@@ -1,11 +1,11 @@
-<script lang="ts">
+<script lang='ts'>
   import Header from './Header.svelte'
   import '../styles/index.scss'
 
-  let { children } = $props()
+  const { children } = $props()
 </script>
 
-<div class="app">
+<div class='app'>
   <Header />
 
   <main>
@@ -13,9 +13,9 @@
   </main>
 
   <footer>
-    <p class="text-sm">123</p>
-    <p class="font-bold">
-      visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to learn
+    <p class='text-sm'>123</p>
+    <p class='font-bold'>
+      visit <a href='https://svelte.dev/docs/kit'>svelte.dev/docs/kit</a> to learn
       about SvelteKit
     </p>
   </footer>
