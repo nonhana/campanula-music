@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
-    "drizzle-orm": "^0.38.4"
+    "drizzle-orm": "^0.38.4",
+    "lucide-svelte": "^0.474.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.1.0",
