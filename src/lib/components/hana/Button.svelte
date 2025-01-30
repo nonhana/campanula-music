@@ -8,11 +8,12 @@
     iconButton?: boolean
     href?: string
     ariaLabel?: string
+    activated?: boolean
     onclick?: () => void
     children: Snippet
   }
 
-  const { class: customClasses = '', style, children, variant = 'primary', iconButton, href, ariaLabel = '', onclick }: Props = $props()
+  const { class: customClasses = '', style, children, variant = 'primary', iconButton, href, ariaLabel = '', activated, onclick }: Props = $props()
 
   const baseClasses = 'rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
   const CommonClasses = 'px-4 py-2'
@@ -23,8 +24,19 @@
     accent: 'bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500',
     transparent: 'bg-transparent text-neutral hover:bg-primary-200 focus:ring-primary-200',
   }
+  const variantActivatedClasses = {
+    primary: 'bg-primary-600 text-white focus:ring-primary-500',
+    secondary: 'bg-secondary-600 text-white focus:ring-secondary-500',
+    accent: 'bg-accent-600 text-white focus:ring-accent-500',
+    transparent: 'bg-primary-200 text-neutral focus:ring-primary-200',
+  }
 
-  const computedClasses = `${baseClasses} ${iconButton ? IconBtnClasses : CommonClasses} ${variantClasses[variant]} ${customClasses}`
+  const computedClasses = $derived(
+    `${baseClasses} ${
+      iconButton ? IconBtnClasses : CommonClasses} ${
+      activated ? variantActivatedClasses[variant] : variantClasses[variant]} ${
+      customClasses}`,
+  )
 </script>
 
 {#if href}
