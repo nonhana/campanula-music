@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
 
   interface Props {
+    disabled?: boolean
     content?: string
     position?: 'top' | 'bottom' | 'left' | 'right'
     offset?: 'start' | 'center' | 'end'
@@ -13,6 +14,7 @@
   }
 
   const {
+    disabled = false,
     content = '',
     position = 'bottom',
     offset = 'center',
@@ -27,6 +29,8 @@
   const clickTrigger = trigger === 'click'
 
   const toggleVisible = (value: boolean) => {
+    if (disabled)
+      return
     visible = value
   }
   const open = () => {
