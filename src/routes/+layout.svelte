@@ -12,7 +12,7 @@
   }
 </script>
 
-<div class='flex flex-col min-h-dvh bg-gradient-to-br from-primary-100 to-primary'>
+<div class='flex flex-col min-h-dvh bg-primary-100'>
   <Header {toggleFolded} />
   <main class='flex-1 flex flex-row'>
     <Sidebar {folded} />

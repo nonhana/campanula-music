@@ -3,6 +3,7 @@
 
   interface Props {
     class?: string
+    style?: string
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent'
     iconButton?: boolean
     href?: string
@@ -11,7 +12,7 @@
     children: Snippet
   }
 
-  const { class: customClasses = '', children, variant = 'primary', iconButton, href, ariaLabel = '', onclick }: Props = $props()
+  const { class: customClasses = '', style, children, variant = 'primary', iconButton, href, ariaLabel = '', onclick }: Props = $props()
 
   const baseClasses = 'rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
   const CommonClasses = 'px-4 py-2'
@@ -28,12 +29,12 @@
 
 {#if href}
   <a class='inline-block' {href} aria-label={ariaLabel} title={ariaLabel} {onclick}>
-    <div class={computedClasses}>
+    <div role='button' class={computedClasses} {style}>
       {@render children()}
     </div>
   </a>
 {:else}
-  <button class={computedClasses} {onclick}>
+  <button class={computedClasses} {style} {onclick}>
     {@render children()}
   </button>
 {/if}

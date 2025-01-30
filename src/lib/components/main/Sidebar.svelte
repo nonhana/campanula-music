@@ -18,7 +18,7 @@
           variant='transparent'
           {href}
           ariaLabel={title}
-          class={folded ? '' : 'block'}
+          style={folded ? undefined : 'width: 13.5rem'}
         >
           <span class='flex items-center text-sm font-normal space-x-2'>
             <Icon />
