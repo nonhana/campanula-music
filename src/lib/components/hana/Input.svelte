@@ -55,7 +55,7 @@
       {placeholder}
       onkeydown={keydown}
       class={[
-        'w-full py-2 text-sm bg-primary-50 placeholder:text-neutral border border-primary-50',
+        'w-full py-2 text-sm bg-white placeholder:text-neutral border border-white',
         'focus:ring-2 focus:ring-primary focus:border-transparent',
         shape === 'rounded' ? 'rounded-full' : 'rounded-lg',
         prefixIcon ? 'pl-11' : 'pl-3',

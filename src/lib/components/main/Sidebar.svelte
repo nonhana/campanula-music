@@ -3,6 +3,7 @@
   import Button from '$lib/components/hana/Button.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { navItems } from '$lib/config.svelte'
+  import { scrolled } from '$lib/stores/scrolled'
 
   interface Props {
     folded: boolean
@@ -13,7 +14,11 @@
   const highlightId = $derived(navItems.findIndex(item => item.href === page.route.id))
 </script>
 
-<nav class={['h-[100dvh-16rem]', folded ? 'w-20' : 'w-60']}>
+<nav class={[
+  'fixed top-16 h-[calc(100dvh-4rem)] border-r border-primary border-opacity-0 transition-all',
+  folded ? 'w-20' : 'w-60',
+  $scrolled && 'bg-white border-opacity-100',
+]}>
   <ul class='flex flex-col gap-2'>
     {#each navItems as { title, href, icon: Icon }, i}
       <li class={['flex', folded ? 'justify-center' : 'justify-start ml-3']}>

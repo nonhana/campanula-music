@@ -3,6 +3,7 @@
   import Input from '$lib/components/hana/Input.svelte'
   import Logo from '$lib/components/svg/Logo.svelte'
   import { siteTitle } from '$lib/config.svelte'
+  import { scrolled } from '$lib/stores/scrolled'
   import { Menu, Search } from 'lucide-svelte'
 
   interface Props {
@@ -12,11 +13,12 @@
   const { toggleFolded }: Props = $props()
 
   let keywords = $state('')
-
-  $inspect(keywords)
 </script>
 
-<header class='w-full h-16 flex items-center px-5 gap-5'>
+<header class={[
+  'sticky top-0 w-full h-16 flex items-center px-5 gap-5 border-b border-primary border-opacity-0 transition-all',
+  $scrolled && 'border-opacity-100 bg-white',
+]}>
   <Button iconButton variant='transparent' onclick={toggleFolded}>
     <Menu />
   </Button>
