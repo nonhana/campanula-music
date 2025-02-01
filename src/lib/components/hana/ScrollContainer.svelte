@@ -11,46 +11,76 @@
   let containerElement: HTMLDivElement | null = null
   let scrollContentElement: HTMLDivElement | null = null
 
+  let scrollBarPos = $state<'right' | 'bottom' | 'none'>('right')
+  const isRight = $derived(scrollBarPos === 'right')
+  const isBottom = $derived(scrollBarPos === 'bottom')
+  const isNone = $derived(scrollBarPos === 'none')
+
+  $inspect(scrollBarPos)
+
   let containerHeight = $state(0)
+  let containerWidth = $state(0)
   let contentHeight = $state(0)
+  let contentWidth = $state(0)
 
-  let scrollTop = $state(0)
-
-  // 动态计算滚动条的高度，最短为 20px
-  const thumbHeight = $derived.by(() => {
-    if (containerHeight === 0 || contentHeight === 0)
-      return 0
-    const ratio = containerHeight / contentHeight
-    return Math.max(ratio * containerHeight, 20)
-  })
-
-  const thumbTop = $derived.by(() => {
-    if (contentHeight <= containerHeight)
-      return 0
-    const maxScrollTop = contentHeight - containerHeight
-    const maxThumbTop = containerHeight - thumbHeight
-    return (scrollTop / maxScrollTop) * maxThumbTop
-  })
+  let scrollOffset = $state(0)
 
   const updateSizes = () => {
     tick().then(() => {
-      if (containerElement && scrollContentElement) {
-        containerHeight = containerElement.clientHeight
-        contentHeight = scrollContentElement.scrollHeight
-      }
+      if (!(containerElement && scrollContentElement))
+        return
+      containerHeight = containerElement.clientHeight
+      containerWidth = containerElement.clientWidth
+      contentHeight = scrollContentElement.scrollHeight
+      contentWidth = scrollContentElement.scrollWidth
+      scrollBarPos = contentHeight > containerHeight
+        ? 'right'
+        : contentWidth > containerWidth
+        ? 'bottom'
+        : 'none'
     })
   }
 
-  let startY = 0
-  let startScrollTop = 0
+  // 动态计算滚动条的长度，最短为 20px
+  const thumbLength = $derived.by(() => {
+    if (
+      ((containerHeight === 0 || contentHeight === 0) && isRight)
+      || ((containerWidth === 0 || contentWidth === 0) && isBottom)
+    ) {
+      return 0
+    }
+    const ratio = isRight
+      ? containerHeight / contentHeight
+      : containerWidth / contentWidth
+    return Math.max(ratio * (isRight ? containerHeight : containerWidth), 20)
+  })
+
+  const thumbOffset = $derived.by(() => {
+    if (
+      (contentHeight <= containerHeight && isRight)
+      || (contentWidth <= containerWidth && isBottom)
+    ) {
+      return 0
+    }
+    const maxScrollLength = isRight
+      ? contentHeight - containerHeight
+      : contentWidth - containerWidth
+    const maxThumbLength = isRight
+      ? containerHeight - thumbLength
+      : containerWidth - thumbLength
+    return (scrollOffset / maxScrollLength) * maxThumbLength
+  })
+
+  let startOffset = 0
+  let startScrollOffset = 0
 
   const onMouseMove = (e: MouseEvent) => {
     if (!scrollContentElement)
       return
-    const deltaY = e.clientY - startY
-    const scrollableHeight = contentHeight - containerHeight
-    const trackHeight = containerHeight - thumbHeight
-    const newScrollTop = startScrollTop + deltaY * (scrollableHeight / trackHeight)
+    const deltaOffset = (isRight ? e.clientY : e.clientX) - startOffset
+    const scrollableLength = isRight ? contentHeight - containerHeight : contentWidth - containerWidth
+    const trackLength = (isRight ? containerHeight : containerWidth) - thumbLength
+    const newScrollTop = startScrollOffset + deltaOffset * (scrollableLength / trackLength)
     scrollContentElement.scrollTop = newScrollTop
   }
 
@@ -61,13 +91,15 @@
 
   const onScroll = () => {
     if (scrollContentElement) {
-      scrollTop = scrollContentElement.scrollTop
+      scrollOffset = isRight
+        ? scrollContentElement.scrollTop
+        : scrollContentElement.scrollLeft
     }
   }
 
   const onThumbMouseDown = (e: MouseEvent) => {
-    startY = e.clientY
-    startScrollTop = scrollTop
+    startOffset = isRight ? e.clientY : e.clientX
+    startScrollOffset = scrollOffset
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
     e.preventDefault()
@@ -87,23 +119,34 @@
       window.removeEventListener('resize', updateSizes)
     }
   })
+
+  const scrollBarStyle = $derived(
+    isRight
+      ? 'height: {thumbLength}px; transform: translateY({thumbOffset}px)'
+      : isBottom ? 'width: {thumbLength}px; transform: translateX({thumbOffset}px)' : '',
+  )
 </script>
 
 <div
   bind:this={containerElement}
-  class='relative size-full overflow-hidden'
+  class='relative size-full overflow-hidden group'
 >
   <div bind:this={scrollContentElement} class='h-full overflow-auto scrollbar-hidden'>
     {@render children?.()}
   </div>
 
   <!-- Custom Scrollbar -->
-  <div class='absolute top-0 w-2 h-full bg-primary-100 rounded right-1'>
+  <div class={[
+    'absolute bg-primary-100 rounded hidden group-hover:block',
+    isRight && 'right-1 top-0 w-2 h-full',
+    isBottom && 'bottom-1 left-0 h-2 w-full',
+    isNone && 'hidden',
+  ]}>
     <div
       role='button'
       tabindex='0'
       class='bg-primary rounded'
-      style='height: {thumbHeight}px; transform: translateY({thumbTop}px)'
+      style={scrollBarStyle}
       onmousedown={onThumbMouseDown}
     ></div>
   </div>

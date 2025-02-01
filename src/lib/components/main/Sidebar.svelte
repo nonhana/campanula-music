@@ -2,7 +2,7 @@
   import { page } from '$app/state'
   import Button from '$lib/components/hana/Button.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
-  import { navItems } from '$lib/config.svelte'
+  import { navItems } from '$lib/config'
   import { scrolled } from '$lib/stores/scrolled'
 
   interface Props {

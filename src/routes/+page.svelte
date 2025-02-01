@@ -13,9 +13,9 @@
   {#snippet icon()}
     <Music />
   {/snippet}
-  <div class='h-40'>
+  <div class='w-40 h-40 bg-white'>
     <ScrollContainer>
-      <div class='h-[1000px]'>
+      <div class='w-[1000px]'>
         <p>123</p>
       </div>
     </ScrollContainer>

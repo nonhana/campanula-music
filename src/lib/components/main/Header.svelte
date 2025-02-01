@@ -2,7 +2,7 @@
   import Button from '$lib/components/hana/Button.svelte'
   import Input from '$lib/components/hana/Input.svelte'
   import Logo from '$lib/components/svg/Logo.svelte'
-  import { siteTitle } from '$lib/config.svelte'
+  import { siteTitle } from '$lib/config'
   import { scrolled } from '$lib/stores/scrolled'
   import { Menu, Search } from 'lucide-svelte'
 
