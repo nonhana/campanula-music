@@ -130,22 +130,16 @@ export default {
           900: '#0D47A1',
         },
       },
-
-      /** 其他可扩展的 UI 样式 */
-      borderRadius: {
-        'xl': '12px',
-        '2xl': '16px',
-        '3xl': '24px',
-      },
-
-      spacing: {
-        18: '4.5rem',
-        22: '5.5rem',
-        26: '6.5rem',
-        30: '7.5rem',
-      },
     },
   },
 
-  plugins: [typography, forms, containerQueries],
+  plugins: [typography, forms, containerQueries, function ({ addUtilities }) {
+    addUtilities({
+      '.scrollbar-hidden': {
+        '&::-webkit-scrollbar': {
+          display: 'none',
+        },
+      },
+    })
+  }],
 } satisfies Config

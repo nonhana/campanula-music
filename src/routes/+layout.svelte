@@ -24,7 +24,7 @@
 <div class='flex flex-col min-h-dvh h-[2000px] bg-primary-100'>
   <Header {toggleFolded} />
   <Sidebar {folded} />
-  <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
+  <main class={['flex-1 m-auto container']}>
     {@render children()}
   </main>
   <footer>

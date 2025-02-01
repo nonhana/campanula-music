@@ -1,6 +1,7 @@
 <script lang='ts'>
-  import Button from '$lib/components/hana/Button.svelte'
-  import Tooltip from '$lib/components/hana/Tooltip.svelte'
+  import BannerCard from '$lib/components/hana/BannerCard.svelte'
+  import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
+  import { Music } from 'lucide-svelte'
 </script>
 
 <svelte:head>
@@ -8,8 +9,15 @@
   <meta name='description' content='Svelte demo app' />
 </svelte:head>
 
-<h1>Home</h1>
-
-<Tooltip content='This is a tooltip' trigger='click'>
-  <Button>Hover me</Button>
-</Tooltip>
+<BannerCard title='歌曲列表'>
+  {#snippet icon()}
+    <Music />
+  {/snippet}
+  <div class='h-40'>
+    <ScrollContainer>
+      <div class='h-[1000px]'>
+        <p>123</p>
+      </div>
+    </ScrollContainer>
+  </div>
+</BannerCard>
