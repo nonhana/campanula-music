@@ -22,11 +22,13 @@
   })
 </script>
 
-<div class='flex flex-col min-h-dvh h-[2000px] bg-neutral-100'>
+<div class='flex flex-col min-h-dvh bg-neutral-100'>
   <Header {toggleFolded} />
   <Sidebar {folded} />
-  <main class={['flex-1 m-auto container']}>
-    {@render children()}
+  <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
+    <div class='container m-auto'>
+      {@render children()}
+    </div>
   </main>
   <Footer />
 </div>

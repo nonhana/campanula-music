@@ -7,7 +7,7 @@
 
 <BannerCard title='歌单列表'>
   {#snippet icon()}<ListMusic />{/snippet}
-  <div class='w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8'>
+  <div class='w-full grid gap-5 grid-cols-[repeat(auto-fill,minmax(170px,1fr))]'>
     {#each mockPlaylists as playlist}
       <PlaylistItem {playlist} />
     {/each}
