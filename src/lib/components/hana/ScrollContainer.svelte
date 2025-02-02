@@ -16,8 +16,6 @@
   const isBottom = $derived(scrollBarPos === 'bottom')
   const isNone = $derived(scrollBarPos === 'none')
 
-  $inspect(scrollBarPos)
-
   let containerHeight = $state(0)
   let containerWidth = $state(0)
   let contentHeight = $state(0)
@@ -80,8 +78,9 @@
     const deltaOffset = (isRight ? e.clientY : e.clientX) - startOffset
     const scrollableLength = isRight ? contentHeight - containerHeight : contentWidth - containerWidth
     const trackLength = (isRight ? containerHeight : containerWidth) - thumbLength
-    const newScrollTop = startScrollOffset + deltaOffset * (scrollableLength / trackLength)
-    scrollContentElement.scrollTop = newScrollTop
+    const newScrollOffset = startScrollOffset + deltaOffset * (scrollableLength / trackLength)
+
+    isRight ? scrollContentElement.scrollTop = newScrollOffset : scrollContentElement.scrollLeft = newScrollOffset
   }
 
   const onMouseUp = () => {
@@ -122,14 +121,16 @@
 
   const scrollBarStyle = $derived(
     isRight
-      ? 'height: {thumbLength}px; transform: translateY({thumbOffset}px)'
-      : isBottom ? 'width: {thumbLength}px; transform: translateX({thumbOffset}px)' : '',
+      ? `width: 100%; height: ${thumbLength}px; transform: translateY(${thumbOffset}px)`
+      : isBottom
+      ? `height: 100%; width: ${thumbLength}px; transform: translateX(${thumbOffset}px)`
+      : '',
   )
 </script>
 
 <div
   bind:this={containerElement}
-  class='relative size-full overflow-hidden group'
+  class={['relative size-full overflow-hidden group', isRight && 'pr-2.5', isBottom && 'pb-2.5']}
 >
   <div bind:this={scrollContentElement} class='h-full overflow-auto scrollbar-hidden'>
     {@render children?.()}
@@ -137,7 +138,7 @@
 
   <!-- Custom Scrollbar -->
   <div class={[
-    'absolute bg-primary-100 rounded hidden group-hover:block',
+    'absolute bg-primary-100 rounded ',
     isRight && 'right-1 top-0 w-2 h-full',
     isBottom && 'bottom-1 left-0 h-2 w-full',
     isNone && 'hidden',

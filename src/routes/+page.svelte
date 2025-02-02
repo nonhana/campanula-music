@@ -13,10 +13,11 @@
   {#snippet icon()}
     <Music />
   {/snippet}
-  <div class='w-40 h-40 bg-white'>
+  <div class='size-40 bg-white'>
     <ScrollContainer>
-      <div class='w-[1000px]'>
+      <div class='relative h-full w-[1000px]'>
         <p>123</p>
+        <p class='absolute bottom-0'>这是底部的内容</p>
       </div>
     </ScrollContainer>
   </div>
