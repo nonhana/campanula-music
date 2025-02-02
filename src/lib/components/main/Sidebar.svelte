@@ -15,7 +15,7 @@
 </script>
 
 <nav class={[
-  'fixed top-16 h-[calc(100dvh-4rem)] border-r border-primary border-opacity-0 transition-all',
+  'z-20 fixed top-16 h-[calc(100dvh-4rem)] border-r border-primary border-opacity-0 transition-all',
   folded ? 'w-20' : 'w-60',
   $scrolled && 'bg-white border-opacity-100',
 ]}>

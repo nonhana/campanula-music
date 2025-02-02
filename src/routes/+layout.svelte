@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import Footer from '$lib/components/main/Footer.svelte'
   import Header from '$lib/components/main/Header.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import { setScrolled } from '$lib/stores/scrolled'
@@ -27,7 +28,5 @@
   <main class={['flex-1 m-auto container']}>
     {@render children()}
   </main>
-  <footer>
-    <p>这是 footer 的内容哦~</p>
-  </footer>
+  <Footer />
 </div>
