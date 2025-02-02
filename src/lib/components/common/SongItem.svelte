@@ -10,7 +10,7 @@
   const { song }: Props = $props()
 </script>
 
-<div class='w-80 h-20 flex items-center gap-4 border-b-2 last:border-b-0 border-neutral-200'>
+<div class='px-4 w-80 h-20 flex items-center gap-4 border-b-2 last:border-b-0 border-neutral-200'>
   <div class='flex items-center gap-4'>
     <figure class='w-12 h-12 rounded-lg overflow-hidden cursor-pointer hover:bg-white'>
       <img class='w-full h-full object-cover aspect-square' src={song.cover} alt={`封面：${song.name}`} />
