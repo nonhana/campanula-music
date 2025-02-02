@@ -138,7 +138,7 @@
 
   <!-- Custom Scrollbar -->
   <div class={[
-    'absolute bg-primary-100 rounded ',
+    'absolute bg-primary-100 rounded hidden group-hover:block',
     isRight && 'right-1 top-0 w-2 h-full',
     isBottom && 'bottom-1 left-0 h-2 w-full',
     isNone && 'hidden',
