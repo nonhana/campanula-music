@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import PlaylistList from '$lib/components/home/PlaylistList.svelte'
   import SongList from '$lib/components/home/SongList.svelte'
 </script>
 
@@ -8,3 +9,4 @@
 </svelte:head>
 
 <SongList />
+<PlaylistList />

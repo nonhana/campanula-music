@@ -4,11 +4,10 @@
   interface Props {
     items: any[]
     direction?: 'vertical' | 'horizontal'
-    containerSize: number // rem
-    itemSize: number // rem
-    getKey?: (item: any, index: number) => string | number
+    containerSize: number // px
+    itemSize: number // px
     scrollPos?: number // 滚动位置由外部进行控制
-    children: Snippet<[any]>
+    renderItem: Snippet<[any]>
   }
 
   const {
@@ -17,7 +16,7 @@
     containerSize,
     itemSize,
     scrollPos,
-    children,
+    renderItem,
   }: Props = $props()
 
   const isVertical = $derived(direction === 'vertical')
@@ -28,7 +27,7 @@
   const effectiveScrollPos = $derived(hasExternalScroll ? scrollPos! : internalScrollPos)
 
   // 当前的可见项数量
-  const visibleCount = $derived(Math.ceil(containerSize / itemSize) + 5)
+  const visibleCount = $derived(Math.ceil(containerSize / itemSize) + 1)
   // 第一个可见项的起始索引
   const startIndex = $derived(Math.floor(effectiveScrollPos / itemSize))
   // 截取当前的可见项 items
@@ -48,27 +47,27 @@
   }
 
   const containerClass = $derived(isVertical ? 'overflow-auto' : 'overflow-x-auto')
-  const containerStyle = $derived(isVertical ? `height: ${containerSize}rem` : `width: ${containerSize}rem; white-space: nowrap`)
+  const containerStyle = $derived(isVertical ? `height: ${containerSize}px` : `width: ${containerSize}px; white-space: nowrap`)
 
   const innerStyle = $derived(
     isVertical
-      ? `height: ${totalSize}rem; position: relative`
-      : `width: ${totalSize}rem; position: relative`,
+      ? `height: ${totalSize}px; position: relative`
+      : `width: ${totalSize}px; position: relative`,
   )
 
   const translateStyle = $derived(
     isVertical
-      ? `transform: translateY(${startOffset}rem)`
-      : `transform: translateX(${startOffset}rem)`,
+      ? `transform: translateY(${startOffset}px)`
+      : `transform: translateX(${startOffset}px)`,
   )
 </script>
 
-{#if hasExternalScroll}
+{#if !hasExternalScroll}
   <div class={containerClass} style={containerStyle} onscroll={onScroll}>
     <div style={innerStyle}>
       <div class={translateStyle}>
         {#each visibleItems as item}
-          {@render children(item)}
+          {@render renderItem(item)}
         {/each}
       </div>
     </div>
@@ -77,7 +76,7 @@
   <div style={innerStyle}>
     <div style={translateStyle}>
       {#each visibleItems as item}
-        {@render children(item)}
+        {@render renderItem(item)}
       {/each}
     </div>
   </div>

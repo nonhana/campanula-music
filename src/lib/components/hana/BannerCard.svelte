@@ -10,7 +10,7 @@
   const { title, icon, children }: Props = $props()
 </script>
 
-<section class='mb-6 flex items-center gap-2 text-2xl font-semibold text-neutral'>
+<section class='my-6 flex items-center gap-2 text-2xl font-semibold text-neutral'>
   {@render icon?.()}
   <h1>{title}</h1>
 </section>

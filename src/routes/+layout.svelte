@@ -21,7 +21,7 @@
   })
 </script>
 
-<div class='flex flex-col min-h-dvh h-[2000px] bg-primary-100'>
+<div class='flex flex-col min-h-dvh h-[2000px] bg-neutral-100'>
   <Header {toggleFolded} />
   <Sidebar {folded} />
   <main class={['flex-1 m-auto container']}>
