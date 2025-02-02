@@ -79,8 +79,12 @@
     const scrollableLength = isRight ? contentHeight - containerHeight : contentWidth - containerWidth
     const trackLength = (isRight ? containerHeight : containerWidth) - thumbLength
     const newScrollOffset = startScrollOffset + deltaOffset * (scrollableLength / trackLength)
-
-    isRight ? scrollContentElement.scrollTop = newScrollOffset : scrollContentElement.scrollLeft = newScrollOffset
+    if (isRight) {
+      scrollContentElement.scrollTop = newScrollOffset
+    }
+    else {
+      scrollContentElement.scrollLeft = newScrollOffset
+    }
   }
 
   const onMouseUp = () => {
