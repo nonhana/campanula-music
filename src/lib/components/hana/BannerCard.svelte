@@ -3,17 +3,21 @@
 
   interface Props {
     title: string
+    subtitle?: string
     icon?: Snippet
     children?: Snippet
   }
 
-  const { title, icon, children }: Props = $props()
+  const { title, subtitle, icon, children }: Props = $props()
 </script>
 
 <div class='my-6'>
-  <section class='mb-6 flex items-center gap-2 text-2xl font-semibold text-neutral'>
+  <section class='mb-6 flex items-center gap-2 text-2xl text-neutral'>
     {@render icon?.()}
-    <h1>{title}</h1>
+    <h1 class='font-semibold'>{title}</h1>
+    {#if subtitle}
+      <p class='text-base'>{subtitle}</p>
+    {/if}
   </section>
   {@render children?.()}
 </div>

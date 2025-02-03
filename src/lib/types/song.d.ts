@@ -3,7 +3,8 @@ import type { StyleItem } from './style'
 export interface SongItem {
   id: number
   name: string
-  artist: string[]
+  alias: string[]
+  artists: string[]
   cover: string | null
   album: string
   duration: number

@@ -18,7 +18,7 @@
 
     <div class='flex flex-col gap-1'>
       <h2 class='font-medium cursor-pointer hover:text-primary'>{song.name}</h2>
-      <p class='text-sm text-neutral'>{song.artist.join(' / ')}</p>
+      <p class='text-sm text-neutral'>{song.artists.join(' / ')}</p>
     </div>
   </div>
 

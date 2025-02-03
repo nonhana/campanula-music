@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
 
   interface Props {
+    class?: string
     disabled?: boolean
     content?: string
     position?: 'top' | 'bottom' | 'left' | 'right'
@@ -14,6 +15,7 @@
   }
 
   const {
+    class: customClasses = '',
     disabled = false,
     content = '',
     position = 'bottom',
@@ -128,7 +130,7 @@
   })
 </script>
 
-<div class='relative size-fit'>
+<div class={['relative size-fit', customClasses]}>
   <div
     bind:this={triggerElement}
     role='button'

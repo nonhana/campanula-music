@@ -5,6 +5,7 @@
     class?: string
     style?: string
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent'
+    shape?: 'rounded' | 'circle'
     iconButton?: boolean
     href?: string
     ariaLabel?: string
@@ -13,9 +14,20 @@
     children: Snippet
   }
 
-  const { class: customClasses = '', style, children, variant = 'primary', iconButton, href, ariaLabel = '', activated, onclick }: Props = $props()
+  const {
+    class: customClasses = '',
+    style,
+    children,
+    variant = 'primary',
+    shape = 'rounded',
+    iconButton,
+    href,
+    ariaLabel = '',
+    activated,
+    onclick,
+  }: Props = $props()
 
-  const baseClasses = 'rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
+  const baseClasses = 'font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
   const CommonClasses = 'px-4 py-2'
   const IconBtnClasses = 'p-2'
   const variantClasses = {
@@ -30,11 +42,16 @@
     accent: 'bg-accent-600 text-white focus:ring-accent-500',
     transparent: 'bg-primary-200 text-neutral focus:ring-primary-200',
   }
+  const shapeClasses = {
+    rounded: 'rounded-lg',
+    circle: 'rounded-full',
+  }
 
   const computedClasses = $derived(
     `${baseClasses} ${
       iconButton ? IconBtnClasses : CommonClasses} ${
       activated ? variantActivatedClasses[variant] : variantClasses[variant]} ${
+      shapeClasses[shape]} ${
       customClasses}`,
   )
 </script>
