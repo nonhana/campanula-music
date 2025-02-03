@@ -13,7 +13,7 @@
 
 <BannerCard title='歌曲列表'>
   {#snippet icon()}<Music />{/snippet}
-  <div class='w-full rounded-lg bg-white'>
+  <div class='w-full rounded-lg bg-white px-2'>
     <ScrollContainer>
       <div class='flex'>
         {#each songGroups as group}
