@@ -17,3 +17,11 @@ export const mockPlaylists: PlaylistItem[] = Array.from({ length: 21 }).map((_, 
   cover: 'https://moe.greyflowers.pics/avatar.webp',
   musicCount: 10,
 }))
+
+export const mockPlaylist: PlaylistItem = {
+  id: 0,
+  name: 'Playlist 0 Playlist 0 Playlist 0',
+  description: 'DescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescription',
+  cover: 'https://moe.greyflowers.pics/avatar.webp',
+  musicCount: 10,
+}

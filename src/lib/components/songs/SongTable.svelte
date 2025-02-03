@@ -49,7 +49,7 @@
     </table>
   </div>
 
-  <div class='sticky bottom-5 mx-auto mt-5 w-fit'>
+  <div class='sticky bottom-5 mx-auto mt-5 w-fit bg-white p-4 rounded-lg'>
     <Paginator bind:currentPage={curPage} total={songCount} pageSize={pageSize} buttonCount={5} />
   </div>
 </BannerCard>

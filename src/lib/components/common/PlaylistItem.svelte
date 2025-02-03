@@ -4,13 +4,19 @@
   import { PlayCircle } from 'lucide-svelte'
 
   interface Props {
+    type?: 'home' | 'playlist'
     playlist: PlaylistItem
   }
 
-  const { playlist }: Props = $props()
+  const { type = 'home', playlist }: Props = $props()
 </script>
 
-<Card elevated={false} divider={false} transparent>
+<Card
+  elevated={false}
+  divider={false}
+  transparent
+  href={type === 'playlist' ? `/playlists/${playlist.id}` : undefined}
+>
   {#snippet mask()}
     <div class='absolute inset-0 size-full cursor-pointer hover:bg-gradient-to-b from-transparent to-primary/30 group/item'>
       <PlayCircle class='text-neutral absolute bottom-2 right-2 hidden group-hover/item:block' />
@@ -20,6 +26,7 @@
     <img
       src={playlist.cover}
       alt={playlist.name}
+      class={[type === 'playlist' && 'w-40']}
     />
   {/snippet}
   <div class='flex flex-col px-4 py-2'>
