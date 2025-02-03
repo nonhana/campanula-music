@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte'
 
   interface Props {
+    transparent?: boolean
     elevated?: boolean
     bordered?: boolean
     rounded?: boolean
@@ -14,6 +15,7 @@
   }
 
   const {
+    transparent = false,
     elevated = true,
     bordered = false,
     rounded = true,
@@ -26,7 +28,8 @@
   }: Props = $props()
 
   const cardClasses = $derived([
-    'relative bg-white overflow-hidden shrink-0',
+    'relative overflow-hidden shrink-0',
+    transparent ? 'bg-transparent' : 'bg-white',
     rounded && 'rounded-lg',
     elevated && 'shadow-lg',
     hoverable && 'cursor-pointer hover:bg-primary-200',
