@@ -4,20 +4,20 @@
   import Buttons from './Buttons.svelte'
 
   interface Props {
+    currentPage: number
     total: number
     pageSize?: number
     buttonCount?: number
   }
 
-  const {
+  let {
+    currentPage = $bindable(),
     total,
     pageSize = 10,
     buttonCount = 5,
   }: Props = $props()
 
   const totalPages = $derived(Math.ceil(total / pageSize) || 1)
-
-  let currentPage = $state(1)
 
   const stepPage = (type: 'prev' | 'next') => {
     if (type === 'prev') {

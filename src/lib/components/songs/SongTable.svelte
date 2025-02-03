@@ -1,10 +1,18 @@
 <script lang='ts'>
   import SongTableItem from '$lib/components/common/SongTableItem.svelte'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
+  import Paginator from '$lib/components/hana/Paginator/index.svelte'
   import { mockSongs } from '$lib/mock'
   import { Music } from 'lucide-svelte'
 
   const songCount = mockSongs.length
+  const pageSize = 50
+  let curPage = $state(1)
+
+  const songGroups = Array.from({ length: Math.ceil(songCount / pageSize) }, (_, i) => {
+    const start = i * pageSize
+    return mockSongs.slice(start, start + pageSize)
+  })
 </script>
 
 <BannerCard title='全部歌曲' subtitle={`共 ${songCount} 首`}>
@@ -34,10 +42,14 @@
         </tr>
       </thead>
       <tbody>
-        {#each mockSongs as song}
+        {#each songGroups[curPage - 1] as song}
           <SongTableItem {song} />
         {/each}
       </tbody>
     </table>
+  </div>
+
+  <div class='sticky bottom-5 mx-auto mt-5 w-fit'>
+    <Paginator bind:currentPage={curPage} total={songCount} pageSize={pageSize} buttonCount={5} />
   </div>
 </BannerCard>

@@ -38,7 +38,7 @@
 
   const baseClasses = 'font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
   const CommonClasses = 'px-4 py-2'
-  const IconBtnClasses = 'p-2'
+  const IconBtnClasses = 'p-2 size-10'
   const variantClasses = {
     primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
     secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 focus:ring-secondary-500',
