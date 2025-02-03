@@ -5,6 +5,12 @@ export interface SongItem {
   name: string
   artist: string[]
   cover: string | null
-  styles: StyleItem[]
+  album: string
   duration: number
+}
+
+export interface SongDetail extends SongItem {
+  styles: StyleItem[]
+  lyrics: string
+  releaseDate: string
 }
