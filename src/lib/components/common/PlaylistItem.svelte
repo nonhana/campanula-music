@@ -5,10 +5,11 @@
 
   interface Props {
     type?: 'home' | 'playlist'
+    activated?: boolean
     playlist: PlaylistItem
   }
 
-  const { type = 'home', playlist }: Props = $props()
+  const { type = 'home', activated = false, playlist }: Props = $props()
 </script>
 
 <Card
@@ -18,8 +19,13 @@
   href={type === 'playlist' ? `/playlists/${playlist.id}` : undefined}
 >
   {#snippet mask()}
-    <div class='absolute inset-0 size-full cursor-pointer hover:bg-gradient-to-b from-transparent to-primary/30 group/item'>
-      <PlayCircle class='text-neutral absolute bottom-2 right-2 hidden group-hover/item:block' />
+    <div
+      class={[
+        'absolute inset-0 size-full cursor-pointer hover:bg-gradient-to-b from-transparent to-primary/30 group/item',
+        activated && 'bg-gradient-to-b from-transparent to-primary/30',
+      ]}
+    >
+      <PlayCircle class={`text-neutral absolute bottom-2 right-2 hidden ${type === 'playlist' ? '' : 'group-hover/item:block'}`} />
     </div>
   {/snippet}
   {#snippet header()}
