@@ -1,13 +1,22 @@
 <script lang='ts'>
-  import Button from '$lib/components/hana/Button.svelte'
   import MaskImg from '$lib/components/hana/MaskImg.svelte'
-  import { nowPlaying, repeat, repeating, shuffle, shuffling } from '$lib/stores'
+  import {
+    mute,
+    muted,
+    nowPlaying,
+    playMode,
+    setPlayMode,
+    volume,
+  } from '$lib/stores'
   import { handleDuration } from '$lib/utils'
   import {
+    ArrowLeftRight,
     ChevronUp,
+    Menu,
     Pause,
     Play,
-    RotateCwSquare,
+    Repeat,
+    Repeat1,
     Shuffle,
     SkipBack,
     SkipForward,
@@ -16,32 +25,75 @@
     Volume2,
     VolumeX,
   } from 'lucide-svelte'
+  import { onMount } from 'svelte'
 
   let currentTime = $state(0)
-  const currentProgress = $derived($nowPlaying ? (currentTime / $nowPlaying.duration) : 0)
-  const handleProgress = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    currentTime = Math.floor(target.valueAsNumber * $nowPlaying!.duration)
-  }
+  let sliderProgress = $state(0)
+  let seeking = $state(false)
+  const currentProgress = $derived(
+    $nowPlaying
+      ? (seeking ? sliderProgress : (currentTime / $nowPlaying.duration))
+      : 0,
+  )
 
   let paused = $state(false)
   const togglePaused = () => {
     paused = !paused
   }
 
-  let volume = $state(0.5)
-  let closeVolume = $state(false)
+  // audio 元素对象
+  let audioElement = $state<HTMLAudioElement | null>(null)
+
+  const handlePointerDown = () => {
+    seeking = true
+  }
+
+  const handleInput = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    sliderProgress = target.valueAsNumber
+  }
+
+  const handleChange = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    sliderProgress = target.valueAsNumber
+    if ($nowPlaying) {
+      const newTime = Math.floor(sliderProgress * $nowPlaying.duration)
+      currentTime = newTime
+      if (audioElement) {
+        audioElement.currentTime = newTime
+      }
+    }
+    seeking = false
+  }
+
+  const globalPause = (e: KeyboardEvent) => {
+    if (e.code === 'Space') {
+      e.preventDefault()
+      togglePaused()
+    }
+  }
+
+  onMount(() => {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', globalPause)
+    }
+    return () => {
+      window.removeEventListener('keydown', globalPause)
+    }
+  })
 </script>
 
 <footer class='fixed bottom-0 w-full h-20 z-20 bg-neutral-200 flex items-center px-5'>
   {#if $nowPlaying}
     <audio
+      bind:this={audioElement}
       src={$nowPlaying.source}
+      preload='metadata'
       autoplay
       bind:currentTime
-      bind:volume
       bind:paused
-      onvolumechange={() => closeVolume = volume === 0}
+      bind:volume={$volume}
+      bind:muted={$muted}
       class='hidden'
     ></audio>
   {/if}
@@ -50,10 +102,11 @@
       type='range'
       min='0'
       max='1'
-      step='0.01'
+      step='0.001'
       value={currentProgress}
-      defaultValue={currentProgress}
-      onchange={handleProgress}
+      oninput={handleInput}
+      onchange={handleChange}
+      onpointerdown={handlePointerDown}
       class='w-full absolute -translate-y-1/2 top-0 left-0'
     />
   {/if}
@@ -89,12 +142,10 @@
   {/if}
 
   <div class='flex items-center gap-5 ml-auto'>
-    <Button iconButton shape='circle' activated={$shuffling} onclick={shuffle}>
-      <Shuffle />
-    </Button>
-    <Button iconButton shape='circle' activated={$repeating} onclick={repeat}>
-      <RotateCwSquare />
-    </Button>
+    <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat')} />
+    <Repeat class={`cursor-pointer ${$playMode === 'repeat' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat1')} />
+    <Repeat1 class={`cursor-pointer ${$playMode === 'repeat1' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('list')} />
+    <ArrowLeftRight class={`cursor-pointer ${$playMode === 'list' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat')} />
     <div class='relative cursor-pointer flex flex-col items-center gap-5 group'>
       <div class='absolute w-28 px-4 py-2 bg-neutral-200 justify-center -rotate-90 -translate-y-[calc(50%+3.5rem)] hidden group-hover:flex rounded-full'>
         <input
@@ -102,21 +153,25 @@
           min='0'
           max='1'
           step='0.01'
-          bind:value={volume}
+          bind:value={$volume}
+          disabled={$muted}
           class='w-full'
         />
       </div>
-      {#if closeVolume}
-        <VolumeX />
-      {:else if volume === 0}
-        <Volume />
-      {:else if volume < 0.5}
-        <Volume1 />
-      {:else if volume <= 1}
-        <Volume2 />
-      {:else}
-        <Volume />
-      {/if}
+      <button onclick={mute}>
+        {#if $muted}
+          <VolumeX />
+        {:else if $volume === 0}
+          <Volume />
+        {:else if $volume < 0.5}
+          <Volume1 />
+        {:else if $volume <= 1}
+          <Volume2 />
+        {:else}
+          <Volume />
+        {/if}
+      </button>
     </div>
+    <Menu class='cursor-pointer' />
   </div>
 </footer>

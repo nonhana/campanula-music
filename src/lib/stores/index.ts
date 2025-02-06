@@ -1,3 +1,3 @@
-export * from './nowPlaying'
+export * from './playerConfig'
 export * from './playlist'
 export * from './scrolled'
