@@ -1,13 +1,23 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types/song'
   import Button from '$lib/components/hana/Button.svelte'
+  import useMessage from '$lib/hooks/useMessage'
   import { Plus } from 'lucide-svelte'
+
+  const { callHanaMessage } = useMessage()
 
   interface Props {
     song: SongItem
   }
 
   const { song }: Props = $props()
+
+  const handleClick = () => {
+    callHanaMessage({
+      message: `已添加歌曲：${song.name}`,
+      type: 'success',
+    })
+  }
 </script>
 
 <div class='px-2 w-80 h-20 flex items-center gap-4 border-b-2 last:border-b-0 border-neutral-200'>
@@ -22,7 +32,13 @@
     </div>
   </div>
 
-  <Button iconButton variant='transparent' ariaLabel='添加到播放列表' class='ml-auto'>
+  <Button
+    iconButton
+    variant='transparent'
+    ariaLabel='添加到播放列表'
+    class='ml-auto'
+    onclick={handleClick}
+  >
     <Plus />
   </Button>
 </div>
