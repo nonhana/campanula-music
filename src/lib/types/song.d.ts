@@ -8,6 +8,7 @@ export interface SongItem {
   cover: string | null
   album: string
   duration: number
+  source: string // 歌曲源文件地址
 }
 
 export interface SongDetail extends SongItem {

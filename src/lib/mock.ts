@@ -7,7 +7,8 @@ export const mockSongs: SongItem[] = Array.from({ length: 312 }).map((_, index) 
   artists: ['Artist1', 'Artist2'],
   cover: 'https://moe.greyflowers.pics/avatar.webp',
   album: 'Album',
-  duration: 60,
+  duration: 274,
+  source: 'https://moe.greyflowers.pics/Windy_Hill.mp3',
 }))
 
 export const mockPlaylists: PlaylistItem[] = Array.from({ length: 21 }).map((_, index) => ({

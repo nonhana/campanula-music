@@ -1,7 +1,7 @@
 <script lang='ts'>
-  import Footer from '$lib/components/main/Footer.svelte'
   import Header from '$lib/components/main/Header.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
+  import Player from '$lib/components/player/Player.svelte'
   import { setScrolled } from '$lib/stores/scrolled'
   import debounce from 'debounce'
   import { onMount } from 'svelte'
@@ -30,5 +30,5 @@
       {@render children()}
     </div>
   </main>
-  <Footer />
+  <Player />
 </div>

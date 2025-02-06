@@ -3,7 +3,7 @@
   import Input from '$lib/components/hana/Input.svelte'
   import Logo from '$lib/components/svg/Logo.svelte'
   import { siteTitle } from '$lib/config'
-  import { scrolled } from '$lib/stores/scrolled'
+  import { scrolled } from '$lib/stores'
   import { Menu, Search } from 'lucide-svelte'
 
   interface Props {
