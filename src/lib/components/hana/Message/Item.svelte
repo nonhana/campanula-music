@@ -2,7 +2,7 @@
   import type { MessageOptions } from '$lib/stores'
   import { Check, CircleAlert, Info, X } from 'lucide-svelte'
   import { onMount } from 'svelte'
-  import { fade } from 'svelte/transition'
+  import { fly } from 'svelte/transition'
 
   type NonUndefined<T> = T extends undefined ? never : T
 
@@ -31,7 +31,7 @@
 
 {#if visible}
   <div
-    transition:fade={{ duration: 300 }}
+    transition:fly={{ y: -50, duration: 300 }}
     class={['m-auto flex w-fit items-center gap-2 text-nowrap rounded-lg p-3 text-sm shadow-lg', messageClasses[type]]}
   >
     {#if type === 'info'}
