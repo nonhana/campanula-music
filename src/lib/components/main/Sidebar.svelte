@@ -28,7 +28,7 @@
             variant='transparent'
             activated={highlightId === i}
             {href}
-            ariaLabel={title}
+            aria-label={title}
             style={folded ? undefined : 'width: 13.5rem'}
           >
             <span class='flex items-center text-sm font-normal space-x-2'>

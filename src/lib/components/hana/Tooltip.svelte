@@ -11,7 +11,7 @@
     trigger?: 'hover' | 'click'
     closeOnBlur?: boolean
     children?: Snippet
-    fragment?: Snippet
+    fragment?: Snippet<[close: () => void]>
   }
 
   const {
@@ -30,17 +30,32 @@
   const hoverTrigger = trigger === 'hover'
   const clickTrigger = trigger === 'click'
 
+  let closeTimeout: ReturnType<typeof setTimeout> | null = null
+
   const toggleVisible = (value: boolean) => {
     if (disabled)
       return
     visible = value
   }
   const open = () => {
+    if (closeTimeout) {
+      clearTimeout(closeTimeout)
+      closeTimeout = null
+    }
     toggleVisible(true)
   }
   const close = () => {
     toggleVisible(false)
   }
+
+  // 延时关闭 Tooltip 的函数
+  const closeWithDelay = () => {
+    // 设置一个延时，比如 200ms，根据实际需求调整
+    closeTimeout = setTimeout(() => {
+      close()
+    }, 200)
+  }
+
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault()
@@ -138,7 +153,7 @@
     class='cursor-auto'
     onclick={() => clickTrigger && toggleVisible(!visible)}
     onmouseenter={() => hoverTrigger && open()}
-    onmouseleave={() => hoverTrigger && close()}
+    onmouseleave={() => hoverTrigger && closeWithDelay()}
     onkeydown={handleKeyDown}
   >
     {@render children?.()}
@@ -151,7 +166,7 @@
     class={['absolute z-10 cursor-auto', visible ? 'block' : 'hidden', positionClass]}
     style={offsetStyle}
     onmouseenter={() => hoverTrigger && open()}
-    onmouseleave={() => hoverTrigger && close()}
+    onmouseleave={() => hoverTrigger && closeWithDelay()}
   >
     <div class={[
       'relative min-w-max max-w-60 text-center',
@@ -159,7 +174,7 @@
       content ? 'px-4 py-2' : 'p-1',
     ]}>
       {#if fragment}
-        {@render fragment()}
+        {@render fragment(close)}
       {:else}
         <span class='text-neutral'>{content}</span>
       {/if}

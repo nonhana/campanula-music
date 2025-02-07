@@ -1,8 +1,22 @@
 <script lang='ts'>
   import Button from '$lib/components/hana/Button.svelte'
+  import Dropdown from '$lib/components/hana/Dropdown/index.svelte'
+  import DropdownItem from '$lib/components/hana/Dropdown/Item.svelte'
+  import DropdownMenu from '$lib/components/hana/Dropdown/Menu.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { mockPlaylist } from '$lib/mock'
-  import { Ellipsis, Play } from 'lucide-svelte'
+  import { Ellipsis, Play, Plus } from 'lucide-svelte'
+
+  const moreMap = [
+    {
+      icon: Plus,
+      text: '添加到播放列表',
+    },
+  ]
+
+  const handleCommand = (command: string | number | object) => {
+    console.log(command)
+  }
 </script>
 
 <div class='flex flex-col items-center space-y-5 w-64'>
@@ -20,10 +34,22 @@
         <Play />
       </Button>
     </Tooltip>
-    <Tooltip content='更多'>
+    <Dropdown oncommand={handleCommand}>
       <Button iconButton variant='secondary' shape='circle'>
         <Ellipsis />
       </Button>
-    </Tooltip>
+      {#snippet dropdown()}
+        <DropdownMenu>
+          {#each moreMap as { icon: Icon, text }}
+            <DropdownItem command={text}>
+              {#snippet icon()}
+                <Icon />
+              {/snippet}
+              {text}
+            </DropdownItem>
+          {/each}
+        </DropdownMenu>
+      {/snippet}
+    </Dropdown>
   </div>
 </div>

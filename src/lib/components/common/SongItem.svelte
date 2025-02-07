@@ -35,7 +35,7 @@
   <Button
     iconButton
     variant='transparent'
-    ariaLabel='添加到播放列表'
+    aria-label='添加到播放列表'
     class='ml-auto'
     onclick={handleClick}
   >

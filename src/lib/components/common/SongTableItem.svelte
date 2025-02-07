@@ -37,7 +37,7 @@
   <td>{handleDuration(song.duration)}</td>
   <td class='rounded-r-lg'>
     <Tooltip content='添加到播放列表' position='left' class='inline-block'>
-      <Button ariaLabel='播放' iconButton variant='transparent' shape='circle'>
+      <Button aria-label='播放' iconButton variant='transparent' shape='circle'>
         <Plus />
       </Button>
     </Tooltip>

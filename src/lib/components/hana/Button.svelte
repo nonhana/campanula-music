@@ -1,17 +1,12 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements'
 
   interface Props {
-    class?: string
-    style?: string
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent'
     shape?: 'rounded' | 'circle'
     iconButton?: boolean
-    disabled?: boolean
-    href?: string
-    ariaLabel?: string
     activated?: boolean
-    onclick?: () => void
     children: Snippet
   }
 
@@ -24,17 +19,9 @@
     iconButton,
     disabled = false,
     href,
-    ariaLabel = '',
     activated,
-    onclick,
-  }: Props = $props()
-
-  const handleClick = () => {
-    if (disabled)
-      return
-    if (onclick)
-      onclick()
-  }
+    ...rest
+  }: Props & HTMLButtonAttributes & HTMLAnchorAttributes = $props()
 
   const baseClasses = 'font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
   const CommonClasses = 'px-4 py-2'
@@ -58,23 +45,30 @@
   const disabledClasses = 'cursor-not-allowed opacity-50'
 
   const computedClasses = $derived(
-    `${baseClasses} ${
-      iconButton ? IconBtnClasses : CommonClasses} ${
-      activated ? variantActivatedClasses[variant] : variantClasses[variant]} ${
-      shapeClasses[shape]} ${
-      customClasses} ${
-      disabled ? disabledClasses : ''}`,
+    `${
+      baseClasses
+    } ${
+      iconButton ? IconBtnClasses : CommonClasses
+    } ${
+      activated ? variantActivatedClasses[variant] : variantClasses[variant]
+    } ${
+      shapeClasses[shape]
+    } ${
+      customClasses
+    } ${
+      disabled ? disabledClasses : ''
+    }`,
   )
 </script>
 
 {#if href}
-  <a class='inline-block' {href} aria-label={ariaLabel} title={ariaLabel} onclick={handleClick}>
+  <a class='inline-block' {href} {...rest}>
     <div role='button' class={computedClasses} {style}>
       {@render children()}
     </div>
   </a>
 {:else}
-  <button class={computedClasses} {style} onclick={handleClick}>
+  <button class={computedClasses} {style} disabled={disabled} {...rest}>
     {@render children()}
   </button>
 {/if}
