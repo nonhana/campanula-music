@@ -1,4 +1,4 @@
 export * from './messageStore'
-export * from './playerConfig'
-export * from './playlist'
-export * from './scrolled'
+export * from './playerConfigStore'
+export * from './playlistStore'
+export * from './scrolledStore'

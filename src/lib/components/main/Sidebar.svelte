@@ -3,7 +3,7 @@
   import Button from '$lib/components/hana/Button.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { navItems } from '$lib/config'
-  import { scrolled } from '$lib/stores/scrolled'
+  import { scrolled } from '$lib/stores'
 
   interface Props {
     folded: boolean

@@ -3,7 +3,7 @@
   import Header from '$lib/components/main/Header.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import Player from '$lib/components/player/Player.svelte'
-  import { setScrolled } from '$lib/stores/scrolled'
+  import { setScrolled } from '$lib/stores'
   import debounce from 'debounce'
   import { onMount } from 'svelte'
   import '../styles/index.scss'
