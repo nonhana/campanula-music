@@ -48,12 +48,10 @@
     toggleVisible(false)
   }
 
-  // 延时关闭 Tooltip 的函数
   const closeWithDelay = () => {
-    // 设置一个延时，比如 200ms，根据实际需求调整
     closeTimeout = setTimeout(() => {
       close()
-    }, 200)
+    }, 50)
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {

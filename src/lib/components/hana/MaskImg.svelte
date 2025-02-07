@@ -8,14 +8,18 @@
     slot?: Snippet
     src: string | null
     alt: string
+    onclick?: (e: MouseEvent) => void
   }
 
-  const { class: wrapperClass, maskClass, imgClass, slot, src, alt }: Props = $props()
+  const { class: wrapperClass, maskClass, imgClass, slot, src, alt, onclick }: Props = $props()
 </script>
 
 <div class={['relative', wrapperClass]}>
-  <div class={['absolute inset-0 size-full hidden justify-center items-center text-white bg-black/50', maskClass]}>
+  <button
+    class={['absolute inset-0 size-full hidden justify-center items-center text-white bg-black/50', maskClass]}
+    {onclick}
+  >
     {@render slot?.()}
-  </div>
+  </button>
   <img {src} {alt} class={imgClass} />
 </div>

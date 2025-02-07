@@ -25,11 +25,8 @@
   // 事件委托
   const handleClick = (e: MouseEvent, fn: () => void) => {
     const target = e.target as HTMLElement
-    const tagName = target.tagName.toLowerCase()
-    if (tagName === 'a' || tagName === 'li') {
-      target.dataset.command && oncommand && oncommand(target.dataset.command)
-      clickClose && fn()
-    }
+    target.dataset.command && oncommand && oncommand(target.dataset.command)
+    clickClose && fn()
   }
 </script>
 

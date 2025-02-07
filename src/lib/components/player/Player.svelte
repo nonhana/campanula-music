@@ -26,6 +26,7 @@
     VolumeX,
   } from 'lucide-svelte'
   import { onMount } from 'svelte'
+  import PlayerDrawer from './PlayerDrawer.svelte'
 
   let currentTime = $state(0)
   let sliderProgress = $state(0)
@@ -81,9 +82,14 @@
       window.removeEventListener('keydown', globalPause)
     }
   })
+
+  let showDrawer = $state(false)
+  const toggleShowDrawer = () => {
+    showDrawer = !showDrawer
+  }
 </script>
 
-<footer class='fixed bottom-0 w-full h-20 z-20 bg-neutral-200 flex items-center px-5'>
+<footer class='fixed bottom-0 w-full h-20 z-20 bg-neutral-200/40 backdrop-blur flex items-center px-5'>
   {#if $nowPlaying}
     <audio
       bind:this={audioElement}
@@ -126,9 +132,10 @@
       <MaskImg
         src={$nowPlaying.cover}
         alt={$nowPlaying.name}
-        class='rounded-lg cursor-pointer overflow-hidden group'
+        class='rounded-lg overflow-hidden group'
         maskClass='group-hover:flex'
         imgClass='size-12'
+        onclick={toggleShowDrawer}
       >
         {#snippet slot()}
           <ChevronUp />
@@ -175,3 +182,13 @@
     <Menu class='cursor-pointer' />
   </div>
 </footer>
+
+<PlayerDrawer
+  {showDrawer}
+  currentProgress={currentProgress}
+  handleInput={handleInput}
+  handleChange={handleChange}
+  handlePointerDown={handlePointerDown}
+  paused={paused}
+  togglePaused={togglePaused}
+/>
