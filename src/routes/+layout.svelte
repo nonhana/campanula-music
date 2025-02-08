@@ -6,7 +6,6 @@
   import Player from '$lib/components/player/Player.svelte'
   import { setScrolled } from '$lib/stores'
   import debounce from 'debounce'
-  import { onMount } from 'svelte'
   import '../styles/index.scss'
 
   const { children } = $props()
@@ -17,15 +16,14 @@
     folded = !folded
   }
 
-  const toggleScrolled = debounce(() => setScrolled(window.scrollY > 0), 100)
-  onMount(() => {
-    window.addEventListener('scroll', toggleScrolled)
-    return () => window.removeEventListener('scroll', toggleScrolled)
-  })
+  const toggleScrolled = debounce((e: Event) => {
+    const target = e.target as HTMLElement
+    setScrolled(target.scrollTop > 0)
+  }, 100)
 </script>
 
 <div class='bg-neutral-100 h-[calc(100vh-5rem)]'>
-  <ScrollContainer scrollbarClass='right-0'>
+  <ScrollContainer scrollbarClass='right-0' scrollEvents={[toggleScrolled]}>
     <div class='flex flex-col'>
       <Header {toggleFolded} />
       <Sidebar {folded} />

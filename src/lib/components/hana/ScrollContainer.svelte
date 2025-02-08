@@ -4,10 +4,11 @@
 
   interface Props {
     scrollbarClass?: string
+    scrollEvents?: ((e: Event) => void)[]
     children?: Snippet
   }
 
-  const { scrollbarClass, children }: Props = $props()
+  const { scrollbarClass, children, scrollEvents }: Props = $props()
 
   let containerElement: HTMLDivElement | null = null
   let scrollContentElement: HTMLDivElement | null = null
@@ -112,16 +113,17 @@
   onMount(() => {
     updateSizes()
     scrollContentElement?.addEventListener('scroll', onScroll)
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', updateSizes)
+    // scrollEvents?.forEach(fn => scrollContentElement?.addEventListener('scroll', fn))
+    if (scrollEvents) {
+      scrollContentElement?.addEventListener('scroll', scrollEvents[0])
     }
+    scrollContentElement?.addEventListener('resize', updateSizes)
   })
 
   onDestroy(() => {
     scrollContentElement?.removeEventListener('scroll', onScroll)
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', updateSizes)
-    }
+    scrollEvents?.forEach(fn => scrollContentElement?.removeEventListener('scroll', fn))
+    scrollContentElement?.removeEventListener('resize', updateSizes)
   })
 
   const scrollBarStyle = $derived(
