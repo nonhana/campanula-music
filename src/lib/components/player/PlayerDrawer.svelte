@@ -1,5 +1,4 @@
 <script lang='ts'>
-  import { setStyles } from '$lib/utils'
   import Detail from './Detail.svelte'
 
   interface Props {
@@ -27,27 +26,8 @@
   // 抽屉与顶部的距离，单位为 dvh（0 表示完全展开，100 表示收起）
   let top = $state(100)
 
-  $effect(() => {
-    if (showDrawer) {
-      requestAnimationFrame(() => {
-        top = 0
-      })
-    }
-    else {
-      requestAnimationFrame(() => {
-        top = 100
-      })
-    }
-  })
-
-  // 拖拽状态相关变量
-  let dragging = $state(false)
-  let startY = 0
-  let initialTop = 0
-
   // 打开抽屉动画：设置过渡并将 top 设为 0
   const openDrawer = () => {
-    setStyles(drawerElement, { transition: 'all 0.3s' })
     requestAnimationFrame(() => {
       top = 0
     })
@@ -55,15 +35,27 @@
 
   // 关闭抽屉动画：设置过渡并将 top 设为 100，然后等待动画结束再隐藏
   const closeDrawer = () => {
-    setStyles(drawerElement, { transition: 'all 0.3s' })
     requestAnimationFrame(() => {
       top = 100
     })
-    // 动画 300ms 结束后隐藏抽屉
     setTimeout(() => {
       showDrawer = false
     }, 300)
   }
+
+  // 逻辑：
+  // 父组件传递 showDrawer 为 true 时，打开抽屉
+  // 子组件接管 showDrawer，手动关闭抽屉
+  $effect(() => {
+    if (showDrawer) {
+      openDrawer()
+    }
+  })
+
+  // 拖拽状态相关变量
+  let dragging = $state(false)
+  let startY = 0
+  let initialTop = 0
 
   // 拖拽事件
   const onPointerMove = (e: PointerEvent) => {
@@ -82,12 +74,9 @@
     dragging = false
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
-    // 重新启用动画
-    setStyles(drawerElement, { transition: 'all 0.3s' })
     // 判断吸附效果：如果释放时 top < 50 则吸附至上侧，否则吸附至下侧
     if (top < 50) {
       openDrawer()
-      showDrawer = true // 保持显示
     }
     else {
       closeDrawer()
@@ -98,8 +87,6 @@
     startY = e.clientY
     initialTop = top
     dragging = true
-    // 禁用动画保证跟随鼠标无延迟
-    setStyles(drawerElement, { transition: 'none' })
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
   }
@@ -112,10 +99,7 @@
       closeDrawer()
     }
     else {
-      showDrawer = true
-      requestAnimationFrame(() => {
-        openDrawer()
-      })
+      openDrawer()
     }
   }
 </script>
@@ -123,7 +107,10 @@
 {#if showDrawer || dragging}
   <div
     bind:this={drawerElement}
-    class='z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur flex justify-center items-center'
+    class={[
+      'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur flex justify-center items-center',
+      !dragging && 'transition-all duration-300',
+    ]}
     style={`top: ${top}dvh;`}
   >
     <button
