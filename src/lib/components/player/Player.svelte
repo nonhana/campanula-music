@@ -185,10 +185,10 @@
 
 <PlayerDrawer
   bind:showDrawer={showDrawer}
-  currentProgress={currentProgress}
-  handleInput={handleInput}
-  handleChange={handleChange}
-  handlePointerDown={handlePointerDown}
-  paused={paused}
-  togglePaused={togglePaused}
+  {currentProgress}
+  {handleInput}
+  {handleChange}
+  {handlePointerDown}
+  {paused}
+  {togglePaused}
 />

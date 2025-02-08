@@ -23,17 +23,15 @@
 
   let drawerElement = $state<HTMLDivElement | null>(null)
 
-  // 抽屉与顶部的距离，单位为 dvh（0 表示完全展开，100 表示收起）
+  // 抽屉与顶部的距离，单位为 dvh
   let top = $state(100)
 
-  // 打开抽屉动画：设置过渡并将 top 设为 0
   const openDrawer = () => {
     requestAnimationFrame(() => {
       top = 0
     })
   }
 
-  // 关闭抽屉动画：设置过渡并将 top 设为 100，然后等待动画结束再隐藏
   const closeDrawer = () => {
     requestAnimationFrame(() => {
       top = 100
@@ -52,12 +50,10 @@
     }
   })
 
-  // 拖拽状态相关变量
   let dragging = $state(false)
   let startY = 0
   let initialTop = 0
 
-  // 拖拽事件
   const onPointerMove = (e: PointerEvent) => {
     if (!dragging)
       return
@@ -74,7 +70,6 @@
     dragging = false
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
-    // 判断吸附效果：如果释放时 top < 50 则吸附至上侧，否则吸附至下侧
     if (top < 50) {
       openDrawer()
     }
@@ -91,7 +86,6 @@
     window.addEventListener('pointerup', onPointerUp)
   }
 
-  // 点击滑块时的切换逻辑（非拖拽）
   const toggleShowDrawer = () => {
     if (dragging)
       return

@@ -1,5 +1,6 @@
 <script lang='ts'>
   import Container from '$lib/components/hana/Message/Container.svelte'
+  import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import Header from '$lib/components/main/Header.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import Player from '$lib/components/player/Player.svelte'
@@ -23,15 +24,19 @@
   })
 </script>
 
-<div class='flex flex-col min-h-dvh bg-neutral-100'>
-  <Header {toggleFolded} />
-  <Sidebar {folded} />
-  <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
-    <div class='container m-auto'>
-      {@render children()}
+<div class='bg-neutral-100 h-[calc(100vh-5rem)]'>
+  <ScrollContainer scrollbarClass='right-0'>
+    <div class='flex flex-col'>
+      <Header {toggleFolded} />
+      <Sidebar {folded} />
+      <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
+        <div class='container m-auto'>
+          {@render children()}
+        </div>
+      </main>
+      <Player />
     </div>
-  </main>
-  <Player />
+  </ScrollContainer>
 </div>
 
 <!-- 全局消息容器 -->

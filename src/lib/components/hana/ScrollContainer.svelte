@@ -3,10 +3,11 @@
   import { onDestroy, onMount, tick } from 'svelte'
 
   interface Props {
+    scrollbarClass?: string
     children?: Snippet
   }
 
-  const { children }: Props = $props()
+  const { scrollbarClass, children }: Props = $props()
 
   let containerElement: HTMLDivElement | null = null
   let scrollContentElement: HTMLDivElement | null = null
@@ -134,7 +135,7 @@
 
 <div
   bind:this={containerElement}
-  class={['relative size-full overflow-hidden group', isRight && 'pr-2.5', isBottom && 'pb-2.5']}
+  class={['relative size-full overflow-hidden', isRight && 'pr-2.5', isBottom && 'pb-2.5']}
 >
   <div bind:this={scrollContentElement} class='h-full overflow-auto scrollbar-hidden'>
     {@render children?.()}
@@ -142,10 +143,11 @@
 
   <!-- Custom Scrollbar -->
   <div class={[
-    'absolute bg-primary-100 rounded hidden group-hover:block',
+    'absolute bg-primary-100 rounded',
     isRight && 'right-1 top-0 w-2 h-full',
     isBottom && 'bottom-1 left-0 h-2 w-full',
     isNone && 'hidden',
+    scrollbarClass,
   ]}>
     <div
       role='button'
