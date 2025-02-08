@@ -184,7 +184,7 @@
 </footer>
 
 <PlayerDrawer
-  {showDrawer}
+  bind:showDrawer={showDrawer}
   currentProgress={currentProgress}
   handleInput={handleInput}
   handleChange={handleChange}
