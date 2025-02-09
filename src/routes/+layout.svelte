@@ -23,17 +23,15 @@
 </script>
 
 <div class='bg-neutral-100 h-[calc(100vh-5rem)]'>
-  <ScrollContainer scrollbarClass='right-0' scrollEvents={[toggleScrolled]}>
-    <div class='flex flex-col'>
-      <Header {toggleFolded} />
-      <Sidebar {folded} />
-      <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
-        <div class='container m-auto'>
-          {@render children()}
-        </div>
-      </main>
-      <Player />
-    </div>
+  <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
+    <Header {toggleFolded} />
+    <Sidebar {folded} />
+    <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
+      <div class='container m-auto'>
+        {@render children()}
+      </div>
+    </main>
+    <Player />
   </ScrollContainer>
 </div>
 

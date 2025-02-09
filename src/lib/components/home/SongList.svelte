@@ -14,16 +14,14 @@
 <BannerCard title='歌曲列表'>
   {#snippet icon()}<Music />{/snippet}
   <div class='w-full rounded-lg bg-white px-2'>
-    <ScrollContainer>
-      <div class='flex'>
-        {#each songGroups as group}
-          <div class='flex flex-col'>
-            {#each group as song}
-              <SongItem song={song} />
-            {/each}
-          </div>
-        {/each}
-      </div>
+    <ScrollContainer contentClass='flex'>
+      {#each songGroups as group}
+        <div class='flex flex-col'>
+          {#each group as song}
+            <SongItem song={song} />
+          {/each}
+        </div>
+      {/each}
     </ScrollContainer>
   </div>
 </BannerCard>

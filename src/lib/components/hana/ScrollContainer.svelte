@@ -3,15 +3,18 @@
   import { onDestroy, onMount, tick } from 'svelte'
 
   interface Props {
+    contentWrapperClass?: string
+    contentClass?: string
     scrollbarClass?: string
     scrollEvents?: ((e: Event) => void)[]
     children?: Snippet
   }
 
-  const { scrollbarClass, children, scrollEvents }: Props = $props()
+  const { contentWrapperClass, contentClass, scrollbarClass, children, scrollEvents }: Props = $props()
 
   let containerElement: HTMLDivElement | null = null
-  let scrollContentElement: HTMLDivElement | null = null
+  let contentWrapperElement: HTMLDivElement | null = null
+  let contentElement: HTMLDivElement | null = null
 
   let scrollBarPos = $state<'right' | 'bottom' | 'none'>('right')
   const isRight = $derived(scrollBarPos === 'right')
@@ -24,22 +27,6 @@
   let contentWidth = $state(0)
 
   let scrollOffset = $state(0)
-
-  const updateSizes = () => {
-    tick().then(() => {
-      if (!(containerElement && scrollContentElement))
-        return
-      containerHeight = containerElement.clientHeight
-      containerWidth = containerElement.clientWidth
-      contentHeight = scrollContentElement.scrollHeight
-      contentWidth = scrollContentElement.scrollWidth
-      scrollBarPos = contentHeight > containerHeight
-        ? 'right'
-        : contentWidth > containerWidth
-        ? 'bottom'
-        : 'none'
-    })
-  }
 
   // 动态计算滚动条的长度，最短为 20px
   const thumbLength = $derived.by(() => {
@@ -75,17 +62,17 @@
   let startScrollOffset = 0
 
   const onMouseMove = (e: MouseEvent) => {
-    if (!scrollContentElement)
+    if (!contentWrapperElement)
       return
     const deltaOffset = (isRight ? e.clientY : e.clientX) - startOffset
     const scrollableLength = isRight ? contentHeight - containerHeight : contentWidth - containerWidth
     const trackLength = (isRight ? containerHeight : containerWidth) - thumbLength
     const newScrollOffset = startScrollOffset + deltaOffset * (scrollableLength / trackLength)
     if (isRight) {
-      scrollContentElement.scrollTop = newScrollOffset
+      contentWrapperElement.scrollTop = newScrollOffset
     }
     else {
-      scrollContentElement.scrollLeft = newScrollOffset
+      contentWrapperElement.scrollLeft = newScrollOffset
     }
   }
 
@@ -95,10 +82,10 @@
   }
 
   const onScroll = () => {
-    if (scrollContentElement) {
+    if (contentWrapperElement) {
       scrollOffset = isRight
-        ? scrollContentElement.scrollTop
-        : scrollContentElement.scrollLeft
+        ? contentWrapperElement.scrollTop
+        : contentWrapperElement.scrollLeft
     }
   }
 
@@ -110,20 +97,39 @@
     e.preventDefault()
   }
 
+  const updateSizes = () => {
+    tick().then(() => {
+      if (!containerElement || !contentElement)
+        return
+      containerHeight = containerElement.clientHeight
+      containerWidth = containerElement.clientWidth
+      contentHeight = contentElement.scrollHeight
+      contentWidth = contentElement.scrollWidth
+      scrollBarPos = contentHeight > containerHeight
+        ? 'right'
+        : contentWidth > containerWidth
+        ? 'bottom'
+        : 'none'
+    })
+  }
+
+  let resizeObserver: ResizeObserver | null = null
+
   onMount(() => {
-    updateSizes()
-    scrollContentElement?.addEventListener('scroll', onScroll)
-    // scrollEvents?.forEach(fn => scrollContentElement?.addEventListener('scroll', fn))
-    if (scrollEvents) {
-      scrollContentElement?.addEventListener('scroll', scrollEvents[0])
-    }
-    scrollContentElement?.addEventListener('resize', updateSizes)
+    if (!contentWrapperElement || !contentElement)
+      return
+    contentWrapperElement.addEventListener('scroll', onScroll)
+    scrollEvents?.forEach(fn => contentWrapperElement!.addEventListener('scroll', fn))
+    resizeObserver = new ResizeObserver(updateSizes)
+    resizeObserver.observe(contentElement)
   })
 
   onDestroy(() => {
-    scrollContentElement?.removeEventListener('scroll', onScroll)
-    scrollEvents?.forEach(fn => scrollContentElement?.removeEventListener('scroll', fn))
-    scrollContentElement?.removeEventListener('resize', updateSizes)
+    if (!contentWrapperElement)
+      return
+    contentWrapperElement.removeEventListener('scroll', onScroll)
+    scrollEvents?.forEach(fn => contentWrapperElement!.removeEventListener('scroll', fn))
+    resizeObserver?.disconnect()
   })
 
   const scrollBarStyle = $derived(
@@ -139,17 +145,19 @@
   bind:this={containerElement}
   class={['relative size-full overflow-hidden', isRight && 'pr-2.5', isBottom && 'pb-2.5']}
 >
-  <div bind:this={scrollContentElement} class='h-full overflow-auto scrollbar-hidden'>
-    {@render children?.()}
+  <div bind:this={contentWrapperElement} class={['w-full h-full overflow-auto scrollbar-hidden', contentWrapperClass]}>
+    <div bind:this={contentElement} class={contentClass}>
+      {@render children?.()}
+    </div>
   </div>
 
   <!-- Custom Scrollbar -->
   <div class={[
-    'absolute bg-primary-100 rounded',
-    isRight && 'right-1 top-0 w-2 h-full',
-    isBottom && 'bottom-1 left-0 h-2 w-full',
-    isNone && 'hidden',
     scrollbarClass,
+    'absolute bg-primary-100 rounded',
+    isRight && 'right-0 top-0 w-2 h-full',
+    isBottom && 'bottom-0 left-0 h-2 w-full',
+    isNone && 'hidden',
   ]}>
     <div
       role='button'

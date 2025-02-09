@@ -14,7 +14,7 @@ export const nowPlaying = writable<SongItem | null>({
   source: 'https://moe.greyflowers.pics/Windy_Hill.mp3',
 })
 export const playMode = writable<PlayMode>('list')
-export const volume = writable(0.5)
+export const volume = writable(0.0)
 export const muted = writable(false)
 
 export function setNowPlaying(song: SongItem | null) {
