@@ -15,9 +15,9 @@
 </script>
 
 <nav class={[
-  'z-20 fixed top-16 h-[calc(100dvh-4rem)] border-r border-primary border-opacity-0 transition-all',
+  'z-20 fixed top-16 h-[calc(100dvh-4rem)] border-r border-primary/0 transition-all',
   folded ? 'w-20' : 'w-60',
-  $scrolled && 'bg-white border-opacity-100',
+  $scrolled && 'bg-white border-primary/100',
 ]}>
   <ul class='flex flex-col gap-2'>
     {#each navItems as { title, href, icon: Icon }, i}
@@ -31,7 +31,7 @@
             aria-label={title}
             style={folded ? undefined : 'width: 13.5rem'}
           >
-            <span class='flex items-center text-sm font-normal space-x-2'>
+            <span class='flex items-center text-sm font-normal gap-4'>
               <Icon />
               <p class={folded ? 'hidden' : 'block'}>{title}</p>
             </span>

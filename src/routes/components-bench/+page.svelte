@@ -10,7 +10,7 @@
   <meta name='description' content='Bench for components' />
 </svelte:head>
 
-<h1>Components Bench</h1>
+<h2>Components Bench</h2>
 
 <div>
   <h2>Button</h2>

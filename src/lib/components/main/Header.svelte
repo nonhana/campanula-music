@@ -16,8 +16,8 @@
 </script>
 
 <header class={[
-  'shrink-0 z-20 sticky top-0 w-full h-16 flex items-center px-5 gap-5 border-b border-primary border-opacity-0 transition-all',
-  $scrolled && 'border-opacity-100 bg-white',
+  'shrink-0 z-20 sticky top-0 w-full h-16 flex items-center px-5 gap-5 border-b border-primary/0 transition-all',
+  $scrolled && 'border-primary/100 bg-white',
 ]}>
   <Button iconButton variant='transparent' onclick={toggleFolded}>
     <Menu />

@@ -6,7 +6,7 @@
   import Player from '$lib/components/player/Player.svelte'
   import { setScrolled } from '$lib/stores'
   import debounce from 'debounce'
-  import '../styles/index.scss'
+  import '../styles/index.css'
 
   const { children } = $props()
 

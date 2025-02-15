@@ -25,7 +25,7 @@
     alt={`歌单 ${mockPlaylist.name} 的封面`}
     class='aspect-square w-64 rounded-lg'
   />
-  <h1 class='text-2xl font-semibold text-center w-80'>{mockPlaylist.name}</h1>
+  <h2 class='text-2xl font-semibold text-center w-80'>{mockPlaylist.name}</h2>
   <p class='text-neutral w-full text-wrap text-center break-words'>{mockPlaylist.description}</p>
   <p class='text-neutral'>{mockPlaylist.musicCount} 首歌曲</p>
   <div class='flex space-x-5'>

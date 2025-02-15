@@ -14,7 +14,7 @@
 <div class='my-6'>
   <section class='mb-6 flex items-center gap-2 text-2xl text-neutral'>
     {@render icon?.()}
-    <h1 class='font-semibold'>{title}</h1>
+    <h2 class='font-semibold'>{title}</h2>
     {#if subtitle}
       <p class='text-base'>{subtitle}</p>
     {/if}
