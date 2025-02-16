@@ -94,8 +94,8 @@
   --color-error-900: #B71C1C;
 }
 
-@layer utilities {
-  .scrollbar-hidden::-webkit-scrollbar {
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
     display: none;
   }
 }
