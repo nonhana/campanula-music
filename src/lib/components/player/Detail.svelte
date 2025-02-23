@@ -45,7 +45,7 @@
   }
 </script>
 
-<div class='flex flex-col gap-5'>
+<div class='flex flex-col h-[40rem] justify-between'>
   {#if $nowPlaying}
     <img
       src={$nowPlaying?.cover}

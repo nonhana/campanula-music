@@ -1,3 +1,4 @@
+export * from './lyricsStore'
 export * from './messageStore'
 export * from './playerConfigStore'
 export * from './playlistStore'

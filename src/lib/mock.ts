@@ -1,4 +1,4 @@
-import type { PlaylistItem, SongItem } from './types'
+import type { LyricItem, PlaylistItem, SongItem } from './types'
 
 export const mockSongs: SongItem[] = Array.from({ length: 312 }).map((_, index) => ({
   id: index,
@@ -25,4 +25,12 @@ export const mockPlaylist: PlaylistItem = {
   description: 'DescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescription',
   cover: 'https://moe.greyflowers.pics/avatar.webp',
   musicCount: 10,
+}
+
+export function mockLyrics(duration: number): LyricItem[] {
+  return Array.from({ length: duration / 2 }).map((_, index) => ({
+    time: 2 * index,
+    text: `Lyric ${index}`,
+    translate: `Lyric ${index} Translate`,
+  }))
 }

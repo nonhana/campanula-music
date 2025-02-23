@@ -5,7 +5,9 @@
     muted,
     nowPlaying,
     playMode,
+    seeking,
     setPlayMode,
+    setSeeking,
     volume,
   } from '$lib/stores'
   import { handleDuration } from '$lib/utils'
@@ -30,10 +32,9 @@
 
   let currentTime = $state(0)
   let sliderProgress = $state(0)
-  let seeking = $state(false)
   const currentProgress = $derived(
     $nowPlaying
-      ? (seeking ? sliderProgress : (currentTime / $nowPlaying.duration))
+      ? ($seeking ? sliderProgress : (currentTime / $nowPlaying.duration))
       : 0,
   )
 
@@ -46,7 +47,7 @@
   let audioElement = $state<HTMLAudioElement | null>(null)
 
   const handlePointerDown = () => {
-    seeking = true
+    setSeeking(true)
   }
 
   const handleInput = (e: Event) => {
@@ -64,7 +65,7 @@
         audioElement.currentTime = newTime
       }
     }
-    seeking = false
+    setSeeking(false)
   }
 
   const globalPause = (e: KeyboardEvent) => {

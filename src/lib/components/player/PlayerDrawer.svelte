@@ -1,5 +1,6 @@
 <script lang='ts'>
   import Detail from './Detail.svelte'
+  import Lyrics from './Lyrics.svelte'
 
   interface Props {
     showDrawer: boolean
@@ -102,7 +103,7 @@
   <div
     bind:this={drawerElement}
     class={[
-      'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur flex justify-center items-center',
+      'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur flex gap-20 justify-center items-center',
       !dragging && 'transition-all duration-300',
     ]}
     style={`top: ${top}dvh;`}
@@ -121,5 +122,6 @@
       {paused}
       {togglePaused}
     />
+    <Lyrics {currentProgress} />
   </div>
 {/if}
