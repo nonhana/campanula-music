@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import Button from '$lib/components/hana/Button.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import {
     currentLyricIndex,
@@ -22,12 +23,70 @@
 
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
 
+  const targetOffset = $derived($currentLyricIndex * ITEM_SIZE)
+
   let scrollPos = $state(0)
+  const scrollStatus = $state({
+    customScrolling: false,
+    restoring: false,
+  })
+  let scrollTimer: NodeJS.Timeout | null = null
+
+  const moveToOriginal = () => {
+    if (scrollStatus.restoring)
+      return
+    scrollStatus.customScrolling = false
+    scrollStatus.restoring = true
+
+    if (!scrollContainerElement)
+      return
+
+    scrollContainerElement.scrollTo({
+      top: targetOffset,
+      behavior: 'smooth',
+    })
+
+    scrollTimer = setTimeout(() => {
+      scrollStatus.restoring = false
+    }, 1000)
+  }
 
   const onScroll = (e: Event) => {
+    if (scrollTimer) {
+      clearTimeout(scrollTimer)
+      scrollTimer = null
+    }
+
     const target = e.target as HTMLElement
     scrollPos = target.scrollTop
+
+    if (!scrollStatus.restoring) {
+      scrollStatus.customScrolling = true
+    }
   }
+
+  const onScrollend = () => {
+    if (scrollStatus.restoring) {
+      scrollStatus.restoring = false
+      return
+    }
+
+    scrollTimer = setTimeout(moveToOriginal, 1000)
+  }
+
+  $effect(() => {
+    if (!$nowPlaying || !$nowLyrics || !scrollContainerElement)
+      return
+
+    scrollPos = targetOffset
+
+    scrollContainerElement.scrollTo({
+      top: targetOffset,
+      behavior: 'smooth',
+    })
+  })
+
+  $inspect('scrollStatus', scrollStatus)
 
   let curTime = $state(0)
 
@@ -51,18 +110,6 @@
       setCurrentLyricIndex(targetLyricsIndex)
     }
   })
-
-  $effect(() => {
-    if (!$nowPlaying || !$nowLyrics || !scrollContainerElement)
-      return
-
-    const targetOffset = $currentLyricIndex * ITEM_SIZE
-
-    scrollContainerElement.scrollTo({
-      top: targetOffset,
-      behavior: 'smooth',
-    })
-  })
 </script>
 
 {#if $nowLyrics}
@@ -73,6 +120,7 @@
         class='relative overflow-auto scrollbar-hidden'
         style={`height: ${CONTAINER_SIZE}px`}
         onscroll={onScroll}
+        onscrollend={onScrollend}
       >
         <VirtualList
           items={$nowLyrics.lyrics}
@@ -102,6 +150,11 @@
         <div class='w-full h-[1px] bg-neutral-400'></div>
         <ChevronLeft size='32' class='text-neutral' />
       </div>
+      {#if scrollStatus.customScrolling && !scrollStatus.restoring && scrollPos !== targetOffset}
+        <div class='absolute top-0 left-1/2 -translate-x-1/2'>
+          <Button onclick={moveToOriginal}>返回原位</Button>
+        </div>
+      {/if}
     </div>
   {:else}
     <div class='flex items-center justify-center h-80 text-neutral-400'>
