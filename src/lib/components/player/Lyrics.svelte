@@ -27,11 +27,13 @@
 
   let scrollPos = $state(0)
   const scrollStatus = $state({
+    autoScrolling: false,
     customScrolling: false,
     restoring: false,
   })
   let scrollTimer: NodeJS.Timeout | null = null
 
+  // 回到原来位置
   const moveToOriginal = () => {
     if (scrollStatus.restoring)
       return
@@ -51,6 +53,7 @@
     }, 1000)
   }
 
+  // 滚动时的触发函数
   const onScroll = (e: Event) => {
     if (scrollTimer) {
       clearTimeout(scrollTimer)
@@ -60,12 +63,18 @@
     const target = e.target as HTMLElement
     scrollPos = target.scrollTop
 
-    if (!scrollStatus.restoring) {
+    if (!scrollStatus.restoring && !scrollStatus.customScrolling && !scrollStatus.autoScrolling) {
       scrollStatus.customScrolling = true
     }
   }
 
+  // 滚动结束后的触发函数
   const onScrollend = () => {
+    if (scrollStatus.autoScrolling) {
+      scrollStatus.autoScrolling = false
+      return
+    }
+
     if (scrollStatus.restoring) {
       scrollStatus.restoring = false
       return
@@ -78,7 +87,7 @@
     if (!$nowPlaying || !$nowLyrics || !scrollContainerElement)
       return
 
-    scrollPos = targetOffset
+    scrollStatus.autoScrolling = true
 
     scrollContainerElement.scrollTo({
       top: targetOffset,
@@ -150,7 +159,7 @@
         <div class='w-full h-[1px] bg-neutral-400'></div>
         <ChevronLeft size='32' class='text-neutral' />
       </div>
-      {#if scrollStatus.customScrolling && !scrollStatus.restoring && scrollPos !== targetOffset}
+      {#if scrollStatus.customScrolling && !scrollStatus.restoring && !scrollStatus.autoScrolling}
         <div class='absolute top-0 left-1/2 -translate-x-1/2'>
           <Button onclick={moveToOriginal}>返回原位</Button>
         </div>
