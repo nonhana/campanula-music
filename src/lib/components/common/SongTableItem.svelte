@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
   import Button from '$lib/components/hana/Button.svelte'
-  import MaskImg from '$lib/components/hana/MaskImg.svelte'
+  import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { handleDuration } from '$lib/utils'
   import { Play, Plus } from 'lucide-svelte'
@@ -15,17 +15,17 @@
 
 <tr class='text-center even:bg-neutral-50 hover:bg-primary-100 group'>
   <td class='rounded-l-lg'>
-    <MaskImg
-      src={song.cover}
-      alt={song.name}
+    <MaskElement
       class='inline-block rounded-lg cursor-pointer overflow-hidden'
       maskClass='group-hover:flex'
-      imgClass='size-12'
     >
       {#snippet slot()}
         <Play />
       {/snippet}
-    </MaskImg>
+      {#snippet root()}
+        <img class='size-12' src={song.cover} alt={song.name} />
+      {/snippet}
+    </MaskElement>
   </td>
   <td>{song.id}</td>
   <td>

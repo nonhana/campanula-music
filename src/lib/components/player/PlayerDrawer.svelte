@@ -18,8 +18,6 @@
     handlePointerDown,
   }: Props = $props()
 
-  let drawerElement = $state<HTMLDivElement | null>(null)
-
   // 抽屉与顶部的距离，单位为 dvh
   let top = $state(100)
 
@@ -97,7 +95,6 @@
 
 {#if showDrawer || dragging}
   <div
-    bind:this={drawerElement}
     class={[
       'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur flex gap-20 justify-center items-center',
       !dragging && 'transition-all duration-300',

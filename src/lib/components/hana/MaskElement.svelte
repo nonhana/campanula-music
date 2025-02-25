@@ -4,14 +4,12 @@
   interface Props {
     class?: string
     maskClass?: string
-    imgClass?: string
-    slot?: Snippet
-    src: string | null
-    alt: string
     onclick?: (e: MouseEvent) => void
+    slot?: Snippet
+    root?: Snippet
   }
 
-  const { class: wrapperClass, maskClass, imgClass, slot, src, alt, onclick }: Props = $props()
+  const { class: wrapperClass, maskClass, slot, root, onclick }: Props = $props()
 </script>
 
 <div class={['relative', wrapperClass]}>
@@ -21,5 +19,5 @@
   >
     {@render slot?.()}
   </button>
-  <img {src} {alt} class={imgClass} />
+  {@render root?.()}
 </div>

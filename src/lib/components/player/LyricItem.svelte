@@ -19,7 +19,7 @@
 
 <div
   class={[
-    'flex justify-between items-center w-80 h-20 transition-all duration-300',
+    'flex justify-between items-center w-full h-20 transition-all duration-300',
     isActivated ? 'text-black text-lg' : 'text-neutral text-sm',
   ]}
 >

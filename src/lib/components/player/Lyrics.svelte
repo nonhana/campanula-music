@@ -145,7 +145,7 @@
     <div class='relative flex gap-5'>
       <div
         bind:this={scrollContainerElement}
-        class='relative overflow-auto scrollbar-hidden'
+        class='relative overflow-auto scrollbar-hidden w-80'
         style={`height: ${CONTAINER_SIZE}px`}
         onscroll={onScroll}
         onscrollend={onScrollend}
@@ -181,12 +181,12 @@
       {/if}
     </div>
   {:else}
-    <div class='flex items-center justify-center h-80 text-neutral-400'>
+    <div class='w-80 flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
       <span>纯音乐，请欣赏</span>
     </div>
   {/if}
 {:else}
-  <div class='flex items-center justify-center h-80 text-neutral-400'>
+  <div class='w-80 flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
     <span>当前未播放音乐</span>
   </div>
 {/if}

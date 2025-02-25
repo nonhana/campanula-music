@@ -9,7 +9,7 @@ export const playMode = writable<PlayMode>('list')
 export const volume = writable(0.0)
 export const muted = writable(false)
 export const seeking = writable(false)
-export const paused = writable(false)
+export const paused = writable(true)
 
 export function setNowPlaying(info: SongItem, lyrics: LyricItem[]) {
   nowPlaying.set({ ...info, lyrics })

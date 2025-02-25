@@ -13,7 +13,7 @@
   } from '$lib/stores'
   import {
     Ellipsis,
-    Music4,
+    Music,
     Pause,
     Play,
     SkipBack,
@@ -48,11 +48,11 @@
     <img
       src={$nowPlaying?.cover}
       alt={$nowPlaying.name}
-      class='w-[27rem] h-[27rem] object-cover rounded-2xl'
+      class='size-[27rem] object-cover rounded-2xl'
     />
   {:else}
-    <div>
-      <Music4 size='64' />
+    <div class='size-[27rem] flex justify-center items-center rounded-2xl bg-white/60 text-neutral'>
+      <Music size={128} />
     </div>
   {/if}
   <div class='flex flex-col gap-2'>
@@ -66,6 +66,7 @@
   </div>
   <input
     type='range'
+    disabled={!$nowPlaying}
     min='0'
     max='1'
     step='0.001'
