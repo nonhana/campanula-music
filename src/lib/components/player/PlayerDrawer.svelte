@@ -4,7 +4,6 @@
 
   interface Props {
     showDrawer: boolean
-    currentTime: number
     currentProgress: number
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
@@ -13,7 +12,6 @@
 
   let {
     showDrawer = $bindable(),
-    currentTime = $bindable(),
     currentProgress,
     handleInput,
     handleChange,
@@ -118,6 +116,6 @@
       {handleChange}
       {handlePointerDown}
     />
-    <Lyrics bind:currentTime={currentTime} />
+    <Lyrics />
   </div>
 {/if}

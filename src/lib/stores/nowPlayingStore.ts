@@ -1,29 +1,21 @@
-import type { SongItem } from '$lib/types'
+import type { LyricItem, SongItem } from '$lib/types'
 import { writable } from 'svelte/store'
 
 type PlayMode = 'repeat' | 'shuffle' | 'repeat1' | 'list'
 
-export const nowPlaying = writable<SongItem | null>({
-  id: 0,
-  name: `Song ${0}`,
-  alias: ['Alias1', 'Alias2'],
-  artists: ['Artist1', 'Artist2'],
-  cover: 'https://moe.greyflowers.pics/avatar.webp',
-  album: 'Album',
-  duration: 274,
-  source: 'https://moe.greyflowers.pics/Windy_Hill.mp3',
-})
+export const nowPlaying = writable<SongItem & { lyrics: LyricItem[] } | null>(null)
+export const currentTime = writable(0)
 export const playMode = writable<PlayMode>('list')
 export const volume = writable(0.0)
 export const muted = writable(false)
 export const seeking = writable(false)
 export const paused = writable(false)
 
-export function setNowPlaying(song: SongItem | null) {
-  nowPlaying.set(song)
+export function setNowPlaying(info: SongItem, lyrics: LyricItem[]) {
+  nowPlaying.set({ ...info, lyrics })
 }
-export function clearNowPlaying() {
-  nowPlaying.set(null)
+export function setCurrentTime(time: number) {
+  currentTime.set(time)
 }
 export function setPlayMode(mode: PlayMode) {
   playMode.set(mode)
@@ -36,4 +28,8 @@ export function setSeeking(value: boolean) {
 }
 export function setPaused(value: boolean) {
   paused.set(value)
+}
+export function reset() {
+  nowPlaying.set(null)
+  currentTime.set(0)
 }

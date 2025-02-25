@@ -3,11 +3,10 @@
   import Button from '$lib/components/hana/Button.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import {
-    currentLyricIndex,
-    nowLyrics,
+    currentTime,
     nowPlaying,
     paused,
-    setCurrentLyricIndex,
+    setCurrentTime,
   } from '$lib/stores'
   import { numCorrector } from '$lib/utils'
   import { ChevronLeft } from 'lucide-svelte'
@@ -17,21 +16,16 @@
   const ITEM_SIZE = 80
   const ACTIVATED_INDEX = 3
 
-  interface Props {
-    currentTime: number
-  }
-
-  let { currentTime = $bindable() }: Props = $props()
-
+  let currentLyricIndex = $state(0) // 当前歌词索引
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
 
   let activatedLyric = $state<LyricItemType | null>(null)
 
   const moveToTargetLyric = () => {
-    if (!$nowPlaying || !$nowLyrics || !activatedLyric)
+    if (!$nowPlaying || !activatedLyric)
       return
 
-    currentTime = activatedLyric.time
+    setCurrentTime(activatedLyric.time)
   }
 
   let scrollPos = $state(0)
@@ -44,25 +38,25 @@
 
   // currentTime 变化，找到当前歌词
   $effect(() => {
-    if (!$nowPlaying || !$nowLyrics)
+    if (!$nowPlaying)
       return
 
-    const targetLyricsIndex = $nowLyrics.lyrics.findIndex((item, index) => {
-      const nextTime = $nowLyrics.lyrics[index + 1]?.time
-      return currentTime >= item.time && currentTime < (nextTime || Infinity)
+    const targetLyricsIndex = $nowPlaying.lyrics.findIndex((item, index) => {
+      const nextTime = $nowPlaying.lyrics[index + 1]?.time
+      return $currentTime >= item.time && $currentTime < (nextTime || Infinity)
     })
 
-    if (targetLyricsIndex !== -1 && targetLyricsIndex !== $currentLyricIndex) {
-      setCurrentLyricIndex(targetLyricsIndex)
+    if (targetLyricsIndex !== -1 && targetLyricsIndex !== currentLyricIndex) {
+      currentLyricIndex = targetLyricsIndex
     }
   })
 
   // currentLyricIndex 变化，找到当前歌词的位置
-  const targetOffset = $derived($currentLyricIndex * ITEM_SIZE)
+  const targetOffset = $derived(currentLyricIndex * ITEM_SIZE)
 
   // targetOffset 变化，触发自动滚动
   $effect(() => {
-    if (!$nowPlaying || !$nowLyrics || !scrollContainerElement)
+    if (!$nowPlaying || !scrollContainerElement)
       return
 
     scrollStatus.autoScrolling = true
@@ -146,8 +140,8 @@
   const actionDisabled = $derived(scrollStatus.customScrolling && !scrollStatus.restoring && !scrollStatus.autoScrolling)
 </script>
 
-{#if $nowLyrics}
-  {#if $nowLyrics.lyrics.length !== 0}
+{#if $nowPlaying}
+  {#if $nowPlaying.lyrics.length !== 0}
     <div class='relative flex gap-5'>
       <div
         bind:this={scrollContainerElement}
@@ -157,7 +151,7 @@
         onscrollend={onScrollend}
       >
         <VirtualList
-          items={$nowLyrics.lyrics}
+          items={$nowPlaying.lyrics}
           containerSize={CONTAINER_SIZE}
           itemSize={ITEM_SIZE}
           emptyItems={ACTIVATED_INDEX}

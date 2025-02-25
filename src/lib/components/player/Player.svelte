@@ -1,12 +1,14 @@
 <script lang='ts'>
   import MaskImg from '$lib/components/hana/MaskImg.svelte'
   import {
+    currentTime,
     mute,
     muted,
     nowPlaying,
     paused,
     playMode,
     seeking,
+    setCurrentTime,
     setPaused,
     setPlayMode,
     setSeeking,
@@ -32,11 +34,10 @@
   import { onMount } from 'svelte'
   import PlayerDrawer from './PlayerDrawer.svelte'
 
-  let currentTime = $state(0)
   let sliderProgress = $state(0)
   const currentProgress = $derived(
     $nowPlaying
-      ? ($seeking ? sliderProgress : (currentTime / $nowPlaying.duration))
+      ? ($seeking ? sliderProgress : ($currentTime / $nowPlaying.duration))
       : 0,
   )
 
@@ -57,7 +58,7 @@
     sliderProgress = target.valueAsNumber
     if ($nowPlaying) {
       const newTime = Math.floor(sliderProgress * $nowPlaying.duration)
-      currentTime = newTime
+      setCurrentTime(newTime)
       if (audioElement) {
         audioElement.currentTime = newTime
       }
@@ -90,11 +91,11 @@
 <footer class='fixed bottom-0 w-full h-20 z-20 bg-neutral-200/40 backdrop-blur flex items-center px-5'>
   {#if $nowPlaying}
     <audio
-      bind:this={audioElement}
-      src={$nowPlaying.source}
       preload='metadata'
       autoplay
-      bind:currentTime
+      src={$nowPlaying.source}
+      bind:this={audioElement}
+      bind:currentTime={$currentTime}
       bind:paused={$paused}
       bind:volume={$volume}
       bind:muted={$muted}
@@ -122,7 +123,7 @@
   </div>
   {#if $nowPlaying}
     <span class='ml-5 text-sm text-neutral select-none'>
-      {handleDuration(Math.floor(currentTime))} / {handleDuration($nowPlaying.duration)}
+      {handleDuration(Math.floor($currentTime))} / {handleDuration($nowPlaying.duration)}
     </span>
   {/if}
   {#if $nowPlaying}
@@ -183,7 +184,6 @@
 
 <PlayerDrawer
   bind:showDrawer={showDrawer}
-  bind:currentTime={currentTime}
   {currentProgress}
   {handleInput}
   {handleChange}

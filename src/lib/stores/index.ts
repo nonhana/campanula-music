@@ -1,5 +1,4 @@
-export * from './lyricsStore'
 export * from './messageStore'
-export * from './playerConfigStore'
+export * from './nowPlayingStore'
 export * from './playlistStore'
 export * from './scrolledStore'

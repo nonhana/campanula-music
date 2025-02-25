@@ -11,6 +11,17 @@ export const mockSongs: SongItem[] = Array.from({ length: 312 }).map((_, index) 
   source: 'https://moe.greyflowers.pics/Windy_Hill.mp3',
 }))
 
+export const mockSong: SongItem = {
+  id: 0,
+  name: `Song ${0}`,
+  alias: ['Alias1', 'Alias2'],
+  artists: ['Artist1', 'Artist2'],
+  cover: 'https://moe.greyflowers.pics/avatar.webp',
+  album: 'Album',
+  duration: 274,
+  source: 'https://moe.greyflowers.pics/Windy_Hill.mp3',
+}
+
 export const mockPlaylists: PlaylistItem[] = Array.from({ length: 21 }).map((_, index) => ({
   id: index,
   name: `Playlist ${index}`,
