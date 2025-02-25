@@ -23,7 +23,7 @@
     ...rest
   }: Props & HTMLButtonAttributes & HTMLAnchorAttributes = $props()
 
-  const baseClasses = 'font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
+  const baseClasses = 'cursor-pointer font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2'
   const CommonClasses = 'px-4 py-2'
   const IconBtnClasses = 'p-2 size-10'
   const variantClasses = {
@@ -68,7 +68,7 @@
     </div>
   </a>
 {:else}
-  <button class={computedClasses} {style} disabled={disabled} {...rest}>
+  <button class={computedClasses} {style} {disabled} {...rest}>
     {@render children()}
   </button>
 {/if}
