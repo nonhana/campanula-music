@@ -19,7 +19,7 @@
   {#snippet icon()}
     <Music />
   {/snippet}
-  <div class='w-full p-5 bg-white rounded-2xl'>
+  <div class='w-full rounded-2xl bg-white p-5'>
     <table class='w-full'>
       <colgroup>
         <col style='width: 15%;'>
@@ -49,7 +49,7 @@
     </table>
   </div>
 
-  <div class='sticky bottom-5 mx-auto mt-5 w-fit bg-white p-4 rounded-lg'>
+  <div class='sticky bottom-5 mx-auto mt-5 w-fit rounded-lg bg-white p-4'>
     <Paginator bind:currentPage={curPage} total={songCount} pageSize={pageSize} buttonCount={5} />
   </div>
 </BannerCard>

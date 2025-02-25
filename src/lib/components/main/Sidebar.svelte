@@ -31,7 +31,7 @@
             aria-label={title}
             style={folded ? undefined : 'width: 13.5rem'}
           >
-            <span class='flex items-center text-sm font-normal gap-4'>
+            <span class='flex items-center gap-4 text-sm font-normal'>
               <Icon />
               <p class={folded ? 'hidden' : 'block'}>{title}</p>
             </span>

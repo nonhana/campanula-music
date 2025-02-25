@@ -6,7 +6,7 @@ import globals from 'globals'
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url))
 
 export default antfu(
-  { svelte: true },
+  { svelte: true, unocss: true },
   includeIgnoreFile(gitignorePath),
   {
     languageOptions: {

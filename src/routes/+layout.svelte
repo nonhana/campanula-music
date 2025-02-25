@@ -6,7 +6,8 @@
   import Player from '$lib/components/player/Player.svelte'
   import { setScrolled } from '$lib/stores'
   import debounce from 'debounce'
-  import '../styles/index.css'
+  import 'uno.css'
+  import '@unocss/reset/tailwind.css'
 
   const { children } = $props()
 
@@ -22,12 +23,12 @@
   }, 100)
 </script>
 
-<div class='bg-neutral-100 h-[calc(100vh-5rem)]'>
+<div class='h-[calc(100vh-5rem)] bg-neutral-100'>
   <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
     <Header {toggleFolded} />
     <Sidebar {folded} />
     <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
-      <div class='container m-auto'>
+      <div class='m-auto container'>
         {@render children()}
       </div>
     </main>

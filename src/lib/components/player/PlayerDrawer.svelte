@@ -103,7 +103,7 @@
   >
     <button
       aria-label='drawer dragger'
-      class='absolute top-5 m-auto w-10 h-2 rounded-full bg-neutral cursor-grab active:cursor-grabbing'
+      class='absolute top-5 m-auto h-2 w-10 cursor-grab rounded-full bg-neutral active:cursor-grabbing'
       onclick={toggleShowDrawer}
       onpointerdown={onPointerDown}
     ></button>

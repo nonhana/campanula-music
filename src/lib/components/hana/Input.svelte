@@ -44,7 +44,7 @@
 {#if type !== 'textarea'}
   <div class='relative w-full'>
     {#if prefixIcon}
-      <span class='absolute top-1/2 -translate-y-1/2 left-3 text-neutral'>
+      <span class='absolute left-3 top-1/2 text-neutral -translate-y-1/2'>
         {@render prefixIcon()}
       </span>
     {/if}
@@ -63,7 +63,7 @@
       ]}
     />
     {#if suffixIcon}
-      <span class='absolute top-1/2 -translate-y-1/2 right-3'>
+      <span class='absolute right-3 top-1/2 -translate-y-1/2'>
         {@render suffixIcon()}
       </span>
     {/if}

@@ -145,7 +145,7 @@
   bind:this={containerElement}
   class={['relative size-full overflow-hidden', isRight && 'pr-2.5', isBottom && 'pb-2.5']}
 >
-  <div bind:this={contentWrapperElement} class={['w-full h-full overflow-auto scrollbar-hidden', contentWrapperClass]}>
+  <div bind:this={contentWrapperElement} class={['w-full h-full overflow-auto scrollbar-none', contentWrapperClass]}>
     <div bind:this={contentElement} class={contentClass}>
       {@render children?.()}
     </div>
@@ -162,7 +162,7 @@
     <div
       role='button'
       tabindex='0'
-      class='bg-primary rounded'
+      class='rounded bg-primary'
       style={scrollBarStyle}
       onmousedown={onThumbMouseDown}
     ></div>

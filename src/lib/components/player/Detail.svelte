@@ -43,15 +43,15 @@
   }
 </script>
 
-<div class='flex flex-col h-[40rem] justify-between'>
+<div class='h-[40rem] flex flex-col justify-between'>
   {#if $nowPlaying}
     <img
       src={$nowPlaying?.cover}
       alt={$nowPlaying.name}
-      class='size-[27rem] object-cover rounded-2xl'
+      class='size-[27rem] rounded-2xl object-cover'
     />
   {:else}
-    <div class='size-[27rem] flex justify-center items-center rounded-2xl bg-white/60 text-neutral'>
+    <div class='size-[27rem] flex items-center justify-center rounded-2xl bg-white/60 text-neutral'>
       <Music size={128} />
     </div>
   {/if}
@@ -61,7 +61,7 @@
       <span class='text-neutral font-semibold'>{$nowPlaying.alias.join(' / ')}</span>
     {/if}
     {#if $nowPlaying}
-      <span class='text-neutral text-sm'>{$nowPlaying.artists.join(' / ')}</span>
+      <span class='text-sm text-neutral'>{$nowPlaying.artists.join(' / ')}</span>
     {/if}
   </div>
   <input
@@ -76,7 +76,7 @@
     onpointerdown={handlePointerDown}
     class='w-full'
   />
-  <div class='w-full flex justify-between items-center text-neutral'>
+  <div class='w-full flex items-center justify-between text-neutral'>
     <Dropdown>
       <Button iconButton variant='transparent' onclick={mute}>
         {#if $muted}

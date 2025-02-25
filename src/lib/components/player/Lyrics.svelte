@@ -145,7 +145,7 @@
     <div class='relative flex gap-5'>
       <div
         bind:this={scrollContainerElement}
-        class='relative overflow-auto scrollbar-hidden w-80'
+        class='scrollbar-none relative w-80 overflow-auto'
         style={`height: ${CONTAINER_SIZE}px`}
         onscroll={onScroll}
         onscrollend={onScrollend}
@@ -175,7 +175,7 @@
         </Button>
       </div>
       {#if actionDisabled}
-        <div class='absolute top-0 left-1/2 -translate-x-1/2'>
+        <div class='absolute left-1/2 top-0 -translate-x-1/2'>
           <Button onclick={moveToOriginal}>返回原位</Button>
         </div>
       {/if}

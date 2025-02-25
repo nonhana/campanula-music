@@ -3,7 +3,7 @@
   import SongList from '$lib/components/playlists/SongList.svelte'
 </script>
 
-<div class='flex w-4/5 gap-40 mx-auto mb-6'>
+<div class='mx-auto mb-6 w-4/5 flex gap-40'>
   <Detail />
   <SongList />
 </div>

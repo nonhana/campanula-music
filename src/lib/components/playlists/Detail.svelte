@@ -19,14 +19,14 @@
   }
 </script>
 
-<div class='flex flex-col items-center space-y-5 w-64'>
+<div class='w-64 flex flex-col items-center space-y-5'>
   <img
     src={mockPlaylist.cover}
     alt={`歌单 ${mockPlaylist.name} 的封面`}
     class='aspect-square w-64 rounded-lg'
   />
-  <h2 class='text-2xl font-semibold text-center w-80'>{mockPlaylist.name}</h2>
-  <p class='text-neutral w-full text-wrap text-center break-words'>{mockPlaylist.description}</p>
+  <h2 class='w-80 text-center text-2xl font-semibold'>{mockPlaylist.name}</h2>
+  <p class='w-full break-words text-center text-wrap text-neutral'>{mockPlaylist.description}</p>
   <p class='text-neutral'>{mockPlaylist.musicCount} 首歌曲</p>
   <div class='flex space-x-5'>
     <Tooltip content='播放全部'>

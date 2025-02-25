@@ -108,7 +108,7 @@
   )
 </script>
 
-<footer class='fixed bottom-0 w-full h-20 z-20 bg-neutral-200/40 backdrop-blur flex items-center px-5'>
+<footer class='fixed bottom-0 z-20 h-20 w-full flex items-center bg-neutral-200/40 px-5 backdrop-blur'>
   {#if $nowPlaying}
     <audio
       preload='metadata'
@@ -132,7 +132,7 @@
     oninput={handleInput}
     onchange={handleChange}
     onpointerdown={handlePointerDown}
-    class='w-full absolute -translate-y-1/2 top-0 left-0'
+    class='absolute left-0 top-0 w-full -translate-y-1/2'
   />
   <div class='flex items-center gap-10'>
     <SkipBack class='cursor-pointer' />
@@ -140,12 +140,12 @@
     <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
     <SkipForward class='cursor-pointer' />
   </div>
-  <span class='ml-5 text-sm text-neutral select-none'>
+  <span class='ml-5 select-none text-sm text-neutral'>
     {curTimeInfo}
   </span>
-  <div class='absolute left-1/2 -translate-x-1/2 flex items-center gap-5'>
+  <div class='absolute left-1/2 flex items-center gap-5 -translate-x-1/2'>
     <MaskElement
-      class='rounded-lg overflow-hidden group'
+      class='group overflow-hidden rounded-lg'
       maskClass='group-hover:flex'
       onclick={toggleShowDrawer}
     >
@@ -156,7 +156,7 @@
         {#if $nowPlaying}
           <img class='size-12' src={$nowPlaying.cover} alt={$nowPlaying.name} />
         {:else}
-          <div class='size-12 flex justify-center items-center rounded-lg bg-white text-neutral'>
+          <div class='size-12 flex items-center justify-center rounded-lg bg-white text-neutral'>
             <Music size={24} />
           </div>
         {/if}
@@ -171,13 +171,13 @@
     </div>
   </div>
 
-  <div class='flex items-center gap-5 ml-auto'>
+  <div class='ml-auto flex items-center gap-5'>
     <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat')} />
     <Repeat class={`cursor-pointer ${$playMode === 'repeat' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat1')} />
     <Repeat1 class={`cursor-pointer ${$playMode === 'repeat1' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('list')} />
     <ArrowLeftRight class={`cursor-pointer ${$playMode === 'list' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat')} />
-    <div class='relative cursor-pointer flex flex-col items-center gap-5 group'>
-      <div class='absolute w-28 px-4 py-2 bg-neutral-200 justify-center -rotate-90 -translate-y-[calc(50%+3.5rem)] hidden group-hover:flex rounded-full'>
+    <div class='group relative flex flex-col cursor-pointer items-center gap-5'>
+      <div class='absolute w-28 justify-center rounded-full bg-neutral-200 px-4 py-2 hidden group-hover:flex -translate-y-[calc(50%+3.5rem)] -rotate-90'>
         <input
           type='range'
           min='0'

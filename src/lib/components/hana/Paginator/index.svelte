@@ -36,7 +36,7 @@
   const sideButtonCount = $derived((maxButtonCount - 3) / 2)
 </script>
 
-<div class='w-fit gap-2 flex'>
+<div class='w-fit flex gap-2'>
   <Button
     iconButton
     shape='circle'

@@ -67,7 +67,7 @@
 </script>
 
 {#if !hasExternalScroll}
-  <div class={['scrollbar-hidden', containerClass]} style={containerStyle} onscroll={onScroll}>
+  <div class={['scrollbar-none', containerClass]} style={containerStyle} onscroll={onScroll}>
     <div style={innerStyle}>
       <div style={translateStyle}>
         {#each visibleItems as item, index}

@@ -13,10 +13,10 @@
   const { song }: Props = $props()
 </script>
 
-<tr class='text-center even:bg-neutral-50 hover:bg-primary-100 group'>
+<tr class='group text-center even:bg-neutral-50 hover:bg-primary-100'>
   <td class='rounded-l-lg'>
     <MaskElement
-      class='inline-block rounded-lg cursor-pointer overflow-hidden'
+      class='inline-block cursor-pointer overflow-hidden rounded-lg'
       maskClass='group-hover:flex'
     >
       {#snippet slot()}
@@ -30,7 +30,7 @@
   <td>{song.id}</td>
   <td>
     <p>{song.name}</p>
-    <p class='text-neutral text-sm'>{song.alias.join(' / ')}</p>
+    <p class='text-sm text-neutral'>{song.alias.join(' / ')}</p>
   </td>
   <td>{song.artists.join(' / ')}</td>
   <td>{song.album}</td>
