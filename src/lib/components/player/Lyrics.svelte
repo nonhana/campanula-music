@@ -6,14 +6,16 @@
     currentLyricIndex,
     nowLyrics,
     nowPlaying,
+    paused,
     setCurrentLyricIndex,
   } from '$lib/stores'
+  import { numCorrector } from '$lib/utils'
   import { ChevronLeft } from 'lucide-svelte'
   import LyricItem from './LyricItem.svelte'
 
   const CONTAINER_SIZE = 640
   const ITEM_SIZE = 80
-  const EMPTY_ITEMS = 3
+  const ACTIVATED_INDEX = 3
 
   interface Props {
     currentTime: number
@@ -32,8 +34,6 @@
     currentTime = activatedLyric.time
   }
 
-  const targetOffset = $derived($currentLyricIndex * ITEM_SIZE)
-
   let scrollPos = $state(0)
   const scrollStatus = $state({
     autoScrolling: false,
@@ -41,6 +41,41 @@
     restoring: false,
   })
   let scrollTimer: NodeJS.Timeout | null = null
+
+  // currentTime 变化，找到当前歌词
+  $effect(() => {
+    if (!$nowPlaying || !$nowLyrics)
+      return
+
+    const targetLyricsIndex = $nowLyrics.lyrics.findIndex((item, index) => {
+      const nextTime = $nowLyrics.lyrics[index + 1]?.time
+      return currentTime >= item.time && currentTime < (nextTime || Infinity)
+    })
+
+    if (targetLyricsIndex !== -1 && targetLyricsIndex !== $currentLyricIndex) {
+      setCurrentLyricIndex(targetLyricsIndex)
+    }
+  })
+
+  // currentLyricIndex 变化，找到当前歌词的位置
+  const targetOffset = $derived($currentLyricIndex * ITEM_SIZE)
+
+  // targetOffset 变化，触发自动滚动
+  $effect(() => {
+    if (!$nowPlaying || !$nowLyrics || !scrollContainerElement)
+      return
+
+    scrollStatus.autoScrolling = true
+
+    // 如果歌曲正在播放，并且此时用户正在滚动歌词，不触发自动滚动
+    if (!$paused && scrollStatus.customScrolling)
+      return
+
+    scrollContainerElement.scrollTo({
+      top: targetOffset,
+      behavior: 'smooth',
+    })
+  })
 
   // 回到原来位置
   const moveToOriginal = () => {
@@ -62,6 +97,20 @@
     }, 1000)
   }
 
+  // 吸附到最近的歌词
+  const snapToNearest = (e: Event) => {
+    if (!scrollContainerElement)
+      return
+
+    const target = e.target as HTMLElement
+    const targetScrollTop = numCorrector(target.scrollTop, ITEM_SIZE)
+
+    scrollContainerElement.scrollTo({
+      top: targetScrollTop,
+      behavior: 'smooth',
+    })
+  }
+
   // 滚动时的触发函数
   const onScroll = (e: Event) => {
     if (scrollTimer) {
@@ -78,7 +127,9 @@
   }
 
   // 滚动结束后的触发函数
-  const onScrollend = () => {
+  const onScrollend = (e: Event) => {
+    snapToNearest(e)
+
     if (scrollStatus.autoScrolling) {
       scrollStatus.autoScrolling = false
       return
@@ -91,32 +142,6 @@
 
     scrollTimer = setTimeout(moveToOriginal, 1000)
   }
-
-  $effect(() => {
-    if (!$nowPlaying || !$nowLyrics || !scrollContainerElement)
-      return
-
-    scrollStatus.autoScrolling = true
-
-    scrollContainerElement.scrollTo({
-      top: targetOffset,
-      behavior: 'smooth',
-    })
-  })
-
-  $effect(() => {
-    if (!$nowPlaying || !$nowLyrics)
-      return
-
-    const targetLyricsIndex = $nowLyrics.lyrics.findIndex((item, index) => {
-      const nextTime = $nowLyrics.lyrics[index + 1]?.time
-      return currentTime >= item.time && currentTime < (nextTime || Infinity)
-    })
-
-    if (targetLyricsIndex !== -1 && targetLyricsIndex !== $currentLyricIndex) {
-      setCurrentLyricIndex(targetLyricsIndex)
-    }
-  })
 
   const actionDisabled = $derived(scrollStatus.customScrolling && !scrollStatus.restoring && !scrollStatus.autoScrolling)
 </script>
@@ -135,13 +160,13 @@
           items={$nowLyrics.lyrics}
           containerSize={CONTAINER_SIZE}
           itemSize={ITEM_SIZE}
-          emptyItems={EMPTY_ITEMS}
+          emptyItems={ACTIVATED_INDEX}
           {scrollPos}
         >
           {#snippet renderItem(item, index)}
             <LyricItem
               lyric={item}
-              isActivated={index === EMPTY_ITEMS}
+              isActivated={index === ACTIVATED_INDEX}
               activateCallback={lyric => activatedLyric = lyric}
             />
           {/snippet}
@@ -149,7 +174,7 @@
       </div>
       <div
         class='relative'
-        style={`top: ${ITEM_SIZE * (EMPTY_ITEMS + 0.5) - 16}px`}
+        style={`top: ${ITEM_SIZE * (ACTIVATED_INDEX + 0.5) - 16}px`}
       >
         <Button iconButton variant='transparent' disabled={!actionDisabled} onclick={moveToTargetLyric}>
           <ChevronLeft class='text-neutral' />

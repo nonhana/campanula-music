@@ -7,6 +7,8 @@
     mute,
     muted,
     nowPlaying,
+    paused,
+    setPaused,
     volume,
   } from '$lib/stores'
   import {
@@ -27,8 +29,6 @@
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
     handlePointerDown: () => void
-    paused: boolean
-    togglePaused: () => void
   }
 
   const {
@@ -36,8 +36,6 @@
     handleInput,
     handleChange,
     handlePointerDown,
-    paused,
-    togglePaused,
   }: Props = $props()
 
   const handleCommand = (command: string | number | object) => {
@@ -111,8 +109,8 @@
 
     <div class='flex items-center gap-10'>
       <SkipBack class='cursor-pointer' />
-      <Play size='32' class={`cursor-pointer ${paused ? 'block' : 'hidden'}`} onclick={togglePaused} />
-      <Pause size='32' class={`cursor-pointer ${paused ? 'hidden' : 'block'}`} onclick={togglePaused} />
+      <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
+      <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
       <SkipForward class='cursor-pointer' />
     </div>
 

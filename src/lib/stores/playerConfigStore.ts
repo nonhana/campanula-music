@@ -17,6 +17,7 @@ export const playMode = writable<PlayMode>('list')
 export const volume = writable(0.0)
 export const muted = writable(false)
 export const seeking = writable(false)
+export const paused = writable(false)
 
 export function setNowPlaying(song: SongItem | null) {
   nowPlaying.set(song)
@@ -32,4 +33,7 @@ export function mute() {
 }
 export function setSeeking(value: boolean) {
   seeking.set(value)
+}
+export function setPaused(value: boolean) {
+  paused.set(value)
 }

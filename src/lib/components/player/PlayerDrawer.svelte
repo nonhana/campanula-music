@@ -9,8 +9,6 @@
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
     handlePointerDown: () => void
-    paused: boolean
-    togglePaused: () => void
   }
 
   let {
@@ -20,8 +18,6 @@
     handleInput,
     handleChange,
     handlePointerDown,
-    paused,
-    togglePaused,
   }: Props = $props()
 
   let drawerElement = $state<HTMLDivElement | null>(null)
@@ -121,8 +117,6 @@
       {handleInput}
       {handleChange}
       {handlePointerDown}
-      {paused}
-      {togglePaused}
     />
     <Lyrics bind:currentTime={currentTime} />
   </div>

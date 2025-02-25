@@ -4,8 +4,10 @@
     mute,
     muted,
     nowPlaying,
+    paused,
     playMode,
     seeking,
+    setPaused,
     setPlayMode,
     setSeeking,
     volume,
@@ -38,11 +40,6 @@
       : 0,
   )
 
-  let paused = $state(false)
-  const togglePaused = () => {
-    paused = !paused
-  }
-
   // audio 元素对象
   let audioElement = $state<HTMLAudioElement | null>(null)
 
@@ -71,7 +68,7 @@
   const globalPause = (e: KeyboardEvent) => {
     if (e.code === 'Space') {
       e.preventDefault()
-      togglePaused()
+      setPaused(!$paused)
     }
   }
 
@@ -98,7 +95,7 @@
       preload='metadata'
       autoplay
       bind:currentTime
-      bind:paused
+      bind:paused={$paused}
       bind:volume={$volume}
       bind:muted={$muted}
       class='hidden'
@@ -119,8 +116,8 @@
   {/if}
   <div class='flex items-center gap-10'>
     <SkipBack class='cursor-pointer' />
-    <Play size='32' class={`cursor-pointer ${paused ? 'block' : 'hidden'}`} onclick={togglePaused} />
-    <Pause size='32' class={`cursor-pointer ${paused ? 'hidden' : 'block'}`} onclick={togglePaused} />
+    <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
+    <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
     <SkipForward class='cursor-pointer' />
   </div>
   {#if $nowPlaying}
@@ -191,6 +188,4 @@
   {handleInput}
   {handleChange}
   {handlePointerDown}
-  {paused}
-  {togglePaused}
 />
