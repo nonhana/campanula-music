@@ -7,7 +7,7 @@
     containerSize: number // px
     itemSize: number // px
     scrollPos?: number // 滚动位置由外部进行控制
-    renderItem: Snippet<[any]>
+    renderItem: Snippet<[any, number]>
     emptyItems?: number
   }
 
@@ -70,11 +70,11 @@
   <div class={['scrollbar-hidden', containerClass]} style={containerStyle} onscroll={onScroll}>
     <div style={innerStyle}>
       <div style={translateStyle}>
-        {#each visibleItems as item}
+        {#each visibleItems as item, index}
           {#if item === null}
             <div style={`height: ${itemSize}px`}></div>
           {:else}
-            {@render renderItem(item)}
+            {@render renderItem(item, index)}
           {/if}
         {/each}
       </div>
@@ -83,11 +83,11 @@
 {:else}
   <div style={innerStyle}>
     <div style={translateStyle}>
-      {#each visibleItems as item}
+      {#each visibleItems as item, index}
         {#if item === null}
           <div style={`height: ${itemSize}px`}></div>
         {:else}
-          {@render renderItem(item)}
+          {@render renderItem(item, index)}
         {/if}
       {/each}
     </div>

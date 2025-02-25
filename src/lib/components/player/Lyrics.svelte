@@ -1,27 +1,36 @@
 <script lang='ts'>
+  import type { LyricItem as LyricItemType } from '$lib/types'
   import Button from '$lib/components/hana/Button.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import {
     currentLyricIndex,
     nowLyrics,
     nowPlaying,
-    seeking,
     setCurrentLyricIndex,
   } from '$lib/stores'
-  import { handleDuration } from '$lib/utils'
   import { ChevronLeft } from 'lucide-svelte'
+  import LyricItem from './LyricItem.svelte'
 
   const CONTAINER_SIZE = 640
   const ITEM_SIZE = 80
   const EMPTY_ITEMS = 3
 
   interface Props {
-    currentProgress: number
+    currentTime: number
   }
 
-  let { currentProgress = $bindable() }: Props = $props()
+  let { currentTime = $bindable() }: Props = $props()
 
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
+
+  let activatedLyric = $state<LyricItemType | null>(null)
+
+  const moveToTargetLyric = () => {
+    if (!$nowPlaying || !$nowLyrics || !activatedLyric)
+      return
+
+    currentTime = activatedLyric.time
+  }
 
   const targetOffset = $derived($currentLyricIndex * ITEM_SIZE)
 
@@ -95,35 +104,26 @@
     })
   })
 
-  $inspect('scrollStatus', scrollStatus)
-
-  let curTime = $state(0)
-
-  $effect(() => {
-    if (!$nowPlaying || $seeking)
-      return
-
-    curTime = Math.floor(currentProgress * $nowPlaying.duration)
-  })
-
   $effect(() => {
     if (!$nowPlaying || !$nowLyrics)
       return
 
     const targetLyricsIndex = $nowLyrics.lyrics.findIndex((item, index) => {
       const nextTime = $nowLyrics.lyrics[index + 1]?.time
-      return curTime >= item.time && curTime < (nextTime || Infinity)
+      return currentTime >= item.time && currentTime < (nextTime || Infinity)
     })
 
     if (targetLyricsIndex !== -1 && targetLyricsIndex !== $currentLyricIndex) {
       setCurrentLyricIndex(targetLyricsIndex)
     }
   })
+
+  const actionDisabled = $derived(scrollStatus.customScrolling && !scrollStatus.restoring && !scrollStatus.autoScrolling)
 </script>
 
 {#if $nowLyrics}
   {#if $nowLyrics.lyrics.length !== 0}
-    <div class='relative'>
+    <div class='relative flex gap-5'>
       <div
         bind:this={scrollContainerElement}
         class='relative overflow-auto scrollbar-hidden'
@@ -138,28 +138,24 @@
           emptyItems={EMPTY_ITEMS}
           {scrollPos}
         >
-          {#snippet renderItem(item)}
-            <div class='flex items-center gap-10 w-80 h-20'>
-              <span>{item.time}</span>
-              <div class='flex flex-col gap-2'>
-                <span>{item.text}</span>
-                {#if item.translate}
-                  <span>{item.translate}</span>
-                {/if}
-              </div>
-              <span>{handleDuration(item.time)}</span>
-            </div>
+          {#snippet renderItem(item, index)}
+            <LyricItem
+              lyric={item}
+              isActivated={index === EMPTY_ITEMS}
+              activateCallback={lyric => activatedLyric = lyric}
+            />
           {/snippet}
         </VirtualList>
       </div>
       <div
-        class='absolute w-full px-2 flex items-center'
-        style={`top: ${ITEM_SIZE * (EMPTY_ITEMS + 0.5)}px;transform: translateY(-50%);`}
+        class='relative'
+        style={`top: ${ITEM_SIZE * (EMPTY_ITEMS + 0.5) - 16}px`}
       >
-        <div class='w-full h-[1px] bg-neutral-400'></div>
-        <ChevronLeft size='32' class='text-neutral' />
+        <Button iconButton variant='transparent' disabled={!actionDisabled} onclick={moveToTargetLyric}>
+          <ChevronLeft class='text-neutral' />
+        </Button>
       </div>
-      {#if scrollStatus.customScrolling && !scrollStatus.restoring && !scrollStatus.autoScrolling}
+      {#if actionDisabled}
         <div class='absolute top-0 left-1/2 -translate-x-1/2'>
           <Button onclick={moveToOriginal}>返回原位</Button>
         </div>

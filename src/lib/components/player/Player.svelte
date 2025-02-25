@@ -186,6 +186,7 @@
 
 <PlayerDrawer
   bind:showDrawer={showDrawer}
+  bind:currentTime={currentTime}
   {currentProgress}
   {handleInput}
   {handleChange}
