@@ -28,7 +28,7 @@
     <Header {toggleFolded} />
     <Sidebar {folded} />
     <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
-      <div class='m-auto container'>
+      <div class='m-auto px-10 container'>
         {@render children()}
       </div>
     </main>
