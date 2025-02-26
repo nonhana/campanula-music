@@ -16,7 +16,7 @@
 
   const { song }: Props = $props()
 
-  const handleClickPlay = async () => {
+  const handlePlay = async () => {
     try {
       await addToPlaylistAndPlay(song)
     }
@@ -28,7 +28,7 @@
     }
   }
 
-  const handleClickPlaylist = async () => {
+  const handleAddToPlaylist = async () => {
     try {
       await addSongToPlaylist(song)
       callHanaMessage({
@@ -50,7 +50,7 @@
     <MaskElement
       class='inline-block cursor-pointer overflow-hidden rounded-lg'
       maskClass='group-hover:flex'
-      onclick={handleClickPlay}
+      onclick={handlePlay}
     >
       {#snippet slot()}
         <Play />
@@ -75,7 +75,7 @@
         iconButton
         variant='transparent'
         shape='circle'
-        onclick={handleClickPlaylist}
+        onclick={handleAddToPlaylist}
       >
         <Plus />
       </Button>

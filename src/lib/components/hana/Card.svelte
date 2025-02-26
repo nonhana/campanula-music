@@ -13,6 +13,7 @@
     footer?: Snippet
     mask?: Snippet
     href?: string
+    onclick?: () => void
   }
 
   const {
@@ -27,6 +28,7 @@
     footer,
     mask,
     href,
+    onclick,
   }: Props = $props()
 
   const cardClasses = $derived([
@@ -54,6 +56,21 @@
       </div>
     {/if}
   </a>
+{:else if onclick}
+  <button class={cardClasses} {onclick}>
+    {@render mask?.()}
+    {#if header}
+      <div class={[divider && 'border-b']}>
+        {@render header()}
+      </div>
+    {/if}
+    {@render children?.()}
+    {#if footer}
+      <div class={[divider && 'border-t']}>
+        {@render footer()}
+      </div>
+    {/if}
+  </button>
 {:else}
   <div class={cardClasses}>
     {@render mask?.()}

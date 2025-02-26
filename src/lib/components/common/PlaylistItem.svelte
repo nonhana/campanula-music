@@ -1,7 +1,12 @@
 <script lang='ts'>
-  import type { PlaylistItem } from '$lib/types'
+  import type { PlaylistItem, SongItem } from '$lib/types'
   import Card from '$lib/components/hana/Card.svelte'
+  import useMessage from '$lib/hooks/useMessage'
+  import { mockSongs } from '$lib/mock'
+  import { getLyrics, setNowPlaying, setPlaylist } from '$lib/stores'
   import { PlayCircle } from 'lucide-svelte'
+
+  const { callHanaMessage } = useMessage()
 
   interface Props {
     type?: 'home' | 'playlist'
@@ -10,6 +15,34 @@
   }
 
   const { type = 'home', activated = false, playlist }: Props = $props()
+
+  // TODO: 现在还是 mock 数据，后续需要调用接口
+  const fetchPlaylistSongs = async (): Promise<SongItem[]> => {
+    return new Promise((res) => {
+      setTimeout(() => {
+        res(mockSongs)
+      }, 1000)
+    })
+  }
+
+  const handlePlayAll = async () => {
+    try {
+      const songs = await fetchPlaylistSongs()
+      setPlaylist(songs)
+      callHanaMessage({
+        message: `成功添加 ${playlist.name} 的 ${songs.length} 首歌曲`,
+        type: 'success',
+      })
+      const lyrics = await getLyrics(songs[0])
+      setNowPlaying(songs[0], lyrics)
+    }
+    catch (error: any) {
+      callHanaMessage({
+        message: error.message,
+        type: 'error',
+      })
+    }
+  }
 </script>
 
 <Card
@@ -17,6 +50,7 @@
   divider={false}
   transparent
   href={type === 'playlist' ? `/playlists/${playlist.id}` : undefined}
+  onclick={handlePlayAll}
 >
   {#snippet mask()}
     <div

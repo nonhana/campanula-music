@@ -13,16 +13,28 @@ export const muted = writable(false)
 export const seeking = writable(false)
 export const paused = writable(true)
 
-export function getLyrics(song: SongItem): LyricItem[] {
+export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
   // TODO: fetch lyrics from API
-  return mockLyrics(song.duration)
+  return new Promise(
+    (res) => {
+      setTimeout(() => {
+        res(mockLyrics(song.duration))
+      }, 1000)
+    },
+  )
+}
+export function reset() {
+  nowPlaying.set(null)
+  currentTime.set(0)
 }
 export function setNowPlaying(info: SongItem, lyrics: LyricItem[]) {
+  reset()
   nowPlaying.set({ ...info, lyrics })
 }
 export async function addToPlaylistAndPlay(song: SongItem) {
-  await addSongToPlaylist(song)
-  setNowPlaying(song, getLyrics(song))
+  await addSongToPlaylist(song, false)
+  const lyrics = await getLyrics(song)
+  setNowPlaying(song, lyrics)
 }
 export function setCurrentTime(time: number) {
   currentTime.set(time)
@@ -38,8 +50,4 @@ export function setSeeking(value: boolean) {
 }
 export function setPaused(value: boolean) {
   paused.set(value)
-}
-export function reset() {
-  nowPlaying.set(null)
-  currentTime.set(0)
 }

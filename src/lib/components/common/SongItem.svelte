@@ -14,11 +14,19 @@
   const { song }: Props = $props()
 
   const onClick = async () => {
-    await addSongToPlaylist(song)
-    callHanaMessage({
-      message: `已添加歌曲：${song.name}`,
-      type: 'success',
-    })
+    try {
+      await addSongToPlaylist(song)
+      callHanaMessage({
+        message: `已添加歌曲：${song.name}`,
+        type: 'success',
+      })
+    }
+    catch (error: any) {
+      callHanaMessage({
+        message: error.message,
+        type: 'error',
+      })
+    }
   }
 </script>
 
