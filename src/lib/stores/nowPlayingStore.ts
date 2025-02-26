@@ -1,5 +1,7 @@
 import type { LyricItem, SongItem } from '$lib/types'
+import { mockLyrics } from '$lib/mock'
 import { writable } from 'svelte/store'
+import { addSongToPlaylist } from './playlistStore'
 
 type PlayMode = 'repeat' | 'shuffle' | 'repeat1' | 'list'
 
@@ -11,8 +13,16 @@ export const muted = writable(false)
 export const seeking = writable(false)
 export const paused = writable(true)
 
+export function getLyrics(song: SongItem): LyricItem[] {
+  // TODO: fetch lyrics from API
+  return mockLyrics(song.duration)
+}
 export function setNowPlaying(info: SongItem, lyrics: LyricItem[]) {
   nowPlaying.set({ ...info, lyrics })
+}
+export async function addToPlaylistAndPlay(song: SongItem) {
+  await addSongToPlaylist(song)
+  setNowPlaying(song, getLyrics(song))
 }
 export function setCurrentTime(time: number) {
   currentTime.set(time)

@@ -4,10 +4,14 @@
   import Header from '$lib/components/main/Header.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import Player from '$lib/components/player/Player.svelte'
+  import useMessage from '$lib/hooks/useMessage'
   import { setScrolled } from '$lib/stores'
   import debounce from 'debounce'
+  import { } from 'svelte'
   import 'uno.css'
   import '@unocss/reset/tailwind.css'
+
+  const { callHanaMessage } = useMessage()
 
   const { children } = $props()
 

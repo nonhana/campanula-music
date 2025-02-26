@@ -2,6 +2,7 @@
   import type { SongItem } from '$lib/types/song'
   import Button from '$lib/components/hana/Button.svelte'
   import useMessage from '$lib/hooks/useMessage'
+  import { addSongToPlaylist } from '$lib/stores'
   import { Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
@@ -12,7 +13,8 @@
 
   const { song }: Props = $props()
 
-  const handleClick = () => {
+  const onClick = async () => {
+    await addSongToPlaylist(song)
     callHanaMessage({
       message: `已添加歌曲：${song.name}`,
       type: 'success',
@@ -37,7 +39,7 @@
     variant='transparent'
     aria-label='添加到播放列表'
     class='ml-auto'
-    onclick={handleClick}
+    onclick={onClick}
   >
     <Plus />
   </Button>
