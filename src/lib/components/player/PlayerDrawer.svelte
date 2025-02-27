@@ -1,9 +1,12 @@
 <script lang='ts'>
   import type { MenuItemInfo } from '$lib/types'
+  import type { Component } from 'svelte'
   import Menu from '$lib/components/hana/Menu.svelte'
   import MenuItem from '$lib/components/hana/MenuItem.svelte'
   import Detail from './Detail.svelte'
   import Lyrics from './Lyrics.svelte'
+  import Playlist from './Playlist.svelte'
+  import TabContent from './TabContent.svelte'
 
   interface Props {
     showDrawer: boolean
@@ -105,6 +108,11 @@
   }]
 
   let selectedMenu = $state('lyrics')
+
+  const tabComponents: Record<string, Component> = {
+    lyrics: Lyrics,
+    playlist: Playlist,
+  }
 </script>
 
 {#if showDrawer || dragging}
@@ -135,11 +143,7 @@
       </Menu>
 
       <div class='h-[40rem] w-80'>
-        {#if selectedMenu === 'lyrics'}
-          <Lyrics />
-        {:else if selectedMenu === 'playlist'}
-          <div>播放列表内容</div>
-        {/if}
+        <TabContent activeKey={selectedMenu} components={tabComponents} />
       </div>
     </div>
   </div>
