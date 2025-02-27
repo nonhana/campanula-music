@@ -34,7 +34,7 @@
     showPassword = !showPassword
   }
 
-  const curType = $derived(() => {
+  const curType = $derived.by(() => {
     if (type === 'textarea')
       return type
     return showPassword ? 'text' : type
@@ -51,7 +51,7 @@
     <input
       bind:value
       {name}
-      type={curType()}
+      type={curType}
       {placeholder}
       onkeydown={keydown}
       class={[

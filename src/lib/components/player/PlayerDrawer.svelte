@@ -105,10 +105,6 @@
   }]
 
   let selectedMenu = $state('lyrics')
-
-  function handleMenuSelect(key: string) {
-    selectedMenu = key
-  }
 </script>
 
 {#if showDrawer || dragging}
@@ -122,8 +118,8 @@
     <button
       aria-label='drawer dragger'
       class='absolute top-5 m-auto h-2 w-10 cursor-grab rounded-full bg-neutral active:cursor-grabbing'
-      on:click={toggleShowDrawer}
-      on:pointerdown={onPointerDown}
+      onclick={toggleShowDrawer}
+      onpointerdown={onPointerDown}
     ></button>
     <Detail
       {currentProgress}
@@ -132,18 +128,19 @@
       {handlePointerDown}
     />
     <div class='flex flex-col gap-10'>
-      <Menu defaultActive={selectedMenu} onselect={handleMenuSelect}>
+      <Menu defaultActive={selectedMenu} onselect={key => selectedMenu = key}>
         {#each playerMenus as menu}
           <MenuItem {...menu} />
         {/each}
       </Menu>
 
-      {#if selectedMenu === 'lyrics'}
-        <Lyrics />
-      {:else if selectedMenu === 'playlist'}
-        <!-- 播放列表内容 -->
-        <div>播放列表内容</div>
-      {/if}
+      <div class='h-[40rem] w-80'>
+        {#if selectedMenu === 'lyrics'}
+          <Lyrics />
+        {:else if selectedMenu === 'playlist'}
+          <div>播放列表内容</div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}

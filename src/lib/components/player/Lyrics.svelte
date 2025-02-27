@@ -145,7 +145,7 @@
     <div class='relative flex gap-5'>
       <div
         bind:this={scrollContainerElement}
-        class='scrollbar-none relative w-80 overflow-auto'
+        class='relative w-80 overflow-auto scrollbar-none'
         style={`height: ${CONTAINER_SIZE}px`}
         onscroll={onScroll}
         onscrollend={onScrollend}

@@ -7,8 +7,9 @@
     class?: string
     defaultActive?: string
     mode?: 'horizontal' | 'vertical'
-    onselect?: (key: string) => void
     children?: Snippet
+    onselect?: (key: string) => void
+    hoverEffect?: boolean
   }
 
   const {
@@ -16,29 +17,66 @@
     defaultActive,
     mode = 'horizontal',
     onselect,
+    children,
+    hoverEffect = false,
   }: Props = $props()
 
   const activeKey = writable(defaultActive)
+  const activeItemRect = writable<DOMRect | null>(null)
 
-  // 将激活的键和选择处理函数设置到上下文中
+  let menuEl: HTMLDivElement
+
   setContext('menu', {
     activeKey,
-    select: (key: string) => {
+    hoverEffect,
+    select: (key: string, rect?: DOMRect) => {
       activeKey.set(key)
+      if (rect)
+        activeItemRect.set(rect)
       onselect?.(key)
+    },
+    registerPosition: (key: string, rect: DOMRect) => {
+      if ($activeKey === key) {
+        activeItemRect.set(rect)
+      }
     },
   })
 
-  // 为了保持与原API的兼容性
-  let activatedKey = $derived($activeKey)
+  const activatedKey = $derived($activeKey)
 
   $effect(() => {
-    // 触发onselect回调
-    if (activatedKey)
+    if (activatedKey) {
       onselect?.(activatedKey)
+    }
+  })
+
+  // 计算背景元素的位置和尺寸
+  const backgroundStyle = $derived.by(() => {
+    const rect = $activeItemRect
+    if (!rect || !menuEl)
+      return 'opacity: 0'
+
+    // 获取菜单容器的边界框，用于计算相对位置
+    const menuRect = menuEl.getBoundingClientRect()
+    const left = rect.left - menuRect.left
+    const top = rect.top - menuRect.top
+
+    return `
+      opacity: 1;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      transform: translate(${left}px, ${top}px);
+    `
   })
 </script>
 
-<div class={['flex gap-5', mode === 'vertical' && 'flex-col', customClass]}>
-  <slot />
+<div class={['flex gap-5 relative', mode === 'vertical' && 'flex-col', customClass]} bind:this={menuEl}>
+  <div
+    class='absolute z-0 rounded-lg bg-primary-100 transition-all duration-300 ease-in-out'
+    style={backgroundStyle}
+    aria-hidden='true'
+  ></div>
+  <div class="relative z-10 flex gap-5 {mode === 'vertical' ? 'flex-col' : ''}">
+    {@render children?.()}
+  </div>
 </div>
