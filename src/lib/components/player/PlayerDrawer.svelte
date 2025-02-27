@@ -1,4 +1,7 @@
 <script lang='ts'>
+  import type { MenuItemInfo } from '$lib/types'
+  import Menu from '$lib/components/hana/Menu.svelte'
+  import MenuItem from '$lib/components/hana/MenuItem.svelte'
   import Detail from './Detail.svelte'
   import Lyrics from './Lyrics.svelte'
 
@@ -91,6 +94,21 @@
       openDrawer()
     }
   }
+
+  // Menu 配置项
+  const playerMenus: MenuItemInfo[] = [{
+    key: 'lyrics',
+    title: '歌词',
+  }, {
+    key: 'playlist',
+    title: '播放列表',
+  }]
+
+  let selectedMenu = $state('lyrics')
+
+  function handleMenuSelect(key: string) {
+    selectedMenu = key
+  }
 </script>
 
 {#if showDrawer || dragging}
@@ -104,8 +122,8 @@
     <button
       aria-label='drawer dragger'
       class='absolute top-5 m-auto h-2 w-10 cursor-grab rounded-full bg-neutral active:cursor-grabbing'
-      onclick={toggleShowDrawer}
-      onpointerdown={onPointerDown}
+      on:click={toggleShowDrawer}
+      on:pointerdown={onPointerDown}
     ></button>
     <Detail
       {currentProgress}
@@ -113,6 +131,19 @@
       {handleChange}
       {handlePointerDown}
     />
-    <Lyrics />
+    <div class='flex flex-col gap-10'>
+      <Menu defaultActive={selectedMenu} onselect={handleMenuSelect}>
+        {#each playerMenus as menu}
+          <MenuItem {...menu} />
+        {/each}
+      </Menu>
+
+      {#if selectedMenu === 'lyrics'}
+        <Lyrics />
+      {:else if selectedMenu === 'playlist'}
+        <!-- 播放列表内容 -->
+        <div>播放列表内容</div>
+      {/if}
+    </div>
   </div>
 {/if}
