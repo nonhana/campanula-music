@@ -1,17 +1,21 @@
-<script lang='ts'>
+<script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
-  import ActiveItemBackground from '$lib/components/player/ActiveItemBackground.svelte'
+  import { setContext } from 'svelte'
+  import { writable } from 'svelte/store'
+  import VirtualListCore from './VirtualListCore.svelte'
+
+  const emptyKey = Symbol('empty')
 
   interface Props {
-    items: any[]
+    items: T[]
     direction?: 'vertical' | 'horizontal'
     containerSize: number // px
     itemSize: number // px
     scrollPos?: number // 滚动位置由外部进行控制
-    renderItem: Snippet<[any, number]>
+    renderItem: Snippet<[T, number]>
     emptyItems?: number
-    activeItemId?: number | null // 激活项的ID
-    getItemId?: (item: any) => number | string // 获取项的ID的函数
+    activeItemId?: number | string | null
+    getItemById?: (id: number | string) => T | null
   }
 
   const {
@@ -23,7 +27,7 @@
     renderItem,
     emptyItems = 0,
     activeItemId = null,
-    getItemId = item => item?.id,
+    getItemById,
   }: Props = $props()
 
   const isVertical = $derived(direction === 'vertical')
@@ -33,33 +37,38 @@
   const hasExternalScroll = $derived(scrollPos !== undefined)
   const effectiveScrollPos = $derived(hasExternalScroll ? scrollPos! : internalScrollPos)
 
-  const curItems = $derived([...Array.from({ length: emptyItems }).fill(null), ...items])
+  const gap = $derived.by(() => {
+    const containableCount = Math.floor(containerSize / itemSize)
+    return (containerSize - containableCount * itemSize) / (containableCount - 1)
+  })
+
+  const curItems = $derived([
+    ...Array.from({ length: emptyItems }).map(() => ({ [emptyKey]: true })),
+    ...items,
+  ])
+
+  const posData = writable<WeakMap<object, number> | null>(null)
+
+  $effect(() => {
+    const validItems = curItems.filter(item => typeof item === 'object' && item !== null)
+    posData.set(
+      new WeakMap(validItems.map((item, index) => [item, index * (itemSize + gap)])),
+    )
+  })
+
+  setContext('VirtualList', { posData, emptyKey })
 
   // 当前的可见项数量
   const visibleCount = $derived(Math.ceil(containerSize / itemSize) + 1)
   // 第一个可见项的起始索引
-  const startIndex = $derived(Math.floor(effectiveScrollPos / itemSize))
+  const startIndex = $derived(Math.floor(effectiveScrollPos / (itemSize + gap)))
   // 截取当前的可见项 items
   const visibleItems = $derived(curItems.slice(startIndex, startIndex + visibleCount))
 
   // 整个列表的总尺寸
-  const totalSize = $derived(curItems.length * itemSize)
+  const totalSize = $derived(curItems.length * itemSize + (curItems.length - 1) * gap)
 
-  const startOffset = $derived(startIndex * itemSize)
-
-  // 计算激活项在全部列表中的索引
-  const activeItemIndex = $derived.by(() => {
-    if (activeItemId === null)
-      return null
-    return curItems.findIndex(item => item !== null && getItemId(item) === activeItemId)
-  })
-
-  // 判断激活项是否在可视范围内
-  const isActiveItemVisible = $derived.by(() => {
-    if (activeItemIndex === null)
-      return false
-    return activeItemIndex >= startIndex && activeItemIndex < startIndex + visibleCount
-  })
+  const startOffset = $derived(startIndex * (itemSize + gap))
 
   // 滚动事件
   const onScroll = (e: Event) => {
@@ -74,51 +83,37 @@
 
   const innerStyle = $derived(
     isVertical
-      ? `height: ${totalSize}px; position: relative`
-      : `width: ${totalSize}px; position: relative`,
+      ? `height: ${totalSize}px;`
+      : `width: ${totalSize}px;`,
   )
 
   const translateStyle = $derived(
     isVertical
-      ? `transform: translateY(${startOffset}px)`
-      : `transform: translateX(${startOffset}px)`,
+      ? `transform: translateY(${startOffset}px); display: flex; flex-direction: column; gap: ${gap}px`
+      : `transform: translateX(${startOffset}px); display: flex; gap: ${gap}px`,
   )
 </script>
 
 {#if !hasExternalScroll}
   <div class={['scrollbar-none', containerClass]} style={containerStyle} onscroll={onScroll}>
-    <div style={innerStyle}>
-      <div style={translateStyle} class='relative'>
-        {#if isActiveItemVisible}
-          <ActiveItemBackground activeIndex={activeItemIndex} itemSize={itemSize} startIndex={startIndex} />
-        {/if}
-        {#each visibleItems as item, index}
-          {#if item === null}
-            <div style={`height: ${itemSize}px`}></div>
-          {:else}
-            <div class='relative z-10 flex items-center' style={`height: ${itemSize}px`}>
-              {@render renderItem(item, index)}
-            </div>
-          {/if}
-        {/each}
-      </div>
-    </div>
+    <VirtualListCore
+      {innerStyle}
+      {translateStyle}
+      {visibleItems}
+      {itemSize}
+      {renderItem}
+      {activeItemId}
+      {getItemById}
+    />
   </div>
 {:else}
-  <div style={innerStyle}>
-    <div style={translateStyle} class='relative'>
-      {#if isActiveItemVisible}
-        <ActiveItemBackground activeIndex={activeItemIndex} itemSize={itemSize} startIndex={startIndex} />
-      {/if}
-      {#each visibleItems as item, index}
-        {#if item === null}
-          <div style={`height: ${itemSize}px`}></div>
-        {:else}
-          <div class='relative z-10'>
-            {@render renderItem(item, index)}
-          </div>
-        {/if}
-      {/each}
-    </div>
-  </div>
+  <VirtualListCore
+    {innerStyle}
+    {translateStyle}
+    {visibleItems}
+    {itemSize}
+    {renderItem}
+    {activeItemId}
+    {getItemById}
+  />
 {/if}
