@@ -142,11 +142,10 @@
 
 {#if $nowPlaying}
   {#if $nowPlaying.lyrics.length !== 0}
-    <div class='relative flex gap-5'>
+    <div class='relative size-full flex gap-5'>
       <div
         bind:this={scrollContainerElement}
-        class='relative w-80 overflow-auto scrollbar-none'
-        style={`height: ${CONTAINER_SIZE}px`}
+        class='relative overflow-auto scrollbar-none'
         onscroll={onScroll}
         onscrollend={onScrollend}
       >
@@ -181,12 +180,12 @@
       {/if}
     </div>
   {:else}
-    <div class='w-80 flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
+    <div class='size-full flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
       <span>纯音乐，请欣赏</span>
     </div>
   {/if}
 {:else}
-  <div class='w-80 flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
+  <div class='size-full flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
     <span>当前未播放音乐</span>
   </div>
 {/if}

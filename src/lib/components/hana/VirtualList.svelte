@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import ActiveItemBackground from '$lib/components/player/ActiveItemBackground.svelte'
 
   interface Props {
     items: any[]
@@ -9,6 +10,8 @@
     scrollPos?: number // 滚动位置由外部进行控制
     renderItem: Snippet<[any, number]>
     emptyItems?: number
+    activeItemId?: number | null // 激活项的ID
+    getItemId?: (item: any) => number | string // 获取项的ID的函数
   }
 
   const {
@@ -19,6 +22,8 @@
     scrollPos,
     renderItem,
     emptyItems = 0,
+    activeItemId = null,
+    getItemId = item => item?.id,
   }: Props = $props()
 
   const isVertical = $derived(direction === 'vertical')
@@ -41,6 +46,20 @@
   const totalSize = $derived(curItems.length * itemSize)
 
   const startOffset = $derived(startIndex * itemSize)
+
+  // 计算激活项在全部列表中的索引
+  const activeItemIndex = $derived.by(() => {
+    if (activeItemId === null)
+      return null
+    return curItems.findIndex(item => item !== null && getItemId(item) === activeItemId)
+  })
+
+  // 判断激活项是否在可视范围内
+  const isActiveItemVisible = $derived.by(() => {
+    if (activeItemIndex === null)
+      return false
+    return activeItemIndex >= startIndex && activeItemIndex < startIndex + visibleCount
+  })
 
   // 滚动事件
   const onScroll = (e: Event) => {
@@ -69,12 +88,17 @@
 {#if !hasExternalScroll}
   <div class={['scrollbar-none', containerClass]} style={containerStyle} onscroll={onScroll}>
     <div style={innerStyle}>
-      <div style={translateStyle}>
+      <div style={translateStyle} class='relative'>
+        {#if isActiveItemVisible}
+          <ActiveItemBackground activeIndex={activeItemIndex} itemSize={itemSize} startIndex={startIndex} />
+        {/if}
         {#each visibleItems as item, index}
           {#if item === null}
             <div style={`height: ${itemSize}px`}></div>
           {:else}
-            {@render renderItem(item, index)}
+            <div class='relative z-10 flex items-center' style={`height: ${itemSize}px`}>
+              {@render renderItem(item, index)}
+            </div>
           {/if}
         {/each}
       </div>
@@ -82,12 +106,17 @@
   </div>
 {:else}
   <div style={innerStyle}>
-    <div style={translateStyle}>
+    <div style={translateStyle} class='relative'>
+      {#if isActiveItemVisible}
+        <ActiveItemBackground activeIndex={activeItemIndex} itemSize={itemSize} startIndex={startIndex} />
+      {/if}
       {#each visibleItems as item, index}
         {#if item === null}
           <div style={`height: ${itemSize}px`}></div>
         {:else}
-          {@render renderItem(item, index)}
+          <div class='relative z-10'>
+            {@render renderItem(item, index)}
+          </div>
         {/if}
       {/each}
     </div>

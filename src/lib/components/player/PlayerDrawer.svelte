@@ -1,12 +1,10 @@
 <script lang='ts'>
   import type { MenuItemInfo } from '$lib/types'
-  import type { Component } from 'svelte'
   import Menu from '$lib/components/hana/Menu.svelte'
   import MenuItem from '$lib/components/hana/MenuItem.svelte'
   import Detail from './Detail.svelte'
   import Lyrics from './Lyrics.svelte'
   import Playlist from './Playlist.svelte'
-  import TabContent from './TabContent.svelte'
 
   interface Props {
     showDrawer: boolean
@@ -98,6 +96,15 @@
     }
   }
 
+  const menuComponents = {
+    lyrics: Lyrics,
+    playlist: Playlist,
+  } as const
+
+  type menuKeys = keyof typeof menuComponents
+
+  let selectedMenu = $state<menuKeys>('lyrics')
+
   // Menu 配置项
   const playerMenus: MenuItemInfo[] = [{
     key: 'lyrics',
@@ -107,12 +114,7 @@
     title: '播放列表',
   }]
 
-  let selectedMenu = $state('lyrics')
-
-  const tabComponents: Record<string, Component> = {
-    lyrics: Lyrics,
-    playlist: Playlist,
-  }
+  const ActivatedComponent = $derived(menuComponents[selectedMenu])
 </script>
 
 {#if showDrawer || dragging}
@@ -136,14 +138,14 @@
       {handlePointerDown}
     />
     <div class='flex flex-col gap-10'>
-      <Menu defaultActive={selectedMenu} onselect={key => selectedMenu = key}>
+      <Menu defaultActive={selectedMenu} onselect={key => selectedMenu = (key as menuKeys)}>
         {#each playerMenus as menu}
           <MenuItem {...menu} />
         {/each}
       </Menu>
 
-      <div class='h-[40rem] w-80'>
-        <TabContent activeKey={selectedMenu} components={tabComponents} />
+      <div class='h-[40rem] w-120'>
+        <ActivatedComponent />
       </div>
     </div>
   </div>

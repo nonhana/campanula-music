@@ -1,14 +1,16 @@
 <script lang='ts'>
-  import type { Snippet } from 'svelte'
-
-  interface Props {
-    children?: Snippet
-  }
-
-  const { children }: Props = $props()
+  import SongPlaylistItem from '$lib/components/common/SongPlaylistItem.svelte'
+  import VirtualList from '$lib/components/hana/VirtualList.svelte'
+  import { nowPlaying, playlist } from '$lib/stores'
 </script>
 
-<div>
-  这是一个播放列表
-  {@render children?.()}
-</div>
+<VirtualList
+  items={$playlist}
+  containerSize={640}
+  itemSize={72}
+  activeItemId={$nowPlaying?.id}
+>
+  {#snippet renderItem(item)}
+    <SongPlaylistItem index={item.id} song={item} type='queue' />
+  {/snippet}
+</VirtualList>
