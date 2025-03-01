@@ -5,13 +5,20 @@ import { addSongToPlaylist } from './playlistStore'
 
 type PlayMode = 'repeat' | 'shuffle' | 'repeat1' | 'list'
 
+/** 正在播放的歌曲 */
 export const nowPlaying = writable<SongItem & { lyrics: LyricItem[] } | null>(null)
+/** 当前播放时间 */
 export const currentTime = writable(0)
-export const playMode = writable<PlayMode>('list')
-export const volume = writable(0.0)
-export const muted = writable(false)
+/** 是否正在拖动进度条 */
 export const seeking = writable(false)
+/** 是否暂停 */
 export const paused = writable(true)
+/** 播放模式 */
+export const playMode = writable<PlayMode>('list')
+/** 音量 */
+export const volume = writable(0.0)
+/** 是否静音 */
+export const muted = writable(false)
 
 export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
   // TODO: fetch lyrics from API
@@ -26,6 +33,8 @@ export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
 export function reset() {
   nowPlaying.set(null)
   currentTime.set(0)
+  setSeeking(false)
+  setPaused(true)
 }
 export function setNowPlaying(info: SongItem, lyrics: LyricItem[]) {
   reset()

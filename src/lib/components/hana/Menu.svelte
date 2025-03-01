@@ -72,7 +72,7 @@
 
 <div class={['flex gap-5 relative', mode === 'vertical' && 'flex-col', customClass]} bind:this={menuEl}>
   <div
-    class='absolute z-0 rounded-lg bg-primary-100 transition-all duration-300 ease-in-out'
+    class='absolute z-0 rounded-lg bg-primary/60 transition-all duration-300 ease-in-out'
     style={backgroundStyle}
     aria-hidden='true'
   ></div>

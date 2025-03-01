@@ -3,7 +3,7 @@
   import Button from '$lib/components/hana/Button.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, setPaused } from '$lib/stores'
+  import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, removeSongFromPlaylist, reset, setPaused } from '$lib/stores'
   import { handleDuration } from '$lib/utils'
   import { Ellipsis, Pause, Play, Plus, X } from 'lucide-svelte'
 
@@ -17,7 +17,7 @@
 
   const { index, song, type = 'list' }: Props = $props()
 
-  const activated = $derived($nowPlaying?.id === song.id)
+  const activated = $derived($nowPlaying?.id === song.id) // 这个 Item 是当前播放的歌曲
 
   const handlePlay = async () => {
     try {
@@ -64,6 +64,13 @@
     list: `bg-primary-100`,
     queue: `bg-white`,
   }
+
+  const handleRemoveSong = () => {
+    removeSongFromPlaylist(song.id)
+    if (activated) {
+      reset()
+    }
+  }
 </script>
 
 <div class={[
@@ -94,7 +101,7 @@
   {:else}
     <div class='w-24 justify-center hidden group-hover/item:flex'>
       <Tooltip content='移除' disabled>
-        <Button iconButton><X /></Button>
+        <Button iconButton onclick={handleRemoveSong}><X /></Button>
       </Tooltip>
     </div>
   {/if}

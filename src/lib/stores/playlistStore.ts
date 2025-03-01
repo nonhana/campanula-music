@@ -27,6 +27,6 @@ export function addSongToPlaylist(song: SongItem, throwError: boolean = true): P
     })
   })
 }
-export function removeSongFromPlaylist(song: SongItem) {
-  playlist.update(songs => songs.filter(s => s.id !== song.id))
+export function removeSongFromPlaylist(id: number) {
+  playlist.update(songs => songs.filter(s => s.id !== id))
 }
