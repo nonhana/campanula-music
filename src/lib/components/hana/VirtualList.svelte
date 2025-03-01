@@ -4,8 +4,6 @@
   import { writable } from 'svelte/store'
   import VirtualListCore from './VirtualListCore.svelte'
 
-  const emptyKey = Symbol('empty')
-
   interface Props {
     items: T[]
     direction?: 'vertical' | 'horizontal'
@@ -41,6 +39,8 @@
     const containableCount = Math.floor(containerSize / itemSize)
     return (containerSize - containableCount * itemSize) / (containableCount - 1)
   })
+
+  const emptyKey = Symbol('empty')
 
   const curItems = $derived([
     ...Array.from({ length: emptyItems }).map(() => ({ [emptyKey]: true })),

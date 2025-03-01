@@ -67,7 +67,7 @@
 </script>
 
 <div class={[
-  'group/item shrink-0 w-full h-16 flex items-center justify-between rounded-lg px-4',
+  'group/item shrink-0 w-full h-18 flex items-center justify-between rounded-lg px-4',
   typeClass[type],
   activated && activatedClass[type],
 ]}>

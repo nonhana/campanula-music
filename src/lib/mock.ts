@@ -1,6 +1,6 @@
 import type { LyricItem, PlaylistItem, SongItem } from './types'
 
-export const mockSongs: SongItem[] = Array.from({ length: 3 }).map((_, index) => ({
+export const mockSongs: SongItem[] = Array.from({ length: 32 }).map((_, index) => ({
   id: index,
   name: `Song ${index}`,
   alias: ['Alias1', 'Alias2'],

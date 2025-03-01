@@ -31,14 +31,11 @@
   })
 
   const bgStyle = $derived(`height: ${itemSize}px; transform: translateY(${activeItemOffset}px);`)
-
-  $inspect($posData)
-  $inspect(activeItemOffset)
 </script>
 
 <div class='relative' style={innerStyle}>
-  {#if activeItemId && getItemById}
-    <div class='absolute w-full bg-primary transition-transform' style={bgStyle}></div>
+  {#if activeItemId !== undefined && activeItemId !== null && getItemById}
+    <div class='absolute w-full rounded-lg bg-primary/60 transition-transform' style={bgStyle}></div>
   {/if}
   <div style={translateStyle} class='relative'>
     {#each visibleItems as item, index}

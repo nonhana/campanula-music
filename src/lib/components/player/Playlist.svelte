@@ -3,9 +3,7 @@
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import { nowPlaying, playlist } from '$lib/stores'
 
-  const getItemById = (id: number | string) => {
-    return $playlist.find(item => item.id === id) ?? null
-  }
+  const getItemById = (id: number | string) => $playlist.find(item => item.id === id) ?? null
 </script>
 
 <VirtualList
