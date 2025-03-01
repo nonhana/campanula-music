@@ -30,3 +30,13 @@ export function addSongToPlaylist(song: SongItem, throwError: boolean = true): P
 export function removeSongFromPlaylist(id: number) {
   playlist.update(songs => songs.filter(s => s.id !== id))
 }
+
+const playlistIdSet = new Set<number>()
+playlist.subscribe((value) => {
+  playlistIdSet.clear()
+  value.forEach(song => playlistIdSet.add(song.id))
+})
+
+export function isSongInPlaylist(id: number) {
+  return playlistIdSet.has(id)
+}

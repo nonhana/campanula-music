@@ -3,7 +3,7 @@
   import Card from '$lib/components/hana/Card.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import { mockSongs } from '$lib/mock'
-  import { getLyrics, setNowPlaying, setPlaylist } from '$lib/stores'
+  import { setNowPlaying, setPlaylist } from '$lib/stores'
   import { PlayCircle } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
@@ -33,8 +33,7 @@
         message: `成功添加 ${playlist.name} 的 ${songs.length} 首歌曲`,
         type: 'success',
       })
-      const lyrics = await getLyrics(songs[0])
-      setNowPlaying(songs[0], lyrics)
+      await setNowPlaying(songs[0])
     }
     catch (error: any) {
       callHanaMessage({

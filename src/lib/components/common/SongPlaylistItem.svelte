@@ -3,7 +3,17 @@
   import Button from '$lib/components/hana/Button.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, removeSongFromPlaylist, reset, setPaused } from '$lib/stores'
+  import {
+    addSongToPlaylist,
+    addToPlaylistAndPlay,
+    isSongInPlaylist,
+    nowPlaying,
+    paused,
+    removeSongFromPlaylist,
+    reset,
+    setNowPlaying,
+    setPaused,
+  } from '$lib/stores'
   import { handleDuration } from '$lib/utils'
   import { Ellipsis, Pause, Play, Plus, X } from 'lucide-svelte'
 
@@ -25,7 +35,10 @@
         setPaused(!$paused)
         return
       }
-      await addToPlaylistAndPlay(song)
+      if (isSongInPlaylist(song.id))
+        await setNowPlaying(song)
+      else
+        await addToPlaylistAndPlay(song)
     }
     catch (error: any) {
       callHanaMessage({

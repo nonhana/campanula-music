@@ -7,9 +7,11 @@
     muted,
     nowPlaying,
     paused,
+    playlist,
     playMode,
     seeking,
     setCurrentTime,
+    setNowPlaying,
     setPaused,
     setPlayMode,
     setSeeking,
@@ -106,6 +108,24 @@
       ? `${handleDuration(Math.floor($currentTime))} / ${handleDuration($nowPlaying.duration)}`
       : '--:-- / --:--',
   )
+
+  const handleChangeSong = (type: 'prev' | 'next') => {
+    return () => {
+      if (!$nowPlaying)
+        return
+      const curSongIndex = $playlist.findIndex(item => item.id === $nowPlaying.id)
+      if (type === 'prev') {
+        const prevSong = $playlist[curSongIndex - 1]
+        if (prevSong)
+          setNowPlaying(prevSong)
+      }
+      else {
+        const nextSong = $playlist[curSongIndex + 1]
+        if (nextSong)
+          setNowPlaying(nextSong)
+      }
+    }
+  }
 </script>
 
 <footer class='fixed bottom-0 z-20 h-20 w-full flex items-center bg-neutral-200/40 px-5 backdrop-blur'>
@@ -135,10 +155,10 @@
     class='absolute left-0 top-0 w-full -translate-y-1/2'
   />
   <div class='flex items-center gap-10'>
-    <SkipBack class='cursor-pointer' />
+    <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
     <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
     <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
-    <SkipForward class='cursor-pointer' />
+    <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
   </div>
   <span class='ml-5 select-none text-sm text-neutral'>
     {curTimeInfo}

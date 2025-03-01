@@ -36,14 +36,14 @@ export function reset() {
   setSeeking(false)
   setPaused(true)
 }
-export function setNowPlaying(info: SongItem, lyrics: LyricItem[]) {
+export async function setNowPlaying(song: SongItem) {
+  const lyrics = await getLyrics(song)
   reset()
-  nowPlaying.set({ ...info, lyrics })
+  nowPlaying.set({ ...song, lyrics })
 }
 export async function addToPlaylistAndPlay(song: SongItem) {
   await addSongToPlaylist(song, false)
-  const lyrics = await getLyrics(song)
-  setNowPlaying(song, lyrics)
+  await setNowPlaying(song)
 }
 export function setCurrentTime(time: number) {
   currentTime.set(time)

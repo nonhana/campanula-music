@@ -7,7 +7,7 @@
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import { mockPlaylist, mockSongs } from '$lib/mock'
-  import { getLyrics, setNowPlaying, setPlaylist } from '$lib/stores'
+  import { setNowPlaying, setPlaylist } from '$lib/stores'
   import { Ellipsis, Play, Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
@@ -37,8 +37,7 @@
         type: 'success',
       })
       if (autoplay) {
-        const lyrics = await getLyrics(songs[0])
-        setNowPlaying(songs[0], lyrics)
+        await setNowPlaying(songs[0])
       }
     }
     catch (error: any) {
