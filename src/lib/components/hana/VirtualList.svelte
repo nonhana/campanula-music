@@ -28,6 +28,8 @@
     getItemById,
   }: Props = $props()
 
+  let scrollContainerElement = $state<HTMLDivElement | null>(null)
+
   const isVertical = $derived(direction === 'vertical')
 
   let internalScrollPos = $state(0)
@@ -57,6 +59,21 @@
   })
 
   setContext('VirtualList', { posData, emptyKey })
+
+  $effect(() => {
+    if (hasExternalScroll || !activeItemId || !$posData || !getItemById || !scrollContainerElement)
+      return
+    const activeItem = getItemById(activeItemId)
+    if (!activeItem)
+      return
+    const targetTop = $posData.get(activeItem)
+    if (targetTop === undefined)
+      return
+    scrollContainerElement.scrollTo({
+      top: targetTop,
+      behavior: 'smooth',
+    })
+  })
 
   // 当前的可见项数量
   const visibleCount = $derived(Math.ceil(containerSize / itemSize) + 1)
@@ -95,7 +112,7 @@
 </script>
 
 {#if !hasExternalScroll}
-  <div class={['scrollbar-none', containerClass]} style={containerStyle} onscroll={onScroll}>
+  <div bind:this={scrollContainerElement} class={['scrollbar-none', containerClass]} style={containerStyle} onscroll={onScroll}>
     <VirtualListCore
       {innerStyle}
       {translateStyle}
