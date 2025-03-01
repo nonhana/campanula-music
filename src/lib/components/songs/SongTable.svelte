@@ -1,7 +1,7 @@
 <script lang='ts'>
   import SongTableItem from '$lib/components/common/SongTableItem.svelte'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
-  import Paginator from '$lib/components/hana/Paginator/index.svelte'
+  import Paginator from '$lib/components/hana/Paginator.svelte'
   import { mockSongs } from '$lib/mock'
   import { Music } from 'lucide-svelte'
 

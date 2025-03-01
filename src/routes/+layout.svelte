@@ -1,5 +1,5 @@
 <script lang='ts'>
-  import Container from '$lib/components/hana/Message/Container.svelte'
+  import MessageContainer from '$lib/components/hana/MessageContainer.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import Header from '$lib/components/main/Header.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
@@ -37,4 +37,4 @@
 </div>
 
 <!-- 全局消息容器 -->
-<Container />
+<MessageContainer />

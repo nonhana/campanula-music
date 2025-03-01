@@ -1,8 +1,8 @@
 <script lang='ts'>
   import Button from '$lib/components/hana/Button.svelte'
-  import Dropdown from '$lib/components/hana/Dropdown/index.svelte'
-  import DropdownItem from '$lib/components/hana/Dropdown/Item.svelte'
-  import DropdownMenu from '$lib/components/hana/Dropdown/Menu.svelte'
+  import Dropdown from '$lib/components/hana/Dropdown.svelte'
+  import DropdownItem from '$lib/components/hana/DropdownItem.svelte'
+  import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import {
     mute,
     muted,
