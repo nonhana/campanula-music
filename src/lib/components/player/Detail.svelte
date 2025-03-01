@@ -77,7 +77,7 @@
     class='w-full'
   />
   <div class='w-full flex items-center justify-between text-neutral'>
-    <Dropdown>
+    <Dropdown clickClose={false}>
       <Button iconButton variant='transparent' onclick={mute}>
         {#if $muted}
           <VolumeX />
