@@ -35,7 +35,7 @@ export const song = sqliteTable('song', {
   duration: integer('duration'),
   source: text('source'),
   sourceId: text('source_id'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(current_timestamp)`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   artistId: integer('artist_id').references(() => artist.id),
   albumId: integer('album_id').references(() => album.id),
 })
