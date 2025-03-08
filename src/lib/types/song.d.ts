@@ -1,18 +1,30 @@
-import type { StyleItem } from './style'
-
 export interface SongItem {
+  /** 主键 ID */
   id: number
+  /** 歌曲名称 */
   name: string
+  /** 歌曲别名 */
   alias: string[]
-  artists: string[]
-  cover: string | null
-  album: string
+  /** 歌手信息 */
+  artists: {
+    /** 歌手 ID */
+    id: number
+    /** 歌手名称 */
+    name: string
+  }[]
+  /** 歌曲专辑 */
+  album: {
+    /** 专辑 ID */
+    id: number
+    /** 专辑名称 */
+    name: string
+    /** 专辑封面 */
+    cover: string
+  }
+  /** 歌曲时长 */
   duration: number
-  source: string // 歌曲源文件地址
-}
-
-export interface SongDetail extends SongItem {
-  styles: StyleItem[]
-  lyrics: string
-  releaseDate: string
+  /** 歌曲来源 */
+  source: string
+  /** 歌曲来源 ID （网易云歌曲 ID） */
+  sourceId: string
 }
