@@ -1,6 +1,6 @@
 <script lang='ts'>
-  import type { PlaylistItem as PlaylistItemType } from '$lib/types'
   import type { Snippet } from 'svelte'
+  import type { LayoutData } from './$types'
   import { page } from '$app/state'
   import PlaylistItem from '$lib/components/common/PlaylistItem.svelte'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
@@ -8,11 +8,11 @@
   import { ListMusic } from 'lucide-svelte'
 
   interface Props {
-    playlists: PlaylistItemType[]
+    data: LayoutData
     children: Snippet
   }
 
-  const { playlists, children }: Props = $props()
+  const { data, children }: Props = $props()
 </script>
 
 <BannerCard title='歌单列表'>
@@ -20,7 +20,7 @@
     <ListMusic />
   {/snippet}
   <ScrollContainer contentClass='flex mb-5 gap-5'>
-    {#each playlists as playlist}
+    {#each data.playlists as playlist}
       <PlaylistItem
         playlist={playlist}
         type='playlist'
