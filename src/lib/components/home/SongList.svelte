@@ -1,13 +1,19 @@
 <script lang='ts'>
+  import type { SongItem as SongItemType } from '$lib/types'
   import SongItem from '$lib/components/common/SongItem.svelte'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
-  import { mockSongs } from '$lib/mock'
   import { Music } from 'lucide-svelte'
 
+  interface Props {
+    songList: SongItemType[]
+  }
+
+  const { songList }: Props = $props()
+
   const songGroups = Array.from(
-    { length: Math.ceil(mockSongs.length / 3) },
-    (_, i) => mockSongs.slice(i * 3, i * 3 + 3),
+    { length: Math.ceil(songList.length / 3) },
+    (_, i) => songList.slice(i * 3, i * 3 + 3),
   )
 </script>
 

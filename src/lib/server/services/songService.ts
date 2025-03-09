@@ -1,9 +1,15 @@
 import type { SongItem } from '$lib/types'
 import { db } from '$lib/server/db'
 import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
-import { eq } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import { lyrics, song } from '../db/schema'
 import { songItemFormatter, songsFormatter } from '../utils/songsFormatter'
+
+// 获取数据库中歌曲总数
+export async function getSongCount() {
+  const result = await db.select({ count: count() }).from(song)
+  return result[0].count
+}
 
 // 分页获取歌曲列表
 export async function getSongList(page: number, pageSize: number) {

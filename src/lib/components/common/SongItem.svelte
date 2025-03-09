@@ -32,13 +32,13 @@
 
 <div class='h-20 w-80 flex items-center gap-4 border-b-2 border-neutral-200 px-2 last:border-b-0'>
   <div class='flex items-center gap-4'>
-    <figure class='h-12 w-12 cursor-pointer overflow-hidden rounded-lg hover:bg-white'>
-      <img class='aspect-square h-full w-full object-cover' src={song.cover} alt={`封面：${song.name}`} />
+    <figure class='h-12 w-12 shrink-0 cursor-pointer overflow-hidden rounded-lg hover:bg-white'>
+      <img class='aspect-square h-full w-full object-cover' src={song.album.cover} alt={`封面：${song.name}`} />
     </figure>
 
     <div class='flex flex-col gap-1'>
-      <h2 class='cursor-pointer font-medium hover:text-primary'>{song.name}</h2>
-      <p class='text-sm text-neutral'>{song.artists.join(' / ')}</p>
+      <h2 class='line-clamp-1 cursor-pointer font-medium hover:text-primary'>{song.name}</h2>
+      <p class='line-clamp-1 text-sm text-neutral'>{song.artists.map(artist => artist.name).join(' / ')}</p>
     </div>
   </div>
 

@@ -15,5 +15,5 @@
   <meta name='description' content='Svelte demo app' />
 </svelte:head>
 
-<SongList />
+<SongList songList={data.songList} />
 <PlaylistList playlists={data.playlists} />

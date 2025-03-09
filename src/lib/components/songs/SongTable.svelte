@@ -1,17 +1,32 @@
 <script lang='ts'>
+  import type { SongItem } from '$lib/types'
   import SongTableItem from '$lib/components/common/SongTableItem.svelte'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
   import Paginator from '$lib/components/hana/Paginator.svelte'
-  import { mockSongs } from '$lib/mock'
   import { Music } from 'lucide-svelte'
 
-  const songCount = mockSongs.length
   const pageSize = 50
+
+  let songCount = $state(0)
+  const fetchSongCount = async () => {
+    const res = await fetch('/api/songs/count')
+    const data = await res.json()
+    songCount = data.count
+  }
+  $effect(() => {
+    fetchSongCount()
+  })
+
   let curPage = $state(1)
 
-  const songGroups = Array.from({ length: Math.ceil(songCount / pageSize) }, (_, i) => {
-    const start = i * pageSize
-    return mockSongs.slice(start, start + pageSize)
+  let curSongs = $state<SongItem[]>([])
+  const fetchSongs = async () => {
+    const res = await fetch(`/api/songs?page=${curPage}&pageSize=${pageSize}`)
+    const data = await res.json()
+    curSongs = data
+  }
+  $effect(() => {
+    fetchSongs()
   })
 </script>
 
@@ -42,7 +57,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each songGroups[curPage - 1] as song}
+        {#each curSongs as song}
           <SongTableItem {song} />
         {/each}
       </tbody>

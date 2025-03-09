@@ -65,8 +65,8 @@
     <p>{song.name}</p>
     <p class='text-sm text-neutral'>{song.alias.join(' / ')}</p>
   </td>
-  <td>{song.artists.join(' / ')}</td>
-  <td>{song.album}</td>
+  <td>{song.artists.map(artist => artist.name).join(' / ')}</td>
+  <td>{song.album.name}</td>
   <td>{durationFormatter(song.duration)}</td>
   <td class='rounded-r-lg'>
     <Tooltip content='添加到播放列表' position='left' class='inline-block'>
