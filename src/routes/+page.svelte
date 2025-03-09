@@ -1,6 +1,13 @@
 <script lang='ts'>
+  import type { PageData } from './$types'
   import PlaylistList from '$lib/components/home/PlaylistList.svelte'
   import SongList from '$lib/components/home/SongList.svelte'
+
+  interface Props {
+    data: PageData
+  }
+
+  const { data }: Props = $props()
 </script>
 
 <svelte:head>
@@ -9,4 +16,4 @@
 </svelte:head>
 
 <SongList />
-<PlaylistList />
+<PlaylistList playlists={data.playlists} />
