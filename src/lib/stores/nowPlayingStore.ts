@@ -1,5 +1,4 @@
 import type { LyricItem, SongItem } from '$lib/types'
-import { mockLyrics } from '$lib/mock'
 import { writable } from 'svelte/store'
 import { addSongToPlaylist } from './playlistStore'
 
@@ -21,14 +20,9 @@ export const volume = writable(0.0)
 export const muted = writable(false)
 
 export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
-  // TODO: fetch lyrics from API
-  return new Promise(
-    (res) => {
-      setTimeout(() => {
-        res(mockLyrics(song.duration))
-      }, 1000)
-    },
-  )
+  const res = await fetch(`/api/songs/${song.id}/lyrics`)
+  const data = await res.json()
+  return data
 }
 export function reset() {
   nowPlaying.set(null)

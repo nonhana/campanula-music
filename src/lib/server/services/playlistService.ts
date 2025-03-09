@@ -1,8 +1,7 @@
 import type { PlaylistItem } from '$lib/types'
-import type { Song } from '../types'
 import { db } from '$lib/server/db'
-import { eq } from 'drizzle-orm'
-import { playlist, playlistSong } from '../db/schema'
+import { eq, inArray } from 'drizzle-orm'
+import { playlist, playlistSong, song } from '../db/schema'
 import { songsFormatter } from '../utils/songsFormatter'
 
 // 获取全部的歌单列表
@@ -39,13 +38,13 @@ export async function getPlaylistById(id: string) {
 
 // 获取某个歌单的歌曲列表
 export async function getPlaylistSongs(id: string) {
-  const retrieved = await db.query.playlistSong.findMany({
+  const relation = await db.query.playlistSong.findMany({
     where: eq(playlistSong.playlistId, Number(id)),
-    with: {
-      song: true,
-    },
   })
-  const songs = retrieved.map(item => item.song) as Song[]
+  const songIds = relation.map(item => item.songId)
+  const songs = await db.query.song.findMany({
+    where: inArray(song.id, songIds),
+  })
   const result = await songsFormatter(songs)
   return result
 }

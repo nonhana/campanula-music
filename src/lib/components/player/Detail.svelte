@@ -46,7 +46,7 @@
 <div class='h-[40rem] flex flex-col justify-between'>
   {#if $nowPlaying}
     <img
-      src={$nowPlaying?.cover}
+      src={$nowPlaying.album.cover}
       alt={$nowPlaying.name}
       class='size-[27rem] rounded-2xl object-cover'
     />
@@ -61,7 +61,7 @@
       <span class='text-neutral font-semibold'>{$nowPlaying.alias.join(' / ')}</span>
     {/if}
     {#if $nowPlaying}
-      <span class='text-sm text-neutral'>{$nowPlaying.artists.join(' / ')}</span>
+      <span class='text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
     {/if}
   </div>
   <input

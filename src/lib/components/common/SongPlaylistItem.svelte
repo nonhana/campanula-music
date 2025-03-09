@@ -96,11 +96,13 @@
     <Button iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}><Play /></Button>
     <Button iconButton onclick={handlePause} class={[activated && !$paused ? 'block' : 'hidden']}><Pause /></Button>
   </Tooltip>
-  <div class='flex flex-col space-y-1'>
-    <span class='font-semibold'>{song.name}</span>
-    <span class='text-sm text-neutral'>{song.alias.join(' / ')}</span>
+  <div class='w-35 flex flex-col space-y-1'>
+    <span class='line-clamp-1 font-semibold'>{song.name}</span>
+    {#if song.alias.length > 0}
+      <span class='line-clamp-1 text-sm text-neutral'>{song.alias.join(' / ')}</span>
+    {/if}
   </div>
-  <div>{song.artists.join(' / ')}</div>
+  <div class='line-clamp-2 w-30'>{song.artists.map(artist => artist.name).join(' / ')}</div>
   <div class='w-24 flex items-center justify-center group-hover/item:hidden'>{durationFormatter(song.duration)}</div>
   {#if type === 'list'}
     <div class='w-24 justify-between hidden group-hover/item:flex'>

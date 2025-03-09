@@ -1,16 +1,35 @@
 <script lang='ts'>
-  import type { SongItem } from '$lib/types'
+  import type { PlaylistItem, SongItem } from '$lib/types'
+  import { page } from '$app/state'
   import Button from '$lib/components/hana/Button.svelte'
   import Dropdown from '$lib/components/hana/Dropdown.svelte'
   import DropdownItem from '$lib/components/hana/DropdownItem.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { mockPlaylist, mockSongs } from '$lib/mock'
   import { setNowPlaying, setPlaylist } from '$lib/stores'
   import { Ellipsis, Play, Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
+
+  const id = $derived(page.params.id)
+
+  let playlist = $state<PlaylistItem>({
+    id: 0,
+    name: '',
+    description: '',
+    cover: null,
+    musicCount: 0,
+    sourceId: '',
+  })
+  const fetchPlaylist = async () => {
+    const res = await fetch(`/api/playlists/${id}`)
+    const data = await res.json()
+    playlist = data
+  }
+  $effect(() => {
+    fetchPlaylist()
+  })
 
   const moreMap = [
     {
@@ -19,13 +38,10 @@
     },
   ]
 
-  // TODO: 现在还是 mock 数据，后续需要调用接口
   const fetchPlaylistSongs = async (): Promise<SongItem[]> => {
-    return new Promise((res) => {
-      setTimeout(() => {
-        res(mockSongs)
-      }, 1000)
-    })
+    const res = await fetch(`/api/playlists/${id}/songs`)
+    const data = await res.json()
+    return data
   }
 
   const handleAddPlaylistSongs = async (autoplay: boolean = false) => {
@@ -33,7 +49,7 @@
       const songs = await fetchPlaylistSongs()
       setPlaylist(songs)
       callHanaMessage({
-        message: `成功添加 ${mockPlaylist.name} 的 ${songs.length} 首歌曲`,
+        message: `成功添加 ${playlist.name} 的 ${songs.length} 首歌曲`,
         type: 'success',
       })
       if (autoplay) {
@@ -61,13 +77,13 @@
 
 <div class='w-64 flex flex-col items-center space-y-5'>
   <img
-    src={mockPlaylist.cover}
-    alt={`歌单 ${mockPlaylist.name} 的封面`}
+    src={playlist.cover}
+    alt={`歌单 ${playlist.name} 的封面`}
     class='aspect-square w-64 rounded-lg'
   />
-  <h2 class='w-80 text-center text-2xl font-semibold'>{mockPlaylist.name}</h2>
-  <p class='w-full break-words text-center text-wrap text-neutral'>{mockPlaylist.description}</p>
-  <p class='text-neutral'>{mockPlaylist.musicCount} 首歌曲</p>
+  <h2 class='w-80 text-center text-2xl font-semibold'>{playlist.name}</h2>
+  <p class='w-full break-words text-center text-wrap text-neutral'>{playlist.description || '暂无描述'}</p>
+  <p class='text-neutral'>{playlist.musicCount} 首歌曲</p>
   <div class='flex space-x-5'>
     <Tooltip content='播放全部'>
       <Button iconButton variant='secondary' shape='circle' onclick={() => handleAddPlaylistSongs(true)}>

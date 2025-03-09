@@ -79,6 +79,17 @@
     }
   }
 
+  // 处理音频加载错误
+  const handleAudioError = () => {
+    const songName = $nowPlaying ? $nowPlaying.name : '当前歌曲'
+    callHanaMessage({
+      message: `${songName}加载失败，请检查音频文件是否可用`,
+      type: 'error',
+    })
+    // 可以选择暂停播放
+    setPaused(true)
+  }
+
   onMount(() => {
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', globalPause)
@@ -139,6 +150,7 @@
       bind:paused={$paused}
       bind:volume={$volume}
       bind:muted={$muted}
+      onerror={handleAudioError}
       class='hidden'
     ></audio>
   {/if}
