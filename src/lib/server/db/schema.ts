@@ -39,7 +39,15 @@ export const song = sqliteTable('song', {
   albumId: integer('album_id').references(() => album.id),
 })
 
-// 歌曲与艺术家的多对多关系表
+// 歌词表
+export const lyrics = sqliteTable('lyrics', {
+  id: integer('id').primaryKey(),
+  songId: integer('song_id').references(() => song.id).notNull(),
+  lyrics: text('lyrics'),
+  translation: text('translation'),
+})
+
+// 歌曲艺术家关联表
 export const songArtists = sqliteTable('song_artists', {
   id: integer('id').primaryKey(),
   songId: integer('song_id').references(() => song.id).notNull(),
@@ -51,12 +59,4 @@ export const playlistSong = sqliteTable('playlist_song', {
   id: integer('id').primaryKey(),
   playlistId: integer('playlist_id').references(() => playlist.id).notNull(),
   songId: integer('song_id').references(() => song.id).notNull(),
-})
-
-// 歌词表
-export const lyrics = sqliteTable('lyrics', {
-  id: integer('id').primaryKey(),
-  songId: integer('song_id').references(() => song.id).notNull(),
-  lyrics: text('lyrics'),
-  translation: text('translation'),
 })
