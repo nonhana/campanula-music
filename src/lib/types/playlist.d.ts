@@ -1,5 +1,3 @@
-import type { SongItem } from './song'
-
 // 歌单 Item 信息
 export interface PlaylistItem {
   /** 主键 ID */
@@ -14,9 +12,4 @@ export interface PlaylistItem {
   musicCount: number
   /** 歌单来源 ID （网易云歌单 ID） */
   sourceId: string
-}
-
-// 歌单详情
-export interface PlaylistDetail extends PlaylistItem {
-  songs: SongItem[]
 }
