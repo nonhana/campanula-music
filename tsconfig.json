@@ -9,6 +9,8 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "isolatedModules": false,
+    "verbatimModuleSyntax": false,
     "skipLibCheck": true
   }
   // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias

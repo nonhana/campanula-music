@@ -2,6 +2,7 @@ import type { SongItem } from '$lib/types'
 import { db } from '$lib/server/db'
 import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
 import { count, eq } from 'drizzle-orm'
+import netease from 'NeteaseCloudMusicApi'
 import { lyrics, song } from '../db/schema'
 import { songItemFormatter, songsFormatter } from '../utils/songsFormatter'
 
@@ -40,4 +41,18 @@ export async function getSongLyric(id: string) {
     return null
 
   return lyricFormatter(lyricData.lyrics ?? '', lyricData.translation)
+}
+
+// 获取某个歌曲的播放链接（网易云）
+export async function getSongUrl(id: string) {
+  const songData = await getSongDetail(id)
+  if (!songData)
+    return null
+
+  const res = await netease.song_url_v1({
+    id: songData.sourceId,
+    level: 'exhigh' as netease.SoundQualityType, // 默认较高音质
+  })
+  const data = res.body.data as { url: string, [key: string]: any }[]
+  return data[0].url
 }

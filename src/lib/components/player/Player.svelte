@@ -198,7 +198,7 @@
     <div class='flex flex-col'>
       <span>{$nowPlaying ? $nowPlaying.name : '暂无歌曲'}</span>
       {#if $nowPlaying}
-        <span class='text-sm text-neutral'>{$nowPlaying.artists.join(' / ')}</span>
+        <span class='text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
       {/if}
     </div>
   </div>

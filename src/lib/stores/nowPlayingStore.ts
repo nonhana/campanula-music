@@ -19,6 +19,11 @@ export const volume = writable(0.0)
 /** 是否静音 */
 export const muted = writable(false)
 
+export async function getSongUrl(song: SongItem) {
+  const res = await fetch(`/api/songs/${song.id}/url`)
+  const data = await res.json()
+  return data
+}
 export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
   const res = await fetch(`/api/songs/${song.id}/lyrics`)
   const data = await res.json()
@@ -32,8 +37,9 @@ export function reset() {
 }
 export async function setNowPlaying(song: SongItem) {
   const lyrics = await getLyrics(song)
+  const source = await getSongUrl(song)
   reset()
-  nowPlaying.set({ ...song, lyrics })
+  nowPlaying.set({ ...song, lyrics, source })
 }
 export async function addToPlaylistAndPlay(song: SongItem) {
   await addSongToPlaylist(song, false)

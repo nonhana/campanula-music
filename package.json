@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
+    "NeteaseCloudMusicApi": "^4.25.0",
     "debounce": "^2.2.0",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.40.0",
