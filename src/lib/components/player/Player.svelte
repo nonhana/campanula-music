@@ -17,7 +17,7 @@
     setSeeking,
     volume,
   } from '$lib/stores'
-  import { handleDuration } from '$lib/utils'
+  import { durationFormatter, msToSeconds, secondsToMs } from '$lib/utils'
   import {
     ArrowLeftRight,
     ChevronUp,
@@ -43,7 +43,7 @@
   let sliderProgress = $state(0)
   const currentProgress = $derived(
     $nowPlaying
-      ? ($seeking ? sliderProgress : ($currentTime / $nowPlaying.duration))
+      ? ($seeking ? sliderProgress : (secondsToMs($currentTime) / $nowPlaying.duration))
       : 0,
   )
 
@@ -63,7 +63,7 @@
     const target = e.target as HTMLInputElement
     sliderProgress = target.valueAsNumber
     if ($nowPlaying) {
-      const newTime = Math.floor(sliderProgress * $nowPlaying.duration)
+      const newTime = msToSeconds(Math.floor(sliderProgress * $nowPlaying.duration))
       setCurrentTime(newTime)
       if (audioElement) {
         audioElement.currentTime = newTime
@@ -105,7 +105,7 @@
 
   const curTimeInfo = $derived(
     $nowPlaying
-      ? `${handleDuration(Math.floor($currentTime))} / ${handleDuration($nowPlaying.duration)}`
+      ? `${durationFormatter(secondsToMs($currentTime))} / ${durationFormatter($nowPlaying.duration)}`
       : '--:-- / --:--',
   )
 
@@ -174,7 +174,7 @@
       {/snippet}
       {#snippet root()}
         {#if $nowPlaying}
-          <img class='size-12' src={$nowPlaying.cover} alt={$nowPlaying.name} />
+          <img class='size-12' src={$nowPlaying.album.cover} alt={$nowPlaying.name} />
         {:else}
           <div class='size-12 flex items-center justify-center rounded-lg bg-white text-neutral'>
             <Music size={24} />

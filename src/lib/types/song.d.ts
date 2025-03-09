@@ -21,7 +21,7 @@ export interface SongItem {
     /** 专辑封面 */
     cover: string
   }
-  /** 歌曲时长 */
+  /** 歌曲时长，单位：毫秒 */
   duration: number
   /** 歌曲来源 */
   source: string

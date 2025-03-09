@@ -16,18 +16,18 @@ export async function getSongList(page: number, pageSize: number) {
 }
 
 // 获取某个歌曲的详情信息
-export async function getSongDetail(id: number): Promise<SongItem | null> {
+export async function getSongDetail(id: string): Promise<SongItem | null> {
   const songData = await db.query.song.findFirst({
-    where: eq(song.id, id),
+    where: eq(song.id, Number(id)),
   })
   const result = await songItemFormatter(songData)
   return result
 }
 
 // 获取某个歌曲的歌词
-export async function getSongLyric(id: number) {
+export async function getSongLyric(id: string) {
   const lyricData = await db.query.lyrics.findFirst({
-    where: eq(lyrics.songId, id),
+    where: eq(lyrics.songId, Number(id)),
   })
 
   if (!lyricData)

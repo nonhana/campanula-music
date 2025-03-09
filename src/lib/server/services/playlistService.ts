@@ -20,9 +20,9 @@ export async function getAllPlaylists() {
 }
 
 // 获取某个歌单信息
-export async function getPlaylistById(id: number) {
+export async function getPlaylistById(id: string) {
   const result = await db.query.playlist.findFirst({
-    where: eq(playlist.id, id),
+    where: eq(playlist.id, Number(id)),
   })
   if (!result) {
     throw new Error('歌单不存在')
@@ -38,9 +38,9 @@ export async function getPlaylistById(id: number) {
 }
 
 // 获取某个歌单的歌曲列表
-export async function getPlaylistSongs(id: number) {
+export async function getPlaylistSongs(id: string) {
   const retrieved = await db.query.playlistSong.findMany({
-    where: eq(playlistSong.playlistId, id),
+    where: eq(playlistSong.playlistId, Number(id)),
     with: {
       song: true,
     },

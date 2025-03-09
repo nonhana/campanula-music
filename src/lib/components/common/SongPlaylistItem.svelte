@@ -14,7 +14,7 @@
     setNowPlaying,
     setPaused,
   } from '$lib/stores'
-  import { handleDuration } from '$lib/utils'
+  import { durationFormatter } from '$lib/utils'
   import { Ellipsis, Pause, Play, Plus, X } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
@@ -101,7 +101,7 @@
     <span class='text-sm text-neutral'>{song.alias.join(' / ')}</span>
   </div>
   <div>{song.artists.join(' / ')}</div>
-  <div class='w-24 flex items-center justify-center group-hover/item:hidden'>{handleDuration(song.duration)}</div>
+  <div class='w-24 flex items-center justify-center group-hover/item:hidden'>{durationFormatter(song.duration)}</div>
   {#if type === 'list'}
     <div class='w-24 justify-between hidden group-hover/item:flex'>
       <Tooltip content='添加到播放列表'>

@@ -7,7 +7,7 @@ type PlayMode = 'repeat' | 'shuffle' | 'repeat1' | 'list'
 
 /** 正在播放的歌曲 */
 export const nowPlaying = writable<SongItem & { lyrics: LyricItem[] } | null>(null)
-/** 当前播放时间 */
+/** 当前播放时间，单位：秒 */
 export const currentTime = writable(0)
 /** 是否正在拖动进度条 */
 export const seeking = writable(false)

@@ -8,7 +8,7 @@
     paused,
     setCurrentTime,
   } from '$lib/stores'
-  import { numCorrector } from '$lib/utils'
+  import { numCorrector, secondsToMs } from '$lib/utils'
   import { ChevronLeft } from 'lucide-svelte'
   import LyricItem from './LyricItem.svelte'
 
@@ -43,7 +43,7 @@
 
     const targetLyricsIndex = $nowPlaying.lyrics.findIndex((item, index) => {
       const nextTime = $nowPlaying.lyrics[index + 1]?.time
-      return $currentTime >= item.time && $currentTime < (nextTime || Infinity)
+      return secondsToMs($currentTime) >= item.time && secondsToMs($currentTime) < (nextTime || Infinity)
     })
 
     if (targetLyricsIndex !== -1 && targetLyricsIndex !== currentLyricIndex) {
