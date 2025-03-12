@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import {
@@ -186,7 +187,7 @@
       {/snippet}
       {#snippet root()}
         {#if $nowPlaying}
-          <img class='size-12' src={$nowPlaying.album.cover} alt={$nowPlaying.name} />
+          <LazyImage class='size-12' src={$nowPlaying.album.cover} alt={$nowPlaying.name} />
         {:else}
           <div class='size-12 flex items-center justify-center rounded-lg bg-white text-neutral'>
             <Music size={24} />

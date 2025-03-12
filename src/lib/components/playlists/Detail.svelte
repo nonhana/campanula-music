@@ -5,6 +5,7 @@
   import Dropdown from '$lib/components/hana/Dropdown.svelte'
   import DropdownItem from '$lib/components/hana/DropdownItem.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
+  import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import { setNowPlaying, setPlaylist } from '$lib/stores'
@@ -76,8 +77,8 @@
 </script>
 
 <div class='w-64 flex flex-col items-center space-y-5'>
-  <img
-    src={playlist.cover}
+  <LazyImage
+    src={playlist.cover ?? ''}
     alt={`歌单 ${playlist.name} 的封面`}
     class='aspect-square w-64 rounded-lg'
   />

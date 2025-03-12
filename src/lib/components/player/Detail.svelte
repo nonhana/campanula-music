@@ -3,6 +3,7 @@
   import Dropdown from '$lib/components/hana/Dropdown.svelte'
   import DropdownItem from '$lib/components/hana/DropdownItem.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
+  import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import {
     mute,
     muted,
@@ -45,7 +46,7 @@
 
 <div class='h-[40rem] flex flex-col justify-between'>
   {#if $nowPlaying}
-    <img
+    <LazyImage
       src={$nowPlaying.album.cover}
       alt={$nowPlaying.name}
       class='size-[27rem] rounded-2xl object-cover'

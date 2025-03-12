@@ -1,6 +1,7 @@
 <script lang='ts'>
   import type { PlaylistItem, SongItem } from '$lib/types'
   import Card from '$lib/components/hana/Card.svelte'
+  import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import { mockSongs } from '$lib/mock'
   import { setNowPlaying, setPlaylist } from '$lib/stores'
@@ -62,8 +63,8 @@
     </div>
   {/snippet}
   {#snippet header()}
-    <img
-      src={playlist.cover}
+    <LazyImage
+      src={playlist.cover ?? ''}
       alt={playlist.name}
       class={[type === 'playlist' && 'w-40']}
     />

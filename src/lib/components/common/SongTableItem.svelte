@@ -1,6 +1,7 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
   import Button from '$lib/components/hana/Button.svelte'
+  import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
@@ -56,7 +57,7 @@
         <Play />
       {/snippet}
       {#snippet root()}
-        <img class='size-12' src={song.album.cover} alt={song.name} />
+        <LazyImage class='size-12' src={song.album.cover} alt={song.name} />
       {/snippet}
     </MaskElement>
   </td>
