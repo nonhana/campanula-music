@@ -14,7 +14,7 @@
 
 <div class={['relative', wrapperClass]}>
   <button
-    class={['absolute inset-0 size-full hidden justify-center items-center text-white bg-black/50', maskClass]}
+    class={['z-1 absolute inset-0 size-full hidden justify-center items-center text-white bg-black/50', maskClass]}
     {onclick}
   >
     {@render slot?.()}

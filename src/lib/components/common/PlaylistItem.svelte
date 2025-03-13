@@ -51,7 +51,7 @@
   {#snippet mask()}
     <div
       class={[
-        'absolute inset-0 size-full cursor-pointer hover:bg-gradient-to-b from-transparent to-primary/30 group/item',
+        'z-1 absolute inset-0 size-full cursor-pointer hover:bg-gradient-to-b from-transparent to-primary/30 group/item',
         activated && 'bg-gradient-to-b from-transparent to-primary/30',
       ]}
     >
