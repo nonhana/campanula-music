@@ -11,7 +11,8 @@
     itemSize: number // px
     scrollPos?: number // 滚动位置由外部进行控制
     renderItem: Snippet<[T, number]>
-    emptyItems?: number
+    headEmptyItems?: number
+    tailEmptyItems?: number
     activeItemId?: number | string | null
     getItemById?: (id: number | string) => T | null
   }
@@ -23,7 +24,8 @@
     itemSize,
     scrollPos,
     renderItem,
-    emptyItems = 0,
+    headEmptyItems = 0,
+    tailEmptyItems = 0,
     activeItemId = null,
     getItemById,
   }: Props = $props()
@@ -45,8 +47,9 @@
   const emptyKey = Symbol('empty')
 
   const curItems = $derived([
-    ...Array.from({ length: emptyItems }).map(() => ({ [emptyKey]: true })),
+    ...Array.from({ length: headEmptyItems }).map(() => ({ [emptyKey]: true })),
     ...items,
+    ...Array.from({ length: tailEmptyItems }).map(() => ({ [emptyKey]: true })),
   ])
 
   const posData = writable<WeakMap<object, number> | null>(null)

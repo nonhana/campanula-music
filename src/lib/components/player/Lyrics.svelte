@@ -15,6 +15,7 @@
   const CONTAINER_SIZE = 640
   const ITEM_SIZE = 80
   const ACTIVATED_INDEX = 3
+  const TAIL_EMPTY_ITEMS = Math.floor(CONTAINER_SIZE / ITEM_SIZE) - ACTIVATED_INDEX - 1
 
   let currentLyricIndex = $state(0) // 当前歌词索引
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
@@ -153,7 +154,8 @@
           items={$nowPlaying.lyrics}
           containerSize={CONTAINER_SIZE}
           itemSize={ITEM_SIZE}
-          emptyItems={ACTIVATED_INDEX}
+          headEmptyItems={ACTIVATED_INDEX}
+          tailEmptyItems={TAIL_EMPTY_ITEMS}
           {scrollPos}
         >
           {#snippet renderItem(item, index)}
