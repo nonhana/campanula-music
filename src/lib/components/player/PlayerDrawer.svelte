@@ -120,7 +120,7 @@
 {#if showDrawer || dragging}
   <div
     class={[
-      'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur flex gap-20 justify-center items-center',
+      'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur-lg flex gap-20 justify-center items-center',
       !dragging && 'transition-all duration-300',
     ]}
     style={`top: ${top}dvh;`}
