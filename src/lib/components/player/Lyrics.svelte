@@ -8,7 +8,7 @@
     paused,
     setCurrentTime,
   } from '$lib/stores'
-  import { numCorrector, secondsToMs } from '$lib/utils'
+  import { msToSeconds, numCorrector, secondsToMs } from '$lib/utils'
   import { ChevronLeft } from 'lucide-svelte'
   import LyricItem from './LyricItem.svelte'
 
@@ -26,7 +26,7 @@
     if (!$nowPlaying || !activatedLyric)
       return
 
-    setCurrentTime(activatedLyric.time)
+    setCurrentTime(msToSeconds(activatedLyric.time))
   }
 
   let scrollPos = $state(0)
