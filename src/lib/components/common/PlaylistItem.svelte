@@ -3,7 +3,6 @@
   import Card from '$lib/components/hana/Card.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { mockSongs } from '$lib/mock'
   import { setNowPlaying, setPlaylist } from '$lib/stores'
   import { PlayCircle } from 'lucide-svelte'
 
@@ -17,13 +16,10 @@
 
   const { type = 'home', activated = false, playlist }: Props = $props()
 
-  // TODO: 现在还是 mock 数据，后续需要调用接口
   const fetchPlaylistSongs = async (): Promise<SongItem[]> => {
-    return new Promise((res) => {
-      setTimeout(() => {
-        res(mockSongs)
-      }, 1000)
-    })
+    const res = await fetch(`/api/playlists/${playlist.id}/songs`)
+    const data = await res.json()
+    return data
   }
 
   const handlePlayAll = async () => {
