@@ -17,7 +17,7 @@
   })
 </script>
 
-<ScrollContainer contentClass='w-full max-h-[50rem] px-5 flex flex-col gap-2'>
+<ScrollContainer contentClass='w-full flex flex-col gap-2'>
   {#each songs as song, index}
     <SongPlaylistItem index={index + 1} song={song} />
   {/each}

@@ -12,9 +12,10 @@
     type?: 'home' | 'playlist'
     activated?: boolean
     playlist: PlaylistItem
+    imgClass?: string
   }
 
-  const { type = 'home', activated = false, playlist }: Props = $props()
+  const { type = 'home', activated = false, playlist, imgClass = '' }: Props = $props()
 
   const fetchPlaylistSongs = async (): Promise<SongItem[]> => {
     const res = await fetch(`/api/playlists/${playlist.id}/songs`)
@@ -62,7 +63,7 @@
     <LazyImage
       src={playlist.cover ?? ''}
       alt={playlist.name}
-      class={[type === 'playlist' && 'w-40']}
+      class={imgClass}
     />
   {/snippet}
   <div class={['flex flex-col items-start gap-2 p-2', type === 'playlist' && 'w-40']}>

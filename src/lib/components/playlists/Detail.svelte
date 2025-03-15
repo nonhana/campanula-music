@@ -6,7 +6,6 @@
   import DropdownItem from '$lib/components/hana/DropdownItem.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
-  import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import { setNowPlaying, setPlaylist } from '$lib/stores'
   import { Ellipsis, Play, Plus } from 'lucide-svelte'
@@ -76,37 +75,39 @@
   }
 </script>
 
-<div class='w-64 flex flex-col items-center space-y-5'>
+<div class='flex gap-8'>
   <LazyImage
     src={playlist.cover ?? ''}
     alt={`歌单 ${playlist.name} 的封面`}
-    class='aspect-square w-64 rounded-lg'
+    class='aspect-square w-48 shrink-0 rounded-2xl'
   />
-  <h2 class='w-80 text-center text-2xl font-semibold'>{playlist.name}</h2>
-  <p class='w-full break-words text-center text-wrap text-neutral'>{playlist.description || '暂无描述'}</p>
-  <p class='text-neutral'>{playlist.musicCount} 首歌曲</p>
-  <div class='flex space-x-5'>
-    <Tooltip content='播放全部'>
-      <Button iconButton variant='secondary' shape='circle' onclick={() => handleAddPlaylistSongs(true)}>
-        <Play />
+  <div class='flex flex-col justify-between'>
+    <h2 class='text-2xl font-semibold'>{playlist.name}</h2>
+    <p class='max-h-[76px] overflow-y-scroll break-words text-wrap text-neutral scrollbar-none'>{playlist.description || '暂无描述'}</p>
+    <p class='text-neutral'>{playlist.musicCount} 首歌曲</p>
+    <div class='flex space-x-5'>
+      <Button variant='accent' onclick={() => handleAddPlaylistSongs(true)}>
+        <span class='flex items-center gap-2'>
+          <Play size={16} /> 播放全部
+        </span>
       </Button>
-    </Tooltip>
-    <Dropdown oncommand={handleCommand}>
-      <Button iconButton variant='secondary' shape='circle'>
-        <Ellipsis />
-      </Button>
-      {#snippet dropdown()}
-        <DropdownMenu>
-          {#each moreMap as { icon: Icon, text }}
-            <DropdownItem command={text}>
-              {#snippet icon()}
-                <Icon />
-              {/snippet}
-              {text}
-            </DropdownItem>
-          {/each}
-        </DropdownMenu>
-      {/snippet}
-    </Dropdown>
+      <Dropdown position='right' trigger='click' oncommand={handleCommand}>
+        <Button iconButton variant='transparent'>
+          <Ellipsis />
+        </Button>
+        {#snippet dropdown()}
+          <DropdownMenu>
+            {#each moreMap as { icon: Icon, text }}
+              <DropdownItem command={text}>
+                {#snippet icon()}
+                  <Icon />
+                {/snippet}
+                <span>{text}</span>
+              </DropdownItem>
+            {/each}
+          </DropdownMenu>
+        {/snippet}
+      </Dropdown>
+    </div>
   </div>
 </div>
