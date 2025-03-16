@@ -30,24 +30,26 @@
   $scrolled && 'bg-white border-primary/100',
 ]}>
   <ul class='flex flex-col gap-2'>
-    {#each navItems as { title, href, icon: Icon }, i}
-      <li class={['flex', folded ? 'justify-center' : 'justify-start ml-3']}>
-        <Tooltip content={title} position='right' disabled={!folded}>
-          <Button
-            iconButton={folded}
-            variant='transparent'
-            activated={highlightId === i}
-            {href}
-            aria-label={title}
-            style={folded ? undefined : 'width: 13.5rem'}
-          >
-            <span class='flex items-center gap-4 text-sm font-normal'>
-              <Icon />
-              <p class={folded ? 'hidden' : 'block'}>{title}</p>
-            </span>
-          </Button>
-        </Tooltip>
-      </li>
+    {#each navItems as { title, href, icon: Icon, disabled }, i}
+      {#if !disabled}
+        <li class={['flex', folded ? 'justify-center' : 'justify-start ml-3']}>
+          <Tooltip content={title} position='right' disabled={!folded}>
+            <Button
+              iconButton={folded}
+              variant='transparent'
+              activated={highlightId === i}
+              {href}
+              aria-label={title}
+              style={folded ? undefined : 'width: 13.5rem'}
+            >
+              <span class='flex items-center gap-4 text-sm font-normal'>
+                <Icon />
+                <p class={folded ? 'hidden' : 'block'}>{title}</p>
+              </span>
+            </Button>
+          </Tooltip>
+        </li>
+      {/if}
     {/each}
   </ul>
 </nav>

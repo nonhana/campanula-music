@@ -12,6 +12,7 @@ interface NavItem {
   title: string
   href: string
   icon: any
+  disabled?: boolean
 }
 
 export const navItems: NavItem[] = [
@@ -34,15 +35,18 @@ export const navItems: NavItem[] = [
     title: '钢琴窗',
     href: '/piano-roll',
     icon: Piano,
+    disabled: true,
   },
   {
     title: '我的作品',
     href: '/my-works',
     icon: Archive,
+    disabled: true,
   },
   {
     title: '乐谱',
     href: '/sheet-music',
     icon: Music4,
+    disabled: true,
   },
 ]
