@@ -4,7 +4,7 @@ import { getSongList } from '$lib/server/services/songService'
 
 export const load: PageServerLoad = async () => {
   const playlists = await getAllPlaylists()
-  const songList = await getSongList(1, 300)
+  const songList = await getSongList(1, 60)
 
   return {
     playlists,

@@ -15,6 +15,9 @@
     tailEmptyItems?: number
     activeItemId?: number | string | null
     getItemById?: (id: number | string) => T | null
+    throttleMs?: number // 滚动节流时间间隔
+    onNearEnd?: () => void // 接近末尾时的回调函数
+    endThreshold?: number // 触发预加载的阈值（0-1之间，表示剩余比例）
   }
 
   const {
@@ -28,6 +31,9 @@
     tailEmptyItems = 0,
     activeItemId = null,
     getItemById,
+    throttleMs = 16,
+    onNearEnd,
+    endThreshold = 0.2, // 默认当剩余20%时触发预加载
   }: Props = $props()
 
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
@@ -69,17 +75,17 @@
     const activeItem = getItemById(activeItemId)
     if (!activeItem)
       return
-    const targetTop = $posData.get(activeItem)
-    if (targetTop === undefined)
+    const targetPos = $posData.get(activeItem)
+    if (targetPos === undefined)
       return
     scrollContainerElement.scrollTo({
-      top: targetTop,
+      [isVertical ? 'top' : 'left']: targetPos,
       behavior: 'smooth',
     })
   })
 
-  // 当前的可见项数量
-  const visibleCount = $derived(Math.ceil(containerSize / itemSize) + 1)
+  // 当前的可见项数量 (增加缓冲区以平滑滚动)
+  const visibleCount = $derived(Math.ceil(containerSize / itemSize) + 3)
   // 第一个可见项的起始索引
   const startIndex = $derived(Math.floor(effectiveScrollPos / (itemSize + gap)))
   // 截取当前的可见项 items
@@ -90,15 +96,85 @@
 
   const startOffset = $derived(startIndex * (itemSize + gap))
 
-  // 滚动事件
-  const onScroll = (e: Event) => {
+  // 滚动节流相关变量
+  let lastScrollTime = 0
+  let scrollTimeoutId: number | null = null
+  let pendingScrollUpdate = false
+  let lastScrollEvent: Event | null = null
+
+  // 预加载相关变量
+  let hasTriggeredNearEnd = $state(false)
+
+  // 检查是否接近末尾
+  const checkNearEnd = () => {
+    if (!onNearEnd || hasTriggeredNearEnd)
+      return
+
+    const scrollMax = totalSize - containerSize
+    if (scrollMax <= 0)
+      return // 内容不足以滚动
+
+    const remainingScroll = scrollMax - effectiveScrollPos
+    const remainingRatio = remainingScroll / scrollMax
+
+    // 当剩余滚动比例小于阈值时，触发回调
+    if (remainingRatio <= endThreshold) {
+      hasTriggeredNearEnd = true
+      onNearEnd()
+
+      // 延迟重置触发状态，避免短时间内多次触发
+      setTimeout(() => {
+        hasTriggeredNearEnd = false
+      }, 500) // 500ms 防抖时间
+    }
+  }
+
+  // 实际更新滚动位置的函数
+  const updateScrollPosition = (e: Event) => {
     if (hasExternalScroll)
       return
     const target = e.target as HTMLElement
     internalScrollPos = isVertical ? target.scrollTop : target.scrollLeft
+
+    // 在更新滚动位置后检查是否需要预加载
+    checkNearEnd()
   }
 
-  const containerClass = $derived(`relative ${isVertical ? 'overflow-auto' : 'overflow-x-auto'}`)
+  // 节流后的滚动事件处理函数
+  const throttledScroll = (e: Event) => {
+    lastScrollEvent = e
+
+    const now = Date.now()
+    if (now - lastScrollTime >= throttleMs) {
+      // 如果超过节流时间，立即执行
+      lastScrollTime = now
+      updateScrollPosition(e)
+      pendingScrollUpdate = false
+    }
+    else if (!pendingScrollUpdate) {
+      // 否则，安排一个延迟执行
+      pendingScrollUpdate = true
+      if (scrollTimeoutId)
+        window.clearTimeout(scrollTimeoutId)
+      scrollTimeoutId = window.setTimeout(() => {
+        if (lastScrollEvent) {
+          lastScrollTime = Date.now()
+          updateScrollPosition(lastScrollEvent)
+          pendingScrollUpdate = false
+          lastScrollEvent = null
+        }
+      }, throttleMs)
+    }
+  }
+
+  // 滚动事件
+  const onScroll = (e: Event) => {
+    if (hasExternalScroll)
+      return
+    throttledScroll(e)
+  }
+
+  const containerClass = $derived(`relative ${isVertical ? 'overflow-y-auto' : 'overflow-x-auto'}`)
   const containerStyle = $derived(isVertical ? `height: ${containerSize}px` : `width: ${containerSize}px; white-space: nowrap`)
 
   const innerStyle = $derived(
@@ -112,6 +188,13 @@
       ? `transform: translateY(${startOffset}px); display: flex; flex-direction: column; gap: ${gap}px`
       : `transform: translateX(${startOffset}px); display: flex; gap: ${gap}px`,
   )
+
+  // 当 items 改变时重置触发状态，以便在新数据加载后可以再次触发
+  $effect(() => {
+    if (items) {
+      hasTriggeredNearEnd = false
+    }
+  })
 </script>
 
 {#if !hasExternalScroll}
