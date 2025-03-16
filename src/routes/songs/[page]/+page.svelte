@@ -20,11 +20,6 @@
     title: `歌曲列表 - 第${curPage}页 | Campanula Music`,
     description: `浏览Campanula Music的歌曲列表，第${curPage}页，发现新的音乐作品`,
     keywords: '歌曲列表,音乐,Campanula,在线音乐',
-    openGraph: {
-      title: `歌曲列表 - 第${curPage}页 | Campanula Music`,
-      description: `浏览Campanula Music的歌曲列表，第${curPage}页，发现新的音乐作品`,
-      url: `https://campanula.netlify.app/songs/${curPage}`,
-    },
   })
 </script>
 
