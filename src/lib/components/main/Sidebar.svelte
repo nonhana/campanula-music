@@ -11,7 +11,17 @@
 
   const { folded }: Props = $props()
 
-  const highlightId = $derived(navItems.findIndex(item => item.href === page.route.id))
+  const currentPath = $derived(page.url.pathname)
+
+  const highlightId = $derived(navItems.findIndex((item) => {
+    if (currentPath === item.href)
+      return true
+    if (item.href !== '/' && currentPath.startsWith(item.href))
+      return true
+    if (item.href === '/' && currentPath === '/')
+      return true
+    return false
+  }))
 </script>
 
 <nav class={[

@@ -8,28 +8,36 @@
     total: number
     pageSize?: number
     buttonCount?: number
+    changePage: (page: number) => void
   }
 
-  let {
-    currentPage = $bindable(),
+  const {
+    currentPage,
     total,
     pageSize = 10,
     buttonCount = 5,
+    changePage,
   }: Props = $props()
+
+  let curPage = $state(currentPage)
+
+  $effect(() => {
+    changePage(curPage)
+  })
 
   const totalPages = $derived(Math.ceil(total / pageSize) || 1)
 
   const stepPage = (type: 'prev' | 'next') => {
     if (type === 'prev') {
-      currentPage = Math.max(1, currentPage - 1)
+      curPage = Math.max(1, curPage - 1)
     }
     else {
-      currentPage = Math.min(totalPages, currentPage + 1)
+      curPage = Math.min(totalPages, curPage + 1)
     }
   }
 
   const goto = (page: number) => {
-    currentPage = Math.max(1, Math.min(totalPages, page))
+    curPage = Math.max(1, Math.min(totalPages, page))
   }
 
   const maxButtonCount = $derived(buttonCount)
@@ -40,11 +48,11 @@
   <Button
     iconButton
     shape='circle'
-    disabled={currentPage === 1}
+    disabled={curPage === 1}
     onclick={() => stepPage('prev')}
   ><ChevronLeft /></Button>
   <Buttons
-    currentPage={currentPage}
+    currentPage={curPage}
     totalPages={totalPages}
     maxButtonCount={maxButtonCount}
     sideButtonCount={sideButtonCount}
@@ -53,7 +61,7 @@
   <Button
     iconButton
     shape='circle'
-    disabled={currentPage === totalPages}
+    disabled={curPage === totalPages}
     onclick={() => stepPage('next')}
   ><ChevronRight /></Button>
 </div>
