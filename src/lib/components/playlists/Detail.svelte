@@ -14,22 +14,11 @@
 
   const id = $derived(page.params.id)
 
-  let playlist = $state<PlaylistItem>({
-    id: 0,
-    name: '',
-    description: '',
-    cover: null,
-    musicCount: 0,
-    sourceId: '',
-  })
-  const fetchPlaylist = async () => {
-    const res = await fetch(`/api/playlists/${id}`)
-    const data = await res.json()
-    playlist = data
+  interface Props {
+    playlist: PlaylistItem
   }
-  $effect(() => {
-    fetchPlaylist()
-  })
+
+  const { playlist }: Props = $props()
 
   const moreMap = [
     {

@@ -1,20 +1,13 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
-  import { page } from '$app/state'
   import SongPlaylistItem from '$lib/components/common/SongPlaylistItem.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
 
-  const id = $derived(page.params.id)
-
-  let songs = $state<SongItem[]>([])
-  const fetchSongs = async () => {
-    const res = await fetch(`/api/playlists/${id}/songs`)
-    const data = await res.json()
-    songs = data
+  interface Props {
+    songs: SongItem[]
   }
-  $effect(() => {
-    fetchSongs()
-  })
+
+  const { songs }: Props = $props()
 </script>
 
 <ScrollContainer contentClass='w-full flex flex-col gap-2'>
