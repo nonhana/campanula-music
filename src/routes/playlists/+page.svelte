@@ -1,7 +1,13 @@
 <script lang='ts'>
   import Button from '$lib/components/hana/Button.svelte'
+  import SeoHead from '$lib/components/shared/SeoHead.svelte'
+  import { generateSeoMetadata } from '$lib/metadata'
   import { Disc3, PlayCircle } from 'lucide-svelte'
+
+  const metadata = generateSeoMetadata('playlists')
 </script>
+
+<SeoHead {metadata} />
 
 <div class='mx-auto flex flex-col items-center justify-center'>
   <div class='mb-6 flex flex-col items-center'>

@@ -4,6 +4,8 @@
   import { page } from '$app/state'
   import SongTableItem from '$lib/components/common/SongTableItem.svelte'
   import Paginator from '$lib/components/hana/Paginator.svelte'
+  import SeoHead from '$lib/components/shared/SeoHead.svelte'
+  import { generateSeoMetadata } from '$lib/metadata'
 
   const curPage = $state(Number(page.params.page))
 
@@ -12,12 +14,21 @@
   }
 
   const { data }: Props = $props()
+
+  // 为歌曲页面创建自定义元数据
+  const metadata = generateSeoMetadata('home', {
+    title: `歌曲列表 - 第${curPage}页 | Campanula Music`,
+    description: `浏览Campanula Music的歌曲列表，第${curPage}页，发现新的音乐作品`,
+    keywords: '歌曲列表,音乐,Campanula,在线音乐',
+    openGraph: {
+      title: `歌曲列表 - 第${curPage}页 | Campanula Music`,
+      description: `浏览Campanula Music的歌曲列表，第${curPage}页，发现新的音乐作品`,
+      url: `https://campanula.netlify.app/songs/${curPage}`,
+    },
+  })
 </script>
 
-<svelte:head>
-  <title>Songs</title>
-  <meta name='description' content='Lists of songs' />
-</svelte:head>
+<SeoHead {metadata} />
 
 <div class='w-full rounded-2xl bg-white p-5'>
   <table class='w-full'>

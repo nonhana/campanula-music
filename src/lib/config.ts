@@ -1,12 +1,9 @@
 import { Archive, Home, ListMusic, Music, Music4, Piano } from 'lucide-svelte'
 
 export const siteTitle = 'Campanula'
-export const siteDescription = 'Built with the SvelteKit Static Blog Starter'
-export const siteURL = 'example.com'
-export const siteLink = 'https://github.com/josh-collinsworth/sveltekit-blog-starter'
+export const siteDescription = 'Campanula Music'
+export const siteURL = 'https://campanula.netlify.app'
 export const siteAuthor = 'non_hana'
-
-export const postsPerPage = 10
 
 interface NavItem {
   title: string
