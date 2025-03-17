@@ -1,15 +1,17 @@
 import type { PageServerLoad } from './$types'
 import { getSongCount, getSongList } from '$lib/server/services/songService'
 
-export const prerender = true
+export const prerender = 'auto'
 export async function entries() {
   const songCount = await getSongCount()
-  return Array.from({ length: Math.ceil(songCount / 50) }, (_, i) => ({ page: String(i + 1) }))
+  const pagesToPrerender = Math.min(10, Math.ceil(songCount / 50))
+  return Array.from({ length: pagesToPrerender }, (_, i) => ({ page: String(i + 1) }))
 }
 
 export const load: PageServerLoad = async ({ params }) => {
   const page = Number(params.page)
-  const songList = await getSongList(page, 50)
+  const pageSize = 50
+  const songList = await getSongList(page, pageSize)
 
   return {
     songList,

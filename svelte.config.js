@@ -14,6 +14,12 @@ const config = {
     adapter: adapter({
       edge: false,
     }),
+    prerender: {
+      concurrency: 5,
+      handleHttpError: ({ path, referrer, message }) => {
+        console.warn(`预渲染错误: ${path} (来自 ${referrer}): ${message}`)
+      },
+    },
   },
 }
 

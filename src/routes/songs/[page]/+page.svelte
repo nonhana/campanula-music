@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import type { SongItem } from '$lib/types'
   import type { PageData } from './$types'
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
@@ -15,7 +16,23 @@
 
   const { data }: Props = $props()
 
-  // 为歌曲页面创建自定义元数据
+  let songList = $state<SongItem[]>([])
+
+  $effect(() => {
+    songList = data.songList
+  })
+
+  const fetchSongList = async () => {
+    const res = await fetch(`/api/songs?page=${curPage}&pageSize=${data.pageSize}`)
+    songList = await res.json()
+  }
+
+  $effect(() => {
+    if (songList.length === 0) {
+      fetchSongList()
+    }
+  })
+
   const metadata = generateSeoMetadata('home', {
     title: `歌曲列表 - 第${curPage}页 | Campanula Music`,
     description: `浏览Campanula Music的歌曲列表，第${curPage}页，发现新的音乐作品`,
@@ -48,7 +65,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each data.songList as song}
+      {#each songList as song}
         <SongTableItem {song} />
       {/each}
     </tbody>
