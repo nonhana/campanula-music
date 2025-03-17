@@ -1,8 +1,7 @@
-import type { PlaylistItem } from '$lib/types'
+import type { PlaylistItem, SongItem } from '$lib/types'
 import { db } from '$lib/server/db'
 import { eq } from 'drizzle-orm'
 import { playlists } from '../db/schema'
-import { songsFormatter } from '../utils/songsFormatter'
 
 // 获取全部的歌单列表
 export async function getAllPlaylists() {
@@ -37,7 +36,7 @@ export async function getPlaylistById(id: string) {
 }
 
 // 获取某个歌单的歌曲列表
-export async function getPlaylistSongs(id: string) {
+export async function getPlaylistSongs(id: string): Promise<SongItem[]> {
   const playlist = await db.query.playlists.findFirst({
     where: eq(playlists.id, Number(id)),
     with: {
@@ -62,8 +61,16 @@ export async function getPlaylistSongs(id: string) {
     return []
   }
 
-  // 提取歌曲数据并格式化
   const songsList = playlist.songs.map(relation => relation.song)
-  const result = await songsFormatter(songsList)
+
+  const result = songsList.map(song => ({
+    ...song,
+    alias: song.alias.split(','),
+    artists: song.artists.map(artist => ({
+      id: artist.artist.id,
+      name: artist.artist.name,
+    })),
+  }))
+
   return result
 }

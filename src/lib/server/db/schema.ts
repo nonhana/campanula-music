@@ -6,45 +6,45 @@ import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 // 歌单表
 export const playlists = sqliteTable('playlists', {
   id: integer('id').primaryKey(),
-  name: text('name'),
-  description: text('description'),
-  cover: text('cover'),
-  musicCount: integer('music_count'),
-  sourceId: text('source_id'),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  cover: text('cover').notNull(),
+  musicCount: integer('music_count').notNull(),
+  sourceId: text('source_id').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 })
 
 // 歌手表
 export const artists = sqliteTable('artists', {
   id: integer('id').primaryKey(),
-  name: text('name'),
-  sourceId: text('source_id'),
+  name: text('name').notNull(),
+  sourceId: text('source_id').notNull(),
 })
 
 // 专辑表
 export const albums = sqliteTable('albums', {
   id: integer('id').primaryKey(),
-  name: text('name'),
-  cover: text('cover'),
-  sourceId: text('source_id'),
+  name: text('name').notNull(),
+  cover: text('cover').notNull(),
+  sourceId: text('source_id').notNull(),
 })
 
 // 歌曲表
 export const songs = sqliteTable('songs', {
   id: integer('id').primaryKey(),
-  name: text('name'),
-  alias: text('alias'),
-  duration: integer('duration'),
-  sourceId: text('source_id'),
+  name: text('name').notNull(),
+  alias: text('alias').notNull(),
+  duration: integer('duration').notNull(),
+  sourceId: text('source_id').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
-  cover: text('cover'),
+  cover: text('cover').notNull(),
   albumId: integer('album_id').notNull(),
 })
 
 // 歌词表
 export const lyrics = sqliteTable('lyrics', {
   id: integer('id').primaryKey(),
-  lyrics: text('lyrics'),
+  lyrics: text('lyrics').notNull(),
   translation: text('translation'),
   songId: integer('song_id').notNull(),
 })

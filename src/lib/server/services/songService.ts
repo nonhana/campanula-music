@@ -4,7 +4,6 @@ import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
 import { count, eq } from 'drizzle-orm'
 import netease from 'NeteaseCloudMusicApi'
 import { lyrics, songs } from '../db/schema'
-import { songItemFormatter, songsFormatter } from '../utils/songsFormatter'
 
 // 获取数据库中歌曲总数
 export async function getSongCount() {
@@ -13,7 +12,7 @@ export async function getSongCount() {
 }
 
 // 分页获取歌曲列表
-export async function getSongList(page: number, pageSize: number) {
+export async function getSongList(page: number, pageSize: number): Promise<SongItem[]> {
   const songsData = await db.query.songs.findMany({
     offset: (page - 1) * pageSize,
     limit: pageSize,
@@ -26,7 +25,14 @@ export async function getSongList(page: number, pageSize: number) {
       },
     },
   })
-  const result = await songsFormatter(songsData)
+  const result = songsData.map(song => ({
+    ...song,
+    alias: song.alias.split(','),
+    artists: song.artists.map(artist => ({
+      id: artist.artist.id,
+      name: artist.artist.name,
+    })),
+  }))
   return result
 }
 
@@ -44,7 +50,17 @@ export async function getSongDetail(id: string): Promise<SongItem | null> {
       lyric: true,
     },
   })
-  const result = await songItemFormatter(songData)
+  if (!songData)
+    return null
+
+  const result = {
+    ...songData,
+    alias: songData.alias.split(','),
+    artists: songData.artists.map(artist => ({
+      id: artist.artist.id,
+      name: artist.artist.name,
+    })),
+  }
   return result
 }
 

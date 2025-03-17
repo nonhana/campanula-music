@@ -57,7 +57,7 @@
         <Play />
       {/snippet}
       {#snippet root()}
-        <LazyImage class='size-12' src={song.album.cover} alt={song.name} />
+        <LazyImage class='size-12' src={song.cover} alt={song.name} />
       {/snippet}
     </MaskElement>
   </td>

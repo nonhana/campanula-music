@@ -186,7 +186,7 @@
       {/snippet}
       {#snippet root()}
         {#if $nowPlaying}
-          <img class='size-12' src={$nowPlaying.album.cover} alt={$nowPlaying.name} />
+          <img class='size-12' src={$nowPlaying.cover} alt={$nowPlaying.name} />
         {:else}
           <div class='size-12 flex items-center justify-center rounded-lg bg-white text-neutral'>
             <Music size={24} />
