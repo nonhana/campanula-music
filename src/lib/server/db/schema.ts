@@ -1,8 +1,10 @@
-import { sql } from 'drizzle-orm'
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { relations, sql } from 'drizzle-orm'
+import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+
+// ==================== 基础表定义 ====================
 
 // 歌单表
-export const playlist = sqliteTable('playlist', {
+export const playlists = sqliteTable('playlists', {
   id: integer('id').primaryKey(),
   name: text('name'),
   description: text('description'),
@@ -13,14 +15,14 @@ export const playlist = sqliteTable('playlist', {
 })
 
 // 歌手表
-export const artist = sqliteTable('artist', {
+export const artists = sqliteTable('artists', {
   id: integer('id').primaryKey(),
   name: text('name'),
   sourceId: text('source_id'),
 })
 
 // 专辑表
-export const album = sqliteTable('album', {
+export const albums = sqliteTable('albums', {
   id: integer('id').primaryKey(),
   name: text('name'),
   cover: text('cover'),
@@ -28,7 +30,7 @@ export const album = sqliteTable('album', {
 })
 
 // 歌曲表
-export const song = sqliteTable('song', {
+export const songs = sqliteTable('songs', {
   id: integer('id').primaryKey(),
   name: text('name'),
   alias: text('alias'),
@@ -36,27 +38,73 @@ export const song = sqliteTable('song', {
   source: text('source'),
   sourceId: text('source_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
-  albumId: integer('album_id').references(() => album.id),
+  albumId: integer('album_id').notNull(),
 })
 
 // 歌词表
 export const lyrics = sqliteTable('lyrics', {
   id: integer('id').primaryKey(),
-  songId: integer('song_id').references(() => song.id).notNull(),
   lyrics: text('lyrics'),
   translation: text('translation'),
+  songId: integer('song_id').notNull(),
 })
 
-// 歌曲艺术家关联表
-export const songArtists = sqliteTable('song_artists', {
-  id: integer('id').primaryKey(),
-  songId: integer('song_id').references(() => song.id).notNull(),
-  artistId: integer('artist_id').references(() => artist.id).notNull(),
-})
+// ==================== 关联表定义 ====================
 
-// 歌单歌曲关联表
-export const playlistSong = sqliteTable('playlist_song', {
-  id: integer('id').primaryKey(),
-  playlistId: integer('playlist_id').references(() => playlist.id).notNull(),
-  songId: integer('song_id').references(() => song.id).notNull(),
-})
+// 歌单歌曲关联表（多对多）
+export const songsToPlaylists = sqliteTable('song_to_playlist', {
+  songId: integer('song_id').references(() => songs.id).notNull(),
+  playlistId: integer('playlist_id').references(() => playlists.id).notNull(),
+}, t => [
+  primaryKey({ columns: [t.songId, t.playlistId] }),
+])
+
+// 歌曲艺术家关联表（多对多）
+export const songsToArtists = sqliteTable('song_to_artist', {
+  songId: integer('song_id').references(() => songs.id).notNull(),
+  artistId: integer('artist_id').references(() => artists.id).notNull(),
+}, t => [
+  primaryKey({ columns: [t.songId, t.artistId] }),
+])
+
+// ==================== 关系定义 ====================
+
+// 歌单相关的关联信息
+export const playlistsRelations = relations(playlists, ({ many }) => ({
+  songs: many(songsToPlaylists),
+}))
+
+// 艺术家相关的关联信息
+export const artistsRelations = relations(artists, ({ many }) => ({
+  songs: many(songsToArtists),
+}))
+
+// 专辑相关的关联信息
+export const albumsRelations = relations(albums, ({ many }) => ({
+  songs: many(songs),
+}))
+
+// 歌词表的关联信息
+export const lyricsRelations = relations(lyrics, ({ one }) => ({
+  song: one(songs, { fields: [lyrics.songId], references: [songs.id] }),
+}))
+
+// 歌曲相关的关联信息
+export const songsRelations = relations(songs, ({ one, many }) => ({
+  artists: many(songsToArtists),
+  playlists: many(songsToPlaylists),
+  album: one(albums, { fields: [songs.albumId], references: [albums.id] }),
+  lyric: one(lyrics, { fields: [songs.id], references: [lyrics.songId] }),
+}))
+
+// 歌单歌曲关联表的关联信息
+export const songsToPlaylistsRelations = relations(songsToPlaylists, ({ one }) => ({
+  song: one(songs, { fields: [songsToPlaylists.songId], references: [songs.id] }),
+  playlist: one(playlists, { fields: [songsToPlaylists.playlistId], references: [playlists.id] }),
+}))
+
+// 歌曲艺术家关联表的关联信息
+export const songsToArtistsRelations = relations(songsToArtists, ({ one }) => ({
+  song: one(songs, { fields: [songsToArtists.songId], references: [songs.id] }),
+  artist: one(artists, { fields: [songsToArtists.artistId], references: [artists.id] }),
+}))
