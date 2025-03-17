@@ -3,6 +3,8 @@ export interface SongItem {
   id: number
   /** 歌曲名称 */
   name: string
+  /** 歌曲封面 */
+  cover: string
   /** 歌曲别名 */
   alias: string[]
   /** 歌手信息 */
@@ -23,8 +25,6 @@ export interface SongItem {
   }
   /** 歌曲时长，单位：毫秒 */
   duration: number
-  /** 歌曲来源 */
-  source: string
   /** 歌曲来源 ID （网易云歌曲 ID） */
   sourceId: string
 }
