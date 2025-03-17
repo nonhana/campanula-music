@@ -38,6 +38,7 @@ export const songs = sqliteTable('songs', {
   source: text('source'),
   sourceId: text('source_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  cover: text('cover'),
   albumId: integer('album_id').notNull(),
 })
 
