@@ -6,6 +6,7 @@
     mute,
     muted,
     nowPlaying,
+    nowPlayingUrl,
     paused,
     playlist,
     playMode,
@@ -144,7 +145,7 @@
     <audio
       preload='metadata'
       autoplay
-      src={$nowPlaying.source}
+      src={$nowPlayingUrl}
       bind:this={audioElement}
       bind:currentTime={$currentTime}
       bind:paused={$paused}

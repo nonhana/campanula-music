@@ -6,6 +6,8 @@ type PlayMode = 'repeat' | 'shuffle' | 'repeat1' | 'list'
 
 /** 正在播放的歌曲 */
 export const nowPlaying = writable<SongItem & { lyrics: LyricItem[] } | null>(null)
+/** 当前正在播放的歌曲的 url */
+export const nowPlayingUrl = writable<string | null>(null)
 /** 当前播放时间，单位：秒 */
 export const currentTime = writable(0)
 /** 是否正在拖动进度条 */
@@ -31,6 +33,7 @@ export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
 }
 export function reset() {
   nowPlaying.set(null)
+  nowPlayingUrl.set(null)
   currentTime.set(0)
   setSeeking(false)
   setPaused(true)
@@ -39,7 +42,8 @@ export async function setNowPlaying(song: SongItem) {
   const lyrics = await getLyrics(song)
   const source = await getSongUrl(song)
   reset()
-  nowPlaying.set({ ...song, lyrics, source })
+  nowPlaying.set({ ...song, lyrics })
+  nowPlayingUrl.set(source)
 }
 export async function addToPlaylistAndPlay(song: SongItem) {
   await addSongToPlaylist(song, false)
