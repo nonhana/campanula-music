@@ -16,12 +16,15 @@
     setPaused,
     setPlayMode,
     setSeeking,
+    setSongLoading,
+    songLoading,
     volume,
   } from '$lib/stores'
   import { durationFormatter, msToSeconds, secondsToMs } from '$lib/utils'
   import {
     ArrowLeftRight,
     ChevronUp,
+    Loader,
     Menu,
     Music,
     Pause,
@@ -87,8 +90,20 @@
       message: `${songName}加载失败，请检查音频文件是否可用`,
       type: 'error',
     })
-    // 可以选择暂停播放
     setPaused(true)
+    setSongLoading(false)
+  }
+
+  const handleLoadStart = () => {
+    setSongLoading(true)
+  }
+
+  const handleCanPlay = () => {
+    setSongLoading(false)
+  }
+
+  const handleWaiting = () => {
+    setSongLoading(true)
   }
 
   onMount(() => {
@@ -112,6 +127,12 @@
         type: 'warning',
       })
       setPaused(true)
+    }
+  })
+
+  $effect(() => {
+    if ($nowPlayingUrl) {
+      setSongLoading(true)
     }
   })
 
@@ -152,6 +173,9 @@
       bind:volume={$volume}
       bind:muted={$muted}
       onerror={handleAudioError}
+      onloadstart={handleLoadStart}
+      oncanplay={handleCanPlay}
+      onwaiting={handleWaiting}
       class='hidden'
     ></audio>
   {/if}
@@ -169,8 +193,12 @@
   />
   <div class='flex items-center gap-10'>
     <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
-    <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
-    <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
+    {#if $songLoading}
+      <Loader size='32' class='animate-spin text-neutral-600' />
+    {:else}
+      <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
+      <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
+    {/if}
     <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
   </div>
   <span class='ml-5 select-none text-sm text-neutral'>
@@ -187,7 +215,14 @@
       {/snippet}
       {#snippet root()}
         {#if $nowPlaying}
-          <img class='size-12' src={$nowPlaying.cover} alt={$nowPlaying.name} />
+          <div class='relative'>
+            <img class='size-12' src={$nowPlaying.cover} alt={$nowPlaying.name} />
+            {#if $songLoading}
+              <div class='absolute inset-0 flex items-center justify-center rounded-lg bg-black/30'>
+                <Loader size={16} class='animate-spin text-white' />
+              </div>
+            {/if}
+          </div>
         {:else}
           <div class='size-12 flex items-center justify-center rounded-lg bg-white text-neutral'>
             <Music size={24} />
@@ -197,7 +232,12 @@
     </MaskElement>
 
     <div class='flex flex-col'>
-      <span>{$nowPlaying ? $nowPlaying.name : '暂无歌曲'}</span>
+      <div class='flex items-center gap-2'>
+        <span>{$nowPlaying ? $nowPlaying.name : '暂无歌曲'}</span>
+        {#if $songLoading && $nowPlaying}
+          <Loader size={14} class='animate-spin text-neutral-500' />
+        {/if}
+      </div>
       {#if $nowPlaying}
         <span class='text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
       {/if}
