@@ -12,6 +12,6 @@
 
 <ScrollContainer contentClass='w-full flex flex-col gap-2'>
   {#each songs as song, index}
-    <SongPlaylistItem index={index + 1} song={song} />
+    <SongPlaylistItem showCover index={index + 1} song={song} />
   {/each}
 </ScrollContainer>

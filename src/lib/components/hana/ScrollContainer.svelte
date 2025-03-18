@@ -139,11 +139,16 @@
       ? `height: 100%; width: ${thumbLength}px; transform: translateX(${thumbOffset}px)`
       : '',
   )
+
+  let hovering = $state(false)
 </script>
 
 <div
+  role='group'
   bind:this={containerElement}
   class={['relative size-full overflow-hidden', isRight && 'pr-2.5', isBottom && 'pb-2.5']}
+  onmouseenter={() => hovering = true}
+  onmouseleave={() => hovering = false}
 >
   <div bind:this={contentWrapperElement} class={['w-full h-full overflow-auto scrollbar-none', contentWrapperClass]}>
     <div bind:this={contentElement} class={contentClass}>
@@ -154,10 +159,11 @@
   <!-- Custom Scrollbar -->
   <div class={[
     scrollbarClass,
-    'absolute bg-primary-100 rounded',
+    'absolute bg-primary-100 rounded opacity-0 transition-opacity',
     isRight && 'right-0 top-0 w-2 h-full',
     isBottom && 'bottom-0 left-0 h-2 w-full',
     isNone && 'hidden',
+    hovering && 'opacity-100',
   ]}>
     <div
       role='button'

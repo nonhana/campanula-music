@@ -15,12 +15,12 @@
 
 <div class='relative h-[calc(100dvh-9rem)] flex justify-between gap-12 py-5'>
   <div class='h-full w-fit'>
-    <ScrollContainer contentClass='flex flex-col mb-5 gap-5'>
+    <ScrollContainer contentClass='flex flex-col gap-5 mx-2'>
       {#each data.playlists as playlist}
         <PlaylistItem
           playlist={playlist}
           type='playlist'
-          imgClass='w-40'
+          imgClass='w-48'
           activated={Number(page.params.id) === playlist.id}
         />
       {/each}

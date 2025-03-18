@@ -24,9 +24,10 @@
     index: number
     song: SongItem
     type?: 'list' | 'queue'
+    showCover?: boolean
   }
 
-  const { index, song, type = 'list' }: Props = $props()
+  const { index, song, type = 'list', showCover = false }: Props = $props()
 
   const activated = $derived($nowPlaying?.id === song.id) // 这个 Item 是当前播放的歌曲
 
@@ -92,17 +93,24 @@
   typeClass[type],
   activated && activatedClass[type],
 ]}>
-  <div class='size-10 flex items-center justify-center group-hover/item:hidden'>{index}</div>
-  <Tooltip class='hidden group-hover/item:block' content='播放' disabled={type === 'queue'}>
-    {#if $songLoading}
-      <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}>
-        <Loader class='animate-spin' />
-      </Button>
-    {:else}
-      <Button iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}><Play /></Button>
-      <Button iconButton onclick={handlePause} class={[activated && !$paused ? 'block' : 'hidden']}><Pause /></Button>
+  <div class='flex items-center gap-10'>
+    <div class='size-10 flex items-center justify-center group-hover/item:hidden'>{index}</div>
+    <Tooltip class='hidden group-hover/item:block' content='播放' disabled={type === 'queue'}>
+      {#if $songLoading}
+        <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}>
+          <Loader class='animate-spin' />
+        </Button>
+      {:else}
+        <Button iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}><Play /></Button>
+        <Button iconButton onclick={handlePause} class={[activated && !$paused ? 'block' : 'hidden']}><Pause /></Button>
+      {/if}
+    </Tooltip>
+    {#if showCover}
+      <div class='size-12'>
+        <img src={song.cover} alt={song.name} class='size-full rounded-lg object-cover' />
+      </div>
     {/if}
-  </Tooltip>
+  </div>
   <div class='w-35 flex flex-col space-y-1'>
     <span class='line-clamp-1 font-semibold'>{song.name}</span>
     {#if song.alias.length > 0}

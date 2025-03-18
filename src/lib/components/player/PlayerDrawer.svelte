@@ -12,6 +12,7 @@
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
     handlePointerDown: () => void
+    handleChangeSong: (type: 'prev' | 'next') => () => void
   }
 
   let {
@@ -20,6 +21,7 @@
     handleInput,
     handleChange,
     handlePointerDown,
+    handleChangeSong,
   }: Props = $props()
 
   // 抽屉与顶部的距离，单位为 dvh
@@ -136,6 +138,7 @@
       {handleInput}
       {handleChange}
       {handlePointerDown}
+      {handleChangeSong}
     />
     <div class='flex flex-col gap-10'>
       <Menu defaultActive={selectedMenu} onselect={key => selectedMenu = (key as menuKeys)}>

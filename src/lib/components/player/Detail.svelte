@@ -5,6 +5,7 @@
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import {
+    currentTime,
     mute,
     muted,
     nowPlaying,
@@ -12,6 +13,7 @@
     setPaused,
     volume,
   } from '$lib/stores'
+  import { durationFormatter, secondsToMs } from '$lib/utils'
   import {
     Ellipsis,
     Music,
@@ -30,6 +32,7 @@
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
     handlePointerDown: () => void
+    handleChangeSong: (type: 'prev' | 'next') => () => void
   }
 
   const {
@@ -37,6 +40,7 @@
     handleInput,
     handleChange,
     handlePointerDown,
+    handleChangeSong,
   }: Props = $props()
 
   const handleCommand = (command: string | number | object) => {
@@ -77,6 +81,10 @@
     onpointerdown={handlePointerDown}
     class='w-full'
   />
+  <div class='flex select-none justify-between text-sm text-neutral'>
+    <span>{durationFormatter(secondsToMs($currentTime))}</span>
+    <span>{$nowPlaying ? durationFormatter($nowPlaying.duration) : '--:--'}</span>
+  </div>
   <div class='w-full flex items-center justify-between text-neutral'>
     <Dropdown clickClose={false}>
       <Button iconButton variant='transparent' onclick={mute}>
@@ -94,7 +102,7 @@
       </Button>
       {#snippet dropdown()}
         <DropdownMenu>
-          <DropdownItem>
+          <div class='h-6 flex items-center justify-center'>
             <input
               type='range'
               min='0'
@@ -104,16 +112,16 @@
               disabled={$muted}
               class='w-28'
             />
-          </DropdownItem>
+          </div>
         </DropdownMenu>
       {/snippet}
     </Dropdown>
 
     <div class='flex items-center gap-10'>
-      <SkipBack class='cursor-pointer' />
+      <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
       <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
       <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
-      <SkipForward class='cursor-pointer' />
+      <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
     </div>
 
     <Dropdown oncommand={handleCommand}>

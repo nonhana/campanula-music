@@ -175,11 +175,6 @@
           <ChevronLeft class='text-neutral' />
         </Button>
       </div>
-      {#if actionDisabled}
-        <div class='absolute left-1/2 top-0 -translate-x-1/2'>
-          <Button onclick={moveToOriginal}>返回原位</Button>
-        </div>
-      {/if}
     </div>
   {:else}
     <div class='size-full flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>

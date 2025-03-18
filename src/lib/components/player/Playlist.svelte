@@ -13,7 +13,7 @@
   activeItemId={$nowPlaying?.id}
   {getItemById}
 >
-  {#snippet renderItem(item)}
-    <SongPlaylistItem index={item.id} song={item} type='queue' />
+  {#snippet renderItem(item, index)}
+    <SongPlaylistItem index={index + 1} song={item} type='queue' />
   {/snippet}
 </VirtualList>

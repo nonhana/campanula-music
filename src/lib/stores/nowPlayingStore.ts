@@ -36,7 +36,7 @@ export function reset() {
   setPaused(true)
 }
 // 获取歌曲 url
-export async function getSongUrl(song: SongItem) {
+export async function getSongUrl(song: SongItem): Promise<string> {
   const res = await fetch(`/api/songs/${song.id}/url`)
   const data = await res.json()
   return data
@@ -51,9 +51,9 @@ export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
 export async function setNowPlaying(song: SongItem) {
   setSongLoading(true)
   const lyrics = await getLyrics(song)
-  const source = await getSongUrl(song)
   reset()
   nowPlaying.set({ ...song, lyrics })
+  const source = await getSongUrl(song)
   nowPlayingUrl.set(source)
 }
 // 添加到播放列表并立即播放

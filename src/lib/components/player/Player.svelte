@@ -102,10 +102,6 @@
     setSongLoading(false)
   }
 
-  const handleWaiting = () => {
-    setSongLoading(true)
-  }
-
   onMount(() => {
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', globalPause)
@@ -127,12 +123,6 @@
         type: 'warning',
       })
       setPaused(true)
-    }
-  })
-
-  $effect(() => {
-    if ($nowPlayingUrl) {
-      setSongLoading(true)
     }
   })
 
@@ -175,7 +165,6 @@
       onerror={handleAudioError}
       onloadstart={handleLoadStart}
       oncanplay={handleCanPlay}
-      onwaiting={handleWaiting}
       class='hidden'
     ></audio>
   {/if}
@@ -189,7 +178,8 @@
     oninput={handleInput}
     onchange={handleChange}
     onpointerdown={handlePointerDown}
-    class='absolute left-0 top-0 w-full -translate-y-1/2'
+    class='absolute left-0 top-0 z-10 w-full -translate-y-1/2'
+    style='--progress: {currentProgress}'
   />
   <div class='flex items-center gap-10'>
     <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
@@ -250,7 +240,7 @@
     <Repeat1 class={`cursor-pointer ${$playMode === 'repeat1' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('list')} />
     <ArrowLeftRight class={`cursor-pointer ${$playMode === 'list' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat')} />
     <div class='group relative flex flex-col cursor-pointer items-center gap-5'>
-      <div class='absolute w-28 justify-center rounded-full bg-neutral-200 px-4 py-2 hidden group-hover:flex -translate-y-[calc(50%+3.5rem)] -rotate-90'>
+      <div class='absolute z-10 h-10 w-32 items-center rounded-lg bg-white px-4 hidden group-hover:flex -translate-y-[calc(50%+4rem)] -rotate-90'>
         <input
           type='range'
           min='0'
@@ -259,6 +249,7 @@
           bind:value={$volume}
           disabled={$muted}
           class='w-full'
+          style='--progress: {$volume}'
         />
       </div>
       <button onclick={mute}>
@@ -285,4 +276,99 @@
   {handleInput}
   {handleChange}
   {handlePointerDown}
+  {handleChangeSong}
 />
+
+<style lang='scss'>
+  /* 自定义全局range输入样式 */
+  :global(input[type="range"]) {
+    appearance: none;
+    height: 4px;
+    border-radius: 8px;
+    background: rgba(165, 165, 165, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: theme('colors.primary.400');
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 0 4px rgba(0, 0, 0, 0);
+    }
+
+    &::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border: none;
+      border-radius: 50%;
+      background: theme('colors.primary.400');
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    &:hover {
+      background: rgba(165, 165, 165, 0.5);
+
+      &::-webkit-slider-thumb {
+        background: theme('colors.primary.500');
+        transform: scale(1.2);
+      }
+
+      &::-moz-range-thumb {
+        background: theme('colors.primary.500');
+        transform: scale(1.2);
+      }
+    }
+
+    &:active {
+      &::-webkit-slider-thumb {
+        background: theme('colors.primary.600');
+        transform: scale(1.4);
+        box-shadow: 0 0 0 4px rgba(168, 230, 207, 0.3);
+      }
+
+      &::-moz-range-thumb {
+        background: theme('colors.primary.600');
+        transform: scale(1.4);
+        box-shadow: 0 0 0 4px rgba(168, 230, 207, 0.3);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+
+      &::-webkit-slider-thumb {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      &::-moz-range-thumb {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  /* 单独定制进度条样式 */
+  footer input[type="range"] {
+    height: 4px;
+    background: linear-gradient(to right,
+      theme('colors.primary.400') calc(var(--progress) * 100%),
+      rgba(165, 165, 165, 0.3) calc(var(--progress) * 100%)
+    );
+    margin: 0;
+
+    &::-webkit-slider-runnable-track {
+      background: transparent;
+    }
+
+    &::-moz-range-track {
+      background: transparent;
+    }
+  }
+</style>
