@@ -44,12 +44,12 @@
 
 <div class={`relative overflow-hidden ${customClasses}`}>
   {#if !isVisible}
-    <div class='h-full w-full animate-pulse rounded-md bg-gray-200' bind:this={imgElement}></div>
+    <div class='size-full animate-pulse rounded-md bg-gray-200' bind:this={imgElement}></div>
   {:else}
     <img
       src={currentSrc}
       alt={alt}
-      class={`transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      class={`size-full transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
       onload={onImageLoad}
       bind:this={imgElement}
     />

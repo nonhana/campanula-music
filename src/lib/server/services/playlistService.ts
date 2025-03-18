@@ -65,7 +65,7 @@ export async function getPlaylistSongs(id: string): Promise<SongItem[]> {
 
   const result = songsList.map(song => ({
     ...song,
-    alias: song.alias.split(','),
+    alias: song.alias?.split(',') ?? [],
     artists: song.artists.map(artist => ({
       id: artist.artist.id,
       name: artist.artist.name,

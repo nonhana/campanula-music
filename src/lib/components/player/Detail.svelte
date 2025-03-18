@@ -47,7 +47,7 @@
 <div class='h-[40rem] flex flex-col justify-between'>
   {#if $nowPlaying}
     <LazyImage
-      src={$nowPlaying.cover}
+      src={$nowPlaying.album.cover}
       alt={$nowPlaying.name}
       class='size-[27rem] rounded-2xl object-cover'
     />

@@ -72,7 +72,7 @@
   />
   <div class='flex flex-col justify-between'>
     <h2 class='text-2xl font-semibold'>{playlist.name}</h2>
-    <p class='max-h-[76px] overflow-y-scroll break-words text-wrap text-neutral scrollbar-none'>{playlist.description || '暂无描述'}</p>
+    <p class='max-h-[76px] overflow-y-scroll break-words text-wrap text-neutral scrollbar-none'>{playlist.description ?? '暂无描述'}</p>
     <p class='text-neutral'>{playlist.musicCount} 首歌曲</p>
     <div class='flex space-x-5'>
       <Button variant='accent' onclick={() => handleAddPlaylistSongs(true)}>

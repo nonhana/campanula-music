@@ -7,7 +7,7 @@ import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 export const playlists = sqliteTable('playlists', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
-  description: text('description').notNull(),
+  description: text('description'),
   cover: text('cover').notNull(),
   musicCount: integer('music_count').notNull(),
   sourceId: text('source_id').notNull(),
@@ -33,7 +33,7 @@ export const albums = sqliteTable('albums', {
 export const songs = sqliteTable('songs', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
-  alias: text('alias').notNull(),
+  alias: text('alias'),
   duration: integer('duration').notNull(),
   sourceId: text('source_id').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),

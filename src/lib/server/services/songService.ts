@@ -1,10 +1,11 @@
 import type { SongItem } from '$lib/types'
+import { USER_COOKIE } from '$env/static/private'
 import { db } from '$lib/server/db'
 import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
 import { count, eq } from 'drizzle-orm'
 import netease from 'NeteaseCloudMusicApi'
 import { lyrics, songs } from '../db/schema'
-
+import { ensureHttps } from '../utils/ensureHttps'
 // 获取数据库中歌曲总数
 export async function getSongCount() {
   const result = await db.select({ count: count() }).from(songs)
@@ -27,7 +28,7 @@ export async function getSongList(page: number, pageSize: number): Promise<SongI
   })
   const result = songsData.map(song => ({
     ...song,
-    alias: song.alias.split(','),
+    alias: song.alias?.split(',') ?? [],
     artists: song.artists.map(artist => ({
       id: artist.artist.id,
       name: artist.artist.name,
@@ -55,7 +56,7 @@ export async function getSongDetail(id: string): Promise<SongItem | null> {
 
   const result = {
     ...songData,
-    alias: songData.alias.split(','),
+    alias: songData.alias?.split(',') ?? [],
     artists: songData.artists.map(artist => ({
       id: artist.artist.id,
       name: artist.artist.name,
@@ -85,7 +86,8 @@ export async function getSongUrl(id: string) {
   const res = await netease.song_url_v1({
     id: songData.sourceId,
     level: 'exhigh' as netease.SoundQualityType, // 默认较高音质
+    cookie: USER_COOKIE,
   })
   const data = res.body.data as { url: string, [key: string]: any }[]
-  return data[0].url
+  return ensureHttps(data[0].url)
 }

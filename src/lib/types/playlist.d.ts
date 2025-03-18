@@ -5,7 +5,7 @@ export interface PlaylistItem {
   /** 歌单名称 */
   name: string
   /** 歌单描述 */
-  description: string
+  description: string | null
   /** 歌单封面 */
   cover: string | null
   /** 歌单歌曲数量 */
