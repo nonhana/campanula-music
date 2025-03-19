@@ -3,17 +3,19 @@
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import { nowPlaying, playlist } from '$lib/stores'
 
-  const getItemById = (id: number | string) => $playlist.find(item => item.id === id) ?? null
+  const indexedPlaylist = $derived($playlist.map((item, index) => ({ ...item, index })))
+
+  const getItemById = (id: number | string) => indexedPlaylist.find(item => item.id === id) ?? null
 </script>
 
 <VirtualList
-  items={$playlist}
+  items={indexedPlaylist}
   containerSize={640}
   itemSize={72}
   activeItemId={$nowPlaying?.id}
   {getItemById}
 >
-  {#snippet renderItem(item, index)}
-    <SongPlaylistItem index={index + 1} song={item} type='queue' />
+  {#snippet renderItem(item)}
+    <SongPlaylistItem index={item.index + 1} song={item} type='queue' />
   {/snippet}
 </VirtualList>
