@@ -7,8 +7,8 @@
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { setNowPlaying, setPlaylist } from '$lib/stores'
-  import { Ellipsis, Play, Plus } from 'lucide-svelte'
+  import { setNowPlaying, setPlaylist, setSongLoading, songLoading } from '$lib/stores'
+  import { Ellipsis, Loader, Play, Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -35,6 +35,7 @@
 
   const handleAddPlaylistSongs = async (autoplay: boolean = false) => {
     try {
+      setSongLoading(true)
       const songs = await fetchPlaylistSongs()
       setPlaylist(songs)
       callHanaMessage({
@@ -50,6 +51,9 @@
         message: error.message,
         type: 'error',
       })
+    }
+    finally {
+      !autoplay && setSongLoading(false)
     }
   }
 
@@ -75,9 +79,13 @@
     <p class='max-h-[76px] overflow-y-scroll break-words text-wrap text-neutral scrollbar-none'>{playlist.description ?? '暂无描述'}</p>
     <p class='text-neutral'>{playlist.musicCount} 首歌曲</p>
     <div class='flex space-x-5'>
-      <Button variant='accent' onclick={() => handleAddPlaylistSongs(true)}>
+      <Button variant='accent' onclick={() => handleAddPlaylistSongs(true)} disabled={$songLoading}>
         <span class='flex items-center gap-2'>
-          <Play size={16} /> 播放全部
+          {#if $songLoading}
+            <Loader size={16} class='animate-spin' />
+          {:else}
+            <Play size={16} />
+          {/if} 播放全部
         </span>
       </Button>
       <Dropdown position='right' trigger='click' oncommand={handleCommand}>
