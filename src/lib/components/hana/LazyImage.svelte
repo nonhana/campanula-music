@@ -42,7 +42,7 @@
   })
 </script>
 
-<div class={`relative overflow-hidden ${customClasses}`}>
+<div class={`aspect-square relative overflow-hidden ${customClasses}`}>
   {#if !isVisible}
     <div class='size-full animate-pulse rounded-md bg-gray-200' bind:this={imgElement}></div>
   {:else}
