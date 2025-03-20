@@ -2,7 +2,8 @@ import type { LyricItem, SongItem } from '$lib/types'
 import { writable } from 'svelte/store'
 import { addSongToPlaylist } from './playlistStore'
 
-type PlayMode = 'repeat' | 'shuffle' | 'repeat1' | 'list'
+// type PlayMode = 'repeat' | 'shuffle' | 'repeat1' | 'list'
+type PlayMode = 'repeatAll' | 'shuffle' | 'repeatOne' | 'sequential'
 
 /** 正在加载 */
 export const songLoading = writable(false)
@@ -17,7 +18,7 @@ export const seeking = writable(false)
 /** 是否暂停 */
 export const paused = writable(true)
 /** 播放模式 */
-export const playMode = writable<PlayMode>('list')
+export const playMode = writable<PlayMode>('sequential')
 /** 音量 */
 export const volume = writable(0.0)
 /** 是否静音 */

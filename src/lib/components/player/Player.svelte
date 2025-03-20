@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import type { SongItem } from '$lib/types'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import {
@@ -51,12 +52,8 @@
       : 0,
   )
 
-  // audio 元素对象
+  // audio 元素对象（单例模式）
   let audioElement = $state<HTMLAudioElement | null>(null)
-
-  const handlePointerDown = () => {
-    setSeeking(true)
-  }
 
   const handleInput = (e: Event) => {
     const target = e.target as HTMLInputElement
@@ -94,14 +91,6 @@
     setSongLoading(false)
   }
 
-  const handleLoadStart = () => {
-    setSongLoading(true)
-  }
-
-  const handleCanPlay = () => {
-    setSongLoading(false)
-  }
-
   onMount(() => {
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', globalPause)
@@ -132,20 +121,104 @@
       : '--:-- / --:--',
   )
 
-  const handleChangeSong = (type: 'prev' | 'next') => {
+  $effect(() => {
+    callHanaMessage({
+      message: `当前播放模式：${$playMode}`,
+      type: 'info',
+    })
+  })
+
+  /**
+   * 根据当前播放模式和方向获取下一首要播放的歌曲
+   * @param direction 方向：'prev'上一首，'next'下一首，'auto'根据播放模式自动决定
+   * @returns 下一首歌曲或undefined（如果没有下一首）
+   */
+  const getNextSong = (direction: 'prev' | 'next' | 'auto') => {
+    if (!$nowPlaying || $playlist.length === 0)
+      return undefined
+
+    const curSongIndex = $playlist.findIndex(item => item.id === $nowPlaying.id)
+    if (curSongIndex === -1)
+      return undefined
+
+    // 在顺序播放模式且已经是最后一首歌，不自动播放下一首
+    if (direction === 'auto' && $playMode === 'sequential' && curSongIndex === $playlist.length - 1) {
+      return undefined
+    }
+
+    let availableSongs: SongItem[] = []
+
+    switch ($playMode) {
+      case 'repeatOne': // 单曲循环
+        // 手动点击时切换歌曲，自动播放结束时重复当前歌曲
+        if (direction === 'auto') {
+          return $nowPlaying // 返回当前歌曲表示重复播放
+        }
+        // 对于手动点击的情况，按照普通列表循环模式处理
+        return direction === 'prev'
+          ? $playlist[(curSongIndex - 1 + $playlist.length) % $playlist.length]
+          : $playlist[(curSongIndex + 1) % $playlist.length]
+
+      case 'shuffle': // 随机播放
+        // 从剩余歌曲中随机选择一首，避免连续播放同一首
+        availableSongs = [...$playlist].filter(song => song.id !== $nowPlaying.id)
+        if (availableSongs.length === 0)
+          return $playlist[0]
+        return availableSongs[Math.floor(Math.random() * availableSongs.length)]
+
+      case 'repeatAll': // 列表循环
+        return direction === 'prev'
+          ? $playlist[(curSongIndex - 1 + $playlist.length) % $playlist.length]
+          : $playlist[(curSongIndex + 1) % $playlist.length]
+
+      case 'sequential': // 顺序播放
+      default:
+        if (direction === 'prev') {
+          return curSongIndex > 0 ? $playlist[curSongIndex - 1] : undefined
+        }
+        else {
+          return curSongIndex < $playlist.length - 1 ? $playlist[curSongIndex + 1] : undefined
+        }
+    }
+  }
+
+  // 主动切歌（上、下一首）
+  const handleChangeSong = (direction: 'prev' | 'next') => {
     return () => {
-      if (!$nowPlaying)
-        return
-      const curSongIndex = $playlist.findIndex(item => item.id === $nowPlaying.id)
-      if (type === 'prev') {
-        const prevSong = $playlist[curSongIndex - 1]
-        if (prevSong)
-          setNowPlaying(prevSong)
+      const nextSong = getNextSong(direction)
+      if (nextSong) {
+        setNowPlaying(nextSong)
+      }
+      else if (direction === 'next' && $playMode === 'sequential') {
+        setPaused(true)
+        if (audioElement) {
+          audioElement.currentTime = 0
+        }
+      }
+    }
+  }
+
+  // 当前曲目播放结束
+  const handleAudioEnded = () => {
+    const nextSong = getNextSong('auto')
+
+    if (nextSong) {
+      // 检查是否是当前歌曲（单曲循环时）
+      if (nextSong.id === $nowPlaying?.id) {
+        if (audioElement) {
+          audioElement.currentTime = 0
+          audioElement.play()
+        }
       }
       else {
-        const nextSong = $playlist[curSongIndex + 1]
-        if (nextSong)
-          setNowPlaying(nextSong)
+        setNowPlaying(nextSong)
+      }
+    }
+    else {
+      // 没有下一首歌曲了（列表播放模式且已到末尾）
+      setPaused(true)
+      if (audioElement) {
+        audioElement.currentTime = 0
       }
     }
   }
@@ -163,8 +236,9 @@
       bind:volume={$volume}
       bind:muted={$muted}
       onerror={handleAudioError}
-      onloadstart={handleLoadStart}
-      oncanplay={handleCanPlay}
+      onloadstart={() => setSongLoading(true)}
+      oncanplay={() => setSongLoading(false)}
+      onended={handleAudioEnded}
       class='hidden'
     ></audio>
   {/if}
@@ -177,7 +251,7 @@
     value={currentProgress}
     oninput={handleInput}
     onchange={handleChange}
-    onpointerdown={handlePointerDown}
+    onpointerdown={() => setSeeking(true)}
     class='absolute left-0 top-0 z-10 w-full -translate-y-1/2'
     style='--progress: {currentProgress}'
   />
@@ -235,10 +309,10 @@
   </div>
 
   <div class='ml-auto flex items-center gap-5'>
-    <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat')} />
-    <Repeat class={`cursor-pointer ${$playMode === 'repeat' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat1')} />
-    <Repeat1 class={`cursor-pointer ${$playMode === 'repeat1' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('list')} />
-    <ArrowLeftRight class={`cursor-pointer ${$playMode === 'list' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeat')} />
+    <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatAll')} />
+    <Repeat class={`cursor-pointer ${$playMode === 'repeatAll' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatOne')} />
+    <Repeat1 class={`cursor-pointer ${$playMode === 'repeatOne' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('sequential')} />
+    <ArrowLeftRight class={`cursor-pointer ${$playMode === 'sequential' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('shuffle')} />
     <div class='group relative flex flex-col cursor-pointer items-center gap-5'>
       <div class='absolute z-10 h-10 w-32 items-center rounded-lg bg-white px-4 hidden group-hover:flex -translate-y-[calc(50%+4rem)] -rotate-90'>
         <input
@@ -275,12 +349,10 @@
   {currentProgress}
   {handleInput}
   {handleChange}
-  {handlePointerDown}
   {handleChangeSong}
 />
 
 <style lang='scss'>
-  /* 自定义全局range输入样式 */
   :global(input[type="range"]) {
     appearance: none;
     height: 4px;
@@ -354,7 +426,6 @@
     }
   }
 
-  /* 单独定制进度条样式 */
   footer input[type="range"] {
     height: 4px;
     background: linear-gradient(to right,

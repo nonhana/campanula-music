@@ -11,7 +11,6 @@
     currentProgress: number
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
-    handlePointerDown: () => void
     handleChangeSong: (type: 'prev' | 'next') => () => void
   }
 
@@ -20,7 +19,6 @@
     currentProgress,
     handleInput,
     handleChange,
-    handlePointerDown,
     handleChangeSong,
   }: Props = $props()
 
@@ -137,7 +135,6 @@
       {currentProgress}
       {handleInput}
       {handleChange}
-      {handlePointerDown}
       {handleChangeSong}
     />
     <div class='flex flex-col gap-10'>

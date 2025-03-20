@@ -1,10 +1,12 @@
 <script lang='ts'>
   import type { MessageOptions } from '$lib/stores'
   import { Check, CircleAlert, Info, X } from 'lucide-svelte'
-  import { onMount } from 'svelte'
+  import { createEventDispatcher, onMount } from 'svelte'
   import { fly } from 'svelte/transition'
 
   type NonUndefined<T> = T extends undefined ? never : T
+
+  const dispatch = createEventDispatcher()
 
   const {
     message = '默认消息',
@@ -22,16 +24,21 @@
   })
 
   const messageClasses: Record<NonUndefined<MessageOptions['type']>, string> = {
-    info: 'bg-hana-blue-100 text-hana-blue border-hana-blue border-2',
+    info: 'bg-neutral-100 text-neutral border-neutral border-2',
     success: 'bg-green-100 text-green-600 border-green-600 border-2',
     warning: 'bg-yellow-100 text-yellow-600 border-yellow-600 border-2',
     error: 'bg-red-100 text-red-600 border-red-600 border-2',
+  }
+
+  function handleOutroEnd() {
+    dispatch('outroEnd')
   }
 </script>
 
 {#if visible}
   <div
     transition:fly={{ y: -50, duration: 300 }}
+    onoutroend={handleOutroEnd}
     class={['m-auto flex w-fit items-center gap-2 text-nowrap rounded-lg p-3 text-sm shadow-lg', messageClasses[type]]}
   >
     {#if type === 'info'}

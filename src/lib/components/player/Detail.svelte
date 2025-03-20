@@ -11,6 +11,7 @@
     nowPlaying,
     paused,
     setPaused,
+    setSeeking,
     songLoading,
     volume,
   } from '$lib/stores'
@@ -33,7 +34,6 @@
     currentProgress: number
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
-    handlePointerDown: () => void
     handleChangeSong: (type: 'prev' | 'next') => () => void
   }
 
@@ -41,7 +41,6 @@
     currentProgress,
     handleInput,
     handleChange,
-    handlePointerDown,
     handleChangeSong,
   }: Props = $props()
 
@@ -80,7 +79,7 @@
     value={currentProgress}
     oninput={handleInput}
     onchange={handleChange}
-    onpointerdown={handlePointerDown}
+    onpointerdown={() => setSeeking(true)}
     class='w-full'
   />
   <div class='flex select-none justify-between text-sm text-neutral'>
