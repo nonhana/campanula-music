@@ -19,8 +19,8 @@ export const seeking = writable(false)
 export const paused = writable(true)
 /** 播放模式 */
 export const playMode = writable<PlayMode>('sequential')
-/** 音量 */
-export const volume = writable(0.0)
+/** 音量，初始为 10% */
+export const volume = writable(0.1)
 /** 是否静音 */
 export const muted = writable(false)
 
