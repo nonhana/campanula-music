@@ -4,6 +4,7 @@
   import { page } from '$app/state'
   import PlaylistItem from '$lib/components/common/PlaylistItem.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
+  import { setPlaylists } from '$lib/stores'
 
   interface Props {
     data: LayoutData
@@ -11,6 +12,8 @@
   }
 
   const { data, children }: Props = $props()
+
+  setPlaylists(data.playlists)
 </script>
 
 <div class='relative h-[calc(100dvh-9rem)] flex justify-between gap-12 py-5'>
