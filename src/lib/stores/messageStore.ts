@@ -27,5 +27,9 @@ export function addMessage(options: MessageOptions) {
     return [...messages, newMessage]
   })
 
-  // 移除自动删除逻辑，现在由组件的动画事件处理
+  setTimeout(() => {
+    messages.update((messages) => {
+      return messages.filter(message => message.id !== id)
+    })
+  }, newMessage.timeout)
 }
