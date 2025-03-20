@@ -8,7 +8,7 @@
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import useMessage from '$lib/hooks/useMessage'
   import { setNowPlaying, setPlaylist, setSongLoading, songLoading } from '$lib/stores'
-  import { Ellipsis, Loader, Play, Plus } from 'lucide-svelte'
+  import { Ellipsis, Loader, Play } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -20,12 +20,10 @@
 
   const { playlist }: Props = $props()
 
-  const moreMap = [
-    {
-      icon: Plus,
-      text: '添加到播放列表',
-    },
-  ]
+  const moreMap = [{
+    text: '添加到播放列表',
+    command: 'add-to-playlist',
+  }]
 
   const fetchPlaylistSongs = async (): Promise<SongItem[]> => {
     const res = await fetch(`/api/playlists/${id}/songs`)
@@ -59,7 +57,7 @@
 
   const handleCommand = async (command: string | number | object) => {
     switch (command) {
-      case '添加到播放列表':
+      case 'add-to-playlist':
         handleAddPlaylistSongs()
         break
       default:
@@ -94,12 +92,9 @@
         </Button>
         {#snippet dropdown()}
           <DropdownMenu>
-            {#each moreMap as { icon: Icon, text }}
-              <DropdownItem command={text}>
-                {#snippet icon()}
-                  <Icon />
-                {/snippet}
-                <span>{text}</span>
+            {#each moreMap as { text, command }}
+              <DropdownItem command={command}>
+                {text}
               </DropdownItem>
             {/each}
           </DropdownMenu>

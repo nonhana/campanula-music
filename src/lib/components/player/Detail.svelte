@@ -11,11 +11,13 @@
     nowPlaying,
     paused,
     setPaused,
+    songLoading,
     volume,
   } from '$lib/stores'
   import { durationFormatter, secondsToMs } from '$lib/utils'
   import {
     Ellipsis,
+    Loader,
     Music,
     Pause,
     Play,
@@ -119,8 +121,12 @@
 
     <div class='flex items-center gap-10'>
       <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
-      <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
-      <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
+      {#if $songLoading}
+        <Loader size='32' class='animate-spin text-neutral-600' />
+      {:else}
+        <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
+        <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
+      {/if}
       <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
     </div>
 
