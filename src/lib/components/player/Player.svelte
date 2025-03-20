@@ -9,6 +9,7 @@
     nowPlaying,
     nowPlayingUrl,
     paused,
+    PLAY_MODE_MAP,
     playlist,
     playMode,
     seeking,
@@ -123,7 +124,7 @@
 
   $effect(() => {
     callHanaMessage({
-      message: `当前播放模式：${$playMode}`,
+      message: `当前播放模式：${PLAY_MODE_MAP[$playMode]}`,
       type: 'info',
     })
   })
