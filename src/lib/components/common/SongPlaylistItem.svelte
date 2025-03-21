@@ -71,7 +71,7 @@
   }
 
   const typeClass = {
-    list: 'bg-white even:bg-neutral-50 hover:bg-primary-100',
+    list: 'bg-white even:bg-neutral-50 hover:bg-primary-100!',
     queue: 'bg-white/0',
   }
 

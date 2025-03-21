@@ -65,28 +65,30 @@
   }
 </script>
 
-<tr class='group text-center even:bg-neutral-50 hover:bg-primary-100'>
+<tr class='group text-center even:bg-neutral-50 hover:bg-primary-100!'>
   <td class='rounded-l-lg'>
-    <MaskElement
-      class='inline-block cursor-pointer overflow-hidden rounded-lg'
-      maskClass={`group-hover:flex ${$songLoading ? 'cursor-not-allowed' : ''}`}
-      onclick={handleMaskClick}
-    >
-      {#snippet slot()}
-        {#if $songLoading}
-          <Loader class='animate-spin' />
-        {:else}
-          {#if activated && !$paused}
-            <Pause />
+    <div class='flex items-center justify-center py-2'>
+      <MaskElement
+        class='inline-block cursor-pointer overflow-hidden rounded-lg'
+        maskClass={`group-hover:flex ${$songLoading ? 'cursor-not-allowed' : ''}`}
+        onclick={handleMaskClick}
+      >
+        {#snippet slot()}
+          {#if $songLoading}
+            <Loader class='animate-spin' />
           {:else}
-            <Play />
+            {#if activated && !$paused}
+              <Pause />
+            {:else}
+              <Play />
+            {/if}
           {/if}
-        {/if}
-      {/snippet}
-      {#snippet root()}
-        <LazyImage class='size-12' src={song.cover} alt={song.name} />
-      {/snippet}
-    </MaskElement>
+        {/snippet}
+        {#snippet root()}
+          <LazyImage class='size-12' src={song.cover} alt={song.name} />
+        {/snippet}
+      </MaskElement>
+    </div>
   </td>
   <td>{song.id}</td>
   <td>
