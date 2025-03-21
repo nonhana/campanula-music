@@ -5,9 +5,9 @@
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { addSongToPlaylist, addToPlaylistAndPlay } from '$lib/stores'
+  import { addSongToPlaylist, addToPlaylistAndPlay, songLoading } from '$lib/stores'
   import { durationFormatter } from '$lib/utils'
-  import { Play, Plus } from 'lucide-svelte'
+  import { Loader, Play, Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -18,6 +18,8 @@
   const { song }: Props = $props()
 
   const handlePlay = async () => {
+    if ($songLoading)
+      return
     try {
       await addToPlaylistAndPlay(song)
     }
@@ -54,7 +56,11 @@
       onclick={handlePlay}
     >
       {#snippet slot()}
-        <Play />
+        {#if $songLoading}
+          <Loader class='animate-spin' />
+        {:else}
+          <Play />
+        {/if}
       {/snippet}
       {#snippet root()}
         <LazyImage class='size-12' src={song.cover} alt={song.name} />
