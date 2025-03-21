@@ -2,7 +2,7 @@ import { Archive, Home, ListMusic, Music, Music4, Piano } from 'lucide-svelte'
 
 export const siteTitle = 'Campanula'
 export const siteDescription = 'Campanula Music'
-export const siteURL = 'https://campanula.netlify.app'
+export const siteURL = 'https://campanulamusic.xyz'
 export const siteAuthor = 'non_hana'
 
 interface NavItem {

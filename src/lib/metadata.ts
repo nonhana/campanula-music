@@ -2,7 +2,7 @@
 export const siteMetadata = {
   title: 'Campanula Music',
   description: '在线音乐分享、创作与探索平台',
-  siteUrl: 'https://campanula.netlify.app',
+  siteUrl: 'https://campanulamusic.xyz',
   siteName: 'Campanula Music',
   themeColor: '#4f46e5',
   locale: 'zh-CN',
