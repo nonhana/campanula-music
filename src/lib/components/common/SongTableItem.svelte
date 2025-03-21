@@ -5,9 +5,9 @@
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { addSongToPlaylist, addToPlaylistAndPlay, songLoading } from '$lib/stores'
+  import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, setPaused, songLoading } from '$lib/stores'
   import { durationFormatter } from '$lib/utils'
-  import { Loader, Play, Plus } from 'lucide-svelte'
+  import { Loader, Pause, Play, Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -17,9 +17,15 @@
 
   const { song }: Props = $props()
 
+  const activated = $derived($nowPlaying?.id === song.id)
+
   const handlePlay = async () => {
     if ($songLoading)
       return
+    if (activated) {
+      setPaused(!$paused)
+      return
+    }
     try {
       await addToPlaylistAndPlay(song)
     }
@@ -29,6 +35,17 @@
         type: 'error',
       })
     }
+  }
+
+  const handlePause = () => {
+    setPaused(!$paused)
+  }
+
+  const handleMaskClick = () => {
+    if (activated && !$paused)
+      handlePause()
+    else
+      handlePlay()
   }
 
   const handleAddToPlaylist = async () => {
@@ -52,14 +69,18 @@
   <td class='rounded-l-lg'>
     <MaskElement
       class='inline-block cursor-pointer overflow-hidden rounded-lg'
-      maskClass='group-hover:flex'
-      onclick={handlePlay}
+      maskClass={`group-hover:flex ${$songLoading ? 'cursor-not-allowed' : ''}`}
+      onclick={handleMaskClick}
     >
       {#snippet slot()}
         {#if $songLoading}
           <Loader class='animate-spin' />
         {:else}
-          <Play />
+          {#if activated && !$paused}
+            <Pause />
+          {:else}
+            <Play />
+          {/if}
         {/if}
       {/snippet}
       {#snippet root()}

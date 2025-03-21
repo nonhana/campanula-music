@@ -4,8 +4,8 @@
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import useMessage from '$lib/hooks/useMessage'
-  import { addSongToPlaylist, addToPlaylistAndPlay, songLoading } from '$lib/stores'
-  import { Loader, Play, Plus } from 'lucide-svelte'
+  import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, setPaused, songLoading } from '$lib/stores'
+  import { Loader, Pause, Play, Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -14,6 +14,37 @@
   }
 
   const { song }: Props = $props()
+
+  const activated = $derived($nowPlaying?.id === song.id)
+
+  const handlePlay = async () => {
+    if ($songLoading)
+      return
+    if (activated) {
+      setPaused(!$paused)
+      return
+    }
+    try {
+      await addToPlaylistAndPlay(song)
+    }
+    catch (error: any) {
+      callHanaMessage({
+        message: error.message,
+        type: 'error',
+      })
+    }
+  }
+
+  const handlePause = () => {
+    setPaused(!$paused)
+  }
+
+  const handleMaskClick = () => {
+    if (activated && !$paused)
+      handlePause()
+    else
+      handlePlay()
+  }
 
   const addToPlaylist = async () => {
     try {
@@ -30,35 +61,24 @@
       })
     }
   }
-
-  const handlePlay = async () => {
-    if ($songLoading)
-      return
-    try {
-      await addToPlaylistAndPlay(song)
-    }
-    catch (error: any) {
-      callHanaMessage({
-        message: error.message,
-        type: 'error',
-      })
-    }
-  }
 </script>
 
-<div class='h-20 w-80 flex items-center gap-4 border-b-2 border-neutral-200 px-2 last:border-b-0'>
+<div class='group h-20 w-80 flex items-center gap-4 border-b-2 border-neutral-200 px-2 last:border-b-0'>
   <div class='flex items-center gap-4'>
-
     <MaskElement
-      class='inline-block cursor-pointer overflow-hidden rounded-lg'
-      maskClass='group-hover:flex'
-      onclick={handlePlay}
+      class='shrink-0 cursor-pointer overflow-hidden rounded-lg'
+      maskClass={`group-hover:flex ${$songLoading ? 'cursor-not-allowed' : ''}`}
+      onclick={handleMaskClick}
     >
       {#snippet slot()}
         {#if $songLoading}
           <Loader class='animate-spin' />
         {:else}
-          <Play />
+          {#if activated && !$paused}
+            <Pause />
+          {:else}
+            <Play />
+          {/if}
         {/if}
       {/snippet}
       {#snippet root()}

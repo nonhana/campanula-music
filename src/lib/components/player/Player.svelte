@@ -283,8 +283,8 @@
           <div class='relative'>
             <img class='size-12' src={$nowPlaying.cover} alt={$nowPlaying.name} />
             {#if $songLoading}
-              <div class='absolute inset-0 flex items-center justify-center rounded-lg bg-black/30'>
-                <Loader size={16} class='animate-spin text-white' />
+              <div class='absolute inset-0 flex items-center justify-center rounded-lg bg-black/50'>
+                <Loader class='animate-spin text-white' />
               </div>
             {/if}
           </div>
@@ -299,9 +299,6 @@
     <div class='flex flex-col'>
       <div class='flex items-center gap-2'>
         <span>{$nowPlaying ? $nowPlaying.name : '暂无歌曲'}</span>
-        {#if $songLoading && $nowPlaying}
-          <Loader size={14} class='animate-spin text-neutral-500' />
-        {/if}
       </div>
       {#if $nowPlaying}
         <span class='text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
