@@ -5,7 +5,7 @@
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import Player from '$lib/components/player/Player.svelte'
   import { setScrolled } from '$lib/stores'
-  import debounce from 'debounce'
+  import { debounce } from 'throttle-debounce'
   import 'uno.css'
   import '@unocss/reset/tailwind.css'
 
@@ -17,10 +17,10 @@
     folded = !folded
   }
 
-  const toggleScrolled = debounce((e: Event) => {
+  const toggleScrolled = debounce(100, (e: Event) => {
     const target = e.target as HTMLElement
     setScrolled(target.scrollTop > 0)
-  }, 100)
+  })
 </script>
 
 <div class='h-[calc(100vh-5rem)] bg-neutral-100'>

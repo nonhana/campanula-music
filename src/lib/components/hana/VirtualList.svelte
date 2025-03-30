@@ -86,7 +86,7 @@
 
   // 当前的可见项数量 (增加缓冲区以平滑滚动)
   const visibleCount = $derived(Math.ceil(containerSize / itemSize) + 3)
-  // 第一个可见项的起始索引
+  // 当 effectiveScrollPos 改变时，计算第一个可见项的起始索引（真正实现虚拟列表的精髓）
   const startIndex = $derived(Math.floor(effectiveScrollPos / (itemSize + gap)))
   // 截取当前的可见项 items
   const visibleItems = $derived(curItems.slice(startIndex, startIndex + visibleCount))
@@ -189,7 +189,6 @@
       : `transform: translateX(${startOffset}px); display: flex; gap: ${gap}px`,
   )
 
-  // 当 items 改变时重置触发状态，以便在新数据加载后可以再次触发
   $effect(() => {
     if (items) {
       hasTriggeredNearEnd = false
@@ -198,7 +197,12 @@
 </script>
 
 {#if !hasExternalScroll}
-  <div bind:this={scrollContainerElement} class={['scrollbar-none', containerClass]} style={containerStyle} onscroll={onScroll}>
+  <div
+    bind:this={scrollContainerElement}
+    class={['scrollbar-none', containerClass]}
+    style={containerStyle}
+    onscroll={onScroll}
+  >
     <VirtualListCore
       {innerStyle}
       {translateStyle}

@@ -1,16 +1,27 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import { onDestroy, onMount, tick } from 'svelte'
+  import { throttle } from 'throttle-debounce'
 
   interface Props {
     contentWrapperClass?: string
     contentClass?: string
     scrollbarClass?: string
     scrollEvents?: ((e: Event) => void)[]
+    scrollWatcher?: (scrollOffset: number) => void
+    onHeightChange?: (height: number) => void
     children?: Snippet
   }
 
-  const { contentWrapperClass, contentClass, scrollbarClass, children, scrollEvents }: Props = $props()
+  const {
+    contentWrapperClass,
+    contentClass,
+    scrollbarClass,
+    scrollEvents,
+    scrollWatcher,
+    onHeightChange,
+    children,
+  }: Props = $props()
 
   let containerElement: HTMLDivElement | null = null
   let contentWrapperElement: HTMLDivElement | null = null
@@ -27,6 +38,14 @@
   let contentWidth = $state(0)
 
   let scrollOffset = $state(0)
+
+  const onScrollDebounced = $derived(scrollWatcher ? throttle(100, scrollWatcher) : null)
+
+  $effect(() => {
+    if (onScrollDebounced) {
+      onScrollDebounced(scrollOffset)
+    }
+  })
 
   // 动态计算滚动条的长度，最短为 20px
   const thumbLength = $derived.by(() => {
@@ -98,6 +117,12 @@
   }
 
   const updateSizes = () => {
+    if (contentWrapperElement) {
+      contentWrapperElement.scrollTop = 0
+      contentWrapperElement.scrollLeft = 0
+      scrollOffset = 0
+    }
+
     tick().then(() => {
       if (!containerElement || !contentElement)
         return
@@ -141,6 +166,13 @@
   )
 
   let hovering = $state(false)
+
+  onMount(() => {
+    if (containerElement) {
+      const { height } = containerElement.getBoundingClientRect()
+      onHeightChange?.(height)
+    }
+  })
 </script>
 
 <div
@@ -156,7 +188,6 @@
     </div>
   </div>
 
-  <!-- Custom Scrollbar -->
   <div class={[
     scrollbarClass,
     'absolute bg-primary-100 rounded opacity-0 transition-opacity',
