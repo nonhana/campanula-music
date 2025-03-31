@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import Drawer from '$lib/components/hana/Drawer.svelte'
   import MessageContainer from '$lib/components/hana/MessageContainer.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import Header from '$lib/components/main/Header.svelte'
@@ -27,7 +28,12 @@
   <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
     <Header {toggleFolded} />
     <Sidebar {folded} />
-    <main class={['flex-1', folded ? 'ml-20' : 'ml-60']}>
+    <Drawer visible={!folded} direction='left'>
+      <div>
+        <h1>Hello</h1>
+      </div>
+    </Drawer>
+    <main class={['flex-1', folded ? 'md:ml-20' : 'md:ml-60']}>
       <div class='m-auto px-10 container'>
         {@render children()}
       </div>
