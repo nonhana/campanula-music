@@ -126,10 +126,11 @@
     tick().then(() => {
       if (!containerElement || !contentElement)
         return
+      const contentRect = contentElement.getBoundingClientRect()
       containerHeight = containerElement.clientHeight
       containerWidth = containerElement.clientWidth
-      contentHeight = contentElement.scrollHeight
-      contentWidth = contentElement.scrollWidth
+      contentHeight = contentRect.height
+      contentWidth = contentRect.width
       scrollBarPos = contentHeight > containerHeight
         ? 'right'
         : contentWidth > containerWidth
