@@ -2,7 +2,6 @@
   import type { Snippet } from 'svelte'
   import Button from '$lib/components/hana/Button.svelte'
   import { X } from 'lucide-svelte'
-  import { onDestroy, onMount } from 'svelte'
   import { cubicInOut } from 'svelte/easing'
   import { fly } from 'svelte/transition'
 
@@ -25,7 +24,7 @@
     hideHeader = false,
     direction = 'right',
     overlayOpacity = 0.5,
-    width = '320px',
+    width = '240px',
     icon,
     header,
     children,
@@ -41,14 +40,6 @@
       handleClose()
     }
   }
-
-  onMount(() => {
-    window.addEventListener('keydown', handleKeydown)
-  })
-
-  onDestroy(() => {
-    window.removeEventListener('keydown', handleKeydown)
-  })
 
   function getTransitionParams() {
     return {
@@ -72,16 +63,14 @@
       {#if header}
         {@render header()}
       {:else}
-        <div class='h-12 flex items-center gap-2 text-primary'>
+        <div class='h-16 flex items-center gap-2 text-neutral'>
           {@render icon?.()}
-          {#if title}
-            <span class='flex-1 text-xl'>{title}</span>
-          {/if}
+          <span class='flex-1 text-xl'>{title ?? ''}</span>
           <Button shape='circle' variant='transparent' iconButton onclick={handleClose}>
             <X />
           </Button>
         </div>
-        <hr class='border-neutral'>
+        <hr class='border-primary -mx-5'>
       {/if}
     {/if}
     <div class='mt-5 flex-1 overflow-auto'>
@@ -89,7 +78,7 @@
     </div>
     {#if footer}
       <div class='my-5'>
-        <hr class='mb-5 border-neutral'>
+        <hr class='mb-5 border-primary'>
         {@render footer(handleClose)}
       </div>
     {/if}
@@ -103,4 +92,7 @@
   ]}
   style:opacity={visible ? overlayOpacity : 0}
   onclick={handleClose}
-/>
+  onkeydown={handleKeydown}
+  role='button'
+  tabindex='0'
+></div>

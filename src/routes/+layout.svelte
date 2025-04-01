@@ -1,7 +1,7 @@
 <script lang='ts'>
-  import Drawer from '$lib/components/hana/Drawer.svelte'
   import MessageContainer from '$lib/components/hana/MessageContainer.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
+  import Drawer from '$lib/components/main/Drawer.svelte'
   import Header from '$lib/components/main/Header.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import Player from '$lib/components/player/Player.svelte'
@@ -12,10 +12,10 @@
 
   const { children } = $props()
 
-  let folded = $state(true)
+  let showDetail = $state(true)
 
   const toggleFolded = () => {
-    folded = !folded
+    showDetail = !showDetail
   }
 
   const toggleScrolled = debounce(100, (e: Event) => {
@@ -27,14 +27,10 @@
 <div class='h-[calc(100vh-5rem)] bg-neutral-100'>
   <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
     <Header {toggleFolded} />
-    <Sidebar {folded} />
-    <Drawer visible={!folded} direction='left'>
-      <div>
-        <h1>Hello</h1>
-      </div>
-    </Drawer>
-    <main class={['flex-1', folded ? 'md:ml-20' : 'md:ml-60']}>
-      <div class='m-auto px-10 container'>
+    <Sidebar folded={!showDetail} />
+    <Drawer bind:showDetail={showDetail} />
+    <main class={['flex-1', showDetail ? 'md:ml-60' : 'md:ml-20']}>
+      <div class='m-auto px-6 container'>
         {@render children()}
       </div>
     </main>
@@ -42,5 +38,4 @@
   </ScrollContainer>
 </div>
 
-<!-- 全局消息容器 -->
 <MessageContainer />

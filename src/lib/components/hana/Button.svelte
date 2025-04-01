@@ -66,8 +66,8 @@
 </script>
 
 {#if href}
-  <a class='inline-block' {href} bind:this={thisEl} {...rest}>
-    <div role='button' class={computedClasses} {style}>
+  <a class={['inline-block', computedClasses]} {style} {href} bind:this={thisEl} {...rest}>
+    <div role='button'>
       {@render children()}
     </div>
   </a>
