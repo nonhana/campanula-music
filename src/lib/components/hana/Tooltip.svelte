@@ -161,7 +161,7 @@
     bind:this={tooltipElement}
     role='button'
     tabindex='0'
-    class={['absolute z-10 cursor-auto', visible ? 'block' : 'hidden', positionClass]}
+    class={['absolute z-10 cursor-auto hidden md:block', visible ? 'md:block' : 'md:hidden', positionClass]}
     style={offsetStyle}
     onmouseenter={() => hoverTrigger && open()}
     onmouseleave={() => hoverTrigger && closeWithDelay()}

@@ -46,6 +46,7 @@
 
 <div class='w-fit flex gap-2'>
   <Button
+    class='hidden md:block'
     iconButton
     shape='circle'
     disabled={curPage === 1}
@@ -59,6 +60,7 @@
     changePage={goto}
   />
   <Button
+    class='hidden md:block'
     iconButton
     shape='circle'
     disabled={curPage === totalPages}

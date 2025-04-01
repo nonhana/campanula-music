@@ -42,25 +42,25 @@
 
 <SeoHead {metadata} />
 
-<div class='w-full rounded-2xl bg-white p-5'>
+<div class='w-full rounded-2xl bg-white px-5 py-3 md:px-15 md:py-5'>
   <table class='w-full'>
     <colgroup>
-      <col style='width: 15%;'>
-      <col style='width: 10%;'>
-      <col style='width: 20%;'>
-      <col style='width: 20%;'>
-      <col style='width: 15%;'>
-      <col style='width: 10%;'>
-      <col style='width: 10%;'>
+      <col class='w-[7%]'>
+      <col class='w-[4%] hidden md:table-column'>
+      <col class='w-[27%]'>
+      <col class='w-[27%] hidden md:table-column'>
+      <col class='w-[27%] hidden md:table-column'>
+      <col class='w-[4%] hidden md:table-column'>
+      <col class='w-[4%]'>
     </colgroup>
     <thead>
-      <tr>
-        <th>封面</th>
-        <th>Id</th>
+      <tr class='text-left hidden md:table-row'>
+        <th></th>
+        <th class='hidden md:table-cell'></th>
         <th>曲名</th>
-        <th>艺术家</th>
-        <th>专辑</th>
-        <th>时长</th>
+        <th class='hidden md:table-cell'>艺术家</th>
+        <th class='hidden md:table-cell'>专辑</th>
+        <th class='hidden md:table-cell'>时长</th>
         <th>操作</th>
       </tr>
     </thead>

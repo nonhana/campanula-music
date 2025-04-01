@@ -65,9 +65,9 @@
   }
 </script>
 
-<tr class='group text-center even:bg-neutral-50 hover:bg-primary-100!'>
+<tr class='group text-left even:bg-neutral-50 hover:bg-primary-100!'>
   <td class='rounded-l-lg'>
-    <div class='flex items-center justify-center py-2'>
+    <div class='flex items-center py-2'>
       <MaskElement
         class='inline-block cursor-pointer overflow-hidden rounded-lg'
         maskClass={`group-hover:flex ${$songLoading ? 'cursor-not-allowed' : ''}`}
@@ -90,14 +90,15 @@
       </MaskElement>
     </div>
   </td>
-  <td>{song.id}</td>
+  <td class='hidden md:table-cell'>{song.id}</td>
   <td>
     <p>{song.name}</p>
-    <p class='text-sm text-neutral'>{song.alias.join(' / ')}</p>
+    <p class='line-clamp-1 text-sm text-neutral hidden md:block'>{song.alias.join(' / ')}</p>
+    <p class='line-clamp-1 text-sm text-neutral md:hidden'>{song.artists.map(artist => artist.name).join(' / ')}</p>
   </td>
-  <td>{song.artists.map(artist => artist.name).join(' / ')}</td>
-  <td>{song.album.name}</td>
-  <td>{durationFormatter(song.duration)}</td>
+  <td class='hidden md:table-cell'>{song.artists.map(artist => artist.name).join(' / ')}</td>
+  <td class='hidden md:table-cell'>{song.album.name}</td>
+  <td class='hidden md:table-cell'>{durationFormatter(song.duration)}</td>
   <td class='rounded-r-lg'>
     <Tooltip content='添加到播放列表' position='left' class='inline-block'>
       <Button
