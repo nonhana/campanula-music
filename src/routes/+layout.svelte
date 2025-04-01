@@ -6,19 +6,19 @@
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import Player from '$lib/components/player/Player.svelte'
   import { setScrolled } from '$lib/stores'
-  import { debounce } from 'throttle-debounce'
+  import { throttle } from 'throttle-debounce'
   import 'uno.css'
   import '@unocss/reset/tailwind.css'
 
   const { children } = $props()
 
-  let showDetail = $state(true)
+  let showDetail = $state(false)
 
   const toggleFolded = () => {
     showDetail = !showDetail
   }
 
-  const toggleScrolled = debounce(100, (e: Event) => {
+  const toggleScrolled = throttle(100, (e: Event) => {
     const target = e.target as HTMLElement
     setScrolled(target.scrollTop > 0)
   })
