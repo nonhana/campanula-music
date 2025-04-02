@@ -2,14 +2,14 @@
   import type { Snippet } from 'svelte'
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements'
 
-  interface Props {
+  type Props = {
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent' | 'none'
     shape?: 'rounded' | 'circle'
     iconButton?: boolean
     activated?: boolean
     children: Snippet
     ref?: HTMLButtonElement | HTMLAnchorElement
-  }
+  } & HTMLButtonAttributes & HTMLAnchorAttributes
 
   let {
     class: customClasses = '',
@@ -23,7 +23,7 @@
     activated,
     ref: thisEl = $bindable(),
     ...rest
-  }: Props & HTMLButtonAttributes & HTMLAnchorAttributes = $props()
+  }: Props = $props()
 
   const baseClasses = 'cursor-pointer font-semibold focus:outline-none'
   const CommonClasses = 'px-4 py-2'

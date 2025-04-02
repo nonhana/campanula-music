@@ -1,14 +1,10 @@
 <script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
+  import type { HTMLAttributes } from 'svelte/elements'
   import { onMount } from 'svelte'
 
-  interface Props {
-    src: string
-    alt: string
-    class?: ClassValue
-  }
+  type Props = { src: string, alt: string } & HTMLAttributes<HTMLDivElement>
 
-  const { src, alt, class: customClasses = '' }: Props = $props()
+  const { src, alt, class: customClasses = '', ...rest }: Props = $props()
 
   let loaded = $state(false)
   let isVisible = $state(false)
@@ -42,7 +38,7 @@
   })
 </script>
 
-<div class={`aspect-square relative overflow-hidden ${customClasses}`}>
+<div class={['aspect-square relative overflow-hidden', customClasses]} {...rest}>
   {#if !isVisible}
     <div class='size-full animate-pulse rounded-md bg-gray-200' bind:this={imgElement}></div>
   {:else}

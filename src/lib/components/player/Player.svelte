@@ -225,7 +225,7 @@
   }
 </script>
 
-<footer class='fixed bottom-0 z-20 h-20 w-full flex items-center bg-neutral-200/40 px-5 backdrop-blur'>
+<footer class='fixed bottom-0 z-20 h-20 w-full flex flex-row-reverse items-center bg-neutral-200/40 px-5 backdrop-blur md:flex-row'>
   {#if $nowPlaying}
     <audio
       preload='metadata'
@@ -266,10 +266,10 @@
     {/if}
     <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
   </div>
-  <span class='ml-5 select-none text-sm text-neutral'>
+  <span class='ml-5 select-none text-sm text-neutral hidden md:inline'>
     {curTimeInfo}
   </span>
-  <div class='absolute left-1/2 flex items-center gap-5 -translate-x-1/2'>
+  <div class='relative w-full flex items-center gap-5 md:(absolute left-1/2 w-fit -translate-x-1/2)'>
     <MaskElement
       class='group overflow-hidden rounded-lg'
       maskClass='group-hover:flex'
@@ -306,7 +306,7 @@
     </div>
   </div>
 
-  <div class='ml-auto flex items-center gap-5'>
+  <div class='ml-auto items-center gap-5 hidden md:flex'>
     <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatAll')} />
     <Repeat class={`cursor-pointer ${$playMode === 'repeatAll' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatOne')} />
     <Repeat1 class={`cursor-pointer ${$playMode === 'repeatOne' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('sequential')} />

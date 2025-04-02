@@ -35,6 +35,7 @@
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
     handleChangeSong: (type: 'prev' | 'next') => () => void
+    onTouchEnd: () => void
   }
 
   const {
@@ -42,6 +43,7 @@
     handleInput,
     handleChange,
     handleChangeSong,
+    onTouchEnd,
   }: Props = $props()
 
   const handleCommand = (command: string | number | object) => {
@@ -49,12 +51,13 @@
   }
 </script>
 
-<div class='h-[40rem] w-[27rem] flex flex-col justify-between'>
+<div class='size-full flex flex-col justify-between'>
   {#if $nowPlaying}
     <LazyImage
       src={$nowPlaying.album.cover}
       alt={$nowPlaying.name}
-      class='size-[27rem] rounded-2xl object-cover'
+      class='w-full rounded-2xl object-cover md:w-[27rem]'
+      ontouchend={onTouchEnd}
     />
   {:else}
     <div class='size-[27rem] flex items-center justify-center rounded-2xl bg-white/60 text-neutral'>

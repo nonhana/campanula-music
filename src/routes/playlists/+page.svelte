@@ -44,7 +44,9 @@
 
   <h2 class='mb-3 text-xl text-gray-700 font-medium'>请选择一个歌单</h2>
   <p class='mb-6 max-w-md text-center text-sm text-gray-500'>
-    从左侧选择一个歌单，或随机进行播放
+    从<span class='inline-block md:hidden'
+    >右</span><span class='hidden md:inline-block'
+    >左</span>侧选择一个歌单，或随机进行播放
   </p>
 
   <Button disabled={$songLoading} variant='accent' onclick={handleRandomPlay}>

@@ -53,6 +53,48 @@
   let startY = 0
   let initialTop = 0
 
+  // 移动端触摸事件处理
+  const onTouchMove = (e: TouchEvent) => {
+    if (!dragging || !e.touches[0])
+      return
+
+    // 防止页面滚动
+    e.preventDefault()
+
+    const deltaY = e.touches[0].clientY - startY
+    const dvh = (deltaY / window.innerHeight) * 100
+    top = initialTop + dvh
+    if (top < 0)
+      top = 0
+    if (top > 100)
+      top = 100
+  }
+
+  const handleTouchEnd = () => {
+    dragging = false
+    window.removeEventListener('touchmove', onTouchMove as EventListener)
+    window.removeEventListener('touchend', handleTouchEnd as EventListener)
+
+    if (top < 50) {
+      openDrawer()
+    }
+    else {
+      closeDrawer()
+    }
+  }
+
+  const onTouchStart = (e: TouchEvent) => {
+    if (!e.touches[0])
+      return
+
+    startY = e.touches[0].clientY
+    initialTop = top
+    dragging = true
+
+    window.addEventListener('touchmove', onTouchMove as EventListener, { passive: false } as AddEventListenerOptions)
+    window.addEventListener('touchend', handleTouchEnd as EventListener)
+  }
+
   const onPointerMove = (e: PointerEvent) => {
     if (!dragging)
       return
@@ -69,6 +111,7 @@
     dragging = false
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
+
     if (top < 50) {
       openDrawer()
     }
@@ -115,6 +158,15 @@
   }]
 
   const ActivatedComponent = $derived(menuComponents[selectedMenu])
+
+  // 控制移动端Detail和Menu/ActivatedComponent的显示
+  let showDetail = $state(true)
+
+  const toggleShowDetail = () => {
+    showDetail = !showDetail
+  }
+
+  const handleDetailTouch = () => toggleShowDetail()
 </script>
 
 {#if showDrawer || dragging}
@@ -130,21 +182,35 @@
       class='absolute top-5 m-auto h-2 w-10 cursor-grab rounded-full bg-neutral active:cursor-grabbing'
       onclick={toggleShowDrawer}
       onpointerdown={onPointerDown}
+      ontouchstart={onTouchStart}
     ></button>
-    <Detail
-      {currentProgress}
-      {handleInput}
-      {handleChange}
-      {handleChangeSong}
-    />
-    <div class='flex flex-col gap-10'>
+
+    <div class={[
+      'h-3/5 w-full px-10 md:h-[40rem] md:w-[27rem] md:px-0 transition-all duration-300',
+      showDetail ? 'block' : 'md:block hidden',
+    ]}>
+      <Detail
+        {currentProgress}
+        {handleInput}
+        {handleChange}
+        {handleChangeSong}
+        onTouchEnd={handleDetailTouch}
+      />
+    </div>
+
+    <div class={[
+      'flex-col gap-10 md:flex',
+      showDetail ? 'hidden' : 'flex',
+    ]}
+         ontouchend={handleDetailTouch}
+    >
       <Menu defaultActive={selectedMenu} onselect={key => selectedMenu = (key as menuKeys)}>
         {#each playerMenus as menu}
           <MenuItem {...menu} />
         {/each}
       </Menu>
 
-      <div class='h-[40rem] w-120'>
+      <div class='h-[40rem] w-full md:w-120'>
         <ActivatedComponent />
       </div>
     </div>
