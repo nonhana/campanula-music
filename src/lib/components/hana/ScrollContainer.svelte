@@ -126,11 +126,10 @@
     tick().then(() => {
       if (!containerElement || !contentElement)
         return
-      const contentRect = contentElement.getBoundingClientRect()
       containerHeight = containerElement.clientHeight
       containerWidth = containerElement.clientWidth
-      contentHeight = contentRect.height
-      contentWidth = contentRect.width
+      contentHeight = contentElement.scrollHeight
+      contentWidth = contentElement.scrollWidth
       scrollBarPos = contentHeight > containerHeight
         ? 'right'
         : contentWidth > containerWidth
@@ -179,7 +178,7 @@
 <div
   role='group'
   bind:this={containerElement}
-  class={['relative size-full overflow-hidden', isRight && 'pr-2.5', isBottom && 'pb-2.5']}
+  class={['relative size-full overflow-hidden', isRight && 'md:pr-2.5', isBottom && 'md:pb-2.5']}
   onmouseenter={() => hovering = true}
   onmouseleave={() => hovering = false}
 >
@@ -191,7 +190,7 @@
 
   <div class={[
     scrollbarClass,
-    'absolute bg-primary-100 rounded opacity-0 transition-opacity',
+    'absolute bg-primary-100 rounded opacity-0 transition-opacity hidden md:block',
     isRight && 'right-0 top-0 w-2 h-full',
     isBottom && 'bottom-0 left-0 h-2 w-full',
     isNone && 'hidden',

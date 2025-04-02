@@ -11,7 +11,6 @@
 
   const { data }: Props = $props()
 
-  // 为歌单详情页面创建自定义元数据
   const metadata = generateSeoMetadata('playlists', {
     title: `${data.curPlaylist.name} | Campanula Music`,
     description: `欣赏歌单"${data.curPlaylist.name}"，包含${data.curPlaylistSongs.length}首精选歌曲`,

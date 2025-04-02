@@ -30,7 +30,7 @@
   }
 </script>
 
-<Tooltip {position} {offset} {trigger}>
+<Tooltip isDropdown {position} {offset} {trigger}>
   {@render children?.()}
   {#snippet fragment(close)}
     <button onclick={e => handleClick(e, close)}>

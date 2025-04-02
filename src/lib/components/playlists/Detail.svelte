@@ -70,7 +70,7 @@
   <LazyImage
     src={playlist.cover ?? ''}
     alt={`歌单 ${playlist.name} 的封面`}
-    class='aspect-square w-48 shrink-0 rounded-2xl'
+    class='aspect-square w-32 shrink-0 rounded-2xl md:w-48'
   />
   <div class='flex flex-col justify-between'>
     <h2 class='text-2xl font-semibold'>{playlist.name}</h2>
@@ -86,7 +86,7 @@
           {/if} 播放全部
         </span>
       </Button>
-      <Dropdown position='right' trigger='click' oncommand={handleCommand}>
+      <Dropdown position='bottom' trigger='click' oncommand={handleCommand}>
         <Button iconButton variant='transparent'>
           <Ellipsis />
         </Button>

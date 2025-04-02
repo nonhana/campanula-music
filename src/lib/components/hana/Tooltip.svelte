@@ -4,6 +4,7 @@
 
   interface Props {
     class?: string
+    isDropdown?: boolean
     disabled?: boolean
     content?: string
     position?: 'top' | 'bottom' | 'left' | 'right'
@@ -17,6 +18,7 @@
   const {
     class: customClasses = '',
     disabled = false,
+    isDropdown = false,
     content = '',
     position = 'bottom',
     offset = 'center',
@@ -161,7 +163,14 @@
     bind:this={tooltipElement}
     role='button'
     tabindex='0'
-    class={['absolute z-10 cursor-auto hidden md:block', visible ? 'md:block' : 'md:hidden', positionClass]}
+    class={[
+      'absolute z-10 cursor-auto',
+      isDropdown ? (visible ? 'block' : 'hidden') : 'hidden md:block',
+      visible
+        ? (isDropdown ? 'block' : 'md:block')
+        : (isDropdown ? 'hidden' : 'md:hidden'),
+      positionClass,
+    ]}
     style={offsetStyle}
     onmouseenter={() => hoverTrigger && open()}
     onmouseleave={() => hoverTrigger && closeWithDelay()}

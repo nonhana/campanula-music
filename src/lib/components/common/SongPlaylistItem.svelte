@@ -89,12 +89,12 @@
 </script>
 
 <div class={[
-  'group/item shrink-0 w-full h-18 flex items-center justify-between rounded-lg px-4',
+  'group/item shrink-0 w-full h-18 flex items-center rounded-lg px-4',
   typeClass[type],
   activated && activatedClass[type],
 ]}>
   <div class='flex items-center gap-10'>
-    <div class='size-10 flex items-center justify-center group-hover/item:hidden'>{index}</div>
+    <div class='size-10 items-center justify-center hidden lg:flex group-hover/item:hidden'>{index}</div>
     <Tooltip class='hidden group-hover/item:block' content='播放' disabled={type === 'queue'}>
       {#if $songLoading}
         <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}>
@@ -106,25 +106,26 @@
       {/if}
     </Tooltip>
     {#if showCover}
-      <div class='size-12'>
+      <div class='size-10 lg:size-12 group-hover/item:hidden'>
         <img src={song.cover} alt={song.name} class='size-full rounded-lg object-cover' />
       </div>
     {/if}
   </div>
-  <div class='w-35 flex flex-col space-y-1'>
+  <div class='ml-4 flex flex-1 flex-col lg:ml-10 space-y-1'>
     <span class='line-clamp-1 font-semibold'>{song.name}</span>
     {#if song.alias.length > 0}
-      <span class='line-clamp-1 text-sm text-neutral'>{song.alias.join(' / ')}</span>
+      <span class='text-sm text-neutral hidden lg:inline'>{song.alias.join(' / ')}</span>
     {/if}
+    <span class='line-clamp-1 text-sm text-neutral lg:hidden'>{song.artists.map(artist => artist.name).join(' / ')}</span>
   </div>
-  <div class='line-clamp-2 w-30'>{song.artists.map(artist => artist.name).join(' / ')}</div>
-  <div class='w-24 flex items-center justify-center group-hover/item:hidden'>{durationFormatter(song.duration)}</div>
+  <div class='line-clamp-2 flex-1 hidden lg:block'>{song.artists.map(artist => artist.name).join(' / ')}</div>
+  <div class='w-10 flex items-center justify-center lg:w-24 group-hover/item:hidden'>{durationFormatter(song.duration)}</div>
   {#if type === 'list'}
-    <div class='w-24 justify-between hidden group-hover/item:flex'>
+    <div class='w-10 justify-between hidden lg:w-24 group-hover/item:flex'>
       <Tooltip content='添加到播放列表'>
         <Button iconButton onclick={handleAddToPlaylist}><Plus /></Button>
       </Tooltip>
-      <Tooltip content='更多'>
+      <Tooltip class='hidden lg:block' content='更多'>
         <Button iconButton><Ellipsis /></Button>
       </Tooltip>
     </div>
