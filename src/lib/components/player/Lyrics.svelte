@@ -2,11 +2,13 @@
   import type { LyricItem as LyricItemType } from '$lib/types'
   import Button from '$lib/components/hana/Button.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
+  import { useTap } from '$lib/hooks/useTap.svelte'
   import {
     currentTime,
     nowPlaying,
     paused,
     setCurrentTime,
+    toggleShowDetail,
   } from '$lib/stores'
   import { msToSeconds, numCorrector, secondsToMs } from '$lib/utils'
   import { ChevronLeft } from 'lucide-svelte'
@@ -139,48 +141,48 @@
   }
 
   const actionDisabled = $derived(scrollStatus.customScrolling && !scrollStatus.restoring && !scrollStatus.autoScrolling)
+
+  useTap(() => scrollContainerElement, {
+    onTap() {
+      toggleShowDetail()
+    },
+  })
 </script>
 
 {#if $nowPlaying}
-  {#if $nowPlaying.lyrics.length !== 0}
-    <div class='relative size-full flex gap-5'>
-      <div
-        bind:this={scrollContainerElement}
-        class='relative w-full overflow-auto scrollbar-none'
-        onscroll={onScroll}
-        onscrollend={onScrollend}
+  <div class='relative size-full flex md:gap-5'>
+    <div
+      bind:this={scrollContainerElement}
+      class='relative w-full overflow-auto scrollbar-none'
+      onscroll={onScroll}
+      onscrollend={onScrollend}
+    >
+      <VirtualList
+        items={$nowPlaying.lyrics}
+        containerSize={CONTAINER_SIZE}
+        itemSize={ITEM_SIZE}
+        headEmptyItems={ACTIVATED_INDEX}
+        tailEmptyItems={TAIL_EMPTY_ITEMS}
+        {scrollPos}
       >
-        <VirtualList
-          items={$nowPlaying.lyrics}
-          containerSize={CONTAINER_SIZE}
-          itemSize={ITEM_SIZE}
-          headEmptyItems={ACTIVATED_INDEX}
-          tailEmptyItems={TAIL_EMPTY_ITEMS}
-          {scrollPos}
-        >
-          {#snippet renderItem(item, index)}
-            <LyricItem
-              lyric={item}
-              isActivated={index === ACTIVATED_INDEX}
-              activateCallback={lyric => activatedLyric = lyric}
-            />
-          {/snippet}
-        </VirtualList>
-      </div>
-      <div
-        class='relative'
-        style={`top: ${ITEM_SIZE * (ACTIVATED_INDEX + 0.5) - 16}px`}
-      >
-        <Button iconButton variant='transparent' disabled={!actionDisabled} onclick={moveToTargetLyric}>
-          <ChevronLeft class='text-neutral' />
-        </Button>
-      </div>
+        {#snippet renderItem(item, index)}
+          <LyricItem
+            lyric={item}
+            isActivated={index === ACTIVATED_INDEX}
+            activateCallback={lyric => activatedLyric = lyric}
+          />
+        {/snippet}
+      </VirtualList>
     </div>
-  {:else}
-    <div class='size-full flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
-      <span>纯音乐，请欣赏</span>
+    <div
+      class='relative'
+      style={`top: ${ITEM_SIZE * (ACTIVATED_INDEX + 0.5) - 16}px`}
+    >
+      <Button iconButton variant='transparent' disabled={!actionDisabled} onclick={moveToTargetLyric}>
+        <ChevronLeft class='text-neutral' />
+      </Button>
     </div>
-  {/if}
+  </div>
 {:else}
   <div class='size-full flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
     <span>当前未播放音乐</span>

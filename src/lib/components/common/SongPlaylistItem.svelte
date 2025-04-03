@@ -3,6 +3,7 @@
   import Button from '$lib/components/hana/Button.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import useMessage from '$lib/hooks/useMessage'
+  import { useTap } from '$lib/hooks/useTap.svelte'
   import {
     addSongToPlaylist,
     addToPlaylistAndPlay,
@@ -82,10 +83,24 @@
 
   const handleRemoveSong = () => {
     removeSongFromPlaylist(song.id)
+    callHanaMessage({
+      message: `已移除歌曲：${song.name}`,
+      type: 'success',
+    })
     if (activated) {
       reset()
     }
   }
+
+  let songNameElement = $state<HTMLDivElement | null>(null)
+
+  useTap(() => songNameElement, {
+    onTap() {
+      if (activated)
+        return
+      handlePlay()
+    },
+  })
 </script>
 
 <div class={[
@@ -95,7 +110,7 @@
 ]}>
   <div class='flex items-center gap-10'>
     <div class='size-10 items-center justify-center hidden lg:flex group-hover/item:hidden'>{index}</div>
-    <Tooltip class='hidden group-hover/item:block' content='播放' disabled={type === 'queue'}>
+    <Tooltip class={['hidden', type === 'queue' ? 'md:group-hover/item:block' : 'group-hover/item:block']} content='播放' disabled={type === 'queue'}>
       {#if $songLoading}
         <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}>
           <Loader class='animate-spin' />
@@ -111,7 +126,7 @@
       </div>
     {/if}
   </div>
-  <div class='ml-4 flex flex-1 flex-col lg:ml-10 space-y-1'>
+  <div bind:this={songNameElement} class='ml-4 flex flex-1 flex-col lg:ml-10 space-y-1'>
     <span class='line-clamp-1 font-semibold'>{song.name}</span>
     {#if song.alias.length > 0}
       <span class='text-sm text-neutral hidden lg:inline'>{song.alias.join(' / ')}</span>
@@ -130,7 +145,7 @@
       </Tooltip>
     </div>
   {:else}
-    <div class='w-24 justify-center hidden group-hover/item:flex'>
+    <div class='w-10 justify-center hidden group-hover/item:flex'>
       <Tooltip content='移除' disabled>
         <Button iconButton onclick={handleRemoveSong}><X /></Button>
       </Tooltip>

@@ -19,8 +19,8 @@
 
 <div
   class={[
-    'flex justify-between items-center w-full h-20 transition-all duration-300',
-    isActivated ? 'text-black text-lg' : 'text-neutral text-sm',
+    'flex justify-between items-center w-full h-20 transition-all duration-300 leading-4',
+    isActivated ? 'text-black md:text-lg' : 'text-neutral text-xs md:text-sm',
   ]}
 >
   <div class='flex flex-col gap-2'>

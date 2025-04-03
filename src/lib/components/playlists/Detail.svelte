@@ -106,7 +106,7 @@
 
 <div class='w-full flex justify-between space-x-5 md:hidden'>
   <Button class='flex-1' variant='accent' onclick={() => handleAddPlaylistSongs(true)} disabled={$songLoading}>
-    <span class='mx-auto inline-block w-fit flex items-center gap-2'>
+    <span class='mx-auto inline-block w-fit flex items-center gap-2 text-sm'>
       {#if $songLoading}
         <Loader size={16} class='animate-spin' />
       {:else}
@@ -115,7 +115,7 @@
     </span>
   </Button>
   <Button class='flex-1' variant='secondary' onclick={() => handleAddPlaylistSongs()}>
-    <span class='mx-auto inline-block w-fit flex items-center gap-2'>
+    <span class='mx-auto inline-block w-fit flex items-center gap-2 text-sm'>
       <Plus /> 添加到播放列表
     </span>
   </Button>

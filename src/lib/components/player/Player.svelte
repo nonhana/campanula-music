@@ -256,7 +256,7 @@
     class='absolute left-0 top-0 z-10 w-full -translate-y-1/2'
     style='--progress: {currentProgress}'
   />
-  <div class='flex items-center gap-10'>
+  <div class='flex items-center gap-5 md:gap-10'>
     <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
     {#if $songLoading}
       <Loader size='32' class='animate-spin text-neutral-600' />
@@ -271,7 +271,7 @@
   </span>
   <div class='relative w-full flex items-center gap-5 md:(absolute left-1/2 w-fit -translate-x-1/2)'>
     <MaskElement
-      class='group overflow-hidden rounded-lg'
+      class='group shrink-0 overflow-hidden rounded-lg'
       maskClass='group-hover:flex'
       onclick={toggleShowDrawer}
     >
@@ -297,11 +297,9 @@
     </MaskElement>
 
     <div class='flex flex-col'>
-      <div class='flex items-center gap-2'>
-        <span>{$nowPlaying ? $nowPlaying.name : '暂无歌曲'}</span>
-      </div>
+      <span class='line-clamp-1'>{$nowPlaying ? $nowPlaying.name : '暂无歌曲'}</span>
       {#if $nowPlaying}
-        <span class='text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
+        <span class='line-clamp-1 text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
       {/if}
     </div>
   </div>

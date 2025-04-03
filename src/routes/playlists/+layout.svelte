@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import type { Action } from 'svelte/action'
   import type { LayoutData } from './$types'
   import { page } from '$app/state'
   import PlaylistItem from '$lib/components/common/PlaylistItem.svelte'
@@ -29,7 +30,6 @@
     isDragging = true
     startY = event.touches[0].clientY
     startPosition = buttonPosition
-    event.preventDefault()
   }
 
   function handleTouchMove(event: TouchEvent) {
@@ -44,11 +44,38 @@
 
     buttonPosition = Math.max(10, Math.min(80, newPositionPercent))
 
-    event.preventDefault()
+    if (Math.abs(deltaY) > 5) {
+      event.preventDefault()
+    }
   }
 
   function handleTouchEnd() {
     isDragging = false
+  }
+
+  function handleClick() {
+    drawerOpen = true
+  }
+
+  const nonPassiveTouchEvents: Action = (node: HTMLElement) => {
+    const clickHandler = handleClick
+    const touchStartHandler = handleTouchStart
+    const touchMoveHandler = handleTouchMove
+    const touchEndHandler = handleTouchEnd
+
+    node.addEventListener('click', clickHandler)
+    node.addEventListener('touchstart', touchStartHandler, { passive: false })
+    node.addEventListener('touchmove', touchMoveHandler, { passive: false })
+    node.addEventListener('touchend', touchEndHandler)
+
+    return {
+      destroy() {
+        node.removeEventListener('click', clickHandler)
+        node.removeEventListener('touchstart', touchStartHandler)
+        node.removeEventListener('touchmove', touchMoveHandler)
+        node.removeEventListener('touchend', touchEndHandler)
+      },
+    }
   }
 
   onMount(() => {
@@ -83,10 +110,7 @@
   <button
     class='fixed right-0 h-20 w-5 rounded-l-xl bg-primary-200 text-neutral md:hidden'
     style='top: {buttonPosition}%; transform: translateY(-50%);'
-    onclick={() => drawerOpen = true}
-    ontouchstart={handleTouchStart}
-    ontouchmove={handleTouchMove}
-    ontouchend={handleTouchEnd}
+    use:nonPassiveTouchEvents
   >
     <ChevronLeft class='h-5 w-5' />
   </button>

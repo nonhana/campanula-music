@@ -1,9 +1,10 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import type { ClassValue } from 'svelte/elements'
   import { onMount } from 'svelte'
 
   interface Props {
-    class?: string
+    class?: ClassValue
     isDropdown?: boolean
     disabled?: boolean
     content?: string

@@ -2,6 +2,7 @@
   import type { MenuItemInfo } from '$lib/types'
   import Menu from '$lib/components/hana/Menu.svelte'
   import MenuItem from '$lib/components/hana/MenuItem.svelte'
+  import { setShowDetail, showDetail } from '$lib/stores/nowPlayingStore'
   import Detail from './Detail.svelte'
   import Lyrics from './Lyrics.svelte'
   import Playlist from './Playlist.svelte'
@@ -46,6 +47,9 @@
   $effect(() => {
     if (showDrawer) {
       openDrawer()
+    }
+    else {
+      setShowDetail(true)
     }
   })
 
@@ -158,15 +162,6 @@
   }]
 
   const ActivatedComponent = $derived(menuComponents[selectedMenu])
-
-  // 控制移动端Detail和Menu/ActivatedComponent的显示
-  let showDetail = $state(true)
-
-  const toggleShowDetail = () => {
-    showDetail = !showDetail
-  }
-
-  const handleDetailTouch = () => toggleShowDetail()
 </script>
 
 {#if showDrawer || dragging}
@@ -187,22 +182,21 @@
 
     <div class={[
       'h-3/5 w-full px-10 md:h-[40rem] md:w-[27rem] md:px-0 transition-all duration-300',
-      showDetail ? 'block' : 'md:block hidden',
+      $showDetail ? 'block' : 'md:block hidden',
     ]}>
       <Detail
         {currentProgress}
         {handleInput}
         {handleChange}
         {handleChangeSong}
-        onTouchEnd={handleDetailTouch}
       />
     </div>
 
-    <div class={[
-      'flex-col gap-10 md:flex',
-      showDetail ? 'hidden' : 'flex',
-    ]}
-         ontouchend={handleDetailTouch}
+    <div
+      class={[
+        'flex-col gap-10 md:flex w-9/10 md:w-120',
+        $showDetail ? 'hidden' : 'flex',
+      ]}
     >
       <Menu defaultActive={selectedMenu} onselect={key => selectedMenu = (key as menuKeys)}>
         {#each playerMenus as menu}
@@ -210,7 +204,7 @@
         {/each}
       </Menu>
 
-      <div class='h-[40rem] w-full md:w-120'>
+      <div class='h-[40rem]'>
         <ActivatedComponent />
       </div>
     </div>

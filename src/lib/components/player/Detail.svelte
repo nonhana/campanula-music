@@ -1,27 +1,30 @@
 <script lang='ts'>
   import Button from '$lib/components/hana/Button.svelte'
   import Dropdown from '$lib/components/hana/Dropdown.svelte'
-  import DropdownItem from '$lib/components/hana/DropdownItem.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import {
     currentTime,
-    mute,
     muted,
     nowPlaying,
     paused,
+    playMode,
     setPaused,
+    setPlayMode,
     setSeeking,
     songLoading,
     volume,
   } from '$lib/stores'
   import { durationFormatter, secondsToMs } from '$lib/utils'
   import {
-    Ellipsis,
+    ArrowLeftRight,
     Loader,
     Music,
     Pause,
     Play,
+    Repeat,
+    Repeat1,
+    Shuffle,
     SkipBack,
     SkipForward,
     Volume,
@@ -35,7 +38,6 @@
     handleInput: (e: Event) => void
     handleChange: (e: Event) => void
     handleChangeSong: (type: 'prev' | 'next') => () => void
-    onTouchEnd: () => void
   }
 
   const {
@@ -43,11 +45,23 @@
     handleInput,
     handleChange,
     handleChangeSong,
-    onTouchEnd,
   }: Props = $props()
 
-  const handleCommand = (command: string | number | object) => {
-    console.log(command)
+  const changePlayMode = () => {
+    switch ($playMode) {
+      case 'shuffle':
+        setPlayMode('repeatAll')
+        break
+      case 'repeatAll':
+        setPlayMode('repeatOne')
+        break
+      case 'repeatOne':
+        setPlayMode('sequential')
+        break
+      case 'sequential':
+        setPlayMode('shuffle')
+        break
+    }
   }
 </script>
 
@@ -57,10 +71,9 @@
       src={$nowPlaying.album.cover}
       alt={$nowPlaying.name}
       class='w-full rounded-2xl object-cover md:w-[27rem]'
-      ontouchend={onTouchEnd}
     />
   {:else}
-    <div class='size-[27rem] flex items-center justify-center rounded-2xl bg-white/60 text-neutral'>
+    <div class='aspect-square w-full flex items-center justify-center rounded-2xl bg-white/60 text-neutral md:w-[27rem]'>
       <Music size={128} />
     </div>
   {/if}
@@ -90,8 +103,8 @@
     <span>{$nowPlaying ? durationFormatter($nowPlaying.duration) : '--:--'}</span>
   </div>
   <div class='w-full flex items-center justify-between text-neutral'>
-    <Dropdown clickClose={false}>
-      <Button iconButton variant='transparent' onclick={mute}>
+    <Dropdown trigger='click' clickClose={false}>
+      <Button iconButton variant='transparent'>
         {#if $muted}
           <VolumeX />
         {:else if $volume === 0}
@@ -132,20 +145,11 @@
       <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
     </div>
 
-    <Dropdown oncommand={handleCommand}>
-      <Button iconButton variant='transparent'>
-        <Ellipsis />
-      </Button>
-      {#snippet dropdown()}
-        <DropdownMenu>
-          <DropdownItem command='a'>
-            歌曲信息
-          </DropdownItem>
-          <DropdownItem command='b'>
-            原始歌词文件
-          </DropdownItem>
-        </DropdownMenu>
-      {/snippet}
-    </Dropdown>
+    <Button iconButton variant='transparent' onclick={changePlayMode}>
+      <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} />
+      <Repeat class={`cursor-pointer ${$playMode === 'repeatAll' ? 'block' : 'hidden'}`} />
+      <Repeat1 class={`cursor-pointer ${$playMode === 'repeatOne' ? 'block' : 'hidden'}`} />
+      <ArrowLeftRight class={`cursor-pointer ${$playMode === 'sequential' ? 'block' : 'hidden'}`} />
+    </Button>
   </div>
 </div>
