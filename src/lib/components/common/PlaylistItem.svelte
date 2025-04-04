@@ -7,11 +7,10 @@
   interface Props {
     activated?: boolean
     playlist: PlaylistItem
-    imgClass?: string
     onclick?: () => void
   }
 
-  const { activated = false, playlist, imgClass = '', onclick }: Props = $props()
+  const { activated = false, playlist, onclick }: Props = $props()
 </script>
 
 <Card
@@ -35,10 +34,9 @@
     <LazyImage
       src={playlist.cover ?? ''}
       alt={playlist.name}
-      class={imgClass}
     />
   {/snippet}
-  <div class='w-40 flex flex-col items-start gap-2 p-2'>
+  <div class='flex flex-col items-start gap-2 p-2'>
     <span class='line-clamp-1 font-bold'>{playlist.name}</span>
     <span class='text-sm text-neutral'>{playlist.musicCount} 首</span>
   </div>

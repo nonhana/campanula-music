@@ -10,8 +10,9 @@
     setCurrentTime,
     toggleShowDetail,
   } from '$lib/stores'
-  import { msToSeconds, numCorrector, secondsToMs } from '$lib/utils'
+  import { durationFormatter, msToSeconds, secondsToMs } from '$lib/utils'
   import { ChevronLeft } from 'lucide-svelte'
+  import { fade } from 'svelte/transition'
   import LyricItem from './LyricItem.svelte'
 
   const CONTAINER_SIZE = 640
@@ -33,11 +34,10 @@
 
   let scrollPos = $state(0)
   const scrollStatus = $state({
-    autoScrolling: false,
     customScrolling: false,
     restoring: false,
   })
-  let scrollTimer: NodeJS.Timeout | null = null
+  let scrollTimer: ReturnType<typeof setTimeout> | null = null
 
   // currentTime 变化，找到当前歌词
   $effect(() => {
@@ -61,8 +61,6 @@
   $effect(() => {
     if (!$nowPlaying || !scrollContainerElement)
       return
-
-    scrollStatus.autoScrolling = true
 
     // 如果歌曲正在播放，并且此时用户正在滚动歌词，不触发自动滚动
     if (!$paused && scrollStatus.customScrolling)
@@ -94,22 +92,8 @@
     }, 1000)
   }
 
-  // 吸附到最近的歌词
-  const snapToNearest = (e: Event) => {
-    if (!scrollContainerElement)
-      return
-
-    const target = e.target as HTMLElement
-    const targetScrollTop = numCorrector(target.scrollTop, ITEM_SIZE)
-
-    scrollContainerElement.scrollTo({
-      top: targetScrollTop,
-      behavior: 'smooth',
-    })
-  }
-
   // 滚动时的触发函数
-  const onScroll = (e: Event) => {
+  const onscroll = (e: Event) => {
     if (scrollTimer) {
       clearTimeout(scrollTimer)
       scrollTimer = null
@@ -118,20 +102,15 @@
     const target = e.target as HTMLElement
     scrollPos = target.scrollTop
 
-    if (!scrollStatus.restoring && !scrollStatus.customScrolling && !scrollStatus.autoScrolling) {
+    if (!scrollStatus.restoring && !scrollStatus.customScrolling) {
       scrollStatus.customScrolling = true
     }
   }
 
+  $inspect(scrollStatus)
+
   // 滚动结束后的触发函数
-  const onScrollend = (e: Event) => {
-    snapToNearest(e)
-
-    if (scrollStatus.autoScrolling) {
-      scrollStatus.autoScrolling = false
-      return
-    }
-
+  const onscrollend = () => {
     if (scrollStatus.restoring) {
       scrollStatus.restoring = false
       return
@@ -140,7 +119,7 @@
     scrollTimer = setTimeout(moveToOriginal, 1000)
   }
 
-  const actionDisabled = $derived(scrollStatus.customScrolling && !scrollStatus.restoring && !scrollStatus.autoScrolling)
+  const actionDisabled = $derived(scrollStatus.customScrolling && !scrollStatus.restoring)
 
   useTap(() => scrollContainerElement, {
     onTap() {
@@ -154,8 +133,8 @@
     <div
       bind:this={scrollContainerElement}
       class='relative w-full overflow-auto scrollbar-none'
-      onscroll={onScroll}
-      onscrollend={onScrollend}
+      {onscroll}
+      {onscrollend}
     >
       <VirtualList
         items={$nowPlaying.lyrics}
@@ -178,8 +157,19 @@
       class='relative'
       style={`top: ${ITEM_SIZE * (ACTIVATED_INDEX + 0.5) - 16}px`}
     >
-      <Button iconButton variant='transparent' disabled={!actionDisabled} onclick={moveToTargetLyric}>
-        <ChevronLeft class='text-neutral' />
+      <Button variant='transparent' disabled={!actionDisabled} onclick={moveToTargetLyric}>
+        <div class='flex items-center -mx-2'>
+          <ChevronLeft class='text-neutral' />
+          {#if actionDisabled}
+            <span
+              in:fade={{ duration: 200 }}
+              out:fade={{ duration: 200 }}
+              class='inline-block'
+            >
+              {durationFormatter(activatedLyric?.time ?? 0)}
+            </span>
+          {/if}
+        </div>
       </Button>
     </div>
   </div>

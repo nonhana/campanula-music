@@ -25,11 +25,12 @@
   <div class='h-full w-fit hidden md:block'>
     <ScrollContainer contentClass='flex flex-col gap-5 mx-2'>
       {#each data.playlists as playlist}
-        <PlaylistItem
-          playlist={playlist}
-          imgClass='w-48'
-          activated={Number(page.params.id) === playlist.id}
-        />
+        <div class='w-48'>
+          <PlaylistItem
+            playlist={playlist}
+            activated={Number(page.params.id) === playlist.id}
+          />
+        </div>
       {/each}
     </ScrollContainer>
   </div>
@@ -37,7 +38,13 @@
     {#snippet icon()}<ListMusic />{/snippet}
     <div class='mx-2 flex flex-col gap-5'>
       {#each data.playlists as playlist}
-        <PlaylistItem playlist={playlist} imgClass='w-48' onclick={() => drawerOpen = false} />
+        <div class='w-48'>
+          <PlaylistItem
+            playlist={playlist}
+            activated={Number(page.params.id) === playlist.id}
+            onclick={() => drawerOpen = false}
+          />
+        </div>
       {/each}
     </div>
   </Drawer>

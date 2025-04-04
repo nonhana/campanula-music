@@ -1,6 +1,5 @@
 <script lang='ts'>
   import type { LyricItem } from '$lib/types'
-  import { durationFormatter } from '$lib/utils'
 
   interface Props {
     lyric: LyricItem
@@ -29,5 +28,4 @@
       <span>{lyric.translate}</span>
     {/if}
   </div>
-  <span>{durationFormatter(lyric.time)}</span>
 </div>
