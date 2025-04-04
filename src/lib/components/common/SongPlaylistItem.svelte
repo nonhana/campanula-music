@@ -121,7 +121,7 @@
       {/if}
     </Tooltip>
     {#if showCover}
-      <div class='size-10 lg:size-12 group-hover/item:hidden'>
+      <div class='size-10 lg:size-12 group-hover/item:hidden md:group-hover/item:block'>
         <img src={song.cover} alt={song.name} class='size-full rounded-lg object-cover' />
       </div>
     {/if}

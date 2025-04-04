@@ -3,6 +3,7 @@
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import Drawer from '$lib/components/main/Drawer.svelte'
   import Header from '$lib/components/main/Header.svelte'
+  import LoadingIndicator from '$lib/components/main/LoadingIndicator.svelte'
   import Sidebar from '$lib/components/main/Sidebar.svelte'
   import Player from '$lib/components/player/Player.svelte'
   import { setScrolled } from '$lib/stores'
@@ -23,6 +24,8 @@
     setScrolled(target.scrollTop > 0)
   })
 </script>
+
+<LoadingIndicator />
 
 <div class='h-[calc(100vh-5rem)] bg-neutral-100'>
   <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
