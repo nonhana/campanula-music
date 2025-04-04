@@ -4,7 +4,7 @@
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
-  import useMessage from '$lib/hooks/useMessage'
+  import { useMessage } from '$lib/hooks/useMessage'
   import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, setPaused, songLoading } from '$lib/stores'
   import { durationFormatter } from '$lib/utils'
   import { Loader, Pause, Play, Plus } from 'lucide-svelte'

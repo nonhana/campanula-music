@@ -107,8 +107,6 @@
     }
   }
 
-  $inspect(scrollStatus)
-
   // 滚动结束后的触发函数
   const onscrollend = () => {
     if (scrollStatus.restoring) {

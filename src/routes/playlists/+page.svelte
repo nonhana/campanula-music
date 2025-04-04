@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation'
   import Button from '$lib/components/hana/Button.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
-  import useMessage from '$lib/hooks/useMessage'
+  import { useMessage } from '$lib/hooks/useMessage'
   import { generateSeoMetadata } from '$lib/metadata'
   import { setNowPlaying, setPlaylist, setSongLoading, songLoading, storedPlaylists } from '$lib/stores'
   import { Disc3, Loader, PlayCircle } from 'lucide-svelte'

@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
-  import useMessage from '$lib/hooks/useMessage'
+  import { useMessage } from '$lib/hooks/useMessage'
   import {
     currentTime,
     mute,
