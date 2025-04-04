@@ -126,15 +126,21 @@
       </div>
     {/if}
   </div>
-  <div bind:this={songNameElement} class='ml-4 flex flex-1 flex-col lg:ml-10 space-y-1'>
+  <div bind:this={songNameElement} class={['ml-4 flex flex-1 flex-col space-y-1', type === 'list' && 'lg:ml-10']}>
     <span class='line-clamp-1 font-semibold'>{song.name}</span>
     {#if song.alias.length > 0}
-      <span class='text-sm text-neutral hidden lg:inline'>{song.alias.join(' / ')}</span>
+      <div class='hidden lg:block'>
+        <span class='line-clamp-1 text-sm text-neutral'>{song.alias.join(' / ')}</span>
+      </div>
     {/if}
-    <span class='line-clamp-1 text-sm text-neutral lg:hidden'>{song.artists.map(artist => artist.name).join(' / ')}</span>
+    <div class='lg:hidden'>
+      <span class='line-clamp-1 text-sm text-neutral'>{song.artists.map(artist => artist.name).join(' / ')}</span>
+    </div>
   </div>
-  <div class='line-clamp-2 flex-1 hidden lg:block'>{song.artists.map(artist => artist.name).join(' / ')}</div>
-  <div class='w-10 flex items-center justify-center lg:w-24 group-hover/item:hidden'>{durationFormatter(song.duration)}</div>
+  <div class='mx-2 flex-1 hidden lg:block'>
+    <span class='line-clamp-1'>{song.artists.map(artist => artist.name).join(' / ')}</span>
+  </div>
+  <div class={['w-10 flex items-center justify-center group-hover/item:hidden', type === 'list' && 'lg:w-24']}>{durationFormatter(song.duration)}</div>
   {#if type === 'list'}
     <div class='w-10 justify-between hidden lg:w-24 group-hover/item:flex'>
       <Tooltip content='添加到播放列表'>

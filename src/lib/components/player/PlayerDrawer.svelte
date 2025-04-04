@@ -2,7 +2,7 @@
   import type { MenuItemInfo } from '$lib/types'
   import Menu from '$lib/components/hana/Menu.svelte'
   import MenuItem from '$lib/components/hana/MenuItem.svelte'
-  import { setShowDetail, showDetail } from '$lib/stores/nowPlayingStore'
+  import { selectedMenu, setSelectedMenu, setShowDetail, showDetail } from '$lib/stores/nowPlayingStore'
   import Detail from './Detail.svelte'
   import Lyrics from './Lyrics.svelte'
   import Playlist from './Playlist.svelte'
@@ -50,6 +50,7 @@
     }
     else {
       setShowDetail(true)
+      setSelectedMenu('lyrics')
     }
   })
 
@@ -150,8 +151,6 @@
 
   type menuKeys = keyof typeof menuComponents
 
-  let selectedMenu = $state<menuKeys>('lyrics')
-
   // Menu 配置项
   const playerMenus: MenuItemInfo[] = [{
     key: 'lyrics',
@@ -161,7 +160,7 @@
     title: '播放列表',
   }]
 
-  const ActivatedComponent = $derived(menuComponents[selectedMenu])
+  const ActivatedComponent = $derived(menuComponents[$selectedMenu])
 </script>
 
 {#if showDrawer || dragging}
@@ -198,7 +197,7 @@
         $showDetail ? 'hidden' : 'flex',
       ]}
     >
-      <Menu defaultActive={selectedMenu} onselect={key => selectedMenu = (key as menuKeys)}>
+      <Menu defaultActive={$selectedMenu} onselect={key => setSelectedMenu(key as menuKeys)}>
         {#each playerMenus as menu}
           <MenuItem {...menu} />
         {/each}

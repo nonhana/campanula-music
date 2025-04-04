@@ -18,6 +18,7 @@
     setPaused,
     setPlayMode,
     setSeeking,
+    setSelectedMenu,
     setSongLoading,
     songLoading,
     volume,
@@ -269,6 +270,7 @@
   <span class='ml-5 select-none text-sm text-neutral hidden md:inline'>
     {curTimeInfo}
   </span>
+
   <div class='relative w-full flex items-center gap-5 md:(absolute left-1/2 w-fit -translate-x-1/2)'>
     <MaskElement
       class='group shrink-0 overflow-hidden rounded-lg'
@@ -336,7 +338,10 @@
         {/if}
       </button>
     </div>
-    <Menu class='cursor-pointer' />
+    <Menu class='cursor-pointer' onclick={() => {
+      toggleShowDrawer()
+      setSelectedMenu('playlist')
+    }} />
   </div>
 </footer>
 

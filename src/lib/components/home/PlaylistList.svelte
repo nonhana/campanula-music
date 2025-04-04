@@ -15,7 +15,7 @@
   {#snippet icon()}<ListMusic />{/snippet}
   <div class='grid grid-cols-2 w-full gap-5 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]'>
     {#each playlists as playlist}
-      <PlaylistItem type='playlist' {playlist} />
+      <PlaylistItem {playlist} />
     {/each}
   </div>
 </BannerCard>

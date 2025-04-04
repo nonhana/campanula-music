@@ -10,6 +10,11 @@
 
   const { songs }: Props = $props()
 
+  const songList = $derived(songs.map((song, index) => ({
+    ...song,
+    index,
+  })))
+
   let scrollOffset = $state(0)
 
   const scrollWatcher = (offset: number) => {
@@ -24,9 +29,9 @@
 </script>
 
 <ScrollContainer {scrollWatcher} {onHeightChange}>
-  <VirtualList items={songs} itemSize={72} {containerSize} scrollPos={scrollOffset}>
-    {#snippet renderItem(item, index)}
-      <SongPlaylistItem showCover index={index + 1} song={item} />
+  <VirtualList items={songList} itemSize={72} {containerSize} scrollPos={scrollOffset}>
+    {#snippet renderItem(item)}
+      <SongPlaylistItem showCover index={item.index + 1} song={item} />
     {/snippet}
   </VirtualList>
 </ScrollContainer>

@@ -28,6 +28,8 @@ export const playMode = writable<PlayMode>('sequential')
 export const volume = writable(0.1)
 /** 是否静音 */
 export const muted = writable(false)
+/** 抽屉当前选中的菜单 */
+export const selectedMenu = writable<'lyrics' | 'playlist'>('lyrics')
 /** 是否正在查看歌曲信息（移动端） */
 export const showDetail = writable(false)
 
@@ -38,6 +40,10 @@ export function toggleShowDetail() {
 // 设置 showDetail 状态
 export function setShowDetail(value: boolean) {
   showDetail.set(value)
+}
+// 设置抽屉当前选中的菜单
+export function setSelectedMenu(value: 'lyrics' | 'playlist') {
+  selectedMenu.set(value)
 }
 // 设置歌曲加载状态
 export function setSongLoading(value: boolean) {

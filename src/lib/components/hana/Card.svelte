@@ -42,7 +42,7 @@
 </script>
 
 {#if href}
-  <a class={cardClasses} {href}>
+  <a class={cardClasses} {href} {onclick}>
     {@render mask?.()}
     {#if header}
       <div class={[divider && 'border-b']}>

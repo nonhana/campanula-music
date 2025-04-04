@@ -184,7 +184,7 @@
     </div>
   </div>
 {:else}
-  <div class='size-full flex items-center justify-center text-neutral-400' style:height={`${CONTAINER_SIZE}px`}>
+  <div class='size-full flex items-center justify-center text-neutral' style:height={`${CONTAINER_SIZE}px`}>
     <span>当前未播放音乐</span>
   </div>
 {/if}
