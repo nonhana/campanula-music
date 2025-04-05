@@ -44,6 +44,7 @@
     if (!$nowPlaying)
       return
 
+    // 找出当前歌词
     const targetLyricsIndex = $nowPlaying.lyrics.findIndex((item, index) => {
       const nextTime = $nowPlaying.lyrics[index + 1]?.time
       return secondsToMs($currentTime) >= item.time && secondsToMs($currentTime) < (nextTime || Infinity)
@@ -56,6 +57,10 @@
 
   // currentLyricIndex 变化，找到当前歌词的位置
   const targetOffset = $derived(currentLyricIndex * ITEM_SIZE)
+  // 是否正在自动滚动歌词
+  const isAutoScrolling = $derived($nowPlaying?.lyrics.findIndex(item => item.time === activatedLyric?.time) === currentLyricIndex - 1)
+
+  $inspect(isAutoScrolling)
 
   // targetOffset 变化，触发自动滚动
   $effect(() => {
@@ -102,7 +107,7 @@
     const target = e.target as HTMLElement
     scrollPos = target.scrollTop
 
-    if (!scrollStatus.restoring && !scrollStatus.customScrolling) {
+    if (!scrollStatus.restoring && !isAutoScrolling && !scrollStatus.customScrolling) {
       scrollStatus.customScrolling = true
     }
   }
@@ -117,7 +122,7 @@
     scrollTimer = setTimeout(moveToOriginal, 1000)
   }
 
-  const actionDisabled = $derived(scrollStatus.customScrolling && !scrollStatus.restoring)
+  const actionDisabled = $derived(!scrollStatus.customScrolling || isAutoScrolling || scrollStatus.restoring)
 
   useTap(() => scrollContainerElement, {
     onTap() {
@@ -155,10 +160,10 @@
       class='relative'
       style={`top: ${ITEM_SIZE * (ACTIVATED_INDEX + 0.5) - 16}px`}
     >
-      <Button variant='transparent' disabled={!actionDisabled} onclick={moveToTargetLyric}>
+      <Button variant='transparent' disabled={actionDisabled} onclick={moveToTargetLyric}>
         <div class='flex items-center -mx-2'>
           <ChevronLeft class='text-neutral' />
-          {#if actionDisabled}
+          {#if !actionDisabled}
             <span
               in:fade={{ duration: 200 }}
               out:fade={{ duration: 200 }}
