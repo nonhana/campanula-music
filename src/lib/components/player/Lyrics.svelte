@@ -60,8 +60,6 @@
   // 是否正在自动滚动歌词
   const isAutoScrolling = $derived($nowPlaying?.lyrics.findIndex(item => item.time === activatedLyric?.time) === currentLyricIndex - 1)
 
-  $inspect(isAutoScrolling)
-
   // targetOffset 变化，触发自动滚动
   $effect(() => {
     if (!$nowPlaying || !scrollContainerElement)
