@@ -3,6 +3,7 @@
   import Menu from '$lib/components/hana/Menu.svelte'
   import MenuItem from '$lib/components/hana/MenuItem.svelte'
   import { selectedMenu, setSelectedMenu, setShowDetail, showDetail } from '$lib/stores/nowPlayingStore'
+  import { onMount } from 'svelte'
   import Detail from './Detail.svelte'
   import Lyrics from './Lyrics.svelte'
   import Playlist from './Playlist.svelte'
@@ -25,6 +26,7 @@
 
   // 抽屉与顶部的距离，单位为 dvh
   let top = $state(100)
+  let dragHandle = $state<HTMLButtonElement | null>(null)
 
   const openDrawer = () => {
     requestAnimationFrame(() => {
@@ -144,6 +146,29 @@
     }
   }
 
+  // 在组件挂载后设置非被动式事件处理
+  onMount(() => {
+    if (dragHandle) {
+      // 移除默认的事件监听器
+      dragHandle.removeEventListener('touchstart', onTouchStart)
+      // 添加非被动事件监听器
+      dragHandle.addEventListener('touchstart', onTouchStart, { passive: false })
+    }
+
+    // 防止页面过度滚动
+    const preventPullToRefresh = (e: TouchEvent) => {
+      if (showDrawer && e.touches[0].clientY < 10) {
+        e.preventDefault()
+      }
+    }
+
+    document.addEventListener('touchmove', preventPullToRefresh, { passive: false })
+
+    return () => {
+      document.removeEventListener('touchmove', preventPullToRefresh)
+    }
+  })
+
   const menuComponents = {
     lyrics: Lyrics,
     playlist: Playlist,
@@ -168,15 +193,16 @@
     class={[
       'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur-lg flex gap-20 justify-center items-center',
       !dragging && 'transition-all duration-300',
+      'overscroll-none',
     ]}
     style={`top: ${top}dvh;`}
   >
     <button
+      bind:this={dragHandle}
       aria-label='drawer dragger'
       class='absolute top-5 m-auto h-2 w-10 cursor-grab rounded-full bg-neutral active:cursor-grabbing'
       onclick={toggleShowDrawer}
       onpointerdown={onPointerDown}
-      ontouchstart={onTouchStart}
     ></button>
 
     <div class={[
@@ -209,3 +235,21 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* 防止iOS下拉刷新 */
+  :global(body) {
+    overscroll-behavior-y: contain;
+  }
+
+  :global(html, body) {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  :global(body.drawer-open) {
+    touch-action: none;
+  }
+</style>
