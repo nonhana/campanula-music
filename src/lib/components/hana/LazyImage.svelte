@@ -1,12 +1,20 @@
 <script lang='ts'>
   import type { HTMLAttributes } from 'svelte/elements'
-  import { useTap } from '$lib/hooks/useTap.svelte'
-  import { toggleShowDetail } from '$lib/stores'
   import { onMount } from 'svelte'
 
-  type Props = { src: string, alt: string } & HTMLAttributes<HTMLDivElement>
+  type Props = {
+    wrapper?: HTMLElement | null
+    src: string
+    alt: string
+  } & HTMLAttributes<HTMLDivElement>
 
-  const { src, alt, class: customClasses = '', ...rest }: Props = $props()
+  let {
+    wrapper = $bindable(null),
+    src,
+    alt,
+    class: customClasses = '',
+    ...rest
+  }: Props = $props()
 
   let loaded = $state(false)
   let isVisible = $state(false)
@@ -38,17 +46,9 @@
       observer?.disconnect()
     }
   })
-
-  let wrapperElement = $state<HTMLElement | null>(null)
-
-  useTap(() => wrapperElement, {
-    onTap() {
-      toggleShowDetail()
-    },
-  })
 </script>
 
-<div bind:this={wrapperElement} class={['aspect-square relative overflow-hidden', customClasses]} {...rest}>
+<div bind:this={wrapper} class={['aspect-square relative overflow-hidden', customClasses]} {...rest}>
   {#if !isVisible}
     <div class='size-full animate-pulse rounded-md bg-gray-200' bind:this={imgElement}></div>
   {:else}

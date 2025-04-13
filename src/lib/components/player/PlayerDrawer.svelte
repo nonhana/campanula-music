@@ -26,7 +26,7 @@
 
   // 抽屉与顶部的距离，单位为 dvh
   let top = $state(100)
-  let dragHandle = $state<HTMLButtonElement | null>(null)
+  let draggerElement = $state<HTMLButtonElement | null>(null)
 
   const openDrawer = () => {
     requestAnimationFrame(() => {
@@ -59,65 +59,40 @@
   let dragging = $state(false)
   let startY = 0
   let initialTop = 0
+  let pointerId = -1
 
-  // 移动端触摸事件处理
-  const onTouchMove = (e: TouchEvent) => {
-    if (!dragging || !e.touches[0])
-      return
-
-    // 防止页面滚动
-    e.preventDefault()
-
-    const deltaY = e.touches[0].clientY - startY
-    const dvh = (deltaY / window.innerHeight) * 100
-    top = initialTop + dvh
-    if (top < 0)
-      top = 0
-    if (top > 100)
-      top = 100
-  }
-
-  const handleTouchEnd = () => {
-    dragging = false
-    window.removeEventListener('touchmove', onTouchMove as EventListener)
-    window.removeEventListener('touchend', handleTouchEnd as EventListener)
-
-    if (top < 50) {
-      openDrawer()
-    }
-    else {
-      closeDrawer()
-    }
-  }
-
-  const onTouchStart = (e: TouchEvent) => {
-    if (!e.touches[0])
-      return
-
-    startY = e.touches[0].clientY
-    initialTop = top
+  const onPointerDown = (e: PointerEvent) => {
+    pointerId = e.pointerId
     dragging = true
 
-    window.addEventListener('touchmove', onTouchMove as EventListener, { passive: false } as AddEventListenerOptions)
-    window.addEventListener('touchend', handleTouchEnd as EventListener)
+    startY = e.clientY
+    initialTop = top
+
+    e.preventDefault()
   }
 
   const onPointerMove = (e: PointerEvent) => {
-    if (!dragging)
+    if (!dragging || e.pointerId !== pointerId)
       return
+
     const deltaY = e.clientY - startY
     const dvh = (deltaY / window.innerHeight) * 100
+
     top = initialTop + dvh
+
     if (top < 0)
       top = 0
     if (top > 100)
       top = 100
+
+    e.preventDefault()
   }
 
-  const onPointerUp = () => {
+  const onPointerUp = (e: PointerEvent) => {
+    if (e.pointerId !== pointerId)
+      return
+
     dragging = false
-    window.removeEventListener('pointermove', onPointerMove)
-    window.removeEventListener('pointerup', onPointerUp)
 
     if (top < 50) {
       openDrawer()
@@ -125,14 +100,6 @@
     else {
       closeDrawer()
     }
-  }
-
-  const onPointerDown = (e: PointerEvent) => {
-    startY = e.clientY
-    initialTop = top
-    dragging = true
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', onPointerUp)
   }
 
   const toggleShowDrawer = () => {
@@ -146,26 +113,15 @@
     }
   }
 
-  // 在组件挂载后设置非被动式事件处理
   onMount(() => {
-    if (dragHandle) {
-      // 移除默认的事件监听器
-      dragHandle.removeEventListener('touchstart', onTouchStart)
-      // 添加非被动事件监听器
-      dragHandle.addEventListener('touchstart', onTouchStart, { passive: false })
-    }
-
-    // 防止页面过度滚动
-    const preventPullToRefresh = (e: TouchEvent) => {
-      if (showDrawer && e.touches[0].clientY < 10) {
-        e.preventDefault()
-      }
-    }
-
-    document.addEventListener('touchmove', preventPullToRefresh, { passive: false })
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+    window.addEventListener('pointercancel', onPointerUp)
 
     return () => {
-      document.removeEventListener('touchmove', preventPullToRefresh)
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerUp)
     }
   })
 
@@ -176,7 +132,6 @@
 
   type menuKeys = keyof typeof menuComponents
 
-  // Menu 配置项
   const playerMenus: MenuItemInfo[] = [{
     key: 'lyrics',
     title: '歌词',
@@ -188,68 +143,48 @@
   const ActivatedComponent = $derived(menuComponents[$selectedMenu])
 </script>
 
-{#if showDrawer || dragging}
+<div
+  class={[
+    'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur-lg flex gap-20 justify-center items-center',
+    !dragging && 'transition-all duration-300',
+    'overscroll-none',
+  ]}
+  style={`top: ${top}dvh;`}
+>
+  <button
+    bind:this={draggerElement}
+    aria-label='drawer dragger'
+    class='absolute top-5 m-auto h-2 w-10 cursor-grab touch-none select-none rounded-full bg-neutral active:cursor-grabbing'
+    onclick={toggleShowDrawer}
+    onpointerdown={onPointerDown}
+  ></button>
+
+  <div class={[
+    'h-3/5 w-full px-10 md:h-[40rem] md:w-[27rem] md:px-0 transition-all duration-300',
+    $showDetail ? 'block' : 'md:block hidden',
+  ]}>
+    <Detail
+      {currentProgress}
+      {handleInput}
+      {handleChange}
+      {handleChangeSong}
+    />
+  </div>
+
   <div
     class={[
-      'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur-lg flex gap-20 justify-center items-center',
-      !dragging && 'transition-all duration-300',
-      'overscroll-none',
+      'flex-col gap-10 md:flex w-9/10 md:w-120',
+      $showDetail ? 'hidden' : 'flex',
     ]}
-    style={`top: ${top}dvh;`}
   >
-    <button
-      bind:this={dragHandle}
-      aria-label='drawer dragger'
-      class='absolute top-5 m-auto h-2 w-10 cursor-grab rounded-full bg-neutral active:cursor-grabbing'
-      onclick={toggleShowDrawer}
-      onpointerdown={onPointerDown}
-    ></button>
+    <Menu defaultActive={$selectedMenu} onselect={key => setSelectedMenu(key as menuKeys)}>
+      {#each playerMenus as menu}
+        <MenuItem {...menu} />
+      {/each}
+    </Menu>
 
-    <div class={[
-      'h-3/5 w-full px-10 md:h-[40rem] md:w-[27rem] md:px-0 transition-all duration-300',
-      $showDetail ? 'block' : 'md:block hidden',
-    ]}>
-      <Detail
-        {currentProgress}
-        {handleInput}
-        {handleChange}
-        {handleChangeSong}
-      />
-    </div>
-
-    <div
-      class={[
-        'flex-col gap-10 md:flex w-9/10 md:w-120',
-        $showDetail ? 'hidden' : 'flex',
-      ]}
-    >
-      <Menu defaultActive={$selectedMenu} onselect={key => setSelectedMenu(key as menuKeys)}>
-        {#each playerMenus as menu}
-          <MenuItem {...menu} />
-        {/each}
-      </Menu>
-
-      <div class='h-[40rem]'>
-        <ActivatedComponent />
-      </div>
+    <div class='h-[40rem]'>
+      <ActivatedComponent />
     </div>
   </div>
-{/if}
-
-<style>
-  /* 防止iOS下拉刷新 */
-  :global(body) {
-    overscroll-behavior-y: contain;
-  }
-
-  :global(html, body) {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  :global(body.drawer-open) {
-    touch-action: none;
-  }
-</style>
+</div>

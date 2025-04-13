@@ -3,6 +3,7 @@
   import Dropdown from '$lib/components/hana/Dropdown.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
+  import { useTap } from '$lib/hooks/useTap.svelte'
   import {
     currentTime,
     muted,
@@ -13,6 +14,7 @@
     setPlayMode,
     setSeeking,
     songLoading,
+    toggleShowDetail,
     volume,
   } from '$lib/stores'
   import { durationFormatter, secondsToMs } from '$lib/utils'
@@ -63,17 +65,26 @@
         break
     }
   }
+
+  let wrapperElement = $state<HTMLElement | null>(null)
+
+  useTap(() => wrapperElement, {
+    onTap() {
+      toggleShowDetail()
+    },
+  })
 </script>
 
 <div class='size-full flex flex-col justify-between'>
   {#if $nowPlaying}
     <LazyImage
+      bind:wrapper={wrapperElement}
       src={$nowPlaying.album.cover}
       alt={$nowPlaying.name}
       class='w-full rounded-2xl object-cover md:w-[27rem]'
     />
   {:else}
-    <div class='aspect-square w-full flex items-center justify-center rounded-2xl bg-white/60 text-neutral md:w-[27rem]'>
+    <div bind:this={wrapperElement} class='aspect-square w-full flex items-center justify-center rounded-2xl bg-white/60 text-neutral md:w-[27rem]'>
       <Music size={128} />
     </div>
   {/if}

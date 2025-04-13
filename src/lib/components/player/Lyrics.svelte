@@ -175,7 +175,7 @@
     </div>
   </div>
 {:else}
-  <div class='size-full flex items-center justify-center text-neutral' style:height={`${CONTAINER_SIZE}px`}>
+  <div bind:this={scrollContainerElement} class='size-full flex items-center justify-center text-neutral' style:height={`${CONTAINER_SIZE}px`}>
     <span>当前未播放音乐</span>
   </div>
 {/if}
