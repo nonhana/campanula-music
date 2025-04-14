@@ -70,9 +70,18 @@
       {/each}
     </tbody>
   </table>
+  <div class='mt-4 flex justify-center md:hidden'>
+    <Paginator
+      currentPage={curPage}
+      total={data.songCount}
+      pageSize={data.pageSize}
+      buttonCount={5}
+      changePage={newPage => goto(`/songs/${newPage}`)}
+    />
+  </div>
 </div>
 
-<div class='sticky bottom-5 mx-auto mt-5 w-fit rounded-lg bg-white p-4'>
+<div class='sticky bottom-5 mx-auto mt-5 w-fit rounded-lg bg-white p-4 hidden md:block'>
   <Paginator
     currentPage={curPage}
     total={data.songCount}

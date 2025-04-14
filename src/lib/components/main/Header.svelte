@@ -19,5 +19,5 @@
     <Menu />
   </Button>
   <a href='/' class='animate-[spin_5s_linear_infinite]'><Logo /></a>
-  <span class='text-neutral'>Campanula</span>
+  <a href='/' class='text-neutral'>Campanula</a>
 </header>

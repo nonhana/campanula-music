@@ -142,6 +142,10 @@ export default defineConfig({
         body {
           @apply contents font-noto;
         }
+        
+        ::selection {
+          @apply bg-primary/50 text-primary-900;
+        }
       `,
     },
   ],
