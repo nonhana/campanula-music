@@ -26,9 +26,10 @@
     song: SongItem
     type?: 'list' | 'queue'
     showCover?: boolean
+    ondblclick?: () => void
   }
 
-  const { index, song, type = 'list', showCover = false }: Props = $props()
+  const { index, song, type = 'list', showCover = false, ondblclick }: Props = $props()
 
   const activated = $derived($nowPlaying?.id === song.id) // 这个 Item 是当前播放的歌曲
 
@@ -103,11 +104,16 @@
   })
 </script>
 
-<div class={[
-  'group/item shrink-0 w-full h-18 flex items-center rounded-lg px-4',
-  typeClass[type],
-  activated && activatedClass[type],
-]}>
+<div
+  role='button'
+  tabindex='0'
+  class={[
+    'group/item shrink-0 w-full h-18 flex items-center rounded-lg px-4',
+    typeClass[type],
+    activated && activatedClass[type],
+  ]}
+  {ondblclick}
+>
   <div class='flex items-center gap-10'>
     <div class='size-10 items-center justify-center hidden lg:flex group-hover/item:hidden'>{index}</div>
     <Tooltip class={['hidden', type === 'queue' ? 'md:group-hover/item:block' : 'group-hover/item:block']} content='播放' disabled={type === 'queue'}>

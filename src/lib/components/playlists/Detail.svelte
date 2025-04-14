@@ -37,7 +37,7 @@
       const songs = await fetchPlaylistSongs()
       setPlaylist(songs)
       callHanaMessage({
-        message: `成功添加 ${playlist.name} 的 ${songs.length} 首歌曲`,
+        message: '播放列表已更新',
         type: 'success',
       })
       if (autoplay) {
@@ -93,7 +93,7 @@
         {#snippet dropdown()}
           <DropdownMenu>
             {#each moreMap as { text, command }}
-              <DropdownItem command={command}>
+              <DropdownItem {command}>
                 {text}
               </DropdownItem>
             {/each}
@@ -116,7 +116,7 @@
   </Button>
   <Button class='flex-1' variant='secondary' onclick={() => handleAddPlaylistSongs()}>
     <span class='mx-auto inline-block w-fit flex items-center gap-2 text-sm'>
-      <Plus /> 添加到播放列表
+      <Plus /> 播放列表
     </span>
   </Button>
 </div>

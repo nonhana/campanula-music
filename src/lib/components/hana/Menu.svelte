@@ -1,11 +1,11 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import { selectedMenu, setSelectedMenu } from '$lib/stores'
   import { setContext } from 'svelte'
   import { writable } from 'svelte/store'
 
   interface Props {
     class?: string
-    defaultActive?: string
     mode?: 'horizontal' | 'vertical'
     children?: Snippet
     onselect?: (key: string) => void
@@ -14,35 +14,32 @@
 
   const {
     class: customClass = '',
-    defaultActive,
     mode = 'horizontal',
     onselect,
     children,
     hoverEffect = false,
   }: Props = $props()
 
-  const activeKey = writable(defaultActive)
   const activeItemRect = writable<DOMRect | null>(null)
 
   let menuEl: HTMLDivElement
 
   setContext('menu', {
-    activeKey,
     hoverEffect,
     select: (key: string, rect?: DOMRect) => {
-      activeKey.set(key)
+      setSelectedMenu(key as 'lyrics' | 'playlist')
       if (rect)
         activeItemRect.set(rect)
       onselect?.(key)
     },
     registerPosition: (key: string, rect: DOMRect) => {
-      if ($activeKey === key) {
+      if ($selectedMenu === key) {
         activeItemRect.set(rect)
       }
     },
   })
 
-  const activatedKey = $derived($activeKey)
+  const activatedKey = $derived($selectedMenu)
 
   $effect(() => {
     if (activatedKey) {

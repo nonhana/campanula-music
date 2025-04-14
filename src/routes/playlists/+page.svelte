@@ -25,7 +25,7 @@
     const songs = await fetchPlaylistSongs(targetPlaylist.id)
     setPlaylist(songs)
     callHanaMessage({
-      message: `成功添加 ${targetPlaylist.name} 的 ${songs.length} 首歌曲`,
+      message: '播放列表已更新',
       type: 'success',
     })
     await setNowPlaying(songs[0])

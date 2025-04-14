@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { MenuItemInfo } from '$lib/types'
   import type { Snippet } from 'svelte'
-  import type { Writable } from 'svelte/store'
+  import { selectedMenu } from '$lib/stores'
   import { getContext, onMount } from 'svelte'
   import Button from './Button.svelte'
 
@@ -11,14 +11,13 @@
 
   const { key, title, icon, disabled }: Props = $props()
 
-  const { activeKey, select, registerPosition, hoverEffect } = getContext<{
-    activeKey: Writable<string>
+  const { select, registerPosition, hoverEffect } = getContext<{
     select: (key: string, rect?: DOMRect) => void
     registerPosition: (key: string, rect: DOMRect) => void
     hoverEffect: boolean
   }>('menu')
 
-  const activated = $derived($activeKey === key)
+  const activated = $derived($selectedMenu === key)
   let buttonElement = $state<HTMLButtonElement | HTMLAnchorElement>()
 
   onMount(() => {

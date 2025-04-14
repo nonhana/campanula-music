@@ -125,8 +125,6 @@
     playlist: Playlist,
   } as const
 
-  type menuKeys = keyof typeof menuComponents
-
   const playerMenus: MenuItemInfo[] = [{
     key: 'lyrics',
     title: '歌词',
@@ -172,7 +170,7 @@
       $showDetail ? 'hidden' : 'flex',
     ]}
   >
-    <Menu defaultActive={$selectedMenu} onselect={key => setSelectedMenu(key as menuKeys)}>
+    <Menu onselect={key => setSelectedMenu(key as 'lyrics' | 'playlist')}>
       {#each playerMenus as menu}
         <MenuItem {...menu} />
       {/each}
