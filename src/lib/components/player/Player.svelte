@@ -104,7 +104,7 @@
 
   let showDrawer = $state(false)
   const toggleShowDrawer = () => {
-    showDrawer = true
+    showDrawer = !showDrawer
   }
 
   $effect(() => {

@@ -94,17 +94,12 @@
 
     dragging = false
 
-    if (top < 50) {
-      openDrawer()
-    }
-    else {
-      closeDrawer()
+    if (top > 0 && top < 100) {
+      top < 50 ? openDrawer() : closeDrawer()
     }
   }
 
   const toggleShowDrawer = () => {
-    if (dragging)
-      return
     if (showDrawer) {
       closeDrawer()
     }
