@@ -31,10 +31,7 @@
     </div>
   {/snippet}
   {#snippet header()}
-    <LazyImage
-      src={playlist.cover ?? ''}
-      alt={playlist.name}
-    />
+    <LazyImage src={playlist.cover ?? ''} alt={playlist.name} />
   {/snippet}
   <div class='flex flex-col items-start gap-2 p-2'>
     <span class='line-clamp-1 font-bold'>{playlist.name}</span>

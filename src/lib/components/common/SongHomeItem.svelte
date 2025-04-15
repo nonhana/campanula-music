@@ -4,7 +4,7 @@
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
-  import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, setPaused, songLoading } from '$lib/stores'
+  import { addSongToPlaylist, addToPlaylistAndPlay, isSongInPlaylist, nowPlaying, paused, setNowPlaying, setPaused, songLoading } from '$lib/stores'
   import { Loader, Pause, Play, Plus } from 'lucide-svelte'
 
   const { callHanaMessage } = useMessage()
@@ -25,7 +25,10 @@
       return
     }
     try {
-      await addToPlaylistAndPlay(song)
+      if (isSongInPlaylist(song.id))
+        await setNowPlaying(song)
+      else
+        await addToPlaylistAndPlay(song)
     }
     catch (error: any) {
       callHanaMessage({
@@ -46,20 +49,12 @@
       handlePlay()
   }
 
-  const addToPlaylist = async () => {
-    try {
-      await addSongToPlaylist(song)
-      callHanaMessage({
-        message: `已添加歌曲：${song.name}`,
-        type: 'success',
-      })
-    }
-    catch (error: any) {
-      callHanaMessage({
-        message: error.message,
-        type: 'error',
-      })
-    }
+  const handleAddToPlaylist = async () => {
+    addSongToPlaylist(song)
+    callHanaMessage({
+      message: `已添加歌曲：${song.name}`,
+      type: 'success',
+    })
   }
 </script>
 
@@ -96,7 +91,7 @@
     variant='transparent'
     aria-label='添加到播放列表'
     class='ml-auto'
-    onclick={addToPlaylist}
+    onclick={handleAddToPlaylist}
   >
     <Plus />
   </Button>

@@ -5,7 +5,7 @@
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
-  import { addSongToPlaylist, addToPlaylistAndPlay, nowPlaying, paused, setPaused, songLoading } from '$lib/stores'
+  import { addSongToPlaylist, addToPlaylistAndPlay, isSongInPlaylist, nowPlaying, paused, setNowPlaying, setPaused, songLoading } from '$lib/stores'
   import { durationFormatter } from '$lib/utils'
   import { Loader, Pause, Play, Plus } from 'lucide-svelte'
 
@@ -27,7 +27,10 @@
       return
     }
     try {
-      await addToPlaylistAndPlay(song)
+      if (isSongInPlaylist(song.id))
+        await setNowPlaying(song)
+      else
+        await addToPlaylistAndPlay(song)
     }
     catch (error: any) {
       callHanaMessage({
@@ -49,19 +52,11 @@
   }
 
   const handleAddToPlaylist = async () => {
-    try {
-      await addSongToPlaylist(song)
-      callHanaMessage({
-        message: `已添加歌曲：${song.name}`,
-        type: 'success',
-      })
-    }
-    catch (error: any) {
-      callHanaMessage({
-        message: error.message,
-        type: 'error',
-      })
-    }
+    addSongToPlaylist(song)
+    callHanaMessage({
+      message: `已添加歌曲：${song.name}`,
+      type: 'success',
+    })
   }
 </script>
 

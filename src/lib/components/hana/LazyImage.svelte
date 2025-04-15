@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { HTMLAttributes } from 'svelte/elements'
+  import { Music } from 'lucide-svelte'
   import { onMount } from 'svelte'
 
   type Props = {
@@ -19,11 +20,17 @@
   let loaded = $state(false)
   let isVisible = $state(false)
   let imgElement = $state<HTMLElement | null>(null)
+  let loadError = $state(false)
   let observer: IntersectionObserver
 
   const currentSrc = $derived(isVisible ? src : '')
 
   function onImageLoad() {
+    loaded = true
+  }
+
+  function onImageError() {
+    loadError = true
     loaded = true
   }
 
@@ -51,12 +58,17 @@
 <div bind:this={wrapper} class={['aspect-square relative overflow-hidden', customClasses]} {...rest}>
   {#if !isVisible}
     <div class='size-full animate-pulse rounded-md bg-gray-200' bind:this={imgElement}></div>
+  {:else if !currentSrc || loadError}
+    <div class='size-full flex items-center justify-center bg-white/60 text-neutral'>
+      <Music class='size-1/3' />
+    </div>
   {:else}
     <img
       src={currentSrc}
       alt={alt}
-      class={`size-full transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      class={['size-full transition-opacity duration-300', loaded ? 'opacity-100' : 'opacity-0']}
       onload={onImageLoad}
+      onerror={onImageError}
       bind:this={imgElement}
     />
 

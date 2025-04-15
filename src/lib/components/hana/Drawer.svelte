@@ -41,13 +41,11 @@
     }
   }
 
-  function getTransitionParams() {
-    return {
-      x: direction === 'right' ? 320 : -320,
-      duration: 300,
-      easing: cubicInOut,
-    }
-  }
+  const getTransitionParams = () => ({
+    x: direction === 'right' ? 320 : -320,
+    duration: 300,
+    easing: cubicInOut,
+  })
 </script>
 
 {#if visible}

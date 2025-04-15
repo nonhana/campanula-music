@@ -81,7 +81,7 @@ export async function setNowPlaying(song: SongItem) {
 // 添加到播放列表并立即播放
 export async function addToPlaylistAndPlay(song: SongItem) {
   setSongLoading(true)
-  await addSongToPlaylist(song, false)
+  addSongToPlaylist(song)
   await setNowPlaying(song)
 }
 // 设置当前播放时间

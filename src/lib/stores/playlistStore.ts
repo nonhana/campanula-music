@@ -71,24 +71,15 @@ export function setPlaylist(songs: SongItem[]): boolean {
 }
 
 // 添加歌曲到播放列表
-export function addSongToPlaylist(song: SongItem, throwError: boolean = true): Promise<void> {
-  return new Promise((res, rej) => {
-    let alreadyExists = false
-
-    playlist.update((songs) => {
-      if (songs.some(s => s.id === song.id)) {
-        alreadyExists = true
-        return songs
-      }
-      return [...songs, song]
-    })
-
-    if (alreadyExists) {
-      throwError ? rej(new Error('已添加相同歌曲')) : res()
+export function addSongToPlaylist(song: SongItem) {
+  playlist.update((songs) => {
+    const existingIndex = songs.findIndex(s => s.id === song.id)
+    if (existingIndex !== -1) {
+      const newSongs = [...songs]
+      const [existingSong] = newSongs.splice(existingIndex, 1)
+      return [existingSong, ...newSongs]
     }
-    else {
-      res()
-    }
+    return [...songs, song]
   })
 }
 

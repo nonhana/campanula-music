@@ -1,6 +1,6 @@
 <script lang='ts'>
   import type { SongItem as SongItemType } from '$lib/types'
-  import SongItem from '$lib/components/common/SongItem.svelte'
+  import SongHomeItem from '$lib/components/common/SongHomeItem.svelte'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import { Music } from 'lucide-svelte'
@@ -24,7 +24,7 @@
       {#each songGroups as group}
         <div class='flex flex-col'>
           {#each group as song}
-            <SongItem song={song} />
+            <SongHomeItem song={song} />
           {/each}
         </div>
       {/each}

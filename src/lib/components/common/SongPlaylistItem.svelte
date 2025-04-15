@@ -34,11 +34,13 @@
   const activated = $derived($nowPlaying?.id === song.id) // 这个 Item 是当前播放的歌曲
 
   const handlePlay = async () => {
+    if ($songLoading)
+      return
+    if (activated) {
+      setPaused(!$paused)
+      return
+    }
     try {
-      if (activated) {
-        setPaused(!$paused)
-        return
-      }
       if (isSongInPlaylist(song.id))
         await setNowPlaying(song)
       else
@@ -57,19 +59,11 @@
   }
 
   const handleAddToPlaylist = async () => {
-    try {
-      await addSongToPlaylist(song)
-      callHanaMessage({
-        message: `已添加歌曲：${song.name}`,
-        type: 'success',
-      })
-    }
-    catch (error: any) {
-      callHanaMessage({
-        message: error.message,
-        type: 'error',
-      })
-    }
+    addSongToPlaylist(song)
+    callHanaMessage({
+      message: `已添加歌曲：${song.name}`,
+      type: 'success',
+    })
   }
 
   const typeClass = {
