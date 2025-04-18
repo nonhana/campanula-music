@@ -76,18 +76,19 @@
 </script>
 
 <div class='size-full flex flex-col justify-between'>
-  {#if $nowPlaying}
-    <LazyImage
-      bind:wrapper={wrapperElement}
-      src={$nowPlaying.album.cover}
-      alt={$nowPlaying.name}
-      class='w-full rounded-2xl object-cover md:w-[27rem]'
-    />
-  {:else}
-    <div bind:this={wrapperElement} class='aspect-square w-full flex items-center justify-center rounded-2xl bg-white/60 text-neutral md:w-[27rem]'>
-      <Music size={128} />
-    </div>
-  {/if}
+  <div bind:this={wrapperElement}>
+    {#if $nowPlaying}
+      <LazyImage
+        src={$nowPlaying.album.cover}
+        alt={$nowPlaying.name}
+        class='w-full rounded-2xl object-cover md:w-[27rem]'
+      />
+    {:else}
+      <div class='aspect-square w-full flex items-center justify-center rounded-2xl bg-white/60 text-neutral md:w-[27rem]'>
+        <Music size={128} />
+      </div>
+    {/if}
+  </div>
   <div class='flex flex-col gap-2'>
     <span class='text-xl font-semibold'>{$nowPlaying?.name ?? '未在播放'}</span>
     {#if $nowPlaying?.alias}

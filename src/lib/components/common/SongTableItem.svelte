@@ -60,7 +60,7 @@
   }
 </script>
 
-<tr class='group text-left even:bg-neutral-50 hover:bg-primary-100!'>
+<tr class='group text-left even:bg-neutral-50 hover:bg-primary-100!' ondblclick={handleMaskClick}>
   <td class='rounded-l-lg'>
     <div class='flex items-center py-2'>
       <MaskElement

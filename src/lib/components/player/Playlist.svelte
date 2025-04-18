@@ -1,7 +1,7 @@
 <script lang='ts'>
   import SongPlaylistItem from '$lib/components/common/SongPlaylistItem.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
-  import { nowPlaying, playlist } from '$lib/stores'
+  import { nowPlaying, playlist, setNowPlaying } from '$lib/stores'
 
   const indexedPlaylist = $derived($playlist.map((item, index) => ({ ...item, index })))
 
@@ -17,7 +17,7 @@
     {getItemById}
   >
     {#snippet renderItem(item)}
-      <SongPlaylistItem index={item.index + 1} song={item} type='queue' />
+      <SongPlaylistItem index={item.index + 1} song={item} type='queue' ondblclick={() => setNowPlaying(item)} />
     {/snippet}
   </VirtualList>
 {:else}

@@ -122,15 +122,17 @@
 
   const actionDisabled = $derived(!scrollStatus.customScrolling || isAutoScrolling || scrollStatus.restoring)
 
-  useTap(() => scrollContainerElement, {
+  let wrapperElement = $state<HTMLElement | null>(null)
+
+  useTap(() => wrapperElement, {
     onTap() {
       toggleShowDetail()
     },
   })
 </script>
 
-{#if $nowPlaying}
-  <div class='relative size-full flex md:gap-5'>
+<div bind:this={wrapperElement} class='relative size-full flex md:gap-5'>
+  {#if $nowPlaying}
     <div
       bind:this={scrollContainerElement}
       class='relative w-full overflow-auto scrollbar-none'
@@ -173,9 +175,9 @@
         </div>
       </Button>
     </div>
-  </div>
-{:else}
-  <div bind:this={scrollContainerElement} class='size-full flex items-center justify-center text-neutral' style:height={`${CONTAINER_SIZE}px`}>
-    <span>当前未播放音乐</span>
-  </div>
-{/if}
+  {:else}
+    <div class='flex items-center justify-center text-neutral' style:height={`${CONTAINER_SIZE}px`}>
+      <span>当前未播放音乐</span>
+    </div>
+  {/if}
+</div>
