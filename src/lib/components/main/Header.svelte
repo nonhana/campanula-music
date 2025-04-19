@@ -1,5 +1,6 @@
 <script lang='ts'>
   import Button from '$lib/components/hana/Button.svelte'
+  import Github from '$lib/components/svg/Github.svelte'
   import Logo from '$lib/components/svg/Logo.svelte'
   import { scrolled } from '$lib/stores'
   import { Menu } from 'lucide-svelte'
@@ -20,4 +21,5 @@
   </Button>
   <a href='/' class='animate-[spin_5s_linear_infinite]'><Logo /></a>
   <a href='/' class='text-neutral'>Campanula</a>
+  <a href='https://github.com/nonhana/campanula-music' target='_blank' class='ml-auto'><Github /></a>
 </header>
