@@ -31,7 +31,9 @@
   <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
     <Header {toggleFolded} />
     <Sidebar folded={!showDetail} />
-    <Drawer bind:showDetail={showDetail} />
+    <div class='block md:hidden'>
+      <Drawer bind:showDetail={showDetail} />
+    </div>
     <main class={['flex-1', showDetail ? 'md:ml-60' : 'md:ml-20']}>
       <div class='m-auto px-6 container'>
         {@render children()}
