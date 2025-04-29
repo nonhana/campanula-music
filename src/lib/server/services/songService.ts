@@ -2,10 +2,11 @@ import type { SongItem } from '$lib/types'
 import { USER_COOKIE } from '$env/static/private'
 import { db } from '$lib/server/db'
 import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
-import { count, eq } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import netease from 'NeteaseCloudMusicApi'
 import { lyrics, songs } from '../db/schema'
 import { ensureHttps } from '../utils/ensureHttps'
+
 // 获取数据库中歌曲总数
 export async function getSongCount() {
   const result = await db.select({ count: count() }).from(songs)
@@ -25,6 +26,7 @@ export async function getSongList(page: number, pageSize: number): Promise<SongI
         },
       },
     },
+    orderBy: [desc(songs.id)],
   })
   const result = songsData.map(song => ({
     ...song,
