@@ -27,7 +27,7 @@
 
 <LoadingIndicator />
 
-<div class='h-[calc(100vh-5rem)] bg-neutral-100'>
+<div class='h-[calc(100dvh-5rem)] bg-neutral-100'>
   <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
     <Header {toggleFolded} />
     <Sidebar folded={!showDetail} />
