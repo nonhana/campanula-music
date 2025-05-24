@@ -4,8 +4,6 @@
   import SongList from '$lib/components/playlists/SongList.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
-  import { resetPlaylist } from '$lib/stores'
-  import { onDestroy } from 'svelte'
 
   interface Props {
     data: PageData
@@ -18,8 +16,6 @@
     description: `欣赏歌单"${data.curPlaylist.name}"，包含${data.curPlaylistSongs.length}首精选歌曲`,
     keywords: `歌单,${data.curPlaylist.name},音乐,Campanula`,
   })
-
-  onDestroy(resetPlaylist)
 </script>
 
 <SeoHead {metadata} />
