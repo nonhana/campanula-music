@@ -1,6 +1,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements'
+  import { ExternalLink } from 'lucide-svelte'
 
   type Props = {
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent' | 'none'
@@ -25,6 +26,8 @@
     ...rest
   }: Props = $props()
 
+  const isExternal = $derived(href?.startsWith('http'))
+
   const baseClasses = 'cursor-pointer font-semibold focus:outline-none'
   const CommonClasses = 'px-4 py-2'
   const IconBtnClasses = 'p-2 size-10'
@@ -47,6 +50,7 @@
     circle: 'rounded-full',
   }
   const disabledClasses = 'cursor-not-allowed opacity-50'
+  const externalClasses = 'hover:text-blue'
 
   const computedClasses = $derived(
     `${
@@ -61,14 +65,22 @@
       customClasses
     } ${
       disabled ? disabledClasses : ''
+    } ${
+      isExternal ? externalClasses : ''
     }`,
   )
+
 </script>
 
 {#if href}
-  <a class={['inline-block', computedClasses]} {style} {href} bind:this={thisEl} {...rest}>
+  <a class={['inline-block group', computedClasses]} {style} {href} target={isExternal ? '_blank' : undefined} bind:this={thisEl} {...rest}>
     <div role='button'>
-      {@render children()}
+      {#if isExternal}
+        <div class='group-hover:hidden'>{@render children()}</div>
+        <div class='hidden group-hover:block'><ExternalLink /></div>
+      {:else}
+        {@render children()}
+      {/if}
     </div>
   </a>
 {:else}

@@ -29,15 +29,14 @@ export const navItems: NavItem[] = [
     icon: ListMusic,
   },
   {
+    title: '我的作品',
+    href: 'https://gallery.caelum.moe',
+    icon: Archive,
+  },
+  {
     title: '钢琴窗',
     href: '/piano-roll',
     icon: Piano,
-    disabled: true,
-  },
-  {
-    title: '我的作品',
-    href: '/my-works',
-    icon: Archive,
     disabled: true,
   },
   {
