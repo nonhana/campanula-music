@@ -61,7 +61,9 @@ export async function getPlaylistSongs(id: string): Promise<SongItem[]> {
     return []
   }
 
-  const songsList = playlist.songs.map(relation => relation.song)
+  const songsList = playlist.songs
+    .map(relation => relation.song)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
   const result = songsList.map(song => ({
     ...song,

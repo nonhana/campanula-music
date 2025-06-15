@@ -15,6 +15,8 @@
 
   const { songs }: Props = $props()
 
+  $inspect(songs)
+
   const songList = $derived(songs.map((song, index) => ({
     ...song,
     index,
