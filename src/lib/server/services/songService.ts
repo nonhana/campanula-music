@@ -1,9 +1,9 @@
 import type { SongItem } from '$lib/types'
 import { USER_COOKIE } from '$env/static/private'
+import { getSongUrlSimple } from '$lib/crawler'
 import { db } from '$lib/server/db'
 import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
 import { count, desc, eq } from 'drizzle-orm'
-import netease from 'NeteaseCloudMusicApi'
 import { lyrics, songs } from '../db/schema'
 import { ensureHttps } from '../utils/ensureHttps'
 
@@ -85,11 +85,10 @@ export async function getSongUrl(id: string) {
   if (!songData)
     return null
 
-  const res = await netease.song_url_v1({
+  const url = await getSongUrlSimple({
     id: songData.sourceId,
-    level: 'exhigh' as netease.SoundQualityType, // 默认较高音质
+    level: 'standard',
     cookie: USER_COOKIE,
   })
-  const data = res.body.data as { url: string, [key: string]: any }[]
-  return ensureHttps(data[0].url)
+  return ensureHttps(url ?? '')
 }
