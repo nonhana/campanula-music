@@ -2,7 +2,7 @@
 
 一款 Web 端的音乐播放器。当前数据来源于我的网易云音乐歌单。
 
-![home](https://moe.greyflowers.pics/2025/03/90d2c6d45dfbfdc5e33fa9ec3808a0ed.png)
+![home](https://picgo-r2.caelum.moe/2025/08/2c70c66041cf467dd041cf0f186c113c.png)
 
 ### 技术栈
 
