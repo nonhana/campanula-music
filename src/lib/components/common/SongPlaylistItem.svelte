@@ -67,7 +67,7 @@
   }
 
   const typeClass = {
-    list: 'bg-white even:bg-neutral-50 hover:bg-primary-100!',
+    list: 'bg-white hover:bg-primary-100!',
     queue: 'bg-white/0',
   }
 
@@ -103,6 +103,7 @@
   tabindex='0'
   class={[
     'group/item shrink-0 w-full h-18 flex items-center rounded-lg px-4',
+    index % 2 === 0 && 'bg-neutral-50!',
     typeClass[type],
     activated && activatedClass[type],
   ]}
