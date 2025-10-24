@@ -12,10 +12,6 @@
 - **构建工具**: [Vite](https://vitejs.dev/)
 - **部署**: [Netlify](https://www.netlify.com/)
 
-### 地址
-
-访问 [https://campanulamusic.xyz](https://campanulamusic.xyz) 体验应用。
-
 ### 贡献
 
 在使用中遇到任何疑问，欢迎提交 Pull Request 或 Issue。
