@@ -103,7 +103,7 @@
   tabindex='0'
   class={[
     'group/item shrink-0 w-full h-18 flex items-center rounded-lg px-4',
-    index % 2 === 0 && 'bg-neutral-50!',
+    index % 2 === 0 && type === 'list' && 'bg-neutral-50!',
     typeClass[type],
     activated && activatedClass[type],
   ]}
