@@ -6,14 +6,24 @@
   interface Props {
     innerStyle: string
     translateStyle: string
-    visibleItems: any[]
+    renderItems: any[]
     itemSize: number
     renderItem: Snippet<[any, number]>
+    visibleStartOffset: number
     activeItemId?: number | string | null
     getItemById?: (id: number | string) => any | null
   }
 
-  const { innerStyle, translateStyle, visibleItems, itemSize, renderItem, activeItemId, getItemById }: Props = $props()
+  const {
+    innerStyle,
+    translateStyle,
+    renderItems,
+    itemSize,
+    renderItem,
+    visibleStartOffset,
+    activeItemId,
+    getItemById,
+  }: Props = $props()
 
   const { posData, emptyKey } = getContext<{
     posData: Writable<WeakMap<any, number>>
@@ -38,11 +48,11 @@
     <div class='absolute w-full rounded-lg bg-primary/60 transition-transform' style={bgStyle}></div>
   {/if}
   <div style={translateStyle} class='relative'>
-    {#each visibleItems as item, index}
-      {#if (item as any)[emptyKey]}
+    {#each renderItems as item, index}
+      {#if item[emptyKey]}
         <div style={`height: ${itemSize}px`}></div>
       {:else}
-        {@render renderItem(item, index)}
+        {@render renderItem(item, index - visibleStartOffset)}
       {/if}
     {/each}
   </div>

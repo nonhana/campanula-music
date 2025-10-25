@@ -18,7 +18,6 @@
     throttleMs?: number // 滚动节流时间间隔
     onNearEnd?: () => void // 接近末尾时的回调函数
     endThreshold?: number // 触发预加载的阈值（0-1之间，表示剩余比例）
-    preloadCount?: number // 预加载的项数
     bufferCount?: number // 可见项缓冲区数量
   }
 
@@ -87,7 +86,7 @@
     })
   })
 
-  // 可见范围
+  // 真实可见范围
   const baseVisibleCount = $derived(Math.ceil(containerSize / (itemSize + gap)))
   // 当 effectiveScrollPos 改变时，计算第一个可见项的起始索引
   const startIndex = $derived(Math.floor(effectiveScrollPos / (itemSize + gap)))
@@ -97,7 +96,9 @@
     Math.min(curItems.length, startIndex + baseVisibleCount + bufferCount),
   )
   // 截取当前需要渲染的 items
-  const visibleItems = $derived(curItems.slice(renderStartIndex, renderEndIndex))
+  const renderItems = $derived(curItems.slice(renderStartIndex, renderEndIndex))
+  // 计算可见区域第一项在 renderItems 中的偏移量
+  const visibleStartOffset = $derived(startIndex - renderStartIndex)
 
   // 整个列表的总尺寸
   const totalSize = $derived(curItems.length * itemSize + (curItems.length - 1) * gap)
@@ -215,9 +216,10 @@
     <VirtualListCore
       {innerStyle}
       {translateStyle}
-      {visibleItems}
+      {renderItems}
       {itemSize}
       {renderItem}
+      {visibleStartOffset}
       {activeItemId}
       {getItemById}
     />
@@ -226,9 +228,10 @@
   <VirtualListCore
     {innerStyle}
     {translateStyle}
-    {visibleItems}
+    {renderItems}
     {itemSize}
     {renderItem}
+    {visibleStartOffset}
     {activeItemId}
     {getItemById}
   />
