@@ -42,7 +42,7 @@
     const activeItem = getItemById(activeItemId)
     if (!activeItem)
       return 0
-    const result = $posData.get(activeItem as object)
+    const result = $posData.get(activeItem)
     return result ?? 0
   })
 

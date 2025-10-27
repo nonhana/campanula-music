@@ -12,6 +12,7 @@
     PLAY_MODE_MAP,
     playlist,
     playMode,
+    registerMediaSessionHandlers,
     seeking,
     setCurrentTime,
     setNowPlaying,
@@ -21,6 +22,7 @@
     setSelectedMenu,
     setSongLoading,
     songLoading,
+    updateMediaSessionPlaybackState,
     volume,
   } from '$lib/stores'
   import { durationFormatter, msToSeconds, secondsToMs } from '$lib/utils'
@@ -93,43 +95,6 @@
     setSongLoading(false)
   }
 
-  onMount(() => {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', globalPause)
-    }
-    return () => {
-      window.removeEventListener('keydown', globalPause)
-    }
-  })
-
-  let showDrawer = $state(false)
-  const toggleShowDrawer = () => {
-    showDrawer = !showDrawer
-  }
-
-  $effect(() => {
-    if (!$paused && !$nowPlaying) {
-      callHanaMessage({
-        message: '请先选择一首歌曲',
-        type: 'warning',
-      })
-      setPaused(true)
-    }
-  })
-
-  const curTimeInfo = $derived(
-    $nowPlaying
-      ? `${durationFormatter(secondsToMs($currentTime))} / ${durationFormatter($nowPlaying.duration)}`
-      : '--:-- / --:--',
-  )
-
-  $effect(() => {
-    callHanaMessage({
-      message: `当前播放模式：${PLAY_MODE_MAP[$playMode]}`,
-      type: 'info',
-    })
-  })
-
   /**
    * 根据当前播放模式和方向获取下一首要播放的歌曲
    * @param direction 方向：'prev'上一首，'next'下一首，'auto'根据播放模式自动决定
@@ -199,6 +164,56 @@
       }
     }
   }
+
+  onMount(() => {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', globalPause)
+
+      // 注册 Media Session 事件处理器
+      registerMediaSessionHandlers({
+        onPlay: () => setPaused(false),
+        onPause: () => setPaused(true),
+        onPreviousTrack: () => handleChangeSong('prev')(),
+        onNextTrack: () => handleChangeSong('next')(),
+      })
+    }
+    return () => {
+      window.removeEventListener('keydown', globalPause)
+    }
+  })
+
+  let showDrawer = $state(false)
+  const toggleShowDrawer = () => {
+    showDrawer = !showDrawer
+  }
+
+  $effect(() => {
+    if (!$paused && !$nowPlaying) {
+      callHanaMessage({
+        message: '请先选择一首歌曲',
+        type: 'warning',
+      })
+      setPaused(true)
+    }
+  })
+
+  const curTimeInfo = $derived(
+    $nowPlaying
+      ? `${durationFormatter(secondsToMs($currentTime))} / ${durationFormatter($nowPlaying.duration)}`
+      : '--:-- / --:--',
+  )
+
+  $effect(() => {
+    callHanaMessage({
+      message: `当前播放模式：${PLAY_MODE_MAP[$playMode]}`,
+      type: 'info',
+    })
+  })
+
+  // 监听播放状态变化，同步更新 Media Session
+  $effect(() => {
+    updateMediaSessionPlaybackState($paused)
+  })
 
   // 当前曲目播放结束
   const handleAudioEnded = () => {

@@ -56,6 +56,9 @@ export function reset() {
   currentTime.set(0)
   setSeeking(false)
   setPaused(true)
+  // 清除 Media Session 元数据
+  updateMediaSessionMetadata(null)
+  updateMediaSessionPlaybackState(true)
 }
 // 获取歌曲 url
 export async function getSongUrl(song: SongItem): Promise<string> {
@@ -77,6 +80,8 @@ export async function setNowPlaying(song: SongItem) {
   nowPlaying.set({ ...song, lyrics })
   const source = await getSongUrl(song)
   nowPlayingUrl.set(source)
+  // 更新 Media Session 元数据
+  updateMediaSessionMetadata(song)
 }
 // 添加到播放列表并立即播放
 export async function addToPlaylistAndPlay(song: SongItem) {
@@ -103,4 +108,96 @@ export function setSeeking(value: boolean) {
 // 设置是否暂停
 export function setPaused(value: boolean) {
   paused.set(value)
+}
+
+// ==================== Media Session API 相关 ====================
+
+/**
+ * 更新 Media Session 元数据
+ * 使浏览器能够正确显示当前播放的媒体信息
+ */
+export function updateMediaSessionMetadata(song: SongItem | null) {
+  if (!('mediaSession' in navigator))
+    return
+
+  if (!song) {
+    navigator.mediaSession.metadata = null
+    return
+  }
+
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: song.name,
+      artist: song.artists.map(artist => artist.name).join(' / '),
+      album: song.album.name,
+      artwork: [
+        {
+          src: song.cover,
+          sizes: '256x256',
+          type: 'image/jpeg',
+        },
+        {
+          src: song.album.cover,
+          sizes: '256x256',
+          type: 'image/jpeg',
+        },
+      ],
+    })
+  }
+  catch (error) {
+    console.warn('Failed to update Media Session metadata:', error)
+  }
+}
+
+/**
+ * 注册 Media Session 事件处理器
+ * 处理系统媒体控制（如蓝牙耳机、系统通知栏等）的交互
+ */
+export function registerMediaSessionHandlers(handlers: {
+  onPlay: () => void
+  onPause: () => void
+  onPreviousTrack: () => void
+  onNextTrack: () => void
+}) {
+  if (!('mediaSession' in navigator))
+    return
+
+  try {
+    navigator.mediaSession.setActionHandler('play', () => {
+      handlers.onPlay()
+    })
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+      handlers.onPause()
+    })
+
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      handlers.onPreviousTrack()
+    })
+
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      handlers.onNextTrack()
+    })
+
+    // 设置播放状态
+    navigator.mediaSession.playbackState = 'none'
+  }
+  catch (error) {
+    console.warn('Failed to register Media Session handlers:', error)
+  }
+}
+
+/**
+ * 更新 Media Session 的播放状态
+ */
+export function updateMediaSessionPlaybackState(isPaused: boolean) {
+  if (!('mediaSession' in navigator))
+    return
+
+  try {
+    navigator.mediaSession.playbackState = isPaused ? 'paused' : 'playing'
+  }
+  catch (error) {
+    console.warn('Failed to update Media Session playback state:', error)
+  }
 }
