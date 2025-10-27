@@ -218,7 +218,7 @@
       {translateStyle}
       {renderItems}
       {itemSize}
-      {renderItem}
+      renderItem={renderItem as any}
       {visibleStartOffset}
       {activeItemId}
       {getItemById}
@@ -230,7 +230,7 @@
     {translateStyle}
     {renderItems}
     {itemSize}
-    {renderItem}
+    renderItem={renderItem as any}
     {visibleStartOffset}
     {activeItemId}
     {getItemById}
