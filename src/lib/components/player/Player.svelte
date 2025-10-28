@@ -97,7 +97,7 @@
 
   /**
    * 根据当前播放模式和方向获取下一首要播放的歌曲
-   * @param direction 方向：'prev'上一首，'next'下一首，'auto'根据播放模式自动决定
+   * @param direction 'prev'上一首，'next'下一首，'auto'根据播放模式自动决定
    * @returns 下一首歌曲或undefined（如果没有下一首）
    */
   const getNextSong = (direction: 'prev' | 'next' | 'auto') => {

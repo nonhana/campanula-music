@@ -109,13 +109,7 @@ export function setSeeking(value: boolean) {
 export function setPaused(value: boolean) {
   paused.set(value)
 }
-
-// ==================== Media Session API 相关 ====================
-
-/**
- * 更新 Media Session 元数据
- * 使浏览器能够正确显示当前播放的媒体信息
- */
+// 更新 Media Session 元数据
 export function updateMediaSessionMetadata(song: SongItem | null) {
   if (!('mediaSession' in navigator))
     return
@@ -132,13 +126,8 @@ export function updateMediaSessionMetadata(song: SongItem | null) {
       album: song.album.name,
       artwork: [
         {
-          src: song.cover,
-          sizes: '256x256',
-          type: 'image/jpeg',
-        },
-        {
           src: song.album.cover,
-          sizes: '256x256',
+          sizes: '384x384',
           type: 'image/jpeg',
         },
       ],
@@ -148,11 +137,7 @@ export function updateMediaSessionMetadata(song: SongItem | null) {
     console.warn('Failed to update Media Session metadata:', error)
   }
 }
-
-/**
- * 注册 Media Session 事件处理器
- * 处理系统媒体控制（如蓝牙耳机、系统通知栏等）的交互
- */
+// 注册 Media Session 事件处理器
 export function registerMediaSessionHandlers(handlers: {
   onPlay: () => void
   onPause: () => void
@@ -179,17 +164,13 @@ export function registerMediaSessionHandlers(handlers: {
       handlers.onNextTrack()
     })
 
-    // 设置播放状态
     navigator.mediaSession.playbackState = 'none'
   }
   catch (error) {
     console.warn('Failed to register Media Session handlers:', error)
   }
 }
-
-/**
- * 更新 Media Session 的播放状态
- */
+// 更新 Media Session 的播放状态
 export function updateMediaSessionPlaybackState(isPaused: boolean) {
   if (!('mediaSession' in navigator))
     return
