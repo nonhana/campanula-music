@@ -73,11 +73,17 @@
 </script>
 
 {#if href}
-  <a class={['inline-block group', computedClasses]} {style} {href} target={isExternal ? '_blank' : undefined} bind:this={thisEl} {...rest}>
+  <a
+    class={['inline-block group', computedClasses]}
+    bind:this={thisEl}
+    target={isExternal ? '_blank' : undefined}
+    {style}
+    {href}
+    {...rest}>
     <div role='button'>
       {#if isExternal}
         <div class='group-hover:hidden'>{@render children()}</div>
-        <div class='hidden group-hover:block'><ExternalLink /></div>
+        <div class='mx-auto w-fit hidden group-hover:block'><ExternalLink /></div>
       {:else}
         {@render children()}
       {/if}

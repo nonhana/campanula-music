@@ -24,7 +24,7 @@
   }))
 </script>
 
-<Drawer bind:visible={showDetail} direction='left'>
+<Drawer bind:visible={showDetail} direction='left' title='路由导航'>
   {#snippet icon()}
     <div class='animate-[spin_5s_linear_infinite]'>
       <Logo />

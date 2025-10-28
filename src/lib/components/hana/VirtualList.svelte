@@ -89,7 +89,7 @@
   // 真实可见范围
   const baseVisibleCount = $derived(Math.ceil(containerSize / (itemSize + gap)))
   // 当 effectiveScrollPos 改变时，计算第一个可见项的起始索引
-  const startIndex = $derived(Math.floor(effectiveScrollPos / (itemSize + gap)))
+  const startIndex = $derived(Math.round(effectiveScrollPos / (itemSize + gap)))
   // 前后各渲染 bufferCount 个
   const renderStartIndex = $derived(Math.max(0, startIndex - bufferCount))
   const renderEndIndex = $derived(
