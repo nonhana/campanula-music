@@ -24,6 +24,7 @@
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
 
   let activatedLyric = $state<LyricItemType | null>(null)
+  let isAutoScrolling = $state(false) // 是否正在自动滚动歌词
 
   const moveToTargetLyric = () => {
     if (!$nowPlaying || !activatedLyric)
@@ -57,8 +58,7 @@
 
   // currentLyricIndex 变化，找到当前歌词的位置
   const targetOffset = $derived(currentLyricIndex * ITEM_SIZE)
-  // 是否正在自动滚动歌词
-  const isAutoScrolling = $derived($nowPlaying?.lyrics.findIndex(item => item.time === activatedLyric?.time) === currentLyricIndex - 1)
+  // 是否正在自动滚动歌词由显式状态控制，避免派生抖动
 
   // targetOffset 变化，触发自动滚动
   $effect(() => {
@@ -69,6 +69,7 @@
     if (!$paused && scrollStatus.customScrolling)
       return
 
+    isAutoScrolling = true
     scrollContainerElement.scrollTo({
       top: targetOffset,
       behavior: 'smooth',
@@ -112,12 +113,22 @@
 
   // 滚动结束后的触发函数
   const onscrollend = () => {
+    // 编程触发的平滑滚动结束
+    if (isAutoScrolling) {
+      isAutoScrolling = false
+      return
+    }
+
+    // 恢复滚动中的一次性结束
     if (scrollStatus.restoring) {
       scrollStatus.restoring = false
       return
     }
 
-    scrollTimer = setTimeout(moveToOriginal, 1000)
+    // 仅当用户滚动过时，才在停止后一段时间恢复到目标位置
+    if (scrollStatus.customScrolling) {
+      scrollTimer = setTimeout(moveToOriginal, 1000)
+    }
   }
 
   const actionDisabled = $derived(!scrollStatus.customScrolling || isAutoScrolling || scrollStatus.restoring)
