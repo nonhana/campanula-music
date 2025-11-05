@@ -1,34 +1,17 @@
 <script lang='ts'>
-  import type { SongItem } from '$lib/types'
   import { goto } from '$app/navigation'
   import Button from '$lib/components/hana/Button.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
-  import { useMessage } from '$lib/hooks/useMessage'
   import { generateSeoMetadata } from '$lib/metadata'
-  import { setNowPlaying, setPlaylist, setSongLoading, songLoading, storedPlaylists } from '$lib/stores'
+  import { setSongLoading, songLoading, storedPlaylists } from '$lib/stores'
   import { Disc3, Loader, PlayCircle } from 'lucide-svelte'
 
   const metadata = generateSeoMetadata('playlists')
 
-  const { callHanaMessage } = useMessage()
-
-  const fetchPlaylistSongs = async (id: number): Promise<SongItem[]> => {
-    const res = await fetch(`/api/playlists/${id}/songs`)
-    const data = await res.json()
-    return data
-  }
-
   const handleRandomPlay = async () => {
     setSongLoading(true)
     const targetPlaylist = $storedPlaylists[Math.floor(Math.random() * $storedPlaylists.length)]
-    await goto(`/playlists/${targetPlaylist.id}`)
-    const songs = await fetchPlaylistSongs(targetPlaylist.id)
-    setPlaylist(songs)
-    callHanaMessage({
-      message: '播放列表已更新',
-      type: 'success',
-    })
-    await setNowPlaying(songs[0])
+    await goto(`/playlists/${targetPlaylist.id}?autoplay=true`)
   }
 
 </script>

@@ -38,33 +38,24 @@ export function resetPlaylist() {
 export function setPlaylist(songs: SongItem[]): boolean {
   let hasChanged = false
 
-  playlist.update((currentPlaylist) => {
-    // 创建当前播放列表的ID映射，用于快速查找
-    const currentSongsMap = new Map<number, SongItem>()
-    currentPlaylist.forEach((song) => {
-      currentSongsMap.set(song.id, song)
-    })
-
-    // 使用Diff算法构建新的播放列表
-    const newPlaylist = songs.map((newSong) => {
-      // 如果新歌曲在当前播放列表中已存在，保留原引用以保持状态
-      const existingSong = currentSongsMap.get(newSong.id)
-      if (existingSong) {
-        return existingSong // 复用已有的对象引用
-      }
-      return newSong // 添加新歌曲
-    })
-
-    // 只有当播放列表确实发生变化时才更新
-    if (
-      newPlaylist.length !== currentPlaylist.length
-      || newPlaylist.some((song, index) => song.id !== currentPlaylist[index]?.id)
-    ) {
+  playlist.update((current) => {
+    const len = songs.length
+    if (len !== current.length) {
       hasChanged = true
-      return newPlaylist
+      return songs
     }
 
-    return currentPlaylist // 如果没有变化，返回原播放列表
+    const newList = [...current]
+    for (let i = 0; i < len; i++) {
+      const newSong = songs[i]
+      const oldSong = current[i]
+      if (oldSong?.id !== newSong.id) {
+        newList[i] = newSong
+        hasChanged = true
+      }
+    }
+
+    return hasChanged ? newList : current
   })
 
   return hasChanged

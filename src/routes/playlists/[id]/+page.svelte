@@ -21,6 +21,6 @@
 <SeoHead {metadata} />
 
 <div class='w-full flex flex-col gap-8'>
-  <Detail playlist={data.curPlaylist} />
+  <Detail songs={data.curPlaylistSongs} playlist={data.curPlaylist} />
   <SongList songs={data.curPlaylistSongs} />
 </div>

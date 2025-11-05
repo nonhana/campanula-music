@@ -58,7 +58,6 @@
 
   // currentLyricIndex 变化，找到当前歌词的位置
   const targetOffset = $derived(currentLyricIndex * ITEM_SIZE)
-  // 是否正在自动滚动歌词由显式状态控制，避免派生抖动
 
   // targetOffset 变化，触发自动滚动
   $effect(() => {

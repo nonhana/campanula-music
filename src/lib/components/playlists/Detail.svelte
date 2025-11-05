@@ -12,36 +12,41 @@
 
   const { callHanaMessage } = useMessage()
 
-  const id = $derived(page.params.id)
-
   interface Props {
     playlist: PlaylistItem
+    songs: SongItem[]
   }
 
-  const { playlist }: Props = $props()
+  const { playlist, songs }: Props = $props()
+
+  const autoplay = $derived(page.url.searchParams.get('autoplay') === 'true')
+
+  $effect(() => {
+    if (autoplay) {
+      setPlaylist(songs)
+      callHanaMessage({
+        message: '播放列表已更新',
+        type: 'success',
+      })
+      setNowPlaying(songs[0])
+    }
+  })
 
   const moreMap = [{
     text: '添加到播放列表',
     command: 'add-to-playlist',
   }]
 
-  const fetchPlaylistSongs = async (): Promise<SongItem[]> => {
-    const res = await fetch(`/api/playlists/${id}/songs`)
-    const data = await res.json()
-    return data
-  }
-
-  const handleAddPlaylistSongs = async (autoplay: boolean = false) => {
+  const handleAddPlaylistSongs = (autoplay: boolean = false) => {
     try {
       setSongLoading(true)
-      const songs = await fetchPlaylistSongs()
       setPlaylist(songs)
       callHanaMessage({
         message: '播放列表已更新',
         type: 'success',
       })
       if (autoplay) {
-        await setNowPlaying(songs[0])
+        setNowPlaying(songs[0])
       }
     }
     catch (error: any) {
@@ -55,7 +60,7 @@
     }
   }
 
-  const handleCommand = async (command: string | number | object) => {
+  const handleCommand = (command: string | number | object) => {
     switch (command) {
       case 'add-to-playlist':
         handleAddPlaylistSongs()

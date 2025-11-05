@@ -84,10 +84,10 @@ export async function setNowPlaying(song: SongItem) {
   updateMediaSessionMetadata(song)
 }
 // 添加到播放列表并立即播放
-export async function addToPlaylistAndPlay(song: SongItem) {
+export function addToPlaylistAndPlay(song: SongItem) {
   setSongLoading(true)
   addSongToPlaylist(song)
-  await setNowPlaying(song)
+  setNowPlaying(song)
 }
 // 设置当前播放时间
 export function setCurrentTime(time: number) {

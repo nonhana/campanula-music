@@ -32,7 +32,7 @@
     containerSize = height
   }
 
-  const handleDblClick = async (targetSong: SongItem) => {
+  const handleDblClick = (targetSong: SongItem) => {
     const curPlaylistId = page.params.id
     try {
       setSongLoading(true)
@@ -45,7 +45,7 @@
           type: 'success',
         })
       }
-      await setNowPlaying(targetSong)
+      setNowPlaying(targetSong)
     }
     catch (error: any) {
       callHanaMessage({

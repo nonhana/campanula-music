@@ -49,7 +49,7 @@
       handlePlay()
   }
 
-  const handleAddToPlaylist = async () => {
+  const handleAddToPlaylist = () => {
     addSongToPlaylist(song)
     callHanaMessage({
       message: `已添加歌曲：${song.name}`,
