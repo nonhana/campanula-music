@@ -9,6 +9,7 @@ export default antfu(
   {
     svelte: true,
     unocss: true,
+    pnpm: true,
     rules: {
       'no-unused-expressions': 'off',
     },

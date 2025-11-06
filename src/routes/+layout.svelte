@@ -35,7 +35,7 @@
       <Drawer bind:showDetail={showDetail} />
     </div>
     <main class={['flex-1', showDetail ? 'md:ml-60' : 'md:ml-20']}>
-      <div class='m-auto px-6 container'>
+      <div class='container m-auto px-6'>
         {@render children()}
       </div>
     </main>

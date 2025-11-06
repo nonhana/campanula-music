@@ -13,7 +13,7 @@ export const PLAY_MODE_MAP: Record<PlayMode, string> = {
 /** 正在加载 */
 export const songLoading = writable(false)
 /** 正在播放的歌曲 */
-export const nowPlaying = writable<SongItem & { lyrics: LyricItem[] } | null>(null)
+export const nowPlaying = writable<SongItem & { lyrics?: LyricItem[] } | null>(null)
 /** 当前正在播放的歌曲的 url */
 export const nowPlayingUrl = writable<string | null>(null)
 /** 当前播放时间，单位：秒 */
@@ -56,7 +56,6 @@ export function reset() {
   currentTime.set(0)
   setSeeking(false)
   setPaused(true)
-  // 清除 Media Session 元数据
   updateMediaSessionMetadata(null)
   updateMediaSessionPlaybackState(true)
 }
@@ -80,7 +79,6 @@ export async function setNowPlaying(song: SongItem) {
   nowPlaying.set({ ...song, lyrics })
   const source = await getSongUrl(song)
   nowPlayingUrl.set(source)
-  // 更新 Media Session 元数据
   updateMediaSessionMetadata(song)
 }
 // 添加到播放列表并立即播放
