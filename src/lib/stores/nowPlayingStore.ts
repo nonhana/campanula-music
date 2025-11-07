@@ -59,6 +59,7 @@ export function reset() {
   updateMediaSessionMetadata(null)
   updateMediaSessionPlaybackState(true)
 }
+let curSetNowPlayingReqId = 0
 // 获取歌曲 url
 export async function getSongUrl(song: SongItem): Promise<string> {
   const res = await fetch(`/api/songs/${song.id}/url`)
@@ -73,13 +74,24 @@ export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
 }
 // 设置当前播放的歌曲
 export async function setNowPlaying(song: SongItem) {
-  setSongLoading(true)
-  const lyrics = await getLyrics(song)
+  const reqId = ++curSetNowPlayingReqId
+
+  const lyricsPromise = getLyrics(song)
+  const urlPromise = getSongUrl(song)
+
   reset()
-  nowPlaying.set({ ...song, lyrics })
-  const source = await getSongUrl(song)
+  nowPlaying.set({ ...song })
+
+  const source = await urlPromise
+  if (reqId !== curSetNowPlayingReqId)
+    return
   nowPlayingUrl.set(source)
   updateMediaSessionMetadata(song)
+
+  const lyrics = await lyricsPromise
+  if (reqId !== curSetNowPlayingReqId)
+    return
+  nowPlaying.update(s => (s && s.id === song.id) ? { ...s, lyrics } : s)
 }
 // 添加到播放列表并立即播放
 export function addToPlaylistAndPlay(song: SongItem) {

@@ -28,7 +28,7 @@
       if (isSongInPlaylist(song.id))
         await setNowPlaying(song)
       else
-        await addToPlaylistAndPlay(song)
+        addToPlaylistAndPlay(song)
     }
     catch (error: any) {
       callHanaMessage({

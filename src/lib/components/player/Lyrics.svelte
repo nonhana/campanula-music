@@ -42,12 +42,12 @@
 
   // currentTime 变化，找到当前歌词
   $effect(() => {
-    if (!$nowPlaying)
+    if (!$nowPlaying || !$nowPlaying.lyrics)
       return
 
     // 找出当前歌词
     const targetLyricsIndex = $nowPlaying.lyrics.findIndex((item, index) => {
-      const nextTime = $nowPlaying.lyrics[index + 1]?.time
+      const nextTime = $nowPlaying.lyrics![index + 1]?.time
       return secondsToMs($currentTime) >= item.time && secondsToMs($currentTime) < (nextTime || Infinity)
     })
 
@@ -150,7 +150,11 @@
       {onscrollend}
     >
       <VirtualList
-        items={$nowPlaying.lyrics}
+        items={$nowPlaying.lyrics ?? [{
+          time: 0,
+          text: '正在加载歌词...',
+          translate: null,
+        }]}
         containerSize={CONTAINER_SIZE}
         itemSize={ITEM_SIZE}
         headEmptyItems={ACTIVATED_INDEX}
