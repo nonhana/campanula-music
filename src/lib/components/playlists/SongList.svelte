@@ -5,7 +5,7 @@
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
-  import { playlistId, resetPlaylist, setNowPlaying, setPlaylist, setPlaylistId, setSongLoading } from '$lib/stores'
+  import { playlistId, resetPlaylist, setNowPlaying, updatePlaylist, setPlaylistId, setSongLoading } from '$lib/stores'
 
   const { callHanaMessage } = useMessage()
 
@@ -39,7 +39,7 @@
       if (curPlaylistId && curPlaylistId !== $playlistId) {
         resetPlaylist()
         setPlaylistId(curPlaylistId)
-        setPlaylist(songs)
+        updatePlaylist(songs)
         callHanaMessage({
           message: '播放列表已更新',
           type: 'success',

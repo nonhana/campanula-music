@@ -7,7 +7,7 @@
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
-  import { setNowPlaying, setPlaylist, setSongLoading, songLoading } from '$lib/stores'
+  import { setNowPlaying, updatePlaylist, setSongLoading, songLoading } from '$lib/stores'
   import { Ellipsis, Loader, Play, Plus } from 'lucide-svelte'
   import { onMount } from 'svelte'
 
@@ -28,7 +28,7 @@
   const handleAddPlaylistSongs = (autoplay: boolean = false) => {
     try {
       setSongLoading(true)
-      setPlaylist(songs)
+      updatePlaylist(songs)
       callHanaMessage({
         message: '播放列表已更新',
         type: 'success',

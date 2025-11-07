@@ -7,7 +7,8 @@
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import Github from '$lib/components/svg/Github.svelte'
   import Logo from '$lib/components/svg/Logo.svelte'
-  import { scrolled } from '$lib/stores'
+  import { useMessage } from '$lib/hooks/useMessage'
+  import { replacePlaylist, scrolled, updatePlaylist } from '$lib/stores'
   import { Loader, Menu, Search } from 'lucide-svelte'
   import { debounce } from 'throttle-debounce'
 
@@ -16,6 +17,8 @@
   }
 
   const { toggleFolded }: Props = $props()
+
+  const { callHanaMessage } = useMessage()
 
   // 搜索相关
   let openModal = $state(false)
@@ -94,6 +97,16 @@
     prevSearchValue = searchValue
     debouncedSearch(searchValue)
   })
+
+  const handleReplacePlaylist = () => {
+    replacePlaylist(searchResults)
+    callHanaMessage({ message: '已替换当前播放列表', type: 'success' })
+  }
+
+  const handleAddToPlaylist = () => {
+    updatePlaylist(searchResults)
+    callHanaMessage({ message: '已添加到播放列表', type: 'success' })
+  }
 </script>
 
 <header class={[
@@ -138,9 +151,13 @@
       {:else if searchResults.length === 0}
         <div class='h-64 flex items-center justify-center text-neutral'>未找到相关歌曲</div>
       {:else}
-        <p
-          class='text-sm text-neutral'
-        >总共找到 {totalCount ?? 0} 首歌曲</p>
+        <div class='flex items-center gap-2'>
+          <p
+            class='text-sm text-neutral'
+          >总共找到 {totalCount ?? 0} 首歌曲</p>
+          <Button class='ml-auto' variant='transparent' onclick={handleReplacePlaylist}>替换列表</Button>
+          <Button variant='secondary' onclick={handleAddToPlaylist}>添加列表</Button>
+        </div>
         <VirtualList
           items={searchResults}
           itemSize={72}

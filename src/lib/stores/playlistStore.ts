@@ -34,8 +34,8 @@ export function resetPlaylist() {
   playlistId.set(null)
 }
 
-// 设置播放列表
-export function setPlaylist(songs: SongItem[]): boolean {
+// 将指定歌曲列表更新到当前播放列表
+export function updatePlaylist(songs: SongItem[]): boolean {
   let hasChanged = false
 
   playlist.update((current) => {
@@ -59,6 +59,11 @@ export function setPlaylist(songs: SongItem[]): boolean {
   })
 
   return hasChanged
+}
+
+// 替换当前播放列表
+export function replacePlaylist(songs: SongItem[]) {
+  playlist.set(songs)
 }
 
 // 添加歌曲到播放列表
