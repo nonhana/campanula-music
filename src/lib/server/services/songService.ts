@@ -3,8 +3,8 @@ import { USER_COOKIE } from '$env/static/private'
 import { getSongUrlSimple } from '$lib/crawler'
 import { db } from '$lib/server/db'
 import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
-import { count, desc, eq } from 'drizzle-orm'
-import { lyrics, songs } from '../db/schema'
+import { count, desc, eq, inArray, like, or } from 'drizzle-orm'
+import { albums, artists, lyrics, songs, songsToArtists } from '../db/schema'
 import { ensureHttps } from '../utils/ensureHttps'
 
 // 获取数据库中歌曲总数
@@ -91,4 +91,61 @@ export async function getSongUrl(id: string) {
     cookie: USER_COOKIE,
   })
   return ensureHttps(url ?? '')
+}
+
+// 搜索歌曲
+export async function searchSongs(keyword: string | null) {
+  if (!keyword)
+    return []
+
+  const trimmed = keyword.trim()
+  if (!trimmed)
+    return []
+
+  const pattern = `%${trimmed}%`
+
+  // 第一阶段：仅用连接过滤并取去重后的歌曲 ID，避免携带大对象造成的 I/O 放大
+  const idRows = await db
+    .select({ id: songs.id })
+    .from(songs)
+    .leftJoin(albums, eq(songs.albumId, albums.id))
+    .leftJoin(songsToArtists, eq(songs.id, songsToArtists.songId))
+    .leftJoin(artists, eq(songsToArtists.artistId, artists.id))
+    .where(or(
+      like(songs.name, pattern),
+      like(songs.alias, pattern),
+      like(albums.name, pattern),
+      like(artists.name, pattern),
+    ))
+    .groupBy(songs.id)
+    .orderBy(desc(songs.id))
+    .limit(50)
+
+  const ids = idRows.map(r => r.id)
+  if (ids.length === 0)
+    return []
+
+  // 第二阶段：按 ID 批量加载完整关系数据
+  const songsData = await db.query.songs.findMany({
+    where: inArray(songs.id, ids),
+    with: {
+      album: true,
+      artists: {
+        with: {
+          artist: true,
+        },
+      },
+    },
+    orderBy: [desc(songs.id)],
+  })
+
+  const result = songsData.map(song => ({
+    ...song,
+    alias: song.alias?.split(',') ?? [],
+    artists: song.artists.map(artist => ({
+      id: artist.artist.id,
+      name: artist.artist.name,
+    })),
+  }))
+  return result
 }

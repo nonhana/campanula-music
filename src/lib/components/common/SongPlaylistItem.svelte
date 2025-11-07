@@ -22,7 +22,7 @@
   const { callHanaMessage } = useMessage()
 
   interface Props {
-    index: number
+    index?: number
     song: SongItem
     type?: 'list' | 'queue'
     showCover?: boolean
@@ -103,14 +103,16 @@
   tabindex='0'
   class={[
     'group/item shrink-0 w-full h-18 flex items-center rounded-lg px-4',
-    index % 2 === 0 && type === 'list' && 'bg-neutral-50!',
+    index && index % 2 === 0 && type === 'list' && 'bg-neutral-50!',
     typeClass[type],
     activated && activatedClass[type],
   ]}
   {ondblclick}
 >
   <div class='flex items-center gap-10'>
-    <div class='size-10 items-center justify-center hidden lg:flex group-hover/item:hidden'>{index}</div>
+    {#if index}
+      <div class='size-10 items-center justify-center hidden lg:flex group-hover/item:hidden'>{index}</div>
+    {/if}
     <Tooltip class={['hidden', type === 'queue' ? 'md:group-hover/item:block' : 'group-hover/item:block']} content='播放' disabled={type === 'queue'}>
       {#if $songLoading}
         <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}>

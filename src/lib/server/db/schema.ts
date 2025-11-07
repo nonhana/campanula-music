@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm'
-import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 // ==================== 基础表定义 ====================
 
@@ -19,7 +19,9 @@ export const artists = sqliteTable('artists', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
   sourceId: text('source_id').notNull(),
-})
+}, t => [
+  index('idx_artists_name').on(t.name),
+])
 
 // 专辑表
 export const albums = sqliteTable('albums', {
@@ -27,7 +29,9 @@ export const albums = sqliteTable('albums', {
   name: text('name').notNull(),
   cover: text('cover').notNull(),
   sourceId: text('source_id').notNull(),
-})
+}, t => [
+  index('idx_albums_name').on(t.name),
+])
 
 // 歌曲表
 export const songs = sqliteTable('songs', {
@@ -39,7 +43,12 @@ export const songs = sqliteTable('songs', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   cover: text('cover').notNull(),
   albumId: integer('album_id').notNull(),
-})
+}, t => [
+  index('idx_songs_name').on(t.name),
+  index('idx_songs_alias').on(t.alias),
+  index('idx_songs_album_id').on(t.albumId),
+  index('idx_songs_created_at').on(t.createdAt),
+])
 
 // 歌词表
 export const lyrics = sqliteTable('lyrics', {

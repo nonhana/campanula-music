@@ -9,6 +9,7 @@
   import { useMessage } from '$lib/hooks/useMessage'
   import { setNowPlaying, setPlaylist, setSongLoading, songLoading } from '$lib/stores'
   import { Ellipsis, Loader, Play, Plus } from 'lucide-svelte'
+  import { onMount } from 'svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -18,19 +19,6 @@
   }
 
   const { playlist, songs }: Props = $props()
-
-  const autoplay = $derived(page.url.searchParams.get('autoplay') === 'true')
-
-  $effect(() => {
-    if (autoplay) {
-      setPlaylist(songs)
-      callHanaMessage({
-        message: '播放列表已更新',
-        type: 'success',
-      })
-      setNowPlaying(songs[0])
-    }
-  })
 
   const moreMap = [{
     text: '添加到播放列表',
@@ -59,6 +47,12 @@
       !autoplay && setSongLoading(false)
     }
   }
+
+  onMount(() => {
+    if (page.url.searchParams.get('autoplay') === 'true') {
+      handleAddPlaylistSongs(true)
+    }
+  })
 
   const handleCommand = (command: string | number | object) => {
     switch (command) {

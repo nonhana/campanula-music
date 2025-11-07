@@ -5,19 +5,10 @@
   import Input from '$lib/components/hana/Input.svelte'
   import Modal from '$lib/components/hana/Modal.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
-  import Github from '$lib/components/svg/Github.svelte'
-  import Logo from '$lib/components/svg/Logo.svelte'
-  import { scrolled, setNowPlaying } from '$lib/stores'
-  import { Loader, Menu, Search } from 'lucide-svelte'
+  import { setNowPlaying } from '$lib/stores'
+  import { Loader, Search } from 'lucide-svelte'
   import { debounce } from 'throttle-debounce'
 
-  interface Props {
-    toggleFolded: () => void
-  }
-
-  const { toggleFolded }: Props = $props()
-
-  // 搜索相关
   let openModal = $state(false)
   let prevSearchValue = ''
   let searchValue = $state('')
@@ -69,23 +60,12 @@
   })
 </script>
 
-<header class={[
-  'shrink-0 z-20 sticky top-0 w-full h-16 flex items-center px-5 gap-5 border-b border-primary/0 transition-all',
-  $scrolled && 'border-primary/100 bg-white',
-]}>
-  <Button iconButton variant='transparent' onclick={toggleFolded}>
-    <Menu />
-  </Button>
-  <a href='/' class='animate-[spin_5s_linear_infinite]'><Logo /></a>
-  <a href='/' class='text-neutral'>Campanula</a>
-  <Button class='ml-auto' onclick={() => openModal = true}>
-    <span class='flex items-center gap-2'>
-      <Search size={20} />
-      <p class='hidden md:block'>搜索歌曲</p>
-    </span>
-  </Button>
-  <a href='https://github.com/nonhana/campanula-music' target='_blank'><Github /></a>
-</header>
+<Button onclick={() => openModal = true}>
+  <span class='flex items-center gap-2'>
+    <Search size={20} />
+    <p class='hidden md:block'>搜索歌曲</p>
+  </span>
+</Button>
 
 {#if openModal}
   <Modal
@@ -94,7 +74,7 @@
     onclose={() => openModal = false}
   >
     <div class='space-y-4'>
-      <Input bind:value={searchValue} />
+      <Input placeholder='搜索歌曲' bind:value={searchValue} />
       {#if !searchValue.trim()}
         <div class='h-64 flex items-center justify-center text-neutral'>请输入关键词开始搜索</div>
       {:else if searching}

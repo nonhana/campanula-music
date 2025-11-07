@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@libsql/client": "catalog:",
-    "debounce": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
     "lucide-svelte": "catalog:",
