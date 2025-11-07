@@ -7,7 +7,7 @@
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import Github from '$lib/components/svg/Github.svelte'
   import Logo from '$lib/components/svg/Logo.svelte'
-  import { scrolled, setNowPlaying } from '$lib/stores'
+  import { scrolled } from '$lib/stores'
   import { Loader, Menu, Search } from 'lucide-svelte'
   import { debounce } from 'throttle-debounce'
 
@@ -24,33 +24,38 @@
   let searchResults = $state<SongItem[]>([])
   let searching = $state(false)
   let controller: AbortController | null = null
+  let page = $state(1)
+  const pageSize = 50
+  let totalCount = $state<number | null>(null)
+  let loadingMore = $state(false)
 
   const searchSongs = async (value: string) => {
+    if (controller)
+      controller.abort()
+
     const keyword = value.trim()
     if (!keyword) {
       searchResults = []
+      totalCount = null
+      page = 1
       searching = false
       return
     }
-
-    if (controller)
-      controller.abort()
 
     controller = new AbortController()
     const signal = controller.signal
 
     searching = true
     try {
-      const res = await fetch(`/api/songs/search?keyword=${encodeURIComponent(keyword)}`, {
-        signal,
-      })
-      const data = await res.json()
-      searchResults = data
-    }
-    catch (err: any) {
-      if (err.name !== 'AbortError') {
-        console.error('搜索请求出错:', err)
-      }
+      const [countRes, listRes] = await Promise.all([
+        fetch(`/api/songs/search/count?keyword=${encodeURIComponent(keyword)}`, { signal }),
+        fetch(`/api/songs/search?keyword=${encodeURIComponent(keyword)}&page=1&pageSize=${pageSize}`, { signal }),
+      ])
+      const countData = await countRes.json()
+      const listData: SongItem[] = await listRes.json()
+      totalCount = countData.count ?? 0
+      searchResults = listData
+      page = 1
     }
     finally {
       if (!signal.aborted)
@@ -59,6 +64,28 @@
   }
 
   const debouncedSearch = debounce(200, searchSongs)
+
+  const loadMore = async () => {
+    if (loadingMore || searching)
+      return
+    if (totalCount !== null && searchResults.length >= totalCount)
+      return
+    loadingMore = true
+    try {
+      const nextPage = page + 1
+      const res = await fetch(`/api/songs/search?keyword=${encodeURIComponent(searchValue)}&page=${nextPage}&pageSize=${pageSize}`)
+      const data: SongItem[] = await res.json()
+      if (Array.isArray(data) && data.length > 0) {
+        const exists = new Set(searchResults.map(s => s.id))
+        const merged = searchResults.concat(data.filter(s => !exists.has(s.id)))
+        searchResults = merged
+        page = nextPage
+      }
+    }
+    finally {
+      loadingMore = false
+    }
+  }
 
   $effect(() => {
     if (prevSearchValue === '' && searchValue !== '') {
@@ -94,7 +121,13 @@
     onclose={() => openModal = false}
   >
     <div class='space-y-4'>
-      <Input bind:value={searchValue} />
+      <Input bind:value={searchValue}>
+        {#snippet suffixIcon()}
+          {#if loadingMore}
+            <Loader size={16} class='animate-spin' />
+          {/if}
+        {/snippet}
+      </Input>
       {#if !searchValue.trim()}
         <div class='h-64 flex items-center justify-center text-neutral'>请输入关键词开始搜索</div>
       {:else if searching}
@@ -107,10 +140,15 @@
       {:else}
         <p
           class='text-sm text-neutral'
-        >总共找到 {searchResults.length} 首歌曲</p>
-        <VirtualList items={searchResults} itemSize={72} containerSize={640}>
+        >总共找到 {totalCount ?? 0} 首歌曲</p>
+        <VirtualList
+          items={searchResults}
+          itemSize={72}
+          containerSize={640}
+          onNearEnd={loadMore}
+        >
           {#snippet renderItem(item)}
-            <SongSearchItem song={item} ondblclick={() => setNowPlaying(item)} />
+            <SongSearchItem song={item} />
           {/snippet}
         </VirtualList>
       {/if}

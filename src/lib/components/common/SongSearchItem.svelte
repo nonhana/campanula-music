@@ -1,7 +1,6 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
   import Button from '$lib/components/hana/Button.svelte'
-  import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { useTap } from '$lib/hooks/useTap.svelte'
   import {
@@ -19,11 +18,9 @@
 
   interface Props {
     song: SongItem
-    showCover?: boolean
-    ondblclick?: () => void
   }
 
-  const { song, showCover = true, ondblclick }: Props = $props()
+  const { song }: Props = $props()
 
   const { callHanaMessage } = useMessage()
 
@@ -66,13 +63,10 @@
   role='button'
   tabindex='0'
   class='group/item h-18 w-full flex items-center rounded-lg bg-white px-4 hover:bg-primary-100'
-  {ondblclick}
 >
-  {#if showCover}
-    <div class='size-10 lg:size-12'>
-      <img src={song.cover} alt={song.name} class='size-full rounded-lg object-cover' />
-    </div>
-  {/if}
+  <div class='size-10 lg:size-12'>
+    <img src={song.cover} alt={song.name} class='size-full rounded-lg object-cover' />
+  </div>
 
   <div class='ml-4 flex flex-1 flex-col space-y-1' bind:this={nameEl}>
     <span class='line-clamp-1 font-semibold'>{song.name}</span>
@@ -84,21 +78,17 @@
   </div>
 
   <div class='w-22 flex items-center justify-end gap-2'>
-    <Tooltip content={activated && !$paused ? '暂停' : '播放'}>
-      {#if $songLoading}
-        <Button variant='transparent' iconButton disabled onclick={handlePlay}>
-          <Loader class='animate-spin' />
-        </Button>
+    {#if $songLoading}
+      <Button variant='transparent' iconButton disabled onclick={handlePlay}>
+        <Loader class='animate-spin' />
+      </Button>
+    {:else}
+      {#if activated && !$paused}
+        <Button variant='transparent' iconButton onclick={() => setPaused(true)}><Pause /></Button>
       {:else}
-        {#if activated && !$paused}
-          <Button variant='transparent' iconButton onclick={() => setPaused(true)}><Pause /></Button>
-        {:else}
-          <Button variant='transparent' iconButton onclick={handlePlay}><Play /></Button>
-        {/if}
+        <Button variant='transparent' iconButton onclick={handlePlay}><Play /></Button>
       {/if}
-    </Tooltip>
-    <Tooltip content='添加到播放列表'>
-      <Button variant='transparent' iconButton onclick={handleAddToPlaylist}><Plus /></Button>
-    </Tooltip>
+    {/if}
+    <Button variant='transparent' iconButton onclick={handleAddToPlaylist}><Plus /></Button>
   </div>
 </div>

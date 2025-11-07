@@ -3,7 +3,7 @@ import { USER_COOKIE } from '$env/static/private'
 import { getSongUrlSimple } from '$lib/crawler'
 import { db } from '$lib/server/db'
 import { lyricFormatter } from '$lib/server/utils/lyricFormatter'
-import { count, desc, eq, inArray, like, or } from 'drizzle-orm'
+import { count, desc, eq, inArray, like, or, sql } from 'drizzle-orm'
 import { albums, artists, lyrics, songs, songsToArtists } from '../db/schema'
 import { ensureHttps } from '../utils/ensureHttps'
 
@@ -94,7 +94,7 @@ export async function getSongUrl(id: string) {
 }
 
 // 搜索歌曲
-export async function searchSongs(keyword: string | null) {
+export async function searchSongs(keyword: string | null, page: number, pageSize: number) {
   if (!keyword)
     return []
 
@@ -102,9 +102,13 @@ export async function searchSongs(keyword: string | null) {
   if (!trimmed)
     return []
 
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1
+  const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 50
+  const offset = (safePage - 1) * safePageSize
+
   const pattern = `%${trimmed}%`
 
-  // 第一阶段：仅用连接过滤并取去重后的歌曲 ID，避免携带大对象造成的 I/O 放大
+  // 1. 拿到歌曲 ID 列表
   const idRows = await db
     .select({ id: songs.id })
     .from(songs)
@@ -119,13 +123,14 @@ export async function searchSongs(keyword: string | null) {
     ))
     .groupBy(songs.id)
     .orderBy(desc(songs.id))
-    .limit(50)
+    .offset(offset)
+    .limit(safePageSize)
 
   const ids = idRows.map(r => r.id)
   if (ids.length === 0)
     return []
 
-  // 第二阶段：按 ID 批量加载完整关系数据
+  // 2. 根据 id 查数据
   const songsData = await db.query.songs.findMany({
     where: inArray(songs.id, ids),
     with: {
@@ -148,4 +153,31 @@ export async function searchSongs(keyword: string | null) {
     })),
   }))
   return result
+}
+
+// 获取搜索歌曲总数
+export async function getSearchSongCount(keyword: string | null) {
+  if (!keyword)
+    return 0
+
+  const trimmed = keyword.trim()
+  if (!trimmed)
+    return 0
+
+  const pattern = `%${trimmed}%`
+
+  const rows = await db
+    .select({ count: sql<number>`count(distinct ${songs.id})` })
+    .from(songs)
+    .leftJoin(albums, eq(songs.albumId, albums.id))
+    .leftJoin(songsToArtists, eq(songs.id, songsToArtists.songId))
+    .leftJoin(artists, eq(songsToArtists.artistId, artists.id))
+    .where(or(
+      like(songs.name, pattern),
+      like(songs.alias, pattern),
+      like(albums.name, pattern),
+      like(artists.name, pattern),
+    ))
+
+  return rows[0]?.count ?? 0
 }
