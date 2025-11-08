@@ -34,6 +34,7 @@
     "@sveltejs/vite-plugin-svelte": "catalog:",
     "@types/node": "catalog:",
     "@types/throttle-debounce": "catalog:",
+    "@typescript-eslint/types": "catalog:",
     "@unocss/eslint-plugin": "catalog:",
     "@unocss/preset-rem-to-px": "catalog:",
     "@unocss/reset": "catalog:",

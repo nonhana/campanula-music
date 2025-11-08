@@ -39,8 +39,8 @@ export function useTap(getter: () => HTMLElement | null, options: UseTapOptions)
     if (!getter())
       return
 
-    getter()?.addEventListener('touchstart', handleTouchStart)
-    getter()?.addEventListener('touchend', handleTouchEnd)
+    getter()?.addEventListener('touchstart', handleTouchStart, { passive: true })
+    getter()?.addEventListener('touchend', handleTouchEnd, { passive: true })
   })
 
   onDestroy(() => {

@@ -7,7 +7,7 @@
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
-  import { setNowPlaying, updatePlaylist, setSongLoading, songLoading } from '$lib/stores'
+  import { setNowPlaying, setSongLoading, songLoading, updatePlaylist } from '$lib/stores'
   import { Ellipsis, Loader, Play, Plus } from 'lucide-svelte'
   import { onMount } from 'svelte'
 

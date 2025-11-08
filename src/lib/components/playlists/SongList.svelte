@@ -5,7 +5,7 @@
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
-  import { playlistId, resetPlaylist, setNowPlaying, updatePlaylist, setPlaylistId, setSongLoading } from '$lib/stores'
+  import { playlistId, resetPlaylist, setNowPlaying, setPlaylistId, setSongLoading, updatePlaylist } from '$lib/stores'
 
   const { callHanaMessage } = useMessage()
 

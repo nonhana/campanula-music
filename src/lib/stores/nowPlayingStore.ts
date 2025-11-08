@@ -59,39 +59,52 @@ export function reset() {
   updateMediaSessionMetadata(null)
   updateMediaSessionPlaybackState(true)
 }
-let curSetNowPlayingReqId = 0
 // 获取歌曲 url
-export async function getSongUrl(song: SongItem): Promise<string> {
-  const res = await fetch(`/api/songs/${song.id}/url`)
-  const data = await res.json()
-  return data
+export async function getSongUrl(song: SongItem, signal?: AbortSignal): Promise<string> {
+  const res = await fetch(`/api/songs/${song.id}/url`, { signal })
+  return await res.json()
 }
 // 获取歌词
-export async function getLyrics(song: SongItem): Promise<LyricItem[]> {
-  const res = await fetch(`/api/songs/${song.id}/lyrics`)
-  const data = await res.json()
-  return data
+export async function getLyrics(song: SongItem, signal?: AbortSignal): Promise<LyricItem[]> {
+  const res = await fetch(`/api/songs/${song.id}/lyrics`, { signal })
+  return await res.json()
 }
+// 请求控制器，用于取消请求
+let controller: AbortController | null = null
 // 设置当前播放的歌曲
 export async function setNowPlaying(song: SongItem) {
-  const reqId = ++curSetNowPlayingReqId
+  // 如果上一次还在加载，先取消掉
+  if (controller)
+    controller.abort()
+  controller = new AbortController()
+  const signal = controller.signal
 
-  const lyricsPromise = getLyrics(song)
-  const urlPromise = getSongUrl(song)
-
+  setSongLoading(true)
   reset()
   nowPlaying.set({ ...song })
 
-  const source = await urlPromise
-  if (reqId !== curSetNowPlayingReqId)
-    return
-  nowPlayingUrl.set(source)
-  updateMediaSessionMetadata(song)
+  try {
+    const [source, lyrics] = await Promise.all([
+      getSongUrl(song, signal),
+      getLyrics(song, signal),
+    ])
 
-  const lyrics = await lyricsPromise
-  if (reqId !== curSetNowPlayingReqId)
-    return
-  nowPlaying.update(s => (s && s.id === song.id) ? { ...s, lyrics } : s)
+    if (signal.aborted)
+      return
+
+    nowPlayingUrl.set(source)
+    updateMediaSessionMetadata(song)
+
+    nowPlaying.update(s =>
+      s && s.id === song.id ? { ...s, lyrics } : s,
+    )
+  }
+  catch (err: any) {
+    if (err.name === 'AbortError') {
+      return
+    }
+    console.error('加载歌曲失败:', err)
+  }
 }
 // 添加到播放列表并立即播放
 export function addToPlaylistAndPlay(song: SongItem) {
