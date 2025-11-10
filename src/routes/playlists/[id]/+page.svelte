@@ -16,11 +16,13 @@
     description: `欣赏歌单"${data.curPlaylist.name}"，包含${data.curPlaylistSongs.length}首精选歌曲`,
     keywords: `歌单,${data.curPlaylist.name},音乐,Campanula`,
   })
+
+  let searchValue = $state('')
 </script>
 
 <SeoHead {metadata} />
 
 <div class='w-full flex flex-col gap-8'>
-  <Detail songs={data.curPlaylistSongs} playlist={data.curPlaylist} />
-  <SongList songs={data.curPlaylistSongs} />
+  <Detail songs={data.curPlaylistSongs} playlist={data.curPlaylist} bind:searchValue={searchValue} />
+  <SongList songs={data.curPlaylistSongs} {searchValue} />
 </div>

@@ -28,7 +28,7 @@
 
   const isExternal = $derived(href?.startsWith('http'))
 
-  const baseClasses = 'cursor-pointer font-semibold focus:outline-none select-none'
+  const baseClasses = 'cursor-pointer font-semibold focus:outline-none select-none shrink-0'
   const CommonClasses = 'px-4 py-2'
   const IconBtnClasses = 'p-2 size-10'
   const variantClasses = {

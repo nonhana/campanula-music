@@ -11,11 +11,20 @@
 
   interface Props {
     songs: SongItem[]
+    searchValue: string
   }
 
-  const { songs }: Props = $props()
+  let { songs, searchValue = $bindable('') }: Props = $props()
 
-  const songList = $derived(songs.map((song, index) => ({
+  const songsFilter = (song: SongItem) => {
+    const target = searchValue.trim().toLowerCase()
+    return song.name.toLowerCase().includes(target)
+      || song.album.name.toLowerCase().includes(target)
+      || song.alias.some(alias => alias.toLowerCase().includes(target))
+      || song.artists.some(artist => artist.name.toLowerCase().includes(target))
+  }
+
+  const songList = $derived(songs.filter(songsFilter).map((song, index) => ({
     ...song,
     index,
   })))

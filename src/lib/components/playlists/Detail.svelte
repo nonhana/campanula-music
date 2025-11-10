@@ -5,10 +5,11 @@
   import Dropdown from '$lib/components/hana/Dropdown.svelte'
   import DropdownItem from '$lib/components/hana/DropdownItem.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
+  import Input from '$lib/components/hana/Input.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { setNowPlaying, setSongLoading, songLoading, updatePlaylist } from '$lib/stores'
-  import { Ellipsis, Loader, Play, Plus } from 'lucide-svelte'
+  import { Ellipsis, Loader, Play, Plus, Search, X } from 'lucide-svelte'
   import { onMount } from 'svelte'
 
   const { callHanaMessage } = useMessage()
@@ -16,9 +17,10 @@
   interface Props {
     playlist: PlaylistItem
     songs: SongItem[]
+    searchValue: string
   }
 
-  const { playlist, songs }: Props = $props()
+  let { playlist, songs, searchValue = $bindable('') }: Props = $props()
 
   const moreMap = [{
     text: '添加到播放列表',
@@ -65,17 +67,17 @@
   }
 </script>
 
-<div class='flex gap-4 md:gap-8'>
+<div class='flex gap-4 lg:gap-8'>
   <LazyImage
     src={playlist.cover ?? ''}
     alt={`歌单 ${playlist.name} 的封面`}
-    class='aspect-square size-32 shrink-0 rounded-2xl md:size-48'
+    class='aspect-square size-32 shrink-0 rounded-2xl lg:size-48'
   />
-  <div class='flex flex-col justify-between'>
-    <h2 class='font-semibold md:text-2xl'>{playlist.name}</h2>
+  <div class='w-full flex flex-col justify-between'>
+    <h2 class='font-semibold lg:text-2xl'>{playlist.name}</h2>
     <p class='text-neutral'>{playlist.musicCount} 首歌曲</p>
-    <p class='line-clamp-2 break-words text-wrap text-xs text-neutral scrollbar-none md:line-clamp-none md:max-h-[76px] md:overflow-y-scroll md:text-sm'>{playlist.description ?? '暂无描述'}</p>
-    <div class='hidden md:flex space-x-5'>
+    <p class='line-clamp-2 break-words text-wrap text-xs text-neutral scrollbar-none lg:line-clamp-none lg:max-h-[76px] lg:overflow-y-scroll lg:text-sm'>{playlist.description ?? '暂无描述'}</p>
+    <div class='w-full items-center hidden lg:flex space-x-5'>
       <Button variant='accent' onclick={() => handleAddPlaylistSongs(true)} disabled={$songLoading}>
         <span class='flex items-center gap-2'>
           {#if $songLoading}
@@ -99,11 +101,34 @@
           </DropdownMenu>
         {/snippet}
       </Dropdown>
+      <Input
+        type='text'
+        shape='rounded'
+        size='sm'
+        placeholder='搜索此歌单中的歌曲…'
+        bind:value={searchValue}
+      >
+        {#snippet prefixIcon()}
+          <Search size={16} />
+        {/snippet}
+        {#snippet suffixIcon()}
+          {#if searchValue}
+            <button
+              type='button'
+              class='rounded-md p-1 hover:bg-neutral-100'
+              aria-label='清空搜索'
+              onclick={() => (searchValue = '')}
+            >
+              <X class='size-4' />
+            </button>
+          {/if}
+        {/snippet}
+      </Input>
     </div>
   </div>
 </div>
 
-<div class='w-full flex justify-between space-x-5 md:hidden'>
+<div class='w-full flex justify-between space-x-5 lg:hidden'>
   <Button class='flex-1' variant='accent' onclick={() => handleAddPlaylistSongs(true)} disabled={$songLoading}>
     <span class='mx-auto inline-block w-fit flex items-center gap-2 text-sm'>
       {#if $songLoading}
@@ -118,4 +143,31 @@
       <Plus /> 播放列表
     </span>
   </Button>
+</div>
+
+<!-- 移动端搜索栏 -->
+<div class='lg:hidden'>
+  <Input
+    type='text'
+    shape='rounded'
+    size='md'
+    placeholder='搜索此歌单中的歌曲…'
+    bind:value={searchValue}
+  >
+    {#snippet prefixIcon()}
+      <Search size={16} />
+    {/snippet}
+    {#snippet suffixIcon()}
+      {#if searchValue}
+        <button
+          type='button'
+          class='rounded-md p-1 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary'
+          aria-label='清空搜索'
+          onclick={() => (searchValue = '')}
+        >
+          <X class='size-4' />
+        </button>
+      {/if}
+    {/snippet}
+  </Input>
 </div>

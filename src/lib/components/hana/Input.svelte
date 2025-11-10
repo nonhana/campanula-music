@@ -90,7 +90,7 @@
   })
 </script>
 
-<div class='w-full {customClasses}'>
+<div class={customClasses}>
   {#if label}
     <label for={inputId} class='mb-1 block text-sm text-neutral-700 font-medium'>{label}</label>
   {/if}
