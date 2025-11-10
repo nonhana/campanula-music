@@ -75,12 +75,11 @@ let controller: AbortController | null = null
 export async function setNowPlaying(song: SongItem) {
   // 如果上一次还在加载，先取消掉
   if (controller)
-    controller.abort()
+    controller.abort('歌曲在加载过程中发生变化')
   controller = new AbortController()
   const signal = controller.signal
 
   setSongLoading(true)
-  reset()
   nowPlaying.set({ ...song })
 
   try {
@@ -108,7 +107,6 @@ export async function setNowPlaying(song: SongItem) {
 }
 // 添加到播放列表并立即播放
 export function addToPlaylistAndPlay(song: SongItem) {
-  setSongLoading(true)
   addSongToPlaylist(song)
   setNowPlaying(song)
 }

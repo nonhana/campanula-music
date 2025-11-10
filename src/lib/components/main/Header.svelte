@@ -34,7 +34,7 @@
 
   const searchSongs = async (value: string) => {
     if (controller)
-      controller.abort()
+      controller.abort('关键词在请求过程中发生变化')
 
     const keyword = value.trim()
     if (!keyword) {
