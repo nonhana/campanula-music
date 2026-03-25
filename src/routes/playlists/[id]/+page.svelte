@@ -11,11 +11,11 @@
 
   const { data }: Props = $props()
 
-  const metadata = generateSeoMetadata('playlists', {
+  const metadata = $derived.by(() => generateSeoMetadata('playlists', {
     title: `${data.curPlaylist.name} | Campanula Music`,
     description: `欣赏歌单"${data.curPlaylist.name}"，包含${data.curPlaylistSongs.length}首精选歌曲`,
     keywords: `歌单,${data.curPlaylist.name},音乐,Campanula`,
-  })
+  }))
 
   let searchValue = $state('')
 </script>

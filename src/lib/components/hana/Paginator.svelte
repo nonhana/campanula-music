@@ -19,29 +19,22 @@
     changePage,
   }: Props = $props()
 
-  let curPage = $state(currentPage)
-
-  $effect(() => {
-    changePage(curPage)
-  })
-
   const totalPages = $derived(Math.ceil(total / pageSize) || 1)
+
+  const goto = (page: number) => {
+    changePage(Math.max(1, Math.min(totalPages, page)))
+  }
 
   const stepPage = (type: 'prev' | 'next') => {
     if (type === 'prev') {
-      curPage = Math.max(1, curPage - 1)
+      goto(currentPage - 1)
     }
     else {
-      curPage = Math.min(totalPages, curPage + 1)
+      goto(currentPage + 1)
     }
   }
 
-  const goto = (page: number) => {
-    curPage = Math.max(1, Math.min(totalPages, page))
-  }
-
-  const maxButtonCount = $derived(buttonCount)
-  const sideButtonCount = $derived((maxButtonCount - 3) / 2)
+  const sideButtonCount = $derived((buttonCount - 3) / 2)
 </script>
 
 <div class='w-fit flex gap-2'>
@@ -49,13 +42,13 @@
     class='hidden md:block'
     iconButton
     shape='circle'
-    disabled={curPage === 1}
+    disabled={currentPage === 1}
     onclick={() => stepPage('prev')}
   ><ChevronLeft /></Button>
   <Buttons
-    currentPage={curPage}
+    {currentPage}
     totalPages={totalPages}
-    maxButtonCount={maxButtonCount}
+    maxButtonCount={buttonCount}
     sideButtonCount={sideButtonCount}
     changePage={goto}
   />
@@ -63,7 +56,7 @@
     class='hidden md:block'
     iconButton
     shape='circle'
-    disabled={curPage === totalPages}
+    disabled={currentPage === totalPages}
     onclick={() => stepPage('next')}
   ><ChevronRight /></Button>
 </div>

@@ -11,10 +11,10 @@
 
   const { songList }: Props = $props()
 
-  const songGroups = Array.from(
+  const songGroups = $derived.by(() => Array.from(
     { length: Math.ceil(songList.length / 3) },
     (_, i) => songList.slice(i * 3, i * 3 + 3),
-  )
+  ))
 </script>
 
 <BannerCard title='歌曲列表'>

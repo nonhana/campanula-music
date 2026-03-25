@@ -30,8 +30,8 @@
   }: Props = $props()
 
   let visible = $state(false)
-  const hoverTrigger = trigger === 'hover'
-  const clickTrigger = trigger === 'click'
+  const hoverTrigger = $derived(trigger === 'hover')
+  const clickTrigger = $derived(trigger === 'click')
 
   let closeTimeout: ReturnType<typeof setTimeout> | null = null
 

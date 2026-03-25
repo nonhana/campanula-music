@@ -15,7 +15,9 @@
 
   const { data, children }: Props = $props()
 
-  setPlaylists(data.playlists)
+  $effect(() => {
+    setPlaylists(data.playlists)
+  })
 
   let drawerOpen = $state(false)
 </script>

@@ -25,7 +25,9 @@
   let menuEl: HTMLDivElement
 
   setContext('menu', {
-    hoverEffect,
+    get hoverEffect() {
+      return hoverEffect
+    },
     select: (key: string, rect?: DOMRect) => {
       setSelectedMenu(key as 'lyrics' | 'playlist')
       if (rect)
