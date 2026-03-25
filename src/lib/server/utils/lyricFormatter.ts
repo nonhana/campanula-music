@@ -1,5 +1,7 @@
 import type { LyricItem } from '$lib/types'
 
+const TIME_REG = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/
+
 /**
  * 将时间字符串转换为毫秒
  * @param timeStr 时间字符串，格式为[mm:ss.xx]
@@ -7,8 +9,7 @@ import type { LyricItem } from '$lib/types'
  */
 function timeStrToMs(timeStr: string): number {
   // 匹配[mm:ss.xx]格式的时间戳
-  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/
-  const match = timeRegex.exec(timeStr)
+  const match = TIME_REG.exec(timeStr)
 
   if (!match)
     return 0
@@ -37,13 +38,12 @@ function parseLyric(lyricStr: string): Map<number, string> {
 
   for (const line of lines) {
     // 匹配时间戳 [00:00.00]
-    const timeRegex = /^\[(\d{2}:\d{2}\.\d{2,3})\]/
-    const match = timeRegex.exec(line)
+    const match = TIME_REG.exec(line)
 
     if (match) {
       const timeStr = match[0]
       const time = timeStrToMs(timeStr)
-      const text = line.replace(timeRegex, '').trim()
+      const text = line.replace(TIME_REG, '').trim()
 
       // 只保存有内容的歌词
       if (text) {

@@ -1,3 +1,7 @@
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
 catalog:
   '@antfu/eslint-config': ^7.7.3
   '@eslint/compat': ^2.0.3

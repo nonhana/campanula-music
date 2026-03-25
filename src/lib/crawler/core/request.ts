@@ -8,6 +8,8 @@ import {
   generateWNMCID,
 } from '../utils/index.js'
 
+const COOKIE_REG = /\s*Domain=[^(;|$)]+;*/g
+
 export async function createNeteaseRequest(
   uri: string,
   data: Record<string, any>,
@@ -145,7 +147,7 @@ export async function createNeteaseRequest(
     status = status > 100 && status < 600 ? status : 400
 
     const setCookies = response.headers.get('set-cookie')?.split(',') || []
-    const responseCookies = setCookies.map(cookie => cookie.replace(/\s*Domain=[^(;|$)]+;*/g, ''))
+    const responseCookies = setCookies.map(cookie => cookie.replace(COOKIE_REG, ''))
 
     const result: ApiResponse = {
       status,
