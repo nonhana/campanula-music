@@ -1,5 +1,6 @@
 export * from './lyrics'
 export * from './menu'
+export * from './ncm'
 export * from './playlist'
 export * from './song'
 export * from './style'

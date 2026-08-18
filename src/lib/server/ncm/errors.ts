@@ -4,15 +4,17 @@
  * 所有对 hana-music-api 的调用失败时，最终都以 NcmError 形式抛给上层，
  * 路由层与编排逻辑只按 code 分支，不感知上游错误细节。
  */
+import type { NcmErrorCode } from '$lib/types'
 
-export const NCM_ERROR_CODES = [
+export type { NcmErrorCode } from '$lib/types'
+
+/** 错误码枚举（顺序即文档顺序），与共享类型 NcmErrorCode 保持一致 */
+export const NCM_ERROR_CODES: readonly NcmErrorCode[] = [
   'UNAUTHENTICATED', // 绑定失效，需要重新扫码
   'RATE_LIMITED', // 被限流
   'RESOURCE_UNAVAILABLE', // 无版权或资源不可用
   'UNKNOWN', // 兜底
-] as const
-
-export type NcmErrorCode = (typeof NCM_ERROR_CODES)[number]
+]
 
 export class NcmError extends Error {
   readonly code: NcmErrorCode

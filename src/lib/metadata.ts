@@ -26,6 +26,11 @@ export const pageMetadata = {
     description: '搜索歌曲、歌单与歌手。',
     keywords: '音乐搜索,歌手,歌单,Campanula',
   },
+  playlistDetail: {
+    title: `歌单详情 | ${siteMetadata.title}`,
+    description: '一个歌单的全部歌曲，实时来自网易云。',
+    keywords: '歌单详情,网易云,Campanula',
+  },
   settings: {
     title: `设置 | ${siteMetadata.title}`,
     description: '切换皮肤与音质档位。',

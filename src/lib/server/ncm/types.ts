@@ -5,14 +5,22 @@
  * 本文件定义门面的方法形状；各方法由后续 ticket 逐个实现。
  * 所有失败以 NcmError（见 ./errors）形式抛出。
  */
+import type { NcmSearchPage, NcmSearchType } from '$lib/types'
+
+export type { NcmSearchPage, NcmSearchType } from '$lib/types'
 
 /** 调用上下文：绑定凭据与执行配置 */
 export interface NcmCallContext {
   cookie: string
 }
 
-/** 搜索目标类型（对应网易云搜索 type 参数） */
-export type NcmSearchType = 'song' | 'playlist' | 'artist'
+/** 搜索参数（见 NcmProvider.search） */
+export interface NcmSearchParams {
+  keywords: string
+  type: NcmSearchType
+  limit?: number
+  offset?: number
+}
 
 /** 音质档位 */
 export type NcmSoundLevel = 'standard' | 'higher' | 'exhigh' | 'lossless' | 'hires'
@@ -31,7 +39,7 @@ export interface NcmProvider {
   loginQrCheck: (key: string) => Promise<{ status: 'waiting' | 'scanned' | 'confirmed' | 'expired', cookie?: string }>
 
   /** 搜索歌曲/歌单/歌手 */
-  search: (ctx: NcmCallContext, params: { keywords: string, type: NcmSearchType, limit?: number, offset?: number }) => Promise<unknown>
+  search: (ctx: NcmCallContext, params: NcmSearchParams) => Promise<NcmSearchPage>
 
   /** 歌单详情，含 trackIds 补全全部歌曲 */
   playlistDetail: (ctx: NcmCallContext, id: number) => Promise<unknown>
