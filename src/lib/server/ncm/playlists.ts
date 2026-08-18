@@ -1,34 +1,20 @@
 import type {
   NcmPlaylist,
   NcmPlaylistDetail,
-  NcmSong,
   NcmUserPlaylists,
 } from '$lib/types'
 import type { NcmCallContext } from './types'
 import {
   playlistDetail as sdkPlaylistDetail,
-  songDetail as sdkSongDetail,
   userPlaylistCollect as sdkUserPlaylistCollect,
   userPlaylistCreate as sdkUserPlaylistCreate,
 } from 'hana-music-api'
 import { mapNcmError } from './errors'
-import { asArray, asImageUrl, asNumber, asRecord, asString, chunkIds, sdkConfig, TRACK_CHUNK_SIZE } from './raw'
+import { asArray, asImageUrl, asNumber, asRecord, asString, sdkConfig } from './raw'
+import { fetchSongsInOrderByIds } from './songDetail'
 
 /** 我的歌单每组拉取数量（两组各自单页，分页留待后续） */
 const USER_PLAYLIST_LIMIT = 100
-
-interface RawArtistRef {
-  id?: unknown
-  name?: unknown
-}
-
-interface RawSong {
-  id?: unknown
-  name?: unknown
-  dt?: unknown
-  ar?: unknown[]
-  al?: unknown | null
-}
 
 interface RawPlaylist {
   id?: unknown
@@ -68,31 +54,6 @@ export function parsePlaylistDetail(body: unknown): PlaylistDetailParts {
   }
 }
 
-/** 把 SDK song/detail 返回体的歌曲数组映射为领域歌曲（纯函数，便于单测） */
-export function mapSongDetailList(body: unknown): NcmSong[] {
-  const songs = asRecord(body).songs
-  if (!Array.isArray(songs))
-    return []
-  return songs.map((item): NcmSong => {
-    const song = asRecord(item) as RawSong
-    const album = asRecord(song.al)
-    return {
-      id: asNumber(song.id),
-      name: asString(song.name),
-      duration: asNumber(song.dt),
-      artists: asArray(song.ar).map((a) => {
-        const artist = asRecord(a) as RawArtistRef
-        return { id: asNumber(artist.id), name: asString(artist.name) }
-      }),
-      album: {
-        id: asNumber(album.id),
-        name: asString(album.name),
-        cover: asImageUrl(album.picUrl),
-      },
-    }
-  })
-}
-
 /** 把 SDK 用户歌单数组映射为领域条目（创建/收藏共用外形，纯函数） */
 export function mapUserPlaylists(raw: unknown[]): NcmPlaylist[] {
   return raw.map((item): NcmPlaylist => {
@@ -109,24 +70,12 @@ export function mapUserPlaylists(raw: unknown[]): NcmPlaylist[] {
 }
 
 /** 按完整 trackIds 分片请求歌曲详情，缺失歌曲跳过，并归位到歌单顺序 */
-async function fetchSongsInOrder(ctx: NcmCallContext, ids: number[]): Promise<NcmSong[]> {
-  const chunks = chunkIds(ids, TRACK_CHUNK_SIZE)
-  const rawLists = await Promise.all(
-    chunks.map(async (chunk) => {
-      const res = await sdkSongDetail({ ids: chunk.join(',') }, sdkConfig(ctx.cookie))
-      return mapSongDetailList(res.body)
-    }),
-  )
-  const byId = new Map<number, NcmSong>(rawLists.flat().map(song => [song.id, song]))
-  return ids.map(id => byId.get(id)).filter((song): song is NcmSong => song !== undefined)
-}
-
 /** 歌单详情：实时拉取并用完整 trackIds 补全全部歌曲；失败抛 NcmError */
 export async function ncmPlaylistDetail(ctx: NcmCallContext, id: number): Promise<NcmPlaylistDetail> {
   try {
     const res = await sdkPlaylistDetail({ id: String(id) }, sdkConfig(ctx.cookie))
     const { trackIds, ...header } = parsePlaylistDetail(res.body)
-    const songs = await fetchSongsInOrder(ctx, trackIds)
+    const songs = await fetchSongsInOrderByIds(ctx, trackIds)
     return { ...header, songs }
   }
   catch (err) {

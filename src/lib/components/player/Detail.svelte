@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import LikeButton from '$lib/components/common/LikeButton.svelte'
   import Button from '$lib/components/hana/Button.svelte'
   import Dropdown from '$lib/components/hana/Dropdown.svelte'
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
@@ -90,7 +91,12 @@
     {/if}
   </div>
   <div class='flex flex-col gap-2'>
-    <span class='text-xl font-semibold'>{$nowPlaying?.name ?? '未在播放'}</span>
+    <div class='flex items-center gap-3'>
+      <span class='text-xl font-semibold'>{$nowPlaying?.name ?? '未在播放'}</span>
+      {#if $nowPlaying}
+        <LikeButton song={$nowPlaying} />
+      {/if}
+    </div>
     {#if $nowPlaying?.alias}
       <span class='text-neutral font-semibold'>{$nowPlaying.alias.join(' / ')}</span>
     {/if}

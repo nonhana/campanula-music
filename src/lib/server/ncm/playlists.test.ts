@@ -5,7 +5,8 @@ import {
   userPlaylistCreate as sdkUserPlaylistCreate,
 } from 'hana-music-api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mapSongDetailList, mapUserPlaylists, ncmPlaylistDetail, ncmUserPlaylists, parsePlaylistDetail } from './playlists'
+import { mapUserPlaylists, ncmPlaylistDetail, ncmUserPlaylists, parsePlaylistDetail } from './playlists'
+import { mapSongDetailList } from './songDetail'
 
 vi.mock('hana-music-api', async (importOriginal) => {
   const mod = await importOriginal<typeof import('hana-music-api')>()

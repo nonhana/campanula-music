@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
+  import LikeButton from '$lib/components/common/LikeButton.svelte'
   import Button from '$lib/components/hana/Button.svelte'
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
@@ -144,6 +145,9 @@
     <span class='line-clamp-1'>{song.artists.map(artist => artist.name).join(' / ')}</span>
   </div>
   <div class={['w-10 flex items-center justify-center group-hover/item:hidden', type === 'list' && 'lg:w-24']}>{durationFormatter(song.duration)}</div>
+  <div class='flex items-center'>
+    <LikeButton {song} />
+  </div>
   {#if type === 'list'}
     <div class='w-10 justify-between hidden lg:w-24 group-hover/item:flex'>
       <Tooltip content='添加到播放列表'>

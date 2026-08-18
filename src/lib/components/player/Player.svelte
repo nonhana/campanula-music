@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
+  import LikeButton from '$lib/components/common/LikeButton.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import {
@@ -324,6 +325,9 @@
         <span class='line-clamp-1 text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
       {/if}
     </div>
+    {#if $nowPlaying}
+      <LikeButton song={$nowPlaying} />
+    {/if}
   </div>
 
   <div class='ml-auto items-center gap-5 hidden md:flex'>

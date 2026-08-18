@@ -1,0 +1,93 @@
+import type { NcmSong } from '$lib/types'
+import type { NcmCallContext } from './types'
+/**
+ * 网易云红心门面实现。
+ *
+ * 实现 NcmProvider.like / likedList（见 ./types）：调用 hana-music-api 的 like / likelist，
+ * 红心写回账号、喜欢列表映射为领域形状；喜欢列表歌曲详情补全（ncmLikedSongs）
+ * 供「我喜欢的音乐」页复用歌单详情的歌曲补全逻辑。
+ * 失败统一映射为 NcmError（见 ./errors）。
+ */
+import { like as sdkLike, likelist as sdkLikelist } from 'hana-music-api'
+import { mapNcmError } from './errors'
+import { asNumber, asRecord, sdkConfig } from './raw'
+import { fetchSongsInOrderByIds } from './songDetail'
+
+/** 红心写回参数 */
+export interface LikeRequest {
+  id: number
+  like: boolean
+}
+
+/**
+ * 把 SDK likelist 返回体映射为红心歌曲 id 列表（纯函数，便于单测）。
+ * 上游 data 可能是纯数字数组或「{ id, time }」对象数组：对象带 time 时按红心时间倒序
+ * （「我喜欢的音乐」按最新红心在前呈现）；偶发的顶层 ids 形态兜底；缺失回落空数组。
+ */
+export function mapLikedListBody(body: unknown): number[] {
+  const record = asRecord(body)
+
+  const pickIds = (items: unknown[]): number[] => {
+    const entries = items
+      .map((item) => {
+        if (typeof item === 'number')
+          return { id: item, time: 0 }
+        const entry = asRecord(item)
+        return { id: asNumber(entry.id), time: asNumber(entry.time) }
+      })
+      // 无 id（0 或非法）的条目跳过
+      .filter(entry => entry.id > 0)
+    // 含红心时间信息时按时间倒序（最新红心在前）；纯 id 数组保持上游顺序
+    const hasTime = entries.some(entry => entry.time > 0)
+    if (!hasTime)
+      return entries.map(entry => entry.id)
+    return entries
+      .slice()
+      .sort((a, b) => b.time - a.time)
+      .map(entry => entry.id)
+  }
+
+  const data = record.data
+  if (Array.isArray(data))
+    return pickIds(data)
+  if (Array.isArray(record.ids))
+    return pickIds(record.ids)
+  return []
+}
+
+/** 红心 / 取消红心：写回账号；成功无返回，失败抛 NcmError */
+export async function ncmLike(ctx: NcmCallContext, request: LikeRequest): Promise<void> {
+  try {
+    const res = await sdkLike({ id: request.id, like: request.like }, sdkConfig(ctx.cookie))
+    // 上游偶发「HTTP 200 + 业务失败码」的返回形态，按门面错误模型映射
+    const code = asRecord(res.body).code
+    if (typeof code === 'number' && code !== 200) {
+      throw mapNcmError({ status: res.status, body: res.body })
+    }
+  }
+  catch (err) {
+    throw mapNcmError(err)
+  }
+}
+
+/** 我喜欢的音乐 id 列表：按红心时间倒序；失败抛 NcmError */
+export async function ncmLikedList(ctx: NcmCallContext, userId: number): Promise<number[]> {
+  try {
+    const res = await sdkLikelist({ uid: userId }, sdkConfig(ctx.cookie))
+    return mapLikedListBody(res.body)
+  }
+  catch (err) {
+    throw mapNcmError(err)
+  }
+}
+
+/** 我喜欢的音乐歌曲列表：红心 id 按序补全歌曲详情（缺失跳过）；失败抛 NcmError */
+export async function ncmLikedSongs(ctx: NcmCallContext, userId: number): Promise<NcmSong[]> {
+  try {
+    const ids = await ncmLikedList(ctx, userId)
+    return await fetchSongsInOrderByIds(ctx, ids)
+  }
+  catch (err) {
+    throw mapNcmError(err)
+  }
+}

@@ -5,9 +5,9 @@
  * 本文件定义门面的方法形状；各方法由后续 ticket 逐个实现。
  * 所有失败以 NcmError（见 ./errors）形式抛出。
  */
-import type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+import type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
-export type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+export type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
 /** 调用上下文：绑定凭据与执行配置 */
 export interface NcmCallContext {
@@ -55,4 +55,7 @@ export interface NcmProvider {
 
   /** 我喜欢的音乐 id 列表 */
   likedList: (ctx: NcmCallContext, userId: number) => Promise<number[]>
+
+  /** 我喜欢的音乐歌曲列表：红心 id 按序补全歌曲详情（缺失跳过） */
+  likedSongs: (ctx: NcmCallContext, userId: number) => Promise<NcmSong[]>
 }

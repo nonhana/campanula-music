@@ -1,12 +1,11 @@
 <script lang='ts'>
   import type { NcmSearchPage, NcmSearchType } from '$lib/types'
   import { resolve } from '$app/paths'
+  import SongRow from '$lib/components/common/SongRow.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
-  import { SEARCH_ERROR_TEXT, SearchClientError, searchNcm, toSongItem } from '$lib/ncm/search'
-  import { addToPlaylistAndPlay } from '$lib/stores'
-  import { durationFormatter } from '$lib/utils'
-  import { List, Loader, Music, Search, User, X } from 'lucide-svelte'
+  import { SEARCH_ERROR_TEXT, SearchClientError, searchNcm } from '$lib/ncm/search'
+  import { List, Loader, Search, User, X } from 'lucide-svelte'
   import { debounce } from 'throttle-debounce'
 
   const metadata = generateSeoMetadata('search')
@@ -179,24 +178,7 @@
     {:else if page.type === 'song'}
       <ul role='list' class='space-y-1'>
         {#each page.songs as song (song.id)}
-          <li>
-            <button
-              type='button'
-              onclick={() => addToPlaylistAndPlay(toSongItem(song))}
-              class='group w-full flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-app-surface-hover'
-            >
-              <span class='size-10 flex shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-700'>
-                <Music class='size-5' />
-              </span>
-              <span class='min-w-0 flex-1'>
-                <span class='block truncate text-sm text-app-text font-medium'>{song.name}</span>
-                <span class='mt-0.5 block truncate text-xs text-app-text-muted'>
-                  {song.artists.map(artist => artist.name).join(' / ')}{song.album.name ? ` · ${song.album.name}` : ''}
-                </span>
-              </span>
-              <span class='shrink-0 text-xs text-app-text-muted'>{durationFormatter(song.duration)}</span>
-            </button>
-          </li>
+          <SongRow {song} />
         {/each}
       </ul>
     {:else if page.type === 'playlist'}

@@ -1,13 +1,11 @@
 <script lang='ts'>
   import type { NcmPlaylistDetail } from '$lib/types'
   import { page } from '$app/state'
+  import SongRow from '$lib/components/common/SongRow.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
   import { NcmClientError } from '$lib/ncm/client'
   import { fetchPlaylistDetail, PLAYLIST_ERROR_TEXT } from '$lib/ncm/playlists'
-  import { toSongItem } from '$lib/ncm/search'
-  import { addToPlaylistAndPlay } from '$lib/stores'
-  import { durationFormatter } from '$lib/utils'
   import { Loader, Music } from 'lucide-svelte'
   import { onMount } from 'svelte'
 
@@ -80,24 +78,7 @@
     {:else}
       <ul role='list' class='space-y-1'>
         {#each detail.songs as song (song.id)}
-          <li>
-            <button
-              type='button'
-              onclick={() => addToPlaylistAndPlay(toSongItem(song))}
-              class='group w-full flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-app-surface-hover'
-            >
-              <span class='size-10 flex shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-700'>
-                <Music class='size-5' />
-              </span>
-              <span class='min-w-0 flex-1'>
-                <span class='block truncate text-sm text-app-text font-medium'>{song.name}</span>
-                <span class='mt-0.5 block truncate text-xs text-app-text-muted'>
-                  {song.artists.map(artist => artist.name).join(' / ')}{song.album.name ? ` · ${song.album.name}` : ''}
-                </span>
-              </span>
-              <span class='shrink-0 text-xs text-app-text-muted'>{durationFormatter(song.duration)}</span>
-            </button>
-          </li>
+          <SongRow {song} />
         {/each}
       </ul>
     {/if}

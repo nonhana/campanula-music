@@ -59,7 +59,21 @@ async function decodeError(res: Response): Promise<NcmClientError> {
 
 /** GET 请求服务端门面代理并返回领域 JSON；失败抛 NcmClientError，网络异常原样透传 */
 export async function ncmFetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(path, { signal })
+  return ncmFetch<T>(path, { signal })
+}
+
+/** POST JSON 请求服务端门面代理并返回领域 JSON；失败抛 NcmClientError，网络异常原样透传 */
+export async function ncmFetchJsonPost<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+  return ncmFetch<T>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+}
+
+async function ncmFetch<T>(path: string, init: RequestInit): Promise<T> {
+  const res = await fetch(path, init)
   if (!res.ok) {
     throw await decodeError(res)
   }

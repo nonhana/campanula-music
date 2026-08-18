@@ -24,9 +24,17 @@ vi.mock('$lib/ncm/search', () => ({
   toSongItem: (song: unknown) => song,
 }))
 
-vi.mock('$lib/stores', () => ({
-  addToPlaylistAndPlay: vi.fn(),
-}))
+vi.mock('$lib/stores', async () => {
+  const { derived, writable } = await import('svelte/store')
+  return {
+    addToPlaylistAndPlay: vi.fn(),
+    // 红心按钮依赖的红心状态（空喜欢列表 + 无操作桩）
+    likedIds: derived(writable<Array<{ id: number }>>([]), songs => new Set(songs.map(s => s.id))),
+    likedPending: writable(new Set()),
+    loadLikedSongs: vi.fn(),
+    toggleLike: vi.fn(),
+  }
+})
 
 const mockedSearch = vi.mocked(searchNcm)
 const mockedPlay = vi.mocked(addToPlaylistAndPlay)
