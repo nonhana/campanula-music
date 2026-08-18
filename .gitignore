@@ -22,9 +22,5 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# SQLite
-*.db
-wrangler.toml
-
-# Drizzle
-drizzle
+# 凭据（网易云绑定文件，由应用写入）
+.data
