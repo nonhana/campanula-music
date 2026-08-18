@@ -1,16 +1,12 @@
-import type { NcmSoundLevel } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
-import { DEFAULT_SOUND_LEVEL } from '$lib/ncm/songs'
 import { ncmErrorJson } from '$lib/server/ncm/http'
 import { TRACK_CHUNK_SIZE } from '$lib/server/ncm/raw'
 import { ncmSongUrl } from '$lib/server/ncm/songUrl'
+import { DEFAULT_SOUND_LEVEL, isSoundLevel } from '$lib/soundLevel'
 import { json } from '@sveltejs/kit'
 
 /** 播放地址接口实时调用门面，不走预渲染 */
 export const prerender = false
-
-/** 合法音质档位（对应网易云门面 NcmSoundLevel），缺省取客户端配置位 DEFAULT_SOUND_LEVEL */
-const SOUND_LEVELS: readonly NcmSoundLevel[] = ['standard', 'higher', 'exhigh', 'lossless', 'hires']
 
 export async function GET({ url }: RequestEvent) {
   const rawIds = url.searchParams.get('ids') ?? ''
@@ -25,7 +21,7 @@ export async function GET({ url }: RequestEvent) {
   }
 
   const rawLevel = url.searchParams.get('level') ?? DEFAULT_SOUND_LEVEL
-  if (!SOUND_LEVELS.includes(rawLevel as NcmSoundLevel)) {
+  if (!isSoundLevel(rawLevel)) {
     return json({ error: { code: 'INVALID_PARAMS', message: '缺少有效的 level 参数' } }, { status: 400 })
   }
 
@@ -33,7 +29,7 @@ export async function GET({ url }: RequestEvent) {
     // 播放地址受账号许可影响（无许可回落试听片段）；凭据由 Ticket 02 接入
     const sources = await ncmSongUrl(
       { cookie: '' },
-      { ids, level: rawLevel as NcmSoundLevel },
+      { ids, level: rawLevel },
     )
     return json(sources)
   }

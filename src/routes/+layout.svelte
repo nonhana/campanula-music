@@ -4,6 +4,7 @@
   import LoadingIndicator from '$lib/components/main/LoadingIndicator.svelte'
   import Player from '$lib/components/player/Player.svelte'
   import { initSkin } from '$lib/skin'
+  import { initSoundLevel } from '$lib/soundLevel'
   import { onMount } from 'svelte'
   import '$lib/skin/skins.css'
   import 'uno.css'
@@ -11,7 +12,10 @@
 
   const { children } = $props()
 
-  onMount(initSkin)
+  onMount(() => {
+    initSkin()
+    initSoundLevel()
+  })
 </script>
 
 <LoadingIndicator />

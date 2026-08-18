@@ -5,10 +5,8 @@
  * 测试注入假 provider 响应即由此处替换（vi.mock 本模块）。
  */
 import type { NcmErrorCode, NcmSongSource, NcmSoundLevel } from '$lib/types'
+import { DEFAULT_SOUND_LEVEL } from '$lib/soundLevel'
 import { ncmFetchJson } from './client'
-
-/** 缺省音质档位：设置页音质档位 UI 未落地前按此档位获取播放地址 */
-export const DEFAULT_SOUND_LEVEL: NcmSoundLevel = 'standard'
 
 /** 错误码 → 播放链路文案（satisfies 保证新增错误码必须在编译期补齐文案） */
 export const SONG_URL_ERROR_TEXT = {

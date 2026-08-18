@@ -2,6 +2,7 @@
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
   import SkinSelector from '$lib/skin/SkinSelector.svelte'
+  import SoundLevelSelector from '$lib/soundLevel/SoundLevelSelector.svelte'
 
   const metadata = generateSeoMetadata('settings')
 </script>
@@ -18,5 +19,11 @@
     <h2 class='text-base text-app-text font-medium'>皮肤</h2>
     <p class='text-sm text-app-text-muted'>切换整套视觉令牌（颜色、字体、圆角与阴影），偏好将被记住。</p>
     <SkinSelector />
+  </div>
+
+  <div class='space-y-3'>
+    <h2 class='text-base text-app-text font-medium'>音质档位</h2>
+    <p class='text-sm text-app-text-muted'>播放地址按所选档位获取；档位或账号受限时如实呈现试听片段。</p>
+    <SoundLevelSelector />
   </div>
 </section>

@@ -2,6 +2,8 @@ import type { LyricItem, SongItem } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
 import { fetchLyric } from '$lib/ncm/lyrics'
 import { fetchSongUrls } from '$lib/ncm/songs'
+import { currentSoundLevel } from '$lib/soundLevel/currentSoundLevel'
+import { DEFAULT_SOUND_LEVEL } from '$lib/soundLevel/levels'
 import { get } from 'svelte/store'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { messages } from './messageStore'
@@ -15,7 +17,6 @@ import {
 
 vi.mock('$lib/ncm/songs', () => ({
   fetchSongUrls: vi.fn(),
-  DEFAULT_SOUND_LEVEL: 'standard',
   SONG_URL_ERROR_TEXT: {
     UNAUTHENTICATED: '播放歌曲需要账号许可：请先绑定网易云账号',
     RATE_LIMITED: '请求过于频繁，请稍后再试',
@@ -62,6 +63,7 @@ beforeEach(() => {
   nowPlayingUrl.set(null)
   paused.set(true)
   songLoading.set(false)
+  currentSoundLevel.set(DEFAULT_SOUND_LEVEL)
 })
 
 afterEach(() => {
@@ -169,6 +171,18 @@ describe('setNowPlaying', () => {
     expect(get(nowPlayingUrl)).toBe('https://m701.music.126.net/a.mp3')
     expect(get(nowPlaying)?.lyrics).toBeUndefined()
     expect(get(messages).some(m => /请求过于频繁/.test(m.message ?? ''))).toBe(true)
+  })
+
+  it('设置页选定的音质档位用于获取播放地址', async () => {
+    currentSoundLevel.set('lossless')
+    mockedFetchSongUrls.mockResolvedValue([
+      { id: song.id, status: 'playable', url: 'https://m701.music.126.net/a.mp3', trial: null },
+    ])
+
+    await setNowPlaying(song)
+
+    expect(mockedFetchSongUrls).toHaveBeenCalledWith([song.id], 'lossless', expect.any(AbortSignal))
+    expect(get(nowPlayingUrl)).toBe('https://m701.music.126.net/a.mp3')
   })
 
   it('切歌后迟到的歌词不覆盖新歌', async () => {

@@ -1,9 +1,10 @@
 import type { LyricItem, NcmSongSource, SongItem } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
 import { fetchLyric, LYRIC_ERROR_TEXT } from '$lib/ncm/lyrics'
-import { DEFAULT_SOUND_LEVEL, fetchSongUrls, SONG_URL_ERROR_TEXT } from '$lib/ncm/songs'
+import { fetchSongUrls, SONG_URL_ERROR_TEXT } from '$lib/ncm/songs'
+import { currentSoundLevel } from '$lib/soundLevel'
 import { durationFormatter } from '$lib/utils'
-import { writable } from 'svelte/store'
+import { get, writable } from 'svelte/store'
 import { addMessage } from './messageStore'
 import { addSongToPlaylist } from './playlistStore'
 
@@ -78,9 +79,10 @@ export async function setNowPlaying(song: SongItem) {
   nowPlaying.set({ ...song })
 
   try {
-    // 播放地址与歌词并行获取；歌词失败不阻断播放（fetchSongLyrics 内部消化）
+    // 播放地址与歌词并行获取；歌词失败不阻断播放（fetchSongLyrics 内部消化）。
+    // 音质档位取设置页当前所选（默认 standard）
     const [sources, lyrics] = await Promise.all([
-      fetchSongUrls([song.id], DEFAULT_SOUND_LEVEL, signal),
+      fetchSongUrls([song.id], get(currentSoundLevel), signal),
       fetchSongLyrics(song.id, signal),
     ])
     if (signal.aborted)
