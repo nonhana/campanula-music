@@ -1,5 +1,6 @@
 <script lang='ts'>
   import AppNav from '$lib/components/app/AppNav.svelte'
+  import InstallPrompt from '$lib/components/app/InstallPrompt.svelte'
   import MessageContainer from '$lib/components/hana/MessageContainer.svelte'
   import LoadingIndicator from '$lib/components/main/LoadingIndicator.svelte'
   import Player from '$lib/components/player/Player.svelte'
@@ -15,11 +16,18 @@
   onMount(() => {
     initSkin()
     initSoundLevel()
+    // 离线壳 service worker：仅生产构建注册，开发态避免缓存干扰
+    if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+      // 注册失败（如受阻环境）不阻塞使用
+      })
+    }
   })
 </script>
 
 <LoadingIndicator />
 <MessageContainer />
+<InstallPrompt />
 
 <Player />
 
