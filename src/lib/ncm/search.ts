@@ -5,6 +5,7 @@
  * 测试注入假 provider 响应即由此处替换（vi.mock 本模块）。
  */
 import type { NcmErrorCode, NcmSearchPage, NcmSearchSong, NcmSearchType, SongItem } from '$lib/types'
+import { ncmFetchJson } from './client'
 
 /** 搜索请求参数 */
 export interface NcmSearchRequest {
@@ -13,21 +14,8 @@ export interface NcmSearchRequest {
   limit?: number
 }
 
-/** 服务端返回的搜索错误 JSON 形状 */
-interface SearchErrorResponseBody {
-  error?: { code?: string, message?: string }
-}
-
-/** 搜索失败（服务端错误码 + 可展示消息） */
-export class SearchClientError extends Error {
-  readonly code: NcmErrorCode
-
-  constructor(code: NcmErrorCode, message: string) {
-    super(message)
-    this.name = 'SearchClientError'
-    this.code = code
-  }
-}
+/** 搜索失败（服务端错误码 + 可展示消息）；与共享客户端错误同形 */
+export { NcmClientError as SearchClientError } from './client'
 
 const DEFAULT_LIMIT = 30
 
@@ -39,35 +27,14 @@ export const SEARCH_ERROR_TEXT = {
   UNKNOWN: '搜索失败，请稍后再试',
 } satisfies Record<NcmErrorCode, string>
 
-/** 实时搜索：请求服务端门面，返回领域结果页；失败抛 SearchClientError */
+/** 实时搜索：请求服务端门面，返回领域结果页；失败抛 NcmClientError */
 export async function searchNcm(request: NcmSearchRequest, signal?: AbortSignal): Promise<NcmSearchPage> {
   const params = new URLSearchParams({
     keywords: request.keywords,
     type: request.type,
     limit: String(request.limit ?? DEFAULT_LIMIT),
   })
-  const res = await fetch(`/api/search?${params}`, { signal })
-  if (!res.ok) {
-    let code: NcmErrorCode = 'UNKNOWN'
-    let message = `搜索失败（HTTP ${res.status}）`
-    try {
-      const body = await res.json() as SearchErrorResponseBody
-      if (body.error?.code && isNcmErrorCode(body.error.code)) {
-        code = body.error.code
-        message = body.error.message ?? message
-      }
-    }
-    catch {
-      // 非 JSON 响应体按 UNKNOWN 处理
-    }
-    throw new SearchClientError(code, message)
-  }
-  return await res.json() as NcmSearchPage
-}
-
-/** 服务端错误码白名单；以文案表为准，新增码漏配文案会在编译期报错 */
-function isNcmErrorCode(value: string): value is NcmErrorCode {
-  return value in SEARCH_ERROR_TEXT
+  return ncmFetchJson<NcmSearchPage>(`/api/search?${params}`, signal)
 }
 
 /** 把搜索歌曲条目映射为播放链路使用的 SongItem（sourceId 取网易云歌曲 id） */

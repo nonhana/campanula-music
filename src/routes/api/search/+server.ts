@@ -1,6 +1,6 @@
 import type { NcmSearchType } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
-import { NcmError } from '$lib/server/ncm/errors'
+import { ncmErrorJson } from '$lib/server/ncm/http'
 import { ncmSearch } from '$lib/server/ncm/search'
 import { json } from '@sveltejs/kit'
 
@@ -12,14 +12,6 @@ const SEARCH_TYPES: readonly NcmSearchType[] = ['song', 'playlist', 'artist']
 
 /** 默认分页大小 */
 const DEFAULT_LIMIT = 30
-
-/** 错误码 → HTTP 状态码（门面未携带上游状态时兜底） */
-const ERROR_STATUS: Record<NcmError['code'], number> = {
-  UNAUTHENTICATED: 401,
-  RATE_LIMITED: 429,
-  RESOURCE_UNAVAILABLE: 404,
-  UNKNOWN: 500,
-}
 
 export async function GET({ url }: RequestEvent) {
   const keywords = (url.searchParams.get('keywords') ?? '').trim()
@@ -37,10 +29,6 @@ export async function GET({ url }: RequestEvent) {
     return json(page)
   }
   catch (err) {
-    const ncmErr = err instanceof NcmError ? err : new NcmError('UNKNOWN', '搜索失败', { cause: err })
-    return json(
-      { error: { code: ncmErr.code, message: ncmErr.message } },
-      { status: ncmErr.status ?? ERROR_STATUS[ncmErr.code] },
-    )
+    return ncmErrorJson(err, '搜索失败')
   }
 }

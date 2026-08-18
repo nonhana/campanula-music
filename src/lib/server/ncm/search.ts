@@ -10,6 +10,7 @@ import type { NcmCallContext, NcmSearchParams } from './types'
  */
 import { search as sdkSearch } from 'hana-music-api'
 import { mapNcmError } from './errors'
+import { asArray, asImageUrl, asNumber, asRecord, asString, sdkConfig } from './raw'
 
 /** 网易云搜索 type 参数：1 单曲 / 1000 歌单 / 100 歌手 */
 const SDK_SEARCH_TYPE: Record<NcmSearchParams['type'], number> = {
@@ -60,23 +61,6 @@ interface RawArtist {
   picUrl?: unknown
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null ? value as Record<string, unknown> : {}
-}
-
-function asNumber(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0
-}
-
-function asString(value: unknown): string {
-  return typeof value === 'string' ? value : ''
-}
-
-/** 封面地址统一为 https（上游偶发 http 协议，混用会被浏览器拦截） */
-function asImageUrl(value: unknown): string {
-  return asString(value).replace(/^http:/, 'https:')
-}
-
 function mapSongs(raw: unknown[]): NcmSearchSong[] {
   return raw.map((item): NcmSearchSong => {
     const song = asRecord(item) as RawSong
@@ -124,10 +108,6 @@ function mapArtists(raw: unknown[]): NcmSearchArtist[] {
   })
 }
 
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : []
-}
-
 /** 把 SDK search 返回体映射为领域形状（纯函数，便于单测） */
 export function mapSearchPage(type: NcmSearchParams['type'], body: unknown): NcmSearchPage {
   const result = asRecord(asRecord(body).result) as RawSearchBody['result']
@@ -152,7 +132,7 @@ export async function ncmSearch(ctx: NcmCallContext, params: NcmSearchParams): P
       limit: params.limit ?? DEFAULT_LIMIT,
       offset: params.offset ?? 0,
     }
-    const res = await sdkSearch(query, ctx.cookie ? { cookie: ctx.cookie } : undefined)
+    const res = await sdkSearch(query, sdkConfig(ctx.cookie))
     return mapSearchPage(params.type, res.body)
   }
   catch (err) {

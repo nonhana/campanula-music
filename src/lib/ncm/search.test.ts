@@ -49,7 +49,7 @@ describe('searchNcm', () => {
     )
   })
 
-  describe('错误响应解码为 SearchClientError', () => {
+  describe('错误响应解码为共享客户端错误', () => {
     it('带错误码的 JSON 保留码与消息', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -58,7 +58,7 @@ describe('searchNcm', () => {
       })
 
       await expect(searchNcm({ keywords: 'x', type: 'song' })).rejects.toMatchObject({
-        name: 'SearchClientError',
+        name: 'NcmClientError',
         code: 'RATE_LIMITED',
         message: '请求过于频繁，请稍后再试',
       })
@@ -72,7 +72,7 @@ describe('searchNcm', () => {
       })
 
       await expect(searchNcm({ keywords: 'x', type: 'song' })).rejects.toMatchObject({
-        name: 'SearchClientError',
+        name: 'NcmClientError',
         code: 'UNKNOWN',
       })
     })

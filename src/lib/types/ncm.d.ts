@@ -16,8 +16,8 @@ export interface NcmSearchArtistRef {
   name: string
 }
 
-/** 歌曲搜索结果 */
-export interface NcmSearchSong {
+/** 歌曲条目（歌单详情歌曲与搜索结果共用同一外形） */
+export interface NcmSong {
   id: number
   name: string
   artists: NcmSearchArtistRef[]
@@ -31,8 +31,11 @@ export interface NcmSearchSong {
   duration: number
 }
 
-/** 歌单搜索结果 */
-export interface NcmSearchPlaylist {
+/** 歌曲搜索结果（与通用歌曲条目同形） */
+export type NcmSearchSong = NcmSong
+
+/** 歌单条目（我的歌单与搜索结果共用同一外形） */
+export interface NcmPlaylist {
   id: number
   name: string
   /** 封面图 URL */
@@ -43,6 +46,33 @@ export interface NcmSearchPlaylist {
   playCount: number
   /** 创建者昵称 */
   creator: string
+}
+
+/** 歌单搜索结果（与通用歌单条目同形） */
+export type NcmSearchPlaylist = NcmPlaylist
+
+/** 歌单详情：完整歌曲列表（trackIds 补全后） */
+export interface NcmPlaylistDetail {
+  id: number
+  name: string
+  /** 封面图 URL */
+  cover: string
+  /** 创建者昵称 */
+  creator: string
+  /** 歌单描述；无描述时为 null */
+  description: string | null
+  /** 歌曲数量 */
+  trackCount: number
+  /** 播放次数 */
+  playCount: number
+  /** 全部歌曲（详情接口仅返回部分，须经完整 trackIds 二次请求补全） */
+  songs: NcmSong[]
+}
+
+/** 我的歌单：创建的歌单与收藏的歌单两组 */
+export interface NcmUserPlaylists {
+  created: NcmPlaylist[]
+  collected: NcmPlaylist[]
 }
 
 /** 歌手搜索结果 */

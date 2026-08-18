@@ -5,9 +5,9 @@
  * 本文件定义门面的方法形状；各方法由后续 ticket 逐个实现。
  * 所有失败以 NcmError（见 ./errors）形式抛出。
  */
-import type { NcmSearchPage, NcmSearchType } from '$lib/types'
+import type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmUserPlaylists } from '$lib/types'
 
-export type { NcmSearchPage, NcmSearchType } from '$lib/types'
+export type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmUserPlaylists } from '$lib/types'
 
 /** 调用上下文：绑定凭据与执行配置 */
 export interface NcmCallContext {
@@ -41,8 +41,11 @@ export interface NcmProvider {
   /** 搜索歌曲/歌单/歌手 */
   search: (ctx: NcmCallContext, params: NcmSearchParams) => Promise<NcmSearchPage>
 
+  /** 我的歌单：创建的歌单与收藏的歌单两组 */
+  userPlaylists: (ctx: NcmCallContext, uid: number) => Promise<NcmUserPlaylists>
+
   /** 歌单详情，含 trackIds 补全全部歌曲 */
-  playlistDetail: (ctx: NcmCallContext, id: number) => Promise<unknown>
+  playlistDetail: (ctx: NcmCallContext, id: number) => Promise<NcmPlaylistDetail>
 
   /** 播放地址：按音质档位获取，命中试听片段限制如实返回 */
   songUrl: (ctx: NcmCallContext, params: { ids: number[], level: NcmSoundLevel }) => Promise<unknown>
