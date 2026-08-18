@@ -1,5 +1,6 @@
 <script lang='ts'>
   import { goto } from '$app/navigation'
+  import { resolve } from '$app/paths'
   import Button from '$lib/components/hana/Button.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
@@ -11,7 +12,7 @@
   const handleRandomPlay = async () => {
     setSongLoading(true)
     const targetPlaylist = $storedPlaylists[Math.floor(Math.random() * $storedPlaylists.length)]
-    await goto(`/playlists/${targetPlaylist.id}?autoplay=true`)
+    await goto(resolve(`/playlists/${targetPlaylist.id}?autoplay=true`))
   }
 
 </script>

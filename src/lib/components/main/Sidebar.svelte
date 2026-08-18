@@ -30,7 +30,7 @@
   $scrolled && 'bg-white border-primary/100',
 ]}>
   <ul class='flex flex-col gap-2'>
-    {#each navItems as { title, href, icon: Icon, disabled }, i}
+    {#each navItems as { title, href, icon: Icon, disabled }, i (href)}
       {#if !disabled}
         <li class={['flex', folded ? 'justify-center' : 'justify-start ml-3']}>
           <Tooltip content={title} position='right' disabled={!folded}>

@@ -171,7 +171,7 @@
     ]}
   >
     <Menu onselect={key => setSelectedMenu(key as 'lyrics' | 'playlist')}>
-      {#each playerMenus as menu}
+      {#each playerMenus as menu (menu.key)}
         <MenuItem {...menu} />
       {/each}
     </Menu>

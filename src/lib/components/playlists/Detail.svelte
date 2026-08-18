@@ -93,7 +93,7 @@
         </Button>
         {#snippet dropdown()}
           <DropdownMenu>
-            {#each moreMap as { text, command }}
+            {#each moreMap as { text, command } (command)}
               <DropdownItem {command}>
                 {text}
               </DropdownItem>

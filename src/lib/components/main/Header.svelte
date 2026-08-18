@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
+  import { resolve } from '$app/paths'
   import SongSearchItem from '$lib/components/common/SongSearchItem.svelte'
   import Button from '$lib/components/hana/Button.svelte'
   import Input from '$lib/components/hana/Input.svelte'
@@ -116,8 +117,8 @@
   <Button iconButton variant='transparent' onclick={toggleFolded}>
     <Menu />
   </Button>
-  <a href='/' class='animate-[spin_5s_linear_infinite]'><Logo /></a>
-  <a href='/' class='text-neutral'>Campanula</a>
+  <a href={resolve('/')} class='animate-[spin_5s_linear_infinite]'><Logo /></a>
+  <a href={resolve('/')} class='text-neutral'>Campanula</a>
   <Button class='ml-auto' onclick={() => openModal = true}>
     <span class='flex items-center gap-2'>
       <Search size={20} />

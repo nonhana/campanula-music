@@ -57,7 +57,7 @@
 {#if start > 2}
   <Button iconButton shape='circle'><Ellipsis /></Button>
 {/if}
-{#each pages as page}
+{#each pages as page (page)}
   <Button
     iconButton
     activated={currentPage === page}

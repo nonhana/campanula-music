@@ -1,6 +1,8 @@
 <script lang='ts'>
+  import type { Pathname } from '$app/types'
   import type { Snippet } from 'svelte'
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements'
+  import { resolve } from '$app/paths'
   import { ExternalLink } from 'lucide-svelte'
 
   type Props = {
@@ -73,22 +75,32 @@
 </script>
 
 {#if href}
-  <a
-    class={['inline-block group', computedClasses]}
-    bind:this={thisEl}
-    target={isExternal ? '_blank' : undefined}
-    {style}
-    {href}
-    {...rest}>
-    <div role='button'>
-      {#if isExternal}
+  {#if isExternal}
+    <a
+      class={['inline-block group', computedClasses]}
+      bind:this={thisEl}
+      target='_blank'
+      rel='external'
+      {style}
+      {href}
+      {...rest}>
+      <div role='button'>
         <div class='group-hover:hidden'>{@render children()}</div>
         <div class='mx-auto w-fit hidden group-hover:block'><ExternalLink /></div>
-      {:else}
+      </div>
+    </a>
+  {:else}
+    <a
+      class={['inline-block group', computedClasses]}
+      bind:this={thisEl}
+      {style}
+      href={resolve(href as Pathname)}
+      {...rest}>
+      <div role='button'>
         {@render children()}
-      {/if}
-    </div>
-  </a>
+      </div>
+    </a>
+  {/if}
 {:else}
   <button class={computedClasses} {style} {disabled} bind:this={thisEl} {...rest}>
     {@render children()}

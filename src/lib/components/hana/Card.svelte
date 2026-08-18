@@ -1,5 +1,7 @@
 <script lang='ts'>
+  import type { Pathname } from '$app/types'
   import type { Snippet } from 'svelte'
+  import { resolve } from '$app/paths'
 
   interface Props {
     transparent?: boolean
@@ -31,6 +33,8 @@
     onclick,
   }: Props = $props()
 
+  const isExternal = $derived(href?.startsWith('http') ?? false)
+
   const cardClasses = $derived([
     'relative overflow-hidden shrink-0',
     transparent ? 'bg-transparent' : 'bg-white',
@@ -41,49 +45,37 @@
   ])
 </script>
 
+{#snippet cardContent()}
+  {@render mask?.()}
+  {#if header}
+    <div class={[divider && 'border-b']}>
+      {@render header()}
+    </div>
+  {/if}
+  {@render children?.()}
+  {#if footer}
+    <div class={[divider && 'border-t']}>
+      {@render footer()}
+    </div>
+  {/if}
+{/snippet}
+
 {#if href}
-  <a class={cardClasses} {href} {onclick}>
-    {@render mask?.()}
-    {#if header}
-      <div class={[divider && 'border-b']}>
-        {@render header()}
-      </div>
-    {/if}
-    {@render children?.()}
-    {#if footer}
-      <div class={[divider && 'border-t']}>
-        {@render footer()}
-      </div>
-    {/if}
-  </a>
+  {#if isExternal}
+    <a class={cardClasses} {href} rel='external' {onclick}>
+      {@render cardContent()}
+    </a>
+  {:else}
+    <a class={cardClasses} href={resolve(href as Pathname)} {onclick}>
+      {@render cardContent()}
+    </a>
+  {/if}
 {:else if onclick}
   <button class={cardClasses} {onclick}>
-    {@render mask?.()}
-    {#if header}
-      <div class={[divider && 'border-b']}>
-        {@render header()}
-      </div>
-    {/if}
-    {@render children?.()}
-    {#if footer}
-      <div class={[divider && 'border-t']}>
-        {@render footer()}
-      </div>
-    {/if}
+    {@render cardContent()}
   </button>
 {:else}
   <div class={cardClasses}>
-    {@render mask?.()}
-    {#if header}
-      <div class={[divider && 'border-b']}>
-        {@render header()}
-      </div>
-    {/if}
-    {@render children?.()}
-    {#if footer}
-      <div class={[divider && 'border-t']}>
-        {@render footer()}
-      </div>
-    {/if}
+    {@render cardContent()}
   </div>
 {/if}
