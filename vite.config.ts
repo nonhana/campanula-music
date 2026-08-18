@@ -10,9 +10,4 @@ export default defineConfig({
     enhancedImages(),
     sveltekit(),
   ],
-  test: {
-    environment: 'jsdom',
-    include: ['src/**/*.test.ts'],
-    exclude: ['node_modules/**', '.svelte-kit/**', 'build/**'],
-  },
 })

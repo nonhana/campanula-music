@@ -1,46 +1,24 @@
 <script lang='ts'>
-  import MessageContainer from '$lib/components/hana/MessageContainer.svelte'
-  import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
-  import Drawer from '$lib/components/main/Drawer.svelte'
-  import Header from '$lib/components/main/Header.svelte'
+  import AppNav from '$lib/components/app/AppNav.svelte'
   import LoadingIndicator from '$lib/components/main/LoadingIndicator.svelte'
-  import Sidebar from '$lib/components/main/Sidebar.svelte'
-  import Player from '$lib/components/player/Player.svelte'
-  import { setScrolled } from '$lib/stores'
-  import { throttle } from 'throttle-debounce'
+  import { initSkin } from '$lib/skin'
+  import { onMount } from 'svelte'
+  import '$lib/skin/skins.css'
   import 'uno.css'
   import '@unocss/reset/tailwind.css'
 
   const { children } = $props()
 
-  let showDetail = $state(false)
-
-  const toggleFolded = () => {
-    showDetail = !showDetail
-  }
-
-  const toggleScrolled = throttle(100, (e: Event) => {
-    const target = e.target as HTMLElement
-    setScrolled(target.scrollTop > 0)
-  })
+  onMount(initSkin)
 </script>
 
 <LoadingIndicator />
 
-<div class='h-[calc(100dvh-5rem)] bg-neutral-100'>
-  <ScrollContainer contentClass='flex flex-col' scrollEvents={[toggleScrolled]}>
-    <Header {toggleFolded} />
-    <Sidebar folded={!showDetail} />
-    <div class='block md:hidden'>
-      <Drawer bind:showDetail={showDetail} />
+<div class='flex flex-col bg-app-bg text-app-text min-h-dvh md:pl-60'>
+  <AppNav />
+  <main class='flex-1'>
+    <div class='mx-auto max-w-5xl w-full px-4 pb-24 pt-6 md:px-8 md:pb-12 md:pt-10'>
+      {@render children()}
     </div>
-    <main class={['flex-1', showDetail ? 'md:ml-60' : 'md:ml-20']}>
-      <div class='container m-auto px-6'>
-        {@render children()}
-      </div>
-    </main>
-    <Player />
-  </ScrollContainer>
+  </main>
 </div>
-
-<MessageContainer />

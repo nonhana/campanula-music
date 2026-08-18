@@ -11,6 +11,26 @@ import {
 } from 'unocss'
 import { presetScrollbar } from 'unocss-preset-scrollbar'
 
+/** 色阶；success/warning/error 沿用旧主题（原只有到 900 的色阶，令牌层保持一致） */
+const FULL_SCALE = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
+const SCALE_TO_900 = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
+
+/**
+ * 主题色引用皮肤令牌：`bg-primary/50`、`text-primary-900` 等写法保留透明度与色阶语义，
+ * 颜色值由 [data-skin] 作用域的 --skin-* 变量提供（见 src/lib/skin/skins.css）。
+ */
+function skinColor(name: string, steps: number[] = FULL_SCALE) {
+  return {
+    DEFAULT: `rgb(var(--skin-${name}) / <alpha-value>)`,
+    ...Object.fromEntries(
+      steps.map(step => [
+        step,
+        `rgb(var(--skin-${name}-${step}) / <alpha-value>)`,
+      ]),
+    ),
+  }
+}
+
 export default defineConfig({
   presets: [
     /* Core Presets */
@@ -35,104 +55,36 @@ export default defineConfig({
     presetScrollbar(),
   ],
   transformers: [transformerDirectives(), transformerVariantGroup()],
-  shortcuts: [['title', 'text-lg font-bold text-[#858585]']],
+  shortcuts: [['title', 'text-lg font-bold text-neutral-500']],
   theme: {
     colors: {
-      primary: {
-        DEFAULT: '#A8E6CF',
-        50: '#F5FCF9',
-        100: '#E8F8F1',
-        200: '#D1F1E3',
-        300: '#B9EAD5',
-        400: '#A8E6CF',
-        500: '#80DBB9',
-        600: '#59CFA3',
-        700: '#37BE8C',
-        800: '#2B976F',
-        900: '#206F52',
-        950: '#1A5B43',
+      primary: skinColor('primary'),
+      secondary: skinColor('secondary'),
+      accent: skinColor('accent'),
+      neutral: skinColor('neutral'),
+      success: skinColor('success', SCALE_TO_900),
+      warning: skinColor('warning', SCALE_TO_900),
+      error: skinColor('error', SCALE_TO_900),
+      /* 语义表面：页面背景 / 卡片表面 / 主次文本 / 边框 */
+      app: {
+        'bg': 'rgb(var(--skin-bg) / <alpha-value>)',
+        'surface': 'rgb(var(--skin-surface) / <alpha-value>)',
+        'surface-hover': 'rgb(var(--skin-surface-hover) / <alpha-value>)',
+        'text': 'rgb(var(--skin-text) / <alpha-value>)',
+        'text-muted': 'rgb(var(--skin-text-muted) / <alpha-value>)',
+        'border': 'rgb(var(--skin-border) / <alpha-value>)',
       },
-      secondary: {
-        DEFAULT: '#FFD3B6',
-        50: '#FFF8F2',
-        100: '#FFEEE2',
-        200: '#FFE1CC',
-        300: '#FFD3B6',
-        400: '#FFBF99',
-        500: '#FFA877',
-        600: '#FF8F55',
-        700: '#FF7733',
-        800: '#E6601F',
-        900: '#B34719',
-        950: '#8C3914',
-      },
-      accent: {
-        DEFAULT: '#FF8C94',
-        50: '#FFF5F6',
-        100: '#FFE8EB',
-        200: '#FFD1D5',
-        300: '#FFBAC0',
-        400: '#FF8C94',
-        500: '#FF5E69',
-        600: '#FF3040',
-        700: '#E01D2C',
-        800: '#B31622',
-        900: '#8C1019',
-        950: '#6E0C14',
-      },
-      neutral: {
-        DEFAULT: '#6B7280',
-        50: '#F9FAFB',
-        100: '#F3F4F6',
-        200: '#E5E7EB',
-        300: '#D1D5DB',
-        400: '#9CA3AF',
-        500: '#6B7280',
-        600: '#4B5563',
-        700: '#374151',
-        800: '#1F2937',
-        900: '#111827',
-        950: '#0A0F1A',
-      },
-      success: {
-        DEFAULT: '#81C784',
-        50: '#F2FBF5',
-        100: '#E6F7EB',
-        200: '#C7EED1',
-        300: '#A8E6B7',
-        400: '#81C784',
-        500: '#66B366',
-        600: '#4A9951',
-        700: '#35793D',
-        800: '#265B2E',
-        900: '#1A4121',
-      },
-      warning: {
-        DEFAULT: '#FFC107',
-        50: '#FFF8E1',
-        100: '#FFECB3',
-        200: '#FFE082',
-        300: '#FFD54F',
-        400: '#FFC107',
-        500: '#FFA000',
-        600: '#FF8F00',
-        700: '#FF6F00',
-        800: '#E65100',
-        900: '#BF360C',
-      },
-      error: {
-        DEFAULT: '#E57373',
-        50: '#FBE9E7',
-        100: '#FFCCBC',
-        200: '#FFAB91',
-        300: '#FF8A65',
-        400: '#E57373',
-        500: '#EF5350',
-        600: '#E53935',
-        700: '#D32F2F',
-        800: '#C62828',
-        900: '#B71C1C',
-      },
+    },
+    borderRadius: {
+      sm: 'var(--skin-radius-sm)',
+      md: 'var(--skin-radius-md)',
+      lg: 'var(--skin-radius-lg)',
+      xl: 'var(--skin-radius-xl)',
+    },
+    boxShadow: {
+      sm: 'var(--skin-shadow-sm)',
+      md: 'var(--skin-shadow-md)',
+      lg: 'var(--skin-shadow-lg)',
     },
   },
   preflights: [
@@ -141,8 +93,9 @@ export default defineConfig({
         html,
         body {
           @apply contents font-noto;
+          font-family: var(--skin-font-family);
         }
-        
+
         ::selection {
           @apply bg-primary/50 text-primary-900;
         }

@@ -1,0 +1,128 @@
+/**
+ * 皮肤令牌层。
+ *
+ * 每套皮肤是 `[data-skin='...']` 作用域下的一组令牌；运行时切换 html 的 data-skin
+ * 属性即切换令牌组，即时生效、零构建变体。uno.config.ts 的主题色引用这些变量
+ * （`rgb(var(--skin-*) / <alpha-value>)`），保留 bg-primary/50、text-primary-900
+ * 等写法的透明度与色阶语义。
+ *
+ * 颜色变量存空格分隔的 RGB 通道（如 `168 230 207` 即 #A8E6CF），供 `rgb(...)` 拼接透明度。
+ */
+[data-skin='campanula'] {
+  /* primary：薄荷绿 */
+  --skin-primary: 168 230 207; /* #A8E6CF */
+  --skin-primary-50: 245 252 249; /* #F5FCF9 */
+  --skin-primary-100: 232 248 241; /* #E8F8F1 */
+  --skin-primary-200: 209 241 227; /* #D1F1E3 */
+  --skin-primary-300: 185 234 213; /* #B9EAD5 */
+  --skin-primary-400: 168 230 207; /* #A8E6CF */
+  --skin-primary-500: 128 219 185; /* #80DBB9 */
+  --skin-primary-600: 89 207 163; /* #59CFA3 */
+  --skin-primary-700: 55 190 140; /* #37BE8C */
+  --skin-primary-800: 43 151 111; /* #2B976F */
+  --skin-primary-900: 32 111 82; /* #206F52 */
+  --skin-primary-950: 26 91 67; /* #1A5B43 */
+
+  /* secondary：蜜桃粉 */
+  --skin-secondary: 255 211 182; /* #FFD3B6 */
+  --skin-secondary-50: 255 248 242; /* #FFF8F2 */
+  --skin-secondary-100: 255 238 226; /* #FFEEE2 */
+  --skin-secondary-200: 255 225 204; /* #FFE1CC */
+  --skin-secondary-300: 255 211 182; /* #FFD3B6 */
+  --skin-secondary-400: 255 191 153; /* #FFBF99 */
+  --skin-secondary-500: 255 168 119; /* #FFA877 */
+  --skin-secondary-600: 255 143 85; /* #FF8F55 */
+  --skin-secondary-700: 255 119 51; /* #FF7733 */
+  --skin-secondary-800: 230 96 31; /* #E6601F */
+  --skin-secondary-900: 179 71 25; /* #B34719 */
+  --skin-secondary-950: 140 57 20; /* #8C3914 */
+
+  /* accent：珊瑚粉 */
+  --skin-accent: 255 140 148; /* #FF8C94 */
+  --skin-accent-50: 255 245 246; /* #FFF5F6 */
+  --skin-accent-100: 255 232 235; /* #FFE8EB */
+  --skin-accent-200: 255 209 213; /* #FFD1D5 */
+  --skin-accent-300: 255 186 192; /* #FFBAC0 */
+  --skin-accent-400: 255 140 148; /* #FF8C94 */
+  --skin-accent-500: 255 94 105; /* #FF5E69 */
+  --skin-accent-600: 255 48 64; /* #FF3040 */
+  --skin-accent-700: 224 29 44; /* #E01D2C */
+  --skin-accent-800: 179 22 34; /* #B31622 */
+  --skin-accent-900: 140 16 25; /* #8C1019 */
+  --skin-accent-950: 110 12 20; /* #6E0C14 */
+
+  /* neutral：中性灰 */
+  --skin-neutral: 107 114 128; /* #6B7280 */
+  --skin-neutral-50: 249 250 251; /* #F9FAFB */
+  --skin-neutral-100: 243 244 246; /* #F3F4F6 */
+  --skin-neutral-200: 229 231 235; /* #E5E7EB */
+  --skin-neutral-300: 209 213 219; /* #D1D5DB */
+  --skin-neutral-400: 156 163 175; /* #9CA3AF */
+  --skin-neutral-500: 107 114 128; /* #6B7280 */
+  --skin-neutral-600: 75 85 99; /* #4B5563 */
+  --skin-neutral-700: 55 65 81; /* #374151 */
+  --skin-neutral-800: 31 41 55; /* #1F2937 */
+  --skin-neutral-900: 17 24 39; /* #111827 */
+  --skin-neutral-950: 10 15 26; /* #0A0F1A */
+
+  /* success */
+  --skin-success: 129 199 132; /* #81C784 */
+  --skin-success-50: 242 251 245; /* #F2FBF5 */
+  --skin-success-100: 230 247 235; /* #E6F7EB */
+  --skin-success-200: 199 238 209; /* #C7EED1 */
+  --skin-success-300: 168 230 183; /* #A8E6B7 */
+  --skin-success-400: 129 199 132; /* #81C784 */
+  --skin-success-500: 102 179 102; /* #66B366 */
+  --skin-success-600: 74 153 81; /* #4A9951 */
+  --skin-success-700: 53 121 61; /* #35793D */
+  --skin-success-800: 38 91 46; /* #265B2E */
+  --skin-success-900: 26 65 33; /* #1A4121 */
+
+  /* warning */
+  --skin-warning: 255 193 7; /* #FFC107 */
+  --skin-warning-50: 255 248 225; /* #FFF8E1 */
+  --skin-warning-100: 255 236 179; /* #FFECB3 */
+  --skin-warning-200: 255 224 130; /* #FFE082 */
+  --skin-warning-300: 255 213 79; /* #FFD54F */
+  --skin-warning-400: 255 193 7; /* #FFC107 */
+  --skin-warning-500: 255 160 0; /* #FFA000 */
+  --skin-warning-600: 255 143 0; /* #FF8F00 */
+  --skin-warning-700: 255 111 0; /* #FF6F00 */
+  --skin-warning-800: 230 81 0; /* #E65100 */
+  --skin-warning-900: 191 54 12; /* #BF360C */
+
+  /* error */
+  --skin-error: 229 115 115; /* #E57373 */
+  --skin-error-50: 251 233 231; /* #FBE9E7 */
+  --skin-error-100: 255 204 188; /* #FFCCBC */
+  --skin-error-200: 255 171 145; /* #FFAB91 */
+  --skin-error-300: 255 138 101; /* #FF8A65 */
+  --skin-error-400: 229 115 115; /* #E57373 */
+  --skin-error-500: 239 83 80; /* #EF5350 */
+  --skin-error-600: 229 57 53; /* #E53935 */
+  --skin-error-700: 211 47 47; /* #D32F2F */
+  --skin-error-800: 198 40 40; /* #C62828 */
+  --skin-error-900: 183 28 28; /* #B71C1C */
+
+  /* 语义表面 */
+  --skin-bg: 243 244 246; /* #F3F4F6 页面背景 */
+  --skin-surface: 255 255 255; /* #FFFFFF 卡片/导航表面 */
+  --skin-surface-hover: 249 250 251; /* #F9FAFB 悬停表面 */
+  --skin-text: 17 24 39; /* #111827 主文本 */
+  --skin-text-muted: 75 85 99; /* #4B5563 次级文本 */
+  --skin-border: 229 231 235; /* #E5E7EB 分隔线/边框 */
+
+  /* 字体 */
+  --skin-font-family: var(--font-noto, 'Noto Sans', 'Noto Sans SC', 'Noto Sans TC', 'Noto Sans JP', sans-serif);
+
+  /* 圆角 */
+  --skin-radius-sm: 0.25rem;
+  --skin-radius-md: 0.375rem;
+  --skin-radius-lg: 0.5rem;
+  --skin-radius-xl: 0.75rem;
+
+  /* 阴影 */
+  --skin-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --skin-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --skin-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}

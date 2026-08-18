@@ -1,9 +1,9 @@
 // 定义网站基本信息
 export const siteMetadata = {
   title: 'Campanula Music',
-  description: '在线音乐分享、创作与探索平台',
+  description: '可自部署的个人第三方网易云播放器：我的歌单、搜索、播放与歌词，全部实时取自你的网易云账号',
   siteUrl: 'https://campanulamusic.xyz',
-  siteName: 'Campanula Music',
+  siteName: 'Campanula',
   themeColor: '#4f46e5',
   locale: 'zh-CN',
   author: 'Campanula',
@@ -12,34 +12,24 @@ export const siteMetadata = {
 // 定义每个页面的元数据
 export const pageMetadata = {
   home: {
-    title: `首页 | ${siteMetadata.title}`,
-    description: '探索和发现音乐的新世界，在Campanula Music欣赏、创作和分享你的音乐',
-    keywords: '音乐,在线音乐,音乐播放器,Campanula',
+    title: `我的歌单 | ${siteMetadata.title}`,
+    description: '我的歌单与「我喜欢的音乐」入口：实时取自你的网易云账号',
+    keywords: '歌单,音乐,网易云,Campanula',
   },
-  myWorks: {
-    title: `我的创作 | ${siteMetadata.title}`,
-    description: '管理和展示你的原创音乐作品，分享你的创作灵感',
-    keywords: '原创音乐,音乐创作,作曲,Campanula',
+  favorites: {
+    title: `我喜欢的音乐 | ${siteMetadata.title}`,
+    description: '你红心过的每一首歌，都收藏在这里。',
+    keywords: '红心,喜欢的音乐,网易云,Campanula',
   },
-  playlists: {
-    title: `歌单 | ${siteMetadata.title}`,
-    description: '浏览和创建个性化歌单，发现精选推荐音乐',
-    keywords: '音乐歌单,推荐歌单,个性化歌单,Campanula',
+  search: {
+    title: `搜索 | ${siteMetadata.title}`,
+    description: '搜索歌曲、歌单与歌手。',
+    keywords: '音乐搜索,歌手,歌单,Campanula',
   },
-  pianoRoll: {
-    title: `钢琴窗 | ${siteMetadata.title}`,
-    description: '使用直观的钢琴窗界面创作和编辑MIDI音乐',
-    keywords: '钢琴窗,MIDI编辑器,音乐制作,FL Studio,Campanula',
-  },
-  sheetMusic: {
-    title: `乐谱 | ${siteMetadata.title}`,
-    description: '浏览、下载和学习各种乐器的乐谱',
-    keywords: '乐谱,钢琴谱,吉他谱,音乐学习,Campanula',
-  },
-  searchResult: {
-    title: `搜索结果 | ${siteMetadata.title}`,
-    description: '查找你喜爱的音乐、歌手和专辑',
-    keywords: '音乐搜索,歌手,专辑,Campanula',
+  settings: {
+    title: `设置 | ${siteMetadata.title}`,
+    description: '切换皮肤与音质档位。',
+    keywords: '设置,皮肤,音质,Campanula',
   },
 }
 
