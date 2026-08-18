@@ -1,5 +1,6 @@
-import type { SongItem } from '$lib/types'
+import type { LyricItem, SongItem } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
+import { fetchLyric } from '$lib/ncm/lyrics'
 import { fetchSongUrls } from '$lib/ncm/songs'
 import { get } from 'svelte/store'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,7 +24,18 @@ vi.mock('$lib/ncm/songs', () => ({
   },
 }))
 
+vi.mock('$lib/ncm/lyrics', () => ({
+  fetchLyric: vi.fn(),
+  LYRIC_ERROR_TEXT: {
+    UNAUTHENTICATED: '获取歌词需要账号许可：请先绑定网易云账号',
+    RATE_LIMITED: '请求过于频繁，请稍后再试',
+    RESOURCE_UNAVAILABLE: '该歌曲歌词暂不可用（无版权）',
+    UNKNOWN: '获取歌词失败，请稍后再试',
+  },
+}))
+
 const mockedFetchSongUrls = vi.mocked(fetchSongUrls)
+const mockedFetchLyric = vi.mocked(fetchLyric)
 
 const song: SongItem = {
   id: 186016,
@@ -36,8 +48,15 @@ const song: SongItem = {
   sourceId: '186016',
 }
 
+const lyrics: LyricItem[] = [
+  { time: 1000, text: '第一句', translate: null },
+  { time: 3500, text: '第二句', translate: 'Second line' },
+]
+
 beforeEach(() => {
   mockedFetchSongUrls.mockReset()
+  mockedFetchLyric.mockReset()
+  mockedFetchLyric.mockResolvedValue([])
   messages.set([])
   nowPlaying.set(null)
   nowPlayingUrl.set(null)
@@ -114,5 +133,64 @@ describe('setNowPlaying', () => {
 
     expect(get(nowPlaying)).toMatchObject({ id: songB.id, name: '七里香' })
     expect(get(nowPlayingUrl)).toBe('https://m701.music.126.net/b.mp3')
+  })
+
+  it('歌词随歌曲加载并写入 nowPlaying', async () => {
+    mockedFetchSongUrls.mockResolvedValue([
+      { id: song.id, status: 'playable', url: 'https://m701.music.126.net/a.mp3', trial: null },
+    ])
+    mockedFetchLyric.mockResolvedValue(lyrics)
+
+    await setNowPlaying(song)
+
+    expect(mockedFetchLyric).toHaveBeenCalledWith(song.id, expect.any(AbortSignal))
+    expect(get(nowPlaying)?.lyrics).toEqual(lyrics)
+  })
+
+  it('无歌词：如实写入空数组，不伪造歌词', async () => {
+    mockedFetchSongUrls.mockResolvedValue([
+      { id: song.id, status: 'playable', url: 'https://m701.music.126.net/a.mp3', trial: null },
+    ])
+    mockedFetchLyric.mockResolvedValue([])
+
+    await setNowPlaying(song)
+
+    expect(get(nowPlaying)?.lyrics).toEqual([])
+  })
+
+  it('歌词接口失败：播放不受影响，按领域错误码提示文案', async () => {
+    mockedFetchSongUrls.mockResolvedValue([
+      { id: song.id, status: 'playable', url: 'https://m701.music.126.net/a.mp3', trial: null },
+    ])
+    mockedFetchLyric.mockRejectedValue(new NcmClientError('RATE_LIMITED', '请求过于频繁，请稍后再试'))
+
+    await setNowPlaying(song)
+
+    expect(get(nowPlayingUrl)).toBe('https://m701.music.126.net/a.mp3')
+    expect(get(nowPlaying)?.lyrics).toBeUndefined()
+    expect(get(messages).some(m => /请求过于频繁/.test(m.message ?? ''))).toBe(true)
+  })
+
+  it('切歌后迟到的歌词不覆盖新歌', async () => {
+    mockedFetchSongUrls.mockResolvedValue([
+      { id: song.id, status: 'playable', url: 'https://m701.music.126.net/a.mp3', trial: null },
+    ])
+    const { promise: firstLyric, resolve: resolveFirstLyric } = Promise.withResolvers<LyricItem[]>()
+    mockedFetchLyric.mockImplementationOnce(() => firstLyric)
+    const first = setNowPlaying(song)
+
+    const songB: SongItem = { ...song, id: 347230, name: '七里香' }
+    mockedFetchSongUrls.mockResolvedValue([
+      { id: songB.id, status: 'playable', url: 'https://m701.music.126.net/b.mp3', trial: null },
+    ])
+    mockedFetchLyric.mockResolvedValue([{ time: 1000, text: '新歌歌词', translate: null }])
+    await setNowPlaying(songB)
+
+    // 上一首歌的歌词迟到归位，不得覆盖新歌（响应对齐到当前播放歌曲）
+    resolveFirstLyric([{ time: 1000, text: '旧歌歌词', translate: null }])
+    await first
+
+    expect(get(nowPlaying)).toMatchObject({ id: songB.id })
+    expect(get(nowPlaying)?.lyrics).toEqual([{ time: 1000, text: '新歌歌词', translate: null }])
   })
 })

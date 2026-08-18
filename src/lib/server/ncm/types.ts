@@ -5,9 +5,9 @@
  * 本文件定义门面的方法形状；各方法由后续 ticket 逐个实现。
  * 所有失败以 NcmError（见 ./errors）形式抛出。
  */
-import type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+import type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
-export type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+export type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
 /** 调用上下文：绑定凭据与执行配置 */
 export interface NcmCallContext {
@@ -47,8 +47,8 @@ export interface NcmProvider {
   /** 播放地址：按音质档位获取，命中试听片段/无版权如实返回各曲来源 */
   songUrl: (ctx: NcmCallContext, params: { ids: number[], level: NcmSoundLevel }) => Promise<NcmSongSource[]>
 
-  /** 歌词 */
-  lyric: (ctx: NcmCallContext, id: number) => Promise<unknown>
+  /** 歌词：LRC 解析为按时间升序的条目，无歌词/未收录如实返回空数组 */
+  lyric: (ctx: NcmCallContext, id: number) => Promise<LyricItem[]>
 
   /** 红心 / 取消红心，写回账号 */
   like: (ctx: NcmCallContext, params: { id: number, like: boolean }) => Promise<void>

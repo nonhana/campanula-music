@@ -1,5 +1,6 @@
 import type { LyricItem, NcmSongSource, SongItem } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
+import { fetchLyric, LYRIC_ERROR_TEXT } from '$lib/ncm/lyrics'
 import { DEFAULT_SOUND_LEVEL, fetchSongUrls, SONG_URL_ERROR_TEXT } from '$lib/ncm/songs'
 import { durationFormatter } from '$lib/utils'
 import { writable } from 'svelte/store'
@@ -77,11 +78,17 @@ export async function setNowPlaying(song: SongItem) {
   nowPlaying.set({ ...song })
 
   try {
-    // 播放地址按缺省音质档位获取（设置页音质档位 UI 由后续 ticket 接入）
-    const [source] = await fetchSongUrls([song.id], DEFAULT_SOUND_LEVEL, signal)
+    // 播放地址与歌词并行获取；歌词失败不阻断播放（fetchSongLyrics 内部消化）
+    const [sources, lyrics] = await Promise.all([
+      fetchSongUrls([song.id], DEFAULT_SOUND_LEVEL, signal),
+      fetchSongLyrics(song.id, signal),
+    ])
     if (signal.aborted)
       return
-    applySongSource(song, source)
+    applySongSource(song, sources[0])
+    // null = 歌词拉取失败（留空呈现占位）；空数组 = 无歌词（如实呈现）
+    if (lyrics !== null)
+      nowPlaying.update(current => (current ? { ...current, lyrics } : current))
   }
   catch (err) {
     if (signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
@@ -124,6 +131,24 @@ function presentPlayError(err: unknown) {
     ? (err.message || SONG_URL_ERROR_TEXT[err.code])
     : SONG_URL_ERROR_TEXT.UNKNOWN
   addMessage({ message, type: 'error' })
+}
+
+/** 歌词拉取：失败不阻断播放，按领域错误码提示并留空歌词（歌词视图如实呈现占位） */
+async function fetchSongLyrics(id: number, signal: AbortSignal): Promise<LyricItem[] | null> {
+  try {
+    return await fetchLyric(id, signal)
+  }
+  catch (err) {
+    if (signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
+      return null
+    }
+    console.error('加载歌词失败:', err)
+    const message = err instanceof NcmClientError
+      ? (err.message || LYRIC_ERROR_TEXT[err.code])
+      : LYRIC_ERROR_TEXT.UNKNOWN
+    addMessage({ message, type: 'error' })
+    return null
+  }
 }
 // 添加到播放列表并立即播放
 export function addToPlaylistAndPlay(song: SongItem) {

@@ -19,6 +19,8 @@
   const ITEM_SIZE = 80
   const ACTIVATED_INDEX = 3
   const TAIL_EMPTY_ITEMS = Math.floor(CONTAINER_SIZE / ITEM_SIZE) - ACTIVATED_INDEX - 1
+  // 无歌词/未加载时的占位条目（空数组与未定义都落到同一占位，如实呈现）
+  const NO_LYRIC_PLACEHOLDER = { time: 0, text: '暂无歌词', translate: null }
 
   let currentLyricIndex = $state(0) // 当前歌词索引
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
@@ -150,11 +152,7 @@
       {onscrollend}
     >
       <VirtualList
-        items={$nowPlaying.lyrics ?? [{
-          time: 0,
-          text: '暂无歌词',
-          translate: null,
-        }]}
+        items={$nowPlaying.lyrics?.length ? $nowPlaying.lyrics : [NO_LYRIC_PLACEHOLDER]}
         containerSize={CONTAINER_SIZE}
         itemSize={ITEM_SIZE}
         headEmptyItems={ACTIVATED_INDEX}
