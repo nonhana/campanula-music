@@ -86,6 +86,11 @@
 
   // 处理音频加载错误
   const handleAudioError = () => {
+    // 无播放地址（无版权/资源不可用）时原因已由编排层如实提示，这里不重复报「加载失败」
+    if (!$nowPlayingUrl) {
+      setSongLoading(false)
+      return
+    }
     const songName = $nowPlaying ? $nowPlaying.name : '当前歌曲'
     callHanaMessage({
       message: `${songName}加载失败，请检查音频文件是否可用`,
@@ -241,7 +246,7 @@
   }
 </script>
 
-<footer class='fixed bottom-0 z-20 h-20 w-full flex flex-row-reverse items-center bg-neutral-200/40 px-5 backdrop-blur md:flex-row'>
+<footer class='fixed bottom-16 z-20 h-20 w-full flex flex-row-reverse items-center bg-neutral-200/40 px-5 backdrop-blur md:bottom-0 md:flex-row'>
   {#if $nowPlaying}
     <audio
       preload='metadata'

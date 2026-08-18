@@ -12,10 +12,7 @@ import {
   userPlaylistCreate as sdkUserPlaylistCreate,
 } from 'hana-music-api'
 import { mapNcmError } from './errors'
-import { asArray, asImageUrl, asNumber, asRecord, asString, sdkConfig } from './raw'
-
-/** 单次 song/detail 请求的歌曲数上限（网易云对单请求 id 数有上限，分片防截断） */
-const TRACK_CHUNK_SIZE = 1000
+import { asArray, asImageUrl, asNumber, asRecord, asString, chunkIds, sdkConfig, TRACK_CHUNK_SIZE } from './raw'
 
 /** 我的歌单每组拉取数量（两组各自单页，分页留待后续） */
 const USER_PLAYLIST_LIMIT = 100
@@ -109,13 +106,6 @@ export function mapUserPlaylists(raw: unknown[]): NcmPlaylist[] {
       creator: asString(asRecord(playlist.creator).nickname),
     }
   })
-}
-
-function chunkIds(ids: number[], size: number): number[][] {
-  const chunks: number[][] = []
-  for (let i = 0; i < ids.length; i += size)
-    chunks.push(ids.slice(i, i + size))
-  return chunks
 }
 
 /** 按完整 trackIds 分片请求歌曲详情，缺失歌曲跳过，并归位到歌单顺序 */

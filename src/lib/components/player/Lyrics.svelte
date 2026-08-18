@@ -152,7 +152,7 @@
       <VirtualList
         items={$nowPlaying.lyrics ?? [{
           time: 0,
-          text: '正在加载歌词...',
+          text: '暂无歌词',
           translate: null,
         }]}
         containerSize={CONTAINER_SIZE}

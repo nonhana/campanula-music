@@ -1,5 +1,9 @@
-import type { LyricItem, SongItem } from '$lib/types'
+import type { LyricItem, NcmSongSource, SongItem } from '$lib/types'
+import { NcmClientError } from '$lib/ncm/client'
+import { DEFAULT_SOUND_LEVEL, fetchSongUrls, SONG_URL_ERROR_TEXT } from '$lib/ncm/songs'
+import { durationFormatter } from '$lib/utils'
 import { writable } from 'svelte/store'
+import { addMessage } from './messageStore'
 import { addSongToPlaylist } from './playlistStore'
 
 type PlayMode = 'repeatAll' | 'shuffle' | 'repeatOne' | 'sequential'
@@ -59,16 +63,6 @@ export function reset() {
   updateMediaSessionMetadata(null)
   updateMediaSessionPlaybackState(true)
 }
-// 获取歌曲 url
-export async function getSongUrl(song: SongItem, signal?: AbortSignal): Promise<string> {
-  const res = await fetch(`/api/songs/${song.id}/url`, { signal })
-  return await res.json()
-}
-// 获取歌词
-export async function getLyrics(song: SongItem, signal?: AbortSignal): Promise<LyricItem[]> {
-  const res = await fetch(`/api/songs/${song.id}/lyrics`, { signal })
-  return await res.json()
-}
 // 请求控制器，用于取消请求
 let controller: AbortController | null = null
 // 设置当前播放的歌曲
@@ -83,27 +77,53 @@ export async function setNowPlaying(song: SongItem) {
   nowPlaying.set({ ...song })
 
   try {
-    const [source, lyrics] = await Promise.all([
-      getSongUrl(song, signal),
-      getLyrics(song, signal),
-    ])
-
+    // 播放地址按缺省音质档位获取（设置页音质档位 UI 由后续 ticket 接入）
+    const [source] = await fetchSongUrls([song.id], DEFAULT_SOUND_LEVEL, signal)
     if (signal.aborted)
       return
-
-    nowPlayingUrl.set(source)
-    updateMediaSessionMetadata(song)
-
-    nowPlaying.update(s =>
-      s && s.id === song.id ? { ...s, lyrics } : s,
-    )
+    applySongSource(song, source)
   }
-  catch (err: any) {
-    if (err.name === 'AbortError') {
+  catch (err) {
+    if (signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
       return
     }
     console.error('加载歌曲失败:', err)
+    setSongLoading(false)
+    nowPlayingUrl.set(null)
+    presentPlayError(err)
   }
+}
+
+/** 把门面返回的单曲来源落到播放器状态；命中试听片段/无版权时如实提示，不伪装成完整播放 */
+function applySongSource(song: SongItem, source: NcmSongSource) {
+  setSongLoading(false)
+
+  if (source.status === 'unavailable') {
+    nowPlayingUrl.set(null)
+    setPaused(true)
+    // 同步媒体会话：锁屏/系统媒体控制不残留上一首的标题与封面
+    updateMediaSessionMetadata(song)
+    addMessage({ message: `「${song.name}」无版权或资源不可用，无法播放`, type: 'warning' })
+    return
+  }
+
+  nowPlayingUrl.set(source.url)
+  updateMediaSessionMetadata(song)
+
+  if (source.status === 'trial') {
+    addMessage({
+      message: `「${song.name}」为试听片段（${durationFormatter(source.trial.start)}–${durationFormatter(source.trial.end)}），非完整播放`,
+      type: 'warning',
+    })
+  }
+}
+
+/** 门面调用失败：按领域错误码呈现文案（错误消息优先，缺失时回落按码文案） */
+function presentPlayError(err: unknown) {
+  const message = err instanceof NcmClientError
+    ? (err.message || SONG_URL_ERROR_TEXT[err.code])
+    : SONG_URL_ERROR_TEXT.UNKNOWN
+  addMessage({ message, type: 'error' })
 }
 // 添加到播放列表并立即播放
 export function addToPlaylistAndPlay(song: SongItem) {

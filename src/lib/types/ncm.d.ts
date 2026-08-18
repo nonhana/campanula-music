@@ -10,6 +10,9 @@ export type NcmErrorCode
 /** 搜索目标类型（对应网易云搜索 type 参数：1 单曲 / 1000 歌单 / 100 歌手） */
 export type NcmSearchType = 'song' | 'playlist' | 'artist'
 
+/** 音质档位（对应网易云 song/url/v1 的 level 参数） */
+export type NcmSoundLevel = 'standard' | 'higher' | 'exhigh' | 'lossless' | 'hires'
+
 /** 搜索结果中的歌手引用 */
 export interface NcmSearchArtistRef {
   id: number
@@ -82,6 +85,23 @@ export interface NcmSearchArtist {
   /** 头像图 URL */
   avatar: string
 }
+
+/** 试听片段起止（单位：毫秒）；网易云对未携带有效账号许可的请求返回截取片段 */
+export interface NcmTrialClip {
+  /** 片段起始时间 */
+  start: number
+  /** 片段结束时间 */
+  end: number
+}
+
+/**
+ * 单首歌曲的播放来源（网易云 song/url/v1 返回体 data 项的领域映射，与请求 ids 对齐）。
+ * 命中试听片段/无版权限制时如实呈现，不伪装成完整播放。
+ */
+export type NcmSongSource
+  = | { id: number, status: 'playable', url: string, trial: null }
+    | { id: number, status: 'trial', url: string, trial: NcmTrialClip }
+    | { id: number, status: 'unavailable', url: null, trial: null }
 
 /** 单次搜索的结果页（按搜索类型分叉） */
 export type NcmSearchPage

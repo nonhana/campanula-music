@@ -5,9 +5,9 @@
  * 本文件定义门面的方法形状；各方法由后续 ticket 逐个实现。
  * 所有失败以 NcmError（见 ./errors）形式抛出。
  */
-import type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmUserPlaylists } from '$lib/types'
+import type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
-export type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmUserPlaylists } from '$lib/types'
+export type { NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
 /** 调用上下文：绑定凭据与执行配置 */
 export interface NcmCallContext {
@@ -21,9 +21,6 @@ export interface NcmSearchParams {
   limit?: number
   offset?: number
 }
-
-/** 音质档位 */
-export type NcmSoundLevel = 'standard' | 'higher' | 'exhigh' | 'lossless' | 'hires'
 
 export interface NcmProvider {
   /** 账号校验：失败抛 NcmError，UNAUTHENTICATED 表示绑定失效 */
@@ -47,8 +44,8 @@ export interface NcmProvider {
   /** 歌单详情，含 trackIds 补全全部歌曲 */
   playlistDetail: (ctx: NcmCallContext, id: number) => Promise<NcmPlaylistDetail>
 
-  /** 播放地址：按音质档位获取，命中试听片段限制如实返回 */
-  songUrl: (ctx: NcmCallContext, params: { ids: number[], level: NcmSoundLevel }) => Promise<unknown>
+  /** 播放地址：按音质档位获取，命中试听片段/无版权如实返回各曲来源 */
+  songUrl: (ctx: NcmCallContext, params: { ids: number[], level: NcmSoundLevel }) => Promise<NcmSongSource[]>
 
   /** 歌词 */
   lyric: (ctx: NcmCallContext, id: number) => Promise<unknown>
