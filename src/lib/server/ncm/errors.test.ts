@@ -33,6 +33,10 @@ describe('mapNcmError', () => {
     const mapped = mapNcmError({ body: { code: -462, msg: '' }, cookie: [], status: 200 })
     expect(mapped.code).toBe('UNAUTHENTICATED')
   })
+  it('业务码 301（需要登录，账号校验接口典型应答）→ 绑定失效', () => {
+    const mapped = mapNcmError({ body: { code: 301, msg: '需要登录' }, cookie: [], status: 200 })
+    expect(mapped.code).toBe('UNAUTHENTICATED')
+  })
 
   it('消息含"需要登录" → 绑定失效', () => {
     const mapped = mapNcmError({ body: { code: 200, msg: '需要登录' }, cookie: [], status: 200 })

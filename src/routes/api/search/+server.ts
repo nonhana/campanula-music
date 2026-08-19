@@ -1,5 +1,6 @@
 import type { NcmSearchType } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { ncmErrorJson } from '$lib/server/ncm/http'
 import { ncmSearch } from '$lib/server/ncm/search'
 import { json } from '@sveltejs/kit'
@@ -24,8 +25,9 @@ export async function GET({ url }: RequestEvent) {
   const limit = Number.isFinite(rawLimit) && rawLimit >= 1 ? Math.floor(rawLimit) : DEFAULT_LIMIT
 
   try {
-    // 绑定凭据由 Ticket 02（凭据与绑定引导）接入；搜索无需登录，先传空凭据
-    const page = await ncmSearch({ cookie: '' }, { keywords, type: rawType as NcmSearchType, limit })
+    // 搜索无需登录；已绑定时携带凭据，让上游按账号许可返回更完整结果
+    const bound = await resolveBoundUser()
+    const page = await ncmSearch({ cookie: bound?.cookie ?? '' }, { keywords, type: rawType as NcmSearchType, limit })
     return json(page)
   }
   catch (err) {

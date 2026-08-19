@@ -1,4 +1,5 @@
 import type { NcmErrorCode } from '$lib/types'
+import { markBindingInvalid } from '$lib/binding/bindingStore'
 
 /**
  * 客户端门面调用的共享传输层：请求 /api/* 代理并统一解码领域错误。
@@ -54,6 +55,10 @@ async function decodeError(res: Response): Promise<NcmClientError> {
   catch {
     // 非 JSON 响应体按 UNKNOWN 处理
   }
+  // 绑定失效是全局态：任何业务接口报 UNAUTHENTICATED 都同步触发全局失效提示
+  // （横幅 + 引导回绑定页），页面级文案由各数据模块另行呈现
+  if (code === 'UNAUTHENTICATED')
+    markBindingInvalid()
   return new NcmClientError(code, message)
 }
 

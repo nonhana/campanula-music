@@ -108,3 +108,12 @@ export type NcmSearchPage
   = | { type: 'song', songs: NcmSearchSong[], total: number }
     | { type: 'playlist', playlists: NcmSearchPlaylist[], total: number }
     | { type: 'artist', artists: NcmSearchArtist[], total: number }
+
+/** 扫码登录状态（对应上游业务码 800 过期 / 801 等待 / 802 已扫码 / 803 确认；门面与客户端共用） */
+export type NcmQrStatus = 'waiting' | 'scanned' | 'confirmed' | 'expired'
+
+/** 绑定状态（服务端心跳判定结果，客户端原样消费；三态即绑定页承载的两态 + 有效） */
+export type NcmBindingStatus
+  = | { status: 'unbound' } // 尚未绑定：无凭据文件
+    | { status: 'invalid' } // 绑定失效：凭据存在但账号校验失败
+    | { status: 'valid', user: { uid: number, nickname: string } }

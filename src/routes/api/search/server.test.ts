@@ -1,14 +1,20 @@
 import type { NcmSearchPage } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { NcmError } from '$lib/server/ncm/errors'
 import { ncmSearch } from '$lib/server/ncm/search'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from './+server'
 
+vi.mock('$lib/server/binding', () => ({
+  resolveBoundUser: vi.fn(),
+}))
+
 vi.mock('$lib/server/ncm/search', () => ({
   ncmSearch: vi.fn(),
 }))
 
+const mockedBound = vi.mocked(resolveBoundUser)
 const mockedSearch = vi.mocked(ncmSearch)
 
 function makeEvent(query = ''): RequestEvent {
@@ -18,7 +24,9 @@ function makeEvent(query = ''): RequestEvent {
 const songPage: NcmSearchPage = { type: 'song', total: 1, songs: [{ id: 1, name: '稻香', duration: 1000, artists: [], album: { id: 0, name: '', cover: '' } }] }
 
 beforeEach(() => {
+  mockedBound.mockReset()
   mockedSearch.mockReset()
+  mockedBound.mockResolvedValue(null)
 })
 
 describe('gET /api/search', () => {
@@ -31,7 +39,7 @@ describe('gET /api/search', () => {
     await expect(res.json()).resolves.toEqual(songPage)
   })
 
-  it('把关键词、类型与分页转发给门面', async () => {
+  it('把关键词、类型与分页转发给门面；未绑定时传空凭据', async () => {
     mockedSearch.mockResolvedValue(songPage)
 
     await GET(makeEvent('?keywords=%E7%A8%BB%E9%A6%99&type=song&limit=20'))
@@ -39,6 +47,18 @@ describe('gET /api/search', () => {
     expect(mockedSearch).toHaveBeenCalledWith(
       { cookie: '' },
       { keywords: '稻香', type: 'song', limit: 20 },
+    )
+  })
+
+  it('已绑定时携带绑定凭据（搜索无需登录，但不失账号许可上下文）', async () => {
+    mockedBound.mockResolvedValue({ uid: 98765, cookie: 'MUSIC_U=abc' })
+    mockedSearch.mockResolvedValue(songPage)
+
+    await GET(makeEvent('?keywords=%E7%A8%BB%E9%A6%99&type=song'))
+
+    expect(mockedSearch).toHaveBeenCalledWith(
+      { cookie: 'MUSIC_U=abc' },
+      { keywords: '稻香', type: 'song', limit: 30 },
     )
   })
 

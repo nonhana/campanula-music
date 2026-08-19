@@ -1,14 +1,20 @@
 import type { NcmSongSource } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { NcmError } from '$lib/server/ncm/errors'
 import { ncmSongUrl } from '$lib/server/ncm/songUrl'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from './+server'
 
+vi.mock('$lib/server/binding', () => ({
+  resolveBoundUser: vi.fn(),
+}))
+
 vi.mock('$lib/server/ncm/songUrl', () => ({
   ncmSongUrl: vi.fn(),
 }))
 
+const mockedBound = vi.mocked(resolveBoundUser)
 const mockedSongUrl = vi.mocked(ncmSongUrl)
 
 function makeEvent(query = ''): RequestEvent {
@@ -20,11 +26,13 @@ const sources: NcmSongSource[] = [
 ]
 
 beforeEach(() => {
+  mockedBound.mockReset()
   mockedSongUrl.mockReset()
+  mockedBound.mockResolvedValue(null)
 })
 
 describe('gET /api/songs/url', () => {
-  it('ids 参数转发给门面并回传来源列表', async () => {
+  it('ids 参数转发给门面并回传来源列表；未绑定时传空凭据', async () => {
     mockedSongUrl.mockResolvedValue(sources)
 
     const res = await GET(makeEvent('?ids=186016&level=standard'))
@@ -35,6 +43,18 @@ describe('gET /api/songs/url', () => {
     )
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual(sources)
+  })
+
+  it('已绑定时携带绑定凭据（账号许可决定试听片段回落与否）', async () => {
+    mockedBound.mockResolvedValue({ uid: 98765, cookie: 'MUSIC_U=abc' })
+    mockedSongUrl.mockResolvedValue(sources)
+
+    await GET(makeEvent('?ids=186016'))
+
+    expect(mockedSongUrl).toHaveBeenCalledWith(
+      { cookie: 'MUSIC_U=abc' },
+      { ids: [186016], level: 'standard' },
+    )
   })
 
   it('多个 id 以逗号分隔解析为数字数组', async () => {

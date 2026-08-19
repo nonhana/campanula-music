@@ -5,9 +5,9 @@
  * 本文件定义门面的方法形状；各方法由后续 ticket 逐个实现。
  * 所有失败以 NcmError（见 ./errors）形式抛出。
  */
-import type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+import type { LyricItem, NcmPlaylistDetail, NcmQrStatus, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
-export type { LyricItem, NcmPlaylistDetail, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+export type { LyricItem, NcmPlaylistDetail, NcmQrStatus, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
 
 /** 调用上下文：绑定凭据与执行配置 */
 export interface NcmCallContext {
@@ -29,11 +29,11 @@ export interface NcmProvider {
   /** 二维码绑定第一步：获取二维码 key */
   loginQrKey: () => Promise<{ key: string, unikey: string }>
 
-  /** 二维码绑定第二步：由 key 生成二维码内容 */
-  loginQrCreate: (key: string) => Promise<{ qrUrl: string }>
+  /** 二维码绑定第二步：由 key 生成二维码内容与图片（qrimg 为 data URL，直接呈现） */
+  loginQrCreate: (key: string) => Promise<{ qrUrl: string, qrimg: string }>
 
-  /** 二维码绑定第三步：轮询扫码状态（带时间戳防缓存） */
-  loginQrCheck: (key: string) => Promise<{ status: 'waiting' | 'scanned' | 'confirmed' | 'expired', cookie?: string }>
+  /** 二维码绑定第三步：轮询扫码状态（官方轮询端点，无缓存问题）；确认态携带凭据 */
+  loginQrCheck: (key: string) => Promise<{ status: NcmQrStatus, cookie?: string }>
 
   /** 搜索歌曲/歌单/歌手 */
   search: (ctx: NcmCallContext, params: NcmSearchParams) => Promise<NcmSearchPage>

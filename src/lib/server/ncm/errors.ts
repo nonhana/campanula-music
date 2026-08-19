@@ -56,8 +56,8 @@ export function mapNcmError(err: unknown): NcmError {
   const code = isSdkFailure(err) ? err.body?.code : undefined
   const msg = isSdkFailure(err) ? err.body?.msg : undefined
 
-  // 网易云绑定失效典型信号：HTTP 301、业务码 -462、或消息含登录相关字样
-  if (status === 301 || code === -462 || (msg != null && UNAUTHENTICATED_PATTERN.test(msg))) {
+  // 网易云绑定失效典型信号：HTTP 301、业务码 -462（登录状态失效）或 301（需要登录）、或消息含登录相关字样
+  if (status === 301 || code === -462 || code === 301 || (msg != null && UNAUTHENTICATED_PATTERN.test(msg))) {
     return new NcmError('UNAUTHENTICATED', msg || '绑定已失效，需要重新扫码', { cause: err, status })
   }
 

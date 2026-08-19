@@ -1,14 +1,20 @@
 import type { NcmPlaylistDetail } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { NcmError } from '$lib/server/ncm/errors'
 import { ncmPlaylistDetail } from '$lib/server/ncm/playlists'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from './+server'
 
+vi.mock('$lib/server/binding', () => ({
+  resolveBoundUser: vi.fn(),
+}))
+
 vi.mock('$lib/server/ncm/playlists', () => ({
   ncmPlaylistDetail: vi.fn(),
 }))
 
+const mockedBound = vi.mocked(resolveBoundUser)
 const mockedDetail = vi.mocked(ncmPlaylistDetail)
 
 const detail: NcmPlaylistDetail = {
@@ -27,11 +33,13 @@ function makeEvent(id: string): RequestEvent {
 }
 
 beforeEach(() => {
+  mockedBound.mockReset()
   mockedDetail.mockReset()
+  mockedBound.mockResolvedValue(null)
 })
 
 describe('gET /api/playlist/[id]', () => {
-  it('有效 id：以门面补全结果返回歌单详情', async () => {
+  it('有效 id：以门面补全结果返回歌单详情；未绑定时传空凭据', async () => {
     mockedDetail.mockResolvedValue(detail)
 
     const res = await GET(makeEvent('6792103822'))
@@ -39,6 +47,15 @@ describe('gET /api/playlist/[id]', () => {
     expect(mockedDetail).toHaveBeenCalledWith({ cookie: '' }, 6792103822)
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toEqual(detail)
+  })
+
+  it('已绑定时携带绑定凭据（未登录歌曲补全受限）', async () => {
+    mockedBound.mockResolvedValue({ uid: 98765, cookie: 'MUSIC_U=abc' })
+    mockedDetail.mockResolvedValue(detail)
+
+    await GET(makeEvent('6792103822'))
+
+    expect(mockedDetail).toHaveBeenCalledWith({ cookie: 'MUSIC_U=abc' }, 6792103822)
   })
 
   it('id 非纯数字 → 400 INVALID_PARAMS', async () => {

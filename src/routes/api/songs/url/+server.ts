@@ -1,4 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { ncmErrorJson } from '$lib/server/ncm/http'
 import { TRACK_CHUNK_SIZE } from '$lib/server/ncm/raw'
 import { ncmSongUrl } from '$lib/server/ncm/songUrl'
@@ -26,9 +27,10 @@ export async function GET({ url }: RequestEvent) {
   }
 
   try {
-    // 播放地址受账号许可影响（无许可回落试听片段）；凭据由 Ticket 02 接入
+    // 播放地址受账号许可影响（无许可回落试听片段）：已绑定时携带凭据获取完整播放
+    const bound = await resolveBoundUser()
     const sources = await ncmSongUrl(
-      { cookie: '' },
+      { cookie: bound?.cookie ?? '' },
       { ids, level: rawLevel },
     )
     return json(sources)

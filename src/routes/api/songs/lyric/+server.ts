@@ -1,4 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { ncmErrorJson } from '$lib/server/ncm/http'
 import { ncmLyric } from '$lib/server/ncm/lyric'
 import { json } from '@sveltejs/kit'
@@ -14,8 +15,9 @@ export async function GET({ url }: RequestEvent) {
   }
 
   try {
-    // 歌词无需登录即可获取，无版权/未收录由门面如实标注；凭据由 Ticket 02 接入
-    const lyrics = await ncmLyric({ cookie: '' }, Number(rawId))
+    // 歌词无需登录即可获取，无版权/未收录由门面如实标注；已绑定时携带凭据
+    const bound = await resolveBoundUser()
+    const lyrics = await ncmLyric({ cookie: bound?.cookie ?? '' }, Number(rawId))
     return json(lyrics)
   }
   catch (err) {

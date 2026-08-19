@@ -1,4 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { ncmErrorJson } from '$lib/server/ncm/http'
 import { ncmPlaylistDetail } from '$lib/server/ncm/playlists'
 import { json } from '@sveltejs/kit'
@@ -14,8 +15,9 @@ export async function GET({ params }: RequestEvent) {
   }
 
   try {
-    // 歌单详情无需登录（未登录仅歌曲补全受限），凭据由 Ticket 02 接入
-    const detail = await ncmPlaylistDetail({ cookie: '' }, Number(rawId))
+    // 歌单详情无需登录（未登录仅歌曲补全受限）；已绑定时携带凭据
+    const bound = await resolveBoundUser()
+    const detail = await ncmPlaylistDetail({ cookie: bound?.cookie ?? '' }, Number(rawId))
     return json(detail)
   }
   catch (err) {

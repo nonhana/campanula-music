@@ -186,7 +186,7 @@
         {#each page.playlists as playlist (playlist.id)}
           <li>
             <a
-              href={resolve('/playlist/[id]', { id: String(playlist.id) })}
+              href={resolve('/(app)/playlist/[id]', { id: String(playlist.id) })}
               class='flex items-center gap-3 border border-app-border rounded-xl bg-app-surface p-3 transition-colors hover:bg-app-surface-hover'
             >
               {#if playlist.cover}

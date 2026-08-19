@@ -1,14 +1,20 @@
 import type { LyricItem } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
+import { resolveBoundUser } from '$lib/server/binding'
 import { NcmError } from '$lib/server/ncm/errors'
 import { ncmLyric } from '$lib/server/ncm/lyric'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from './+server'
 
+vi.mock('$lib/server/binding', () => ({
+  resolveBoundUser: vi.fn(),
+}))
+
 vi.mock('$lib/server/ncm/lyric', () => ({
   ncmLyric: vi.fn(),
 }))
 
+const mockedBound = vi.mocked(resolveBoundUser)
 const mockedLyric = vi.mocked(ncmLyric)
 
 function makeEvent(query = ''): RequestEvent {
@@ -21,11 +27,13 @@ const lyrics: LyricItem[] = [
 ]
 
 beforeEach(() => {
+  mockedBound.mockReset()
   mockedLyric.mockReset()
+  mockedBound.mockResolvedValue(null)
 })
 
 describe('gET /api/songs/lyric', () => {
-  it('id 参数转发给门面并回传歌词列表', async () => {
+  it('id 参数转发给门面并回传歌词列表；未绑定时传空凭据', async () => {
     mockedLyric.mockResolvedValue(lyrics)
 
     const res = await GET(makeEvent('?id=186016'))
@@ -33,6 +41,15 @@ describe('gET /api/songs/lyric', () => {
     expect(mockedLyric).toHaveBeenCalledWith({ cookie: '' }, 186016)
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual(lyrics)
+  })
+
+  it('已绑定时携带绑定凭据', async () => {
+    mockedBound.mockResolvedValue({ uid: 98765, cookie: 'MUSIC_U=abc' })
+    mockedLyric.mockResolvedValue(lyrics)
+
+    await GET(makeEvent('?id=186016'))
+
+    expect(mockedLyric).toHaveBeenCalledWith({ cookie: 'MUSIC_U=abc' }, 186016)
   })
 
   it('无歌词返回空数组（如实呈现，非错误）', async () => {
