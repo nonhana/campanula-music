@@ -14,9 +14,13 @@
     searchValue: string
     /** 队列守卫标识：非路由歌单（如红心页）传入固定 id，缺省沿用路由歌单 id */
     playlistId?: string
+    /** 切换队列前补全整张歌单（分页懒加载下队列必须完整）；缺省直接用已加载歌曲 */
+    onQueueAll?: () => Promise<SongItem[]>
+    /** 触底增量加载回调，透传给 VirtualList 的 onNearEnd */
+    onNearEnd?: () => void
   }
 
-  let { songs, searchValue = $bindable(''), playlistId }: Props = $props()
+  let { songs, searchValue = $bindable(''), playlistId, onQueueAll, onNearEnd }: Props = $props()
 
   const songsFilter = (song: SongItem) => {
     const target = searchValue.trim().toLowerCase()
@@ -46,13 +50,15 @@
   // 队列守卫标识：非路由歌单（如红心页）传入固定 id，缺省沿用路由歌单 id
   const curPlaylistId = $derived(playlistId ?? page.params.id)
 
-  const handleDblClick = (targetSong: SongItem) => {
+  const handleDblClick = async (targetSong: SongItem) => {
     try {
       setSongLoading(true)
       if (curPlaylistId && curPlaylistId !== $playlistIdStore) {
         resetPlaylist()
         setPlaylistId(curPlaylistId)
-        updatePlaylist(songs)
+        // 浏览按分页懒加载，切换队列前补全整张歌单，保证队列完整
+        const queue = await onQueueAll?.() ?? songs
+        updatePlaylist(queue)
         callHanaMessage({
           message: '播放列表已更新',
           type: 'success',
@@ -70,7 +76,7 @@
 </script>
 
 <ScrollContainer {scrollWatcher} {onHeightChange}>
-  <VirtualList items={songList} itemSize={72} {containerSize} scrollPos={scrollOffset}>
+  <VirtualList items={songList} itemSize={72} {containerSize} scrollPos={scrollOffset} {onNearEnd}>
     {#snippet renderItem(item)}
       <SongPlaylistItem showCover index={item.index + 1} song={item} ondblclick={() => handleDblClick(item)} />
     {/snippet}

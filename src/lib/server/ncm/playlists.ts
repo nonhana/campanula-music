@@ -1,17 +1,19 @@
 import type {
   NcmPlaylist,
   NcmPlaylistDetail,
+  NcmSong,
   NcmUserPlaylists,
 } from '$lib/types'
 import type { NcmCallContext } from './types'
 import {
   playlistDetail as sdkPlaylistDetail,
+  playlistTrackAll as sdkPlaylistTrackAll,
   userPlaylistCollect as sdkUserPlaylistCollect,
   userPlaylistCreate as sdkUserPlaylistCreate,
 } from 'hana-music-api'
 import { mapNcmError } from './errors'
 import { asArray, asImageUrl, asNumber, asRecord, asString, sdkConfig } from './raw'
-import { fetchSongsInOrderByIds } from './songDetail'
+import { mapSongDetailList } from './songDetail'
 
 /** 我的歌单每组拉取数量（两组各自单页，分页留待后续） */
 const USER_PLAYLIST_LIMIT = 100
@@ -78,14 +80,41 @@ function unpackUserPlaylistEnvelope(body: unknown): unknown[] {
   return asArray(asRecord(envelope.data).playlist ?? envelope.playlist)
 }
 
-/** 按完整 trackIds 分片请求歌曲详情，缺失歌曲跳过，并归位到歌单顺序 */
-/** 歌单详情：实时拉取并用完整 trackIds 补全全部歌曲；失败抛 NcmError */
+/** 歌单详情：实时拉取头信息；歌曲不随详情返回，经 ncmPlaylistTracks 分页拉取。失败抛 NcmError */
 export async function ncmPlaylistDetail(ctx: NcmCallContext, id: number): Promise<NcmPlaylistDetail> {
   try {
     const res = await sdkPlaylistDetail({ id: String(id) }, sdkConfig(ctx.cookie))
-    const { trackIds, ...header } = parsePlaylistDetail(res.body)
-    const songs = await fetchSongsInOrderByIds(ctx, trackIds)
-    return { ...header, songs }
+    const parts = parsePlaylistDetail(res.body)
+    return {
+      id: parts.id,
+      name: parts.name,
+      cover: parts.cover,
+      creator: parts.creator,
+      description: parts.description,
+      trackCount: parts.trackCount,
+      playCount: parts.playCount,
+    }
+  }
+  catch (err) {
+    throw mapNcmError(err)
+  }
+}
+
+/**
+ * 歌单曲目分页：playlist/track/all 按偏移窗口请求歌曲详情（上游对每页重新解析 trackIds），
+ * 缺失歌曲（已下架）跳过；失败抛 NcmError。
+ */
+export async function ncmPlaylistTracks(
+  ctx: NcmCallContext,
+  id: number,
+  params: { limit: number, offset: number },
+): Promise<NcmSong[]> {
+  try {
+    const res = await sdkPlaylistTrackAll(
+      { id: String(id), limit: params.limit, offset: params.offset },
+      sdkConfig(ctx.cookie),
+    )
+    return mapSongDetailList(res.body)
   }
   catch (err) {
     throw mapNcmError(err)

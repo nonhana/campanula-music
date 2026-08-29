@@ -1,12 +1,13 @@
 import {
   playlistDetail as sdkPlaylistDetail,
+  playlistTrackAll as sdkPlaylistTrackAll,
   songDetail as sdkSongDetail,
   userPlaylistCollect as sdkUserPlaylistCollect,
   userPlaylistCreate as sdkUserPlaylistCreate,
 } from 'hana-music-api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userPlaylistsFixture from './fixtures/user-playlists.json'
-import { mapUserPlaylists, ncmPlaylistDetail, ncmUserPlaylists, parsePlaylistDetail } from './playlists'
+import { mapUserPlaylists, ncmPlaylistDetail, ncmPlaylistTracks, ncmUserPlaylists, parsePlaylistDetail } from './playlists'
 import { mapSongDetailList } from './songDetail'
 
 vi.mock('hana-music-api', async (importOriginal) => {
@@ -14,6 +15,7 @@ vi.mock('hana-music-api', async (importOriginal) => {
   return {
     ...mod,
     playlistDetail: vi.fn(),
+    playlistTrackAll: vi.fn(),
     songDetail: vi.fn(),
     userPlaylistCreate: vi.fn(),
     userPlaylistCollect: vi.fn(),
@@ -21,6 +23,7 @@ vi.mock('hana-music-api', async (importOriginal) => {
 })
 
 const mockedDetail = vi.mocked(sdkPlaylistDetail)
+const mockedTrackAll = vi.mocked(sdkPlaylistTrackAll)
 const mockedSong = vi.mocked(sdkSongDetail)
 const mockedCreate = vi.mocked(sdkUserPlaylistCreate)
 const mockedCollect = vi.mocked(sdkUserPlaylistCollect)
@@ -48,6 +51,7 @@ function rawSong(id: number, name: string, dt = 269000) {
 
 beforeEach(() => {
   mockedDetail.mockReset()
+  mockedTrackAll.mockReset()
   mockedSong.mockReset()
   mockedCreate.mockReset()
   mockedCollect.mockReset()
@@ -119,7 +123,7 @@ describe('mapSongDetailList', () => {
 })
 
 describe('ncmPlaylistDetail', () => {
-  it('用完整 trackIds 补全全部歌曲并归位到歌单顺序', async () => {
+  it('实时拉取歌单头信息，歌曲不随详情补全（由分页接口按需拉取）', async () => {
     mockedDetail.mockResolvedValue({
       body: {
         playlist: {
@@ -133,69 +137,20 @@ describe('ncmPlaylistDetail', () => {
         },
       },
     } as never)
-    mockedSong.mockResolvedValue({
-      body: songDetailBody([rawSong(202, '第二首'), rawSong(101, '第一首')]),
-    } as never)
 
     const detail = await ncmPlaylistDetail({ cookie: '' }, 42)
 
-    expect(mockedSong).toHaveBeenCalledWith({ ids: '101,202' }, undefined)
-    expect(detail).toMatchObject({
+    expect(mockedSong).not.toHaveBeenCalled()
+    expect(mockedTrackAll).not.toHaveBeenCalled()
+    expect(detail).toEqual({
       id: 42,
       name: '精选',
+      cover: '',
+      creator: 'n',
+      description: null,
       trackCount: 2,
-      songs: [{ id: 101, name: '第一首' }, { id: 202, name: '第二首' }],
+      playCount: 1,
     })
-  })
-
-  it('trackIds 超过分片大小时分片请求并在顺序归位后合并', async () => {
-    const ids = Array.from({ length: 2001 }, (_, i) => i + 1)
-    mockedDetail.mockResolvedValue({
-      body: {
-        playlist: { id: 1, name: '大全', creator: { nickname: 'n' }, trackCount: ids.length, playCount: 1, trackIds: ids.map(id => ({ id })), tracks: [] },
-      },
-    } as never)
-    mockedSong.mockImplementation((async (query: unknown) => {
-      const chunk = typeof query === 'object' && query !== null && 'ids' in query && typeof query.ids === 'string'
-        ? query.ids
-        : ''
-      return { body: songDetailBody(chunk.split(',').map(id => rawSong(Number(id), `song-${id}`))) }
-    }) as never)
-
-    const detail = await ncmPlaylistDetail({ cookie: '' }, 1)
-
-    expect(mockedSong).toHaveBeenCalledTimes(3)
-    expect(mockedSong).toHaveBeenNthCalledWith(1, { ids: ids.slice(0, 1000).join(',') }, undefined)
-    expect(mockedSong).toHaveBeenNthCalledWith(3, { ids: ids.slice(2000).join(',') }, undefined)
-    expect(detail.songs).toHaveLength(ids.length)
-    expect(detail.songs[0].id).toBe(1)
-    expect(detail.songs[2000].id).toBe(2001)
-  })
-
-  it('无 trackIds 时不请求歌曲详情', async () => {
-    mockedDetail.mockResolvedValue({
-      body: { playlist: { id: 1, name: '空歌单', creator: { nickname: 'n' }, trackIds: [], tracks: [] } },
-    } as never)
-
-    const detail = await ncmPlaylistDetail({ cookie: '' }, 1)
-
-    expect(mockedSong).not.toHaveBeenCalled()
-    expect(detail.songs).toEqual([])
-  })
-
-  it('歌曲详情缺失部分歌曲时跳过（已下架歌曲不报错）', async () => {
-    mockedDetail.mockResolvedValue({
-      body: {
-        playlist: { id: 1, name: '有下架', creator: { nickname: 'n' }, trackCount: 2, playCount: 1, trackIds: [{ id: 11 }, { id: 22 }], tracks: [] },
-      },
-    } as never)
-    mockedSong.mockResolvedValue({ body: songDetailBody([rawSong(11, '在架')]) } as never)
-
-    const detail = await ncmPlaylistDetail({ cookie: '' }, 1)
-
-    expect(detail.songs).toEqual([
-      { id: 11, name: '在架', duration: 269000, artists: [{ id: 6452, name: '周杰伦' }], album: { id: 21349, name: '叶惠美', cover: 'https://p3.music.126.net/c.jpg' } },
-    ])
   })
 
   it('歌单详情失败映射为领域错误', async () => {
@@ -204,16 +159,44 @@ describe('ncmPlaylistDetail', () => {
     await expect(ncmPlaylistDetail({ cookie: '' }, 1)).rejects.toMatchObject({ name: 'NcmError', code: 'RATE_LIMITED' })
   })
 
-  it('携带绑定凭据调用并透传给歌曲详情', async () => {
+  it('携带绑定凭据调用', async () => {
     mockedDetail.mockResolvedValue({
       body: { playlist: { id: 1, name: 'n', creator: { nickname: 'n' }, trackIds: [{ id: 7 }], tracks: [] } },
     } as never)
-    mockedSong.mockResolvedValue({ body: songDetailBody([rawSong(7, 's')]) } as never)
 
     await ncmPlaylistDetail({ cookie: 'MUSIC_U=abc' }, 1)
 
     expect(mockedDetail).toHaveBeenCalledWith({ id: '1' }, { cookie: 'MUSIC_U=abc' })
-    expect(mockedSong).toHaveBeenCalledWith({ ids: '7' }, { cookie: 'MUSIC_U=abc' })
+  })
+})
+
+describe('ncmPlaylistTracks', () => {
+  it('按 limit/offset 请求 playlist/track/all 并映射为领域歌曲', async () => {
+    mockedTrackAll.mockResolvedValue({
+      body: songDetailBody([rawSong(202, '第二首'), rawSong(101, '第一首')]),
+    } as never)
+
+    const songs = await ncmPlaylistTracks({ cookie: '' }, 42, { limit: 100, offset: 100 })
+
+    expect(mockedTrackAll).toHaveBeenCalledWith({ id: '42', limit: 100, offset: 100 }, undefined)
+    expect(songs).toEqual([
+      { id: 202, name: '第二首', duration: 269000, artists: [{ id: 6452, name: '周杰伦' }], album: { id: 21349, name: '叶惠美', cover: 'https://p3.music.126.net/c.jpg' } },
+      { id: 101, name: '第一首', duration: 269000, artists: [{ id: 6452, name: '周杰伦' }], album: { id: 21349, name: '叶惠美', cover: 'https://p3.music.126.net/c.jpg' } },
+    ])
+  })
+
+  it('携带绑定凭据调用', async () => {
+    mockedTrackAll.mockResolvedValue({ body: songDetailBody([]) } as never)
+
+    await ncmPlaylistTracks({ cookie: 'MUSIC_U=abc' }, 42, { limit: 100, offset: 200 })
+
+    expect(mockedTrackAll).toHaveBeenCalledWith({ id: '42', limit: 100, offset: 200 }, { cookie: 'MUSIC_U=abc' })
+  })
+
+  it('失败映射为领域错误', async () => {
+    mockedTrackAll.mockRejectedValue({ status: 429, body: { code: -460, msg: '操作太频繁' } })
+
+    await expect(ncmPlaylistTracks({ cookie: '' }, 1, { limit: 100, offset: 0 })).rejects.toMatchObject({ name: 'NcmError', code: 'RATE_LIMITED' })
   })
 })
 

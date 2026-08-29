@@ -62,7 +62,7 @@ export function asImageUrl(value: unknown): string {
   }
 }
 
-/** 单次批量请求的 id 数上限（网易云对单请求 id 数有上限，分片防截断；歌单补全与播放地址共用） */
+/** 单次批量请求的 id 数上限（网易云对单请求 id 数有上限，分片防截断；红心补全、播放地址与歌单曲目分页上限共用） */
 export const TRACK_CHUNK_SIZE = 1000
 
 /** 把 id 列表按单请求上限分片 */

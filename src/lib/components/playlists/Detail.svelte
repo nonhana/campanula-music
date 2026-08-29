@@ -19,25 +19,29 @@
     playlist: PlaylistItem
     songs: SongItem[]
     searchValue: string
+    /** 入队前补全整张歌单（分页懒加载下队列必须完整）；缺省直接用已加载歌曲 */
+    onQueueAll?: () => Promise<SongItem[]>
   }
 
-  let { playlist, songs, searchValue = $bindable('') }: Props = $props()
+  let { playlist, songs, searchValue = $bindable(''), onQueueAll }: Props = $props()
 
   const moreMap = [{
     text: '添加到播放列表',
     command: 'add-to-playlist',
   }]
 
-  const handleAddPlaylistSongs = (autoplay: boolean = false) => {
+  const handleAddPlaylistSongs = async (autoplay: boolean = false) => {
     try {
       setSongLoading(true)
-      updatePlaylist(songs)
+      // 浏览按分页懒加载，入队前补全整张歌单，保证播放队列完整
+      const queue = await onQueueAll?.() ?? songs
+      updatePlaylist(queue)
       callHanaMessage({
         message: '播放列表已更新',
         type: 'success',
       })
       if (autoplay) {
-        setNowPlaying(songs[0])
+        setNowPlaying(queue[0])
       }
     }
     catch (error: any) {
@@ -53,14 +57,14 @@
 
   onMount(() => {
     if (page.url.searchParams.get('autoplay') === 'true') {
-      handleAddPlaylistSongs(true)
+      void handleAddPlaylistSongs(true)
     }
   })
 
   const handleCommand = (command: string | number | object) => {
     switch (command) {
       case 'add-to-playlist':
-        handleAddPlaylistSongs()
+        void handleAddPlaylistSongs()
         break
       default:
         break

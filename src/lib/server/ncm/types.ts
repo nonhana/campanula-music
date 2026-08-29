@@ -5,9 +5,29 @@
  * 本文件定义门面的方法形状；各方法由后续 ticket 逐个实现。
  * 所有失败以 NcmError（见 ./errors）形式抛出。
  */
-import type { LyricItem, NcmPlaylistDetail, NcmQrStatus, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+import type {
+  LyricItem,
+  NcmPlaylistDetail,
+  NcmQrStatus,
+  NcmSearchPage,
+  NcmSearchType,
+  NcmSong,
+  NcmSongSource,
+  NcmSoundLevel,
+  NcmUserPlaylists,
+} from '$lib/types'
 
-export type { LyricItem, NcmPlaylistDetail, NcmQrStatus, NcmSearchPage, NcmSearchType, NcmSong, NcmSongSource, NcmSoundLevel, NcmUserPlaylists } from '$lib/types'
+export type {
+  LyricItem,
+  NcmPlaylistDetail,
+  NcmQrStatus,
+  NcmSearchPage,
+  NcmSearchType,
+  NcmSong,
+  NcmSongSource,
+  NcmSoundLevel,
+  NcmUserPlaylists,
+} from '$lib/types'
 
 /** 调用上下文：绑定凭据与执行配置 */
 export interface NcmCallContext {
@@ -41,8 +61,11 @@ export interface NcmProvider {
   /** 我的歌单：创建的歌单与收藏的歌单两组 */
   userPlaylists: (ctx: NcmCallContext, uid: number) => Promise<NcmUserPlaylists>
 
-  /** 歌单详情，含 trackIds 补全全部歌曲 */
+  /** 歌单详情头信息（歌曲经 playlistTracks 分页拉取） */
   playlistDetail: (ctx: NcmCallContext, id: number) => Promise<NcmPlaylistDetail>
+
+  /** 歌单曲目分页：按 limit/offset 返回歌单顺序的歌曲详情（缺失歌曲跳过） */
+  playlistTracks: (ctx: NcmCallContext, id: number, params: { limit: number, offset: number }) => Promise<NcmSong[]>
 
   /** 播放地址：按音质档位获取，命中试听片段/无版权如实返回各曲来源 */
   songUrl: (ctx: NcmCallContext, params: { ids: number[], level: NcmSoundLevel }) => Promise<NcmSongSource[]>

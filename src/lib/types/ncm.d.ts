@@ -54,7 +54,7 @@ export interface NcmPlaylist {
 /** 歌单搜索结果（与通用歌单条目同形） */
 export type NcmSearchPlaylist = NcmPlaylist
 
-/** 歌单详情：完整歌曲列表（trackIds 补全后） */
+/** 歌单详情头信息（歌曲不随详情返回，经 /api/playlist/[id]/tracks 分页拉取） */
 export interface NcmPlaylistDetail {
   id: number
   name: string
@@ -68,8 +68,6 @@ export interface NcmPlaylistDetail {
   trackCount: number
   /** 播放次数 */
   playCount: number
-  /** 全部歌曲（详情接口仅返回部分，须经完整 trackIds 二次请求补全） */
-  songs: NcmSong[]
 }
 
 /** 我的歌单：创建的歌单与收藏的歌单两组 */

@@ -3,8 +3,7 @@ import type { NcmCallContext } from './types'
 /**
  * 歌曲详情门面助手：SDK song/detail 返回体映射与按序补全。
  *
- * 歌单详情补全（playlists.ts）与红心歌曲列表补全（like.ts）共用：
- * 按完整 trackIds / 红心 id 顺序分片请求详情，缺失歌曲跳过并归位到输入顺序。
+ * 红心歌曲列表补全（like.ts）使用：按红心 id 顺序分片请求详情，缺失歌曲跳过并归位到输入顺序。
  * 失败由调用方统一映射为 NcmError。
  */
 import { songDetail as sdkSongDetail } from 'hana-music-api'

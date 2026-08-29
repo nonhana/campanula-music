@@ -25,7 +25,6 @@ const detail: NcmPlaylistDetail = {
   description: '经典曲目',
   trackCount: 1,
   playCount: 32251352,
-  songs: [{ id: 186016, name: '晴天', duration: 269000, artists: [], album: { id: 0, name: '', cover: '' } }],
 }
 
 function makeEvent(id: string): RequestEvent {
@@ -39,7 +38,7 @@ beforeEach(() => {
 })
 
 describe('gET /api/playlist/[id]', () => {
-  it('有效 id：以门面补全结果返回歌单详情；未绑定时传空凭据', async () => {
+  it('有效 id：返回歌单头信息；未绑定时传空凭据', async () => {
     mockedDetail.mockResolvedValue(detail)
 
     const res = await GET(makeEvent('6792103822'))

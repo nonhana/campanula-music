@@ -15,7 +15,6 @@ const detail: NcmPlaylistDetail = {
   description: null,
   trackCount: 3,
   playCount: 32251352,
-  songs: [],
 }
 
 const originalFetch = globalThis.fetch
@@ -77,7 +76,7 @@ describe('fetchUserPlaylists', () => {
 })
 
 describe('fetchPlaylistDetail', () => {
-  it('按 id 请求 /api/playlist/[id] 并返回补全后的详情', async () => {
+  it('按 id 请求 /api/playlist/[id] 并返回头信息', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(detail),
