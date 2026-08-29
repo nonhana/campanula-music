@@ -1,6 +1,6 @@
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
-  import { setContext } from 'svelte'
+  import { onDestroy, setContext } from 'svelte'
   import { writable } from 'svelte/store'
   import VirtualListCore from './VirtualListCore.svelte'
 
@@ -49,6 +49,9 @@
 
   const gap = $derived.by(() => {
     const containableCount = Math.floor(containerSize / itemSize)
+    // 容器不足容纳两项时无空隙可分，避免除零与负间距
+    if (containableCount < 2)
+      return 0
     return (containerSize - containableCount * itemSize) / (containableCount - 1)
   })
 
@@ -101,7 +104,7 @@
   const visibleStartOffset = $derived(startIndex - renderStartIndex)
 
   // 整个列表的总尺寸
-  const totalSize = $derived(curItems.length * itemSize + (curItems.length - 1) * gap)
+  const totalSize = $derived(Math.max(0, curItems.length * itemSize + (curItems.length - 1) * gap))
 
   // 偏移改为基于 renderStartIndex
   const startOffset = $derived(renderStartIndex * (itemSize + gap))
@@ -112,11 +115,13 @@
   let pendingScrollUpdate = false
   let lastScrollEvent: Event | null = null
 
-  // 预加载相关变量
+  // 预加载触发状态
   let hasTriggeredNearEnd = $state(false)
+  let lastTriggeredPos = -1
 
-  // 检查是否接近末尾
-  const checkNearEnd = () => {
+  // 接近末尾检查：基于 effectiveScrollPos 派生，内部/外部滚动模式统一生效
+  // （外部滚动模式的 scrollPos 由父组件传入，滚动事件不会到达本组件）
+  $effect(() => {
     if (!onNearEnd || hasTriggeredNearEnd)
       return
 
@@ -124,12 +129,12 @@
     if (scrollMax <= 0)
       return // 内容不足以滚动
 
-    const remainingScroll = scrollMax - effectiveScrollPos
-    const remainingRatio = remainingScroll / scrollMax
+    const remainingRatio = (scrollMax - effectiveScrollPos) / scrollMax
 
-    // 当剩余滚动比例小于阈值时，触发回调
-    if (remainingRatio <= endThreshold) {
+    // 剩余滚动比例达到阈值且位置有推进时触发回调（停留原地不重复触发）
+    if (remainingRatio <= endThreshold && effectiveScrollPos !== lastTriggeredPos) {
       hasTriggeredNearEnd = true
+      lastTriggeredPos = effectiveScrollPos
       onNearEnd()
 
       // 延迟重置触发状态，避免短时间内多次触发
@@ -137,7 +142,7 @@
         hasTriggeredNearEnd = false
       }, 500) // 500ms 防抖时间
     }
-  }
+  })
 
   // 实际更新滚动位置的函数
   const updateScrollPosition = (e: Event) => {
@@ -145,9 +150,6 @@
       return
     const target = e.target as HTMLElement
     internalScrollPos = isVertical ? target.scrollTop : target.scrollLeft
-
-    // 在更新滚动位置后检查是否需要预加载
-    checkNearEnd()
   }
 
   // 节流后的滚动事件处理函数
@@ -204,6 +206,11 @@
       hasTriggeredNearEnd = false
     }
   })
+
+  onDestroy(() => {
+    if (scrollTimeoutId)
+      window.clearTimeout(scrollTimeoutId)
+  })
 </script>
 
 {#if !hasExternalScroll}
@@ -220,6 +227,7 @@
       {itemSize}
       renderItem={renderItem as any}
       {visibleStartOffset}
+      {renderStartIndex}
       {activeItemId}
       {getItemById}
     />
@@ -232,6 +240,7 @@
     {itemSize}
     renderItem={renderItem as any}
     {visibleStartOffset}
+    {renderStartIndex}
     {activeItemId}
     {getItemById}
   />

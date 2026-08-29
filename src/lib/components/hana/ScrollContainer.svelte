@@ -116,13 +116,9 @@
     e.preventDefault()
   }
 
-  const updateSizes = () => {
-    if (contentWrapperElement) {
-      contentWrapperElement.scrollTop = 0
-      contentWrapperElement.scrollLeft = 0
-      scrollOffset = 0
-    }
+  let lastReportedHeight = -1
 
+  const updateSizes = () => {
     tick().then(() => {
       if (!containerElement || !contentElement)
         return
@@ -135,17 +131,24 @@
         : contentWidth > containerWidth
         ? 'bottom'
         : 'none'
+      // 容器尺寸变化时同步给 VirtualList（containerSize 驱动可视窗口与 gap 计算）；值未变不重复上报
+      if (containerHeight !== lastReportedHeight) {
+        lastReportedHeight = containerHeight
+        onHeightChange?.(containerHeight)
+      }
     })
   }
 
   let resizeObserver: ResizeObserver | null = null
 
   onMount(() => {
-    if (!contentWrapperElement || !contentElement)
+    if (!containerElement || !contentWrapperElement || !contentElement)
       return
     contentWrapperElement.addEventListener('scroll', onScroll)
     scrollEvents?.forEach(fn => contentWrapperElement!.addEventListener('scroll', fn))
     resizeObserver = new ResizeObserver(updateSizes)
+    // 同时观察容器与内容：容器尺寸变化驱动 onHeightChange（窗口缩放、布局调整），内容尺寸变化刷新滚动条
+    resizeObserver.observe(containerElement)
     resizeObserver.observe(contentElement)
   })
 
@@ -168,9 +171,9 @@
   let hovering = $state(false)
 
   onMount(() => {
-    if (containerElement) {
-      const { height } = containerElement.getBoundingClientRect()
-      onHeightChange?.(height)
+    if (containerElement && containerElement.clientHeight !== lastReportedHeight) {
+      lastReportedHeight = containerElement.clientHeight
+      onHeightChange?.(lastReportedHeight)
     }
   })
 </script>

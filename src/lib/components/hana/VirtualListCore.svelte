@@ -12,6 +12,7 @@
     itemSize: number
     renderItem: Snippet<[T, number]>
     visibleStartOffset: number
+    renderStartIndex: number
     activeItemId?: number | string | null
     getItemById?: (id: number | string) => T | null
   }
@@ -23,6 +24,7 @@
     itemSize,
     renderItem,
     visibleStartOffset,
+    renderStartIndex,
     activeItemId,
     getItemById,
   }: Props = $props()
@@ -54,7 +56,7 @@
     <div class='absolute w-full rounded-lg bg-primary/60 transition-transform' style={bgStyle}></div>
   {/if}
   <div style={translateStyle} class='relative'>
-    {#each renderItems as item, index (isEmptyItem(item) ? `empty-${index}` : item)}
+    {#each renderItems as item, index (renderStartIndex + index)}
       {#if isEmptyItem(item)}
         <div style={`height: ${itemSize}px`}></div>
       {:else}
