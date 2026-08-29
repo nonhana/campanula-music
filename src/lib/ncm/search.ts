@@ -4,7 +4,7 @@
  * 页面只经本模块访问 /api/search（服务端网易云门面的薄代理），
  * 测试注入假 provider 响应即由此处替换（vi.mock 本模块）。
  */
-import type { NcmErrorCode, NcmSearchPage, NcmSearchSong, NcmSearchType, SongItem } from '$lib/types'
+import type { NcmErrorCode, NcmSearchPage, NcmSearchType } from '$lib/types'
 import { ncmFetchJson } from './client'
 
 /** 搜索请求参数 */
@@ -12,6 +12,8 @@ export interface NcmSearchRequest {
   keywords: string
   type: NcmSearchType
   limit?: number
+  /** 增量分页偏移（歌曲 tab 加载更多时传已收条数） */
+  offset?: number
 }
 
 /** 搜索失败（服务端错误码 + 可展示消息）；与共享客户端错误同形 */
@@ -33,20 +35,7 @@ export async function searchNcm(request: NcmSearchRequest, signal?: AbortSignal)
     keywords: request.keywords,
     type: request.type,
     limit: String(request.limit ?? DEFAULT_LIMIT),
+    offset: String(request.offset ?? 0),
   })
   return ncmFetchJson<NcmSearchPage>(`/api/search?${params}`, signal)
-}
-
-/** 把搜索歌曲条目映射为播放链路使用的 SongItem（sourceId 取网易云歌曲 id） */
-export function toSongItem(song: NcmSearchSong): SongItem {
-  return {
-    id: song.id,
-    name: song.name,
-    cover: song.album.cover,
-    alias: [],
-    artists: song.artists,
-    album: song.album,
-    duration: song.duration,
-    sourceId: String(song.id),
-  }
 }

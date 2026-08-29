@@ -1,5 +1,5 @@
 import type { NcmBindingStatus, NcmQrStatus } from '$lib/types'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { ncmCheckAuth, ncmLoginQrCheck, ncmLoginQrCreate, ncmLoginQrKey } from './ncm/auth'
@@ -81,6 +81,17 @@ export async function saveBoundUser(user: BoundUser): Promise<void> {
   const tmp = `${file}.tmp`
   await writeFile(tmp, JSON.stringify(user), { mode: 0o600 })
   await rename(tmp, file)
+}
+
+/** 删除绑定凭据（解绑）：文件不存在时幂等返回，应用回到未绑定态 */
+export async function clearBoundUser(): Promise<void> {
+  try {
+    await rm(credentialFile())
+  }
+  catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT')
+      throw err
+  }
 }
 
 /**

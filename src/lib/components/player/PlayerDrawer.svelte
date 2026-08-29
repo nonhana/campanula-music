@@ -147,7 +147,11 @@
   <button
     bind:this={draggerElement}
     aria-label='drawer dragger'
-    class='absolute top-5 m-auto h-2 w-10 cursor-grab touch-none select-none rounded-full bg-neutral active:cursor-grabbing'
+    class={[
+      'absolute top-5 m-auto h-2 w-10 cursor-grab touch-none select-none rounded-full bg-neutral active:cursor-grabbing',
+      // 关闭态停靠视口外，把手随之隐匿，避免移动端 dvh 抖动时露出游离灰点
+      top >= 100 && 'pointer-events-none opacity-0',
+    ]}
     onclick={toggleShowDrawer}
     onpointerdown={onPointerDown}
   ></button>

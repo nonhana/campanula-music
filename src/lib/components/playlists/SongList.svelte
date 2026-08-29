@@ -5,16 +5,18 @@
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
-  import { playlistId, resetPlaylist, setNowPlaying, setPlaylistId, setSongLoading, updatePlaylist } from '$lib/stores'
+  import { playlistId as playlistIdStore, resetPlaylist, setNowPlaying, setPlaylistId, setSongLoading, updatePlaylist } from '$lib/stores'
 
   const { callHanaMessage } = useMessage()
 
   interface Props {
     songs: SongItem[]
     searchValue: string
+    /** 队列守卫标识：非路由歌单（如红心页）传入固定 id，缺省沿用路由歌单 id */
+    playlistId?: string
   }
 
-  let { songs, searchValue = $bindable('') }: Props = $props()
+  let { songs, searchValue = $bindable(''), playlistId }: Props = $props()
 
   const songsFilter = (song: SongItem) => {
     const target = searchValue.trim().toLowerCase()
@@ -41,11 +43,13 @@
     containerSize = height
   }
 
+  // 队列守卫标识：非路由歌单（如红心页）传入固定 id，缺省沿用路由歌单 id
+  const curPlaylistId = $derived(playlistId ?? page.params.id)
+
   const handleDblClick = (targetSong: SongItem) => {
-    const curPlaylistId = page.params.id
     try {
       setSongLoading(true)
-      if (curPlaylistId && curPlaylistId !== $playlistId) {
+      if (curPlaylistId && curPlaylistId !== $playlistIdStore) {
         resetPlaylist()
         setPlaylistId(curPlaylistId)
         updatePlaylist(songs)

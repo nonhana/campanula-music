@@ -1,21 +1,37 @@
-import { search as sdkSearch } from 'hana-music-api'
+import { search as sdkSearch, songDetail as sdkSongDetail } from 'hana-music-api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mapSearchPage, ncmSearch } from './search'
 
 vi.mock('hana-music-api', async (importOriginal) => {
   const mod = await importOriginal<typeof import('hana-music-api')>()
-  return { ...mod, search: vi.fn() }
+  return { ...mod, search: vi.fn(), songDetail: vi.fn() }
 })
 
 const mockedSearch = vi.mocked(sdkSearch)
+const mockedSong = vi.mocked(sdkSongDetail)
 
 /** 与 hana-music-api 的 search 返回体一致的最小夹具 */
 function sdkBody(partial: Record<string, unknown> = {}) {
   return { result: { hasMore: false, ...partial } }
 }
 
+/** 与 hana-music-api 的 song/detail 返回体一致的最小夹具（带封面） */
+function songDetailBody(ids: number[]) {
+  return {
+    songs: ids.map(id => ({
+      id,
+      name: `song-${id}`,
+      dt: 269000,
+      ar: [{ id: 6452, name: '周杰伦' }],
+      al: { id: 21349, name: '叶惠美', picUrl: 'http://p1.music.126.net/c.jpg' },
+    })),
+    privileges: [],
+  }
+}
+
 beforeEach(() => {
   mockedSearch.mockReset()
+  mockedSong.mockReset()
 })
 
 describe('mapSearchPage', () => {
@@ -78,7 +94,7 @@ describe('mapSearchPage', () => {
         {
           id: 6792103822,
           name: '周杰伦精选',
-          cover: 'https://p1.music.126.net/abc.jpg',
+          cover: 'https://p4.music.126.net/abc.jpg',
           trackCount: 139,
           playCount: 32251352,
           creator: 'Buradarrr',
@@ -104,7 +120,7 @@ describe('mapSearchPage', () => {
     expect(page).toEqual({
       type: 'artist',
       total: 81,
-      artists: [{ id: 6452, name: '周杰伦', avatar: 'https://p3.music.126.net/a.jpg' }],
+      artists: [{ id: 6452, name: '周杰伦', avatar: 'https://p1.music.126.net/a.jpg' }],
     })
   })
 })
@@ -152,5 +168,53 @@ describe('ncmSearch', () => {
       { keywords: '周', type: 100, limit: 30, offset: 0 },
       undefined,
     )
+  })
+})
+
+describe('ncmSearch 封面回填', () => {
+  it('歌曲搜索借一次批量 song/detail 回填专辑封面', async () => {
+    mockedSearch.mockResolvedValue({
+      body: sdkBody({ songCount: 2, songs: [{ id: 101, name: 'a', duration: 1, artists: [], album: { id: 1, name: 'x' } }, { id: 202, name: 'b', duration: 1, artists: [], album: { id: 1, name: 'x' } }] }),
+    } as never)
+    mockedSong.mockResolvedValue({ body: songDetailBody([101, 202]) } as never)
+
+    const page = await ncmSearch({ cookie: '' }, { keywords: '晴天', type: 'song' })
+
+    expect(mockedSong).toHaveBeenCalledTimes(1)
+    expect(mockedSong).toHaveBeenCalledWith({ ids: '101,202' }, undefined)
+    expect(page.type === 'song' && page.songs.every(song => song.album.cover === 'https://p3.music.126.net/c.jpg')).toBe(true)
+  })
+
+  it('回填部分缺失时缺失歌曲封面留空不报错', async () => {
+    mockedSearch.mockResolvedValue({
+      body: sdkBody({ songCount: 2, songs: [{ id: 101, name: 'a', duration: 1, artists: [], album: { id: 1, name: 'x' } }, { id: 202, name: 'b', duration: 1, artists: [], album: { id: 1, name: 'x' } }] }),
+    } as never)
+    mockedSong.mockResolvedValue({ body: songDetailBody([101]) } as never)
+
+    const page = await ncmSearch({ cookie: '' }, { keywords: '晴天', type: 'song' })
+
+    expect(page.type === 'song'
+      && page.songs[0].album.cover === 'https://p3.music.126.net/c.jpg'
+      && page.songs[1].album.cover === '').toBe(true)
+  })
+
+  it('回填上游失败不阻断搜索（封面留空、搜索正常返回）', async () => {
+    mockedSearch.mockResolvedValue({
+      body: sdkBody({ songCount: 1, songs: [{ id: 101, name: 'a', duration: 1, artists: [], album: { id: 1, name: 'x' } }] }),
+    } as never)
+    mockedSong.mockRejectedValue({ status: 500, body: { code: -460 } })
+
+    const page = await ncmSearch({ cookie: '' }, { keywords: '晴天', type: 'song' })
+
+    expect(page.type === 'song' && page.songs[0].album.cover === '').toBe(true)
+    expect(page.type === 'song' && page.songs).toHaveLength(1)
+  })
+
+  it('歌单与歌手搜索不触发歌曲详情回填', async () => {
+    mockedSearch.mockResolvedValue({ body: sdkBody({ playlistCount: 0, playlists: [] }) } as never)
+
+    await ncmSearch({ cookie: '' }, { keywords: 'x', type: 'playlist' })
+
+    expect(mockedSong).not.toHaveBeenCalled()
   })
 })

@@ -56,7 +56,7 @@ describe('我的歌单页', () => {
     expect(screen.getByText('创建的歌单')).toBeTruthy()
     expect(screen.getByText('收藏的歌单')).toBeTruthy()
     expect(screen.getByText('收藏的歌单A')).toBeTruthy()
-    expect(screen.getByText(/甲/)).toBeTruthy()
+    expect(screen.getByText('3 首')).toBeTruthy()
   })
 
   it('每组歌单可进入歌单详情', async () => {
@@ -124,7 +124,7 @@ describe('我的歌单页', () => {
 
     await waitFor(() => expect(screen.getByText('收藏的歌单A')).toBeTruthy())
 
-    const img = screen.getByAltText('')
-    expect((img as HTMLImageElement).src).toBe('https://p1.music.126.net/a.jpg')
+    await waitFor(() => expect(screen.getByAltText('收藏的歌单A')).toBeTruthy())
+    expect((screen.getByAltText('收藏的歌单A') as HTMLImageElement).src).toBe('https://p1.music.126.net/a.jpg?param=400y400')
   })
 })

@@ -8,6 +8,7 @@
   import Input from '$lib/components/hana/Input.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
+  import { ncmImageSrc } from '$lib/ncm/image'
   import { setNowPlaying, setSongLoading, songLoading, updatePlaylist } from '$lib/stores'
   import { Ellipsis, Loader, Play, Plus, Search, X } from 'lucide-svelte'
   import { onMount } from 'svelte'
@@ -69,7 +70,7 @@
 
 <div class='flex gap-4 lg:gap-8'>
   <LazyImage
-    src={playlist.cover ?? ''}
+    src={ncmImageSrc(playlist.cover ?? '', 's')}
     alt={`歌单 ${playlist.name} 的封面`}
     class='aspect-square size-32 shrink-0 rounded-2xl lg:size-48'
   />

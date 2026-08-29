@@ -1,6 +1,6 @@
-import type { NcmSongSource } from '$lib/types'
+import type { NcmSong, NcmSongSource } from '$lib/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchSongUrls } from './songs'
+import { fetchSongUrls, toSongItem } from './songs'
 
 const sources: NcmSongSource[] = [
   { id: 186016, status: 'playable', url: 'https://m701.music.126.net/a.mp3', trial: null },
@@ -75,5 +75,28 @@ describe('fetchSongUrls', () => {
     globalThis.fetch = vi.fn().mockRejectedValue(abortError)
 
     await expect(fetchSongUrls([1])).rejects.toMatchObject({ name: 'AbortError' })
+  })
+})
+
+describe('toSongItem', () => {
+  it('把领域歌曲映射为播放链路 SongItem（sourceId 取网易云 id）', () => {
+    const song: NcmSong = {
+      id: 186016,
+      name: '晴天',
+      artists: [{ id: 6452, name: '周杰伦' }],
+      album: { id: 21349, name: '叶惠美', cover: 'https://p1.music.126.net/c.jpg' },
+      duration: 269000,
+    }
+
+    expect(toSongItem(song)).toEqual({
+      id: 186016,
+      name: '晴天',
+      cover: 'https://p1.music.126.net/c.jpg',
+      alias: [],
+      artists: [{ id: 6452, name: '周杰伦' }],
+      album: { id: 21349, name: '叶惠美', cover: 'https://p1.music.126.net/c.jpg' },
+      duration: 269000,
+      sourceId: '186016',
+    })
   })
 })

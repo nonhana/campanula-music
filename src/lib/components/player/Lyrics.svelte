@@ -21,6 +21,12 @@
   const TAIL_EMPTY_ITEMS = Math.floor(CONTAINER_SIZE / ITEM_SIZE) - ACTIVATED_INDEX - 1
   // 无歌词/未加载时的占位条目（空数组与未定义都落到同一占位，如实呈现）
   const NO_LYRIC_PLACEHOLDER = { time: 0, text: '暂无歌词', translate: null }
+  // 行首元信息白名单（作词/作曲等 credits 行）：仅匹配行首标签+冒号，避免误伤真实歌词行
+  const LYRIC_META_PATTERN = /^\s*(?:作词|作詞|作曲|编曲|編曲|填词|填詞|监制|監製|制作人|製作人|混音|母带|母帶|录音|錄音|配唱|和声|和聲)\s*[:：]/
+
+  const allLyrics = $derived($nowPlaying?.lyrics ?? [])
+  const metaLyrics = $derived(allLyrics.filter(item => LYRIC_META_PATTERN.test(item.text)))
+  const singingLyrics = $derived(allLyrics.filter(item => !LYRIC_META_PATTERN.test(item.text)))
 
   let currentLyricIndex = $state(0) // 当前歌词索引
   let scrollContainerElement = $state<HTMLDivElement | null>(null)
@@ -44,13 +50,13 @@
 
   // currentTime 变化，找到当前歌词
   $effect(() => {
-    if (!$nowPlaying || !$nowPlaying.lyrics)
+    if (singingLyrics.length === 0)
       return
 
-    // 找出当前歌词
-    const targetLyricsIndex = $nowPlaying.lyrics.findIndex((item, index) => {
-      const nextTime = $nowPlaying.lyrics![index + 1]?.time
-      return secondsToMs($currentTime) >= item.time && secondsToMs($currentTime) < (nextTime || Infinity)
+    // 找出当前歌词（过滤后数组内的索引）
+    const targetLyricsIndex = singingLyrics.findIndex((item, index) => {
+      const nextTime = singingLyrics[index + 1]?.time
+      return secondsToMs($currentTime) >= item.time && secondsToMs($currentTime) < (nextTime || Number.POSITIVE_INFINITY)
     })
 
     if (targetLyricsIndex !== -1 && targetLyricsIndex !== currentLyricIndex) {
@@ -59,6 +65,7 @@
   })
 
   // currentLyricIndex 变化，找到当前歌词的位置
+  // targetOffset 基于过滤后的歌词数组（元信息行已拆出，索引与 VirtualList 对齐）
   const targetOffset = $derived(currentLyricIndex * ITEM_SIZE)
 
   // targetOffset 变化，触发自动滚动
@@ -145,28 +152,38 @@
 
 <div bind:this={wrapperElement} class='relative size-full flex md:gap-5'>
   {#if $nowPlaying}
-    <div
-      bind:this={scrollContainerElement}
-      class='relative w-full overflow-auto scrollbar-none'
-      {onscroll}
-      {onscrollend}
-    >
-      <VirtualList
-        items={$nowPlaying.lyrics?.length ? $nowPlaying.lyrics : [NO_LYRIC_PLACEHOLDER]}
-        containerSize={CONTAINER_SIZE}
-        itemSize={ITEM_SIZE}
-        headEmptyItems={ACTIVATED_INDEX}
-        tailEmptyItems={TAIL_EMPTY_ITEMS}
-        {scrollPos}
+    <div class='min-w-0 flex flex-1 flex-col gap-3'>
+      {#if metaLyrics.length > 0}
+        <!-- 作词/作曲等元信息：静态块，不参与滚动与时间对齐 -->
+        <div class='text-sm text-neutral space-y-1'>
+          {#each metaLyrics as meta (meta.time)}
+            <span class='block'>{meta.text}</span>
+          {/each}
+        </div>
+      {/if}
+      <div
+        bind:this={scrollContainerElement}
+        class='relative w-full overflow-auto scrollbar-none'
+        {onscroll}
+        {onscrollend}
       >
-        {#snippet renderItem(item, index)}
-          <LyricItem
-            lyric={item}
-            isActivated={index === ACTIVATED_INDEX}
-            activateCallback={lyric => activatedLyric = lyric}
-          />
-        {/snippet}
-      </VirtualList>
+        <VirtualList
+          items={singingLyrics.length ? singingLyrics : [NO_LYRIC_PLACEHOLDER]}
+          containerSize={CONTAINER_SIZE}
+          itemSize={ITEM_SIZE}
+          headEmptyItems={ACTIVATED_INDEX}
+          tailEmptyItems={TAIL_EMPTY_ITEMS}
+          {scrollPos}
+        >
+          {#snippet renderItem(item, index)}
+            <LyricItem
+              lyric={item}
+              isActivated={index === ACTIVATED_INDEX}
+              activateCallback={lyric => activatedLyric = lyric}
+            />
+          {/snippet}
+        </VirtualList>
+      </div>
     </div>
     <div
       class='relative'

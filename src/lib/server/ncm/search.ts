@@ -11,6 +11,7 @@ import type { NcmCallContext, NcmSearchParams } from './types'
 import { search as sdkSearch } from 'hana-music-api'
 import { mapNcmError } from './errors'
 import { asArray, asImageUrl, asNumber, asRecord, asString, sdkConfig } from './raw'
+import { fetchCoverMapByIds } from './songDetail'
 
 /** 网易云搜索 type 参数：1 单曲 / 1000 歌单 / 100 歌手 */
 const SDK_SEARCH_TYPE: Record<NcmSearchParams['type'], number> = {
@@ -133,7 +134,15 @@ export async function ncmSearch(ctx: NcmCallContext, params: NcmSearchParams): P
       offset: params.offset ?? 0,
     }
     const res = await sdkSearch(query, sdkConfig(ctx.cookie))
-    return mapSearchPage(params.type, res.body)
+    const page = mapSearchPage(params.type, res.body)
+    if (page.type !== 'song')
+      return page
+    // 封面回填：搜索接口不返回专辑封面，借一次批量 song/detail 补齐；失败不阻断搜索（封面留空）
+    const covers = await fetchCoverMapByIds(ctx, page.songs.map(song => song.id))
+    return {
+      ...page,
+      songs: page.songs.map(song => ({ ...song, album: { ...song.album, cover: covers.get(song.id) ?? song.album.cover } })),
+    }
   }
   catch (err) {
     throw mapNcmError(err)

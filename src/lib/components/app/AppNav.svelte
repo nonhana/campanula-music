@@ -38,9 +38,6 @@
       </li>
     {/each}
   </ul>
-  <p class='shrink-0 border-t border-app-border px-5 py-4 text-xs text-app-text-muted'>
-    自部署 · 自己的网易云音乐
-  </p>
 </nav>
 
 <!-- 移动端顶栏 -->

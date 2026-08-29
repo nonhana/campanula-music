@@ -65,7 +65,6 @@
       <Download class='size-5 shrink-0 text-primary-700' />
       <div class='min-w-0 flex-1'>
         <p class='text-sm text-app-text font-medium'>把风铃草安装到主屏</p>
-        <p class='text-xs text-app-text-muted'>像应用一样启动，后台持续播放</p>
       </div>
       <button
         type='button'
@@ -94,7 +93,7 @@
   >
     <div class='max-w-md w-full flex items-center gap-3 border border-app-border rounded-xl bg-app-surface p-4 shadow-lg'>
       <p class='min-w-0 flex-1 text-sm text-app-text-muted'>
-        iOS：请在 Safari 中选「分享 → 添加到主屏幕」使用；后台播放受系统限制。
+        请在 Safari 中选「分享 → 添加到主屏幕」
       </p>
       <button
         type='button'

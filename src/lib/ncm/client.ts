@@ -77,6 +77,11 @@ export async function ncmFetchJsonPost<T>(path: string, body: unknown, signal?: 
   })
 }
 
+/** DELETE 请求服务端门面代理并返回领域 JSON；失败抛 NcmClientError，网络异常原样透传 */
+export async function ncmFetchJsonDelete<T>(path: string, signal?: AbortSignal): Promise<T> {
+  return ncmFetch<T>(path, { method: 'DELETE', signal })
+}
+
 async function ncmFetch<T>(path: string, init: RequestInit): Promise<T> {
   const res = await fetch(path, init)
   if (!res.ok) {

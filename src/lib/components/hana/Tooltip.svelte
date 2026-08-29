@@ -89,8 +89,9 @@
 
   onMount(() => {
     document.addEventListener('click', handleOutSideClick)
-    observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
+    observer = new IntersectionObserver((entries) => {
+      const entry = entries.at(-1)
+      if (entry?.isIntersecting) {
         triggerWidth = entry.boundingClientRect.width
       }
     }, { threshold: 1 })

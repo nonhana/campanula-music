@@ -5,6 +5,7 @@ import {
   userPlaylistCreate as sdkUserPlaylistCreate,
 } from 'hana-music-api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import userPlaylistsFixture from './fixtures/user-playlists.json'
 import { mapUserPlaylists, ncmPlaylistDetail, ncmUserPlaylists, parsePlaylistDetail } from './playlists'
 import { mapSongDetailList } from './songDetail'
 
@@ -23,6 +24,12 @@ const mockedDetail = vi.mocked(sdkPlaylistDetail)
 const mockedSong = vi.mocked(sdkSongDetail)
 const mockedCreate = vi.mocked(sdkUserPlaylistCreate)
 const mockedCollect = vi.mocked(sdkUserPlaylistCollect)
+
+/** 录制自真实上游的 user_playlist 封套（数组已裁剪至 3 条），形状知识以它为准 */
+const fixture = userPlaylistsFixture as unknown as {
+  created: { data: { playlist: Record<string, unknown>[] }, code: number }
+  collected: { data: { playlist: Record<string, unknown>[] }, code: number }
+}
 
 /** 与 hana-music-api 的 song/detail 返回体一致的最小夹具 */
 function songDetailBody(songs: unknown[]) {
@@ -65,7 +72,7 @@ describe('parsePlaylistDetail', () => {
     expect(parts).toEqual({
       id: 6792103822,
       name: '周杰伦精选',
-      cover: 'https://p1.music.126.net/abc.jpg',
+      cover: 'https://p4.music.126.net/abc.jpg',
       creator: 'Buradarrr',
       description: '经典曲目',
       trackCount: 3,
@@ -99,7 +106,7 @@ describe('mapSongDetailList', () => {
         name: '晴天',
         duration: 269000,
         artists: [{ id: 6452, name: '周杰伦' }],
-        album: { id: 21349, name: '叶惠美', cover: 'https://p1.music.126.net/c.jpg' },
+        album: { id: 21349, name: '叶惠美', cover: 'https://p3.music.126.net/c.jpg' },
       },
     ])
   })
@@ -187,7 +194,7 @@ describe('ncmPlaylistDetail', () => {
     const detail = await ncmPlaylistDetail({ cookie: '' }, 1)
 
     expect(detail.songs).toEqual([
-      { id: 11, name: '在架', duration: 269000, artists: [{ id: 6452, name: '周杰伦' }], album: { id: 21349, name: '叶惠美', cover: 'https://p1.music.126.net/c.jpg' } },
+      { id: 11, name: '在架', duration: 269000, artists: [{ id: 6452, name: '周杰伦' }], album: { id: 21349, name: '叶惠美', cover: 'https://p3.music.126.net/c.jpg' } },
     ])
   })
 
@@ -237,26 +244,43 @@ describe('mapUserPlaylists', () => {
 
 describe('ncmUserPlaylists', () => {
   it('并行拉取创建与收藏两组歌单并分组返回', async () => {
-    mockedCreate.mockResolvedValue({
-      body: { playlist: [{ id: 1, name: '我的创建', creator: { nickname: '甲' } }] },
-    } as never)
-    mockedCollect.mockResolvedValue({
-      body: { playlist: [{ id: 2, name: '收藏的', creator: { nickname: '乙' } }] },
-    } as never)
+    mockedCreate.mockResolvedValue({ body: fixture.created } as never)
+    mockedCollect.mockResolvedValue({ body: fixture.collected } as never)
 
     const groups = await ncmUserPlaylists({ cookie: '' }, 98765)
 
     expect(mockedCreate).toHaveBeenCalledWith({ uid: '98765', limit: 100, offset: 0 }, undefined)
     expect(mockedCollect).toHaveBeenCalledWith({ uid: '98765', limit: 100, offset: 0 }, undefined)
-    expect(groups).toEqual({
-      created: [expect.objectContaining({ id: 1, name: '我的创建' })],
-      collected: [expect.objectContaining({ id: 2, name: '收藏的' })],
+    // 封套回归：真实上游为 {data:{playlist:[...]}}，解包后两组均非空且逐条映射
+    expect(groups.created.length).toBe(fixture.created.data.playlist.length)
+    expect(groups.created.length).toBeGreaterThan(0)
+    expect(groups.collected.length).toBe(fixture.collected.data.playlist.length)
+    expect(groups.collected.length).toBeGreaterThan(0)
+    expect(groups.created[0]).toMatchObject({
+      id: fixture.created.data.playlist[0]?.id,
+      name: fixture.created.data.playlist[0]?.name,
+    })
+    expect(groups.collected[0]).toMatchObject({
+      id: fixture.collected.data.playlist[0]?.id,
+      name: fixture.collected.data.playlist[0]?.name,
     })
   })
 
-  it('携带绑定凭据调用两组接口', async () => {
-    mockedCreate.mockResolvedValue({ body: { playlist: [] } } as never)
+  it('顶层 playlist 旧形状同样兼容解包', async () => {
+    mockedCreate.mockResolvedValue({
+      body: { playlist: [{ id: 1, name: '旧形状', creator: { nickname: '甲' } }] },
+    } as never)
     mockedCollect.mockResolvedValue({ body: { playlist: [] } } as never)
+
+    const groups = await ncmUserPlaylists({ cookie: '' }, 98765)
+
+    expect(groups.created).toEqual([expect.objectContaining({ id: 1, name: '旧形状' })])
+    expect(groups.collected).toEqual([])
+  })
+
+  it('携带绑定凭据调用两组接口', async () => {
+    mockedCreate.mockResolvedValue({ body: fixture.created } as never)
+    mockedCollect.mockResolvedValue({ body: fixture.collected } as never)
 
     await ncmUserPlaylists({ cookie: 'MUSIC_U=abc' }, 7)
 
@@ -271,7 +295,7 @@ describe('ncmUserPlaylists', () => {
   })
 
   it('任一组失败映射为领域错误', async () => {
-    mockedCreate.mockResolvedValue({ body: { playlist: [] } } as never)
+    mockedCreate.mockResolvedValue({ body: fixture.created } as never)
     mockedCollect.mockRejectedValue({ body: { code: -462, msg: '登录状态已失效' }, status: 301 })
 
     await expect(ncmUserPlaylists({ cookie: '' }, 1)).rejects.toMatchObject(

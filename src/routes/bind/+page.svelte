@@ -122,22 +122,20 @@
 </script>
 
 <svelte:head>
-  <title>绑定网易云账号 | 风铃草音乐</title>
+  <title>绑定网易云账号 | Campanula Music</title>
 </svelte:head>
 
 <main class='flex flex-col items-center justify-center gap-10 bg-app-bg px-6 py-12 text-app-text min-h-dvh'>
   <header class='flex flex-col items-center gap-3 text-center'>
     <span class='flex items-center gap-2'>
       <Logo />
-      <span class='text-lg font-semibold'>Campanula 风铃草音乐</span>
+      <span class='text-lg font-semibold'>Campanula Music</span>
     </span>
     <h1 class='text-2xl font-semibold'>
       {mode === 'invalid' ? '绑定已失效' : '绑定网易云账号'}
     </h1>
     <p class='max-w-sm text-sm text-app-text-muted'>
-      {mode === 'invalid'
-        ? '账号许可已失效，重新扫码即可恢复全部功能。'
-        : '首次使用请用网易云 App 扫码绑定；凭据仅保存在本机数据目录，不会上传。'}
+      {mode === 'invalid' ? '账号许可已失效' : '用网易云 App 扫码绑定'}
     </p>
   </header>
 
@@ -154,7 +152,7 @@
       {#if phase === 'checking' || phase === 'creating'}
         <p class='text-sm text-app-text-muted'>正在准备绑定，请稍候…</p>
       {:else if phase === 'waiting'}
-        <p class='text-sm text-app-text-muted'>打开网易云 App，扫一扫即可登录绑定</p>
+        <p class='text-sm text-app-text-muted'>打开网易云 App 扫一扫</p>
       {:else if phase === 'scanned'}
         <p class='text-sm text-app-text'>扫码成功，请在手机上确认登录</p>
       {:else if phase === 'confirmed'}
@@ -177,7 +175,4 @@
     </div>
   </section>
 
-  <p class='max-w-sm text-center text-xs text-app-text-muted'>
-    自部署实例的账号凭据与数据库分离，独立存放在本地数据目录；如需更换账号，删除凭据文件后重新打开本页。
-  </p>
 </main>

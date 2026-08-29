@@ -3,6 +3,7 @@
   import Button from '$lib/components/hana/Button.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { useTap } from '$lib/hooks/useTap.svelte'
+  import { ncmImageSrc } from '$lib/ncm/image'
   import {
     addSongToPlaylist,
     addToPlaylistAndPlay,
@@ -65,7 +66,7 @@
   class='group/item h-18 w-full flex items-center rounded-lg bg-white px-4 hover:bg-primary-100'
 >
   <div class='size-10 lg:size-12'>
-    <img src={song.cover} alt={song.name} class='size-full rounded-lg object-cover' />
+    <img src={ncmImageSrc(song.cover, 'xs')} alt={song.name} class='size-full rounded-lg object-cover' />
   </div>
 
   <div class='ml-4 flex flex-1 flex-col space-y-1' bind:this={nameEl}>

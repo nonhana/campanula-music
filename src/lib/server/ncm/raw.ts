@@ -21,14 +21,45 @@ export function asString(value: unknown): string {
   return typeof value === 'string' ? value : ''
 }
 
+/** 网易云图片 CDN 主机池：p1–p4 同源同物（路径含对象密钥，跨主机一致），仅主机名可互换 */
+const IMAGE_CDN_HOSTS = ['p1.music.126.net', 'p2.music.126.net', 'p3.music.126.net', 'p4.music.126.net'] as const
+
+/** FNV-1a 32 位哈希：对路径做稳定分片，跨重启/实例结果一致（零状态缓存） */
+function hashShard(text: string): number {
+  let hash = 0x811C9DC5
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return hash >>> 0
+}
+
 /** 资源地址统一为 https（上游偶发 http 协议，混用会被浏览器拦截） */
 export function asHttpUrl(value: unknown): string {
   return asString(value).replace(/^http:/, 'https:')
 }
 
-/** 封面地址统一为 https（上游偶发 http 协议，混用会被浏览器拦截） */
+/**
+ * 图片地址统一为 https，并对网易云 CDN 地址做确定性主机归一。
+ *
+ * 上游同一张图（路径相同）会在 p1–p4 间随机漂移，浏览器缓存按完整 URL 命中，
+ * 漂移即重复下载；路径哈希分片让同一路径永远落在同一主机，图片只下载一次，
+ * 同时路径仍摊在 4 个主机上，不产生单点热点。非网易云地址原样返回。
+ */
 export function asImageUrl(value: unknown): string {
-  return asHttpUrl(value)
+  const url = asHttpUrl(value)
+  if (!url)
+    return url
+  try {
+    const parsed = new URL(url)
+    if (!parsed.hostname.endsWith('.music.126.net'))
+      return url
+    parsed.hostname = IMAGE_CDN_HOSTS[hashShard(parsed.pathname) % IMAGE_CDN_HOSTS.length]
+    return parsed.toString()
+  }
+  catch {
+    return url
+  }
 }
 
 /** 单次批量请求的 id 数上限（网易云对单请求 id 数有上限，分片防截断；歌单补全与播放地址共用） */

@@ -60,3 +60,19 @@ export async function fetchSongsInOrderByIds(ctx: NcmCallContext, ids: number[])
   const byId = new Map<number, NcmSong>(rawLists.flat().map(song => [song.id, song]))
   return ids.map(id => byId.get(id)).filter((song): song is NcmSong => song !== undefined)
 }
+
+/**
+ * 按 id 批量取专辑封面（一次 song/detail 批量请求），失败容忍返回空 Map。
+ * 供搜索封面回填使用：回填是锦上添花，任何失败都不阻断主流程。
+ */
+export async function fetchCoverMapByIds(ctx: NcmCallContext, ids: number[]): Promise<Map<number, string>> {
+  if (ids.length === 0)
+    return new Map()
+  try {
+    const res = await sdkSongDetail({ ids: ids.join(',') }, sdkConfig(ctx.cookie))
+    return new Map(mapSongDetailList(res.body).map(song => [song.id, song.album.cover]))
+  }
+  catch {
+    return new Map()
+  }
+}

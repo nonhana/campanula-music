@@ -11,8 +11,6 @@ export interface Skin {
   id: SkinId
   /** 选择器中展示的名称 */
   label: string
-  /** 一句话描述 */
-  description: string
 }
 
 /** 默认皮肤：薄荷绿/蜜桃粉浅色方案 */
@@ -25,7 +23,6 @@ export const SKINS: readonly Skin[] = [
   {
     id: 'campanula',
     label: '风铃草 · 薄荷蜜桃',
-    description: '默认皮肤：薄荷绿主色、蜜桃粉点缀的浅色方案',
   },
 ]
 

@@ -23,11 +23,13 @@ export async function GET({ url }: RequestEvent) {
 
   const rawLimit = Number(url.searchParams.get('limit') ?? DEFAULT_LIMIT)
   const limit = Number.isFinite(rawLimit) && rawLimit >= 1 ? Math.floor(rawLimit) : DEFAULT_LIMIT
+  const rawOffset = Number(url.searchParams.get('offset') ?? 0)
+  const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.floor(rawOffset) : 0
 
   try {
     // 搜索无需登录；已绑定时携带凭据，让上游按账号许可返回更完整结果
     const bound = await resolveBoundUser()
-    const page = await ncmSearch({ cookie: bound?.cookie ?? '' }, { keywords, type: rawType as NcmSearchType, limit })
+    const page = await ncmSearch({ cookie: bound?.cookie ?? '' }, { keywords, type: rawType as NcmSearchType, limit, offset })
     return json(page)
   }
   catch (err) {

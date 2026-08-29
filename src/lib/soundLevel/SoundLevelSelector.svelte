@@ -22,9 +22,6 @@
     >
       <span class='min-w-0 flex-1'>
         <span class='block text-sm text-app-text font-medium'>{level.label}</span>
-        {#if level.description}
-          <span class='mt-0.5 block text-xs text-app-text-muted'>{level.description}</span>
-        {/if}
       </span>
       {#if activeLevel === level.id}
         <Check class='size-5 shrink-0 text-primary-700' />

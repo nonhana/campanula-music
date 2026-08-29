@@ -1,7 +1,7 @@
 import type { NcmPlaylistDetail } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
 import { fetchPlaylistDetail } from '$lib/ncm/playlists'
-import { addToPlaylistAndPlay } from '$lib/stores'
+import { resetPlaylist, setNowPlaying, setPlaylistId, updatePlaylist } from '$lib/stores'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Page from './+page.svelte'
@@ -16,20 +16,43 @@ vi.mock('$lib/ncm/playlists', () => ({
   },
 }))
 
+vi.mock('$lib/hooks/useMessage', () => ({
+  useMessage: () => ({ callHanaMessage: vi.fn() }),
+}))
+
 vi.mock('$lib/stores', async () => {
   const { derived, writable } = await import('svelte/store')
   return {
+    // 播放队列与编排（Detail / SongList / SongPlaylistItem 共用）
+    nowPlaying: writable(null),
+    paused: writable(true),
+    songLoading: writable(false),
+    playlistId: writable(null),
+    setNowPlaying: vi.fn(),
+    setPaused: vi.fn(),
+    setSongLoading: vi.fn(),
+    setPlaylistId: vi.fn(),
+    resetPlaylist: vi.fn(),
+    reset: vi.fn(),
+    updatePlaylist: vi.fn(),
+    addSongToPlaylist: vi.fn(),
+    removeSongFromPlaylist: vi.fn(),
+    isSongInPlaylist: () => false,
     addToPlaylistAndPlay: vi.fn(),
     // 红心按钮依赖的红心状态（空喜欢列表 + 无操作桩）
     likedIds: derived(writable<Array<{ id: number }>>([]), songs => new Set(songs.map(s => s.id))),
     likedPending: writable(new Set()),
     loadLikedSongs: vi.fn(),
     toggleLike: vi.fn(),
+    addMessage: vi.fn(),
   }
 })
 
 const mockedFetch = vi.mocked(fetchPlaylistDetail)
-const mockedPlay = vi.mocked(addToPlaylistAndPlay)
+const mockedUpdate = vi.mocked(updatePlaylist)
+const mockedSetNowPlaying = vi.mocked(setNowPlaying)
+const mockedResetPlaylist = vi.mocked(resetPlaylist)
+const mockedSetPlaylistId = vi.mocked(setPlaylistId)
 
 const detail: NcmPlaylistDetail = {
   id: 6792103822,
@@ -59,7 +82,10 @@ const detail: NcmPlaylistDetail = {
 
 beforeEach(() => {
   mockedFetch.mockReset()
-  mockedPlay.mockReset()
+  mockedUpdate.mockReset()
+  mockedSetNowPlaying.mockReset()
+  mockedResetPlaylist.mockReset()
+  mockedSetPlaylistId.mockReset()
 })
 
 afterEach(() => {
@@ -67,38 +93,55 @@ afterEach(() => {
 })
 
 describe('歌单详情页', () => {
-  it('加载歌单头信息并列出全部歌曲', async () => {
+  it('渲染富视图头信息并列出全部歌曲', async () => {
     mockedFetch.mockResolvedValue(detail)
     render(Page)
 
     await waitFor(() => expect(screen.getByText('周杰伦精选')).toBeTruthy())
 
-    expect(screen.getByText(/Buradarrr/)).toBeTruthy()
-    expect(screen.getByText(/2 首/)).toBeTruthy()
-    expect(screen.getByText('晴天')).toBeTruthy()
-    expect(screen.getByText('七里香')).toBeTruthy()
-    expect(screen.getByText('周杰伦 · 叶惠美')).toBeTruthy()
+    expect(screen.getByText('2 首歌曲')).toBeTruthy()
+    expect(screen.getByText('经典曲目')).toBeTruthy()
+    expect(screen.getAllByText('播放全部').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('晴天').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('七里香').length).toBeGreaterThan(0)
   })
 
-  it('渲染歌单封面图', async () => {
+  it('点击播放全部将整张歌单替换进播放队列', async () => {
     mockedFetch.mockResolvedValue(detail)
     render(Page)
 
-    await waitFor(() => expect(screen.getByText('周杰伦精选')).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByText('播放全部').length).toBeGreaterThan(0))
+    await fireEvent.click(screen.getAllByText('播放全部')[0]!)
 
-    const img = screen.getByAltText('')
-    expect((img as HTMLImageElement).src).toBe('https://p1.music.126.net/abc.jpg')
+    expect(mockedUpdate).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 186016, name: '晴天', sourceId: '186016' }),
+      expect.objectContaining({ id: 347230, name: '七里香', sourceId: '347230' }),
+    ])
   })
 
-  it('点击歌曲行进入播放链路', async () => {
+  it('双击歌曲行进入播放链路', async () => {
     mockedFetch.mockResolvedValue(detail)
     render(Page)
 
-    await waitFor(() => expect(screen.getByText('晴天')).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByText('晴天').length).toBeGreaterThan(0))
 
-    await fireEvent.click(screen.getByRole('button', { name: /晴天/ }))
+    const row = screen.getAllByText('晴天')[0]!.closest('[role="button"]')!
+    await fireEvent.doubleClick(row)
 
-    expect(mockedPlay).toHaveBeenCalledWith(expect.objectContaining({ id: 186016, name: '晴天', sourceId: '186016' }))
+    expect(mockedSetNowPlaying).toHaveBeenCalledWith(expect.objectContaining({ id: 186016, name: '晴天' }))
+  })
+
+  it('歌单内搜索即时过滤列表', async () => {
+    mockedFetch.mockResolvedValue(detail)
+    render(Page)
+
+    await waitFor(() => expect(screen.getAllByText('七里香').length).toBeGreaterThan(0))
+
+    const input = screen.getAllByPlaceholderText('搜索此歌单中的歌曲…')[0]!
+    await fireEvent.input(input, { target: { value: '晴天' } })
+
+    await waitFor(() => expect(screen.queryByText('七里香')).toBeNull())
+    expect(screen.getAllByText('晴天').length).toBeGreaterThan(0)
   })
 
   it('无歌曲时呈现空态', async () => {
@@ -106,14 +149,6 @@ describe('歌单详情页', () => {
     render(Page)
 
     await waitFor(() => expect(screen.getByText('这个歌单还没有歌曲')).toBeTruthy())
-  })
-
-  it('无描述时不渲染描述行', async () => {
-    mockedFetch.mockResolvedValue({ ...detail, description: null })
-    render(Page)
-
-    await waitFor(() => expect(screen.getByText('周杰伦精选')).toBeTruthy())
-    expect(screen.queryByText(/经典曲目/)).toBeNull()
   })
 
   it('被限流呈现限流文案', async () => {

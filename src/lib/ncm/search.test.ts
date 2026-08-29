@@ -1,6 +1,6 @@
 import type { NcmSearchPage } from '$lib/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { searchNcm, toSongItem } from './search'
+import { searchNcm } from './search'
 
 const songPage: NcmSearchPage = {
   type: 'song',
@@ -83,23 +83,5 @@ describe('searchNcm', () => {
     globalThis.fetch = vi.fn().mockRejectedValue(abortError)
 
     await expect(() => searchNcm({ keywords: 'x', type: 'song' }, new AbortController().signal)).rejects.toMatchObject({ name: 'AbortError' })
-  })
-})
-
-describe('toSongItem', () => {
-  it('把搜索结果映射为播放链路 SongItem', () => {
-    const song = songPage.type === 'song' ? songPage.songs[0] : null
-    const item = toSongItem(song!)
-
-    expect(item).toEqual({
-      id: 186016,
-      name: '晴天',
-      cover: '',
-      alias: [],
-      artists: [{ id: 6452, name: '周杰伦' }],
-      album: { id: 21349, name: '叶惠美', cover: '' },
-      duration: 269000,
-      sourceId: '186016',
-    })
   })
 })

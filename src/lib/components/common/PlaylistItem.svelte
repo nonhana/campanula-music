@@ -1,7 +1,9 @@
 <script lang='ts'>
   import type { PlaylistItem } from '$lib/types'
+  import { resolve } from '$app/paths'
   import Card from '$lib/components/hana/Card.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
+  import { ncmImageSrc } from '$lib/ncm/image'
   import { PlayCircle } from 'lucide-svelte'
 
   interface Props {
@@ -17,7 +19,7 @@
   elevated={false}
   divider={false}
   transparent
-  href={`/playlists/${playlist.id}`}
+  href={resolve('/(app)/playlist/[id]', { id: String(playlist.id) })}
   {onclick}
 >
   {#snippet mask()}
@@ -31,7 +33,7 @@
     </div>
   {/snippet}
   {#snippet header()}
-    <LazyImage src={playlist.cover ?? ''} alt={playlist.name} />
+    <LazyImage src={ncmImageSrc(playlist.cover ?? '', 's')} alt={playlist.name} />
   {/snippet}
   <div class='flex flex-col items-start gap-2 p-2'>
     <span class='line-clamp-1 font-bold'>{playlist.name}</span>

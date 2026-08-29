@@ -1,5 +1,6 @@
 import type { LyricItem, NcmSongSource, SongItem } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
+import { ncmImageSrc } from '$lib/ncm/image'
 import { fetchLyric, LYRIC_ERROR_TEXT } from '$lib/ncm/lyrics'
 import { fetchSongUrls, SONG_URL_ERROR_TEXT } from '$lib/ncm/songs'
 import { currentSoundLevel } from '$lib/soundLevel'
@@ -194,8 +195,8 @@ export function updateMediaSessionMetadata(song: SongItem | null) {
       album: song.album.name,
       artwork: [
         {
-          src: song.album.cover,
-          sizes: '384x384',
+          src: ncmImageSrc(song.album.cover, 'l'),
+          sizes: '1024x1024',
           type: 'image/jpeg',
         },
       ],

@@ -46,7 +46,7 @@ describe('gET /api/search', () => {
 
     expect(mockedSearch).toHaveBeenCalledWith(
       { cookie: '' },
-      { keywords: '稻香', type: 'song', limit: 20 },
+      { keywords: '稻香', type: 'song', limit: 20, offset: 0 },
     )
   })
 
@@ -58,7 +58,7 @@ describe('gET /api/search', () => {
 
     expect(mockedSearch).toHaveBeenCalledWith(
       { cookie: 'MUSIC_U=abc' },
-      { keywords: '稻香', type: 'song', limit: 30 },
+      { keywords: '稻香', type: 'song', limit: 30, offset: 0 },
     )
   })
 
@@ -67,7 +67,7 @@ describe('gET /api/search', () => {
 
     await GET(makeEvent('?keywords=x&type=song&limit=abc'))
 
-    expect(mockedSearch).toHaveBeenCalledWith({ cookie: '' }, { keywords: 'x', type: 'song', limit: 30 })
+    expect(mockedSearch).toHaveBeenCalledWith({ cookie: '' }, { keywords: 'x', type: 'song', limit: 30, offset: 0 })
   })
 
   it('缺少关键词 → 400 INVALID_PARAMS', async () => {

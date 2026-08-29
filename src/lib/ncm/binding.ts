@@ -1,5 +1,5 @@
 import type { NcmBindingStatus, NcmErrorCode, NcmQrStatus } from '$lib/types'
-import { ncmFetchJson } from './client'
+import { ncmFetchJson, ncmFetchJsonDelete } from './client'
 
 /**
  * 绑定页与绑定心跳的客户端数据入口。
@@ -59,6 +59,11 @@ export function decideBindingAction(status: BindingStatusResponse): BindingActio
 /** 绑定状态：冷启动与心跳复检共用 */
 export function fetchBindingStatus(signal?: AbortSignal): Promise<BindingStatusResponse> {
   return ncmFetchJson<BindingStatusResponse>('/api/binding/status', signal)
+}
+
+/** 解绑：删除本地凭据；成功后由全局心跳编排回到未绑定引导 */
+export function unbind(signal?: AbortSignal): Promise<{ status: 'unbound' }> {
+  return ncmFetchJsonDelete<{ status: 'unbound' }>('/api/binding', signal)
 }
 
 /** 二维码绑定第一步：获取 key 与二维码图片 */

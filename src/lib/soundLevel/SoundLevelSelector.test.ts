@@ -13,9 +13,9 @@ afterEach(() => {
 })
 
 describe('soundLevelSelector', () => {
-  /** 选项的无障碍名 = 档位名 + 描述；用「名+描述」做唯一匹配，避免与其它档位描述的文字重合 */
+  /** 选项的无障碍名 = 档位名 */
   function radioName(level: SoundLevelOption) {
-    return new RegExp(`${level.label}[\\s\\S]*${level.description}`)
+    return level.label
   }
 
   it('列出全部可用音质档位', () => {

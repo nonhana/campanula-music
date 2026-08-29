@@ -69,6 +69,15 @@ export function mapUserPlaylists(raw: unknown[]): NcmPlaylist[] {
   })
 }
 
+/**
+ * SDK user_playlist 封套解包：v1.1.x 实测返回 {data:{playlist:[...]},code}，
+ * 兼容旧版顶层 {playlist:[...]} 形状（防御未来上游再变）。
+ */
+function unpackUserPlaylistEnvelope(body: unknown): unknown[] {
+  const envelope = asRecord(body)
+  return asArray(asRecord(envelope.data).playlist ?? envelope.playlist)
+}
+
 /** 按完整 trackIds 分片请求歌曲详情，缺失歌曲跳过，并归位到歌单顺序 */
 /** 歌单详情：实时拉取并用完整 trackIds 补全全部歌曲；失败抛 NcmError */
 export async function ncmPlaylistDetail(ctx: NcmCallContext, id: number): Promise<NcmPlaylistDetail> {
@@ -92,8 +101,8 @@ export async function ncmUserPlaylists(ctx: NcmCallContext, uid: number): Promis
       sdkUserPlaylistCollect(query, sdkConfig(ctx.cookie)),
     ])
     return {
-      created: mapUserPlaylists(asArray(asRecord(createdRes.body).playlist)),
-      collected: mapUserPlaylists(asArray(asRecord(collectedRes.body).playlist)),
+      created: mapUserPlaylists(unpackUserPlaylistEnvelope(createdRes.body)),
+      collected: mapUserPlaylists(unpackUserPlaylistEnvelope(collectedRes.body)),
     }
   }
   catch (err) {

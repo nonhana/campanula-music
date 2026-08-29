@@ -3,6 +3,7 @@
   import LikeButton from '$lib/components/common/LikeButton.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
+  import { ncmImageSrc } from '$lib/ncm/image'
   import {
     currentTime,
     mute,
@@ -247,7 +248,7 @@
   }
 </script>
 
-<footer class='fixed bottom-16 z-20 h-20 w-full flex flex-row-reverse items-center bg-neutral-200/40 px-5 backdrop-blur md:bottom-0 md:flex-row'>
+<footer class='fixed bottom-16 z-20 h-20 w-full flex flex-row-reverse items-center bg-neutral-200/40 px-5 backdrop-blur md:bottom-0 md:flex-row md:pl-[17.5rem]'>
   {#if $nowPlaying}
     <audio
       preload='metadata'
@@ -278,7 +279,7 @@
     class='absolute left-0 top-0 z-10 w-full -translate-y-1/2'
     style='--progress: {currentProgress}'
   />
-  <div class='flex items-center gap-5 md:gap-10'>
+  <div class='flex shrink-0 items-center gap-5 md:gap-10'>
     <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
     {#if $songLoading}
       <Loader size='32' class='animate-spin text-neutral-600' />
@@ -292,7 +293,7 @@
     {curTimeInfo}
   </span>
 
-  <div class='relative w-full flex items-center gap-5 md:(absolute left-1/2 w-fit -translate-x-1/2)'>
+  <div class='relative min-w-0 flex flex-1 items-center gap-5 md:mx-auto md:max-w-[26rem] md:justify-center'>
     <MaskElement
       class='group shrink-0 overflow-hidden rounded-lg'
       maskClass='group-hover:flex'
@@ -302,9 +303,9 @@
         <ChevronUp />
       {/snippet}
       {#snippet root()}
-        {#if $nowPlaying}
+        {#if $nowPlaying?.cover}
           <div class='relative'>
-            <img class='size-12' src={$nowPlaying.cover} alt={$nowPlaying.name} />
+            <img class='size-12' src={ncmImageSrc($nowPlaying.cover, 'xs')} alt={$nowPlaying.name} />
             {#if $songLoading}
               <div class='absolute inset-0 flex items-center justify-center rounded-lg bg-black/50'>
                 <Loader class='animate-spin text-white' />
@@ -312,6 +313,7 @@
             {/if}
           </div>
         {:else}
+          <!-- 空封面（搜索结果 cover 可空）与无歌曲共用占位图标，避免 alt 文字叠标题 -->
           <div class='size-12 flex items-center justify-center rounded-lg bg-white text-neutral'>
             <Music size={24} />
           </div>
@@ -319,7 +321,7 @@
       {/snippet}
     </MaskElement>
 
-    <div class='flex flex-col'>
+    <div class='min-w-0 flex flex-col'>
       <span class='line-clamp-1'>{$nowPlaying ? $nowPlaying.name : '暂无歌曲'}</span>
       {#if $nowPlaying}
         <span class='line-clamp-1 text-sm text-neutral'>{$nowPlaying.artists.map(artist => artist.name).join(' / ')}</span>
@@ -330,7 +332,7 @@
     {/if}
   </div>
 
-  <div class='ml-auto items-center gap-5 hidden md:flex'>
+  <div class='ml-auto shrink-0 items-center gap-5 hidden md:flex'>
     <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatAll')} />
     <Repeat class={`cursor-pointer ${$playMode === 'repeatAll' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatOne')} />
     <Repeat1 class={`cursor-pointer ${$playMode === 'repeatOne' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('sequential')} />

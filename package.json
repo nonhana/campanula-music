@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "smoke": "node scripts/smoke-ncm.ts"
   },
   "dependencies": {
     "hana-music-api": "catalog:",

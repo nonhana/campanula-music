@@ -21,14 +21,33 @@ vi.mock('$lib/ncm/search', () => ({
       this.code = code
     }
   },
-  toSongItem: (song: unknown) => song,
+}))
+
+vi.mock('$lib/hooks/useMessage', () => ({
+  useMessage: () => ({ callHanaMessage: vi.fn() }),
 }))
 
 vi.mock('$lib/stores', async () => {
   const { derived, writable } = await import('svelte/store')
   return {
+    // 播放队列与编排（SongSearchItem 共用）
+    nowPlaying: writable(null),
+    paused: writable(true),
+    songLoading: writable(false),
+    playlistId: writable(null),
+    setNowPlaying: vi.fn(),
+    setPaused: vi.fn(),
+    setSongLoading: vi.fn(),
+    setPlaylistId: vi.fn(),
+    resetPlaylist: vi.fn(),
+    reset: vi.fn(),
+    updatePlaylist: vi.fn(),
+    addSongToPlaylist: vi.fn(),
+    removeSongFromPlaylist: vi.fn(),
+    isSongInPlaylist: () => false,
     addToPlaylistAndPlay: vi.fn(),
-    // 红心按钮依赖的红心状态（空喜欢列表 + 无操作桩）
+    addMessage: vi.fn(),
+    // 红心状态桩
     likedIds: derived(writable<Array<{ id: number }>>([]), songs => new Set(songs.map(s => s.id))),
     likedPending: writable(new Set()),
     loadLikedSongs: vi.fn(),
@@ -51,6 +70,17 @@ const songPage: NcmSearchPage = {
       album: { id: 21349, name: '叶惠美', cover: '' },
     },
   ],
+}
+
+/** 构造多页结果中的歌曲条目 */
+function makeSong(id: number) {
+  return {
+    id,
+    name: `歌曲-${id}`,
+    duration: 200000,
+    artists: [{ id: 6452, name: '周杰伦' }],
+    album: { id: 21349, name: '叶惠美', cover: '' },
+  }
 }
 
 const playlistPage: NcmSearchPage = {
@@ -91,7 +121,7 @@ describe('搜索页', () => {
     expect(screen.getByText('输入关键词开始搜索')).toBeTruthy()
   })
 
-  it('输入关键词后按歌曲类型实时搜索并渲染结果', async () => {
+  it('输入关键词后按歌曲类型实时搜索并渲染富行结果', async () => {
     mockedSearch.mockResolvedValueOnce(songPage)
     render(Page)
 
@@ -104,22 +134,50 @@ describe('搜索页', () => {
       )
     })
     await waitFor(() => expect(screen.getByText('晴天')).toBeTruthy())
-    expect(screen.getByText('周杰伦 · 叶惠美')).toBeTruthy()
+    expect(screen.getByText('周杰伦')).toBeTruthy()
   })
 
   it('搜索进行中呈现加载态', async () => {
-    let resolveSearch!: (p: NcmSearchPage) => void
-    mockedSearch.mockReturnValueOnce(new Promise((resolve) => {
-      resolveSearch = resolve
-    }))
+    const { promise, resolve } = Promise.withResolvers<NcmSearchPage>()
+    mockedSearch.mockReturnValueOnce(promise)
     render(Page)
 
     await typeKeyword('晴天')
 
     await waitFor(() => expect(screen.getByText('搜索中…')).toBeTruthy())
 
-    resolveSearch(songPage)
+    resolve(songPage)
     await waitFor(() => expect(screen.getByText('晴天')).toBeTruthy())
+  })
+
+  it('歌曲 tab 显示总数，滚动接近末尾自动按 offset 加载更多', async () => {
+    const firstPage: NcmSearchPage = {
+      type: 'song',
+      total: 90,
+      songs: Array.from({ length: 12 }, (_, i) => makeSong(i + 1)),
+    }
+    const secondPage: NcmSearchPage = {
+      type: 'song',
+      total: 90,
+      songs: [makeSong(13), makeSong(14)],
+    }
+    mockedSearch.mockResolvedValueOnce(firstPage)
+    mockedSearch.mockResolvedValueOnce(secondPage)
+    render(Page)
+
+    await typeKeyword('周杰伦')
+    await waitFor(() => expect(screen.getByText('歌曲-12')).toBeTruthy())
+    expect(screen.getByText(/总共找到 90 首歌曲/)).toBeTruthy()
+
+    // jsdom 无布局，直接覆写 scrollTop 读值模拟滚到列表底部触发 onNearEnd
+    const scroller = document.querySelector('[class*="overflow-y-auto"]')!
+    Object.defineProperty(scroller, 'scrollTop', { value: 9999, configurable: true, writable: true })
+    await fireEvent.scroll(scroller)
+
+    await waitFor(() => expect(mockedSearch).toHaveBeenCalledTimes(2))
+    expect(mockedSearch.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ keywords: '周杰伦', type: 'song', offset: 12 }),
+    )
   })
 
   it('切换到歌单 tab 以歌单类型再次搜索，结果可进入歌单详情', async () => {
@@ -160,16 +218,18 @@ describe('搜索页', () => {
     await waitFor(() => expect(screen.getByText('周杰伦')).toBeTruthy())
   })
 
-  it('点击歌曲结果进入播放链路', async () => {
+  it('点击播放按钮进入播放链路', async () => {
     mockedSearch.mockResolvedValueOnce(songPage)
     render(Page)
 
     await typeKeyword('晴天')
     await waitFor(() => expect(screen.getByText('晴天')).toBeTruthy())
 
-    await fireEvent.click(screen.getByRole('button', { name: /晴天/ }))
+    const row = screen.getAllByText('晴天')[0]!.closest('[role="button"]')!
+    const playButton = row.querySelectorAll('button')[0]!
+    await fireEvent.click(playButton)
 
-    expect(mockedPlay).toHaveBeenCalledWith(expect.objectContaining({ id: 186016, name: '晴天' }))
+    expect(mockedPlay).toHaveBeenCalledWith(expect.objectContaining({ id: 186016, name: '晴天', sourceId: '186016' }))
   })
 
   it('搜索失败按错误码呈现文案', async () => {

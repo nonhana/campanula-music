@@ -33,6 +33,45 @@ class MemoryStorage {
   }
 }
 
+// jsdom 未实现 ResizeObserver / IntersectionObserver；富视图组件（ScrollContainer、
+// LazyImage）挂载时实例化。ResizeObserver 注入无操作实现；IntersectionObserver
+// observe 时立即以「已进入视口」回调一次，模拟元素可见（测试环境无真实布局）
+class NoopObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+class IntersectionObserverStub {
+  callback: IntersectionObserverCallback
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback
+  }
+
+  observe(target: Element) {
+    // 微任务延迟触发，模拟真实 IntersectionObserver 的异步回调时机
+    queueMicrotask(() => {
+      this.callback(
+        [{
+          isIntersecting: true,
+          target,
+          boundingClientRect: target.getBoundingClientRect(),
+        } as unknown as IntersectionObserverEntry],
+        this as unknown as IntersectionObserver,
+      )
+    })
+  }
+
+  unobserve() {}
+  disconnect() {}
+}
+
+if (typeof globalThis.ResizeObserver === 'undefined')
+  (globalThis as Record<string, unknown>).ResizeObserver = NoopObserver
+if (typeof globalThis.IntersectionObserver === 'undefined')
+  (globalThis as Record<string, unknown>).IntersectionObserver = IntersectionObserverStub
+
 const storage: Storage = new MemoryStorage()
 
 for (const target of [globalThis, globalThis.window].filter(Boolean)) {

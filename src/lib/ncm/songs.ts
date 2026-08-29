@@ -4,7 +4,7 @@
  * 页面与播放编排只经本模块访问 /api/songs/url（服务端网易云门面的薄代理），
  * 测试注入假 provider 响应即由此处替换（vi.mock 本模块）。
  */
-import type { NcmErrorCode, NcmSongSource, NcmSoundLevel } from '$lib/types'
+import type { NcmErrorCode, NcmSong, NcmSongSource, NcmSoundLevel, SongItem } from '$lib/types'
 import { DEFAULT_SOUND_LEVEL } from '$lib/soundLevel'
 import { ncmFetchJson } from './client'
 
@@ -24,4 +24,18 @@ export function fetchSongUrls(
 ): Promise<NcmSongSource[]> {
   const params = new URLSearchParams({ ids: ids.join(','), level })
   return ncmFetchJson<NcmSongSource[]>(`/api/songs/url?${params}`, signal)
+}
+
+/** 把领域歌曲映射为播放链路使用的 SongItem（sourceId 取网易云歌曲 id） */
+export function toSongItem(song: NcmSong): SongItem {
+  return {
+    id: song.id,
+    name: song.name,
+    cover: song.album.cover,
+    alias: [],
+    artists: song.artists,
+    album: song.album,
+    duration: song.duration,
+    sourceId: String(song.id),
+  }
 }

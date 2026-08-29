@@ -5,6 +5,7 @@
   import DropdownMenu from '$lib/components/hana/DropdownMenu.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { useTap } from '$lib/hooks/useTap.svelte'
+  import { ncmImageSrc } from '$lib/ncm/image'
   import {
     currentTime,
     muted,
@@ -80,7 +81,7 @@
   <div bind:this={wrapperElement}>
     {#if $nowPlaying}
       <LazyImage
-        src={$nowPlaying.album.cover}
+        src={ncmImageSrc($nowPlaying.album.cover, 'l')}
         alt={$nowPlaying.name}
         class='w-full rounded-2xl object-cover md:w-[27rem]'
       />

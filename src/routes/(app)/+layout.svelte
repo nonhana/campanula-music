@@ -3,6 +3,7 @@
   import AppNav from '$lib/components/app/AppNav.svelte'
   import BindingInvalidBanner from '$lib/components/app/BindingInvalidBanner.svelte'
   import InstallPrompt from '$lib/components/app/InstallPrompt.svelte'
+  import MessageContainer from '$lib/components/hana/MessageContainer.svelte'
   import Player from '$lib/components/player/Player.svelte'
   import { BINDING_HEARTBEAT_INTERVAL } from '$lib/ncm/binding'
   import { onMount } from 'svelte'
@@ -17,6 +18,7 @@
   })
 </script>
 
+<MessageContainer />
 <BindingInvalidBanner />
 <InstallPrompt />
 <Player />

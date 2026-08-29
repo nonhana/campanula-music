@@ -11,8 +11,6 @@ export interface SoundLevelOption {
   id: NcmSoundLevel
   /** 选择器中展示的名称 */
   label: string
-  /** 一句话描述 */
-  description: string
 }
 
 /** 缺省音质档位：未在设置页选择任何档位时的播放获取档位 */
@@ -23,11 +21,11 @@ export const SOUND_LEVEL_STORAGE_KEY = 'campanula.soundLevel'
 
 /** 全部可用音质档位（按码率从低到高） */
 export const SOUND_LEVELS: readonly SoundLevelOption[] = [
-  { id: 'standard', label: '标准', description: '默认档位，码率与流量消耗均衡' },
-  { id: 'higher', label: '较高', description: '提高码率，听感更细腻' },
-  { id: 'exhigh', label: '极高', description: '接近无损的高码率' },
-  { id: 'lossless', label: '无损', description: '无损音质，流量消耗较大' },
-  { id: 'hires', label: '高解析度', description: '高解析度音质，流量消耗最大' },
+  { id: 'standard', label: '标准' },
+  { id: 'higher', label: '较高' },
+  { id: 'exhigh', label: '极高' },
+  { id: 'lossless', label: '无损' },
+  { id: 'hires', label: '高解析度' },
 ]
 
 export function isSoundLevel(value: unknown): value is NcmSoundLevel {

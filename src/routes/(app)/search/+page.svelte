@@ -1,10 +1,13 @@
 <script lang='ts'>
   import type { NcmSearchPage, NcmSearchType } from '$lib/types'
   import { resolve } from '$app/paths'
-  import SongRow from '$lib/components/common/SongRow.svelte'
+  import SongSearchItem from '$lib/components/common/SongSearchItem.svelte'
+  import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
+  import { ncmImageSrc } from '$lib/ncm/image'
   import { SEARCH_ERROR_TEXT, SearchClientError, searchNcm } from '$lib/ncm/search'
+  import { toSongItem } from '$lib/ncm/songs'
   import { List, Loader, Search, User, X } from 'lucide-svelte'
   import { debounce } from 'throttle-debounce'
 
@@ -19,6 +22,8 @@
   let keywords = $state('')
   let type = $state<NcmSearchType>('song')
   let page = $state<NcmSearchPage | null>(null)
+  let total = $state(0)
+  let loadingMore = $state(false)
   let loading = $state(false)
   let errorMessage = $state<string | null>(null)
 
@@ -51,6 +56,7 @@
       if (next.signal.aborted)
         return
       page = result
+      total = result.total
     }
     catch (err) {
       if (next.signal.aborted)
@@ -74,6 +80,7 @@
   function reset() {
     controller?.abort()
     page = null
+    total = 0
     errorMessage = null
     loading = false
   }
@@ -104,6 +111,35 @@
   }
 
   $effect(() => () => debouncedRun.cancel())
+
+  /** 歌曲 tab 的富行数据（随累计结果增量增长） */
+  const songItems = $derived(page?.type === 'song' ? page.songs.map(toSongItem) : [])
+
+  /** 滚动接近末尾自动加载更多（对齐旧 Header 的 onNearEnd 模式） */
+  async function loadMore() {
+    const keyword = keywords.trim()
+    if (loadingMore || loading || type !== 'song' || !keyword)
+      return
+    if (!page || page.type !== 'song' || page.songs.length >= total)
+      return
+    loadingMore = true
+    try {
+      const result = await searchNcm({ keywords: keyword, type, offset: page.songs.length })
+      // 关键词/类型在请求期间变化则丢弃结果
+      if (keywords.trim() !== keyword || type !== 'song' || result.type !== 'song')
+        return
+      const seen = new Set(page.songs.map(song => song.id))
+      page.songs.push(...result.songs.filter(song => !seen.has(song.id)))
+      total = Math.max(total, result.total)
+    }
+    catch (err) {
+      // 增量加载失败不破坏已有结果，可继续滚动重试
+      console.error('加载更多失败', err)
+    }
+    finally {
+      loadingMore = false
+    }
+  }
 </script>
 
 <SeoHead {metadata} />
@@ -111,7 +147,6 @@
 <section class='space-y-6'>
   <header>
     <h1 class='text-2xl text-app-text font-semibold'>搜索</h1>
-    <p class='mt-1 text-sm text-app-text-muted'>搜索歌曲、歌单与歌手，结果实时来自网易云。</p>
   </header>
 
   <div class='relative'>
@@ -120,7 +155,7 @@
       type='search'
       bind:value={keywords}
       oninput={handleInput}
-      placeholder='输入关键词，搜索歌曲、歌单与歌手'
+      placeholder='搜索歌曲、歌单与歌手'
       aria-label='搜索关键词'
       class='w-full border border-app-border rounded-xl bg-app-surface py-3 pl-11 pr-10 text-sm text-app-text shadow-sm placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500/40'
     />
@@ -176,11 +211,14 @@
         {/if}
       </p>
     {:else if page.type === 'song'}
-      <ul role='list' class='space-y-1'>
-        {#each page.songs as song (song.id)}
-          <SongRow {song} />
-        {/each}
-      </ul>
+      <VirtualList items={songItems} itemSize={72} containerSize={640} onNearEnd={loadMore}>
+        {#snippet renderItem(item)}
+          <SongSearchItem song={item} />
+        {/snippet}
+      </VirtualList>
+      <p class='pt-2 text-center text-sm text-app-text-muted'>
+        总共找到 {total.toLocaleString('zh-CN')} 首歌曲{loadingMore ? ' · 加载中…' : ''}
+      </p>
     {:else if page.type === 'playlist'}
       <ul role='list' class='grid gap-3 sm:grid-cols-2'>
         {#each page.playlists as playlist (playlist.id)}
@@ -190,7 +228,7 @@
               class='flex items-center gap-3 border border-app-border rounded-xl bg-app-surface p-3 transition-colors hover:bg-app-surface-hover'
             >
               {#if playlist.cover}
-                <img src={playlist.cover} alt='' class='size-12 shrink-0 rounded-lg object-cover' />
+                <img src={ncmImageSrc(playlist.cover, 'xs')} alt='' class='size-12 shrink-0 rounded-lg object-cover' />
               {:else}
                 <span class='size-12 flex shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-700'>
                   <List class='size-5' />
@@ -214,7 +252,7 @@
         {#each page.artists as artist (artist.id)}
           <li class='flex items-center gap-3 rounded-lg px-3 py-2'>
             {#if artist.avatar}
-              <img src={artist.avatar} alt='' class='size-11 shrink-0 rounded-full object-cover' />
+              <img src={ncmImageSrc(artist.avatar, 'xs')} alt='' class='size-11 shrink-0 rounded-full object-cover' />
             {:else}
               <span class='size-11 flex shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-700'>
                 <User class='size-5' />

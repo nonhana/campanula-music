@@ -68,7 +68,7 @@ describe('绑定引导页', () => {
 
     await waitFor(() => expect(screen.getByText('绑定网易云账号')).toBeTruthy())
     await waitFor(() => expect(screen.getByAltText('绑定二维码')).toBeTruthy())
-    expect(screen.getByText('打开网易云 App，扫一扫即可登录绑定')).toBeTruthy()
+    expect(screen.getByText('打开网易云 App 扫一扫')).toBeTruthy()
   })
 
   it('绑定失效：呈现失效重绑引导', async () => {

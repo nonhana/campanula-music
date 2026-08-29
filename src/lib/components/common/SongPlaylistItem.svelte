@@ -5,6 +5,7 @@
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { useTap } from '$lib/hooks/useTap.svelte'
+  import { ncmImageSrc } from '$lib/ncm/image'
   import {
     addSongToPlaylist,
     addToPlaylistAndPlay,
@@ -126,7 +127,7 @@
     </Tooltip>
     {#if showCover}
       <div class='size-10 lg:size-12 group-hover/item:hidden md:group-hover/item:block'>
-        <img src={song.cover} alt={song.name} class='size-full rounded-lg object-cover' />
+        <img src={ncmImageSrc(song.cover, 'xs')} alt={song.name} class='size-full rounded-lg object-cover' />
       </div>
     {/if}
   </div>

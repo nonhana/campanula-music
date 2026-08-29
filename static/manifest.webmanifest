@@ -1,6 +1,6 @@
 {
-  "name": "风铃草音乐",
-  "short_name": "风铃草音乐",
+  "name": "Campanula Music",
+  "short_name": "Campanula Music",
   "description": "可自部署的个人音乐播放器：我的歌单、搜索、播放、歌词与红心，全部实时取自你的网易云账号",
   "lang": "zh-CN",
   "start_url": "/",
