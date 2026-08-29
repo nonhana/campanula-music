@@ -8,7 +8,7 @@
   import { ncmImageSrc } from '$lib/ncm/image'
   import { SEARCH_ERROR_TEXT, SearchClientError, searchNcm } from '$lib/ncm/search'
   import { toSongItem } from '$lib/ncm/songs'
-  import { List, Loader, Search, User, X } from 'lucide-svelte'
+  import { List, Loader, Search, User, X } from '@lucide/svelte'
   import { debounce } from 'throttle-debounce'
 
   const metadata = generateSeoMetadata('search')

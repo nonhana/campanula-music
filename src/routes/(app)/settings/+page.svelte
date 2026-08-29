@@ -7,7 +7,7 @@
   import { fetchBindingStatus, unbind } from '$lib/ncm/binding'
   import SkinSelector from '$lib/skin/SkinSelector.svelte'
   import SoundLevelSelector from '$lib/soundLevel/SoundLevelSelector.svelte'
-  import { Loader } from 'lucide-svelte'
+  import { Loader } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   const metadata = generateSeoMetadata('settings')

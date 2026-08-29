@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@11.24.0",
   "engines": {
     "node": ">=24"
   },
@@ -21,8 +21,8 @@
     "smoke": "node scripts/smoke-ncm.ts"
   },
   "dependencies": {
+    "@lucide/svelte": "catalog:",
     "hana-music-api": "catalog:",
-    "lucide-svelte": "catalog:",
     "throttle-debounce": "catalog:"
   },
   "devDependencies": {

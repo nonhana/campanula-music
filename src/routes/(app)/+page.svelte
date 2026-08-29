@@ -6,7 +6,7 @@
   import { generateSeoMetadata } from '$lib/metadata'
   import { NcmClientError } from '$lib/ncm/client'
   import { fetchUserPlaylists, PLAYLIST_ERROR_TEXT } from '$lib/ncm/playlists'
-  import { Heart, Loader } from 'lucide-svelte'
+  import { Heart, Loader } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   const metadata = generateSeoMetadata('home')

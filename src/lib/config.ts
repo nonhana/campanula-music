@@ -1,10 +1,10 @@
-import { Home, Search, Settings } from 'lucide-svelte'
+import { Home, Search, Settings } from '@lucide/svelte'
 
 interface NavItem {
   title: string
   /** 应用内路由，满足 resolve() 的字面量类型约束 */
   href: '/' | '/search' | '/settings'
-  /** lucide-svelte 图标组件（SvelteComponentTyped 类，非 Svelte 5 Component） */
+  /** @lucide/svelte 图标组件（Svelte 5 Component） */
   icon: typeof Home
 }
 

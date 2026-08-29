@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { NcmSong } from '$lib/types'
   import { likedIds, likedPending, loadLikedSongs, toggleLike } from '$lib/stores'
-  import { Heart } from 'lucide-svelte'
+  import { Heart } from '@lucide/svelte'
 
   interface Props {
     song: NcmSong

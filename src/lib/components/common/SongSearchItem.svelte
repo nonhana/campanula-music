@@ -15,7 +15,7 @@
     songLoading,
   } from '$lib/stores'
   import { durationFormatter } from '$lib/utils'
-  import { Loader, Pause, Play, Plus } from 'lucide-svelte'
+  import { Loader, Pause, Play, Plus } from '@lucide/svelte'
 
   interface Props {
     song: SongItem

@@ -4,7 +4,7 @@
   import Card from '$lib/components/hana/Card.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { ncmImageSrc } from '$lib/ncm/image'
-  import { PlayCircle } from 'lucide-svelte'
+  import { PlayCircle } from '@lucide/svelte'
 
   interface Props {
     activated?: boolean

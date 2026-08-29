@@ -5,7 +5,7 @@
   import { generateSeoMetadata } from '$lib/metadata'
   import { toSongItem } from '$lib/ncm/songs'
   import { likedError, likedLoading, likedSongs, loadLikedSongs } from '$lib/stores'
-  import { Heart, Loader, Search, X } from 'lucide-svelte'
+  import { Heart, Loader, Search, X } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   const metadata = generateSeoMetadata('favorites')

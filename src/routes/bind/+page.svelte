@@ -5,7 +5,7 @@
   import { clearBindingInvalid } from '$lib/binding'
   import Logo from '$lib/components/svg/Logo.svelte'
   import { BINDING_ERROR_TEXT, BindingClientError, fetchBindingStatus, fetchQrStatus, QR_POLL_INTERVAL, startQrLogin } from '$lib/ncm/binding'
-  import { Loader, RefreshCw } from 'lucide-svelte'
+  import { Loader, RefreshCw } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   /** 绑定页承载两种态：尚未绑定（首次）与绑定失效（重绑） */

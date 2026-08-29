@@ -8,7 +8,7 @@
   import { NcmClientError } from '$lib/ncm/client'
   import { fetchPlaylistDetail, fetchPlaylistTracks, PLAYLIST_ERROR_TEXT } from '$lib/ncm/playlists'
   import { toSongItem } from '$lib/ncm/songs'
-  import { Loader } from 'lucide-svelte'
+  import { Loader } from '@lucide/svelte'
 
   const metadata = generateSeoMetadata('playlistDetail')
 

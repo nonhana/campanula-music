@@ -3,7 +3,7 @@
   import type { Snippet } from 'svelte'
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements'
   import { resolve } from '$app/paths'
-  import { ExternalLink } from 'lucide-svelte'
+  import { ExternalLink } from '@lucide/svelte'
 
   type Props = {
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent' | 'none'

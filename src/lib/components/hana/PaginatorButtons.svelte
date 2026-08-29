@@ -1,6 +1,6 @@
 <script lang='ts'>
   import Button from '$lib/components/hana/Button.svelte'
-  import { Ellipsis } from 'lucide-svelte'
+  import { Ellipsis } from '@lucide/svelte'
 
   interface Props {
     currentPage: number

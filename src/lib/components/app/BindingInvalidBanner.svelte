@@ -1,7 +1,7 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { bindingInvalid } from '$lib/binding'
-  import { TriangleAlert } from 'lucide-svelte'
+  import { TriangleAlert } from '@lucide/svelte'
 </script>
 
 {#if $bindingInvalid}

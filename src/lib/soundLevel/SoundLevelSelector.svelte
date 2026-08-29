@@ -1,5 +1,5 @@
 <script lang='ts'>
-  import { Check } from 'lucide-svelte'
+  import { Check } from '@lucide/svelte'
   import { currentSoundLevel, setSoundLevel } from './currentSoundLevel'
   import { SOUND_LEVELS } from './levels'
 

@@ -1,5 +1,5 @@
 <script lang='ts'>
-  import { Download, X } from 'lucide-svelte'
+  import { Download, X } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   /** beforeinstallprompt 事件（非标准，仅 Chromium 系/Android 触发） */

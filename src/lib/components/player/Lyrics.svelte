@@ -11,7 +11,7 @@
     toggleShowDetail,
   } from '$lib/stores'
   import { durationFormatter, msToSeconds, secondsToMs } from '$lib/utils'
-  import { ChevronLeft } from 'lucide-svelte'
+  import { ChevronLeft } from '@lucide/svelte'
   import { fade } from 'svelte/transition'
   import LyricItem from './LyricItem.svelte'
 

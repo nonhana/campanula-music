@@ -10,7 +10,7 @@
   import { useMessage } from '$lib/hooks/useMessage'
   import { ncmImageSrc } from '$lib/ncm/image'
   import { setNowPlaying, setSongLoading, songLoading, updatePlaylist } from '$lib/stores'
-  import { Ellipsis, Loader, Play, Plus, Search, X } from 'lucide-svelte'
+  import { Ellipsis, Loader, Play, Plus, Search, X } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   const { callHanaMessage } = useMessage()

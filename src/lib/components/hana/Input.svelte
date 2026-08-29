@@ -1,6 +1,6 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
-  import { Eye, EyeOff } from 'lucide-svelte'
+  import { Eye, EyeOff } from '@lucide/svelte'
 
   interface Props {
     value?: string
