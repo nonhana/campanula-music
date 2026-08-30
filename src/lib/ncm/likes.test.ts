@@ -1,6 +1,6 @@
 import type { NcmSong } from '$lib/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchLikedSongs, likeSong } from './likes'
+import { fetchLikedPage, fetchLikedSongIds, fetchLikedSongs, likeSong } from './likes'
 
 const songs: NcmSong[] = [
   {
@@ -74,11 +74,37 @@ describe('likeSong', () => {
   })
 })
 
-describe('fetchLikedSongs', () => {
-  it('请求 /api/songs/liked 并返回红心歌曲列表', async () => {
+describe('fetchLikedSongIds', () => {
+  it('请求 /api/songs/liked/ids 并返回红心 id 列表', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve(songs),
+      json: () => Promise.resolve([2, 1]),
+    })
+
+    await expect(fetchLikedSongIds()).resolves.toEqual([2, 1])
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/songs/liked/ids', expect.any(Object))
+  })
+})
+
+describe('fetchLikedPage', () => {
+  it('按 limit/offset 查询参数请求分页并透传 { songs, total }', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ songs, total: 4812 }),
+    })
+
+    await expect(fetchLikedPage({ limit: 100, offset: 200 })).resolves.toEqual({ songs, total: 4812 })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/songs/liked?limit=100&offset=200', expect.any(Object))
+  })
+})
+
+describe('fetchLikedSongs', () => {
+  it('请求全量端点并解包红心歌曲列表', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ songs, total: 1 }),
     })
 
     await expect(fetchLikedSongs()).resolves.toEqual(songs)
@@ -89,7 +115,7 @@ describe('fetchLikedSongs', () => {
   it('无红心歌曲时返回空数组', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve([]),
+      json: () => Promise.resolve({ songs: [], total: 0 }),
     })
 
     await expect(fetchLikedSongs()).resolves.toEqual([])

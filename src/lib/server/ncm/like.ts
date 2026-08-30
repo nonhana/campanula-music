@@ -3,9 +3,9 @@ import type { NcmCallContext } from './types'
 /**
  * 网易云红心门面实现。
  *
- * 实现 NcmProvider.like / likedList（见 ./types）：调用 hana-music-api 的 like / likelist，
- * 红心写回账号、喜欢列表映射为领域形状；喜欢列表歌曲详情补全（ncmLikedSongs）
- * 供「我喜欢的音乐」页复用歌单详情的歌曲补全逻辑。
+ * 实现 NcmProvider.like / likedList / likedPage（见 ./types）：调用 hana-music-api 的 like / likelist，
+ * 红心写回账号、喜欢列表映射为领域形状；歌曲详情补全（ncmLikedPage，支持分页与全量）
+ * 供「我喜欢的音乐」页滚动分页与播放队列补全复用。
  * 失败统一映射为 NcmError（见 ./errors）。
  */
 import { like as sdkLike, likelist as sdkLikelist } from 'hana-music-api'
@@ -79,11 +79,21 @@ export async function ncmLikedList(ctx: NcmCallContext, userId: number): Promise
   }
 }
 
-/** 我喜欢的音乐歌曲列表：红心 id 按序补全歌曲详情（缺失跳过）；失败抛 NcmError */
-export async function ncmLikedSongs(ctx: NcmCallContext, userId: number): Promise<NcmSong[]> {
+/**
+ * 我喜欢的音乐分页：红心 id 列表切片后按序补全详情。
+ * total 恒为红心总数（与切片窗口无关），页面据此判断是否还有下一页；
+ * 缺省 request 时返回全量（播放队列补全等需要整表内容的场景）。
+ */
+export async function ncmLikedPage(
+  ctx: NcmCallContext,
+  userId: number,
+  request?: { limit: number, offset: number },
+): Promise<{ songs: NcmSong[], total: number }> {
   try {
     const ids = await ncmLikedList(ctx, userId)
-    return await fetchSongsInOrderByIds(ctx, ids)
+    const window = request ? ids.slice(request.offset, request.offset + request.limit) : ids
+    const songs = await fetchSongsInOrderByIds(ctx, window)
+    return { songs, total: ids.length }
   }
   catch (err) {
     throw mapNcmError(err)

@@ -1,7 +1,7 @@
 import { like as sdkLike, likelist as sdkLikelist, songDetail as sdkSongDetail } from 'hana-music-api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userPlaylistsFixture from './fixtures/user-playlists.json'
-import { mapLikedListBody, ncmLike, ncmLikedList, ncmLikedSongs } from './like'
+import { mapLikedListBody, ncmLike, ncmLikedList, ncmLikedPage } from './like'
 
 vi.mock('hana-music-api', async (importOriginal) => {
   const mod = await importOriginal<typeof import('hana-music-api')>()
@@ -153,23 +153,45 @@ describe('ncmLikedList', () => {
   })
 })
 
-describe('ncmLikedSongs', () => {
-  it('红心 id 列表按序补全歌曲详情', async () => {
+describe('ncmLikedPage', () => {
+  it('缺省请求时返回全量，total 恒为红心总数', async () => {
     mockedLikelist.mockResolvedValue({ body: { code: 200, data: [2, 1] } } as never)
     mockedSongDetail.mockResolvedValue({ body: songDetailBody([2, 1]) } as never)
 
-    const songs = await ncmLikedSongs({ cookie: 'MUSIC_U=abc' }, 98765)
+    const { songs, total } = await ncmLikedPage({ cookie: 'MUSIC_U=abc' }, 98765)
 
     expect(mockedSongDetail).toHaveBeenCalledWith({ ids: '2,1' }, { cookie: 'MUSIC_U=abc' })
     expect(songs.map(song => song.id)).toEqual([2, 1])
-    expect(songs[0]).toMatchObject({ name: '歌曲2', duration: 180000 })
+    expect(total).toBe(2)
+  })
+
+  it('携带分页请求时只补全切片窗口，total 仍为红心总数', async () => {
+    mockedLikelist.mockResolvedValue({ body: { code: 200, data: [3, 2, 1] } } as never)
+    mockedSongDetail.mockResolvedValue({ body: songDetailBody([2]) } as never)
+
+    const { songs, total } = await ncmLikedPage({ cookie: '' }, 1, { limit: 1, offset: 1 })
+
+    expect(mockedSongDetail).toHaveBeenCalledWith({ ids: '2' }, undefined)
+    expect(songs.map(song => song.id)).toEqual([2])
+    expect(total).toBe(3)
+  })
+
+  it('切片越界时返回空窗口，total 不变', async () => {
+    mockedLikelist.mockResolvedValue({ body: { code: 200, data: [1] } } as never)
+    mockedSongDetail.mockResolvedValue({ body: songDetailBody([]) } as never)
+
+    const { songs, total } = await ncmLikedPage({ cookie: '' }, 1, { limit: 100, offset: 5 })
+
+    expect(mockedSongDetail).not.toHaveBeenCalled()
+    expect(songs).toEqual([])
+    expect(total).toBe(1)
   })
 
   it('详情缺失的歌曲跳过，不伪造条目', async () => {
     mockedLikelist.mockResolvedValue({ body: { code: 200, data: [1, 99] } } as never)
     mockedSongDetail.mockResolvedValue({ body: songDetailBody([1]) } as never)
 
-    const songs = await ncmLikedSongs({ cookie: '' }, 1)
+    const { songs } = await ncmLikedPage({ cookie: '' }, 1)
 
     expect(songs.map(song => song.id)).toEqual([1])
   })
@@ -177,7 +199,7 @@ describe('ncmLikedSongs', () => {
   it('likelist 失败直接映射领域错误，不请求详情', async () => {
     mockedLikelist.mockRejectedValue({ status: 301, body: { code: -462 } })
 
-    await expect(ncmLikedSongs({ cookie: '' }, 1)).rejects.toMatchObject(
+    await expect(ncmLikedPage({ cookie: '' }, 1)).rejects.toMatchObject(
       { name: 'NcmError', code: 'UNAUTHENTICATED' },
     )
     expect(mockedSongDetail).not.toHaveBeenCalled()

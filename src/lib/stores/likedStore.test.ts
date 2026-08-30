@@ -1,13 +1,13 @@
 import type { NcmSong } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
-import { fetchLikedSongs, LIKE_ERROR_TEXT, likeSong } from '$lib/ncm/likes'
+import { fetchLikedSongIds, LIKE_ERROR_TEXT, likeSong } from '$lib/ncm/likes'
 import { get } from 'svelte/store'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { likedError, likedIds, likedLoaded, likedLoading, likedPending, likedSongs, loadLikedSongs, toggleLike } from './likedStore'
+import { likedError, likedIds, likedLoaded, likedLoading, likedPending, loadLikedSongs, toggleLike } from './likedStore'
 import { addMessage } from './messageStore'
 
 vi.mock('$lib/ncm/likes', () => ({
-  fetchLikedSongs: vi.fn(),
+  fetchLikedSongIds: vi.fn(),
   likeSong: vi.fn(),
   LIKE_ERROR_TEXT: {
     UNAUTHENTICATED: '红心需要账号许可：请先绑定网易云账号',
@@ -21,7 +21,7 @@ vi.mock('./messageStore', () => ({
   addMessage: vi.fn(),
 }))
 
-const mockedFetch = vi.mocked(fetchLikedSongs)
+const mockedFetch = vi.mocked(fetchLikedSongIds)
 const mockedLike = vi.mocked(likeSong)
 const mockedMessage = vi.mocked(addMessage)
 
@@ -39,7 +39,7 @@ beforeEach(() => {
   mockedFetch.mockReset()
   mockedLike.mockReset()
   mockedMessage.mockReset()
-  likedSongs.set([])
+  likedIds.set(new Set())
   likedPending.set(new Set())
   likedLoading.set(false)
   likedLoaded.set(false)
@@ -47,19 +47,19 @@ beforeEach(() => {
 })
 
 describe('loadLikedSongs', () => {
-  it('拉取红心歌曲并填充状态与派生 id 集合', async () => {
-    mockedFetch.mockResolvedValue([song(2), song(1)])
+  it('拉取红心 id 列表并填充状态', async () => {
+    mockedFetch.mockResolvedValue([2, 1])
 
     await loadLikedSongs()
 
-    expect(get(likedSongs).map(s => s.id)).toEqual([2, 1])
     expect(get(likedIds)).toEqual(new Set([2, 1]))
+    expect(get(likedLoaded)).toBe(true)
     expect(get(likedLoading)).toBe(false)
     expect(get(likedError)).toBeNull()
   })
 
   it('已加载过则跳过重复请求', async () => {
-    mockedFetch.mockResolvedValue([song(1)])
+    mockedFetch.mockResolvedValue([1])
 
     await loadLikedSongs()
     await loadLikedSongs()
@@ -68,7 +68,7 @@ describe('loadLikedSongs', () => {
   })
 
   it('并发调用共享同一在途请求（红心按钮批量挂载不产生请求风暴）', async () => {
-    mockedFetch.mockResolvedValue([song(1)])
+    mockedFetch.mockResolvedValue([1])
 
     await Promise.all([loadLikedSongs(), loadLikedSongs(), loadLikedSongs()])
 
@@ -77,19 +77,15 @@ describe('loadLikedSongs', () => {
   })
 
   it('加载完成前在途红心的歌曲不被服务端快照覆盖', async () => {
-    let resolveFetch!: (songs: NcmSong[]) => void
-    let resolveLike!: () => void
-    mockedFetch.mockReturnValueOnce(new Promise((resolve) => {
-      resolveFetch = resolve
-    }))
-    mockedLike.mockReturnValueOnce(new Promise((resolve) => {
-      resolveLike = resolve
-    }))
+    const { promise: fetchPromise, resolve: resolveFetch } = Promise.withResolvers<number[]>()
+    const { promise: likePromise, resolve: resolveLike } = Promise.withResolvers<void>()
+    mockedFetch.mockReturnValueOnce(fetchPromise)
+    mockedLike.mockReturnValueOnce(likePromise)
 
     const loading = loadLikedSongs()
     // 快照在途时用户先红心了一首新歌（写回尚未完成）
     const toggling = toggleLike(song(99))
-    resolveFetch([song(1)])
+    resolveFetch([1])
     await loading
     // 在途新增被合并保留，不被过期快照覆盖
     expect(get(likedIds)).toEqual(new Set([99, 1]))
@@ -100,7 +96,7 @@ describe('loadLikedSongs', () => {
   })
 
   it('force 强制重新拉取', async () => {
-    mockedFetch.mockResolvedValueOnce([song(1)]).mockResolvedValueOnce([song(1), song(2)])
+    mockedFetch.mockResolvedValueOnce([1]).mockResolvedValueOnce([1, 2])
 
     await loadLikedSongs()
     await loadLikedSongs(true)
@@ -111,7 +107,7 @@ describe('loadLikedSongs', () => {
 
   it('失败（未绑定）留下可展示错误，且再次加载会重试', async () => {
     mockedFetch.mockRejectedValueOnce(new NcmClientError('UNAUTHENTICATED', '查看我喜欢的音乐需要账号许可：请先绑定网易云账号'))
-      .mockResolvedValueOnce([song(1)])
+      .mockResolvedValueOnce([1])
 
     await loadLikedSongs()
     expect(get(likedError)).toBe('查看我喜欢的音乐需要账号许可：请先绑定网易云账号')
@@ -136,7 +132,7 @@ describe('toggleLike', () => {
   })
 
   it('已红心 → 乐观移除并写回 false', async () => {
-    likedSongs.set([song(2), song(1)])
+    likedIds.set(new Set([2, 1]))
     mockedLike.mockResolvedValue()
 
     await toggleLike(song(2))
@@ -147,7 +143,7 @@ describe('toggleLike', () => {
   })
 
   it('写回失败回滚到原状并呈现错误文案', async () => {
-    likedSongs.set([song(2)])
+    likedIds.set(new Set([2]))
     mockedLike.mockRejectedValue(new NcmClientError('RATE_LIMITED', '请求过于频繁，请稍后再试'))
 
     await toggleLike(song(2))
@@ -167,10 +163,8 @@ describe('toggleLike', () => {
   })
 
   it('写回进行中重复点击被忽略（防重复请求）', async () => {
-    let resolveLike: (value?: void) => void = () => {}
-    mockedLike.mockImplementation(() => new Promise((resolve) => {
-      resolveLike = resolve
-    }))
+    const { promise: likePromise, resolve: resolveLike } = Promise.withResolvers<void>()
+    mockedLike.mockReturnValueOnce(likePromise)
 
     const first = toggleLike(song(1))
     // 进行中：pending 防重

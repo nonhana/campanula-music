@@ -79,6 +79,6 @@ export interface NcmProvider {
   /** 我喜欢的音乐 id 列表 */
   likedList: (ctx: NcmCallContext, userId: number) => Promise<number[]>
 
-  /** 我喜欢的音乐歌曲列表：红心 id 按序补全歌曲详情（缺失跳过） */
-  likedSongs: (ctx: NcmCallContext, userId: number) => Promise<NcmSong[]>
+  /** 我喜欢的音乐分页：红心 id 切片按序补全歌曲详情（缺失跳过）；缺省请求返回全量，total 恒为红心总数 */
+  likedPage: (ctx: NcmCallContext, userId: number, request?: { limit: number, offset: number }) => Promise<{ songs: NcmSong[], total: number }>
 }

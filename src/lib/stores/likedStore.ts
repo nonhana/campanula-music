@@ -1,29 +1,29 @@
 import type { NcmSong } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
-import { fetchLikedSongs, LIKE_ERROR_TEXT, likeSong } from '$lib/ncm/likes'
-import { derived, get, writable } from 'svelte/store'
+import { fetchLikedSongIds, LIKE_ERROR_TEXT, likeSong } from '$lib/ncm/likes'
+import { get, writable } from 'svelte/store'
 import { addMessage } from './messageStore'
 
 /**
- * 红心编排：我喜欢的音乐是红心状态与收藏页共用的单一数据源。
+ * 红心编排：红心 id 集合是全站红心按钮状态的单一数据源。
  *
- * loadLikedSongs 拉取红心歌曲列表（已成功加载过则跳过，force 强制刷新，
+ * loadLikedSongs 拉取红心 id 列表（已成功加载过则跳过，force 强制刷新，
  * 在途请求共享同一 Promise 防并发风暴）；toggleLike 乐观写回网易云账号，
  * 失败只对当前歌曲回滚（不覆盖并发在途的其他歌曲乐观更新）并呈现领域错误文案。
- * 只经 $lib/ncm/likes 访问服务端门面代理，测试注入假 provider 响应即替换该模块。
+ * 「我喜欢的音乐」页的列表内容走自身分页数据流（+page.ts + 触底增量），
+ * 不经本 store 携带歌曲详情。只经 $lib/ncm/likes 访问服务端门面代理，
+ * 测试注入假 provider 响应即替换该模块。
  */
 
-/** 我喜欢的音乐歌曲列表（按红心时间倒序） */
-export const likedSongs = writable<NcmSong[]>([])
-/** 红心歌曲列表是否已成功加载（驱动 loadLikedSongs 跳过重复请求） */
+/** 已红心歌曲 id 集合（按红心时间倒序的快照，供各红心按钮查询状态） */
+export const likedIds = writable<Set<number>>(new Set())
+/** 红心 id 列表是否已成功加载（驱动 loadLikedSongs 跳过重复请求） */
 export const likedLoaded = writable(false)
-/** 已红心歌曲 id 集合（派生，供各红心按钮查询状态） */
-export const likedIds = derived(likedSongs, songs => new Set(songs.map(song => song.id)))
 /** 正在写回红心状态的歌曲 id 集合（防重复点击） */
 export const likedPending = writable<Set<number>>(new Set())
-/** 红心歌曲列表是否加载中 */
+/** 红心 id 列表是否加载中 */
 export const likedLoading = writable(false)
-/** 红心歌曲列表加载失败的可展示错误；成功后清空 */
+/** 红心 id 列表加载失败的可展示错误；成功后清空 */
 export const likedError = writable<string | null>(null)
 
 /** 在途的加载请求：并发调用共享同一请求，避免每个红心按钮挂载都触发一次拉取 */
@@ -40,13 +40,16 @@ async function doLoad(): Promise<void> {
   likedLoading.set(true)
   likedError.set(null)
   try {
-    const songs = await fetchLikedSongs()
+    const ids = await fetchLikedSongIds()
     // 服务端快照为准，但保留本地在途写回的新增（快照可能早于写回生效）；
     // 在途取消红心只可能发生在已加载之后，不会与此处竞争
     const pending = get(likedPending)
-    const fetchedIds = new Set(songs.map(song => song.id))
-    const localPending = get(likedSongs).filter(song => pending.has(song.id) && !fetchedIds.has(song.id))
-    likedSongs.set([...localPending, ...songs])
+    const merged = new Set(ids)
+    for (const id of pending) {
+      if (!merged.has(id))
+        merged.add(id)
+    }
+    likedIds.set(merged)
     likedLoaded.set(true)
   }
   catch (err) {
@@ -58,7 +61,7 @@ async function doLoad(): Promise<void> {
   }
 }
 
-/** 拉取红心歌曲列表；已成功加载过则跳过（force 强制刷新），失败留 likedError 供重试 */
+/** 拉取红心 id 列表；已成功加载过则跳过（force 强制刷新），失败留 likedError 供重试 */
 export function loadLikedSongs(force = false): Promise<void> {
   if (get(likedLoaded) && !force)
     return Promise.resolve()
@@ -78,13 +81,17 @@ export async function toggleLike(song: NcmSong): Promise<void> {
 
   const liked = get(likedIds).has(song.id)
   const next = !liked
-  const previousIndex = get(likedSongs).findIndex(item => item.id === song.id)
 
   // 乐观更新本地状态，让红心按钮即时反馈
   likedPending.set(new Set(pending).add(song.id))
-  likedSongs.update(current => next
-    ? [song, ...current.filter(item => item.id !== song.id)]
-    : current.filter(item => item.id !== song.id))
+  likedIds.update((current) => {
+    const nextSet = new Set(current)
+    if (next)
+      nextSet.add(song.id)
+    else
+      nextSet.delete(song.id)
+    return nextSet
+  })
 
   try {
     await likeSong(song.id, next)
@@ -93,14 +100,12 @@ export async function toggleLike(song: NcmSong): Promise<void> {
   catch (err) {
     console.error('红心写回失败:', err)
     // 只对当前歌曲做回滚：整表快照会清掉并发在途的其他歌曲乐观更新
-    likedSongs.update((current) => {
-      if (next) {
-        return current.filter(item => item.id !== song.id)
-      }
-      if (current.some(item => item.id === song.id))
-        return current
-      const restored = [...current]
-      restored.splice(previousIndex >= 0 ? previousIndex : restored.length, 0, song)
+    likedIds.update((current) => {
+      const restored = new Set(current)
+      if (next)
+        restored.delete(song.id)
+      else
+        restored.add(song.id)
       return restored
     })
     addMessage({ message: presentLikedError(err), type: 'error' })

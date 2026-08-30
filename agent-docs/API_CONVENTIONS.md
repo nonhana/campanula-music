@@ -29,13 +29,13 @@ Binding is checked per request via `resolveBoundUser`; there is no global auth m
 
 | Tier | Endpoints | Unbound behavior |
 | --- | --- | --- |
-| Account domain | GET /api/playlists · GET /api/songs/liked · POST /api/songs/like | `401 UNAUTHENTICATED` + per-endpoint guidance copy (same code as binding invalidation, so pages render guidance from it); the account cookie is required for the call itself |
+| Account domain | GET /api/playlists · GET /api/songs/liked · GET /api/songs/liked/ids · POST /api/songs/like | `401 UNAUTHENTICATED` + per-endpoint guidance copy (same code as binding invalidation, so pages render guidance from it); the account cookie is required for the call itself |
 | Public domain | GET /api/search · GET /api/songs/lyric · GET /api/songs/url · GET /api/playlist/[id] · GET /api/playlist/[id]/tracks | Anonymous access allowed: the facade is called with `bound?.cookie ?? ''` (empty cookie = upstream's logged-out subset); results may be degraded (trial-only audio, restricted lyric fields, partial track completion) but never rejected |
 | Binding domain | GET /api/binding/status · GET /api/binding/qr · GET /api/binding/qr/status · DELETE /api/binding | Manage the binding state itself; never gated on being bound |
 
 Parameter validation is identical in both tiers once a request reaches validation: invalid params return `400 INVALID_PARAMS` through `ncmErrorJson`. Public-domain endpoints validate regardless of binding state; account-domain endpoints gate on binding first (401 when unbound), so their validation is only reachable when bound.
 
-## Endpoint list (12, as of 2026-08)
+## Endpoint list (13, as of 2026-08)
 
 | Method & path | Purpose | Params |
 | --- | --- | --- |
@@ -47,7 +47,8 @@ Parameter validation is identical in both tiers once a request reaches validatio
 | GET /api/playlist/[id] | Playlist detail | — |
 | GET /api/playlist/[id]/tracks | Playlist tracks (paged) | limit, offset |
 | GET /api/search | Search | keywords, type, limit, offset |
-| GET /api/songs/liked | Liked songs | — |
+| GET /api/songs/liked | Liked songs (paged; omit params for full list) | limit, offset |
+| GET /api/songs/liked/ids | Liked song id list (heart-state source) | — |
 | POST /api/songs/like | Like (heart) write-back | body |
 | GET /api/songs/lyric | Lyrics | id |
 | GET /api/songs/url | Play URLs (batch-capable) | ids, level (audio-quality tier) |

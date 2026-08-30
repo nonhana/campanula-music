@@ -1,8 +1,7 @@
-import type { NcmSong } from '$lib/types'
 import type { RequestEvent } from '@sveltejs/kit'
 import { resolveBoundUser } from '$lib/server/binding'
 import { NcmError } from '$lib/server/ncm/errors'
-import { ncmLikedSongs } from '$lib/server/ncm/like'
+import { ncmLikedPage } from '$lib/server/ncm/like'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from './+server'
 
@@ -11,29 +10,19 @@ vi.mock('$lib/server/binding', () => ({
 }))
 
 vi.mock('$lib/server/ncm/like', () => ({
-  ncmLikedSongs: vi.fn(),
+  ncmLikedPage: vi.fn(),
 }))
 
 const mockedBound = vi.mocked(resolveBoundUser)
-const mockedLikedSongs = vi.mocked(ncmLikedSongs)
+const mockedLikedPage = vi.mocked(ncmLikedPage)
 
-function makeEvent(): RequestEvent {
-  return { url: new URL('http://localhost/api/songs/liked') } as RequestEvent
+function makeEvent(query = ''): RequestEvent {
+  return { url: new URL(`http://localhost/api/songs/liked${query}`) } as RequestEvent
 }
-
-const songs: NcmSong[] = [
-  {
-    id: 186016,
-    name: '歌曲A',
-    artists: [{ id: 1, name: '歌手A' }],
-    album: { id: 2, name: '专辑B', cover: 'https://p1.music.126.net/a.jpg' },
-    duration: 180000,
-  },
-]
 
 beforeEach(() => {
   mockedBound.mockReset()
-  mockedLikedSongs.mockReset()
+  mockedLikedPage.mockReset()
 })
 
 describe('gET /api/songs/liked', () => {
@@ -44,32 +33,48 @@ describe('gET /api/songs/liked', () => {
 
     expect(res.status).toBe(401)
     await expect(res.json()).resolves.toMatchObject({ error: { code: 'UNAUTHENTICATED' } })
-    expect(mockedLikedSongs).not.toHaveBeenCalled()
+    expect(mockedLikedPage).not.toHaveBeenCalled()
   })
 
-  it('已绑定时以绑定凭据与账号 id 拉取红心歌曲列表', async () => {
+  it('无分页参数时以绑定凭据请求全量并透传 { songs, total }', async () => {
     mockedBound.mockResolvedValue({ uid: 98765, cookie: 'MUSIC_U=abc' })
-    mockedLikedSongs.mockResolvedValue(songs)
+    mockedLikedPage.mockResolvedValue({ songs: [], total: 0 })
 
     const res = await GET(makeEvent())
 
-    expect(mockedLikedSongs).toHaveBeenCalledWith({ cookie: 'MUSIC_U=abc' }, 98765)
+    expect(mockedLikedPage).toHaveBeenCalledWith({ cookie: 'MUSIC_U=abc' }, 98765, undefined)
     expect(res.status).toBe(200)
-    await expect(res.json()).resolves.toEqual(songs)
+    await expect(res.json()).resolves.toEqual({ songs: [], total: 0 })
   })
 
-  it('无红心歌曲时返回空数组', async () => {
+  it('携带 limit/offset 时按分页请求', async () => {
+    mockedBound.mockResolvedValue({ uid: 98765, cookie: 'MUSIC_U=abc' })
+    mockedLikedPage.mockResolvedValue({ songs: [], total: 4812 })
+
+    const res = await GET(makeEvent('?limit=100&offset=200'))
+
+    expect(mockedLikedPage).toHaveBeenCalledWith(
+      { cookie: 'MUSIC_U=abc' },
+      98765,
+      { limit: 100, offset: 200 },
+    )
+    await expect(res.json()).resolves.toEqual({ songs: [], total: 4812 })
+  })
+
+  it('分页参数非整数或为负 → 400 INVALID_PARAMS', async () => {
     mockedBound.mockResolvedValue({ uid: 1, cookie: '' })
-    mockedLikedSongs.mockResolvedValue([])
 
-    const res = await GET(makeEvent())
-
-    await expect(res.json()).resolves.toEqual([])
+    for (const query of ['?limit=abc&offset=0', '?limit=100&offset=-1', '?limit=1.5&offset=0']) {
+      const res = await GET(makeEvent(query))
+      expect(res.status).toBe(400)
+      await expect(res.json()).resolves.toMatchObject({ error: { code: 'INVALID_PARAMS' } })
+    }
+    expect(mockedLikedPage).not.toHaveBeenCalled()
   })
 
   it('绑定失效（门面抛 UNAUTHENTICATED）→ 401 且带错误码', async () => {
     mockedBound.mockResolvedValue({ uid: 1, cookie: '' })
-    mockedLikedSongs.mockRejectedValue(new NcmError('UNAUTHENTICATED', '绑定已失效，需要重新扫码'))
+    mockedLikedPage.mockRejectedValue(new NcmError('UNAUTHENTICATED', '绑定已失效，需要重新扫码'))
 
     const res = await GET(makeEvent())
 
@@ -79,7 +84,7 @@ describe('gET /api/songs/liked', () => {
 
   it('门面抛非领域异常 → 500 UNKNOWN', async () => {
     mockedBound.mockResolvedValue({ uid: 1, cookie: '' })
-    mockedLikedSongs.mockRejectedValue(new Error('boom'))
+    mockedLikedPage.mockRejectedValue(new Error('boom'))
 
     const res = await GET(makeEvent())
 
