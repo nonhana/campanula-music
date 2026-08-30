@@ -12,7 +12,7 @@ import {
   userPlaylistCreate as sdkUserPlaylistCreate,
 } from 'hana-music-api'
 import { mapNcmError } from './errors'
-import { asArray, asImageUrl, asNumber, asRecord, asString, sdkConfig } from './raw'
+import { asArray, asImageUrl, asNumber, asRecord, assertOkBody, asString, sdkConfig } from './raw'
 import { mapSongDetailList } from './songDetail'
 
 /** 我的歌单每组拉取数量（两组各自单页，分页留待后续） */
@@ -84,6 +84,7 @@ function unpackUserPlaylistEnvelope(body: unknown): unknown[] {
 export async function ncmPlaylistDetail(ctx: NcmCallContext, id: number): Promise<NcmPlaylistDetail> {
   try {
     const res = await sdkPlaylistDetail({ id: String(id) }, sdkConfig(ctx.cookie))
+    assertOkBody(res)
     const parts = parsePlaylistDetail(res.body)
     return {
       id: parts.id,
@@ -114,6 +115,7 @@ export async function ncmPlaylistTracks(
       { id: String(id), limit: params.limit, offset: params.offset },
       sdkConfig(ctx.cookie),
     )
+    assertOkBody(res)
     return mapSongDetailList(res.body)
   }
   catch (err) {
@@ -129,6 +131,8 @@ export async function ncmUserPlaylists(ctx: NcmCallContext, uid: number): Promis
       sdkUserPlaylistCreate(query, sdkConfig(ctx.cookie)),
       sdkUserPlaylistCollect(query, sdkConfig(ctx.cookie)),
     ])
+    assertOkBody(createdRes)
+    assertOkBody(collectedRes)
     return {
       created: mapUserPlaylists(unpackUserPlaylistEnvelope(createdRes.body)),
       collected: mapUserPlaylists(unpackUserPlaylistEnvelope(collectedRes.body)),

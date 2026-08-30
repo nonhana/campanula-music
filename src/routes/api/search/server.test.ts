@@ -70,6 +70,14 @@ describe('gET /api/search', () => {
     expect(mockedSearch).toHaveBeenCalledWith({ cookie: '' }, { keywords: 'x', type: 'song', limit: 30, offset: 0 })
   })
 
+  it('limit 超上界时收敛到 100', async () => {
+    mockedSearch.mockResolvedValue(songPage)
+
+    await GET(makeEvent('?keywords=x&type=song&limit=5000'))
+
+    expect(mockedSearch).toHaveBeenCalledWith({ cookie: '' }, { keywords: 'x', type: 'song', limit: 100, offset: 0 })
+  })
+
   it('缺少关键词 → 400 INVALID_PARAMS', async () => {
     const res = await GET(makeEvent('?type=song'))
 

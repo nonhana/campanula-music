@@ -72,6 +72,13 @@ describe('gET /api/playlist/[id]/tracks', () => {
 
     expect(res.status).toBe(400)
     await expect(res.json()).resolves.toMatchObject({ error: { code: 'INVALID_PARAMS' } })
+  })
+
+  it('limit 为 "0" → 400 INVALID_PARAMS（不允许静默回落默认值）', async () => {
+    const res = await GET(makeEvent('1', '?limit=0'))
+
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toMatchObject({ error: { code: 'INVALID_PARAMS' } })
     expect(mockedTracks).not.toHaveBeenCalled()
   })
 

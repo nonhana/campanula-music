@@ -10,7 +10,7 @@ import type { NcmCallContext } from './types'
  */
 import { like as sdkLike, likelist as sdkLikelist } from 'hana-music-api'
 import { mapNcmError } from './errors'
-import { asNumber, asRecord, sdkConfig } from './raw'
+import { asNumber, asRecord, assertOkBody, sdkConfig } from './raw'
 import { fetchSongsInOrderByIds } from './songDetail'
 
 /** 红心写回参数 */
@@ -60,10 +60,7 @@ export async function ncmLike(ctx: NcmCallContext, request: LikeRequest): Promis
   try {
     const res = await sdkLike({ id: request.id, like: request.like }, sdkConfig(ctx.cookie))
     // 上游偶发「HTTP 200 + 业务失败码」的返回形态，按门面错误模型映射
-    const code = asRecord(res.body).code
-    if (typeof code === 'number' && code !== 200) {
-      throw mapNcmError({ status: res.status, body: res.body })
-    }
+    assertOkBody(res)
   }
   catch (err) {
     throw mapNcmError(err)
@@ -74,6 +71,7 @@ export async function ncmLike(ctx: NcmCallContext, request: LikeRequest): Promis
 export async function ncmLikedList(ctx: NcmCallContext, userId: number): Promise<number[]> {
   try {
     const res = await sdkLikelist({ uid: userId }, sdkConfig(ctx.cookie))
+    assertOkBody(res)
     return mapLikedListBody(res.body)
   }
   catch (err) {

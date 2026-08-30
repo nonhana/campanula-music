@@ -13,6 +13,7 @@ export const NCM_ERROR_CODES: readonly NcmErrorCode[] = [
   'UNAUTHENTICATED', // 绑定失效，需要重新扫码
   'RATE_LIMITED', // 被限流
   'RESOURCE_UNAVAILABLE', // 无版权或资源不可用
+  'INVALID_PARAMS', // 参数校验拒绝（路由层发射，不经上游映射）
   'UNKNOWN', // 兜底
 ]
 
@@ -41,6 +42,9 @@ function isSdkFailure(err: unknown): err is SdkFailure {
 const UNAUTHENTICATED_PATTERN = /需要登录|未登录|登录状态已失效|登录已过期|not logged|login expired/i
 const RATE_LIMITED_PATTERN = /请求过于频繁|操作太频繁|访问过于频繁|too many requests|too frequent/i
 const RESOURCE_UNAVAILABLE_PATTERN = /无版权|版权受限|版权保护|暂无版权|no copyright/i
+
+/** SDK 传输层超时的固定文案（client.generated.js：Request timed out after Nms） */
+const SDK_TIMEOUT_PATTERN = /^Request timed out after \d+ms$/
 
 /**
  * 把 SDK/上游抛出的任意失败映射为领域错误。
@@ -71,6 +75,15 @@ export function mapNcmError(err: unknown): NcmError {
     return new NcmError('RESOURCE_UNAVAILABLE', msg || '资源不可用（无版权或仅试听片段）', { cause: err, status })
   }
 
-  const message = msg || (err instanceof Error ? err.message : String(err))
+  // SDK 传输层超时：请求未达上游或响应未归，按资源不可用处理，文案中文化（避免英文超时直出）
+  if (msg != null && SDK_TIMEOUT_PATTERN.test(msg)) {
+    return new NcmError('RESOURCE_UNAVAILABLE', '上游请求超时，请稍后重试', { cause: err, status })
+  }
+
+  // 消息回退链：业务 msg → 业务码 → 真实 Error 消息 → 中文兜底，避免 [object Object] 直出
+  const message = msg
+    || (code !== undefined ? String(code) : undefined)
+    || (err instanceof Error ? err.message : undefined)
+    || '未知上游错误'
   return new NcmError('UNKNOWN', message, { cause: err, status })
 }

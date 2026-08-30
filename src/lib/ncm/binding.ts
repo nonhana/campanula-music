@@ -41,6 +41,7 @@ export const BINDING_ERROR_TEXT = {
   UNAUTHENTICATED: '网易云账号未绑定或绑定已失效，请重新扫码绑定',
   RATE_LIMITED: '请求过于频繁，请稍后再试',
   RESOURCE_UNAVAILABLE: '绑定服务暂不可用',
+  INVALID_PARAMS: '请求参数不合法，请检查后重试',
   UNKNOWN: '绑定服务出错，请重试',
 } satisfies Record<NcmErrorCode, string>
 

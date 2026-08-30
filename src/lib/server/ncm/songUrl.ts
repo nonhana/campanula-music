@@ -9,7 +9,7 @@ import type { NcmCallContext } from './types'
  */
 import { songUrlV1 as sdkSongUrlV1 } from 'hana-music-api'
 import { mapNcmError } from './errors'
-import { asArray, asHttpUrl, asNumber, asRecord, chunkIds, sdkConfig, TRACK_CHUNK_SIZE } from './raw'
+import { asArray, asHttpUrl, asNumber, asRecord, assertOkBody, chunkIds, sdkConfig, TRACK_CHUNK_SIZE } from './raw'
 
 /** 播放地址请求：歌曲 id 数组 + 音质档位 */
 export interface SongUrlRequest {
@@ -31,7 +31,10 @@ export function mapSongUrlList(body: unknown, ids: number[]): NcmSongSource[] {
   const data = asArray(asRecord(body).data)
   return ids.map((id, index) => {
     const entry = asRecord(data[index]) as RawUrlEntry
-    // 播放地址统一为 https（上游返回 http 协议，https 部署下会被浏览器混合内容拦截）
+    // 上游 data 可能与请求 id 错位或缺条目：id 不匹配时该曲按 unavailable 处理，不整体失败
+    if (asNumber(entry.id) !== id) {
+      return { id, status: 'unavailable', url: null, trial: null }
+    }
     const url = asHttpUrl(entry.url)
     if (!url) {
       return { id, status: 'unavailable', url: null, trial: null }
@@ -51,6 +54,7 @@ export async function ncmSongUrl(ctx: NcmCallContext, request: SongUrlRequest): 
     const lists = await Promise.all(
       chunks.map(async (ids) => {
         const res = await sdkSongUrlV1({ id: ids.join(','), level: request.level }, sdkConfig(ctx.cookie))
+        assertOkBody(res)
         return mapSongUrlList(res.body, ids)
       }),
     )

@@ -2,8 +2,10 @@
  * hana-music-api 返回体 → 领域形状的防御性取值助手。
  *
  * 多个门面实现共用：上游字段缺失/类型不符时一律回落到安全空值，
- * 不做服务端二次补全。由门面内部使用，不对外暴露。
+ * 不做服务端二次补全；业务失败码复核（assertOkBody）也在此收敛。由门面内部使用，不对外暴露。
  */
+
+import { mapNcmError } from './errors'
 
 export function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? value as Record<string, unknown> : {}
@@ -76,4 +78,15 @@ export function chunkIds(ids: number[], size: number): number[][] {
 /** 绑定凭据 → SDK 调用配置；无凭据时不传 cookie（与既有 search 门面一致的调用约定） */
 export function sdkConfig(cookie: string): { cookie: string } | undefined {
   return cookie ? { cookie } : undefined
+}
+
+/**
+ * 复核上游业务码：SDK 会把 201/302/400/502/800-803 等特殊状态码强制视为
+ * HTTP 200 成功返回（SPECIAL_STATUS_CODES），仅看 res.status 会漏掉
+ * 「HTTP 200 + 业务失败码」形态。body.code 非 200 时按门面错误模型抛 NcmError。
+ */
+export function assertOkBody(res: { body: unknown, status?: number }): void {
+  const code = asRecord(res.body).code
+  if (typeof code === 'number' && code !== 200)
+    throw mapNcmError({ status: res.status, body: res.body })
 }

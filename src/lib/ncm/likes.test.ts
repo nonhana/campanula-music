@@ -109,7 +109,7 @@ describe('fetchLikedSongs', () => {
     })
   })
 
-  it('非领域码（参数校验）消息照常透传，码降级 UNKNOWN', async () => {
+  it('参数校验码（INVALID_PARAMS）消息照常透传', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
@@ -118,7 +118,7 @@ describe('fetchLikedSongs', () => {
 
     await expect(fetchLikedSongs()).rejects.toMatchObject({
       name: 'NcmClientError',
-      code: 'UNKNOWN',
+      code: 'INVALID_PARAMS',
       message: '缺少有效的参数',
     })
   })

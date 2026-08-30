@@ -106,6 +106,17 @@ describe('gET /api/songs/url', () => {
     expect(mockedSongUrl).not.toHaveBeenCalled()
   })
 
+  it('ids 含超出 u64 安全范围（含 "0"）→ 400 INVALID_PARAMS', async () => {
+    const huge = await GET(makeEvent('?ids=186016,99999999999999999999'))
+
+    expect(huge.status).toBe(400)
+    expect(await huge.json()).toMatchObject({ error: { code: 'INVALID_PARAMS' } })
+
+    const zero = await GET(makeEvent('?ids=0'))
+    expect(zero.status).toBe(400)
+    expect(mockedSongUrl).not.toHaveBeenCalled()
+  })
+
   it('ids 数量超单请求上限 → 400 INVALID_PARAMS', async () => {
     const ids = Array.from({ length: 1001 }, (_, i) => i + 1).join(',')
     const res = await GET(makeEvent(`?ids=${ids}`))

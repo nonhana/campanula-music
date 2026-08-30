@@ -6,6 +6,7 @@ import {
 } from 'hana-music-api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mapAccountBody, mapQrCheckBody, mapQrCreateBody, mapQrKeyBody, ncmCheckAuth, ncmLoginQrCheck, ncmLoginQrCreate, ncmLoginQrKey } from './auth'
+import userPlaylistsFixture from './fixtures/user-playlists.json'
 
 vi.mock('hana-music-api', async (importOriginal) => {
   const mod = await importOriginal<typeof import('hana-music-api')>()
@@ -16,6 +17,15 @@ const mockedUserAccount = vi.mocked(sdkUserAccount)
 const mockedQrKey = vi.mocked(sdkLoginQrKey)
 const mockedQrCreate = vi.mocked(sdkLoginQrCreate)
 const mockedQrCheck = vi.mocked(sdkLoginQrCheck)
+
+/** 失败封套由真实录制包 fixtures/user-playlists.json 派生（仅改 code 相关字段；上游业务失败包未录制） */
+function failedEnvelope(code: number, msg: string) {
+  return {
+    ...userPlaylistsFixture.created,
+    code,
+    msg,
+  }
+}
 
 beforeEach(() => {
   mockedUserAccount.mockReset()
@@ -112,6 +122,13 @@ describe('ncmLoginQrKey', () => {
     expect(mockedQrKey).toHaveBeenCalledWith({})
   })
 
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误', async () => {
+    mockedQrKey.mockResolvedValue({ status: 200, body: failedEnvelope(801, '登录状态已失效'), cookie: [] } as never)
+
+    await expect(ncmLoginQrKey()).rejects.toMatchObject(
+      { name: 'NcmError', code: 'UNAUTHENTICATED' },
+    )
+  })
   it('sDK 失败映射为领域错误', async () => {
     mockedQrKey.mockRejectedValue({ status: 429, body: { code: -460, msg: '操作太频繁' } })
 
@@ -149,6 +166,14 @@ describe('ncmLoginQrCreate', () => {
       qrimg: 'data:image/png;base64,xxx',
     })
     expect(mockedQrCreate).toHaveBeenCalledWith({ key: 'abc', qrimg: true })
+  })
+
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误', async () => {
+    mockedQrCreate.mockResolvedValue({ status: 200, body: failedEnvelope(-462, '登录状态已失效'), cookie: [] } as never)
+
+    await expect(ncmLoginQrCreate('abc')).rejects.toMatchObject(
+      { name: 'NcmError', code: 'UNAUTHENTICATED' },
+    )
   })
 
   it('sDK 失败映射为领域错误', async () => {

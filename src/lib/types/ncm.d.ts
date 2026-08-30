@@ -5,6 +5,7 @@ export type NcmErrorCode
   = | 'UNAUTHENTICATED' // 绑定失效，需要重新扫码
     | 'RATE_LIMITED' // 被限流
     | 'RESOURCE_UNAVAILABLE' // 无版权或资源不可用
+    | 'INVALID_PARAMS' // 请求参数不合法（路由层校验拒绝，不经上游映射）
     | 'UNKNOWN' // 兜底
 
 /** 搜索目标类型（对应网易云搜索 type 参数：1 单曲 / 1000 歌单 / 100 歌手） */

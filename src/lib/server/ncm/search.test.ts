@@ -148,6 +148,16 @@ describe('ncmSearch', () => {
     )
   })
 
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误，不静默返回 0 结果', async () => {
+    // 失败封套由最小成功封套派生，仅改 code 相关字段（上游业务失败包未录制）
+    mockedSearch.mockResolvedValue({ body: { ...sdkBody({ songCount: 0, songs: [] }), code: -110, msg: '无版权' } } as never)
+
+    await expect(ncmSearch({ cookie: '' }, { keywords: 'x', type: 'song' })).rejects.toMatchObject(
+      { name: 'NcmError', code: 'RESOURCE_UNAVAILABLE' },
+    )
+    expect(mockedSong).not.toHaveBeenCalled()
+  })
+
   it('携带绑定凭据调用', async () => {
     mockedSearch.mockResolvedValue({ body: sdkBody({ artistCount: 0, artists: [] }) } as never)
 

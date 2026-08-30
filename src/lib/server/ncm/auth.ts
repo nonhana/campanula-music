@@ -19,7 +19,7 @@ import {
   userAccount as sdkUserAccount,
 } from 'hana-music-api'
 import { mapNcmError, NcmError } from './errors'
-import { asNumber, asRecord, asString, sdkConfig } from './raw'
+import { asNumber, asRecord, assertOkBody, asString, sdkConfig } from './raw'
 
 /** 账号校验结果：绑定账号的 id 与昵称 */
 export interface NcmAccountInfo {
@@ -87,10 +87,7 @@ export async function ncmCheckAuth(ctx: NcmCallContext): Promise<NcmAccountInfo>
   try {
     const res = await sdkUserAccount({}, sdkConfig(ctx.cookie))
     // 上游偶发「HTTP 200 + 业务失败码」的返回形态，按门面错误模型映射
-    const code = asRecord(res.body).code
-    if (typeof code === 'number' && code !== 200) {
-      throw mapNcmError({ status: res.status, body: res.body })
-    }
+    assertOkBody(res)
     const info = mapAccountBody(res.body)
     // 「HTTP 200 + 空 account」形态：无效/匿名凭据的典型应答，按绑定失效处理
     if (info.userId <= 0)
@@ -106,6 +103,7 @@ export async function ncmCheckAuth(ctx: NcmCallContext): Promise<NcmAccountInfo>
 export async function ncmLoginQrKey(): Promise<{ key: string, unikey: string }> {
   try {
     const res = await sdkLoginQrKey({})
+    assertOkBody(res)
     return mapQrKeyBody(res.body)
   }
   catch (err) {
@@ -117,6 +115,7 @@ export async function ncmLoginQrKey(): Promise<{ key: string, unikey: string }> 
 export async function ncmLoginQrCreate(key: string): Promise<{ qrUrl: string, qrimg: string }> {
   try {
     const res = await sdkLoginQrCreate({ key, qrimg: true })
+    assertOkBody(res)
     return mapQrCreateBody(res.body)
   }
   catch (err) {
@@ -128,6 +127,8 @@ export async function ncmLoginQrCreate(key: string): Promise<{ qrUrl: string, qr
 export async function ncmLoginQrCheck(key: string): Promise<QrCheckState> {
   try {
     const res = await sdkLoginQrCheck({ key })
+    // 此处有意不做 assertOkBody 复核：业务码 800/801/802/803 是扫码轮询的状态语义
+    // （过期/等待/已扫/确认），由 mapQrCheckBody 按语义映射，不能按失败拦截
     const state = mapQrCheckBody(res.body)
     if (!state)
       throw new NcmError('UNKNOWN', '扫码状态检查失败，请重试', { cause: res.body })

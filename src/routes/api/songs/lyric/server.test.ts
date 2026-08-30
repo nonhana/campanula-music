@@ -76,6 +76,17 @@ describe('gET /api/songs/lyric', () => {
     expect(mockedLyric).not.toHaveBeenCalled()
   })
 
+  it('id 超出 u64 安全范围（含 "0"）→ 400 INVALID_PARAMS', async () => {
+    const huge = await GET(makeEvent('?id=99999999999999999999'))
+
+    expect(huge.status).toBe(400)
+    expect(await huge.json()).toMatchObject({ error: { code: 'INVALID_PARAMS' } })
+
+    const zero = await GET(makeEvent('?id=0'))
+    expect(zero.status).toBe(400)
+    expect(mockedLyric).not.toHaveBeenCalled()
+  })
+
   it('无版权 → 404 且带错误码', async () => {
     mockedLyric.mockRejectedValue(new NcmError('RESOURCE_UNAVAILABLE', '亲爱的,暂无版权'))
 

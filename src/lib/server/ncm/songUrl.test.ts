@@ -70,6 +70,14 @@ describe('mapSongUrlList', () => {
   it('非数组 data 视为无来源', () => {
     expect(mapSongUrlList({ data: null }, [1])).toEqual([{ id: 1, status: 'unavailable', url: null, trial: null }])
   })
+
+  it('条目 id 与请求 id 错位时该曲按 unavailable 处理，不整体失败', () => {
+    const sources = mapSongUrlList(sdkBody([
+      { id: 999, url: 'https://x.mp3', freeTrialInfo: null },
+    ]), [1])
+
+    expect(sources).toEqual([{ id: 1, status: 'unavailable', url: null, trial: null }])
+  })
 })
 
 describe('ncmSongUrl', () => {
@@ -114,6 +122,15 @@ describe('ncmSongUrl', () => {
 
     await expect(ncmSongUrl({ cookie: '' }, { ids: [1], level: 'standard' })).rejects.toMatchObject(
       { name: 'NcmError', code: 'RATE_LIMITED' },
+    )
+  })
+
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误，不静默返回全 unavailable', async () => {
+    // 失败封套由最小成功封套派生，仅改 code 相关字段（上游业务失败包未录制）
+    mockedSongUrl.mockResolvedValue({ body: { code: -110, msg: '无版权', data: [] } } as never)
+
+    await expect(ncmSongUrl({ cookie: '' }, { ids: [1], level: 'standard' })).rejects.toMatchObject(
+      { name: 'NcmError', code: 'RESOURCE_UNAVAILABLE' },
     )
   })
 })

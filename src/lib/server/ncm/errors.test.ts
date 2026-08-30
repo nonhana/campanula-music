@@ -63,6 +63,25 @@ describe('mapNcmError', () => {
     expect(mapped.code).toBe('RESOURCE_UNAVAILABLE')
   })
 
+  it('sDK 传输层超时 → 资源不可用且文案中文化（避免英文超时直出）', () => {
+    // 失败封套按 SDK 传输层超时形状（client.generated.js）构造：code/status 504 + 固定英文文案
+    const mapped = mapNcmError({ body: { code: 504, msg: 'Request timed out after 10000ms' }, cookie: [], status: 504 })
+    expect(mapped.code).toBe('RESOURCE_UNAVAILABLE')
+    expect(mapped.message).toBe('上游请求超时，请稍后重试')
+    expect(mapped.status).toBe(504)
+  })
+
+  it('无 msg 的 SDK 失败 → 消息回退业务码字符串，不出现 [object Object]', () => {
+    const mapped = mapNcmError({ body: { code: 400 }, cookie: [], status: 200 })
+    expect(mapped.code).toBe('UNKNOWN')
+    expect(mapped.message).toBe('400')
+  })
+
+  it('无 msg 且无业务码的 SDK 失败 → 中文兜底文案', () => {
+    const mapped = mapNcmError({ body: {}, cookie: [], status: 200 })
+    expect(mapped.message).toBe('未知上游错误')
+  })
+
   it('无法识别的 SDK 失败 → UNKNOWN 且保留消息与状态码', () => {
     const mapped = mapNcmError({ body: { code: 500, msg: '内部错误' }, cookie: [], status: 502 })
     expect(mapped.code).toBe('UNKNOWN')
@@ -80,5 +99,6 @@ describe('mapNcmError', () => {
   it('非错误输入 → UNKNOWN 兜底', () => {
     const mapped = mapNcmError('weird')
     expect(mapped.code).toBe('UNKNOWN')
+    expect(mapped.message).toBe('未知上游错误')
   })
 })

@@ -1,5 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { resolveBoundUser } from '$lib/server/binding'
+import { NcmError } from '$lib/server/ncm/errors'
 import { ncmErrorJson } from '$lib/server/ncm/http'
 import { ncmLike } from '$lib/server/ncm/like'
 import { json } from '@sveltejs/kit'
@@ -39,12 +40,12 @@ export async function POST(event: RequestEvent) {
     body = await event.request.json()
   }
   catch {
-    return json({ error: { code: 'INVALID_PARAMS', message: '请求体不是有效的 JSON' } }, { status: 400 })
+    return ncmErrorJson(new NcmError('INVALID_PARAMS', '请求体不是有效的 JSON'), '请求参数不合法')
   }
 
   const params = parseLikeBody(body)
   if (!params) {
-    return json({ error: { code: 'INVALID_PARAMS', message: '缺少有效的 id 或 like 参数' } }, { status: 400 })
+    return ncmErrorJson(new NcmError('INVALID_PARAMS', '缺少有效的 id 或 like 参数'), '请求参数不合法')
   }
 
   try {

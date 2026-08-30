@@ -13,6 +13,7 @@ export const SONG_URL_ERROR_TEXT = {
   UNAUTHENTICATED: '播放歌曲需要账号许可：请先绑定网易云账号',
   RATE_LIMITED: '请求过于频繁，请稍后再试',
   RESOURCE_UNAVAILABLE: '该资源暂不可用',
+  INVALID_PARAMS: '请求参数不合法，请检查后重试',
   UNKNOWN: '获取播放地址失败，请稍后再试',
 } satisfies Record<NcmErrorCode, string>
 

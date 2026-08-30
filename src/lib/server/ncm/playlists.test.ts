@@ -152,6 +152,16 @@ describe('ncmPlaylistDetail', () => {
       playCount: 1,
     })
   })
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误，不静默返回空壳', async () => {
+    // 失败封套由真实录制包派生（真实 playlist 对象 + 仅改 code 相关字段；上游业务失败包未录制）
+    mockedDetail.mockResolvedValue({
+      body: { playlist: fixture.created.data.playlist[0], code: 301, msg: '需要登录' },
+    } as never)
+
+    await expect(ncmPlaylistDetail({ cookie: '' }, 1)).rejects.toMatchObject(
+      { name: 'NcmError', code: 'UNAUTHENTICATED' },
+    )
+  })
 
   it('歌单详情失败映射为领域错误', async () => {
     mockedDetail.mockRejectedValue({ status: 429, body: { code: -460, msg: '操作太频繁' } })
@@ -197,6 +207,15 @@ describe('ncmPlaylistTracks', () => {
     mockedTrackAll.mockRejectedValue({ status: 429, body: { code: -460, msg: '操作太频繁' } })
 
     await expect(ncmPlaylistTracks({ cookie: '' }, 1, { limit: 100, offset: 0 })).rejects.toMatchObject({ name: 'NcmError', code: 'RATE_LIMITED' })
+  })
+
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误（无版权）', async () => {
+    // 失败封套由最小成功封套派生，仅改 code 相关字段（上游业务失败包未录制）
+    mockedTrackAll.mockResolvedValue({ body: { ...songDetailBody([rawSong(1, '第一首')]), code: -110, msg: '无版权' } } as never)
+
+    await expect(ncmPlaylistTracks({ cookie: '' }, 1, { limit: 100, offset: 0 })).rejects.toMatchObject(
+      { name: 'NcmError', code: 'RESOURCE_UNAVAILABLE' },
+    )
   })
 })
 
@@ -280,6 +299,16 @@ describe('ncmUserPlaylists', () => {
   it('任一组失败映射为领域错误', async () => {
     mockedCreate.mockResolvedValue({ body: fixture.created } as never)
     mockedCollect.mockRejectedValue({ body: { code: -462, msg: '登录状态已失效' }, status: 301 })
+
+    await expect(ncmUserPlaylists({ cookie: '' }, 1)).rejects.toMatchObject(
+      { name: 'NcmError', code: 'UNAUTHENTICATED' },
+    )
+  })
+
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误，不静默返回空分组', async () => {
+    // 失败封套由真实录制包派生（仅改 code 相关字段；上游业务失败包未录制）
+    mockedCreate.mockResolvedValue({ body: { ...fixture.created, code: 801, msg: '登录状态已失效' } } as never)
+    mockedCollect.mockResolvedValue({ body: fixture.collected } as never)
 
     await expect(ncmUserPlaylists({ cookie: '' }, 1)).rejects.toMatchObject(
       { name: 'NcmError', code: 'UNAUTHENTICATED' },

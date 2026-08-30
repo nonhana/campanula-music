@@ -10,7 +10,7 @@ import type { NcmCallContext } from './types'
  */
 import { lyric as sdkLyric } from 'hana-music-api'
 import { mapNcmError } from './errors'
-import { asRecord, asString, sdkConfig } from './raw'
+import { asRecord, assertOkBody, asString, sdkConfig } from './raw'
 
 /** LRC 时间戳：mm:ss / mm:ss.xx（小数 1–3 位） */
 const LRC_TIME_PATTERN = /\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g
@@ -81,10 +81,7 @@ export async function ncmLyric(ctx: NcmCallContext, id: number): Promise<LyricIt
   try {
     const res = await sdkLyric({ id }, sdkConfig(ctx.cookie))
     // 上游偶发「HTTP 200 + 业务失败码」（如 -110 无版权）的返回形态，按门面错误模型映射
-    const code = asRecord(res.body).code
-    if (typeof code === 'number' && code !== 200) {
-      throw mapNcmError({ status: res.status, body: res.body })
-    }
+    assertOkBody(res)
     return mapLyricBody(res.body)
   }
   catch (err) {

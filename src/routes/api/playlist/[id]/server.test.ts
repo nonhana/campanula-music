@@ -65,6 +65,17 @@ describe('gET /api/playlist/[id]', () => {
     expect(mockedDetail).not.toHaveBeenCalled()
   })
 
+  it('id 超出 u64 安全范围（含 "0"）→ 400 INVALID_PARAMS', async () => {
+    const huge = await GET(makeEvent('99999999999999999999'))
+
+    expect(huge.status).toBe(400)
+    await expect(huge.json()).resolves.toMatchObject({ error: { code: 'INVALID_PARAMS' } })
+
+    const zero = await GET(makeEvent('0'))
+    expect(zero.status).toBe(400)
+    expect(mockedDetail).not.toHaveBeenCalled()
+  })
+
   it('歌单不存在（未认证/资源不可用）→ 404 且带错误码', async () => {
     mockedDetail.mockRejectedValue(new NcmError('RESOURCE_UNAVAILABLE', '资源不可用'))
 

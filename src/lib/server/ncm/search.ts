@@ -10,7 +10,7 @@ import type { NcmCallContext, NcmSearchParams } from './types'
  */
 import { search as sdkSearch } from 'hana-music-api'
 import { mapNcmError } from './errors'
-import { asArray, asImageUrl, asNumber, asRecord, asString, sdkConfig } from './raw'
+import { asArray, asImageUrl, asNumber, asRecord, assertOkBody, asString, sdkConfig } from './raw'
 import { fetchCoverMapByIds } from './songDetail'
 
 /** 网易云搜索 type 参数：1 单曲 / 1000 歌单 / 100 歌手 */
@@ -134,6 +134,7 @@ export async function ncmSearch(ctx: NcmCallContext, params: NcmSearchParams): P
       offset: params.offset ?? 0,
     }
     const res = await sdkSearch(query, sdkConfig(ctx.cookie))
+    assertOkBody(res)
     const page = mapSearchPage(params.type, res.body)
     if (page.type !== 'song')
       return page

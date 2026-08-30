@@ -12,20 +12,22 @@ export interface NcmSearchRequest {
   keywords: string
   type: NcmSearchType
   limit?: number
-  /** 增量分页偏移（歌曲 tab 加载更多时传已收条数） */
+  /** 增量分页偏移（歌曲 tab 加载更多时传请求窗口偏移） */
   offset?: number
 }
 
+/** 单次搜索的请求窗口大小：首屏与增量加载按同一窗口推进 nextOffset */
+export const SEARCH_PAGE_SIZE = 30
+
 /** 搜索失败（服务端错误码 + 可展示消息）；与共享客户端错误同形 */
 export { NcmClientError as SearchClientError } from './client'
-
-const DEFAULT_LIMIT = 30
 
 /** 错误码 → 页面文案（satisfies 保证新增错误码必须在编译期补齐文案） */
 export const SEARCH_ERROR_TEXT = {
   UNAUTHENTICATED: '搜索需要账号许可，绑定已失效，请重新绑定',
   RATE_LIMITED: '请求过于频繁，请稍后再试',
   RESOURCE_UNAVAILABLE: '该资源暂不可用',
+  INVALID_PARAMS: '请求参数不合法，请检查后重试',
   UNKNOWN: '搜索失败，请稍后再试',
 } satisfies Record<NcmErrorCode, string>
 
@@ -34,7 +36,7 @@ export async function searchNcm(request: NcmSearchRequest, signal?: AbortSignal)
   const params = new URLSearchParams({
     keywords: request.keywords,
     type: request.type,
-    limit: String(request.limit ?? DEFAULT_LIMIT),
+    limit: String(request.limit ?? SEARCH_PAGE_SIZE),
     offset: String(request.offset ?? 0),
   })
   return ncmFetchJson<NcmSearchPage>(`/api/search?${params}`, signal)

@@ -1,5 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { resolveBoundUser } from '$lib/server/binding'
+import { NcmError } from '$lib/server/ncm/errors'
 import { ncmErrorJson } from '$lib/server/ncm/http'
 import { TRACK_CHUNK_SIZE } from '$lib/server/ncm/raw'
 import { ncmSongUrl } from '$lib/server/ncm/songUrl'
@@ -13,17 +14,21 @@ export async function GET({ url }: RequestEvent) {
   const rawIds = url.searchParams.get('ids') ?? ''
   // 歌曲 id 只接受逗号分隔的纯数字（网易云歌曲 id 为 u64），避免把脏输入透传给门面
   if (!/^\d+(?:,\d+)*$/.test(rawIds)) {
-    return json({ error: { code: 'INVALID_PARAMS', message: '缺少有效的 ids 参数' } }, { status: 400 })
+    return ncmErrorJson(new NcmError('INVALID_PARAMS', '缺少有效的 ids 参数'), '请求参数不合法')
   }
   const ids = rawIds.split(',').map(Number)
+  // u64 超出 Number 安全范围会被静默截断成错误 id，必须显式拒绝
+  if (ids.some(id => !Number.isSafeInteger(id) || id <= 0)) {
+    return ncmErrorJson(new NcmError('INVALID_PARAMS', 'ids 超出有效范围'), '请求参数不合法')
+  }
   // 单请求 id 数有上限（与门面分片一致），防无界并发上游分片请求
   if (ids.length > TRACK_CHUNK_SIZE) {
-    return json({ error: { code: 'INVALID_PARAMS', message: `ids 数量超出上限（${TRACK_CHUNK_SIZE}）` } }, { status: 400 })
+    return ncmErrorJson(new NcmError('INVALID_PARAMS', `ids 数量超出上限（${TRACK_CHUNK_SIZE}）`), '请求参数不合法')
   }
 
   const rawLevel = url.searchParams.get('level') ?? DEFAULT_SOUND_LEVEL
   if (!isSoundLevel(rawLevel)) {
-    return json({ error: { code: 'INVALID_PARAMS', message: '缺少有效的 level 参数' } }, { status: 400 })
+    return ncmErrorJson(new NcmError('INVALID_PARAMS', '缺少有效的 level 参数'), '请求参数不合法')
   }
 
   try {

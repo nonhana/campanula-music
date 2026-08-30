@@ -1,5 +1,6 @@
 import { like as sdkLike, likelist as sdkLikelist, songDetail as sdkSongDetail } from 'hana-music-api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import userPlaylistsFixture from './fixtures/user-playlists.json'
 import { mapLikedListBody, ncmLike, ncmLikedList, ncmLikedSongs } from './like'
 
 vi.mock('hana-music-api', async (importOriginal) => {
@@ -114,6 +115,15 @@ describe('ncmLike', () => {
   })
 })
 
+/** 失败封套由真实录制包 fixtures/user-playlists.json 派生（仅改 code 相关字段；上游业务失败包未录制） */
+function failedEnvelope(code: number, msg: string) {
+  return {
+    ...userPlaylistsFixture.created,
+    code,
+    msg,
+  }
+}
+
 describe('ncmLikedList', () => {
   it('按账号 id 调用 SDK 并返回红心歌曲 id 列表', async () => {
     mockedLikelist.mockResolvedValue({
@@ -124,6 +134,14 @@ describe('ncmLikedList', () => {
 
     expect(mockedLikelist).toHaveBeenCalledWith({ uid: 98765 }, { cookie: 'MUSIC_U=abc' })
     expect(ids).toEqual([2, 1])
+  })
+
+  it('「HTTP 200 + 业务失败码」形态映射为领域错误，不静默返回空列表', async () => {
+    mockedLikelist.mockResolvedValue({ body: failedEnvelope(801, '登录状态已失效') } as never)
+
+    await expect(ncmLikedList({ cookie: '' }, 1)).rejects.toMatchObject(
+      { name: 'NcmError', code: 'UNAUTHENTICATED' },
+    )
   })
 
   it('sDK 失败映射为领域错误', async () => {

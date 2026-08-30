@@ -6,6 +6,7 @@ const ERROR_STATUS: Record<NcmError['code'], number> = {
   UNAUTHENTICATED: 401,
   RATE_LIMITED: 429,
   RESOURCE_UNAVAILABLE: 404,
+  INVALID_PARAMS: 400,
   UNKNOWN: 500,
 }
 
