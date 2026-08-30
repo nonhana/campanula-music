@@ -1,9 +1,10 @@
 <script lang='ts'>
+  import type { Pathname } from '$app/types'
   import type { Snippet } from 'svelte'
   import Button from '$lib/components/hana/Button.svelte'
 
   interface Props {
-    href?: string
+    href?: Pathname
     command?: string
     center?: boolean
     icon?: Snippet

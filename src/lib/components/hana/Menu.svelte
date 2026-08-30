@@ -28,8 +28,8 @@
     get hoverEffect() {
       return hoverEffect
     },
-    select: (key: string, rect?: DOMRect) => {
-      setSelectedMenu(key as 'lyrics' | 'playlist')
+    select: (key: 'lyrics' | 'playlist', rect?: DOMRect) => {
+      setSelectedMenu(key)
       if (rect)
         activeItemRect.set(rect)
       onselect?.(key)
@@ -39,14 +39,6 @@
         activeItemRect.set(rect)
       }
     },
-  })
-
-  const activatedKey = $derived($selectedMenu)
-
-  $effect(() => {
-    if (activatedKey) {
-      onselect?.(activatedKey)
-    }
   })
 
   // 计算背景元素的位置和尺寸

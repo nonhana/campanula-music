@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
-  import { onMount } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
 
   interface Props {
     class?: ClassValue
@@ -57,18 +57,27 @@
     }, 50)
   }
 
+  // 卸载时清掉挂起的延迟关闭定时器，避免卸载后仍写组件状态
+  onDestroy(() => {
+    if (closeTimeout) {
+      clearTimeout(closeTimeout)
+      closeTimeout = null
+    }
+  })
+
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault()
-      clickTrigger && close()
+      close()
     }
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      clickTrigger && open()
+      open()
     }
   }
 
-  let triggerElement: HTMLDivElement | null = null
+  // 触发器在 click/hover 两分支间切换重绑，需 $state 让重绑可被感知
+  let triggerElement = $state<HTMLDivElement | null>(null)
   let tooltipElement: HTMLDivElement | null = null
 
   const handleOutSideClick = (e: MouseEvent) => {
@@ -148,23 +157,32 @@
 </script>
 
 <div class={['relative size-fit', customClasses]}>
-  <div
-    bind:this={triggerElement}
-    role='button'
-    tabindex='0'
-    class='cursor-auto'
-    onclick={() => clickTrigger && toggleVisible(!visible)}
-    onmouseenter={() => hoverTrigger && open()}
-    onmouseleave={() => hoverTrigger && closeWithDelay()}
-    onkeydown={handleKeyDown}
-  >
-    {@render children?.()}
-  </div>
+  {#if clickTrigger}
+    <div
+      bind:this={triggerElement}
+      role='button'
+      tabindex='0'
+      class='cursor-auto'
+      onclick={() => toggleVisible(!visible)}
+      onkeydown={handleKeyDown}
+    >
+      {@render children?.()}
+    </div>
+  {:else}
+    <div
+      bind:this={triggerElement}
+      role='presentation'
+      class='cursor-auto'
+      onmouseenter={open}
+      onmouseleave={closeWithDelay}
+    >
+      {@render children?.()}
+    </div>
+  {/if}
 
   <div
     bind:this={tooltipElement}
-    role='button'
-    tabindex='0'
+    role='presentation'
     class={[
       'absolute z-10 cursor-auto',
       isDropdown ? (visible ? 'block' : 'hidden') : 'hidden md:block',
@@ -179,7 +197,7 @@
   >
     <div class={[
       'relative min-w-max max-w-60 text-center',
-      'bg-white rounded-lg p-2 text-neutral',
+      'bg-app-surface rounded-lg p-2 text-neutral',
       content ? 'px-4 py-2' : 'p-1',
     ]}>
       {#if fragment}

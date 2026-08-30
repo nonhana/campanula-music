@@ -5,14 +5,15 @@
   import { resolve } from '$app/paths'
   import { ExternalLink } from '@lucide/svelte'
 
-  type Props = {
+  interface Props extends Omit<HTMLButtonAttributes & HTMLAnchorAttributes, 'href'> {
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent' | 'none'
     shape?: 'rounded' | 'circle'
     iconButton?: boolean
     activated?: boolean
     children: Snippet
     ref?: HTMLButtonElement | HTMLAnchorElement
-  } & HTMLButtonAttributes & HTMLAnchorAttributes
+    href?: Pathname
+  }
 
   let {
     class: customClasses = '',
@@ -29,6 +30,12 @@
   }: Props = $props()
 
   const isExternal = $derived(href?.startsWith('http'))
+
+  // 锚点没有原生 disabled，禁用态以 aria-disabled 表达并拦截默认导航
+  const preventDisabledClick = (e: MouseEvent) => {
+    if (disabled)
+      e.preventDefault()
+  }
 
   const baseClasses = 'cursor-pointer font-semibold focus:outline-none select-none shrink-0'
   const CommonClasses = 'px-4 py-2'
@@ -54,6 +61,9 @@
   const disabledClasses = 'cursor-not-allowed opacity-50'
   const externalClasses = 'hover:text-blue'
 
+  // class 入参可能是数组（clsx 风格），拼进模板串会 toString 成逗号分隔，先归一化为空格串
+  const normalizedClasses = $derived(Array.isArray(customClasses) ? customClasses.join(' ') : customClasses)
+
   const computedClasses = $derived(
     `${
       baseClasses
@@ -64,7 +74,7 @@
     } ${
       shapeClasses[shape]
     } ${
-      customClasses
+      normalizedClasses
     } ${
       disabled ? disabledClasses : ''
     } ${
@@ -81,6 +91,8 @@
       bind:this={thisEl}
       target='_blank'
       rel='external'
+      aria-disabled={disabled || undefined}
+      onclick={preventDisabledClick}
       {style}
       {href}
       {...rest}>
@@ -93,8 +105,10 @@
     <a
       class={['inline-block group', computedClasses]}
       bind:this={thisEl}
+      aria-disabled={disabled || undefined}
+      onclick={preventDisabledClick}
       {style}
-      href={resolve(href as Pathname)}
+      href={resolve(href)}
       {...rest}>
       <div role='button'>
         {@render children()}

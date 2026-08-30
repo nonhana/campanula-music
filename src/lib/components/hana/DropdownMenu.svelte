@@ -9,5 +9,7 @@
 </script>
 
 <ul class='flex flex-col gap-1'>
-  {@render children()}
+  <li class='contents'>
+    {@render children()}
+  </li>
 </ul>
