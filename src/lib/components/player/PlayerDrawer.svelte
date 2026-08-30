@@ -164,9 +164,10 @@
     onpointerdown={onPointerDown}
   ></button>
 
+  <!-- Detail 与歌词/队列面板桌面恒显两栏；showDetail 的互斥只在移动端生效（关闭抽屉时的复位不影响桌面） -->
   <div class={[
     'h-3/5 w-full px-10 md:h-[40rem] md:w-[27rem] md:px-0 transition-all duration-300',
-    $showDetail ? 'block' : 'md:block hidden',
+    $showDetail ? 'block' : 'hidden md:block',
   ]}>
     <Detail
       {currentProgress}
@@ -178,8 +179,8 @@
 
   <div
     class={[
-      'flex-col gap-10 md:flex w-9/10 md:w-120',
-      $showDetail ? 'hidden' : 'flex',
+      'flex-col gap-10 w-9/10 md:w-120',
+      $showDetail ? 'hidden md:flex' : 'flex',
     ]}
   >
     <Menu onselect={key => setSelectedMenu(key as 'lyrics' | 'playlist')}>
