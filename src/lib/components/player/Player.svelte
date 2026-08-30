@@ -310,6 +310,7 @@
   <div class='relative min-w-0 flex flex-1 items-center gap-5 md:mx-auto md:max-w-[26rem] md:justify-center'>
     <MaskElement
       class='group shrink-0 overflow-hidden rounded-lg'
+      label='打开播放详情'
       onclick={toggleShowDrawer}
     >
       {#snippet slot()}
