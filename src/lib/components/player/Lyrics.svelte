@@ -179,9 +179,11 @@
           {/each}
         </div>
       {/if}
+      <!-- 上下渐隐遮罩：裁切行柔和过渡，避免歌词首末行被容器边缘硬切（Safari 需 -webkit- 前缀） -->
       <div
         bind:this={scrollContainerElement}
         class='relative w-full overflow-auto scrollbar-none'
+        style='-webkit-mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent); mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent)'
         {onscroll}
         {onscrollend}
       >
@@ -197,6 +199,7 @@
             <LyricItem
               lyric={item}
               activated={item === activatedLyric}
+              onclick={item === NO_LYRIC_PLACEHOLDER ? undefined : () => setCurrentTime(msToSeconds(item.time))}
             />
           {/snippet}
         </VirtualList>
