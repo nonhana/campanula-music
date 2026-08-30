@@ -108,15 +108,23 @@
     }
   }
 
+  // Esc 收起抽屉：与把手/拖拽关闭共用链路，仅抽屉展开时响应
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && showDrawer)
+      closeDrawer()
+  }
+
   onMount(() => {
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     window.addEventListener('pointercancel', onPointerUp)
+    window.addEventListener('keydown', onKeydown)
 
     return () => {
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerUp)
+      window.removeEventListener('keydown', onKeydown)
     }
   })
 
