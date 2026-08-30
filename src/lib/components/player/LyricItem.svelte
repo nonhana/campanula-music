@@ -3,23 +3,16 @@
 
   interface Props {
     lyric: LyricItem
-    isActivated: boolean
-    activateCallback: (curLyric: LyricItem) => void
+    activated: boolean
   }
 
-  const { lyric, isActivated, activateCallback }: Props = $props()
-
-  $effect(() => {
-    if (isActivated) {
-      activateCallback(lyric)
-    }
-  })
+  const { lyric, activated }: Props = $props()
 </script>
 
 <div
   class={[
     'flex justify-between items-center w-full h-20 transition-all duration-300 leading-4',
-    isActivated ? 'text-black md:text-lg' : 'text-neutral text-xs md:text-sm',
+    activated ? 'text-black md:text-lg' : 'text-neutral text-xs md:text-sm',
   ]}
 >
   <div class='flex flex-col gap-2'>

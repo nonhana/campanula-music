@@ -12,6 +12,7 @@
   } from '$lib/stores'
   import { durationFormatter, msToSeconds, secondsToMs } from '$lib/utils'
   import { ChevronLeft } from '@lucide/svelte'
+  import { onDestroy } from 'svelte'
   import { fade } from 'svelte/transition'
   import LyricItem from './LyricItem.svelte'
 
@@ -28,17 +29,26 @@
   const metaLyrics = $derived(allLyrics.filter(item => LYRIC_META_PATTERN.test(item.text)))
   const singingLyrics = $derived(allLyrics.filter(item => !LYRIC_META_PATTERN.test(item.text)))
 
-  let currentLyricIndex = $state(0) // 当前歌词索引
-  let scrollContainerElement = $state<HTMLDivElement | null>(null)
+  // 当前歌词索引随歌与播放进度派生（-1 = 无当前行：纯音乐或尚未唱到第一句），跨歌不残留
+  const currentLyricIndex = $derived(
+    singingLyrics.findIndex((item, index) => {
+      const nextTime = singingLyrics[index + 1]?.time
+      return secondsToMs($currentTime) >= item.time && secondsToMs($currentTime) < (nextTime || Number.POSITIVE_INFINITY)
+    }),
+  )
+  // 激活歌词由父级派生并直接下传 activated 布尔，子组件不再 effect 回写
+  const activatedLyric: LyricItemType | null = $derived(singingLyrics[currentLyricIndex] ?? null)
 
-  let activatedLyric = $state<LyricItemType | null>(null)
+  let scrollContainerElement = $state<HTMLDivElement | null>(null)
   let isAutoScrolling = $state(false) // 是否正在自动滚动歌词
+  // 自动滚动归还控制的兜底定时器：无 scrollend 的浏览器（Safari < 26.2）依赖它解锁
+  let autoScrollTimer: ReturnType<typeof setTimeout> | null = null
 
   const moveToTargetLyric = () => {
     if (!$nowPlaying || !activatedLyric)
       return
 
-    setCurrentTime(msToSeconds(activatedLyric.time))
+    setCurrentTime(msToSeconds(activatedLyric?.time))
   }
 
   let scrollPos = $state(0)
@@ -47,22 +57,6 @@
     restoring: false,
   })
   let scrollTimer: ReturnType<typeof setTimeout> | null = null
-
-  // currentTime 变化，找到当前歌词
-  $effect(() => {
-    if (singingLyrics.length === 0)
-      return
-
-    // 找出当前歌词（过滤后数组内的索引）
-    const targetLyricsIndex = singingLyrics.findIndex((item, index) => {
-      const nextTime = singingLyrics[index + 1]?.time
-      return secondsToMs($currentTime) >= item.time && secondsToMs($currentTime) < (nextTime || Number.POSITIVE_INFINITY)
-    })
-
-    if (targetLyricsIndex !== -1 && targetLyricsIndex !== currentLyricIndex) {
-      currentLyricIndex = targetLyricsIndex
-    }
-  })
 
   // currentLyricIndex 变化，找到当前歌词的位置
   // targetOffset 基于过滤后的歌词数组（元信息行已拆出，索引与 VirtualList 对齐）
@@ -82,6 +76,21 @@
       top: targetOffset,
       behavior: 'smooth',
     })
+
+    // scrollend 之外的兜底：1.5s 后强制归还控制，避免无 scrollend 的浏览器永久锁死
+    if (autoScrollTimer)
+      clearTimeout(autoScrollTimer)
+    autoScrollTimer = setTimeout(() => {
+      autoScrollTimer = null
+      isAutoScrolling = false
+    }, 1500)
+  })
+
+  onDestroy(() => {
+    if (scrollTimer)
+      clearTimeout(scrollTimer)
+    if (autoScrollTimer)
+      clearTimeout(autoScrollTimer)
   })
 
   // 回到原来位置
@@ -89,6 +98,11 @@
     if (scrollStatus.restoring)
       return
     scrollStatus.customScrolling = false
+    // 清掉未触发的静止防抖，避免与本次归还重复触发
+    if (scrollTimer) {
+      clearTimeout(scrollTimer)
+      scrollTimer = null
+    }
     scrollStatus.restoring = true
 
     if (!scrollContainerElement)
@@ -106,7 +120,8 @@
 
   // 滚动时的触发函数
   const onscroll = (e: Event) => {
-    if (scrollTimer) {
+    // 仅重置用户滚动静止防抖；restoring 的兜底复位定时器不能被滚动事件取消
+    if (scrollTimer && scrollStatus.customScrolling) {
       clearTimeout(scrollTimer)
       scrollTimer = null
     }
@@ -117,6 +132,10 @@
     if (!scrollStatus.restoring && !isAutoScrolling && !scrollStatus.customScrolling) {
       scrollStatus.customScrolling = true
     }
+
+    // 滚动静止 1s 即归还控制：回到当前歌词（防抖，与 scrollend 统一为「滚动静止即归还」单一机制）
+    if (scrollStatus.customScrolling)
+      scrollTimer = setTimeout(moveToOriginal, 1000)
   }
 
   // 滚动结束后的触发函数
@@ -124,22 +143,21 @@
     // 编程触发的平滑滚动结束
     if (isAutoScrolling) {
       isAutoScrolling = false
+      if (autoScrollTimer) {
+        clearTimeout(autoScrollTimer)
+        autoScrollTimer = null
+      }
       return
     }
 
     // 恢复滚动中的一次性结束
     if (scrollStatus.restoring) {
       scrollStatus.restoring = false
-      return
-    }
-
-    // 仅当用户滚动过时，才在停止后一段时间恢复到目标位置
-    if (scrollStatus.customScrolling) {
-      scrollTimer = setTimeout(moveToOriginal, 1000)
     }
   }
 
-  const actionDisabled = $derived(!scrollStatus.customScrolling || isAutoScrolling || scrollStatus.restoring)
+  // 无当前行（纯音乐/尚未唱到第一句）时不提供回到当前歌词
+  const actionDisabled = $derived(!scrollStatus.customScrolling || isAutoScrolling || scrollStatus.restoring || currentLyricIndex === -1)
 
   let wrapperElement = $state<HTMLElement | null>(null)
 
@@ -175,11 +193,10 @@
           tailEmptyItems={TAIL_EMPTY_ITEMS}
           {scrollPos}
         >
-          {#snippet renderItem(item, index)}
+          {#snippet renderItem(item)}
             <LyricItem
               lyric={item}
-              isActivated={index === ACTIVATED_INDEX}
-              activateCallback={lyric => activatedLyric = lyric}
+              activated={item === activatedLyric}
             />
           {/snippet}
         </VirtualList>
