@@ -37,7 +37,7 @@
 
   const cardClasses = $derived([
     'relative overflow-hidden shrink-0',
-    transparent ? 'bg-transparent' : 'bg-white',
+    transparent ? 'bg-transparent' : 'bg-app-surface',
     rounded && 'rounded-lg',
     elevated && 'shadow-lg',
     hoverable && 'cursor-pointer hover:bg-primary-200',

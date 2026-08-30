@@ -111,6 +111,7 @@
   --skin-text: 17 24 39; /* #111827 主文本 */
   --skin-text-muted: 75 85 99; /* #4B5563 次级文本 */
   --skin-border: 229 231 235; /* #E5E7EB 分隔线/边框 */
+  --skin-mask: 0 0 0; /* #000000 遮罩，模态/悬浮层背板 */
 
   /* 字体 */
   --skin-font-family: var(--font-noto, 'Noto Sans', 'Noto Sans SC', 'Noto Sans TC', 'Noto Sans JP', sans-serif);

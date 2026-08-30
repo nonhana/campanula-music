@@ -11,9 +11,9 @@
 
   const messageClasses: Record<NonUndefined<MessageOptions['type']>, string> = {
     info: 'bg-neutral-100 text-neutral border-neutral border-2',
-    success: 'bg-green-100 text-green-600 border-green-600 border-2',
-    warning: 'bg-yellow-100 text-yellow-600 border-yellow-600 border-2',
-    error: 'bg-red-100 text-red-600 border-red-600 border-2',
+    success: 'bg-success-100 text-success-600 border-success-600 border-2',
+    warning: 'bg-warning-100 text-warning-600 border-warning-600 border-2',
+    error: 'bg-error-100 text-error-600 border-error-600 border-2',
   }
 </script>
 

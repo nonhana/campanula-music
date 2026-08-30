@@ -65,11 +65,12 @@ export default defineConfig({
       success: skinColor('success', SCALE_TO_900),
       warning: skinColor('warning', SCALE_TO_900),
       error: skinColor('error', SCALE_TO_900),
-      /* 语义表面：页面背景 / 卡片表面 / 主次文本 / 边框 */
+      /* 语义表面：页面背景 / 卡片表面 / 遮罩 / 主次文本 / 边框 */
       app: {
         'bg': 'rgb(var(--skin-bg) / <alpha-value>)',
         'surface': 'rgb(var(--skin-surface) / <alpha-value>)',
         'surface-hover': 'rgb(var(--skin-surface-hover) / <alpha-value>)',
+        'mask': 'rgb(var(--skin-mask) / <alpha-value>)',
         'text': 'rgb(var(--skin-text) / <alpha-value>)',
         'text-muted': 'rgb(var(--skin-text-muted) / <alpha-value>)',
         'border': 'rgb(var(--skin-border) / <alpha-value>)',

@@ -138,7 +138,7 @@
 
 <div
   class={[
-    'z-30 fixed left-0 w-full h-full bg-neutral-200/40 backdrop-blur-lg flex gap-20 justify-center items-center',
+    'z-30 fixed left-0 w-full h-full bg-app-surface-hover/40 backdrop-blur-lg flex gap-20 justify-center items-center',
     !dragging && 'transition-all duration-300',
     'overscroll-none',
   ]}
@@ -146,7 +146,7 @@
 >
   <button
     bind:this={draggerElement}
-    aria-label='drawer dragger'
+    aria-label='收起播放抽屉'
     class={[
       'absolute top-5 m-auto h-2 w-10 cursor-grab touch-none select-none rounded-full bg-neutral active:cursor-grabbing',
       // 关闭态停靠视口外，把手随之隐匿，避免移动端 dvh 抖动时露出游离灰点
