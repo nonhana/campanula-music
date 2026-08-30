@@ -292,10 +292,10 @@
     {#if $songLoading}
       <Loader size='32' class='animate-spin text-neutral-600' />
     {:else}
-      <Button iconButton variant='transparent' aria-label='播放' class={$paused ? 'block' : 'hidden'} onclick={() => setPaused(false)}>
+      <Button iconButton variant='transparent' aria-label='播放' class={$paused ? 'flex' : 'hidden'} onclick={() => setPaused(false)}>
         <Play size='32' />
       </Button>
-      <Button iconButton variant='transparent' aria-label='暂停' class={$paused ? 'hidden' : 'block'} onclick={() => setPaused(true)}>
+      <Button iconButton variant='transparent' aria-label='暂停' class={$paused ? 'hidden' : 'flex'} onclick={() => setPaused(true)}>
         <Pause size='32' />
       </Button>
     {/if}
@@ -346,16 +346,16 @@
   </div>
 
   <div class='ml-auto shrink-0 items-center gap-5 hidden md:flex'>
-    <Button iconButton variant='transparent' aria-label='切换为循环播放' class={$playMode === 'shuffle' ? 'block' : 'hidden'} onclick={() => setPlayMode('repeatAll')}>
+    <Button iconButton variant='transparent' aria-label='切换为循环播放' class={$playMode === 'shuffle' ? 'flex' : 'hidden'} onclick={() => setPlayMode('repeatAll')}>
       <Shuffle />
     </Button>
-    <Button iconButton variant='transparent' aria-label='切换为单曲循环' class={$playMode === 'repeatAll' ? 'block' : 'hidden'} onclick={() => setPlayMode('repeatOne')}>
+    <Button iconButton variant='transparent' aria-label='切换为单曲循环' class={$playMode === 'repeatAll' ? 'flex' : 'hidden'} onclick={() => setPlayMode('repeatOne')}>
       <Repeat />
     </Button>
-    <Button iconButton variant='transparent' aria-label='切换为顺序播放' class={$playMode === 'repeatOne' ? 'block' : 'hidden'} onclick={() => setPlayMode('sequential')}>
+    <Button iconButton variant='transparent' aria-label='切换为顺序播放' class={$playMode === 'repeatOne' ? 'flex' : 'hidden'} onclick={() => setPlayMode('sequential')}>
       <Repeat1 />
     </Button>
-    <Button iconButton variant='transparent' aria-label='切换为随机播放' class={$playMode === 'sequential' ? 'block' : 'hidden'} onclick={() => setPlayMode('shuffle')}>
+    <Button iconButton variant='transparent' aria-label='切换为随机播放' class={$playMode === 'sequential' ? 'flex' : 'hidden'} onclick={() => setPlayMode('shuffle')}>
       <ArrowLeftRight />
     </Button>
     <div class='group relative flex flex-col cursor-pointer items-center gap-5'>

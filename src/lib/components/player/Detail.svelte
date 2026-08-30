@@ -170,10 +170,10 @@
       {#if $songLoading}
         <Loader size='32' class='animate-spin text-neutral-600' />
       {:else}
-        <Button iconButton variant='transparent' aria-label='播放' class={$paused ? 'block' : 'hidden'} onclick={() => setPaused(false)}>
+        <Button iconButton variant='transparent' aria-label='播放' class={$paused ? 'flex' : 'hidden'} onclick={() => setPaused(false)}>
           <Play size='32' />
         </Button>
-        <Button iconButton variant='transparent' aria-label='暂停' class={$paused ? 'hidden' : 'block'} onclick={() => setPaused(true)}>
+        <Button iconButton variant='transparent' aria-label='暂停' class={$paused ? 'hidden' : 'flex'} onclick={() => setPaused(true)}>
           <Pause size='32' />
         </Button>
       {/if}

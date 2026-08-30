@@ -39,7 +39,7 @@
 
   const baseClasses = 'cursor-pointer font-semibold focus:outline-none select-none shrink-0'
   const CommonClasses = 'px-4 py-2'
-  const IconBtnClasses = 'p-2 size-10'
+  const IconBtnClasses = 'p-2 size-10 flex items-center justify-center'
   const variantClasses = {
     primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:bg-primary-600',
     secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 focus:bg-secondary-600',

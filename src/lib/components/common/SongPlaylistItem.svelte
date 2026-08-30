@@ -123,12 +123,12 @@
     {/if}
     <Tooltip class={['hidden', type === 'queue' ? 'md:group-hover/item:block' : 'group-hover/item:block']} content='播放' disabled={type === 'queue'}>
       {#if $songLoading}
-        <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}>
+        <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'flex']}>
           <Loader class='animate-spin' />
         </Button>
       {:else}
-        <Button iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'block']}><Play /></Button>
-        <Button iconButton onclick={handlePause} class={[activated && !$paused ? 'block' : 'hidden']}><Pause /></Button>
+        <Button iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'flex']}><Play /></Button>
+        <Button iconButton onclick={handlePause} class={[activated && !$paused ? 'flex' : 'hidden']}><Pause /></Button>
       {/if}
     </Tooltip>
     {#if showCover}
