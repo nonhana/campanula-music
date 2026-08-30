@@ -68,6 +68,14 @@
     }
   }
 
+  // 模式按钮只有一枚：可读名指向下一次切换的目标模式，与 Player 页脚各模式按钮词汇一致
+  const NEXT_PLAY_MODE_LABEL = {
+    shuffle: '切换为循环播放',
+    repeatAll: '切换为单曲循环',
+    repeatOne: '切换为顺序播放',
+    sequential: '切换为随机播放',
+  }
+
   let wrapperElement = $state<HTMLElement | null>(null)
 
   useTap(() => wrapperElement, {
@@ -86,7 +94,7 @@
         class='w-full rounded-2xl object-cover md:w-[27rem]'
       />
     {:else}
-      <div class='aspect-square w-full flex items-center justify-center rounded-2xl bg-white/60 text-neutral md:w-[27rem]'>
+      <div class='aspect-square w-full flex items-center justify-center rounded-2xl bg-app-surface/60 text-neutral md:w-[27rem]'>
         <Music size={128} />
       </div>
     {/if}
@@ -108,6 +116,7 @@
   <input
     type='range'
     disabled={!$nowPlaying}
+    aria-label='播放进度'
     min='0'
     max='1'
     step='0.001'
@@ -123,7 +132,7 @@
   </div>
   <div class='w-full flex items-center justify-between text-neutral'>
     <Dropdown trigger='click' clickClose={false}>
-      <Button iconButton variant='transparent'>
+      <Button iconButton variant='transparent' aria-label='音量'>
         {#if $muted}
           <VolumeX />
         {:else if $volume === 0}
@@ -146,6 +155,7 @@
               step='0.01'
               bind:value={$volume}
               disabled={$muted}
+              aria-label='音量'
               class='w-28'
             />
           </div>
@@ -154,17 +164,25 @@
     </Dropdown>
 
     <div class='flex items-center gap-10'>
-      <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
+      <Button iconButton variant='transparent' aria-label='上一首' onclick={handleChangeSong('prev')}>
+        <SkipBack />
+      </Button>
       {#if $songLoading}
         <Loader size='32' class='animate-spin text-neutral-600' />
       {:else}
-        <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
-        <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
+        <Button iconButton variant='transparent' aria-label='播放' class={$paused ? 'block' : 'hidden'} onclick={() => setPaused(false)}>
+          <Play size='32' />
+        </Button>
+        <Button iconButton variant='transparent' aria-label='暂停' class={$paused ? 'hidden' : 'block'} onclick={() => setPaused(true)}>
+          <Pause size='32' />
+        </Button>
       {/if}
-      <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
+      <Button iconButton variant='transparent' aria-label='下一首' onclick={handleChangeSong('next')}>
+        <SkipForward />
+      </Button>
     </div>
 
-    <Button iconButton variant='transparent' onclick={changePlayMode}>
+    <Button iconButton variant='transparent' aria-label={NEXT_PLAY_MODE_LABEL[$playMode]} onclick={changePlayMode}>
       <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} />
       <Repeat class={`cursor-pointer ${$playMode === 'repeatAll' ? 'block' : 'hidden'}`} />
       <Repeat1 class={`cursor-pointer ${$playMode === 'repeatOne' ? 'block' : 'hidden'}`} />

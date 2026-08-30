@@ -1,6 +1,7 @@
 <script lang='ts'>
   import type { SongItem } from '$lib/types'
   import LikeButton from '$lib/components/common/LikeButton.svelte'
+  import Button from '$lib/components/hana/Button.svelte'
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { ncmImageSrc } from '$lib/ncm/image'
@@ -178,17 +179,16 @@
   }
 
   onMount(() => {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', globalPause)
+    window.addEventListener('keydown', globalPause)
 
-      // 注册 Media Session 事件处理器
-      registerMediaSessionHandlers({
-        onPlay: () => setPaused(false),
-        onPause: () => setPaused(true),
-        onPreviousTrack: () => handleChangeSong('prev')(),
-        onNextTrack: () => handleChangeSong('next')(),
-      })
-    }
+    // 注册 Media Session 事件处理器
+    registerMediaSessionHandlers({
+      onPlay: () => setPaused(false),
+      onPause: () => setPaused(true),
+      onPreviousTrack: () => handleChangeSong('prev')(),
+      onNextTrack: () => handleChangeSong('next')(),
+    })
+
     return () => {
       window.removeEventListener('keydown', globalPause)
     }
@@ -253,7 +253,7 @@
   }
 </script>
 
-<footer class='fixed bottom-16 z-20 h-20 w-full flex flex-row-reverse items-center bg-neutral-200/40 px-5 backdrop-blur md:bottom-0 md:flex-row md:pl-[17.5rem]'>
+<footer class='fixed bottom-16 z-20 h-20 w-full flex flex-row-reverse items-center bg-app-surface-hover/40 px-5 backdrop-blur md:bottom-0 md:flex-row md:pl-[17.5rem]'>
   {#if $nowPlaying}
     <audio
       preload='metadata'
@@ -274,6 +274,7 @@
   <input
     type='range'
     disabled={!$nowPlaying}
+    aria-label='播放进度'
     min='0'
     max='1'
     step='0.001'
@@ -285,14 +286,22 @@
     style='--progress: {currentProgress}'
   />
   <div class='flex shrink-0 items-center gap-5 md:gap-10'>
-    <SkipBack class='cursor-pointer' onclick={handleChangeSong('prev')} />
+    <Button iconButton variant='transparent' aria-label='上一首' onclick={handleChangeSong('prev')}>
+      <SkipBack />
+    </Button>
     {#if $songLoading}
       <Loader size='32' class='animate-spin text-neutral-600' />
     {:else}
-      <Play size='32' class={`cursor-pointer ${$paused ? 'block' : 'hidden'}`} onclick={() => setPaused(false)} />
-      <Pause size='32' class={`cursor-pointer ${$paused ? 'hidden' : 'block'}`} onclick={() => setPaused(true)} />
+      <Button iconButton variant='transparent' aria-label='播放' class={$paused ? 'block' : 'hidden'} onclick={() => setPaused(false)}>
+        <Play size='32' />
+      </Button>
+      <Button iconButton variant='transparent' aria-label='暂停' class={$paused ? 'hidden' : 'block'} onclick={() => setPaused(true)}>
+        <Pause size='32' />
+      </Button>
     {/if}
-    <SkipForward class='cursor-pointer' onclick={handleChangeSong('next')} />
+    <Button iconButton variant='transparent' aria-label='下一首' onclick={handleChangeSong('next')}>
+      <SkipForward />
+    </Button>
   </div>
   <span class='ml-5 select-none text-sm text-neutral hidden md:inline'>
     {curTimeInfo}
@@ -301,7 +310,6 @@
   <div class='relative min-w-0 flex flex-1 items-center gap-5 md:mx-auto md:max-w-[26rem] md:justify-center'>
     <MaskElement
       class='group shrink-0 overflow-hidden rounded-lg'
-      maskClass='group-hover:flex'
       onclick={toggleShowDrawer}
     >
       {#snippet slot()}
@@ -312,14 +320,14 @@
           <div class='relative'>
             <img class='size-12' src={ncmImageSrc($nowPlaying.cover, 'xs')} alt={$nowPlaying.name} />
             {#if $songLoading}
-              <div class='absolute inset-0 flex items-center justify-center rounded-lg bg-black/50'>
+              <div class='absolute inset-0 flex items-center justify-center rounded-lg bg-app-mask/50'>
                 <Loader class='animate-spin text-white' />
               </div>
             {/if}
           </div>
         {:else}
           <!-- 空封面（搜索结果 cover 可空）与无歌曲共用占位图标，避免 alt 文字叠标题 -->
-          <div class='size-12 flex items-center justify-center rounded-lg bg-white text-neutral'>
+          <div class='size-12 flex items-center justify-center rounded-lg bg-app-surface text-neutral'>
             <Music size={24} />
           </div>
         {/if}
@@ -338,12 +346,20 @@
   </div>
 
   <div class='ml-auto shrink-0 items-center gap-5 hidden md:flex'>
-    <Shuffle class={`cursor-pointer ${$playMode === 'shuffle' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatAll')} />
-    <Repeat class={`cursor-pointer ${$playMode === 'repeatAll' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('repeatOne')} />
-    <Repeat1 class={`cursor-pointer ${$playMode === 'repeatOne' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('sequential')} />
-    <ArrowLeftRight class={`cursor-pointer ${$playMode === 'sequential' ? 'block' : 'hidden'}`} onclick={() => setPlayMode('shuffle')} />
+    <Button iconButton variant='transparent' aria-label='切换为循环播放' class={$playMode === 'shuffle' ? 'block' : 'hidden'} onclick={() => setPlayMode('repeatAll')}>
+      <Shuffle />
+    </Button>
+    <Button iconButton variant='transparent' aria-label='切换为单曲循环' class={$playMode === 'repeatAll' ? 'block' : 'hidden'} onclick={() => setPlayMode('repeatOne')}>
+      <Repeat />
+    </Button>
+    <Button iconButton variant='transparent' aria-label='切换为顺序播放' class={$playMode === 'repeatOne' ? 'block' : 'hidden'} onclick={() => setPlayMode('sequential')}>
+      <Repeat1 />
+    </Button>
+    <Button iconButton variant='transparent' aria-label='切换为随机播放' class={$playMode === 'sequential' ? 'block' : 'hidden'} onclick={() => setPlayMode('shuffle')}>
+      <ArrowLeftRight />
+    </Button>
     <div class='group relative flex flex-col cursor-pointer items-center gap-5'>
-      <div class='absolute z-10 h-10 w-32 items-center rounded-lg bg-white px-4 hidden group-hover:flex -translate-y-[calc(50%+4rem)] -rotate-90'>
+      <div class='absolute z-10 h-10 w-32 items-center rounded-lg bg-app-surface px-4 hidden group-focus-within:flex group-hover:flex -translate-y-[calc(50%+4rem)] -rotate-90'>
         <input
           type='range'
           min='0'
@@ -351,11 +367,12 @@
           step='0.01'
           bind:value={$volume}
           disabled={$muted}
+          aria-label='音量'
           class='w-full'
           style='--progress: {$volume}'
         />
       </div>
-      <button onclick={mute}>
+      <button aria-label='静音' onclick={mute}>
         {#if $muted}
           <VolumeX />
         {:else if $volume === 0}
@@ -369,10 +386,12 @@
         {/if}
       </button>
     </div>
-    <Menu class='cursor-pointer' onclick={() => {
+    <Button iconButton variant='transparent' aria-label='打开播放列表' onclick={() => {
       toggleShowDrawer()
       setSelectedMenu('playlist')
-    }} />
+    }}>
+      <Menu />
+    </Button>
   </div>
 </footer>
 
@@ -389,7 +408,7 @@
     appearance: none;
     height: 4px;
     border-radius: 8px;
-    background: rgba(165, 165, 165, 0.3);
+    background: rgb(var(--skin-neutral-300) / 0.3);
     cursor: pointer;
     transition: all 0.2s ease;
 
@@ -398,7 +417,7 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background: theme('colors.primary.400');
+      background: rgb(var(--skin-primary-400));
       cursor: pointer;
       transition: all 0.2s ease;
       box-shadow: 0 0 0 4px rgba(0, 0, 0, 0);
@@ -409,36 +428,36 @@
       height: 12px;
       border: none;
       border-radius: 50%;
-      background: theme('colors.primary.400');
+      background: rgb(var(--skin-primary-400));
       cursor: pointer;
       transition: all 0.2s ease;
     }
 
     &:hover {
-      background: rgba(165, 165, 165, 0.5);
+      background: rgb(var(--skin-neutral-300) / 0.5);
 
       &::-webkit-slider-thumb {
-        background: theme('colors.primary.500');
+        background: rgb(var(--skin-primary-500));
         transform: scale(1.2);
       }
 
       &::-moz-range-thumb {
-        background: theme('colors.primary.500');
+        background: rgb(var(--skin-primary-500));
         transform: scale(1.2);
       }
     }
 
     &:active {
       &::-webkit-slider-thumb {
-        background: theme('colors.primary.600');
+        background: rgb(var(--skin-primary-600));
         transform: scale(1.4);
-        box-shadow: 0 0 0 4px rgba(168, 230, 207, 0.3);
+        box-shadow: 0 0 0 4px rgb(var(--skin-primary) / 0.3);
       }
 
       &::-moz-range-thumb {
-        background: theme('colors.primary.600');
+        background: rgb(var(--skin-primary-600));
         transform: scale(1.4);
-        box-shadow: 0 0 0 4px rgba(168, 230, 207, 0.3);
+        box-shadow: 0 0 0 4px rgb(var(--skin-primary) / 0.3);
       }
     }
 
@@ -447,12 +466,12 @@
       cursor: not-allowed;
 
       &::-webkit-slider-thumb {
-        background: #ccc;
+        background: rgb(var(--skin-neutral-300));
         cursor: not-allowed;
       }
 
       &::-moz-range-thumb {
-        background: #ccc;
+        background: rgb(var(--skin-neutral-300));
         cursor: not-allowed;
       }
     }
@@ -461,8 +480,8 @@
   footer input[type="range"] {
     height: 4px;
     background: linear-gradient(to right,
-      theme('colors.primary.400') calc(var(--progress) * 100%),
-      rgba(165, 165, 165, 0.3) calc(var(--progress) * 100%)
+      rgb(var(--skin-primary-400)) calc(var(--progress) * 100%),
+      rgb(var(--skin-neutral-300) / 0.3) calc(var(--progress) * 100%)
     );
     margin: 0;
 

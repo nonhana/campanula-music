@@ -5,6 +5,7 @@
   import Tooltip from '$lib/components/hana/Tooltip.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { useTap } from '$lib/hooks/useTap.svelte'
+  import { ncmErrorText } from '$lib/ncm/client'
   import { ncmImageSrc } from '$lib/ncm/image'
   import {
     addSongToPlaylist,
@@ -19,7 +20,7 @@
     songLoading,
   } from '$lib/stores'
   import { durationFormatter } from '$lib/utils'
-  import { Ellipsis, Loader, Pause, Play, Plus, X } from '@lucide/svelte'
+  import { Loader, Pause, Play, Plus, X } from '@lucide/svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -36,8 +37,6 @@
   const activated = $derived($nowPlaying?.id === song.id) // 这个 Item 是当前播放的歌曲
 
   const handlePlay = async () => {
-    if ($songLoading)
-      return
     if (activated) {
       setPaused(!$paused)
       return
@@ -48,16 +47,22 @@
       else
         addToPlaylistAndPlay(song)
     }
-    catch (error: any) {
-      callHanaMessage({
-        message: error.message,
-        type: 'error',
-      })
+    catch (error) {
+      callHanaMessage({ message: ncmErrorText(error, '播放失败，请稍后再试'), type: 'error' })
     }
   }
 
   const handlePause = () => {
     setPaused(!$paused)
+  }
+
+  // 行的键盘激活等价点击播放；阻断冒泡，避免与 Player 的全局 Space 切播重复触发
+  const handleRowKeydown = (e: KeyboardEvent) => {
+    if (e.code === 'Space' || e.key === 'Enter') {
+      e.preventDefault()
+      e.stopPropagation()
+      handlePlay()
+    }
   }
 
   const handleAddToPlaylist = () => {
@@ -69,13 +74,13 @@
   }
 
   const typeClass = {
-    list: 'bg-white hover:bg-primary-100!',
-    queue: 'bg-white/0',
+    list: 'bg-app-surface hover:bg-primary-100!',
+    queue: 'bg-app-surface/0',
   }
 
   const activatedClass = {
     list: `bg-primary-100`,
-    queue: `bg-white`,
+    queue: `bg-app-surface`,
   }
 
   const handleRemoveSong = () => {
@@ -105,11 +110,12 @@
   tabindex='0'
   class={[
     'group/item shrink-0 w-full h-18 flex items-center rounded-lg px-4',
-    index && index % 2 === 0 && type === 'list' && 'bg-neutral-50!',
+    index && index % 2 === 0 && type === 'list' && !activated && 'bg-neutral-50!',
     typeClass[type],
     activated && activatedClass[type],
   ]}
   {ondblclick}
+  onkeydown={handleRowKeydown}
 >
   <div class='flex items-center gap-10'>
     {#if index}
@@ -153,9 +159,6 @@
     <div class='w-10 justify-between hidden lg:w-24 group-hover/item:flex'>
       <Tooltip content='添加到播放列表'>
         <Button iconButton onclick={handleAddToPlaylist}><Plus /></Button>
-      </Tooltip>
-      <Tooltip class='hidden lg:block' content='更多'>
-        <Button iconButton><Ellipsis /></Button>
       </Tooltip>
     </div>
   {:else}
