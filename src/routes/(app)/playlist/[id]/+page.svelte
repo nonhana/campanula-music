@@ -1,112 +1,84 @@
 <script lang='ts'>
-  import type { NcmPlaylistDetail, NcmSong, PlaylistItem, SongItem } from '$lib/types'
+  import type { NcmSong, PlaylistItem, SongItem } from '$lib/types'
+  import type { PageProps } from './$types'
+  import { afterNavigate } from '$app/navigation'
   import { page } from '$app/state'
   import Detail from '$lib/components/playlists/Detail.svelte'
   import SongList from '$lib/components/playlists/SongList.svelte'
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
-  import { NcmClientError } from '$lib/ncm/client'
-  import { fetchPlaylistDetail, fetchPlaylistTracks, PLAYLIST_ERROR_TEXT } from '$lib/ncm/playlists'
+  import { fetchPlaylistTracks, PLAYLIST_PAGE_SIZE, PLAYLIST_QUEUE_CHUNK } from '$lib/ncm/playlists'
   import { toSongItem } from '$lib/ncm/songs'
-  import { Loader } from '@lucide/svelte'
+
+  const { data }: PageProps = $props()
 
   const metadata = generateSeoMetadata('playlistDetail')
 
-  // 浏览用分页大小：首屏并行取头信息与第一页，其余触底增量加载
-  const PAGE_SIZE = 100
-  // 队列补全分页大小：与单请求 id 分片上限一致，整张歌单补全按 1000 首并行拉取
-  const QUEUE_CHUNK = 1000
-
   const playlistId = $derived(Number(page.params.id))
 
-  let detail = $state<NcmPlaylistDetail | null>(null)
-  let songs = $state<SongItem[]>([])
+  /** 客户端增量状态：触底追加的后续页曲目（首屏页随 load 经 data 原子更新，不落本地状态） */
+  let moreSongs = $state<SongItem[]>([])
   /** 已请求到的曲目偏移：按请求窗口推进，不随下架缺曲回退，避免窗口重叠 */
-  let nextOffset = $state(0)
-  let loading = $state(true)
+  let nextOffset = $state(PLAYLIST_PAGE_SIZE)
   let loadingMore = $state(false)
-  let errorMessage = $state<string | null>(null)
-  let controller: AbortController | null = null
+  let searchValue = $state('')
 
-  // 路由歌单 id 变化（初次挂载与歌单间跳转）时重置并重新加载
-  $effect(() => {
-    controller?.abort()
-    controller = new AbortController()
-    nextOffset = 0
-    void load(playlistId)
-    return () => controller?.abort()
+  // 路由歌单 id 变化（歌单间跳转）时重置增量状态并清空过滤词；首次进入同样归位。
+  // load 期间 data 保持旧歌单内容，切歌单不闪「加载中/错误」态
+  afterNavigate((navigation) => {
+    if (navigation.to?.params?.id != null && navigation.to.params.id === navigation.from?.params?.id)
+      return
+    nextOffset = PLAYLIST_PAGE_SIZE
+    moreSongs = []
+    loadingMore = false
+    searchValue = ''
   })
 
-  async function load(id: number) {
-    loading = true
-    loadingMore = false
-    detail = null
-    songs = []
-    try {
-      const [header, firstPage] = await Promise.all([
-        fetchPlaylistDetail(id, controller?.signal),
-        fetchPlaylistTracks(id, { limit: PAGE_SIZE, offset: 0 }, controller?.signal),
-      ])
-      if (controller?.signal.aborted)
-        return
-      detail = header
-      nextOffset = PAGE_SIZE
-      songs = firstPage.map(toSongItem)
-      errorMessage = null
-    }
-    catch (err) {
-      if (controller?.signal.aborted)
-        return
-      detail = null
-      songs = []
-      errorMessage = err instanceof NcmClientError
-        ? (err.message || PLAYLIST_ERROR_TEXT[err.code])
-        : PLAYLIST_ERROR_TEXT.UNKNOWN
-    }
-    finally {
-      if (!controller?.signal.aborted)
-        loading = false
-    }
-  }
+  /** 已加载歌曲：首屏页 + 客户端增量页，按歌单顺序 */
+  const songs = $derived([...data.firstPage.map(toSongItem), ...moreSongs])
 
   /** 触底增量加载下一页（失败不破坏已有内容，可再次滚动重试） */
-  async function loadMore() {
-    if (!detail || loading || loadingMore || nextOffset >= detail.trackCount)
+  const loadMore = async () => {
+    if (!data.detail || loadingMore || nextOffset >= data.detail.trackCount)
       return
+    // 闭包捕获发起时的歌单：await 期间切到其他歌单则响应整页丢弃，不写回状态
+    const id = playlistId
     loadingMore = true
     try {
       const offset = nextOffset
-      const next = await fetchPlaylistTracks(playlistId, { limit: PAGE_SIZE, offset }, controller?.signal)
-      if (controller?.signal.aborted)
+      const next = await fetchPlaylistTracks(id, { limit: PLAYLIST_PAGE_SIZE, offset })
+      if (id !== playlistId)
         return
-      nextOffset = offset + PAGE_SIZE
+      nextOffset = offset + PLAYLIST_PAGE_SIZE
       const seen = new Set(songs.map(song => song.id))
-      songs.push(...next.map(toSongItem).filter(song => !seen.has(song.id)))
+      moreSongs.push(...next.map(toSongItem).filter(song => !seen.has(song.id)))
     }
     catch (err) {
       console.error('加载更多失败', err)
     }
     finally {
-      loadingMore = false
+      if (id === playlistId)
+        loadingMore = false
     }
   }
 
   /** 播放全部/双击入队前补全整张歌单：并行拉取剩余分页后按歌单顺序归并 */
-  async function ensureAllSongs(): Promise<SongItem[]> {
-    if (!detail || nextOffset >= detail.trackCount)
+  const ensureAllSongs = async () => {
+    if (!data.detail || nextOffset >= data.detail.trackCount)
       return songs
-    const target = detail.trackCount
+    const id = playlistId
+    const target = data.detail.trackCount
     const pages: Promise<NcmSong[]>[] = []
-    for (let offset = nextOffset; offset < target; offset += QUEUE_CHUNK)
-      pages.push(fetchPlaylistTracks(playlistId, { limit: QUEUE_CHUNK, offset }, controller?.signal))
+    for (let offset = nextOffset; offset < target; offset += PLAYLIST_QUEUE_CHUNK)
+      pages.push(fetchPlaylistTracks(id, { limit: PLAYLIST_QUEUE_CHUNK, offset }))
     try {
       const fetched = await Promise.all(pages)
-      if (controller?.signal.aborted)
+      if (id !== playlistId)
         return songs
       const seen = new Set(songs.map(song => song.id))
-      songs.push(
+      moreSongs.push(
         ...fetched
-          .flatMap(page => page.map(toSongItem))
+          .flatMap(fetchedPage => fetchedPage.map(toSongItem))
           .filter(song => !seen.has(song.id)),
       )
       nextOffset = target
@@ -118,33 +90,26 @@
     return songs
   }
 
-  let searchValue = $state('')
-
-  // 领域形状适配：歌单头 → 旧富视图 PlaylistItem，歌曲 → 播放链路 SongItem
-  const playlistItem = $derived(detail
+  // 领域形状适配：歌单头 → 旧富视图 PlaylistItem
+  const playlistItem = $derived(data.detail
     ? {
-      id: detail.id,
-      name: detail.name,
-      description: detail.description,
-      musicCount: detail.trackCount,
-      cover: detail.cover,
-      sourceId: String(detail.id),
+      id: data.detail.id,
+      name: data.detail.name,
+      description: data.detail.description,
+      musicCount: data.detail.trackCount,
+      cover: data.detail.cover,
+      sourceId: String(data.detail.id),
     } satisfies PlaylistItem
     : null)
 </script>
 
 <SeoHead {metadata} />
 
-{#if loading}
-  <div class='flex items-center justify-center gap-2 py-12 text-sm text-app-text-muted'>
-    <Loader class='size-5 animate-spin' />
-    加载中…
-  </div>
-{:else if errorMessage}
+{#if data.error}
   <div role='alert' class='border border-error-200 rounded-xl bg-error/5 px-4 py-3 text-sm text-error-700'>
-    {errorMessage}
+    {data.error}
   </div>
-{:else if detail && playlistItem}
+{:else if playlistItem}
   <!-- 定高根：扣去顶部留白与底部播放栏，列表在根内 flex-1 自适应头部实际高度 -->
   <div class='h-[calc(100dvh-15rem)] w-full flex flex-col gap-8 md:h-[calc(100dvh-9.5rem)]'>
     <Detail {songs} playlist={playlistItem} bind:searchValue onQueueAll={ensureAllSongs} />

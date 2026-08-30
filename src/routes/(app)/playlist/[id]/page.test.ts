@@ -1,9 +1,12 @@
 import type { NcmPlaylistDetail, NcmSong } from '$lib/types'
+import type { Mock } from 'vitest'
+import type { PageProps } from './$types'
 import { NcmClientError } from '$lib/ncm/client'
 import { fetchPlaylistDetail, fetchPlaylistTracks } from '$lib/ncm/playlists'
 import { resetPlaylist, setNowPlaying, setPlaylistId, updatePlaylist } from '$lib/stores'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { load } from './+page'
 import Page from './+page.svelte'
 
 vi.mock('$app/state', () => ({
@@ -16,6 +19,8 @@ vi.mock('$app/state', () => ({
 vi.mock('$lib/ncm/playlists', () => ({
   fetchPlaylistDetail: vi.fn(),
   fetchPlaylistTracks: vi.fn(),
+  PLAYLIST_PAGE_SIZE: 100,
+  PLAYLIST_QUEUE_CHUNK: 1000,
   PLAYLIST_ERROR_TEXT: {
     UNAUTHENTICATED: '查看歌单需要账号许可：请先绑定网易云账号',
     RATE_LIMITED: '请求过于频繁，请稍后再试',
@@ -101,6 +106,19 @@ const firstPage: NcmSong[] = [
   },
 ]
 
+/** load 成功供数的 data 形状（直访路径首屏） */
+const loadedData = { detail, firstPage, error: null }
+
+/** load 事件桩：load 只消费 fetch 与 params */
+function makeLoadEvent(fetchStub: Mock = vi.fn(), id = '6792103822') {
+  return ({ fetch: fetchStub as typeof fetch, params: { id } }) as Parameters<typeof load>[0]
+}
+
+/** 渲染入参：PageProps 要求 data 与 params 成对 */
+function renderPage(data: PageProps['data']) {
+  return render(Page, { data, params: { id: '6792103822' } })
+}
+
 beforeEach(() => {
   mockedFetch.mockReset()
   mockedTracks.mockReset()
@@ -114,11 +132,39 @@ afterEach(() => {
   cleanup()
 })
 
-describe('歌单详情页', () => {
-  it('渲染富视图头信息并列出第一页歌曲', async () => {
+describe('load 首屏供数', () => {
+  it('直访路径：并行取详情与第一页并随 data 返回，event.fetch 注入客户端', async () => {
     mockedFetch.mockResolvedValue(detail)
     mockedTracks.mockResolvedValue(firstPage)
-    render(Page)
+    const fetchMock = vi.fn()
+
+    const result = await load(makeLoadEvent(fetchMock))
+
+    expect(result).toEqual({ detail, firstPage, error: null })
+    expect(mockedFetch).toHaveBeenCalledWith(6792103822, fetchMock)
+    expect(mockedTracks).toHaveBeenCalledWith(6792103822, { limit: 100, offset: 0 }, fetchMock)
+  })
+
+  it('门面报错：详情置空并按码携带页面文案', async () => {
+    mockedFetch.mockRejectedValue(new NcmClientError('RATE_LIMITED', ''))
+
+    const result = await load(makeLoadEvent())
+
+    expect(result).toEqual({ detail: null, firstPage: [], error: '请求过于频繁，请稍后再试' })
+  })
+
+  it('非领域错误（如网络异常）：兜底 UNKNOWN 文案', async () => {
+    mockedFetch.mockRejectedValue(new TypeError('网络中断'))
+
+    const result = await load(makeLoadEvent())
+
+    expect(result).toEqual({ detail: null, firstPage: [], error: '获取歌单失败，请稍后再试' })
+  })
+})
+
+describe('歌单详情页', () => {
+  it('渲染富视图头信息并列出第一页歌曲', async () => {
+    renderPage(loadedData)
 
     await waitFor(() => expect(screen.getByText('周杰伦精选')).toBeTruthy())
 
@@ -130,9 +176,7 @@ describe('歌单详情页', () => {
   })
 
   it('点击播放全部将整张歌单替换进播放队列', async () => {
-    mockedFetch.mockResolvedValue(detail)
-    mockedTracks.mockResolvedValue(firstPage)
-    render(Page)
+    renderPage(loadedData)
 
     await waitFor(() => expect(screen.getAllByText('播放全部').length).toBeGreaterThan(0))
     await fireEvent.click(screen.getAllByText('播放全部')[0]!)
@@ -144,9 +188,7 @@ describe('歌单详情页', () => {
   })
 
   it('双击歌曲行进入播放链路', async () => {
-    mockedFetch.mockResolvedValue(detail)
-    mockedTracks.mockResolvedValue(firstPage)
-    render(Page)
+    renderPage(loadedData)
 
     await waitFor(() => expect(screen.getAllByText('晴天').length).toBeGreaterThan(0))
 
@@ -157,9 +199,7 @@ describe('歌单详情页', () => {
   })
 
   it('歌单内搜索即时过滤列表', async () => {
-    mockedFetch.mockResolvedValue(detail)
-    mockedTracks.mockResolvedValue(firstPage)
-    render(Page)
+    renderPage(loadedData)
 
     await waitFor(() => expect(screen.getAllByText('七里香').length).toBeGreaterThan(0))
 
@@ -171,16 +211,13 @@ describe('歌单详情页', () => {
   })
 
   it('无歌曲时呈现空态', async () => {
-    mockedFetch.mockResolvedValue(detail)
-    mockedTracks.mockResolvedValue([])
-    render(Page)
+    renderPage({ detail, firstPage: [], error: null })
 
     await waitFor(() => expect(screen.getByText('这个歌单还没有歌曲')).toBeTruthy())
   })
 
   it('被限流呈现限流文案', async () => {
-    mockedFetch.mockRejectedValue(new NcmClientError('RATE_LIMITED', '请求过于频繁，请稍后再试'))
-    render(Page)
+    renderPage({ detail: null, firstPage: [], error: '请求过于频繁，请稍后再试' })
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain('请求过于频繁，请稍后再试')
@@ -188,19 +225,16 @@ describe('歌单详情页', () => {
   })
 
   it('绑定失效呈现引导文案', async () => {
-    mockedFetch.mockRejectedValue(new NcmClientError('UNAUTHENTICATED', '查看歌单需要账号许可：请先绑定网易云账号'))
-    render(Page)
+    renderPage({ detail: null, firstPage: [], error: '查看歌单需要账号许可：请先绑定网易云账号' })
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain('查看歌单需要账号许可：请先绑定网易云账号')
     })
   })
 
-  it('首屏只取第一页，触底滚动按 offset 增量加载下一页', async () => {
-    mockedFetch.mockResolvedValue({ ...detail, trackCount: 250 })
-    mockedTracks.mockResolvedValueOnce(makePage(1, 100))
+  it('首屏 data 只含第一页，触底滚动按请求窗口 offset 增量加载下一页', async () => {
     mockedTracks.mockResolvedValueOnce(makePage(101, 100))
-    render(Page)
+    renderPage({ detail: { ...detail, trackCount: 250 }, firstPage: makePage(1, 100), error: null })
 
     await waitFor(() => expect(screen.getByText('歌曲-1')).toBeTruthy())
 
@@ -209,26 +243,24 @@ describe('歌单详情页', () => {
     Object.defineProperty(scroller, 'scrollTop', { value: 9999, configurable: true, writable: true })
     await fireEvent.scroll(scroller)
 
-    // 第二页以 offset=100 请求（ScrollContainer 的 scrollWatcher 有 100ms 节流）
-    await waitFor(() => expect(mockedTracks).toHaveBeenCalledTimes(2))
-    expect(mockedTracks).toHaveBeenNthCalledWith(2, 6792103822, { limit: 100, offset: 100 }, expect.anything())
+    // 第二页以请求窗口 offset=100 请求（ScrollContainer 的 scrollWatcher 有 100ms 节流）
+    await waitFor(() => expect(mockedTracks).toHaveBeenCalledTimes(1))
+    expect(mockedTracks).toHaveBeenCalledWith(6792103822, { limit: 100, offset: 100 })
 
     // 追加后窗口移到新加载区域
     await waitFor(() => expect(screen.getByText('歌曲-130')).toBeTruthy())
   })
 
   it('播放全部在未加载完整歌单时先并行补全队列再入队', async () => {
-    mockedFetch.mockResolvedValue({ ...detail, trackCount: 250 })
-    mockedTracks.mockResolvedValueOnce(makePage(1, 100))
     mockedTracks.mockResolvedValueOnce(makePage(101, 150))
-    render(Page)
+    renderPage({ detail: { ...detail, trackCount: 250 }, firstPage: makePage(1, 100), error: null })
 
     await waitFor(() => expect(screen.getAllByText('播放全部').length).toBeGreaterThan(0))
     await fireEvent.click(screen.getAllByText('播放全部')[0]!)
 
-    // 剩余 150 首按 1000/页的单次补全请求拉取
+    // 剩余 150 首按 1000/页的单次补全请求拉取（请求窗口从首屏 100 起）
     await waitFor(() => expect(mockedUpdate).toHaveBeenCalled())
-    expect(mockedTracks).toHaveBeenNthCalledWith(2, 6792103822, { limit: 1000, offset: 100 }, expect.anything())
+    expect(mockedTracks).toHaveBeenCalledWith(6792103822, { limit: 1000, offset: 100 })
 
     const queue = mockedUpdate.mock.calls[0]![0]
     expect(queue).toHaveLength(250)
