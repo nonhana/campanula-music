@@ -9,7 +9,7 @@
 
   const { lyric, activated, onclick }: Props = $props()
 </script>
-<!-- 歌词行点击跳转进度：纯文本行不做键盘聚焦（百余行全部进 tab 序会污染键盘导航） -->
+<!-- 歌词行点击跳转进度：纯文本行不做键盘聚焦（百余行全部进 tab 序会污染键盘导航）；data-lyric-seek 供抽屉 tap-to-close 豁免判定 -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div
   class={[
@@ -18,6 +18,7 @@
     onclick ? 'cursor-pointer' : '',
   ]}
   {onclick}
+  data-lyric-seek={onclick ? '' : undefined}
 >
   <div class='flex flex-col gap-2'>
     <span>{lyric.text}</span>

@@ -162,7 +162,11 @@
   let wrapperElement = $state<HTMLElement | null>(null)
 
   useTap(() => wrapperElement, {
-    onTap() {
+    onTap(event) {
+      // 点歌词行是跳转进度，不触发抽屉的 tap-to-close（移动端行内 seek 与关闭互斥）
+      const target = event.target
+      if (target instanceof Element && target.closest('[data-lyric-seek]'))
+        return
       toggleShowDetail()
     },
   })
