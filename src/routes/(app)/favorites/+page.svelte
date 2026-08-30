@@ -19,6 +19,7 @@
   /** 已请求到的曲目偏移：按请求窗口推进，不随下架缺曲回退，避免窗口重叠 */
   let nextOffset = $state(LIKED_PAGE_SIZE)
   let loadingMore = $state(false)
+  let searchCompleting = $state(false)
   let searchValue = $state('')
 
   const songs = $derived(
@@ -62,6 +63,18 @@
     }
     return songs
   }
+
+  /** 搜索需覆盖未加载部分：输入非空时补全整份红心列表（与入队补全共用链路），完成后过滤即覆盖全量 */
+  $effect(() => {
+    if (!searchValue.trim() || data.error)
+      return
+    if (nextOffset >= data.total || searchCompleting)
+      return
+    searchCompleting = true
+    ensureAllSongs().finally(() => {
+      searchCompleting = false
+    })
+  })
 </script>
 
 <SeoHead {metadata} />
@@ -119,7 +132,7 @@
             playlistId='liked'
             onQueueAll={ensureAllSongs}
             onNearEnd={loadMore}
-            loading={loadingMore}
+            loading={loadingMore || searchCompleting}
           />
         </div>
       </div>

@@ -251,6 +251,22 @@ describe('歌单详情页', () => {
     await waitFor(() => expect(screen.getByText('歌曲-130')).toBeTruthy())
   })
 
+  it('搜索时未加载完整歌单先补全，再过滤出未加载区域的曲目', async () => {
+    mockedTracks.mockResolvedValueOnce(makePage(101, 150))
+    renderPage({ detail: { ...detail, trackCount: 250 }, firstPage: makePage(1, 100), error: null })
+
+    await waitFor(() => expect(screen.getByText('歌曲-1')).toBeTruthy())
+
+    const input = screen.getAllByPlaceholderText('搜索此歌单中的歌曲…')[0]!
+    await fireEvent.input(input, { target: { value: '歌曲-200' } })
+
+    // 搜索触发整单补全：按 1000/页并行拉取剩余分页
+    await waitFor(() => expect(mockedTracks).toHaveBeenCalledWith(6792103822, { limit: 1000, offset: 100 }))
+
+    // 补全完成后过滤覆盖全量：位于未加载区域的曲目可搜到
+    await waitFor(() => expect(screen.getByText('歌曲-200')).toBeTruthy())
+  })
+
   it('播放全部在未加载完整歌单时先并行补全队列再入队', async () => {
     mockedTracks.mockResolvedValueOnce(makePage(101, 150))
     renderPage({ detail: { ...detail, trackCount: 250 }, firstPage: makePage(1, 100), error: null })

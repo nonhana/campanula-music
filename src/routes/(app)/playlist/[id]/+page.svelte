@@ -21,6 +21,7 @@
   /** 已请求到的曲目偏移：按请求窗口推进，不随下架缺曲回退，避免窗口重叠 */
   let nextOffset = $state(PLAYLIST_PAGE_SIZE)
   let loadingMore = $state(false)
+  let searchCompleting = $state(false)
   let searchValue = $state('')
 
   // 路由歌单 id 变化（歌单间跳转）时重置增量状态并清空过滤词；首次进入同样归位。
@@ -90,6 +91,18 @@
     return songs
   }
 
+  /** 搜索需覆盖未加载部分：输入非空时补全整张歌单（与入队补全共用链路），完成后过滤即覆盖全量 */
+  $effect(() => {
+    if (!searchValue.trim() || !data.detail)
+      return
+    if (nextOffset >= data.detail.trackCount || searchCompleting)
+      return
+    searchCompleting = true
+    ensureAllSongs().finally(() => {
+      searchCompleting = false
+    })
+  })
+
   // 领域形状适配：歌单头 → 旧富视图 PlaylistItem
   const playlistItem = $derived(data.detail
     ? {
@@ -118,7 +131,7 @@
     {:else}
       <!-- 弹性高度：列表填满头部以下剩余空间（VirtualList 依赖有界容器） -->
       <div class='min-h-40 flex-1'>
-        <SongList {songs} {searchValue} onQueueAll={ensureAllSongs} onNearEnd={loadMore} loading={loadingMore} />
+        <SongList {songs} {searchValue} onQueueAll={ensureAllSongs} onNearEnd={loadMore} loading={loadingMore || searchCompleting} />
       </div>
     {/if}
   </div>

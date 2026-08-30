@@ -252,4 +252,19 @@ describe('我喜欢的音乐页', () => {
     expect(queue[0]).toMatchObject({ id: 1, name: '歌曲-1', sourceId: '1' })
     expect(queue[249]).toMatchObject({ id: 250, name: '歌曲-250', sourceId: '250' })
   })
+  it('搜索时未加载完整红心列表先补全，再过滤出未加载区域的曲目', async () => {
+    mockedAll.mockResolvedValue(makePage(1, 250))
+    renderPage({ firstPage: makePage(1, 100), total: 250, error: null })
+
+    await waitFor(() => expect(screen.getByText('歌曲-1')).toBeTruthy())
+
+    const input = screen.getAllByPlaceholderText('搜索我喜欢的音乐…')[0]!
+    await fireEvent.input(input, { target: { value: '歌曲-200' } })
+
+    // 搜索触发整份补全：一次全量拉取
+    await waitFor(() => expect(mockedAll).toHaveBeenCalledTimes(1))
+
+    // 补全完成后过滤覆盖全量：位于未加载区域的曲目可搜到
+    await waitFor(() => expect(screen.getByText('歌曲-200')).toBeTruthy())
+  })
 })
