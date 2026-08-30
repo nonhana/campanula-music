@@ -1,7 +1,8 @@
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
+  import { browser } from '$app/environment'
   import { onDestroy, setContext } from 'svelte'
-  import { writable } from 'svelte/store'
+  import { throttle } from 'throttle-debounce'
   import VirtualListCore from './VirtualListCore.svelte'
 
   interface Props {
@@ -63,24 +64,26 @@
     ...Array.from({ length: tailEmptyItems }).map(() => ({ [emptyKey]: true })),
   ])
 
-  const posData = writable<WeakMap<object, number> | null>(null)
-
-  $effect(() => {
+  // 条目 → 位置映射派生自 curItems/itemSize/gap：激活项滚动与高亮在数据变化当拍即得，
+  // 不再等 writable+$effect 的下一次 effect 批次（激活高亮晚一拍的根因）
+  const posData = $derived.by(() => {
     const validItems = curItems.filter(item => typeof item === 'object' && item !== null)
-    posData.set(
-      new WeakMap(validItems.map((item, index) => [item, index * (itemSize + gap)])),
-    )
+    return new WeakMap(validItems.map((item, index): [object, number] => [item, index * (itemSize + gap)]))
   })
 
-  setContext('VirtualList', { posData, emptyKey })
+  // 经函数读取派生值：直接传值会被 context 固化为首次快照，消费方拿不到后续更新
+  setContext('VirtualList', {
+    emptyKey,
+    getItemPos: (item: object) => posData.get(item),
+  })
 
   $effect(() => {
-    if (hasExternalScroll || !activeItemId || !$posData || !getItemById || !scrollContainerElement)
+    if (hasExternalScroll || !activeItemId || !getItemById || !scrollContainerElement)
       return
     const activeItem = getItemById(activeItemId)
     if (!activeItem)
       return
-    const targetPos = $posData.get(activeItem)
+    const targetPos = posData.get(activeItem)
     if (targetPos === undefined)
       return
     scrollContainerElement.scrollTo({
@@ -109,15 +112,11 @@
   // 偏移改为基于 renderStartIndex
   const startOffset = $derived(renderStartIndex * (itemSize + gap))
 
-  // 滚动节流相关变量
-  let lastScrollTime = 0
-  let scrollTimeoutId: number | null = null
-  let pendingScrollUpdate = false
-  let lastScrollEvent: Event | null = null
-
   // 预加载触发状态
   let hasTriggeredNearEnd = $state(false)
   let lastTriggeredPos = -1
+  // 500ms 防抖重置定时器 id：卸载时清理，避免组件销毁后仍触发
+  let nearEndResetTimerId: number | null = null
 
   // 接近末尾检查：基于 effectiveScrollPos 派生，内部/外部滚动模式统一生效
   // （外部滚动模式的 scrollPos 由父组件传入，滚动事件不会到达本组件）
@@ -138,7 +137,9 @@
       onNearEnd()
 
       // 延迟重置触发状态，避免短时间内多次触发
-      setTimeout(() => {
+      if (nearEndResetTimerId !== null)
+        window.clearTimeout(nearEndResetTimerId)
+      nearEndResetTimerId = window.setTimeout(() => {
         hasTriggeredNearEnd = false
       }, 500) // 500ms 防抖时间
     }
@@ -152,32 +153,8 @@
     internalScrollPos = isVertical ? target.scrollTop : target.scrollLeft
   }
 
-  // 节流后的滚动事件处理函数
-  const throttledScroll = (e: Event) => {
-    lastScrollEvent = e
-
-    const now = Date.now()
-    if (now - lastScrollTime >= throttleMs) {
-      // 如果超过节流时间，立即执行
-      lastScrollTime = now
-      updateScrollPosition(e)
-      pendingScrollUpdate = false
-    }
-    else if (!pendingScrollUpdate) {
-      // 否则，安排一个延迟执行
-      pendingScrollUpdate = true
-      if (scrollTimeoutId)
-        window.clearTimeout(scrollTimeoutId)
-      scrollTimeoutId = window.setTimeout(() => {
-        if (lastScrollEvent) {
-          lastScrollTime = Date.now()
-          updateScrollPosition(lastScrollEvent)
-          pendingScrollUpdate = false
-          lastScrollEvent = null
-        }
-      }, throttleMs)
-    }
-  }
+  // 节流后的滚动事件处理（leading 立即 + trailing 补末次，与 ScrollContainer 同用 throttle-debounce）
+  const throttledScroll = $derived(throttle(throttleMs, updateScrollPosition))
 
   // 滚动事件
   const onScroll = (e: Event) => {
@@ -201,15 +178,17 @@
       : `transform: translateX(${startOffset}px); display: flex; gap: ${gap}px`,
   )
 
+  // items 变化（触底追加等）即重置预加载触发状态，允许对新区域继续触发
   $effect(() => {
-    if (items) {
-      hasTriggeredNearEnd = false
-    }
+    void items
+    hasTriggeredNearEnd = false
   })
 
   onDestroy(() => {
-    if (scrollTimeoutId)
-      window.clearTimeout(scrollTimeoutId)
+    throttledScroll.cancel()
+    // onDestroy 在 SSR 阶段也会执行：window 仅存在于浏览器
+    if (browser && nearEndResetTimerId !== null)
+      window.clearTimeout(nearEndResetTimerId)
   })
 </script>
 

@@ -1,9 +1,11 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import { browser } from '$app/environment'
   import { onDestroy, onMount, tick } from 'svelte'
   import { throttle } from 'throttle-debounce'
 
   interface Props {
+    ariaLabel?: string
     contentWrapperClass?: string
     contentClass?: string
     scrollbarClass?: string
@@ -14,6 +16,7 @@
   }
 
   const {
+    ariaLabel,
     contentWrapperClass,
     contentClass,
     scrollbarClass,
@@ -153,6 +156,14 @@
   })
 
   onDestroy(() => {
+    // 节流器可能有待执行的 trailing 调用，卸载即取消
+    onScrollDebounced?.cancel()
+    // onDestroy 在 SSR 阶段也会执行（$effect 不跑但 onDestroy 跑）：document 仅存在于浏览器
+    if (browser) {
+      // 拖拽把手中途卸载时兜底移除 document 监听（正常路径由 onMouseUp 移除）
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
     if (!contentWrapperElement)
       return
     contentWrapperElement.removeEventListener('scroll', onScroll)
@@ -185,7 +196,15 @@
   onmouseenter={() => hovering = true}
   onmouseleave={() => hovering = false}
 >
-  <div bind:this={contentWrapperElement} class={['w-full h-full overflow-auto scrollbar-none', contentWrapperClass]}>
+  <!-- 可滚动区域需可聚焦，键盘用户才能滚动内容；region 为非交互角色，豁免 tabindex 警告 -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
+    bind:this={contentWrapperElement}
+    class={['w-full h-full overflow-auto scrollbar-none', contentWrapperClass]}
+    tabindex='0'
+    role='region'
+    aria-label={ariaLabel}
+  >
     <div bind:this={contentElement} class={contentClass}>
       {@render children?.()}
     </div>
@@ -199,9 +218,9 @@
     isNone && 'hidden',
     hovering && 'opacity-100',
   ]}>
+    <!-- 把手只承担鼠标拖拽（键盘滚动走容器本身），对读屏降级为装饰 -->
     <div
-      role='button'
-      tabindex='0'
+      aria-hidden='true'
       class='rounded bg-primary'
       style={scrollBarStyle}
       onmousedown={onThumbMouseDown}

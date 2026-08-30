@@ -1,6 +1,5 @@
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
-  import type { Writable } from 'svelte/store'
   import { getContext } from 'svelte'
 
   type ItemWithEmpty<T> = T | { [key: symbol]: true }
@@ -29,23 +28,22 @@
     getItemById,
   }: Props = $props()
 
-  const { posData, emptyKey } = getContext<{
-    posData: Writable<WeakMap<object, number> | null>
+  const { emptyKey, getItemPos } = getContext<{
     emptyKey: symbol
+    getItemPos: (item: object) => number | undefined
   }>('VirtualList')
 
-  function isEmptyItem(item: ItemWithEmpty<T>): item is { [key: symbol]: true } {
+  const isEmptyItem = (item: ItemWithEmpty<T>): item is { [key: symbol]: true } => {
     return typeof item === 'object' && item !== null && emptyKey in item
   }
 
   const activeItemOffset = $derived.by(() => {
-    if (!activeItemId || !$posData || !getItemById)
+    if (!activeItemId || !getItemById)
       return 0
     const activeItem = getItemById(activeItemId)
     if (!activeItem)
       return 0
-    const result = $posData.get(activeItem)
-    return result ?? 0
+    return getItemPos(activeItem) ?? 0
   })
 
   const bgStyle = $derived(`height: ${itemSize}px; transform: translateY(${activeItemOffset}px);`)

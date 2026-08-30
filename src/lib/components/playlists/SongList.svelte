@@ -75,7 +75,7 @@
   }
 </script>
 
-<ScrollContainer {scrollWatcher} {onHeightChange}>
+<ScrollContainer ariaLabel='歌曲列表' {scrollWatcher} {onHeightChange}>
   <VirtualList items={songList} itemSize={72} {containerSize} scrollPos={scrollOffset} {onNearEnd}>
     {#snippet renderItem(item)}
       <SongPlaylistItem showCover index={item.index + 1} song={item} ondblclick={() => handleDblClick(item)} />
