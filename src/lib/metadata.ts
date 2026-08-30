@@ -4,7 +4,6 @@ export const siteMetadata = {
   description: '可自部署的个人第三方网易云播放器：我的歌单、搜索、播放与歌词，全部实时取自你的网易云账号',
   siteUrl: 'https://campanulamusic.xyz',
   siteName: 'Campanula',
-  themeColor: '#4f46e5',
   locale: 'zh-CN',
   author: 'Campanula',
 }

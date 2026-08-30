@@ -28,7 +28,6 @@
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@eslint/compat": "catalog:",
-    "@neoconfetti/svelte": "catalog:",
     "@sveltejs/adapter-node": "catalog:",
     "@sveltejs/enhanced-img": "catalog:",
     "@sveltejs/kit": "catalog:",
@@ -42,8 +41,6 @@
     "@unocss/reset": "catalog:",
     "@unocss/svelte-scoped": "catalog:",
     "autoprefixer": "catalog:",
-    "csstype": "catalog:",
-    "dayjs": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-svelte": "catalog:",
     "globals": "catalog:",

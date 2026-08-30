@@ -1,4 +1,4 @@
-minimumReleaseAge: 0
+minimumReleaseAge: 1440
 
 shellEmulator: true
 
@@ -10,7 +10,6 @@ catalog:
   '@antfu/eslint-config': ^9.3.0
   '@eslint/compat': ^2.1.0
   '@lucide/svelte': ^1.37.0
-  '@neoconfetti/svelte': ^2.2.2
   '@sveltejs/adapter-node': ^5.5.7
   '@sveltejs/enhanced-img': ^0.11.0
   '@sveltejs/kit': ^2.70.3
@@ -25,8 +24,6 @@ catalog:
   '@unocss/reset': ^66.8.1
   '@unocss/svelte-scoped': ^66.8.1
   autoprefixer: ^10.5.4
-  csstype: ^3.2.3
-  dayjs: ^1.11.23
   eslint: ^10.9.1
   eslint-plugin-svelte: ^3.23.0
   globals: ^17.11.0

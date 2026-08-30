@@ -33,6 +33,28 @@ function asPlaylistEntry(value: unknown): { id: number, name: string, trackCount
   return value
 }
 
+/** /api/playlist/[id] 详情头字段的最小形状守卫（NcmPlaylistDetail 合同），不匹配返回 null */
+function asPlaylistDetail(value: unknown): {
+  id: number
+  name: string
+  cover: string
+  creator: string
+  description: string | null
+  trackCount: number
+  playCount: number
+} | null {
+  const keys = ['id', 'name', 'cover', 'creator', 'description', 'trackCount', 'playCount'] as const
+  if (typeof value !== 'object' || value === null || keys.some(key => !(key in value)))
+    return null
+  if (typeof value.id !== 'number' || typeof value.name !== 'string' || typeof value.cover !== 'string'
+    || typeof value.creator !== 'string' || typeof value.trackCount !== 'number' || typeof value.playCount !== 'number') {
+    return null
+  }
+  if (value.description !== null && typeof value.description !== 'string')
+    return null
+  return value
+}
+
 // 跨步骤共享的取样结果（步骤按序执行，先到的步骤负责赋值）
 let firstPlaylistId = 0
 let firstSearchSongId = 0
@@ -88,15 +110,25 @@ const steps: Array<{ name: string, run: () => Promise<void> }> = [
     },
   },
   {
-    name: `/api/playlist/{收藏歌单 ${firstPlaylistId}} → songs.length === trackCount`,
+    name: `/api/playlist/{收藏歌单 ${firstPlaylistId}} → detail 头字段形状 + tracks 包级不变量`,
     run: async () => {
       const body = await getJson(`/api/playlist/${firstPlaylistId}`)
-      if (typeof body !== 'object' || body === null || !('songs' in body) || !('trackCount' in body))
-        fail('playlist', { body })
-      const detail = body as { trackCount: number, songs: unknown[] }
-      if (!Array.isArray(detail.songs) || detail.songs.length !== detail.trackCount)
-        fail('playlist', { hint: '歌曲补全数量与 trackCount 不一致', trackCount: detail.trackCount, actual: Array.isArray(detail.songs) ? detail.songs.length : null })
-      console.log(`✓ playlist ${firstPlaylistId} songs=${detail.songs.length}`)
+      const detail = asPlaylistDetail(body)
+      if (detail === null)
+        fail('playlist', { hint: 'detail 字段形状不符合 NcmPlaylistDetail 合同', body })
+      if (detail.id !== firstPlaylistId)
+        fail('playlist', { hint: 'detail.id 与请求的歌单 id 不一致', detail })
+
+      // tracks 端点包级不变量：{ songs: [...] }，条目带数字 id，页大小不超过请求 limit
+      const tracksBody = await getJson(`/api/playlist/${firstPlaylistId}/tracks?limit=10&offset=0`)
+      if (typeof tracksBody !== 'object' || tracksBody === null || !('songs' in tracksBody) || !Array.isArray(tracksBody.songs))
+        fail('tracks', { body: tracksBody })
+      if (tracksBody.songs.length > 10)
+        fail('tracks', { hint: 'songs 超过 limit=10', body: tracksBody })
+      const badEntry = tracksBody.songs.find(song => typeof song !== 'object' || song === null || !('id' in song) || typeof song.id !== 'number')
+      if (badEntry !== undefined)
+        fail('tracks', { hint: 'songs 条目缺少数字 id', badEntry })
+      console.log(`✓ playlist ${firstPlaylistId} trackCount=${detail.trackCount} tracks=${tracksBody.songs.length}`)
     },
   },
   {
