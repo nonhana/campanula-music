@@ -213,19 +213,23 @@
       class='relative'
       style={`top: ${ITEM_SIZE * (ACTIVATED_INDEX + 0.5) - 16}px`}
     >
-      <Button variant='transparent' disabled={actionDisabled} onclick={moveToTargetLyric}>
-        <div class='flex items-center -mx-2'>
-          <ChevronLeft class='text-neutral' />
-          {#if !actionDisabled}
-            <span
-              in:fade={{ duration: 200 }}
-              out:fade={{ duration: 200 }}
-              class='inline-block'
-            >
-              {durationFormatter(activatedLyric?.time ?? 0)}
-            </span>
-          {/if}
-        </div>
+      <Button
+        variant='none'
+        disabled={actionDisabled}
+        onclick={moveToTargetLyric}
+        aria-label='回到当前歌词'
+        class='flex items-center gap-1.5 border border-app-border rounded-full px-3 py-1.5 text-sm text-app-text shadow-sm backdrop-blur transition-colors !bg-app-surface-hover/80 hover:!bg-app-surface'
+      >
+        <ChevronLeft class='size-4' />
+        {#if !actionDisabled}
+          <span
+            in:fade={{ duration: 200 }}
+            out:fade={{ duration: 200 }}
+            class='inline-block'
+          >
+            {durationFormatter(activatedLyric?.time ?? 0)}
+          </span>
+        {/if}
       </Button>
     </div>
   {:else}
