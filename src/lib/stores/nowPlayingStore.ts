@@ -40,24 +40,25 @@ export const selectedMenu = writable<'lyrics' | 'playlist'>('lyrics')
 /** 是否正在查看歌曲信息（移动端） */
 export const showDetail = writable(false)
 
-// 变更 showDetail 状态
 export function toggleShowDetail() {
   showDetail.update(v => !v)
 }
-// 设置 showDetail 状态
 export function setShowDetail(value: boolean) {
   showDetail.set(value)
 }
-// 设置抽屉当前选中的菜单
 export function setSelectedMenu(value: 'lyrics' | 'playlist') {
   selectedMenu.set(value)
 }
-// 设置歌曲加载状态
 export function setSongLoading(value: boolean) {
   songLoading.set(value)
 }
-// 重置歌曲播放状态
+
+let controller: AbortController | null = null
 export function reset() {
+  // 在途请求一并取消：移除加载中的歌曲后，迟到的响应不得复活播放器状态、不得弹错误提示
+  controller?.abort('reset')
+  controller = null
+  setSongLoading(false)
   nowPlaying.set(null)
   nowPlayingUrl.set(null)
   currentTime.set(0)
@@ -66,9 +67,6 @@ export function reset() {
   updateMediaSessionMetadata(null)
   updateMediaSessionPlaybackState(true)
 }
-// 请求控制器，用于取消请求
-let controller: AbortController | null = null
-// 设置当前播放的歌曲
 export async function setNowPlaying(song: SongItem) {
   // 如果上一次还在加载，先取消掉
   if (controller)
@@ -153,32 +151,25 @@ async function fetchSongLyrics(id: number, signal: AbortSignal): Promise<LyricIt
     return null
   }
 }
-// 添加到播放列表并立即播放
 export function addToPlaylistAndPlay(song: SongItem) {
   addSongToPlaylist(song)
   setNowPlaying(song)
 }
-// 设置当前播放时间
 export function setCurrentTime(time: number) {
   currentTime.set(time)
 }
-// 设置播放模式
 export function setPlayMode(mode: PlayMode) {
   playMode.set(mode)
 }
-// 静音
 export function mute() {
   muted.update(v => !v)
 }
-// 设置是否正在拖动进度条
 export function setSeeking(value: boolean) {
   seeking.set(value)
 }
-// 设置是否暂停
 export function setPaused(value: boolean) {
   paused.set(value)
 }
-// 更新 Media Session 元数据
 export function updateMediaSessionMetadata(song: SongItem | null) {
   if (!('mediaSession' in navigator))
     return
@@ -203,10 +194,9 @@ export function updateMediaSessionMetadata(song: SongItem | null) {
     })
   }
   catch (error) {
-    console.warn('Failed to update Media Session metadata:', error)
+    console.warn('更新 Media Session 元数据失败:', error)
   }
 }
-// 注册 Media Session 事件处理器
 export function registerMediaSessionHandlers(handlers: {
   onPlay: () => void
   onPause: () => void
@@ -236,10 +226,9 @@ export function registerMediaSessionHandlers(handlers: {
     navigator.mediaSession.playbackState = 'none'
   }
   catch (error) {
-    console.warn('Failed to register Media Session handlers:', error)
+    console.warn('注册 Media Session 事件处理器失败:', error)
   }
 }
-// 更新 Media Session 的播放状态
 export function updateMediaSessionPlaybackState(isPaused: boolean) {
   if (!('mediaSession' in navigator))
     return
@@ -248,6 +237,6 @@ export function updateMediaSessionPlaybackState(isPaused: boolean) {
     navigator.mediaSession.playbackState = isPaused ? 'paused' : 'playing'
   }
   catch (error) {
-    console.warn('Failed to update Media Session playback state:', error)
+    console.warn('更新 Media Session 播放状态失败:', error)
   }
 }

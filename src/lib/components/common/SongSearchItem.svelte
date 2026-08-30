@@ -3,6 +3,7 @@
   import Button from '$lib/components/hana/Button.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { useTap } from '$lib/hooks/useTap.svelte'
+  import { ncmErrorText } from '$lib/ncm/client'
   import { ncmImageSrc } from '$lib/ncm/image'
   import {
     addSongToPlaylist,
@@ -28,8 +29,6 @@
   const activated = $derived($nowPlaying?.id === song.id)
 
   const handlePlay = async () => {
-    if ($songLoading)
-      return
     if (activated) {
       setPaused(!$paused)
       return
@@ -40,8 +39,8 @@
       else
         addToPlaylistAndPlay(song)
     }
-    catch (error: any) {
-      callHanaMessage({ message: error.message, type: 'error' })
+    catch (error) {
+      callHanaMessage({ message: ncmErrorText(error, '播放失败，请稍后再试'), type: 'error' })
     }
   }
 
@@ -63,7 +62,7 @@
 <div
   role='button'
   tabindex='0'
-  class='group/item h-18 w-full flex items-center rounded-lg bg-white px-4 hover:bg-primary-100'
+  class='group/item h-18 w-full flex items-center rounded-lg bg-app-surface px-4 hover:bg-primary-100'
 >
   <div class='size-10 lg:size-12'>
     <img src={ncmImageSrc(song.cover, 'xs')} alt={song.name} class='size-full rounded-lg object-cover' />

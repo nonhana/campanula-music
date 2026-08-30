@@ -1,4 +1,4 @@
-import type { LyricItem, SongItem } from '$lib/types'
+import type { LyricItem, NcmSongSource, SongItem } from '$lib/types'
 import { NcmClientError } from '$lib/ncm/client'
 import { fetchLyric } from '$lib/ncm/lyrics'
 import { fetchSongUrls } from '$lib/ncm/songs'
@@ -11,6 +11,7 @@ import {
   nowPlaying,
   nowPlayingUrl,
   paused,
+  reset,
   setNowPlaying,
   songLoading,
 } from './nowPlayingStore'
@@ -206,5 +207,76 @@ describe('setNowPlaying', () => {
 
     expect(get(nowPlaying)).toMatchObject({ id: songB.id })
     expect(get(nowPlaying)?.lyrics).toEqual([{ time: 1000, text: '新歌歌词', translate: null }])
+  })
+})
+
+describe('reset', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'mediaSession')
+    vi.unstubAllGlobals()
+  })
+
+  it('移除加载中的歌曲：迟到的播放地址不落 store，MediaSession 元数据不复活', async () => {
+    const mediaSession = {
+      metadata: null,
+      playbackState: 'none',
+      setActionHandler: vi.fn(),
+    }
+    Object.defineProperty(navigator, 'mediaSession', { configurable: true, value: mediaSession })
+    vi.stubGlobal('MediaMetadata', class {
+      constructor(data: Record<string, unknown>) {
+        Object.assign(this, data)
+      }
+    })
+
+    const { promise: pendingFetch, resolve: resolveFetch } = Promise.withResolvers<NcmSongSource[]>()
+    mockedFetchSongUrls.mockImplementationOnce(() => pendingFetch)
+    const pending = setNowPlaying(song)
+    expect(get(songLoading)).toBe(true)
+
+    reset()
+
+    expect(get(nowPlaying)).toBeNull()
+    expect(get(nowPlayingUrl)).toBeNull()
+    expect(get(songLoading)).toBe(false)
+    expect(mediaSession.metadata).toBeNull()
+
+    // 控制器已在 reset 中取消：迟到的成功响应不得写回 url / MediaSession
+    resolveFetch([{ id: song.id, status: 'playable', url: 'https://m701.music.126.net/late.mp3', trial: null }])
+    await pending
+
+    expect(get(nowPlaying)).toBeNull()
+    expect(get(nowPlayingUrl)).toBeNull()
+    expect(get(songLoading)).toBe(false)
+    expect(mediaSession.metadata).toBeNull()
+  })
+
+  it('移除加载中的歌曲：loading 复位为 false，迟到 resolve 后不再变回 true', async () => {
+    const { promise: pendingFetch, resolve: resolveFetch } = Promise.withResolvers<NcmSongSource[]>()
+    mockedFetchSongUrls.mockImplementationOnce(() => pendingFetch)
+    const pending = setNowPlaying(song)
+    expect(get(songLoading)).toBe(true)
+
+    reset()
+    expect(get(songLoading)).toBe(false)
+
+    resolveFetch([{ id: song.id, status: 'playable', url: 'https://m701.music.126.net/late.mp3', trial: null }])
+    await pending
+
+    expect(get(songLoading)).toBe(false)
+  })
+
+  it('移除加载中的歌曲：迟到的失败响应不弹错误提示', async () => {
+    const { promise: pendingFetch, reject: rejectFetch } = Promise.withResolvers<never>()
+    mockedFetchSongUrls.mockImplementationOnce(() => pendingFetch)
+    const pending = setNowPlaying(song)
+
+    reset()
+
+    rejectFetch(new NcmClientError('RATE_LIMITED', '请求过于频繁，请稍后再试'))
+    await pending
+
+    expect(get(messages)).toEqual([])
+    expect(get(songLoading)).toBe(false)
   })
 })
