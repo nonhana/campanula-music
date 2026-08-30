@@ -10,7 +10,7 @@ Conventions beyond the tooling defaults. Formatting and linting are entirely ESL
 - Never duplicate a utility: a helper needed by two or more files belongs in `$lib/` or its owning domain module — search the existing ones first.
 - When framework or installed-library functionality meets the need, always use it; never reimplement it with project-local code.
 - In TypeScript, redundant type annotations on inferable positions are forbidden: write `serve({}, (info) => {})`, not `serve({}, (info: AddressInfo) => {})`.
-- Unless absolutely necessary, prefer arrow functions over function declarations.
+- Unless absolutely necessary, prefer arrow functions over function declarations. Exemption: module-level exports may use function declarations (hoisting + named-export readability — reference: `src/lib/server/ncm/raw.ts`); inside components everything is an arrow function.
 
 ## Language & copy
 

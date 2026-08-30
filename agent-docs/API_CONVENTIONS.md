@@ -12,15 +12,28 @@
 | UNAUTHENTICATED | Unbound / binding invalid | 401 |
 | RATE_LIMITED | Rate limited | 429 |
 | RESOURCE_UNAVAILABLE | No copyright / resource unavailable | 404 |
+| INVALID_PARAMS | Route-level parameter validation rejected (emitted by routes, never by upstream mapping) | 400 |
 | UNKNOWN | Fallback | 500 |
 
 - When the facade carries an upstream `status ≥ 400`, pass that status through; otherwise use the fallback table above.
-- The upstream often returns "HTTP 200 + business failure code"; such responses must be classified by business code into an error status — passing 200 through would make clients misjudge success via `res.ok`.
-- The code table is synced in three places (`satisfies` guarantees compile-time errors): `$lib/types` (definition), `server/ncm/errors.ts` (classification), `lib/ncm/client.ts` (allowlist; non-allowlisted codes degrade to UNKNOWN, but the server message is still passed through for display).
+- The upstream often returns "HTTP 200 + business failure code"; such responses must be classified by business code into an error status — passing 200 through would make clients misjudge success via `res.ok`. The enforcement mechanism is `assertOkBody` in `server/ncm/raw.ts`: every facade call re-checks the response body and throws `mapNcmError` when `body.code !== 200` (two deliberate exceptions carry inline comments: batch cover fetch tolerates per-item failure, QR polling maps the 800–803 polling codes).
+- The code table is synced in four places (`satisfies`/`Record` typing guarantees compile-time errors): `$lib/types/ncm.d.ts` (definition), `server/ncm/errors.ts` (classification enum), `lib/ncm/client.ts` (allowlist via `satisfies`; non-allowlisted codes degrade to UNKNOWN, but the server message is still passed through for display), `server/ncm/http.ts` (`ERROR_STATUS` fallback mapping).
 
 ## Client calls
 
-Pages request `/api/*` only through `ncmFetchJson` / `ncmFetchJsonPost` / `ncmFetchJsonDelete` in `$lib/ncm/client.ts`; any `UNAUTHENTICATED` response triggers the global binding-invalidation orchestration. When unbound, all business endpoints return `401 UNAUTHENTICATED` + guidance copy (the same code as binding invalidation, so pages render guidance based on it).
+Pages request `/api/*` only through `ncmFetchJson` / `ncmFetchJsonPost` / `ncmFetchJsonDelete` in `$lib/ncm/client.ts`; any `UNAUTHENTICATED` response triggers the global binding-invalidation orchestration.
+
+## Unbound access tiers (fixed contract, one row per endpoint)
+
+Binding is checked per request via `resolveBoundUser`; there is no global auth middleware. Behavior when unbound is tiered:
+
+| Tier | Endpoints | Unbound behavior |
+| --- | --- | --- |
+| Account domain | GET /api/playlists · GET /api/songs/liked · POST /api/songs/like | `401 UNAUTHENTICATED` + per-endpoint guidance copy (same code as binding invalidation, so pages render guidance from it); the account cookie is required for the call itself |
+| Public domain | GET /api/search · GET /api/songs/lyric · GET /api/songs/url · GET /api/playlist/[id] · GET /api/playlist/[id]/tracks | Anonymous access allowed: the facade is called with `bound?.cookie ?? ''` (empty cookie = upstream's logged-out subset); results may be degraded (trial-only audio, restricted lyric fields, partial track completion) but never rejected |
+| Binding domain | GET /api/binding/status · GET /api/binding/qr · GET /api/binding/qr/status · DELETE /api/binding | Manage the binding state itself; never gated on being bound |
+
+Parameter validation is identical in both tiers once a request reaches validation: invalid params return `400 INVALID_PARAMS` through `ncmErrorJson`. Public-domain endpoints validate regardless of binding state; account-domain endpoints gate on binding first (401 when unbound), so their validation is only reachable when bound.
 
 ## Endpoint list (12, as of 2026-08)
 
