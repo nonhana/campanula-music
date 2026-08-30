@@ -31,6 +31,9 @@
     command: 'add-to-playlist',
   }]
 
+  /** 描述是否展开：超长描述默认两行截断，点击展开/收起（桌面滚动条方案发现性差已弃用） */
+  let descExpanded = $state(false)
+
   const handleAddPlaylistSongs = async (autoplay: boolean = false) => {
     try {
       setSongLoading(true)
@@ -80,7 +83,17 @@
   <div class='w-full flex flex-col justify-between'>
     <h2 class='font-semibold lg:text-2xl'>{playlist.name}</h2>
     <p class='text-neutral'>{playlist.musicCount} 首歌曲</p>
-    <p class='line-clamp-2 break-words text-wrap text-xs text-neutral scrollbar-none lg:line-clamp-none lg:max-h-[76px] lg:overflow-y-scroll lg:text-sm'>{playlist.description ?? '暂无描述'}</p>
+    <button
+      type='button'
+      aria-expanded={descExpanded}
+      class={[
+        'w-full cursor-pointer break-words text-wrap text-left text-xs text-neutral lg:text-sm',
+        descExpanded ? '' : 'line-clamp-2',
+      ]}
+      onclick={() => (descExpanded = !descExpanded)}
+    >
+      {playlist.description ?? '暂无描述'}
+    </button>
     <div class='w-full items-center hidden lg:flex space-x-5'>
       <Button variant='accent' onclick={() => handleAddPlaylistSongs(true)} disabled={$songLoading}>
         <span class='flex items-center gap-2'>
