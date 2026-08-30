@@ -493,4 +493,9 @@
       background: transparent;
     }
   }
+
+  /* 未播放时进度条完全隐藏：disabled 态的游离灰点与假轨道只是视觉噪音（选择器限定直接子级，不影响弹窗内的音量滑杆） */
+  footer > input[type="range"]:disabled {
+    opacity: 0;
+  }
 </style>
