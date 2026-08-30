@@ -3,11 +3,11 @@
   import { Music } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
-  type Props = {
+  interface Props extends HTMLAttributes<HTMLDivElement> {
     wrapper?: HTMLElement | null
     src: string
     alt: string
-  } & HTMLAttributes<HTMLDivElement>
+  }
 
   let {
     wrapper = $bindable(null),
@@ -25,11 +25,18 @@
 
   const currentSrc = $derived(isVisible ? src : '')
 
-  function onImageLoad() {
+  // src 变化即复位加载两态，避免上一次的加载结果（如 404 错误占位）永久占据展示
+  $effect(() => {
+    void src
+    loaded = false
+    loadError = false
+  })
+
+  const onImageLoad = () => {
     loaded = true
   }
 
-  function onImageError() {
+  const onImageError = () => {
     loadError = true
     loaded = true
   }
@@ -59,7 +66,7 @@
   {#if !isVisible}
     <div class='size-full animate-pulse rounded-md bg-gray-200' bind:this={imgElement}></div>
   {:else if !currentSrc || loadError}
-    <div class='size-full flex items-center justify-center bg-white/60 text-neutral'>
+    <div class='size-full flex items-center justify-center bg-app-surface/60 text-neutral'>
       <Music class='size-1/3' />
     </div>
   {:else}

@@ -80,6 +80,11 @@
   }
 
   const globalPause = (e: KeyboardEvent) => {
+    // 输入法组合期与文本框内的按键不触发全局暂停，避免搜索框输入空格被吞或误切歌
+    if (e.isComposing)
+      return
+    if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable]'))
+      return
     if (e.code === 'Space') {
       e.preventDefault()
       setPaused(!$paused)

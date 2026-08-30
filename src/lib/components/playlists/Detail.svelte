@@ -8,6 +8,7 @@
   import Input from '$lib/components/hana/Input.svelte'
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
+  import { ncmErrorText } from '$lib/ncm/client'
   import { ncmImageSrc } from '$lib/ncm/image'
   import { setNowPlaying, setSongLoading, songLoading, updatePlaylist } from '$lib/stores'
   import { Ellipsis, Loader, Play, Plus, Search, X } from '@lucide/svelte'
@@ -40,15 +41,13 @@
         message: '播放列表已更新',
         type: 'success',
       })
-      if (autoplay) {
-        setNowPlaying(queue[0])
+      const first = queue[0]
+      if (autoplay && first) {
+        setNowPlaying(first)
       }
     }
-    catch (error: any) {
-      callHanaMessage({
-        message: error.message,
-        type: 'error',
-      })
+    catch (error) {
+      callHanaMessage({ message: ncmErrorText(error, '播放列表更新失败，请稍后再试'), type: 'error' })
     }
     finally {
       !autoplay && setSongLoading(false)
