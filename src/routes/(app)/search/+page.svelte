@@ -27,6 +27,8 @@
   let nextOffset = $state(0)
   let loadingMore = $state(false)
   let loading = $state(false)
+  /** 歌曲列表可视区实测高度：随视口/布局自适应，替换旧的 640 硬编码（对齐歌单页动态测量模式） */
+  let listHeight = $state(0)
   let errorMessage = $state<string | null>(null)
 
   /** 在途请求的取消句柄：新搜索发出前中止旧请求，避免乱序覆盖 */
@@ -149,8 +151,8 @@
 </script>
 
 <SeoHead {metadata} />
-
-<section class='space-y-6'>
+<!-- 定高根（对齐歌单页）：列表自适应填满剩余空间，搜索框/tab 固定在上方 -->
+<section class='h-[calc(100dvh-15rem)] flex flex-col gap-6 md:h-[calc(100dvh-9.5rem)]'>
   <header>
     <h1 class='text-2xl text-app-text font-semibold'>搜索</h1>
   </header>
@@ -217,16 +219,19 @@
         {/if}
       </p>
     {:else if page.type === 'song'}
-      <VirtualList items={songItems} itemSize={72} containerSize={640} onNearEnd={loadMore}>
-        {#snippet renderItem(item)}
-          <SongSearchItem song={item} />
-        {/snippet}
-      </VirtualList>
+      <!-- 列表可视区实测高度驱动虚拟窗口：containerSize 不再硬编码 640，大屏不再下方留白 -->
+      <div class='min-h-40 flex-1' bind:clientHeight={listHeight}>
+        <VirtualList items={songItems} itemSize={72} containerSize={listHeight} onNearEnd={loadMore}>
+          {#snippet renderItem(item)}
+            <SongSearchItem song={item} />
+          {/snippet}
+        </VirtualList>
+      </div>
       <p class='pt-2 text-center text-sm text-app-text-muted'>
         总共找到 {total.toLocaleString('zh-CN')} 首歌曲{loadingMore ? ' · 加载中…' : ''}
       </p>
     {:else if page.type === 'playlist'}
-      <ul role='list' class='grid gap-3 sm:grid-cols-2'>
+      <ul role='list' class='grid min-h-40 flex-1 content-start gap-3 overflow-y-auto scrollbar-none sm:grid-cols-2'>
         {#each page.playlists as playlist (playlist.id)}
           <li>
             <a
@@ -254,7 +259,7 @@
         {/each}
       </ul>
     {:else}
-      <ul role='list' class='space-y-1'>
+      <ul role='list' class='min-h-40 flex-1 content-start overflow-y-auto scrollbar-none space-y-1'>
         {#each page.artists as artist (artist.id)}
           <li class='flex items-center gap-3 rounded-lg px-3 py-2'>
             {#if artist.avatar}

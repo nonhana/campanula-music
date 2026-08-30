@@ -168,7 +168,7 @@ describe('搜索页', () => {
     render(Page)
 
     await typeKeyword('周杰伦')
-    await waitFor(() => expect(screen.getByText('歌曲-12')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('歌曲-10')).toBeTruthy())
     expect(screen.getByText(/总共找到 90 首歌曲/)).toBeTruthy()
 
     // jsdom 无布局，直接覆写 scrollTop 读值模拟滚到列表底部触发 onNearEnd
