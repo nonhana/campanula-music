@@ -79,16 +79,16 @@
 
   <div class='w-22 flex items-center justify-end gap-2'>
     {#if $songLoading}
-      <Button variant='transparent' iconButton disabled onclick={handlePlay}>
+      <Button variant='transparent' iconButton disabled onclick={handlePlay} aria-label='播放'>
         <Loader class='animate-spin' />
       </Button>
     {:else}
       {#if activated && !$paused}
-        <Button variant='transparent' iconButton onclick={() => setPaused(true)}><Pause /></Button>
+        <Button variant='transparent' iconButton aria-label='暂停' onclick={() => setPaused(true)}><Pause /></Button>
       {:else}
-        <Button variant='transparent' iconButton onclick={handlePlay}><Play /></Button>
+        <Button variant='transparent' iconButton aria-label='播放' onclick={handlePlay}><Play /></Button>
       {/if}
     {/if}
-    <Button variant='transparent' iconButton onclick={handleAddToPlaylist}><Plus /></Button>
+    <Button variant='transparent' iconButton aria-label='添加到播放列表' onclick={handleAddToPlaylist}><Plus /></Button>
   </div>
 </div>

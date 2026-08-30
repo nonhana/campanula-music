@@ -123,12 +123,12 @@
     {/if}
     <Tooltip class={['hidden', type === 'queue' ? 'md:group-hover/item:block' : 'group-hover/item:block']} content='播放' disabled={type === 'queue'}>
       {#if $songLoading}
-        <Button disabled iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'flex']}>
+        <Button disabled iconButton aria-label='播放' onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'flex']}>
           <Loader class='animate-spin' />
         </Button>
       {:else}
-        <Button iconButton onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'flex']}><Play /></Button>
-        <Button iconButton onclick={handlePause} class={[activated && !$paused ? 'flex' : 'hidden']}><Pause /></Button>
+        <Button iconButton aria-label='播放' onclick={handlePlay} class={[activated && !$paused ? 'hidden' : 'flex']}><Play /></Button>
+        <Button iconButton aria-label='暂停' onclick={handlePause} class={[activated && !$paused ? 'flex' : 'hidden']}><Pause /></Button>
       {/if}
     </Tooltip>
     {#if showCover}
@@ -158,13 +158,13 @@
   {#if type === 'list'}
     <div class='w-10 justify-between hidden lg:w-24 group-hover/item:flex'>
       <Tooltip content='添加到播放列表'>
-        <Button iconButton onclick={handleAddToPlaylist}><Plus /></Button>
+        <Button iconButton aria-label='添加到播放列表' onclick={handleAddToPlaylist}><Plus /></Button>
       </Tooltip>
     </div>
   {:else}
     <div class='w-10 justify-center hidden group-hover/item:flex'>
       <Tooltip content='移除' disabled>
-        <Button iconButton onclick={handleRemoveSong}><X /></Button>
+        <Button iconButton aria-label='移除' onclick={handleRemoveSong}><X /></Button>
       </Tooltip>
     </div>
   {/if}

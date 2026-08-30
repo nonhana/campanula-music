@@ -105,7 +105,7 @@
         </span>
       </Button>
       <Dropdown position='bottom' trigger='click' oncommand={handleCommand}>
-        <Button iconButton variant='transparent'>
+        <Button iconButton variant='transparent' aria-label='更多操作'>
           <Ellipsis />
         </Button>
         {#snippet dropdown()}
