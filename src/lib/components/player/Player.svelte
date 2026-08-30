@@ -303,7 +303,7 @@
       <SkipForward />
     </Button>
   </div>
-  <span class='ml-5 select-none text-sm text-neutral hidden md:inline'>
+  <span class='ml-5 select-none text-sm text-neutral hidden lg:inline'>
     {curTimeInfo}
   </span>
 
