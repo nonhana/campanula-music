@@ -118,11 +118,8 @@
     {:else}
       <!-- 弹性高度：列表填满头部以下剩余空间（VirtualList 依赖有界容器） -->
       <div class='min-h-40 flex-1'>
-        <SongList {songs} {searchValue} onQueueAll={ensureAllSongs} onNearEnd={loadMore} />
+        <SongList {songs} {searchValue} onQueueAll={ensureAllSongs} onNearEnd={loadMore} loading={loadingMore} />
       </div>
-      {#if loadingMore}
-        <p class='py-2 text-center text-sm text-app-text-muted'>加载中…</p>
-      {/if}
     {/if}
   </div>
 {/if}

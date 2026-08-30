@@ -6,6 +6,7 @@
   import VirtualList from '$lib/components/hana/VirtualList.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { playlistId as playlistIdStore, resetPlaylist, setNowPlaying, setPlaylistId, setSongLoading, updatePlaylist } from '$lib/stores'
+  import { Loader } from '@lucide/svelte'
 
   const { callHanaMessage } = useMessage()
 
@@ -18,9 +19,11 @@
     onQueueAll?: () => Promise<SongItem[]>
     /** 触底增量加载回调，透传给 VirtualList 的 onNearEnd */
     onNearEnd?: () => void
+    /** 增量加载进行中：在列表内容末尾（滚动区内）渲染加载指示 */
+    loading?: boolean
   }
 
-  let { songs, searchValue = $bindable(''), playlistId, onQueueAll, onNearEnd }: Props = $props()
+  let { songs, searchValue = $bindable(''), playlistId, onQueueAll, onNearEnd, loading = false }: Props = $props()
 
   const songsFilter = (song: SongItem) => {
     const target = searchValue.trim().toLowerCase()
@@ -81,4 +84,11 @@
       <SongPlaylistItem showCover index={item.index + 1} song={item} ondblclick={() => handleDblClick(item)} />
     {/snippet}
   </VirtualList>
+  {#if loading}
+    <!-- 加载指示属于列表内容：置于滚动区内紧跟末行，避免脱离滚动流孤立在页面底部 -->
+    <div class='flex items-center justify-center gap-2 py-3 text-sm text-app-text-muted'>
+      <Loader class='size-4 animate-spin' />
+      加载中…
+    </div>
+  {/if}
 </ScrollContainer>
