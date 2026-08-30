@@ -59,7 +59,7 @@
   <div
     role='region'
     aria-label='安装提示'
-    class='fixed inset-x-0 bottom-20 z-30 flex justify-center px-4 md:bottom-6'
+    class='fixed inset-x-0 bottom-44 z-30 flex justify-center px-4 md:bottom-24'
   >
     <div class='max-w-md w-full flex items-center gap-3 border border-app-border rounded-xl bg-app-surface p-4 shadow-lg'>
       <Download class='size-5 shrink-0 text-primary-700' />
@@ -89,7 +89,7 @@
   <div
     role='region'
     aria-label='iOS 安装提示'
-    class='fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-4'
+    class='fixed inset-x-0 bottom-44 z-30 flex justify-center px-4'
   >
     <div class='max-w-md w-full flex items-center gap-3 border border-app-border rounded-xl bg-app-surface p-4 shadow-lg'>
       <p class='min-w-0 flex-1 text-sm text-app-text-muted'>
