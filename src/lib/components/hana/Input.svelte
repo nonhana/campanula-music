@@ -48,7 +48,9 @@
     keydown,
   }: Props = $props()
 
-  const inputId = $derived(id ?? `input-${Math.random().toString(36).slice(2)}`)
+  // $props.id() 在 SSR 与水合间保持一致（Math.random 会导致两侧 id 不同）
+  const uid = $props.id()
+  const inputId = $derived(id ?? `${uid}-input`)
 
   let showPassword = $state(false)
 
@@ -75,7 +77,7 @@
   })
 
   const fieldBaseClasses = $derived([
-    'w-full bg-white border placeholder:text-neutral',
+    'w-full bg-app-surface border placeholder:text-neutral',
     'focus:outline-none focus:ring-2 focus:border-transparent',
     invalid ? 'border-error-400 focus:ring-error-400' : 'border-neutral-200 hover:border-neutral-300 focus:ring-primary',
     radiusClass,

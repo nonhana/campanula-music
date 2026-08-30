@@ -16,13 +16,7 @@
   let errorMessage = $state<string | null>(null)
   let controller: AbortController | null = null
 
-  onMount(() => {
-    controller = new AbortController()
-    void load()
-    return () => controller?.abort()
-  })
-
-  async function load() {
+  const load = async () => {
     try {
       groups = await fetchUserPlaylists(controller?.signal)
       errorMessage = null
@@ -38,8 +32,14 @@
     }
   }
 
+  onMount(() => {
+    controller = new AbortController()
+    void load()
+    return () => controller?.abort()
+  })
+
   /** 领域形状适配：歌单条目 → 旧富卡 PlaylistItem */
-  function toCard(playlist: NcmPlaylist): PlaylistItem {
+  const toCard = (playlist: NcmPlaylist): PlaylistItem => {
     return {
       id: playlist.id,
       name: playlist.name,

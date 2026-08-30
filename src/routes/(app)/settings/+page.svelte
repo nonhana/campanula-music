@@ -13,38 +13,47 @@
   const metadata = generateSeoMetadata('settings')
 
   let accountStatus = $state<NcmBindingStatus | null>(null)
+  /** null 两义拆分：loading = 首查未归，error = 查询失败，二者文案不同 */
+  let accountLoading = $state(true)
+  let accountError = $state(false)
   let unbinding = $state(false)
   let confirmingUnbind = $state(false)
   let unbindError = $state<string | null>(null)
 
-  onMount(() => {
-    void refreshAccount()
-  })
-
-  async function refreshAccount() {
+  const refreshAccount = async () => {
+    accountLoading = true
+    accountError = false
     try {
       accountStatus = await fetchBindingStatus()
       unbindError = null
     }
     catch {
       accountStatus = null
+      accountError = true
+    }
+    finally {
+      accountLoading = false
     }
   }
+
+  onMount(() => {
+    void refreshAccount()
+  })
 
   /**
    * 解绑采用两步确认：首次点击进入确认态，再次点击才执行。
    * 确认后删除本机凭据，全局心跳编排自然回到绑定引导页。
    */
-  function requestUnbind() {
+  const requestUnbind = () => {
     confirmingUnbind = true
   }
 
-  function cancelUnbind() {
+  const cancelUnbind = () => {
     confirmingUnbind = false
     unbindError = null
   }
 
-  async function handleUnbind() {
+  const handleUnbind = async () => {
     unbinding = true
     unbindError = null
     try {
@@ -80,8 +89,10 @@
 
   <div class='space-y-3'>
     <h2 class='text-base text-app-text font-medium'>账号</h2>
-    {#if accountStatus === null}
-      <p class='text-sm text-app-text-muted'>账号状态未知，请稍后重试。</p>
+    {#if accountLoading}
+      <p class='text-sm text-app-text-muted'>账号状态加载中…</p>
+    {:else if accountError || accountStatus === null}
+      <p class='text-sm text-app-text-muted'>账号状态获取失败，请稍后重试。</p>
     {:else if accountStatus.status === 'valid'}
       <div class='flex items-center justify-between gap-4 border border-app-border rounded-xl bg-app-surface p-4'>
         <div class='min-w-0'>

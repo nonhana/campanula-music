@@ -1,72 +1,52 @@
 import type { PlaylistItem, SongItem } from '$lib/types'
-import { derived, writable } from 'svelte/store'
+import { derived, get, writable } from 'svelte/store'
 
 /** 歌单 ID（如果是从一个歌单添加的播放列表，则记录歌单 ID） */
 export const playlistId = writable<string | null>(null)
 /** 存储的歌单列表 */
 export const storedPlaylists = writable<PlaylistItem[]>([])
 
-// 设置歌单 ID
 export function setPlaylistId(id: string) {
   playlistId.set(id)
 }
 
-// 清空歌单列表
-export function clearPlaylists() {
-  storedPlaylists.set([])
-}
-
-// 设置歌单列表
-export function setPlaylists(playlists: PlaylistItem[]) {
-  storedPlaylists.set(playlists)
-}
-
 export const playlist = writable<SongItem[]>([])
 
-// 使用 derived store 维护 ID 集合
 export const playlistIdSet = derived(playlist, ($playlist) => {
   return new Set<number>($playlist.map(song => song.id))
 })
 
-// 重置状态
 export function resetPlaylist() {
   playlist.set([])
   playlistId.set(null)
 }
 
-// 将指定歌曲列表更新到当前播放列表
+/**
+ * 将指定歌曲列表更新到当前播放列表，返回是否发生了变更。
+ * svelte 的 safe_not_equal 对对象恒真：update 回调即使返回原引用，订阅者也会被广播；
+ * 因此不走 update 的闭包回传，显式比较后仅在真实变更时 set
+ */
 export function updatePlaylist(songs: SongItem[]): boolean {
+  const current = get(playlist)
+  if (current.length !== songs.length) {
+    playlist.set(songs)
+    return true
+  }
+
   let hasChanged = false
-
-  playlist.update((current) => {
-    const len = songs.length
-    if (len !== current.length) {
+  const newList = [...current]
+  for (let i = 0; i < songs.length; i++) {
+    if (current[i].id !== songs[i].id) {
+      newList[i] = songs[i]
       hasChanged = true
-      return songs
     }
+  }
 
-    const newList = [...current]
-    for (let i = 0; i < len; i++) {
-      const newSong = songs[i]
-      const oldSong = current[i]
-      if (oldSong?.id !== newSong.id) {
-        newList[i] = newSong
-        hasChanged = true
-      }
-    }
-
-    return hasChanged ? newList : current
-  })
-
+  if (hasChanged)
+    playlist.set(newList)
   return hasChanged
 }
 
-// 替换当前播放列表
-export function replacePlaylist(songs: SongItem[]) {
-  playlist.set(songs)
-}
-
-// 添加歌曲到播放列表
 export function addSongToPlaylist(song: SongItem) {
   playlist.update((songs) => {
     const existingIndex = songs.findIndex(s => s.id === song.id)
@@ -79,14 +59,12 @@ export function addSongToPlaylist(song: SongItem) {
   })
 }
 
-// 从播放列表中移除歌曲
 export function removeSongFromPlaylist(id: number) {
   playlist.update((songs) => {
     return songs.some(s => s.id === id) ? songs.filter(s => s.id !== id) : songs
   })
 }
 
-// 判断歌曲是否在播放列表中
 export function isSongInPlaylist(id: number) {
   let exists = false
   playlistIdSet.subscribe(set => exists = set.has(id))()

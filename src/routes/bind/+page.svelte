@@ -24,74 +24,15 @@
   /** 会话号：刷新二维码/卸载时自增，作废在途轮询结果，防迟到覆盖 */
   let session = 0
 
-  onMount(() => {
-    controller = new AbortController()
-    void init()
-    return () => {
-      controller?.abort()
-      session += 1
-      if (pollTimer)
-        clearTimeout(pollTimer)
-    }
-  })
-
-  async function init() {
-    phase = 'checking'
-    let status: BindingStatusResponse
-    try {
-      status = await fetchBindingStatus(controller?.signal)
-    }
-    catch {
-      phase = 'error'
-      errorMessage = BINDING_ERROR_TEXT.UNKNOWN
-      return
-    }
-    if (status.status === 'valid') {
-      // 已绑定：无需再绑（正常应被心跳引导离开，兜底防误入重复绑定）
-      await goto(resolve('/'))
-      return
-    }
-    mode = status.status === 'invalid' ? 'invalid' : 'first'
-    await start()
-  }
-
-  function presentError(err: unknown) {
+  const presentError = (err: unknown) => {
     phase = 'error'
     errorMessage = err instanceof BindingClientError
       ? (err.message || BINDING_ERROR_TEXT[err.code])
       : BINDING_ERROR_TEXT.UNKNOWN
   }
 
-  /** 开始/刷新二维码：获取 key 与二维码后进入轮询 */
-  async function start() {
-    session += 1
-    const current = session
-    phase = 'creating'
-    errorMessage = null
-    try {
-      qr = await startQrLogin(controller?.signal)
-      if (current !== session)
-        return
-      phase = 'waiting'
-      await pollOnce(current)
-    }
-    catch (err) {
-      if (current !== session)
-        return
-      presentError(err)
-    }
-  }
-
-  function schedulePoll(current: number) {
-    if (pollTimer)
-      clearTimeout(pollTimer)
-    pollTimer = setTimeout(() => {
-      void pollOnce(current)
-    }, QR_POLL_INTERVAL)
-  }
-
   /** 轮询扫码状态：确认即进入应用；过期停止并引导刷新；其余状态续拍直到终止 */
-  async function pollOnce(current: number) {
+  const pollOnce = async (current: number) => {
     if (!qr)
       return
     let result: QrPollResponse
@@ -117,8 +58,64 @@
       return
     }
     phase = result.status === 'scanned' ? 'scanned' : 'waiting'
-    schedulePoll(current)
+    // 续拍：清除旧定时器后按既定间隔再轮询（自引用发生在自身初始化之后的闭包里）
+    if (pollTimer)
+      clearTimeout(pollTimer)
+    pollTimer = setTimeout(() => {
+      void pollOnce(current)
+    }, QR_POLL_INTERVAL)
   }
+
+  /** 开始/刷新二维码：获取 key 与二维码后进入轮询 */
+  const start = async () => {
+    session += 1
+    const current = session
+    phase = 'creating'
+    errorMessage = null
+    try {
+      qr = await startQrLogin(controller?.signal)
+      if (current !== session)
+        return
+      phase = 'waiting'
+      await pollOnce(current)
+    }
+    catch (err) {
+      if (current !== session)
+        return
+      presentError(err)
+    }
+  }
+
+  const init = async () => {
+    phase = 'checking'
+    let status: BindingStatusResponse
+    try {
+      status = await fetchBindingStatus(controller?.signal)
+    }
+    catch {
+      phase = 'error'
+      errorMessage = BINDING_ERROR_TEXT.UNKNOWN
+      return
+    }
+    if (status.status === 'valid') {
+      // 已绑定：无需再绑（正常应被心跳引导离开，兜底防误入重复绑定）
+      await goto(resolve('/'))
+      return
+    }
+    mode = status.status === 'invalid' ? 'invalid' : 'first'
+    await start()
+  }
+
+  onMount(() => {
+    controller = new AbortController()
+    void init()
+    return () => {
+      controller?.abort()
+      session += 1
+      if (pollTimer)
+        clearTimeout(pollTimer)
+    }
+  })
 </script>
 
 <svelte:head>

@@ -6,7 +6,7 @@
   import SeoHead from '$lib/components/shared/SeoHead.svelte'
   import { generateSeoMetadata } from '$lib/metadata'
   import { ncmImageSrc } from '$lib/ncm/image'
-  import { SEARCH_ERROR_TEXT, SearchClientError, searchNcm } from '$lib/ncm/search'
+  import { SEARCH_ERROR_TEXT, SEARCH_PAGE_SIZE, SearchClientError, searchNcm } from '$lib/ncm/search'
   import { toSongItem } from '$lib/ncm/songs'
   import { List, Loader, Search, User, X } from '@lucide/svelte'
   import { debounce } from 'throttle-debounce'
@@ -23,6 +23,8 @@
   let type = $state<NcmSearchType>('song')
   let page = $state<NcmSearchPage | null>(null)
   let total = $state(0)
+  /** 已请求到的偏移：按请求窗口推进，不随去重丢弃回退，避免窗口重叠（对齐歌单页模式） */
+  let nextOffset = $state(0)
   let loadingMore = $state(false)
   let loading = $state(false)
   let errorMessage = $state<string | null>(null)
@@ -40,7 +42,16 @@
       : false,
   )
 
-  async function runSearch() {
+  const reset = () => {
+    controller?.abort()
+    page = null
+    total = 0
+    nextOffset = 0
+    errorMessage = null
+    loading = false
+  }
+
+  const runSearch = async () => {
     const keyword = keywords.trim()
     if (!keyword) {
       reset()
@@ -57,6 +68,7 @@
         return
       page = result
       total = result.total
+      nextOffset = SEARCH_PAGE_SIZE
     }
     catch (err) {
       if (next.signal.aborted)
@@ -77,15 +89,7 @@
     void runSearch()
   })
 
-  function reset() {
-    controller?.abort()
-    page = null
-    total = 0
-    errorMessage = null
-    loading = false
-  }
-
-  function handleInput() {
+  const handleInput = () => {
     if (!keywords.trim()) {
       reset()
       return
@@ -93,14 +97,14 @@
     debouncedRun()
   }
 
-  function clearKeywords() {
+  const clearKeywords = () => {
     keywords = ''
     reset()
     // upcomingOnly：只取消待执行调用，保留后续输入可再次触发（v5 cancel 默认会永久禁用）
     debouncedRun.cancel({ upcomingOnly: true })
   }
 
-  function selectTab(nextType: NcmSearchType) {
+  const selectTab = (nextType: NcmSearchType) => {
     if (type === nextType)
       return
     type = nextType
@@ -116,18 +120,20 @@
   const songItems = $derived(page?.type === 'song' ? page.songs.map(toSongItem) : [])
 
   /** 滚动接近末尾自动加载更多（对齐旧 Header 的 onNearEnd 模式） */
-  async function loadMore() {
+  const loadMore = async () => {
     const keyword = keywords.trim()
     if (loadingMore || loading || type !== 'song' || !keyword)
       return
-    if (!page || page.type !== 'song' || page.songs.length >= total)
+    if (!page || page.type !== 'song' || nextOffset >= total)
       return
     loadingMore = true
     try {
-      const result = await searchNcm({ keywords: keyword, type, offset: page.songs.length })
+      const offset = nextOffset
+      const result = await searchNcm({ keywords: keyword, type, offset })
       // 关键词/类型在请求期间变化则丢弃结果
       if (keywords.trim() !== keyword || type !== 'song' || result.type !== 'song')
         return
+      nextOffset = offset + SEARCH_PAGE_SIZE
       const seen = new Set(page.songs.map(song => song.id))
       page.songs.push(...result.songs.filter(song => !seen.has(song.id)))
       total = Math.max(total, result.total)

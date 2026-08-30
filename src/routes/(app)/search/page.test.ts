@@ -11,8 +11,10 @@ vi.mock('$lib/ncm/search', () => ({
     UNAUTHENTICATED: '搜索需要账号许可，绑定已失效，请重新绑定',
     RATE_LIMITED: '请求过于频繁，请稍后再试',
     RESOURCE_UNAVAILABLE: '该资源暂不可用',
+    INVALID_PARAMS: '请求参数不合法，请检查后重试',
     UNKNOWN: '搜索失败，请稍后再试',
   },
+  SEARCH_PAGE_SIZE: 30,
   SearchClientError: class SearchClientError extends Error {
     readonly code: string
     constructor(code: string, message: string) {
@@ -150,7 +152,7 @@ describe('搜索页', () => {
     await waitFor(() => expect(screen.getByText('晴天')).toBeTruthy())
   })
 
-  it('歌曲 tab 显示总数，滚动接近末尾自动按 offset 加载更多', async () => {
+  it('歌曲 tab 显示总数，滚动接近末尾自动按请求窗口 offset 加载更多', async () => {
     const firstPage: NcmSearchPage = {
       type: 'song',
       total: 90,
@@ -175,8 +177,9 @@ describe('搜索页', () => {
     await fireEvent.scroll(scroller)
 
     await waitFor(() => expect(mockedSearch).toHaveBeenCalledTimes(2))
+    // 第二页按请求窗口 offset=30 请求（SEARCH_PAGE_SIZE），不随去重后条数回退
     expect(mockedSearch.mock.calls[1]?.[0]).toEqual(
-      expect.objectContaining({ keywords: '周杰伦', type: 'song', offset: 12 }),
+      expect.objectContaining({ keywords: '周杰伦', type: 'song', offset: 30 }),
     )
   })
 

@@ -37,14 +37,14 @@
     }
   })
 
-  async function install() {
+  const install = async () => {
     if (!deferredPrompt)
       return
     await deferredPrompt.prompt()
     deferredPrompt = null
   }
 
-  function dismissIosHint() {
+  const dismissIosHint = () => {
     showIosHint = false
     try {
       localStorage.setItem(INSTALL_HINT_KEY, '1')

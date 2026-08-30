@@ -1,5 +1,3 @@
-import { onDestroy, onMount } from 'svelte'
-
 interface UseTapOptions {
   /** 触点移动距离阈值（默认 10px） */
   threshold?: number
@@ -35,19 +33,18 @@ export function useTap(getter: () => HTMLElement | null, options: UseTapOptions)
     }
   }
 
-  onMount(() => {
-    if (!getter())
+  // $effect 按 getter 的响应式读取挂载：元素引用（bind:this）晚于首次运行就绪时，
+  // 依赖变化会重跑并补挂；清理函数在元素更换/组件卸载时摘除旧监听
+  $effect(() => {
+    const element = getter()
+    if (!element)
       return
 
-    getter()?.addEventListener('touchstart', handleTouchStart, { passive: true })
-    getter()?.addEventListener('touchend', handleTouchEnd, { passive: true })
-  })
-
-  onDestroy(() => {
-    if (!getter())
-      return
-
-    getter()?.removeEventListener('touchstart', handleTouchStart)
-    getter()?.removeEventListener('touchend', handleTouchEnd)
+    element.addEventListener('touchstart', handleTouchStart, { passive: true })
+    element.addEventListener('touchend', handleTouchEnd, { passive: true })
+    return () => {
+      element.removeEventListener('touchstart', handleTouchStart)
+      element.removeEventListener('touchend', handleTouchEnd)
+    }
   })
 }

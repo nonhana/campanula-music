@@ -4,7 +4,7 @@
   import Logo from '$lib/components/svg/Logo.svelte'
   import { navItems } from '$lib/config'
 
-  function isActive(href: string) {
+  const isActive = (href: string) => {
     const pathname = page.url.pathname
     return href === '/' ? pathname === '/' : pathname.startsWith(href)
   }
