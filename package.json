@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@12.8.1",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -19,14 +19,15 @@
   },
   "dependencies": {
     "@libsql/client": "catalog:",
+    "@lucide/svelte": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
-    "lucide-svelte": "catalog:",
     "throttle-debounce": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@eslint/compat": "catalog:",
+    "@eslint/config-helpers": "catalog:",
     "@neoconfetti/svelte": "catalog:",
     "@sveltejs/adapter-netlify": "catalog:",
     "@sveltejs/enhanced-img": "catalog:",

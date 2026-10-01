@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements'
-  import { ExternalLink } from 'lucide-svelte'
+  import { ExternalLink } from '@lucide/svelte'
 
   type Props = {
     variant?: 'primary' | 'secondary' | 'accent' | 'transparent' | 'none'
@@ -70,25 +70,38 @@
     }`,
   )
 
+// href is an arbitrary string by component contract: callers pass internal pathnames (pre-resolved via resolve() at the call site) or external URLs, which are rendered in the rel='external' branch below. This component is exempted from svelte/no-navigation-without-resolve in eslint.config.js for that reason.
+
 </script>
 
 {#if href}
-  <a
-    class={['inline-block group', computedClasses]}
-    bind:this={thisEl}
-    target={isExternal ? '_blank' : undefined}
-    {style}
-    {href}
-    {...rest}>
-    <div role='button'>
-      {#if isExternal}
+  {#if isExternal}
+    <a
+      class={['inline-block group', computedClasses]}
+      bind:this={thisEl}
+      target='_blank'
+      rel='external'
+      {style}
+      {href}
+      {...rest}>
+      <div role='button'>
         <div class='group-hover:hidden'>{@render children()}</div>
         <div class='mx-auto w-fit hidden group-hover:block'><ExternalLink /></div>
-      {:else}
+      </div>
+    </a>
+  {:else}
+    <!-- external URLs go to the rel='external' branch above; internal callers pass route paths already -->
+    <a
+      class={['inline-block group', computedClasses]}
+      bind:this={thisEl}
+      {style}
+      {href}
+      {...rest}>
+      <div role='button'>
         {@render children()}
-      {/if}
-    </div>
-  </a>
+      </div>
+    </a>
+  {/if}
 {:else}
   <button class={computedClasses} {style} {disabled} bind:this={thisEl} {...rest}>
     {@render children()}

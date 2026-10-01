@@ -1,6 +1,6 @@
 <script lang='ts'>
   import type { HTMLAttributes } from 'svelte/elements'
-  import { Music } from 'lucide-svelte'
+  import { Music } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   type Props = {

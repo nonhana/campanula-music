@@ -1,4 +1,4 @@
-import { Archive, Home, ListMusic, Music, Music4, Piano } from 'lucide-svelte'
+import { Archive, Home, ListMusic, Music, Music4, Piano } from '@lucide/svelte'
 
 export const siteTitle = 'Campanula'
 export const siteDescription = 'Campanula Music'

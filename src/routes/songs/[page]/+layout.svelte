@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte'
   import type { LayoutData } from './$types'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
-  import { Music } from 'lucide-svelte'
+  import { Music } from '@lucide/svelte'
 
   interface Props {
     data: LayoutData

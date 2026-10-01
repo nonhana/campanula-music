@@ -3,7 +3,7 @@
   import SongHomeItem from '$lib/components/common/SongHomeItem.svelte'
   import BannerCard from '$lib/components/hana/BannerCard.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
-  import { Music } from 'lucide-svelte'
+  import { Music } from '@lucide/svelte'
 
   interface Props {
     songList: SongItemType[]
@@ -21,9 +21,9 @@
   {#snippet icon()}<Music />{/snippet}
   <div class='w-full rounded-lg bg-white px-2'>
     <ScrollContainer contentClass='flex'>
-      {#each songGroups as group}
+      {#each songGroups as group (group[0].id)}
         <div class='flex flex-col'>
-          {#each group as song}
+          {#each group as song (song.id)}
             <SongHomeItem song={song} />
           {/each}
         </div>

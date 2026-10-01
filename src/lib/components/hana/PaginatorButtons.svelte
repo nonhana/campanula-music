@@ -1,6 +1,6 @@
 <script lang='ts'>
   import Button from '$lib/components/hana/Button.svelte'
-  import { Ellipsis } from 'lucide-svelte'
+  import { Ellipsis } from '@lucide/svelte'
 
   interface Props {
     currentPage: number
@@ -57,7 +57,7 @@
 {#if start > 2}
   <Button iconButton shape='circle'><Ellipsis /></Button>
 {/if}
-{#each pages as page}
+{#each pages as page (page)}
   <Button
     iconButton
     activated={currentPage === page}

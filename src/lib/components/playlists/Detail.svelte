@@ -9,7 +9,7 @@
   import LazyImage from '$lib/components/hana/LazyImage.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { setNowPlaying, setSongLoading, songLoading, updatePlaylist } from '$lib/stores'
-  import { Ellipsis, Loader, Play, Plus, Search, X } from 'lucide-svelte'
+  import { Ellipsis, Loader, Play, Plus, Search, X } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   const { callHanaMessage } = useMessage()
@@ -93,7 +93,7 @@
         </Button>
         {#snippet dropdown()}
           <DropdownMenu>
-            {#each moreMap as { text, command }}
+            {#each moreMap as { text, command } (command)}
               <DropdownItem {command}>
                 {text}
               </DropdownItem>

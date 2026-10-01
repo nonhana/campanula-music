@@ -5,7 +5,7 @@
   import MaskElement from '$lib/components/hana/MaskElement.svelte'
   import { useMessage } from '$lib/hooks/useMessage'
   import { addSongToPlaylist, addToPlaylistAndPlay, isSongInPlaylist, nowPlaying, paused, setNowPlaying, setPaused, songLoading } from '$lib/stores'
-  import { Loader, Pause, Play, Plus } from 'lucide-svelte'
+  import { Loader, Pause, Play, Plus } from '@lucide/svelte'
 
   const { callHanaMessage } = useMessage()
 

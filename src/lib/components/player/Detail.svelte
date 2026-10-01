@@ -33,7 +33,7 @@
     Volume1,
     Volume2,
     VolumeX,
-  } from 'lucide-svelte'
+  } from '@lucide/svelte'
 
   interface Props {
     currentProgress: number

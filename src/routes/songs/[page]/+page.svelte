@@ -1,7 +1,7 @@
 <script lang='ts'>
-  import type { SongItem } from '$lib/types'
   import type { PageData } from './$types'
   import { goto } from '$app/navigation'
+  import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import SongTableItem from '$lib/components/common/SongTableItem.svelte'
   import Paginator from '$lib/components/hana/Paginator.svelte'
@@ -16,11 +16,7 @@
 
   const { data }: Props = $props()
 
-  let songList = $state<SongItem[]>([])
-
-  $effect(() => {
-    songList = data.songList
-  })
+  let songList = $derived(data.songList)
 
   const fetchSongList = async () => {
     const res = await fetch(`/api/songs?page=${curPage}&pageSize=${data.pageSize}`)
@@ -65,7 +61,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each songList as song}
+      {#each songList as song (song.id)}
         <SongTableItem {song} />
       {/each}
     </tbody>
@@ -76,7 +72,7 @@
       total={data.songCount}
       pageSize={data.pageSize}
       buttonCount={5}
-      changePage={newPage => goto(`/songs/${newPage}`)}
+      changePage={newPage => goto(resolve(`/songs/${newPage}`))}
     />
   </div>
 </div>
@@ -87,6 +83,6 @@
     total={data.songCount}
     pageSize={data.pageSize}
     buttonCount={5}
-    changePage={newPage => goto(`/songs/${newPage}`)}
+    changePage={newPage => goto(resolve(`/songs/${newPage}`))}
   />
 </div>

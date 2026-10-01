@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import Button from '$lib/components/hana/Button.svelte'
-  import { X } from 'lucide-svelte'
+  import { X } from '@lucide/svelte'
   import { cubicInOut } from 'svelte/easing'
   import { fly } from 'svelte/transition'
 

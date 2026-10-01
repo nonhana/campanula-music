@@ -31,7 +31,7 @@
     </div>
   {/snippet}
   <ul class='flex flex-col gap-4'>
-    {#each navItems as { title, href, icon: Icon, disabled }, i}
+    {#each navItems as { title, href, icon: Icon, disabled }, i (href)}
       {#if !disabled}
         <li>
           <Button

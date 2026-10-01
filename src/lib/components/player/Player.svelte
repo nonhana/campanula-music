@@ -43,7 +43,7 @@
     Volume1,
     Volume2,
     VolumeX,
-  } from 'lucide-svelte'
+  } from '@lucide/svelte'
   import { onMount } from 'svelte'
   import PlayerDrawer from './PlayerDrawer.svelte'
 

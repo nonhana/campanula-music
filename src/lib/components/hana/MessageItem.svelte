@@ -1,6 +1,6 @@
 <script lang='ts'>
   import type { MessageOptions } from '$lib/stores'
-  import { Check, CircleAlert, Info, X } from 'lucide-svelte'
+  import { Check, CircleAlert, Info, X } from '@lucide/svelte'
 
   type NonUndefined<T> = T extends undefined ? never : T
 

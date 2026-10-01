@@ -17,7 +17,7 @@
     songLoading,
   } from '$lib/stores'
   import { durationFormatter } from '$lib/utils'
-  import { Ellipsis, Loader, Pause, Play, Plus, X } from 'lucide-svelte'
+  import { Ellipsis, Loader, Pause, Play, Plus, X } from '@lucide/svelte'
 
   const { callHanaMessage } = useMessage()
 

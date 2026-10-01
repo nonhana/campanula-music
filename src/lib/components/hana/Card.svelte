@@ -39,51 +39,42 @@
     hoverable && 'cursor-pointer hover:bg-primary-200',
     bordered && 'border border-neutral-200',
   ])
+
+// href is an arbitrary string by component contract: callers pass internal pathnames (pre-resolved via resolve() at the call site) or external URLs, which are rendered in the rel='external' branch below. This component is exempted from svelte/no-navigation-without-resolve in eslint.config.js for that reason.
 </script>
 
+{#snippet cardBody()}
+  {@render mask?.()}
+  {#if header}
+    <div class={[divider && 'border-b']}>
+      {@render header()}
+    </div>
+  {/if}
+  {@render children?.()}
+  {#if footer}
+    <div class={[divider && 'border-t']}>
+      {@render footer()}
+    </div>
+  {/if}
+{/snippet}
+
 {#if href}
-  <a class={cardClasses} {href} {onclick}>
-    {@render mask?.()}
-    {#if header}
-      <div class={[divider && 'border-b']}>
-        {@render header()}
-      </div>
-    {/if}
-    {@render children?.()}
-    {#if footer}
-      <div class={[divider && 'border-t']}>
-        {@render footer()}
-      </div>
-    {/if}
-  </a>
+  {#if href.startsWith('http')}
+    <a class={cardClasses} {href} rel='external' {onclick}>
+      {@render cardBody()}
+    </a>
+  {:else}
+    <!-- external URLs go to the rel='external' branch above; internal callers pass route paths already -->
+    <a class={cardClasses} {href} {onclick}>
+      {@render cardBody()}
+    </a>
+  {/if}
 {:else if onclick}
   <button class={cardClasses} {onclick}>
-    {@render mask?.()}
-    {#if header}
-      <div class={[divider && 'border-b']}>
-        {@render header()}
-      </div>
-    {/if}
-    {@render children?.()}
-    {#if footer}
-      <div class={[divider && 'border-t']}>
-        {@render footer()}
-      </div>
-    {/if}
+    {@render cardBody()}
   </button>
 {:else}
   <div class={cardClasses}>
-    {@render mask?.()}
-    {#if header}
-      <div class={[divider && 'border-b']}>
-        {@render header()}
-      </div>
-    {/if}
-    {@render children?.()}
-    {#if footer}
-      <div class={[divider && 'border-t']}>
-        {@render footer()}
-      </div>
-    {/if}
+    {@render cardBody()}
   </div>
 {/if}

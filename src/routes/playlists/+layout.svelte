@@ -6,7 +6,7 @@
   import Drawer from '$lib/components/hana/Drawer.svelte'
   import ScrollContainer from '$lib/components/hana/ScrollContainer.svelte'
   import { setPlaylists } from '$lib/stores'
-  import { ChevronLeft, ListMusic } from 'lucide-svelte'
+  import { ChevronLeft, ListMusic } from '@lucide/svelte'
 
   interface Props {
     data: LayoutData
@@ -26,7 +26,7 @@
   {@render children()}
   <div class='h-full w-fit hidden md:block'>
     <ScrollContainer contentClass='flex flex-col gap-5 mx-2'>
-      {#each data.playlists as playlist}
+      {#each data.playlists as playlist (playlist.id)}
         <div class='w-48'>
           <PlaylistItem
             playlist={playlist}
@@ -39,7 +39,7 @@
   <Drawer bind:visible={drawerOpen} title='歌单列表'>
     {#snippet icon()}<ListMusic />{/snippet}
     <div class='mx-2 flex flex-col gap-5'>
-      {#each data.playlists as playlist}
+      {#each data.playlists as playlist (playlist.id)}
         <div class='w-48'>
           <PlaylistItem
             playlist={playlist}
