@@ -1,0 +1,3405 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campanula 逻辑原型（一次性）：播放队列 · 下载 · 曲库同步 · 登录</title>
+<style>
+  :root {
+    --ink: #1f2937; --muted: #6b7280; --faint: #9ca3af; --line: #e5e7eb; --line2: #f1f2f4;
+    --bg: #f6f7f7; --card: #fff;
+    --accent: #206f52; --accent-ink: #1a5b43; --accent-wash: #e8f8f1; --accent-line: #b9ead5;
+    --warn: #b42318; --warn-line: #f2c6c0;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 12px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 "PingFang SC", "Noto Sans SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; }
+  h1, h2, h3 { line-height: 1.35; }
+  h1 { font-size: 22px; margin: 4px 0 10px; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  p { margin: 6px 0; }
+  .eyebrow { color: var(--muted); font-size: 12px; letter-spacing: .04em; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .pill { display: inline-block; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-right: 8px; white-space: nowrap; }
+  .chg-sample { background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); padding: 0 6px 0 8px; border-radius: 4px; }
+
+  .intro { max-width: 1520px; margin: 0 auto; padding: 24px 28px 4px; }
+  .intro .lede { max-width: 72em; }
+  .howto { margin: 8px 0; padding-left: 1.4em; max-width: 72em; }
+  .howto li { margin: 2px 0; }
+  .fine { color: var(--muted); font-size: 13px; max-width: 72em; }
+
+  .layout { max-width: 1520px; margin: 0 auto; padding: 14px 28px 48px; display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+  .col-state { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; display: grid; gap: 12px; padding-right: 4px; }
+  .col-ctl { display: grid; gap: 16px; }
+  @media (max-width: 1060px) {
+    .layout { grid-template-columns: minmax(0, 1fr); padding: 12px 14px 40px; }
+    .intro { padding: 18px 14px 0; }
+    .col-state { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  }
+
+  button { font: inherit; font-size: 13px; color: var(--ink); background: #fff; border: 1px solid #d0d5dc; border-radius: 8px; padding: 4px 10px; cursor: pointer; line-height: 1.5; }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink); }
+  button:disabled { cursor: default; color: var(--faint); border-color: var(--line); background: #fafafa; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { color: #fff; background: var(--accent-ink); }
+  button[aria-pressed="true"] { background: var(--accent-wash); border-color: var(--accent); color: var(--accent-ink); }
+  select, input[type="text"] { font: inherit; font-size: 13px; color: var(--ink); border: 1px solid #d0d5dc; border-radius: 8px; padding: 4px 8px; background: #fff; max-width: 100%; }
+  input[type="radio"] { accent-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* 状态 */
+  .last { border-color: var(--accent-line); }
+  .last-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .changes { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .changes a { color: var(--accent-ink); }
+  .prep summary { cursor: pointer; color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .sec { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+  .sec h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .badge { font-size: 12px; font-weight: 500; color: var(--accent-ink); background: var(--accent-wash); border-radius: 999px; padding: 0 9px; }
+  .kv { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 10px; padding: 2px 8px; border-radius: 6px; }
+  .kv .k { color: var(--muted); }
+  .kv.warn .v, .note.warn { color: var(--warn); }
+  .note { margin: 4px 8px; font-size: 13px; color: var(--muted); }
+  .chg { background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); }
+  .gone { margin: 2px 8px; font-size: 13px; color: var(--faint); }
+  .gone s { text-decoration-color: var(--faint); }
+  .tbl { overflow-x: auto; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 4px 8px; border-bottom: 1px solid var(--line2); vertical-align: top; }
+  tr.chg td { background: var(--accent-wash); }
+  tr.chg td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  tr.cur td { font-weight: 600; }
+  tr.dim td { color: var(--faint); }
+  tr.warn td:last-child { color: var(--warn); }
+  td.num { color: var(--muted); font-variant-numeric: tabular-nums; width: 2.5em; }
+  td.prio { white-space: nowrap; color: var(--muted); width: 3.5em; }
+  #allrec summary { cursor: pointer; font-weight: 600; }
+  .rec { border-top: 1px solid var(--line2); padding-top: 6px; margin-top: 8px; }
+  .rec-h { font-weight: 600; font-size: 13px; margin: 0; }
+
+  /* 记录 */
+  .log { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 3px; }
+  .log li { display: grid; grid-template-columns: max-content max-content minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; }
+  .log time { color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .log .tag { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; white-space: nowrap; }
+  .log .t-you .tx { color: var(--muted); }
+  .log .t-warn .tag { color: var(--warn); border-color: var(--warn-line); }
+  .log .t-warn .tx { color: var(--warn); }
+  .log-empty { color: var(--faint); font-size: 13px; margin: 6px 0 0; }
+
+  /* 自由操作 */
+  .fp { display: grid; gap: 8px; margin-top: 10px; }
+  .fp-row { display: grid; grid-template-columns: 6.8em minmax(0, 1fr); gap: 10px; align-items: start; }
+  .fp-label { color: var(--muted); font-size: 13px; padding-top: 5px; }
+  .fp-body { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .fp-msg { color: var(--warn); font-size: 13px; }
+  .sep { width: 10px; }
+  @media (max-width: 560px) { .fp-row { grid-template-columns: minmax(0, 1fr); gap: 2px; } .fp-label { padding-top: 0; } }
+
+  /* 场景 */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 10px; }
+  .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tabs small { color: inherit; opacity: .75; margin-left: 2px; }
+  .scen-list { display: grid; gap: 4px; margin-bottom: 14px; }
+  .scen-list button { text-align: left; border-color: var(--line); }
+  .scen-list button[aria-current="true"] { border-color: var(--accent); background: var(--accent-wash); color: var(--accent-ink); font-weight: 600; }
+  .scen-detail { border-top: 1px solid var(--line); padding-top: 12px; }
+  .setup { font-size: 13px; }
+  .scen-knobs { margin: 10px 0; padding: 10px 12px; border: 1px dashed var(--accent-line); border-radius: 10px; }
+  .knobs-title { font-size: 13px; color: var(--accent-ink); margin: 0 0 6px; }
+  .steps { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
+  .step { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .step.next { border-color: var(--accent); }
+  .step.later { opacity: .8; }
+  .step button { text-align: left; }
+  .watch { font-size: 13px; color: var(--muted); }
+  .scen-foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  /* 开关 */
+  fieldset.knob { border: 0; border-top: 1px solid var(--line2); margin: 0; padding: 8px 0; min-width: 0; }
+  fieldset.knob legend { padding: 0; font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  fieldset.knob .n { color: var(--accent-ink); }
+  .moved-tag { font-size: 12px; font-weight: 500; color: var(--accent-ink); background: var(--accent-wash); border-radius: 999px; padding: 0 8px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 4px; font-size: 13px; }
+  .opts label { cursor: pointer; }
+  .dflt { color: var(--faint); margin-left: 2px; }
+  .kgroup { margin-top: 14px; }
+</style>
+</head>
+<body>
+<header class="intro">
+  <p class="eyebrow">一次性原型 · 分支 prototype/logic · 2026-10-07 做，10-08 定下规则 · 不进正式代码</p>
+  <h1>Campanula 逻辑原型：播放队列、下载、曲库同步、登录</h1>
+  <p class="lede"><strong>要回答的问题：</strong>简报 §3 的四块规则放在一起、被真实情况推着走时，会不会出现“这不该发生”或者“我以为会是另一样”？最要紧的是 §3.1 插播和下一首播放的 4 个边角（规则 ①–④），以及四块之间的交叉，例如：断网时听了歌、联网前就主动退出登录，听歌打卡怎么办；首次同步还没完时点歌、红心，会不会被同步挤在后面；登录失效、续期又失败时，播放队列和下载怎么办。</p>
+  <ol class="howto">
+    <li>在<a href="#scen">引导场景</a>里挑一个，按顺序点步骤。<a href="#state">状态</a>每点一次就重新显示，<span class="chg-sample">浅绿底</span>的是这一步变了的地方。</li>
+    <li>场景里列出的<strong>开关</strong>一改，就用新设置从头再跑一遍，方便对比。简报没写死的 12 条规则（①–⑫）2026-10-08 已经定下，默认值就是定下的做法，另一个选项留着对照；还没验证的上游行为做成了可以切换的<strong>假设</strong>（都在<a href="#knobs">全部开关</a>里）。</li>
+    <li><a href="#free">自由操作</a>随时能点，顺序随意；做不了的操作会说明为什么。</li>
+    <li>看到“这不该发生”或“我以为会是另一样”，记下场景和第几步，交给主会话。</li>
+  </ol>
+  <p class="fine">原型里的简化：时间是模拟的（“等 1 分钟”一下就过去）；网易云是假的，行为照 2026-10-06/07 的实测和文档；每页 4 首（真实是 1000 首）。hana-music-api 不再限速（2026-10-08 定），网易云自己怎么限频还没实测，做成了可以切换的假设。状态只在内存里，刷新页面就全部重来。</p>
+</header>
+<main class="layout">
+  <div class="col-state" id="state">
+    <section id="last" class="card last" aria-live="polite"></section>
+    <div id="panel" style="display: grid; gap: 12px;"></div>
+    <details id="allrec" class="card"></details>
+  </div>
+  <div class="col-ctl">
+    <section id="free" class="card" aria-label="自由操作"></section>
+    <section id="scen" class="card" aria-label="引导场景"></section>
+    <section id="knobs" class="card" aria-label="全部开关"></section>
+  </div>
+</main>
+<noscript><p style="padding: 0 28px;">这个原型要开着 JavaScript 才能用。</p></noscript>
+
+<!-- 纯逻辑模块：不碰页面，可以原样搬走 -->
+<script>
+/* =====================================================================
+ * Campanula 逻辑原型 · 纯逻辑模块（一次性原型；不碰页面）
+ *
+ * 页面只做一件事：next = Campanula.step(sim, action)，再把 next 画出来。
+ * step 先整份复制状态，只改副本，所以对外是纯函数；随机数用状态里的种子，
+ * 同样的操作顺序永远得到同样的结果。
+ *
+ * 模块分两半：
+ *   一、Campanula 自己的规则：播放队列、听歌打卡、下载、曲库同步、登录、请求排队。
+ *       以后搬进正式代码的是这一半。
+ *   二、假的网易云和环境：网易云对请求频率的限制（假设）、Cookie、远端曲库。只在原型里存在。
+ * ===================================================================== */
+(function (root) {
+  'use strict';
+
+  // ───────────────────────── 假数据（原型专用） ─────────────────────────
+  const SONGS = {
+    s1: { title: '夜に駆ける', artist: 'YOASOBI', dur: 261 },
+    s2: { title: '群青', artist: 'YOASOBI', dur: 248 },
+    s3: { title: '打上花火', artist: 'DAOKO × 米津玄師', dur: 289 },
+    s4: { title: 'Lemon', artist: '米津玄師', dur: 255, vip: true },
+    s5: { title: '富士山下', artist: '陈奕迅', dur: 259 },
+    s6: { title: '晴天', artist: '周杰伦', dur: 269, noCopyright: true },
+    s7: { title: '稻香', artist: '周杰伦', dur: 223, noCopyright: true },
+    s8: { title: '小幸運', artist: '田馥甄', dur: 265 },
+    s9: { title: 'Blinding Lights', artist: 'The Weeknd', dur: 200 },
+    s10: { title: '春日影', artist: 'MyGO!!!!!', dur: 244 },
+    s11: { title: '千本桜', artist: '黒うさP feat. 初音ミク', dur: 244 },
+    s12: { title: '光辉岁月', artist: 'Beyond', dur: 298 },
+    s13: { title: 'アイドル', artist: 'YOASOBI', dur: 213, vip: true },
+    s14: { title: 'Shape of You', artist: 'Ed Sheeran', dur: 233 },
+    s15: { title: '可惜没如果', artist: '林俊杰', dur: 298 },
+    s16: { title: '怪物', artist: 'YOASOBI', dur: 205 },
+    s17: { title: '勇者', artist: 'YOASOBI', dur: 194 },
+  };
+
+  const ACCOUNTS = {
+    hana: { name: 'hana', vip: true, desc: 'hana（站长，黑胶会员）' },
+    lin: { name: '小号', vip: false, desc: '小号（站长的另一个账号，非会员）' },
+  };
+
+  const SEARCHES = {
+    YOASOBI: ['s1', 's2', 's16', 's13', 's17'],
+    米津玄師: ['s4', 's3'],
+    周杰伦: ['s6', 's7'],
+  };
+
+  function initialRemote() {
+    const pl = (id, name, kind, tracks, extra = {}) => ({ id, name, kind, tracks, rev: 1, ...extra });
+    return {
+      hana: {
+        lists: [
+          pl('hana-like', '我喜欢的音乐', 'liked', ['s3', 's1', 's10', 's4', 's8', 's6', 's2', 's12']),
+          pl('hana-commute', '通勤路上', 'own', ['s9', 's14', 's5', 's1', 's15']),
+          pl('hana-night', '深夜', 'own', ['s12', 's8', 's5', 's7']),
+          pl('jpop', 'J-POP 精选', 'collected', ['s1', 's2', 's3', 's13', 's16', 's11', 's10'], { owner: '音乐小编' }),
+          pl('album-book3', 'THE BOOK 3', 'album', ['s16', 's13', 's17'], { owner: 'YOASOBI' }),
+        ],
+        daily: ['s15', 's11', 's14', 's9', 's3'],
+        rank: 0,
+        rankSeconds: 0,
+      },
+      lin: {
+        lists: [
+          pl('lin-like', '我喜欢的音乐', 'liked', ['s9', 's14', 's4', 's7']),
+          pl('lin-run', '跑步', 'own', ['s9', 's16', 's12']),
+        ],
+        daily: ['s2', 's5', 's8'],
+        rank: 0,
+        rankSeconds: 0,
+      },
+    };
+  }
+
+  // ───────────────────────── 常量 ─────────────────────────
+  const PAGE_SIZE = 4; // 原型里每页 4 首；真实是 1000 首
+  const URL_TTL = 20 * 60; // 播放地址 20 分钟过期（2026-10-06 实测 expi: 1200）
+  const RENEW_GAP = 24 * 3600; // 同一浏览器 24 小时内最多续期一次
+  const TRIAL_SECONDS = 30;
+  const DL_SPEED = 2; // MB/秒
+  const BG_MAX = 2; // 后台请求（同步、取下载地址、补发打卡）同时最多几个在路上；具体数字等验证关卡后再调
+  const QUALITY = {
+    standard: { label: '标准', mbPerMin: 0.96 },
+    exhigh: { label: '极高', mbPerMin: 2.4 },
+    lossless: { label: '无损', mbPerMin: 6.5 },
+  };
+  const DISK = { plenty: 2000, tight: 40 };
+  const MODE_LABEL = { loop: '列表循环', one: '单曲循环', shuffle: '随机' };
+
+  const DEFAULT_CONFIG = {
+    // 已定的规则（2026-10-08 作者在原型里点过后定下，全部采用原型推荐）
+    rules: {
+      emptyAdd: 'play', // ① 队列为空时“下一首播放 / 加入播放队列”：play 直接放 / hold 放进队列等按播放
+      dupInQueue: 'move', // ② 要插播、下一首播放的歌已在队列里：move 挪过来只留一份 / copy 再放一份
+      shuffleAdd: 'next', // ③ 随机模式下“下一首播放 / 加入播放队列”：next 照字面排 / mix 混进随机顺序
+      interrupted: 'drop', // ④ 被插播打断的那首：drop 不续播（简报字面意思）/ resume 插播完回来接着放
+      playNextOrder: 'lifo', // ⑤ 连续几次“下一首播放”：lifo 后加的先放 / fifo 先加的先放
+      scrobbleOnClose: 'carry', // ⑥ 放到一半关掉 App：carry 不算结束，放完再一起打卡 / close 关掉就打一条
+      deleteByList: 'keepShared', // ⑦ 按歌单删除下载，同一首歌别的歌单、专辑也下载过或单独下载过：keepShared 留着 / deleteAll 一起删
+      queuedDlOnLogout: 'keep', // ⑧ 退出或换账号时还在排队的下载：keep 留着，谁登录就接着下 / cancel 取消（可重试）
+      offlineWrite: 'refuse', // ⑨ 断网时红心、加入歌单：refuse 提示没改成 / queue 先改本地，联网再提交
+      queueOnOtherAccount: 'clear', // ⑩ 登录失效后换了别的账号登录：clear 清空播放队列 / keep 保留
+      diskFull: 'pause', // ⑪ 存储空间不够：pause 暂停整个下载队列，腾出空间后点“继续下载” / skip 这首标失败，接着试下一首
+      partialList: 'fill', // ⑫ 点歌、下载整个歌单时这张歌单还没拉完：fill 拉完后补齐播放队列和下载队列 / now 只用点的那一刻已经拉到的
+    },
+    // 还没验证的上游行为（假设，可以切换）
+    assume: {
+      renewOk: true, // Cookie 还有效时续期：成功 / 被拒
+      renewAfterExpiry: false, // Cookie 已经失效后还能不能续期
+      oldCookie: 'dies', // 续期后旧 Cookie：dies 立即失效 / lives 继续有效
+      scrobbleCounts: true, // 听歌打卡在网易云那边是否计入排行
+      anonOk: true, // 匿名注册：正常 / 失败（扫码取 key、发验证码都依赖它）
+      qr8821: false, // 扫码登录会不会遇到 8821（需要行为验证码）
+      bgFetch: 'all', // Android 后台下载：all 能接力下完全部 / current 只下完已经开始的那首 / off 不可用
+      rateLimit: 'none', // 网易云对同一个账号的请求频率：none 不限制 / strict 一秒超过 4 个，30 秒内都回“操作频繁”
+    },
+    // 对照实验：关掉看看会出什么问题
+    contrast: {
+      pacedSync: true, // 后台请求自己控制节奏：同时最多 BG_MAX 个在路上；关掉就是同步一口气全发出去
+      rebaseLocalWrites: true, // 同步数据回来时，把还没确认的本地修改叠回去
+      renewLock: true, // 多个标签页同时想续期时，用 Web Locks 只放一个去
+    },
+  };
+
+  // ───────────────────────── 小工具 ─────────────────────────
+  const pad = (n) => String(n).padStart(2, '0');
+  const round1 = (x) => Math.round(x * 10) / 10;
+  function fmtClock(t) {
+    const r = t % 86400;
+    return `第 ${Math.floor(t / 86400) + 1} 天 ${pad(Math.floor(r / 3600))}:${pad(Math.floor((r % 3600) / 60))}:${pad(r % 60)}`;
+  }
+  function fmtTime(t) {
+    const day = Math.floor(t / 86400) + 1;
+    const r = t % 86400;
+    return `${day > 1 ? `第 ${day} 天 ` : ''}${pad(Math.floor(r / 3600))}:${pad(Math.floor((r % 3600) / 60))}:${pad(r % 60)}`;
+  }
+  function fmtDur(sec) {
+    const v = Math.max(0, Math.floor(sec));
+    return `${Math.floor(v / 60)}:${pad(v % 60)}`;
+  }
+  function humanSecs(sec) {
+    if (sec >= 86400 && sec % 86400 === 0) return `${sec / 86400} 天`;
+    if (sec >= 3600 && sec % 3600 === 0) return `${sec / 3600} 小时`;
+    if (sec >= 60 && sec % 60 === 0) return `${sec / 60} 分钟`;
+    return `${sec} 秒`;
+  }
+  const songName = (id) => `《${SONGS[id].title}》`;
+  const mb = (x) => `${round1(x)} MB`;
+  const sizeOf = (songId, q) => round1((SONGS[songId].dur / 60) * QUALITY[q].mbPerMin);
+  function srcLabel(src) {
+    switch (src.kind) {
+      case 'liked': return '我喜欢的音乐';
+      case 'own':
+      case 'collected': return `歌单《${src.name}》`;
+      case 'album': return `专辑《${src.name}》`;
+      case 'daily': return '每日推荐';
+      case 'downloads': return '已下载';
+      case 'search': return `搜索“${src.name}”`;
+      case 'single': return '单独下载';
+      default: return src.name;
+    }
+  }
+  const listTitle = (l) => srcLabel({ kind: l.kind, name: l.name });
+  const originPhrase = (o) => (o.kind === 'single' ? '单独下载过' : `从${o.name}下载过`);
+  function nextId(s, prefix) {
+    s.seq += 1;
+    return prefix + s.seq;
+  }
+  function rand(s) {
+    s.rng = (s.rng + 0x6d2b79f5) >>> 0;
+    let t = s.rng;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function shuffled(s, arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand(s) * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const LOG_CAP = 160; // 一次操作最多记这么多行（等上一整天时不至于刷屏）
+  function say(s, tag, text) {
+    if (s.log.length < LOG_CAP) s.log.push({ t: s.now, tag, text });
+    else if (s.log.length === LOG_CAP) s.log.push({ t: s.now, tag: 'warn', text: '（这一步的记录太多，后面的省略；状态面板仍是最新的）' });
+  }
+  function mergeConfig(base, over) {
+    const out = structuredClone(base);
+    if (!over) return out;
+    for (const k of Object.keys(over)) out[k] = { ...out[k], ...over[k] };
+    return out;
+  }
+
+  // ───────────────────────── 初始状态 ─────────────────────────
+  // pump：有同步结果回来，等同一秒的结果都处理完再接着拉（见 deliver）
+  const newSync = () => ({ running: false, kind: null, todo: [], again: false, pump: false });
+  function create(config) {
+    return {
+      now: 8 * 3600, // 第 1 天 08:00:00
+      seq: 0,
+      rng: 20261007,
+      config: mergeConfig(DEFAULT_CONFIG, config),
+      env: { online: true, appOpen: true, tabs: 1, diskMB: DISK.plenty },
+      world: {
+        remote: initialRemote(),
+        cookies: {
+          hana: { version: 0, valid: false, prevValid: false },
+          lin: { version: 0, valid: false, prevValid: false },
+        },
+        counts: {},
+        throttle: {},
+        seq: 0,
+      },
+      app: {
+        auth: { status: 'out', account: null, cookieVersion: 0, renewedAt: null, flow: null, renewing: null, parked: [], clearCookie: false },
+        player: { queue: [], order: [], cur: null, playing: false, loading: false, pos: 0, listened: 0, mode: 'loop', trial: false, local: false, pendingNext: [], urls: {}, msg: '', ends: 0, fill: null },
+        scrobbles: [],
+        downloads: { items: [], quality: 'exhigh', paused: false, follow: [] },
+        library: null,
+        sync: newSync(),
+        writes: [],
+        outbox: [],
+        inflight: [],
+        timeline: [],
+        backoffUntil: 0,
+        lastSearch: null,
+      },
+      log: [],
+    };
+  }
+
+  // =====================================================================
+  // 一、Campanula 自己的规则
+  // =====================================================================
+  const P = (s) => s.app.player;
+  const A = (s) => s.app.auth;
+  const entryOf = (s, eid) => P(s).queue.find((e) => e.eid === eid) || null;
+  const curEntry = (s) => (P(s).cur ? entryOf(s, P(s).cur) : null);
+  const isDownloaded = (s, songId) => s.app.downloads.items.some((i) => i.songId === songId && i.status === 'done');
+  const libraryLists = (s) => (s.app.library ? s.app.library.lists : []);
+  const listById = (s, id) => libraryLists(s).find((l) => l.id === id) || null;
+  const likedId = (s) => (libraryLists(s).find((l) => l.kind === 'liked') || {}).id || null;
+  const loggedIn = (s) => A(s).status === 'in';
+
+  // ---------- 能点的列表（播放来源） ----------
+  function sources(s) {
+    const a = A(s);
+    const out = libraryLists(s).map((l) => ({ id: l.id, kind: l.kind, name: l.name, songs: l.tracks.slice(), partial: l.syncedRev === null, total: l.count }));
+    if (loggedIn(s) && s.env.online) {
+      out.push({ id: 'daily', kind: 'daily', name: '每日推荐', songs: s.world.remote[a.account].daily.slice() });
+      for (const q of Object.keys(SEARCHES)) out.push({ id: `search:${q}`, kind: 'search', name: q, songs: SEARCHES[q].slice() });
+    }
+    out.push({ id: 'downloads', kind: 'downloads', name: '已下载', songs: s.app.downloads.items.filter((i) => i.status === 'done').map((i) => i.songId) });
+    return out;
+  }
+  const findSource = (s, id) => sources(s).find((x) => x.id === id) || null;
+  const srcRef = (src) => ({ kind: src.kind, id: src.id, name: src.name });
+
+  // ---------- 一首歌现在能不能放 ----------
+  function playability(s, songId) {
+    const song = SONGS[songId];
+    if (isDownloaded(s, songId)) return { ok: true, local: true };
+    if (song.noCopyright) return { ok: false, why: '无版权' };
+    if (!s.env.online) return { ok: false, why: '断网，没下载' };
+    const a = A(s);
+    if (a.status !== 'in') return { ok: false, why: a.status === 'expired' ? '登录失效，没下载' : '没登录，没下载' };
+    if (song.vip && !ACCOUNTS[a.account].vip) return { ok: true, trial: true };
+    return { ok: true };
+  }
+
+  // ---------- 请求排队（客户端） ----------
+  function enqueue(s, req) {
+    const r = { id: nextId(s, 'r'), prio: 'bg', createdAt: s.now, notBefore: 0, data: {}, ...req };
+    s.app.outbox.push(r);
+    return r;
+  }
+  function requeue(s, r, notBefore) {
+    return enqueue(s, { kind: r.kind, prio: r.prio, label: r.label, data: r.data, notBefore: notBefore || 0 });
+  }
+  function canSendNow(s, r) {
+    if (!s.env.online || (r.notBefore || 0) > s.now) return false;
+    return s.env.appOpen || (r.kind === 'dlUrl' && s.config.assume.bgFetch === 'all');
+  }
+  // 前台请求（你正在等的：取播放地址、提交修改、续期）马上发。
+  // 后台请求（同步、取下载地址、补发打卡）同时最多 BG_MAX 个在路上；网易云说“操作频繁”后先停一会儿。
+  function schedule(s, tl) {
+    const ready = s.app.outbox.filter((r) => canSendNow(s, r));
+    const fg = ready.filter((r) => r.prio === 'fg');
+    let bg = s.app.backoffUntil > s.now ? [] : ready.filter((r) => r.prio !== 'fg');
+    if (s.config.contrast.pacedSync) {
+      const flying = s.app.inflight.filter((r) => r.prio !== 'fg' && !r.orphan).length;
+      bg = bg.slice(0, Math.max(0, BG_MAX - flying));
+    }
+    for (const r of [...fg, ...bg]) {
+      s.app.outbox = s.app.outbox.filter((x) => x !== r);
+      r.sentAt = s.now;
+      r.account = A(s).account;
+      r.cookieV = A(s).cookieVersion;
+      worldAdmit(s, r);
+      s.app.inflight.push(r);
+      tl.sent.push({ label: r.label, prio: r.prio });
+    }
+  }
+  // 网易云说“操作频繁”：后台请求先停，等它给的时间过去再接着来；前台操作照常发，被拒就提示稍后再试
+  function backoff(s, secs) {
+    const until = s.now + secs;
+    if (s.app.backoffUntil >= until) return;
+    s.app.backoffUntil = until;
+    say(s, 'warn', `网易云说“操作频繁” → 同步、取下载地址、补发打卡这些后台请求先停 ${secs} 秒，再接着来`);
+  }
+  function failWith(s, r, err) {
+    r.account = r.account || A(s).account; // 还没发出去就失败的请求，算当前账号的（不然同步会当成别的账号的结果丢掉，卡在半路）
+    r.result = { err };
+    onResponse(s, r);
+  }
+  function brief(res) {
+    if (res.ok) return '成功';
+    if (res.err === 'busy') return `操作频繁（要等 ${res.retryAfter} 秒）`;
+    if (res.err === 301) return '301（登录失效）';
+    return { offline: '断网', needLogin: '需要登录', gone: '已经不存在', denied: '被拒', trial: '只有试听', nocopyright: '无版权' }[res.err] || String(res.err);
+  }
+  function onResponse(s, r) {
+    if (r.result.err === 301) return onAuthFail(s, r);
+    switch (r.kind) {
+      case 'url': return onUrl(s, r);
+      case 'dlUrl': return onDlUrl(s, r);
+      case 'commit': return onCommit(s, r);
+      case 'syncList': return onSyncList(s, r);
+      case 'syncPage': return onSyncPage(s, r);
+      case 'scrobble': return onScrobble(s, r);
+      case 'renew': return onRenew(s, r);
+      case 'logout': return onLogout(s, r);
+      default: return undefined;
+    }
+  }
+
+  // ---------- 登录、续期、301 ----------
+  const renewPending = (s) => [...s.app.outbox, ...s.app.inflight].some((r) => r.kind === 'renew');
+  function startRenew(s, reason, notBefore = 0) {
+    const a = A(s);
+    if (renewPending(s)) {
+      if (reason === '301') a.renewing = '301';
+      return;
+    }
+    a.renewing = reason;
+    const label = reason === 'open' ? '续期（打开 App 时）' : '续期（因为 301）';
+    enqueue(s, { kind: 'renew', prio: 'fg', label, data: { reason, tab: 1 }, notBefore });
+    if (s.env.tabs < 2 || notBefore) return;
+    if (s.config.contrast.renewLock) {
+      say(s, 'auth', `${s.env.tabs} 个标签页都想续期：用 Web Locks 只让一个拿到锁去续期；另一个等到锁时，看加密 Cookie 里的续期时间是刚才，就跳过`);
+      return;
+    }
+    enqueue(s, { kind: 'renew', prio: 'fg', label: `标签页 2 的${label}`, data: { reason, tab: 2 } });
+    say(s, 'warn', '（对照实验：续期不加锁）标签页 2 也拿着同一个 Cookie 去续期');
+  }
+  function resend(s, r) {
+    if (r.kind === 'url' && (P(s).cur !== r.data.eid || !P(s).loading)) return;
+    enqueue(s, { kind: r.kind, prio: r.prio, label: r.label, data: r.data });
+  }
+  function onAuthFail(s, r) {
+    const a = A(s);
+    if (a.status !== 'in' || a.account !== r.account) return failWith(s, r, 'needLogin');
+    if (r.cookieV < a.cookieVersion) {
+      say(s, 'auth', `${r.label}：带的是续期前的旧 Cookie（第 ${r.cookieV} 代），被拒（301）。现在已经是第 ${a.cookieVersion} 代 → 直接重发，不再续期`);
+      resend(s, r);
+      return undefined;
+    }
+    a.parked.push(r);
+    if (a.renewing) {
+      say(s, 'auth', `${r.label}：返回 301，已经在续期了，等结果`);
+      return undefined;
+    }
+    say(s, 'auth', `${r.label}：返回 301（登录失效）→ 先续期一次，成功就重发原请求`);
+    startRenew(s, '301');
+    return undefined;
+  }
+  function onRenew(s, r) {
+    const a = A(s);
+    const res = r.result;
+    if (a.status !== 'in' || a.account !== r.account) return;
+    if (!renewPending(s)) a.renewing = null;
+    if (res.ok) {
+      a.cookieVersion = res.version;
+      a.renewedAt = s.now;
+      say(s, 'auth', `${r.label}成功：换上第 ${res.version} 代 Cookie（${s.config.assume.oldCookie === 'dies' ? '假设：旧 Cookie 立即失效' : '假设：旧 Cookie 还能用一阵'}）`);
+      const parked = a.parked;
+      a.parked = [];
+      if (parked.length) say(s, 'auth', `重发刚才因为 301 停下的 ${parked.length} 个请求`);
+      for (const x of parked) resend(s, x);
+      return;
+    }
+    if (res.err === 'offline' || res.err === 'busy') {
+      if (res.err === 'busy') backoff(s, res.retryAfter);
+      if (!a.parked.length) {
+        say(s, 'auth', `${r.label}没完成（${brief(res)}）；Cookie 还能用，这次先不续`);
+        return;
+      }
+      say(s, 'auth', `${r.label}没完成（${brief(res)}）→ ${res.err === 'offline' ? '等联网再续' : `${res.retryAfter} 秒后再试`}；这不算登录失效`);
+      startRenew(s, '301', res.err === 'busy' ? s.now + res.retryAfter : s.now + 1);
+      return;
+    }
+    if (r.data.tab === 2 && res.dead) {
+      say(s, 'warn', `${r.label}被拒：它带的是续期前的旧 Cookie，刚被另一个标签页的续期作废了（假设：旧 Cookie 立即失效）→ 它误以为登录失效`);
+      becomeExpired(s);
+      return;
+    }
+    if (res.dead || a.parked.length) {
+      say(s, 'auth', `${r.label}被拒：网易云说这个 Cookie 已经失效（假设：失效后不能再续期）`);
+      becomeExpired(s);
+      return;
+    }
+    say(s, 'auth', `${r.label}被拒（假设：这个 Cookie 不支持续期）；Cookie 还能用就先用着，等哪天接口返回 301 再处理`);
+  }
+  function becomeExpired(s) {
+    const a = A(s);
+    a.status = 'expired';
+    say(s, 'warn', '提示“需要重新登录”。播放队列、下载、曲库副本都保留；没下载的歌暂时放不了，已下载的照常放；听歌打卡先记在本机，等这个账号重新登录再补发');
+    const keepWrites = s.config.rules.offlineWrite === 'queue';
+    const waiting = [...a.parked, ...s.app.outbox.filter((r) => r.kind !== 'logout')];
+    a.parked = [];
+    s.app.outbox = s.app.outbox.filter((r) => r.kind === 'logout');
+    let kept = 0;
+    for (const x of waiting) {
+      if (x.kind === 'commit' && keepWrites) kept += 1;
+      else failWith(s, x, 'needLogin');
+    }
+    if (kept) say(s, 'sync', `${kept} 个修改先记着，等这个账号重新登录再提交（规则⑨：先记下）`);
+  }
+
+  function loginStart(s, method, account) {
+    const a = A(s);
+    if (a.status !== 'out' && a.status !== 'expired') return say(s, 'auth', a.status === 'login' ? '已经在登录了' : a.account === account ? `${ACCOUNTS[account].name} 本来就登录着，不用再登录` : '已经登录了：先退出才能换账号');
+    if (!s.env.online) return say(s, 'warn', '断网了，登录要联网');
+    a.flow = { method, account, step: method === 'sms' ? 'phone' : 'qr-start', error: null, from: a.status };
+    a.status = 'login';
+    say(s, 'auth', `开始登录：${ACCOUNTS[account].desc}，用${method === 'sms' ? '短信验证码' : '扫码'}`);
+    return undefined;
+  }
+  function flowAt(s, method, steps) {
+    const a = A(s);
+    const f = a.flow;
+    if (a.status !== 'login' || !f || f.method !== method || !steps.includes(f.step)) {
+      say(s, 'auth', a.status !== 'login' ? '现在没有在登录，这一步不用做' : '登录页现在不在这一步');
+      return null;
+    }
+    return f;
+  }
+  function needsAnon(s, f, what) {
+    if (!s.env.online) {
+      f.error = '断网了，可以联网后重试';
+      say(s, 'warn', `${what}失败：断网`);
+      return false;
+    }
+    if (!s.config.assume.anonOk) {
+      f.error = `${what}失败：匿名注册没成功（上游 502「Anonymous registration did not return MUSIC_A」），可以重试`;
+      say(s, 'warn', f.error);
+      return false;
+    }
+    return true;
+  }
+  function smsSend(s) {
+    const f = flowAt(s, 'sms', ['phone', 'code']);
+    if (!f || !needsAnon(s, f, '发送验证码')) return;
+    f.step = 'code';
+    f.error = null;
+    say(s, 'auth', '验证码短信已发出');
+  }
+  function smsCode(s, ok) {
+    const f = flowAt(s, 'sms', ['code']);
+    if (!f) return;
+    if (!ok) {
+      f.error = '验证码不对，请重新输入';
+      say(s, 'auth', f.error);
+      return;
+    }
+    loginSuccess(s);
+  }
+  function qrFetch(s) {
+    const f = flowAt(s, 'qr', ['qr-start', 'qr-wait']);
+    if (!f || !needsAnon(s, f, '获取二维码')) return;
+    f.step = 'qr-wait';
+    f.error = null;
+    say(s, 'auth', '二维码显示出来了，等手机扫码');
+  }
+  function qrScan(s) {
+    const f = flowAt(s, 'qr', ['qr-wait']);
+    if (!f) return;
+    f.step = 'qr-scanned';
+    say(s, 'auth', '手机已扫码，等手机上点“确认登录”');
+  }
+  function qrConfirm(s) {
+    const f = flowAt(s, 'qr', ['qr-scanned']);
+    if (!f) return;
+    if (s.config.assume.qr8821) {
+      f.step = 'captcha';
+      say(s, 'auth', '网易云返回 8821（需要行为验证码）→ 改走 verify_getQr，让听众在手机上完成验证');
+      return;
+    }
+    loginSuccess(s);
+  }
+  function captchaPass(s) {
+    if (flowAt(s, 'qr', ['captcha'])) loginSuccess(s);
+  }
+  function loginRetry(s) {
+    const f = A(s).flow;
+    if (A(s).status !== 'login' || !f || !f.error) return say(s, 'auth', '现在没有要重试的');
+    if (f.method === 'sms' && f.step === 'phone') return smsSend(s);
+    if (f.method === 'qr' && f.step === 'qr-start') return qrFetch(s);
+    f.error = null;
+    return undefined;
+  }
+  function loginSwitch(s) {
+    const f = A(s).flow;
+    if (A(s).status !== 'login' || !f) return say(s, 'auth', '现在没有在登录');
+    f.method = f.method === 'sms' ? 'qr' : 'sms';
+    f.step = f.method === 'sms' ? 'phone' : 'qr-start';
+    f.error = null;
+    return say(s, 'auth', `换成${f.method === 'sms' ? '短信验证码' : '扫码'}登录`);
+  }
+  function loginCancel(s) {
+    const a = A(s);
+    if (a.status !== 'login') return say(s, 'auth', '现在没有在登录');
+    a.status = a.flow.from;
+    a.flow = null;
+    return say(s, 'auth', a.status === 'expired' ? '取消登录，回到“需要重新登录”' : '取消登录');
+  }
+  function loginSuccess(s) {
+    const a = A(s);
+    const f = a.flow;
+    const account = f.account;
+    const prev = f.from === 'expired' ? a.account : null;
+    if (prev && prev !== account) onAccountSwitch(s, prev, account);
+    const p = P(s);
+    const e = curEntry(s);
+    if (f.from === 'out' && e && p.listened > 0) {
+      say(s, 'scrobble', `登录前已经听的 ${Math.floor(p.listened)} 秒${songName(e.songId)}不算：未登录时听的歌不打卡，也不能记到之后登录的账号上`);
+      p.listened = 0;
+    }
+    const c = s.world.cookies[account];
+    c.version += 1;
+    c.valid = true;
+    c.prevValid = false;
+    Object.assign(a, { status: 'in', account, cookieVersion: c.version, renewedAt: s.now, flow: null, renewing: null, parked: [], clearCookie: false });
+    s.app.outbox = s.app.outbox.filter((r) => r.kind !== 'logout');
+    say(s, 'auth', `登录成功：${ACCOUNTS[account].desc}。凭据加密后放进浏览器的 httpOnly Cookie（第 ${c.version} 代），服务器不存`);
+    if (prev && prev === account) {
+      say(s, 'auth', '同一个账号重新登录：曲库副本、播放队列照旧；记在本机的听歌打卡开始补发');
+      resendWrites(s, '重新登录');
+      startSync(s, 'incr', '重新登录');
+      return;
+    }
+    s.app.library = { account, lists: [], listFetched: false, firstDone: false };
+    s.app.sync = newSync();
+    s.app.writes = [];
+    startSync(s, 'first');
+  }
+  // 曲库副本要删掉时：已经发出去的修改网易云照样会处理；还没发的就没了
+  function dropWrites(s, why) {
+    const pending = s.app.writes.filter((w) => w.status === 'pending');
+    const flying = new Set();
+    for (const r of s.app.inflight) {
+      if (r.kind === 'commit' && !r.orphan) {
+        r.orphan = true;
+        flying.add(r.data.wid);
+      }
+    }
+    s.app.writes = [];
+    const sent = pending.filter((w) => flying.has(w.id));
+    const lost = pending.filter((w) => !flying.has(w.id));
+    if (sent.length) say(s, 'sync', `${sent.length} 个修改已经发给网易云，不再等结果（网易云那边照样会改）`);
+    if (lost.length) say(s, 'warn', `${lost.length} 个还没发出去的修改随曲库副本一起删掉，网易云那边没有改（${why}）：${lost.map((w) => w.what).join('、')}`);
+  }
+  function onAccountSwitch(s, from, to) {
+    say(s, 'auth', `换了账号：上一个是 ${ACCOUNTS[from].name}，这次是 ${ACCOUNTS[to].name}`);
+    const p = P(s);
+    if (p.queue.length) {
+      if (s.config.rules.queueOnOtherAccount === 'clear') {
+        clearQueue(s, '换了账号');
+        say(s, 'queue', '播放队列清空（规则⑩：换了账号就清空）');
+      } else {
+        const e = curEntry(s);
+        if (e && p.listened > 0) endListen(s, e, '换了账号');
+        p.urls = {};
+        say(s, 'queue', `播放队列保留（规则⑩：保留）：里面每首歌的播放来源还是 ${ACCOUNTS[from].name} 的列表`);
+      }
+    }
+    dropWrites(s, '换了账号');
+    if (s.app.library) say(s, 'sync', `删掉 ${ACCOUNTS[from].name} 留在本机的曲库副本，不沿用`);
+    s.app.library = null;
+    s.app.sync = newSync();
+    s.app.outbox = s.app.outbox.filter((r) => r.kind === 'logout');
+    s.app.inflight = s.app.inflight.filter((r) => r.orphan);
+    dropScrobbles(s, (k) => k.account !== to, `换了账号（${ACCOUNTS[from].name} → ${ACCOUNTS[to].name}），没补发的丢弃`);
+    downloadsOnLogout(s, '换账号');
+    if (s.app.downloads.follow.length) {
+      s.app.downloads.follow = [];
+      say(s, 'dl', '等歌单同步完再补下的约定作废：那是上一个账号的歌单');
+    }
+  }
+  function logout(s) {
+    const a = A(s);
+    if (a.status !== 'in' && a.status !== 'expired') return say(s, 'auth', '现在没有登录');
+    const p = P(s);
+    const e = curEntry(s);
+    if (a.status === 'in' && s.env.online) {
+      p.playing = false;
+      p.loading = false;
+      if (e) endListen(s, e, '退出登录');
+      if (s.app.scrobbles.some((k) => k.status === 'pending' && k.account === a.account)) {
+        say(s, 'scrobble', '退出前先把还没报的听歌打卡发出去');
+        flushScrobbles(s, 'fg');
+        for (let g = 0; g < 4 && s.app.scrobbles.some((k) => k.status === 'sending'); g++) tick(s);
+      }
+    }
+    if (p.queue.length) clearQueue(s, '退出登录');
+    dropScrobbles(s, () => true, '退出登录前没能补发');
+    dropWrites(s, '退出登录');
+    s.app.library = null;
+    s.app.sync = newSync();
+    s.app.outbox = [];
+    s.app.inflight = s.app.inflight.filter((r) => r.orphan);
+    Object.assign(a, { status: 'out', account: null, cookieVersion: 0, renewedAt: null, flow: null, renewing: null, parked: [], clearCookie: true });
+    downloadsOnLogout(s, '退出登录');
+    s.app.downloads.follow = [];
+    say(s, 'auth', '已退出：删掉本机的曲库副本和播放队列，下载保留');
+    if (!s.env.online) say(s, 'warn', '断网了：登录用的 Cookie 是 httpOnly，网页自己删不掉，要等联网后请服务器清掉；在那之前浏览器里还留着它');
+    flushLogout(s);
+    return undefined;
+  }
+  function flushLogout(s) {
+    if (!A(s).clearCookie || !s.env.online || !s.env.appOpen) return;
+    if ([...s.app.outbox, ...s.app.inflight].some((r) => r.kind === 'logout')) return;
+    enqueue(s, { kind: 'logout', prio: 'fg', label: '退出：请服务器清掉登录 Cookie' });
+  }
+  function onLogout(s, r) {
+    if (!r.result.ok || !A(s).clearCookie) return;
+    A(s).clearCookie = false;
+    say(s, 'auth', '服务器回了一个过期的 Set-Cookie：浏览器里的登录 Cookie 清掉了');
+  }
+
+  // ---------- 听歌打卡 ----------
+  function endListen(s, e, how) {
+    const secs = Math.floor(P(s).listened);
+    P(s).listened = 0;
+    recordScrobble(s, e, secs, how);
+  }
+  function recordScrobble(s, e, secs, how) {
+    if (secs <= 0) return;
+    const a = A(s);
+    if (!a.account) {
+      say(s, 'scrobble', `${songName(e.songId)}听了 ${secs} 秒，但现在没登录，不打卡`);
+      return;
+    }
+    const why = !s.env.online ? '：断网，先记在本机' : a.status !== 'in' ? '：登录失效，先记在本机' : '';
+    s.app.scrobbles.push({ id: nextId(s, 'k'), songId: e.songId, secs, src: { ...e.src }, account: a.account, at: s.now, how, status: 'pending', held: !!why, notBefore: 0, note: '' });
+    say(s, 'scrobble', `记一条听歌打卡：${songName(e.songId)} ${secs} 秒，播放来源 ${srcLabel(e.src)}（${how}）${why}`);
+  }
+  function flushScrobbles(s, prio = 'bg') {
+    const a = A(s);
+    if (a.status !== 'in' || !s.env.online || !s.env.appOpen) return;
+    for (const k of s.app.scrobbles) {
+      if (k.status !== 'pending' || k.account !== a.account || k.notBefore > s.now) continue;
+      k.status = 'sending';
+      enqueue(s, { kind: 'scrobble', prio, label: `听歌打卡${songName(k.songId)} ${k.secs} 秒`, data: { kid: k.id, secs: k.secs } });
+    }
+  }
+  function onScrobble(s, r) {
+    const k = s.app.scrobbles.find((x) => x.id === r.data.kid);
+    if (!k || k.status !== 'sending') return;
+    const res = r.result;
+    if (res.ok) {
+      k.status = 'sent';
+      k.sentAt = s.now;
+      const late = k.held || s.now - k.at > 5;
+      say(s, 'scrobble', `${late ? '补发' : '上报'}听歌打卡成功：${songName(k.songId)} ${k.secs} 秒，来源 ${srcLabel(k.src)}，记到 ${ACCOUNTS[k.account].name}${s.config.assume.scrobbleCounts ? '' : '（假设：网易云那边没计入排行，Campanula 这边看不出来）'}`);
+      return;
+    }
+    k.status = 'pending';
+    if (res.err === 'busy') {
+      k.notBefore = s.now + res.retryAfter;
+      backoff(s, res.retryAfter);
+    }
+  }
+  function dropScrobbles(s, pred, why) {
+    let n = 0;
+    for (const k of s.app.scrobbles) {
+      if ((k.status === 'pending' || k.status === 'sending') && pred(k)) {
+        k.status = 'dropped';
+        k.note = why;
+        n += 1;
+      }
+    }
+    if (n) say(s, 'scrobble', `丢弃 ${n} 条没补发的听歌打卡（${why}）`);
+  }
+
+  // ---------- 播放队列 ----------
+  function newEntry(s, songId, src) {
+    return { eid: nextId(s, 'e'), songId, src: { ...src }, resumeAt: null, resumeListened: 0 };
+  }
+  function stepInOrder(s, eid, dir) {
+    const o = P(s).order;
+    const i = o.indexOf(eid);
+    if (i < 0 || !o.length) return null;
+    return o[(i + dir + o.length) % o.length];
+  }
+  function findPlayable(s, fromEid, dir) {
+    const skipped = [];
+    let eid = fromEid;
+    for (let k = 0; k < P(s).order.length; k++) {
+      eid = stepInOrder(s, eid, dir);
+      if (eid === null) break;
+      const e = entryOf(s, eid);
+      const pl = playability(s, e.songId);
+      if (pl.ok) return { eid, skipped };
+      skipped.push({ e, why: pl.why });
+    }
+    return { eid: null, skipped };
+  }
+  function stopNoPlayable(s, eid) {
+    Object.assign(P(s), { cur: eid, playing: false, loading: false, pos: 0, listened: 0, trial: false, local: false, msg: '播放队列里没有现在能放的歌' });
+    P(s).pendingNext = P(s).pendingNext.filter((x) => x !== eid);
+    say(s, 'warn', '播放队列里没有现在能放的歌，停下');
+  }
+  function startEntry(s, eid, opt = {}) {
+    const p = P(s);
+    const e = entryOf(s, eid);
+    const pl = playability(s, e.songId);
+    if (!pl.ok) {
+      say(s, 'play', `跳过${songName(e.songId)}（${pl.why}）`);
+      const { eid: nx, skipped } = findPlayable(s, eid, opt.dir || 1);
+      for (const x of skipped) if (x.e.eid !== eid) say(s, 'play', `跳过${songName(x.e.songId)}（${x.why}）`);
+      if (nx === null || nx === eid) return stopNoPlayable(s, eid);
+      return startEntry(s, nx, { autoplay: opt.autoplay, dir: opt.dir });
+    }
+    let pos = 0;
+    let listened = 0;
+    if (e.resumeAt != null) {
+      pos = e.resumeAt;
+      listened = e.resumeListened || 0;
+      say(s, 'play', `回到被插播打断的${songName(e.songId)}，从 ${fmtDur(pos)} 接着放`);
+      e.resumeAt = null;
+      e.resumeListened = 0;
+    }
+    const autoplay = opt.autoplay !== false;
+    Object.assign(p, { cur: eid, pos, listened, trial: !!pl.trial, local: !!pl.local, loading: false, playing: autoplay, msg: '' });
+    p.pendingNext = p.pendingNext.filter((x) => x !== eid);
+    if (!autoplay) return undefined;
+    if (pl.local) return say(s, 'play', `开始放${songName(e.songId)}：已下载，用本地文件（在线也优先本地）`);
+    const u = p.urls[e.songId];
+    if (u && u.expiresAt > s.now) {
+      p.trial = u.trial;
+      return say(s, 'play', `开始放${songName(e.songId)}（播放地址还在 20 分钟有效期内，不用重新取）`);
+    }
+    return requestUrl(s, e);
+  }
+  function requestUrl(s, e) {
+    const stale = s.app.outbox.filter((r) => r.kind === 'url');
+    if (stale.length) {
+      s.app.outbox = s.app.outbox.filter((r) => r.kind !== 'url');
+      say(s, 'req', `前面切过的歌还没发出去的取地址请求作废（${stale.length} 个），只为现在这首取`);
+    }
+    P(s).loading = true;
+    enqueue(s, { kind: 'url', prio: 'fg', label: `获取播放地址${songName(e.songId)}`, data: { eid: e.eid, songId: e.songId } });
+    say(s, 'play', `准备放${songName(e.songId)}：先获取播放地址（前台请求）`);
+  }
+  function onUrl(s, r) {
+    const p = P(s);
+    const res = r.result;
+    const { eid, songId } = r.data;
+    if (res.ok) p.urls[songId] = { expiresAt: res.expiresAt, trial: res.trial };
+    if (p.cur !== eid || !p.loading) {
+      if (res.ok) say(s, 'req', `${songName(songId)}的播放地址回来了，但已经切走，先存着`);
+      return;
+    }
+    p.loading = false;
+    if (res.ok) {
+      p.trial = res.trial;
+      say(s, 'play', `拿到${songName(songId)}的播放地址（${res.trial ? '会员歌曲：这个账号只有 30 秒试听片段' : '完整音频'}，20 分钟内有效）${p.pos ? `，从 ${fmtDur(p.pos)} 接着放` : '，开始播放'}`);
+      return;
+    }
+    if (res.err === 'busy') {
+      p.playing = false;
+      p.msg = `网易云说“操作频繁”，没拿到播放地址；${res.retryAfter} 秒后再按播放试试`;
+      say(s, 'warn', `获取${songName(songId)}的播放地址时，网易云说“操作频繁”（要等 ${res.retryAfter} 秒）→ 停在这首，提示稍后再试`);
+      backoff(s, res.retryAfter);
+      return;
+    }
+    const why = { offline: '断网，没下载', needLogin: '登录失效，没下载', nocopyright: '无版权' }[res.err] || '拿不到播放地址';
+    say(s, 'play', `${songName(songId)}放不了（${why}）`);
+    const { eid: nx, skipped } = findPlayable(s, eid, 1);
+    for (const x of skipped) if (x.e.eid !== eid) say(s, 'play', `跳过${songName(x.e.songId)}（${x.why}）`);
+    if (nx === null || nx === eid) stopNoPlayable(s, eid);
+    else startEntry(s, nx, { autoplay: true });
+  }
+  function resume(s) {
+    const p = P(s);
+    const e = curEntry(s);
+    if (!e) {
+      if (p.queue.length) return startEntry(s, p.order[0]);
+      return say(s, 'play', '播放队列是空的');
+    }
+    const pl = playability(s, e.songId);
+    if (!pl.ok) {
+      say(s, 'play', `${songName(e.songId)}现在放不了（${pl.why}）`);
+      const { eid: nx } = findPlayable(s, e.eid, 1);
+      if (nx === null || nx === e.eid) return stopNoPlayable(s, e.eid);
+      return startEntry(s, nx);
+    }
+    p.playing = true;
+    p.msg = '';
+    p.local = !!pl.local;
+    if (pl.local) return say(s, 'play', `继续放${songName(e.songId)}（本地文件），从 ${fmtDur(p.pos)}`);
+    const u = p.urls[e.songId];
+    if (u && u.expiresAt > s.now) {
+      p.trial = u.trial;
+      return say(s, 'play', `继续放${songName(e.songId)}，从 ${fmtDur(p.pos)}`);
+    }
+    say(s, 'play', `${songName(e.songId)}的播放地址${u ? '已经过期（超过 20 分钟）' : '还没取'} → 重新获取，拿到后从 ${fmtDur(p.pos)} 接着放（音频服务器支持分段请求）`);
+    return requestUrl(s, e);
+  }
+  function togglePlay(s) {
+    const p = P(s);
+    if (p.playing || p.loading) {
+      if (p.loading) s.app.outbox = s.app.outbox.filter((r) => r.kind !== 'url');
+      p.playing = false;
+      p.loading = false;
+      return say(s, 'play', `暂停在 ${fmtDur(p.pos)}`);
+    }
+    return resume(s);
+  }
+  function clearPlayer(s) {
+    s.app.outbox = s.app.outbox.filter((r) => r.kind !== 'url');
+    Object.assign(P(s), { queue: [], order: [], cur: null, playing: false, loading: false, pos: 0, listened: 0, pendingNext: [], trial: false, local: false, msg: '', urls: {}, fill: null });
+  }
+  function flushResumeHolders(s, how) {
+    for (const e of P(s).queue) {
+      if (e.resumeAt != null && e.eid !== P(s).cur) {
+        recordScrobble(s, e, Math.floor(e.resumeListened || 0), `${how}，没回到被打断处`);
+        e.resumeAt = null;
+        e.resumeListened = 0;
+      }
+    }
+  }
+  function clearQueue(s, how) {
+    const e = curEntry(s);
+    if (e) endListen(s, e, how);
+    flushResumeHolders(s, how);
+    clearPlayer(s);
+  }
+  function removeRaw(s, eid) {
+    const p = P(s);
+    const e = entryOf(s, eid);
+    if (e && e.resumeAt != null) recordScrobble(s, e, Math.floor(e.resumeListened || 0), '被插播打断后又被移出队列');
+    p.queue = p.queue.filter((x) => x.eid !== eid);
+    p.order = p.order.filter((x) => x !== eid);
+    p.pendingNext = p.pendingNext.filter((x) => x !== eid);
+  }
+  function insertIndex(arr, curEid, pendingNext) {
+    let i = arr.indexOf(curEid) + 1;
+    while (i < arr.length && pendingNext.includes(arr[i])) i += 1;
+    return i;
+  }
+  // 随机模式“混进随机顺序”：把播放顺序转到当前这首打头，再随机插进后面某个位置
+  function insertRandomAfterCur(s, eid) {
+    const p = P(s);
+    const ci = p.order.indexOf(p.cur);
+    const rot = [...p.order.slice(ci), ...p.order.slice(0, ci)];
+    const at = 1 + Math.floor(rand(s) * rot.length);
+    rot.splice(at, 0, eid);
+    p.order = rot;
+    return at;
+  }
+
+  function replaceQueue(s, src, songIds, startSongId, partial) {
+    const p = P(s);
+    const old = curEntry(s);
+    if (old) endListen(s, old, '播放队列被替换');
+    flushResumeHolders(s, '播放队列被替换');
+    const entries = songIds.map((id) => newEntry(s, id, src));
+    const start = entries.find((e) => e.songId === startSongId);
+    p.queue = entries;
+    p.pendingNext = [];
+    p.fill = partial ? { listId: src.id, have: songIds.slice() } : null;
+    p.order = p.mode === 'shuffle'
+      ? [start.eid, ...shuffled(s, entries.filter((e) => e !== start).map((e) => e.eid))]
+      : entries.map((e) => e.eid);
+    say(s, 'queue', `用${srcLabel(src)}的 ${entries.length} 首替换播放队列，从${songName(startSongId)}开始${p.mode === 'shuffle' ? '（随机模式：先放这首，其余打乱）' : ''}`);
+    startEntry(s, start.eid, { autoplay: true });
+  }
+
+  function clickSong(s, srcId, songId) {
+    const src = findSource(s, srcId);
+    if (!src) return say(s, 'warn', '这个列表现在打不开');
+    if (!src.songs.includes(songId)) return say(s, 'warn', `${srcLabel(src)}里现在没有${songName(songId)}`);
+    say(s, 'you', `在${srcLabel(src)}里点${songName(songId)}`);
+    const pl = playability(s, songId);
+    if (!pl.ok) return say(s, 'play', `${songName(songId)}${pl.why}，显示成灰色，点了也不能放`);
+    if (src.kind === 'search') return addSong(s, 'now', songId, srcRef(src));
+    const cur = curEntry(s);
+    if (cur && cur.songId === songId && cur.src.id === src.id) {
+      say(s, 'play', '点的就是正在放的这首：不重新开始，打开播放页');
+      if (!P(s).playing && !P(s).loading) resume(s);
+      return undefined;
+    }
+    const fill = src.partial && s.config.rules.partialList === 'fill';
+    if (src.partial) {
+      say(s, 'queue', fill
+        ? `${srcLabel(src)}还没同步完（本机 ${src.songs.length} 首，网易云 ${src.total} 首）：先用已经同步的部分替换播放队列，这张同步完再把后面的补进来（规则⑫）`
+        : `${srcLabel(src)}还没同步完（本机 ${src.songs.length} 首，网易云 ${src.total} 首）：播放队列只放已经同步的部分，之后不补（规则⑫）`);
+    }
+    return replaceQueue(s, srcRef(src), src.songs, songId, fill);
+  }
+
+  // how: now 插播 / next 下一首播放 / end 加入播放队列
+  function addSong(s, how, songId, src) {
+    const p = P(s);
+    const verb = { now: '插播', next: '下一首播放', end: '加入播放队列' }[how];
+    const cur = curEntry(s);
+    if (!cur) {
+      const e = newEntry(s, songId, src);
+      p.queue = [e];
+      p.order = [e.eid];
+      p.pendingNext = [];
+      if (how === 'now' || s.config.rules.emptyAdd === 'play') {
+        say(s, 'queue', `播放队列是空的：${verb}${songName(songId)} → 队列里只有这一首，直接开始放${how === 'now' ? '' : '（规则①：直接放）'}`);
+        return startEntry(s, e.eid, { autoplay: true });
+      }
+      Object.assign(p, { cur: e.eid, playing: false, loading: false, pos: 0, listened: 0, trial: false, local: false });
+      return say(s, 'queue', `播放队列是空的：${verb}${songName(songId)} → 放进队列，停在这首，等你按播放（规则①：只放进队列）`);
+    }
+    const existing = p.queue.filter((e) => e.songId === songId);
+    const move = s.config.rules.dupInQueue === 'move';
+    if (cur.songId === songId && (how === 'now' || move)) {
+      if (how === 'now' && !p.playing && !p.loading) {
+        say(s, 'queue', `${songName(songId)}就是当前这首（暂停中）：不重复插播，接着放`);
+        return resume(s);
+      }
+      return say(s, 'queue', how === 'now'
+        ? `${songName(songId)}就是正在放的这首：不重复插播，接着放`
+        : `${songName(songId)}就是正在放的这首：队列里只留一份，不再${verb}（规则②）`);
+    }
+    if (existing.length && move) {
+      for (const e of existing) {
+        const at = p.queue.indexOf(e) + 1;
+        removeRaw(s, e.eid);
+        say(s, 'queue', `${songName(songId)}原来在队列第 ${at} 首（来源 ${srcLabel(e.src)}）→ 挪过来，只留一份，播放来源改成${srcLabel(src)}（规则②）`);
+      }
+    } else if (existing.length) {
+      say(s, 'queue', `${songName(songId)}已经在队列里 → 原来那份留着，再放一份（规则②）`);
+    }
+    const e = newEntry(s, songId, src);
+    const qEids = p.queue.map((x) => x.eid);
+    const mix = p.mode === 'shuffle' && s.config.rules.shuffleAdd === 'mix';
+    if (how === 'end') {
+      p.queue.push(e);
+      if (mix) {
+        const at = insertRandomAfterCur(s, e.eid);
+        return say(s, 'queue', `加入播放队列：${songName(songId)}排到队列最后；随机模式下混进随机顺序，排在接下来第 ${at} 首（规则③）`);
+      }
+      p.order.push(e.eid);
+      return say(s, 'queue', `加入播放队列：${songName(songId)}排到最后（第 ${p.queue.length} 首）${p.mode === 'shuffle' ? '；随机模式下也排在播放顺序最后（规则③）' : ''}`);
+    }
+    if (how === 'next') {
+      if (mix) {
+        p.queue.splice(insertIndex(qEids, p.cur, []), 0, e);
+        const at = insertRandomAfterCur(s, e.eid);
+        return say(s, 'queue', `下一首播放：${songName(songId)}在队列里排到当前这首后面；但随机模式下混进随机顺序，排在接下来第 ${at} 首（规则③）`);
+      }
+      const fifo = s.config.rules.playNextOrder === 'fifo';
+      const pend = fifo ? p.pendingNext : [];
+      const oi = insertIndex(p.order, p.cur, pend);
+      p.queue.splice(insertIndex(qEids, p.cur, pend), 0, e);
+      p.order.splice(oi, 0, e.eid);
+      p.pendingNext.push(e.eid);
+      const behind = fifo && oi > p.order.indexOf(p.cur) + 1;
+      return say(s, 'queue', `下一首播放：${songName(songId)}排到${behind ? '前面几首“下一首播放”的后面（规则⑤：先加的先放）' : `当前这首${songName(cur.songId)}紧后面`}${p.mode === 'shuffle' ? '；随机模式下也是紧接着放（规则③）' : ''}`);
+    }
+    // 插播
+    if (s.config.rules.interrupted === 'resume') {
+      p.queue.splice(qEids.indexOf(p.cur), 0, e);
+      p.order.splice(p.order.indexOf(p.cur), 0, e.eid);
+      say(s, 'queue', `插播：${songName(songId)}立即播放；被打断的${songName(cur.songId)}排在它后面，等着从断点接着放（规则④：续播）`);
+    } else {
+      p.queue.splice(insertIndex(qEids, p.cur, []), 0, e);
+      p.order.splice(insertIndex(p.order, p.cur, []), 0, e.eid);
+      say(s, 'queue', `插播：${songName(songId)}排到${songName(cur.songId)}后面，立即播放；队列其余部分不变`);
+    }
+    return interrupt(s, e.eid);
+  }
+  function interrupt(s, newEid) {
+    const p = P(s);
+    const cur = curEntry(s);
+    if (s.config.rules.interrupted === 'resume') {
+      cur.resumeAt = p.pos;
+      cur.resumeListened = p.listened;
+      say(s, 'play', `${songName(cur.songId)}停在 ${fmtDur(p.pos)}，先不打卡，等回来接着放`);
+    } else {
+      endListen(s, cur, '被插播打断');
+      say(s, 'play', `${songName(cur.songId)}被打断，之后不续播（规则④：不续播）`);
+    }
+    p.listened = 0;
+    startEntry(s, newEid, { autoplay: true });
+  }
+  function naturalEnd(s) {
+    const p = P(s);
+    const e = curEntry(s);
+    p.ends += 1;
+    endListen(s, e, p.trial ? '试听片段放完' : '放完');
+    if (p.mode === 'one') {
+      say(s, 'play', `单曲循环：${songName(e.songId)}再放一遍`);
+      return startEntry(s, e.eid, { autoplay: true });
+    }
+    if (p.queue.length === 1) say(s, 'play', `队列里只有${songName(e.songId)}这一首，${MODE_LABEL[p.mode]} → 再放一遍`);
+    return startEntry(s, stepInOrder(s, e.eid, 1), { autoplay: true, dir: 1 });
+  }
+  function userSkip(s, dir) {
+    const e = curEntry(s);
+    if (!e) return say(s, 'play', '播放队列是空的');
+    endListen(s, e, '切走');
+    return startEntry(s, stepInOrder(s, e.eid, dir), { autoplay: true, dir });
+  }
+  function jump(s, eid) {
+    const p = P(s);
+    const e = entryOf(s, eid);
+    const cur = curEntry(s);
+    if (cur && cur.eid === eid) {
+      if (!p.playing && !p.loading) return resume(s);
+      return say(s, 'play', '点的就是正在放的这首');
+    }
+    const pl = playability(s, e.songId);
+    if (!pl.ok) return say(s, 'play', `${songName(e.songId)}${pl.why}，不能放`);
+    if (cur) endListen(s, cur, '切走');
+    say(s, 'queue', `直接跳到队列里的${songName(e.songId)}，队列不变`);
+    return startEntry(s, eid, { autoplay: true });
+  }
+  function removeEntry(s, eid) {
+    const p = P(s);
+    const e = entryOf(s, eid);
+    if (p.cur !== eid) {
+      removeRaw(s, eid);
+      return say(s, 'queue', `从播放队列移除${songName(e.songId)}`);
+    }
+    endListen(s, e, '从队列移除');
+    const nx = p.queue.length > 1 ? stepInOrder(s, eid, 1) : null;
+    const wasPlaying = p.playing || p.loading;
+    removeRaw(s, eid);
+    say(s, 'queue', `从播放队列移除正在放的${songName(e.songId)}`);
+    if (!p.queue.length) {
+      clearPlayer(s);
+      return say(s, 'queue', '播放队列空了');
+    }
+    return startEntry(s, nx, { autoplay: wasPlaying });
+  }
+  function setMode(s, mode) {
+    const p = P(s);
+    if (p.mode === mode) return say(s, 'queue', `本来就是${MODE_LABEL[mode]}`);
+    if (mode === 'shuffle') {
+      const keep = p.cur ? [p.cur, ...p.order.filter((x) => p.pendingNext.includes(x))] : [];
+      const rest = p.queue.map((e) => e.eid).filter((x) => !keep.includes(x));
+      p.order = [...keep, ...shuffled(s, rest)];
+      say(s, 'queue', `切到随机：当前这首${keep.length > 1 ? '和“下一首播放”的歌' : ''}不动，其余 ${rest.length} 首打乱成新的播放顺序（队列的列表顺序不变）`);
+    } else if (p.mode === 'shuffle') {
+      p.order = p.queue.map((e) => e.eid);
+      say(s, 'queue', `切到${MODE_LABEL[mode]}：恢复按列表顺序，从当前这首接着往下`);
+    } else {
+      say(s, 'queue', `切到${MODE_LABEL[mode]}`);
+    }
+    p.mode = mode;
+    return undefined;
+  }
+  function upcoming(s, n = 5) {
+    const p = P(s);
+    if (!p.cur) return [];
+    const out = [];
+    let eid = p.cur;
+    for (let k = 0; k < Math.min(n, p.order.length - 1); k++) {
+      eid = stepInOrder(s, eid, 1);
+      out.push(entryOf(s, eid));
+    }
+    return out;
+  }
+  function advancePlayback(s) {
+    const p = P(s);
+    if (!s.env.appOpen || !p.playing || p.loading || !p.cur) return;
+    p.pos += 1;
+    p.listened += 1;
+    const limit = p.trial ? TRIAL_SECONDS : SONGS[curEntry(s).songId].dur;
+    if (p.pos >= limit) naturalEnd(s);
+  }
+
+  // ---------- 下载 ----------
+  function usedMB(s) {
+    return round1(s.app.downloads.items.reduce((t, i) => t + (i.status === 'done' ? i.sizeMB : i.doneMB || 0), 0));
+  }
+  const freeMB = (s) => round1(Math.max(0, s.env.diskMB - usedMB(s)));
+  function canDownload(s, songId) {
+    const a = A(s);
+    const song = SONGS[songId];
+    if (a.status !== 'in') return { ok: false, why: a.status === 'expired' ? '登录失效，要重新登录才能下载' : '要登录才能下载' };
+    if (song.noCopyright) return { ok: false, why: '无版权' };
+    if (song.vip && !ACCOUNTS[a.account].vip) return { ok: false, why: '会员歌曲，这个账号只能听试听片段；试听片段不能下载' };
+    return { ok: true };
+  }
+  // 为什么还没下完（页面直接显示这句话）
+  function dlWait(s, it) {
+    const bg = s.config.assume.bgFetch;
+    const a = A(s);
+    if (it.status === 'done' || it.status === 'failed') return '';
+    if (s.app.downloads.paused) return '下载队列暂停了：存储空间不够';
+    if (it.status === 'downloading' && it.url) return s.env.appOpen ? '下载中' : '后台下载中（App 关着）';
+    if (!s.env.online) return '等联网';
+    if (!s.env.appOpen && bg !== 'all') return it.doneMB ? '等打开 App，从断点续传' : '等打开 App';
+    if (a.status !== 'in') return a.status === 'expired' ? '等重新登录' : '等登录';
+    if (it.waitingUrl) return '取下载地址中';
+    if (it.notBefore > s.now) return `网易云说“操作频繁”，${it.notBefore - s.now} 秒后再试`;
+    return it.status === 'downloading' ? '马上取下载地址' : '排队中';
+  }
+  function downloadSongs(s, songIds, origin) {
+    const d = s.app.downloads;
+    let added = 0;
+    const merged = [];
+    const skipped = [];
+    for (const id of songIds) {
+      const it = d.items.find((i) => i.songId === id);
+      if (it) {
+        if (!it.origins.some((o) => o.id === origin.id)) it.origins.push({ ...origin });
+        if (it.status === 'failed' && loggedIn(s)) Object.assign(it, { status: 'queued', reason: '', netFail: false });
+        merged.push(id);
+        continue;
+      }
+      const c = canDownload(s, id);
+      if (!c.ok) {
+        skipped.push(`${songName(id)}（${c.why}）`);
+        continue;
+      }
+      d.items.push({ songId: id, status: 'queued', origins: [{ ...origin }], doneMB: 0, sizeMB: null, quality: null, url: null, waitingUrl: false, notBefore: 0, reason: '', netFail: false });
+      added += 1;
+    }
+    if (added) say(s, 'dl', `${added} 首加入下载队列（${origin.kind === 'single' ? '单独下载' : `来自${origin.name}`}，音质：${QUALITY[d.quality].label}）`);
+    if (merged.length) say(s, 'dl', `${merged.map(songName).join('')}已经在下载里：不重复下，只多记一笔“也${originPhrase(origin)}”`);
+    if (skipped.length) say(s, 'dl', `${origin.kind === 'single' ? '不能下载' : '跳过'}：${skipped.join('、')}`);
+  }
+  function onDlUrl(s, r) {
+    const it = s.app.downloads.items.find((i) => i.songId === r.data.songId);
+    if (!it || it.status !== 'downloading') return undefined;
+    it.waitingUrl = false;
+    const res = r.result;
+    if (res.ok) {
+      const need = round1(res.sizeMB - it.doneMB);
+      const free = freeMB(s);
+      if (need > free) return diskFull(s, it, need, free);
+      const resumed = it.doneMB > 0;
+      Object.assign(it, { url: { expiresAt: res.expiresAt }, sizeMB: res.sizeMB, quality: res.quality });
+      const downgraded = res.quality !== r.data.quality ? `（这个账号拿不到${QUALITY[r.data.quality].label}，降成${QUALITY[res.quality].label}）` : '';
+      const who = s.env.appOpen ? '' : '（App 关着，后台程序接力取到了这首的地址）';
+      say(s, 'dl', resumed
+        ? `${songName(it.songId)}从断点 ${mb(it.doneMB)} 续传（带 Range 请求，音频服务器回 206）${who}`
+        : `${songName(it.songId)}开始下载：${QUALITY[res.quality].label}，${mb(res.sizeMB)}${downgraded}${who}`);
+      return undefined;
+    }
+    if (res.err === 'trial') return dlFail(s, it, '只能下载完整音频：这首对现在登录的账号只有试听片段');
+    if (res.err === 'nocopyright') return dlFail(s, it, '无版权');
+    if (res.err === 'busy') {
+      it.notBefore = s.now + res.retryAfter;
+      say(s, 'dl', `取${songName(it.songId)}的下载地址时，网易云说“操作频繁” → ${res.retryAfter} 秒后再试`);
+      return backoff(s, res.retryAfter);
+    }
+    if (res.err === 'needLogin') it.status = 'queued';
+    return undefined;
+  }
+  function dlFail(s, it, why) {
+    Object.assign(it, { status: 'failed', reason: why, url: null, waitingUrl: false });
+    say(s, 'dl', `${songName(it.songId)}下载失败：${why}`);
+  }
+  function pumpDownloads(s) {
+    const d = s.app.downloads;
+    if (!s.env.online) return;
+    if (!s.env.appOpen && s.config.assume.bgFetch !== 'all') return;
+    if (d.paused) return;
+    let it = d.items.find((i) => i.status === 'downloading');
+    if (!it) {
+      if (!loggedIn(s)) return;
+      it = d.items.find((i) => i.status === 'queued');
+      if (!it) return;
+      it.status = 'downloading';
+    }
+    if (it.url || it.waitingUrl || it.notBefore > s.now) return;
+    if (!loggedIn(s)) {
+      it.status = 'queued';
+      return;
+    }
+    it.waitingUrl = true;
+    enqueue(s, { kind: 'dlUrl', prio: 'bg', label: `取下载地址${songName(it.songId)}${s.env.appOpen ? '' : '（后台程序）'}`, data: { songId: it.songId, quality: it.quality || d.quality } });
+  }
+  function diskFull(s, it, need, free) {
+    if (s.config.rules.diskFull === 'skip') return dlFail(s, it, `存储空间不足：还要 ${mb(need)}，只剩 ${mb(free)}${it.doneMB ? `（已下的 ${mb(it.doneMB)} 留着，腾出空间后重试可续传）` : '，腾出空间后可以重试'}`);
+    Object.assign(it, { status: 'queued', url: null, waitingUrl: false });
+    s.app.downloads.paused = true;
+    return say(s, 'warn', `存储空间不够：${songName(it.songId)}还要 ${mb(need)}，只剩 ${mb(free)} → 整个下载队列暂停（规则⑪）。腾出空间后点“继续下载”`);
+  }
+  function advanceDownloads(s) {
+    const bg = s.config.assume.bgFetch;
+    if (!s.env.online || (!s.env.appOpen && bg === 'off')) return;
+    const items = s.app.downloads.items;
+    const it = items.find((i) => i.status === 'downloading' && i.url);
+    if (!it) return;
+    const chunk = round1(Math.min(DL_SPEED, it.sizeMB - it.doneMB));
+    const free = freeMB(s);
+    if (chunk > free) return diskFull(s, it, round1(it.sizeMB - it.doneMB), free);
+    it.doneMB = round1(it.doneMB + chunk);
+    if (it.doneMB < it.sizeMB) return undefined;
+    Object.assign(it, { status: 'done', url: null });
+    const more = items.some((i) => i.status === 'queued');
+    return say(s, 'dl', `${songName(it.songId)}下载完成（${QUALITY[it.quality].label}，${mb(it.sizeMB)}）：音频、封面缩略图、歌词、歌曲信息都存在本机${!s.env.appOpen && bg === 'current' && more ? '。App 关着，后面的要等打开 App 再接着下（假设：后台只下完已经开始的那首）' : ''}`);
+  }
+  function downloadsOnLogout(s, why) {
+    const items = s.app.downloads.items;
+    for (const it of items) {
+      it.waitingUrl = false;
+      if (it.status === 'downloading' && !it.url) it.status = 'queued';
+    }
+    const going = items.find((i) => i.status === 'downloading' && i.url);
+    if (going) say(s, 'dl', `正在下的${songName(going.songId)}已经拿到地址：音频直连网易云的音频服务器，不需要登录，继续下完`);
+    const waiting = items.filter((i) => i.status === 'queued');
+    if (!waiting.length) return;
+    if (s.config.rules.queuedDlOnLogout === 'cancel') {
+      for (const it of waiting) Object.assign(it, { status: 'failed', reason: `${why}时还没下，取消了；登录后可以重试` });
+      say(s, 'dl', `${waiting.length} 首还在排队的下载取消，标成失败，登录后可以重试（规则⑧：取消）`);
+      return;
+    }
+    say(s, 'dl', `${waiting.length} 首还在排队的下载留着：下次不管谁登录，都用那个账号接着下（规则⑧：留着）`);
+  }
+  function dlRetry(s, it) {
+    if (!loggedIn(s)) return say(s, 'dl', '要登录才能下载');
+    if (it.status !== 'failed') return say(s, 'dl', `${songName(it.songId)}不是失败状态`);
+    Object.assign(it, { status: 'queued', reason: '', netFail: false });
+    return say(s, 'dl', `${songName(it.songId)}重新排队${it.doneMB ? `（从断点 ${mb(it.doneMB)} 续传）` : ''}`);
+  }
+  function dlDelete(s, songId) {
+    const d = s.app.downloads;
+    const it = d.items.find((i) => i.songId === songId);
+    if (!it) return say(s, 'dl', `${songName(songId)}没有下载`);
+    d.items = d.items.filter((i) => i !== it);
+    s.app.outbox = s.app.outbox.filter((r) => !(r.kind === 'dlUrl' && r.data.songId === songId));
+    say(s, 'dl', `删除下载${songName(songId)}${it.status === 'done' ? `，腾出 ${mb(it.sizeMB)}` : ''}`);
+    const e = curEntry(s);
+    if (e && e.songId === songId && P(s).local) say(s, 'play', '它正在用本地文件放：这一遍先放完（已经读进内存），之后再放就要在线取地址');
+    return undefined;
+  }
+  function followList(s, l) {
+    const d = s.app.downloads;
+    if (!d.follow.includes(l.id)) return;
+    d.follow = d.follow.filter((x) => x !== l.id);
+    const origin = { kind: l.kind, id: l.id, name: listTitle(l) };
+    const fresh = l.tracks.filter((id) => !d.items.some((i) => i.songId === id && i.origins.some((o) => o.id === l.id)));
+    if (!fresh.length) return;
+    say(s, 'dl', `${listTitle(l)}同步完了：把刚才还没同步到的 ${fresh.length} 首也加入下载（规则⑫）`);
+    downloadSongs(s, fresh, origin);
+  }
+  function dlDeleteOrigin(s, originId) {
+    s.app.downloads.follow = s.app.downloads.follow.filter((x) => x !== originId);
+    const d = s.app.downloads;
+    const keepShared = s.config.rules.deleteByList === 'keepShared';
+    const hit = d.items.filter((i) => i.origins.some((o) => o.id === originId));
+    if (!hit.length) return say(s, 'dl', '没有从这里下载的歌');
+    const origin = hit[0].origins.find((o) => o.id === originId);
+    let removed = 0;
+    let freed = 0;
+    const kept = [];
+    for (const it of hit) {
+      const others = it.origins.filter((o) => o.id !== originId);
+      if (keepShared && others.length) {
+        it.origins = others;
+        kept.push(`${songName(it.songId)}（也${others.map(originPhrase).join('，也')}）`);
+        continue;
+      }
+      d.items = d.items.filter((i) => i !== it);
+      removed += 1;
+      if (it.status === 'done') freed += it.sizeMB;
+    }
+    say(s, 'dl', `删除${origin.kind === 'single' ? '单独下载的歌' : `从${origin.name}下载的歌`}：删掉 ${removed} 首，腾出 ${mb(freed)}`);
+    if (kept.length) say(s, 'dl', `留下 ${kept.length} 首（规则⑦：别的歌单、专辑也下载过，或者单独下载过的，留着）：${kept.join('、')}`);
+    else if (!keepShared) {
+      const shared = hit.filter((i) => i.origins.length > 1);
+      if (shared.length) say(s, 'warn', `其中 ${shared.length} 首别的歌单、专辑也下载过，或者单独下载过，一起删了（规则⑦：一起删）：${shared.map((i) => songName(i.songId)).join('')}`);
+    }
+    const e = curEntry(s);
+    if (e && P(s).local && !d.items.some((i) => i.songId === e.songId)) say(s, 'play', `${songName(e.songId)}正在用本地文件放：这一遍先放完（已经读进内存），之后再放就要在线取地址`);
+    return undefined;
+  }
+
+  // ---------- 曲库同步（本地优先） ----------
+  function startSync(s, kind, why) {
+    const lib = s.app.library;
+    if (!lib || !loggedIn(s) || lib.account !== A(s).account) return;
+    const sy = s.app.sync;
+    if (sy.running) {
+      sy.again = true;
+      return;
+    }
+    Object.assign(sy, { running: true, kind: lib.firstDone ? 'incr' : 'first', todo: [], again: false, pump: false });
+    say(s, 'sync', sy.kind === 'first'
+      ? `${kind === 'first' ? '开始' : '继续'}首次同步：先拉歌单列表，再逐张拉曲目`
+      : `开始增量同步${why ? `（${why}）` : ''}：先拉歌单列表，只同步更新时间变了的`);
+    enqueue(s, { kind: 'syncList', prio: 'bg', label: '同步：拉歌单列表', data: {} });
+  }
+  function stopSync(s, why) {
+    const sy = s.app.sync;
+    if (!sy.running) return;
+    Object.assign(sy, { running: false, todo: [], again: false, pump: false });
+    s.app.outbox = s.app.outbox.filter((r) => r.kind !== 'syncList' && r.kind !== 'syncPage');
+    say(s, 'sync', why);
+  }
+  function finishSync(s) {
+    const sy = s.app.sync;
+    sy.running = false;
+    if (sy.kind === 'first') {
+      s.app.library.firstDone = true;
+      say(s, 'sync', '首次同步完成：整个曲库都在本机了');
+    } else say(s, 'sync', '增量同步完成');
+    if (sy.again) {
+      sy.again = false;
+      startSync(s, 'incr', '途中又有新的同步请求');
+    }
+  }
+  function syncTrouble(s, r) {
+    const res = r.result;
+    if (res.err === 'busy') {
+      say(s, 'sync', `${r.label}：网易云说“操作频繁” → ${res.retryAfter} 秒后再拉`);
+      requeue(s, r, s.now + res.retryAfter);
+      backoff(s, res.retryAfter);
+    } else if (res.err === 'offline') requeue(s, r, 0);
+    else if (res.err === 'needLogin') stopSync(s, '登录失效，同步停下，等重新登录');
+  }
+  function onSyncList(s, r) {
+    const lib = s.app.library;
+    const sy = s.app.sync;
+    if (!lib || lib.account !== r.account || !sy.running) return undefined;
+    const res = r.result;
+    if (!res.ok) return syncTrouble(s, r);
+    const ids = res.lists.map((x) => x.id);
+    for (const l of lib.lists.filter((x) => !ids.includes(x.id))) {
+      say(s, 'sync', `网易云那边已经没有${listTitle(l)}（可能在官方 App 里删了）→ 本地也删掉，以网易云为准`);
+    }
+    lib.lists = lib.lists.filter((l) => ids.includes(l.id));
+    s.app.writes = s.app.writes.filter((w) => ids.includes(w.listId));
+    for (const x of res.lists) {
+      const l = lib.lists.find((y) => y.id === x.id);
+      if (!l) {
+        lib.lists.push({ id: x.id, name: x.name, kind: x.kind, owner: x.owner, rev: x.rev, syncedRev: null, count: x.count, tracks: [], state: 'waiting', priority: false, fetch: null });
+        continue;
+      }
+      if (l.name !== x.name) say(s, 'sync', `${listTitle(l)}在网易云那边改名成《${x.name}》`);
+      Object.assign(l, { name: x.name, count: x.count, rev: x.rev });
+      if (l.state === 'done' && l.syncedRev !== x.rev) {
+        l.state = 'stale';
+        l.fetch = null;
+      }
+    }
+    lib.lists.sort((p, q) => ids.indexOf(p.id) - ids.indexOf(q.id));
+    lib.listFetched = true;
+    const todo = lib.lists.filter((l) => l.state !== 'done');
+    if (sy.kind === 'first' && !lib.firstDone) {
+      say(s, 'sync', `拿到歌单列表：${lib.lists.length} 张（含收藏的专辑），先显示出来；接下来逐张拉曲目（每页最多 1000 首，原型里每页 ${PAGE_SIZE} 首）`);
+    } else {
+      say(s, 'sync', todo.length
+        ? `有变化的：${todo.map(listTitle).join('、')}；其余 ${lib.lists.length - todo.length} 张的更新时间没变，跳过`
+        : '所有歌单的更新时间都没变，不用拉曲目');
+    }
+    sy.todo = [...todo.filter((l) => l.priority), ...todo.filter((l) => !l.priority)].map((l) => l.id);
+    sy.pump = true;
+    return undefined;
+  }
+  function newFetch(l) {
+    return { rev: null, pages: Math.max(1, Math.ceil(l.count / PAGE_SIZE)), got: {}, lastSeq: 0 };
+  }
+  // 还在路上的这张歌单的页：没发出去的、在路上的、因为 301 停着等续期的都算
+  const syncPageOut = (s, listId) => [...s.app.outbox, ...s.app.inflight, ...A(s).parked].some((r) => r.kind === 'syncPage' && !r.orphan && r.data.listId === listId);
+  function syncNext(s) {
+    const lib = s.app.library;
+    const sy = s.app.sync;
+    while (sy.todo.length) {
+      const l = lib.lists.find((x) => x.id === sy.todo[0]);
+      if (!l || l.state === 'done') {
+        sy.todo.shift();
+        continue;
+      }
+      if (syncPageOut(s, l.id)) return; // 这张已经有一页在路上：等它回来再拉下一页
+      if (!l.fetch) l.fetch = newFetch(l);
+      let page = 0;
+      while (l.fetch.got[page]) page += 1;
+      l.state = 'syncing';
+      enqueue(s, { kind: 'syncPage', prio: l.priority ? 'fg' : 'bg', label: `同步：${listTitle(l)}第 ${page + 1}/${l.fetch.pages} 页`, data: { listId: l.id, page } });
+      return;
+    }
+    finishSync(s);
+  }
+  // 对照实验：同步不控制节奏。把还没拉到、也不在路上的页一口气全发出去（中途才关掉节奏时，也靠它把剩下的补上）
+  function burstPages(s) {
+    const lib = s.app.library;
+    const sy = s.app.sync;
+    sy.todo = sy.todo.filter((id) => lib.lists.some((x) => x.id === id && x.state !== 'done'));
+    if (!sy.todo.length) return finishSync(s);
+    const out = [...s.app.outbox, ...s.app.inflight, ...A(s).parked].filter((r) => r.kind === 'syncPage' && !r.orphan);
+    let n = 0;
+    for (const id of sy.todo) {
+      const l = lib.lists.find((x) => x.id === id);
+      if (!l.fetch) l.fetch = newFetch(l);
+      l.state = 'syncing';
+      for (let p = 0; p < l.fetch.pages; p++) {
+        if (l.fetch.got[p] || out.some((r) => r.data.listId === id && r.data.page === p)) continue;
+        enqueue(s, { kind: 'syncPage', prio: l.priority ? 'fg' : 'bg', label: `同步：${listTitle(l)}第 ${p + 1}/${l.fetch.pages} 页`, data: { listId: l.id, page: p } });
+        n += 1;
+      }
+    }
+    if (n) say(s, 'warn', `（对照实验：同步不控制节奏）一口气发出 ${n} 个同步请求`);
+    return undefined;
+  }
+  function flatten(f) {
+    const out = [];
+    for (let i = 0; i < f.pages; i++) if (f.got[i]) out.push(...f.got[i]);
+    return out;
+  }
+  function prefixTracks(f) {
+    const out = [];
+    for (let i = 0; i < f.pages && f.got[i]; i++) out.push(...f.got[i]);
+    return out;
+  }
+  function applyOp(tracks, op, songId) {
+    if (op === 'add') return tracks.includes(songId) ? tracks : [songId, ...tracks];
+    return tracks.filter((x) => x !== songId);
+  }
+  function laterWrites(s, l, snapSeq) {
+    return s.app.writes.filter((w) => w.listId === l.id && (w.status === 'pending' || (w.status === 'confirmed' && w.seq > snapSeq)));
+  }
+  function rebase(s, l, base, snapSeq) {
+    if (!s.config.contrast.rebaseLocalWrites) return base.slice();
+    return laterWrites(s, l, snapSeq).reduce((t, w) => applyOp(t, w.op, w.songId), base.slice());
+  }
+  function fillQueue(s, l) {
+    const p = P(s);
+    if (!p.fill || p.fill.listId !== l.id) return;
+    const missing = l.tracks.filter((id) => !p.fill.have.includes(id) && !p.queue.some((e) => e.songId === id));
+    p.fill = null;
+    if (!missing.length) return;
+    const src = { kind: l.kind, id: l.id, name: l.name };
+    const entries = missing.map((id) => newEntry(s, id, src));
+    const eids = entries.map((e) => e.eid);
+    p.queue.push(...entries);
+    p.order.push(...(p.mode === 'shuffle' ? shuffled(s, eids) : eids));
+    say(s, 'queue', `${listTitle(l)}同步完了：把刚才还没同步到的 ${missing.length} 首补进播放队列（点歌时用的应该是整个列表）`);
+  }
+  function finalizeList(s, l) {
+    const snap = l.fetch.lastSeq;
+    const later = laterWrites(s, l, snap);
+    l.tracks = rebase(s, l, flatten(l.fetch), snap);
+    if (later.length) {
+      say(s, s.config.contrast.rebaseLocalWrites ? 'sync' : 'warn', s.config.contrast.rebaseLocalWrites
+        ? `${listTitle(l)}拿回来的数据比你刚才的 ${later.length} 个修改早 → 把这些修改叠回去，界面不会闪回`
+        : `（对照实验：不叠回本地修改）${listTitle(l)}的同步结果直接盖掉本地：你刚才的 ${later.length} 个修改在界面上不见了`);
+    }
+    s.app.writes = s.app.writes.filter((w) => !(w.listId === l.id && w.status === 'confirmed' && w.seq <= snap));
+    Object.assign(l, { syncedRev: l.fetch.rev, state: 'done', priority: false, fetch: null });
+    s.app.sync.todo = s.app.sync.todo.filter((id) => id !== l.id);
+    say(s, 'sync', `${listTitle(l)}同步完：${l.tracks.length} 首`);
+    fillQueue(s, l);
+    followList(s, l);
+  }
+  function onSyncPage(s, r) {
+    const lib = s.app.library;
+    const sy = s.app.sync;
+    if (!lib || lib.account !== r.account || !sy.running) return undefined;
+    const burst = !s.config.contrast.pacedSync;
+    const next = () => {
+      sy.pump = true;
+    };
+    const res = r.result;
+    const l = lib.lists.find((x) => x.id === r.data.listId);
+    if (!res.ok) {
+      if (res.err !== 'gone') return syncTrouble(s, r);
+      if (l) {
+        lib.lists = lib.lists.filter((x) => x !== l);
+        s.app.writes = s.app.writes.filter((w) => w.listId !== l.id);
+        say(s, 'sync', `${listTitle(l)}在网易云那边已经没有了 → 本地也删掉，以网易云为准`);
+      }
+      sy.todo = sy.todo.filter((id) => id !== r.data.listId);
+      return next();
+    }
+    if (!l || l.state === 'done') return next();
+    if (!l.fetch) l.fetch = newFetch(l);
+    if (!burst && l.fetch.rev !== null && l.fetch.rev !== res.rev) {
+      say(s, 'sync', `${listTitle(l)}在同步途中被改过（网易云那边的版本变了）→ 这张从头重拉，免得前后页对不上`);
+      l.fetch = { rev: res.rev, pages: res.pages, got: {}, lastSeq: 0 };
+    }
+    l.fetch.rev = res.rev;
+    l.fetch.pages = res.pages;
+    l.fetch.got[res.page] = res.tracks;
+    l.fetch.lastSeq = Math.max(l.fetch.lastSeq, res.seq);
+    const firstTime = l.syncedRev === null;
+    let all = true;
+    for (let i = 0; i < res.pages; i++) if (!l.fetch.got[i]) all = false;
+    if (all) finalizeList(s, l);
+    else {
+      if (firstTime && l.fetch.got[0]) l.tracks = rebase(s, l, prefixTracks(l.fetch), l.fetch.lastSeq);
+      say(s, 'sync', `${listTitle(l)}第 ${res.page + 1}/${res.pages} 页到了${firstTime ? `：已经同步的 ${l.tracks.length} 首可以先搜、先放` : '：先攒着，整张到齐再换上'}`);
+    }
+    return next();
+  }
+  function openList(s, id) {
+    const l = listById(s, id);
+    if (!l) return say(s, 'warn', '本机副本里没有这张歌单');
+    say(s, 'you', `打开${listTitle(l)}`);
+    if (l.state === 'done') return say(s, 'sync', `本机副本里有，直接显示（${l.tracks.length} 首）`);
+    if (!s.env.online || !loggedIn(s)) return say(s, 'sync', `只能看已经同步的部分（${l.tracks.length} 首）`);
+    l.priority = true;
+    const sy = s.app.sync;
+    if (!sy.running) return startSync(s, 'incr', '打开了还没同步完的歌单');
+    sy.todo = [id, ...sy.todo.filter((x) => x !== id)];
+    for (const r of s.app.outbox) if (r.kind === 'syncPage' && r.data.listId === id) r.prio = 'fg';
+    if (s.config.contrast.pacedSync && !syncPageOut(s, id)) {
+      syncNext(s);
+      return say(s, 'sync', `${listTitle(l)}还没同步完 → 马上用前台请求拉这张，不用等后台同步手上的请求回来；其余的同步排在它后面`);
+    }
+    return say(s, 'sync', `${listTitle(l)}还没同步完 → 插到同步的最前面，按前台优先拉`);
+  }
+  function doWrite(s, listId, op, songId) {
+    const a = A(s);
+    if (a.status !== 'in') return say(s, 'sync', a.status === 'expired' ? '登录失效了：要先重新登录才能改曲库' : '要登录才能改曲库');
+    const l = listById(s, listId);
+    if (!l) return say(s, 'sync', '本机副本里还没有这张歌单');
+    const what = l.kind === 'liked' ? `${op === 'add' ? '红心' : '取消红心'}${songName(songId)}` : op === 'add' ? `把${songName(songId)}加入歌单《${l.name}》` : `把${songName(songId)}从歌单《${l.name}》移除`;
+    if (l.kind !== 'liked' && l.kind !== 'own') return say(s, 'sync', `${listTitle(l)}是收藏的，不能改`);
+    const has = l.tracks.includes(songId);
+    if (op === 'add' && has) return say(s, 'sync', `${songName(songId)}已经在${listTitle(l)}里了`);
+    if (op === 'remove' && !has) return say(s, 'sync', `${songName(songId)}本来就不在${listTitle(l)}里`);
+    const offline = !s.env.online;
+    if (offline && s.config.rules.offlineWrite === 'refuse') return say(s, 'warn', `断网了：${what}没改成，界面不变（规则⑨：断网时直接提示没改成）`);
+    const w = { id: nextId(s, 'w'), listId, op, songId, status: 'pending', at: s.now, seq: null, index: l.tracks.indexOf(songId), what };
+    l.tracks = applyOp(l.tracks, op, songId);
+    s.app.writes.push(w);
+    enqueue(s, { kind: 'commit', prio: 'fg', label: `提交：${what}`, data: { wid: w.id, listId, op, songId } });
+    return say(s, 'sync', offline
+      ? `断网了：${what}，先改本地副本，等联网再提交（规则⑨：先记下）`
+      : `${what}：先改本地副本，立即生效；再提交给网易云`);
+  }
+  function resendWrites(s, why) {
+    const busyIds = [...s.app.outbox, ...s.app.inflight].filter((r) => r.kind === 'commit' && !r.orphan).map((r) => r.data.wid);
+    const again = s.app.writes.filter((w) => w.status === 'pending' && !busyIds.includes(w.id));
+    for (const w of again) enqueue(s, { kind: 'commit', prio: 'fg', label: `重新提交：${w.what}`, data: { wid: w.id, listId: w.listId, op: w.op, songId: w.songId } });
+    if (again.length) say(s, 'sync', `重新提交 ${again.length} 个还没等到网易云确认的修改（${why}）`);
+  }
+  function onCommit(s, r) {
+    const w = s.app.writes.find((x) => x.id === r.data.wid);
+    if (!w || w.status !== 'pending') return;
+    const res = r.result;
+    if (res.ok) {
+      w.status = 'confirmed';
+      w.seq = res.seq;
+      say(s, 'sync', `网易云确认：${w.what}`);
+      return;
+    }
+    if (res.err === 'needLogin' && s.config.rules.offlineWrite === 'queue') return;
+    const why = { busy: '网易云说“操作频繁”，稍后再试', offline: '断网', needLogin: '登录失效', gone: '网易云那边已经没有这张歌单' }[res.err] || String(res.err);
+    const l = listById(s, w.listId);
+    if (l) {
+      if (w.op === 'add') l.tracks = l.tracks.filter((x) => x !== w.songId);
+      else if (!l.tracks.includes(w.songId)) {
+        const t = l.tracks.slice();
+        t.splice(Math.max(0, Math.min(w.index, t.length)), 0, w.songId);
+        l.tracks = t;
+      }
+    }
+    s.app.writes = s.app.writes.filter((x) => x !== w);
+    say(s, 'warn', `${w.what}没成功（${why}）→ 回滚本地副本，界面变回去`);
+    if (res.err === 'busy') backoff(s, res.retryAfter);
+    if (res.err === 'gone') startSync(s, 'incr', '提交失败，说明本机副本落后了');
+  }
+  function searchLocal(s, q) {
+    const pool = new Set();
+    for (const l of libraryLists(s)) for (const id of l.tracks) pool.add(id);
+    for (const i of s.app.downloads.items) if (i.status === 'done') pool.add(i.songId);
+    const key = q.toLowerCase();
+    const hits = [...pool].filter((id) => SONGS[id].title.toLowerCase().includes(key) || SONGS[id].artist.toLowerCase().includes(key));
+    const partial = !!s.app.library && !s.app.library.firstDone;
+    s.app.lastSearch = { q, hits, partial, at: s.now };
+    say(s, 'you', `在本机搜“${q}”`);
+    say(s, 'sync', `本机找到 ${hits.length} 首：${hits.map(songName).join('') || '（无）'}${partial ? '。首次同步还没完，结果可能不全' : ''}`);
+  }
+
+  // ---------- App 开关、网络 ----------
+  function closeApp(s) {
+    const p = P(s);
+    const e = curEntry(s);
+    if (e && p.listened > 0) {
+      if (s.config.rules.scrobbleOnClose === 'close') endListen(s, e, '关掉 App');
+      else say(s, 'scrobble', `${songName(e.songId)}已经听了 ${Math.floor(p.listened)} 秒：先存着，不算这首结束；下次打开接着放完再一起打卡（规则⑥）`);
+    }
+    p.playing = false;
+    p.loading = false;
+    const bg = s.config.assume.bgFetch;
+    const keep = (r) => r.kind === 'dlUrl' && bg === 'all';
+    const dropped = [...s.app.outbox.filter((r) => !keep(r)).map((r) => [r, false]), ...s.app.inflight.filter((r) => !r.orphan && !keep(r)).map((r) => [r, true]), ...A(s).parked.map((r) => [r, false])];
+    s.app.outbox = s.app.outbox.filter(keep);
+    s.app.inflight = s.app.inflight.filter((r) => r.orphan || keep(r));
+    A(s).parked = [];
+    A(s).renewing = null;
+    for (const [r, sent] of dropped) {
+      if (r.kind === 'commit' && sent) {
+        r.orphan = true; // 已经发出去：网易云照样会处理，只是 App 收不到结果
+        s.app.inflight.push(r);
+      }
+      if (r.kind === 'scrobble') {
+        const k = s.app.scrobbles.find((x) => x.id === r.data.kid);
+        if (k && k.status === 'sending') k.status = 'pending';
+      }
+      if (r.kind === 'dlUrl') {
+        const it = s.app.downloads.items.find((i) => i.songId === r.data.songId);
+        if (it) it.waitingUrl = false;
+      }
+    }
+    const pending = s.app.writes.filter((w) => w.status === 'pending');
+    if (pending.length) say(s, 'sync', `还有 ${pending.length} 个修改没等到网易云确认 → 记在本机，下次打开 App 重新提交`);
+    if (s.app.sync.running) {
+      Object.assign(s.app.sync, { running: false, todo: [], again: false });
+      say(s, 'sync', '同步停在半路，下次打开 App 接着来');
+    }
+    const dl = s.app.downloads.items.find((i) => i.status === 'downloading');
+    if (dl) {
+      if (bg === 'off') {
+        Object.assign(dl, { url: null, waitingUrl: false });
+        say(s, 'dl', `${songName(dl.songId)}的下载停在 ${mb(dl.doneMB)}（假设：后台下载不可用），下次打开从断点续传`);
+      } else if (dl.url) {
+        say(s, 'dl', bg === 'all'
+          ? '正在下的这首交给浏览器在后台继续；下完还能接力取下一首的地址，通知栏显示进度（假设：能接力）'
+          : '正在下的这首交给浏览器在后台下完；后面的要等打开 App 再取地址（假设：只下完已经开始的那首）');
+      }
+    }
+    s.env.appOpen = false;
+    return say(s, 'app', `关掉 App：播放停下；播放队列（含每首的播放来源）和进度存在本机${e ? `（${songName(e.songId)} ${fmtDur(p.pos)}）` : ''}`);
+  }
+  function openApp(s) {
+    if (s.env.appOpen) return say(s, 'app', 'App 已经开着');
+    s.env.appOpen = true;
+    const p = P(s);
+    const e = curEntry(s);
+    say(s, 'app', e
+      ? `打开 App：恢复播放队列（${p.queue.length} 首，每首的播放来源都在）和进度：${songName(e.songId)}停在 ${fmtDur(p.pos)}，暂停中，等你按播放`
+      : '打开 App');
+    const a = A(s);
+    if (a.status === 'in') {
+      if (s.now - a.renewedAt >= RENEW_GAP) {
+        say(s, 'auth', `离上次续期（${fmtTime(a.renewedAt)}）超过 24 小时 → 续期`);
+        startRenew(s, 'open');
+      } else say(s, 'auth', `上次续期在 ${fmtTime(a.renewedAt)}，24 小时内，这次不续`);
+      resendWrites(s, '打开 App');
+      startSync(s, 'incr', '打开 App');
+    } else if (a.status === 'expired') say(s, 'auth', '还是“需要重新登录”的状态');
+    flushLogout(s);
+    return undefined;
+  }
+  function goOffline(s) {
+    if (!s.env.online) return say(s, 'net', '本来就断网');
+    s.env.online = false;
+    const queueWrites = s.config.rules.offlineWrite === 'queue';
+    const lost = s.app.inflight.filter((r) => !r.orphan);
+    s.app.inflight = s.app.inflight.filter((r) => r.orphan);
+    if (lost.length) say(s, 'net', `还在路上的 ${lost.length} 个请求断了`);
+    for (const r of lost) {
+      if (r.kind === 'commit' && queueWrites) requeue(s, r, 0);
+      else failWith(s, r, 'offline');
+    }
+    const failNow = s.app.outbox.filter((r) => r.kind === 'url' || (r.kind === 'commit' && !queueWrites));
+    s.app.outbox = s.app.outbox.filter((r) => !failNow.includes(r));
+    for (const r of failNow) failWith(s, r, 'offline');
+    const it = s.app.downloads.items.find((i) => i.status === 'downloading');
+    if (it && it.url) {
+      Object.assign(it, { status: 'failed', reason: '断网', netFail: true, url: null });
+      say(s, 'dl', `${songName(it.songId)}下载中断（断网），停在 ${mb(it.doneMB)}；联网后自动从断点续传`);
+    } else if (it) it.waitingUrl = false;
+    const p = P(s);
+    if (p.playing && !p.loading && !p.local) say(s, 'play', '当前这首在线播放的歌已经缓冲：原型里假设它能放完；之后没下载的歌会跳过');
+    return say(s, 'net', '现在离线：已下载的歌照常放，没下载的歌不可播放');
+  }
+  function goOnline(s) {
+    if (s.env.online) return say(s, 'net', '本来就联着网');
+    s.env.online = true;
+    say(s, 'net', '联网了');
+    for (const it of s.app.downloads.items) {
+      if (it.status === 'failed' && it.netFail) {
+        Object.assign(it, { status: 'queued', reason: '', netFail: false });
+        say(s, 'dl', `${songName(it.songId)}：断网失败的下载自动重新排队，稍后从断点续传`);
+      }
+    }
+    flushLogout(s);
+    const a = A(s);
+    if (a.status === 'in' && s.env.appOpen) {
+      const n = s.app.scrobbles.filter((k) => k.status === 'pending' && k.account === a.account).length;
+      if (n) say(s, 'scrobble', `有 ${n} 条听歌打卡记在本机，开始补发给当时登录的 ${ACCOUNTS[a.account].name}`);
+      const w = s.app.writes.filter((x) => x.status === 'pending').length;
+      if (w) say(s, 'sync', `提交断网时记下的 ${w} 个修改`);
+      if (!s.app.sync.running) startSync(s, 'incr', '联网后');
+    }
+    return undefined;
+  }
+
+  // =====================================================================
+  // 二、假的网易云和环境（只在原型里）
+  // =====================================================================
+  // 网易云对同一个账号的请求频率（假设，还没实测）：一秒超过 perSecond 个，就 penalty 秒内都回“操作频繁”
+  const RATE_LIMIT = { perSecond: 4, penalty: 30 };
+  function worldAdmit(s, r) {
+    const w = s.world;
+    r.due = s.now + 1;
+    const acc = r.account;
+    if (!acc || r.kind === 'logout') return;
+    const until = w.throttle[acc] || 0;
+    if (until > s.now) {
+      r.serverResult = { err: 'busy', retryAfter: until - s.now };
+      return;
+    }
+    if (s.config.assume.rateLimit !== 'strict') return;
+    const sec = (w.counts[s.now] = w.counts[s.now] || {});
+    sec[acc] = (sec[acc] || 0) + 1;
+    if (sec[acc] > RATE_LIMIT.perSecond) {
+      w.throttle[acc] = s.now + RATE_LIMIT.penalty;
+      r.serverResult = { err: 'busy', retryAfter: RATE_LIMIT.penalty };
+    }
+  }
+  function cookieOk(s, r) {
+    const c = s.world.cookies[r.account];
+    if (!c || !r.account) return false;
+    if (r.cookieV === c.version) return c.valid;
+    if (r.cookieV === c.version - 1) return c.prevValid;
+    return false;
+  }
+  function worldProcess(s, r) {
+    const w = s.world;
+    w.seq += 1;
+    const seq = w.seq;
+    if (r.kind === 'logout') return { ok: true, seq };
+    if (r.kind !== 'renew' && !cookieOk(s, r)) return { err: 301, seq };
+    const rem = w.remote[r.account];
+    const d = r.data;
+    const vip = ACCOUNTS[r.account].vip;
+    switch (r.kind) {
+      case 'url': {
+        const song = SONGS[d.songId];
+        if (song.noCopyright) return { err: 'nocopyright', seq };
+        return { ok: true, seq, trial: !!song.vip && !vip, expiresAt: s.now + URL_TTL };
+      }
+      case 'dlUrl': {
+        const song = SONGS[d.songId];
+        if (song.noCopyright) return { err: 'nocopyright', seq };
+        if (song.vip && !vip) return { err: 'trial', seq };
+        const q = d.quality === 'lossless' && !vip ? 'exhigh' : d.quality;
+        return { ok: true, seq, quality: q, sizeMB: sizeOf(d.songId, q), expiresAt: s.now + URL_TTL };
+      }
+      case 'commit': {
+        const l = rem.lists.find((x) => x.id === d.listId);
+        if (!l) return { err: 'gone', seq };
+        const has = l.tracks.includes(d.songId);
+        if (d.op === 'add' && !has) {
+          l.tracks.unshift(d.songId);
+          l.rev += 1;
+        }
+        if (d.op === 'remove' && has) {
+          l.tracks = l.tracks.filter((x) => x !== d.songId);
+          l.rev += 1;
+        }
+        return { ok: true, seq };
+      }
+      case 'syncList':
+        return { ok: true, seq, lists: rem.lists.map((l) => ({ id: l.id, name: l.name, kind: l.kind, owner: l.owner, rev: l.rev, count: l.tracks.length })) };
+      case 'syncPage': {
+        const l = rem.lists.find((x) => x.id === d.listId);
+        if (!l) return { err: 'gone', seq };
+        const pages = Math.max(1, Math.ceil(l.tracks.length / PAGE_SIZE));
+        return { ok: true, seq, page: d.page, pages, rev: l.rev, tracks: l.tracks.slice(d.page * PAGE_SIZE, (d.page + 1) * PAGE_SIZE) };
+      }
+      case 'scrobble':
+        if (s.config.assume.scrobbleCounts) {
+          rem.rank += 1;
+          rem.rankSeconds += d.secs;
+        }
+        return { ok: true, seq };
+      case 'renew': {
+        const c = w.cookies[r.account];
+        const valid = cookieOk(s, r);
+        const ok = valid ? s.config.assume.renewOk : s.config.assume.renewAfterExpiry;
+        if (!ok) return { err: 'denied', dead: !valid, seq };
+        c.version += 1;
+        c.valid = true;
+        c.prevValid = valid && s.config.assume.oldCookie === 'lives';
+        return { ok: true, seq, version: c.version };
+      }
+      default:
+        return { err: 'unknown', seq };
+    }
+  }
+  function deliver(s, tl) {
+    const num = (r) => Number(r.id.slice(1));
+    const due = s.app.inflight
+      .filter((r) => r.due <= s.now)
+      .sort((a, b) => a.due - b.due || num(a) - num(b));
+    s.app.inflight = s.app.inflight.filter((r) => r.due > s.now);
+    for (const r of due) {
+      r.result = r.serverResult || worldProcess(s, r);
+      tl.done.push({ label: r.label, prio: r.prio, result: brief(r.result), ok: !!r.result.ok, orphan: !!r.orphan });
+      if (!r.orphan) onResponse(s, r);
+    }
+    // 同一秒回来的同步结果都处理完，才决定接下来拉哪些页；边处理边决定会把同一秒回来、还没处理的页当成没拉过，重复请求
+    const sy = s.app.sync;
+    if (sy.pump) {
+      sy.pump = false;
+      if (sy.running) (s.config.contrast.pacedSync ? syncNext : burstPages)(s);
+    }
+  }
+  function remoteAction(s, a) {
+    const acc = a.account || A(s).account || 'hana';
+    const rem = s.world.remote[acc];
+    const l = rem.lists.find((x) => x.id === a.list);
+    if (!l) return say(s, 'remote', '（官方 App 里）找不到这张歌单');
+    const who = `（官方 App 里）${ACCOUNTS[acc].name}`;
+    if (a.op === 'add') {
+      if (l.tracks.includes(a.song)) return say(s, 'remote', `${who}：${songName(a.song)}已经在${listTitle(l)}里`);
+      l.tracks.unshift(a.song);
+      l.rev += 1;
+      return say(s, 'remote', `${who}往${listTitle(l)}加了${songName(a.song)}`);
+    }
+    if (a.op === 'remove') {
+      if (!l.tracks.includes(a.song)) return say(s, 'remote', `${who}：${songName(a.song)}不在${listTitle(l)}里`);
+      l.tracks = l.tracks.filter((x) => x !== a.song);
+      l.rev += 1;
+      return say(s, 'remote', `${who}从${listTitle(l)}删了${songName(a.song)}`);
+    }
+    if (a.op === 'delete') {
+      if (l.kind === 'liked') return say(s, 'remote', '我喜欢的音乐不能删');
+      rem.lists = rem.lists.filter((x) => x !== l);
+      return say(s, 'remote', `${who}删除了${listTitle(l)}`);
+    }
+    return undefined;
+  }
+  function expireCookie(s) {
+    const acc = A(s).account;
+    if (!acc) return say(s, 'remote', '现在没有登录的账号');
+    const c = s.world.cookies[acc];
+    c.valid = false;
+    c.prevValid = false;
+    return say(s, 'remote', `（网易云那边）${ACCOUNTS[acc].name} 的 Cookie 到期失效了。Campanula 还不知道，要等下一个请求返回 301 才发现`);
+  }
+  function throttleAccount(s, secs) {
+    const acc = A(s).account;
+    if (!acc) return say(s, 'remote', '现在没有登录的账号');
+    s.world.throttle[acc] = s.now + secs;
+    return say(s, 'remote', `（网易云那边）对 ${ACCOUNTS[acc].name} 限制 ${secs} 秒：这期间它的请求都回“操作频繁”`);
+  }
+
+  // =====================================================================
+  // 时间推进
+  // =====================================================================
+  function tick(s) {
+    const tl = { t: s.now, sent: [], done: [] };
+    flushScrobbles(s);
+    flushLogout(s);
+    pumpDownloads(s);
+    schedule(s, tl);
+    s.now += 1;
+    advancePlayback(s);
+    advanceDownloads(s);
+    deliver(s, tl);
+    for (const k of Object.keys(s.world.counts)) if (Number(k) < s.now - 3) delete s.world.counts[k];
+    if (tl.sent.length || tl.done.length) {
+      s.app.timeline.push(tl);
+      if (s.app.timeline.length > 10) s.app.timeline.shift();
+    }
+  }
+  function busy(s) {
+    const p = P(s);
+    const a = A(s);
+    const bg = s.config.assume.bgFetch;
+    const on = s.env.online;
+    const open = s.env.appOpen;
+    if (open && p.playing) return true;
+    if (s.app.inflight.length) return true;
+    if (on && s.app.outbox.some((r) => open || (r.kind === 'dlUrl' && bg === 'all'))) return true;
+    if (on && open && a.clearCookie) return true;
+    if (on && open && a.status === 'in' && s.app.scrobbles.some((k) => k.status === 'pending' && k.account === a.account)) return true;
+    const items = s.app.downloads.items;
+    if (on && (open || bg !== 'off') && items.some((i) => i.status === 'downloading' && i.url)) return true;
+    const canFetch = on && (open || bg === 'all') && a.status === 'in' && !s.app.downloads.paused;
+    return canFetch && items.some((i) => i.status === 'queued' || (i.status === 'downloading' && !i.url));
+  }
+  function advance(s, seconds) {
+    for (let i = 0; i < seconds; i++) {
+      if (!busy(s)) {
+        s.now += seconds - i;
+        return;
+      }
+      tick(s);
+    }
+  }
+  function fgPending(s) {
+    return s.app.outbox.some((r) => r.prio === 'fg' && canSendNow(s, r)) || s.app.inflight.some((r) => r.prio === 'fg' && !r.orphan);
+  }
+  function settle(s) {
+    for (let g = 0; g < 8 && fgPending(s); g++) tick(s);
+  }
+  function finishSong(s) {
+    const p = P(s);
+    if (!p.cur) return say(s, 'play', '没有正在放的歌');
+    if (!p.playing && !p.loading) resume(s);
+    for (let g = 0; g < 10 && p.loading; g++) tick(s);
+    const eid = p.cur;
+    const ends = p.ends;
+    for (let g = 0; g < 400 && p.playing && p.cur === eid && p.ends === ends; g++) tick(s);
+    return undefined;
+  }
+
+  // =====================================================================
+  // 动作入口
+  // =====================================================================
+  const NO_SETTLE = new Set(['wait', 'config']);
+  const WHILE_CLOSED = new Set(['open', 'wait', 'offline', 'online', 'env', 'disk', 'config', 'expireCookie', 'throttle', 'remote', 'batch']);
+  function step(sim, action) {
+    const s = structuredClone(sim);
+    s.log = [];
+    apply(s, action);
+    if (!NO_SETTLE.has(action.type)) settle(s);
+    return s;
+  }
+  function apply(s, a) {
+    if (!s.env.appOpen && !WHILE_CLOSED.has(a.type)) return say(s, 'warn', 'App 关着：先打开 App');
+    const src = a.src ? findSource(s, a.src) : null;
+    switch (a.type) {
+      case 'batch':
+        for (const x of a.actions) apply(s, x);
+        return undefined;
+      // 播放
+      case 'click': return clickSong(s, a.src, a.song);
+      case 'playNext':
+      case 'addToQueue': {
+        if (!src) return say(s, 'warn', '这个列表现在打不开');
+        const label = a.type === 'playNext' ? '下一首播放' : '加入播放队列';
+        say(s, 'you', `在${srcLabel(src)}里对${songName(a.song)}选“${label}”`);
+        const pl = playability(s, a.song);
+        if (!pl.ok) return say(s, 'play', `${songName(a.song)}${pl.why}，显示成灰色，不能${label}`);
+        return addSong(s, a.type === 'playNext' ? 'next' : 'end', a.song, srcRef(src));
+      }
+      case 'jump': {
+        const e = entryOf(s, a.eid);
+        if (!e) return say(s, 'warn', '播放队列里已经没有这一首');
+        say(s, 'you', `在播放队列里点${songName(e.songId)}`);
+        return jump(s, a.eid);
+      }
+      case 'remove': {
+        const e = entryOf(s, a.eid);
+        if (!e) return say(s, 'warn', '播放队列里已经没有这一首');
+        say(s, 'you', `把${songName(e.songId)}从播放队列移除`);
+        return removeEntry(s, a.eid);
+      }
+      case 'clearQueue':
+        say(s, 'you', '清空播放队列');
+        clearQueue(s, '清空播放队列');
+        return say(s, 'queue', '播放队列清空了');
+      case 'toggle':
+        say(s, 'you', P(s).playing || P(s).loading ? '按暂停' : '按播放');
+        return togglePlay(s);
+      case 'next':
+        say(s, 'you', '按下一首');
+        return userSkip(s, 1);
+      case 'prev':
+        say(s, 'you', '按上一首');
+        return userSkip(s, -1);
+      case 'mode':
+        say(s, 'you', `播放模式切到${MODE_LABEL[a.mode]}`);
+        return setMode(s, a.mode);
+      // 时间
+      case 'wait':
+        say(s, 'you', `等 ${humanSecs(a.sec)}`);
+        if (a.sec >= 3600 && P(s).playing) {
+          P(s).playing = false;
+          say(s, 'play', '（先暂停，免得一口气放上好几个小时）');
+        }
+        return advance(s, a.sec);
+      case 'finishSong':
+        say(s, 'you', '放到这首结束');
+        return finishSong(s);
+      // App、网络、环境
+      case 'close':
+        say(s, 'you', '关掉 App');
+        return closeApp(s);
+      case 'open':
+        say(s, 'you', '打开 App');
+        return openApp(s);
+      case 'offline':
+        say(s, 'you', '断网');
+        return goOffline(s);
+      case 'online':
+        say(s, 'you', '联网');
+        return goOnline(s);
+      case 'env':
+        s.env[a.key] = a.value;
+        return say(s, 'you', a.label || `环境：${a.key} = ${a.value}`);
+      case 'disk':
+        s.env.diskMB = round1(usedMB(s) + a.free);
+        return say(s, 'you', a.free >= DISK.plenty ? '设备存储：充足' : `设备存储：只剩 ${mb(a.free)}`);
+      case 'config':
+        s.config[a.group][a.key] = a.value;
+        return say(s, 'rule', a.label || `${a.group}.${a.key} = ${a.value}`);
+      case 'expireCookie':
+        say(s, 'you', '让 Cookie 到期（模拟网易云那边）');
+        return expireCookie(s);
+      case 'throttle':
+        say(s, 'you', `让网易云限制这个账号 ${a.sec} 秒（模拟网易云那边）`);
+        return throttleAccount(s, a.sec);
+      case 'remote':
+        say(s, 'you', '在官方 App 里改了一下');
+        return remoteAction(s, a);
+      // 曲库
+      case 'openList': return openList(s, a.list);
+      case 'like':
+        say(s, 'you', `红心${songName(a.song)}`);
+        return doWrite(s, likedId(s), 'add', a.song);
+      case 'unlike':
+        say(s, 'you', `取消红心${songName(a.song)}`);
+        return doWrite(s, likedId(s), 'remove', a.song);
+      case 'addTo':
+        say(s, 'you', `把${songName(a.song)}加入歌单`);
+        return doWrite(s, a.list, 'add', a.song);
+      case 'removeFrom':
+        say(s, 'you', `把${songName(a.song)}从歌单移除`);
+        return doWrite(s, a.list, 'remove', a.song);
+      case 'sync':
+        say(s, 'you', '手动同步一次');
+        if (!loggedIn(s)) return say(s, 'sync', '没登录，不同步');
+        if (s.app.sync.running) return say(s, 'sync', '同步已经在跑');
+        return startSync(s, 'incr', '手动');
+      case 'searchLocal': return searchLocal(s, a.q);
+      // 下载
+      case 'dlSong':
+        say(s, 'you', `下载${songName(a.song)}`);
+        return downloadSongs(s, [a.song], { kind: 'single', id: 'single', name: '单独下载' });
+      case 'dlList': {
+        if (!src) return say(s, 'warn', '这个列表现在打不开');
+        say(s, 'you', `下载整个${srcLabel(src)}`);
+        if (src.partial) {
+          const fill = s.config.rules.partialList === 'fill';
+          if (fill && !s.app.downloads.follow.includes(src.id)) s.app.downloads.follow.push(src.id);
+          say(s, 'dl', fill
+            ? `${srcLabel(src)}还没同步完（本机 ${src.songs.length} 首，网易云 ${src.total} 首）：先下已经同步的部分，同步完再把后面的补上（规则⑫）`
+            : `${srcLabel(src)}还没同步完（本机 ${src.songs.length} 首，网易云 ${src.total} 首）：只下已经同步的部分，之后不补（规则⑫）`);
+        }
+        return downloadSongs(s, src.songs, { kind: src.kind, id: src.id, name: srcLabel(src) });
+      }
+      case 'dlRetry': {
+        say(s, 'you', `重试下载${songName(a.song)}`);
+        const it = s.app.downloads.items.find((i) => i.songId === a.song);
+        if (!it) return say(s, 'dl', `${songName(a.song)}没有下载`);
+        return dlRetry(s, it);
+      }
+      case 'dlRetryAll': {
+        say(s, 'you', '全部重试');
+        const failed = s.app.downloads.items.filter((i) => i.status === 'failed');
+        if (!failed.length) return say(s, 'dl', '没有失败的下载');
+        for (const it of failed) dlRetry(s, it);
+        return undefined;
+      }
+      case 'dlDelete':
+        say(s, 'you', `删除下载${songName(a.song)}`);
+        return dlDelete(s, a.song);
+      case 'dlDeleteOrigin':
+        say(s, 'you', '按歌单删除下载');
+        return dlDeleteOrigin(s, a.origin);
+      case 'dlClear': {
+        say(s, 'you', '一键清空下载');
+        const n = s.app.downloads.items.length;
+        const freed = usedMB(s);
+        s.app.downloads.items = [];
+        s.app.downloads.paused = false;
+        s.app.downloads.follow = [];
+        s.app.outbox = s.app.outbox.filter((r) => r.kind !== 'dlUrl');
+        return say(s, 'dl', `清空了 ${n} 首下载，腾出 ${mb(freed)}`);
+      }
+      case 'dlResume':
+        say(s, 'you', '继续下载');
+        if (!s.app.downloads.paused) return say(s, 'dl', '下载队列没有暂停');
+        s.app.downloads.paused = false;
+        return say(s, 'dl', `下载队列继续（现在剩余空间 ${mb(freeMB(s))}）`);
+      case 'dlQuality':
+        s.app.downloads.quality = a.q;
+        say(s, 'you', `下载音质设成${QUALITY[a.q].label}`);
+        return say(s, 'dl', '和在线播放音质分开设置；只影响之后开始下的歌，下到一半的不变');
+      // 登录
+      case 'loginStart':
+        say(s, 'you', `用${a.method === 'sms' ? '短信' : '扫码'}登录 ${ACCOUNTS[a.account].name}`);
+        return loginStart(s, a.method, a.account);
+      case 'smsSend':
+        say(s, 'you', '输入手机号，点“发送验证码”');
+        return smsSend(s);
+      case 'smsCode':
+        say(s, 'you', a.ok ? '输入正确的验证码' : '输入错误的验证码');
+        return smsCode(s, a.ok);
+      case 'qrFetch':
+        say(s, 'you', '显示二维码');
+        return qrFetch(s);
+      case 'qrScan':
+        say(s, 'you', '用网易云 App 扫码');
+        return qrScan(s);
+      case 'qrConfirm':
+        say(s, 'you', '在手机上点“确认登录”');
+        return qrConfirm(s);
+      case 'captchaPass':
+        say(s, 'you', '在手机上完成行为验证');
+        return captchaPass(s);
+      case 'loginRetry':
+        say(s, 'you', '点“重试”');
+        return loginRetry(s);
+      case 'loginSwitch':
+        say(s, 'you', '换另一种登录方式');
+        return loginSwitch(s);
+      case 'loginCancel':
+        say(s, 'you', '取消登录');
+        return loginCancel(s);
+      case 'logout':
+        say(s, 'you', '主动退出登录');
+        return logout(s);
+      default:
+        return say(s, 'warn', `不认识的操作：${a.type}`);
+    }
+  }
+
+  root.Campanula = {
+    SONGS, ACCOUNTS, SEARCHES, QUALITY, DISK, MODE_LABEL, PAGE_SIZE, URL_TTL, RENEW_GAP, TRIAL_SECONDS, BG_MAX, RATE_LIMIT, DEFAULT_CONFIG,
+    create, step,
+    sources, findSource, playability, canDownload, isDownloaded, dlWait, upcoming, entryOf, curEntry, listById, likedId,
+    usedMB, freeMB, srcLabel, listTitle, songName, fmtClock, fmtTime, fmtDur, humanSecs, mb,
+  };
+})(globalThis);
+</script>
+
+<!-- 开关说明和引导场景：纯数据 -->
+<script>
+/* =====================================================================
+ * Campanula 逻辑原型 · 开关说明和引导场景（纯数据，页面和无头检查共用）
+ * ===================================================================== */
+(function (root) {
+  'use strict';
+
+  // ---------- 开关：已定的规则、未验证的假设、对照实验 ----------
+  const KNOBS = {
+    rules: {
+      title: '已定的规则',
+      hint: '2026-10-08 作者在原型里点过后定下，全部采用原型推荐。现在的默认值就是定下的做法；另一个选项留着，方便对照。',
+      items: {
+        emptyAdd: { n: '①', label: '播放队列为空时，选“下一首播放”或“加入播放队列”', options: [['play', '直接开始放'], ['hold', '放进队列，等你按播放']] },
+        dupInQueue: { n: '②', label: '要插播、下一首播放、加入播放队列的歌已经在播放队列里', options: [['move', '挪过来，只留一份（播放来源改成新的）'], ['copy', '原来那份留着，再放一份']] },
+        shuffleAdd: { n: '③', label: '随机模式下“下一首播放”“加入播放队列”', options: [['next', '照字面：下一首就是下一首，加入就排最后'], ['mix', '混进随机顺序']] },
+        interrupted: { n: '④', label: '被插播打断的那首', options: [['drop', '不续播（简报字面意思）'], ['resume', '插播完回来，从断点接着放']] },
+        playNextOrder: { n: '⑤', label: '连续几次“下一首播放”', options: [['lifo', '后加的先放（每次都插在当前这首紧后面）'], ['fifo', '先加的先放（排在之前加的后面）']] },
+        scrobbleOnClose: { n: '⑥', label: '一首歌放到一半关掉 App，听歌打卡', options: [['carry', '不算结束：秒数存着，下次放完一起打'], ['close', '关掉就算结束：先打一条']] },
+        deleteByList: { n: '⑦', label: '按歌单删除下载时，同一首歌别的歌单、专辑也下载过，或者单独下载过', options: [['keepShared', '留着'], ['deleteAll', '一起删']] },
+        queuedDlOnLogout: { n: '⑧', label: '退出或换账号时，还在排队的下载', options: [['keep', '留着：谁登录就用谁的账号接着下'], ['cancel', '取消：标成失败，登录后可重试']] },
+        offlineWrite: { n: '⑨', label: '断网时红心、加入歌单', options: [['refuse', '直接提示没改成'], ['queue', '先改本地，联网后再提交']] },
+        queueOnOtherAccount: { n: '⑩', label: '登录失效后，换了另一个账号登录', options: [['clear', '清空播放队列'], ['keep', '保留播放队列']] },
+        diskFull: { n: '⑪', label: '下载时存储空间不够', options: [['pause', '整个下载队列暂停，腾出空间后点“继续下载”'], ['skip', '这首标失败，接着试下一首']] },
+        partialList: { n: '⑫', label: '点歌、下载整个歌单时，这张歌单还没拉完', options: [['fill', '拉完后补齐播放队列和下载队列'], ['now', '只用点的那一刻已经拉到的']] },
+      },
+    },
+    assume: {
+      title: '还没验证的上游行为（假设）',
+      hint: 'decisions.md 第 7 节和交接文档里还没实测的事。切换后看规则在每种情况下是否都站得住。',
+      items: {
+        renewOk: { label: 'Cookie 还有效时续期', options: [[true, '成功'], [false, '被拒（不支持续期）']] },
+        renewAfterExpiry: { label: 'Cookie 已经失效后再续期', options: [[false, '不行'], [true, '还能续']] },
+        oldCookie: { label: '续期后，旧 Cookie', options: [['dies', '立即失效'], ['lives', '还能用一阵']] },
+        scrobbleCounts: { label: '听歌打卡在网易云那边', options: [[true, '计入听歌排行'], [false, '没计入（Campanula 看不出来）']] },
+        anonOk: { label: '匿名注册（扫码取 key、发验证码都靠它）', options: [[true, '正常'], [false, '失败（上游 502）']] },
+        qr8821: { label: '扫码登录确认后', options: [[false, '直接成功'], [true, '返回 8821，要行为验证']] },
+        bgFetch: { label: 'Android 上 App 关掉后的后台下载', options: [['all', '能接力下完全部'], ['current', '只下完已经开始的那首'], ['off', '不可用']] },
+        rateLimit: { label: '网易云对同一个账号的请求频率', options: [['none', '不限制'], ['strict', '一秒超过 4 个，30 秒内都回“操作频繁”']] },
+      },
+    },
+    contrast: {
+      title: '对照实验',
+      hint: '原型推荐的做法默认打开。关掉看看会出什么问题，用来确认这些做法有必要。',
+      items: {
+        pacedSync: { label: '后台请求自己控制节奏：同时最多 2 个在路上（网易云限频时才看得出差别）', options: [[true, '控制'], [false, '不控制，一口气全发']] },
+        rebaseLocalWrites: { label: '同步数据回来时，把还没确认的本地修改叠回去', options: [[true, '叠回去'], [false, '直接覆盖']] },
+        renewLock: { label: '多个标签页同时续期时加锁（Web Locks）', options: [[true, '加锁'], [false, '不加锁']] },
+      },
+    },
+  };
+
+  // ---------- 场景里常用的几段操作 ----------
+  const batch = (...actions) => ({ type: 'batch', actions });
+  const login = (account) => [{ type: 'loginStart', method: 'sms', account }, { type: 'smsSend' }, { type: 'smsCode', ok: true }];
+  const READY_HANA = [...login('hana'), { type: 'wait', sec: 30 }];
+  const READY_LIN = [...login('lin'), { type: 'wait', sec: 30 }];
+  const s = (label, act, watch) => ({ label, act, watch });
+  const ST = {
+    finish: (watch) => s('放到这首结束', { type: 'finishSong' }, watch),
+    wait: (sec, label, watch) => s(label, { type: 'wait', sec }, watch),
+    loginBatch: (account, label, watch) => s(label, batch(...login(account)), watch),
+  };
+
+  const BLOCKS = [
+    { id: 'queue', title: '播放队列', brief: '§3.1' },
+    { id: 'download', title: '下载', brief: '§3.2' },
+    { id: 'library', title: '曲库同步', brief: '§3.3' },
+    { id: 'auth', title: '登录', brief: '§3.4' },
+    { id: 'cross', title: '综合场景', brief: '四块串起来' },
+  ];
+
+  const SCENARIOS = [
+    // ===================== 播放队列 =====================
+    {
+      block: 'queue', id: 'q-basic', title: '点歌：列表里点是替换，搜索里点是插播',
+      desc: '已登录 hana，曲库同步完了，播放队列是空的。先在我喜欢的音乐里点一首，再去搜索里点一首已经在队列里的歌，看播放队列和每首歌的播放来源怎么变。',
+      knobs: ['rules.dupInQueue'],
+      setup: READY_HANA, setupText: '已登录 hana（黑胶会员），首次同步完成，播放队列为空',
+      steps: [
+        s('在我喜欢的音乐里点《夜に駆ける》', { type: 'click', src: 'hana-like', song: 's1' }, '播放队列被我喜欢的音乐的 8 首替换，从《夜に駆ける》开始；每首的播放来源都是“我喜欢的音乐”。'),
+        ST.wait(30, '等 30 秒'),
+        s('在搜索“YOASOBI”里点《群青》', { type: 'click', src: 'search:YOASOBI', song: 's2' }, '插播：《群青》排到当前这首后面立即播放。它本来在队列第 7 首，规则②决定是挪过来，还是再放一份。《夜に駆ける》打卡 30 秒。'),
+        ST.finish('接着放《春日影》，也就是插播前原来的下一首。《群青》打卡 248 秒，播放来源是搜索“YOASOBI”。'),
+        s('在歌单《通勤路上》里点《富士山下》', { type: 'click', src: 'hana-commute', song: 's5' }, '整个播放队列换成《通勤路上》的 5 首；听到一半的《春日影》按实际听的秒数打卡。'),
+      ],
+    },
+    {
+      block: 'queue', id: 'q-empty', title: '边角①：播放队列为空时插播',
+      desc: '插播的字面意思是“排到当前歌曲后面立即播放”，可队列为空时没有当前歌曲。顺便看“下一首播放”“加入播放队列”在空队列时怎么办（规则①）。',
+      knobs: ['rules.emptyAdd'],
+      setup: READY_HANA, setupText: '已登录 hana，首次同步完成，播放队列为空',
+      steps: [
+        s('在搜索“米津玄師”里点《打上花火》', { type: 'click', src: 'search:米津玄師', song: 's3' }, '队列里只有这一首，直接开始放，播放来源是搜索“米津玄師”。'),
+        ST.finish('队列里只有一首，列表循环下再放一遍。这样对吗？'),
+        s('清空播放队列', { type: 'clearQueue' }),
+        s('在搜索“YOASOBI”里对《怪物》选“下一首播放”', { type: 'playNext', src: 'search:YOASOBI', song: 's16' }, '规则①：直接开始放，还是放进队列等你按播放。'),
+        s('在搜索“YOASOBI”里对《勇者》选“加入播放队列”', { type: 'addToQueue', src: 'search:YOASOBI', song: 's17' }, '队列不空了，《勇者》排到最后。'),
+      ],
+    },
+    {
+      block: 'queue', id: 'q-dup', title: '边角②：要插播或下一首播放的歌已经在播放队列里',
+      desc: '正在放我喜欢的音乐（8 首），《夜に駆ける》在第 2 首，《群青》在第 7 首。从搜索里把它们插播或下一首播放，看队列里是挪过来只留一份，还是再放一份（规则②），播放来源记哪个。',
+      knobs: ['rules.dupInQueue'],
+      setup: [...READY_HANA, { type: 'click', src: 'hana-like', song: 's3' }], setupText: '已登录 hana；正在放我喜欢的音乐的《打上花火》',
+      steps: [
+        s('在搜索“YOASOBI”里对《群青》选“下一首播放”', { type: 'playNext', src: 'search:YOASOBI', song: 's2' }, '挪过来：队列还是 8 首，《群青》到了第 2 首，来源改成搜索。再放一份：队列变成 9 首，第 2 首和第 8 首都是《群青》。'),
+        s('在搜索“YOASOBI”里点《夜に駆ける》（插播）', { type: 'click', src: 'search:YOASOBI', song: 's1' }, '插播到当前这首后面，立即放。《打上花火》打卡。'),
+        s('再点一次《夜に駆ける》（就是正在放的这首）', { type: 'click', src: 'search:YOASOBI', song: 's1' }, '不重复插播，什么都不变。'),
+        ST.finish('插播完接着放刚才“下一首播放”的《群青》。'),
+      ],
+    },
+    {
+      block: 'queue', id: 'q-shuffle', title: '边角③：随机模式下插播、下一首播放之后，接着放哪首',
+      desc: '随机模式下，播放顺序和队列的列表顺序不一样（看状态面板里的“接下来会放”）。看“下一首播放”“加入播放队列”“插播”放进来的歌，排到随机顺序的哪里（规则③）。',
+      knobs: ['rules.shuffleAdd'],
+      setup: [...READY_HANA, { type: 'click', src: 'hana-like', song: 's3' }, { type: 'mode', mode: 'shuffle' }], setupText: '已登录 hana；正在放我喜欢的音乐的《打上花火》，播放模式是随机',
+      steps: [
+        s('在搜索“YOASOBI”里对《怪物》选“下一首播放”', { type: 'playNext', src: 'search:YOASOBI', song: 's16' }, '照字面：《怪物》就是下一首。混进随机顺序：它可能排到很后面。'),
+        s('在搜索“YOASOBI”里对《勇者》选“加入播放队列”', { type: 'addToQueue', src: 'search:YOASOBI', song: 's17' }, '照字面：排在播放顺序最后。混进随机顺序：随机插到某个位置。'),
+        s('在搜索“YOASOBI”里点《群青》（插播）', { type: 'click', src: 'search:YOASOBI', song: 's2' }, '插播不管哪种规则，都是立即放。'),
+        ST.finish('插播完接着放哪首？'),
+        ST.finish(),
+        s('播放模式切到列表循环', { type: 'mode', mode: 'loop' }, '回到队列的列表顺序，从当前这首往下接着放。'),
+      ],
+    },
+    {
+      block: 'queue', id: 'q-interrupt', title: '边角④：插播打断了正在放的那首',
+      desc: '《打上花火》放到 1:00 时，在搜索里点一首歌插播。简报的字面意思是：插播的歌放完，接着放原来的下一首，被打断的那首不续播。切换规则④，对比“回来从 1:00 接着放”。也看听歌打卡怎么记。',
+      knobs: ['rules.interrupted'],
+      setup: [...READY_HANA, { type: 'click', src: 'hana-like', song: 's3' }, { type: 'wait', sec: 60 }], setupText: '已登录 hana；我喜欢的音乐的《打上花火》放到 1:00',
+      steps: [
+        s('在搜索“YOASOBI”里点《怪物》（插播）', { type: 'click', src: 'search:YOASOBI', song: 's16' }, '不续播：《打上花火》马上打卡 60 秒。续播：先不打卡，等回来接着放。'),
+        ST.finish('不续播：接着放《夜に駆ける》（原来的下一首）。续播：回到《打上花火》，从 1:00 接着放。'),
+        ST.finish('续播时，《打上花火》这次打卡 289 秒（前后两段加在一起）。'),
+      ],
+    },
+    {
+      block: 'queue', id: 'q-playnext', title: '连续几次“下一首播放”',
+      desc: '对三首歌连续选“下一首播放”，它们按什么顺序放（规则⑤）。',
+      knobs: ['rules.playNextOrder'],
+      setup: [...READY_HANA, { type: 'click', src: 'hana-like', song: 's3' }], setupText: '已登录 hana；正在放我喜欢的音乐的《打上花火》',
+      steps: [
+        s('对《怪物》选“下一首播放”', { type: 'playNext', src: 'search:YOASOBI', song: 's16' }),
+        s('对《勇者》选“下一首播放”', { type: 'playNext', src: 'search:YOASOBI', song: 's17' }),
+        s('对《群青》选“下一首播放”', { type: 'playNext', src: 'search:YOASOBI', song: 's2' }, '看“接下来会放”：后加的先放是 群青、勇者、怪物；先加的先放是 怪物、勇者、群青。'),
+        ST.finish(),
+        ST.finish(),
+      ],
+    },
+    {
+      block: 'queue', id: 'q-rights', title: '无版权跳过，会员歌只放试听，已下载的优先放本地',
+      desc: '登录非会员的小号。这个账号的我喜欢的音乐里有一首会员歌《Lemon》，一首无版权的《稻香》。',
+      knobs: [],
+      setup: READY_LIN, setupText: '已登录小号（非会员），首次同步完成',
+      steps: [
+        s('在我喜欢的音乐里点《Blinding Lights》', { type: 'click', src: 'lin-like', song: 's9' }),
+        s('下载《Shape of You》', { type: 'dlSong', song: 's14' }),
+        s('下载《Lemon》', { type: 'dlSong', song: 's4' }, '不能下载：会员歌曲对小号只有试听片段，试听片段不能下载。'),
+        ST.finish('接着放《Shape of You》：已经下载完，用本地文件，不取播放地址。'),
+        ST.finish('《Lemon》只放 30 秒试听，状态面板里标“试听”。'),
+        ST.finish('试听放完，打卡 30 秒；《稻香》无版权，跳过，回到第一首。'),
+      ],
+    },
+    {
+      block: 'queue', id: 'q-reopen', title: '重新打开 App：恢复播放队列和进度；播放地址过期就重新取',
+      desc: '《打上花火》放到 1:00，队列里还有一首从搜索“下一首播放”的《怪物》。关掉 App 过一天再打开。播放地址 20 分钟就过期（2026-10-06 实测）。',
+      knobs: ['rules.scrobbleOnClose'],
+      setup: [...READY_HANA, { type: 'click', src: 'hana-like', song: 's3' }, { type: 'playNext', src: 'search:YOASOBI', song: 's16' }, { type: 'wait', sec: 60 }], setupText: '已登录 hana；《打上花火》放到 1:00，下一首是从搜索“下一首播放”的《怪物》',
+      steps: [
+        s('关掉 App', { type: 'close' }, '播放停下。规则⑥：这首已经听了 60 秒，是先存着，还是马上打卡？'),
+        ST.wait(86400, '等 1 天'),
+        s('打开 App', { type: 'open' }, '播放队列（每首的播放来源）和进度都恢复了，停在 1:00，暂停中。离上次续期超过 24 小时，续期一次。'),
+        s('按播放', { type: 'toggle' }, '播放地址早就过期了，重新获取，拿到后从 1:00 接着放。'),
+        ST.finish('打卡几秒？“存着”：60 + 229 = 289 秒；“关掉就算”：关 App 时已经打过 60 秒，这里只打 229 秒。'),
+        s('按暂停，等 20 分钟，再按播放', batch({ type: 'toggle' }, { type: 'wait', sec: 1200 }, { type: 'toggle' }), '《怪物》的播放地址过期了，重新获取。'),
+      ],
+    },
+
+    // ===================== 下载 =====================
+    {
+      block: 'download', id: 'd-disk', title: '下载一张歌单，存储空间不够',
+      desc: '下载《通勤路上》（5 首，极高音质约 50 MB），设备只剩 40 MB。规则⑪：存储空间不够时，是整个下载队列暂停，还是跳过这首接着下。',
+      knobs: ['rules.diskFull'],
+      setup: READY_HANA, setupText: '已登录 hana，下载音质是极高',
+      steps: [
+        s('设备存储只剩 40 MB', { type: 'disk', free: 40 }),
+        s('下载整个歌单《通勤路上》', { type: 'dlList', src: 'hana-commute' }, '5 首进下载队列，一次只下一首。'),
+        ST.wait(60, '等 1 分钟', '前 4 首下完；第 5 首《可惜没如果》要 11.9 MB，只剩 1.9 MB。'),
+        s('腾出空间（设备存储变充足）', { type: 'disk', free: 2000 }),
+        s('点“继续下载”和“全部重试”', batch({ type: 'dlResume' }, { type: 'dlRetryAll' })),
+        ST.wait(60, '等 1 分钟', '全部下完。'),
+      ],
+    },
+    {
+      block: 'download', id: 'd-resume', title: '断网中断，联网后从断点续传',
+      desc: '音频服务器支持分段请求（带 Range 返回 206，已实测），所以断网后可以从断点接着下。',
+      knobs: [],
+      setup: READY_HANA, setupText: '已登录 hana',
+      steps: [
+        s('下载《光辉岁月》', { type: 'dlSong', song: 's12' }),
+        ST.wait(3, '等 3 秒', '下到一半。'),
+        s('断网', { type: 'offline' }, '下载中断，标成失败（原因：断网），停在已经下的大小。'),
+        s('联网', { type: 'online' }, '断网造成的失败自动重新排队。'),
+        ST.wait(10, '等 10 秒', '从断点续传，不是从头下。'),
+      ],
+    },
+    {
+      block: 'download', id: 'd-quality', title: '下载音质单独设置；试听片段不能下载',
+      desc: '登录非会员小号。下载音质和在线播放音质分开设置。',
+      knobs: [],
+      setup: READY_LIN, setupText: '已登录小号（非会员）',
+      steps: [
+        s('下载音质设成无损', { type: 'dlQuality', q: 'lossless' }),
+        s('下载《Blinding Lights》', { type: 'dlSong', song: 's9' }, '（假的网易云）非会员拿不到无损，降成极高。实际降级规则以接口为准。'),
+        s('下载《Lemon》', { type: 'dlSong', song: 's4' }, '会员歌曲对小号只有试听片段，不能下载。'),
+        ST.wait(10, '等 10 秒'),
+      ],
+    },
+    {
+      block: 'download', id: 'd-device', title: '下载属于设备：退出登录后照样能放；按歌单删除',
+      desc: '先下载《通勤路上》和我喜欢的音乐，《夜に駆ける》两边都有。退出登录后，下载都还在，未登录也能放、能删。规则⑦：按歌单删除下载时，也从别处下载过的歌留不留。',
+      knobs: ['rules.deleteByList'],
+      setup: READY_HANA, setupText: '已登录 hana',
+      steps: [
+        s('下载整个歌单《通勤路上》', { type: 'dlList', src: 'hana-commute' }),
+        s('下载整个我喜欢的音乐', { type: 'dlList', src: 'hana-like' }, '《夜に駆ける》已经在下载里，不重复下，只多记一笔“也从我喜欢的音乐下载过”；《晴天》无版权，跳过。'),
+        ST.wait(120, '等 2 分钟'),
+        s('主动退出登录', { type: 'logout' }, '曲库副本、播放队列删掉，下载全部保留。'),
+        s('在已下载里点《夜に駆ける》', { type: 'click', src: 'downloads', song: 's1' }, '未登录也能放（本地文件），但不打卡。'),
+        s('删除从歌单《通勤路上》下载的歌', { type: 'dlDeleteOrigin', origin: 'hana-commute' }, '规则⑦：《夜に駆ける》也从我喜欢的音乐下载过，留着还是一起删。'),
+      ],
+    },
+    {
+      block: 'download', id: 'd-background', title: 'App 关掉后继续下载（Android 后台下载）',
+      desc: 'Android 上的后台下载（Background Fetch）能不能用还没在真机上验证。切换假设，看三种情况。',
+      knobs: ['assume.bgFetch'],
+      setup: READY_HANA, setupText: '已登录 hana',
+      steps: [
+        s('下载整个歌单《深夜》', { type: 'dlList', src: 'hana-night' }, '3 首（《稻香》无版权，跳过）。'),
+        ST.wait(2, '等 2 秒'),
+        s('关掉 App', { type: 'close' }),
+        ST.wait(60, '等 1 分钟', '能接力：3 首都下完。只下完已经开始的那首：剩下的等打开 App。不可用：停在断点。'),
+        s('打开 App', { type: 'open' }),
+        ST.wait(60, '等 1 分钟'),
+      ],
+    },
+    {
+      block: 'download', id: 'd-logout', title: '退出登录时还在排队的下载',
+      desc: '下载专辑《THE BOOK 3》（3 首，其中《アイドル》是会员歌），下到一半时退出登录，再换非会员小号登录。规则⑧：排队中的下载是留着（谁登录就用谁的账号接着下），还是取消。',
+      knobs: ['rules.queuedDlOnLogout'],
+      setup: READY_HANA, setupText: '已登录 hana',
+      steps: [
+        s('下载整个专辑《THE BOOK 3》', { type: 'dlList', src: 'album-book3' }),
+        ST.wait(2, '等 2 秒'),
+        s('主动退出登录', { type: 'logout' }, '正在下的那首已经拿到地址，继续下完（音频直连网易云的音频服务器）；排队中的看规则⑧。'),
+        ST.wait(60, '等 1 分钟'),
+        ST.loginBatch('lin', '用短信登录小号（发验证码、输入验证码）'),
+        ST.wait(60, '等 1 分钟', '“留着”：用小号的账号接着下；《アイドル》对小号只有试听片段，下载失败。'),
+      ],
+    },
+
+    // ===================== 曲库同步 =====================
+    {
+      block: 'library', id: 'l-first', title: '第一次同步：先拉歌单列表，再逐张拉；已同步的部分先能搜',
+      desc: '刚登录时本机什么都没有。看同步的顺序，以及同步途中搜索、打开歌单会怎样。原型里每页 4 首（真实是 1000 首）。',
+      knobs: [],
+      setup: [], setupText: '未登录',
+      steps: [
+        ST.loginBatch('hana', '用短信登录 hana（发验证码、输入验证码）', '开始首次同步。'),
+        ST.wait(1, '等 1 秒', '歌单列表先到，5 张都显示出来，曲目还没有。'),
+        ST.wait(2, '等 2 秒', '我喜欢的音乐第 1 页到了。'),
+        s('在本机搜“YOASOBI”', { type: 'searchLocal', q: 'YOASOBI' }, '只搜得到已经同步的部分，结果标“可能不全”。'),
+        s('打开歌单《J-POP 精选》', { type: 'openList', list: 'jpop' }, '这张还没同步：马上用前台请求拉它，不等后台同步手上的那页；拉完再接着同步别的。'),
+        ST.wait(15, '等 15 秒', '首次同步完成。'),
+        s('在本机搜“YOASOBI”', { type: 'searchLocal', q: 'YOASOBI' }),
+      ],
+    },
+    {
+      block: 'library', id: 'l-incr', title: '增量同步只拉有变化的歌单；冲突以网易云为准',
+      desc: '同时在官方 App 里改了歌单。增量同步按歌单的更新时间，只重拉变了的。本地修改和网易云冲突时，以网易云为准。',
+      knobs: [],
+      setup: READY_HANA, setupText: '已登录 hana，首次同步完成',
+      steps: [
+        s('（官方 App 里）往歌单《通勤路上》加《春日影》', { type: 'remote', list: 'hana-commute', op: 'add', song: 's10' }),
+        s('（官方 App 里）删除歌单《深夜》', { type: 'remote', list: 'hana-night', op: 'delete' }),
+        s('手动同步', { type: 'sync' }),
+        ST.wait(5, '等 5 秒', '只重拉了《通勤路上》，其余更新时间没变，跳过；《深夜》本地也删掉。'),
+        s('（官方 App 里）删除歌单《通勤路上》', { type: 'remote', list: 'hana-commute', op: 'delete' }),
+        s('把《群青》加入歌单《通勤路上》（本机还以为它在）', { type: 'addTo', list: 'hana-commute', song: 's2' }, '先改本地立即生效 → 提交时网易云说没有这张歌单 → 回滚，并马上同步，本地也删掉这张歌单。'),
+        ST.wait(5, '等 5 秒'),
+      ],
+    },
+    {
+      block: 'library', id: 'l-write', title: '写操作先改本地，失败就回滚；断网时怎么办',
+      desc: '红心、加入歌单都先改本地副本立即生效，再提交给网易云。看提交失败和断网两种情况（规则⑨）。',
+      knobs: ['rules.offlineWrite'],
+      setup: READY_HANA, setupText: '已登录 hana，首次同步完成',
+      steps: [
+        s('红心《怪物》', { type: 'like', song: 's16' }, '先改本地（我喜欢的音乐多了一首），再提交，网易云确认。'),
+        s('让网易云限制 hana 30 秒（模拟网易云那边）', { type: 'throttle', sec: 30 }),
+        s('红心《勇者》', { type: 'like', song: 's17' }, '先改本地；提交时网易云说“操作频繁” → 回滚，红心消失，提示稍后再试。同步这些后台请求也先停 30 秒。'),
+        ST.wait(30, '等 30 秒', '限制过去了。'),
+        s('断网', { type: 'offline' }),
+        s('红心《勇者》', { type: 'like', song: 's17' }, '规则⑨：直接提示没改成，还是先改本地、联网再提交。'),
+        s('联网', { type: 'online' }),
+      ],
+    },
+    {
+      block: 'library', id: 'l-rebase', title: '同步拿回的数据比本地修改旧（对照实验）',
+      desc: '同步拿回来的数据，可能是在你刚才的修改之前生成的。如果直接盖到本地，刚加的歌会在界面上消失又出现（闪回）。关掉对照实验“叠回去”，看有什么不同。',
+      knobs: ['contrast.rebaseLocalWrites'],
+      setup: READY_HANA, setupText: '已登录 hana，首次同步完成',
+      steps: [
+        s('（官方 App 里）从歌单《深夜》删《稻香》', { type: 'remote', list: 'hana-night', op: 'remove', song: 's7' }),
+        s('手动同步', { type: 'sync' }),
+        ST.wait(1, '等 1 秒', '歌单列表到了：《深夜》变了，要重拉。'),
+        s('把《怪物》加入歌单《深夜》', { type: 'addTo', list: 'hana-night', song: 's16' }, '同一秒里，同步先拿到《深夜》（还没有《怪物》），网易云才处理你的修改。叠回去：《怪物》还在。直接覆盖：《怪物》在界面上消失。'),
+        s('手动同步，等 5 秒', batch({ type: 'sync' }, { type: 'wait', sec: 5 }), '下一次同步后，两种做法结果一致（以网易云为准）。'),
+      ],
+    },
+    {
+      block: 'library', id: 'l-pace', title: '后台请求自己控制节奏；网易云说“操作频繁”就先停一会儿',
+      desc: 'hana-music-api 不再限速（2026-10-08 定），发多快由 Campanula 自己控制：你正在等的操作（取播放地址、提交修改、续期）马上发；同步、取下载地址、补发打卡这些后台请求，同时最多 2 个在路上，网易云说“操作频繁”就先停一会儿。网易云到底怎么限频还没实测，这个场景先假设：同一个账号一秒超过 4 个请求，30 秒内都回“操作频繁”。状态面板的“请求排队”里能看到每秒发了哪些请求。关掉对照实验“控制节奏”看看。',
+      knobs: ['contrast.pacedSync'], presets: { 'assume.rateLimit': 'strict' },
+      setup: login('hana'), setupText: '刚登录 hana，首次同步刚开始；假设网易云限频',
+      steps: [
+        ST.wait(1, '等 1 秒', '歌单列表到了。控制节奏：一页一页地拉。不控制：一口气排上全部 8 个页面请求。'),
+        s('在每日推荐里点《可惜没如果》', { type: 'click', src: 'daily', song: 's15' }, '取播放地址是前台请求，马上发、马上拿到。不控制节奏时，8 个同步请求也在这一秒一起发出，超过网易云的限制：后面几个被拒，这个账号接下来 30 秒的请求都会被拒。'),
+        s('红心《千本桜》', { type: 'like', song: 's11' }, '控制节奏：网易云确认。不控制：还在被限制的 30 秒里，提交被拒，回滚，提示稍后再试。'),
+        ST.wait(40, '等 40 秒', '控制节奏：首次同步完成。不控制：等限制过去，剩下的请求又一起发出，又被限制一次。'),
+      ],
+    },
+
+    // ===================== 登录 =====================
+    {
+      block: 'auth', id: 'a-login', title: '登录：匿名注册失败可以重试，扫码遇到 8821',
+      desc: '扫码取 key、发验证码都依赖匿名注册，它偶尔失败（2026-10-07 本机遇到过几分钟的 502），所以登录页要能重试。扫码登录可能返回 8821（需要行为验证码），这时走 verify_getQr。这个场景开始时，先把两个假设设成“匿名注册失败”和“扫码会遇到 8821”。',
+      knobs: [], presets: { 'assume.anonOk': false, 'assume.qr8821': true },
+      setup: [], setupText: '未登录',
+      steps: [
+        s('用扫码登录 hana', { type: 'loginStart', method: 'qr', account: 'hana' }),
+        s('显示二维码', { type: 'qrFetch' }, '匿名注册失败，登录页显示出错，可以重试。'),
+        s('（网易云那边恢复了）匿名注册恢复正常', { type: 'config', group: 'assume', key: 'anonOk', value: true, label: '（网易云那边恢复了）匿名注册恢复正常' }),
+        s('点“重试”', { type: 'loginRetry' }, '二维码出来了。'),
+        s('用网易云 App 扫码', { type: 'qrScan' }),
+        s('在手机上点“确认登录”', { type: 'qrConfirm' }, '返回 8821 → 改走 verify_getQr，在手机上完成验证。'),
+        s('在手机上完成行为验证', { type: 'captchaPass' }, '登录成功，开始首次同步。'),
+      ],
+    },
+    {
+      block: 'auth', id: 'a-renew', title: '打开 App 时续期：24 小时最多一次；多个标签页只让一个去续',
+      desc: '上次续期的时间写在加密 Cookie 里。同时开着 2 个标签页时，两个都想续期，用 Web Locks 只放一个去。关掉对照实验“加锁”，再把“旧 Cookie 立即失效”的假设打开，看会出什么事。',
+      knobs: ['contrast.renewLock', 'assume.oldCookie', 'assume.renewOk'],
+      setup: READY_HANA, setupText: '已登录 hana（08:00 登录，也就是 08:00 续过期）',
+      steps: [
+        s('关掉 App', { type: 'close' }),
+        ST.wait(3600, '等 1 小时'),
+        s('打开 App', { type: 'open' }, '上次续期在 24 小时内，这次不续。'),
+        s('关掉 App，等 1 天', batch({ type: 'close' }, { type: 'wait', sec: 86400 })),
+        s('同时开着 2 个 Campanula 标签页', { type: 'env', key: 'tabs', value: 2, label: '同时开着 2 个 Campanula 标签页' }),
+        s('打开 App', { type: 'open' }, '超过 24 小时，续期。加锁：只有一个标签页去续。不加锁 + 旧 Cookie 立即失效：后到的那个带着作废的旧 Cookie，被拒，误以为登录失效。'),
+      ],
+    },
+    {
+      block: 'auth', id: 'a-301', title: '接口返回 301：先续期，成功就重发；失败就提示重新登录',
+      desc: 'Cookie 在网易云那边到期了，Campanula 要等下一个请求返回 301 才知道。“Cookie 失效后还能不能续期”还没验证，两种都看看。',
+      knobs: ['assume.renewAfterExpiry'],
+      setup: [...READY_HANA, { type: 'dlSong', song: 's10' }, { type: 'wait', sec: 20 }, { type: 'click', src: 'hana-like', song: 's3' }], setupText: '已登录 hana，下载过《春日影》；正在放我喜欢的音乐的《打上花火》',
+      steps: [
+        s('让 Cookie 到期（网易云那边）', { type: 'expireCookie' }),
+        s('按下一首', { type: 'next' }, '取《夜に駆ける》的播放地址返回 301 → 续期一次。能续：换上新 Cookie，重发，照常播放。不能续：提示“需要重新登录”，播放队列、下载都保留；没下载的歌放不了，跳到已下载的《春日影》。'),
+        ST.finish('续期失败：打卡先记在本机，等重新登录再补发。续期成功：照常上报。'),
+        ST.loginBatch('hana', '用短信重新登录 hana（发验证码、输入验证码）', '续期失败时：同一个账号重新登录，播放队列、曲库副本照旧，补发刚才记下的打卡。续期成功时本来就登录着，会提示不用再登录，什么都不变。'),
+      ],
+    },
+    {
+      block: 'auth', id: 'a-offline-scrobble', title: '断网时听的歌：联网后补发听歌打卡',
+      desc: '每首歌结束时上报实际听的整数秒，带上这首歌的播放来源。断网时先记在本机，联网后补发给当时登录的账号。',
+      knobs: ['assume.scrobbleCounts'],
+      setup: [...READY_HANA, { type: 'dlList', src: 'hana-commute' }, { type: 'wait', sec: 60 }, { type: 'click', src: 'hana-commute', song: 's9' }], setupText: '已登录 hana，《通勤路上》全部下载完，正在放《Blinding Lights》',
+      steps: [
+        s('断网', { type: 'offline' }, '都下载过，断网照常放。'),
+        ST.finish('打卡先记在本机。'),
+        ST.finish(),
+        s('联网', { type: 'online' }, '补发给当时登录的 hana。'),
+        ST.wait(5, '等 5 秒', '补发成功。网易云那边记没记到，Campanula 看不出来（看状态面板“网易云那边”的听歌排行）。'),
+      ],
+    },
+    {
+      block: 'auth', id: 'a-switch', title: '退出后换另一个账号登录：曲库副本不沿用',
+      desc: '一个浏览器同时只登录一个网易云账号。主动退出删曲库副本和播放队列，保留下载。',
+      knobs: [],
+      setup: [...READY_HANA, { type: 'dlSong', song: 's1' }, { type: 'click', src: 'hana-like', song: 's3' }, { type: 'wait', sec: 30 }], setupText: '已登录 hana，下载过《夜に駆ける》；《打上花火》放到 0:30',
+      steps: [
+        s('主动退出登录', { type: 'logout' }, '退出前先把《打上花火》的 30 秒打卡发出去；然后删掉曲库副本和播放队列，下载保留。'),
+        ST.loginBatch('lin', '用短信登录小号（发验证码、输入验证码）'),
+        ST.wait(30, '等 30 秒', '小号的首次同步从头开始，没有沿用 hana 的副本；已下载里还能看到 hana 下载的《夜に駆ける》。'),
+      ],
+    },
+
+    // ===================== 综合场景 =====================
+    {
+      block: 'cross', id: 'x-day', title: '通勤的一天（四块串起来）',
+      desc: '昨晚下载了歌单《通勤路上》。今天早上打开 App 出门：地铁里断网听歌、顺手红心、出地铁联网、在搜索里插播一首、到公司关掉 App。',
+      knobs: ['rules.offlineWrite', 'rules.scrobbleOnClose'],
+      setup: [...READY_HANA, { type: 'dlList', src: 'hana-commute' }, { type: 'wait', sec: 60 }, { type: 'close' }, { type: 'wait', sec: 86400 }], setupText: '已登录 hana，昨晚下载了《通勤路上》并关掉 App；现在是第二天早上',
+      steps: [
+        s('打开 App', { type: 'open' }, '超过 24 小时，续期；增量同步。'),
+        s('在歌单《通勤路上》里点《Blinding Lights》', { type: 'click', src: 'hana-commute', song: 's9' }, '已下载，用本地文件。'),
+        s('进地铁：断网', { type: 'offline' }),
+        s('红心《Shape of You》', { type: 'like', song: 's14' }, '规则⑨。'),
+        ST.finish('打卡记在本机。'),
+        ST.finish(),
+        s('出地铁：联网', { type: 'online' }, '补发 2 条打卡；增量同步。'),
+        s('在搜索“YOASOBI”里点《群青》（插播）', { type: 'click', src: 'search:YOASOBI', song: 's2' }, '《群青》没下载，在线取播放地址。'),
+        s('听 1 分钟，到公司关掉 App', batch({ type: 'wait', sec: 60 }, { type: 'close' }), '规则⑥：这 60 秒是先存着，还是马上打卡。'),
+      ],
+    },
+    {
+      block: 'cross', id: 'x-offline-logout', title: '断网时听了歌，联网前就主动退出登录',
+      desc: '听歌打卡要补发给“当时登录的账号”，补发前已经退出就丢弃（简报 §3.4）。另外：登录用的 Cookie 是 httpOnly 的，断网时网页自己删不掉。',
+      knobs: [],
+      setup: [...READY_HANA, { type: 'dlSong', song: 's1' }, { type: 'dlSong', song: 's2' }, { type: 'wait', sec: 20 }, { type: 'click', src: 'downloads', song: 's1' }], setupText: '已登录 hana，下载过《夜に駆ける》《群青》；正在已下载里放《夜に駆ける》',
+      steps: [
+        s('断网', { type: 'offline' }),
+        ST.finish('《夜に駆ける》的打卡记在本机。'),
+        ST.finish(),
+        s('主动退出登录', { type: 'logout' }, '断网发不出去，2 条打卡丢弃；曲库副本、播放队列删掉；浏览器里的登录 Cookie 要等联网才能清。'),
+        s('联网', { type: 'online' }, '请服务器清掉 Cookie；丢弃的打卡不会再补发。对照：联网时退出，会先把打卡发出去（见“登录”里的换账号场景）。'),
+      ],
+    },
+    {
+      block: 'cross', id: 'x-first-sync', title: '首次同步还没完时点歌、红心、下载',
+      desc: '刚登录，曲库还在第一次同步。这时点我喜欢的音乐里的歌（只拉到一部分）、红心、下载整张还没拉的歌单。你正在等的操作（取播放地址、提交红心）马上发，不排在同步后面。规则⑫：没拉完的歌单，播放队列和下载队列要不要等它拉完再补齐。',
+      knobs: ['rules.partialList'],
+      setup: login('hana'), setupText: '刚登录 hana，首次同步刚开始',
+      steps: [
+        ST.wait(2, '等 2 秒', '歌单列表到了，我喜欢的音乐第 1 页（4 首）也到了。'),
+        s('在我喜欢的音乐里点《打上花火》', { type: 'click', src: 'hana-like', song: 's3' }, '规则⑫：先用已经拉到的 4 首替换播放队列；一秒后这张拉完，后面 4 首补进来。取播放地址是前台请求，马上发。'),
+        s('红心《千本桜》', { type: 'like', song: 's11' }, '提交也是前台请求。'),
+        s('下载整个歌单《J-POP 精选》', { type: 'dlList', src: 'jpop' }, '这张一首都还没拉到。规则⑫：拉完后补下，还是只下点的那一刻已经拉到的（现在是 0 首）。'),
+        ST.wait(30, '等 30 秒', '《J-POP 精选》拉完，7 首补进下载。取下载地址是后台请求，和同步一起控制节奏（同时最多 2 个在路上）。'),
+      ],
+    },
+    {
+      block: 'cross', id: 'x-expired', title: '登录失效、续期又失败：播放队列和下载怎么办',
+      desc: '正在放我喜欢的音乐，下载过《春日影》。Cookie 失效、续期被拒之后：播放队列、下载、曲库副本都保留，已下载的歌照常放，听歌打卡先记着。最后换另一个账号（小号）登录，看规则⑩。',
+      knobs: ['rules.queueOnOtherAccount'],
+      setup: [...READY_HANA, { type: 'dlSong', song: 's10' }, { type: 'wait', sec: 20 }, { type: 'click', src: 'hana-like', song: 's3' }], setupText: '已登录 hana，下载过《春日影》；正在放我喜欢的音乐的《打上花火》',
+      steps: [
+        s('让 Cookie 到期（网易云那边）', { type: 'expireCookie' }),
+        s('按下一首', { type: 'next' }, '301 → 续期被拒 → “需要重新登录”；《夜に駆ける》没下载放不了，跳到已下载的《春日影》。'),
+        s('下载《小幸運》', { type: 'dlSong', song: 's8' }, '要重新登录才能下载。'),
+        ST.finish('打卡记在本机；其余没下载的歌都放不了，列表循环又回到《春日影》。'),
+        ST.loginBatch('lin', '用短信登录小号（另一个账号）', '规则⑩：播放队列清空还是保留；hana 记在本机的打卡丢弃（不能记到小号头上）；hana 的曲库副本删掉；下载保留。'),
+      ],
+    },
+  ];
+
+  root.CampanulaScenarios = { KNOBS, BLOCKS, SCENARIOS };
+})(globalThis);
+</script>
+
+<!-- 页面外壳：只负责把状态画出来、把按钮变成动作 -->
+<script>
+(function () {
+  'use strict';
+  const C = window.Campanula;
+  const { KNOBS, BLOCKS, SCENARIOS } = window.CampanulaScenarios;
+  const GROUPS = ['rules', 'assume', 'contrast'];
+  const byId = (id) => document.getElementById(id);
+  const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const name = (acc) => C.ACCOUNTS[acc].name;
+
+  const TAG = { you: '你', queue: '播放队列', play: '播放', scrobble: '听歌打卡', dl: '下载', sync: '曲库', auth: '登录', net: '网络', app: 'App', warn: '注意', rule: '开关', remote: '网易云那边', req: '请求' };
+  const FLOW_STEP = {
+    phone: '等输入手机号、发验证码',
+    code: '验证码已发出，等输入',
+    'qr-start': '还没显示二维码',
+    'qr-wait': '二维码显示着，等手机扫码',
+    'qr-scanned': '手机已扫码，等手机上点“确认登录”',
+    captcha: '返回了 8821，等在手机上完成行为验证',
+  };
+  const DL_STATUS = { queued: '排队中', downloading: '下载中', done: '已下载', failed: '失败' };
+  const LIST_STATE = { waiting: '还没拉曲目', syncing: '同步中', stale: '网易云那边变了，等重拉', done: '已同步' };
+  const WAITS = [[1, '1 秒'], [5, '5 秒'], [30, '30 秒'], [60, '1 分钟'], [1200, '20 分钟'], [3600, '1 小时'], [86400, '1 天']];
+
+  const ui = {
+    sim: null,
+    rows: null,
+    history: [],
+    overrides: {},
+    block: 'queue',
+    scen: null,
+    last: { label: '', log: [], setup: null },
+    all: [],
+    freeMsg: '',
+    sel: { src: null, song: null, target: null, eid: null, dl: null, origin: null, acc: 'hana', q: 'YOASOBI', remList: null, remSong: 's10' },
+  };
+
+  // ---------- 开关设置 ----------
+  function cfgFrom(...layers) {
+    const cfg = {};
+    for (const layer of layers) {
+      for (const [path, v] of Object.entries(layer || {})) {
+        const [g, k] = path.split('.');
+        (cfg[g] = cfg[g] || {})[k] = v;
+      }
+    }
+    return cfg;
+  }
+  const knobDef = (path) => {
+    const [g, k] = path.split('.');
+    return { g, k, def: KNOBS[g].items[k], dflt: C.DEFAULT_CONFIG[g][k] };
+  };
+
+  // ---------- 重置、执行、退回 ----------
+  function startScenario(id) {
+    const sc = SCENARIOS.find((x) => x.id === id);
+    let s = C.create(cfgFrom(ui.overrides, sc.presets));
+    const setupLog = [];
+    for (const a of sc.setup) {
+      s = C.step(s, a);
+      setupLog.push(...s.log);
+    }
+    ui.sim = s;
+    ui.block = sc.block;
+    ui.scen = { id, next: 0, logs: [], mixed: false };
+    ui.history = [];
+    ui.last = { label: `开始场景：${sc.title}`, log: [], setup: { text: sc.setupText, log: setupLog } };
+    ui.all = [{ label: ui.last.label, log: setupLog }];
+    ui.freeMsg = '';
+    ui.lastStep = null;
+    renderAll(true);
+  }
+  function resetAll() {
+    ui.sim = C.create(cfgFrom(ui.overrides));
+    ui.scen = null;
+    ui.history = [];
+    ui.last = { label: '全部重来：未登录，什么都没有', log: [], setup: null };
+    ui.all = [{ label: ui.last.label, log: [] }];
+    ui.freeMsg = '';
+    ui.lastStep = null;
+    renderAll(true);
+  }
+  function dispatch(actions, label, stepIndex) {
+    ui.history.push({ sim: ui.sim, scen: ui.scen && { ...ui.scen, logs: ui.scen.logs.slice() }, last: ui.last, allLen: ui.all.length });
+    if (ui.history.length > 300) ui.history.shift();
+    let s = ui.sim;
+    const log = [];
+    for (const a of [].concat(actions)) {
+      s = C.step(s, a);
+      log.push(...s.log);
+    }
+    ui.sim = s;
+    ui.last = { label, log, setup: null };
+    ui.all.push({ label, log });
+    ui.freeMsg = '';
+    ui.lastStep = stepIndex == null ? null : stepIndex;
+    if (ui.scen) {
+      if (stepIndex == null) ui.scen.mixed = true;
+      else {
+        ui.scen.logs[stepIndex] = log;
+        ui.scen.next = stepIndex + 1;
+      }
+    }
+    renderAll(false);
+  }
+  function undo() {
+    const h = ui.history.pop();
+    if (!h) {
+      ui.freeMsg = '已经退到这一轮的起点了';
+      renderFree();
+      return;
+    }
+    ui.sim = h.sim;
+    ui.scen = h.scen;
+    ui.last = { label: `退回上一步：回到“${h.last.label}”之后`, log: [], setup: null };
+    ui.lastStep = null;
+    ui.all.length = h.allLen;
+    renderAll(false);
+  }
+  function setKnob(path, i, restart) {
+    const { g, k, def, dflt } = knobDef(path);
+    const [value, text] = def.options[i];
+    if (value === dflt) delete ui.overrides[path];
+    else ui.overrides[path] = value;
+    if (restart && ui.scen) return startScenario(ui.scen.id);
+    return dispatch({ type: 'config', group: g, key: k, value, label: `${def.n || ''}${def.label}：${text}` }, `改开关：${def.n || ''}${def.label}`);
+  }
+  function resetKnobs() {
+    ui.overrides = {};
+    const acts = [];
+    for (const g of GROUPS) {
+      for (const k of Object.keys(KNOBS[g].items)) {
+        const dflt = C.DEFAULT_CONFIG[g][k];
+        if (ui.sim.config[g][k] === dflt) continue;
+        const def = KNOBS[g].items[k];
+        const text = def.options.find(([v]) => v === dflt)[1];
+        acts.push({ type: 'config', group: g, key: k, value: dflt, label: `${def.n || ''}${def.label}：恢复默认（${text}）` });
+      }
+    }
+    if (!acts.length) {
+      ui.freeMsg = '开关本来就都是默认值';
+      renderFree();
+      return;
+    }
+    dispatch(acts, '全部开关恢复默认');
+  }
+
+  // ---------- 状态面板的内容（按行列出，方便比较这一步变了什么） ----------
+  function scrobbleStatus(s, k) {
+    if (k.status === 'sent') return `已上报（${C.fmtTime(k.sentAt)}）`;
+    if (k.status === 'sending') return '发送中';
+    if (k.status === 'dropped') return `丢弃：${k.note}`;
+    return `${k.held ? '记在本机，等补发' : '等发'}${k.notBefore > s.now ? '；网易云那边忙，稍后再试' : ''}`;
+  }
+  function listName(s, id) {
+    const l = C.listById(s, id);
+    return l ? C.listTitle(l) : id;
+  }
+  function stateSections(s) {
+    const out = [];
+    let sec = null;
+    const section = (id, nm, title, hint, tables) => {
+      sec = { id, name: nm, title, hint, tables: tables || {}, rows: [] };
+      out.push(sec);
+    };
+    const kv = (key, label, value, o) => sec.rows.push({ key, kind: 'kv', label, value, text: `${label}：${value}`, ...o });
+    const item = (key, table, cells, o) => sec.rows.push({ key, kind: 'item', table, cells, text: cells.filter((c) => c !== '').join(' · '), ...o });
+    const note = (key, text, o) => sec.rows.push({ key, kind: 'note', text, ...o });
+    const a = s.app.auth;
+    const p = s.app.player;
+    const d = s.app.downloads;
+    const lib = s.app.library;
+    const sy = s.app.sync;
+
+    section('env', '此刻', '此刻');
+    kv('clock', '时间', C.fmtClock(s.now), { noDiff: true });
+    kv('net', '网络', s.env.online ? '联网' : '断网');
+    kv('app', 'App', s.env.appOpen ? '开着' : '关着');
+    kv('tabs', '开着的标签页', `${s.env.tabs} 个`);
+    kv('disk', '设备存储', `还剩 ${C.mb(C.freeMB(s))}（下载占了 ${C.mb(C.usedMB(s))}）`);
+
+    section('auth', '登录', '登录');
+    const who = a.account ? C.ACCOUNTS[a.account].desc : '';
+    const statusText = a.status === 'in' ? `已登录 ${who}`
+      : a.status === 'expired' ? `需要重新登录（${who}）：登录失效，续期也没成功`
+      : a.status === 'login' ? '登录中'
+      : '未登录：只能看介绍、登录入口和已下载的歌';
+    kv('status', '状态', statusText, { warn: a.status === 'expired' });
+    if (a.flow) {
+      const f = a.flow;
+      kv('flow', '正在登录', `${C.ACCOUNTS[f.account].desc}，用${f.method === 'sms' ? '短信验证码' : '扫码'}：${FLOW_STEP[f.step]}`);
+      if (f.error) kv('flowErr', '登录页显示', f.error, { warn: true });
+    }
+    kv('cookie', '浏览器里的登录 Cookie', a.cookieVersion ? `第 ${a.cookieVersion} 代（加密的 httpOnly Cookie，服务器不存）`
+      : a.clearCookie ? '已经退出，但旧 Cookie 还留在浏览器里：要联网后请服务器清掉' : '没有', { warn: !a.cookieVersion && a.clearCookie });
+    if (a.renewedAt != null) kv('renewed', '上次续期', `${C.fmtTime(a.renewedAt)}（打开 App 时，离这次超过 24 小时才再续）`);
+    if (a.renewing) kv('renewing', '正在续期', a.renewing === '301' ? '因为接口返回了 301' : '打开 App 时');
+    if (a.parked.length) kv('parked', '等续期结果的请求', `${a.parked.length} 个：${a.parked.map((r) => r.label).join('、')}`);
+
+    section('player', '正在播放', '正在播放');
+    const e = C.curEntry(s);
+    if (!e) kv('none', '歌曲', '没有（播放队列是空的）', { quiet: true });
+    else {
+      const song = C.SONGS[e.songId];
+      kv('song', '歌曲', `${C.songName(e.songId)} ${song.artist}`);
+      kv('src', '播放来源', C.srcLabel(e.src));
+      kv('state', '状态', p.loading ? '取播放地址中，拿到就放' : p.playing ? '播放中' : '暂停');
+      const limit = p.trial ? C.TRIAL_SECONDS : song.dur;
+      kv('pos', '进度', `${C.fmtDur(p.pos)} / ${C.fmtDur(limit)}${p.trial ? '（试听片段）' : ''}`);
+      const u = p.urls[e.songId];
+      kv('source', '音源', p.local ? '本地文件（已下载）'
+        : !u ? '在线：还没取播放地址'
+        : u.expiresAt > s.now ? `在线：播放地址还有 ${Math.ceil((u.expiresAt - s.now) / 60)} 分钟过期`
+        : '在线：播放地址已经过期，再放要重新取');
+      kv('listened', '这首已经听了', `${Math.floor(p.listened)} 秒（这首结束时，按实际听的秒数打卡）`);
+    }
+    kv('mode', '播放模式', C.MODE_LABEL[p.mode]);
+    if (p.msg) kv('msg', '提示', p.msg, { warn: true });
+
+    section('queue', '播放队列', `播放队列（${p.queue.length} 首）`, '', { q: ['', '歌曲', '播放来源', '备注'] });
+    p.queue.forEach((x, i) => {
+      const notes = [];
+      if (x.eid === p.cur) notes.push('▶ 当前');
+      if (p.pendingNext.includes(x.eid)) notes.push('下一首播放');
+      if (x.resumeAt != null) notes.push(`被插播打断：回来从 ${C.fmtDur(x.resumeAt)} 接着放`);
+      const pl = C.playability(s, x.songId);
+      if (!pl.ok) notes.push(`放不了：${pl.why}`);
+      else if (pl.local) notes.push('已下载');
+      else if (pl.trial) notes.push('只能试听');
+      const cells = [String(i + 1), C.songName(x.songId), C.srcLabel(x.src), notes.join('；')];
+      item(x.eid, 'q', cells, { sig: cells.slice(1).filter(Boolean).join(' · '), cur: x.eid === p.cur, dim: !pl.ok, num: true });
+    });
+    if (!p.queue.length) note('none', '空的', { quiet: true });
+    else {
+      const up = C.upcoming(s, 5);
+      const extra = p.mode === 'shuffle' ? '（随机顺序）' : p.mode === 'one' ? '（单曲循环：放完还是这首；按“下一首”才往下）' : '';
+      kv('upcoming', '接下来会放', up.length ? `${up.map((x) => C.songName(x.songId)).join(' → ')}${extra}` : '（只有这一首）');
+    }
+    if (p.fill) kv('fill', '还要补进来', `${listName(s, p.fill.listId)}同步完后，把还没同步到的歌补进来（规则⑫）`);
+
+    section('scrobble', '听歌打卡', '听歌打卡', '每首歌结束时记一条（放完、切走、被插播打断、退出登录……），带上实际听的整数秒和这首的播放来源。', { k: ['歌曲', '秒数', '播放来源', '记给（记下的时间）', '状态'] });
+    const ks = s.app.scrobbles;
+    const shown = ks.slice(-10);
+    if (ks.length > shown.length) note('more', `更早的 ${ks.length - shown.length} 条省略`, { quiet: true });
+    for (const k of shown) {
+      item(k.id, 'k', [C.songName(k.songId), `${k.secs} 秒`, C.srcLabel(k.src), `${name(k.account)}（${C.fmtTime(k.at)}）`, scrobbleStatus(s, k)], { warn: k.status === 'dropped', gone: false });
+    }
+    if (!ks.length) note('none', '还没有', { quiet: true });
+
+    section('dl', '下载', `下载（${d.items.length} 首）`, '下载属于这台设备：退出登录、换账号都不删，只有手动删除才会消失。', { d: ['歌曲', '状态', '大小', '从哪儿下载的', '说明'] });
+    kv('quality', '下载音质', `${C.QUALITY[d.quality].label}（和在线播放音质分开设置）`);
+    if (d.paused) kv('paused', '下载队列', '暂停了：存储空间不够。腾出空间后点“继续下载”', { warn: true });
+    if (d.follow.length) kv('follow', '同步完再补下', `${d.follow.map((id) => listName(s, id)).join('、')}（规则⑫）`);
+    for (const it of d.items) {
+      const size = it.status === 'done' ? `${C.mb(it.sizeMB)} · ${C.QUALITY[it.quality].label}`
+        : it.sizeMB ? `${it.doneMB} / ${C.mb(it.sizeMB)}`
+        : it.doneMB ? `已下 ${C.mb(it.doneMB)}` : '—';
+      const why = it.status === 'failed' ? it.reason : C.dlWait(s, it);
+      item(it.songId, 'd', [C.songName(it.songId), DL_STATUS[it.status], size, it.origins.map((o) => o.name).join('、'), why], { warn: it.status === 'failed' });
+    }
+    if (!d.items.length) note('none', '还没有下载', { quiet: true });
+
+    section('lib', '曲库副本', '曲库副本（存在这台设备上）', '本地优先：先显示本机副本，后台再和网易云比对；红心、加入歌单先改本地，失败就回滚；冲突以网易云为准。', {
+      l: ['歌单', '本机状态', '本机 / 网易云', '歌曲（前 6 首）'],
+      w: ['还没对齐的修改', '状态'],
+    });
+    if (!lib) note('none', '没有：没登录，或者退出登录时删掉了', { quiet: true });
+    else {
+      kv('acct', '属于', name(lib.account));
+      kv('first', '首次同步', lib.firstDone ? '完成了' : lib.listFetched ? '进行中：已经同步的部分可以先搜、先放' : '进行中：等歌单列表');
+      kv('sync', '后台同步', sy.running
+        ? `正在${sy.kind === 'first' ? '首次' : '增量'}同步${sy.todo.length ? `，排着队要拉：${sy.todo.map((id) => listName(s, id)).join('、')}` : ''}${sy.again ? '；跑完再来一轮' : ''}`
+        : '没在跑');
+      for (const l of lib.lists) {
+        const st = l.state === 'syncing' && l.fetch ? `同步中（到了 ${Object.keys(l.fetch.got).length}/${l.fetch.pages} 页）` : LIST_STATE[l.state];
+        const names = l.tracks.slice(0, 6).map(C.songName).join('') + (l.tracks.length > 6 ? ' …' : '');
+        item(l.id, 'l', [C.listTitle(l), `${st}${l.priority ? '，插队优先拉' : ''}`, `${l.tracks.length} / ${l.count} 首`, names || '—']);
+      }
+      const wStatus = (w) => (w.status === 'confirmed' ? '网易云确认了；下次同步这张歌单时对齐'
+        : a.status !== 'in' ? '登录失效，等这个账号重新登录再提交'
+        : !s.env.online ? '断网，等联网再提交'
+        : !s.env.appOpen ? '下次打开 App 再提交'
+        : '等网易云确认');
+      for (const w of s.app.writes) item(w.id, 'w', [`${w.what}${C.songName(w.songId)}`, wStatus(w)]);
+    }
+    if (s.app.lastSearch) {
+      const q = s.app.lastSearch;
+      kv('search', `本机搜“${q.q}”`, `${q.hits.length} 首：${q.hits.map(C.songName).join('') || '（无）'}${q.partial ? '（首次同步还没完，可能不全）' : ''}（${C.fmtTime(q.at)}）`);
+    }
+
+    section('req', '请求排队', '请求排队', `你正在等的操作（取播放地址、提交修改、续期）马上发。同步、取下载地址、补发打卡这些后台请求，同时最多 ${C.BG_MAX} 个在路上；网易云说“操作频繁”时，后台请求先停一会儿，前台操作照常发，被拒就提示稍后再试。`, { r: ['', '请求', '状态'] });
+    if (s.app.backoffUntil > s.now) kv('backoff', '后台请求', `先停到 ${C.fmtTime(s.app.backoffUntil)}（网易云说“操作频繁”）`, { warn: true });
+    for (const r of s.app.outbox) {
+      const wait = Math.max(r.notBefore || 0, r.prio === 'fg' ? 0 : s.app.backoffUntil) - s.now;
+      item(r.id, 'r', [r.prio === 'fg' ? '前台' : '后台', r.label, wait > 0 ? `等着发（${wait} 秒后）` : '等着发'], { prio: true, gone: false });
+    }
+    for (const r of s.app.inflight) item(r.id, 'r', [r.prio === 'fg' ? '前台' : '后台', r.label, r.orphan ? '已经发出；App 不再等结果，网易云照样处理' : '已发出，等回音'], { prio: true, gone: false });
+    if (!s.app.outbox.length && !s.app.inflight.length) note('idle', '现在没有请求', { quiet: true });
+    const tl = s.app.timeline.slice(-6);
+    if (tl.length) note('tlh', '最近几秒，每秒发出和收到了什么：', { quiet: true });
+    for (const x of tl) {
+      const sent = x.sent.length ? `发出 ${x.sent.map((y) => `［${y.prio === 'fg' ? '前台' : '后台'}］${y.label}`).join('、')}` : '';
+      const done = x.done.length ? `收到 ${x.done.map((y) => `${y.label}：${y.result}`).join('、')}` : '';
+      kv(`tl${x.t}`, C.fmtTime(x.t), [sent, done].filter(Boolean).join('；'), { gone: false });
+    }
+
+    section('world', '网易云那边', '网易云那边（假的，只在原型里）', 'Campanula 自己看不到这一块。用来看切换假设之后，网易云那边到底发生了什么。');
+    for (const acc of Object.keys(C.ACCOUNTS)) {
+      const c = s.world.cookies[acc];
+      kv(`ck-${acc}`, `${name(acc)} 的 Cookie`, c.version
+        ? `最新是第 ${c.version} 代，${c.valid ? '有效' : '已失效'}${c.version > 1 ? `；上一代${c.prevValid ? '还能用' : '已作废'}` : ''}`
+        : '还没登录过');
+    }
+    kv('limit', '请求频率（假设）', s.config.assume.rateLimit === 'strict'
+      ? `同一个账号一秒超过 ${C.RATE_LIMIT.perSecond} 个请求，${C.RATE_LIMIT.penalty} 秒内都回“操作频繁”`
+      : '不限制');
+    for (const acc of Object.keys(C.ACCOUNTS)) {
+      const until = s.world.throttle[acc] || 0;
+      if (until > s.now) kv(`th-${acc}`, `${name(acc)} 被限制`, `到 ${C.fmtTime(until)}：这期间它的请求都回“操作频繁”`, { warn: true });
+    }
+    const rank = Object.keys(C.ACCOUNTS).map((acc) => {
+      const r = s.world.remote[acc];
+      return r.rank ? `${name(acc)} 计入 ${r.rank} 条、共 ${r.rankSeconds} 秒` : '';
+    }).filter(Boolean);
+    kv('rank', '听歌排行', rank.length ? rank.join('；') : '还没有计入');
+    const racc = a.account || 'hana';
+    for (const l of s.world.remote[racc].lists) {
+      kv(`rl-${racc}-${l.id}`, `${name(racc)}：${C.listTitle(l)}`, `${l.tracks.length} 首，第 ${l.rev} 版：${l.tracks.slice(0, 6).map(C.songName).join('')}${l.tracks.length > 6 ? ' …' : ''}`);
+    }
+    return out;
+  }
+
+  // ---------- 画状态 ----------
+  function logHtml(lines) {
+    if (!lines || !lines.length) return '<p class="log-empty">（这一步没有输出）</p>';
+    return `<ol class="log">${lines.map((l) => `<li class="t-${esc(l.tag)}"><time>${esc(C.fmtTime(l.t))}</time><span class="tag">${esc(TAG[l.tag] || l.tag)}</span><span class="tx">${esc(l.text)}</span></li>`).join('')}</ol>`;
+  }
+  function renderState(fresh) {
+    const prev = fresh ? null : ui.rows;
+    const rows = new Map();
+    const summary = [];
+    const html = stateSections(ui.sim).map((sec) => {
+      const seen = new Set();
+      const parts = [];
+      let n = 0;
+      let table = null;
+      let trs = [];
+      const flush = () => {
+        if (!table) return;
+        const cols = sec.tables[table];
+        parts.push(`<div class="tbl"><table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${trs.join('')}</tbody></table></div>`);
+        table = null;
+        trs = [];
+      };
+      for (const r of sec.rows) {
+        const id = `${sec.id}/${r.key}`;
+        const sig = r.sig != null ? r.sig : r.text;
+        seen.add(id);
+        if (!r.quiet) rows.set(id, { sig, gone: r.gone !== false });
+        const chg = !!prev && !r.quiet && !r.noDiff && (!prev.has(id) || prev.get(id).sig !== sig);
+        if (chg) n += 1;
+        if (r.kind === 'item') {
+          if (table !== r.table) {
+            flush();
+            table = r.table;
+          }
+          const cls = [chg && 'chg', r.cur && 'cur', r.dim && 'dim', r.warn && 'warn'].filter(Boolean).join(' ');
+          trs.push(`<tr class="${cls}">${r.cells.map((c, i) => `<td class="${i === 0 && r.num ? 'num' : i === 0 && r.prio ? 'prio' : ''}">${esc(c)}</td>`).join('')}</tr>`);
+          continue;
+        }
+        flush();
+        const cls = [chg && 'chg', r.warn && 'warn'].filter(Boolean).join(' ');
+        parts.push(r.kind === 'kv'
+          ? `<div class="kv ${cls}"><div class="k">${esc(r.label)}</div><div class="v">${esc(r.value)}</div></div>`
+          : `<p class="note ${cls}">${esc(r.text)}</p>`);
+      }
+      flush();
+      if (prev) {
+        for (const [id, v] of prev) {
+          if (!id.startsWith(`${sec.id}/`) || seen.has(id) || !v.gone) continue;
+          parts.push(`<p class="gone">刚去掉：<s>${esc(v.sig)}</s></p>`);
+          n += 1;
+        }
+      }
+      if (n) summary.push(`<a href="#sec-${sec.id}">${esc(sec.name)}</a>（${n} 处）`);
+      return `<section class="sec" id="sec-${sec.id}"><h3>${esc(sec.title)}${n ? `<span class="badge">这一步变了 ${n} 处</span>` : ''}</h3>${sec.hint ? `<p class="hint">${esc(sec.hint)}</p>` : ''}${parts.join('')}</section>`;
+    }).join('');
+    ui.rows = rows;
+    byId('panel').innerHTML = html;
+
+    const L = ui.last;
+    ui.changesHtml = fresh
+      ? '状态从这里开始；之后每一步变了的地方会标成<span class="chg-sample">浅绿底</span>。'
+      : summary.length ? `这一步变了：${summary.join('、')}` : '状态没有变化。';
+    const changes = ui.changesHtml;
+    byId('last').innerHTML = `<div class="last-head"><span class="eyebrow">刚才</span><strong>${esc(L.label)}</strong></div>
+      ${L.setup ? `<p class="setup"><span class="pill">起点</span>${esc(L.setup.text)}</p>` : logHtml(L.log)}
+      ${L.setup && L.setup.log.length ? `<details class="prep"><summary>准备起点时发生了什么（${L.setup.log.length} 行）</summary>${logHtml(L.setup.log)}</details>` : ''}
+      <p class="changes">${changes}</p>`;
+    byId('allrec').innerHTML = `<summary>这一轮的全部记录（${ui.all.length} 步）</summary>${ui.all.map((x) => `<div class="rec"><p class="rec-h">${esc(x.label)}</p>${logHtml(x.log)}</div>`).join('')}`;
+  }
+
+  // ---------- 自由操作 ----------
+  function fix(key, values) {
+    if (!values.includes(ui.sel[key])) ui.sel[key] = values.length ? values[0] : null;
+  }
+  function selectHtml(key, items, label) {
+    if (!items.length) return `<select data-sel="${key}" aria-label="${esc(label)}" disabled><option>（${esc(label)}：没有）</option></select>`;
+    return `<select data-sel="${key}" aria-label="${esc(label)}">${items.map(([v, t]) => `<option value="${esc(v)}"${v === ui.sel[key] ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+  }
+  const btn = (act, text, o = {}) => `<button type="button" data-do="${act}"${o.pressed != null ? ` aria-pressed="${o.pressed}"` : ''}${o.primary ? ' class="primary"' : ''}>${esc(text)}</button>`;
+  const fpRow = (label, body) => `<div class="fp-row"><div class="fp-label">${esc(label)}</div><div class="fp-body">${body}</div></div>`;
+  function songLabel(s, id) {
+    const pl = C.playability(s, id);
+    const flag = !pl.ok ? `（${pl.why}）` : pl.local ? '（已下载）' : pl.trial ? '（只能试听）' : '';
+    return `${C.songName(id)} ${C.SONGS[id].artist}${flag}`;
+  }
+  function renderFree() {
+    const s = ui.sim;
+    const srcs = C.sources(s);
+    fix('src', srcs.map((x) => x.id));
+    const src = srcs.find((x) => x.id === ui.sel.src) || null;
+    const songs = src ? src.songs : [];
+    fix('song', songs);
+    const own = (s.app.library ? s.app.library.lists : []).filter((l) => l.kind === 'own');
+    fix('target', own.map((l) => l.id));
+    const p = s.app.player;
+    fix('eid', p.queue.map((e) => e.eid));
+    const items = s.app.downloads.items;
+    fix('dl', items.map((i) => i.songId));
+    const origins = [];
+    for (const it of items) for (const o of it.origins) if (!origins.some((x) => x.id === o.id)) origins.push(o);
+    fix('origin', origins.map((o) => o.id));
+    const racc = s.app.auth.account || 'hana';
+    const rlists = s.world.remote[racc].lists;
+    fix('remList', rlists.map((l) => l.id));
+    const quality = s.app.downloads.quality;
+    const srcText = (x) => `${C.srcLabel(x)}${x.partial ? `（本机 ${x.songs.length}/${x.total} 首，还在同步）` : `（${x.songs.length} 首）`}`;
+
+    byId('free').innerHTML = `
+      <h2>自由操作</h2>
+      <p class="hint">随时能点，顺序随意；做不了的操作会说明为什么。在列表里点一首 = 用整个列表替换播放队列；在搜索结果里点 = 插播。${ui.scen ? '场景走到一半也能点，场景接着往下走。' : ''}</p>
+      ${ui.freeMsg ? `<p class="fp-msg" role="status">${esc(ui.freeMsg)}</p>` : ''}
+      <div class="fp">
+        ${fpRow('选一首歌', selectHtml('src', srcs.map((x) => [x.id, srcText(x)]), '列表') + selectHtml('song', songs.map((id) => [id, songLabel(s, id)]), '歌曲'))}
+        ${fpRow('对这首歌', [btn('click', '点这首'), btn('playNext', '下一首播放'), btn('addToQueue', '加入播放队列'), btn('like', '红心'), btn('unlike', '取消红心'), btn('dlSong', '下载这首')].join(''))}
+        ${fpRow('自建歌单', selectHtml('target', own.map((l) => [l.id, C.listTitle(l)]), '自建歌单') + btn('addTo', '加入歌单') + btn('removeFrom', '从歌单移除'))}
+        ${fpRow('对这个列表', btn('openList', '打开') + btn('dlList', '下载整个列表'))}
+        ${fpRow('播放', [btn('toggle', p.playing || p.loading ? '暂停' : '播放'), btn('prev', '上一首'), btn('next', '下一首'), btn('finishSong', '放到这首结束'), '<span class="sep"></span>', ...['loop', 'one', 'shuffle'].map((m) => btn(`mode-${m}`, C.MODE_LABEL[m], { pressed: p.mode === m }))].join(''))}
+        ${fpRow('播放队列', selectHtml('eid', p.queue.map((e, i) => [e.eid, `第 ${i + 1} 首 ${C.songName(e.songId)}（${C.srcLabel(e.src)}）`]), '队列里的歌') + btn('jump', '跳到这首') + btn('remove', '移出队列') + btn('clearQueue', '清空播放队列'))}
+        ${fpRow('时间', WAITS.map(([sec, t]) => btn(`wait-${sec}`, `等 ${t}`)).join(''))}
+        ${fpRow('App 和网络', [btn('close', '关掉 App'), btn('open', '打开 App'), btn('offline', '断网'), btn('online', '联网'), btn('tabs-2', '开着 2 个标签页'), btn('tabs-1', '只开 1 个标签页')].join(''))}
+        ${fpRow('设备和网易云', [btn('disk-40', '存储只剩 40 MB'), btn('disk-2000', '存储充足'), btn('throttle-30', '让网易云限制这个账号 30 秒'), btn('expireCookie', '让 Cookie 到期')].join(''))}
+        ${fpRow('下载的歌', selectHtml('dl', items.map((i) => [i.songId, `${C.songName(i.songId)}（${DL_STATUS[i.status]}）`]), '下载的歌') + btn('dlRetry', '重试') + btn('dlDelete', '删除这首下载') + btn('dlRetryAll', '全部重试') + btn('dlResume', '继续下载'))}
+        ${fpRow('按歌单', selectHtml('origin', origins.map((o) => [o.id, o.name]), '从哪儿下载的') + btn('dlDeleteOrigin', '删除从这里下载的歌') + btn('dlClear', '一键清空下载'))}
+        ${fpRow('下载音质', ['standard', 'exhigh', 'lossless'].map((q) => btn(`q-${q}`, C.QUALITY[q].label, { pressed: quality === q })).join(''))}
+        ${fpRow('曲库', `${btn('sync', '手动同步')}<input type="text" data-sel="q" value="${esc(ui.sel.q)}" aria-label="搜索词" size="10">${btn('searchLocal', '在本机搜')}`)}
+        ${fpRow('登录', selectHtml('acc', Object.keys(C.ACCOUNTS).map((acc) => [acc, C.ACCOUNTS[acc].desc]), '账号') + btn('loginSms', '用短信登录') + btn('loginQr', '用扫码登录') + btn('logout', '主动退出登录'))}
+        ${fpRow('登录页上', [btn('smsSend', '发送验证码'), btn('smsOk', '输入正确的验证码'), btn('smsBad', '输入错误的验证码'), btn('qrFetch', '显示二维码'), btn('qrScan', '用网易云 App 扫码'), btn('qrConfirm', '在手机上点“确认登录”'), btn('captchaPass', '在手机上完成行为验证'), btn('loginRetry', '点“重试”'), btn('loginSwitch', '换另一种登录方式'), btn('loginCancel', '取消登录')].join(''))}
+        ${fpRow('官方 App 里', selectHtml('remList', rlists.map((l) => [l.id, `${name(racc)}：${C.listTitle(l)}`]), '网易云上的歌单') + selectHtml('remSong', Object.keys(C.SONGS).map((id) => [id, `${C.songName(id)} ${C.SONGS[id].artist}`]), '歌曲') + btn('remoteAdd', '把这首加进去') + btn('remoteRemove', '把这首删掉') + btn('remoteDelete', '删除整张歌单'))}
+        ${fpRow('页面', btn('undo', '退回上一步') + btn('resetAll', '全部重来（未登录，什么都没有）'))}
+      </div>`;
+  }
+  function freeAction(act) {
+    const sel = ui.sel;
+    const needSong = (a) => (sel.song ? a : '先在“选一首歌”里选一首');
+    const racc = ui.sim.app.auth.account || 'hana';
+    switch (act) {
+      case 'click': return needSong({ type: 'click', src: sel.src, song: sel.song });
+      case 'playNext': return needSong({ type: 'playNext', src: sel.src, song: sel.song });
+      case 'addToQueue': return needSong({ type: 'addToQueue', src: sel.src, song: sel.song });
+      case 'like': return needSong({ type: 'like', song: sel.song });
+      case 'unlike': return needSong({ type: 'unlike', song: sel.song });
+      case 'dlSong': return needSong({ type: 'dlSong', song: sel.song });
+      case 'addTo': return needSong({ type: 'addTo', list: sel.target, song: sel.song });
+      case 'removeFrom': return needSong({ type: 'removeFrom', list: sel.target, song: sel.song });
+      case 'openList': return { type: 'openList', list: sel.src };
+      case 'dlList': return { type: 'dlList', src: sel.src };
+      case 'jump': return { type: 'jump', eid: sel.eid };
+      case 'remove': return { type: 'remove', eid: sel.eid };
+      case 'dlRetry': return sel.dl ? { type: 'dlRetry', song: sel.dl } : '还没有下载';
+      case 'dlDelete': return sel.dl ? { type: 'dlDelete', song: sel.dl } : '还没有下载';
+      case 'dlDeleteOrigin': return sel.origin ? { type: 'dlDeleteOrigin', origin: sel.origin } : '还没有下载';
+      case 'searchLocal': return { type: 'searchLocal', q: (sel.q || '').trim() || 'YOASOBI' };
+      case 'loginSms': return { type: 'loginStart', method: 'sms', account: sel.acc };
+      case 'loginQr': return { type: 'loginStart', method: 'qr', account: sel.acc };
+      case 'smsOk': return { type: 'smsCode', ok: true };
+      case 'smsBad': return { type: 'smsCode', ok: false };
+      case 'tabs-2': return { type: 'env', key: 'tabs', value: 2, label: '同时开着 2 个 Campanula 标签页' };
+      case 'tabs-1': return { type: 'env', key: 'tabs', value: 1, label: '只开着 1 个 Campanula 标签页' };
+      case 'throttle-30': return { type: 'throttle', sec: 30 };
+      case 'disk-40': return { type: 'disk', free: 40 };
+      case 'disk-2000': return { type: 'disk', free: 2000 };
+      case 'remoteAdd': return { type: 'remote', account: racc, list: sel.remList, op: 'add', song: sel.remSong };
+      case 'remoteRemove': return { type: 'remote', account: racc, list: sel.remList, op: 'remove', song: sel.remSong };
+      case 'remoteDelete': return { type: 'remote', account: racc, list: sel.remList, op: 'delete' };
+      default:
+        if (act.startsWith('wait-')) return { type: 'wait', sec: Number(act.slice(5)) };
+        if (act.startsWith('mode-')) return { type: 'mode', mode: act.slice(5) };
+        if (act.startsWith('q-')) return { type: 'dlQuality', q: act.slice(2) };
+        return { type: act };
+    }
+  }
+  function doButton(act, text) {
+    if (act === 'undo') return undo();
+    if (act === 'resetAll') return resetAll();
+    if (act === 'restart') return ui.scen ? startScenario(ui.scen.id) : resetAll();
+    if (act === 'knobsReset') return resetKnobs();
+    const a = freeAction(act);
+    if (typeof a === 'string') {
+      ui.freeMsg = a;
+      renderFree();
+      return undefined;
+    }
+    return dispatch(a, `自由操作：${text}`);
+  }
+
+  // ---------- 引导场景 ----------
+  function knobHtml(path, scope) {
+    const { def, dflt, g, k } = knobDef(path);
+    const cur = ui.sim.config[g][k];
+    const moved = cur !== dflt;
+    const settled = g === 'rules';
+    return `<fieldset class="knob"><legend>${def.n ? `<span class="n">${def.n}</span>` : ''}${esc(def.label)}${moved ? `<span class="moved-tag">${settled ? '不是定下的做法' : '不是默认'}</span>` : ''}</legend>
+      <div class="opts">${def.options.map(([v, t], i) => `<label><input type="radio" name="${scope}-${esc(path)}" data-knob="${esc(path)}" data-i="${i}" data-restart="${scope === 'scen' ? 1 : 0}"${v === cur ? ' checked' : ''}> ${esc(t)}${v === dflt ? `<span class="dflt">${settled ? '（已定）' : '（默认）'}</span>` : ''}</label>`).join('')}</div></fieldset>`;
+  }
+  function scenDetail(sc) {
+    const run = ui.scen;
+    const done = run.next >= sc.steps.length;
+    const others = Object.keys(ui.overrides).filter((path) => !sc.knobs.includes(path)).map((path) => {
+      const { def } = knobDef(path);
+      return `${def.n || ''}${def.label}：${def.options.find(([v]) => v === ui.overrides[path])[1]}`;
+    });
+    const steps = sc.steps.map((st, i) => {
+      const state = i < run.next ? 'done' : i === run.next ? 'next' : 'later';
+      return `<li class="step ${state}">
+        <button type="button" data-step="${i}"${state === 'next' ? ' class="primary"' : ' disabled'}>${state === 'done' ? '✓ ' : ''}${i + 1}. ${esc(st.label)}</button>
+        ${st.watch ? `<p class="watch"><span class="pill">看</span>${esc(st.watch)}</p>` : ''}
+        ${run.logs[i] ? logHtml(run.logs[i]) : ''}
+        ${i === ui.lastStep ? `<p class="changes">${ui.changesHtml}</p>` : ''}
+      </li>`;
+    }).join('');
+    return `<article class="scen-detail">
+      <h3>${esc(sc.title)}</h3>
+      <p>${esc(sc.desc)}</p>
+      <p class="setup"><span class="pill">起点</span>${esc(sc.setupText)}</p>
+      ${sc.knobs.length ? `<div class="scen-knobs"><p class="knobs-title">这个场景要比较的开关：一改就用新设置从头再跑一遍</p>${sc.knobs.map((path) => knobHtml(path, 'scen')).join('')}</div>` : ''}
+      ${others.length ? `<p class="hint">注意：“全部开关”里还有 ${others.length} 个不是默认值（${esc(others.join('；'))}），这个场景也照它们跑，结果可能和“看”里写的不一样。</p>` : ''}
+      ${run.mixed ? '<p class="hint">这一遍中途做过自由操作或改过开关，结果可能和“看”里写的不一样。</p>' : ''}
+      <ol class="steps">${steps}</ol>
+      <div class="scen-foot">${done ? '<p>这个场景走完了。改一下上面的开关再跑一遍对比；也可以在自由操作里接着戳。</p>' : `<p class="hint">第 ${run.next + 1} 步，共 ${sc.steps.length} 步</p>`}${btn('restart', '从头再来')}</div>
+    </article>`;
+  }
+  function renderScen() {
+    const list = SCENARIOS.filter((x) => x.block === ui.block);
+    const sc = ui.scen ? SCENARIOS.find((x) => x.id === ui.scen.id) : null;
+    const showing = sc && sc.block === ui.block ? sc : null;
+    byId('scen').innerHTML = `
+      <h2>引导场景</h2>
+      <p class="hint">每个场景从固定的起点开始，按顺序点步骤。选场景、点“从头再来”都会把状态重置到起点（开关的设置保留）。</p>
+      <div class="tabs" role="tablist" aria-label="分块">${BLOCKS.map((b) => `<button type="button" role="tab" aria-selected="${b.id === ui.block}" data-block="${b.id}">${esc(b.title)} <small>${esc(b.brief)}</small></button>`).join('')}</div>
+      <div class="scen-list">${list.map((x) => `<button type="button" data-scen="${x.id}" aria-current="${showing && x.id === showing.id ? 'true' : 'false'}">${esc(x.title)}</button>`).join('')}</div>
+      ${showing ? scenDetail(showing) : '<p class="hint">选一个场景开始。</p>'}`;
+  }
+  function runStep(i) {
+    const sc = SCENARIOS.find((x) => x.id === ui.scen.id);
+    if (i !== ui.scen.next || !sc.steps[i]) return;
+    const st = sc.steps[i];
+    dispatch(st.act, `第 ${i + 1} 步：${st.label}`, i);
+    const nextBtn = document.querySelector(`#scen [data-step="${i + 1}"]`) || document.querySelector('#scen [data-do="restart"]');
+    nextBtn.scrollIntoView({ block: 'nearest' });
+    nextBtn.focus({ preventScroll: true });
+  }
+
+  // ---------- 全部开关 ----------
+  function renderKnobs() {
+    byId('knobs').innerHTML = `
+      <h2>全部开关</h2>
+      <p class="hint">在这里改，马上作用在现在的状态上，不重置；之后点“从头再来”也照这里的设置。</p>
+      <p>${btn('knobsReset', '全部恢复默认')}</p>
+      ${GROUPS.map((g) => `<section class="kgroup"><h3>${esc(KNOBS[g].title)}</h3><p class="hint">${esc(KNOBS[g].hint)}</p>${Object.keys(KNOBS[g].items).map((k) => knobHtml(`${g}.${k}`, 'all')).join('')}</section>`).join('')}`;
+  }
+
+  // ---------- 总的重画（保住键盘焦点） ----------
+  function focusKey() {
+    const f = document.activeElement;
+    if (!f || !f.dataset) return null;
+    if (f.dataset.sel) return `[data-sel="${f.dataset.sel}"]`;
+    if (f.dataset.do) return `[data-do="${f.dataset.do}"]`;
+    if (f.dataset.knob) return `input[name="${f.name}"]:checked`;
+    if (f.dataset.block) return `[data-block="${f.dataset.block}"]`;
+    if (f.dataset.scen) return `[data-scen="${f.dataset.scen}"]`;
+    return null;
+  }
+  function withFocus(fn) {
+    const key = focusKey();
+    fn();
+    if (!key) return;
+    const el = document.querySelector(key);
+    if (el && !el.disabled) el.focus({ preventScroll: true });
+  }
+  function renderAll(fresh) {
+    withFocus(() => {
+      renderState(fresh);
+      renderFree();
+      renderScen();
+      renderKnobs();
+    });
+  }
+
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b || b.disabled) return;
+    if (b.dataset.block) {
+      ui.block = b.dataset.block;
+      withFocus(renderScen);
+    } else if (b.dataset.scen) startScenario(b.dataset.scen);
+    else if (b.dataset.step) runStep(Number(b.dataset.step));
+    else if (b.dataset.do) doButton(b.dataset.do, b.textContent.trim());
+  });
+  document.addEventListener('change', (ev) => {
+    const t = ev.target;
+    if (t.dataset.knob) setKnob(t.dataset.knob, Number(t.dataset.i), t.dataset.restart === '1');
+    else if (t.dataset.sel) {
+      ui.sel[t.dataset.sel] = t.value;
+      withFocus(renderFree);
+    }
+  });
+  document.addEventListener('input', (ev) => {
+    if (ev.target.dataset.sel === 'q') ui.sel.q = ev.target.value;
+  });
+
+  startScenario(SCENARIOS[0].id);
+})();
+</script>
+</body>
+</html>
