@@ -20,6 +20,8 @@ export default defineConfig({
     presetTypography(),
     presetWebFonts({
       provider: 'google',
+      // PROTOTYPE：服务端抓取 Google Fonts 超过 2 秒会让 dev server 直接崩溃；原型改用自托管字体，这里只输出 @import
+      inlineImports: false,
       fonts: {
         noto: [
           'Noto Sans:300,400',
@@ -37,6 +39,11 @@ export default defineConfig({
   transformers: [transformerDirectives(), transformerVariantGroup()],
   shortcuts: [['title', 'text-lg font-bold text-[#858585]']],
   theme: {
+    // PROTOTYPE：“柔和的环境光”——白色面板从浅底上轻轻浮起；float 只给真正浮起的层（菜单、弹层、播放条）
+    boxShadow: {
+      ambient: '0 1px 2px rgb(17 24 39 / 0.04), 0 4px 16px -4px rgb(17 24 39 / 0.07)',
+      float: '0 2px 8px rgb(17 24 39 / 0.06), 0 16px 40px -12px rgb(17 24 39 / 0.18)',
+    },
     colors: {
       primary: {
         DEFAULT: '#A8E6CF',
