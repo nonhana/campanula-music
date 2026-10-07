@@ -1,0 +1,53 @@
+/* PROTOTYPE：视觉原型共用的全局样式（字体、浏览器表层、截图模式）。 */
+
+.proto-root {
+  /* 自托管的 Noto 可变字体：拉丁先走 Noto Sans，汉字默认简体，日文、繁体按 lang 切换 */
+  --font-sans: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif;
+  --font-ja: 'Noto Sans Variable', 'Noto Sans JP Variable', 'Noto Sans SC Variable', system-ui, sans-serif;
+  --font-tc: 'Noto Sans Variable', 'Noto Sans TC Variable', 'Noto Sans SC Variable', system-ui, sans-serif;
+
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  color: #111827;
+  caret-color: #2b976f;
+  accent-color: #37be8c;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.proto-root :lang(ja) {
+  font-family: var(--font-ja);
+}
+
+.proto-root :lang(zh-TW) {
+  font-family: var(--font-tc);
+}
+
+.proto-root ::selection {
+  background: #d1f1e3;
+  color: #1a5b43;
+}
+
+.proto-root :focus-visible {
+  outline: 2px solid #2b976f;
+  outline-offset: 2px;
+}
+
+.proto-root .tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.proto-root * {
+  scrollbar-width: thin;
+  scrollbar-color: #c5d3cd transparent;
+}
+
+/* 截图模式：关掉过渡和动画，保证截到的是稳定状态 */
+.proto-root[data-still] *,
+.proto-root[data-still] *::before,
+.proto-root[data-still] *::after {
+  transition: none !important;
+  animation: none !important;
+}
