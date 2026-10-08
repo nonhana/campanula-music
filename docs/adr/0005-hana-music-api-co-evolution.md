@@ -1,6 +1,6 @@
 # hana-music-api 作为独立发布的上游，与 Campanula 一起演进
 
-hana-music-api 是站长自己的开源 SDK，单独发布到 npm，有 Campanula 以外的使用者。Campanula 遇到它的问题时，回到它的仓库修复并发版，不在 Campanula 里绕路：
+hana-music-api 是作者自己的开源 SDK，单独发布到 npm，有 Campanula 以外的使用者。Campanula 遇到它的问题时，回到它的仓库修复并发版，不在 Campanula 里绕路：
 
 - 问题开在 `nonhana/hana-music-api` 的 Issue 里，依赖它的 Campanula Issue 用“被阻塞”关系关联过去。
 - Campanula 主分支只依赖 npm 上已发布的版本，不提交本地 link。
