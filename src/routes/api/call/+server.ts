@@ -2,7 +2,6 @@ import type { IpMode } from '$lib/server/netease'
 import type { NeSession, Slot, SlotView } from '$lib/server/session'
 import type { RequestHandler } from './$types'
 import { callNetease, mergeCookies } from '$lib/server/netease'
-import { fingerprint } from '$lib/server/seal'
 import { deviceIdOf, isSlot, readSlot, sessionFrom, viewSlot, writeSlot } from '$lib/server/session'
 import { error, json } from '@sveltejs/kit'
 
@@ -48,17 +47,25 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
   const gotMusicU = parsedCookies.some(cookie => cookie.name === 'MUSIC_U' && cookie.value)
   let saved: SlotView | undefined
-  if (gotMusicU && ((save === 'sms' && code === 200) || (save === 'qr' && code === 803))) {
-    const next = sessionFrom(save, mergeCookies({}, parsedCookies), deviceId, result.setCookie)
-    writeSlot(cookies, save, next)
-    saved = viewSlot(save, next)
+  let saveError: string | undefined
+  try {
+    if (gotMusicU && ((save === 'sms' && code === 200) || (save === 'qr' && code === 803))) {
+      const next = sessionFrom(save, mergeCookies({}, parsedCookies), deviceId, result.setCookie)
+      writeSlot(cookies, save, next)
+      saved = viewSlot(save, next)
+    }
+    if (gotMusicU && save === 'refresh' && session && (slot === 'sms' || slot === 'qr') && code === 200) {
+      const merged = mergeCookies(session.cookie, parsedCookies)
+      const fresh = sessionFrom(session.method, merged, session.deviceId, result.setCookie)
+      const next: NeSession = { ...session, cookie: merged, refreshedAt: Date.now(), musicU: fresh.musicU, fp: fresh.fp }
+      writeSlot(cookies, slot, next)
+      writeSlot(cookies, `${slot}_prev` as Slot, session)
+      saved = viewSlot(slot, next)
+    }
   }
-  if (gotMusicU && save === 'refresh' && session && (slot === 'sms' || slot === 'qr') && code === 200) {
-    writeSlot(cookies, `${slot}_prev` as Slot, session)
-    const merged = mergeCookies(session.cookie, parsedCookies)
-    const next: NeSession = { ...session, cookie: merged, refreshedAt: Date.now(), setCookie: result.setCookie, fp: fingerprint(merged.MUSIC_U ?? '') }
-    writeSlot(cookies, slot, next)
-    saved = viewSlot(slot, next)
+  catch (error) {
+    // 存不进去也要把网易云的返回带回去，这是录制数据
+    saveError = error instanceof Error ? error.message : String(error)
   }
-  return json({ ...result, slot, sessionFp: session?.fp, saved })
+  return json({ ...result, slot, sessionFp: session?.fp, saved, saveError })
 }

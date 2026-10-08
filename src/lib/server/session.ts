@@ -18,8 +18,8 @@ export interface NeSession {
   deviceId: string
   loginAt: number
   refreshedAt?: number
-  /** 建立或最近一次续期时网易云给的 Set-Cookie，只有名字和属性，没有值。 */
-  setCookie: CookieMeta[]
+  /** MUSIC_U 的 Max-Age / Expires（没有值）。完整的 Set-Cookie 属性只在接口返回里给，不放进 Cookie。 */
+  musicU?: Pick<CookieMeta, 'maxAge' | 'expires'>
   fp: string
 }
 
@@ -41,8 +41,15 @@ export function readSlot(cookies: Cookies, slot: Slot): NeSession | null {
   return unseal<NeSession>(cookies.get(cookieName(slot)))
 }
 
+/**
+ * 浏览器会悄悄丢掉超过 4096 字节的 Cookie（2026-10-08 第一次扫码登录就是这样丢的：
+ * 当时把 27 条 Set-Cookie 的属性也塞了进去，加密后约 6.9 KB）。超过上限就报错，不假装存好了。
+ */
 export function writeSlot(cookies: Cookies, slot: Slot, session: NeSession): void {
-  cookies.set(cookieName(slot), seal(session), options)
+  const value = seal(session)
+  if (cookieName(slot).length + value.length + 1 > 4000)
+    throw new Error(`槽 ${slot} 的 Cookie 有 ${value.length} 字节，超过浏览器上限`)
+  cookies.set(cookieName(slot), value, options)
 }
 
 export function clearSlot(cookies: Cookies, slot: Slot): void {
@@ -55,7 +62,8 @@ export function viewSlot(slot: Slot, session: NeSession): SlotView {
 }
 
 export function sessionFrom(method: LoginMethod, cookie: Record<string, string>, deviceId: string, setCookie: CookieMeta[]): NeSession {
-  return { method, cookie, deviceId, loginAt: Date.now(), setCookie, fp: fingerprint(cookie.MUSIC_U ?? '') }
+  const meta = setCookie.findLast(item => item.name === 'MUSIC_U' && !item.empty)
+  return { method, cookie, deviceId, loginAt: Date.now(), musicU: meta && { maxAge: meta.maxAge, expires: meta.expires }, fp: fingerprint(cookie.MUSIC_U ?? '') }
 }
 
 const ID_XOR_KEY = '3go8&$8*3*3h0k(2)2'

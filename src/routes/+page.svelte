@@ -82,9 +82,9 @@
       const { code } = result.res
       qrStatus = `${code} ${result.res.body?.message ?? ''}`
       if (code === 803) {
-        qrStatus = `803 登录成功${result.res.saved ? '，凭据已存进 qr 槽' : '，但没拿到 MUSIC_U'}`
         qrActive = false
         await loadSessions()
+        qrStatus = `803 登录成功${savedText(result.res, 'qr')}`
         return
       }
       if (code === 800) {
@@ -163,10 +163,19 @@
     const result = await call('login_cellphone', { phone, captcha, countrycode: '86' }, { save: 'sms', redact: ['phone', 'captcha'], tag: 'sms' })
     syncRecent()
     captcha = ''
-    smsStatus = `短信登录：${result.res.code} ${result.res.body?.message ?? result.res.body?.msg ?? ''}${result.res.saved ? '，凭据已存进 sms 槽' : ''}`
+    await loadSessions()
+    smsStatus = `短信登录：${result.res.code} ${result.res.body?.message ?? result.res.body?.msg ?? ''}${result.res.code === 200 ? savedText(result.res, 'sms') : ''}`
     if (result.res.saved)
       phone = ''
-    await loadSessions()
+  }
+
+  /** 服务器说存了不算数，要浏览器里真的有这个槽才算。 */
+  function savedText(res: any, slot: string): string {
+    if (res.saveError)
+      return `，但没存进 ${slot} 槽：${res.saveError}`
+    if (!res.saved)
+      return '，但没拿到 MUSIC_U'
+    return slots.some(item => item.slot === slot) ? `，凭据已存进 ${slot} 槽` : `，但浏览器没存下 ${slot} 槽`
   }
 
   async function runRtt() {
@@ -214,10 +223,7 @@
             {#if slot.refreshedAt}· 续期于 {new Date(slot.refreshedAt).toLocaleString()}{/if}
             · MUSIC_U 指纹 {slot.fp}
             <button type='button' onclick={() => drop(slot.slot)}>删掉这个槽</button>
-            <details>
-              <summary>Set-Cookie 属性（无值）</summary>
-              <pre>{JSON.stringify(slot.setCookie, null, 2)}</pre>
-            </details>
+            · MUSIC_U Max-Age {slot.musicU?.maxAge ?? '-'}，Expires {slot.musicU?.expires ?? '-'}
           </li>
         {/each}
       </ul>
@@ -301,10 +307,6 @@
   img {
     display: block;
     margin: 8px 0;
-  }
-  pre {
-    font-size: 12px;
-    overflow: auto;
   }
   table {
     border-collapse: collapse;
