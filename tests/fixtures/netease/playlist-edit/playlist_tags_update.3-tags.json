@@ -1,0 +1,20 @@
+{
+  "module": "playlist_tags_update",
+  "query": {
+    "id": 900000002,
+    "tags": "华语;流行;夜晚"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:43:17.476Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

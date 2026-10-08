@@ -1,0 +1,23 @@
+{
+  "module": "playlist_tracks",
+  "query": {
+    "op": "del",
+    "pid": 900000002,
+    "tracks": "1402860124"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:57:56.751Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "从已删除的歌单移除歌"
+  },
+  "response": {
+    "status": 404,
+    "body": {
+      "code": 404,
+      "message": "歌单不存在"
+    }
+  }
+}

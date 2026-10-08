@@ -1,0 +1,26 @@
+{
+  "module": "playlist_subscribe",
+  "query": {
+    "id": 2889745179,
+    "t": 1
+  },
+  "context": {
+    "recordedAt": "2026-10-08T17:18:17.226Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "real",
+    "viewer": "vip-qr",
+    "note": "改用真实国内 IP（realIP）"
+  },
+  "response": {
+    "status": 405,
+    "body": {
+      "code": 405,
+      "data": null,
+      "debugInfo": null,
+      "failData": null,
+      "message": "操作过于频繁，请稍后再试",
+      "msg": "操作过于频繁，请稍后再试"
+    }
+  }
+}

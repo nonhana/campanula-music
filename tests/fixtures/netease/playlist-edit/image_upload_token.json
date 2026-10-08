@@ -1,0 +1,23 @@
+{
+  "module": "image_upload_token",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T16:43:41.847Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "imgId": "109951174079391436",
+        "token": "",
+        "uploadUrl": "https://nosup-hz1.127.net/yyimgs/h0MaD8lPOfhxfbHJMb7atA==/109951174079391436?offset=0&complete=true&version=1.0",
+        "url_pre": "https://p1.music.126.net/h0MaD8lPOfhxfbHJMb7atA==/109951174079391436"
+      }
+    }
+  }
+}

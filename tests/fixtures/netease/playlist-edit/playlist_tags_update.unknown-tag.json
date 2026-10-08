@@ -1,0 +1,21 @@
+{
+  "module": "playlist_tags_update",
+  "query": {
+    "id": 900000002,
+    "tags": "Campanula"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:43:17.817Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "标签库里没有的标签"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

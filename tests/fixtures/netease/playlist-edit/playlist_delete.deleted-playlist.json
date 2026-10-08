@@ -1,0 +1,23 @@
+{
+  "module": "playlist_delete",
+  "query": {
+    "id": 900000002
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:58:01.211Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "再删一次已删除的歌单"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": null,
+      "message": null,
+      "msg": null
+    }
+  }
+}

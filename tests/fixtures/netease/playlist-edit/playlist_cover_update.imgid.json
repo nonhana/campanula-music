@@ -1,0 +1,24 @@
+{
+  "module": "playlist_cover_update",
+  "query": {
+    "id": 900000002,
+    "imgId": "109951174079391436"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:43:42.994Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "code": 200,
+        "url": "https://p1.music.126.net/h0MaD8lPOfhxfbHJMb7atA==/109951174079391436.jpg"
+      }
+    }
+  }
+}

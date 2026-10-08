@@ -1,0 +1,21 @@
+{
+  "module": "playlist_tags_update",
+  "query": {
+    "id": 900000002,
+    "tags": "华语"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:57:59.709Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "给已删除的歌单设标签"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

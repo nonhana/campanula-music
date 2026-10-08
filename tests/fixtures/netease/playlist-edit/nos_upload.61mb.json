@@ -1,0 +1,25 @@
+{
+  "module": "nos_upload",
+  "query": {
+    "bytes": 61399534,
+    "contentType": "image/jpeg",
+    "height": 4500,
+    "quality": 1,
+    "width": 4500
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:44:53.734Z",
+    "region": "browser",
+    "viewer": "vip-qr",
+    "note": "4500×4500、61,399,534 字节的 JPEG：直传成功，但图片服务器拒绝输出（FileTooBig），设为封面后显示不出来"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "callbackRetMsg": "eyJjb2RlIjoyMDB9",
+      "context": "2ced0b81-7bfe-520c-1d3b-6cff54ca999b",
+      "offset": 61399534,
+      "requestId": "fe8effb075bb000000006ac7c8839614"
+    }
+  }
+}

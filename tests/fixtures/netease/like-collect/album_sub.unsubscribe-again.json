@@ -1,0 +1,22 @@
+{
+  "module": "album_sub",
+  "query": {
+    "id": 110646,
+    "t": 0
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:56:07.702Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "已经取消了，再取消一次"
+  },
+  "response": {
+    "status": 404,
+    "body": {
+      "code": 404,
+      "message": "用户未收藏此专辑"
+    }
+  }
+}

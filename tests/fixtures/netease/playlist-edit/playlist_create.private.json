@@ -1,0 +1,68 @@
+{
+  "module": "playlist_create",
+  "query": {
+    "name": "Campanula 测试 · 可删除",
+    "privacy": "10"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:42:36.188Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "id": 900000002,
+      "playlist": {
+        "adType": 0,
+        "anonimous": false,
+        "artists": null,
+        "backgroundCoverId": 0,
+        "backgroundCoverUrl": null,
+        "cloudTrackCount": 0,
+        "commentThreadId": "A_PL_0_900000002",
+        "containsTracks": false,
+        "copied": false,
+        "coverImgId": 109951165474121400,
+        "coverImgId_str": "109951165474121408",
+        "coverImgUrl": "https://p1.music.126.net/jWE3OEZUlwdz0ARvyQ9wWw==/109951165474121408.jpg",
+        "createTime": 1791477755013,
+        "creator": null,
+        "description": null,
+        "englishTitle": null,
+        "highQuality": false,
+        "id": 900000002,
+        "mix": false,
+        "name": "Campanula 测试 · 可删除",
+        "newImported": false,
+        "opRecommend": false,
+        "ordered": false,
+        "playCount": 0,
+        "privacy": 10,
+        "recommendInfo": null,
+        "shareStatus": null,
+        "sharedUsers": null,
+        "specialType": 0,
+        "status": 0,
+        "subscribed": null,
+        "subscribedCount": 0,
+        "subscribers": [],
+        "tags": [],
+        "titleImage": 0,
+        "titleImageUrl": null,
+        "top": false,
+        "totalDuration": 0,
+        "trackCount": 0,
+        "trackNumberUpdateTime": 0,
+        "trackUpdateTime": 0,
+        "tracks": null,
+        "updateFrequency": null,
+        "updateTime": 1791477755013,
+        "userId": 10000001
+      }
+    }
+  }
+}

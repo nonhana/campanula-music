@@ -1,0 +1,25 @@
+{
+  "module": "playlist_cover_update",
+  "query": {
+    "id": 900000002,
+    "imgId": "109951174079467673"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:46:39.898Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "200×200 的 JPEG"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "code": 200,
+        "url": "https://p1.music.126.net/EqFOSHJNRrgHLrEjX37lFw==/109951174079467673.jpg"
+      }
+    }
+  }
+}

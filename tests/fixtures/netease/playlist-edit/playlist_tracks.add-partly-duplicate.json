@@ -1,0 +1,29 @@
+{
+  "module": "playlist_tracks",
+  "query": {
+    "op": "add",
+    "pid": 900000002,
+    "tracks": "41632480,41632486"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:47:12.725Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "一首已在歌单里、一首不在"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "body": {
+        "cloudCount": 0,
+        "code": 200,
+        "count": 4,
+        "trackIds": "[41632486]"
+      },
+      "cookie": "",
+      "status": 200
+    }
+  }
+}

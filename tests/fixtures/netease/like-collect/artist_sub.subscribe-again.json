@@ -1,0 +1,23 @@
+{
+  "module": "artist_sub",
+  "query": {
+    "id": 33737,
+    "t": 1
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:56:24.314Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "已经收藏了，再收藏一次"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": null,
+      "message": "success"
+    }
+  }
+}

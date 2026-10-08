@@ -1,0 +1,26 @@
+{
+  "module": "playlist_subscribe",
+  "query": {
+    "id": 2889745179,
+    "t": 1
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:55:40.883Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "收藏别人的歌单：回 405“操作过于频繁”（这一轮收藏任何歌单都是 405，见 #15 留言）"
+  },
+  "response": {
+    "status": 405,
+    "body": {
+      "code": 405,
+      "data": null,
+      "debugInfo": null,
+      "failData": null,
+      "message": "操作过于频繁，请稍后再试",
+      "msg": "操作过于频繁，请稍后再试"
+    }
+  }
+}

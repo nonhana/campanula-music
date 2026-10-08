@@ -1,0 +1,22 @@
+{
+  "module": "like",
+  "query": {
+    "id": 1394617453,
+    "like": false
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:56:43.700Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "playlistId": 900000001,
+      "songs": []
+    }
+  }
+}

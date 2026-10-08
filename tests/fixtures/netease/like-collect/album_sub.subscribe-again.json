@@ -1,0 +1,22 @@
+{
+  "module": "album_sub",
+  "query": {
+    "id": 110646,
+    "t": 1
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:56:06.542Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "已经收藏了，再收藏一次"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "message": "该专辑已经在用户收藏列表中"
+    }
+  }
+}

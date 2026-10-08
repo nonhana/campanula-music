@@ -1,0 +1,25 @@
+{
+  "module": "playlist_cover_update",
+  "query": {
+    "id": 900000002,
+    "imgId": "109951174079460872"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:46:37.734Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "申请了上传凭证、没有直传就设为封面：回 200，封面地址打开是 NotAnImage"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "code": 200,
+        "url": "https://p1.music.126.net/g_MK6qFOc_341CQrvNKtUg==/109951174079460872.jpg"
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "module": "playlist_cover_update",
+  "query": {
+    "id": 900000002,
+    "imgId": "109951174079391436"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:58:00.627Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "给已删除的歌单设封面（图片是前面直传成功的那张）"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "code": 200,
+        "url": "https://p1.music.126.net/h0MaD8lPOfhxfbHJMb7atA==/109951174079391436.jpg"
+      }
+    }
+  }
+}
