@@ -147,12 +147,15 @@ export async function callNetease(input: CallInput) {
   const cold = instance.calls === 1
   const { invokeModule } = await loadSdk()
   const events: Array<Omit<RequestDebugEvent, 'url'> & { path: string }> = []
-  const config: ModuleCallConfig = {
+  // 顶层的 deviceId 不在 SDK 的类型里，但 1.4.0 的隐式匿名注册会用它（不传就每次随机生成，
+  // 约一半摘要带 + 或 / 被网易云拒绝）。传入摘要干净的 deviceId，匿名注册就不再随机失败。
+  const config = {
     cookie: input.cookie,
+    deviceId: input.deviceId,
     state: input.ip === 'none' ? { deviceId: input.deviceId, cnIp: '' } : { deviceId: input.deviceId },
-    realIP: input.ip === 'real' ? env.GATE_REAL_IP : undefined,
-    onRequestEvent: ({ url, ...event }) => events.push({ ...event, path: new URL(url).pathname }),
-  }
+    ...(input.ip === 'real' ? { realIP: env.GATE_REAL_IP } : {}),
+    onRequestEvent: ({ url, ...event }: RequestDebugEvent) => events.push({ ...event, path: new URL(url).pathname }),
+  } as ModuleCallConfig
   const started = performance.now()
   let threw = false
   let response: NcmApiResponse
