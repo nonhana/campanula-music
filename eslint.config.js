@@ -8,7 +8,7 @@ const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url))
 export default antfu(
   {
     svelte: true,
-    unocss: true,
+    unocss: false,
     pnpm: true,
     rules: {
       'no-unused-expressions': 'off',
@@ -21,15 +21,6 @@ export default antfu(
         ...globals.browser,
         ...globals.node,
       },
-    },
-  },
-  {
-    files: [
-      'src/lib/components/hana/Button.svelte',
-      'src/lib/components/hana/Card.svelte',
-    ],
-    rules: {
-      'svelte/no-navigation-without-resolve': 'off',
     },
   },
 )

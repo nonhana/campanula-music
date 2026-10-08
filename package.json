@@ -12,47 +12,26 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "db:push": "drizzle-kit push",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@libsql/client": "catalog:",
-    "@lucide/svelte": "catalog:",
-    "dotenv": "catalog:",
-    "drizzle-orm": "catalog:",
-    "throttle-debounce": "catalog:"
+    "hana-music-api": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@eslint/compat": "catalog:",
     "@eslint/config-helpers": "catalog:",
-    "@neoconfetti/svelte": "catalog:",
-    "@sveltejs/adapter-netlify": "catalog:",
-    "@sveltejs/enhanced-img": "catalog:",
+    "@sveltejs/adapter-vercel": "catalog:",
     "@sveltejs/kit": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",
     "@types/node": "catalog:",
-    "@types/throttle-debounce": "catalog:",
     "@typescript-eslint/types": "catalog:",
-    "@unocss/eslint-plugin": "catalog:",
-    "@unocss/preset-rem-to-px": "catalog:",
-    "@unocss/reset": "catalog:",
-    "@unocss/svelte-scoped": "catalog:",
-    "autoprefixer": "catalog:",
-    "csstype": "catalog:",
-    "dayjs": "catalog:",
-    "drizzle-kit": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-svelte": "catalog:",
     "globals": "catalog:",
-    "sass": "catalog:",
     "svelte": "catalog:",
     "svelte-check": "catalog:",
     "typescript": "catalog:",
-    "unocss": "catalog:",
-    "unocss-preset-scrollbar": "catalog:",
     "vite": "catalog:"
   }
 }
