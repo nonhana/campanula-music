@@ -1,6 +1,6 @@
 # 以自部署为主：每个实例给部署的人自己用，首推 Vercel，也能跑在自己的服务器上
 
-Campanula 以自部署为主，作者不运营公共实例：每个站长部署自己的实例，给自己用，但不限制谁登录（和 YesPlayMusic 一样）。同一份代码按部署平台换 SvelteKit 适配器：v1 正式支持 Vercel（首推：免费 HTTPS、不用备案、不用自己的服务器，函数地区选香港 `hkg1`）和自己的服务器跑 Node（`adapter-node`，Docker 镜像可选）；Netlify、Cloudflare Workers 等平台以后再支持。实例必须用 HTTPS（本机 `localhost` 除外），因为 Service Worker、Background Fetch、Storage API、Web Locks 都只在安全上下文里可用，安装成应用也要求 HTTPS。听众登录自己的网易云账号后才能使用，未登录时只能看到介绍、登录入口，以及这台设备上已下载的歌曲（ADR-0006）。campanula.caelum.moe 放项目主页和部署文档，作者自己的实例用另一个不公开的地址。
+Campanula 以自部署为主，作者不运营公共实例：每个站长部署自己的实例，给自己用，但不限制谁登录（和 YesPlayMusic 一样）。同一份代码按部署平台换 SvelteKit 适配器：v1 正式支持 Vercel（首推：免费 HTTPS、不用备案、不用自己的服务器，函数地区选香港 `hkg1`）和自己的服务器跑 Node（`adapter-node`，Docker 镜像可选）；Netlify、Cloudflare Workers 等平台以后再支持。实例必须用 HTTPS（本机 `localhost` 除外），因为 Service Worker、Background Fetch、Storage API 都只在安全上下文里可用，安装成应用也要求 HTTPS。听众登录自己的网易云账号后才能使用，未登录时只能看到介绍、登录入口，以及这台设备上已下载的歌曲（ADR-0006）。campanula.caelum.moe 放项目主页和部署文档，作者自己的实例用另一个不公开的地址。
 
 本 ADR 取代 ADR-0001。
 
@@ -16,6 +16,6 @@ Campanula 以自部署为主，作者不运营公共实例：每个站长部署�
 
 - 服务端代码不能依赖长期运行的进程：不能在内存里保存跨请求的状态，不能在启动时读写本地文件。hana-music-api 要能在 Serverless 函数里运行，这一条要在它的仓库里落实。
 - Vercel 单次请求和响应最大 4.5 MB：曲库同步必须分页（每页最多 1,000 首），只返回界面用得到的字段。
-- `*.vercel.app` 在国内被 DNS 污染，站长必须给实例绑定自己的域名。
-- 网易云对境外请求的限制没有验证过：hana-music-api 默认在请求里带一个随机的国内 IP（`X-Real-IP`），部署的人传入真实国内 IP 时改用它。验证关卡在 Vercel 上实测，如果带了也不行，Vercel 降为“只适合出口在国内的部署方式”，文档改为首推自己的服务器。
+- `*.vercel.app` 在国内被 DNS 污染，站长必须给实例绑定自己的域名。CNAME 的目标要填 Vercel 给的 `*.vercel-dns-0xx.com`，不能填 `*.vercel.app`，否则国内解析时还要经过被污染的 `vercel.app`。
+- 网易云对境外云函数的限制，验证关卡①（#14，2026-10-08）已实测：登录后在香港 `hkg1` 和华盛顿 `iad1`，带默认伪装 IP、传入真实国内 IP、不带 IP 三种情况下，播放权限、会员歌的完整播放地址、搜索、歌词结果完全一样，Vercel 直接能用，不降级。真实国内 IP 仍是可选配置：短信登录用默认伪装 IP 时被网易云风控拦下过一次（10004），改用真实国内 IP 后成功（两次之间还隔了 19 分钟，分不清是哪个原因），所以部署文档建议站长配置。
 - 每次升级都不能让站长丢数据：加密 Cookie 用的密钥要跨版本保留（换密钥会让所有听众重新登录，ADR-0003）；浏览器里的曲库副本、播放队列和下载，在新版本里照样能用。
