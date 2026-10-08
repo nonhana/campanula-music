@@ -1,0 +1,21 @@
+{
+  "module": "login_qr_check",
+  "query": {
+    "key": "f124a8be-db3f-42f9-a236-30cc4130ed2c"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:55:18.610202+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 801,
+      "message": "等待扫码",
+      "cookie": ""
+    }
+  }
+}

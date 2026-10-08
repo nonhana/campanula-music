@@ -1,0 +1,172 @@
+{
+  "module": "cloudsearch",
+  "query": {
+    "keywords": "夜に駆ける",
+    "type": 1000,
+    "limit": 5
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:49:49.079748+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "result": {
+        "searchQcReminder": null,
+        "playlists": [
+          {
+            "id": 6964362443,
+            "name": "日语‖那些听着都忍不住唱起来的歌曲",
+            "coverImgUrl": "http://p1.music.126.net/3FBpFinKcj5Xo-4MyNKBvQ==/109951166373690987.jpg",
+            "creator": {
+              "nickname": "用户49",
+              "userId": 10000049,
+              "userType": 207,
+              "avatarUrl": null,
+              "authStatus": 1,
+              "expertTags": null,
+              "experts": null
+            },
+            "subscribed": false,
+            "trackCount": 234,
+            "userId": 10000049,
+            "playCount": 5993311,
+            "bookCount": 86692,
+            "specialType": 0,
+            "officialTags": null,
+            "action": null,
+            "actionType": null,
+            "recommendText": null,
+            "score": null,
+            "officialPlaylistTitle": null,
+            "playlistType": "UGC",
+            "description": "忘不掉的旋律‖停不了的小声哼哼 呐 认真听歌的人 最可爱了！！\n\n封面:明日方舟——森蚺\n\np站画师:7ife\n\n这里是日语与ACG专场\n\n另外加一点：如果大家有觉得肥肠好听的歌可以在评论区分享出来 我会挑选然后加进去的哇！\n\n因为有大家，才成就了这张歌单！这张歌单是属于大家的！谢谢你们！",
+            "highQuality": false
+          },
+          {
+            "id": 6912929040,
+            "name": "日本流媒体播放量最高单曲榜单",
+            "coverImgUrl": "http://p1.music.126.net/IgPtjHh704QFC5Eey5jlyA==/109951166278511479.jpg",
+            "creator": {
+              "nickname": "用户50",
+              "userId": 10000050,
+              "userType": 200,
+              "avatarUrl": null,
+              "authStatus": 0,
+              "expertTags": null,
+              "experts": null
+            },
+            "subscribed": false,
+            "trackCount": 63,
+            "userId": 10000050,
+            "playCount": 1047873,
+            "bookCount": 10577,
+            "specialType": 0,
+            "officialTags": null,
+            "action": null,
+            "actionType": null,
+            "recommendText": null,
+            "score": null,
+            "officialPlaylistTitle": null,
+            "playlistType": "UGC",
+            "description": "本歌单统计了截止至21年6月底流媒体上的日语歌播放量排行前65名，本歌单按照顺序排列，最后一首是B站做排行视频用到的开头曲。",
+            "highQuality": false
+          },
+          {
+            "id": 13234048278,
+            "name": "日语歌油管排行TOP100 25年版",
+            "coverImgUrl": "http://p1.music.126.net/eRUZbPgQdHtHZb5YV92UFQ==/109951170436629107.jpg",
+            "creator": {
+              "nickname": "用户50",
+              "userId": 10000050,
+              "userType": 200,
+              "avatarUrl": null,
+              "authStatus": 0,
+              "expertTags": null,
+              "experts": null
+            },
+            "subscribed": false,
+            "trackCount": 101,
+            "userId": 10000050,
+            "playCount": 415660,
+            "bookCount": 3632,
+            "specialType": 0,
+            "officialTags": null,
+            "action": null,
+            "actionType": null,
+            "recommendText": null,
+            "score": null,
+            "officialPlaylistTitle": null,
+            "playlistType": "UGC",
+            "description": "本次歌单收录了油管上日语歌曲播放量的前一百名，只包含日本本土歌手所演唱的日语歌，数据收集日期是2025/01/21。最后一首是我在B站做排名视频用的开头曲,视频版见Bilibili@正源司阳。",
+            "highQuality": false
+          },
+          {
+            "id": 5366727632,
+            "name": "夜に駆ける【全收录】向夜晚奔去",
+            "coverImgUrl": "http://p1.music.126.net/LrIxSnHUfM7Ix_x323lTBg==/109951165522154272.jpg",
+            "creator": {
+              "nickname": "用户51",
+              "userId": 10000051,
+              "userType": 200,
+              "avatarUrl": null,
+              "authStatus": 0,
+              "expertTags": null,
+              "experts": null
+            },
+            "subscribed": false,
+            "trackCount": 294,
+            "userId": 10000051,
+            "playCount": 98064,
+            "bookCount": 409,
+            "specialType": 0,
+            "officialTags": null,
+            "action": null,
+            "actionType": null,
+            "recommendText": null,
+            "score": null,
+            "officialPlaylistTitle": null,
+            "playlistType": "UGC",
+            "description": "2019.12.15\n\n暂停整理",
+            "highQuality": false
+          },
+          {
+            "id": 8282796980,
+            "name": "白夕高品味歌单！",
+            "coverImgUrl": "http://p1.music.126.net/hSIhNqEw5ht7sn_6la48xw==/109951170070093763.jpg",
+            "creator": {
+              "nickname": "用户52",
+              "userId": 10000052,
+              "userType": 0,
+              "avatarUrl": null,
+              "authStatus": 0,
+              "expertTags": null,
+              "experts": null
+            },
+            "subscribed": false,
+            "trackCount": 201,
+            "userId": 10000052,
+            "playCount": 135604,
+            "bookCount": 3128,
+            "specialType": 300,
+            "officialTags": null,
+            "action": null,
+            "actionType": null,
+            "recommendText": null,
+            "score": null,
+            "officialPlaylistTitle": null,
+            "playlistType": "UGC",
+            "description": "基米！",
+            "highQuality": false
+          }
+        ],
+        "playlistCount": 161
+      },
+      "code": 200
+    }
+  }
+}

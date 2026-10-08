@@ -1,0 +1,23 @@
+{
+  "module": "scrobble",
+  "query": {
+    "id": 22712179,
+    "sourceid": 900000001,
+    "time": 241
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:20:25.479Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": "success",
+      "message": ""
+    }
+  }
+}

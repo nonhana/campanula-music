@@ -1,0 +1,329 @@
+{
+  "module": "search_suggest",
+  "query": {
+    "keywords": "夜に"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:49:50.974563+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "result": {
+        "albums": [
+          {
+            "id": 84072830,
+            "name": "夜に駆ける",
+            "artist": {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "picUrl": "https://p3.music.126.net/Af267FCGfOlv8b48PukVUg==/109951172064237298.jpg",
+              "alias": [
+                "ヨアソビ"
+              ],
+              "albumSize": 65,
+              "musicSize": 148,
+              "picId": 109951172064237300,
+              "fansGroup": null,
+              "recommendText": null,
+              "appendRecText": null,
+              "fansSize": null,
+              "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+              "img1v1": 0,
+              "transNames": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ],
+              "trans": "夜游"
+            },
+            "publishTime": 1576339200000,
+            "size": 1,
+            "copyrightId": 1416336,
+            "status": 1,
+            "transNames": [
+              "向夜晚奔去"
+            ],
+            "picId": 109951164546210610,
+            "mark": 0
+          },
+          {
+            "id": 97136563,
+            "name": "夜に浮かぶ",
+            "artist": {
+              "id": 1156370,
+              "name": "Haruna",
+              "picUrl": "https://p3.music.126.net/BWS497SMJLEb385ZDRfnHA==/109951170500808154.jpg",
+              "alias": [],
+              "albumSize": 23,
+              "musicSize": 56,
+              "picId": 109951170500808160,
+              "fansGroup": null,
+              "recommendText": null,
+              "appendRecText": null,
+              "fansSize": null,
+              "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+              "img1v1": 0,
+              "trans": null
+            },
+            "publishTime": 1604592000000,
+            "size": 1,
+            "copyrightId": 743010,
+            "status": 1,
+            "picId": 109951165405472450,
+            "mark": 0
+          }
+        ],
+        "artists": [
+          {
+            "id": 37063847,
+            "name": "夜に駆ける",
+            "picUrl": "https://p3.music.126.net/Hwf3tL61BTwXfW6tMJpgpQ==/109951166723741323.jpg",
+            "alias": [],
+            "albumSize": 3,
+            "musicSize": 15,
+            "picId": 109951166723741330,
+            "fansGroup": null,
+            "recommendText": null,
+            "appendRecText": null,
+            "fansSize": null,
+            "img1v1Url": "https://p4.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg",
+            "img1v1": 18686200114669624,
+            "trans": null
+          }
+        ],
+        "songs": [
+          {
+            "id": 1409311773,
+            "name": "夜に駆ける",
+            "artists": [
+              {
+                "id": 33927412,
+                "name": "YOASOBI",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              }
+            ],
+            "album": {
+              "id": 84072830,
+              "name": "夜に駆ける",
+              "artist": {
+                "id": 0,
+                "name": "",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              },
+              "publishTime": 1576339200000,
+              "size": 1,
+              "copyrightId": 1416336,
+              "status": 1,
+              "transNames": [
+                "向夜晚奔去"
+              ],
+              "picId": 109951164546210610,
+              "mark": 0
+            },
+            "duration": 261013,
+            "copyrightId": 1416336,
+            "status": 0,
+            "alias": [],
+            "rtype": 0,
+            "ftype": 0,
+            "transNames": [
+              "向夜晚奔去"
+            ],
+            "mvid": 10907191,
+            "fee": 1,
+            "rUrl": null,
+            "mark": 17180139520
+          },
+          {
+            "id": 1488866474,
+            "name": "夜に浮かぶ",
+            "artists": [
+              {
+                "id": 1156370,
+                "name": "Haruna",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              }
+            ],
+            "album": {
+              "id": 97136563,
+              "name": "夜に浮かぶ",
+              "artist": {
+                "id": 0,
+                "name": "",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              },
+              "publishTime": 1604592000000,
+              "size": 1,
+              "copyrightId": 743010,
+              "status": 1,
+              "picId": 109951165405472450,
+              "mark": 0
+            },
+            "duration": 218854,
+            "copyrightId": 743010,
+            "status": 0,
+            "alias": [],
+            "rtype": 0,
+            "ftype": 0,
+            "transNames": [
+              "浮于夜色"
+            ],
+            "mvid": 0,
+            "fee": 1,
+            "rUrl": null,
+            "mark": 17180139520
+          },
+          {
+            "id": 1935705494,
+            "name": "夜に駆ける (feat. 宵崎奏 & 初音ミク)",
+            "artists": [
+              {
+                "id": 35135807,
+                "name": "Ayase",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              },
+              {
+                "id": 48153027,
+                "name": "25時、ナイトコードで。",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              },
+              {
+                "id": 159692,
+                "name": "初音ミク",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              }
+            ],
+            "album": {
+              "id": 143084582,
+              "name": "25時、ナイトコードで。 SEKAI ALBUM vol.1",
+              "artist": {
+                "id": 0,
+                "name": "",
+                "picUrl": null,
+                "alias": [],
+                "albumSize": 0,
+                "musicSize": 0,
+                "picId": 0,
+                "fansGroup": null,
+                "recommendText": null,
+                "appendRecText": null,
+                "fansSize": null,
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "img1v1": 0,
+                "trans": null
+              },
+              "publishTime": 1649174400000,
+              "size": 12,
+              "copyrightId": 2707442,
+              "status": 0,
+              "picId": 109951167382644530,
+              "mark": 0
+            },
+            "duration": 260053,
+            "copyrightId": 2707442,
+            "status": 0,
+            "alias": [],
+            "rtype": 0,
+            "ftype": 0,
+            "transNames": [
+              "向黑夜奔去"
+            ],
+            "mvid": 0,
+            "fee": 0,
+            "rUrl": null,
+            "mark": 262272
+          }
+        ],
+        "order": [
+          "songs",
+          "artists",
+          "albums"
+        ]
+      },
+      "code": 200
+    }
+  }
+}

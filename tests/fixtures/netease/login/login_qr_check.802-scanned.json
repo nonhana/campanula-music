@@ -1,0 +1,23 @@
+{
+  "module": "login_qr_check",
+  "query": {
+    "key": "b7f3d57d-e632-4bff-a73a-d57f778dca85"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:04:06.848Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "nickname": "测试听众",
+      "avatarUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+      "code": 802,
+      "message": "授权中",
+      "cookie": ""
+    }
+  }
+}

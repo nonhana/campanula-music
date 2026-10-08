@@ -1,0 +1,70 @@
+{
+  "module": "song_download_url_v1",
+  "query": {
+    "id": 2108191414,
+    "level": "exhigh"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:24:46.951Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "accompany": null,
+        "auEff": null,
+        "beatType": 0,
+        "br": 0,
+        "canExtend": false,
+        "channelLayout": null,
+        "closedGain": 0,
+        "closedPeak": 0,
+        "code": -110,
+        "effectTypes": null,
+        "encodeType": null,
+        "expi": 1200,
+        "fee": 0,
+        "flag": 1081345,
+        "freeTimeTrialPrivilege": {
+          "remainTime": 0,
+          "resConsumable": false,
+          "type": 0,
+          "userConsumable": false
+        },
+        "freeTrialInfo": null,
+        "freeTrialPrivilege": {
+          "cannotListenReason": null,
+          "freeLimitTagType": null,
+          "listenType": null,
+          "playReason": null,
+          "resConsumable": false,
+          "userConsumable": false
+        },
+        "gain": 0,
+        "id": 2108191414,
+        "immerseType": null,
+        "level": null,
+        "levelConfuse": null,
+        "md5": null,
+        "message": null,
+        "musicId": null,
+        "payed": 0,
+        "peak": null,
+        "podcastCtrp": null,
+        "rightSource": 0,
+        "size": 0,
+        "sr": 0,
+        "time": 0,
+        "type": null,
+        "uf": null,
+        "url": null,
+        "urlSource": 0
+      }
+    }
+  }
+}

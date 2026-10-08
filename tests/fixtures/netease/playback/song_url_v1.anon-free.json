@@ -1,0 +1,72 @@
+{
+  "module": "song_url_v1",
+  "query": {
+    "id": 2092595510,
+    "level": "exhigh"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:54:28.125852+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "real",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "id": 2092595510,
+          "url": "http://m801.music.126.net/20261008221928/7c651d8bfc65883fb6f3a4f52f7c16be/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/31032416305/3fd2/4300/3076/6943d067b987eac700b43cc94892d2f7.mp3?vuutv=v6c2b/08+bNp+5364rpBOPeRhgOloQCu3R3xZCZQ+4LczrMWc09j0FxMt6JK/h4YVuZXOhUXNxuioUZWk5PNVVI3CeYqMdHpnZQgVvN3ay8=",
+          "br": 320000,
+          "size": 12001005,
+          "md5": "6943d067b987eac700b43cc94892d2f7",
+          "code": 200,
+          "expi": 1200,
+          "type": "mp3",
+          "gain": -9.8778,
+          "peak": 1,
+          "closedGain": -6,
+          "closedPeak": 1,
+          "fee": 0,
+          "uf": null,
+          "payed": 0,
+          "flag": 1544449,
+          "canExtend": false,
+          "freeTrialInfo": null,
+          "level": "exhigh",
+          "encodeType": "mp3",
+          "channelLayout": null,
+          "freeTrialPrivilege": {
+            "resConsumable": false,
+            "userConsumable": false,
+            "listenType": null,
+            "cannotListenReason": null,
+            "playReason": null,
+            "freeLimitTagType": null
+          },
+          "freeTimeTrialPrivilege": {
+            "resConsumable": false,
+            "userConsumable": false,
+            "type": 0,
+            "remainTime": 0
+          },
+          "urlSource": 0,
+          "rightSource": 0,
+          "podcastCtrp": null,
+          "effectTypes": null,
+          "time": 299975,
+          "message": null,
+          "levelConfuse": null,
+          "musicId": "8526705853",
+          "accompany": null,
+          "sr": 48000,
+          "auEff": null,
+          "immerseType": null,
+          "beatType": 0
+        }
+      ],
+      "code": 200
+    }
+  }
+}

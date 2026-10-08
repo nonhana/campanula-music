@@ -1,0 +1,21 @@
+{
+  "module": "login_qr_key",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T13:55:17.745211+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "code": 200,
+        "unikey": "f124a8be-db3f-42f9-a236-30cc4130ed2c"
+      },
+      "code": 200
+    }
+  }
+}

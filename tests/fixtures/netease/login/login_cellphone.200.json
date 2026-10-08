@@ -1,0 +1,107 @@
+{
+  "module": "login_cellphone",
+  "query": {
+    "phone": "<phone>",
+    "captcha": "<captcha>",
+    "countrycode": "86"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:23:20.851Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "real",
+    "viewer": "vip-sms",
+    "note": "真实国内 IP"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "loginType": 1,
+      "hitType": 0,
+      "code": 200,
+      "account": {
+        "id": 10000001,
+        "userName": "1_00000000000",
+        "type": 1,
+        "status": 0,
+        "whitelistAuthority": 0,
+        "createTime": 1500000000000,
+        "salt": "[B@3a81b2d3",
+        "tokenVersion": 0,
+        "ban": 0,
+        "baoyueVersion": 1,
+        "donateVersion": 0,
+        "vipType": 11,
+        "viptypeVersion": 1790371238124,
+        "anonimousUser": false,
+        "uninitialized": false
+      },
+      "token": "",
+      "profile": {
+        "backgroundImgIdStr": "109951000000000000",
+        "avatarImgIdStr": "109951000000000000",
+        "userType": 4,
+        "followed": false,
+        "backgroundUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+        "avatarUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+        "vipType": 11,
+        "authStatus": 1,
+        "djStatus": 10,
+        "detailDescription": "",
+        "experts": {},
+        "expertTags": null,
+        "accountStatus": 0,
+        "nickname": "测试听众",
+        "birthday": 631152000000,
+        "gender": 1,
+        "province": 110000,
+        "city": 110101,
+        "avatarImgId": 109951000000000000,
+        "backgroundImgId": 109951000000000000,
+        "defaultAvatar": false,
+        "mutual": false,
+        "remarkName": null,
+        "description": "",
+        "userId": 10000001,
+        "signature": "",
+        "authority": 0,
+        "followeds": 31,
+        "follows": 131,
+        "artistId": 99999999,
+        "eventCount": 19,
+        "avatarDetail": {
+          "userType": 4,
+          "identityLevel": 1,
+          "identityIconUrl": "https://p1.music.126.net/placeholder/avatar.jpg"
+        },
+        "playlistCount": 18,
+        "playlistBeSubscribedCount": 6
+      },
+      "bindings": [
+        {
+          "bindingTime": 1500000000000,
+          "refreshTime": 1500000000,
+          "tokenJsonStr": "",
+          "expiresIn": 2147483647,
+          "url": "",
+          "expired": false,
+          "userId": 10000001,
+          "id": 1,
+          "type": 1
+        },
+        {
+          "bindingTime": 1500000000000,
+          "refreshTime": 1500000000,
+          "tokenJsonStr": "",
+          "expiresIn": 5184000,
+          "url": "",
+          "expired": true,
+          "userId": 10000001,
+          "id": 2,
+          "type": 5
+        }
+      ],
+      "cookie": ""
+    }
+  }
+}

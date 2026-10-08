@@ -1,0 +1,66 @@
+{
+  "module": "search_suggest",
+  "query": {
+    "keywords": "夜に",
+    "type": "mobile"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:49:51.443177+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "result": {
+        "allMatch": [
+          {
+            "keyword": "夜に驱ける",
+            "type": 1,
+            "alg": "alg_suggest_other_Consume;Artist;Album;Song___{}",
+            "lastKeyword": "",
+            "feature": ""
+          },
+          {
+            "keyword": "夜に浮かぶ",
+            "type": 1,
+            "alg": "alg_suggest_other_Consume;Album;Song___{}",
+            "lastKeyword": "",
+            "feature": ""
+          },
+          {
+            "keyword": "夜になったら",
+            "type": 1,
+            "alg": "alg_suggest_other_Album___{}",
+            "lastKeyword": "",
+            "feature": ""
+          },
+          {
+            "keyword": "夜にほどけたことばたち",
+            "type": 1,
+            "alg": "alg_suggest_other_Album___{}",
+            "lastKeyword": "",
+            "feature": ""
+          },
+          {
+            "keyword": "夜に驱ける-From THE FIRST TAKE",
+            "type": 1,
+            "alg": "alg_suggest_other_Album;Song___{}",
+            "lastKeyword": "",
+            "feature": ""
+          },
+          {
+            "keyword": "夜に魔法をかけられて",
+            "type": 1,
+            "alg": "alg_suggest_other_Album___{}",
+            "lastKeyword": "",
+            "feature": ""
+          }
+        ]
+      },
+      "code": 200
+    }
+  }
+}

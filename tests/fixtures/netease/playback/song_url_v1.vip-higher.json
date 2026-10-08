@@ -1,0 +1,72 @@
+{
+  "module": "song_url_v1",
+  "query": {
+    "id": 512359195,
+    "level": "higher"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:24:42.494Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": [
+        {
+          "accompany": null,
+          "auEff": null,
+          "beatType": 0,
+          "br": 192000,
+          "canExtend": false,
+          "channelLayout": null,
+          "closedGain": -6,
+          "closedPeak": 1,
+          "code": 200,
+          "effectTypes": null,
+          "encodeType": "mp3",
+          "expi": 1200,
+          "fee": 1,
+          "flag": 1540100,
+          "freeTimeTrialPrivilege": {
+            "remainTime": 0,
+            "resConsumable": false,
+            "type": 0,
+            "userConsumable": false
+          },
+          "freeTrialInfo": null,
+          "freeTrialPrivilege": {
+            "cannotListenReason": null,
+            "freeLimitTagType": null,
+            "listenType": null,
+            "playReason": null,
+            "resConsumable": false,
+            "userConsumable": false
+          },
+          "gain": -10.913,
+          "id": 512359195,
+          "immerseType": null,
+          "level": "higher",
+          "levelConfuse": null,
+          "md5": "2e8e435aacc696e2f8ea5521a93c34e0",
+          "message": null,
+          "musicId": "8652553020",
+          "payed": 1,
+          "peak": 1,
+          "podcastCtrp": null,
+          "rightSource": 0,
+          "size": 5854398,
+          "sr": 44100,
+          "time": 243879,
+          "type": "mp3",
+          "uf": null,
+          "url": "http://m701.music.126.net/20261008224942/5b07cc92b37f095b3931ed0f7c01c2df/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/32069289277/a6e0/9934/a047/2e8e435aacc696e2f8ea5521a93c34e0.mp3?vuutv=WBe1RaWUVB4tcjuehWpTvxGtLy/85Phx4ypiOz3rNT2t1Fz2C/H2amB4B/bZRJLCAR8CTAQTK4YBJIfHj3RyzuH12RFFZODz3vvAcS0nGw4=",
+          "urlSource": 0
+        }
+      ]
+    }
+  }
+}

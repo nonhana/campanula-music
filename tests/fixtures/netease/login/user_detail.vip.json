@@ -1,0 +1,179 @@
+{
+  "module": "user_detail",
+  "query": {
+    "uid": 10000001
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:20:00.886Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "adValid": false,
+      "bindings": [
+        {
+          "bindingTime": 1500000000000,
+          "expired": false,
+          "expiresIn": 2147483647,
+          "id": 1,
+          "refreshTime": 1500000000,
+          "tokenJsonStr": null,
+          "type": 1,
+          "url": "",
+          "userId": 10000001
+        },
+        {
+          "bindingTime": 1500000000000,
+          "expired": true,
+          "expiresIn": 5184000,
+          "id": 2,
+          "refreshTime": 1500000000,
+          "tokenJsonStr": null,
+          "type": 5,
+          "url": "",
+          "userId": 10000001
+        }
+      ],
+      "code": 200,
+      "createDays": 1000,
+      "createTime": 1500000000000,
+      "currentExpert": {
+        "level": null,
+        "roleId": 1,
+        "roleName": "网易音乐人"
+      },
+      "currentProduct": null,
+      "expertArray": [
+        {
+          "level": null,
+          "roleId": 1,
+          "roleName": "网易音乐人"
+        }
+      ],
+      "identify": {
+        "actionUrl": null,
+        "imageDesc": "网易音乐人、歌手、作曲、编曲",
+        "imageUrl": "https://p5.music.126.net/obj/wo3DlcOGw6DClTvDisK1/4874132307/4499/f228/d867/da64b9725e125943ad4e14e4c72d0884.png"
+      },
+      "level": 9,
+      "listenSongs": 10811,
+      "mobileSign": false,
+      "newUser": false,
+      "pcSign": false,
+      "peopleCanSeeMyPlayRecord": true,
+      "products": [
+        {
+          "productionTypeId": 10,
+          "productionTypeName": "演唱"
+        },
+        {
+          "productionTypeId": 12,
+          "productionTypeName": "作曲"
+        },
+        {
+          "productionTypeId": 8,
+          "productionTypeName": "编曲"
+        }
+      ],
+      "profile": {
+        "accountStatus": 0,
+        "allAuthTypes": [
+          {
+            "desc": "网易音乐人",
+            "tags": [
+              "歌手",
+              "作曲",
+              "编曲"
+            ],
+            "type": 4
+          }
+        ],
+        "allSubscribedCount": 0,
+        "artistId": 99999999,
+        "artistIdentity": [
+          4
+        ],
+        "artistName": "测试歌手",
+        "authStatus": 1,
+        "authority": 0,
+        "avatarDetail": {
+          "identityIconUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+          "identityLevel": 1,
+          "userType": null
+        },
+        "avatarImgId": 109951000000000000,
+        "avatarImgIdStr": "109951000000000000",
+        "avatarUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+        "backgroundImgId": 109951000000000000,
+        "backgroundImgIdStr": "109951000000000000",
+        "backgroundUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+        "birthday": 631152000000,
+        "blacklist": false,
+        "cCount": 0,
+        "city": 110101,
+        "createTime": 1500000000000,
+        "defaultAvatar": false,
+        "description": "",
+        "detailDescription": "",
+        "djStatus": 10,
+        "eventCount": 19,
+        "expertTags": null,
+        "experts": {},
+        "followMe": false,
+        "followTime": null,
+        "followed": false,
+        "followeds": 31,
+        "follows": 131,
+        "gender": 1,
+        "inBlacklist": false,
+        "mainAuthType": {
+          "desc": "网易音乐人",
+          "tags": [
+            "歌手",
+            "作曲",
+            "编曲"
+          ],
+          "type": 4
+        },
+        "mutual": false,
+        "newFollows": 131,
+        "nickname": "测试听众",
+        "playlistBeSubscribedCount": 6,
+        "playlistCount": 18,
+        "privacyItemUnlimit": {
+          "age": true,
+          "area": true,
+          "college": true,
+          "gender": true,
+          "villageAge": true
+        },
+        "province": 110000,
+        "remarkName": null,
+        "sCount": 0,
+        "sDJPCount": 0,
+        "signature": "",
+        "userId": 10000001,
+        "userType": 4,
+        "vipType": 11
+      },
+      "profileVillageInfo": {
+        "imageUrl": null,
+        "targetUrl": "https://sg.music.163.com/g/cloud-card-3?full_screen=true&nm_style=sbt&market=wode",
+        "title": "领取村民证"
+      },
+      "recallUser": false,
+      "userPoint": {
+        "balance": 0,
+        "blockBalance": 0,
+        "status": 0,
+        "updateTime": 1791469200659,
+        "userId": 10000001,
+        "version": 10
+      }
+    }
+  }
+}

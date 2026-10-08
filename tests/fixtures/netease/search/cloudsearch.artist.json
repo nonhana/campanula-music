@@ -1,0 +1,148 @@
+{
+  "module": "cloudsearch",
+  "query": {
+    "keywords": "夜に駆ける",
+    "type": 100,
+    "limit": 5
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:49:49.748409+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "result": {
+        "artistCount": 5,
+        "artists": [
+          {
+            "id": 37063847,
+            "name": "夜に駆ける",
+            "picUrl": "https://p4.music.126.net/Hwf3tL61BTwXfW6tMJpgpQ==/109951166723741323.jpg",
+            "alias": [],
+            "albumSize": 3,
+            "musicSize": 15,
+            "picId": 109951166723741330,
+            "fansGroup": null,
+            "recommendText": null,
+            "appendRecText": null,
+            "fansSize": null,
+            "img1v1Url": "https://p3.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg",
+            "img1v1": 18686200114669624,
+            "mvSize": 2,
+            "followed": false,
+            "trans": null
+          },
+          {
+            "id": 159692,
+            "name": "初音ミク",
+            "picUrl": "https://p4.music.126.net/4JX_c-M61K0MTn4K2DT4Sg==/109951172350537735.jpg",
+            "alias": [
+              "Hatsune Miku"
+            ],
+            "albumSize": 994,
+            "musicSize": 44382,
+            "picId": 109951172350537730,
+            "fansGroup": null,
+            "recommendText": null,
+            "appendRecText": null,
+            "fansSize": null,
+            "img1v1Url": "https://p4.music.126.net/9vDGt6BedyJz8KMV7GDwlw==/109951172350533947.jpg",
+            "accountId": 17094508133,
+            "img1v1": 109951172350533950,
+            "transNames": [
+              "初音未来"
+            ],
+            "mvSize": 1088,
+            "followed": false,
+            "alia": [
+              "Hatsune Miku"
+            ],
+            "trans": "初音未来"
+          },
+          {
+            "id": 33927412,
+            "name": "YOASOBI",
+            "picUrl": "https://p4.music.126.net/Af267FCGfOlv8b48PukVUg==/109951172064237298.jpg",
+            "alias": [
+              "ヨアソビ"
+            ],
+            "albumSize": 65,
+            "musicSize": 148,
+            "picId": 109951172064237300,
+            "fansGroup": null,
+            "recommendText": null,
+            "appendRecText": null,
+            "fansSize": null,
+            "img1v1Url": "https://p4.music.126.net/1f_5IU9FLWRZjAJVXu-ipA==/109951172064233940.jpg",
+            "accountId": 4056458726,
+            "img1v1": 109951172064233940,
+            "transNames": [
+              "夜游"
+            ],
+            "mvSize": 67,
+            "followed": false,
+            "alia": [
+              "ヨアソビ"
+            ],
+            "trans": "夜游"
+          },
+          {
+            "id": 48153027,
+            "name": "25時、ナイトコードで。",
+            "picUrl": "https://p4.music.126.net/kc-8EcTHWMg-_fjbpbOupQ==/109951169499723550.jpg",
+            "alias": [
+              "Nightcord at 25:00"
+            ],
+            "albumSize": 19,
+            "musicSize": 103,
+            "picId": 109951169499723550,
+            "fansGroup": null,
+            "recommendText": null,
+            "appendRecText": null,
+            "fansSize": null,
+            "img1v1Url": "https://p3.music.126.net/DLO_1oVe4t-SfEVFi2umOQ==/109951169499714394.jpg",
+            "img1v1": 109951169499714400,
+            "transNames": [
+              "25点，Nightcord见"
+            ],
+            "mvSize": 76,
+            "followed": false,
+            "alia": [
+              "Nightcord at 25:00"
+            ],
+            "trans": "25点，Nightcord见"
+          },
+          {
+            "id": 35135807,
+            "name": "Ayase",
+            "picUrl": "https://p4.music.126.net/dYKRaT9i53is2sGfLO2QcQ==/109951165253432028.jpg",
+            "alias": [
+              "あやせ"
+            ],
+            "albumSize": 11,
+            "musicSize": 74,
+            "picId": 109951165253432030,
+            "fansGroup": null,
+            "recommendText": null,
+            "appendRecText": null,
+            "fansSize": null,
+            "img1v1Url": "https://p3.music.126.net/e4S-Sx7rGJ7tAp29HA8QaQ==/109951165253427621.jpg",
+            "img1v1": 109951165253427620,
+            "mvSize": 8,
+            "followed": false,
+            "alia": [
+              "あやせ"
+            ],
+            "trans": null
+          }
+        ],
+        "searchQcReminder": null
+      },
+      "code": 200
+    }
+  }
+}

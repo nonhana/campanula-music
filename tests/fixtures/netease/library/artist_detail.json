@@ -1,0 +1,150 @@
+{
+  "module": "artist_detail",
+  "query": {
+    "id": 33927412
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:54:07.147922+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "message": "ok",
+      "data": {
+        "videoCount": 68,
+        "vipRights": {
+          "rightsInfoDetailDtoList": [
+            {
+              "vipCode": 220,
+              "expireTime": 1783871999000,
+              "iconUrl": null,
+              "dynamicIconUrl": null,
+              "vipLevel": 0,
+              "signIap": false,
+              "signDeduct": false,
+              "signIapDeduct": false,
+              "sign": false
+            },
+            {
+              "vipCode": 100,
+              "expireTime": 1783871999000,
+              "iconUrl": null,
+              "dynamicIconUrl": null,
+              "vipLevel": 0,
+              "signIap": false,
+              "signDeduct": false,
+              "signIapDeduct": false,
+              "sign": false
+            }
+          ],
+          "oldProtocol": false,
+          "redVipAnnualCount": -1,
+          "redVipLevel": 5,
+          "now": 1791467647049
+        },
+        "identify": {
+          "imageUrl": "https://p5.music.126.net/obj/wo3DlcOGw6DClTvDisK1/4788940880/1a1f/68f5/b59a/b444b81b88567108ba88194fa29144f5.png",
+          "imageDesc": "日本音乐组合",
+          "actionUrl": "orpheus://rnpage?component=music-reactnative-artistwiki&split=index&artistId=33927412"
+        },
+        "artist": {
+          "id": 33927412,
+          "cover": "http://p4.music.126.net/Af267FCGfOlv8b48PukVUg==/109951172064237298.jpg",
+          "avatar": "http://p4.music.126.net/1f_5IU9FLWRZjAJVXu-ipA==/109951172064233940.jpg",
+          "name": "YOASOBI",
+          "transNames": [
+            "夜游"
+          ],
+          "alias": [
+            "ヨアソビ"
+          ],
+          "identities": [],
+          "identifyTag": [
+            "入驻艺人"
+          ],
+          "briefDesc": "YOASOBI（ヨアソビ、夜遊び），日本音乐组合，由词曲创作者 Ayase、主唱 几田莉拉（ikura）组成。\n\n外文名：YOASOBI ヨアソビ 夜遊び\n\n组合成员：Ayase、几田莉拉（以组合形式活动时使用“ikura”的名号）\n\n成立时间：2019年10月1日\n\n经纪公司：索尼音乐娱乐",
+          "rank": {
+            "rank": 5,
+            "type": 4
+          },
+          "albumSize": 65,
+          "musicSize": 148,
+          "mvSize": 67
+        },
+        "simpleUserIdentify": {
+          "imageUrl": "https://p5.music.126.net/obj/wo3DlcOGw6DClTvDisK1/4788940880/1a1f/68f5/b59a/b444b81b88567108ba88194fa29144f5.png",
+          "imageDesc": "日本音乐组合",
+          "actionUrl": "orpheus://rnpage?component=music-reactnative-artistwiki&split=index&artistId=33927412"
+        },
+        "blacklist": false,
+        "preferShow": 10,
+        "showPriMsg": true,
+        "secondaryExpertIdentiy": [
+          {
+            "expertIdentiyId": 10,
+            "expertIdentiyName": "演唱",
+            "expertIdentiyCount": 148
+          },
+          {
+            "expertIdentiyId": 11,
+            "expertIdentiyName": "作词",
+            "expertIdentiyCount": 148
+          },
+          {
+            "expertIdentiyId": 12,
+            "expertIdentiyName": "作曲",
+            "expertIdentiyCount": 148
+          }
+        ],
+        "eventCount": 17,
+        "user": {
+          "backgroundUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+          "birthday": 631152000000,
+          "detailDescription": "",
+          "authenticated": true,
+          "gender": 0,
+          "city": 110101,
+          "signature": "",
+          "description": "",
+          "remarkName": null,
+          "shortUserName": "YO************al",
+          "accountStatus": 0,
+          "locationStatus": 30,
+          "avatarImgId": 109951000000000000,
+          "defaultAvatar": false,
+          "province": 110000,
+          "nickname": "用户2",
+          "expertTags": null,
+          "djStatus": 0,
+          "avatarUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+          "accountType": 1,
+          "authStatus": 1,
+          "vipType": 0,
+          "userName": "1_00000000000",
+          "followed": false,
+          "userId": 10000003,
+          "lastLoginIP": "203.0.113.1",
+          "lastLoginTime": 1788149504020,
+          "authenticationTypes": 2,
+          "mutual": false,
+          "createTime": 1500000000000,
+          "anchor": false,
+          "authority": 0,
+          "backgroundImgId": 109951000000000000,
+          "userType": 2,
+          "experts": null,
+          "avatarDetail": {
+            "userType": 2,
+            "identityLevel": 1,
+            "identityIconUrl": "https://p1.music.126.net/placeholder/avatar.jpg"
+          }
+        }
+      }
+    }
+  }
+}

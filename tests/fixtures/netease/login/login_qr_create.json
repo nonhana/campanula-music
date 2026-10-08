@@ -1,0 +1,24 @@
+{
+  "module": "login_qr_create",
+  "query": {
+    "key": "f124a8be-db3f-42f9-a236-30cc4130ed2c",
+    "qrimg": true
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:55:18.159014+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "qrurl": "https://music.163.com/login?codekey=f124a8be-db3f-42f9-a236-30cc4130ed2c",
+        "qrimg": "data:image/png;base64,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"
+      }
+    }
+  }
+}

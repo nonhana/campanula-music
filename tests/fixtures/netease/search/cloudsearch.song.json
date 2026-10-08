@@ -1,0 +1,464 @@
+{
+  "module": "cloudsearch",
+  "query": {
+    "keywords": "夜に駆ける",
+    "type": 1,
+    "limit": 5
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:49:48.318313+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "result": {
+        "songs": [
+          {
+            "no": 1,
+            "rt": "",
+            "copyright": 1,
+            "fee": 1,
+            "privilege": {
+              "flag": 1540100,
+              "code": 0,
+              "dlLevel": "none",
+              "subp": 1,
+              "fl": 0,
+              "fee": 0,
+              "dl": 0,
+              "plLevel": "none",
+              "maxBrLevel": "jymaster",
+              "rightSource": 0,
+              "maxbr": 999000,
+              "id": 1409311773,
+              "sp": 7,
+              "payed": 0,
+              "rscl": 0,
+              "st": -100,
+              "chargeInfoList": [
+                {
+                  "rate": 128000,
+                  "chargeType": 1
+                },
+                {
+                  "rate": 192000,
+                  "chargeType": 1
+                },
+                {
+                  "rate": 320000,
+                  "chargeType": 1
+                },
+                {
+                  "rate": 999000,
+                  "chargeType": 1
+                }
+              ],
+              "freeTrialPrivilege": {
+                "userConsumable": false,
+                "resConsumable": true,
+                "cannotListenReason": 1
+              },
+              "downloadMaxbr": 999000,
+              "downloadMaxBrLevel": "jymaster",
+              "cp": 0,
+              "preSell": false,
+              "playMaxBrLevel": "jymaster",
+              "cs": false,
+              "toast": false,
+              "playMaxbr": 999000,
+              "flLevel": "none",
+              "pl": 0
+            },
+            "mst": 9,
+            "pst": 0,
+            "pop": 100,
+            "dt": 261013,
+            "rtype": 0,
+            "s_id": 0,
+            "rtUrls": [],
+            "resourceState": true,
+            "id": 1409311773,
+            "sq": {
+              "br": 1411000,
+              "fid": 0,
+              "size": 33419167,
+              "vd": -65358,
+              "sr": 44100
+            },
+            "st": 0,
+            "cd": "01",
+            "publishTime": 1576339200000,
+            "cf": "",
+            "originCoverType": 1,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10442754,
+              "vd": -65371,
+              "sr": 44100
+            },
+            "mv": 10907191,
+            "al": {
+              "picUrl": "http://p3.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+              "name": "夜に駆ける",
+              "tns": [
+                "向夜晚奔去"
+              ],
+              "pic_str": "109951164546210608",
+              "id": 84072830,
+              "pic": 109951164546210610
+            },
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4177128,
+              "vd": -61478,
+              "sr": 44100
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6265670,
+              "vd": -62856,
+              "sr": 44100
+            },
+            "version": 20,
+            "cp": 1416336,
+            "alia": [],
+            "djId": 0,
+            "single": 0,
+            "ar": [
+              {
+                "name": "YOASOBI",
+                "tns": [
+                  "夜游"
+                ],
+                "alias": [
+                  "ヨアソビ"
+                ],
+                "id": 33927412,
+                "alia": [
+                  "ヨアソビ"
+                ]
+              }
+            ],
+            "ftype": 0,
+            "t": 0,
+            "v": 54,
+            "name": "夜に駆ける",
+            "tns": [
+              "向夜晚奔去"
+            ],
+            "mark": 17180139520
+          },
+          {
+            "no": 18,
+            "rt": "",
+            "copyright": 0,
+            "fee": 8,
+            "privilege": {
+              "flag": 1540357,
+              "code": 0,
+              "dlLevel": "none",
+              "subp": 1,
+              "fl": 0,
+              "fee": 0,
+              "dl": 0,
+              "plLevel": "none",
+              "maxBrLevel": "jymaster",
+              "rightSource": 0,
+              "maxbr": 999000,
+              "id": 2623442905,
+              "sp": 7,
+              "payed": 0,
+              "rscl": 0,
+              "st": -100,
+              "chargeInfoList": [
+                {
+                  "rate": 128000,
+                  "chargeType": 0
+                },
+                {
+                  "rate": 192000,
+                  "chargeType": 0
+                },
+                {
+                  "rate": 320000,
+                  "chargeType": 0
+                },
+                {
+                  "rate": 999000,
+                  "chargeType": 1
+                }
+              ],
+              "freeTrialPrivilege": {
+                "userConsumable": false,
+                "resConsumable": false,
+                "cannotListenReason": 1
+              },
+              "downloadMaxbr": 999000,
+              "downloadMaxBrLevel": "jymaster",
+              "cp": 1,
+              "preSell": false,
+              "playMaxBrLevel": "jymaster",
+              "cs": false,
+              "toast": false,
+              "playMaxbr": 999000,
+              "flLevel": "none",
+              "pl": 0
+            },
+            "mst": 9,
+            "pst": 0,
+            "pop": 80,
+            "dt": 260706,
+            "rtype": 0,
+            "s_id": 0,
+            "rtUrls": [],
+            "resourceState": true,
+            "id": 2623442905,
+            "sq": {
+              "br": 1024871,
+              "fid": 0,
+              "size": 33403614,
+              "vd": -61994,
+              "sr": 44100
+            },
+            "st": 0,
+            "cd": "01",
+            "publishTime": 0,
+            "cf": "",
+            "originCoverType": 2,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10431260,
+              "vd": -61994,
+              "sr": 44100
+            },
+            "mv": 0,
+            "al": {
+              "picUrl": "http://p4.music.126.net/rqnwB_dV2sVZg4XpqIUGXg==/109951170646743447.jpg",
+              "name": "プロジェクトセカイ カラフルステージ！ feat. 初音ミク アナザーボーカルアルバム ワンダーランズ×ショウタイム",
+              "tns": [
+                "Wonderlands×Showtime Another Vocal Album"
+              ],
+              "pic_str": "109951170646743447",
+              "id": 246754133,
+              "pic": 109951170646743440
+            },
+            "originSongSimpleData": {
+              "artists": [
+                {
+                  "name": "YOASOBI",
+                  "id": 33927412
+                }
+              ],
+              "name": "夜に駆ける",
+              "songId": 1409311773,
+              "albumMeta": {
+                "name": "夜に駆ける",
+                "id": 84072830
+              }
+            },
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4172530,
+              "vd": -57615,
+              "sr": 44100
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6258773,
+              "vd": -59399,
+              "sr": 44100
+            },
+            "version": 14,
+            "cp": 743010,
+            "alia": [],
+            "djId": 0,
+            "single": 0,
+            "ar": [
+              {
+                "name": "草薙寧々",
+                "tns": [
+                  "草薙宁宁"
+                ],
+                "alias": [
+                  "Kusanagi Nene"
+                ],
+                "id": 94530717,
+                "alia": [
+                  "Kusanagi Nene"
+                ]
+              }
+            ],
+            "ftype": 0,
+            "t": 0,
+            "v": 48,
+            "name": "夜に駆ける",
+            "tns": [
+              "向夜晚奔去"
+            ],
+            "mark": 270464
+          },
+          {
+            "no": 7,
+            "rt": "",
+            "copyright": 1,
+            "fee": 8,
+            "privilege": {
+              "flag": 1540357,
+              "code": 0,
+              "dlLevel": "none",
+              "subp": 1,
+              "fl": 0,
+              "fee": 0,
+              "dl": 0,
+              "plLevel": "none",
+              "maxBrLevel": "jymaster",
+              "rightSource": 0,
+              "maxbr": 999000,
+              "id": 2601690985,
+              "sp": 7,
+              "payed": 0,
+              "rscl": 0,
+              "st": -100,
+              "chargeInfoList": [
+                {
+                  "rate": 128000,
+                  "chargeType": 0
+                },
+                {
+                  "rate": 192000,
+                  "chargeType": 0
+                },
+                {
+                  "rate": 320000,
+                  "chargeType": 0
+                },
+                {
+                  "rate": 999000,
+                  "chargeType": 1
+                }
+              ],
+              "freeTrialPrivilege": {
+                "userConsumable": false,
+                "resConsumable": false,
+                "cannotListenReason": 1
+              },
+              "downloadMaxbr": 999000,
+              "downloadMaxBrLevel": "jymaster",
+              "cp": 1,
+              "preSell": false,
+              "playMaxBrLevel": "jymaster",
+              "cs": false,
+              "toast": false,
+              "playMaxbr": 999000,
+              "flLevel": "none",
+              "pl": 0
+            },
+            "mst": 9,
+            "pst": 0,
+            "pop": 40,
+            "dt": 262266,
+            "rtype": 0,
+            "s_id": 0,
+            "rtUrls": [],
+            "resourceState": true,
+            "id": 2601690985,
+            "sq": {
+              "br": 1047782,
+              "fid": 0,
+              "size": 34349787,
+              "vd": -59263,
+              "sr": 44100
+            },
+            "st": 0,
+            "cd": "01",
+            "publishTime": 1719331200000,
+            "cf": "",
+            "originCoverType": 2,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10492909,
+              "vd": -59070,
+              "sr": 44100
+            },
+            "mv": 0,
+            "al": {
+              "picUrl": "http://p3.music.126.net/qwRiFKKzGv5SMwcWsClq-g==/109951169718534124.jpg",
+              "name": "あんさんぶるスターズ！！ カバーソングコレクション",
+              "tns": [],
+              "pic_str": "109951169718534124",
+              "id": 240163657,
+              "pic": 109951169718534130
+            },
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4197190,
+              "vd": -54931,
+              "sr": 44100
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6295763,
+              "vd": -56541,
+              "sr": 44100
+            },
+            "version": 6,
+            "cp": 1416512,
+            "alia": [],
+            "djId": 0,
+            "single": 0,
+            "ar": [
+              {
+                "name": "ALKALOID",
+                "tns": [],
+                "alias": [
+                  "アルカロイド"
+                ],
+                "id": 34556525,
+                "alia": [
+                  "アルカロイド"
+                ]
+              },
+              {
+                "name": "Double Face",
+                "tns": [],
+                "alias": [],
+                "id": 46739001
+              }
+            ],
+            "ftype": 0,
+            "t": 0,
+            "v": 40,
+            "name": "夜に駆ける",
+            "tns": [
+              "向夜晚奔去"
+            ],
+            "mark": 270464
+          }
+        ],
+        "songCount": 300
+      },
+      "code": 200,
+      "trp": {
+        "rules": [
+          "search_tab_song::2623442905::searchAlg$isGlobalQuality$1",
+          "search_tab_song::1935705494::searchAlg$isGlobalQuality$1",
+          "search_tab_song::2623481922::searchAlg$isGlobalQuality$1",
+          "search_tab_song::1409311773::searchAlg$isGlobalQuality$1"
+        ]
+      }
+    }
+  }
+}

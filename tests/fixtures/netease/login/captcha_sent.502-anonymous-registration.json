@@ -1,0 +1,22 @@
+{
+  "module": "captcha_sent",
+  "query": {
+    "phone": "<phone>",
+    "ctcode": "86"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:16:17.501Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "real",
+    "viewer": "anonymous",
+    "note": "SDK 1.4.0 隐式匿名注册随机 deviceId 被拒（摘要含 + 或 /）"
+  },
+  "response": {
+    "status": 502,
+    "body": {
+      "code": 502,
+      "msg": "Anonymous registration did not return MUSIC_A"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "module": "login_qr_check",
+  "query": {
+    "key": "1d1faaaf-f1bc-4861-8d4e-4d1f226d35ec"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:17:00.500Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "real",
+    "viewer": "anonymous",
+    "note": "扫码成功；Set-Cookie 不收录，各条 Cookie 的有效期见 #14 留言"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 803,
+      "message": "授权登陆成功",
+      "cookie": ""
+    }
+  }
+}

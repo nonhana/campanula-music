@@ -1,0 +1,33 @@
+{
+  "module": "login_cellphone",
+  "query": {
+    "phone": "<phone>",
+    "captcha": "<captcha>",
+    "countrycode": "86"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:04:47.174Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous",
+    "note": "默认伪装 IP；扫码登录成功后 37 秒发起"
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "loginType": 1,
+      "hitType": 800001,
+      "code": 10004,
+      "toast": {
+        "type": 1,
+        "title": null,
+        "content": null,
+        "nickname": "用户44",
+        "unikey": "qrcode_login_verify_09aa537b-1004-4fd3-9987-26077240f92b"
+      },
+      "message": "当前登录存在安全风险，请稍后再试",
+      "redirectUrl": "https://st.music.163.com/st/user-new/phoneReuse/index.html?scene=-1&userId=10000001&failCode=10003&systemOs=pc&ts=1791468287072&NMSCVT=0"
+    }
+  }
+}

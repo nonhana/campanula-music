@@ -1,0 +1,4901 @@
+{
+  "module": "artists",
+  "query": {
+    "id": 33927412
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:54:06.410930+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous",
+    "truncated": [
+      {
+        "path": "body.hotSongs",
+        "length": 50
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "artist": {
+        "img1v1Id": 109951172064233940,
+        "topicPerson": 0,
+        "picId": 109951172064237300,
+        "musicSize": 148,
+        "albumSize": 65,
+        "briefDesc": "YOASOBI（ヨアソビ、夜遊び），日本音乐组合，由词曲创作者 Ayase、主唱 几田莉拉（ikura）组成。\n\n外文名：YOASOBI ヨアソビ 夜遊び\n\n组合成员：Ayase、几田莉拉（以组合形式活动时使用“ikura”的名号）\n\n成立时间：2019年10月1日\n\n经纪公司：索尼音乐娱乐",
+        "picUrl": "https://p3.music.126.net/Af267FCGfOlv8b48PukVUg==/109951172064237298.jpg",
+        "img1v1Url": "https://p4.music.126.net/1f_5IU9FLWRZjAJVXu-ipA==/109951172064233940.jpg",
+        "followed": false,
+        "trans": "夜游",
+        "alias": [
+          "ヨアソビ"
+        ],
+        "name": "YOASOBI",
+        "id": 33927412,
+        "publishTime": 0,
+        "accountId": 4056458726,
+        "picId_str": "109951172064237298",
+        "transNames": [
+          "夜游"
+        ],
+        "img1v1Id_str": "109951172064233940",
+        "mvSize": 67
+      },
+      "hotSongs": [
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 94214994,
+            "name": "群青",
+            "picUrl": "https://p4.music.126.net/sF9I_mKMVNtsCD-ZXzfV_A==/109951165251958014.jpg",
+            "pic_str": "109951165251958014",
+            "pic": 109951165251958020
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 10977779,
+          "cd": "01",
+          "t": 0,
+          "v": 21,
+          "dt": 248444,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 9939885,
+            "vd": -78225,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1102038,
+            "fid": 0,
+            "size": 34224403,
+            "vd": -78653,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1870504,
+            "fid": 0,
+            "size": 58089541,
+            "vd": -78258,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3975981,
+            "vd": -74099,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5963949,
+            "vd": -75677,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "群青",
+          "id": 1472480890,
+          "privilege": {
+            "id": 1472480890,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 91768071,
+            "name": "たぶん",
+            "picUrl": "https://p3.music.126.net/l-oheMQzLncYGGv3E7Wn9A==/109951165101444453.jpg",
+            "tns": [
+              "大概"
+            ],
+            "pic_str": "109951165101444453",
+            "pic": 109951165101444450
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 10948445,
+          "cd": "01",
+          "t": 0,
+          "v": 24,
+          "dt": 258666,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 10348845,
+            "vd": -54995,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 941510,
+            "fid": 0,
+            "size": 30442161,
+            "vd": -55079,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1709351,
+            "fid": 0,
+            "size": 55269043,
+            "vd": -54999,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 4139565,
+            "vd": -50709,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 6209325,
+            "vd": -52406,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "たぶん",
+          "id": 1459343252,
+          "tns": [
+            "大概"
+          ],
+          "privilege": {
+            "id": 1459343252,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 120375092,
+            "name": "怪物",
+            "picUrl": "https://p3.music.126.net/M9FA7rm098sFErf-B7QWOw==/109951165536665031.jpg",
+            "pic_str": "109951165536665031",
+            "pic": 109951165536665020,
+            "alia": [
+              "アニメ「BEASTARS」OP 2",
+              "かいぶつ"
+            ]
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14227491,
+          "cd": "01",
+          "t": 0,
+          "v": 18,
+          "dt": 206000,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320002,
+            "fid": 0,
+            "size": 8242605,
+            "vd": -63972,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1083210,
+            "fid": 0,
+            "size": 27892672,
+            "vd": -64021,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1852426,
+            "fid": 0,
+            "size": 47699986,
+            "vd": -63932,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128002,
+            "fid": 0,
+            "size": 3297069,
+            "vd": -59944,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "TV动画《BEASTARS》第二季片头曲",
+            "かいぶつ",
+            "アニメ「BEASTARS」OP 2"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192002,
+            "fid": 0,
+            "size": 4945581,
+            "vd": -61450,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "怪物",
+          "id": 1803908863,
+          "privilege": {
+            "id": 1803908863,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 162749810,
+            "name": "アイドル",
+            "picUrl": "https://p3.music.126.net/mLJ_pKshFVtboLyD-4nBdA==/109951168573694568.jpg",
+            "tns": [
+              "偶像"
+            ],
+            "pic_str": "109951168573694568",
+            "pic": 109951168573694560
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14618738,
+          "cd": "01",
+          "t": 0,
+          "v": 15,
+          "dt": 213233,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8531565,
+            "vd": -75480,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1143952,
+            "fid": 0,
+            "size": 30491178,
+            "vd": -75982,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3229994,
+            "fid": 0,
+            "size": 86093055,
+            "vd": -75454,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3412653,
+            "vd": -71767,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "TV动画《我推的孩子》片头曲"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5118957,
+            "vd": -73039,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "アイドル",
+          "id": 2034742057,
+          "tns": [
+            "偶像"
+          ],
+          "privilege": {
+            "id": 2034742057,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 84072830,
+            "name": "夜に駆ける",
+            "picUrl": "https://p4.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+            "tns": [
+              "向夜晚奔去"
+            ],
+            "pic_str": "109951164546210608",
+            "pic": 109951164546210610
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 10907191,
+          "cd": "01",
+          "t": 0,
+          "v": 20,
+          "dt": 261013,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 10442754,
+            "vd": -65371,
+            "sr": 44100
+          },
+          "sq": {
+            "br": 1411000,
+            "fid": 0,
+            "size": 33419167,
+            "vd": -65358,
+            "sr": 44100
+          },
+          "hr": null,
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 4177128,
+            "vd": -61478,
+            "sr": 44100
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 6265670,
+            "vd": -62856,
+            "sr": 44100
+          },
+          "mark": 17180139520,
+          "name": "夜に駆ける",
+          "id": 1409311773,
+          "tns": [
+            "向夜晚奔去"
+          ],
+          "privilege": {
+            "id": 1409311773,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1541124,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 175012713,
+            "name": "勇者",
+            "picUrl": "https://p3.music.126.net/9mBj0oY95FqKkVWzMeoxog==/109951168924619987.jpg",
+            "pic_str": "109951168924619987",
+            "pic": 109951168924619980
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14686769,
+          "cd": "01",
+          "t": 0,
+          "v": 6,
+          "dt": 194164,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 7769325,
+            "vd": -66505,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1079792,
+            "fid": 0,
+            "size": 26207117,
+            "vd": -66621,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3105502,
+            "fid": 0,
+            "size": 75372135,
+            "vd": -66496,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3107757,
+            "vd": -62617,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "TV动画《葬送的芙莉莲》片头曲"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4661613,
+            "vd": -64022,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "勇者",
+          "id": 2083182016,
+          "privilege": {
+            "id": 2083182016,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 99079344,
+            "name": "THE BOOK",
+            "picUrl": "https://p3.music.126.net/r3HQ2Na5Z-CvnDGHmcl9-A==/109951165515346936.jpg",
+            "pic_str": "109951165515346936",
+            "pic": 109951165515346940
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 5,
+          "fee": 0,
+          "djId": 0,
+          "mv": 10948445,
+          "cd": "01",
+          "t": 0,
+          "v": 14,
+          "dt": 258666,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 10348845,
+            "vd": -54999,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 941510,
+            "fid": 0,
+            "size": 30442161,
+            "vd": -55516,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1709351,
+            "fid": 0,
+            "size": 55269043,
+            "vd": -54984,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 4139565,
+            "vd": -50707,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 6209325,
+            "vd": -52415,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "たぶん",
+          "id": 1500152660,
+          "tns": [
+            "大概"
+          ],
+          "privilege": {
+            "id": 1500152660,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 88653008,
+            "name": "ハルジオン",
+            "picUrl": "https://p4.music.126.net/_xZS7ETwZ-EK71Yvr-MFcQ==/109951164945006694.jpg",
+            "tns": [
+              "春紫菀"
+            ],
+            "pic_str": "109951164945006694",
+            "pic": 109951164945006690
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 10935046,
+          "cd": "01",
+          "t": 0,
+          "v": 19,
+          "dt": 198000,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320002,
+            "fid": 0,
+            "size": 7921965,
+            "vd": -85378,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1179059,
+            "fid": 0,
+            "size": 29181720,
+            "vd": -85451,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1946810,
+            "fid": 0,
+            "size": 48183561,
+            "vd": -85441,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128002,
+            "fid": 0,
+            "size": 3168813,
+            "vd": -81241,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "Halzion",
+            "Harujion"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192002,
+            "fid": 0,
+            "size": 4753197,
+            "vd": -82870,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "ハルジオン",
+          "id": 1444071945,
+          "tns": [
+            "春紫菀"
+          ],
+          "privilege": {
+            "id": 1444071945,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 126662089,
+            "name": "もう少しだけ",
+            "picUrl": "https://p3.music.126.net/seyhDwTzRNqFvYAw9FtJnw==/109951165930283941.jpg",
+            "tns": [
+              "只要多一点"
+            ],
+            "pic_str": "109951165930283941",
+            "pic": 109951165930283940
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14576974,
+          "cd": "01",
+          "t": 0,
+          "v": 19,
+          "dt": 218853,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8756205,
+            "vd": -77750,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1094134,
+            "fid": 0,
+            "size": 29931866,
+            "vd": -78032,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3182275,
+            "fid": 0,
+            "size": 87056462,
+            "vd": -77827,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3502509,
+            "vd": -73603,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "晨间新闻节目「闹钟电视」春季主题曲"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5253741,
+            "vd": -75175,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "もう少しだけ",
+          "id": 1840862630,
+          "tns": [
+            "再多一点"
+          ],
+          "privilege": {
+            "id": 1840862630,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 151974372,
+            "name": "祝福",
+            "picUrl": "https://p3.music.126.net/PhuYCfPgOIObvWsLy5Aznw==/109951167902770123.jpg",
+            "pic_str": "109951167902770123",
+            "pic": 109951167902770130
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14578299,
+          "cd": "01",
+          "t": 0,
+          "v": 12,
+          "dt": 196235,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 7851885,
+            "vd": -79155,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1129057,
+            "fid": 0,
+            "size": 27695128,
+            "vd": -79166,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3225882,
+            "fid": 0,
+            "size": 79129002,
+            "vd": -79180,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3140781,
+            "vd": -75139,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "TV动画《机动战士高达：水星的魔女》片头曲"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4711149,
+            "vd": -76633,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "祝福",
+          "id": 1983292457,
+          "privilege": {
+            "id": 1983292457,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 239928744,
+            "name": "UNDEAD",
+            "picUrl": "https://p3.music.126.net/GjmFDN-Uxp5Hfw509Aw7ug==/109951169724367907.jpg",
+            "pic_str": "109951169724367907",
+            "pic": 109951169724367900,
+            "alia": [
+              "动漫《物语系列 外传季&怪物季》主题曲"
+            ]
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 8,
+          "dt": 182702,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 7310445,
+            "vd": -89874,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1263540,
+            "fid": 0,
+            "size": 28856496,
+            "vd": -89832,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3539884,
+            "fid": 0,
+            "size": 80843218,
+            "vd": -89833,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 2924205,
+            "vd": -86341,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4386285,
+            "vd": -87497,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "UNDEAD",
+          "id": 2600874339,
+          "tns": [
+            "TV动画《物语系列 外传季&怪物季》主题曲"
+          ],
+          "privilege": {
+            "id": 2600874339,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 85040420,
+            "name": "あの夢をなぞって",
+            "picUrl": "https://p4.music.126.net/lX06lnoMCH8x18XqC4j5yg==/109951164632728541.jpg",
+            "tns": [
+              "描绘着那场梦"
+            ],
+            "pic_str": "109951164632728541",
+            "pic": 109951164632728540
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 10910933,
+          "cd": "01",
+          "t": 0,
+          "v": 20,
+          "dt": 242666,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 9709236,
+            "vd": -73112,
+            "sr": 44100
+          },
+          "sq": {
+            "br": 1411000,
+            "fid": 0,
+            "size": 31491650,
+            "vd": -73117,
+            "sr": 44100
+          },
+          "hr": null,
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3883720,
+            "vd": -69050,
+            "sr": 44100
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5825559,
+            "vd": -70594,
+            "sr": 44100
+          },
+          "mark": 17180139520,
+          "name": "あの夢をなぞって",
+          "id": 1417236632,
+          "tns": [
+            "描绘着那场梦"
+          ],
+          "privilege": {
+            "id": 1417236632,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1541124,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 99079344,
+            "name": "THE BOOK",
+            "picUrl": "https://p4.music.126.net/r3HQ2Na5Z-CvnDGHmcl9-A==/109951165515346936.jpg",
+            "pic_str": "109951165515346936",
+            "pic": 109951165515346940
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 2,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14232169,
+          "cd": "01",
+          "t": 0,
+          "v": 11,
+          "dt": 271440,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 10860713,
+            "vd": -59066,
+            "sr": 44100
+          },
+          "sq": {
+            "br": 1631996,
+            "fid": 0,
+            "size": 55373655,
+            "vd": -59059,
+            "sr": 44100
+          },
+          "hr": null,
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 4344311,
+            "vd": -54813,
+            "sr": 44100
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            " 谷歌手机Pixel 5日本区广告歌"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 6516445,
+            "vd": -56483,
+            "sr": 44100
+          },
+          "mark": 17180139520,
+          "name": "アンコール",
+          "id": 1500151579,
+          "tns": [
+            "安可"
+          ],
+          "privilege": {
+            "id": 1500151579,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1541124,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 121242784,
+            "name": "優しい彗星",
+            "picUrl": "https://p3.music.126.net/_lmpEeZLeJH-qsmcKjqHqg==/109951165609070788.jpg",
+            "tns": [
+              "温柔的彗星"
+            ],
+            "pic_str": "109951165609070788",
+            "pic": 109951165609070780
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14275236,
+          "cd": "01",
+          "t": 0,
+          "v": 27,
+          "dt": 215333,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8616045,
+            "vd": -60201,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1002867,
+            "fid": 0,
+            "size": 26993850,
+            "vd": -60213,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1772241,
+            "fid": 0,
+            "size": 47702822,
+            "vd": -60213,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3446445,
+            "vd": -55964,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "TV动画《BEASTARS》第二季片尾曲"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5169645,
+            "vd": -57614,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "優しい彗星",
+          "id": 1809741562,
+          "tns": [
+            "温柔的彗星"
+          ],
+          "privilege": {
+            "id": 1809741562,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 135888000,
+            "name": "THE BOOK 2",
+            "picUrl": "https://p3.music.126.net/Nwwpjbdyj6qM66WGwKBM_Q==/109951166603574539.jpg",
+            "pic_str": "109951166603574539",
+            "pic": 109951166603574540
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 7,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14482643,
+          "cd": "01",
+          "t": 0,
+          "v": 16,
+          "dt": 201626,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8067969,
+            "vd": -65971,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1035900,
+            "fid": 0,
+            "size": 26108136,
+            "vd": -65957,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3078095,
+            "fid": 0,
+            "size": 77578268,
+            "vd": -65964,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3227265,
+            "vd": -61872,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "舞台剧《若能描绘生命》主题曲"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4840833,
+            "vd": -63393,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "もしも命が描けたら",
+          "id": 1893592988,
+          "tns": [
+            "若能描绘生命"
+          ],
+          "privilege": {
+            "id": 1893592988,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            },
+            {
+              "id": 50083561,
+              "name": "ミドリーズ"
+            }
+          ],
+          "al": {
+            "id": 134495411,
+            "name": "ツバメ (feat. ミドリーズ)",
+            "picUrl": "https://p3.music.126.net/6Hrz_bIYDBJ3z272Kojvkg==/109951166514155566.jpg",
+            "tns": [
+              "燕子"
+            ],
+            "pic_str": "109951166514155566",
+            "pic": 109951166514155570,
+            "alia": [
+              "番組「ひろがれ！いろとりどり」テーマソング"
+            ]
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14479472,
+          "cd": "01",
+          "t": 0,
+          "v": 17,
+          "dt": 217429,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8699565,
+            "vd": -61683,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1060949,
+            "fid": 0,
+            "size": 28835180,
+            "vd": -61672,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1830480,
+            "fid": 0,
+            "size": 49749997,
+            "vd": -61659,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3479853,
+            "vd": -57834,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "番組「ひろがれ！いろとりどり」テーマソング"
+          ],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5219757,
+            "vd": -59189,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "ツバメ (feat. ミドリーズ)",
+          "id": 1885359359,
+          "tns": [
+            "燕子"
+          ],
+          "privilege": {
+            "id": 1885359359,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 154281101,
+            "name": "海のまにまに",
+            "picUrl": "https://p3.music.126.net/IViHFIjIJb6BdlCamNb4Yw==/109951168025317111.jpg",
+            "tns": [
+              "任由海波荡漾"
+            ],
+            "pic_str": "109951168025317111",
+            "pic": 109951168025317100
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14614071,
+          "cd": "01",
+          "t": 0,
+          "v": 7,
+          "dt": 255918,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 10239405,
+            "vd": -54943,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 869794,
+            "fid": 0,
+            "size": 27824541,
+            "vd": -55045,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 2758062,
+            "fid": 0,
+            "size": 88229856,
+            "vd": -54942,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 4095789,
+            "vd": -50708,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 6143661,
+            "vd": -52359,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "海のまにまに",
+          "id": 1994955842,
+          "tns": [
+            "任由海波荡漾"
+          ],
+          "privilege": {
+            "id": 1994955842,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 379547126,
+            "name": "THE BOOK for,",
+            "picUrl": "https://p3.music.126.net/JqcEraVTzd1T8RBFXLoffQ==/109951173349711420.jpg",
+            "pic_str": "109951173349711420",
+            "pic": 109951173349711420
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 5,
+          "dt": 206586,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8265645,
+            "vd": -79269,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1118060,
+            "fid": 0,
+            "size": 28875852,
+            "vd": -79250,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3233726,
+            "fid": 0,
+            "size": 83509413,
+            "vd": -79257,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3306285,
+            "vd": -75329,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4959405,
+            "vd": -76783,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "オリオン",
+          "id": 3389005906,
+          "privilege": {
+            "id": 3389005906,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 99080009,
+            "name": "ハルカ",
+            "picUrl": "https://p4.music.126.net/KX7-Ty46vm62LCok2ogcCQ==/109951165515356576.jpg",
+            "tns": [
+              "遥"
+            ],
+            "pic_str": "109951165515356576",
+            "pic": 109951165515356580
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14212988,
+          "cd": "01",
+          "t": 0,
+          "v": 11,
+          "dt": 243613,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 9746852,
+            "vd": -61918,
+            "sr": 44100
+          },
+          "sq": {
+            "br": 1676830,
+            "fid": 0,
+            "size": 51062295,
+            "vd": -61904,
+            "sr": 44100
+          },
+          "hr": null,
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3898767,
+            "vd": -57762,
+            "sr": 44100
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "Haruka"
+          ],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5848129,
+            "vd": -59343,
+            "sr": 44100
+          },
+          "mark": 17180139520,
+          "name": "ハルカ",
+          "id": 1500152567,
+          "tns": [
+            "遥"
+          ],
+          "privilege": {
+            "id": 1500152567,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1541124,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 128734514,
+            "name": "三原色",
+            "picUrl": "https://p3.music.126.net/iINXoDrH_6uYJpPHMjRtgg==/109951166074091495.jpg",
+            "pic_str": "109951166074091495",
+            "pic": 109951166074091490
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14297739,
+          "cd": "01",
+          "t": 0,
+          "v": 24,
+          "dt": 220253,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8812845,
+            "vd": -84895,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1187008,
+            "fid": 0,
+            "size": 32680336,
+            "vd": -85147,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3325639,
+            "fid": 0,
+            "size": 91560385,
+            "vd": -85032,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3525165,
+            "vd": -80907,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "日本电信公司NTT Docomo “Ahamo” CM主题曲"
+          ],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5287725,
+            "vd": -82402,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "三原色",
+          "id": 1851994664,
+          "privilege": {
+            "id": 1851994664,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 179163394,
+            "name": "Biri-Biri",
+            "picUrl": "https://p4.music.126.net/1k_NUEjVtEYGy1ZoZ_Ug1A==/109951169058065477.jpg",
+            "pic_str": "109951169058065477",
+            "pic": 109951169058065470
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 10,
+          "dt": 187325,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 7495725,
+            "vd": -66342,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1136609,
+            "fid": 0,
+            "size": 26614507,
+            "vd": -66441,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3203796,
+            "fid": 0,
+            "size": 75019122,
+            "vd": -66518,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 2998317,
+            "vd": -62167,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "游戏《宝可梦 朱紫》一周年纪念合作曲",
+            "ビリビリ",
+            "《宝可梦 朱·紫》一周年纪念曲"
+          ],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4497453,
+            "vd": -63834,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "Biri-Biri",
+          "id": 2100202477,
+          "privilege": {
+            "id": 2100202477,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 181191935,
+            "name": "HEART BEAT",
+            "picUrl": "https://p4.music.126.net/aklY8yRC2rxzjaH0LCd3Og==/109951169164896877.jpg",
+            "tns": [
+              "心音"
+            ],
+            "pic_str": "109951169164896877",
+            "pic": 109951169164896880,
+            "alia": [
+              "ハートビート"
+            ]
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 8,
+          "dt": 335465,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 13420845,
+            "vd": -56896,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1037179,
+            "fid": 0,
+            "size": 43492228,
+            "vd": -57026,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3005212,
+            "fid": 0,
+            "size": 126018054,
+            "vd": -56962,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 5368365,
+            "vd": -52897,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "ハートビート"
+          ],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 8052525,
+            "vd": -54355,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "HEART BEAT",
+          "id": 2108833053,
+          "tns": [
+            "心音"
+          ],
+          "privilege": {
+            "id": 2108833053,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 159712078,
+            "name": "アドベンチャー",
+            "picUrl": "https://p4.music.126.net/eKVGZxXPqfHoq1su7ig6tw==/109951168295122895.jpg",
+            "tns": [
+              "冒险"
+            ],
+            "pic_str": "109951168295122895",
+            "pic": 109951168295122900,
+            "alia": [
+              "Adventure"
+            ]
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14612558,
+          "cd": "01",
+          "t": 0,
+          "v": 8,
+          "dt": 199964,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8000685,
+            "vd": -67623,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1061605,
+            "fid": 0,
+            "size": 26535496,
+            "vd": -67618,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3083729,
+            "fid": 0,
+            "size": 77079741,
+            "vd": -67608,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3200301,
+            "vd": -63692,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "USJ学生应援企画「ユニ春」广告曲"
+          ],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4800429,
+            "vd": -65111,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "アドベンチャー",
+          "id": 2020918656,
+          "tns": [
+            "冒险"
+          ],
+          "privilege": {
+            "id": 2020918656,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 131303910,
+            "name": "ラブレター",
+            "picUrl": "https://p3.music.126.net/0_cAuexJyNdGy7wJno8jOw==/109951166248690270.jpg",
+            "tns": [
+              "情书"
+            ],
+            "pic_str": "109951166248690270",
+            "pic": 109951166248690270,
+            "alia": [
+              "Lover Letter"
+            ]
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14313389,
+          "cd": "01",
+          "t": 0,
+          "v": 13,
+          "dt": 212400,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8498925,
+            "vd": -71377,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1086525,
+            "fid": 0,
+            "size": 28847341,
+            "vd": -71435,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1853203,
+            "fid": 0,
+            "size": 49202729,
+            "vd": -71388,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3399597,
+            "vd": -67285,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 5099373,
+            "vd": -68846,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "ラブレター",
+          "id": 1866654479,
+          "tns": [
+            "情书"
+          ],
+          "privilege": {
+            "id": 1866654479,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 189843739,
+            "name": "E-SIDE 3",
+            "picUrl": "https://p4.music.126.net/Y8_FHHQTxnpHhre5f8F1gQ==/109951169435442153.jpg",
+            "pic_str": "109951169435442153",
+            "pic": 109951169435442160
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 8,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 5,
+          "dt": 199657,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 7989165,
+            "vd": -66419,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1071666,
+            "fid": 0,
+            "size": 26745769,
+            "vd": -66472,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3098868,
+            "fid": 0,
+            "size": 77339018,
+            "vd": -66395,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3195693,
+            "vd": -62617,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4793517,
+            "vd": -63942,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "Adventure",
+          "id": 2138449756,
+          "privilege": {
+            "id": 2138449756,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 132553411,
+            "name": "大正浪漫",
+            "picUrl": "https://p4.music.126.net/UFICcArmOffVujo1ssa5hg==/109951166340345046.jpg",
+            "pic_str": "109951166340345046",
+            "pic": 109951166340345040
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 14330434,
+          "cd": "01",
+          "t": 0,
+          "v": 12,
+          "dt": 168461,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 6741165,
+            "vd": -72346,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1118987,
+            "fid": 0,
+            "size": 23563294,
+            "vd": -72348,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3191808,
+            "fid": 0,
+            "size": 67212117,
+            "vd": -72356,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 2696493,
+            "vd": -68384,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4044717,
+            "vd": -69859,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "大正浪漫",
+          "id": 1874298270,
+          "privilege": {
+            "id": 1874298270,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 128732322,
+            "name": "Into the Night",
+            "picUrl": "https://p4.music.126.net/EEnj2ySgXX3cigKOXWQXlQ==/109951166074031746.jpg",
+            "pic_str": "109951166074031746",
+            "pic": 109951166074031740
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 22693058,
+          "cd": "01",
+          "t": 0,
+          "v": 17,
+          "dt": 262153,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 10489005,
+            "vd": -63447,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1125326,
+            "fid": 0,
+            "size": 36876083,
+            "vd": -63700,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 1895477,
+            "fid": 0,
+            "size": 62113349,
+            "vd": -63445,
+            "sr": 48000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 4195629,
+            "vd": -59596,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "夜に駆ける English Ver."
+          ],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 6293421,
+            "vd": -60970,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "Into The Night",
+          "id": 1851982133,
+          "privilege": {
+            "id": 1851982133,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 271740739,
+            "name": "Watch me!",
+            "picUrl": "https://p3.music.126.net/zFfoIYkXtPmvmrGetzm79g==/109951170976847402.jpg",
+            "pic_str": "109951170976847402",
+            "pic": 109951170976847410
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 9,
+          "dt": 186193,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 7450605,
+            "vd": -82444,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1225022,
+            "fid": 0,
+            "size": 28514895,
+            "vd": -82374,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3230903,
+            "fid": 0,
+            "size": 75200237,
+            "vd": -82367,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 2980269,
+            "vd": -79359,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4470381,
+            "vd": -80196,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "Watch me!",
+          "id": 2704166360,
+          "tns": [
+            "看着我！ (TV动画《魔女与使魔》片头曲)"
+          ],
+          "privilege": {
+            "id": 2704166360,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 179595783,
+            "name": "The Brave",
+            "picUrl": "https://p3.music.126.net/kddQeEW1srSgmKIF2JNkGQ==/109951169071990949.jpg",
+            "pic_str": "109951169071990949",
+            "pic": 109951169071990940
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 8,
+          "dt": 194423,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 7778925,
+            "vd": -73137,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1102591,
+            "fid": 0,
+            "size": 26796147,
+            "vd": -73230,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3160696,
+            "fid": 0,
+            "size": 76814031,
+            "vd": -73307,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3111597,
+            "vd": -69394,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [
+            "《葬送的芙莉莲》TV动画片头曲《勇者》英文版",
+            "ザブレイブ"
+          ],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4667373,
+            "vd": -70679,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "The Brave",
+          "id": 2102066775,
+          "privilege": {
+            "id": 2102066775,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1545220,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        },
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 385510184,
+            "name": "Orion (English Version)",
+            "picUrl": "https://p3.music.126.net/OMg7u1CFc43TEtopC0fbHg==/109951173514903682.jpg",
+            "pic_str": "109951173514903682",
+            "pic": 109951173514903680
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "no": 1,
+          "fee": 0,
+          "djId": 0,
+          "mv": 0,
+          "cd": "01",
+          "t": 0,
+          "v": 4,
+          "dt": 206798,
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 8274285,
+            "vd": -73118,
+            "sr": 48000
+          },
+          "sq": {
+            "br": 1100437,
+            "fid": 0,
+            "size": 28449945,
+            "vd": -73097,
+            "sr": 48000
+          },
+          "hr": {
+            "br": 3083257,
+            "fid": 0,
+            "size": 79705573,
+            "vd": -73100,
+            "sr": 96000
+          },
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 3309741,
+            "vd": -69282,
+            "sr": 48000
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 95,
+          "rt": "",
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 4964589,
+            "vd": -70612,
+            "sr": 48000
+          },
+          "mark": 17717010432,
+          "name": "Orion (English Version)",
+          "id": 3402244259,
+          "privilege": {
+            "id": 3402244259,
+            "fee": 8,
+            "payed": 0,
+            "st": 0,
+            "pl": 320000,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 320000,
+            "toast": false,
+            "flag": 1544196,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "exhigh",
+            "dlLevel": "none",
+            "flLevel": "exhigh",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 0
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 0
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 0
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 1999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        }
+      ],
+      "more": true,
+      "code": 200
+    }
+  }
+}
