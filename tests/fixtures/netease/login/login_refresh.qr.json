@@ -1,0 +1,19 @@
+{
+  "module": "login_refresh",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T14:24:23.052Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "bizCode": "200",
+      "code": 200,
+      "cookie": ""
+    }
+  }
+}

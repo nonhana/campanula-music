@@ -1,0 +1,278 @@
+{
+  "module": "album",
+  "query": {
+    "id": 84072830
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:54:05.710361+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "resourceState": true,
+      "songs": [
+        {
+          "rtUrls": [],
+          "ar": [
+            {
+              "id": 33927412,
+              "name": "YOASOBI",
+              "tns": [
+                "夜游"
+              ],
+              "alia": [
+                "ヨアソビ"
+              ]
+            }
+          ],
+          "al": {
+            "id": 84072830,
+            "name": "夜に駆ける",
+            "picUrl": "https://p3.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+            "tns": [
+              "向夜晚奔去"
+            ],
+            "pic_str": "109951164546210608",
+            "pic": 109951164546210610
+          },
+          "st": -1,
+          "noCopyrightRcmd": null,
+          "artistClassics": null,
+          "songJumpInfo": null,
+          "djId": 0,
+          "no": 1,
+          "fee": 0,
+          "mv": 10907191,
+          "cd": "01",
+          "t": 0,
+          "v": 20,
+          "dt": 261013,
+          "rtype": 0,
+          "rurl": null,
+          "pst": 0,
+          "alia": [],
+          "pop": 100,
+          "rt": "",
+          "mst": 9,
+          "cp": 1416336,
+          "crbt": null,
+          "cf": "",
+          "h": {
+            "br": 320000,
+            "fid": 0,
+            "size": 10442754,
+            "vd": -65371,
+            "sr": 44100
+          },
+          "sq": {
+            "br": 1411000,
+            "fid": 0,
+            "size": 33419167,
+            "vd": -65358,
+            "sr": 44100
+          },
+          "hr": null,
+          "l": {
+            "br": 128000,
+            "fid": 0,
+            "size": 4177128,
+            "vd": -61478,
+            "sr": 44100
+          },
+          "rtUrl": null,
+          "ftype": 0,
+          "mark": 17180139520,
+          "a": null,
+          "m": {
+            "br": 192000,
+            "fid": 0,
+            "size": 6265670,
+            "vd": -62856,
+            "sr": 44100
+          },
+          "name": "夜に駆ける",
+          "id": 1409311773,
+          "tns": [
+            "向夜晚奔去"
+          ],
+          "privilege": {
+            "id": 1409311773,
+            "fee": 1,
+            "payed": 0,
+            "st": 0,
+            "pl": 0,
+            "dl": 0,
+            "sp": 7,
+            "cp": 1,
+            "subp": 1,
+            "cs": false,
+            "maxbr": 999000,
+            "fl": 0,
+            "toast": false,
+            "flag": 1541124,
+            "preSell": false,
+            "playMaxbr": 999000,
+            "downloadMaxbr": 999000,
+            "maxBrLevel": "jymaster",
+            "playMaxBrLevel": "jymaster",
+            "downloadMaxBrLevel": "jymaster",
+            "plLevel": "none",
+            "dlLevel": "none",
+            "flLevel": "none",
+            "rscl": null,
+            "freeTrialPrivilege": {
+              "resConsumable": false,
+              "userConsumable": false,
+              "listenType": 0,
+              "cannotListenReason": 1,
+              "playReason": null,
+              "freeLimitTagType": null
+            },
+            "rightSource": 0,
+            "chargeInfoList": [
+              {
+                "rate": 128000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 192000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 320000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              },
+              {
+                "rate": 999000,
+                "chargeUrl": null,
+                "chargeMessage": null,
+                "chargeType": 1
+              }
+            ],
+            "code": 0,
+            "message": null,
+            "plLevels": null,
+            "dlLevels": null,
+            "ignoreCache": null,
+            "bd": null
+          }
+        }
+      ],
+      "code": 200,
+      "album": {
+        "songs": [],
+        "paid": false,
+        "onSale": false,
+        "mark": 8192,
+        "awardTags": null,
+        "displayTags": null,
+        "artists": [
+          {
+            "img1v1Id": 18686200114669624,
+            "topicPerson": 0,
+            "picId": 0,
+            "briefDesc": "",
+            "musicSize": 0,
+            "albumSize": 0,
+            "picUrl": "",
+            "img1v1Url": "https://p4.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg",
+            "followed": false,
+            "trans": "",
+            "alias": [],
+            "name": "YOASOBI",
+            "id": 33927412,
+            "img1v1Id_str": "18686200114669622"
+          }
+        ],
+        "copyrightId": 1416336,
+        "picId": 109951164546210610,
+        "artist": {
+          "img1v1Id": 109951172064233940,
+          "topicPerson": 0,
+          "picId": 109951172064237300,
+          "briefDesc": "",
+          "musicSize": 148,
+          "albumSize": 65,
+          "picUrl": "https://p3.music.126.net/Af267FCGfOlv8b48PukVUg==/109951172064237298.jpg",
+          "img1v1Url": "https://p3.music.126.net/1f_5IU9FLWRZjAJVXu-ipA==/109951172064233940.jpg",
+          "followed": false,
+          "trans": "夜游",
+          "alias": [
+            "ヨアソビ"
+          ],
+          "name": "YOASOBI",
+          "id": 33927412,
+          "picId_str": "109951172064237298",
+          "transNames": [
+            "夜游"
+          ],
+          "img1v1Id_str": "109951172064233940"
+        },
+        "publishTime": 1576339200000,
+        "company": "YOASOBI",
+        "briefDesc": "",
+        "picUrl": "https://p3.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+        "commentThreadId": "R_AL_3_84072830",
+        "blurPicUrl": "https://p3.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+        "companyId": 0,
+        "pic": 109951164546210610,
+        "subType": "录音室版",
+        "status": 1,
+        "description": "音乐组合YOASOBI于2019年发行的首张单曲，该曲发行后在日本公信榜单曲周合计排行榜上连续数周获得第一。同时YOASOBI凭借该曲获得“MTV日本音乐录像带大奖”年度最优秀最歌曲奖。",
+        "tags": "",
+        "alias": [],
+        "name": "夜に駆ける",
+        "id": 84072830,
+        "type": "Single",
+        "size": 1,
+        "picId_str": "109951164546210608",
+        "transNames": [
+          "向夜晚奔去"
+        ],
+        "info": {
+          "commentThread": {
+            "id": "R_AL_3_84072830",
+            "resourceInfo": {
+              "id": 84072830,
+              "userId": -1,
+              "name": "夜に駆ける",
+              "imgUrl": "http://p3.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+              "creator": null,
+              "encodedId": null,
+              "subTitle": null,
+              "webUrl": null
+            },
+            "resourceType": 3,
+            "commentCount": 179,
+            "likedCount": 0,
+            "shareCount": 119,
+            "hotCount": 9,
+            "latestLikedUsers": null,
+            "resourceId": 84072830,
+            "resourceOwnerId": -1,
+            "resourceTitle": "夜に駆ける"
+          },
+          "latestLikedUsers": null,
+          "liked": false,
+          "comments": null,
+          "resourceType": 3,
+          "resourceId": 84072830,
+          "commentCount": 179,
+          "likedCount": 0,
+          "shareCount": 119,
+          "threadId": "R_AL_3_84072830"
+        }
+      }
+    }
+  }
+}

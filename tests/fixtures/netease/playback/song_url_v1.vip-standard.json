@@ -1,0 +1,72 @@
+{
+  "module": "song_url_v1",
+  "query": {
+    "id": 512359195,
+    "level": "standard"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:24:42.141Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": [
+        {
+          "accompany": null,
+          "auEff": null,
+          "beatType": 0,
+          "br": 128000,
+          "canExtend": false,
+          "channelLayout": null,
+          "closedGain": -6,
+          "closedPeak": 1,
+          "code": 200,
+          "effectTypes": null,
+          "encodeType": "mp3",
+          "expi": 1200,
+          "fee": 1,
+          "flag": 1540100,
+          "freeTimeTrialPrivilege": {
+            "remainTime": 0,
+            "resConsumable": false,
+            "type": 0,
+            "userConsumable": false
+          },
+          "freeTrialInfo": null,
+          "freeTrialPrivilege": {
+            "cannotListenReason": null,
+            "freeLimitTagType": null,
+            "listenType": null,
+            "playReason": null,
+            "resConsumable": false,
+            "userConsumable": false
+          },
+          "gain": -10.7964,
+          "id": 512359195,
+          "immerseType": null,
+          "level": "standard",
+          "levelConfuse": null,
+          "md5": "a5c2e9814c6f63d9ef8cb7f85f921d2a",
+          "message": null,
+          "musicId": "8652553023",
+          "payed": 1,
+          "peak": 1,
+          "podcastCtrp": null,
+          "rightSource": 0,
+          "size": 3902946,
+          "sr": 44100,
+          "time": 243879,
+          "type": "mp3",
+          "uf": null,
+          "url": "http://m801.music.126.net/20261008224942/ae4fdbf6d55b45dd6d21a17c60be4a88/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/32069289453/5ef6/68cd/786a/a5c2e9814c6f63d9ef8cb7f85f921d2a.mp3?vuutv=pW99G8Xv7wSFIU5XbkLf4EmNk5mZAXDc984LtaCytdV98S5KDZaeeIeUNtJv9sS6xba1TBTcxm4fFGHBtcG7LyYf9b0Tc9VtiqQksLl4qyo=",
+          "urlSource": 0
+        }
+      ]
+    }
+  }
+}

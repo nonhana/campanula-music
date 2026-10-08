@@ -1,0 +1,390 @@
+{
+  "module": "cloudsearch",
+  "query": {
+    "keywords": "夜に駆ける",
+    "type": 10,
+    "limit": 5
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:49:50.505744+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "result": {
+        "albums": [
+          {
+            "name": "夜に駆ける",
+            "id": 394929254,
+            "idStr": "394929254",
+            "type": "Single",
+            "size": 1,
+            "picId": 109951173836714060,
+            "blurPicUrl": "https://p4.music.126.net/g8JkOa-5_NgjVo8Is24tvg==/109951173836714064.jpg",
+            "companyId": 0,
+            "pic": 109951173836714060,
+            "picUrl": "https://p3.music.126.net/g8JkOa-5_NgjVo8Is24tvg==/109951173836714064.jpg",
+            "publishTime": 1790870400000,
+            "description": "",
+            "tags": "",
+            "company": "DAVASUN RECORDS",
+            "briefDesc": "",
+            "artist": {
+              "name": "Yuna Velie",
+              "id": 125850636,
+              "picId": 0,
+              "img1v1Id": 0,
+              "briefDesc": "",
+              "picUrl": "",
+              "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+              "albumSize": 14,
+              "alias": [],
+              "trans": "",
+              "musicSize": 14,
+              "topicPerson": 0
+            },
+            "songs": [],
+            "alias": [],
+            "status": 1,
+            "copyrightId": 743010,
+            "commentThreadId": "R_AL_3_394929254",
+            "artists": [
+              {
+                "name": "Yuna Velie",
+                "id": 125850636,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              }
+            ],
+            "onSale": false,
+            "mark": 0,
+            "gapless": 0,
+            "picId_str": "109951173836714064",
+            "transNames": [
+              "向夜晚奔去"
+            ],
+            "isSub": false
+          },
+          {
+            "name": "夜に駆ける Mashup",
+            "id": 98923417,
+            "idStr": "98923417",
+            "type": "Single",
+            "size": 1,
+            "picId": 109951165515134700,
+            "blurPicUrl": "https://p4.music.126.net/HARVLuOTcQFjMVhVX_8esw==/109951165515134703.jpg",
+            "companyId": 0,
+            "pic": 109951165515134700,
+            "picUrl": "https://p3.music.126.net/HARVLuOTcQFjMVhVX_8esw==/109951165515134703.jpg",
+            "publishTime": 1606966775901,
+            "description": "",
+            "tags": "",
+            "company": null,
+            "briefDesc": "",
+            "artist": {
+              "name": "悠",
+              "id": 12319738,
+              "picId": 109951165045559120,
+              "img1v1Id": 0,
+              "briefDesc": "",
+              "picUrl": "https://p4.music.126.net/49ry803YnkyDuUio4-OneA==/109951165045559117.jpg",
+              "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+              "albumSize": 107,
+              "alias": [],
+              "trans": "",
+              "musicSize": 117,
+              "topicPerson": 0,
+              "picId_str": "109951165045559117"
+            },
+            "songs": [],
+            "alias": [],
+            "status": 0,
+            "copyrightId": 0,
+            "commentThreadId": "R_AL_3_98923417",
+            "artists": [
+              {
+                "name": "悠",
+                "id": 12319738,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              }
+            ],
+            "onSale": false,
+            "mark": 0,
+            "gapless": 0,
+            "picId_str": "109951165515134703",
+            "isSub": false
+          },
+          {
+            "name": "夜に駆ける",
+            "id": 84072830,
+            "idStr": "84072830",
+            "type": "Single",
+            "size": 1,
+            "picId": 109951164546210610,
+            "blurPicUrl": "https://p3.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+            "companyId": 0,
+            "pic": 109951164546210610,
+            "picUrl": "https://p3.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg",
+            "publishTime": 1576339200000,
+            "description": "",
+            "tags": "",
+            "company": "YOASOBI",
+            "briefDesc": "",
+            "artist": {
+              "name": "YOASOBI",
+              "id": 33927412,
+              "picId": 109951172064237300,
+              "img1v1Id": 0,
+              "briefDesc": "",
+              "picUrl": "https://p3.music.126.net/Af267FCGfOlv8b48PukVUg==/109951172064237298.jpg",
+              "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+              "albumSize": 65,
+              "alias": [
+                "ヨアソビ"
+              ],
+              "trans": "夜游",
+              "musicSize": 148,
+              "topicPerson": 0,
+              "picId_str": "109951172064237298",
+              "transNames": [
+                "夜游"
+              ]
+            },
+            "songs": [],
+            "alias": [],
+            "status": 1,
+            "copyrightId": 1416336,
+            "commentThreadId": "R_AL_3_84072830",
+            "artists": [
+              {
+                "name": "YOASOBI",
+                "id": 33927412,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              }
+            ],
+            "onSale": false,
+            "mark": 0,
+            "gapless": 0,
+            "picId_str": "109951164546210608",
+            "transNames": [
+              "向夜晚奔去"
+            ],
+            "isSub": false
+          },
+          {
+            "name": "プロジェクトセカイ カラフルステージ！ feat. 初音ミク アナザーボーカルアルバム 25時、ナイトコードで。",
+            "id": 246764349,
+            "idStr": "246764349",
+            "type": "专辑",
+            "size": 33,
+            "picId": 109951170646756590,
+            "blurPicUrl": "https://p3.music.126.net/GaEmddxyTQ8uM3c7tJ5hKg==/109951170646756588.jpg",
+            "companyId": 0,
+            "pic": 109951170646756590,
+            "picUrl": "https://p3.music.126.net/GaEmddxyTQ8uM3c7tJ5hKg==/109951170646756588.jpg",
+            "publishTime": 1743350400000,
+            "description": "",
+            "tags": "",
+            "company": "KARENT",
+            "briefDesc": "",
+            "artist": {
+              "name": "25時、ナイトコードで。",
+              "id": 48153027,
+              "picId": 109951169499723550,
+              "img1v1Id": 0,
+              "briefDesc": "",
+              "picUrl": "https://p4.music.126.net/kc-8EcTHWMg-_fjbpbOupQ==/109951169499723550.jpg",
+              "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+              "albumSize": 19,
+              "alias": [
+                "Nightcord at 25:00"
+              ],
+              "trans": "25点，Nightcord见",
+              "musicSize": 103,
+              "topicPerson": 0,
+              "picId_str": "109951169499723550",
+              "transNames": [
+                "25点，Nightcord见"
+              ]
+            },
+            "songs": [],
+            "alias": [],
+            "status": 1,
+            "copyrightId": 743010,
+            "commentThreadId": "R_AL_3_246764349",
+            "artists": [
+              {
+                "name": "25時、ナイトコードで。",
+                "id": 48153027,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              },
+              {
+                "name": "宵崎奏",
+                "id": 54405247,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              },
+              {
+                "name": "朝比奈まふゆ",
+                "id": 94531572,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              },
+              {
+                "name": "東雲絵名",
+                "id": 94530703,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              },
+              {
+                "name": "暁山瑞希",
+                "id": 94530704,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              }
+            ],
+            "onSale": false,
+            "mark": 0,
+            "gapless": 0,
+            "picId_str": "109951170646756588",
+            "transNames": [
+              "25时，在Nightcord。 Another Vocal Album"
+            ],
+            "isSub": false
+          },
+          {
+            "name": "夜に駆ける",
+            "id": 278380211,
+            "idStr": "278380211",
+            "type": "Single",
+            "size": 1,
+            "picId": 109951171463891540,
+            "blurPicUrl": "https://p4.music.126.net/yBtZZxFBPXygNBF6qu_Zsw==/109951171463891536.jpg",
+            "companyId": 0,
+            "pic": 109951171463891540,
+            "picUrl": "https://p4.music.126.net/yBtZZxFBPXygNBF6qu_Zsw==/109951171463891536.jpg",
+            "publishTime": 1752508800000,
+            "description": "",
+            "tags": "",
+            "company": null,
+            "briefDesc": "",
+            "artist": {
+              "name": "Lawn m#ower",
+              "id": 48806580,
+              "picId": 109951166158651230,
+              "img1v1Id": 0,
+              "briefDesc": "",
+              "picUrl": "https://p3.music.126.net/_Dwa9TvRu1QGTT8wG4qRoA==/109951166158651224.jpg",
+              "img1v1Url": "https://p3.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+              "albumSize": 9,
+              "alias": [],
+              "trans": "",
+              "musicSize": 16,
+              "topicPerson": 0,
+              "picId_str": "109951166158651224"
+            },
+            "songs": [],
+            "alias": [],
+            "status": 1,
+            "copyrightId": 0,
+            "commentThreadId": "R_AL_3_278380211",
+            "artists": [
+              {
+                "name": "Lawn m#ower",
+                "id": 48806580,
+                "picId": 0,
+                "img1v1Id": 0,
+                "briefDesc": "",
+                "picUrl": "",
+                "img1v1Url": "https://p4.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg",
+                "albumSize": 0,
+                "alias": [],
+                "trans": "",
+                "musicSize": 0,
+                "topicPerson": 0
+              }
+            ],
+            "onSale": false,
+            "mark": 0,
+            "gapless": 0,
+            "picId_str": "109951171463891536",
+            "isSub": false
+          }
+        ],
+        "albumCount": 302
+      },
+      "code": 200
+    }
+  }
+}

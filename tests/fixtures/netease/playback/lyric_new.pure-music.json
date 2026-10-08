@@ -1,0 +1,29 @@
+{
+  "module": "lyric_new",
+  "query": {
+    "id": 22829932
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:53:57.402996+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "sgc": false,
+      "sfy": true,
+      "qfy": true,
+      "needDesc": true,
+      "pureMusic": true,
+      "lrc": {
+        "version": 1,
+        "lyric": "{\"t\":0,\"c\":[{\"tx\":\"作曲: \"},{\"tx\":\"Yiruma\"}]}\n[00:05.00]纯音乐，请欣赏\n"
+      },
+      "code": 200,
+      "briefDesc": null
+    }
+  }
+}

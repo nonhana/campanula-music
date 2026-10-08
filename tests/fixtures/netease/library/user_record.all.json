@@ -1,0 +1,5019 @@
+{
+  "module": "user_record",
+  "query": {
+    "type": 0,
+    "uid": 10000001
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:20:13.154Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "truncated": [
+      {
+        "path": "body.allData",
+        "length": 100
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "allData": [
+        {
+          "playCount": 993,
+          "score": 100,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 37439886,
+              "name": "为霜",
+              "pic": 109951169500070130,
+              "picUrl": "http://p4.music.126.net/mi_gtiAay-phig2bC1wwYQ==/109951169500070127.jpg",
+              "pic_str": "109951169500070127",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12094419,
+                "name": "羽肿",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 1416618,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 296150,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 11849187,
+              "sr": 44100,
+              "vd": -29978
+            },
+            "hr": null,
+            "id": 535517304,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4739701,
+              "sr": 44100,
+              "vd": -25533
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 7109529,
+              "sr": 44100,
+              "vd": -27335
+            },
+            "mainTitle": null,
+            "mark": 17180270656,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "为霜",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540358,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 535517304,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1517728851250,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1306719,
+              "fid": 0,
+              "size": 48373240,
+              "sr": 44100,
+              "vd": -30053
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 70,
+            "version": 36
+          }
+        },
+        {
+          "playCount": 646,
+          "score": 65,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 34910116,
+              "name": "花火が瞬く夜に",
+              "pic": 109951169500060290,
+              "picUrl": "http://p4.music.126.net/m_hW-M2jlDM9HaevdDq90g==/109951169500060294.jpg",
+              "pic_str": "109951169500060294",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12094419,
+                "name": "羽肿",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 1416618,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 270857,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10836680,
+              "sr": 44100,
+              "vd": -9004
+            },
+            "hr": null,
+            "id": 434902428,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4334698,
+              "sr": 44100,
+              "vd": -4590
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6502026,
+              "sr": 44100,
+              "vd": -6378
+            },
+            "mainTitle": null,
+            "mark": 17180270656,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "花火が瞬く夜に",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540358,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 434902428,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1476285579238,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1301792,
+              "fid": 0,
+              "size": 44074969,
+              "sr": 44100,
+              "vd": -8992
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "烟花闪烁的夜晚"
+            ],
+            "v": 298,
+            "version": 264
+          }
+        },
+        {
+          "playCount": 476,
+          "score": 47,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 34856396,
+              "name": "Windy Hill",
+              "pic": 109951169463411520,
+              "picUrl": "http://p3.music.126.net/R5wdneWJADdilEDtqBev-w==/109951169463411528.jpg",
+              "pic_str": "109951169463411528",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12094419,
+                "name": "羽肿",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 1,
+            "cp": 1416618,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 308918,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 12359097,
+              "sr": 44100,
+              "vd": -15741
+            },
+            "hr": null,
+            "id": 427606780,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4943665,
+              "sr": 44100,
+              "vd": -11309
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 7415475,
+              "sr": 44100,
+              "vd": -13136
+            },
+            "mainTitle": null,
+            "mark": 17180270656,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Windy Hill",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540358,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 427606780,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1472486400000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1436128,
+              "fid": 0,
+              "size": 55455889,
+              "sr": 44100,
+              "vd": -15744
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "风之谷"
+            ],
+            "v": 205,
+            "version": 171
+          }
+        },
+        {
+          "playCount": 474,
+          "score": 47,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 35750356,
+              "name": "夏に花が散る",
+              "pic": 109951169500060860,
+              "picUrl": "http://p4.music.126.net/saXNx3aWMTFX77b9KQpXwg==/109951169500060865.jpg",
+              "pic_str": "109951169500060865",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12094419,
+                "name": "羽肿",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 1416618,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 283241,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 11331962,
+              "sr": 44100,
+              "vd": -13669
+            },
+            "hr": null,
+            "id": 490687121,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4532811,
+              "sr": 44100,
+              "vd": -9295
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6799195,
+              "sr": 44100,
+              "vd": -11042
+            },
+            "mainTitle": null,
+            "mark": 17180270656,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "夏に花が散る",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540358,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 490687121,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1500036492277,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1527997,
+              "fid": 0,
+              "size": 54099118,
+              "sr": 44100,
+              "vd": -13671
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "夏天花落"
+            ],
+            "v": 87,
+            "version": 53
+          }
+        },
+        {
+          "playCount": 344,
+          "score": 34,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 72066873,
+              "name": "A.r.k",
+              "pic": 109951163436673360,
+              "picUrl": "http://p3.music.126.net/ID9frVgi-6h0-o9immuB0A==/109951163436673353.jpg",
+              "pic_str": "109951163436673353",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 1074042,
+                "name": "Noicybino",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 0,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 193982,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 7761546,
+              "sr": 44100,
+              "vd": -5999
+            },
+            "hr": null,
+            "id": 1298135870,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3104644,
+              "sr": 44100,
+              "vd": -1813
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 4656945,
+              "sr": 44100,
+              "vd": -3449
+            },
+            "mainTitle": null,
+            "mark": 17180008512,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Atolón",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 3,
+            "originSongSimpleData": null,
+            "pop": 90,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540102,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 1298135870,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1533052800000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 767262,
+              "fid": 0,
+              "size": 18604424,
+              "sr": 44100,
+              "vd": -5993
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 59,
+            "version": 25
+          }
+        },
+        {
+          "playCount": 343,
+          "score": 34,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 49415,
+              "name": "Landscape",
+              "pic": 2270491511406026,
+              "picUrl": "http://p3.music.126.net/AYUIngFniHE0GExrSfkzVQ==/2270491511406026.jpg",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 15567,
+                "name": "tsunenori a.k.a Marukabis",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 663018,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 254000,
+            "entertainmentTags": null,
+            "fee": 0,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10183730,
+              "sr": 44100,
+              "vd": -35921
+            },
+            "hr": null,
+            "id": 524681,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4073473,
+              "sr": 44100,
+              "vd": -35921
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6110300,
+              "sr": 44100,
+              "vd": -35921
+            },
+            "mainTitle": null,
+            "mark": 9007199254872064,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "An Avenue",
+            "no": 10,
+            "noCopyrightRcmd": null,
+            "originCoverType": 0,
+            "originSongSimpleData": null,
+            "pop": 80,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 320000,
+              "dlLevel": "exhigh",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "sky",
+              "downloadMaxbr": 320000,
+              "fee": 0,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1343744,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 524681,
+              "ignoreCache": null,
+              "maxBrLevel": "sky",
+              "maxbr": 320000,
+              "message": null,
+              "payed": 0,
+              "pl": 320000,
+              "plLevel": "exhigh",
+              "plLevels": null,
+              "playMaxBrLevel": "sky",
+              "playMaxbr": 320000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1219766400000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": null,
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 46,
+            "version": 12
+          }
+        },
+        {
+          "playCount": 311,
+          "score": 31,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 74409234,
+              "name": "正しい偽りからの起床",
+              "pic": 109951171178959500,
+              "picUrl": "http://p4.music.126.net/S7fYKauzveE9NDDVstBQvw==/109951171178959502.jpg",
+              "pic_str": "109951171178959502",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 15021101,
+                "name": "ずっと真夜中でいいのに。",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 1,
+            "cp": 7003,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 258626,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10347668,
+              "sr": 44100,
+              "vd": -72654
+            },
+            "hr": null,
+            "id": 1325357378,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4139093,
+              "sr": 44100,
+              "vd": -68469
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6208618,
+              "sr": 44100,
+              "vd": -70075
+            },
+            "mainTitle": null,
+            "mark": 17180139520,
+            "markTags": [],
+            "mst": 9,
+            "mv": 5954048,
+            "name": "秒針を噛む",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540100,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 1325357378,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1542124800000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1068587,
+              "fid": 0,
+              "size": 34550383,
+              "sr": 44100,
+              "vd": -72675
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "咬住秒针"
+            ],
+            "v": 62,
+            "version": 28
+          }
+        },
+        {
+          "playCount": 297,
+          "score": 29,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 3427126,
+              "name": "Collapsing World",
+              "pic": 109951167955465260,
+              "picUrl": "http://p4.music.126.net/b-zvY5gJZ2zZ-F7WcH1cbg==/109951167955465270.jpg",
+              "pic_str": "109951167955465270",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 1084238,
+                "name": "Lightscape",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 1,
+            "cp": 1416618,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 190249,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 7612125,
+              "sr": 44100,
+              "vd": -45394
+            },
+            "hr": null,
+            "id": 38018486,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3044876,
+              "sr": 44100,
+              "vd": -41171
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 4567293,
+              "sr": 44100,
+              "vd": -42805
+            },
+            "mainTitle": null,
+            "mark": 17180270592,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Collapsing World",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540356,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 38018486,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1441209600000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 825532,
+              "fid": 0,
+              "size": 19632167,
+              "sr": 44100,
+              "vd": -45396
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "崩溃的世界"
+            ],
+            "v": 84,
+            "version": 50
+          }
+        },
+        {
+          "playCount": 277,
+          "score": 27,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 78399571,
+              "name": "だから僕は音楽を辞めた",
+              "pic": 109951170245162530,
+              "picUrl": "http://p3.music.126.net/AVhYLte6khAcd3wOO65avw==/109951170245162530.jpg",
+              "pic_str": "109951170245162530",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12390232,
+                "name": "ヨルシカ",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 1,
+            "cp": 456010,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 242973,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 9721774,
+              "sr": 44100,
+              "vd": -55005
+            },
+            "hr": null,
+            "id": 1357953768,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3888736,
+              "sr": 44100,
+              "vd": -50727
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 5833082,
+              "sr": 44100,
+              "vd": -52399
+            },
+            "mainTitle": null,
+            "mark": 17180139520,
+            "markTags": [],
+            "mst": 9,
+            "mv": 10861891,
+            "name": "だから僕は音楽を辞めた",
+            "no": 14,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540356,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 1357953768,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1554825600000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1611999,
+              "fid": 0,
+              "size": 48963616,
+              "sr": 44100,
+              "vd": -54996
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "所以我放弃了音乐"
+            ],
+            "v": 70,
+            "version": 36
+          }
+        },
+        {
+          "playCount": 274,
+          "score": 27,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 3426487,
+              "name": "212",
+              "pic": 109951163338335040,
+              "picUrl": "http://p4.music.126.net/Q7o5JZusviFWxfIZxPfc5g==/109951163338335039.jpg",
+              "pic_str": "109951163338335039",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 1150207,
+                "name": "nameless",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 663018,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 248160,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 9928664,
+              "sr": 44100,
+              "vd": -43606
+            },
+            "hr": null,
+            "id": 38689090,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3971492,
+              "sr": 44100,
+              "vd": -39404
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 5957216,
+              "sr": 44100,
+              "vd": -41022
+            },
+            "mainTitle": null,
+            "mark": 9007216434880512,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "ツギハギスタッカート",
+            "no": 4,
+            "noCopyrightRcmd": null,
+            "originCoverType": 2,
+            "originSongSimpleData": {
+              "albumMeta": {
+                "id": 3094190,
+                "name": "ツギハギスタッカート"
+              },
+              "artists": [
+                {
+                  "id": 1087651,
+                  "name": "とあ"
+                },
+                {
+                  "id": 159692,
+                  "name": "初音ミク"
+                }
+              ],
+              "name": "ツギハギスタッカート",
+              "songId": 30148963
+            },
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540100,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 38689090,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1448380800000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 921200,
+              "fid": 0,
+              "size": 28575628,
+              "sr": 44100,
+              "vd": -43606
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "拼凑的断音"
+            ],
+            "v": 149,
+            "version": 115
+          }
+        },
+        {
+          "playCount": 267,
+          "score": 26,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 75453,
+              "name": "三年幻想郷",
+              "pic": 565148976688829,
+              "picUrl": "http://p4.music.126.net/QdxRMFtZCNkTsvJtNfpHpg==/565148976688829.jpg",
+              "tns": []
+            },
+            "alia": [
+              "千年幻想郷　~ History of the Moon"
+            ],
+            "ar": [
+              {
+                "alias": [],
+                "id": 20185,
+                "name": "神乃木製作所",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 663018,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 316080,
+            "entertainmentTags": null,
+            "fee": 0,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 12645399,
+              "sr": 44100,
+              "vd": -58908
+            },
+            "hr": null,
+            "id": 767452,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 5058186,
+              "sr": 44100,
+              "vd": -54634
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 7587257,
+              "sr": 44100,
+              "vd": -56327
+            },
+            "mainTitle": null,
+            "mark": 131072,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "三年幻想郷",
+            "no": 16,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 95,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 0,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540352,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 767452,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 0,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1299945600000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1145000,
+              "fid": 0,
+              "size": 40418995,
+              "sr": 44100,
+              "vd": -58901
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 54,
+            "version": 20
+          }
+        },
+        {
+          "playCount": 266,
+          "score": 26,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 34876297,
+              "name": "Rain after Summer",
+              "pic": 109951169500066560,
+              "picUrl": "http://p3.music.126.net/YBl1n_Rg5vzDpiw0HUvlqA==/109951169500066565.jpg",
+              "pic_str": "109951169500066565",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12094419,
+                "name": "羽肿",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 0,
+            "cp": 1416618,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 345000,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320001,
+              "fid": 0,
+              "size": 13803146,
+              "sr": 44100,
+              "vd": -779
+            },
+            "hr": null,
+            "id": 430685732,
+            "l": {
+              "br": 128001,
+              "fid": 0,
+              "size": 5521284,
+              "sr": 44100,
+              "vd": 3589
+            },
+            "m": {
+              "br": 192001,
+              "fid": 0,
+              "size": 8281905,
+              "sr": 44100,
+              "vd": 1828
+            },
+            "mainTitle": null,
+            "mark": 17180008512,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Rain after Summer",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540358,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 430685732,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1474371520868,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1543372,
+              "fid": 0,
+              "size": 66557925,
+              "sr": 44100,
+              "vd": -746
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 96,
+            "version": 62
+          }
+        },
+        {
+          "playCount": 260,
+          "score": 26,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 121433199,
+              "name": "春泥棒",
+              "pic": 109951165616927100,
+              "picUrl": "http://p3.music.126.net/kBtj7HlFDuokeO4iyHTXaA==/109951165616927101.jpg",
+              "pic_str": "109951165616927101",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12390232,
+                "name": "ヨルシカ",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 1,
+            "cp": 7003,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 290279,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 11613165,
+              "sr": 48000,
+              "vd": -49636
+            },
+            "hr": {
+              "br": 3046834,
+              "fid": 0,
+              "size": 110554003,
+              "sr": 96000,
+              "vd": -49669
+            },
+            "id": 1810759765,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4645293,
+              "sr": 48000,
+              "vd": -45438
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6967917,
+              "sr": 48000,
+              "vd": -47053
+            },
+            "mainTitle": null,
+            "mark": 17717010432,
+            "markTags": [],
+            "mst": 9,
+            "mv": 14224142,
+            "name": "春泥棒",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 1999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1560580,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 1810759765,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1610121600000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 951341,
+              "fid": 0,
+              "size": 34519321,
+              "sr": 48000,
+              "vd": -47177
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "盗春者"
+            ],
+            "v": 45,
+            "version": 11
+          }
+        },
+        {
+          "playCount": 251,
+          "score": 25,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 47161,
+              "name": "雨道",
+              "pic": 4447524534356140,
+              "picUrl": "http://p3.music.126.net/fEvTj3iuLsIcoFWBNFTC4w==/4447524534356140.jpg",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 15164,
+                "name": "Otokaze",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 663018,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 217431,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 8699864,
+              "sr": 44100,
+              "vd": -59795
+            },
+            "hr": null,
+            "id": 493903,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3479972,
+              "sr": 44100,
+              "vd": -55541
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 5219936,
+              "sr": 44100,
+              "vd": -57215
+            },
+            "mainTitle": null,
+            "mark": 17180008448,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "雨道",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540100,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 493903,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1340035200000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 933628,
+              "fid": 0,
+              "size": 25375048,
+              "sr": 44100,
+              "vd": -60058
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 50,
+            "version": 16
+          }
+        },
+        {
+          "playCount": 244,
+          "score": 24,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 129243977,
+              "name": "あいつら全員同窓会",
+              "pic": 109951166099784620,
+              "picUrl": "http://p4.music.126.net/5kIcYrMgdjhPb4Lsf71hvA==/109951166099784628.jpg",
+              "pic_str": "109951166099784628",
+              "tns": []
+            },
+            "alia": [
+              "PC游戏《PSO2:NGS》合作曲",
+              "SpotifyテレビCM"
+            ],
+            "ar": [
+              {
+                "alias": [],
+                "id": 15021101,
+                "name": "ずっと真夜中でいいのに。",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 1,
+            "cp": 7003,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 254533,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10183725,
+              "sr": 48000,
+              "vd": -77432
+            },
+            "hr": {
+              "br": 1919251,
+              "fid": 0,
+              "size": 61064187,
+              "sr": 48000,
+              "vd": -77410
+            },
+            "id": 1854474192,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4073517,
+              "sr": 48000,
+              "vd": -73276
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6110253,
+              "sr": 48000,
+              "vd": -74902
+            },
+            "mainTitle": null,
+            "mark": 17717010432,
+            "markTags": [],
+            "mst": 9,
+            "mv": 14295185,
+            "name": "あいつら全員同窓会",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 1999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1544196,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 1854474192,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1623945600000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1152516,
+              "fid": 0,
+              "size": 36669243,
+              "sr": 48000,
+              "vd": -77275
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "那些家伙们的校友会 (PC游戏《PSO2:NGS》合作曲)"
+            ],
+            "v": 52,
+            "version": 18
+          }
+        },
+        {
+          "playCount": 232,
+          "score": 23,
+          "song": {
+            "a": null,
+            "additionalTitle": "（Demo）",
+            "al": {
+              "id": 37112526,
+              "name": "一个人跨年的你看啊，今晚月色真美。",
+              "pic": 109951163096544860,
+              "picUrl": "http://p4.music.126.net/3bs7NZugy1tMOuM-R-Adpg==/109951163096544864.jpg",
+              "pic_str": "109951163096544864",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12021027,
+                "name": "十指流玉",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 0,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 189050,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320002,
+              "fid": 0,
+              "size": 7565105,
+              "sr": 44100,
+              "vd": -17043
+            },
+            "hr": null,
+            "id": 527354000,
+            "l": {
+              "br": 128002,
+              "fid": 0,
+              "size": 3026068,
+              "sr": 44100,
+              "vd": -12689
+            },
+            "m": {
+              "br": 192002,
+              "fid": 0,
+              "size": 4539080,
+              "sr": 44100,
+              "vd": -14424
+            },
+            "mainTitle": "春风再美也比不上你的笑，没见过你的人自然不会明了。",
+            "mark": 17180008512,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "春风再美也比不上你的笑，没见过你的人自然不会明了。（Demo）",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 0,
+            "originSongSimpleData": null,
+            "pop": 90,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540102,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 527354000,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1514649600000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 716421,
+              "fid": 0,
+              "size": 16930009,
+              "sr": 44100,
+              "vd": -16770
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 60,
+            "version": 26
+          }
+        },
+        {
+          "playCount": 228,
+          "score": 22,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 3056604,
+              "name": "Memories",
+              "pic": 109951171294906770,
+              "picUrl": "http://p3.music.126.net/TK8Doy2Fv8lB4k308w73wQ==/109951171294906772.jpg",
+              "pic_str": "109951171294906772",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 347497,
+                "name": "Jacoo",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 1,
+            "cp": 22036,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 222930,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 8920338,
+              "sr": 44100,
+              "vd": 1000
+            },
+            "hr": null,
+            "id": 29737646,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3568161,
+              "sr": 44100,
+              "vd": 5536
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 5352220,
+              "sr": 44100,
+              "vd": 3757
+            },
+            "mainTitle": null,
+            "mark": 17180008448,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Memories",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 0,
+            "originSongSimpleData": null,
+            "pop": 95,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540100,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 29737646,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1404144000000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1261219,
+              "fid": 0,
+              "size": 35149562,
+              "sr": 44100,
+              "vd": 964
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 55,
+            "version": 21
+          }
+        },
+        {
+          "playCount": 222,
+          "score": 22,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 920000023,
+              "name": "黒鳥璃水",
+              "pic": 109951168691656320,
+              "picUrl": "http://p3.music.126.net/RuuLmlFpA5G_VRP8PAYJmQ==/109951168691656312.jpg",
+              "pic_str": "109951168691656312",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 99999999,
+                "name": "测试歌手",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 0,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 277014,
+            "entertainmentTags": null,
+            "fee": 0,
+            "ftype": 0,
+            "h": {
+              "br": 320001,
+              "fid": 0,
+              "size": 11083276,
+              "sr": 44100,
+              "vd": 79570
+            },
+            "hr": null,
+            "id": 910000022,
+            "l": {
+              "br": 128001,
+              "fid": 0,
+              "size": 4433337,
+              "sr": 44100,
+              "vd": 84015
+            },
+            "m": {
+              "br": 192001,
+              "fid": 0,
+              "size": 6649983,
+              "sr": 44100,
+              "vd": 82214
+            },
+            "mainTitle": null,
+            "mark": 131200,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Grey Flowers",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 0,
+            "originSongSimpleData": null,
+            "pop": 5,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 0,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1277953,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 910000022,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 0,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 0,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1111115,
+              "fid": 0,
+              "size": 38474376,
+              "sr": 44100,
+              "vd": 79471
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 37,
+            "version": 3
+          }
+        },
+        {
+          "playCount": 222,
+          "score": 22,
+          "song": {
+            "a": null,
+            "additionalTitle": "(=I)（Jersey Club Bootleg）",
+            "al": {
+              "id": 37920144,
+              "name": "You(=I) (Jersey club Bootleg)",
+              "pic": 109951163197752180,
+              "picUrl": "http://p4.music.126.net/91fn6ZqGzCcCB8dK12eRgg==/109951163197752176.jpg",
+              "pic_str": "109951163197752176",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12490212,
+                "name": "幸子小姐拜托了",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 1416673,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 102875,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 4117987,
+              "sr": 44100,
+              "vd": -57314
+            },
+            "hr": null,
+            "id": 545385865,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 1647221,
+              "sr": 44100,
+              "vd": -53018
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 2470809,
+              "sr": 44100,
+              "vd": -54719
+            },
+            "mainTitle": "You",
+            "mark": 17180139584,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "You(=I)（Jersey Club Bootleg）",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 2,
+            "originSongSimpleData": {
+              "albumMeta": {
+                "id": 34840768,
+                "name": "Full Album RED PLANET"
+              },
+              "artists": [
+                {
+                  "id": 1039524,
+                  "name": "脸红的思春期"
+                }
+              ],
+              "name": "You(=I)",
+              "songId": 427595458
+            },
+            "pop": 85,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540358,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 545385865,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1521008420706,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 897214,
+              "fid": 0,
+              "size": 11537614,
+              "sr": 44100,
+              "vd": -57307
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 65,
+            "version": 31
+          }
+        },
+        {
+          "playCount": 222,
+          "score": 22,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 3081085,
+              "name": "SOUND NOVEL",
+              "pic": 3247957350394210,
+              "picUrl": "http://p4.music.126.net/YuQQw6jiLaxQ7oa1-wGJew==/3247957350394210.jpg",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 14825,
+                "name": "田熊理秀",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 0,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 212096,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320002,
+              "fid": 0,
+              "size": 8486705,
+              "sr": 44100,
+              "vd": -44736
+            },
+            "hr": null,
+            "id": 29803287,
+            "l": {
+              "br": 128002,
+              "fid": 0,
+              "size": 3394708,
+              "sr": 44100,
+              "vd": -40454
+            },
+            "m": {
+              "br": 192002,
+              "fid": 0,
+              "size": 5092040,
+              "sr": 44100,
+              "vd": -42178
+            },
+            "mainTitle": null,
+            "mark": 17180008448,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Komorebi",
+            "no": 7,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540100,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 29803287,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1415721600000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 903536,
+              "fid": 0,
+              "size": 23954663,
+              "sr": 44100,
+              "vd": -44739
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "叶隙间散落的阳光"
+            ],
+            "v": 498,
+            "version": 464
+          }
+        },
+        {
+          "playCount": 213,
+          "score": 21,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 47163,
+              "name": "夏恋",
+              "pic": 4450823069239492,
+              "picUrl": "http://p3.music.126.net/5gNt0nW6l-2hSAtJAnaNCw==/4450823069239492.jpg",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 15164,
+                "name": "Otokaze",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 663018,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 266010,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320001,
+              "fid": 0,
+              "size": 10643374,
+              "sr": 44100,
+              "vd": -66954
+            },
+            "hr": null,
+            "id": 493911,
+            "l": {
+              "br": 128001,
+              "fid": 0,
+              "size": 4257376,
+              "sr": 44100,
+              "vd": -62703
+            },
+            "m": {
+              "br": 192001,
+              "fid": 0,
+              "size": 6386042,
+              "sr": 44100,
+              "vd": -64375
+            },
+            "mainTitle": null,
+            "mark": 17180008448,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "夏恋",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540100,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 493911,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1333641600000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 951073,
+              "fid": 0,
+              "size": 31624475,
+              "sr": 44100,
+              "vd": -66992
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 52,
+            "version": 18
+          }
+        },
+        {
+          "playCount": 212,
+          "score": 21,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 40148,
+              "name": "A Cup Of Coffee",
+              "pic": 109951168761281260,
+              "picUrl": "http://p3.music.126.net/Ht2oP1r8uK7GSZGZupbBWA==/109951168761281269.jpg",
+              "pic_str": "109951168761281269",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 13950,
+                "name": "DJ OKAWARI",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 743010,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 265800,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 10635015,
+              "sr": 44100,
+              "vd": -35859
+            },
+            "hr": null,
+            "id": 406238,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 4254032,
+              "sr": 44100,
+              "vd": -31475
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 6381026,
+              "sr": 44100,
+              "vd": -33209
+            },
+            "mainTitle": null,
+            "mark": 17182498816,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "Flower Dance",
+            "no": 2,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 95,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540356,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 406238,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1285689600000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 841943,
+              "fid": 0,
+              "size": 27973574,
+              "sr": 44100,
+              "vd": -36261
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "花之舞"
+            ],
+            "v": 241,
+            "version": 207
+          }
+        },
+        {
+          "playCount": 210,
+          "score": 21,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 84174069,
+              "name": "Renovatio",
+              "pic": 109951164813461420,
+              "picUrl": "http://p4.music.126.net/KJwrRiyFN8Lsnc1t3j-Klw==/109951164813461428.jpg",
+              "pic_str": "109951164813461428",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 13714181,
+                "name": "Intelligency",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 1,
+            "cp": 7002,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 207360,
+            "entertainmentTags": null,
+            "fee": 1,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 8296533,
+              "sr": 44100,
+              "vd": -37288
+            },
+            "hr": null,
+            "id": 1410339379,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3318639,
+              "sr": 44100,
+              "vd": -32952
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 4977937,
+              "sr": 44100,
+              "vd": -34689
+            },
+            "mainTitle": null,
+            "mark": 17180139520,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "August",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 1,
+              "fl": 0,
+              "flLevel": "none",
+              "flag": 1540100,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 1410339379,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1584547200000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1546469,
+              "fid": 0,
+              "size": 40088303,
+              "sr": 44100,
+              "vd": -37283
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "八月"
+            ],
+            "v": 55,
+            "version": 21
+          }
+        },
+        {
+          "playCount": 206,
+          "score": 20,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 3266578,
+              "name": "Pneumatic Tokyo",
+              "pic": 109951169611923360,
+              "picUrl": "http://p4.music.126.net/hlxd90WmTJYXJJU8JoXO2A==/109951169611923358.jpg",
+              "pic_str": "109951169611923358",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 836033,
+                "name": "EnV",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 743010,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 229798,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 9194101,
+              "sr": 44100,
+              "vd": -76588
+            },
+            "hr": null,
+            "id": 33937527,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3677666,
+              "sr": 44100,
+              "vd": -73209
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 5516478,
+              "sr": 44100,
+              "vd": -74049
+            },
+            "mainTitle": null,
+            "mark": 139392,
+            "markTags": [],
+            "mst": 9,
+            "mv": 507172,
+            "name": "Pneumatic Tokyo",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540357,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 33937527,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1542499200000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1046159,
+              "fid": 0,
+              "size": 30050679,
+              "sr": 44100,
+              "vd": -3
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "气动东京"
+            ],
+            "v": 57,
+            "version": 23
+          }
+        },
+        {
+          "playCount": 203,
+          "score": 20,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 13865,
+              "name": "春夏秋冬·続",
+              "pic": 102254581398923,
+              "picUrl": "http://p4.music.126.net/HwQ5ubsoQtN8kDSlCleB_A==/102254581398923.jpg",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 4716,
+                "name": "α·Pav",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 1,
+            "cp": 5003,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 411036,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320001,
+              "fid": 0,
+              "size": 16443603,
+              "sr": 44100,
+              "vd": -6217
+            },
+            "hr": null,
+            "id": 139177,
+            "l": {
+              "br": 128001,
+              "fid": 0,
+              "size": 6577467,
+              "sr": 44100,
+              "vd": -1824
+            },
+            "m": {
+              "br": 192001,
+              "fid": 0,
+              "size": 9866179,
+              "sr": 44100,
+              "vd": -3607
+            },
+            "mainTitle": null,
+            "mark": 139456,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "秋～華恋～",
+            "no": 3,
+            "noCopyrightRcmd": null,
+            "originCoverType": 0,
+            "originSongSimpleData": null,
+            "pop": 95,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 320000,
+              "dlLevel": "exhigh",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "sky",
+              "downloadMaxbr": 320000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1343495,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 139177,
+              "ignoreCache": null,
+              "maxBrLevel": "sky",
+              "maxbr": 320000,
+              "message": null,
+              "payed": 1,
+              "pl": 320000,
+              "plLevel": "exhigh",
+              "plLevels": null,
+              "playMaxBrLevel": "sky",
+              "playMaxbr": 320000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1336579200000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": null,
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 59,
+            "version": 25
+          }
+        },
+        {
+          "playCount": 200,
+          "score": 20,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 920000020,
+              "name": "一些随弹",
+              "pic": 109951168894598910,
+              "picUrl": "http://p4.music.126.net/6NuOQJXeBrZgDEk2QVlKIg==/109951168894598908.jpg",
+              "pic_str": "109951168894598908",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 99999999,
+                "name": "测试歌手",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 0,
+            "cp": 0,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 184025,
+            "entertainmentTags": null,
+            "fee": 0,
+            "ftype": 0,
+            "h": {
+              "br": 320002,
+              "fid": 0,
+              "size": 7363245,
+              "sr": 48000,
+              "vd": 13965
+            },
+            "hr": {
+              "br": 1221147,
+              "fid": 0,
+              "size": 28090251,
+              "sr": 48000,
+              "vd": 13755
+            },
+            "id": 910000019,
+            "l": {
+              "br": 128002,
+              "fid": 0,
+              "size": 2945325,
+              "sr": 48000,
+              "vd": 18410
+            },
+            "m": {
+              "br": 192002,
+              "fid": 0,
+              "size": 4417965,
+              "sr": 48000,
+              "vd": 16610
+            },
+            "mainTitle": null,
+            "mark": 537002112,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "I'll send some notes for your poems,",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 0,
+            "originSongSimpleData": null,
+            "pop": 10,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 1999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 0,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1544193,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 910000019,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 0,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 0,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 487595,
+              "fid": 0,
+              "size": 11216223,
+              "sr": 48000,
+              "vd": 11835
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 37,
+            "version": 3
+          }
+        },
+        {
+          "playCount": 194,
+          "score": 19,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 13876,
+              "name": "Afterglow",
+              "pic": 93458488376709,
+              "picUrl": "http://p3.music.126.net/lGKTPIR0dvEt09OMlzflxA==/93458488376709.jpg",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 4716,
+                "name": "α·Pav",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 2,
+            "cp": 0,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 195000,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 7821142,
+              "sr": 44100,
+              "vd": -6518
+            },
+            "hr": null,
+            "id": 139268,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3128505,
+              "sr": 44100,
+              "vd": -2114
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 4692717,
+              "sr": 44100,
+              "vd": -3898
+            },
+            "mainTitle": null,
+            "mark": 17180008512,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "桜",
+            "no": 8,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 85,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 320000,
+              "dlLevel": "exhigh",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "sky",
+              "downloadMaxbr": 320000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1343494,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 139268,
+              "ignoreCache": null,
+              "maxBrLevel": "sky",
+              "maxbr": 320000,
+              "message": null,
+              "payed": 1,
+              "pl": 320000,
+              "plLevel": "exhigh",
+              "plLevels": null,
+              "playMaxBrLevel": "sky",
+              "playMaxbr": 320000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1303747200000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": null,
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 59,
+            "version": 25
+          }
+        },
+        {
+          "playCount": 194,
+          "score": 19,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 35111172,
+              "name": "City",
+              "pic": 109951169500054600,
+              "picUrl": "http://p3.music.126.net/XbwsxIgcM9uNxOV8X4dZDw==/109951169500054589.jpg",
+              "pic_str": "109951169500054589",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 12094419,
+                "name": "羽肿",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 0,
+            "cp": 1416618,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 253150,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320001,
+              "fid": 0,
+              "size": 10128240,
+              "sr": 44100,
+              "vd": -14520
+            },
+            "hr": null,
+            "id": 451319227,
+            "l": {
+              "br": 128001,
+              "fid": 0,
+              "size": 4051322,
+              "sr": 44100,
+              "vd": -10054
+            },
+            "m": {
+              "br": 192001,
+              "fid": 0,
+              "size": 6076961,
+              "sr": 44100,
+              "vd": -11832
+            },
+            "mainTitle": null,
+            "mark": 17180008512,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "City",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540358,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 451319227,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1483113600000,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1547161,
+              "fid": 0,
+              "size": 48958126,
+              "sr": 44100,
+              "vd": -14998
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 175,
+            "version": 141
+          }
+        },
+        {
+          "playCount": 193,
+          "score": 19,
+          "song": {
+            "a": null,
+            "additionalTitle": null,
+            "al": {
+              "id": 126576144,
+              "name": "INTERNET OVERDOSE",
+              "pic": 109951165925710450,
+              "picUrl": "http://p4.music.126.net/CN5bP6hxB2TXmyMgAPKqHA==/109951165925710451.jpg",
+              "pic_str": "109951165925710451",
+              "tns": []
+            },
+            "alia": [
+              "游戏《主播女孩重度依赖》主题曲"
+            ],
+            "ar": [
+              {
+                "alias": [],
+                "id": 47734911,
+                "name": "NEEDY GIRL OVERDOSE",
+                "tns": []
+              },
+              {
+                "alias": [],
+                "id": 16691,
+                "name": "KOTOKO",
+                "tns": []
+              },
+              {
+                "alias": [],
+                "id": 94216475,
+                "name": "Aiobahn +81",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "01",
+            "cf": "",
+            "copyright": 1,
+            "cp": 1418220,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 220899,
+            "entertainmentTags": null,
+            "fee": 8,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 8838836,
+              "sr": 44100,
+              "vd": -66740
+            },
+            "hr": null,
+            "id": 1840401436,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3535560,
+              "sr": 44100,
+              "vd": -62912
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 5303319,
+              "sr": 44100,
+              "vd": -64265
+            },
+            "mainTitle": null,
+            "mark": 270336,
+            "markTags": [],
+            "mst": 9,
+            "mv": 14287652,
+            "name": "INTERNET OVERDOSE",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 1,
+            "originSongSimpleData": null,
+            "pop": 100,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 999000,
+              "dlLevel": "jyeffect",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "jymaster",
+              "downloadMaxbr": 999000,
+              "fee": 8,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1540356,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 1840401436,
+              "ignoreCache": null,
+              "maxBrLevel": "jymaster",
+              "maxbr": 999000,
+              "message": null,
+              "payed": 1,
+              "pl": 999000,
+              "plLevel": "jyeffect",
+              "plLevels": null,
+              "playMaxBrLevel": "jymaster",
+              "playMaxbr": 999000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1619625600000,
+            "resourceState": true,
+            "rt": "",
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": {
+              "br": 1042014,
+              "fid": 0,
+              "size": 28776596,
+              "sr": 44100,
+              "vd": -66706
+            },
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "tns": [
+              "互联网重度依赖"
+            ],
+            "v": 68,
+            "version": 34
+          }
+        },
+        {
+          "playCount": 191,
+          "score": 19,
+          "song": {
+            "a": null,
+            "additionalTitle": "(AK Remix)",
+            "al": {
+              "id": 34608097,
+              "name": "The Garden of Escapism (AK Remix)",
+              "pic": 1386484168182737,
+              "picUrl": "http://p3.music.126.net/n_e3sUZRGUg7mLk3Kp_6OA==/1386484168182737.jpg",
+              "tns": []
+            },
+            "alia": [],
+            "ar": [
+              {
+                "alias": [],
+                "id": 1192509,
+                "name": "AK",
+                "tns": []
+              },
+              {
+                "alias": [],
+                "id": 129703,
+                "name": "Miro",
+                "tns": []
+              }
+            ],
+            "artistClassics": false,
+            "awardTags": null,
+            "cd": "1",
+            "cf": "",
+            "copyright": 0,
+            "cp": 0,
+            "crbt": null,
+            "displayTags": null,
+            "djId": 0,
+            "dt": 218543,
+            "entertainmentTags": null,
+            "fee": 0,
+            "ftype": 0,
+            "h": {
+              "br": 320000,
+              "fid": 0,
+              "size": 8743749,
+              "sr": 44100,
+              "vd": -37351
+            },
+            "hr": null,
+            "id": 409302035,
+            "l": {
+              "br": 128000,
+              "fid": 0,
+              "size": 3497525,
+              "sr": 44100,
+              "vd": -32945
+            },
+            "m": {
+              "br": 192000,
+              "fid": 0,
+              "size": 5246266,
+              "sr": 44100,
+              "vd": -34708
+            },
+            "mainTitle": "The Garden of Escapism ",
+            "mark": 131072,
+            "markTags": [],
+            "mst": 9,
+            "mv": 0,
+            "name": "The Garden of Escapism (AK Remix)",
+            "no": 1,
+            "noCopyrightRcmd": null,
+            "originCoverType": 2,
+            "originSongSimpleData": null,
+            "pop": 95,
+            "privilege": {
+              "bd": null,
+              "chargeInfoList": [
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 128000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 192000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 0,
+                  "chargeUrl": null,
+                  "rate": 320000
+                },
+                {
+                  "chargeMessage": null,
+                  "chargeType": 1,
+                  "chargeUrl": null,
+                  "rate": 999000
+                }
+              ],
+              "code": 0,
+              "cp": 1,
+              "cs": false,
+              "dl": 320000,
+              "dlLevel": "exhigh",
+              "dlLevels": null,
+              "downloadMaxBrLevel": "sky",
+              "downloadMaxbr": 320000,
+              "fee": 0,
+              "fl": 320000,
+              "flLevel": "exhigh",
+              "flag": 1343744,
+              "freeTrialPrivilege": {
+                "cannotListenReason": null,
+                "freeLimitTagType": null,
+                "listenType": null,
+                "playReason": null,
+                "resConsumable": false,
+                "userConsumable": false
+              },
+              "id": 409302035,
+              "ignoreCache": null,
+              "maxBrLevel": "sky",
+              "maxbr": 320000,
+              "message": null,
+              "payed": 0,
+              "pl": 320000,
+              "plLevel": "exhigh",
+              "plLevels": null,
+              "playMaxBrLevel": "sky",
+              "playMaxbr": 320000,
+              "preSell": false,
+              "rightSource": 0,
+              "rscl": null,
+              "sp": 7,
+              "st": 0,
+              "subp": 1,
+              "toast": false
+            },
+            "pst": 0,
+            "publishTime": 1460140997892,
+            "resourceState": true,
+            "rt": null,
+            "rtUrl": null,
+            "rtUrls": [],
+            "rtype": 0,
+            "rurl": null,
+            "s_id": 0,
+            "single": 0,
+            "songFeature": null,
+            "songJumpInfo": null,
+            "sq": null,
+            "st": 0,
+            "t": 0,
+            "tagPicList": null,
+            "v": 44,
+            "version": 10
+          }
+        }
+      ],
+      "code": 200
+    }
+  }
+}

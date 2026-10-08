@@ -1,0 +1,70 @@
+{
+  "module": "song_download_url_v1",
+  "query": {
+    "id": 512359195,
+    "level": "lossless"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:24:46.212Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "accompany": null,
+        "auEff": null,
+        "beatType": 0,
+        "br": 1723622,
+        "canExtend": false,
+        "channelLayout": null,
+        "closedGain": -6,
+        "closedPeak": 1,
+        "code": 200,
+        "effectTypes": null,
+        "encodeType": "mp3",
+        "expi": 1200,
+        "fee": 1,
+        "flag": 1540100,
+        "freeTimeTrialPrivilege": {
+          "remainTime": 0,
+          "resConsumable": false,
+          "type": 0,
+          "userConsumable": false
+        },
+        "freeTrialInfo": null,
+        "freeTrialPrivilege": {
+          "cannotListenReason": null,
+          "freeLimitTagType": null,
+          "listenType": null,
+          "playReason": null,
+          "resConsumable": false,
+          "userConsumable": false
+        },
+        "gain": -11.1571,
+        "id": 512359195,
+        "immerseType": null,
+        "level": "lossless",
+        "levelConfuse": null,
+        "md5": "09ae9772fe3b55fae1c90a44d839814f",
+        "message": null,
+        "musicId": "8652553024",
+        "payed": 1,
+        "peak": 1,
+        "podcastCtrp": null,
+        "rightSource": 0,
+        "size": 52544441,
+        "sr": 44100,
+        "time": 243879,
+        "type": "flac",
+        "uf": null,
+        "url": "http://m801.music.126.net/20261008224946/b710ea52b049349b53a0a06f00ed9317/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/32069287776/fdad/34b3/2996/09ae9772fe3b55fae1c90a44d839814f.flac?vuutv=rrvNY69ZezvcMUE7mgCYKlFMLUweEpM8py411lHfSGms1LcAVptu9geUMiK+sWRYDYxEKXN/14RxJ16SAgJTWNDnmw2qenQ20QQHgYKbpNE=",
+        "urlSource": 0
+      }
+    }
+  }
+}

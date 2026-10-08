@@ -1,0 +1,18 @@
+{
+  "module": "logout",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T14:42:04.722Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-sms",
+    "note": "对续期前的旧短信 Cookie 退出"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

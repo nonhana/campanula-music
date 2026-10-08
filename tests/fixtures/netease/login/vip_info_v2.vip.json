@@ -1,0 +1,83 @@
+{
+  "module": "vip_info_v2",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T14:19:58.524Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "albumVip": {
+          "dynamicIconUrl": null,
+          "expireTime": 1698854399000,
+          "iconUrl": null,
+          "isSign": false,
+          "isSignDeduct": false,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 400,
+          "vipLevel": 0
+        },
+        "associator": {
+          "dynamicIconUrl": null,
+          "expireTime": 1793203199000,
+          "iconUrl": null,
+          "isSign": true,
+          "isSignDeduct": true,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 100,
+          "vipLevel": 7
+        },
+        "musicPackage": {
+          "dynamicIconUrl": null,
+          "expireTime": 1795535999000,
+          "iconUrl": null,
+          "isSign": true,
+          "isSignDeduct": true,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 220,
+          "vipLevel": 7
+        },
+        "now": 1791469198355,
+        "oldCacheProtocol": false,
+        "redVipAnnualCount": -1,
+        "redVipLevel": 7,
+        "redplus": {
+          "dynamicIconUrl": null,
+          "expireTime": 1698854399000,
+          "iconUrl": null,
+          "isSign": false,
+          "isSignDeduct": false,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 300,
+          "vipLevel": 7
+        },
+        "relationOtherUserId": 0,
+        "relationOtherUserRedVipExpireTime": 0,
+        "relationType": 0,
+        "userId": 10000001,
+        "voiceBookVip": {
+          "dynamicIconUrl": null,
+          "expireTime": 1698854399000,
+          "iconUrl": null,
+          "isSign": false,
+          "isSignDeduct": false,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 500,
+          "vipLevel": 0
+        }
+      },
+      "message": "成功"
+    }
+  }
+}

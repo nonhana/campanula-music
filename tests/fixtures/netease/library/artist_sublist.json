@@ -1,0 +1,441 @@
+{
+  "module": "artist_sublist",
+  "query": {
+    "limit": 100
+  },
+  "context": {
+    "recordedAt": "2026-10-08T14:25:04.405Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "truncated": [
+      {
+        "path": "body.data",
+        "length": 100
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "count": 236,
+      "data": [
+        {
+          "albumSize": 52,
+          "alias": [
+            "ワールズ・エンド・ガールフレンド",
+            "前田勝彦",
+            "WEG"
+          ],
+          "id": 22298,
+          "img1v1Url": "http://p3.music.126.net/XHee86i0wEHO7QFjWMvXcw==/109951163214181883.jpg",
+          "info": "",
+          "mvSize": 7,
+          "name": "world's end girlfriend",
+          "picId": 109951163214181890,
+          "picUrl": "http://p4.music.126.net/XHee86i0wEHO7QFjWMvXcw==/109951163214181883.jpg",
+          "trans": "世界末日女朋友"
+        },
+        {
+          "albumSize": 925,
+          "alias": [],
+          "id": 906118,
+          "img1v1Url": "http://p4.music.126.net/2dJ9Fo7HfkRExyICXG_t3g==/109951167677450486.jpg",
+          "info": "",
+          "mvSize": 432,
+          "name": "洛天依Official",
+          "picId": 109951167677450480,
+          "picUrl": "http://p3.music.126.net/2dJ9Fo7HfkRExyICXG_t3g==/109951167677450486.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 23,
+          "alias": [],
+          "id": 11975111,
+          "img1v1Url": "http://p3.music.126.net/TySrZ-0l20UJ7ifhgh9Q7w==/109951169230880371.jpg",
+          "info": "",
+          "mvSize": 2,
+          "name": "ilem",
+          "picId": 109951169230880370,
+          "picUrl": "http://p4.music.126.net/TySrZ-0l20UJ7ifhgh9Q7w==/109951169230880371.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 18,
+          "alias": [
+            "THT天梦"
+          ],
+          "id": 12495253,
+          "img1v1Url": "http://p4.music.126.net/Tl1B0JTm0aweCqG_k9Umeg==/109951173556578880.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "THT",
+          "picId": 109951173556578880,
+          "picUrl": "http://p4.music.126.net/Tl1B0JTm0aweCqG_k9Umeg==/109951173556578880.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 37,
+          "alias": [
+            "Radiation"
+          ],
+          "id": 1193377,
+          "img1v1Url": "http://p4.music.126.net/1v0s2Vra64EGvHEPfcdj4w==/109951167080689608.jpg",
+          "info": "",
+          "mvSize": 1,
+          "name": "Toby Fox",
+          "picId": 109951167080689600,
+          "picUrl": "http://p4.music.126.net/1v0s2Vra64EGvHEPfcdj4w==/109951167080689608.jpg",
+          "trans": "托比·福克斯"
+        },
+        {
+          "albumSize": 5,
+          "alias": [],
+          "id": 49665604,
+          "img1v1Url": "http://p3.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "アリレム",
+          "picId": 18686200114669624,
+          "picUrl": "http://p4.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 12,
+          "alias": [
+            "whiteflame"
+          ],
+          "id": 14610,
+          "img1v1Url": "http://p3.music.126.net/dcfUkbEBDEFSA09T6a1STw==/109951165547310068.jpg",
+          "info": "",
+          "mvSize": 6,
+          "name": "黒うさP",
+          "picId": 109951165547310060,
+          "picUrl": "http://p3.music.126.net/dcfUkbEBDEFSA09T6a1STw==/109951165547310068.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 103,
+          "alias": [
+            "Garrett Nash"
+          ],
+          "id": 1137226,
+          "img1v1Url": "http://p4.music.126.net/NNnQ-hUhlfPr0k74QHDyNw==/3313928050145987.jpg",
+          "info": "",
+          "mvSize": 44,
+          "name": "gnash",
+          "picId": 3313928050145987,
+          "picUrl": "http://p4.music.126.net/NNnQ-hUhlfPr0k74QHDyNw==/3313928050145987.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 1,
+          "alias": [
+            "m-taku"
+          ],
+          "id": 14825,
+          "img1v1Url": "http://p4.music.126.net/Nv2yXC1xnVhv7OHxqgEDsw==/109951170334197139.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "田熊理秀",
+          "picId": 109951170334197140,
+          "picUrl": "http://p3.music.126.net/Nv2yXC1xnVhv7OHxqgEDsw==/109951170334197139.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 31,
+          "alias": [
+            "汉岚帝",
+            "Z湛岚L"
+          ],
+          "id": 58908705,
+          "img1v1Url": "http://p3.music.126.net/m1IQ9BD_MSlEPOhS8wVIcg==/109951173697025119.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "zl_lan",
+          "picId": 109951173697025120,
+          "picUrl": "http://p3.music.126.net/m1IQ9BD_MSlEPOhS8wVIcg==/109951173697025119.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 105,
+          "alias": [],
+          "id": 48576625,
+          "img1v1Url": "http://p4.music.126.net/kw5Kneqoy1WcAOUZkOltfg==/109951173785186813.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "雾江月",
+          "picId": 109951173785186820,
+          "picUrl": "http://p3.music.126.net/kw5Kneqoy1WcAOUZkOltfg==/109951173785186813.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 104,
+          "alias": [],
+          "id": 46999564,
+          "img1v1Url": "http://p4.music.126.net/maoJAygjM133T1ndUbsXtw==/109951170671321520.jpg",
+          "info": "",
+          "mvSize": 1,
+          "name": "Sansssss",
+          "picId": 109951170671321520,
+          "picUrl": "http://p4.music.126.net/maoJAygjM133T1ndUbsXtw==/109951170671321520.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 61,
+          "alias": [],
+          "id": 49088363,
+          "img1v1Url": "http://p3.music.126.net/LSjv-mATDtZlFnds-KXvNA==/109951172471768080.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "Jux",
+          "picId": 109951172471768080,
+          "picUrl": "http://p4.music.126.net/LSjv-mATDtZlFnds-KXvNA==/109951172471768080.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 24,
+          "alias": [
+            "松本文纪",
+            "szak",
+            "Fuminori Matsumoto"
+          ],
+          "id": 954433,
+          "img1v1Url": "http://p3.music.126.net/PqHFOaScwwm3S-txde21RQ==/109951170242957164.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "松本文紀",
+          "picId": 109951170242957170,
+          "picUrl": "http://p3.music.126.net/PqHFOaScwwm3S-txde21RQ==/109951170242957164.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 3,
+          "alias": [],
+          "id": 97880645,
+          "img1v1Url": "http://p4.music.126.net/q1fMH9abWrP50o6F5hoj6Q==/109951170682726468.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "氟西汀海",
+          "picId": 109951170682726460,
+          "picUrl": "http://p4.music.126.net/q1fMH9abWrP50o6F5hoj6Q==/109951170682726468.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 56,
+          "alias": [
+            "Memo"
+          ],
+          "id": 97638899,
+          "img1v1Url": "http://p4.music.126.net/iIUY_9cyXa82GPXyFK7UHg==/109951170635744644.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "M3mo",
+          "picId": 109951170635744640,
+          "picUrl": "http://p4.music.126.net/iIUY_9cyXa82GPXyFK7UHg==/109951170635744644.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 127,
+          "alias": [
+            "mafumafu"
+          ],
+          "id": 896913,
+          "img1v1Url": "http://p3.music.126.net/09EV_5ysDJInY-TjPXfPwA==/109951169421889117.jpg",
+          "info": "",
+          "mvSize": 10,
+          "name": "まふまふ",
+          "picId": 109951169421889120,
+          "picUrl": "http://p4.music.126.net/09EV_5ysDJInY-TjPXfPwA==/109951169421889117.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 19,
+          "alias": [],
+          "id": 58520310,
+          "img1v1Url": "http://p4.music.126.net/n2p9WUkVsp6SY96oyK6JPw==/109951169019101067.jpg",
+          "info": "",
+          "mvSize": 2,
+          "name": "kyiku",
+          "picId": 109951169019101070,
+          "picUrl": "http://p4.music.126.net/n2p9WUkVsp6SY96oyK6JPw==/109951169019101067.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 58,
+          "alias": [],
+          "id": 97589116,
+          "img1v1Url": "http://p4.music.126.net/Q8IlmZ7RbugJy-yGjf3K6A==/109951170610184764.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "在虚无中永存",
+          "picId": 109951170610184770,
+          "picUrl": "http://p4.music.126.net/Q8IlmZ7RbugJy-yGjf3K6A==/109951170610184764.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 37,
+          "alias": [
+            "Fujii Kaze"
+          ],
+          "id": 33760539,
+          "img1v1Url": "http://p3.music.126.net/AfPEQeeoC99TLOplRB3d4A==/109951169429388250.jpg",
+          "info": "",
+          "mvSize": 35,
+          "name": "藤井風",
+          "picId": 109951169429388260,
+          "picUrl": "http://p4.music.126.net/AfPEQeeoC99TLOplRB3d4A==/109951169429388250.jpg",
+          "trans": "藤井风"
+        },
+        {
+          "albumSize": 26,
+          "alias": [
+            "クロガキ",
+            "黑柿子P",
+            "神崎伊织"
+          ],
+          "id": 15250024,
+          "img1v1Url": "http://p3.music.126.net/YkxQl1OoJX7KizlHJDxaAw==/109951164287566933.jpg",
+          "info": "",
+          "mvSize": 8,
+          "name": "カンザキイオリ",
+          "picId": 109951164287566930,
+          "picUrl": "http://p3.music.126.net/YkxQl1OoJX7KizlHJDxaAw==/109951164287566933.jpg",
+          "trans": "神崎伊织"
+        },
+        {
+          "albumSize": 25,
+          "alias": [
+            "蜜柑星P"
+          ],
+          "id": 1072042,
+          "img1v1Url": "http://p4.music.126.net/EJzUOWU8M8f5KGr5MFDdpw==/109951165825881659.jpg",
+          "info": "",
+          "mvSize": 11,
+          "name": "Orangestar",
+          "picId": 109951165825881660,
+          "picUrl": "http://p4.music.126.net/EJzUOWU8M8f5KGr5MFDdpw==/109951165825881659.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 23,
+          "alias": [
+            "KRUX",
+            "INOFIX STUDIO",
+            "이노픽스 스튜디오"
+          ],
+          "id": 31473473,
+          "img1v1Url": "http://p3.music.126.net/WM8l35N27z9aE2aCErdeVg==/109951167090756462.jpg",
+          "info": "",
+          "mvSize": 4,
+          "name": "HyuN",
+          "picId": 109951167090756460,
+          "picUrl": "http://p3.music.126.net/WM8l35N27z9aE2aCErdeVg==/109951167090756462.jpg",
+          "trans": "姜声贤"
+        },
+        {
+          "albumSize": 39,
+          "alias": [
+            "V.W.P -Virtual Witch Phenomenon-"
+          ],
+          "id": 48964646,
+          "img1v1Url": "http://p3.music.126.net/XWMNL7JQ-LWBAYG0pL9ZVw==/109951169215163075.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "V.W.P",
+          "picId": 109951169215163070,
+          "picUrl": "http://p3.music.126.net/XWMNL7JQ-LWBAYG0pL9ZVw==/109951169215163075.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 39,
+          "alias": [
+            "可惜夜",
+            "Atarayo"
+          ],
+          "id": 37687426,
+          "img1v1Url": "http://p3.music.126.net/4USJFtfQMk0pt8N7jThDFQ==/109951172591891516.jpg",
+          "info": "",
+          "mvSize": 18,
+          "name": "あたらよ",
+          "picId": 109951172591891520,
+          "picUrl": "http://p4.music.126.net/4USJFtfQMk0pt8N7jThDFQ==/109951172591891516.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 185,
+          "alias": [
+            "逃离地球"
+          ],
+          "id": 105493,
+          "img1v1Url": "http://p3.music.126.net/rpXCh8mzc9I8Oel28s6AAw==/109951173789911554.jpg",
+          "info": "",
+          "mvSize": 143,
+          "name": "Walk off the Earth",
+          "picId": 109951173789911550,
+          "picUrl": "http://p4.music.126.net/rpXCh8mzc9I8Oel28s6AAw==/109951173789911554.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 15,
+          "alias": [
+            "Toaka"
+          ],
+          "id": 54169132,
+          "img1v1Url": "http://p4.music.126.net/tmPw5nPxSMy-LONp9x0PSA==/109951169141087684.jpg",
+          "info": "",
+          "mvSize": 15,
+          "name": "十明",
+          "picId": 109951169141087680,
+          "picUrl": "http://p3.music.126.net/tmPw5nPxSMy-LONp9x0PSA==/109951169141087684.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 6,
+          "alias": [],
+          "id": 12476269,
+          "img1v1Url": "http://p4.music.126.net/9ylbM-TvdNRmOnx8-pXxKQ==/109951165614129400.jpg",
+          "info": "",
+          "mvSize": 0,
+          "name": "Funton",
+          "picId": 109951165614129400,
+          "picUrl": "http://p4.music.126.net/9ylbM-TvdNRmOnx8-pXxKQ==/109951165614129400.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 55,
+          "alias": [
+            "雪と葉",
+            "Yukitoha",
+            "莉洛"
+          ],
+          "id": 32973240,
+          "img1v1Url": "http://p4.music.126.net/2W_0_TpPjAo06DebJqHUsg==/109951172926881662.jpg",
+          "info": "",
+          "mvSize": 1,
+          "name": "雪叶子",
+          "picId": 109951172926881660,
+          "picUrl": "http://p3.music.126.net/2W_0_TpPjAo06DebJqHUsg==/109951172926881662.jpg",
+          "trans": null
+        },
+        {
+          "albumSize": 4,
+          "alias": [
+            "BAKUI"
+          ],
+          "id": 48933405,
+          "img1v1Url": "http://p3.music.126.net/uSUoAZif-nbmb1Pc5hQ3XA==/109951166521486133.jpg",
+          "info": "",
+          "mvSize": 2,
+          "name": "sakanauosakana",
+          "picId": 109951166521486130,
+          "picUrl": "http://p3.music.126.net/uSUoAZif-nbmb1Pc5hQ3XA==/109951166521486133.jpg",
+          "trans": null
+        }
+      ],
+      "hasMore": true
+    }
+  }
+}

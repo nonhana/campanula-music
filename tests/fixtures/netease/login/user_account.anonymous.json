@@ -1,0 +1,33 @@
+{
+  "module": "user_account",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T14:31:40.601Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "account": {
+        "anonimousUser": true,
+        "ban": 0,
+        "baoyueVersion": 0,
+        "createTime": 1500000000000,
+        "donateVersion": 0,
+        "id": 10000002,
+        "paidFee": false,
+        "status": -10,
+        "tokenVersion": 0,
+        "type": 1000,
+        "userName": "1_00000000000",
+        "vipType": 0,
+        "whitelistAuthority": 0
+      },
+      "code": 200,
+      "profile": null
+    }
+  }
+}

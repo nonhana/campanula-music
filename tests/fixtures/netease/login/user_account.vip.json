@@ -1,0 +1,75 @@
+{
+  "module": "user_account",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T14:19:57.894Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "account": {
+        "anonimousUser": false,
+        "ban": 0,
+        "baoyueVersion": 1,
+        "createTime": 1500000000000,
+        "donateVersion": 0,
+        "id": 10000001,
+        "paidFee": true,
+        "status": 0,
+        "tokenVersion": 0,
+        "type": 1,
+        "userName": "1_00000000000",
+        "vipType": 11,
+        "whitelistAuthority": 0
+      },
+      "code": 200,
+      "profile": {
+        "accountStatus": 0,
+        "accountType": 1,
+        "anchor": false,
+        "authStatus": 1,
+        "authenticated": true,
+        "authenticationTypes": 8,
+        "authority": 0,
+        "avatarDetail": {
+          "identityIconUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+          "identityLevel": 1,
+          "userType": 0
+        },
+        "avatarImgId": 109951000000000000,
+        "avatarUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+        "backgroundImgId": 109951000000000000,
+        "backgroundUrl": "https://p1.music.126.net/placeholder/avatar.jpg",
+        "birthday": 631152000000,
+        "city": 110101,
+        "createTime": 1500000000000,
+        "defaultAvatar": false,
+        "description": "",
+        "detailDescription": "",
+        "djStatus": 10,
+        "expertTags": null,
+        "experts": null,
+        "followed": false,
+        "gender": 1,
+        "lastLoginIP": "203.0.113.1",
+        "lastLoginTime": 1791469020394,
+        "locationStatus": 30,
+        "mutual": false,
+        "nickname": "测试听众",
+        "province": 110000,
+        "remarkName": null,
+        "shortUserName": "********687",
+        "signature": "",
+        "userId": 10000001,
+        "userName": "1_00000000000",
+        "userType": 0,
+        "vipType": 110,
+        "viptypeVersion": 1790371238124
+      }
+    }
+  }
+}

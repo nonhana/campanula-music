@@ -1,0 +1,29 @@
+{
+  "module": "lyric_new",
+  "query": {
+    "id": 2731893087
+  },
+  "context": {
+    "recordedAt": "2026-10-08T13:53:57.867746+00:00",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "anonymous"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "uncollected": true,
+      "sgc": true,
+      "sfy": false,
+      "qfy": false,
+      "needDesc": true,
+      "lrc": {
+        "version": 1,
+        "lyric": ""
+      },
+      "code": 200,
+      "briefDesc": null
+    }
+  }
+}

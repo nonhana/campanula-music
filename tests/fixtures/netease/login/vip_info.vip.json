@@ -1,0 +1,69 @@
+{
+  "module": "vip_info",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T14:20:00.081Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "associator": {
+          "dynamicIconUrl": "https://p5.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/32141388261/a2e9/3284/e98d/937112ec4f5a78553946211a9794eb21.webp",
+          "expireTime": 1793203199000,
+          "iconUrl": "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/32582185437/838c/3e35/26c7/1483dd70f2bbbf601f095dff56c603b8.png",
+          "isSign": true,
+          "isSignDeduct": true,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 100,
+          "vipLevel": 7
+        },
+        "familyVip": {
+          "dynamicIconUrl": null,
+          "expireTime": 0,
+          "iconUrl": null,
+          "isSign": false,
+          "isSignDeduct": false,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 600,
+          "vipLevel": 0
+        },
+        "musicPackage": {
+          "dynamicIconUrl": "",
+          "expireTime": 1795535999000,
+          "iconUrl": "https://p5.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/21892874340/50e6/e81d/5292/2d693cbb98954e28d4d9fdb11be99a8b.png",
+          "isSign": true,
+          "isSignDeduct": true,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 220,
+          "vipLevel": 7
+        },
+        "redVipAnnualCount": -1,
+        "redVipDynamicIconUrl": null,
+        "redVipDynamicIconUrl2": null,
+        "redVipLevel": 7,
+        "redVipLevelIcon": "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/32582185437/838c/3e35/26c7/1483dd70f2bbbf601f095dff56c603b8.png",
+        "redplus": {
+          "dynamicIconUrl": "",
+          "expireTime": 1698854399000,
+          "iconUrl": "https://p5.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/32582302732/b720/a97c/34a6/3e8f57486090097d59624d8daac32cab.png",
+          "isSign": false,
+          "isSignDeduct": false,
+          "isSignIap": false,
+          "isSignIapDeduct": false,
+          "vipCode": 300,
+          "vipLevel": 7
+        }
+      },
+      "message": "成功"
+    }
+  }
+}
