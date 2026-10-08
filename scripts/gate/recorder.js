@@ -6,10 +6,16 @@
 // res 就是测试版 /api/call 的返回：{ module, ip, instance, durationMs, threw, status, code, bytes, body, setCookie, events, ... }
 // 其中 body 已经由服务器去掉凭据（src/lib/server/netease.ts 的 scrub），setCookie 只有名字和属性。
 //
-// 三个来源：
+// 验证关卡①的三个来源：
 // 1. via: 'curl-anon'      未登录的录制：在本机用 curl 带口令 Cookie 调 /api/call，原样存 res。
 // 2. via: 'browser'        登录后的录制：在已登录的测试页里调 recordInBrowser。
 // 3. via: 'browser-user-tab' 作者自己操作扫码、短信的那个标签页，导出 window.gate.log 后用 fromGateLog 转换。
+//
+// 验证关卡②（2026-10-09）由 gate2-snippets.js 的 call() / upload() 直接记录，录到 .scratch/gate2-raw/rec/：
+// - via: 'browser'          同上，格式不变；
+// - via: 'browser-direct'   浏览器直传网易云图片存储，不经过 /api/call：module 记成 'nos_upload'，
+//                           res 是 { status, code, body, headers, durationMs }，query 是图片的尺寸、字节数和 JPEG 质量；
+// - name 以 _ref. 开头的只用来让 sanitize.mjs 认出账号本人，不写成测试数据。
 
 /* global window */
 

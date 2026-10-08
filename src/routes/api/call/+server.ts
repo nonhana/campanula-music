@@ -31,6 +31,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   const save = input.save as Save | undefined
   if (save !== undefined && !SAVES.includes(save))
     error(400, 'save')
+  const timeoutMs = input.timeoutMs
+  if (timeoutMs !== undefined && !(typeof timeoutMs === 'number' && Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 55_000))
+    error(400, 'timeoutMs')
 
   const session = slot === 'none' ? null : readSlot(cookies, slot)
   if (slot !== 'none' && !session)
@@ -43,6 +46,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     deviceId,
     cookie: session?.cookie,
     summary: input.summary === true,
+    timeoutMs,
   })
 
   const gotMusicU = parsedCookies.some(cookie => cookie.name === 'MUSIC_U' && cookie.value)

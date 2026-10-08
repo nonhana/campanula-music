@@ -5,6 +5,8 @@ export interface CallOptions {
   ip?: IpMode
   save?: 'sms' | 'qr' | 'refresh'
   summary?: boolean
+  /** 服务器调 SDK 时的超时（毫秒，最多 55 秒）；不传用 SDK 默认。 */
+  timeoutMs?: number
   /** 这些查询参数（手机号、验证码）在本地记录里换成占位，只发给服务器。 */
   redact?: string[]
   tag?: string

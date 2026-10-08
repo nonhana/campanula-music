@@ -50,7 +50,9 @@ const CREDENTIAL_TEXT = /MUSIC_U=|MUSIC_A=|MUSIC_R_T=|MUSIC_A_T=|__csrf=/
 
 /**
  * 凭据绝不离开服务器：返回体里凡是凭据字段、或含凭据的字符串，一律换成占位。
- * 例外：扫码遇到 8821 时返回体里的 `token` 是行为验证用的，`verify_getQr` 要用，留着。
+ * 例外：
+ * - 扫码遇到 8821 时返回体里的 `token` 是行为验证用的，`verify_getQr` 要用，留着；
+ * - `image_upload_token` 的 `token` 是浏览器直传这一张图用的上传凭证（放进 `x-nos-token`），本来就要交给浏览器。
  */
 export function scrub(value: unknown, keepToken = false): unknown {
   if (Array.isArray(value))
@@ -140,6 +142,8 @@ export interface CallInput {
   deviceId: string
   cookie?: Record<string, string>
   summary: boolean
+  /** 不传就用 SDK 默认（读写 8 秒，上传类 5 分钟）。验证关卡②的大批量写操作要看真实耗时，才放宽。 */
+  timeoutMs?: number
 }
 
 export async function callNetease(input: CallInput) {
@@ -158,6 +162,7 @@ export async function callNetease(input: CallInput) {
     state: input.ip === 'none' ? { deviceId: input.deviceId, cnIp: '' } : { deviceId: input.deviceId },
     ...(input.ip === 'real' ? { realIP: env.GATE_REAL_IP } : {}),
     onRequestEvent: ({ url, ...event }: RequestDebugEvent) => events.push({ ...event, path: new URL(url).pathname }),
+    timeoutMs: input.timeoutMs,
   } as ModuleCallConfig
   const started = performance.now()
   let threw = false
@@ -174,7 +179,7 @@ export async function callNetease(input: CallInput) {
   const durationMs = Math.round(performance.now() - started)
   const parsedCookies = parseSetCookie(response.cookie)
   const code = codeOf(response.body, response.status)
-  const body = scrub(response.body, code === 8821)
+  const body = scrub(response.body, code === 8821 || input.module === 'image_upload_token')
   const bytes = Buffer.byteLength(JSON.stringify(response.body ?? null))
   const full = !input.summary || code !== 200 || threw
   return {
