@@ -1,5 +1,5 @@
 <script lang='ts'>
-  import type { LogEntry } from '$lib/gate/client'
+  import type { IpMode, LogEntry } from '$lib/gate/client'
   import { call, dropSlot, gateLog, ping, rttTest, sessions } from '$lib/gate/client'
   import { onMount } from 'svelte'
 
@@ -21,6 +21,8 @@
   let phone = $state('')
   let captcha = $state('')
   let smsStatus = $state('')
+  // 登录请求用哪种 IP：SDK 默认伪装 IP / 作者给的真实国内 IP / 不带
+  let loginIp = $state<IpMode>('default')
 
   // 往返时间
   let rtt = $state<Awaited<ReturnType<typeof rttTest>> | null>(null)
@@ -60,14 +62,14 @@
     verify = null
     qrImg = ''
     qrStatus = '正在取二维码…'
-    const key = await call('login_qr_key', {}, { tag: 'qr' })
+    const key = await call('login_qr_key', {}, { ip: loginIp, tag: 'qr' })
     syncRecent()
     qrKey = key.res.body?.data?.unikey ?? ''
     if (!qrKey) {
       qrStatus = `取二维码失败：${key.res.code} ${key.res.body?.msg ?? key.res.body?.message ?? ''}`
       return
     }
-    const created = await call('login_qr_create', { key: qrKey, qrimg: true }, { tag: 'qr' })
+    const created = await call('login_qr_create', { key: qrKey, qrimg: true }, { ip: loginIp, tag: 'qr' })
     syncRecent()
     qrImg = created.res.body?.data?.qrimg ?? ''
     await pollQr()
@@ -77,7 +79,7 @@
     qrActive = true
     const deadline = Date.now() + 5 * 60_000
     while (qrActive && Date.now() < deadline) {
-      const result = await call('login_qr_check', { key: qrKey }, { save: 'qr', tag: 'qr' })
+      const result = await call('login_qr_check', { key: qrKey }, { ip: loginIp, save: 'qr', tag: 'qr' })
       syncRecent()
       const { code } = result.res
       qrStatus = `${code} ${result.res.body?.message ?? ''}`
@@ -125,7 +127,7 @@
       sign: pick(body, ['sign']),
     }
     qrStatus = '8821：需要行为验证，正在取验证二维码…'
-    const result = await call('verify_getQr', Object.fromEntries(Object.entries(query).filter(([, value]) => value !== undefined)), { tag: 'qr-verify' })
+    const result = await call('verify_getQr', Object.fromEntries(Object.entries(query).filter(([, value]) => value !== undefined)), { ip: loginIp, tag: 'qr-verify' })
     syncRecent()
     const data = result.res.body?.data
     if (!data?.qrimg) {
@@ -138,7 +140,7 @@
     // eslint-disable-next-line no-unmodified-loop-condition -- resumeQr() 在别处把它置为 false
     while (verifyActive && Date.now() < deadline) {
       await sleep(3000)
-      const status = await call('verify_qrcodestatus', { qr: data.qrCode }, { tag: 'qr-verify' })
+      const status = await call('verify_qrcodestatus', { qr: data.qrCode }, { ip: loginIp, tag: 'qr-verify' })
       syncRecent()
       if (verify)
         verify.status = `${status.res.code} ${JSON.stringify(status.res.body?.data ?? status.res.body).slice(0, 160)}`
@@ -153,14 +155,14 @@
 
   async function sendSms() {
     smsStatus = '正在发送…'
-    const result = await call('captcha_sent', { phone, ctcode: '86' }, { redact: ['phone'], tag: 'sms' })
+    const result = await call('captcha_sent', { phone, ctcode: '86' }, { ip: loginIp, redact: ['phone'], tag: 'sms' })
     syncRecent()
     smsStatus = `发送验证码：${result.res.code} ${result.res.body?.message ?? result.res.body?.msg ?? ''}`
   }
 
   async function loginSms() {
     smsStatus = '正在登录…'
-    const result = await call('login_cellphone', { phone, captcha, countrycode: '86' }, { save: 'sms', redact: ['phone', 'captcha'], tag: 'sms' })
+    const result = await call('login_cellphone', { phone, captcha, countrycode: '86' }, { ip: loginIp, save: 'sms', redact: ['phone', 'captcha'], tag: 'sms' })
     syncRecent()
     captcha = ''
     await loadSessions()
@@ -228,6 +230,17 @@
         {/each}
       </ul>
       <button type='button' onclick={loadSessions}>刷新</button>
+    </section>
+
+    <section>
+      <h2>登录用的 IP</h2>
+      <label>
+        <select bind:value={loginIp}>
+          <option value='default'>SDK 默认伪装 IP</option>
+          <option value='real'>真实国内 IP（GATE_REAL_IP）</option>
+          <option value='none'>不带 IP</option>
+        </select>
+      </label>
     </section>
 
     <section>
