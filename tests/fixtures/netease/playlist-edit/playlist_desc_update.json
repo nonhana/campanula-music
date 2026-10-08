@@ -1,0 +1,20 @@
+{
+  "module": "playlist_desc_update",
+  "query": {
+    "desc": "验证关卡②的临时歌单，测完即删。",
+    "id": 900000002
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:42:44.069Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

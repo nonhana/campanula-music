@@ -1,0 +1,27 @@
+{
+  "module": "playlist_tracks",
+  "query": {
+    "op": "add",
+    "pid": 900000002,
+    "tracks": "22766017"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:47:12.377Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "这首已经在歌单里"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "body": {
+        "code": 502,
+        "message": "歌单内歌曲重复"
+      },
+      "cookie": "",
+      "status": 200
+    }
+  }
+}

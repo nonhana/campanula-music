@@ -1,0 +1,21 @@
+{
+  "module": "playlist_name_update",
+  "query": {
+    "id": 900000002,
+    "name": "Campanula 测试"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:57:58.233Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "给已删除的歌单改名"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

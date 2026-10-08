@@ -1,0 +1,25 @@
+{
+  "module": "nos_upload",
+  "query": {
+    "bytes": 31030986,
+    "contentType": "image/jpeg",
+    "height": 3200,
+    "quality": 1,
+    "width": 3200
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:44:36.631Z",
+    "region": "browser",
+    "viewer": "vip-qr",
+    "note": "3200×3200、31,030,986 字节的 JPEG：直传成功，图片服务器能正常输出原图（6.5 MB）和缩略图；没有设为封面"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "callbackRetMsg": "eyJjb2RlIjoyMDB9",
+      "context": "e36840c7-34a4-2244-4344-420d3ba17f82",
+      "offset": 31030986,
+      "requestId": "745884320a26000000006ac7c86faa0e"
+    }
+  }
+}

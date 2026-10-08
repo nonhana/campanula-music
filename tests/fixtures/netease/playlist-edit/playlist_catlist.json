@@ -1,0 +1,373 @@
+{
+  "module": "playlist_catlist",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-08T16:42:54.157Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "truncated": [
+      {
+        "path": "body.sub",
+        "length": 70
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "all": {
+        "activity": false,
+        "category": 4,
+        "hot": false,
+        "imgId": 0,
+        "imgUrl": null,
+        "name": "全部歌单",
+        "resourceCount": 1000,
+        "resourceType": 0,
+        "type": 0
+      },
+      "categories": {
+        "0": "语种",
+        "1": "风格",
+        "2": "场景",
+        "3": "情感",
+        "4": "主题"
+      },
+      "code": 200,
+      "sub": [
+        {
+          "activity": false,
+          "category": 4,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "综艺",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 1,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "流行",
+          "resourceCount": 874,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 3,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "怀旧",
+          "resourceCount": 608,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 2,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "清晨",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 0,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "华语",
+          "resourceCount": 510,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 4,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "影视原声",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 1,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "摇滚",
+          "resourceCount": 754,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 2,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "夜晚",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 3,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "清新",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 0,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "欧美",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 4,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "ACG",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 1,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "民谣",
+          "resourceCount": 167,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 2,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "学习",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 3,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "浪漫",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 4,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "儿童",
+          "resourceCount": 857,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 0,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "日语",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 2,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "工作",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 4,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "校园",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 1,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "电子",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 0,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "韩语",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 4,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "游戏",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 2,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "午休",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 0,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "粤语",
+          "resourceCount": 86,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 3,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "伤感",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 1,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "舞曲",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 3,
+          "hot": true,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "治愈",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 0
+        },
+        {
+          "activity": false,
+          "category": 2,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "下午茶",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 1,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "说唱",
+          "resourceCount": 971,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 4,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "70后",
+          "resourceCount": 167,
+          "resourceType": 0,
+          "type": 1
+        },
+        {
+          "activity": false,
+          "category": 2,
+          "hot": false,
+          "imgId": 0,
+          "imgUrl": null,
+          "name": "地铁",
+          "resourceCount": 1000,
+          "resourceType": 0,
+          "type": 1
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "module": "like",
+  "query": {
+    "id": 1394617453,
+    "like": true
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:56:42.911Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "已经红心了，再红心一次"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "playlistId": 900000001,
+      "songs": []
+    }
+  }
+}

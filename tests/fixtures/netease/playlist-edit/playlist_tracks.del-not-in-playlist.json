@@ -1,0 +1,28 @@
+{
+  "module": "playlist_tracks",
+  "query": {
+    "op": "del",
+    "pid": 900000002,
+    "tracks": "1"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:47:13.627Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "编号 1 不在歌单里"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "body": {
+        "cloudCount": 0,
+        "code": 200,
+        "count": 3
+      },
+      "cookie": "",
+      "status": 200
+    }
+  }
+}

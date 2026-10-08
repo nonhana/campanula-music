@@ -1,0 +1,25 @@
+{
+  "module": "playlist_cover_update",
+  "query": {
+    "id": 900000002,
+    "imgId": "109951174079420215"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:45:22.043Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "4500×4500、61,399,534 字节的 JPEG（直传成功）。设封面回 200，但图片服务器拒绝输出这张图（FileTooBig），封面显示不出来"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "code": 200,
+        "url": "https://p1.music.126.net/zzjlgt_XggHmCl43qLurzA==/109951174079420215.jpg"
+      }
+    }
+  }
+}

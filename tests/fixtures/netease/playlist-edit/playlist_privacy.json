@@ -1,0 +1,23 @@
+{
+  "module": "playlist_privacy",
+  "query": {
+    "id": 900000020
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:55:23.877Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "隐私歌单改公开"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": null,
+      "message": null,
+      "msg": null
+    }
+  }
+}

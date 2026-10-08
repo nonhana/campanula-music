@@ -1,0 +1,21 @@
+{
+  "module": "playlist_desc_update",
+  "query": {
+    "desc": "测试",
+    "id": 900000002
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:57:59.116Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "给已删除的歌单改简介"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

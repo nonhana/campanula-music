@@ -1,0 +1,26 @@
+{
+  "module": "playlist_name_update",
+  "query": {
+    "id": 900000002,
+    "name": "Campanula 测试歌单名称长度上限试探一二三四五六七八九十一二三四五六七八九"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:42:53.869Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "名称 41 个字符：英文和空格 10 个、汉字 31 个，宽度 72（汉字算 2），超过上限 40"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 400,
+      "data": null,
+      "debugInfo": null,
+      "failData": null,
+      "message": "标题字数异常，请修改",
+      "msg": "标题字数异常，请修改"
+    }
+  }
+}
