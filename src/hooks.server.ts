@@ -2,14 +2,17 @@ import type { Handle, HandleServerError } from '@sveltejs/kit'
 import { hasPass } from '$lib/server/session'
 import { json } from '@sveltejs/kit'
 
-/** 除了输口令的接口，所有 /api 都要先有口令 Cookie。页面壳子本身不含任何数据。 */
+/**
+ * 除了输口令的接口，所有 /api 都要先有口令 Cookie。页面壳子本身不含任何数据。
+ * 按匹配到的路由判断，不按原始路径：`/%61pi/call` 的 pathname 不以 `/api/` 开头，却会被路由到 /api/call。
+ */
 export const handle: Handle = async ({ event, resolve }) => {
-  const path = event.url.pathname
-  if (path.startsWith('/api/') && path !== '/api/pass' && !hasPass(event.cookies))
+  const api = event.route.id?.startsWith('/api/') ?? false
+  if (api && event.route.id !== '/api/pass' && !hasPass(event.cookies))
     return json({ error: '需要口令' }, { status: 401, headers: { 'X-Robots-Tag': 'noindex' } })
   const response = await resolve(event)
   response.headers.set('X-Robots-Tag', 'noindex, nofollow')
-  if (path.startsWith('/api/'))
+  if (api)
     response.headers.set('Cache-Control', 'no-store')
   return response
 }

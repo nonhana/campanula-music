@@ -147,6 +147,9 @@ export async function callNetease(input: CallInput) {
   const cold = instance.calls === 1
   const { invokeModule } = await loadSdk()
   const events: Array<Omit<RequestDebugEvent, 'url'> & { path: string }> = []
+  // 没配 GATE_REAL_IP 时 SDK 会悄悄退回默认伪装 IP，结果却标成 real，所以直接报错
+  if (input.ip === 'real' && !env.GATE_REAL_IP)
+    throw new Error('GATE_REAL_IP 未配置')
   // 顶层的 deviceId 不在 SDK 的类型里，但 1.4.0 的隐式匿名注册会用它（不传就每次随机生成，
   // 约一半摘要带 + 或 / 被网易云拒绝）。传入摘要干净的 deviceId，匿名注册就不再随机失败。
   const config = {
