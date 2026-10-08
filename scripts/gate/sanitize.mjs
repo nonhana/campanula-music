@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // 验证关卡①：把录下的真实返回脱敏成测试数据（Spec #11“交付方式”第 5 条规矩）。
-// 用法：node scripts/gate/sanitize.mjs <录制目录> <输出目录>
+// 用法：SANITIZE_IPS=<要抹掉的 IP，逗号分隔> node scripts/gate/sanitize.mjs <录制目录> <输出目录>
 // - 去掉 Cookie：返回体里的 cookie、token 等凭据字段清空；Set-Cookie 不进测试数据。
 // - 替换 uid、昵称、头像链接：所有用户（包括歌单创建者等其他用户）都换成假身份。
-// - 账号资料里的个人信息（上次登录 IP、生日、地区、签名、绑定的手机）换成固定假值。
-// - 字符串里的手机号、IP 地址换成固定假值。
+// - 账号资料里的个人信息（上次登录 IP、生日、地区、签名、注册时间）换成固定假值。
+// - 账号绑定的手机号（从 account.userName 里认出来）、SANITIZE_IPS 里的 IP，在任何字符串里都换成固定假值。
+//   只换这些确切的值，不用“11 位数字”这类宽泛规则，免得把歌单编号之类的真数据改坏。
+// - 账号本人作为歌手的身份（profile.artistId 对应的歌手编号和名字）换成假的。
 // - 大数组只留前 MAX_ITEMS 项，原长度记在 context.truncated。
 // - 其余结构和取值原样保留。
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -39,9 +41,12 @@ const PROFILE_FIXED = {
   city: 110101,
   lastLoginIP: FAKE_IP,
   userName: '1_00000000000',
+  artistId: 0,
+  createTime: 1500000000000,
 }
-const PHONE_TEXT = /(?<!\d)1[3-9]\d{9}(?!\d)/g
-const IP_TEXT = /(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])/g
+const FAKE_ARTIST_ID = 99999999
+const FAKE_ARTIST_NAME = '测试歌手'
+const IPS = (process.env.SANITIZE_IPS ?? '').split(',').map(ip => ip.trim()).filter(Boolean)
 
 const files = readdirSync(input).filter(name => name.endsWith('.json')).sort()
 const entries = files.map(name => JSON.parse(readFileSync(join(input, name), 'utf8')))
@@ -49,9 +54,10 @@ const entries = files.map(name => JSON.parse(readFileSync(join(input, name), 'ut
 // 第一遍：收集所有用户身份，按出现顺序分配假 uid 和假昵称；登录账号本人固定是第一个。
 const uidMap = new Map()
 const nickMap = new Map()
+// 只认“像一个人”的对象：有昵称、有账号名，或同时有 userId 和头像。歌单对象也带 userId（创建者），不算。
 function isUserObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value)
-    && ('userId' in value || 'nickname' in value || 'avatarUrl' in value || 'userName' in value)
+    && ('nickname' in value || 'userName' in value || ('userId' in value && 'avatarUrl' in value))
 }
 function remember(uid, nickname) {
   if (uid !== undefined && uid !== null && Number(uid) > 0 && !uidMap.has(String(uid)))
@@ -59,14 +65,22 @@ function remember(uid, nickname) {
   if (typeof nickname === 'string' && nickname && !nickMap.has(nickname))
     nickMap.set(nickname, nickMap.size === 0 ? '测试听众' : `用户${nickMap.size + 1}`)
 }
+const phones = new Set()
+let selfArtistId
 for (const entry of entries) {
   const body = entry.res?.body
   if (['user_account', 'login_status', 'login_cellphone', 'login_qr_check', 'user_detail'].includes(entry.module)) {
     const account = body?.account ?? body?.data?.account
     const profile = body?.profile ?? body?.data?.profile
     remember(account?.id ?? profile?.userId, profile?.nickname)
+    const phone = /^1_(\d{6,})$/.exec(account?.userName ?? '')?.[1]
+    if (phone && account?.anonimousUser === false)
+      phones.add(phone)
+    if (profile?.artistId)
+      selfArtistId ??= profile.artistId
   }
 }
+const selfArtistNames = new Set()
 function collect(value) {
   if (Array.isArray(value)) {
     value.forEach(collect)
@@ -76,6 +90,8 @@ function collect(value) {
     return
   if (isUserObject(value))
     remember(value.userId, value.nickname)
+  if (selfArtistId && value.id === selfArtistId && typeof value.name === 'string' && value.name)
+    selfArtistNames.add(value.name)
   for (const [key, item] of Object.entries(value)) {
     if (USER_ID_KEYS.has(key) && (typeof item === 'number' || typeof item === 'string'))
       remember(item)
@@ -93,9 +109,16 @@ function cleanText(text) {
   let next = text
   for (const nickname of nicknames)
     next = next.split(nickname).join(nickMap.get(nickname))
+  for (const name of selfArtistNames)
+    next = next.split(name).join(FAKE_ARTIST_NAME)
   for (const uid of uids)
     next = next.replace(new RegExp(`(?<!\\d)${uid}(?!\\d)`, 'g'), String(uidMap.get(uid)))
-  return next.replace(PHONE_TEXT, FAKE_PHONE).replace(IP_TEXT, FAKE_IP)
+  for (const phone of phones)
+    next = next.split(phone).join(FAKE_PHONE)
+  for (const ip of IPS)
+    next = next.split(ip).join(FAKE_IP)
+  // 风控跳转链接里带的 NMSCVT 是一次性的验证凭据（同名 Set-Cookie，20 分钟有效），也抹掉
+  return next.replace(/NMSCVT=\d+/g, 'NMSCVT=0')
 }
 
 function clean(value, path, truncated, inUser = false) {
@@ -107,12 +130,17 @@ function clean(value, path, truncated, inUser = false) {
   }
   if (value && typeof value === 'object') {
     const user = inUser || isUserObject(value)
+    const selfArtist = selfArtistId !== undefined && value.id === selfArtistId && 'name' in value
     return Object.fromEntries(Object.entries(value).map(([key, item]) => {
       const at = `${path}.${key}`
       if (CREDENTIAL_KEYS.has(key))
         return [key, typeof item === 'string' ? '' : item === null ? null : '']
+      if (selfArtist && key === 'id')
+        return [key, FAKE_ARTIST_ID]
       if ((USER_ID_KEYS.has(key) || (key === 'id' && path.endsWith('.account'))) && uidMap.has(String(item)))
         return [key, typeof item === 'string' ? String(uidMap.get(String(item))) : uidMap.get(String(item))]
+      if (key === 'artistId' && item === selfArtistId)
+        return [key, FAKE_ARTIST_ID]
       if (NICK_KEYS.has(key) && typeof item === 'string' && item)
         return [key, nickMap.get(item) ?? '某用户']
       if (AVATAR_URL_KEYS.has(key) && typeof item === 'string' && item)
@@ -125,7 +153,7 @@ function clean(value, path, truncated, inUser = false) {
         return [key, PROFILE_FIXED[key]]
       if (key === 'bindings' && Array.isArray(item))
         return [key, item.map((binding, index) => ({ ...clean(binding, `${at}[${index}]`, truncated, true), url: '', id: index + 1 }))]
-      return [key, clean(item, at, truncated, user)]
+      return [key, clean(item, at, truncated)]
     }))
   }
   if (typeof value === 'string')
