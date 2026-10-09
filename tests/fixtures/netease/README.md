@@ -16,7 +16,7 @@
 - `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。
 - `playlist-edit/song_order_update.whole-4967-reversed.json`、`…whole-4967-shuffled.json`：一次改动几千首位置的排序，网易云约 3.3 秒后回 HTTP 400 / `-1`“请求异常，请稍后重试”，但新顺序其实已经生效（重新读歌单确认过）。只挪动几首时同样大小的请求 0.5 秒回 200（`…whole-4967-small-change.json`）。`…missing-one.json`（少提交一首、其余倒序）同样回 `-1`，2 秒后重读时新顺序还没有完全生效。
 - `playlist-edit/playlist_detail.deleted.json`：已删除的歌单仍回 200 和完整歌单，只有 `playlist.status` 是 10（正常歌单是 0）。对已删除的歌单加歌、移除、排序回 404“歌单不存在”；改名称、简介、标签、封面和再删一次都回 200。
-- `like-collect/playlist_subscribe.*`：验证关卡②里用 SDK 1.4.0 收藏歌单一律回 405“操作过于频繁，请稍后再试”：自己的、别人的歌单，eapi、weapi，默认伪装 IP、真实国内 IP，隔 20 分钟再试，都一样；同一时间作者在官方 App 里收藏、取消都正常，专辑、歌手、红心也都正常。所以这些文件代表的是 SDK 发的请求被拒的样子，不是收藏歌单成功的返回（见 #15 留言）。
+- `like-collect/playlist_subscribe.*`：验证关卡②里用 SDK 1.4.0 收藏歌单一律回 405“操作过于频繁，请稍后再试”：自己的、别人的歌单，eapi、weapi，默认伪装 IP、真实国内 IP，隔 20 分钟再试，都一样；同一时间作者在官方 App 里收藏、取消都正常，专辑、歌手、红心也都正常。所以这些文件代表的是 SDK 发的请求被拒的样子，不是收藏歌单成功的返回（见 #15 留言）。原因由 nonhana/hana-music-api#32 查明：设备身份 `os=pc`、写死的 checkToken，任一个都会被拒。`hana-music-api@2.0.0` 已改写法，修复后的模块还没在真账号上成功过（nonhana/hana-music-api#33）。收藏成功、取消成功的返回在 hana-music-api 仓库的 `tests/fixtures/netease/playlist_subscribe/`。
 - `playlist-edit/nos_upload.*` 不是 SDK 调用，是浏览器拿 `image_upload_token` 的凭证直传网易云图片存储（`nosup-hz1.127.net`）的返回：`query` 写图片的尺寸、字节数和 JPEG 质量。
 - 两次录制分别脱敏，假编号不跨批次对应：比如两边的 `900000002` 不是同一张歌单。
 
