@@ -1,0 +1,18 @@
+{
+  "id": "/probe",
+  "name": "Campanula 验证关卡③",
+  "short_name": "Campanula 探针",
+  "description": "验证关卡③的一次性探针：安装、后台播放、后台下载、照片选择器、返回手势。",
+  "lang": "zh-CN",
+  "start_url": "/probe",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5FCF9",
+  "theme_color": "#37BE8C",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -5,7 +5,10 @@ declare global {
     // interface Error {}
     // interface Locals {}
     // interface PageData {}
-    // interface PageState {}
+    interface PageState {
+      /** 验证关卡③：多选压的那条浅路由历史 */
+      select?: boolean
+    }
     // interface Platform {}
   }
 }
