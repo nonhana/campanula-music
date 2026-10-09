@@ -1,36 +1,70 @@
 <script lang='ts'>
-  import type { Level } from '$lib/probe/netease'
+  import type { AudioUrl, Level } from '$lib/probe/netease'
   import { errorText, logPage } from '$lib/probe/log'
   import LogView from '$lib/probe/LogView.svelte'
   import { playUrl } from '$lib/probe/netease'
   import { SONGS } from '$lib/probe/songs'
   import { onMount } from 'svelte'
 
+  /** 地址约 20 分钟过期；提前取好的地址超过 15 分钟就不用了，现取。 */
+  const PREFETCH_TTL = 15 * 60_000
+
   let audio: HTMLAudioElement
   let index = $state(0)
   let level = $state<Level>('exhigh')
+  let prefetchNext = $state(false)
   let status = $state('还没开始')
   let position = $state(0)
   let duration = $state(0)
   let paused = $state(true)
   let lastHiddenLog = 0
+  /** 提前取好的下一首地址：哪一首、哪种音质、什么时候取的。 */
+  let prefetched: { index: number, level: Level, at: number, url: AudioUrl } | null = null
 
   const song = $derived(SONGS[index]!)
 
   const cover = (size: number) => `${song.cover.replace(/^http:/, 'https:')}?param=${size}y${size}`
 
-  /** 取地址、换歌、开始放。锁屏时自动放下一首也走这里，记录里能看出当时页面是否可见。 */
+  const wrap = (value: number) => (value + SONGS.length) % SONGS.length
+
+  /** 用提前取好的地址（还新鲜、音质对得上），没有就现取。 */
+  async function urlFor(target: number): Promise<{ url: AudioUrl, source: 'prefetched' | 'fetched' }> {
+    const hit = prefetched
+    prefetched = null
+    if (hit && hit.index === target && hit.level === level && Date.now() - hit.at < PREFETCH_TTL)
+      return { url: hit.url, source: 'prefetched' }
+    return { url: await playUrl(SONGS[target]!.id, level), source: 'fetched' }
+  }
+
+  /** 开关打开时，这首开始放后就取好下一首的地址。 */
+  async function prefetch(current: number) {
+    if (!prefetchNext)
+      return
+    const target = wrap(current + 1)
+    try {
+      const url = await playUrl(SONGS[target]!.id, level)
+      prefetched = { index: target, level, at: Date.now(), url }
+      await logPage('play', '取好了下一首的地址', { song: SONGS[target]!.name })
+    }
+    catch (error) {
+      await logPage('play', '提前取地址失败', { song: SONGS[target]!.name, error: errorText(error) })
+    }
+  }
+
+  /** 取地址、换歌、开始放。锁屏时自动放下一首也走这里，记录里能看出当时页面是否可见、地址是现取还是提前取好的。 */
   async function load(next: number, reason: string) {
-    index = (next + SONGS.length) % SONGS.length
-    const current = SONGS[index]!
+    index = wrap(next)
+    const target = index
+    const current = SONGS[target]!
     status = `正在取「${current.name}」的地址…`
     try {
-      const url = await playUrl(current.id, level)
+      const { url, source } = await urlFor(target)
       audio.src = url.url
       setMetadata()
       await audio.play()
       status = `在放「${current.name}」（${url.level}，${url.type}）`
-      await logPage('play', '开始放', { reason, song: current.name, level: url.level })
+      await logPage('play', '开始放', { reason, song: current.name, level: url.level, url: source === 'prefetched' ? '提前取好' : '现取' })
+      await prefetch(target)
     }
     catch (error) {
       status = `「${current.name}」放不了：${errorText(error)}`
@@ -120,7 +154,8 @@
 
 <section>
   <p>做法：点播放，然后切到别的 App、锁屏，等这首放完（第一首 2 分 45 秒），看能不能自动接着放下一首；在锁屏和通知栏上看封面，按暂停、下一首、上一首。回来后看记录。</p>
-  <p>歌是不登录也能完整播放的免费歌，地址从网易云现取；锁屏时自动放下一首也要现取地址。</p>
+  <p>歌是不登录也能完整播放的免费歌，地址从网易云取。默认在上一首放完时才现取下一首的地址；打开下面的开关，就在这首开始放后先取好下一首的地址，放完直接切过去。</p>
+  <p class='muted'>2026-10-10 在 OnePlus（Android 16）上，现取的做法有一次失败：上一首放完后系统几秒内就冻结了 Chrome，下一首的地址没取回来。</p>
   <label>音质
     <select bind:value={level}>
       <option value='standard'>标准</option>
@@ -128,6 +163,7 @@
       <option value='lossless'>无损（flac）</option>
     </select>
   </label>
+  <label><input type='checkbox' bind:checked={prefetchNext} /> 提前取好下一首的地址</label>
 </section>
 
 <section class='player'>
