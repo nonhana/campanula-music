@@ -25,13 +25,4 @@ export default antfu(
       },
     },
   },
-  {
-    files: [
-      'src/lib/components/hana/Button.svelte',
-      'src/lib/components/hana/Card.svelte',
-    ],
-    rules: {
-      'svelte/no-navigation-without-resolve': 'off',
-    },
-  },
 )
