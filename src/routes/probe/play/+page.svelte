@@ -10,18 +10,23 @@
    * 换下一首的方式。2026-10-10 在 Android 16 上查明：一首放完时 Chrome 结束媒体会话、交还音频焦点，
    * 前台服务随之撤掉；下一首在后台重新申请音频焦点会被系统拦下（AS.HardeningEnforcer，Android 15 起）。
    * 后三种方式都提前取好下一首的地址，区别在换歌时“正在播放”会不会断。
+   *
+   * “两个播放器交替”：会话已持有焦点时，新播放器加入不会再申请焦点（Chromium media_session_impl.cc AddPlayer）；
+   * 会话里还有别的播放器在放时，停掉的那个只是被移出（OnPlayerPaused）。所以新的出声后再停旧的，焦点和通知都不断。
    */
   type Advance = 'ended-fetch' | 'ended-prefetch' | 'early' | 'overlap'
   const ADVANCES: Array<[Advance, string]> = [
     ['ended-fetch', '放完再现取地址、换歌'],
     ['ended-prefetch', '放完再换歌（地址提前取好）'],
     ['early', '剩 1 秒时在同一个播放器里换歌'],
-    ['overlap', '剩 1 秒时用另一个播放器先放下一首'],
+    ['overlap', '两个播放器交替（剩 1 秒时另一个先放下一首）'],
   ]
   /** 剩多少秒时提前换歌 */
   const EARLY_S = 1
   /** 地址约 20 分钟过期；提前取好的地址超过 15 分钟就不用了，现取。 */
   const PREFETCH_TTL = 15 * 60_000
+  /** 交替时等新播放器真正出声（playing 事件）最多多久，超时就不停旧的 */
+  const HANDOFF_TIMEOUT_MS = 8000
 
   const players: HTMLAudioElement[] = []
   let active = 0
@@ -37,6 +42,8 @@
   let switching = false
   /** 提前取好的下一首地址：哪一首、哪种音质、什么时候取的。 */
   let prefetched: { index: number, level: Level, at: number, url: AudioUrl } | null = null
+  /** “两个播放器交替”时，空闲的那个已经装好的是第几首（已设好 src 在缓冲） */
+  let preloaded: { slot: number, index: number, url: AudioUrl } | null = null
 
   const song = $derived(SONGS[index]!)
   const current = () => players[active]!
@@ -53,7 +60,7 @@
     return { url: await playUrl(SONGS[target]!.id, level), source: '现取' }
   }
 
-  /** 除了“放完再现取”，这首开始放后就取好下一首的地址。 */
+  /** 除了“放完再现取”，这首开始放后就取好下一首的地址；交替方式下顺便让空闲的播放器先缓冲。 */
   async function prefetch(from: number) {
     if (advance === 'ended-fetch')
       return
@@ -61,7 +68,15 @@
     try {
       const url = await playUrl(SONGS[target]!.id, level)
       prefetched = { index: target, level, at: Date.now(), url }
-      await logPage('play', '取好了下一首的地址', { song: SONGS[target]!.name })
+      if (advance === 'overlap') {
+        const slot = 1 - active
+        const idle = players[slot]!
+        idle.pause()
+        idle.src = url.url
+        idle.load()
+        preloaded = { slot, index: target, url }
+      }
+      await logPage('play', '取好了下一首的地址', { song: SONGS[target]!.name, preload: advance === 'overlap' ? `播放器 ${1 - active} 开始缓冲` : undefined })
     }
     catch (error) {
       await logPage('play', '提前取地址失败', { song: SONGS[target]!.name, error: errorText(error) })
@@ -83,10 +98,13 @@
     await logPage('play', '开始放', { reason, song: item.name, level: url.level, url: source, player: slot, mode: label(advance) })
   }
 
-  /** 按钮、放完一首、“剩 1 秒时在同一个播放器里换歌”都走这里：在当前播放器上换歌。 */
+  /** 按钮、放完一首、“剩 1 秒时在同一个播放器里换歌”都走这里：在当前播放器上换歌。交替方式下按钮也走交替。 */
   async function load(next: number, reason: string) {
     const target = wrap(next)
+    if (advance === 'overlap' && !current().paused && current().src)
+      return handoff(target, reason)
     try {
+      preloaded = null
       players[1 - active]!.pause()
       await startOn(active, target, reason)
       await prefetch(target)
@@ -97,17 +115,69 @@
     }
   }
 
-  /** 剩 1 秒时用另一个播放器先放下一首，开始出声后再停掉旧的，换歌时始终有一个在放。 */
-  async function overlapNext() {
-    const old = current()
-    const target = wrap(index + 1)
+  /** 等播放器真正出声（playing 事件）；超时返回 false。 */
+  function waitPlaying(player: HTMLAudioElement): Promise<boolean> {
+    if (!player.paused && player.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA)
+      return Promise.resolve(true)
+    return new Promise((resolve) => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => {
+        controller.abort()
+        resolve(false)
+      }, HANDOFF_TIMEOUT_MS)
+      player.addEventListener('playing', () => {
+        clearTimeout(timer)
+        controller.abort()
+        resolve(true)
+      }, { signal: controller.signal })
+    })
+  }
+
+  /**
+   * 两个播放器交替：另一个播放器放第 target 首，等它真正出声后再停掉旧的，换歌时始终有一个在放。
+   * 空闲播放器已经缓冲好这一首就直接放，否则现设地址。
+   */
+  async function handoff(target: number, reason: string) {
+    const oldSlot = active
+    const old = players[oldSlot]!
+    const slot = 1 - oldSlot
+    const next = players[slot]!
+    const item = SONGS[target]!
+    const started = performance.now()
     try {
-      await startOn(1 - active, target, '剩 1 秒时换歌')
-      old.pause()
+      const ready = preloaded?.slot === slot && preloaded.index === target
+      let source = '已缓冲'
+      if (!ready) {
+        const { url, source: from } = await urlFor(target)
+        next.src = url.url
+        source = from
+      }
+      preloaded = null
+      prefetched = null
+      const bufferedAhead = next.buffered.length ? Math.round(next.buffered.end(0)) : 0
+      await next.play()
+      const sounding = await waitPlaying(next)
+      active = slot
+      index = target
+      setMetadata()
+      if (sounding)
+        old.pause()
+      status = `在放「${item.name}」`
+      await logPage('play', '交替：新的已出声，停掉旧的', {
+        reason,
+        song: item.name,
+        from: oldSlot,
+        to: slot,
+        url: source,
+        bufferedAheadS: bufferedAhead,
+        sounding,
+        handoffMs: Math.round(performance.now() - started),
+        oldLeftS: Number.isFinite(old.duration) ? Math.round((old.duration - old.currentTime) * 10) / 10 : null,
+      })
       await prefetch(target)
     }
     catch (error) {
-      await logPage('play', '放不了', { reason: '剩 1 秒时换歌', song: SONGS[target]!.name, error: errorText(error) })
+      await logPage('play', '交替失败', { reason, song: item.name, error: errorText(error) })
     }
   }
 
@@ -171,7 +241,7 @@
     if (!early || switching || audio.paused || !(audio.duration - audio.currentTime <= EARLY_S))
       return
     switching = true
-    const run = advance === 'early' ? load(index + 1, '剩 1 秒时换歌') : overlapNext()
+    const run = advance === 'early' ? load(index + 1, '剩 1 秒时换歌') : handoff(wrap(index + 1), '剩 1 秒时换歌')
     run.finally(() => (switching = false))
   }
 
