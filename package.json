@@ -8,7 +8,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "svelte-kit sync || echo ''",
+    "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint .",
@@ -47,12 +47,20 @@
     "eslint": "catalog:",
     "eslint-plugin-svelte": "catalog:",
     "globals": "catalog:",
+    "lint-staged": "catalog:",
     "sass": "catalog:",
+    "simple-git-hooks": "catalog:",
     "svelte": "catalog:",
     "svelte-check": "catalog:",
     "typescript": "catalog:",
     "unocss": "catalog:",
     "unocss-preset-scrollbar": "catalog:",
     "vite": "catalog:"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix --no-warn-ignored"
   }
 }

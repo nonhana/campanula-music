@@ -7,6 +7,8 @@ allowBuilds:
   '@parcel/watcher': true
   esbuild: true
   sharp: true
+  # 钩子由 package.json 的 prepare 安装，不需要它自己的安装后脚本
+  simple-git-hooks: false
 
 catalog:
   '@antfu/eslint-config': ^9.5.1
@@ -35,7 +37,9 @@ catalog:
   eslint: ^10.11.0
   eslint-plugin-svelte: ^3.23.0
   globals: ^17.13.0
+  lint-staged: ^17.6.0
   sass: ^1.105.1
+  simple-git-hooks: ^2.14.0
   svelte: ^5.57.1
   svelte-check: ^4.7.6
   throttle-debounce: ^5.0.2
