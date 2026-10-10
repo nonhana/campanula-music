@@ -8,20 +8,18 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "svelte-kit sync || echo ''",
+    "prepare": "svelte-kit sync && simple-git-hooks || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint .",
+    "test": "vitest run",
     "lint:fix": "eslint . --fix",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@libsql/client": "catalog:",
     "@lucide/svelte": "catalog:",
-    "dotenv": "catalog:",
-    "drizzle-orm": "catalog:",
     "throttle-debounce": "catalog:"
   },
   "devDependencies": {
@@ -29,7 +27,8 @@
     "@eslint/compat": "catalog:",
     "@eslint/config-helpers": "catalog:",
     "@neoconfetti/svelte": "catalog:",
-    "@sveltejs/adapter-netlify": "catalog:",
+    "@sveltejs/adapter-node": "^5.5.7",
+    "@sveltejs/adapter-vercel": "catalog:",
     "@sveltejs/enhanced-img": "catalog:",
     "@sveltejs/kit": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",
@@ -40,19 +39,23 @@
     "@unocss/preset-rem-to-px": "catalog:",
     "@unocss/reset": "catalog:",
     "@unocss/svelte-scoped": "catalog:",
+    "@vitest/browser": "catalog:",
     "autoprefixer": "catalog:",
     "csstype": "catalog:",
     "dayjs": "catalog:",
-    "drizzle-kit": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-svelte": "catalog:",
     "globals": "catalog:",
+    "lint-staged": "catalog:",
+    "playwright": "catalog:",
     "sass": "catalog:",
+    "simple-git-hooks": "catalog:",
     "svelte": "catalog:",
     "svelte-check": "catalog:",
     "typescript": "catalog:",
     "unocss": "catalog:",
     "unocss-preset-scrollbar": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }
