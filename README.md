@@ -1,20 +1,23 @@
 ## Campanula Music
 
-一款 Web 端的音乐播放器。当前数据来源于我的网易云音乐歌单。
+开源的第三方网易云音乐播放器：听众用自己的网易云账号登录，在手机和桌面上听歌、搜歌，把喜欢的音乐收进自己的曲库。可以安装成手机和桌面上的独立 App（PWA），以自部署为主。
 
-![home](https://picgo-r2.caelum.moe/2025/08/2c70c66041cf467dd041cf0f186c113c.png)
+v1 正在 `rewrite/v1` 分支上从零重写，还不能使用。
 
-### 技术栈
+- 产品与设计：[PRODUCT.md](./PRODUCT.md)、[DESIGN.md](./DESIGN.md)
+- 术语：[GLOSSARY.md](./GLOSSARY.md)
+- 架构决策：[docs/adr/](./docs/adr/)
 
-- **框架**: [SvelteKit](https://kit.svelte.dev/) (Svelte 5)
-- **样式**: [UnoCSS](https://unocss.dev/)
-- **数据库**: [Drizzle ORM](https://orm.drizzle.team/) + [LibSQL](https://github.com/libsql/libsql)
-- **构建工具**: [Vite](https://vitejs.dev/)
-- **部署**: [Netlify](https://www.netlify.com/)
+### 开发
 
-### 贡献
+需要 Node.js（版本见 `.node-version`）和 pnpm（版本见 `package.json` 的 `packageManager`）。
 
-在使用中遇到任何疑问，欢迎提交 Pull Request 或 Issue。
+```bash
+pnpm install
+pnpm dev
+```
+
+提交前钩子会对暂存的文件跑 `eslint --fix`；`pnpm lint`、`pnpm check` 在 CI 里也会跑。
 
 ### License
 
