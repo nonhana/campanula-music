@@ -11,7 +11,7 @@ export default antfu(
     unocss: true,
     pnpm: true,
     // 录下来的网易云真实返回，原样保留（歌名里的全角空格等不能被 lint 改掉）
-    ignores: ['tests/fixtures/**/*.json', '_notes/**'],
+    ignores: ['tests/fixtures/**/*.json'],
     rules: {
       'no-unused-expressions': 'off',
     },
