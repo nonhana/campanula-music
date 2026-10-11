@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-07T04:58:02.291Z",
+  "generatedAt": "2026-10-11T08:00:00.000Z",
   "title": "Design System: Campanula",
   "extensions": {
     "colorMeta": {
@@ -428,15 +428,23 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "每日推荐的日期大数字；播放页、介绍页的大字是它的放大版。等宽数字。"
+        "purpose": "介绍页的大标题（44px）。每日推荐的日期大数字是图形，不算阶梯里的一档。"
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "歌单、专辑、歌手、已下载、搜索结果的页面标题（手机 22px）。"
+        "purpose": "桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）；手机介绍页的大标题。"
+      },
+      "headline-sm": {
+        "displayName": "Headline Small",
+        "purpose": "手机的页面标题、桌面播放页的歌名（24px）。"
       },
       "title": {
         "displayName": "Title",
-        "purpose": "首页区块标题；弹窗标题用 18px。"
+        "purpose": "首页区块标题、手机播放页的歌名。"
+      },
+      "title-sm": {
+        "displayName": "Title Small",
+        "purpose": "弹窗标题、手机区块标题、播放队列标题、空状态和出错的标题、logo 字样（17px）。"
       },
       "body": {
         "displayName": "Body",
@@ -444,11 +452,11 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "桌面歌名、按钮、导航、标签文字。"
+        "purpose": "桌面歌名、按钮、导航、chip 文字。"
       },
       "caption": {
         "displayName": "Caption",
-        "purpose": "歌手、首数、时长、元信息；桌面次要行 12.5px。"
+        "purpose": "歌手、首数、时长、元信息、表头、提示、歌单标签。"
       },
       "micro": {
         "displayName": "Micro",
@@ -478,7 +486,7 @@
       },
       {
         "name": "field-focus",
-        "value": "border-color: #59CFA3; box-shadow: 0 0 0 3px #E8F8F1",
+        "value": "border-color: #2B976F; box-shadow: inset 0 0 0 1px #2B976F, 0 0 0 3px #E8F8F1",
         "purpose": "输入框、搜索框获得焦点或展开时。"
       }
     ],
@@ -573,7 +581,7 @@
       "refersTo": "input-search",
       "description": "顶栏搜索框：胶囊形，展开或聚焦时薄荷边 + 薄荷雾光环。",
       "html": "<label class='ds-search'><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' aria-hidden='true'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg><input placeholder='搜索歌曲、歌单、歌手、专辑'></label>",
-      "css": ".ds-search { display: flex; align-items: center; gap: 12px; width: 420px; height: 44px; padding: 0 8px 0 16px; box-sizing: border-box; border: 1px solid #E5E7EB; border-radius: 9999px; background: #FFFFFF; color: #6B7280; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; transition: border-color 120ms ease-out, box-shadow 120ms ease-out; } .ds-search:focus-within { border-color: #59CFA3; box-shadow: 0 0 0 3px #E8F8F1; } .ds-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 14.5px; color: #111827; } .ds-search input::placeholder { color: #6B7280; }"
+      "css": ".ds-search { display: flex; align-items: center; gap: 12px; width: 420px; height: 44px; padding: 0 8px 0 16px; box-sizing: border-box; border: 1px solid #E5E7EB; border-radius: 9999px; background: #FFFFFF; color: #6B7280; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; transition: border-color 120ms ease-out, box-shadow 120ms ease-out; } .ds-search:focus-within { border-color: #2B976F; box-shadow: inset 0 0 0 1px #2B976F, 0 0 0 3px #E8F8F1; } .ds-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; color: #111827; } .ds-search input::placeholder { color: #6B7280; }"
     },
     {
       "name": "Rail Navigation",
@@ -597,7 +605,7 @@
       "refersTo": "play-button-large",
       "description": "播放页的波浪进度条：已播放部分是茎绿正弦线，未播放部分是平的发丝线，深薄荷游标。",
       "html": "<div class='ds-wave'><svg width='360' height='24' viewBox='0 0 360 24' aria-hidden='true'><path d='M0 12 q3 -7 6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0' fill='none' stroke='#2B976F' stroke-width='3' stroke-linecap='round'/><line x1='148' y1='12' x2='360' y2='12' stroke='#E5E7EB' stroke-width='2.5' stroke-linecap='round'/><rect x='140' y='3' width='4' height='18' rx='2' fill='#206F52'/></svg><div class='ds-wave-times'><span>0:51</span><span>4:12</span></div></div>",
-      "css": ".ds-wave { width: 360px; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; } .ds-wave svg { display: block; overflow: visible; } .ds-wave-times { display: flex; justify-content: space-between; margin-top: 2px; color: #4B5563; font-size: 12.5px; font-variant-numeric: tabular-nums; }"
+      "css": ".ds-wave { width: 360px; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; } .ds-wave svg { display: block; overflow: visible; } .ds-wave-times { display: flex; justify-content: space-between; margin-top: 2px; color: #4B5563; font-size: 13px; font-variant-numeric: tabular-nums; }"
     },
     {
       "name": "Mini Player",

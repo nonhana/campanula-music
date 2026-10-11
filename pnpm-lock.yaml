@@ -170,6 +170,21 @@ catalogs:
     '@eslint/config-helpers':
       specifier: ^0.7.0
       version: 0.7.0
+    '@fontsource-variable/noto-sans':
+      specifier: ^5.3.0
+      version: 5.3.0
+    '@fontsource-variable/noto-sans-jp':
+      specifier: ^5.3.1
+      version: 5.3.1
+    '@fontsource-variable/noto-sans-sc':
+      specifier: ^5.3.1
+      version: 5.3.1
+    '@fontsource-variable/noto-sans-tc':
+      specifier: ^5.3.1
+      version: 5.3.1
+    '@lucide/svelte':
+      specifier: ^1.55.0
+      version: 1.55.0
     '@sinonjs/fake-timers':
       specifier: ^15.4.0
       version: 15.4.0
@@ -236,9 +251,6 @@ catalogs:
     unocss:
       specifier: ^66.10.5
       version: 66.10.5
-    unocss-preset-scrollbar:
-      specifier: ^4.0.0
-      version: 4.0.0
     vite:
       specifier: ^8.3.2
       version: 8.3.2
@@ -256,6 +268,21 @@ importers:
       '@eslint/config-helpers':
         specifier: 'catalog:'
         version: 0.7.0
+      '@fontsource-variable/noto-sans':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/noto-sans-jp':
+        specifier: 'catalog:'
+        version: 5.3.1
+      '@fontsource-variable/noto-sans-sc':
+        specifier: 'catalog:'
+        version: 5.3.1
+      '@fontsource-variable/noto-sans-tc':
+        specifier: 'catalog:'
+        version: 5.3.1
+      '@lucide/svelte':
+        specifier: 'catalog:'
+        version: 1.55.0(svelte@5.57.1(@typescript-eslint/types@8.71.0))
       '@sinonjs/fake-timers':
         specifier: 'catalog:'
         version: 15.4.0
@@ -322,9 +349,6 @@ importers:
       unocss:
         specifier: 'catalog:'
         version: 66.10.5(cac@7.0.0)(rolldown@1.2.11)(rollup@4.64.5)(srvx@1.0.5)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
-      unocss-preset-scrollbar:
-        specifier: 'catalog:'
-        version: 4.0.0(unocss@66.10.5(cac@7.0.0)(rolldown@1.2.11)(rollup@4.64.5)(srvx@1.0.5)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       vite:
         specifier: 'catalog:'
         version: 8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
@@ -677,6 +701,18 @@ packages:
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
+  '@fontsource-variable/noto-sans-jp@5.3.1':
+    resolution: {integrity: sha512-/anGvJFc5y36f8DJ+3TSh2+KAvaRLA9PaLUMvneeY5s4j8m+8X4F3lE/sjTuG9YI5BX4sykvCk4TuJMG7ecMRQ==}
+
+  '@fontsource-variable/noto-sans-sc@5.3.1':
+    resolution: {integrity: sha512-UB96JJ17HyD5ehEU7Em0hDdh7fvTMB4B4Hzmq5c4QaNwwSLqTrdM2S+coySeBqCkXwh0DxqXT0b0wMrmzorFpQ==}
+
+  '@fontsource-variable/noto-sans-tc@5.3.1':
+    resolution: {integrity: sha512-gueh+AySNkihE+HvizXLHltxt5/xVFSvw6ISnKTlpb/lG5QQm6u/KwuempTJ/jDYMST3xwiERYTTyseoJ/Kxew==}
+
+  '@fontsource-variable/noto-sans@5.3.0':
+    resolution: {integrity: sha512-e3ZuxzY9AL2psXPZlhwhnYrHUHv6PMoyK9MQ7croF0CUgURLqu9EMjW7q2FgVLwij1tjLsIHQrnwQ8aUcg4BiA==}
+
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
     engines: {node: '>=18.18.0'}
@@ -731,6 +767,11 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@lucide/svelte@1.55.0':
+    resolution: {integrity: sha512-CTxJ3qbkDK2oCW1VJYKhqAUfOongRJqc9YWmJZn8E06QpCU7i5yAnUny4h/zMNy/iYpMtGiJDRSb6AVIornuXg==}
+    peerDependencies:
+      svelte: ^5
 
   '@mapbox/node-pre-gyp@2.0.3':
     resolution: {integrity: sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg==}
@@ -2616,9 +2657,6 @@ packages:
     resolution: {integrity: sha512-kKHJhxwpR/Okycz4HhQKKlhWe4ASEfPgkSWNmKFHd7+ezuQlxkA5cM3+XkBPvm1gmHen3w53qsYAv+8GwRrBlg==}
     engines: {node: '>=18'}
 
-  node-addon-api@7.1.1:
-    resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
-
   node-fetch-native@1.6.7:
     resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
 
@@ -3104,11 +3142,6 @@ packages:
 
   unist-util-visit@5.1.0:
     resolution: {integrity: sha512-m+vIdyeCOpdr/QeQCu2EzxX/ohgS8KbnPDgFni4dQsfSCtpz8UqDyY5GjRru8PDKuYn7Fq19j1CQ+nJSsGKOzg==}
-
-  unocss-preset-scrollbar@4.0.0:
-    resolution: {integrity: sha512-wPePkUCOvWsA1kOeImQtBzUnBuWhFvo2gOdWsPpmBke+z2zWbW4p9KfOPtGch+WrgnwnpmM4d4BxoVulC+1xhA==}
-    peerDependencies:
-      unocss: '>=66.0.0'
 
   unocss@66.10.5:
     resolution: {integrity: sha512-hts6uxRjtEdOLmdmo0Mbh5k3jrHsjsQlU3rFJdtob+wu57iM5b+d70fnxqMWe7yF/OBeiZKW6H+ti0qHNJBKPw==}
@@ -3599,6 +3632,14 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
+  '@fontsource-variable/noto-sans-jp@5.3.1': {}
+
+  '@fontsource-variable/noto-sans-sc@5.3.1': {}
+
+  '@fontsource-variable/noto-sans-tc@5.3.1': {}
+
+  '@fontsource-variable/noto-sans@5.3.0': {}
+
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -3653,6 +3694,10 @@ snapshots:
       keyv: 5.6.0
 
   '@keyv/serialize@1.1.1': {}
+
+  '@lucide/svelte@1.55.0(svelte@5.57.1(@typescript-eslint/types@8.71.0))':
+    dependencies:
+      svelte: 5.57.1(@typescript-eslint/types@8.71.0)
 
   '@mapbox/node-pre-gyp@2.0.3':
     dependencies:
@@ -5679,9 +5724,6 @@ snapshots:
 
   natural-orderby@5.0.0: {}
 
-  node-addon-api@7.1.1:
-    optional: true
-
   node-fetch-native@1.6.7: {}
 
   node-fetch@2.7.0:
@@ -6194,11 +6236,6 @@ snapshots:
       '@types/unist': 3.0.3
       unist-util-is: 6.0.1
       unist-util-visit-parents: 6.0.2
-
-  unocss-preset-scrollbar@4.0.0(unocss@66.10.5(cac@7.0.0)(rolldown@1.2.11)(rollup@4.64.5)(srvx@1.0.5)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))):
-    dependencies:
-      '@unocss/preset-mini': 66.10.5
-      unocss: 66.10.5(cac@7.0.0)(rolldown@1.2.11)(rollup@4.64.5)(srvx@1.0.5)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
   unocss@66.10.5(cac@7.0.0)(rolldown@1.2.11)(rollup@4.64.5)(srvx@1.0.5)(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)):
     dependencies:

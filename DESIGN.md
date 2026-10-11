@@ -33,22 +33,32 @@ colors:
 typography:
   display:
     fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "56px"
+    fontSize: "44px"
     fontWeight: 600
     lineHeight: "52px"
-    letterSpacing: "-0.03em"
-    fontFeature: "tnum"
+    letterSpacing: "-0.025em"
   headline:
     fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
     fontSize: "28px"
     fontWeight: 600
     lineHeight: "36px"
     letterSpacing: "-0.01em"
+  headline-sm:
+    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
+    fontSize: "24px"
+    fontWeight: 600
+    lineHeight: "32px"
+    letterSpacing: "-0.01em"
   title:
     fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
     fontSize: "20px"
     fontWeight: 600
     lineHeight: "28px"
+  title-sm:
+    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 600
+    lineHeight: "24px"
   body:
     fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
     fontSize: "15px"
@@ -218,10 +228,10 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 - **薄荷雾**（`mint-mist`）：白色面板上“正在播放”那一行的晨光、悬停底、标签 chip 的底。
 - **薄荷玻璃**（`mint-glass`）：侧栏当前项的底；行放在晨光底上时（手机），晨光行用这一档才看得见；选中文字的底色。
 - **薄荷线**（`mint-line`）：输入框、描边按钮悬停时的边框。
-- **薄荷**（`mint`）：品牌原色，现在只用在 `primary` 的默认值和 `accent-color`，界面上几乎不直接铺。
-- **新芽绿**（`mint-sprout`）：输入框、搜索框获得焦点或展开时的边框。
+- **薄荷**（`mint`）：品牌原色，现在只是 `primary` 的默认值，界面上几乎不直接铺。
+- **新芽绿**（`mint-sprout`）：只做装饰（例如浅色底上的小点）。白底上只有 1.9:1，不能当焦点或边框用。
 - **叶绿**（`mint-leaf`）：logo（Lucide 的 flower 图形）的描边，一处不改。
-- **茎绿**（`mint-stem`）：焦点环、波浪进度线已播放的部分、输入光标。
+- **茎绿**（`mint-stem`）：焦点环、输入框和搜索框获得焦点时的边框、波浪进度线已播放的部分、输入光标和 `accent-color`（原生勾选框、进度条；薄荷和叶绿在白底上都不到 3:1）。
 - **深薄荷**（`deep-mint`）：主要按钮（播放全部、登录、重试）的底；白底上的薄荷色文字（链接、“查看全部”、“已收藏”）。
 - **森林墨**（`forest-ink`）：最大的播放键；薄荷浅底上的文字和图标；主要按钮的悬停色。
 
@@ -268,13 +278,19 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 
 ### Hierarchy
 
-- **Display**（600，56px，行高 52px，字距 -0.03em，等宽数字）：只用在每日推荐的日期大数字上；播放页、介绍页的大字是它的放大版。
-- **Headline**（600，28px，行高 36px，字距 -0.01em）：歌单、专辑、歌手、已下载、搜索结果的页面标题（手机 22px）。
-- **Title**（600，20px，行高 28px）：首页的区块标题（我喜欢的音乐、歌单、专辑、歌手）、弹窗标题（18px）。
-- **Body**（400，15px，行高 22px）：手机上的歌名、正文、说明。
-- **Label**（500，14px，行高 20px）：桌面的歌名、按钮文字、导航文字、标签。
-- **Caption**（400，13px，行高 20px）：歌手、首数、时长、元信息；桌面次要行用 12.5px。
+字号阶梯在 #18 定稿（2026-10-11，作者看过前后对比截图）：只有下面九档，UnoCSS 里写 `text-<档名>`（见 `uno.config.ts`；Wind 自带的 `text-sm`、`text-lg` 这类已经去掉）。不要写 `text-[13.5px]` 这种阶梯以外的字号。视觉原型里零散的 10 / 12 / 12.5 / 13.5 / 14.5 / 16 / 18 / 21 / 22 / 32px 都归到最近的一档。
+
+- **Display**（600，44px，行高 52px，字距 -0.025em）：介绍页的大标题。
+- **Headline**（600，28px，行高 36px，字距 -0.01em）：桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）；手机介绍页的大标题。
+- **Headline-sm**（600，24px，行高 32px，字距 -0.01em）：手机的页面标题、桌面播放页的歌名。
+- **Title**（600，20px，行高 28px）：首页的区块标题（我喜欢的音乐、歌单、专辑、歌手）、手机播放页的歌名。
+- **Title-sm**（600 或 500，17px，行高 24px）：弹窗标题、手机的区块标题、播放队列标题、空状态和出错的标题、logo 旁的 Campanula 字样（500）。
+- **Body**（400 或 500，15px，行高 22px）：手机上的歌名、正文、说明；输入框里的字。
+- **Label**（500 或 400，14px，行高 20px）：桌面的歌名、按钮文字、导航文字、chip。
+- **Caption**（400 或 500，13px，行高 20px）：歌手、首数、时长、元信息、表头、提示、歌单标签。
 - **Micro**（500，11px，行高 18px）：试听、无版权、未下载这类徽标。
+
+每日推荐的日期大数字（桌面方块 56px、每日推荐页 88px、手机 72px，600，等宽数字）是图形，不算阶梯里的一档。数字一律用等宽数字（`tabular-nums`）。
 
 ### Named Rules
 
@@ -290,7 +306,7 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 - **桌面搜索**：顶栏搜索框挂下拉（历史 / 建议，无遮罩）；按搜索后，结果是内容区里的一页（单曲 / 歌单 / 歌手 / 专辑）。
 - **手机骨架**：logo 行（搜索、每日推荐日历），文字标签（我喜欢 / 歌单 / 专辑 / 歌手），同步细条，Auxio 式歌曲行（左 16px、56px 高、无分隔线），底部离屏幕边 8px 的浮起迷你播放条，下面垫一层晨光底的渐隐；二级页面有返回栏。
 - **播放页**：桌面左列是封面、歌名、波浪进度、控制键、音量，右列是 歌词 / 播放队列；手机照 Auxio 的结构，一屏放下，不滚动。
-- **断点**：小于 768px 用手机布局，768px 及以上用桌面布局。操作细节按输入方式切换，不按宽度：窄窗口里用鼠标，右键仍是浮动菜单；触屏用底部弹层。
+- **断点**：小于 768px 用手机布局，768px 及以上用桌面布局。操作细节按输入方式切换，不按宽度：窄窗口里用鼠标，右键仍是浮动菜单；触屏用底部弹层。悬停效果只给鼠标和触控板，UnoCSS 里写 `mouse:hover:`（`@media (hover: hover) and (pointer: fine)`）。
 - **节奏**：以 4px 为基数，常用 8、12、16、20、24、32、40px。
 
 ## Elevation & Depth
@@ -344,7 +360,7 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 ### Inputs / Fields
 
 - **Style:** 纸白底、1px 发丝线、胶囊形，44px（顶栏搜索、歌单内搜索）；表单输入框 12px 圆角。左边是搜索图标，有内容时右边出现清除按钮。
-- **Focus:** 边框换成新芽绿，外面加一圈 3px 的薄荷雾光环。
+- **Focus:** 边框加粗成 2px 茎绿（白底上 3.6:1），外面加一圈 3px 的薄荷雾光环。新芽绿边框在白底上只有 1.9:1，看不出焦点，#18 换成了茎绿。
 - **Error / Disabled:** 出错用出错红的边框和说明文字；禁用降到 50%。
 
 ### Navigation

@@ -13,4 +13,20 @@ describe('打开 App', () => {
     expect(device.requests).toEqual([{ method: 'GET', path: '/api/account' }])
     expect(world.netease.calls).toEqual([])
   })
+
+  it('断网时打开：不知道有没有登录，界面能说明是断网；联网后重新打开就是未登录', async () => {
+    const device = world.device()
+    device.setOnline(false)
+
+    const { app } = await device.open()
+
+    expect(app.state).toEqual({ session: { status: 'checkFailed', reason: 'offline' }, library: null })
+    expect(device.requests).toEqual([])
+
+    device.setOnline(true)
+    await app.open()
+
+    expect(app.state).toEqual({ session: { status: 'signedOut' }, library: null })
+    expect(device.requests).toEqual([{ method: 'GET', path: '/api/account' }])
+  })
 })

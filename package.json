@@ -18,6 +18,11 @@
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@eslint/config-helpers": "catalog:",
+    "@fontsource-variable/noto-sans": "catalog:",
+    "@fontsource-variable/noto-sans-jp": "catalog:",
+    "@fontsource-variable/noto-sans-sc": "catalog:",
+    "@fontsource-variable/noto-sans-tc": "catalog:",
+    "@lucide/svelte": "catalog:",
     "@sinonjs/fake-timers": "catalog:",
     "@sveltejs/adapter-node": "catalog:",
     "@sveltejs/adapter-vercel": "catalog:",
@@ -40,7 +45,6 @@
     "tough-cookie": "catalog:",
     "typescript": "catalog:",
     "unocss": "catalog:",
-    "unocss-preset-scrollbar": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   },
