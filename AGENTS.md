@@ -13,3 +13,9 @@ Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: one root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/domain.md`.
+
+**Decisions**: before stating or relying on a design decision (in a reply, a plan, or code), check `docs/adr/`; each filename names its decision. ADRs outrank recalled memories.
+
+### Delivery
+
+Before implementing a ticket, read `docs/agents/delivery.md`: branch, test seam, screenshots, real-account rules, hand-off.
