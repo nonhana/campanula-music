@@ -7,12 +7,16 @@ export const MUSIC_U = `00B4F1${'9C2E7A1D5F'.repeat(32)}`
 /** 录下的账号（脱敏后的昵称和头像）：登录、问当前账号时界面上显示的 */
 export const RECORDED_ACCOUNT = { nickname: '测试听众', avatarUrl: 'https://p1.music.126.net/placeholder/avatar.jpg' }
 
+/** Set-Cookie 的有效期属性：Max-Age 和 Expires 都写，和网易云下发的一样 */
+function expires(days: number): string {
+  return `Max-Age=${days * 86400}; Expires=${new Date(Date.now() + days * 86400_000).toUTCString()}`
+}
+
 /**
  * 网易云登录成功时下发的 Set-Cookie：写法照真的（同名的按不同路径下发好几条，验证关卡①一次登录约 28 条），
  * 值是假的。只存名字和值时加密后约 2 KB；连属性一起存会超过浏览器 4 KB 的上限
  */
 export function signInCookies(): string[] {
-  const expires = (days: number) => `Max-Age=${days * 86400}; Expires=${new Date(Date.now() + days * 86400_000).toUTCString()}`
   const logPaths = ['/api/clientlog', '/eapi/clientlog', '/neapi/clientlog', '/openapi/clientlog', '/weapi/clientlog', '/wapi/clientlog', '/api/feedback', '/eapi/feedback', '/neapi/feedback', '/openapi/feedback', '/weapi/feedback', '/wapi/feedback']
   return [
     `MUSIC_U=${MUSIC_U}; ${expires(180)}; Path=/; HTTPOnly`,
@@ -31,7 +35,6 @@ export const RENEWED_MUSIC_U = `00C7A2${'5E1B8D3F6A'.repeat(32)}`
 
 /** 续期时网易云下发的 Set-Cookie：新的 MUSIC_U（重新算 180 天）和新的 __csrf（验证关卡①），值是假的 */
 export function renewCookies(): string[] {
-  const expires = (days: number) => `Max-Age=${days * 86400}; Expires=${new Date(Date.now() + days * 86400_000).toUTCString()}`
   return [
     `MUSIC_U=${RENEWED_MUSIC_U}; ${expires(180)}; Path=/; HTTPOnly`,
     `__csrf=0a1b2c3d4e5f60718293a4b5c6d7e8f9; ${expires(15)}; Path=/`,

@@ -5,6 +5,10 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 
 const modules = () => world.netease.calls.map(call => call.module)
+/** 从第 since 次调用起，每次调网易云的模块和带的 MUSIC_U */
+function credentialsUsed(since: number) {
+  return world.netease.calls.slice(since).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])
+}
 
 const HOUR = 3600_000
 
@@ -207,7 +211,7 @@ describe('续期', () => {
     await device.open()
 
     expect(renewed.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
-    expect(world.netease.calls.slice(signedIn).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])).toEqual([
+    expect(credentialsUsed(signedIn)).toEqual([
       ['user_account', MUSIC_U],
       ['login_refresh', MUSIC_U],
       ['user_account', RENEWED_MUSIC_U],
@@ -229,7 +233,7 @@ describe('续期', () => {
 
     for (const { app: opened } of tabs)
       expect(opened.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
-    expect(world.netease.calls.slice(signedIn).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])).toEqual([
+    expect(credentialsUsed(signedIn)).toEqual([
       ['login_refresh', MUSIC_U],
       ['user_account', RENEWED_MUSIC_U],
       ['user_account', RENEWED_MUSIC_U],
@@ -249,7 +253,7 @@ describe('续期', () => {
     const { app: reopened } = await device.open()
 
     expect(reopened.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
-    expect(world.netease.calls.slice(signedIn).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])).toEqual([
+    expect(credentialsUsed(signedIn)).toEqual([
       ['user_account', MUSIC_U],
       ['login_refresh', MUSIC_U],
       ['user_account', RENEWED_MUSIC_U],
@@ -260,5 +264,31 @@ describe('续期', () => {
     await world.netease.reply('login/user_account.vip.json')
     await device.open()
     expect(world.netease.calls.at(-1)?.module).toBe('user_account')
+  })
+
+  it('续期回了 200 却没下发新的 MUSIC_U：不算续期成功，接着用原来的凭据，服务器日志写明，下次打开再续', async () => {
+    const device = world.device()
+    const { app } = await device.open()
+    await signIn(world, app)
+    const signedIn = world.netease.calls.length
+    await world.clock.advance(24 * HOUR)
+
+    await world.netease.reply('login/login_refresh.sms.json')
+    await world.netease.reply('login/user_account.vip.json')
+    const { app: reopened } = await device.open()
+
+    expect(reopened.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
+    expect(world.serverLogs).toContainEqual({ level: 'warn', text: expect.stringContaining('login_refresh') })
+
+    await world.netease.reply('login/login_refresh.sms.json', { cookie: renewCookies() })
+    await world.netease.reply('login/user_account.vip.json')
+    await device.open()
+
+    expect(credentialsUsed(signedIn)).toEqual([
+      ['login_refresh', MUSIC_U],
+      ['user_account', MUSIC_U],
+      ['login_refresh', MUSIC_U],
+      ['user_account', RENEWED_MUSIC_U],
+    ])
   })
 })

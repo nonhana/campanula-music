@@ -15,10 +15,10 @@ const LOGIN_COOKIE_LOCK = 'campanula:login-cookie'
 /** 标签页之间同步登录会话的广播频道 */
 const SESSION_CHANNEL = 'campanula:session'
 
-/** 标签页之间广播的消息：这个浏览器退出登录了 */
-interface SignedOutMessage {
-  type: 'signedOut'
-}
+/** 标签页之间广播的消息。只有同源的 Campanula 页面能发进这个频道 */
+type SessionMessage
+  /** 这个浏览器退出登录了 */
+  = | { type: 'signedOut' }
 
 /** 登录会话。刚打开时要先问服务端，才知道有没有当前账号 */
 export type Session
@@ -115,8 +115,15 @@ export function createApp(browser: BrowserCapabilities): App {
   // 一个标签页退出，同一浏览器里开着的其他标签页跟着变成未登录（退出请求由退出的那个标签页发）
   const sessionChannel = browser.broadcastChannel(SESSION_CHANNEL)
   sessionChannel.addEventListener('message', (event) => {
-    if ((event.data as SignedOutMessage).type === 'signedOut')
-      signedOut()
+    const message = event.data as SessionMessage
+    switch (message.type) {
+      case 'signedOut':
+        return signedOut()
+      default: {
+        const unhandled: never = message.type
+        throw new Error(`不认识的广播消息：${JSON.stringify(unhandled)}`)
+      }
+    }
   })
 
   /** 问服务端当前账号是谁；没问到时说明原因 */
@@ -159,7 +166,7 @@ export function createApp(browser: BrowserCapabilities): App {
     async logout() {
       await local.setPendingLogout(true)
       signedOut()
-      sessionChannel.postMessage({ type: 'signedOut' } satisfies SignedOutMessage)
+      sessionChannel.postMessage({ type: 'signedOut' } satisfies SessionMessage)
       await finishLogout()
     },
   }
