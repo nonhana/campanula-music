@@ -1,4 +1,4 @@
-<!-- logo 加上 Campanula 字样：未登录页、出错页和两种骨架的左上角 -->
+<!-- logo 加上 Campanula 字样：登录页、出错页和两种骨架的左上角 -->
 <script lang='ts'>
   import Logo from './svg/Logo.svelte'
 </script>

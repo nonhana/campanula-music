@@ -6,8 +6,8 @@
   import AppOpening from '$lib/components/AppOpening.svelte'
   import CookieSecretRequired from '$lib/components/CookieSecretRequired.svelte'
   import HttpsRequired from '$lib/components/HttpsRequired.svelte'
+  import LoginPage from '$lib/components/login/LoginPage.svelte'
   import SignedInFrame from '$lib/components/shell/SignedInFrame.svelte'
-  import Welcome from '$lib/components/welcome/Welcome.svelte'
   // 字体随项目打包（Noto Sans 可变字体，拉丁 → SC → JP → TC），不从网络加载
   import '@fontsource-variable/noto-sans'
   import '@fontsource-variable/noto-sans-sc'
@@ -58,5 +58,5 @@
     {@render children()}
   </SignedInFrame>
 {:else}
-  <Welcome expired={session.status === 'loginExpired'} />
+  <LoginPage expired={session.status === 'loginExpired'} />
 {/if}
