@@ -12,7 +12,8 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
@@ -29,14 +30,17 @@
     "eslint": "catalog:",
     "eslint-plugin-svelte": "catalog:",
     "globals": "catalog:",
+    "hana-music-api": "catalog:",
     "lint-staged": "catalog:",
     "simple-git-hooks": "catalog:",
     "svelte": "catalog:",
     "svelte-check": "catalog:",
+    "tough-cookie": "catalog:",
     "typescript": "catalog:",
     "unocss": "catalog:",
     "unocss-preset-scrollbar": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged"
