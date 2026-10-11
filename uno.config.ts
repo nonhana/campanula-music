@@ -160,7 +160,6 @@ export default defineConfig<Theme>({
       'title': ['20px', '28px'],
       'headline-sm': ['24px', { 'line-height': '32px', 'letter-spacing': '-0.01em' }],
       'headline': ['28px', { 'line-height': '36px', 'letter-spacing': '-0.01em' }],
-      'display': ['44px', { 'line-height': '52px', 'letter-spacing': '-0.025em' }],
     }
     theme.fontFamily = { ...theme.fontFamily, sans: FONT_SANS }
   },

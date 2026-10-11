@@ -426,13 +426,9 @@
       }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Display",
-        "purpose": "大标题（44px），暂时没有用到：原来用在介绍页，#19 起登录页不再有介绍。每日推荐的日期大数字是图形，不算阶梯里的一档。"
-      },
       "headline": {
         "displayName": "Headline",
-        "purpose": "桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）。"
+        "purpose": "桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）。每日推荐的日期大数字是图形，不算阶梯里的一档。"
       },
       "headline-sm": {
         "displayName": "Headline Small",

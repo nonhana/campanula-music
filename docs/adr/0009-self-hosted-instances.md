@@ -1,6 +1,6 @@
 # 以自部署为主：每个实例给部署的人自己用，首推 Vercel，也能跑在自己的服务器上
 
-Campanula 以自部署为主，作者不运营公共实例：每个站长部署自己的实例，给自己用，但不限制谁登录（和 YesPlayMusic 一样）。同一份代码按部署平台换 SvelteKit 适配器：v1 正式支持 Vercel（首推：免费 HTTPS、不用备案、不用自己的服务器，函数地区选香港 `hkg1`）和自己的服务器跑 Node（`adapter-node`，Docker 镜像可选）；Netlify、Cloudflare Workers 等平台以后再支持。实例必须用 HTTPS（本机 `localhost` 除外），因为 Service Worker、Background Fetch、Storage API 都只在安全上下文里可用，安装成应用也要求 HTTPS。听众登录自己的网易云账号后才能使用，未登录时只能看到介绍、登录入口，以及这台设备上已下载的歌曲（ADR-0006）。campanula.caelum.moe 放项目主页和部署文档，作者自己的实例用另一个不公开的地址。
+Campanula 以自部署为主，作者不运营公共实例：每个站长部署自己的实例，给自己用，但不限制谁登录（和 YesPlayMusic 一样）。同一份代码按部署平台换 SvelteKit 适配器：v1 正式支持 Vercel（首推：免费 HTTPS、不用备案、不用自己的服务器，函数地区选香港 `hkg1`）和自己的服务器跑 Node（`adapter-node`，Docker 镜像可选）；Netlify、Cloudflare Workers 等平台以后再支持。实例必须用 HTTPS（本机 `localhost` 除外），因为 Service Worker、Background Fetch、Storage API 都只在安全上下文里可用，安装成应用也要求 HTTPS。听众登录自己的网易云账号后才能使用，未登录时只能看到登录页（只有登录，没有介绍，#19 定），以及这台设备上已下载的歌曲（ADR-0006）。campanula.caelum.moe 放项目主页和部署文档，作者自己的实例用另一个不公开的地址。
 
 本 ADR 取代 ADR-0001。
 

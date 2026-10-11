@@ -65,7 +65,6 @@
   ]
 
   const typeScale = [
-    { name: 'display', size: '44 / 52', weight: 600, use: '大标题，暂时没有用到（介绍页在 #19 去掉了）', cls: 'text-display font-600', sample: '纯粹的网易云音乐播放器', lang: undefined },
     { name: 'headline', size: '28 / 36', weight: 600, use: '桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）', cls: 'text-headline font-600', sample: '我喜欢的音乐', lang: undefined },
     { name: 'headline-sm', size: '24 / 32', weight: 600, use: '手机的页面标题、桌面播放页的歌名', cls: 'text-headline-sm font-600', sample: '歌に形はないけれど', lang: 'ja' },
     { name: 'title', size: '20 / 28', weight: 600, use: '首页的区块标题；手机播放页的歌名', cls: 'text-title font-600', sample: '歌单', lang: undefined },
