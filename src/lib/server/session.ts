@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 import type { LoginCookie } from './credentials'
-import type { Listener } from './netease'
+import type { Listener, SignedInListener } from './netease'
 import { renewalDue, saveLogin } from './credentials'
 import { NeteaseError, renewLogin } from './netease'
 
@@ -15,7 +15,7 @@ export type SignedIn = LoginCookie & { session: NonNullable<LoginCookie['session
  * - 网易云说需要登录：续期一次，成功就带着新凭据重发；续期也没成功，就把续期的失败交给客户端。
  */
 export async function asSignedIn<T>(cookies: Cookies, login: SignedIn, call: (listener: Listener) => Promise<T>, { renewIfDue = false } = {}): Promise<T> {
-  let listener: Listener & { credentials: Record<string, string> } = { deviceId: login.deviceId, credentials: login.session.credentials }
+  let listener: SignedInListener = { deviceId: login.deviceId, credentials: login.session.credentials }
   let renewed = false
   async function renew(): Promise<void> {
     listener = { ...listener, credentials: await renewLogin(listener) }

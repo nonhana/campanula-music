@@ -98,7 +98,8 @@ function invoke(callback: LockGrantedCallback<unknown>, lock: Lock | null): Prom
  * 跨标签页的锁（Web Locks），一台设备一个，所有标签页共用。照 W3C Web Locks API（2025-09-24 编辑草案）§4 的算法写：
  * - 同名的请求按先后排队，只有排在最前、又不和已持有的锁冲突的才能拿到（grantable）；
  *   exclusive 和同名的任何锁冲突，shared 只和同名的 exclusive 冲突。
- * - 拿到锁后在之后的微任务里调回调；回调返回的 promise 了结（成功或失败）才释放锁，request() 跟着它了结。
+ * - 拿到锁后排一个任务（宏任务，§4.4 第 14 步“enqueue … on the responsible event loop”）调回调；
+ *   回调返回的 promise 了结（成功或失败）才释放锁，request() 跟着它了结。
  * - ifAvailable：拿不到就不排队，回调收到 null，request() 不失败。
  * - signal：调回调之前被取消，request() 以取消的原因失败；还在排队就从队列里拿掉，已经拿到锁就释放、不调回调。
  * - steal：App 没用到，替身没做，用到时照 §4.1 第 4 步补上。
@@ -106,6 +107,17 @@ function invoke(callback: LockGrantedCallback<unknown>, lock: Lock | null): Prom
 export class FakeLocks implements LocksCapability {
   readonly #held: FakeLock[] = []
   readonly #queues = new Map<string, LockRequest[]>()
+  /** 已经排下、还没跑的回调任务有几个 */
+  pending = 0
+
+  /** 在页面的事件循环里排一个任务 */
+  #task(step: () => void): void {
+    this.pending += 1
+    setImmediate(() => {
+      this.pending -= 1
+      step()
+    })
+  }
 
   request<T>(name: string, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
   request<T>(name: string, options: LockOptions, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
@@ -132,7 +144,7 @@ export class FakeLocks implements LocksCapability {
       const queue = this.#queue(name)
       // §4.1 第 3.5 步
       if (ifAvailable && !this.#grantable(request)) {
-        queueMicrotask(() => resolve(invoke(request.callback, null) as Promise<Awaited<T>>))
+        this.#task(() => resolve(invoke(request.callback, null) as Promise<Awaited<T>>))
         return
       }
       // §4.3 signal to abort the request
@@ -178,7 +190,7 @@ export class FakeLocks implements LocksCapability {
         this.#held.splice(this.#held.indexOf(lock), 1)
         this.#process(name)
       }
-      queueMicrotask(() => {
+      this.#task(() => {
         if (request.signal?.aborted)
           return release()
         request.invoked = true

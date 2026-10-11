@@ -98,9 +98,9 @@ async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, li
 
 /**
  * 从网易云下发的 Set-Cookie 里取出凭据，叠在 base 上：只留名字和值（同名的后者覆盖），值为空或已经过期的删掉。
- * 没有 MUSIC_U 就算不上登录成功，当作上游结构变了
+ * 没有下发新的 MUSIC_U 就算不上登录或续期成功：当作上游结构变了，和 call() 一样记一条日志
  */
-function credentialsFrom(setCookies: readonly string[], base: Record<string, string> = {}): Record<string, string> {
+function credentialsFrom(module: ModuleIdentifier, setCookies: readonly string[], base: Record<string, string> = {}): Record<string, string> {
   const credentials: Record<string, string> = { ...base }
   for (const line of setCookies) {
     const [pair = '', ...attributes] = line.split(';')
@@ -115,8 +115,11 @@ function credentialsFrom(setCookies: readonly string[], base: Record<string, str
     else
       delete credentials[name]
   }
-  if (!credentials.MUSIC_U)
-    throw new NeteaseError({ kind: 'upstreamChanged' }, null)
+  if (!credentials.MUSIC_U || credentials.MUSIC_U === base.MUSIC_U) {
+    const failure = { kind: 'upstreamChanged' } as const
+    console.warn(`网易云 ${module} 失败：${describe(failure)}（没有下发新的 MUSIC_U）`)
+    throw new NeteaseError(failure, null)
+  }
   return credentials
 }
 
@@ -187,7 +190,7 @@ export async function checkLoginQr(key: string, listener: Listener): Promise<QrC
     case 802:
       return { status: 'scanned', nickname: body.nickname, avatarUrl: body.avatarUrl }
     case 803:
-      return { status: 'confirmed', credentials: credentialsFrom(cookie) }
+      return { status: 'confirmed', credentials: credentialsFrom('login_qr_check', cookie) }
     default: {
       const unhandled: never = body
       throw new Error(`不认识的扫码状态：${JSON.stringify(unhandled)}`)
@@ -204,7 +207,7 @@ export async function sendCaptcha(phone: string, listener: Listener): Promise<vo
 export async function loginWithCaptcha(phone: string, captcha: string, listener: Listener): Promise<{ credentials: Record<string, string>, account: Account }> {
   const { body, cookie } = await call('login_cellphone', { phone, captcha, countrycode: '86' }, listener)
   return {
-    credentials: credentialsFrom(cookie),
+    credentials: credentialsFrom('login_cellphone', cookie),
     account: { nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl },
   }
 }
@@ -217,13 +220,16 @@ export async function fetchAccount(listener: Listener): Promise<Account> {
   return { nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl }
 }
 
+/** 已经登录的听众：带着网易云凭据 */
+export type SignedInListener = Listener & { credentials: Record<string, string> }
+
 /**
  * 续期：网易云下发新的 MUSIC_U（重新算 180 天）和新的 __csrf，叠在原来的凭据上。
  * 续期后旧的凭据不会马上失效（验证关卡①：17.6 分钟后还能用）
  */
-export async function renewLogin(listener: Listener & { credentials: Record<string, string> }): Promise<Record<string, string>> {
+export async function renewLogin(listener: SignedInListener): Promise<Record<string, string>> {
   const { cookie } = await call('login_refresh', {}, listener)
-  return credentialsFrom(cookie, listener.credentials)
+  return credentialsFrom('login_refresh', cookie, listener.credentials)
 }
 
 /** 退出登录：网易云只注销同一个 deviceId 上的登录，听众在其他设备上的登录不受影响（验证关卡①） */

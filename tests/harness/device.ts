@@ -37,7 +37,7 @@ export interface Device {
   setOnline: (online: boolean) => void
   /** 存储空间：已用、配额、persist() 会不会被同意，测试可以改 */
   storage: FakeStorage
-  /** 等这台设备上正在发的请求都回来、标签页之间的广播都送到、App 处理完（处理时又发的请求、广播也等） */
+  /** 等这台设备上正在发的请求都回来、排着的锁回调和标签页之间的广播都跑完、App 处理完（处理时又发的也等） */
   idle: () => Promise<void>
 }
 
@@ -110,9 +110,9 @@ export function createDevice(origin: string, clock: Clock): Device {
     setOnline: online => network.set(online),
     storage,
     async idle() {
-      while (inFlight.size > 0 || broadcast.pending > 0) {
+      while (inFlight.size > 0 || locks.pending > 0 || broadcast.pending > 0) {
         await Promise.allSettled(inFlight)
-        // 让 App 处理完回来的结果（微任务）、送达广播（宏任务）；处理时又发了请求或广播就接着等
+        // 让 App 处理完回来的结果（微任务）、跑完锁回调和广播（任务）；处理时又发了请求、锁或广播就接着等
         await new Promise(resolve => setImmediate(resolve))
       }
     },
