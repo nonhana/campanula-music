@@ -6,15 +6,17 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { createServer as createHttpServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { format } from 'node:util'
+import { withGlobal } from '@sinonjs/fake-timers'
 import { sveltekit } from '@sveltejs/kit/vite'
 import { createServer } from 'vite'
-import { afterAll, beforeAll, beforeEach, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach } from 'vitest'
+import { clockOn } from './browser'
 import { createDevice } from './device'
 import { loadFixture } from './fixtures'
 
 // 测试接入点“去掉界面的整个 App”（Spec #11 Testing Decisions）：
 // 世界里有一个在测试进程里真实运行的服务端、一个网易云替身和一个共用的时钟；
-// 每台设备有自己的 Cookie；每个标签页是一个 App。
+// 每台设备有自己的 Cookie、本机数据库、联网状态和存储空间；每个标签页是一个 App。
 
 const FAKE_SDK = fileURLToPath(new URL('./netease-sdk.ts', import.meta.url))
 const START = new Date('2026-10-12T00:00:00Z') // 北京时间 08:00
@@ -36,8 +38,11 @@ export interface World {
   }
   /** 服务端打的日志 */
   readonly serverLogs: readonly ServerLog[]
-  /** 服务端和所有设备共用的时钟，只有调用 advance 才会走 */
-  clock: { advance: (ms: number) => void }
+  /**
+   * 服务端、Cookie 过期和所有 App 共用的时钟，只有 advance 才会走；
+   * 走的过程中 App 的定时按到期先后触发，触发时 Date.now() 正好是到期的时刻
+   */
+  clock: { advance: (ms: number) => Promise<void> }
 }
 
 // 自检用的模块：和服务端路由一样，在模块里用裸名字 import SDK
@@ -105,19 +110,22 @@ async function startWorld() {
     throw new Error('服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云')
 
   const serverLogs = captureServerLogs(serving)
-  vi.useFakeTimers({ toFake: ['Date'], now: START })
+  // 只换掉全局的 Date（服务端和 Cookie 过期用它）；App 的定时用这个时钟自己的 setTimeout。
+  // 全局的 setTimeout 不换：Vite 和 HTTP 连接也在用它
+  const timers = withGlobal(globalThis).install({ now: START, toFake: ['Date'] })
 
   return {
     origin: `http://localhost:${port}`,
     fake,
+    timers,
     serverLogs: serverLogs.logs,
     reset() {
       fake.reset()
       serverLogs.logs.length = 0
-      vi.setSystemTime(START)
+      timers.reset() // 清掉没到期的定时，时间回到 START
     },
     async close() {
-      vi.useRealTimers()
+      timers.uninstall()
       serverLogs.restore()
       http.closeAllConnections()
       await new Promise(resolve => http.close(resolve))
@@ -144,7 +152,7 @@ export function useWorld(): World {
   beforeEach(() => current().reset())
 
   return {
-    device: () => createDevice(current().origin),
+    device: () => createDevice(current().origin, clockOn(current().timers)),
     netease: {
       get calls() {
         return current().fake.calls
@@ -158,7 +166,9 @@ export function useWorld(): World {
       return current().serverLogs
     },
     clock: {
-      advance: ms => vi.setSystemTime(Date.now() + ms),
+      advance: async (ms) => {
+        await current().timers.tickAsync(ms)
+      },
     },
   }
 }
