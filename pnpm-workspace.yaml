@@ -13,6 +13,7 @@ allowBuilds:
 catalog:
   '@antfu/eslint-config': ^9.5.1
   '@eslint/config-helpers': ^0.7.0
+  '@sinonjs/fake-timers': ^15.4.0
   '@sveltejs/adapter-node': ^5.5.7
   '@sveltejs/adapter-vercel': ^6.3.4
   '@sveltejs/kit': ^2.70.3
@@ -24,6 +25,7 @@ catalog:
   '@unocss/reset': ^66.10.5
   eslint: ^10.11.0
   eslint-plugin-svelte: ^3.23.0
+  fake-indexeddb: ^6.2.5
   globals: ^17.13.0
   hana-music-api: ^2.2.0
   lint-staged: ^17.6.0
