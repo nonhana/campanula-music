@@ -45,7 +45,8 @@
     "vitest": "catalog:"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged"
+    "pre-commit": "pnpm lint-staged",
+    "pre-push": "test ! -f package.json || (pnpm check && pnpm test)"
   },
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored"
