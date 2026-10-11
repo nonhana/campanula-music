@@ -1,8 +1,6 @@
 <script lang='ts'>
-  import Logo from '$lib/components/svg/Logo.svelte'
+  import Welcome from '$lib/components/welcome/Welcome.svelte'
 </script>
 
-<main class='min-h-screen flex flex-col items-center justify-center gap-3 text-neutral-700'>
-  <Logo />
-  <h1 class='text-xl text-neutral-900'>Campanula</h1>
-</main>
+<!-- 根布局只在问清当前账号后才渲染页面；登录（#19）之前只会是未登录 -->
+<Welcome />
