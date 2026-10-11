@@ -4,6 +4,7 @@ import type { Device } from './device'
 import type { Call } from './netease-sdk'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { createServer as createHttpServer } from 'node:http'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { format } from 'node:util'
 import { withGlobal } from '@sinonjs/fake-timers'
@@ -20,6 +21,15 @@ import { loadFixture } from './fixtures'
 
 const FAKE_SDK = fileURLToPath(new URL('./netease-sdk.ts', import.meta.url))
 const START = new Date('2026-10-12T00:00:00Z') // 北京时间 08:00
+
+/** 站长配置的真实国内 IP（文档用的保留地址 TEST-NET-3），服务端调网易云时要作为 realIP 传入 */
+export const REAL_IP = '203.0.113.7'
+
+// 站长的配置（Spec #11 部署与发布）。服务端在启动时读一次环境变量，所以要在启动世界之前设好
+const SITE_ENV = {
+  COOKIE_SECRET: 'campanula-test-secret-0123456789abcdefghijklmnopqrstuv',
+  NETEASE_REAL_IP: REAL_IP,
+}
 const LOG_METHODS = ['debug', 'log', 'info', 'warn', 'error'] as const
 
 export interface ServerLog {
@@ -35,15 +45,17 @@ export interface World {
     readonly calls: readonly Call[]
     /**
      * 网易云对这个模块的下一次调用，回这份录制数据（tests/fixtures/netease/ 下的相对路径）。
-     * 录下的是失败返回时，替身像真的 SDK 一样把它抛出来
+     * 录下的是失败返回时，替身像真的 SDK 一样把它抛出来。
+     * 录制数据去掉了 Cookie（Spec #11 交付方式第 5 条）；要网易云下发 Cookie（例如登录成功）时，用 cookie 放进 Set-Cookie
      */
-    reply: (fixture: string) => Promise<void>
+    reply: (fixture: string, options?: { cookie?: string[] }) => Promise<void>
   }
   /** 服务端打的日志 */
   readonly serverLogs: readonly ServerLog[]
   /**
    * 服务端、Cookie 过期和所有 App 共用的时钟，只有 advance 才会走；
-   * 走的过程中 App 的定时按到期先后触发，触发时 Date.now() 正好是到期的时刻
+   * 走的过程中 App 的定时按到期先后触发，触发时 Date.now() 正好是到期的时刻。
+   * 走完后等各台设备上被定时触发的请求都回来、App 处理完
    */
   clock: { advance: (ms: number) => Promise<void> }
 }
@@ -96,6 +108,7 @@ function captureServerLogs(serving: AsyncLocalStorage<true>) {
 /* eslint-enable no-console */
 
 async function startWorld() {
+  Object.assign(process.env, SITE_ENV)
   const vite = await createServer({
     configFile: false,
     logLevel: 'silent',
@@ -157,17 +170,26 @@ export function useWorld(): World {
   afterAll(async () => {
     await started?.close()
   })
-  beforeEach(() => current().reset())
+  /** 这条测试开出来的设备 */
+  let devices: Device[] = []
+  beforeEach(() => {
+    current().reset()
+    devices = []
+  })
 
   return {
-    device: () => createDevice(current().origin, clockOn(current().timers)),
+    device: () => {
+      const device = createDevice(current().origin, clockOn(current().timers))
+      devices.push(device)
+      return device
+    },
     netease: {
       get calls() {
         return current().fake.calls
       },
-      async reply(path) {
+      async reply(path, { cookie = [] } = {}) {
         const { module, outcome } = await loadFixture(path)
-        current().fake.queueReply(module, outcome)
+        current().fake.queueReply(module, { ...outcome, response: { ...outcome.response, cookie } })
       },
     },
     get serverLogs() {
@@ -176,6 +198,7 @@ export function useWorld(): World {
     clock: {
       advance: async (ms) => {
         await current().timers.tickAsync(ms)
+        await Promise.all(devices.map(device => device.idle()))
       },
     },
   }

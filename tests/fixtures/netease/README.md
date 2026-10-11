@@ -10,7 +10,7 @@
 ## 使用前须知
 
 - `playback/scrobble.json`：网易云回了 `{"code":200,"data":"success"}`，但这次打卡**没有计入**听歌排行（41 分钟后仍未变化，见 #14 留言）。它只代表“接口返回的样子”，不代表打卡有效。
-- 扫码时要求行为验证的 8821 这次没有出现，没有录到。
+- 扫码时要求行为验证的 8821 这次没有出现，没有录到。测试 8821 分支用的是构造的数据，见下面“构造的数据”。
 - `login/login_cellphone.10004-risk.json` 是短信登录被风控拦下的真实返回；`login/captcha_sent.502-anonymous-registration.json` 是 SDK 1.4.0 匿名注册失败时的返回（报错原文里的“MUSIC_A”只是文字，不是凭据）。
 - 首次同步时“我喜欢的音乐”的歌单详情原始返回约 3.1 MB、一次 1,000 首的歌曲信息约 2.1 MB；这里的文件只留了前 30 项，原长度见 `context.truncated`。
 - `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。
@@ -50,6 +50,18 @@
 - 超过 30 项的数组只留前 30 项，原长度记在 `context.truncated`；查询参数里上千个编号的列表（加歌的 `tracks`、排序的 `ids`）同样只留前 30 个，记在 `context.truncated` 的 `query.*` 路径下。
 - 上传凭证（`image_upload_token` 返回的 `token`）清空；图片编号和地址是测试时画的图，原样保留。
 - 其余结构和取值原样保留。
+
+## 构造的数据
+
+文件名带 `.constructed` 的不是录制，是 #19 为了测 8821 分支构造的（作者同意，2026-10-11）。`context.constructed` 是 `true`。真遇到 8821 时录下来替换掉。
+
+| 文件 | 构造了什么、依据 |
+|---|---|
+| `login/login_qr_check.8821-verify.constructed.json` | 扫码确认后网易云要求行为验证。`message` 照真实报错的原文（chaunsin/netease-cloud-music#26 里贴的 `8821 需要行为验证码验证`）；`data` 里的 `verifyId`、`verifyType`、`verifyToken`、`params.event_id`、`params.sign` 照开源实现 saltbo/zme 的 `NeteaseRiskData`（它把这几项交给 `/frontrisk/verify/getqrcode`，和 SDK `verify_getQr` 的参数一一对应），取值是假的 |
+| `login/login_qr_check.8821-no-params.constructed.json` | 同一个 8821，但 `data` 是 null：上面那个 issue 里贴的返回只有 `code`、`message`，没有验证参数 |
+| `login/verify_getQr.constructed.json` | 照 SDK 2.2.0 的 `verify_getQr`：网易云只给 `data.qrCode`，`qrurl` 是 SDK 用 `qrCode` 和查询参数拼的，`qrimg` 是 `qrurl` 的二维码（用 SDK 依赖的 `qrcode` 生成）。过 SDK 的 `VerifyGetQrBody` 校验 |
+
+它们不进下面的清单。
 
 ## 清单
 

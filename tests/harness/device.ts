@@ -27,24 +27,32 @@ export interface Device {
   open: () => Promise<Tab>
   /** 这台设备向 Campanula 服务端发出的请求，按先后；断网时没发出去的不算 */
   readonly requests: readonly SentRequest[]
+  /** 这台设备收到的服务端响应正文，按先后：页面脚本能读到的就是这些 */
+  readonly responseBodies: readonly string[]
   /** 这台设备存着的 Cookie（包括 httpOnly 的） */
   cookies: () => Promise<Cookie[]>
+  /** 像有人在浏览器里手动改了 Cookie：按 Set-Cookie 的写法存进这台设备 */
+  setCookie: (setCookie: string) => Promise<void>
   /** 断网或联网：navigator.onLine 跟着变、发 offline / online 事件；断网时请求直接失败 */
   setOnline: (online: boolean) => void
   /** 存储空间：已用、配额、persist() 会不会被同意，测试可以改 */
   storage: FakeStorage
+  /** 等这台设备上正在发的请求都回来、App 处理完（处理时又发的请求也等） */
+  idle: () => Promise<void>
 }
 
 /** origin：测试进程里服务端的地址；clock：世界的时钟 */
 export function createDevice(origin: string, clock: Clock): Device {
   const jar = new CookieJar()
   const requests: SentRequest[] = []
+  const responseBodies: string[] = []
   const indexedDB = new IDBFactory()
   const network = new FakeNetwork()
   const storage = new FakeStorage()
+  const inFlight = new Set<Promise<Response>>()
 
   // 和浏览器的同源请求一样：带上这台设备的 Cookie，存下服务端设的 Cookie
-  const deviceFetch: BrowserCapabilities['fetch'] = async (path, init) => {
+  async function send(path: string, init?: RequestInit): Promise<Response> {
     if (!network.onLine)
       throw new TypeError('Failed to fetch')
     const request = new Request(new URL(path, origin), init)
@@ -56,11 +64,20 @@ export function createDevice(origin: string, clock: Clock): Device {
     const response = await fetch(request)
     for (const setCookie of response.headers.getSetCookie())
       await jar.setCookie(setCookie, response.url)
+    responseBodies.push(await response.clone().text())
     return response
+  }
+
+  const deviceFetch: BrowserCapabilities['fetch'] = (path, init) => {
+    const sending = send(path, init)
+    inFlight.add(sending)
+    void sending.catch(() => {}).finally(() => inFlight.delete(sending))
+    return sending
   }
 
   return {
     requests,
+    responseBodies,
     async open() {
       const page = new FakePage()
       const mediaSession = new FakeMediaSession()
@@ -83,7 +100,17 @@ export function createDevice(origin: string, clock: Clock): Device {
       }
     },
     cookies: () => jar.getCookies(origin),
+    setCookie: async (setCookie) => {
+      await jar.setCookie(setCookie, origin)
+    },
     setOnline: online => network.set(online),
     storage,
+    async idle() {
+      while (inFlight.size > 0) {
+        await Promise.allSettled(inFlight)
+        // 让 App 处理完回来的结果（微任务）；处理时又发了请求就接着等
+        await new Promise(resolve => setImmediate(resolve))
+      }
+    },
   }
 }

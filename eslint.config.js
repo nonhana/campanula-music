@@ -39,4 +39,14 @@ export default antfu(
       }))],
     },
   },
+  {
+    // 网易云适配层是服务端里唯一调 SDK 的地方（Spec #11“服务端：网易云适配层”）；测试架子要用 SDK 导出的结构定义校验录制数据
+    files: ['**/*.{js,ts,svelte}'],
+    ignores: ['src/lib/server/netease.ts', 'tests/harness/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{ name: 'hana-music-api', message: '只有网易云适配层（src/lib/server/netease.ts）能用 hana-music-api' }],
+      }],
+    },
+  },
 )
