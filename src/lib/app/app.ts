@@ -7,6 +7,19 @@ import { createApi } from './api'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 
+/**
+ * 会改登录 Cookie 的请求排队用的跨标签页的锁：问当前账号（服务端可能在这一步续期、写回新的登录 Cookie）和退出。
+ * 不排队的话，退出先回、续期后回，续期写回的登录 Cookie 会把刚退出的登录又带回来
+ */
+const LOGIN_COOKIE_LOCK = 'campanula:login-cookie'
+/** 标签页之间同步登录会话的广播频道 */
+const SESSION_CHANNEL = 'campanula:session'
+
+/** 标签页之间广播的消息：这个浏览器退出登录了 */
+interface SignedOutMessage {
+  type: 'signedOut'
+}
+
 /** 登录会话。刚打开时要先问服务端，才知道有没有当前账号 */
 export type Session
   = | { status: 'checking' }
@@ -66,7 +79,7 @@ export function createApp(browser: BrowserCapabilities): App {
    */
   let finishingLogout: Promise<RequestFailure | null> | undefined
   function finishLogout(): Promise<RequestFailure | null> {
-    finishingLogout ??= (async () => {
+    finishingLogout ??= browser.locks.request(LOGIN_COOKIE_LOCK, async () => {
       if (!await local.pendingLogout())
         return null
       const result = await api.post<LogoutResponse>('/api/logout')
@@ -74,7 +87,7 @@ export function createApp(browser: BrowserCapabilities): App {
         return result.failure
       await local.setPendingLogout(false)
       return null
-    })().finally(() => {
+    }).finally(() => {
       finishingLogout = undefined
     })
     return finishingLogout
@@ -89,6 +102,21 @@ export function createApp(browser: BrowserCapabilities): App {
     read: () => state.login,
     write: next => update({ login: next }),
     signedIn: account => update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN }),
+  })
+
+  /** 每退出一次就加一：退出之前发出去的问账号回来时，结果就不要了 */
+  let signOuts = 0
+  function signedOut(): void {
+    signOuts += 1
+    login.stopQr()
+    update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN })
+  }
+
+  // 一个标签页退出，同一浏览器里开着的其他标签页跟着变成未登录（退出请求由退出的那个标签页发）
+  const sessionChannel = browser.broadcastChannel(SESSION_CHANNEL)
+  sessionChannel.addEventListener('message', (event) => {
+    if ((event.data as SignedOutMessage).type === 'signedOut')
+      signedOut()
   })
 
   /** 问服务端当前账号是谁；没问到时说明原因 */
@@ -116,7 +144,12 @@ export function createApp(browser: BrowserCapabilities): App {
         update({ session: { status: 'signedOut' } })
         return
       }
-      update({ session: await checkAccount() })
+      // 服务端在这一步里续期（满 24 小时、或网易云说需要登录时）。同一浏览器的标签页排队问：
+      // 前一个续期拿到的新登录 Cookie，后一个直接带上，不会再续一次
+      const asked = signOuts
+      const session = await browser.locks.request(LOGIN_COOKIE_LOCK, checkAccount)
+      if (signOuts === asked)
+        update({ session })
     },
     startQrLogin: login.startQr,
     stopQrLogin: login.stopQr,
@@ -125,8 +158,8 @@ export function createApp(browser: BrowserCapabilities): App {
     loginWithCaptcha: login.loginWithCaptcha,
     async logout() {
       await local.setPendingLogout(true)
-      login.stopQr()
-      update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN })
+      signedOut()
+      sessionChannel.postMessage({ type: 'signedOut' } satisfies SignedOutMessage)
       await finishLogout()
     },
   }

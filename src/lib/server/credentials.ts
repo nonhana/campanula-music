@@ -22,6 +22,11 @@ export interface LoginCookie {
 const COOKIE_NAME = 'campanula_login'
 /** 浏览器会悄悄丢掉名字加值超过 4096 字节的 Cookie（RFC 6265bis 5.6） */
 const MAX_COOKIE_BYTES = 4096
+/**
+ * 同一浏览器多久续期一次（Spec #11“客户端：登录会话”）。网易云凭据有效 180 天、每次续期重新算，
+ * 续期后旧凭据也不会马上失效（验证关卡①），24 小时远短于这些，不用调
+ */
+const RENEW_INTERVAL_MS = 24 * 3600_000
 /** 密钥至少这么长：太短的密钥能被猜出来，拿到 Cookie 的人就能解开凭据 */
 export const MIN_SECRET_LENGTH = 32
 const OPTIONS = {
@@ -83,9 +88,14 @@ function writeLogin(cookies: Cookies, login: LoginCookie): void {
   cookies.set(COOKIE_NAME, value, OPTIONS)
 }
 
-/** 登录成功：凭据和 deviceId 加密进登录 Cookie；登录的时间就是上次续期的时间 */
+/** 登录或续期成功：凭据和 deviceId 加密进登录 Cookie，这一刻就是上次续期的时间 */
 export function saveLogin(cookies: Cookies, deviceId: string, credentials: Record<string, string>): void {
   writeLogin(cookies, { deviceId, session: { credentials, renewedAt: Date.now() } })
+}
+
+/** 离上次续期满 24 小时了 */
+export function renewalDue(session: NonNullable<LoginCookie['session']>): boolean {
+  return Date.now() - session.renewedAt >= RENEW_INTERVAL_MS
 }
 
 /** 回一个过期的登录 Cookie，浏览器收到就删掉它 */

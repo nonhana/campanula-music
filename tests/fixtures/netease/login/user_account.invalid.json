@@ -1,0 +1,20 @@
+{
+  "module": "user_account",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-11T14:36:54.409Z",
+    "sdk": "hana-music-api@2.2.0",
+    "region": "local",
+    "ip": "default",
+    "viewer": "invalid",
+    "note": "凭据无效时问账号：MUSIC_U 是随机编造的，不属于任何账号（#20）"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "account": null,
+      "profile": null
+    }
+  }
+}

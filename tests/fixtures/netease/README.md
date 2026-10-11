@@ -4,6 +4,7 @@
 
 - 验证关卡①（nonhana/campanula-music#14，2026-10-08）：`login/`、`library/`、`playback/`、`search/`。登录后的录制之外，其余是未登录（匿名）视角。
 - 验证关卡②（nonhana/campanula-music#15，2026-10-09 北京时间）：`playlist-edit/`（歌单编辑：新建、删除、名称和简介、标签、隐私、封面、加歌和移除、排序、自建歌单之间排序）、`like-collect/`（红心、收藏和取消收藏）。歌单写操作只在临时新建、测完即删的歌单上做。
+- nonhana/campanula-music#20（2026-10-11）：`login/login_refresh.301-invalid.json`、`login/user_account.invalid.json`。在本机用 `hana-music-api@2.2.0` 直接调 SDK，带一个随机编造、不属于任何账号的 `MUSIC_U`，不涉及真实账号。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
@@ -19,6 +20,7 @@
 - `like-collect/playlist_subscribe.*`：验证关卡②里用 SDK 1.4.0 收藏歌单一律回 405“操作过于频繁，请稍后再试”：自己的、别人的歌单，eapi、weapi，默认伪装 IP、真实国内 IP，隔 20 分钟再试，都一样；同一时间作者在官方 App 里收藏、取消都正常，专辑、歌手、红心也都正常。所以这些文件代表的是 SDK 发的请求被拒的样子，不是收藏歌单成功的返回（见 #15 留言）。原因由 nonhana/hana-music-api#32 查明：设备身份 `os=pc`、写死的 checkToken，任一个都会被拒。`hana-music-api@2.0.0` 已改写法，修复后的模块还没在真账号上成功过（nonhana/hana-music-api#33）。收藏成功、取消成功的返回在 hana-music-api 仓库的 `tests/fixtures/netease/playlist_subscribe/`。
 - `playlist-edit/nos_upload.*` 不是 SDK 调用，是浏览器拿 `image_upload_token` 的凭证直传网易云图片存储（`nosup-hz1.127.net`）的返回：`query` 写图片的尺寸、字节数和 JPEG 质量。
 - 两次录制分别脱敏，假编号不跨批次对应：比如两边的 `900000002` 不是同一张歌单。
+- `login/*.invalid.json`、`login/login_refresh.301-invalid.json`：凭据无效时，`user_account` 照样回 200，只是 `account`、`profile` 都是 null；`login_refresh` 回 301，同时下发一条新的 `NMTID`（没有收录）。所以“需要登录”要看 `user_account` 有没有账号，或者看接口回不回 301（#14 留言）。
 
 ## 文件格式
 
@@ -31,9 +33,9 @@
   "context": {
     "recordedAt": "…", // 录制时间（UTC）
     "sdk": "hana-music-api@1.4.0",
-    "region": "hkg1", // Vercel 函数地区
+    "region": "hkg1", // Vercel 函数地区；local = 作者本机
     "ip": "default", // default = SDK 默认伪装 IP；real = 传入真实国内 IP；none = 不带
-    "viewer": "vip-qr", // anonymous / vip-qr（扫码登录）/ vip-sms（短信登录）
+    "viewer": "vip-qr", // anonymous / vip-qr（扫码登录）/ vip-sms（短信登录）/ invalid（编造的无效凭据）
     "note": "…", // 可选
     "truncated": [{ "path": "body.songs", "length": 1000 }] // 可选：哪些数组被截短，原长度多少
   },
@@ -98,11 +100,13 @@
 | `login/login_qr_key.json` | `login_qr_key` | anonymous | hkg1 / default | 200 |  |  |
 | `login/login_refresh.qr.json` | `login_refresh` | vip-qr | hkg1 / default | 200 |  |  |
 | `login/login_refresh.sms.json` | `login_refresh` | vip-sms | hkg1 / default | 200 |  |  |
+| `login/login_refresh.301-invalid.json` | `login_refresh` | invalid | local / default | 301 |  | SDK 2.2.0；编造的 MUSIC_U：续期被拒 |
 | `login/login_status.anonymous.json` | `login_status` | anonymous | hkg1 / default | 200 |  |  |
 | `login/login_status.vip.json` | `login_status` | vip-qr | hkg1 / default | 200 |  |  |
 | `login/logout.json` | `logout` | vip-sms | hkg1 / default | 200 |  | 对续期前的旧短信 Cookie 退出 |
 | `login/user_account.anonymous.json` | `user_account` | anonymous | hkg1 / default | 200 |  |  |
 | `login/user_account.vip.json` | `user_account` | vip-qr | hkg1 / default | 200 |  |  |
+| `login/user_account.invalid.json` | `user_account` | invalid | local / default | 200 |  | SDK 2.2.0；编造的 MUSIC_U：account、profile 都是 null |
 | `login/user_detail.vip.json` | `user_detail` | vip-qr | hkg1 / default | 200 |  |  |
 | `login/vip_info.vip.json` | `vip_info` | vip-qr | hkg1 / default | 200 |  |  |
 | `login/vip_info_v2.vip.json` | `vip_info_v2` | vip-qr | hkg1 / default | 200 |  |  |
