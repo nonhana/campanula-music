@@ -1,0 +1,164 @@
+import type { AddressInfo } from 'node:net'
+import type { Plugin } from 'vite'
+import type { Device } from './device'
+import type { Call } from './netease-sdk'
+import { AsyncLocalStorage } from 'node:async_hooks'
+import { createServer as createHttpServer } from 'node:http'
+import { fileURLToPath } from 'node:url'
+import { format } from 'node:util'
+import { sveltekit } from '@sveltejs/kit/vite'
+import { createServer } from 'vite'
+import { afterAll, beforeAll, beforeEach, vi } from 'vitest'
+import { createDevice } from './device'
+import { loadFixture } from './fixtures'
+
+// 测试接入点“去掉界面的整个 App”（Spec #11 Testing Decisions）：
+// 世界里有一个在测试进程里真实运行的服务端、一个网易云替身和一个共用的时钟；
+// 每台设备有自己的 Cookie；每个标签页是一个 App。
+
+const FAKE_SDK = fileURLToPath(new URL('./netease-sdk.ts', import.meta.url))
+const START = new Date('2026-10-12T00:00:00Z') // 北京时间 08:00
+const LOG_METHODS = ['debug', 'log', 'info', 'warn', 'error'] as const
+
+export interface ServerLog {
+  level: typeof LOG_METHODS[number]
+  text: string
+}
+
+export interface World {
+  /** 一台新设备 */
+  device: () => Device
+  netease: {
+    /** 服务端调过的网易云模块，按先后 */
+    readonly calls: readonly Call[]
+    /** 网易云对这个模块的下一次调用，回这份录制数据（tests/fixtures/netease/ 下的相对路径） */
+    reply: (fixture: string) => Promise<void>
+  }
+  /** 服务端打的日志 */
+  readonly serverLogs: readonly ServerLog[]
+  /** 服务端和所有设备共用的时钟，只有调用 advance 才会走 */
+  clock: { advance: (ms: number) => void }
+}
+
+// 自检用的模块：和服务端路由一样，在模块里用裸名字 import SDK
+const SDK_PROBE = 'virtual:campanula-sdk-probe'
+
+/** 服务端 import 'hana-music-api' 时换成网易云替身 */
+function replaceSdk(): Plugin {
+  return {
+    name: 'campanula:netease-fake',
+    enforce: 'pre',
+    // Vite 跑服务端代码时，node_modules 里的包默认绕过插件直接加载，替身就失效了
+    config: () => ({ ssr: { noExternal: ['hana-music-api'] } }),
+    resolveId(id) {
+      if (id === 'hana-music-api')
+        return FAKE_SDK
+      if (id.startsWith('hana-music-api/'))
+        throw new Error(`网易云替身只替换了 hana-music-api 本身，服务端不能引用 ${id}`)
+      if (id === SDK_PROBE)
+        return `\0${SDK_PROBE}`
+    },
+    load(id) {
+      if (id === `\0${SDK_PROBE}`)
+        return `export { invokeModule } from 'hana-music-api'`
+    },
+  }
+}
+
+/* eslint-disable no-console -- 依赖库也可能用 console.log 打日志，都算服务器日志，所以接管全部方法 */
+/** 记下服务端处理请求时打的日志，照常打印出来方便排查 */
+function captureServerLogs(serving: AsyncLocalStorage<true>) {
+  const logs: ServerLog[] = []
+  const originals = LOG_METHODS.map(level => [level, console[level]] as const)
+  for (const [level, original] of originals) {
+    console[level] = (...args: unknown[]) => {
+      if (serving.getStore())
+        logs.push({ level, text: format(...args) })
+      original.apply(console, args)
+    }
+  }
+  return {
+    logs,
+    restore: () => {
+      for (const [level, original] of originals)
+        console[level] = original
+    },
+  }
+}
+/* eslint-enable no-console */
+
+async function startWorld() {
+  const vite = await createServer({
+    configFile: false,
+    logLevel: 'silent',
+    server: { middlewareMode: true, hmr: false, ws: false, watch: null },
+    plugins: [replaceSdk(), sveltekit()],
+  })
+  const serving = new AsyncLocalStorage<true>()
+  const http = createHttpServer((req, res) => serving.run(true, () => vite.middlewares(req, res)))
+  await new Promise<void>(resolve => http.listen(0, 'localhost', resolve))
+  const { port } = http.address() as AddressInfo
+
+  const fake = await vite.ssrLoadModule(FAKE_SDK) as typeof import('./netease-sdk')
+  const probe = await vite.ssrLoadModule(SDK_PROBE) as Pick<typeof import('./netease-sdk'), 'invokeModule'>
+  if (probe.invokeModule !== fake.invokeModule)
+    throw new Error('服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云')
+
+  const serverLogs = captureServerLogs(serving)
+  vi.useFakeTimers({ toFake: ['Date'], now: START })
+
+  return {
+    origin: `http://localhost:${port}`,
+    fake,
+    serverLogs: serverLogs.logs,
+    reset() {
+      fake.reset()
+      serverLogs.logs.length = 0
+      vi.setSystemTime(START)
+    },
+    async close() {
+      vi.useRealTimers()
+      serverLogs.restore()
+      http.closeAllConnections()
+      await new Promise(resolve => http.close(resolve))
+      await vite.close()
+    },
+  }
+}
+
+/** 在测试文件顶层调用：整个文件共用一个世界，每条测试开始前清空网易云替身、日志和时钟 */
+export function useWorld(): World {
+  let started: Awaited<ReturnType<typeof startWorld>> | undefined
+  const current = () => {
+    if (!started)
+      throw new Error('世界还没启动：useWorld() 要在测试文件顶层调用')
+    return started
+  }
+
+  beforeAll(async () => {
+    started = await startWorld()
+  }, 30_000)
+  afterAll(async () => {
+    await started?.close()
+  })
+  beforeEach(() => current().reset())
+
+  return {
+    device: () => createDevice(current().origin),
+    netease: {
+      get calls() {
+        return current().fake.calls
+      },
+      async reply(path) {
+        const { module, reply } = await loadFixture(path)
+        current().fake.queueReply(module, reply)
+      },
+    },
+    get serverLogs() {
+      return current().serverLogs
+    },
+    clock: {
+      advance: ms => vi.setSystemTime(Date.now() + ms),
+    },
+  }
+}

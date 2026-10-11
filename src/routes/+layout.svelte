@@ -1,4 +1,6 @@
 <script lang='ts'>
+  import { createApp } from '$lib/app/app'
+  import { realBrowserCapabilities } from '$lib/app/browser'
   import HttpsRequired from '$lib/components/HttpsRequired.svelte'
   // reset 必须先于 UnoCSS 加载，否则带 type="button" 的按钮会丢底色
   import '@unocss/reset/tailwind.css'
@@ -10,6 +12,10 @@
   // 安全上下文 = HTTPS 或本机 localhost：Service Worker、Background Fetch、Storage API、
   // 带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
   const secure = window.isSecureContext
+
+  // 打开 App：问服务端当前账号是谁。界面从 #18、#19 起读它的状态
+  if (secure)
+    createApp(realBrowserCapabilities()).open()
 </script>
 
 {#if secure}
