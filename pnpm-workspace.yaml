@@ -4,9 +4,7 @@ trustPolicy: no-downgrade
 shellEmulator: true
 
 allowBuilds:
-  '@parcel/watcher': true
   esbuild: true
-  sharp: true
   # 钩子由 package.json 的 prepare 安装，不需要它自己的安装后脚本
   simple-git-hooks: false
 

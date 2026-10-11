@@ -1,4 +1,4 @@
-import type { Clock, NetworkStatus, PageVisibility } from '$lib/app/browser'
+import type { Clock, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '$lib/app/browser'
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
 
 // 风险低的浏览器能力替身：行为照浏览器标准，几乎没有要猜的地方。
@@ -48,7 +48,7 @@ export class FakePage extends EventTarget implements PageVisibility {
 }
 
 /** 存储空间：已用和配额由测试设定，不会跟着写入变化 */
-export class FakeStorage implements Pick<StorageManager, 'estimate' | 'persist' | 'persisted'> {
+export class FakeStorage implements StorageCapability {
   usage = 0
   quota = 10 * 1024 ** 3
   /**
@@ -89,7 +89,7 @@ export class FakeMediaMetadata implements MediaMetadata {
 }
 
 /** 一个标签页的 Media Session：测试看锁屏上显示什么、有哪些按钮，也能模拟按按钮 */
-export class FakeMediaSession implements Pick<MediaSession, 'metadata' | 'playbackState' | 'setActionHandler' | 'setPositionState'> {
+export class FakeMediaSession implements MediaSessionCapability {
   metadata: MediaMetadata | null = null
   playbackState: MediaSessionPlaybackState = 'none'
   /** 最近一次 setPositionState 设的进度；没设过或已清除时是 null */

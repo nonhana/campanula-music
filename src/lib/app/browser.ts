@@ -12,12 +12,16 @@ export interface BrowserCapabilities {
   indexedDB: IDBFactory
   network: NetworkStatus
   page: PageVisibility
-  /** 存储空间，同 navigator.storage */
-  storage: Pick<StorageManager, 'estimate' | 'persist' | 'persisted'>
-  /** 锁屏和通知栏上的播放控件，同 navigator.mediaSession；歌曲信息用 MediaMetadata 构造 */
-  mediaSession: Pick<MediaSession, 'metadata' | 'playbackState' | 'setActionHandler' | 'setPositionState'>
+  storage: StorageCapability
+  mediaSession: MediaSessionCapability
   MediaMetadata: typeof MediaMetadata
 }
+
+/** 存储空间，同 navigator.storage */
+export type StorageCapability = Pick<StorageManager, 'estimate' | 'persist' | 'persisted'>
+
+/** 锁屏和通知栏上的播放控件，同 navigator.mediaSession；歌曲信息用 BrowserCapabilities.MediaMetadata 构造 */
+export type MediaSessionCapability = Pick<MediaSession, 'metadata' | 'playbackState' | 'setActionHandler' | 'setPositionState'>
 
 export interface Clock {
   /** 现在的时间，毫秒，同 Date.now() */

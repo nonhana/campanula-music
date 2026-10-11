@@ -13,9 +13,12 @@
   // 带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
   const secure = window.isSecureContext
 
-  // 打开 App：问服务端当前账号是谁。界面从 #18、#19 起读它的状态
-  if (secure)
-    createApp(realBrowserCapabilities()).open()
+  // 打开 App：问服务端当前账号是谁。界面从 #18、#19 起读它的状态，出错时的提示也从那时起加
+  if (secure) {
+    createApp(realBrowserCapabilities()).open().catch((error: unknown) => {
+      console.error('打开 App 失败', error)
+    })
+  }
 </script>
 
 {#if secure}
