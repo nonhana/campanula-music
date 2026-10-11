@@ -1,6 +1,11 @@
 <script lang='ts'>
-  import Welcome from '$lib/components/welcome/Welcome.svelte'
+  import { getAppView } from '$lib/components/app-context.svelte'
+  import StateBlock from '$lib/components/ui/StateBlock.svelte'
+  import { Library } from '@lucide/svelte'
+
+  // 根布局只在登录后渲染页面。曲库（#21）还没做，先如实说明
+  const view = getAppView()
+  const nickname = $derived(view.state.session.status === 'signedIn' ? view.state.session.account.nickname : '')
 </script>
 
-<!-- 根布局只在问清当前账号后才渲染页面；登录（#19）之前只会是未登录 -->
-<Welcome />
+<StateBlock kind='empty' icon={Library} title='已登录为 {nickname}' body='曲库同步会在之后的版本加入。' />

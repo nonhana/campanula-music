@@ -1,0 +1,27 @@
+{
+  "module": "login_qr_check",
+  "query": {
+    "key": "f124a8be-db3f-42f9-a236-30cc4130ed2c"
+  },
+  "context": {
+    "constructed": true,
+    "sdk": "hana-music-api@2.2.0",
+    "note": "构造的，不是录制：8821 在验证关卡里没出现过（#14、#19）。字段和取值的来历见 README 的“构造的数据”"
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "code": 8821,
+      "message": "需要行为验证码验证",
+      "data": {
+        "verifyId": 61,
+        "verifyType": 2,
+        "verifyToken": "00.verify-token.placeholder",
+        "params": {
+          "event_id": "risk-event-placeholder",
+          "sign": "risk-sign-placeholder"
+        }
+      }
+    }
+  }
+}

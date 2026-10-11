@@ -14,8 +14,11 @@ v1 正在 `rewrite/v1` 分支上从零重写，还不能使用。
 
 ```bash
 pnpm install
+cp .env.example .env   # 填上 COOKIE_SECRET：openssl rand -base64 32
 pnpm dev
 ```
+
+站长要配的环境变量见 `.env.example`：`COOKIE_SECRET`（必填，加密登录 Cookie 的密钥，至少 32 个字符，升级时保留同一个，换了所有听众都要重新登录）、`NETEASE_REAL_IP`（可选，真实的国内 IP）。
 
 提交前钩子会对暂存的文件跑 `eslint --fix`；`pnpm lint`、`pnpm check` 在 CI 里也会跑。
 

@@ -14,9 +14,21 @@ export interface Outcome {
   response: SdkResponse
 }
 
+/**
+ * 调用配置里替身关心的部分，照 SDK 的 ModuleCallConfig：凭据（Cookie 的名字和值）、realIP，
+ * 以及 deviceId（顶层的给隐式匿名注册用，state 里的给每次请求的 Cookie 头用）
+ */
+export interface CallConfig {
+  cookie?: Record<string, string | number | boolean | undefined> | string
+  deviceId?: string
+  realIP?: string
+  state?: { deviceId?: string }
+}
+
 export interface Call {
   module: string
   query: unknown
+  config: CallConfig
 }
 
 const outcomes = new Map<string, Outcome[]>()
@@ -33,9 +45,9 @@ export function reset(): void {
   calls.length = 0
 }
 
-// 和 SDK 的 invokeModule 同名同参数；config（凭据、deviceId、realIP）从 #19 起要记下来
-export async function invokeModule(module: string, query: unknown): Promise<SdkResponse> {
-  calls.push({ module, query })
+// 和 SDK 的 invokeModule 同名同参数（config 默认是空对象）
+export async function invokeModule(module: string, query: unknown, config: CallConfig = {}): Promise<SdkResponse> {
+  calls.push({ module, query, config: structuredClone(config) })
   const outcome = outcomes.get(module)?.shift()
   if (!outcome)
     throw new Error(`网易云替身：没有为 ${module} 准备录制数据`)
