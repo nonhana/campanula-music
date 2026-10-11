@@ -28,3 +28,11 @@ jobs:
 
       - name: 类型检查
         run: pnpm check
+
+      - name: 构建（Vercel 适配器）
+        run: pnpm build
+        env:
+          VERCEL: '1'
+
+      - name: 构建（Node 适配器）
+        run: pnpm build
