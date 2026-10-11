@@ -12,6 +12,8 @@ export interface Outcome {
   /** true：像真的 SDK 一样把 response 抛出来 */
   rejected: boolean
   response: SdkResponse
+  /** 有的话等它了结才回：模拟网易云回得慢，测请求之间的先后 */
+  until?: Promise<void>
 }
 
 /**
@@ -51,6 +53,7 @@ export async function invokeModule(module: string, query: unknown, config: CallC
   const outcome = outcomes.get(module)?.shift()
   if (!outcome)
     throw new Error(`网易云替身：没有为 ${module} 准备录制数据`)
+  await outcome.until
   const response = structuredClone(outcome.response)
   if (outcome.rejected)
     throw response

@@ -1,8 +1,8 @@
-import type { Clock, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '$lib/app/browser'
+import type { ChannelCapability, Clock, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '$lib/app/browser'
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
 
-// 风险低的浏览器能力替身：行为照浏览器标准，几乎没有要猜的地方。
-// 音频、Web Locks、浏览器直连网易云的传输、Background Fetch 由最早用到它们的票加上。
+// 浏览器能力替身：行为照浏览器标准写。
+// 音频、浏览器直连网易云的传输、Background Fetch 由最早用到它们的票加上。
 
 /** App 的时钟：和世界的假时钟走同一个时间，定时按到期先后触发 */
 export function clockOn(timers: FakeTimers): Clock {
@@ -70,6 +70,181 @@ export class FakeStorage implements StorageCapability {
 
   async persisted(): Promise<boolean> {
     return this.#persisted
+  }
+}
+
+/** 锁，同 Lock：名字和模式 */
+class FakeLock implements Lock {
+  constructor(readonly name: string, readonly mode: LockMode) {}
+}
+
+interface LockRequest {
+  name: string
+  mode: LockMode
+  callback: LockGrantedCallback<unknown>
+  signal: AbortSignal | undefined
+  /** 已经调了回调：之后 signal 不再理会（§4.4 第 14.1.2 步） */
+  invoked: boolean
+  /** request() 返回的 promise（标准里的 released promise） */
+  settle: { resolve: (value: unknown) => void, reject: (reason: unknown) => void }
+}
+
+/** 调回调；回调同步抛错时当作返回了失败的 promise（WebIDL 对返回 Promise 的回调的规定） */
+function invoke(callback: LockGrantedCallback<unknown>, lock: Lock | null): Promise<unknown> {
+  return new Promise(resolve => resolve(callback(lock)))
+}
+
+/**
+ * 跨标签页的锁（Web Locks），一台设备一个，所有标签页共用。照 W3C Web Locks API（2025-09-24 编辑草案）§4 的算法写：
+ * - 同名的请求按先后排队，只有排在最前、又不和已持有的锁冲突的才能拿到（grantable）；
+ *   exclusive 和同名的任何锁冲突，shared 只和同名的 exclusive 冲突。
+ * - 拿到锁后在之后的微任务里调回调；回调返回的 promise 了结（成功或失败）才释放锁，request() 跟着它了结。
+ * - ifAvailable：拿不到就不排队，回调收到 null，request() 不失败。
+ * - signal：调回调之前被取消，request() 以取消的原因失败；还在排队就从队列里拿掉，已经拿到锁就释放、不调回调。
+ * - steal：App 没用到，替身没做，用到时照 §4.1 第 4 步补上。
+ */
+export class FakeLocks implements LocksCapability {
+  readonly #held: FakeLock[] = []
+  readonly #queues = new Map<string, LockRequest[]>()
+
+  request<T>(name: string, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
+  request<T>(name: string, options: LockOptions, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
+  request<T>(name: string, ...args: [LockGrantedCallback<T>] | [LockOptions, LockGrantedCallback<T>]): Promise<Awaited<T>> {
+    const [options, callback] = args.length === 1 ? [{}, args[0]] : args
+    const { mode = 'exclusive', ifAvailable = false, steal = false, signal } = options
+    // §3.2.1 request() 第 5～9 步
+    const notSupported = (message: string) => Promise.reject(new DOMException(message, 'NotSupportedError'))
+    if (name.startsWith('-'))
+      return notSupported('以 - 开头的锁名是保留的')
+    if (steal && ifAvailable)
+      return notSupported('steal 和 ifAvailable 不能同时用')
+    if (steal && mode !== 'exclusive')
+      return notSupported('steal 只能用于 exclusive')
+    if (signal && (steal || ifAvailable))
+      return notSupported('signal 不能和 steal、ifAvailable 同时用')
+    if (signal?.aborted)
+      return Promise.reject(signal.reason)
+    if (steal)
+      throw new Error('Web Locks 替身没有做 steal')
+
+    return new Promise((resolve, reject) => {
+      const request: LockRequest = { name, mode, callback: callback as LockGrantedCallback<unknown>, signal, invoked: false, settle: { resolve: resolve as (value: unknown) => void, reject } }
+      const queue = this.#queue(name)
+      // §4.1 第 3.5 步
+      if (ifAvailable && !this.#grantable(request)) {
+        queueMicrotask(() => resolve(invoke(request.callback, null) as Promise<Awaited<T>>))
+        return
+      }
+      // §4.3 signal to abort the request
+      signal?.addEventListener('abort', () => {
+        if (request.invoked)
+          return
+        reject(signal.reason)
+        const at = queue.indexOf(request)
+        if (at !== -1) {
+          queue.splice(at, 1)
+          this.#process(name)
+        }
+      }, { once: true })
+      queue.push(request)
+      this.#process(name)
+    })
+  }
+
+  #queue(name: string): LockRequest[] {
+    let queue = this.#queues.get(name)
+    if (!queue)
+      this.#queues.set(name, queue = [])
+    return queue
+  }
+
+  /** §2.5 grantable */
+  #grantable(request: LockRequest): boolean {
+    const queue = this.#queue(request.name)
+    if (queue.length > 0 && queue[0] !== request)
+      return false
+    const sameName = this.#held.filter(lock => lock.name === request.name)
+    return request.mode === 'exclusive' ? sameName.length === 0 : sameName.every(lock => lock.mode !== 'exclusive')
+  }
+
+  /** §4.4 process the lock request queue */
+  #process(name: string): void {
+    const queue = this.#queue(name)
+    while (queue.length > 0 && this.#grantable(queue[0])) {
+      const request = queue.shift()!
+      const lock = new FakeLock(request.name, request.mode)
+      this.#held.push(lock)
+      const release = () => {
+        this.#held.splice(this.#held.indexOf(lock), 1)
+        this.#process(name)
+      }
+      queueMicrotask(() => {
+        if (request.signal?.aborted)
+          return release()
+        request.invoked = true
+        const waiting = invoke(request.callback, lock)
+        // §2.4：waiting promise 了结（成功或失败）后释放锁，released promise 跟着它了结
+        void waiting.catch(() => {}).then(() => {
+          release()
+          request.settle.resolve(waiting)
+        })
+      })
+    }
+  }
+}
+
+/**
+ * 跨标签页的广播（BroadcastChannel），一台设备一份，所有标签页共用。照 HTML 标准 §9.5 postMessage() 的步骤：
+ * - 关闭后再发抛 InvalidStateError；消息先结构化克隆（克隆不了照样抛出）；
+ * - 送给同名、还没关闭的其他频道，不送给自己；按频道创建的先后，每个频道排一个任务（宏任务）送达，
+ *   送达时已经关闭的就不送；收到时发 message 事件，消息在 data 里。
+ */
+export class FakeBroadcast {
+  readonly #open = new Set<FakeChannel>()
+  /** 已经发出、还没送达的消息有几份 */
+  pending = 0
+
+  channel = (name: string): ChannelCapability => {
+    const channel = new FakeChannel(name, this)
+    this.#open.add(channel)
+    return channel
+  }
+
+  /** 频道发消息：克隆好的消息送给同名的其他频道 */
+  deliver(source: FakeChannel, data: unknown): void {
+    for (const destination of this.#open) {
+      if (destination === source || destination.name !== source.name)
+        continue
+      this.pending += 1
+      setImmediate(() => {
+        this.pending -= 1
+        if (!destination.closed)
+          destination.dispatchEvent(new MessageEvent('message', { data: structuredClone(data) }))
+      })
+    }
+  }
+
+  forget(channel: FakeChannel): void {
+    this.#open.delete(channel)
+  }
+}
+
+class FakeChannel extends EventTarget implements ChannelCapability {
+  closed = false
+
+  constructor(readonly name: string, private readonly broadcast: FakeBroadcast) {
+    super()
+  }
+
+  postMessage(message: unknown): void {
+    if (this.closed)
+      throw new DOMException('频道已经关闭', 'InvalidStateError')
+    this.broadcast.deliver(this, structuredClone(message))
+  }
+
+  close(): void {
+    this.closed = true
+    this.broadcast.forget(this)
   }
 }
 

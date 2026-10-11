@@ -97,11 +97,11 @@ async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, li
 }
 
 /**
- * 从网易云下发的 Set-Cookie 里取出凭据：只留名字和值（同名的后者覆盖），值为空或已经过期的不要。
+ * 从网易云下发的 Set-Cookie 里取出凭据，叠在 base 上：只留名字和值（同名的后者覆盖），值为空或已经过期的删掉。
  * 没有 MUSIC_U 就算不上登录成功，当作上游结构变了
  */
-function credentialsFrom(setCookies: readonly string[]): Record<string, string> {
-  const credentials: Record<string, string> = {}
+function credentialsFrom(setCookies: readonly string[], base: Record<string, string> = {}): Record<string, string> {
+  const credentials: Record<string, string> = { ...base }
   for (const line of setCookies) {
     const [pair = '', ...attributes] = line.split(';')
     const at = pair.indexOf('=')
@@ -215,6 +215,15 @@ export async function fetchAccount(listener: Listener): Promise<Account> {
   if (!body.account || body.account.anonimousUser || !body.profile)
     throw new NeteaseError({ kind: 'needsLogin' }, body)
   return { nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl }
+}
+
+/**
+ * 续期：网易云下发新的 MUSIC_U（重新算 180 天）和新的 __csrf，叠在原来的凭据上。
+ * 续期后旧的凭据不会马上失效（验证关卡①：17.6 分钟后还能用）
+ */
+export async function renewLogin(listener: Listener & { credentials: Record<string, string> }): Promise<Record<string, string>> {
+  const { cookie } = await call('login_refresh', {}, listener)
+  return credentialsFrom(cookie, listener.credentials)
 }
 
 /** 退出登录：网易云只注销同一个 deviceId 上的登录，听众在其他设备上的登录不受影响（验证关卡①） */

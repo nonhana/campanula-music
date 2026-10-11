@@ -26,6 +26,18 @@ export function signInCookies(): string[] {
   ]
 }
 
+/** 续期后网易云下发的新凭据（假的） */
+export const RENEWED_MUSIC_U = `00C7A2${'5E1B8D3F6A'.repeat(32)}`
+
+/** 续期时网易云下发的 Set-Cookie：新的 MUSIC_U（重新算 180 天）和新的 __csrf（验证关卡①），值是假的 */
+export function renewCookies(): string[] {
+  const expires = (days: number) => `Max-Age=${days * 86400}; Expires=${new Date(Date.now() + days * 86400_000).toUTCString()}`
+  return [
+    `MUSIC_U=${RENEWED_MUSIC_U}; ${expires(180)}; Path=/; HTTPOnly`,
+    `__csrf=0a1b2c3d4e5f60718293a4b5c6d7e8f9; ${expires(15)}; Path=/`,
+  ]
+}
+
 /** 用短信验证码登录这个标签页的 App（网易云回录制数据） */
 export async function signIn(world: World, app: App): Promise<void> {
   await world.netease.reply('login/captcha_sent.json')

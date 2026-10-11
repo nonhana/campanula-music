@@ -1,0 +1,20 @@
+{
+  "module": "login_refresh",
+  "query": {},
+  "context": {
+    "recordedAt": "2026-10-11T14:36:54.585Z",
+    "sdk": "hana-music-api@2.2.0",
+    "region": "local",
+    "ip": "default",
+    "viewer": "invalid",
+    "note": "凭据无效时续期：MUSIC_U 是随机编造的，不属于任何账号（#20）"
+  },
+  "response": {
+    "status": 301,
+    "body": {
+      "msg": null,
+      "code": 301,
+      "message": null
+    }
+  }
+}

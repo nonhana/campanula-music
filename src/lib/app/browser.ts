@@ -1,8 +1,7 @@
 /**
  * App 用到的浏览器能力。App 只从这里拿，不直接用 window、navigator、document 这些全局对象，
  * 测试接入点里整个换成替身（Spec #11 Testing Decisions）。
- * 音频（#24）、Web Locks（#20）、浏览器直连网易云的传输（#34、#38）、Background Fetch（#41）
- * 由最早用到它们的票加上。
+ * 音频（#24）、浏览器直连网易云的传输（#34、#38）、Background Fetch（#41）由最早用到它们的票加上。
  */
 export interface BrowserCapabilities {
   /** 向 Campanula 自己的服务端发请求：同源，浏览器自动带上 Cookie；断网时失败 */
@@ -15,7 +14,17 @@ export interface BrowserCapabilities {
   storage: StorageCapability
   mediaSession: MediaSessionCapability
   MediaMetadata: typeof MediaMetadata
+  /** 跨标签页的锁，同 navigator.locks：同一浏览器里同源的标签页共用 */
+  locks: LocksCapability
+  /** 打开一个跨标签页的广播频道，同 new BroadcastChannel(name)：同一浏览器里同源、同名的频道互相收得到，自己发的自己收不到 */
+  broadcastChannel: (name: string) => ChannelCapability
 }
+
+/** 跨标签页的锁（Web Locks） */
+export type LocksCapability = Pick<LockManager, 'request'>
+
+/** 跨标签页的广播频道：收到消息时发 message 事件（MessageEvent，消息在 data 里） */
+export type ChannelCapability = Pick<BroadcastChannel, 'postMessage' | 'addEventListener' | 'close'>
 
 /** 存储空间，同 navigator.storage */
 export type StorageCapability = Pick<StorageManager, 'estimate' | 'persist' | 'persisted'>
@@ -66,5 +75,7 @@ export function realBrowserCapabilities(): BrowserCapabilities {
     storage: navigator.storage,
     mediaSession: navigator.mediaSession,
     MediaMetadata: window.MediaMetadata,
+    locks: navigator.locks,
+    broadcastChannel: name => new BroadcastChannel(name),
   }
 }
