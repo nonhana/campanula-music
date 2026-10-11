@@ -31,12 +31,6 @@ colors:
   error-wash: "#FBE9E7"
   error-ink: "#D32F2F"
 typography:
-  display:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "44px"
-    fontWeight: 600
-    lineHeight: "52px"
-    letterSpacing: "-0.025em"
   headline:
     fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
     fontSize: "28px"
@@ -278,9 +272,8 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 
 ### Hierarchy
 
-字号阶梯在 #18 定稿（2026-10-11，作者看过前后对比截图）：只有下面九档，UnoCSS 里写 `text-<档名>`（见 `uno.config.ts`；Wind 自带的 `text-sm`、`text-lg` 这类已经去掉）。不要写 `text-[13.5px]` 这种阶梯以外的字号。视觉原型里零散的 10 / 12 / 12.5 / 13.5 / 14.5 / 16 / 18 / 21 / 22 / 32px 都归到最近的一档。
+字号阶梯在 #18 定稿（2026-10-11，作者看过前后对比截图）：只有下面八档，UnoCSS 里写 `text-<档名>`（见 `uno.config.ts`；Wind 自带的 `text-sm`、`text-lg` 这类已经去掉）。不要写 `text-[13.5px]` 这种阶梯以外的字号。视觉原型里零散的 10 / 12 / 12.5 / 13.5 / 14.5 / 16 / 18 / 21 / 22 / 32px 都归到最近的一档。原来最大的一档 Display（44px）只给介绍页的大标题用，#19 起登录页不再有介绍（作者定，2026-10-11），这一档随之删掉；以后真有比 Headline 更大的标题，再重新定。
 
-- **Display**（600，44px，行高 52px，字距 -0.025em）：大标题，暂时没有用到（原来用在介绍页，#19 起登录页不再有介绍）。
 - **Headline**（600，28px，行高 36px，字距 -0.01em）：桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）。
 - **Headline-sm**（600，24px，行高 32px，字距 -0.01em）：手机的页面标题、桌面播放页的歌名。
 - **Title**（600，20px，行高 28px）：首页的区块标题（我喜欢的音乐、歌单、专辑、歌手）、手机播放页的歌名。
