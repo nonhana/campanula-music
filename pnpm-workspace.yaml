@@ -13,6 +13,8 @@ allowBuilds:
 catalog:
   '@antfu/eslint-config': ^9.5.1
   '@eslint/config-helpers': ^0.7.0
+  '@sveltejs/adapter-node': ^5.5.7
+  '@sveltejs/adapter-vercel': ^6.3.4
   '@sveltejs/kit': ^2.70.3
   '@sveltejs/vite-plugin-svelte': ^7.3.1
   '@types/node': ^26.6.3

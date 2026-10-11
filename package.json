@@ -17,6 +17,8 @@
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@eslint/config-helpers": "catalog:",
+    "@sveltejs/adapter-node": "catalog:",
+    "@sveltejs/adapter-vercel": "catalog:",
     "@sveltejs/kit": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",
     "@types/node": "catalog:",
