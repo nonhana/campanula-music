@@ -25,4 +25,4 @@ git -C /tmp/campanula-shots push origin HEAD:screenshots
 git worktree remove /tmp/campanula-shots
 ```
 
-这个分支没有 `package.json`：pre-push 钩子会直接放行，Vercel 也不会构建它（只构建生产分支）。
+这个分支没有 `package.json`，pre-push 钩子会直接放行。推它不会触发 Vercel 部署（2026-10-11 实测）。
