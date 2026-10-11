@@ -31,8 +31,12 @@ export function createApp(browser: BrowserCapabilities): App {
       if (!response.ok)
         throw new Error(`问不到当前账号：HTTP ${response.status}`)
       const { account }: AccountResponse = await response.json()
-      if (account === null)
-        state = { ...state, session: { status: 'signedOut' } }
+      if (account !== null) {
+        // 登录（#19）之前只会是 null；类型放宽后这里编译不过，提醒补上已登录的情况
+        const unhandled: never = account
+        throw new Error(`还不会处理已登录的账号：${String(unhandled)}`)
+      }
+      state = { ...state, session: { status: 'signedOut' } }
     },
   }
 }

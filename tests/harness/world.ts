@@ -33,7 +33,10 @@ export interface World {
   netease: {
     /** 服务端调过的网易云模块，按先后 */
     readonly calls: readonly Call[]
-    /** 网易云对这个模块的下一次调用，回这份录制数据（tests/fixtures/netease/ 下的相对路径） */
+    /**
+     * 网易云对这个模块的下一次调用，回这份录制数据（tests/fixtures/netease/ 下的相对路径）。
+     * 录下的是失败返回时，替身像真的 SDK 一样把它抛出来
+     */
     reply: (fixture: string) => Promise<void>
   }
   /** 服务端打的日志 */
@@ -103,11 +106,18 @@ async function startWorld() {
   const http = createHttpServer((req, res) => serving.run(true, () => vite.middlewares(req, res)))
   await new Promise<void>(resolve => http.listen(0, 'localhost', resolve))
   const { port } = http.address() as AddressInfo
+  const closeServers = async () => {
+    http.closeAllConnections()
+    await new Promise(resolve => http.close(resolve))
+    await vite.close()
+  }
 
   const fake = await vite.ssrLoadModule(FAKE_SDK) as typeof import('./netease-sdk')
   const probe = await vite.ssrLoadModule(SDK_PROBE) as Pick<typeof import('./netease-sdk'), 'invokeModule'>
-  if (probe.invokeModule !== fake.invokeModule)
+  if (probe.invokeModule !== fake.invokeModule) {
+    await closeServers()
     throw new Error('服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云')
+  }
 
   const serverLogs = captureServerLogs(serving)
   // 只换掉全局的 Date（服务端和 Cookie 过期用它）；App 的定时用这个时钟自己的 setTimeout。
@@ -127,9 +137,7 @@ async function startWorld() {
     async close() {
       timers.uninstall()
       serverLogs.restore()
-      http.closeAllConnections()
-      await new Promise(resolve => http.close(resolve))
-      await vite.close()
+      await closeServers()
     },
   }
 }
@@ -158,8 +166,8 @@ export function useWorld(): World {
         return current().fake.calls
       },
       async reply(path) {
-        const { module, reply } = await loadFixture(path)
-        current().fake.queueReply(module, reply)
+        const { module, outcome } = await loadFixture(path)
+        current().fake.queueReply(module, outcome)
       },
     },
     get serverLogs() {
