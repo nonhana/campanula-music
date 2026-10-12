@@ -50,9 +50,10 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",
-    "pre-push": "test ! -f package.json || (pnpm check && pnpm test)"
+    "pre-push": "pnpm check && pnpm test"
   },
   "lint-staged": {
-    "*": "eslint --fix --no-warn-ignored"
+    "*": "eslint --fix --no-warn-ignored",
+    "tests/fixtures/**/*.{json,gz}": "node scripts/fixture-identity.mjs"
   }
 }

@@ -62,6 +62,27 @@
 - 上传凭证（`image_upload_token` 返回的 `token`）清空；图片编号和地址是测试时画的图，原样保留。
 - 其余结构和取值原样保留。
 
+## 录制
+
+新的录制用 `scripts/netease-record.mjs`，每张票只写一个一次性脚本决定调哪些模块（不进仓库）：
+
+```js
+import process from 'node:process'
+import { loadIdentity } from './scripts/fixture-identity.mjs'
+import { createRecorder, openSession } from './scripts/netease-record.mjs'
+
+// 浏览器开发者工具里复制 campanula_login 的值；凭据只在内存里
+const invoke = await openSession(process.env.CAMPANULA_LOGIN)
+const recorder = createRecorder({ invoke, dir: 'tests/fixtures/netease/library/sync/after', viewer: 'vip-qr' })
+const list = await recorder.call('user_playlist', { uid: loadIdentity().self.uid, limit: 1000 })
+// …按 list.body 决定接着调什么
+const { written, problems } = recorder.save() // problems 不为空：那几个文件有残留，没写
+```
+
+- `save()` 按上面「脱敏」的规则处理，写之前用 `scripts/fixture-identity.mjs` 查残留；对照表在作者本机的 `_notes/fixture-identity.json`（本人的 uid、昵称、歌手编号和名字，本人歌单、作品、其他听众的真假编号对照）。录到新的人、本人新的歌单和作品时补进对照表，之后的录制沿用同一套假编号。
+- 提交时 `lint-staged` 对暂存的录制跑同一个检查，有残留就拦下；没有对照表的机器（CI）跳过。手动查全部：`node scripts/fixture-identity.mjs`。
+- 对照表不在了要重建：本人身份用 `/api/account`，本人歌单的真实编号用浏览器里的 `/api/playlists`，作品的真实编号用本机副本里歌手是本人的歌，按名字和录制里 `99999999` 的歌对上。
+
 ## 构造的数据
 
 文件名带 `.constructed` 的不是录制，`context.constructed` 是 `true`：8821 那三份是 #19 为了测 8821 分支构造的（作者同意，2026-10-11），真遇到 8821 时录下来替换掉；另一个账号是 #21 构造的（作者同意，2026-10-12，作者只有一个账号）；限流那份是 #21 为了测“操作频繁”的退避构造的，真遇到限流时录下来替换掉。
