@@ -48,11 +48,8 @@ export interface Device {
    * App 处理完（处理时又发的也等）
    */
   idle: () => Promise<void>
-  /**
-   * 和 idle() 一样，但网易云替身压着没回的请求（reply 时给了 until）不等：
-   * 等到在路上的请求只剩 held() 个、其余的事都做完。网易云回得慢时用它看 App 当时的样子
-   */
-  settle: (held: () => number) => Promise<void>
+  /** 除了在路上的请求（pending），还有没做完的事：本机数据库事务、排着的锁回调、没送到的广播 */
+  busy: () => boolean
 }
 
 /** App 在本机数据库里用的库名（src/lib/app/local.ts），在浏览器的开发者工具里看到的就是它 */
@@ -134,7 +131,6 @@ export function createDevice(origin: string, clock: Clock): Device {
     }
   }
 
-  /** 除了在路上的请求，还有没做完的事：数据库事务、排着的锁回调、没送到的广播 */
   const busy = () => activeTransactions > 0 || locks.pending > 0 || broadcast.pending > 0
 
   const deviceFetch: BrowserCapabilities['fetch'] = (path, init) => {
@@ -207,12 +203,6 @@ export function createDevice(origin: string, clock: Clock): Device {
         await new Promise(resolve => setImmediate(resolve))
       } while (inFlight.size > 0 || busy())
     },
-    async settle(held) {
-      // 压着的请求永远不会自己回来，不能 await 它们，只能一轮一轮地看：连着两轮什么都没在做才算停下
-      for (let quiet = 0; quiet < 2;) {
-        await new Promise(resolve => setImmediate(resolve))
-        quiet = pending.length > held() || busy() ? 0 : quiet + 1
-      }
-    },
+    busy,
   }
 }

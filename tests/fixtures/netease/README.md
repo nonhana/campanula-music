@@ -5,7 +5,7 @@
 - 验证关卡①（nonhana/campanula-music#14，2026-10-08）：`login/`、`library/`、`playback/`、`search/`。登录后的录制之外，其余是未登录（匿名）视角。
 - 验证关卡②（nonhana/campanula-music#15，2026-10-09 北京时间）：`playlist-edit/`（歌单编辑：新建、删除、名称和简介、标签、隐私、封面、加歌和移除、排序、自建歌单之间排序）、`like-collect/`（红心、收藏和取消收藏）。歌单写操作只在临时新建、测完即删的歌单上做。
 - nonhana/campanula-music#20（2026-10-11）：`login/login_refresh.301-invalid.json`、`login/user_account.invalid.json`。在本机用 `hana-music-api@2.2.0` 直接调 SDK，带一个随机编造、不属于任何账号的 `MUSIC_U`，不涉及真实账号。
-- nonhana/campanula-music#21（2026-10-12 北京时间）：`library/` 下文件名带 `.full`、`.liked-full`、`.liked-page` 的整页录制。作者在本机开发服务器的登录页扫码登录一次，一次性脚本用这份凭据直接调 `hana-music-api@2.3.0`，只读：歌单列表 1 次、我喜欢的音乐详情 1 次、歌曲信息每页 1,000 首共 5 次；第 4 页被 SDK 拒掉后，又逐个去掉出错的歌调了 4 次、用 `fetcher` 截网易云原样的返回 1 次。凭据只在内存里，原始录制脱敏后当场删了。同一票里 `library/likelist.301-invalid.json`、`library/user_playlist.502-invalid.json`、`library/user_playlist.anonymous-view.json` 用随机编造的 `MUSIC_U`，不涉及真实账号。
+- nonhana/campanula-music#21（2026-10-12 北京时间）：`library/` 下文件名带 `.full`、`.liked-full`、`.liked-page` 的整页录制。作者在本机开发服务器的登录页扫码登录一次，一次性脚本用这份凭据直接调 `hana-music-api@2.3.0`，只读：歌单列表 1 次、我喜欢的音乐详情 1 次、歌曲信息每页 1,000 首共 5 次；第 4 页被 SDK 拒掉后，又逐个去掉出错的歌调了 4 次、用 `fetcher` 截网易云原样的返回 1 次。凭据只在内存里，原始录制脱敏后当场删了。同一票里 `library/likelist.301-invalid.json`、`library/user_playlist.502-invalid.json` 用随机编造的 `MUSIC_U`，不涉及真实账号。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
@@ -17,7 +17,7 @@
 - 首次同步时“我喜欢的音乐”的歌单详情原始返回约 3.1 MB、一次 1,000 首的歌曲信息约 2.1 MB；验证关卡①②的文件只留了前 30 项，原长度见 `context.truncated`。
 - `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。
 - `library/song_detail.liked-page4.*`：第 4 页里有 3 首听众自己上传、没有关联歌手和专辑的歌（1984488794、1959160688、1916897283），网易云回的 `ar[0].name`、`al.name` 是 null，`hana-music-api@2.3.0` 的结构定义要求是字符串，**整页 1,000 首都被拒掉**（502 `UnexpectedUpstreamShape`，nonhana/hana-music-api#48）。`.502-null-artist` 是 2.3.0 真实的返回；不带后缀的 `song_detail.liked-page4.json.gz` 是网易云原样的返回（SDK 校验之前截下），SDK 修好之前过不了结构校验，测试还不能用。
-- 凭据无效时（#21，编造的 `MUSIC_U`）：`likelist` 回 301；`user_playlist`、`playlist_detail` 回 200 的匿名视角，每张歌单的 `subscribed` 是 null，2.3.0 报 502（`library/user_playlist.502-invalid.json`）；`song_detail` 照常 200。所以同步时靠红心（`likelist`）认出登录失效。`library/user_playlist.anonymous-view.json` 是网易云原样的匿名视角，同样要等 nonhana/hana-music-api#48 放行 null 才过得了结构校验。
+- 凭据无效时（#21，编造的 `MUSIC_U`）：`likelist` 回 301；`user_playlist`、`playlist_detail` 回 200 的匿名视角，每张歌单的 `subscribed` 是 null，2.3.0 报 502（`library/user_playlist.502-invalid.json`）；`song_detail` 照常 200。所以同步时靠红心（`likelist`）认出登录失效。匿名视角的原样返回里有那位公开用户的歌单名和编号，没有收录；#48 放行 null、要用到时，再用编造的凭据录一份并按上面的规矩脱敏。
 - `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。
 - `playlist-edit/song_order_update.whole-4967-reversed.json`、`…whole-4967-shuffled.json`：一次改动几千首位置的排序，网易云约 3.3 秒后回 HTTP 400 / `-1`“请求异常，请稍后重试”，但新顺序其实已经生效（重新读歌单确认过）。只挪动几首时同样大小的请求 0.5 秒回 200（`…whole-4967-small-change.json`）。`…missing-one.json`（少提交一首、其余倒序）同样回 `-1`，2 秒后重读时新顺序还没有完全生效。
 - `playlist-edit/playlist_detail.deleted.json`：已删除的歌单仍回 200 和完整歌单，只有 `playlist.status` 是 10（正常歌单是 0）。对已删除的歌单加歌、移除、排序回 404“歌单不存在”；改名称、简介、标签、封面和再删一次都回 200。
@@ -102,7 +102,6 @@
 | `library/user_playlist.json` | `user_playlist` | vip-qr | hkg1 / default | 200 | 是 |  |
 | `library/user_playlist.full.json.gz` | `user_playlist` | vip-qr | local / default | 200 |  | SDK 2.3.0；53 张，我喜欢的音乐在最前 |
 | `library/user_playlist.502-invalid.json` | `user_playlist` | invalid | local / default | 502 |  | SDK 2.3.0；编造的 MUSIC_U：匿名视角的 `subscribed` 是 null，结构对不上 |
-| `library/user_playlist.anonymous-view.json` | `user_playlist` | invalid | local / default | 200 |  | 同上，网易云原样的返回（SDK 校验之前截下），一位公开用户的 32 张歌单；#48 修好之前过不了结构校验 |
 | `library/user_record.all.json` | `user_record` | vip-qr | hkg1 / default | 200 | 是 |  |
 | `library/user_record.week.json` | `user_record` | vip-qr | hkg1 / default | 200 | 是 |  |
 | `login/captcha_sent.502-anonymous-registration.json` | `captcha_sent` | anonymous | hkg1 / real | 502 |  | SDK 1.4.0 隐式匿名注册随机 deviceId 被拒（摘要含 + 或 /） |

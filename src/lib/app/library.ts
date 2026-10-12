@@ -32,6 +32,8 @@ export interface LikedMusic {
   songs: readonly Song[]
   /** 一共几首：拿到曲目编号后是编号数，之前是网易云写的歌曲数（会少几首，#21 留言） */
   total: number
+  /** 每首歌的信息都取过一遍了：网易云没给的歌（比如已经下架）不在 songs 里，所以 songs 可能比 total 少几首 */
+  complete: boolean
 }
 
 /** 界面看到的曲库 */
@@ -81,6 +83,7 @@ function stateOf(replica: Replica, sync: SyncStatus): LibraryState {
           playlist,
           songs: tracks ? tracks.trackIds.flatMap(id => replica.songs.get(id) ?? []) : [],
           total: tracks ? tracks.trackIds.length : playlist.trackCount,
+          complete: tracks?.complete ?? false,
         }
       : null,
     sync,
@@ -88,7 +91,16 @@ function stateOf(replica: Replica, sync: SyncStatus): LibraryState {
 }
 
 function waitingStatus(waiting: Waiting): SyncStatus {
-  return waiting.reason === 'rateLimited' ? { status: 'rateLimited', until: waiting.until } : { status: 'offline' }
+  switch (waiting.reason) {
+    case 'rateLimited':
+      return { status: 'rateLimited', until: waiting.until }
+    case 'offline':
+      return { status: 'offline' }
+    default: {
+      const unhandled: never = waiting
+      throw new Error(`不认识的等待原因：${JSON.stringify(unhandled)}`)
+    }
+  }
 }
 
 export function createLibrary(context: LibraryContext): Library {
@@ -126,13 +138,12 @@ export function createLibrary(context: LibraryContext): Library {
 
   /**
    * 这一轮同步还算数时，先写进本机副本，再改显示着的；作废了（退出、登录失效、换账号）就什么都不写。
-   * 检查和开事务在同一步里（数据库打开后 LocalDb 当场开事务），退出时删副本的事务一定排在后面，不会被它写回去
+   * 检查和开事务在同一步里（数据库打开后 LocalDb 当场开事务），本标签页退出时删副本的事务一定排在后面。
+   * 别的标签页退出删了副本、或换了账号时，LocalDb 在写的事务里核对副本的主人，对不上就不写：这一轮停下，
+   * 退出的那个标签页会广播过来（App 跟着变成未登录）
    */
-  async function save(mine: number, write: () => Promise<void>, apply: () => void): Promise<boolean> {
-    if (mine !== generation)
-      return false
-    await write()
-    if (mine !== generation)
+  async function save(mine: number, write: () => Promise<boolean>, apply: () => void): Promise<boolean> {
+    if (mine !== generation || !await write() || mine !== generation)
       return false
     apply()
     publish()
@@ -144,7 +155,7 @@ export function createLibrary(context: LibraryContext): Library {
     if (tracks?.version !== playlist.tracksUpdatedAt) {
       const fetched = await request(mine, () => api.get<TrackIdsResponse>(`/api/playlists/${playlist.id}/track-ids`))
       const next = fetched && { version: playlist.tracksUpdatedAt, trackIds: fetched.trackIds, complete: false }
-      if (!next || !await save(mine, () => local.saveTracks(playlist.id, next), () => current.tracks.set(playlist.id, next)))
+      if (!next || !await save(mine, () => local.saveTracks(current.owner, playlist.id, next), () => current.tracks.set(playlist.id, next)))
         return false
       tracks = next
     }
@@ -153,11 +164,11 @@ export function createLibrary(context: LibraryContext): Library {
     const missing = tracks.trackIds.filter(id => !current.songs.has(id))
     for (const ids of chunks(missing, SONGS_PER_REQUEST)) {
       const page = await request(mine, () => api.post<SongsResponse>('/api/songs', { ids } satisfies SongsRequest))
-      if (!page || !await save(mine, () => local.saveSongs(page.songs), () => page.songs.forEach(song => current.songs.set(song.id, song))))
+      if (!page || !await save(mine, () => local.saveSongs(current.owner, page.songs), () => page.songs.forEach(song => current.songs.set(song.id, song))))
         return false
     }
     const done = { ...tracks, complete: true }
-    return save(mine, () => local.saveTracks(playlist.id, done), () => current.tracks.set(playlist.id, done))
+    return save(mine, () => local.saveTracks(current.owner, playlist.id, done), () => current.tracks.set(playlist.id, done))
   }
 
   async function run(mine: number): Promise<void> {
@@ -166,10 +177,10 @@ export function createLibrary(context: LibraryContext): Library {
       return
     publish({ status: 'syncing' })
     const hearts = await request(mine, () => api.get<HeartsResponse>(`/api/hearts?uid=${current.owner}`))
-    if (!hearts || !await save(mine, () => local.saveHearts(hearts.songIds), () => (current.hearts = hearts.songIds)))
+    if (!hearts || !await save(mine, () => local.saveHearts(current.owner, hearts.songIds), () => (current.hearts = hearts.songIds)))
       return
     const list = await request(mine, () => api.get<PlaylistsResponse>(`/api/playlists?uid=${current.owner}`))
-    if (!list || !await save(mine, () => local.savePlaylists(list.playlists), () => (current.playlists = list.playlists)))
+    if (!list || !await save(mine, () => local.savePlaylists(current.owner, list.playlists), () => (current.playlists = list.playlists)))
       return
     const liked = list.playlists.find(playlist => playlist.kind === 'liked')
     if (liked && !await syncLiked(mine, current, liked))

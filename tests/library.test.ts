@@ -328,6 +328,30 @@ describe('请求节奏', () => {
     ])
     expect(songPages(device).at(-1)).toEqual(trackIds.slice(3000, 4000))
   })
+
+  it('退出时有个同步请求还在路上，重新登录后它才回来说需要登录：不影响新的登录，新的同步照常进行', async () => {
+    const device = world.device()
+    const { app } = await device.open()
+    const stale = held()
+    await world.netease.reply('library/likelist.301-invalid.json', { until: stale.until })
+    await world.netease.reply('login/login_refresh.301-invalid.json')
+    await signIn(world, app)
+    await world.settle()
+
+    await world.netease.reply('login/logout.json')
+    await app.logout()
+    const fresh = held()
+    await world.netease.reply(HEARTS, { until: fresh.until })
+    await signIn(world, app)
+
+    stale.release()
+    await world.settle()
+
+    expect(app.state.session).toEqual({ status: 'signedIn', account: RECORDED_ACCOUNT })
+    expect(app.state.library?.sync).toEqual({ status: 'syncing' })
+    expect(syncRequests(device).map(request => request.path)).toEqual(['/api/hearts?uid=10000001', '/api/hearts?uid=10000001'])
+    expect(world.netease.held).toBe(1)
+  })
 })
 
 describe('随机操作检查（借鉴逻辑原型）', () => {
@@ -343,7 +367,8 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
   }
 
   it('随便怎么操作，每一步之后：同步请求同时最多一个在路上、同一页不会同时请求两次、显示“同步中”时一定有同步请求在路上、登录失效或退出后不挂着同步', async () => {
-    const seed = Date.now() % 100_000
+    // 全局的 Date 被世界的时钟冻结在同一时刻，不能拿来当种子
+    const seed = Math.floor(Math.random() * 100_000)
     const random = seeded(seed)
     const pick = <T>(items: readonly T[]): T => items[Math.floor(random() * items.length)]
     /** 压着的网易云返回，随机地放出来 */
@@ -422,7 +447,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
             await signIn(world, app, { another: random() < 0.3 })
             break
         }
-        await device.settle(() => world.netease.held)
+        await world.settle()
 
         const where = `种子 ${seed}，第 ${round} 轮，操作 ${steps.join(' → ')}`
         const pending = device.pending.filter(isSync)

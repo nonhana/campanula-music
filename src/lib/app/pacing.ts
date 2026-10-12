@@ -91,7 +91,9 @@ export function createBackgroundLane({ clock, network }: { clock: Clock, network
           case 'offline':
             continue
           case 'needsLogin':
-            stop()
+            // 只在当前 epoch 的 needsLogin 才停后台通道：退出前发出的请求在重新登录后才回 401 时，不要停新会话的通道
+            if (epoch === mine)
+              stop()
             return NEEDS_LOGIN
           default:
             return { ok: false, failure }

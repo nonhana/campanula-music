@@ -61,6 +61,11 @@ export interface World {
    * 走完后等各台设备上被定时触发的请求都回来（网易云替身压着的不等）、App 处理完
    */
   clock: { advance: (ms: number) => Promise<void> }
+  /**
+   * 等所有设备停下，但网易云替身压着没回的调用（reply 时给了 until）不等：
+   * 所有设备在路上的请求加起来只剩压着的那几个、其余的事都做完。网易云回得慢时用它看 App 当时的样子
+   */
+  settle: () => Promise<void>
 }
 
 // 自检用的模块：和服务端路由一样，在模块里用裸名字 import SDK
@@ -182,9 +187,18 @@ export function useWorld(): World {
     current().reset()
     devices = []
   })
-  afterEach(async () => {
-    await Promise.all(devices.map(device => device.settle(() => current().fake.heldCalls())))
-  })
+
+  // 压着的调用永远不会自己回来，不能 await 它们，只能一轮一轮地看：连着两轮什么都没在做才算停下。
+  // 压着的调用分在哪台设备上不知道，所以把所有设备在路上的请求加起来比
+  async function settle(): Promise<void> {
+    for (let quiet = 0; quiet < 2;) {
+      await new Promise(resolve => setImmediate(resolve))
+      const pending = devices.reduce((sum, device) => sum + device.pending.length, 0)
+      quiet = pending > current().fake.heldCalls() || devices.some(device => device.busy()) ? 0 : quiet + 1
+    }
+  }
+  // 每条测试结束时等这条测试的设备停下，免得后台同步之类的请求落进下一条测试
+  afterEach(settle)
 
   return {
     device: () => {
@@ -210,8 +224,9 @@ export function useWorld(): World {
     clock: {
       advance: async (ms) => {
         await current().timers.tickAsync(ms)
-        await Promise.all(devices.map(device => device.settle(() => current().fake.heldCalls())))
+        await settle()
       },
     },
+    settle,
   }
 }
