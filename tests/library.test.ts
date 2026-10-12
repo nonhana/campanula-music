@@ -7,15 +7,21 @@ import { useWorld } from './harness/world'
 
 const world = useWorld()
 
-// 作者的“我喜欢的音乐”（#21 录制，4,984 首）：每页 1,000 首，第 4 页里有 3 首上传的歌没有歌手名，
-// hana-music-api 2.3.0 认不出这一页（nonhana/hana-music-api#48）
+// 作者的“我喜欢的音乐”（#21 录制，4,984 首）：每页 1,000 首。第 4 页里有 3 首传到云盘、没匹配上曲库的歌，
+// 歌手名、专辑名是 null（hana-music-api 2.4.0 起原样返回，nonhana/hana-music-api#48）
 const HEARTS = 'library/likelist.json'
 const PLAYLISTS = 'library/user_playlist.full.json.gz'
 const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-const PAGE = (n: 1 | 2 | 3 | 5) => `library/song_detail.liked-page${n}.json.gz`
-const PAGE_4_UNREADABLE = 'library/song_detail.liked-page4.502-null-artist.json.gz'
+const PAGE = (n: 1 | 2 | 3 | 4 | 5) => `library/song_detail.liked-page${n}.json.gz`
+/**
+ * SDK 认不出返回的结构时整页拒掉（502）：2.3.0 对第 4 页的真实返回。2.4.0 起这一页能认出了，
+ * 但别人看云盘上传的歌（歌名也是 null）时照样这样拒，所以留着当“这一页没取到”用
+ */
+const PAGE_4_REJECTED = 'library/song_detail.liked-page4.502-null-artist.json.gz'
 const RATE_LIMITED = 'library/song_detail.405-rate-limited.constructed.json'
 const LIKED_ID = 900000001
+/** 第 4 页里一首传到云盘、没匹配上曲库的歌 */
+const UPLOADED_SONG = 1984488794
 
 /** 录下的我喜欢的音乐的全部曲目编号，按歌单里的顺序 */
 async function recordedTrackIds(): Promise<number[]> {
@@ -48,7 +54,7 @@ const syncRequests = (device: Device) => device.requests.filter(isSync)
 const songPages = (device: Device) => syncRequests(device).filter(request => request.path === '/api/songs').map(request => (request.body as { ids: number[] }).ids)
 
 describe('首次同步', () => {
-  it('登录后先拿红心和歌单列表，再拿我喜欢的音乐的全部曲目编号，然后按歌单顺序一页一页地取歌曲信息，每页最多 1,000 首', async () => {
+  it('登录后先拿红心和歌单列表，再拿我喜欢的音乐的全部曲目编号，然后按歌单顺序一页一页地取歌曲信息，每页最多 1,000 首，直到同步完', async () => {
     const trackIds = await recordedTrackIds()
     const device = world.device()
     const { app } = await device.open()
@@ -69,7 +75,8 @@ describe('首次同步', () => {
     expect(library.liked?.songs.map(song => song.id)).toEqual(trackIds.slice(0, 1000))
     expect(library.sync).toEqual({ status: 'syncing' })
 
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE(4))
+    await world.netease.reply(PAGE(5))
     page2.release()
     await device.idle()
 
@@ -81,26 +88,35 @@ describe('首次同步', () => {
       'POST /api/songs',
       'POST /api/songs',
       'POST /api/songs',
+      'POST /api/songs',
     ])
-    expect(songPages(device)).toEqual([0, 1, 2, 3].map(page => trackIds.slice(page * 1000, (page + 1) * 1000)))
+    expect(songPages(device)).toEqual([0, 1, 2, 3, 4].map(page => trackIds.slice(page * 1000, (page + 1) * 1000)))
     expect(world.netease.calls.filter(call => call.module !== 'song_detail').slice(2).map(({ module, query }) => ({ module, query }))).toEqual([
       { module: 'likelist', query: { uid: 10000001 } },
       { module: 'user_playlist', query: { uid: 10000001, limit: 1000, offset: 0 } },
       { module: 'playlist_detail', query: { id: LIKED_ID } },
     ])
-    expect(app.state.library?.liked?.songs.map(song => song.id)).toEqual(trackIds.slice(0, 3000))
+    expect(app.state.library?.liked?.songs.map(song => song.id)).toEqual(trackIds)
+    expect(app.state.library?.liked).toMatchObject({ total: 4984, complete: true })
+    expect(app.state.library?.sync).toEqual({ status: 'synced' })
+    // 传到云盘、没匹配上曲库的歌照样同步下来：歌手名、专辑名是 null，由界面决定怎么显示
+    expect(app.state.library?.liked?.songs.find(song => song.id === UPLOADED_SONG)).toMatchObject({
+      name: 'Sugar life',
+      artists: [{ id: 0, name: null }],
+      album: { id: 0, name: null },
+    })
     // 服务端只回界面用得到的字段：网易云的原始返回一页歌曲信息约 2.1 MB、曲目编号约 3.1 MB，Vercel 单次响应的上限是 4.5 MB
     expect(Math.max(...device.responseBodies.map(body => body.length))).toBeLessThan(1_000_000)
   })
 
-  it('有一页 SDK 认不出（上传的歌没有歌手名）：已经同步的照常显示，同步停在“没能同步”；重试从这一页接着取，不重取前面的', async () => {
+  it('有一页 SDK 认不出返回的结构：已经同步的照常显示，同步停在“没能同步”；重试从这一页接着取，不重取前面的', async () => {
     const trackIds = await recordedTrackIds()
     const device = world.device()
     const { app } = await device.open()
     await replyListAndTrackIds()
     for (const page of [1, 2, 3] as const)
       await world.netease.reply(PAGE(page))
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     await signIn(world, app)
     await device.idle()
 
@@ -110,7 +126,7 @@ describe('首次同步', () => {
 
     await world.netease.reply(HEARTS)
     await world.netease.reply(PLAYLISTS)
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     app.retrySync()
     await device.idle()
 
@@ -127,7 +143,7 @@ describe('本机副本', () => {
     await replyListAndTrackIds()
     for (const page of [1, 2, 3] as const)
       await world.netease.reply(PAGE(page))
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     await signIn(world, app)
     await device.idle()
     return app
@@ -143,7 +159,7 @@ describe('本机副本', () => {
     await world.netease.reply('login/user_account.vip.json')
     await world.netease.reply(HEARTS, { until: hearts.until })
     await world.netease.reply(PLAYLISTS)
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     const { app } = await device.open()
 
     expect(app.state.session).toEqual({ status: 'signedIn', account: RECORDED_ACCOUNT })
@@ -229,7 +245,7 @@ describe('请求节奏', () => {
     await world.netease.reply(RATE_LIMITED)
     await world.netease.reply(PAGE(2))
     await world.netease.reply(PAGE(3))
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     await signIn(world, app)
     await device.idle()
 
@@ -280,7 +296,7 @@ describe('请求节奏', () => {
 
     await world.netease.reply(PAGE(2))
     await world.netease.reply(PAGE(3))
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     device.setOnline(true)
     await device.idle()
 
@@ -294,7 +310,7 @@ describe('请求节奏', () => {
     await replyListAndTrackIds()
     for (const page of [1, 2, 3] as const)
       await world.netease.reply(PAGE(page))
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     await signIn(world, app)
     await device.idle()
 
@@ -315,7 +331,7 @@ describe('请求节奏', () => {
     const hearts = held()
     await world.netease.reply(HEARTS, { until: hearts.until })
     await world.netease.reply(PLAYLISTS)
-    await world.netease.reply(PAGE_4_UNREADABLE)
+    await world.netease.reply(PAGE_4_REJECTED)
     await signIn(world, reopened)
     expect(reopened.state.library?.liked?.songs).toHaveLength(3000)
 
@@ -327,6 +343,21 @@ describe('请求节奏', () => {
       'POST /api/songs',
     ])
     expect(songPages(device).at(-1)).toEqual(trackIds.slice(3000, 4000))
+  })
+
+  it('凭据在拿到红心之后失效，网易云给歌单列表的是匿名视角：当作需要登录，续期也被拒就停下同步、显示需要重新登录；匿名视角的歌单列表不写进副本', async () => {
+    const device = world.device()
+    const { app } = await device.open()
+    await world.netease.reply(HEARTS)
+    await world.netease.reply('library/user_playlist.anonymous-view.json.gz')
+    await world.netease.reply('login/login_refresh.301-invalid.json')
+    await signIn(world, app)
+    await device.idle()
+
+    expect(app.state.session).toEqual({ status: 'loginExpired' })
+    expect(syncRequests(device).map(request => request.path)).toEqual(['/api/hearts?uid=10000001', '/api/playlists?uid=10000001'])
+    expect(world.netease.calls.slice(-2).map(call => call.module)).toEqual(['user_playlist', 'login_refresh'])
+    expect((await device.stored()).library.map(([key]) => key)).toEqual(['hearts', 'owner'])
   })
 
   it('退出时有个同步请求还在路上，重新登录后它才回来说需要登录：不影响新的登录，新的同步照常进行', async () => {
@@ -408,7 +439,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
       while (left('playlist_detail') < 2)
         await reply('playlist_detail', LIKED_TRACK_IDS)
       while (left('song_detail') < 2)
-        await reply('song_detail', pick(['library/song_detail.vip.json', 'library/song_detail.vip.json', 'library/song_detail.vip.json', RATE_LIMITED, PAGE_4_UNREADABLE]))
+        await reply('song_detail', pick(['library/song_detail.vip.json', 'library/song_detail.vip.json', 'library/song_detail.vip.json', RATE_LIMITED, PAGE_4_REJECTED]))
       while (left('logout') < 2)
         await reply('logout', 'login/logout.json')
     }

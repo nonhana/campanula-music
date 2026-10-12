@@ -26,7 +26,7 @@
       <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
     </span>
   </span>
-  <span class='truncate text-caption text-neutral-600' lang={langOf(song.album.name)}>{song.album.name}</span>
+  <span class='truncate text-caption text-neutral-600' lang={langOf(song.album.name ?? '')}>{song.album.name}</span>
   <span class='flex items-center'>
     {#if hearted}
       <Heart size={15} class='flex-none text-accent-600' fill='currentColor' aria-hidden='true' />

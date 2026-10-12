@@ -31,7 +31,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * SDK 失败时抛出 { status, body, cookie }（照 SDK 2.3.0 的 normalizeFailure、classifyConsumedRateLimit；npm 包的 README 只写了 429）：
+ * SDK 失败时抛出 { status, body, cookie }（照 SDK 2.4.0 的 normalizeFailure、classifyConsumedRateLimit；npm 包的 README 只写了 429）：
  * - 网易云的业务拒绝：body 是网易云原样的返回，status 取返回码（不在 101~599 时是 400）；
  * - 返回结构不认识：status 502，body.upstreamShape 写明哪里不对；
  * - 网易云限流（HTTP 429、返回码 429，或 405 带“操作频繁”“操作过于频繁”）：status 是 429 或 405，
@@ -250,11 +250,18 @@ const PLAYLISTS_PER_CALL = 1000
 /** 我喜欢的音乐在 user_playlist 里的 specialType */
 const LIKED_SPECIAL_TYPE = 5
 
-/** 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样 */
+/**
+ * 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样。
+ * 凭据已经失效时网易云不报错，回 200 的匿名视角：每张歌单的 subscribed 都是 null（已登录时是 true / false，#21 实测），
+ * 而且看不到隐私歌单。当作需要登录：拿它去同步，隐私歌单就像被删了一样。
+ * 要全部都是 null 才算：万一已登录时有哪张歌单是 null，不至于把听众当成掉了登录
+ */
 export async function fetchPlaylists(uid: number, listener: Listener): Promise<Playlist[]> {
   const playlists: Playlist[] = []
   for (let offset = 0; ; offset += PLAYLISTS_PER_CALL) {
     const { body } = await call('user_playlist', { uid, limit: PLAYLISTS_PER_CALL, offset }, listener)
+    if (body.playlist.length > 0 && body.playlist.every(playlist => playlist.subscribed === null))
+      throw new NeteaseError({ kind: 'needsLogin' }, body)
     for (const playlist of body.playlist) {
       playlists.push({
         id: playlist.id,
