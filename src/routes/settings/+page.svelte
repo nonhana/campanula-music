@@ -34,7 +34,7 @@
         </div>
         <div class='mt-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-neutral-100 pt-5'>
           <Button variant='outline' icon={LogOut} onclick={logout}>退出登录</Button>
-          <p class='min-w-0 flex-1 basis-56 text-caption text-neutral-600'>退出后，这个浏览器里不再保存你的网易云登录。</p>
+          <p class='min-w-0 flex-1 basis-56 text-caption text-neutral-600'>退出后，这个浏览器里不再保存你的网易云登录和曲库。</p>
         </div>
       </div>
     {/if}

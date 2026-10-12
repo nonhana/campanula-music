@@ -1,8 +1,10 @@
 import type { Cookies } from '@sveltejs/kit'
 import type { LoginCookie } from './credentials'
 import type { Listener, SignedInListener } from './netease'
-import { renewalDue, saveLogin } from './credentials'
+import { json } from '@sveltejs/kit'
+import { readLogin, renewalDue, saveLogin } from './credentials'
 import { NeteaseError, renewLogin } from './netease'
+import { errorResponse, withNetease } from './respond'
 
 /** 登录 Cookie 里登录以后的部分 */
 export type SignedIn = LoginCookie & { session: NonNullable<LoginCookie['session']> }
@@ -39,4 +41,13 @@ export async function asSignedIn<T>(cookies: Cookies, login: SignedIn, call: (li
     await renew()
     return call(listener)
   }
+}
+
+/** 要登录的接口：没有登录 Cookie 就回“需要登录”，不调网易云；有就以登录的听众身份调网易云，结果回 JSON */
+export async function respondSignedIn(cookies: Cookies, call: (listener: Listener) => Promise<unknown>): Promise<Response> {
+  const login = readLogin(cookies)
+  if (!login?.session)
+    return errorResponse({ kind: 'needsLogin' })
+  const signedIn = { ...login, session: login.session }
+  return withNetease(async () => json(await asSignedIn(cookies, signedIn, call)))
 }

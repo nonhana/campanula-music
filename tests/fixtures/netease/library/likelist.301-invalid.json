@@ -1,0 +1,21 @@
+{
+  "module": "likelist",
+  "query": {
+    "uid": 10000001
+  },
+  "context": {
+    "recordedAt": "2026-10-12T03:34:29.443Z",
+    "sdk": "hana-music-api@2.3.0",
+    "region": "local",
+    "ip": "default",
+    "viewer": "invalid",
+    "note": "凭据无效：MUSIC_U 是随机编造的，不属于任何账号"
+  },
+  "response": {
+    "status": 301,
+    "body": {
+      "msg": null,
+      "code": 301
+    }
+  }
+}

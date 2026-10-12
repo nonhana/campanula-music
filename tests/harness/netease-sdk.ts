@@ -38,6 +38,13 @@ const outcomes = new Map<string, Outcome[]>()
 /** 服务端调过的模块，按先后 */
 export const calls: Call[] = []
 
+/** 正在等 until 了结、还没回的调用 */
+let held = 0
+
+export function heldCalls(): number {
+  return held
+}
+
 export function queueReply(module: string, outcome: Outcome): void {
   outcomes.set(module, [...(outcomes.get(module) ?? []), outcome])
 }
@@ -45,6 +52,7 @@ export function queueReply(module: string, outcome: Outcome): void {
 export function reset(): void {
   outcomes.clear()
   calls.length = 0
+  held = 0
 }
 
 // 和 SDK 的 invokeModule 同名同参数（config 默认是空对象）
@@ -53,7 +61,12 @@ export async function invokeModule(module: string, query: unknown, config: CallC
   const outcome = outcomes.get(module)?.shift()
   if (!outcome)
     throw new Error(`网易云替身：没有为 ${module} 准备录制数据`)
-  await outcome.until
+  if (outcome.until) {
+    held += 1
+    await outcome.until.finally(() => {
+      held -= 1
+    })
+  }
   const response = structuredClone(outcome.response)
   if (outcome.rejected)
     throw response

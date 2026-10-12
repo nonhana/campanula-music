@@ -1,13 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
-import { RECORDED_ACCOUNT as ACCOUNT, MUSIC_U, renewCookies, RENEWED_MUSIC_U, signIn } from './harness/sign-in'
+import { RECORDED_ACCOUNT as ACCOUNT, LIBRARY_SYNC_MODULES, MUSIC_U, renewCookies, RENEWED_MUSIC_U, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
 
-const modules = () => world.netease.calls.map(call => call.module)
+/** 从第 since 次调用起调过的网易云，不算后台同步曲库的 */
+const sessionCalls = (since = 0) => world.netease.calls.slice(since).filter(call => !LIBRARY_SYNC_MODULES.has(call.module))
+const modules = () => sessionCalls().map(call => call.module)
 /** 从第 since 次调用起，每次调网易云的模块和带的 MUSIC_U */
 function credentialsUsed(since: number) {
-  return world.netease.calls.slice(since).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])
+  return sessionCalls(since).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])
 }
 
 const HOUR = 3600_000
@@ -62,7 +64,7 @@ describe('打开 App', () => {
     const { app: reopened } = await device.open()
 
     expect(reopened.state.session).toEqual({ status: 'loginExpired' })
-    expect(world.netease.calls.slice(signedIn).map(call => call.module)).toEqual(['user_account', 'login_refresh'])
+    expect(sessionCalls(signedIn).map(call => call.module)).toEqual(['user_account', 'login_refresh'])
     expect((await device.cookies()).map(cookie => cookie.key)).toEqual(['campanula_login'])
   })
 
@@ -90,7 +92,7 @@ describe('退出登录', () => {
 
     expect(app.state.session).toEqual({ status: 'signedOut' })
     expect(await device.cookies()).toEqual([])
-    const logout = world.netease.calls.at(-1)
+    const logout = sessionCalls().at(-1)
     expect(logout?.module).toBe('logout')
     expect(logout?.config.cookie).toMatchObject({ MUSIC_U })
 
@@ -263,7 +265,7 @@ describe('续期', () => {
     await world.clock.advance(24 * HOUR - 1)
     await world.netease.reply('login/user_account.vip.json')
     await device.open()
-    expect(world.netease.calls.at(-1)?.module).toBe('user_account')
+    expect(sessionCalls().at(-1)?.module).toBe('user_account')
   })
 
   it('续期回了 200 却没下发新的 MUSIC_U：不算续期成功，接着用原来的凭据，服务器日志写明，下次打开再续', async () => {

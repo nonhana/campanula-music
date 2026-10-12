@@ -1,5 +1,6 @@
 import type { Account } from '$lib/api/account'
 import type { NeteaseFailure } from '$lib/api/errors'
+import type { Playlist, Song } from '$lib/api/library'
 import type { QrResponse } from '$lib/api/login'
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
 import { env } from '$env/dynamic/private'
@@ -30,10 +31,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * SDK 失败时抛出 { status, body, cookie }（SDK 2.2.0 normalizeFailure；上游 README 还没写，nonhana/hana-music-api#43）：
+ * SDK 失败时抛出 { status, body, cookie }（照 SDK 2.3.0 的 normalizeFailure、classifyConsumedRateLimit；npm 包的 README 只写了 429）：
  * - 网易云的业务拒绝：body 是网易云原样的返回，status 取返回码（不在 101~599 时是 400）；
  * - 返回结构不认识：status 502，body.upstreamShape 写明哪里不对；
- * - 网易云限流：status 429，body.retryAfter 是秒数；
+ * - 网易云限流（HTTP 429、返回码 429，或 405 带“操作频繁”“操作过于频繁”）：status 是 429 或 405，
+ *   body 是网易云原样的返回加上 retryAfter（秒，网易云没给 Retry-After 时是 30）。只有这种失败带 retryAfter；
  * - SDK 自己生成的失败（超时 504、连不上或读不懂返回 502、匿名注册失败 502）：body 只有 code 和 msg。
  */
 function translate(thrown: unknown): { failure: NeteaseFailure, body: unknown } {
@@ -44,10 +46,8 @@ function translate(thrown: unknown): { failure: NeteaseFailure, body: unknown } 
   const code = typeof fields.code === 'number' ? fields.code : status
   if (code === 301)
     return { failure: { kind: 'needsLogin' }, body }
-  if (status === 429) {
-    // 网易云用业务码 429 限流时 SDK 不带 retryAfter，按 SDK 自己的默认值 30 秒
-    return { failure: { kind: 'rateLimited', retryAfter: typeof fields.retryAfter === 'number' ? fields.retryAfter : 30 }, body }
-  }
+  if (typeof fields.retryAfter === 'number')
+    return { failure: { kind: 'rateLimited', retryAfter: fields.retryAfter }, body }
   if (isRecord(fields.upstreamShape))
     return { failure: { kind: 'upstreamChanged' }, body }
   if (status >= 500 && Object.keys(fields).every(key => key === 'code' || key === 'msg'))
@@ -208,7 +208,7 @@ export async function loginWithCaptcha(phone: string, captcha: string, listener:
   const { body, cookie } = await call('login_cellphone', { phone, captcha, countrycode: '86' }, listener)
   return {
     credentials: credentialsFrom('login_cellphone', cookie),
-    account: { nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl },
+    account: { id: body.profile.userId, nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl },
   }
 }
 
@@ -217,7 +217,7 @@ export async function fetchAccount(listener: Listener): Promise<Account> {
   const { body } = await call('user_account', {}, listener)
   if (!body.account || body.account.anonimousUser || !body.profile)
     throw new NeteaseError({ kind: 'needsLogin' }, body)
-  return { nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl }
+  return { id: body.profile.userId, nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl }
 }
 
 /** 已经登录的听众：带着网易云凭据 */
@@ -235,4 +235,61 @@ export async function renewLogin(listener: SignedInListener): Promise<Record<str
 /** 退出登录：网易云只注销同一个 deviceId 上的登录，听众在其他设备上的登录不受影响（验证关卡①） */
 export async function logout(listener: Listener): Promise<void> {
   await call('logout', {}, listener)
+}
+
+// 曲库（Spec #11“服务端：Campanula API”曲库一项）。uid 是界面问到的当前账号，凭据才决定网易云把谁当作听众
+
+/** 红心了哪些歌（likelist）。凭据失效时网易云回 301（#21 实测），曲库同步靠它先认出登录失效 */
+export async function fetchHearts(uid: number, listener: Listener): Promise<number[]> {
+  const { body } = await call('likelist', { uid }, listener)
+  return [...body.ids]
+}
+
+/** user_playlist 一次最多要这么多张；网易云说还有（more）就接着要 */
+const PLAYLISTS_PER_CALL = 1000
+/** 我喜欢的音乐在 user_playlist 里的 specialType */
+const LIKED_SPECIAL_TYPE = 5
+
+/** 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样 */
+export async function fetchPlaylists(uid: number, listener: Listener): Promise<Playlist[]> {
+  const playlists: Playlist[] = []
+  for (let offset = 0; ; offset += PLAYLISTS_PER_CALL) {
+    const { body } = await call('user_playlist', { uid, limit: PLAYLISTS_PER_CALL, offset }, listener)
+    for (const playlist of body.playlist) {
+      playlists.push({
+        id: playlist.id,
+        name: playlist.name,
+        coverUrl: playlist.coverImgUrl,
+        kind: playlist.specialType === LIKED_SPECIAL_TYPE ? 'liked' : playlist.creator.userId === uid ? 'own' : 'collected',
+        trackCount: playlist.trackCount,
+        tracksUpdatedAt: playlist.trackUpdateTime,
+      })
+    }
+    if (!body.more)
+      return playlists
+  }
+}
+
+/** 一张歌单的全部曲目编号（SDK 的 playlist_detail 一次要 10 万首）。我喜欢的音乐约 5,000 首时网易云原始返回约 3.1 MB，这里只留编号 */
+export async function fetchTrackIds(playlistId: number, listener: Listener): Promise<number[]> {
+  const { body } = await call('playlist_detail', { id: playlistId }, listener)
+  return body.playlist.trackIds.map(track => track.id)
+}
+
+/** 歌曲信息，按 ids 的顺序；网易云没给的不在里面 */
+export async function fetchSongs(ids: readonly number[], listener: Listener): Promise<Song[]> {
+  const { body } = await call('song_detail', { ids: ids.join(',') }, listener)
+  const byId = new Map(body.songs.map(song => [song.id, song]))
+  return ids.flatMap((id) => {
+    const song = byId.get(id)
+    return song
+      ? [{
+          id: song.id,
+          name: song.name,
+          artists: song.ar.map(artist => ({ id: artist.id, name: artist.name })),
+          album: { id: song.al.id, name: song.al.name, coverUrl: song.al.picUrl },
+          duration: song.dt,
+        }]
+      : []
+  })
 }

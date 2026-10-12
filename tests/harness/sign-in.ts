@@ -4,8 +4,14 @@ import type { World } from './world'
 /** 假的网易云登录凭据（录制数据去掉了 Cookie） */
 export const MUSIC_U = `00B4F1${'9C2E7A1D5F'.repeat(32)}`
 
-/** 录下的账号（脱敏后的昵称和头像）：登录、问当前账号时界面上显示的 */
-export const RECORDED_ACCOUNT = { nickname: '测试听众', avatarUrl: 'https://p1.music.126.net/placeholder/avatar.jpg' }
+/** 录下的账号（脱敏后的 uid、昵称和头像）：登录、问当前账号时界面上显示的 */
+export const RECORDED_ACCOUNT = { id: 10000001, nickname: '测试听众', avatarUrl: 'https://p1.music.126.net/placeholder/avatar.jpg' }
+
+/** 同一台设备上换的另一个网易云账号：录下的短信登录只换了 uid 和昵称（构造的数据，见 tests/fixtures/netease/README.md） */
+export const ANOTHER_ACCOUNT = { ...RECORDED_ACCOUNT, id: 10000002, nickname: '另一位听众' }
+
+/** 登录后 App 在后台同步曲库时调的网易云模块（tests/library.test.ts 专门测）：只看登录会话的测试把它们去掉 */
+export const LIBRARY_SYNC_MODULES: ReadonlySet<string> = new Set(['likelist', 'user_playlist', 'playlist_detail', 'song_detail'])
 
 /** Set-Cookie 的有效期属性：Max-Age 和 Expires 都写，和网易云下发的一样 */
 function expires(days: number): string {
@@ -41,11 +47,11 @@ export function renewCookies(): string[] {
   ]
 }
 
-/** 用短信验证码登录这个标签页的 App（网易云回录制数据） */
-export async function signIn(world: World, app: App): Promise<void> {
+/** 用短信验证码登录这个标签页的 App（网易云回录制数据）；another：登录的是另一个账号 */
+export async function signIn(world: World, app: App, { another = false } = {}): Promise<void> {
   await world.netease.reply('login/captcha_sent.json')
   await app.sendCaptcha('13800138000')
-  await world.netease.reply('login/login_cellphone.200.json', { cookie: signInCookies() })
+  await world.netease.reply(another ? 'login/login_cellphone.200.another-account.constructed.json' : 'login/login_cellphone.200.json', { cookie: signInCookies() })
   await app.loginWithCaptcha('13800138000', '2468')
   if (app.state.session.status !== 'signedIn')
     throw new Error(`没登录上：${JSON.stringify(app.state)}`)

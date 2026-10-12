@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { MUSIC_U, signIn, signInCookies } from './harness/sign-in'
+import { LIBRARY_SYNC_MODULES, MUSIC_U, signIn, signInCookies } from './harness/sign-in'
 import { REAL_IP, useWorld } from './harness/world'
 
 const world = useWorld()
 
-const modules = () => world.netease.calls.map(call => call.module)
+/** 调过的网易云模块，不算后台同步曲库的 */
+const modules = () => world.netease.calls.map(call => call.module).filter(module => !LIBRARY_SYNC_MODULES.has(module))
 
 describe('网易云凭据只在加密 Cookie 里', () => {
   it('每次调网易云都带同一个 deviceId，登录后带上凭据，配了真实国内 IP 就作为 realIP 传入', async () => {
