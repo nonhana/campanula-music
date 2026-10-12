@@ -10,7 +10,7 @@ import { format } from 'node:util'
 import { withGlobal } from '@sinonjs/fake-timers'
 import { sveltekit } from '@sveltejs/kit/vite'
 import { createServer } from 'vite'
-import { afterAll, beforeAll, beforeEach } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { clockOn } from './browser'
 import { createDevice } from './device'
 import { loadFixture } from './fixtures'
@@ -50,13 +50,15 @@ export interface World {
      * until：等它了结才回，模拟网易云回得慢
      */
     reply: (fixture: string, options?: { cookie?: string[], until?: Promise<void> }) => Promise<void>
+    /** 正在等 until 了结、还没回的调用 */
+    readonly held: number
   }
   /** 服务端打的日志 */
   readonly serverLogs: readonly ServerLog[]
   /**
    * 服务端、Cookie 过期和所有 App 共用的时钟，只有 advance 才会走；
    * 走的过程中 App 的定时按到期先后触发，触发时 Date.now() 正好是到期的时刻。
-   * 走完后等各台设备上被定时触发的请求都回来、App 处理完
+   * 走完后等各台设备上被定时触发的请求都回来（网易云替身压着的不等）、App 处理完
    */
   clock: { advance: (ms: number) => Promise<void> }
 }
@@ -156,7 +158,10 @@ async function startWorld() {
   }
 }
 
-/** 在测试文件顶层调用：整个文件共用一个世界，每条测试开始前清空网易云替身、日志和时钟 */
+/**
+ * 在测试文件顶层调用：整个文件共用一个世界，每条测试开始前清空网易云替身、日志和时钟；
+ * 每条测试结束时等这条测试的设备停下（网易云替身压着的不等），免得后台同步之类的请求落进下一条测试
+ */
 export function useWorld(): World {
   let started: Awaited<ReturnType<typeof startWorld>> | undefined
   const current = () => {
@@ -177,6 +182,9 @@ export function useWorld(): World {
     current().reset()
     devices = []
   })
+  afterEach(async () => {
+    await Promise.all(devices.map(device => device.settle(() => current().fake.heldCalls())))
+  })
 
   return {
     device: () => {
@@ -192,6 +200,9 @@ export function useWorld(): World {
         const { module, outcome } = await loadFixture(path)
         current().fake.queueReply(module, { ...outcome, response: { ...outcome.response, cookie }, until })
       },
+      get held() {
+        return current().fake.heldCalls()
+      },
     },
     get serverLogs() {
       return current().serverLogs
@@ -199,7 +210,7 @@ export function useWorld(): World {
     clock: {
       advance: async (ms) => {
         await current().timers.tickAsync(ms)
-        await Promise.all(devices.map(device => device.idle()))
+        await Promise.all(devices.map(device => device.settle(() => current().fake.heldCalls())))
       },
     },
   }

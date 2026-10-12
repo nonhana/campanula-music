@@ -1,10 +1,11 @@
-# 网易云真实返回（验证关卡①②录制）
+# 网易云真实返回（验证关卡①②和之后各票录制）
 
-来源：在 Vercel 上的一次性测试版（分支 `gate/vercel`）里录制，SDK 为 `hana-music-api@1.4.0`，登录态用作者的主账号（会员）。
+来源：验证关卡①②在 Vercel 上的一次性测试版（分支 `gate/vercel`）里录制，SDK 为 `hana-music-api@1.4.0`，登录态用作者的主账号（会员）；之后各票的录制在本机直接调 SDK，见下面各条。
 
 - 验证关卡①（nonhana/campanula-music#14，2026-10-08）：`login/`、`library/`、`playback/`、`search/`。登录后的录制之外，其余是未登录（匿名）视角。
 - 验证关卡②（nonhana/campanula-music#15，2026-10-09 北京时间）：`playlist-edit/`（歌单编辑：新建、删除、名称和简介、标签、隐私、封面、加歌和移除、排序、自建歌单之间排序）、`like-collect/`（红心、收藏和取消收藏）。歌单写操作只在临时新建、测完即删的歌单上做。
 - nonhana/campanula-music#20（2026-10-11）：`login/login_refresh.301-invalid.json`、`login/user_account.invalid.json`。在本机用 `hana-music-api@2.2.0` 直接调 SDK，带一个随机编造、不属于任何账号的 `MUSIC_U`，不涉及真实账号。
+- nonhana/campanula-music#21（2026-10-12 北京时间）：`library/` 下文件名带 `.full`、`.liked-full`、`.liked-page` 的整页录制。作者在本机开发服务器的登录页扫码登录一次，一次性脚本用这份凭据直接调 `hana-music-api@2.3.0`，只读：歌单列表 1 次、我喜欢的音乐详情 1 次、歌曲信息每页 1,000 首共 5 次；第 4 页被 SDK 拒掉后，又逐个去掉出错的歌调了 4 次、用 `fetcher` 截网易云原样的返回 1 次。凭据只在内存里，原始录制脱敏后当场删了。同一票里 `library/likelist.301-invalid.json`、`library/user_playlist.502-invalid.json`、`library/user_playlist.anonymous-view.json` 用随机编造的 `MUSIC_U`，不涉及真实账号。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
@@ -13,13 +14,16 @@
 - `playback/scrobble.json`：网易云回了 `{"code":200,"data":"success"}`，但这次打卡**没有计入**听歌排行（41 分钟后仍未变化，见 #14 留言）。它只代表“接口返回的样子”，不代表打卡有效。
 - 扫码时要求行为验证的 8821 这次没有出现，没有录到。测试 8821 分支用的是构造的数据，见下面“构造的数据”。
 - `login/login_cellphone.10004-risk.json` 是短信登录被风控拦下的真实返回；`login/captcha_sent.502-anonymous-registration.json` 是 SDK 1.4.0 匿名注册失败时的返回（报错原文里的“MUSIC_A”只是文字，不是凭据）。
-- 首次同步时“我喜欢的音乐”的歌单详情原始返回约 3.1 MB、一次 1,000 首的歌曲信息约 2.1 MB；这里的文件只留了前 30 项，原长度见 `context.truncated`。
+- 首次同步时“我喜欢的音乐”的歌单详情原始返回约 3.1 MB、一次 1,000 首的歌曲信息约 2.1 MB；验证关卡①②的文件只留了前 30 项，原长度见 `context.truncated`。
+- `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。
+- `library/song_detail.liked-page4.*`：第 4 页里有 3 首听众自己上传、没有关联歌手和专辑的歌（1984488794、1959160688、1916897283），网易云回的 `ar[0].name`、`al.name` 是 null，`hana-music-api@2.3.0` 的结构定义要求是字符串，**整页 1,000 首都被拒掉**（502 `UnexpectedUpstreamShape`，nonhana/hana-music-api#48）。`.502-null-artist` 是 2.3.0 真实的返回；不带后缀的 `song_detail.liked-page4.json.gz` 是网易云原样的返回（SDK 校验之前截下），SDK 修好之前过不了结构校验，测试还不能用。
+- 凭据无效时（#21，编造的 `MUSIC_U`）：`likelist` 回 301；`user_playlist`、`playlist_detail` 回 200 的匿名视角，每张歌单的 `subscribed` 是 null，2.3.0 报 502（`library/user_playlist.502-invalid.json`）；`song_detail` 照常 200。所以同步时靠红心（`likelist`）认出登录失效。`library/user_playlist.anonymous-view.json` 是网易云原样的匿名视角，同样要等 nonhana/hana-music-api#48 放行 null 才过得了结构校验。
 - `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。
 - `playlist-edit/song_order_update.whole-4967-reversed.json`、`…whole-4967-shuffled.json`：一次改动几千首位置的排序，网易云约 3.3 秒后回 HTTP 400 / `-1`“请求异常，请稍后重试”，但新顺序其实已经生效（重新读歌单确认过）。只挪动几首时同样大小的请求 0.5 秒回 200（`…whole-4967-small-change.json`）。`…missing-one.json`（少提交一首、其余倒序）同样回 `-1`，2 秒后重读时新顺序还没有完全生效。
 - `playlist-edit/playlist_detail.deleted.json`：已删除的歌单仍回 200 和完整歌单，只有 `playlist.status` 是 10（正常歌单是 0）。对已删除的歌单加歌、移除、排序回 404“歌单不存在”；改名称、简介、标签、封面和再删一次都回 200。
 - `like-collect/playlist_subscribe.*`：验证关卡②里用 SDK 1.4.0 收藏歌单一律回 405“操作过于频繁，请稍后再试”：自己的、别人的歌单，eapi、weapi，默认伪装 IP、真实国内 IP，隔 20 分钟再试，都一样；同一时间作者在官方 App 里收藏、取消都正常，专辑、歌手、红心也都正常。所以这些文件代表的是 SDK 发的请求被拒的样子，不是收藏歌单成功的返回（见 #15 留言）。原因由 nonhana/hana-music-api#32 查明：设备身份 `os=pc`、写死的 checkToken，任一个都会被拒。`hana-music-api@2.0.0` 已改写法，修复后的模块还没在真账号上成功过（nonhana/hana-music-api#33）。收藏成功、取消成功的返回在 hana-music-api 仓库的 `tests/fixtures/netease/playlist_subscribe/`。
 - `playlist-edit/nos_upload.*` 不是 SDK 调用，是浏览器拿 `image_upload_token` 的凭证直传网易云图片存储（`nosup-hz1.127.net`）的返回：`query` 写图片的尺寸、字节数和 JPEG 质量。
-- 两次录制分别脱敏，假编号不跨批次对应：比如两边的 `900000002` 不是同一张歌单。
+- 每批录制分别脱敏，假编号不跨批次对应：比如验证关卡①②两边的 `900000002` 不是同一张歌单。
 - `login/*.invalid.json`、`login/login_refresh.301-invalid.json`：凭据无效时，`user_account` 照样回 200，只是 `account`、`profile` 都是 null；`login_refresh` 回 301，同时下发一条新的 `NMTID`（没有收录）。所以“需要登录”要看 `user_account` 有没有账号，或者看接口回不回 301（#14 留言）。
 
 ## 文件格式
@@ -49,19 +53,21 @@
 - 所有用户（账号本人、歌单创建者、歌词贡献者……）的 uid 字段换成 `10000001` 起的假编号，昵称字段换成“测试听众”“用户N”，头像和背景图换成占位链接。账号本人是 `10000001` / “测试听众”；只有本人的 uid 和昵称会在任意文字里替换（其他人的只换字段，避免误改同名的歌手名）。
 - 账号资料里的个人信息（生日、地区、签名、注册时间、绑定信息、账号名里的手机号）换成固定假值；账号本人作为歌手的编号和名字换成 `99999999` / “测试歌手”。
 - 本人自建歌单的编号换成 `900000001` 起，本人作品（歌、专辑）的编号换成 9 字头的假编号：这些编号公开可查，查到就能找到真实账号。其他歌单、歌、专辑、歌手的编号是真实的。
-- 超过 30 项的数组只留前 30 项，原长度记在 `context.truncated`；查询参数里上千个编号的列表（加歌的 `tracks`、排序的 `ids`）同样只留前 30 个，记在 `context.truncated` 的 `query.*` 路径下。
+- 超过 30 项的数组只留前 30 项，原长度记在 `context.truncated`；查询参数里上千个编号的列表（加歌的 `tracks`、排序的 `ids`）同样只留前 30 个，记在 `context.truncated` 的 `query.*` 路径下。#21 的整页录制（`.json.gz`）为了测分页，不截短。
 - 上传凭证（`image_upload_token` 返回的 `token`）清空；图片编号和地址是测试时画的图，原样保留。
 - 其余结构和取值原样保留。
 
 ## 构造的数据
 
-文件名带 `.constructed` 的不是录制，是 #19 为了测 8821 分支构造的（作者同意，2026-10-11）。`context.constructed` 是 `true`。真遇到 8821 时录下来替换掉。
+文件名带 `.constructed` 的不是录制，`context.constructed` 是 `true`：8821 那三份是 #19 为了测 8821 分支构造的（作者同意，2026-10-11），真遇到 8821 时录下来替换掉；另一个账号是 #21 构造的（作者同意，2026-10-12，作者只有一个账号）；限流那份是 #21 为了测“操作频繁”的退避构造的，真遇到限流时录下来替换掉。
 
 | 文件 | 构造了什么、依据 |
 |---|---|
 | `login/login_qr_check.8821-verify.constructed.json` | 扫码确认后网易云要求行为验证。`message` 照真实报错的原文（chaunsin/netease-cloud-music#26 里贴的 `8821 需要行为验证码验证`）；`data` 里的 `verifyId`、`verifyType`、`verifyToken`、`params.event_id`、`params.sign` 照开源实现 saltbo/zme 的 `NeteaseRiskData`（它把这几项交给 `/frontrisk/verify/getqrcode`，和 SDK `verify_getQr` 的参数一一对应），取值是假的 |
 | `login/login_qr_check.8821-no-params.constructed.json` | 同一个 8821，但 `data` 是 null：上面那个 issue 里贴的返回只有 `code`、`message`，没有验证参数 |
 | `login/verify_getQr.constructed.json` | 照 SDK 2.2.0 的 `verify_getQr`：网易云只给 `data.qrCode`，`qrurl` 是 SDK 用 `qrCode` 和查询参数拼的，`qrimg` 是 `qrurl` 的二维码（用 SDK 依赖的 `qrcode` 生成）。过 SDK 的 `VerifyGetQrBody` 校验 |
+| `login/login_cellphone.200.another-account.constructed.json` | 同一台设备上换另一个网易云账号登录。作者只有一个账号：复制 `login/login_cellphone.200.json`，只把账号的 uid（10000001 → 10000002）和昵称（“另一位听众”）换掉 |
+| `library/song_detail.405-rate-limited.constructed.json` | 网易云对接口限流的返回没有录到过（验证关卡①首次同步没遇到）。复制 `like-collect/playlist_subscribe.405.json` 的返回体（405“操作过于频繁，请稍后再试”，`hana-music-api@2.3.0` 认作限流，抛出时加上 `retryAfter`），只把模块换成 `song_detail`。注意那份 405 本身是请求写法被拒，不一定是真的限流（见上面 `like-collect/playlist_subscribe.*`） |
 
 它们不进下面的清单。
 
@@ -78,14 +84,25 @@
 | `library/artist_top_song.json` | `artist_top_song` | anonymous | hkg1 / default | 200 | 是 |  |
 | `library/artists.json` | `artists` | anonymous | hkg1 / default | 200 | 是 |  |
 | `library/likelist.json` | `likelist` | vip-qr | hkg1 / default | 200 | 是 |  |
+| `library/likelist.301-invalid.json` | `likelist` | invalid | local / default | 301 |  | SDK 2.3.0；编造的 MUSIC_U：凭据失效时红心回 301 |
 | `library/playlist_detail.liked.json` | `playlist_detail` | vip-qr | hkg1 / default | 200 | 是 |  |
+| `library/playlist_detail.liked-full.json.gz` | `playlist_detail` | vip-qr | local / default | 200 |  | SDK 2.3.0；我喜欢的音乐 4,984 首的全部曲目编号（`trackCount` 写的是 4,981） |
 | `library/playlist_detail.own-small.json` | `playlist_detail` | vip-qr | hkg1 / default | 200 |  |  |
 | `library/playlist_detail.subscribed.json` | `playlist_detail` | vip-qr | hkg1 / default | 200 | 是 |  |
 | `library/playlist_track_all.json` | `playlist_track_all` | vip-qr | hkg1 / default | 200 |  |  |
 | `library/recommend_songs.json` | `recommend_songs` | vip-qr | hkg1 / default | 200 | 是 |  |
 | `library/song_detail.anon.json` | `song_detail` | anonymous | hkg1 / default | 200 |  |  |
 | `library/song_detail.vip.json` | `song_detail` | vip-qr | hkg1 / default | 200 | 是 |  |
+| `library/song_detail.liked-page1.json.gz` | `song_detail` | vip-qr | local / default | 200 |  | SDK 2.3.0；我喜欢的音乐第 1–1,000 首 |
+| `library/song_detail.liked-page2.json.gz` | `song_detail` | vip-qr | local / default | 200 |  | 第 1,001–2,000 首 |
+| `library/song_detail.liked-page3.json.gz` | `song_detail` | vip-qr | local / default | 200 |  | 第 2,001–3,000 首 |
+| `library/song_detail.liked-page4.502-null-artist.json.gz` | `song_detail` | vip-qr | local / default | 502 |  | 第 3,001–4,000 首：3 首上传的歌没有歌手名，2.3.0 整页拒掉（nonhana/hana-music-api#48） |
+| `library/song_detail.liked-page4.json.gz` | `song_detail` | vip-qr | local / default | 200 |  | 同一页网易云原样的返回（SDK 校验之前截下）；#48 修好之前过不了结构校验 |
+| `library/song_detail.liked-page5.json.gz` | `song_detail` | vip-qr | local / default | 200 |  | 第 4,001–4,984 首 |
 | `library/user_playlist.json` | `user_playlist` | vip-qr | hkg1 / default | 200 | 是 |  |
+| `library/user_playlist.full.json.gz` | `user_playlist` | vip-qr | local / default | 200 |  | SDK 2.3.0；53 张，我喜欢的音乐在最前 |
+| `library/user_playlist.502-invalid.json` | `user_playlist` | invalid | local / default | 502 |  | SDK 2.3.0；编造的 MUSIC_U：匿名视角的 `subscribed` 是 null，结构对不上 |
+| `library/user_playlist.anonymous-view.json` | `user_playlist` | invalid | local / default | 200 |  | 同上，网易云原样的返回（SDK 校验之前截下），一位公开用户的 32 张歌单；#48 修好之前过不了结构校验 |
 | `library/user_record.all.json` | `user_record` | vip-qr | hkg1 / default | 200 | 是 |  |
 | `library/user_record.week.json` | `user_record` | vip-qr | hkg1 / default | 200 | 是 |  |
 | `login/captcha_sent.502-anonymous-registration.json` | `captcha_sent` | anonymous | hkg1 / real | 502 |  | SDK 1.4.0 隐式匿名注册随机 deviceId 被拒（摘要含 + 或 /） |

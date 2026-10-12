@@ -56,8 +56,8 @@ export interface LoginContext {
   beforeLogin: () => Promise<RequestFailure | null>
   read: () => LoginState
   write: (login: LoginState) => void
-  /** 登录成功，服务端已经设好登录 Cookie */
-  signedIn: (account: Account) => void
+  /** 登录成功，服务端已经设好登录 Cookie：App 拿出这个账号的曲库副本，切到登录后 */
+  signedIn: (account: Account) => Promise<void>
 }
 
 export interface Login {
@@ -92,9 +92,9 @@ export function createLogin(context: LoginContext): Login {
     cancelPoll()
   }
 
-  function finish(account: Account): void {
+  function finish(account: Account): Promise<void> {
     forget()
-    context.signedIn(account)
+    return context.signedIn(account)
   }
 
   function schedulePoll(qr: ShownQr): void {
@@ -110,10 +110,10 @@ export function createLogin(context: LoginContext): Login {
       return schedulePoll(qr)
     const result = await api.post<QrCheckResponse>('/api/login/qr/check', { key: qr.key } satisfies QrCheckRequest)
     if (generation === mine)
-      handleCheck(qr, result, false)
+      await handleCheck(qr, result, false)
   }
 
-  function handleCheck(qr: ShownQr, result: Result<QrCheckResponse>, afterVerification: boolean): void {
+  async function handleCheck(qr: ShownQr, result: Result<QrCheckResponse>, afterVerification: boolean): Promise<void> {
     if (!result.ok)
       return setQr({ step: 'failed', failure: result.failure })
     const check = result.value
@@ -172,7 +172,7 @@ export function createLogin(context: LoginContext): Login {
       setQr({ ...step, checking: true })
       const result = await api.post<QrCheckResponse>('/api/login/qr/check', { key: qr.key } satisfies QrCheckRequest)
       if (generation === mine)
-        handleCheck(qr, result, true)
+        await handleCheck(qr, result, true)
     },
     async sendCaptcha(phone) {
       setSms({ captcha: { status: 'sending' } })
@@ -183,7 +183,7 @@ export function createLogin(context: LoginContext): Login {
       setSms({ submit: { status: 'submitting' } })
       const result = await afterPendingLogout(() => api.post<SmsLoginResponse>('/api/login/sms', { phone, captcha } satisfies SmsLoginRequest))
       if (result.ok)
-        finish(result.value.account)
+        await finish(result.value.account)
       else
         setSms({ submit: { status: 'failed', failure: result.failure } })
     },

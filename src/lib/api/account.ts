@@ -1,5 +1,7 @@
-/** 当前登录的网易云账号：界面上显示的头像和昵称 */
+/** 当前登录的网易云账号：界面上显示的头像和昵称；曲库副本按 id 区分 */
 export interface Account {
+  /** 网易云的 uid */
+  id: number
   nickname: string
   /** 网易云的原图地址；显示时按尺寸取缩略图 */
   avatarUrl: string

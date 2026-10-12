@@ -2,10 +2,13 @@ import type { Account, AccountResponse } from '$lib/api/account'
 import type { LogoutResponse } from '$lib/api/login'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
+import type { LibraryState } from './library'
 import type { LoginState } from './login'
 import { createApi } from './api'
+import { createLibrary } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
+import { createBackgroundLane } from './pacing'
 
 /**
  * 会改登录 Cookie 的请求排队用的跨标签页的锁：问当前账号（服务端可能在这一步续期、写回新的登录 Cookie）和退出。
@@ -34,8 +37,8 @@ export interface AppState {
   session: Session
   /** 登录页：扫码和短信验证码两种方式走到哪一步 */
   login: LoginState
-  /** 曲库副本（ADR-0007）。未登录时没有 */
-  library: null
+  /** 曲库副本（ADR-0007）：登录了才有，先显示本机副本，再在后台同步 */
+  library: LibraryState | null
 }
 
 /** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
@@ -59,6 +62,8 @@ export interface App {
    * 断网或服务端出错时 Cookie 删不掉，记下来，联网后、下次打开时再发（ADR-0003）
    */
   logout: () => Promise<void>
+  /** 曲库同步没成功（连不上、网易云出错）时重试：从停下的地方接着同步 */
+  retrySync: () => void
 }
 
 export function createApp(browser: BrowserCapabilities): App {
@@ -94,6 +99,15 @@ export function createApp(browser: BrowserCapabilities): App {
   }
   browser.network.addEventListener('online', () => void finishLogout())
 
+  const lane = createBackgroundLane(browser)
+  const library = createLibrary({
+    api,
+    lane,
+    local,
+    write: next => update({ library: next }),
+    loginExpired,
+  })
+
   const login = createLogin({
     api,
     clock: browser.clock,
@@ -101,15 +115,34 @@ export function createApp(browser: BrowserCapabilities): App {
     beforeLogin: finishLogout,
     read: () => state.login,
     write: next => update({ login: next }),
-    signedIn: account => update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN }),
+    signedIn,
   })
 
-  /** 每退出一次就加一：退出之前发出去的问账号回来时，结果就不要了 */
-  let signOuts = 0
+  /** 每换一次登录状态（登录、退出、登录失效）就加一：之前发出去的问账号、拿曲库副本回来时，结果就不要了 */
+  let sessions = 0
   function signedOut(): void {
-    signOuts += 1
+    sessions += 1
     login.stopQr()
-    update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN })
+    library.leave()
+    update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
+  }
+
+  /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
+  function loginExpired(): void {
+    sessions += 1
+    library.leave()
+    update({ session: { status: 'loginExpired' }, library: null })
+  }
+
+  /** 登录了：先拿出这个账号的曲库副本，和登录状态一起显示，再在后台同步 */
+  async function signedIn(account: Account): Promise<void> {
+    sessions += 1
+    const mine = sessions
+    const shown = await library.enter(account)
+    if (mine !== sessions)
+      return
+    update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN, library: shown })
+    library.sync()
   }
 
   // 一个标签页退出，同一浏览器里开着的其他标签页跟着变成未登录（退出请求由退出的那个标签页发）
@@ -153,10 +186,13 @@ export function createApp(browser: BrowserCapabilities): App {
       }
       // 服务端在这一步里续期（满 24 小时、或网易云说需要登录时）。同一浏览器的标签页排队问：
       // 前一个续期拿到的新登录 Cookie，后一个直接带上，不会再续一次
-      const asked = signOuts
+      const asked = sessions
       const session = await browser.locks.request(LOGIN_COOKIE_LOCK, checkAccount)
-      if (signOuts === asked)
-        update({ session })
+      if (sessions !== asked)
+        return
+      if (session.status === 'signedIn')
+        return signedIn(session.account)
+      update({ session })
     },
     startQrLogin: login.startQr,
     stopQrLogin: login.stopQr,
@@ -166,8 +202,10 @@ export function createApp(browser: BrowserCapabilities): App {
     async logout() {
       await local.setPendingLogout(true)
       signedOut()
+      await local.deleteLibrary()
       sessionChannel.postMessage({ type: 'signedOut' } satisfies SessionMessage)
       await finishLogout()
     },
+    retrySync: library.retry,
   }
 }

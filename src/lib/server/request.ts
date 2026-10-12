@@ -7,9 +7,10 @@ export const CAPTCHA = /^\d{4,6}$/
 /** 二维码的 key（网易云给的 UUID） */
 export const QR_KEY = /^[\w-]{1,64}$/
 
+// 界面发请求前已经检查过格式，到这里还不对，说明请求不是 Campanula 的页面发的：回 400
+
 /**
- * 读请求体（JSON）里的字符串字段，每个都要符合格式，否则回 400。
- * 界面发请求前已经检查过格式，到这里还不对，说明请求不是 Campanula 的页面发的
+ * 读请求体（JSON）里的字符串字段，每个都要符合格式
  */
 export async function readFields<K extends string>(request: Request, patterns: Record<K, RegExp>): Promise<Record<K, string>> {
   const body: unknown = await request.json().catch(() => null)
@@ -21,4 +22,26 @@ export async function readFields<K extends string>(request: Request, patterns: R
     fields[name] = value
   }
   return fields
+}
+
+/** 网易云的编号（uid、歌单、歌曲）：正整数 */
+function isNeteaseId(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) > 0
+}
+
+/** 读网址里的一个编号（查询参数或路径参数） */
+export function readId(name: string, value: string | null | undefined): number {
+  const id = /^\d{1,16}$/.test(value ?? '') ? Number(value) : Number.NaN
+  if (!isNeteaseId(id))
+    error(400, `${name} 的格式不对`)
+  return id
+}
+
+/** 读请求体（JSON）里的编号列表：1 到 max 个 */
+export async function readIds(request: Request, name: string, max: number): Promise<number[]> {
+  const body: unknown = await request.json().catch(() => null)
+  const ids = typeof body === 'object' && body !== null && name in body ? (body as Record<string, unknown>)[name] : undefined
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > max || !ids.every(isNeteaseId))
+    error(400, `${name} 要有 1 到 ${max} 个编号`)
+  return ids
 }

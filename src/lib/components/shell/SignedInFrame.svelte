@@ -1,6 +1,6 @@
 <!--
   登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）和图标侧栏（曲库，设置在最下面）；
-  手机是 logo 行（右边是设置），设置这类二级页面换成返回栏。曲库、搜索、每日推荐、已下载由之后的票放进来。
+  手机是 logo 行（右边是设置），设置、我喜欢的音乐这类二级页面换成返回栏；曲库首页下面有文字标签。曲库、搜索、每日推荐、已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { Account } from '$lib/api/account'
@@ -20,7 +20,9 @@
   const { account, children }: { account: Account, children: Snippet } = $props()
 
   /** 二级页面：手机上顶行换成返回栏 */
-  const secondary = $derived(page.url.pathname === resolve('/settings') ? '设置' : undefined)
+  const secondary = $derived(page.url.pathname === resolve('/settings') ? '设置' : page.url.pathname === resolve('/liked') ? '我喜欢的音乐' : undefined)
+  /** 曲库首页在手机上有文字标签；其他标签（歌单、专辑、歌手）由之后的票加 */
+  const onLibrary = $derived(page.url.pathname === resolve('/'))
 
   let railExpanded = $state(false)
 
@@ -56,6 +58,15 @@
   <span class={['whitespace-nowrap text-label font-500', !railExpanded && 'sr-only']}>{label}</span>
 {/snippet}
 
+{#snippet libraryTabs()}
+  <nav class='flex px-2' aria-label='曲库'>
+    <a href={resolve('/')} aria-current='page' class='relative h-11 flex flex-none items-center px-3 text-body text-neutral-900 font-600'>
+      我喜欢
+      <span class='absolute bottom-1 left-1/2 h-[3px] w-4 rounded-full bg-primary-700 -translate-x-1/2' aria-hidden='true'></span>
+    </a>
+  </nav>
+{/snippet}
+
 {#if desktopLayout.current}
   <DesktopShell {railExpanded}>
     {#snippet header()}
@@ -73,7 +84,7 @@
     {@render children()}
   </DesktopShell>
 {:else}
-  <PhoneShell>
+  <PhoneShell tabs={onLibrary ? libraryTabs : undefined}>
     {#snippet header()}
       {#if secondary}
         <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />

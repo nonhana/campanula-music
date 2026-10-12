@@ -1,0 +1,26 @@
+{
+  "module": "song_detail",
+  "query": {
+    "ids": "<一页 1,000 个编号>"
+  },
+  "context": {
+    "recordedAt": "2026-10-08T16:55:40.883Z",
+    "sdk": "hana-music-api@1.4.0",
+    "region": "hkg1",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "note": "构造：网易云对接口限流的返回没有录到过。照 like-collect/playlist_subscribe.405.json（SDK 2.3.0 认作“操作频繁”的写法）复制，只把模块换成 song_detail",
+    "constructed": true
+  },
+  "response": {
+    "status": 405,
+    "body": {
+      "code": 405,
+      "data": null,
+      "debugInfo": null,
+      "failData": null,
+      "message": "操作过于频繁，请稍后再试",
+      "msg": "操作过于频繁，请稍后再试"
+    }
+  }
+}

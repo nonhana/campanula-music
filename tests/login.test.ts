@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { RECORDED_ACCOUNT as ACCOUNT, signInCookies } from './harness/sign-in'
+import { RECORDED_ACCOUNT as ACCOUNT, LIBRARY_SYNC_MODULES, signInCookies } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+
+/** 调过的网易云，不算后台同步曲库的 */
+const sessionCalls = () => world.netease.calls.filter(call => !LIBRARY_SYNC_MODULES.has(call.module))
 
 const PHONE = '13800138000'
 const CAPTCHA = '2468'
@@ -21,7 +24,7 @@ describe('短信验证码登录', () => {
     await app.loginWithCaptcha(PHONE, CAPTCHA)
 
     expect(app.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
-    expect(world.netease.calls.map(({ module, query }) => ({ module, query }))).toEqual([
+    expect(sessionCalls().map(({ module, query }) => ({ module, query }))).toEqual([
       { module: 'captcha_sent', query: { phone: PHONE, ctcode: '86' } },
       { module: 'login_cellphone', query: { phone: PHONE, captcha: CAPTCHA, countrycode: '86' } },
     ])
@@ -43,7 +46,7 @@ describe('短信验证码登录', () => {
     })
     const { app: reopened } = await device.open()
     expect(reopened.state.session).toEqual({ status: 'signedOut' })
-    expect(world.netease.calls.map(call => call.module)).toEqual(['captcha_sent', 'login_cellphone'])
+    expect(sessionCalls().map(call => call.module)).toEqual(['captcha_sent', 'login_cellphone'])
   })
 
   it('匿名注册失败、验证码没发出去：说明是网易云暂时没回应，重试就发出去了', async () => {
@@ -77,7 +80,7 @@ describe('扫码登录', () => {
     return { device, app, image: qr.image }
   }
 
-  const modules = () => world.netease.calls.map(call => call.module)
+  const modules = () => sessionCalls().map(call => call.module)
 
   it('等待扫码 → 已扫码（显示扫码的账号）→ 在手机上确认后登录，之后不再查', async () => {
     const { app, image } = await showQr()
@@ -90,7 +93,7 @@ describe('扫码登录', () => {
 
     await world.netease.reply('login/login_qr_check.802-scanned.json')
     await world.clock.advance(2000)
-    expect(app.state.login.qr).toEqual({ step: 'scanned', image, ...ACCOUNT })
+    expect(app.state.login.qr).toEqual({ step: 'scanned', image, nickname: ACCOUNT.nickname, avatarUrl: ACCOUNT.avatarUrl })
 
     await world.netease.reply('login/login_qr_check.803-success.json', { cookie: signInCookies() })
     await world.netease.reply('login/user_account.vip.json')
@@ -176,7 +179,7 @@ describe('扫码登录', () => {
 
       const verifying = app.state.login.qr
       expect(verifying).toEqual({ step: 'verifying', image: expect.stringMatching(/^data:image\/png;base64,/), checking: false, unverified: false })
-      expect(world.netease.calls.at(-1)).toMatchObject({
+      expect(sessionCalls().at(-1)).toMatchObject({
         module: 'verify_getQr',
         query: { vid: '61', type: '2', token: '00.verify-token.placeholder', evid: 'risk-event-placeholder', sign: 'risk-sign-placeholder' },
       })
