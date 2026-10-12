@@ -1,38 +1,85 @@
-import type { Song } from '$lib/api/library'
-import type { LibraryState, SyncFailure } from '$lib/app/library'
+import type { Playlist, Song } from '$lib/api/library'
+import type { RequestFailure } from '$lib/app/api'
+import type { LibraryState, PlaylistSongs, SyncFailure } from '$lib/app/library'
 import { failureText } from '../failure'
 
-// 曲库界面上怎么显示：同步条说什么、我喜欢的音乐是加载中、空、出错还是列表。界面组件只照着画
+// 曲库界面上怎么显示：同步条说什么、歌单是加载中、空、出错还是列表。界面组件只照着画
 
-/** 我喜欢的音乐那一块显示什么 */
-export type LikedView
-  /** 首次同步还没拿到歌：骨架行 */
+/** 一张歌单（包括我喜欢的音乐）的歌曲列表那一块显示什么 */
+export type SongsView
+  /** 还没拿到歌：骨架行 */
   = | { kind: 'loading' }
   /** 同步完了，一首都没有 */
     | { kind: 'empty' }
-  /** 一首都还没拿到就没同步成：说明原因，可以重试 */
-    | { kind: 'failed', failure: SyncFailure }
+  /** 一首都还没拿到就没拉成：说明原因，可以重试 */
+    | { kind: 'failed', failure: RequestFailure }
   /** total：一共几首。还在同步时比 songs 多；同步完了就是 songs 的首数（网易云没给的歌不算），和列表对得上 */
-    | { kind: 'songs', songs: readonly Song[], total: number }
+    | { kind: 'songs', songs: readonly Song[], total: number, complete: boolean }
 
-export function likedView(library: LibraryState): LikedView {
-  const { liked, sync } = library
-  if (liked && liked.songs.length > 0)
-    return { kind: 'songs', songs: liked.songs, total: liked.complete ? liked.songs.length : liked.total }
-  if (liked?.complete)
+function songsView(playlist: PlaylistSongs, failure: RequestFailure | null): SongsView {
+  if (playlist.songs.length > 0)
+    return { kind: 'songs', songs: playlist.songs, total: playlist.complete ? playlist.songs.length : playlist.total, complete: playlist.complete }
+  if (playlist.complete)
     return { kind: 'empty' }
-  if (sync.status === 'failed')
-    return { kind: 'failed', failure: sync.failure }
-  return { kind: 'loading' }
+  return failure ? { kind: 'failed', failure } : { kind: 'loading' }
+}
+
+export function likedView(library: LibraryState): SongsView {
+  const { liked, sync } = library
+  const failure = sync.status === 'failed' ? sync.failure : null
+  if (!liked)
+    return failure ? { kind: 'failed', failure } : { kind: 'loading' }
+  return songsView(liked, failure)
+}
+
+/** 歌单页：歌单列表里没有这张歌单（在网易云里删掉了、地址不对）时是 missing */
+export type PlaylistView = SongsView | { kind: 'missing' }
+
+export function playlistView(library: LibraryState, playlistId: number): PlaylistView {
+  const { sync } = library
+  const syncFailure = sync.status === 'failed' ? sync.failure : null
+  if (!library.playlists)
+    return syncFailure ? { kind: 'failed', failure: syncFailure } : { kind: 'loading' }
+  const playlist = library.songsOf(playlistId)
+  if (!playlist)
+    return { kind: 'missing' }
+  // 打开时拉过：以它为准；没拉过（还没到能拉的时候）才看后台同步
+  const opening = library.opening.get(playlistId)
+  return songsView(playlist, opening ? (opening.status === 'failed' ? opening.failure : null) : syncFailure)
+}
+
+/** 歌单的名字：我喜欢的音乐在网易云里叫“某某喜欢的音乐”，界面上统一叫我喜欢的音乐 */
+export function playlistName(playlist: Playlist): string {
+  return playlist.kind === 'liked' ? '我喜欢的音乐' : playlist.name
+}
+
+export type PlaylistFilter = 'all' | 'own' | 'collected'
+
+export const PLAYLIST_FILTERS: readonly { key: PlaylistFilter, label: string }[] = [
+  { key: 'all', label: '全部' },
+  { key: 'own', label: '自建' },
+  { key: 'collected', label: '收藏' },
+]
+
+/** 歌单标签、首页的歌单网格：我喜欢的音乐另有一块，不在里面 */
+export function filterPlaylists(playlists: readonly Playlist[], filter: PlaylistFilter): Playlist[] {
+  return playlists.filter(playlist => playlist.kind !== 'liked' && (filter === 'all' || playlist.kind === filter))
+}
+
+/** 首次同步的进度：整个曲库同步完了几张歌单、几首歌 */
+export interface SyncProgress {
+  playlists: { done: number, total: number }
+  songs: { done: number, total: number }
 }
 
 /**
- * 同步条：首次同步（我喜欢的音乐还没同步全）或同步出错时才显示；曲库已经在本机、只是在后台比对时不打扰。
- * 一首歌都还没有就出错时，由我喜欢的音乐那一块说明（likedView 的 failed），同步条不再重复
+ * 同步条：首次同步（还有歌单一首都没同步到，或者我喜欢的音乐还没同步全）或同步出错时才显示；
+ * 曲库已经在本机、只是在后台比对时不打扰。
+ * failureShown：这一页别的地方已经说了同步为什么没成功（一首歌都没有时的出错状态），同步条不再重复
  */
 export type SyncNotice
-  /** done / total：我喜欢的音乐同步了几首、一共几首；还不知道一共几首时是 null */
-  = | { kind: 'syncing', progress: { done: number, total: number } | null }
+  /** 还不知道曲库有多大（歌单列表还没拿到）时 progress 是 null */
+  = | { kind: 'syncing', progress: SyncProgress | null }
   /** 网易云说操作频繁：过一会儿自动接着同步 */
     | { kind: 'rateLimited' }
   /** 断网：联网后接着同步 */
@@ -40,16 +87,26 @@ export type SyncNotice
   /** 停下了：text 说明原因，可以重试 */
     | { kind: 'failed', text: string }
 
-export function syncNotice(library: LibraryState): SyncNotice | null {
-  const { liked, sync } = library
+export function syncNotice(library: LibraryState, failureShown = false): SyncNotice | null {
+  const { sync } = library
   if (sync.status === 'failed')
-    return liked && liked.songs.length > 0 ? { kind: 'failed', text: syncFailureText(sync.failure) } : null
-  const complete = liked?.complete ?? false
-  if (sync.status === 'synced' || complete)
+    return failureShown ? null : { kind: 'failed', text: syncFailureText(sync.failure) }
+  if (sync.status === 'synced')
+    return null
+  const playlists = library.playlists?.map(playlist => library.songsOf(playlist.id)!) ?? null
+  const firstSync = !playlists || playlists.some(({ playlist, songs, complete }) => !complete && (songs.length === 0 || playlist.kind === 'liked'))
+  if (!firstSync)
     return null
   switch (sync.status) {
     case 'syncing':
-      return { kind: 'syncing', progress: liked && { done: liked.songs.length, total: liked.total } }
+      return {
+        kind: 'syncing',
+        progress: playlists && {
+          playlists: { done: playlists.filter(playlist => playlist.complete).length, total: playlists.length },
+          // 同步完的歌单按一共几首算：网易云没给的歌（下架了）不会再有，进度要能走到头
+          songs: playlists.reduce((sum, { songs, total, complete }) => ({ done: sum.done + (complete ? total : songs.length), total: sum.total + total }), { done: 0, total: 0 }),
+        },
+      }
     case 'rateLimited':
       return { kind: 'rateLimited' }
     case 'offline':

@@ -4,7 +4,7 @@ import type { Playlist, Song } from '$lib/api/library'
 // 之后的播放队列、下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 2
+const VERSION = 3
 /** 登录会话的小事，按名字存 */
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists */
@@ -52,6 +52,7 @@ export interface LocalDb {
   deleteLibrary: () => Promise<void>
   // 往副本里写同步拿到的东西：同一个事务里先核对副本还是不是 owner 的，不是（别的标签页退出删了、换了账号）就什么都不写，返回 false
   saveHearts: (owner: number, songIds: number[]) => Promise<boolean>
+  /** 歌单列表：网易云那边删掉的歌单（不在列表里了），它的曲目在同一个事务里一起删 */
   savePlaylists: (owner: number, playlists: Playlist[]) => Promise<boolean>
   saveTracks: (owner: number, playlistId: number, tracks: PlaylistTracks) => Promise<boolean>
   saveSongs: (owner: number, songs: Song[]) => Promise<boolean>
@@ -72,13 +73,23 @@ function committed(transaction: IDBTransaction): Promise<void> {
   })
 }
 
-function upgrade(database: IDBDatabase, from: number): void {
+function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: number): void {
   if (from < 1)
     database.createObjectStore(SESSION)
   if (from < 2) {
     database.createObjectStore(LIBRARY)
     database.createObjectStore(TRACKS)
     database.createObjectStore(SONGS, { keyPath: 'id' })
+  }
+  // 3（#22）：歌单多了创建者和是否隐私。存着的歌单列表补上空的值，曲库照样能先显示，下一次同步拿到真的值
+  if (from === 2) {
+    const library = transaction.objectStore(LIBRARY)
+    const stored = library.get('playlists')
+    stored.onsuccess = () => {
+      const playlists = stored.result as Omit<Playlist, 'creator' | 'private'>[] | undefined
+      if (playlists)
+        library.put(playlists.map(playlist => ({ ...playlist, creator: '', private: false }) satisfies Playlist), 'playlists')
+    }
   }
 }
 
@@ -89,7 +100,7 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
   function database(): Promise<IDBDatabase> {
     opening ??= new Promise((resolve, reject) => {
       const request = indexedDB.open(NAME, VERSION)
-      request.onupgradeneeded = event => upgrade(request.result, event.oldVersion)
+      request.onupgradeneeded = event => upgrade(request.result, request.transaction!, event.oldVersion)
       request.onsuccess = () => {
         open = request.result
         // 新版本的标签页要升级本机数据库时，这个（旧的）标签页让开，免得把升级卡住；它之后的读写会失败，刷新就好
@@ -171,7 +182,18 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
     }),
     deleteLibrary: () => write(LIBRARY_STORES, clearLibrary),
     saveHearts: (owner, songIds) => writeLibrary(owner, [], transaction => transaction.objectStore(LIBRARY).put(songIds, 'hearts')),
-    savePlaylists: (owner, playlists) => writeLibrary(owner, [], transaction => transaction.objectStore(LIBRARY).put(playlists, 'playlists')),
+    savePlaylists: (owner, playlists) => writeLibrary(owner, [TRACKS], (transaction) => {
+      transaction.objectStore(LIBRARY).put(playlists, 'playlists')
+      const tracks = transaction.objectStore(TRACKS)
+      const kept = new Set(playlists.map(playlist => playlist.id))
+      const keys = tracks.getAllKeys()
+      keys.onsuccess = () => {
+        for (const key of keys.result as number[]) {
+          if (!kept.has(key))
+            tracks.delete(key)
+        }
+      }
+    }),
     saveTracks: (owner, playlistId, tracks) => writeLibrary(owner, [TRACKS], transaction => transaction.objectStore(TRACKS).put(tracks, playlistId)),
     saveSongs: (owner, songs) => writeLibrary(owner, [SONGS], (transaction) => {
       const store = transaction.objectStore(SONGS)

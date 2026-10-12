@@ -5,7 +5,12 @@
 - 验证关卡①（nonhana/campanula-music#14，2026-10-08）：`login/`、`library/`、`playback/`、`search/`。登录后的录制之外，其余是未登录（匿名）视角。
 - 验证关卡②（nonhana/campanula-music#15，2026-10-09 北京时间）：`playlist-edit/`（歌单编辑：新建、删除、名称和简介、标签、隐私、封面、加歌和移除、排序、自建歌单之间排序）、`like-collect/`（红心、收藏和取消收藏）。歌单写操作只在临时新建、测完即删的歌单上做。
 - nonhana/campanula-music#20（2026-10-11）：`login/login_refresh.301-invalid.json`、`login/user_account.invalid.json`。在本机用 `hana-music-api@2.2.0` 直接调 SDK，带一个随机编造、不属于任何账号的 `MUSIC_U`，不涉及真实账号。
-- nonhana/campanula-music#21（2026-10-12 北京时间）：`library/` 下文件名带 `.full`、`.liked-full`、`.liked-page` 的整页录制。作者在本机开发服务器的登录页扫码登录一次，一次性脚本用这份凭据直接调 `hana-music-api@2.3.0`，只读：歌单列表 1 次、我喜欢的音乐详情 1 次、歌曲信息每页 1,000 首共 5 次；第 4 页被 SDK 拒掉后，又逐个去掉出错的歌调了 4 次、用 `fetcher` 截网易云原样的返回 1 次。凭据只在内存里，原始录制脱敏后当场删了。同一票里 `library/likelist.301-invalid.json`（SDK 2.3.0）和 `library/user_playlist.anonymous-view.json.gz`（SDK 2.4.0，看的是作者本人的歌单列表，没用作者的凭据）用随机编造的 `MUSIC_U`。
+- nonhana/campanula-music#21（2026-10-12 北京时间）：`library/` 下文件名带 `.full`、`.liked-full`、`.liked-page` 的整页录制。作者在本机开发服务器的登录页扫码登录一次，一次性脚本用这份凭据直接调 `hana-music-api@2.3.0`，只读：歌单列表 1 次、我喜欢的音乐详情 1 次、歌曲信息每页 1,000 首共 5 次；第 4 页被 SDK 拒掉后，又逐个去掉出错的歌调了 4 次、用 `fetcher` 截网易云原样的返回 1 次。凭据只在内存里，原始录制脱敏后当场删了。同一票里 `library/likelist.301-invalid.json`（SDK 2.3.0）和 `library/user_playlist.anonymous-view.json.gz`（SDK 2.4.0，看的是作者本人的歌单列表，没用作者的凭据）用随机编造的 `MUSIC_U`。#22 时补做了本人作为歌手的脱敏：`.liked-page1`、`.liked-page3`、`.liked-full` 里本人的歌手编号、名字和作品编号原来没换，已换成 `99999999` / “测试歌手”和 9 字头的假编号。
+- nonhana/campanula-music#22（2026-10-12 北京时间）：`library/sync/` 下三批整个曲库的录制，作者在本机开发服务器扫码登录，一次性脚本用这份凭据直接调 `hana-music-api@2.4.0`，只读，照 App 的同步顺序：
+  - `before/`：作者在官方 App 里新建临时歌单 poems（2 首）之后：歌单列表 1 次，我喜欢的音乐以外的 53 张歌单详情各 1 次，还没有的歌曲信息 45 页（我喜欢的音乐当作已经同步过，用 #21 的录制）。另有 `user_account`、`user_detail` 各 1 次，只为拿到要脱敏的本人身份。
+  - `after/`：作者在官方 App 里往 poems 加了一首、移除了一首之后：歌单列表 1 次，更新时间变了的 4 张歌单详情各 1 次（poems 之外的 3 张网易云自己改了更新时间，歌没变），新的歌 1 页。
+  - `deleted/`：作者在官方 App 里删掉 poems 之后：歌单列表 1 次（poems 不在了），更新时间变了的 1 张歌单详情 1 次。
+  - 文件名前的序号是调用的先后。编号和 #21 那批对得上：本人歌单的假编号按名字沿用，poems 是 `900000019`；收藏的歌单创建者沿用 #21 的假 uid，新出现的人从 `10000035` 起。歌单详情里的 `playlist.tracks`、`privileges` 截到前 30 项。临时歌单录完已在官方 App 里删掉。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 

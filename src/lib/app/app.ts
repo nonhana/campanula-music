@@ -2,10 +2,10 @@ import type { Account, AccountResponse } from '$lib/api/account'
 import type { LogoutResponse } from '$lib/api/login'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
-import type { LibraryState } from './library'
+import type { LibraryState, PlaylistSearch } from './library'
 import type { LoginState } from './login'
 import { createApi } from './api'
-import { createLibrary } from './library'
+import { createLibrary, searchPlaylist } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 import { createBackgroundLane } from './pacing'
@@ -64,6 +64,16 @@ export interface App {
   logout: () => Promise<void>
   /** 曲库同步没成功（连不上、网易云出错）时重试：从停下的地方接着同步 */
   retrySync: () => void
+  /**
+   * 打开一张歌单：本机还没有它最新、完整的曲目（没同步到、只同步了一部分），就马上用前台请求拉，不等后台同步。
+   * 拉到哪了看 state.library.opening；没拉成时再调一次就是重试
+   */
+  openPlaylist: (playlistId: number) => Promise<void>
+  /**
+   * 歌单内搜索：在本机副本里即时完成。歌名、歌手、专辑都搜，不分大小写和全角半角；
+   * 歌单还没同步全时结果标“可能不全”。不在歌单列表里的歌单是 null
+   */
+  searchPlaylist: (playlistId: number, query: string) => PlaylistSearch | null
 }
 
 export function createApp(browser: BrowserCapabilities): App {
@@ -207,5 +217,10 @@ export function createApp(browser: BrowserCapabilities): App {
       await finishLogout()
     },
     retrySync: library.retry,
+    openPlaylist: library.open,
+    searchPlaylist(playlistId, query) {
+      const playlist = state.library?.songsOf(playlistId)
+      return playlist ? searchPlaylist(playlist, query) : null
+    },
   }
 }

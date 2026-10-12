@@ -211,6 +211,29 @@ export default defineConfig<Theme>({
           outline: 2px solid ${colors.primary[800]};
           outline-offset: 2px;
         }
+
+        /* 加载中的骨架（歌曲行、封面格子）：一道很淡的光从左扫到右；减少动态效果时不动 */
+        .bone {
+          display: block;
+          background: linear-gradient(90deg, #e3eae6 0%, #f0f5f2 40%, #e3eae6 80%);
+          background-size: 240% 100%;
+          animation: bone-sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes bone-sweep {
+          from {
+            background-position: 100% 0;
+          }
+          to {
+            background-position: -140% 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .bone {
+            animation: none;
+          }
+        }
       `,
     },
   ],

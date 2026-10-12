@@ -42,27 +42,3 @@
     {/if}
   {/each}
 </div>
-
-<style>
-  .bone {
-    display: block;
-    background: linear-gradient(90deg, #e3eae6 0%, #f0f5f2 40%, #e3eae6 80%);
-    background-size: 240% 100%;
-    animation: sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  }
-
-  @keyframes sweep {
-    from {
-      background-position: 100% 0;
-    }
-    to {
-      background-position: -140% 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bone {
-      animation: none;
-    }
-  }
-</style>

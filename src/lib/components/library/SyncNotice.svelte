@@ -11,14 +11,16 @@
 
   interface Props {
     library: LibraryState
+    /** 这一页别的地方已经说了同步为什么没成功：出错时不再重复 */
+    failureShown?: boolean
     phone?: boolean
   }
 
-  const { library, phone = false }: Props = $props()
+  const { library, failureShown = false, phone = false }: Props = $props()
   const view = getAppView()
-  const notice = $derived(syncNotice(library))
+  const notice = $derived(syncNotice(library, failureShown))
   const progress = $derived(notice?.kind === 'syncing' ? notice.progress : null)
-  const percent = $derived(progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0)
+  const percent = $derived(progress && progress.songs.total > 0 ? Math.round((progress.songs.done / progress.songs.total) * 100) : 0)
 
   const PAUSED = {
     rateLimited: '网易云说操作太频繁，过一会儿自动接着同步',
@@ -39,7 +41,7 @@
           <RefreshCw size={14} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800 motion-reduce:animate-none' : 'text-neutral-500']} aria-hidden='true' />
           <span class='min-w-0 flex-1 truncate'>{notice.kind === 'syncing' ? '正在同步曲库' : `同步暂停 · ${PAUSED[notice.kind]}`}</span>
           {#if progress}
-            <span class='flex-none tabular-nums'>{formatCount(progress.done)} / {formatCount(progress.total)}</span>
+            <span class='flex-none tabular-nums'>{formatCount(progress.songs.done)} / {formatCount(progress.songs.total)}</span>
           {/if}
         {/if}
       </div>
@@ -58,11 +60,11 @@
       {:else}
         <RefreshCw size={18} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800 motion-reduce:animate-none' : 'text-neutral-500']} aria-hidden='true' />
         <p class='min-w-0 flex-1 truncate text-label text-neutral-900 font-500'>
-          {notice.kind === 'syncing' ? '正在同步曲库' : '同步暂停'}<span class='ml-2 text-neutral-600 font-400'>{notice.kind === 'syncing' ? '已经同步的歌先显示出来' : PAUSED[notice.kind]}</span>
+          {notice.kind === 'syncing' ? '正在同步曲库' : '同步暂停'}<span class='ml-2 text-neutral-600 font-400'>{notice.kind === 'syncing' ? '已经同步的歌先显示出来，可以先搜' : PAUSED[notice.kind]}</span>
         </p>
         {#if progress}
           <span class='h-4 w-px flex-none bg-neutral-200' aria-hidden='true'></span>
-          <p class='flex-none text-caption text-neutral-600 tabular-nums'>我喜欢的音乐 {formatCount(progress.done)} / {formatCount(progress.total)}</p>
+          <p class='flex-none text-caption text-neutral-600 tabular-nums'>歌单 {formatCount(progress.playlists.done)} / {formatCount(progress.playlists.total)} · 歌曲 {formatCount(progress.songs.done)} / {formatCount(progress.songs.total)}</p>
           <span class='relative h-1 w-40 flex-none overflow-hidden rounded-full bg-primary-100' aria-hidden='true'>
             <span class='absolute inset-y-0 left-0 rounded-full bg-primary-800' style:width='{percent}%'></span>
           </span>

@@ -20,9 +20,11 @@ export type BackgroundResult<T> = { ok: true, value: T } | { ok: false, failure:
 export interface BackgroundLane {
   /**
    * 发一个后台请求。request 每次调用发一次（被拒后重发会再调）；
-   * onWaiting 在开始等（操作频繁、断网）时收到在等什么，等完要发出去时收到 null
+   * onWaiting 在开始等（操作频繁、断网）时收到在等什么，等完要发出去时收到 null。
+   * giveUp：调用方不想再等了（听众打开了这张歌单，要改成前台请求马上发）。在等的时候、或者被拒后要重发之前
+   * 收到它，就不再发，返回 null；请求已经在路上时照常等它回来
    */
-  send: <T>(request: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void) => Promise<BackgroundResult<T>>
+  send: <T>(request: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void, giveUp?: AbortSignal) => Promise<BackgroundResult<T> | null>
   /** 登录失效或退出：等着的后台请求马上按需要登录了结，之后发的也一样 */
   stop: () => void
   /** 重新登录了：后台请求照常发 */
@@ -40,17 +42,19 @@ export function createBackgroundLane({ clock, network }: { clock: Clock, network
   /** 正在等的后台请求：stop() 时叫醒它们 */
   const sleepers = new Set<() => void>()
 
-  /** 等到 until，或联网，或被 stop() 叫醒 */
-  function sleep(wake: { until: number } | 'online'): Promise<void> {
+  /** 等到 until，或联网，或被 stop() 叫醒，或调用方不等了 */
+  function sleep(wake: { until: number } | 'online', giveUp: AbortSignal | undefined): Promise<void> {
     return new Promise((resolve) => {
       let cancelTimer = (): void => {}
       const done = () => {
         sleepers.delete(done)
         cancelTimer()
         network.removeEventListener('online', done)
+        giveUp?.removeEventListener('abort', done)
         resolve()
       }
       sleepers.add(done)
+      giveUp?.addEventListener('abort', done)
       if (wake === 'online')
         network.addEventListener('online', done)
       else
@@ -66,17 +70,19 @@ export function createBackgroundLane({ clock, network }: { clock: Clock, network
   }
 
   return {
-    async send<T>(request: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void): Promise<BackgroundResult<T>> {
+    async send<T>(request: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void, giveUp?: AbortSignal): Promise<BackgroundResult<T> | null> {
       const mine = epoch
       while (!stopped && epoch === mine) {
+        if (giveUp?.aborted)
+          return null
         if (pausedUntil > clock.now()) {
           onWaiting({ reason: 'rateLimited', until: pausedUntil })
-          await sleep({ until: pausedUntil })
+          await sleep({ until: pausedUntil }, giveUp)
           continue
         }
         if (!network.onLine) {
           onWaiting({ reason: 'offline' })
-          await sleep('online')
+          await sleep('online', giveUp)
           continue
         }
         onWaiting(null)
