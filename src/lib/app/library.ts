@@ -1,17 +1,23 @@
 import type { Account } from '$lib/api/account'
 import type { HeartsResponse, Playlist, PlaylistsResponse, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '$lib/api/library'
 import type { Api, RequestFailure, Result } from './api'
-import type { LocalDb, Replica } from './local'
+import type { LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
 import { SONGS_PER_REQUEST } from '$lib/api/library'
 
 // 曲库副本和同步（Spec #11“客户端：曲库副本”，ADR-0007）：登录后先显示本机副本，再在后台和网易云同步。
-// 这一版同步红心状态、歌单列表和我喜欢的音乐；其他歌单的曲目由 #22 加上。
-// 同步一步一步来：红心 → 歌单列表 → 我喜欢的音乐的曲目编号 → 歌曲信息一页一页（每页最多 1,000 首），
-// 同时只有一个同步请求在路上，同一页不会同时请求两次
+// 同步一步一步来：红心 → 歌单列表 → 每张歌单（我喜欢的音乐在最前，然后按歌单列表的顺序）。
+// 一张歌单：更新时间和本机的对不上才重拉全部曲目编号，再一页一页（每页最多 1,000 首）取还没有的歌曲信息。
+// 后台同步同时只有一个请求在路上，同一页不会同时请求两次。
+// 听众打开一张还没同步全的歌单时，拉这张歌单的请求马上发（前台请求，不经过后台的节奏）；
+// 同一张歌单同时只有一处在拉，后台同步轮到它时等那边拉完，不重拉。
+// 在网易云里删掉的歌单，拿到歌单列表时就从本机副本里删掉。
 
 /** 同步没成功的原因（需要登录另外处理：整个 App 变成登录失效） */
 export type SyncFailure = Exclude<RequestFailure, { kind: 'needsLogin' | 'rateLimited' | 'offline' }>
+
+/** 打开歌单时没拉成的原因：前台请求不等，断网、操作频繁都直接说 */
+export type OpenFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
 
 export type SyncStatus
   /** 有一个同步请求在路上 */
@@ -25,16 +31,21 @@ export type SyncStatus
   /** 和网易云一致了 */
     | { status: 'synced' }
 
-/** 我喜欢的音乐 */
-export interface LikedMusic {
+/** 一张歌单在本机的样子 */
+export interface PlaylistSongs {
   playlist: Playlist
-  /** 已经有歌曲信息的歌，按歌单里的顺序；首次同步时一页一页地多起来 */
+  /** 已经有歌曲信息的歌，按歌单里的顺序；同步时一页一页地多起来 */
   songs: readonly Song[]
-  /** 一共几首：拿到曲目编号后是编号数，之前是网易云写的歌曲数（会少几首，#21 留言） */
+  /** 一共几首：拿到曲目编号后是编号数，之前是网易云写的歌曲数（我喜欢的音乐的会少几首，#21 留言） */
   total: number
   /** 每首歌的信息都取过一遍了：网易云没给的歌（比如已经下架）不在 songs 里，所以 songs 可能比 total 少几首 */
   complete: boolean
 }
+
+/** 听众打开的歌单还没同步全：正在用前台请求拉，或者没拉成 */
+export type PlaylistOpening
+  = | { status: 'loading' }
+    | { status: 'failed', failure: OpenFailure }
 
 /** 界面看到的曲库 */
 export interface LibraryState {
@@ -42,9 +53,21 @@ export interface LibraryState {
   playlists: readonly Playlist[] | null
   /** 红心了的歌：首次同步还没拿到时是 null */
   hearts: ReadonlySet<number> | null
-  /** 歌单列表还没拿到时是 null */
-  liked: LikedMusic | null
+  /** 我喜欢的音乐；歌单列表还没拿到时是 null */
+  liked: PlaylistSongs | null
+  /** 歌单列表里的这张歌单；不在列表里（还没拿到列表、在网易云里删掉了）时是 null。按调用时的本机副本算 */
+  songsOf: (playlistId: number) => PlaylistSongs | null
+  /** 听众打开的、还没同步全的歌单拉到哪了；拉完了就不在里面 */
+  opening: ReadonlyMap<number, PlaylistOpening>
   sync: SyncStatus
+}
+
+/** 歌单内搜索的结果 */
+export interface PlaylistSearch {
+  /** 歌名、歌手或专辑里有搜索词的歌，按歌单里的顺序 */
+  songs: readonly Song[]
+  /** 歌单还没同步全：还没同步到的歌里可能也有，结果可能不全 */
+  incomplete: boolean
 }
 
 export interface LibraryContext {
@@ -64,29 +87,77 @@ export interface Library {
   sync: () => void
   /** 同步没成功时重试：从停下的地方接着来 */
   retry: () => void
+  /** 听众打开一张歌单：本机还没有它最新、完整的曲目，就马上用前台请求拉；没拉成时再调一次就是重试 */
+  open: (playlistId: number) => Promise<void>
   /** 退出、登录失效：停下同步。本机副本留着，退出时由 App 另外删 */
   leave: () => void
 }
+
+/** 一个同步请求的结果；null：这一轮已经作废（退出、登录失效、换账号），什么都不用做 */
+type Outcome<T, F> = { ok: true, value: T } | { ok: false, failure: F } | null
+
+/** 拉一张歌单的结果 */
+type Pulled = Outcome<void, OpenFailure>
 
 function chunks<T>(items: readonly T[], size: number): T[][] {
   return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, (index + 1) * size))
 }
 
-function stateOf(replica: Replica, sync: SyncStatus): LibraryState {
-  const playlist = replica.playlists?.find(item => item.kind === 'liked')
-  const tracks = playlist && replica.tracks.get(playlist.id)
+/** 本机已经有这张歌单最新、完整的曲目 */
+function upToDate(replica: Replica, playlist: Playlist): boolean {
+  const tracks = replica.tracks.get(playlist.id)
+  return tracks?.version === playlist.tracksUpdatedAt && tracks.complete
+}
+
+/** 后台请求经过后台通道，断网、操作频繁在那里等过、重发过；只有前台请求会因为它们失败 */
+function isSyncFailure(failure: OpenFailure): failure is SyncFailure {
+  return failure.kind !== 'offline' && failure.kind !== 'rateLimited'
+}
+
+function songsOf(replica: Replica, playlist: Playlist): PlaylistSongs {
+  const tracks = replica.tracks.get(playlist.id)
+  return {
+    playlist,
+    songs: tracks ? tracks.trackIds.flatMap(id => replica.songs.get(id) ?? []) : [],
+    total: tracks ? tracks.trackIds.length : playlist.trackCount,
+    complete: tracks?.complete ?? false,
+  }
+}
+
+function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number, PlaylistOpening>): LibraryState {
+  const playlists = new Map(replica.playlists?.map(playlist => [playlist.id, playlist]))
+  // 几十张歌单、上万首：界面看哪张才算哪张
+  const computed = new Map<number, PlaylistSongs | null>()
+  const songsOfPlaylist = (playlistId: number): PlaylistSongs | null => {
+    if (!computed.has(playlistId)) {
+      const playlist = playlists.get(playlistId)
+      computed.set(playlistId, playlist ? songsOf(replica, playlist) : null)
+    }
+    return computed.get(playlistId) ?? null
+  }
+  const liked = replica.playlists?.find(playlist => playlist.kind === 'liked')
   return {
     playlists: replica.playlists,
     hearts: replica.hearts && new Set(replica.hearts),
-    liked: playlist
-      ? {
-          playlist,
-          songs: tracks ? tracks.trackIds.flatMap(id => replica.songs.get(id) ?? []) : [],
-          total: tracks ? tracks.trackIds.length : playlist.trackCount,
-          complete: tracks?.complete ?? false,
-        }
-      : null,
+    liked: liked ? songsOfPlaylist(liked.id) : null,
+    songsOf: songsOfPlaylist,
+    opening: new Map(opening),
     sync,
+  }
+}
+
+/** 搜索时不分大小写和全角半角：“ＤＪ”和“dj”一样 */
+function folded(text: string): string {
+  return text.normalize('NFKC').toLowerCase()
+}
+
+/** 歌单内搜索：在本机副本里即时完成 */
+export function searchPlaylist(playlist: PlaylistSongs, query: string): PlaylistSearch {
+  const term = folded(query.trim())
+  const matches = (text: string | null) => text !== null && folded(text).includes(term)
+  return {
+    songs: playlist.songs.filter(song => matches(song.name) || matches(song.album.name) || song.artists.some(artist => matches(artist.name))),
+    incomplete: !playlist.complete,
   }
 }
 
@@ -112,28 +183,60 @@ export function createLibrary(context: LibraryContext): Library {
   let generation = 0
   /** 正在跑的同步。新的一轮等上一轮了结再开始，所以同一时间只有一轮在发请求 */
   let running: Promise<void> = Promise.resolve()
+  /**
+   * 正在拉的歌单：拉的是哪个版本（tracksUpdatedAt）、拉完的结果。同一张歌单同时只有一处在拉，后台同步和听众打开共用；
+   * 打开时用的可能是本机旧的歌单列表，版本不同的要等它拉完再拉
+   */
+  const pulling = new Map<number, { version: number, job: Promise<Pulled> }>()
+  /** 听众打开着、要马上拉的歌单：拉它的请求不经过后台的节奏 */
+  const urgent = new Set<number>()
+  /** 拉歌单时正在后台通道里等着的请求：听众打开这张歌单时叫它别等了，改成前台请求马上发 */
+  const waiting = new Map<number, AbortController>()
+  let opening = new Map<number, PlaylistOpening>()
 
   function publish(next: SyncStatus = status): void {
     status = next
     if (replica)
-      context.write(stateOf(replica, status))
+      context.write(stateOf(replica, status, opening))
   }
 
-  /** 发一个同步请求。没成功就停下同步、返回 null；这一轮同步已经作废时也返回 null */
-  async function request<T>(mine: number, send: () => Promise<Result<T>>): Promise<T | null> {
-    const result = await lane.send(send, (waiting) => {
-      if (mine === generation)
-        publish(waiting ? waitingStatus(waiting) : { status: 'syncing' })
-    })
+  /** 请求回来了：这一轮已经作废时不要结果；网易云说需要登录（续期也没成功）时整个 App 变成登录失效 */
+  function settle<T, F extends RequestFailure>(mine: number, result: { ok: true, value: T } | { ok: false, failure: F }): Outcome<T, Exclude<F, { kind: 'needsLogin' }>> {
     if (mine !== generation)
       return null
     if (result.ok)
-      return result.value
-    if (result.failure.kind === 'needsLogin')
+      return result
+    if (result.failure.kind === 'needsLogin') {
       context.loginExpired()
-    else
-      publish({ status: 'failed', failure: result.failure })
-    return null
+      return null
+    }
+    return { ok: false, failure: result.failure as Exclude<F, { kind: 'needsLogin' }> }
+  }
+
+  /** 发一个后台请求：经过后台通道（操作频繁、断网时等着再发）。giveUp 了就不发，返回 'gaveUp' */
+  async function background<T>(mine: number, send: () => Promise<Result<T>>, giveUp?: AbortSignal): Promise<Outcome<T, SyncFailure> | 'gaveUp'> {
+    const result = await lane.send(send, (waitingFor) => {
+      if (mine === generation)
+        publish(waitingFor ? waitingStatus(waitingFor) : { status: 'syncing' })
+    }, giveUp)
+    return result ? settle(mine, result) : 'gaveUp'
+  }
+
+  /**
+   * 拉歌单时的一个请求：听众打开着这张歌单就马上发（前台请求）；否则是后台请求，
+   * 在后台通道里等着的时候听众打开了它，就不再等，改成马上发
+   */
+  async function playlistRequest<T>(mine: number, playlistId: number, send: () => Promise<Result<T>>): Promise<Outcome<T, OpenFailure>> {
+    if (!urgent.has(playlistId)) {
+      const giveUp = new AbortController()
+      waiting.set(playlistId, giveUp)
+      const result = await background(mine, send, giveUp.signal).finally(() => waiting.delete(playlistId))
+      if (result !== 'gaveUp')
+        return result
+      if (mine !== generation)
+        return null
+    }
+    return settle(mine, await send())
   }
 
   /**
@@ -150,25 +253,72 @@ export function createLibrary(context: LibraryContext): Library {
     return true
   }
 
-  async function syncLiked(mine: number, current: Replica, playlist: Playlist): Promise<boolean> {
-    let tracks = current.tracks.get(playlist.id)
+  /** 把一张歌单拉到和网易云一致：更新时间变了才重拉曲目编号，再取还没有的歌曲信息 */
+  async function pull(mine: number, current: Replica, playlist: Playlist): Promise<Pulled> {
+    const { id } = playlist
+    /** 拉的时候新的歌单列表到了，这张已经在网易云里删掉：不再往本机写它的曲目（列表到的时候已经删过了） */
+    const deleted = () => current.playlists !== null && !current.playlists.some(item => item.id === id)
+    const saveTracks = (tracks: PlaylistTracks) => save(mine, () => local.saveTracks(current.owner, id, tracks), () => {
+      current.tracks.set(id, tracks)
+      // 拉完了：之前打开时没拉成的说明不再显示
+      if (tracks.complete)
+        opening.delete(id)
+    })
+
+    let tracks = current.tracks.get(id)
     if (tracks?.version !== playlist.tracksUpdatedAt) {
-      const fetched = await request(mine, () => api.get<TrackIdsResponse>(`/api/playlists/${playlist.id}/track-ids`))
-      const next = fetched && { version: playlist.tracksUpdatedAt, trackIds: fetched.trackIds, complete: false }
-      if (!next || !await save(mine, () => local.saveTracks(current.owner, playlist.id, next), () => current.tracks.set(playlist.id, next)))
-        return false
+      const fetched = await playlistRequest(mine, id, () => api.get<TrackIdsResponse>(`/api/playlists/${id}/track-ids`))
+      if (!fetched?.ok)
+        return fetched
+      const next: PlaylistTracks = { version: playlist.tracksUpdatedAt, trackIds: fetched.value.trackIds, complete: false }
+      if (deleted())
+        return { ok: true, value: undefined }
+      if (!await saveTracks(next))
+        return null
       tracks = next
     }
     if (tracks.complete)
-      return true
-    const missing = tracks.trackIds.filter(id => !current.songs.has(id))
+      return { ok: true, value: undefined }
+    const missing = tracks.trackIds.filter(songId => !current.songs.has(songId))
     for (const ids of chunks(missing, SONGS_PER_REQUEST)) {
-      const page = await request(mine, () => api.post<SongsResponse>('/api/songs', { ids } satisfies SongsRequest))
-      if (!page || !await save(mine, () => local.saveSongs(current.owner, page.songs), () => page.songs.forEach(song => current.songs.set(song.id, song))))
-        return false
+      const page = await playlistRequest(mine, id, () => api.post<SongsResponse>('/api/songs', { ids } satisfies SongsRequest))
+      if (!page?.ok)
+        return page
+      if (!await save(mine, () => local.saveSongs(current.owner, page.value.songs), () => page.value.songs.forEach(song => current.songs.set(song.id, song))))
+        return null
     }
-    const done = { ...tracks, complete: true }
-    return save(mine, () => local.saveTracks(current.owner, playlist.id, done), () => current.tracks.set(playlist.id, done))
+    if (deleted())
+      return { ok: true, value: undefined }
+    return await saveTracks({ ...tracks, complete: true }) ? { ok: true, value: undefined } : null
+  }
+
+  /** 拉一张歌单；同一个版本已经有一处在拉（后台同步、听众打开）就等它，不重拉；拉的是别的版本就等它拉完再拉这个 */
+  function load(mine: number, current: Replica, playlist: Playlist): Promise<Pulled> {
+    const { id, tracksUpdatedAt: version } = playlist
+    const existing = pulling.get(id)
+    if (existing?.version === version)
+      return existing.job
+    const before = existing?.job.catch(() => null) ?? Promise.resolve(null)
+    const job: Promise<Pulled> = before.then(() => pull(mine, current, playlist)).finally(() => {
+      // 退出、换账号时已经清掉了，那之后开始的拉取不归它管
+      if (pulling.get(id)?.job === job) {
+        pulling.delete(id)
+        urgent.delete(id)
+      }
+    })
+    pulling.set(id, { version, job })
+    return job
+  }
+
+  /** 后台同步一张歌单。听众打开它时前台请求没拉成（断网、操作频繁）：后台照常排队，等联网、等到时间再拉 */
+  async function syncPlaylist(mine: number, current: Replica, playlist: Playlist): Promise<Outcome<void, SyncFailure>> {
+    for (;;) {
+      const result = await load(mine, current, playlist)
+      if (!result || result.ok)
+        return result
+      if (isSyncFailure(result.failure))
+        return { ok: false, failure: result.failure }
+    }
   }
 
   async function run(mine: number): Promise<void> {
@@ -176,16 +326,57 @@ export function createLibrary(context: LibraryContext): Library {
     if (mine !== generation || !current)
       return
     publish({ status: 'syncing' })
-    const hearts = await request(mine, () => api.get<HeartsResponse>(`/api/hearts?uid=${current.owner}`))
-    if (!hearts || !await save(mine, () => local.saveHearts(current.owner, hearts.songIds), () => (current.hearts = hearts.songIds)))
+    const hearts = await background(mine, () => api.get<HeartsResponse>(`/api/hearts?uid=${current.owner}`))
+    if (!hearts || hearts === 'gaveUp')
       return
-    const list = await request(mine, () => api.get<PlaylistsResponse>(`/api/playlists?uid=${current.owner}`))
-    if (!list || !await save(mine, () => local.savePlaylists(current.owner, list.playlists), () => (current.playlists = list.playlists)))
+    if (!hearts.ok)
+      return publish({ status: 'failed', failure: hearts.failure })
+    if (!await save(mine, () => local.saveHearts(current.owner, hearts.value.songIds), () => (current.hearts = hearts.value.songIds)))
       return
-    const liked = list.playlists.find(playlist => playlist.kind === 'liked')
-    if (liked && !await syncLiked(mine, current, liked))
+    const list = await background(mine, () => api.get<PlaylistsResponse>(`/api/playlists?uid=${current.owner}`))
+    if (!list || list === 'gaveUp')
       return
-    publish({ status: 'synced' })
+    if (!list.ok)
+      return publish({ status: 'failed', failure: list.failure })
+    const { playlists } = list.value
+    const kept = new Set(playlists.map(playlist => playlist.id))
+    const removeDeleted = () => {
+      current.playlists = playlists
+      for (const map of [current.tracks, opening]) {
+        for (const id of map.keys()) {
+          if (!kept.has(id))
+            map.delete(id)
+        }
+      }
+    }
+    if (!await save(mine, () => local.savePlaylists(current.owner, playlists), removeDeleted))
+      return
+    /** 内容网易云不认、SDK 认不出的歌单：跳过它接着同步别的，最后说没同步完；连不上、出错就停下 */
+    let skipped: SyncFailure | null = null
+    for (const playlist of playlists) {
+      const result = await syncPlaylist(mine, current, playlist)
+      if (!result)
+        return
+      if (result.ok)
+        continue
+      const { failure } = result
+      switch (failure.kind) {
+        case 'upstreamChanged':
+        case 'rejected':
+          skipped ??= failure
+          continue
+        case 'unreachable':
+        case 'serverError':
+        case 'neteaseUnavailable':
+        case 'cookieSecretMissing':
+          return publish({ status: 'failed', failure })
+        default: {
+          const unhandled: never = failure
+          throw new Error(`不认识的同步失败：${JSON.stringify(unhandled)}`)
+        }
+      }
+    }
+    publish(skipped ? { status: 'failed', failure: skipped } : { status: 'synced' })
   }
 
   function start(): void {
@@ -193,9 +384,18 @@ export function createLibrary(context: LibraryContext): Library {
     running = running.then(() => run(mine))
   }
 
+  /** 换了一轮（登录、退出、登录失效）：上一轮打开、正在拉的都不算了 */
+  function forget(): void {
+    pulling.clear()
+    urgent.clear()
+    waiting.clear()
+    opening = new Map()
+  }
+
   return {
     async enter(account) {
       generation += 1
+      forget()
       const mine = generation
       const stored = await local.readLibrary()
       const shown: Replica = stored?.owner === account.id
@@ -208,7 +408,7 @@ export function createLibrary(context: LibraryContext): Library {
         status = { status: 'syncing' }
         lane.resume()
       }
-      return stateOf(shown, status)
+      return stateOf(shown, status, opening)
     },
     sync: start,
     retry() {
@@ -217,8 +417,28 @@ export function createLibrary(context: LibraryContext): Library {
       publish({ status: 'syncing' })
       start()
     },
+    async open(playlistId) {
+      const current = replica
+      const playlist = current?.playlists?.find(item => item.id === playlistId)
+      if (!current || !playlist || upToDate(current, playlist))
+        return
+      const mine = generation
+      urgent.add(playlistId)
+      waiting.get(playlistId)?.abort()
+      opening.set(playlistId, { status: 'loading' })
+      publish()
+      const result = await load(mine, current, playlist)
+      if (!result || mine !== generation)
+        return
+      if (result.ok)
+        opening.delete(playlistId)
+      else
+        opening.set(playlistId, { status: 'failed', failure: result.failure })
+      publish()
+    },
     leave() {
       generation += 1
+      forget()
       replica = null
       lane.stop()
     },

@@ -13,13 +13,17 @@ export interface Playlist {
   /** 网易云的原图地址；显示时按尺寸取缩略图 */
   coverUrl: string
   kind: 'liked' | 'own' | 'collected'
+  /** 创建者的昵称：收藏的歌单下面写是谁的 */
+  creator: string
+  /** 隐私歌单：只有自己看得到 */
+  private: boolean
   /** 网易云写的歌曲数。我喜欢的音乐的这个数会比曲目编号少几首（验证关卡①：4,965 对 4,968），拿到编号后以编号为准 */
   trackCount: number
   /** 曲目最后一次变动的时间（毫秒）：和本机副本里的比，变了才重拉曲目 */
   tracksUpdatedAt: number
 }
 
-/** GET /api/playlists?uid=：歌单列表，我喜欢的音乐在最前，然后是自建的、收藏的，和网易云的顺序一样 */
+/** GET /api/playlists?uid=:歌单列表，我喜欢的音乐在最前，然后是自建的、收藏的，和网易云的顺序一样；在网易云里删掉的歌单不在里面 */
 export interface PlaylistsResponse {
   playlists: Playlist[]
 }

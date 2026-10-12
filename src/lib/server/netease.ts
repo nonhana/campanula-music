@@ -249,6 +249,8 @@ export async function fetchHearts(uid: number, listener: Listener): Promise<numb
 const PLAYLISTS_PER_CALL = 1000
 /** 我喜欢的音乐在 user_playlist 里的 specialType */
 const LIKED_SPECIAL_TYPE = 5
+/** 隐私歌单的 privacy（公开的是 0，验证关卡②） */
+const PRIVATE_PLAYLIST = 10
 
 /**
  * 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样。
@@ -268,6 +270,8 @@ export async function fetchPlaylists(uid: number, listener: Listener): Promise<P
         name: playlist.name,
         coverUrl: playlist.coverImgUrl,
         kind: playlist.specialType === LIKED_SPECIAL_TYPE ? 'liked' : playlist.creator.userId === uid ? 'own' : 'collected',
+        creator: playlist.creator.nickname,
+        private: playlist.privacy === PRIVATE_PLAYLIST,
         trackCount: playlist.trackCount,
         tracksUpdatedAt: playlist.trackUpdateTime,
       })

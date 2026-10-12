@@ -1,21 +1,35 @@
-<!-- 曲库首页：手机是我喜欢的音乐列表；桌面是同步提示和我喜欢的音乐的三行歌曲格（“查看全部”进完整列表） -->
+<!--
+  曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页）
+  和歌单的封面网格。返回这一页时，歌单的筛选和滚动位置都回到原来的样子
+-->
 <script lang='ts'>
+  import type { PlaylistFilter } from '$lib/components/library/view'
   import { resolve } from '$app/paths'
   import { getAppView } from '$lib/components/app-context.svelte'
   import { desktopLayout } from '$lib/components/layout'
   import Cover from '$lib/components/library/Cover.svelte'
   import LikedStates from '$lib/components/library/LikedStates.svelte'
   import PhoneLiked from '$lib/components/library/PhoneLiked.svelte'
+  import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte'
   import SyncNotice from '$lib/components/library/SyncNotice.svelte'
   import { artistLine, formatCount, langOf, likedView, syncNotice } from '$lib/components/library/view'
+  import { scrollSnapshot } from '$lib/components/snapshot'
   import IconButton from '$lib/components/ui/IconButton.svelte'
   import { ChevronLeft, ChevronRight } from '@lucide/svelte'
 
   const view = getAppView()
   const library = $derived(view.state.library)
   const liked = $derived(library && likedView(library))
-  const hasNotice = $derived(library !== null && syncNotice(library) !== null)
+  const failureShown = $derived(liked?.kind === 'failed')
+  const hasNotice = $derived(library !== null && syncNotice(library, failureShown) !== null)
   const strip = $derived(liked?.kind === 'songs' ? liked.songs.slice(0, 36) : [])
+
+  let filter = $state<PlaylistFilter>('all')
+  /** 手机“我喜欢”标签里的歌单内搜索 */
+  let query = $state('')
+  export const snapshot = scrollSnapshot(() => ({ filter, query }), (value) => {
+    ({ filter, query } = value)
+  })
 
   let stripEl = $state<HTMLElement>()
   let atStart = $state(true)
@@ -41,12 +55,12 @@
   }
 </script>
 
-<svelte:head><title>我喜欢的音乐 · Campanula</title></svelte:head>
+<svelte:head><title>曲库 · Campanula</title></svelte:head>
 
 {#if library && liked}
   {#if desktopLayout.current}
     <h1 class='sr-only'>曲库</h1>
-    <SyncNotice {library} />
+    <SyncNotice {library} {failureShown} />
     <section class={hasNotice ? 'mt-10' : undefined} aria-labelledby='liked-heading'>
       <div class='mb-4 flex items-center gap-3'>
         <h2 id='liked-heading' class='text-title text-neutral-900 font-600'>我喜欢的音乐</h2>
@@ -60,7 +74,9 @@
             <IconButton icon={ChevronLeft} label='上一页' disabled={atStart} onclick={() => turn(-1)} />
             <IconButton icon={ChevronRight} label='下一页' disabled={atEnd} onclick={() => turn(1)} />
           {/if}
-          <a href={resolve('/liked')} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-150 mouse:hover:(bg-primary-100 text-primary-950)'>查看全部</a>
+          {#if library.liked}
+            <a href={resolve('/playlists/[id]', { id: String(library.liked.playlist.id) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-150 mouse:hover:(bg-primary-100 text-primary-950)'>查看全部</a>
+          {/if}
         </div>
       </div>
 
@@ -91,9 +107,17 @@
         {/if}
       </div>
     </section>
+
+    <section class='mt-10' aria-labelledby='playlists-heading'>
+      <PlaylistGrid {library} bind:filter>
+        {#snippet heading()}
+          <h2 id='playlists-heading' class='text-title text-neutral-900 font-600'>歌单</h2>
+        {/snippet}
+      </PlaylistGrid>
+    </section>
   {:else}
     <h1 class='sr-only'>我喜欢的音乐</h1>
-    <PhoneLiked {library} />
+    <PhoneLiked {library} bind:query />
   {/if}
 {/if}
 

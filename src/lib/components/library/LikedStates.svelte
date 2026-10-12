@@ -2,7 +2,7 @@
   我喜欢的音乐还没有歌时的三种样子：加载中（骨架行）、空、出错（可以重试）。有歌时由调用方画列表。
 -->
 <script lang='ts'>
-  import type { LikedView } from './view'
+  import type { SongsView } from './view'
   import { Heart } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
@@ -10,7 +10,7 @@
   import SkeletonRows from './SkeletonRows.svelte'
 
   interface Props {
-    liked: Exclude<LikedView, { kind: 'songs' }>
+    liked: Exclude<SongsView, { kind: 'songs' }>
     /** 骨架几行 */
     rows: number
     phone?: boolean
