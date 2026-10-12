@@ -62,7 +62,7 @@
   <nav class='flex px-2' aria-label='曲库'>
     <a href={resolve('/')} aria-current='page' class='relative h-11 flex flex-none items-center px-3 text-body text-neutral-900 font-600'>
       我喜欢
-      <span class='absolute bottom-1 left-1/2 h-[3px] w-4 rounded-full bg-primary-700 -translate-x-1/2' aria-hidden='true'></span>
+      <span class='absolute bottom-1 left-1/2 h-[3px] w-4 rounded-full bg-primary-800 -translate-x-1/2' aria-hidden='true'></span>
     </a>
   </nav>
 {/snippet}

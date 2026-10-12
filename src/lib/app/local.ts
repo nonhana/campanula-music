@@ -50,10 +50,11 @@ export interface LocalDb {
   /** 换成 owner 的空副本：原来的（别的账号的）整个删掉 */
   resetLibrary: (owner: number) => Promise<void>
   deleteLibrary: () => Promise<void>
-  saveHearts: (songIds: number[]) => Promise<void>
-  savePlaylists: (playlists: Playlist[]) => Promise<void>
-  saveTracks: (playlistId: number, tracks: PlaylistTracks) => Promise<void>
-  saveSongs: (songs: Song[]) => Promise<void>
+  // 往副本里写同步拿到的东西：同一个事务里先核对副本还是不是 owner 的，不是（别的标签页退出删了、换了账号）就什么都不写，返回 false
+  saveHearts: (owner: number, songIds: number[]) => Promise<boolean>
+  savePlaylists: (owner: number, playlists: Playlist[]) => Promise<boolean>
+  saveTracks: (owner: number, playlistId: number, tracks: PlaylistTracks) => Promise<boolean>
+  saveSongs: (owner: number, songs: Song[]) => Promise<boolean>
 }
 
 function settled<T>(request: IDBRequest<T>): Promise<T> {
@@ -91,9 +92,16 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       request.onupgradeneeded = event => upgrade(request.result, event.oldVersion)
       request.onsuccess = () => {
         open = request.result
+        // 新版本的标签页要升级本机数据库时，这个（旧的）标签页让开，免得把升级卡住；它之后的读写会失败，刷新就好
+        open.onversionchange = () => open?.close()
         resolve(open)
       }
       request.onerror = () => reject(request.error)
+      // 升级被别的标签页开着的旧连接卡住（旧版本不会让开）：不干等着，说明原因；再打开时重新试
+      request.onblocked = () => {
+        opening = undefined
+        reject(new Error('另一个标签页还开着旧版本的 Campanula，本机数据库没法升级：关掉或刷新那个标签页再试'))
+      }
     })
     return opening
   }
@@ -103,6 +111,20 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
     const transaction = (open ?? await database()).transaction(stores, 'readwrite')
     change(transaction)
     await committed(transaction)
+  }
+
+  /** 副本还是 owner 的才在同一个事务里改 stores；返回改了没有 */
+  async function writeLibrary(owner: number, stores: string[], change: (transaction: IDBTransaction) => void): Promise<boolean> {
+    const transaction = (open ?? await database()).transaction([LIBRARY, ...stores], 'readwrite')
+    const current = transaction.objectStore(LIBRARY).get('owner')
+    let mine = false
+    current.onsuccess = () => {
+      mine = current.result === owner
+      if (mine)
+        change(transaction)
+    }
+    await committed(transaction)
+    return mine
   }
 
   const clearLibrary = (transaction: IDBTransaction) => {
@@ -148,10 +170,10 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       transaction.objectStore(LIBRARY).put(owner, 'owner')
     }),
     deleteLibrary: () => write(LIBRARY_STORES, clearLibrary),
-    saveHearts: songIds => write([LIBRARY], transaction => transaction.objectStore(LIBRARY).put(songIds, 'hearts')),
-    savePlaylists: playlists => write([LIBRARY], transaction => transaction.objectStore(LIBRARY).put(playlists, 'playlists')),
-    saveTracks: (playlistId, tracks) => write([TRACKS], transaction => transaction.objectStore(TRACKS).put(tracks, playlistId)),
-    saveSongs: songs => write([SONGS], (transaction) => {
+    saveHearts: (owner, songIds) => writeLibrary(owner, [], transaction => transaction.objectStore(LIBRARY).put(songIds, 'hearts')),
+    savePlaylists: (owner, playlists) => writeLibrary(owner, [], transaction => transaction.objectStore(LIBRARY).put(playlists, 'playlists')),
+    saveTracks: (owner, playlistId, tracks) => writeLibrary(owner, [TRACKS], transaction => transaction.objectStore(TRACKS).put(tracks, playlistId)),
+    saveSongs: (owner, songs) => writeLibrary(owner, [SONGS], (transaction) => {
       const store = transaction.objectStore(SONGS)
       for (const song of songs)
         store.put(song)

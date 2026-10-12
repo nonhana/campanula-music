@@ -12,17 +12,17 @@ export type LikedView
     | { kind: 'empty' }
   /** 一首都还没拿到就没同步成：说明原因，可以重试 */
     | { kind: 'failed', failure: SyncFailure }
-  /** total：一共几首（还在同步时比 songs 多） */
+  /** total：一共几首。还在同步时比 songs 多；同步完了就是 songs 的首数（网易云没给的歌不算），和列表对得上 */
     | { kind: 'songs', songs: readonly Song[], total: number }
 
 export function likedView(library: LibraryState): LikedView {
   const { liked, sync } = library
   if (liked && liked.songs.length > 0)
-    return { kind: 'songs', songs: liked.songs, total: liked.total }
+    return { kind: 'songs', songs: liked.songs, total: liked.complete ? liked.songs.length : liked.total }
+  if (liked?.complete)
+    return { kind: 'empty' }
   if (sync.status === 'failed')
     return { kind: 'failed', failure: sync.failure }
-  if (liked && sync.status === 'synced' && liked.total === 0)
-    return { kind: 'empty' }
   return { kind: 'loading' }
 }
 
@@ -44,7 +44,7 @@ export function syncNotice(library: LibraryState): SyncNotice | null {
   const { liked, sync } = library
   if (sync.status === 'failed')
     return liked && liked.songs.length > 0 ? { kind: 'failed', text: syncFailureText(sync.failure) } : null
-  const complete = liked !== null && liked.songs.length >= liked.total
+  const complete = liked?.complete ?? false
   if (sync.status === 'synced' || complete)
     return null
   switch (sync.status) {

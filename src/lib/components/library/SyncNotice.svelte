@@ -45,7 +45,7 @@
       </div>
       {#if progress}
         <div class='mx-4 h-[2px] overflow-hidden rounded-full bg-primary-100' aria-hidden='true'>
-          <div class='h-full rounded-full bg-primary-700' style:width='{percent}%'></div>
+          <div class='h-full rounded-full bg-primary-800' style:width='{percent}%'></div>
         </div>
       {/if}
     </div>
@@ -64,7 +64,7 @@
           <span class='h-4 w-px flex-none bg-neutral-200' aria-hidden='true'></span>
           <p class='flex-none text-caption text-neutral-600 tabular-nums'>我喜欢的音乐 {formatCount(progress.done)} / {formatCount(progress.total)}</p>
           <span class='relative h-1 w-40 flex-none overflow-hidden rounded-full bg-primary-100' aria-hidden='true'>
-            <span class='absolute inset-y-0 left-0 rounded-full bg-primary-700' style:width='{percent}%'></span>
+            <span class='absolute inset-y-0 left-0 rounded-full bg-primary-800' style:width='{percent}%'></span>
           </span>
           <span class='w-10 flex-none text-right text-caption text-neutral-600 tabular-nums'>{percent}%</span>
         {/if}
