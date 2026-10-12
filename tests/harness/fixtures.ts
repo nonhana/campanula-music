@@ -19,7 +19,7 @@ interface Fixture {
   response: { status: number, body: unknown }
 }
 
-// SDK 2.3.0 decodeUpstreamBody 的 codes：模块把哪些 body.code 算成功。没列出来的模块只有 200
+// SDK 2.4.0 decodeUpstreamBody 的 codes：模块把哪些 body.code 算成功。没列出来的模块只有 200
 const SUCCESS_CODES: Record<string, readonly number[]> = {
   login_qr_check: [800, 801, 802, 803],
 }
@@ -30,7 +30,7 @@ const REJECTION_SCHEMAS: Record<string, string> = {
 }
 
 /**
- * 网易云限流时 SDK 建议等多久（秒）。SDK 2.3.0 的 retryAfterMs 读响应头 Retry-After，没有就是 30 秒；
+ * 网易云限流时 SDK 建议等多久（秒）。SDK 2.4.0 的 retryAfterMs 读响应头 Retry-After，没有就是 30 秒；
  * 录制数据没有收录响应头，所以都按没有
  */
 const DEFAULT_RETRY_AFTER = 30
@@ -44,7 +44,7 @@ function field(body: unknown, name: string): unknown {
   return typeof body === 'object' && body !== null && name in body ? (body as Record<string, unknown>)[name] : undefined
 }
 
-// 照 SDK 2.3.0 判断失败（decodeUpstreamBody、normalizeFailure）：body.code 是数字且不在模块的成功码里，
+// 照 SDK 2.4.0 判断失败（decodeUpstreamBody、normalizeFailure）：body.code 是数字且不在模块的成功码里，
 // SDK 就抛出，status 在 101~599 时等于 code，否则是 400。录制数据有的是 SDK 1.4.0 录的，
 // 录下的 status 不一定符合这个规矩（例如 status 200、code 400），所以只看 body.code
 function failureStatus(module: string, code: unknown): number | undefined {
@@ -53,7 +53,7 @@ function failureStatus(module: string, code: unknown): number | undefined {
   return code > 100 && code < 600 ? code : 400
 }
 
-// 照 SDK 2.3.0 classifyConsumedRateLimit 认出网易云限流：返回码 429，或 405 且说明里有“操作频繁”“操作过于频繁”
+// 照 SDK 2.4.0 classifyConsumedRateLimit 认出网易云限流：返回码 429，或 405 且说明里有“操作频繁”“操作过于频繁”
 function rateLimited(code: unknown, body: unknown): boolean {
   const message = field(body, 'msg') ?? field(body, 'message')
   return code === 429 || (code === 405 && typeof message === 'string' && /操作(?:过于)?频繁/.test(message))
@@ -98,7 +98,7 @@ async function load(path: string): Promise<{ module: string, outcome: Outcome }>
 const loaded = new Map<string, Promise<{ module: string, outcome: Outcome }>>()
 
 /**
- * 读一份录制数据（tests/fixtures/netease/ 下的相对路径），照 SDK 2.3.0 的规矩决定替身是返回还是抛出，
+ * 读一份录制数据（tests/fixtures/netease/ 下的相对路径），照 SDK 2.4.0 的规矩决定替身是返回还是抛出，
  * 并先过 SDK 导出的结构定义校验，防止测试数据是猜的（Spec #11 Testing Decisions）。
  * - 成功：必须符合模块的结构定义 <模块名>Body；SDK 还没导出时直接报错。
  * - 失败：SDK 不校验失败返回的结构；另外导出了结构定义的（REJECTION_SCHEMAS）照样校验。

@@ -32,10 +32,12 @@ export interface TrackIdsResponse {
 export interface Song {
   id: number
   name: string
-  artists: { id: number, name: string }[]
+  /** 传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48） */
+  artists: { id: number, name: string | null }[]
   album: {
     id: number
-    name: string
+    /** 同上，没匹配上曲库的歌是 null */
+    name: string | null
     /** 网易云的原图地址；显示时按尺寸取缩略图 */
     coverUrl: string
   }

@@ -83,8 +83,10 @@ export function langOf(...texts: string[]): 'ja' | 'zh-TW' | undefined {
   return undefined
 }
 
+/** 歌手一行：没有名字的歌手（传到云盘、没匹配上曲库的歌）不列；一个都没有时写“未知歌手” */
 export function artistLine(song: Song): string {
-  return song.artists.map(artist => artist.name).join(' / ')
+  const names = song.artists.flatMap(artist => artist.name ?? [])
+  return names.length > 0 ? names.join(' / ') : '未知歌手'
 }
 
 /** 首数等：千位加逗号（4,984） */
