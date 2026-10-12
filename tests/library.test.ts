@@ -688,7 +688,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     }
   }
 
-  it('随便怎么操作，每一步之后：后台同步请求同时最多一个在路上、同一页不会同时请求两次、显示“同步中”时一定有同步请求在路上、登录失效或退出后不挂着同步', async () => {
+  it('随便怎么操作，每一步之后：后台同步请求同时最多一个在路上、同一页不会同时请求两次、显示“同步中”时一定有同步请求在路上、打开的歌单显示加载中时一定有请求在路上、登录失效或退出后不挂着同步', async () => {
     // 全局的 Date 被世界的时钟冻结在同一时刻，不能拿来当种子
     const seed = Math.floor(Math.random() * 100_000)
     const random = seeded(seed)
@@ -766,10 +766,13 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
           case 'retry':
             app.retrySync()
             break
-          case 'open':
-            // 不等它拉完：听众打开歌单后照样可以做别的
-            void app.openPlaylist(pick(library!.playlists!).id)
+          case 'open': {
+            // 不等它拉完：听众打开歌单后照样可以做别的。一半时候打开后台同步正轮到的那张（按歌单列表的顺序，第一张还没同步全的），
+            // 前台和后台抢同一张歌单最容易出错
+            const syncing = library!.playlists!.find(playlist => !library!.songsOf(playlist.id)?.complete)
+            void app.openPlaylist((syncing && random() < 0.5 ? syncing : pick(library!.playlists!)).id)
             break
+          }
           case 'signIn':
             device.setOnline(true)
             await signIn(world, app, { another: random() < 0.3 })
@@ -799,6 +802,9 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
           expect(inFlight.length, `显示“同步中”时一定有同步请求在路上（${where}）`).toBeGreaterThanOrEqual(1)
         if (sync === 'rateLimited' || sync === 'offline')
           expect(pending.length, `等着的时候没有后台同步请求在路上（${where}）`).toBeLessThanOrEqual(opening)
+        // 打开歌单是前台请求，不等后台同步：显示加载中时，拉它的请求一定已经发出去了
+        if (opening > 0)
+          expect(pending.length, `打开的歌单显示加载中时一定有请求在路上（${where}）`).toBeGreaterThanOrEqual(1)
       }
 
       for (const release of holds)
