@@ -48,7 +48,8 @@
 </script>
 
 {#snippet found()}
-  找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'> · {INCOMPLETE}</span>{/if}
+  <!-- 元素开头的普通空格 Svelte 会去掉，分隔符前用不换行空格 -->
+  找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'>&nbsp;· {INCOMPLETE}</span>{/if}
 {/snippet}
 
 {#snippet list()}
