@@ -4,7 +4,7 @@ import type { Cookie } from 'tough-cookie'
 import { createApp } from '$lib/app/app'
 import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
 import { CookieJar } from 'tough-cookie'
-import { FakeBroadcast, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage } from './browser'
+import { FakeAudio, FakeBroadcast, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage, MediaTasks } from './browser'
 
 export interface SentRequest {
   method: string
@@ -13,7 +13,7 @@ export interface SentRequest {
   body?: unknown
 }
 
-/** 一个标签页：一个 App，加上只属于这个标签页的页面可见性和 Media Session */
+/** 一个标签页：一个 App，加上只属于这个标签页的页面可见性、Media Session 和播放器 */
 export interface Tab {
   app: App
   /** 页面被隐藏（切到别的应用、锁屏） */
@@ -21,6 +21,10 @@ export interface Tab {
   /** 页面回到前台 */
   show: () => void
   mediaSession: FakeMediaSession
+  /** 这个标签页的播放器，按 App 新建的先后 */
+  audio: readonly FakeAudio[]
+  /** 正在出声的播放器；没有就是 undefined */
+  sounding: () => FakeAudio | undefined
 }
 
 /** 一台设备上的浏览器：Cookie、本机数据库、跨标签页的锁和广播、联网状态和存储空间，开出来的标签页共用 */
@@ -44,11 +48,11 @@ export interface Device {
   /** 存储空间：已用、配额、persist() 会不会被同意，测试可以改 */
   storage: FakeStorage
   /**
-   * 等这台设备上正在发的请求都回来、排着的锁回调和标签页之间的广播都跑完、本机数据库的读写都做完、
+   * 等这台设备上正在发的请求都回来、排着的锁回调、标签页之间的广播和播放器的事件都跑完、本机数据库的读写都做完、
    * App 处理完（处理时又发的也等）
    */
   idle: () => Promise<void>
-  /** 除了在路上的请求（pending），还有没做完的事：本机数据库事务、排着的锁回调、没送到的广播 */
+  /** 除了在路上的请求（pending），还有没做完的事：本机数据库事务、排着的锁回调、没送到的广播、播放器排着的事件 */
   busy: () => boolean
 }
 
@@ -89,6 +93,7 @@ export function createDevice(origin: string, clock: Clock): Device {
   const storage = new FakeStorage()
   const locks = new FakeLocks()
   const broadcast = new FakeBroadcast()
+  const mediaTasks = new MediaTasks()
   const inFlight = new Set<Promise<unknown>>()
 
   function track(work: Promise<unknown>): void {
@@ -131,7 +136,7 @@ export function createDevice(origin: string, clock: Clock): Device {
     }
   }
 
-  const busy = () => activeTransactions > 0 || locks.pending > 0 || broadcast.pending > 0
+  const busy = () => activeTransactions > 0 || locks.pending > 0 || broadcast.pending > 0 || mediaTasks.pending > 0
 
   const deviceFetch: BrowserCapabilities['fetch'] = (path, init) => {
     const sending = send(path, init)
@@ -146,6 +151,7 @@ export function createDevice(origin: string, clock: Clock): Device {
     async open() {
       const page = new FakePage()
       const mediaSession = new FakeMediaSession()
+      const audio: FakeAudio[] = []
       const app = createApp({
         fetch: deviceFetch,
         clock,
@@ -157,6 +163,11 @@ export function createDevice(origin: string, clock: Clock): Device {
         MediaMetadata: FakeMediaMetadata,
         locks,
         broadcastChannel: broadcast.channel,
+        audio: () => {
+          const player = new FakeAudio(mediaTasks)
+          audio.push(player)
+          return player
+        },
       })
       await app.open()
       return {
@@ -164,6 +175,8 @@ export function createDevice(origin: string, clock: Clock): Device {
         hide: () => page.set('hidden'),
         show: () => page.set('visible'),
         mediaSession,
+        audio,
+        sounding: () => audio.find(player => player.sounding),
       }
     },
     cookies: () => jar.getCookies(origin),

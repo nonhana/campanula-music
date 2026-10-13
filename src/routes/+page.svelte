@@ -1,6 +1,7 @@
 <!--
-  曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页）
-  、歌单的封面网格和收藏的专辑、歌手两排横向架子。返回这一页时，歌单的筛选和滚动位置都回到原来的样子
+  曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页，
+  点一首就用整个我喜欢的音乐替换播放队列）、歌单的封面网格和收藏的专辑、歌手两排横向架子。
+  返回这一页时，歌单的筛选和滚动位置都回到原来的样子
 -->
 <script lang='ts'>
   import type { PlaylistFilter } from '$lib/components/library/view'
@@ -12,8 +13,12 @@
   import LikedStates from '$lib/components/library/LikedStates.svelte'
   import PhoneLiked from '$lib/components/library/PhoneLiked.svelte'
   import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte'
+  import PlayTarget from '$lib/components/library/PlayTarget.svelte'
+  import SongBadge from '$lib/components/library/SongBadge.svelte'
   import SyncNotice from '$lib/components/library/SyncNotice.svelte'
   import { artistLine, formatCount, langOf, likedView, syncNotice } from '$lib/components/library/view'
+  import NowChip from '$lib/components/player/NowChip.svelte'
+  import { currentSong } from '$lib/components/player/view'
   import { scrollSnapshot } from '$lib/components/snapshot'
   import IconButton from '$lib/components/ui/IconButton.svelte'
   import { ChevronLeft, ChevronRight } from '@lucide/svelte'
@@ -24,6 +29,7 @@
   const failureShown = $derived(liked?.kind === 'failed')
   const hasNotice = $derived(library !== null && syncNotice(library, failureShown) !== null)
   const strip = $derived(liked?.kind === 'songs' ? liked.songs.slice(0, 36) : [])
+  const nowId = $derived(currentSong(view.state.player)?.id ?? null)
 
   let filter = $state<PlaylistFilter>('all')
   /** 手机“我喜欢”标签里的歌单内搜索 */
@@ -94,12 +100,22 @@
             onscroll={measureStrip}
           >
             {#each strip as song (song.id)}
-              <div role='listitem' class='cell grid grid-cols-[48px_minmax(0,1fr)] h-[60px] items-center gap-3 rounded-lg pl-1.5 pr-2 mouse:hover:bg-neutral-50'>
-                <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
-                <span class='min-w-0'>
-                  <span class='block truncate text-label text-neutral-900 font-500' lang={langOf(song.name)}>{song.name}</span>
-                  <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
-                </span>
+              {@const off = song.availability === 'noCopyright'}
+              {@const now = song.id === nowId}
+              <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
+                <div class={['grid grid-cols-[48px_minmax(0,1fr)] h-full items-center gap-3 pl-1.5 pr-2', off && 'opacity-45']}>
+                  <span class='relative size-12'>
+                    <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
+                    {#if now}<NowChip />{/if}
+                  </span>
+                  <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.play({ kind: 'playlist', id: library.liked!.playlist.id }, song.id)}>
+                    <span class='min-w-0 flex items-center gap-1.5'>
+                      <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
+                      <SongBadge availability={song.availability} />
+                    </span>
+                    <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
+                  </PlayTarget>
+                </div>
               </div>
             {/each}
           </div>

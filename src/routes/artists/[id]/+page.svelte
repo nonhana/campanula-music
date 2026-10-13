@@ -116,7 +116,7 @@
       {@render header(false)}
       <section class='mt-10' aria-labelledby='artist-hot'>
         <h2 id='artist-hot' class='text-title text-neutral-900 font-600'>热门歌曲</h2>
-        <div class='mt-3'><SongList songs={content?.hotSongs ?? null} loadingLabel='正在加载热门歌曲' empty={EMPTY} /></div>
+        <div class='mt-3'><SongList songs={content?.hotSongs ?? null} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' empty={EMPTY} /></div>
       </section>
       {@render albums(false)}
     </div>
@@ -124,7 +124,7 @@
     {@render header(true)}
     <section class='pt-6' aria-labelledby='artist-hot'>
       <h2 id='artist-hot' class='px-4 text-title-sm text-neutral-900 font-600'>热门歌曲</h2>
-      <div class='pt-1'><SongList songs={content?.hotSongs ?? null} loadingLabel='正在加载热门歌曲' empty={EMPTY} phone /></div>
+      <div class='pt-1'><SongList songs={content?.hotSongs ?? null} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' empty={EMPTY} phone /></div>
     </section>
     {@render albums(true)}
   {/if}

@@ -9,9 +9,11 @@
   interface Props extends Omit<HTMLButtonAttributes, 'children' | 'aria-label'> {
     icon: LucideIcon
     label: string
+    /** 实心图标（上一首、下一首） */
+    filled?: boolean
   }
 
-  const { icon: Icon, label, type = 'button', class: klass, ...rest }: Props = $props()
+  const { icon: Icon, label, filled = false, type = 'button', class: klass, ...rest }: Props = $props()
 </script>
 
 <button
@@ -23,5 +25,5 @@
   ]}
   {...rest}
 >
-  <Icon size={20} aria-hidden='true' />
+  <Icon size={20} fill={filled ? 'currentColor' : 'none'} aria-hidden='true' />
 </button>

@@ -84,6 +84,7 @@ describe('专辑页', () => {
       artists: [{ id: 99995, name: 'Stereophonics' }],
       album: { id: KEEP_THE_VILLAGE_ALIVE.id, name: 'Keep The Village Alive', coverUrl: 'https://p3.music.126.net/GdQ9aQ3f3pscKhOpmIV4eA==/18345351510219723.jpg' },
       duration: 220320,
+      availability: 'full',
     })
 
     const reopened = await reopen(device)
@@ -204,6 +205,7 @@ describe('歌手页', () => {
       artists: [{ id: YOASOBI.id, name: 'YOASOBI' }],
       album: { id: 94214994, name: '群青', coverUrl: 'https://p3.music.126.net/sF9I_mKMVNtsCD-ZXzfV_A==/109951165251958014.jpg' },
       duration: 248444,
+      availability: 'full',
     })
     expect(page.content.albums).toHaveLength(65)
     expect(page.content.albums[0]).toEqual({

@@ -89,7 +89,7 @@
         {/if}
       </header>
       {#if description}<AlbumDescription text={description} />{/if}
-      <div class='mt-6'><SongList songs={content?.songs ?? null} loadingLabel='正在加载专辑' empty={EMPTY} numbered /></div>
+      <div class='mt-6'><SongList songs={content?.songs ?? null} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' empty={EMPTY} numbered /></div>
     </div>
   {:else}
     <header class='px-4 pt-2 text-center'>
@@ -104,6 +104,6 @@
       {/if}
     </header>
     {#if description}<AlbumDescription text={description} phone />{/if}
-    <div class='pt-3'><SongList songs={content?.songs ?? null} loadingLabel='正在加载专辑' empty={EMPTY} phone numbered /></div>
+    <div class='pt-3'><SongList songs={content?.songs ?? null} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' empty={EMPTY} phone numbered /></div>
   {/if}
 {/if}

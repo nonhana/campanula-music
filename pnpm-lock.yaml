@@ -228,8 +228,8 @@ catalogs:
       specifier: ^17.13.0
       version: 17.13.0
     hana-music-api:
-      specifier: ^2.7.1
-      version: 2.7.1
+      specifier: ^2.8.0
+      version: 2.8.0
     lint-staged:
       specifier: ^17.6.0
       version: 17.6.0
@@ -327,7 +327,7 @@ importers:
         version: 17.13.0
       hana-music-api:
         specifier: 'catalog:'
-        version: 2.7.1
+        version: 2.8.0
       lint-staged:
         specifier: 'catalog:'
         version: 17.6.0
@@ -2210,8 +2210,8 @@ packages:
       ocache:
         optional: true
 
-  hana-music-api@2.7.1:
-    resolution: {integrity: sha512-MMx/8WmpdpmZOsXALZxbny/QjDqtLZwrdIAopdQXjr0lBFk/WbgFnAskPxM7q5ZDgeMLIDXw/JCKCK4XTkkjmQ==}
+  hana-music-api@2.8.0:
+    resolution: {integrity: sha512-yq2CE83bGGyu0Kzs5P8YAatzo+sgdeefPCNhODIhJeYM86x24g3cRD051ZBNwlV3zRTpbz3qQ8A+XPy8Lb7P+w==}
 
   hashery@1.5.1:
     resolution: {integrity: sha512-iZyKG96/JwPz1N55vj2Ie2vXbhu440zfUfJvSwEqEbeLluk7NnapfGqa7LH0mOsnDxTF85Mx8/dyR6HfqcbmbQ==}
@@ -5100,7 +5100,7 @@ snapshots:
     optionalDependencies:
       crossws: 0.4.12(srvx@1.0.5)
 
-  hana-music-api@2.7.1:
+  hana-music-api@2.8.0:
     dependencies:
       effect: 4.0.2
       hono: 4.13.13

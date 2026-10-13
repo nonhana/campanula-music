@@ -1,14 +1,17 @@
 import type { Account, AccountResponse } from '$lib/api/account'
+import type { Song } from '$lib/api/library'
 import type { LogoutResponse } from '$lib/api/login'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { LibraryState, PlaylistSearch } from './library'
 import type { LoginState } from './login'
+import type { PlayerState, PlaySource } from './player'
 import { createApi } from './api'
 import { createLibrary, searchPlaylist } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 import { createBackgroundLane } from './pacing'
+import { createPlayer, INITIAL_PLAYER } from './player'
 
 /**
  * 会改登录 Cookie 的请求排队用的跨标签页的锁：问当前账号（服务端可能在这一步续期、写回新的登录 Cookie）和退出。
@@ -39,6 +42,8 @@ export interface AppState {
   login: LoginState
   /** 曲库副本（ADR-0007）：登录了才有，先显示本机副本，再在后台同步 */
   library: LibraryState | null
+  /** 播放队列和正在放的歌 */
+  player: PlayerState
 }
 
 /** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
@@ -83,12 +88,25 @@ export interface App {
   openArtist: (artistId: number) => Promise<void>
   /** 歌手页取后面的一页专辑；没取成时再调一次就是重试 */
   moreArtistAlbums: (artistId: number) => Promise<void>
+  /**
+   * 在列表里点一首歌：用整个列表（歌单、专辑的曲目、歌手的热门歌曲）替换播放队列，从这首开始放。
+   * 歌单还没同步全时先用已经同步的部分，同步全了把后面的补上（规则⑫）。无版权的歌不能点
+   */
+  play: (source: PlaySource, songId: number) => void
+  /** 在放就暂停，停着就接着放（出了问题停下时就是重试） */
+  togglePlay: () => void
+  next: () => void
+  previous: () => void
+  /** 音量，0 到 1 */
+  setVolume: (volume: number) => void
+  /** 关掉播放的提示 */
+  dismissPlayerNotice: () => void
 }
 
 export function createApp(browser: BrowserCapabilities): App {
   const api = createApi(browser)
   const local = createLocalDb(browser.indexedDB)
-  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null }
+  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER }
   const listeners = new Set<() => void>()
 
   function update(next: Partial<AppState>) {
@@ -118,12 +136,23 @@ export function createApp(browser: BrowserCapabilities): App {
   }
   browser.network.addEventListener('online', () => void finishLogout())
 
+  const player = createPlayer({
+    api,
+    clock: browser.clock,
+    audio: browser.audio,
+    write: next => update({ player: next }),
+    loginExpired,
+  })
+
   const lane = createBackgroundLane(browser)
   const library = createLibrary({
     api,
     lane,
     local,
-    write: next => update({ library: next }),
+    write: (next) => {
+      update({ library: next })
+      player.libraryChanged(next.songsOf)
+    },
     loginExpired,
   })
 
@@ -143,7 +172,31 @@ export function createApp(browser: BrowserCapabilities): App {
     sessions += 1
     login.stopQr()
     library.leave()
+    player.stop()
     update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
+  }
+
+  /** 点歌时的整个列表；还没打开、没显示出来时是 null */
+  function listOf(source: PlaySource): { songs: readonly Song[], complete: boolean } | null {
+    const shown = state.library
+    if (!shown)
+      return null
+    switch (source.kind) {
+      case 'playlist':
+        return shown.songsOf(source.id)
+      case 'album': {
+        const page = shown.albumPage(source.id)
+        return page?.status === 'shown' ? { songs: page.content.songs, complete: true } : null
+      }
+      case 'artist': {
+        const page = shown.artistPage(source.id)
+        return page?.status === 'shown' ? { songs: page.content.hotSongs, complete: true } : null
+      }
+      default: {
+        const unhandled: never = source.kind
+        throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)
+      }
+    }
   }
 
   /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
@@ -234,5 +287,15 @@ export function createApp(browser: BrowserCapabilities): App {
     openAlbum: library.openAlbum,
     openArtist: library.openArtist,
     moreArtistAlbums: library.moreArtistAlbums,
+    play(source, songId) {
+      const list = listOf(source)
+      if (list)
+        player.play(source, list.songs, songId, list.complete)
+    },
+    togglePlay: player.toggle,
+    next: player.next,
+    previous: player.previous,
+    setVolume: player.setVolume,
+    dismissPlayerNotice: player.dismissNotice,
   }
 }

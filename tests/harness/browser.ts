@@ -1,8 +1,8 @@
-import type { ChannelCapability, Clock, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '$lib/app/browser'
+import type { AudioCapability, ChannelCapability, Clock, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '$lib/app/browser'
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
 
 // 浏览器能力替身：行为照浏览器标准写。
-// 音频、浏览器直连网易云的传输、Background Fetch 由最早用到它们的票加上。
+// 浏览器直连网易云的传输、Background Fetch 由最早用到它们的票加上。
 
 /** App 的时钟：和世界的假时钟走同一个时间，定时按到期先后触发 */
 export function clockOn(timers: FakeTimers): Clock {
@@ -318,5 +318,194 @@ export class FakeMediaSession implements MediaSessionCapability {
     if (!handler)
       throw new Error(`锁屏上没有 ${action} 按钮`)
     handler({ action, ...details })
+  }
+}
+
+/** 播放器排的事件任务：一台设备一份，排着的没跑完算设备还在忙 */
+export class MediaTasks {
+  pending = 0
+
+  queue(step: () => void): void {
+    this.pending += 1
+    setImmediate(() => {
+      this.pending -= 1
+      step()
+    })
+  }
+}
+
+/** MediaError 的 code */
+export const MEDIA_ERR_NETWORK = 2
+export const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
+
+interface PendingPlay {
+  resolve: () => void
+  reject: (reason: DOMException) => void
+}
+
+/**
+ * 播放器（<audio>），照 HTML 标准“媒体元素”里 App 用到的部分：
+ * - 设 src 就是重新加载（media element load algorithm）：停下、进度回到 0、时长变回 NaN、清掉出错，还没了结的 play() 以 AbortError 失败；
+ *   加载出来之前设的 currentTime 记着，加载出来后从那里开始放（default playback start position）。
+ * - play()：放完了的从头放；暂停着就改成没暂停、排任务发 play，数据还不够就再发 waiting，够了就发 playing、play() 成功。
+ * - pause()：没暂停就改成暂停，排任务发 timeupdate、pause，还没了结的 play() 以 AbortError 失败。
+ * 音频服务器那边由测试决定：数据什么时候够放（ready）、放到哪了（progress）、放完（end）、断流（stall）、出错（fail）。
+ * 这些由测试直接调，事件当场发：测试本身就是事件循环里的一个任务
+ */
+export class FakeAudio extends EventTarget implements AudioCapability {
+  #src = ''
+  #currentTime = 0
+  duration = Number.NaN
+  paused = true
+  ended = false
+  volume = 1
+  preload: AudioCapability['preload'] = 'auto'
+  error: { code: number } | null = null
+  /** 正在出声：没暂停、数据够放、发过 playing */
+  sounding = false
+  /** 音频服务器给的数据够放了 */
+  #ready = false
+  #pending: PendingPlay[] = []
+
+  constructor(private readonly tasks: MediaTasks) {
+    super()
+  }
+
+  get src(): string {
+    return this.#src
+  }
+
+  set src(value: string) {
+    this.#src = value
+    this.#ready = false
+    this.paused = true
+    this.sounding = false
+    this.ended = false
+    this.#currentTime = 0
+    this.duration = Number.NaN
+    this.error = null
+    this.#reject(this.#take(), 'AbortError')
+  }
+
+  get currentTime(): number {
+    return this.#currentTime
+  }
+
+  set currentTime(value: number) {
+    this.#currentTime = value
+    this.ended = false
+  }
+
+  play(): Promise<void> {
+    if (this.error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED)
+      return Promise.reject(new DOMException('地址放不了', 'NotSupportedError'))
+    const promise = new Promise<void>((resolve, reject) => this.#pending.push({ resolve, reject }))
+    if (this.ended)
+      this.currentTime = 0
+    if (this.paused) {
+      this.paused = false
+      this.tasks.queue(() => this.#fire('play'))
+      if (!this.#ready)
+        this.tasks.queue(() => this.#fire('waiting'))
+    }
+    if (this.#ready) {
+      this.tasks.queue(() => {
+        if (this.paused || !this.#ready)
+          return
+        this.#sound()
+      })
+    }
+    return promise
+  }
+
+  pause(): void {
+    if (this.paused)
+      return
+    this.paused = true
+    this.sounding = false
+    const pending = this.#take()
+    this.tasks.queue(() => {
+      this.#fire('timeupdate')
+      this.#fire('pause')
+      this.#reject(pending, 'AbortError')
+    })
+  }
+
+  /** 音频服务器的数据到了、够放了，知道了时长（秒）；没暂停的话就出声 */
+  ready(duration = 240): void {
+    if (!this.#src)
+      throw new Error('播放器还没有地址')
+    const known = !Number.isNaN(this.duration)
+    this.#ready = true
+    this.duration = duration
+    if (!known)
+      this.#fire('durationchange')
+    this.#fire('canplaythrough')
+    if (!this.paused)
+      this.#sound()
+  }
+
+  /** 放到了第几秒 */
+  progress(seconds: number): void {
+    if (!this.sounding)
+      throw new Error('播放器没在出声')
+    this.#currentTime = seconds
+    this.#fire('timeupdate')
+  }
+
+  /** 放完了 */
+  end(): void {
+    if (!this.sounding)
+      throw new Error('播放器没在出声')
+    this.#currentTime = this.duration
+    this.paused = true
+    this.sounding = false
+    this.ended = true
+    this.#fire('timeupdate')
+    this.#fire('pause')
+    this.#fire('ended')
+  }
+
+  /** 数据接不上了，停下等着（断网、网络慢） */
+  stall(): void {
+    if (!this.sounding)
+      throw new Error('播放器没在出声')
+    this.#ready = false
+    this.sounding = false
+    this.#fire('waiting')
+  }
+
+  /** 加载出错：MEDIA_ERR_NETWORK 是网络出错（放到一半断流、地址过期），MEDIA_ERR_SRC_NOT_SUPPORTED 是地址放不了 */
+  fail(code: typeof MEDIA_ERR_NETWORK | typeof MEDIA_ERR_SRC_NOT_SUPPORTED = MEDIA_ERR_NETWORK): void {
+    this.error = { code }
+    this.#ready = false
+    this.sounding = false
+    this.#fire('error')
+    if (code === MEDIA_ERR_SRC_NOT_SUPPORTED)
+      this.#reject(this.#take(), 'NotSupportedError')
+  }
+
+  #sound(): void {
+    if (!this.sounding) {
+      this.sounding = true
+      this.#fire('playing')
+    }
+    for (const pending of this.#take())
+      pending.resolve()
+  }
+
+  #take(): PendingPlay[] {
+    const pending = this.#pending
+    this.#pending = []
+    return pending
+  }
+
+  #reject(pending: PendingPlay[], name: 'AbortError' | 'NotSupportedError'): void {
+    for (const play of pending)
+      play.reject(new DOMException(name === 'AbortError' ? '播放被打断' : '地址放不了', name))
+  }
+
+  #fire(type: string): void {
+    this.dispatchEvent(new Event(type))
   }
 }

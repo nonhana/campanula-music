@@ -1,7 +1,8 @@
 import type { Account } from '$lib/api/account'
 import type { NeteaseFailure } from '$lib/api/errors'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '$lib/api/library'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '$lib/api/library'
 import type { QrResponse } from '$lib/api/login'
+import type { PlayUrlResponse, Quality } from '$lib/api/playback'
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
 import { env } from '$env/dynamic/private'
 import { ARTIST_ALBUMS_PER_REQUEST } from '$lib/api/library'
@@ -116,12 +117,16 @@ function credentialsFrom(module: ModuleIdentifier, setCookies: readonly string[]
     else
       delete credentials[name]
   }
-  if (!credentials.MUSIC_U || credentials.MUSIC_U === base.MUSIC_U) {
-    const failure = { kind: 'upstreamChanged' } as const
-    console.warn(`网易云 ${module} 失败：${describe(failure)}（没有下发新的 MUSIC_U）`)
-    throw new NeteaseError(failure, null)
-  }
+  if (!credentials.MUSIC_U || credentials.MUSIC_U === base.MUSIC_U)
+    throw shapeChanged(module, '没有下发新的 MUSIC_U')
   return credentials
+}
+
+/** 网易云的返回 SDK 认得、但对不上 Campanula 依赖的约定：当作上游结构变了，和 call() 一样记一条日志 */
+function shapeChanged(module: ModuleIdentifier, detail: string): NeteaseError {
+  const failure = { kind: 'upstreamChanged' } as const
+  console.warn(`网易云 ${module} 失败：${describe(failure)}（${detail}）`)
+  return new NeteaseError(failure, null)
 }
 
 /** 一张新的登录二维码 */
@@ -297,15 +302,33 @@ interface NeteaseSong {
   dt: number
 }
 
+/** 网易云的权限信息里 Campanula 用到的：st 小于 0 是无版权（录到的都是 -200），pl 是能在线放的最高码率，0 是放不了完整的 */
+interface Privilege {
+  st: number
+  pl: number
+}
+
+function availabilityOf(privilege: Privilege): Availability {
+  if (privilege.st < 0)
+    return 'noCopyright'
+  return privilege.pl > 0 ? 'full' : 'trial'
+}
+
 /** 网易云的歌只留界面用得到的字段 */
-function songOf(song: NeteaseSong): Song {
+function songOf(song: NeteaseSong, privilege: Privilege): Song {
   return {
     id: song.id,
     name: song.name,
     artists: song.ar.map(creditOf),
     album: { id: song.al.id, name: song.al.name, coverUrl: song.al.picUrl },
     duration: song.dt,
+    availability: availabilityOf(privilege),
   }
+}
+
+/** 专辑页、热门歌曲里每首歌带着自己的权限信息 */
+function songWithPrivilegeOf(song: NeteaseSong & { privilege: Privilege }): Song {
+  return songOf(song, song.privilege)
 }
 
 function creditOf(artist: Credit): Credit {
@@ -316,10 +339,26 @@ function creditOf(artist: Credit): Credit {
 export async function fetchSongs(ids: readonly number[], listener: Listener): Promise<Song[]> {
   const { body } = await call('song_detail', { ids: ids.join(',') }, listener)
   const byId = new Map(body.songs.map(song => [song.id, song]))
+  // 权限信息在另一个数组里，按编号对上（录到的 51 份都是一首一条）
+  const privileges = new Map(body.privileges.map(privilege => [privilege.id, privilege]))
   return ids.flatMap((id) => {
     const song = byId.get(id)
-    return song ? [songOf(song)] : []
+    if (!song)
+      return []
+    const privilege = privileges.get(id)
+    if (!privilege)
+      throw shapeChanged('song_detail', `歌曲 ${id} 没有权限信息`)
+    return [songOf(song, privilege)]
   })
+}
+
+/** 一首歌的播放地址。网易云给的是 http 地址，换成 https（音频服务器支持，页面是 https 的） */
+export async function fetchPlayUrl(songId: number, quality: Quality, listener: Listener): Promise<PlayUrlResponse> {
+  const { body } = await call('song_url_v1', { id: songId, level: quality }, listener)
+  const item = body.data.find(data => data.id === songId)
+  if (!item?.url)
+    return { playable: false }
+  return { playable: true, url: item.url.replace(/^http:\/\//, 'https://'), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
 }
 
 /** 收藏的专辑、歌手一次要这么多（#23 实测网易云接受 1,000，作者的 55 张、236 位一次取完）；网易云说还有（hasMore）就接着要 */
@@ -371,7 +410,7 @@ export async function fetchAlbum(albumId: number, listener: Listener): Promise<A
       description: album.description,
       songCount: album.size,
     },
-    songs: songs.map(songOf),
+    songs: songs.map(songWithPrivilegeOf),
   }
 }
 
@@ -393,7 +432,7 @@ export async function fetchArtist(artistId: number, listener: Listener): Promise
   const { artist } = albums.body
   return {
     artist: { id: artist.id, name: artist.name, avatarUrl: artist.img1v1Url, songCount: artist.musicSize, albumCount: artist.albumSize },
-    hotSongs: top.body.songs.map(songOf),
+    hotSongs: top.body.songs.map(songWithPrivilegeOf),
     albums: albums.body.hotAlbums.map(artistAlbumOf),
     moreAlbums: albums.body.more,
   }
