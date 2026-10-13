@@ -1,9 +1,10 @@
 import type { Account } from '$lib/api/account'
 import type { NeteaseFailure } from '$lib/api/errors'
-import type { Playlist, Song } from '$lib/api/library'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '$lib/api/library'
 import type { QrResponse } from '$lib/api/login'
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
 import { env } from '$env/dynamic/private'
+import { ARTIST_ALBUMS_PER_REQUEST } from '$lib/api/library'
 import { invokeModule } from 'hana-music-api'
 
 // 网易云适配层（Spec #11“服务端：网易云适配层”）：服务端里只有这里调 hana-music-api。
@@ -31,11 +32,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * SDK 失败时抛出 { status, body, cookie }（照 SDK 2.4.0 的 normalizeFailure、classifyConsumedRateLimit；npm 包的 README 只写了 429）：
+ * SDK 失败时抛出 { status, body, cookie }（照 SDK 2.7.1 的 normalizeFailure、classifyConsumedRateLimit，文档见它的 programmatic-api.md）：
  * - 网易云的业务拒绝：body 是网易云原样的返回，status 取返回码（不在 101~599 时是 400）；
  * - 返回结构不认识：status 502，body.upstreamShape 写明哪里不对；
- * - 网易云限流（HTTP 429、返回码 429，或 405 带“操作频繁”“操作过于频繁”）：status 是 429 或 405，
- *   body 是网易云原样的返回加上 retryAfter（秒，网易云没给 Retry-After 时是 30）。只有这种失败带 retryAfter；
+ * - 网易云限流（HTTP 429、返回码 429，或返回码 405 带“操作频繁”“操作过于频繁”，不管 HTTP 状态是多少）：status 是 429 或 405，
+ *   body 是网易云原样的返回加上 retryAfter（秒，网易云没给 Retry-After 时是 30；405 那种录到的一次没给，nonhana/hana-music-api#60）。只有这种失败带 retryAfter；
  * - SDK 自己生成的失败（超时 504、连不上或读不懂返回 502、匿名注册失败 502）：body 只有 code 和 msg。
  */
 function translate(thrown: unknown): { failure: NeteaseFailure, body: unknown } {
@@ -287,20 +288,119 @@ export async function fetchTrackIds(playlistId: number, listener: Listener): Pro
   return body.playlist.trackIds.map(track => track.id)
 }
 
+/** 网易云的歌（歌曲信息、专辑页、热门歌曲里的结构一样） */
+interface NeteaseSong {
+  id: number
+  name: string
+  ar: readonly Credit[]
+  al: { id: number, name: string | null, picUrl: string }
+  dt: number
+}
+
+/** 网易云的歌只留界面用得到的字段 */
+function songOf(song: NeteaseSong): Song {
+  return {
+    id: song.id,
+    name: song.name,
+    artists: song.ar.map(creditOf),
+    album: { id: song.al.id, name: song.al.name, coverUrl: song.al.picUrl },
+    duration: song.dt,
+  }
+}
+
+function creditOf(artist: Credit): Credit {
+  return { id: artist.id, name: artist.name }
+}
+
 /** 歌曲信息，按 ids 的顺序；网易云没给的不在里面 */
 export async function fetchSongs(ids: readonly number[], listener: Listener): Promise<Song[]> {
   const { body } = await call('song_detail', { ids: ids.join(',') }, listener)
   const byId = new Map(body.songs.map(song => [song.id, song]))
   return ids.flatMap((id) => {
     const song = byId.get(id)
-    return song
-      ? [{
-          id: song.id,
-          name: song.name,
-          artists: song.ar.map(artist => ({ id: artist.id, name: artist.name })),
-          album: { id: song.al.id, name: song.al.name, coverUrl: song.al.picUrl },
-          duration: song.dt,
-        }]
-      : []
+    return song ? [songOf(song)] : []
   })
+}
+
+/** 收藏的专辑、歌手一次要这么多（#23 实测网易云接受 1,000，作者的 55 张、236 位一次取完）；网易云说还有（hasMore）就接着要 */
+const COLLECTED_PER_CALL = 1000
+
+/** 一页一页要到底：page 取从第 offset 个起的一页 */
+async function everyPage<T>(page: (offset: number) => Promise<{ items: T[], hasMore: boolean }>): Promise<T[]> {
+  const items: T[] = []
+  for (let offset = 0; ; offset += COLLECTED_PER_CALL) {
+    const next = await page(offset)
+    items.push(...next.items)
+    if (!next.hasMore)
+      return items
+  }
+}
+
+/** 收藏的专辑，和网易云的顺序一样（最近收藏的在前） */
+export function fetchCollectedAlbums(listener: Listener): Promise<CollectedAlbum[]> {
+  return everyPage(async (offset) => {
+    const { body } = await call('album_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
+    return {
+      items: body.data.map(album => ({ id: album.id, name: album.name, coverUrl: album.picUrl, artists: album.artists.map(creditOf), songCount: album.size })),
+      hasMore: body.hasMore,
+    }
+  })
+}
+
+/** 收藏的歌手，和网易云的顺序一样（最近收藏的在前） */
+export function fetchCollectedArtists(listener: Listener): Promise<CollectedArtist[]> {
+  return everyPage(async (offset) => {
+    const { body } = await call('artist_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
+    return {
+      items: body.data.map(artist => ({ id: artist.id, name: artist.name, avatarUrl: artist.picUrl })),
+      hasMore: body.hasMore,
+    }
+  })
+}
+
+/** 专辑页：曲目和简介 */
+export async function fetchAlbum(albumId: number, listener: Listener): Promise<AlbumResponse> {
+  const { body: { album, songs } } = await call('album', { id: albumId }, listener)
+  return {
+    album: {
+      id: album.id,
+      name: album.name,
+      coverUrl: album.picUrl,
+      artist: creditOf(album.artist),
+      publishedAt: album.publishTime,
+      description: album.description,
+      songCount: album.size,
+    },
+    songs: songs.map(songOf),
+  }
+}
+
+/** 歌手的一页专辑（新的在前）：从第 offset 张起，每页 ARTIST_ALBUMS_PER_REQUEST 张 */
+function artistAlbums(artistId: number, offset: number, listener: Listener) {
+  return call('artist_album', { id: artistId, limit: ARTIST_ALBUMS_PER_REQUEST, offset }, listener)
+}
+
+function artistAlbumOf(album: { id: number, name: string, picUrl: string, publishTime: number }): ArtistAlbum {
+  return { id: album.id, name: album.name, coverUrl: album.picUrl, publishedAt: album.publishTime }
+}
+
+/** 歌手页：头部（在专辑那一页的返回里）、热门歌曲和第一页专辑，两个调用一起发 */
+export async function fetchArtist(artistId: number, listener: Listener): Promise<ArtistResponse> {
+  const [top, albums] = await Promise.all([
+    call('artist_top_song', { id: artistId }, listener),
+    artistAlbums(artistId, 0, listener),
+  ])
+  const { artist } = albums.body
+  return {
+    artist: { id: artist.id, name: artist.name, avatarUrl: artist.img1v1Url, songCount: artist.musicSize, albumCount: artist.albumSize },
+    hotSongs: top.body.songs.map(songOf),
+    albums: albums.body.hotAlbums.map(artistAlbumOf),
+    moreAlbums: albums.body.more,
+  }
+}
+
+/** 歌手页后面的专辑 */
+export async function fetchArtistAlbums(artistId: number, offset: number, listener: Listener): Promise<ArtistAlbumsResponse> {
+  const { body } = await artistAlbums(artistId, offset, listener)
+  return { albums: body.hotAlbums.map(artistAlbumOf), more: body.more }
 }

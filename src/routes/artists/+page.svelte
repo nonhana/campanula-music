@@ -1,0 +1,33 @@
+<!--
+  曲库的“歌手”标签：收藏的歌手，三列圆形头像网格。
+  手机上在曲库的文字标签下面；桌面没有标签（首页已经有歌手架子），直接打开这个地址时照样显示。返回这一页时滚动位置回到原来的样子
+-->
+<script lang='ts'>
+  import { getAppView } from '$lib/components/app-context.svelte'
+  import { desktopLayout } from '$lib/components/layout'
+  import CollectedGrid from '$lib/components/library/CollectedGrid.svelte'
+  import SyncNotice from '$lib/components/library/SyncNotice.svelte'
+  import { formatCount } from '$lib/components/library/view'
+  import { scrollSnapshot } from '$lib/components/snapshot'
+
+  const view = getAppView()
+  const library = $derived(view.state.library)
+  export const snapshot = scrollSnapshot(() => null, () => {})
+</script>
+
+<svelte:head><title>歌手 · Campanula</title></svelte:head>
+
+{#if library}
+  {#if desktopLayout.current}
+    <SyncNotice {library} failureShown={library.artists === null} />
+    <div class='mb-4 mt-6 flex items-center gap-3'>
+      <h1 class='text-headline text-neutral-900 font-600'>歌手</h1>
+      {#if library.artists}<span class='text-caption text-neutral-500 tabular-nums'>{formatCount(library.artists.length)} 位</span>{/if}
+    </div>
+    <CollectedGrid {library} kind='artists' layout='grid' />
+  {:else}
+    <h1 class='sr-only'>歌手</h1>
+    <SyncNotice {library} failureShown={library.artists === null} phone />
+    <CollectedGrid {library} kind='artists' layout='phone' />
+  {/if}
+{/if}

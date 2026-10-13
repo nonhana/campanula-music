@@ -1,4 +1,4 @@
-import type { Playlist, Song } from '$lib/api/library'
+import type { Credit, Playlist, Song } from '$lib/api/library'
 import type { RequestFailure } from '$lib/app/api'
 import type { LibraryState, PlaylistSongs, SyncFailure } from '$lib/app/library'
 import { failureText } from '../failure'
@@ -141,9 +141,19 @@ export function langOf(...texts: string[]): 'ja' | 'zh-TW' | undefined {
 }
 
 /** 歌手一行：没有名字的歌手（传到云盘、没匹配上曲库的歌）不列；一个都没有时写“未知歌手” */
-export function artistLine(song: Song): string {
-  const names = song.artists.flatMap(artist => artist.name ?? [])
+export function creditLine(credits: readonly Credit[]): string {
+  const names = credits.flatMap(artist => artist.name ?? [])
   return names.length > 0 ? names.join(' / ') : '未知歌手'
+}
+
+/** 一首歌的歌手一行（见 creditLine） */
+export function artistLine(song: Song): string {
+  return creditLine(song.artists)
+}
+
+/** 专辑的发行年份（本地时区）；网易云没给时间时是 null */
+export function yearOf(publishedAt: number): number | null {
+  return publishedAt > 0 ? new Date(publishedAt).getFullYear() : null
 }
 
 /** 首数等：千位加逗号（4,984） */

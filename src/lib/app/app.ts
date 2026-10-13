@@ -74,6 +74,15 @@ export interface App {
    * 歌单还没同步全时结果标“可能不全”。不在歌单列表里的歌单是 null
    */
   searchPlaylist: (playlistId: number, query: string) => PlaylistSearch | null
+  /**
+   * 打开一张专辑：这次登录还没拉过就用前台请求拉曲目和简介，拉到哪了看 state.library.albumPage。
+   * 收藏的专辑打开过就存在本机，再打开时先显示存着的、断网也能看；没拉成时再调一次就是重试
+   */
+  openAlbum: (albumId: number) => Promise<void>
+  /** 打开一位歌手：这次登录还没拉过就用前台请求拉，拉到哪了看 state.library.artistPage；没拉成时再调一次就是重试 */
+  openArtist: (artistId: number) => Promise<void>
+  /** 歌手页取后面的一页专辑；没取成时再调一次就是重试 */
+  moreArtistAlbums: (artistId: number) => Promise<void>
 }
 
 export function createApp(browser: BrowserCapabilities): App {
@@ -222,5 +231,8 @@ export function createApp(browser: BrowserCapabilities): App {
       const playlist = state.library?.songsOf(playlistId)
       return playlist ? searchPlaylist(playlist, query) : null
     },
+    openAlbum: library.openAlbum,
+    openArtist: library.openArtist,
+    moreArtistAlbums: library.moreArtistAlbums,
   }
 }

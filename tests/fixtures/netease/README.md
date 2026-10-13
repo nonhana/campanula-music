@@ -11,6 +11,13 @@
   - `after/`：作者在官方 App 里往 poems 加了一首、移除了一首之后：歌单列表 1 次，更新时间变了的 4 张歌单详情各 1 次（poems 之外的 3 张网易云自己改了更新时间，歌没变），新的歌 1 页。
   - `deleted/`：作者在官方 App 里删掉 poems 之后：歌单列表 1 次（poems 不在了），更新时间变了的 1 张歌单详情 1 次。
   - 文件名前的序号是调用的先后。编号和 #21 那批对得上：本人歌单的假编号按名字沿用，poems 是 `900000019`；收藏的歌单创建者沿用 #21 的假 uid，新出现的人从 `10000035` 起。歌单详情里的 `playlist.tracks`、`privileges` 截到前 30 项。临时歌单录完已在官方 App 里删掉。
+- nonhana/campanula-music#23（2026-10-13 北京时间）：`library/album-artist/` 下收藏的专辑和歌手、专辑页、歌手页的录制。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.7.1`，照服务端真实的参数，**不截短**（测试要核对收藏的列表、专辑曲目和歌手专辑的条数，以及“显示更多专辑”）；文件名前的序号是第一次录制时调用的先后：
+  - `001`、`002`：收藏的专辑（55 张）、收藏的歌手（236 位），`limit: 1000` 一次取完。
+  - `003`、`004`：YOASOBI 的歌手页：热门歌曲 50 首，专辑一页 100 张（65 张，`more` 是 false）。
+  - `005`–`007`：まらしぃ的歌手页（收藏的歌手里专辑刚过一页的）：热门歌曲，专辑一页一页取到底（100 张 + 1 张）。
+  - `008`–`010`：专辑页，每张之间隔 4 秒（连着取会回“操作频繁”，nonhana/hana-music-api#60）：收藏的「Keep The Village Alive」（3149073）、收藏的「月に寄りそう乙女の作法2 COMPLETE SOUNDTRACK」（3154337，没有简介，`description` 是 null，nonhana/hana-music-api#59）、没收藏的 YOASOBI「THE BOOK for,」（379547126）。
+  - `011`：成对操作（Spec #11 交付方式第 2 条）：用 SDK 收藏「THE BOOK for,」，取收藏的专辑（56 张，它排在最前）录下，马上取消收藏，再取一次确认回到 55 张（没录）。收藏、取消收藏的返回没录（`like-collect/album_sub.*` 已有）。
+  - 专辑页的 `album.info.commentThread.resourceInfo.userId` 是 -1（没有这个人）。第一次录制时脱敏把它当成了一个人，`008`–`010` 没写成；修好 `scripts/netease-record.mjs` 后几分钟内只读重录了这三张，所以它们的 `recordedAt` 比 `011` 晚。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
@@ -20,7 +27,7 @@
 - 扫码时要求行为验证的 8821 这次没有出现，没有录到。测试 8821 分支用的是构造的数据，见下面“构造的数据”。
 - `login/login_cellphone.10004-risk.json` 是短信登录被风控拦下的真实返回；`login/captcha_sent.502-anonymous-registration.json` 是 SDK 1.4.0 匿名注册失败时的返回（报错原文里的“MUSIC_A”只是文字，不是凭据）。
 - 首次同步时“我喜欢的音乐”的歌单详情原始返回约 3.1 MB、一次 1,000 首的歌曲信息约 2.1 MB；验证关卡①②的文件只留了前 30 项，原长度见 `context.truncated`。
-- `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。
+- `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。#22 的 `library/sync/`、#23 的 `library/album-artist/` 也是 `.json.gz`。
 - `library/song_detail.liked-page4.*`：第 4 页里有 3 首传到云盘、没匹配上曲库的歌（1984488794、1959160688、1916897283），网易云回的 `ar[0].name`、`al.name` 是 null。`hana-music-api@2.3.0` 要求它们是字符串，**整页 1,000 首都被拒掉**（502 `UnexpectedUpstreamShape`）；2.4.0 起原样返回（nonhana/hana-music-api#48）。不带后缀的 `song_detail.liked-page4.json.gz` 是网易云原样的返回（SDK 校验之前截下），2.4.0 能通过结构校验；`.502-null-artist` 是 2.3.0 真实的拒绝，2.4.0 下别人看云盘上传的歌（歌名也是 null）时照样这样拒，测试拿它当“这一页没取到”。
 - 凭据无效时（#21，编造的 `MUSIC_U`）：`likelist` 回 301；`user_playlist`、`playlist_detail` 回 200 的匿名视角，每张歌单的 `subscribed` 是 null（已登录时是 true / false）；`song_detail` 照常 200。2.3.0 把匿名视角当结构不符报 502，2.4.0 起原样返回，Campanula 的服务端认出 `subscribed` 是 null 就当作需要登录（`library/user_playlist.anonymous-view.json.gz`）。
 - `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。
@@ -58,7 +65,7 @@
 - 所有用户（账号本人、歌单创建者、歌词贡献者……）的 uid 字段换成 `10000001` 起的假编号，昵称字段换成“测试听众”“用户N”，头像和背景图换成占位链接。账号本人是 `10000001` / “测试听众”；只有本人的 uid 和昵称会在任意文字里替换（其他人的只换字段，避免误改同名的歌手名）。
 - 账号资料里的个人信息（生日、地区、签名、注册时间、绑定信息、账号名里的手机号）换成固定假值；账号本人作为歌手的编号和名字换成 `99999999` / “测试歌手”。
 - 本人自建歌单的编号换成 `900000001` 起，本人作品（歌、专辑）的编号换成 9 字头的假编号：这些编号公开可查，查到就能找到真实账号。其他歌单、歌、专辑、歌手的编号是真实的。
-- 超过 30 项的数组只留前 30 项，原长度记在 `context.truncated`；查询参数里上千个编号的列表（加歌的 `tracks`、排序的 `ids`）同样只留前 30 个，记在 `context.truncated` 的 `query.*` 路径下。#21 的整页录制（`.json.gz`）为了测分页，不截短。
+- 超过 30 项的数组只留前 30 项，原长度记在 `context.truncated`；查询参数里上千个编号的列表（加歌的 `tracks`、排序的 `ids`）同样只留前 30 个，记在 `context.truncated` 的 `query.*` 路径下。#21 的整页录制（`.json.gz`）为了测分页不截短，#23 的 `library/album-artist/` 为了核对条数不截短。
 - 上传凭证（`image_upload_token` 返回的 `token`）清空；图片编号和地址是测试时画的图，原样保留。
 - 其余结构和取值原样保留。
 
