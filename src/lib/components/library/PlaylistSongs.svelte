@@ -3,6 +3,7 @@
   - 手机：搜索框和“找到几首”在列表上面；桌面：搜索框在歌单页的头部（调用方放，绑定同一个 query），
     “找到几首”在白色面板的表头里。
   - 搜索在本机副本里即时完成；歌单还没同步全时结果标“可能不全”。
+  - 点一首歌（搜索结果里点也一样）就用整张歌单替换播放队列。
   - 加载中、空、出错、搜不到都有各自的样子；已经有一部分歌时，没拉完、没拉成在列表上方说明。
 -->
 <script lang='ts'>
@@ -11,6 +12,7 @@
   import { CircleAlert, Heart, ListMusic, SearchX } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
+  import { currentSong } from '../player/view'
   import Button from '../ui/Button.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
@@ -37,6 +39,8 @@
   const result = $derived(term && shown.kind === 'songs' ? view.app.searchPlaylist(playlistId, term) : null)
   /** 列表里显示的歌：搜索时是搜到的 */
   const songs = $derived(result ? result.songs : shown.kind === 'songs' ? shown.songs : [])
+  const nowId = $derived(currentSong(view.state.player)?.id ?? null)
+  const play = (song: Song) => () => view.app.play({ kind: 'playlist', id: playlistId }, song.id)
   const INCOMPLETE = '这张歌单还没同步完，结果可能不全'
 
   function retry() {
@@ -84,9 +88,9 @@
       <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id}>
         {#snippet row(song: Song, i: number)}
           {#if phone}
-            <PhoneSongRow {song} />
+            <PhoneSongRow {song} now={song.id === nowId} onplay={play(song)} />
           {:else}
-            <DesktopSongRow {song} n={i + 1} hearted={library.hearts?.has(song.id) ?? false} />
+            <DesktopSongRow {song} n={i + 1} hearted={library.hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} />
           {/if}
         {/snippet}
       </VirtualList>

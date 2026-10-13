@@ -4,7 +4,7 @@ import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } f
 // 之后的播放队列、下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 4
+const VERSION = 5
 /** 登录会话的小事，按名字存 */
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
@@ -107,6 +107,20 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
   // 4（#23）：收藏的专辑和歌手的列表存在 LIBRARY 里，打开过的专辑页另存一处
   if (from < 4)
     database.createObjectStore(ALBUM_PAGES)
+  // 5（#24）：歌曲多了能不能放（availability）。存着的歌曲信息和专辑页里没有，删掉；每张歌单记成歌曲信息还没取全，
+  // 下一次同步重新取（歌单列表、红心、收藏的专辑和歌手照样先显示）
+  if (from >= 2 && from < 5) {
+    transaction.objectStore(SONGS).clear()
+    transaction.objectStore(ALBUM_PAGES).clear()
+    const tracks = transaction.objectStore(TRACKS).openCursor()
+    tracks.onsuccess = () => {
+      const cursor = tracks.result
+      if (!cursor)
+        return
+      cursor.update({ ...(cursor.value as PlaylistTracks), complete: false } satisfies PlaylistTracks)
+      cursor.continue()
+    }
+  }
 }
 
 export function createLocalDb(indexedDB: IDBFactory): LocalDb {

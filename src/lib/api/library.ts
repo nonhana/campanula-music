@@ -52,7 +52,14 @@ export interface Song {
   }
   /** 时长，毫秒 */
   duration: number
+  /**
+   * 这个账号能不能放（网易云的权限信息 privilege）：完整的；只能放试听片段（会员歌对非会员）；无版权，不能放。
+   * 列表里事先标出来，播放时以取到的播放地址为准
+   */
+  availability: Availability
 }
+
+export type Availability = 'full' | 'trial' | 'noCopyright'
 
 /**
  * POST /api/songs 一次最多取这么多首。网易云一次 1,000 首的原始返回约 2.1 MB，

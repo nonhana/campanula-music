@@ -1,3 +1,5 @@
+import type { Quality } from '$lib/api/playback'
+import { QUALITIES } from '$lib/api/playback'
 import { error } from '@sveltejs/kit'
 
 /** 中国大陆手机号（+86）：1 开头的 11 位数字 */
@@ -51,4 +53,12 @@ export function readOffset(value: string | null): number {
   if (!/^\d{1,6}$/.test(value ?? ''))
     error(400, 'offset 的格式不对')
   return Number(value)
+}
+
+/** 读网址里的音质 */
+export function readQuality(value: string | null): Quality {
+  const quality = QUALITIES.find(item => item === value)
+  if (!quality)
+    error(400, 'quality 的格式不对')
+  return quality
 }

@@ -1,6 +1,7 @@
 <!--
-  登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）和图标侧栏（曲库，设置在最下面）；
-  手机是 logo 行（右边是设置），设置、歌单页、专辑页、歌手页这类二级页面换成返回栏；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签。搜索、每日推荐、已下载由之后的票放进来。
+  登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）、图标侧栏（曲库，设置在最下面）和底部播放条；
+  手机是 logo 行（右边是设置），设置、歌单页、专辑页、歌手页这类二级页面换成返回栏；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；
+  底部是迷你播放条。播放条在播放队列里有歌时才有。搜索、每日推荐、已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { Account } from '$lib/api/account'
@@ -10,14 +11,20 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { ArrowLeft, House, Menu, Settings } from '@lucide/svelte'
+  import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
   import { desktopLayout } from '../layout'
+  import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
+  import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
   import DesktopShell from './DesktopShell.svelte'
   import PhoneShell from './PhoneShell.svelte'
 
   const { account, children }: { account: Account, children: Snippet } = $props()
+  const view = getAppView()
+  /** 播放队列里有歌：才有播放条 */
+  const hasQueue = $derived(view.state.player.queue.length > 0)
 
   const pathname = $derived(page.url.pathname)
   /** 歌单页、专辑页、歌手页：标题是歌单名、专辑名、歌手名，返回栏只说这是哪一类页面 */
@@ -93,8 +100,16 @@
   </nav>
 {/snippet}
 
+{#snippet desktopBar()}
+  <DesktopPlayerBar />
+{/snippet}
+
+{#snippet miniPlayer()}
+  <PhoneMiniPlayer />
+{/snippet}
+
 {#if desktopLayout.current}
-  <DesktopShell {railExpanded}>
+  <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
     {#snippet header()}
       <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
       <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
@@ -110,7 +125,7 @@
     {@render children()}
   </DesktopShell>
 {:else}
-  <PhoneShell tabs={onLibrary ? libraryTabs : undefined}>
+  <PhoneShell tabs={onLibrary ? libraryTabs : undefined} bar={hasQueue ? miniPlayer : undefined}>
     {#snippet header()}
       {#if secondary}
         <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
