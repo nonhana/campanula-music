@@ -58,9 +58,10 @@ const wholeNumber = number => new RegExp(`(?<![0-9])${number}(?![0-9])`, 'g')
 function sanitize(module, body, identity, truncate) {
   const { self, artist } = identity
   const fake = (table, counter) => real => (identity[table][real] ??= identity.next[counter]++)
+  // 0、-1 是“没有这个人”（例如专辑页 album.info.commentThread.resourceInfo.userId 是 -1），不是谁的编号
   const fakeUser = (uid) => {
-    if (uid === 0)
-      return 0
+    if (uid <= 0)
+      return uid
     return uid === self.uid ? self.fakeUid : fake('users', 'user')(uid)
   }
   const truncated = []

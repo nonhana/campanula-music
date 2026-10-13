@@ -1,9 +1,5 @@
 import type { RequestFailure } from '$lib/app/api'
 
-function wait(seconds: number): string {
-  return seconds < 60 ? `${seconds} 秒` : `${Math.ceil(seconds / 60)} 分钟`
-}
-
 /** 一句话说清请求为什么没成功、能怎么办（文案平实，不卖萌） */
 export function failureText(failure: RequestFailure): string {
   switch (failure.kind) {
@@ -16,7 +12,8 @@ export function failureText(failure: RequestFailure): string {
     case 'neteaseUnavailable':
       return '网易云暂时没有回应，稍后再试。'
     case 'rateLimited':
-      return `网易云说操作太频繁，请 ${wait(failure.retryAfter)}后再试。`
+      // 不写等几秒：retryAfter 多半是 SDK 在网易云没说时填的 30 秒（nonhana/hana-music-api#60），不是网易云说的
+      return '网易云说操作太频繁，稍等一会儿再试。'
     case 'upstreamChanged':
       return '网易云返回的内容和 Campanula 认识的不一样了，需要升级 Campanula，请告诉站长。'
     case 'rejected':

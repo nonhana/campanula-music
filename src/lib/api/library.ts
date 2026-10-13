@@ -33,14 +33,19 @@ export interface TrackIdsResponse {
   trackIds: number[]
 }
 
+/** 署名的歌手。传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48） */
+export interface Credit {
+  id: number
+  name: string | null
+}
+
 export interface Song {
   id: number
   name: string
-  /** 传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48） */
-  artists: { id: number, name: string | null }[]
+  artists: Credit[]
   album: {
     id: number
-    /** 同上，没匹配上曲库的歌是 null */
+    /** 传到云盘、没匹配上曲库的歌是 null */
     name: string | null
     /** 网易云的原图地址；显示时按尺寸取缩略图 */
     coverUrl: string
@@ -63,4 +68,87 @@ export interface SongsRequest {
 /** 按请求的顺序；网易云没给的歌（比如已经下架）不在里面 */
 export interface SongsResponse {
   songs: Song[]
+}
+
+/** 曲库里收藏的一张专辑 */
+export interface CollectedAlbum {
+  id: number
+  name: string
+  /** 网易云的原图地址；显示时按尺寸取缩略图 */
+  coverUrl: string
+  artists: Credit[]
+  /** 网易云写的歌曲数：和本机存着的专辑页的对不上才重拉专辑页 */
+  songCount: number
+}
+
+/** GET /api/albums：收藏的专辑，最近收藏的在前，和网易云的顺序一样 */
+export interface CollectedAlbumsResponse {
+  albums: CollectedAlbum[]
+}
+
+/** 曲库里收藏的一位歌手 */
+export interface CollectedArtist {
+  id: number
+  name: string
+  /** 网易云的原图地址，不一定是正方形；显示时按尺寸取正方形的缩略图 */
+  avatarUrl: string
+}
+
+/** GET /api/artists：收藏的歌手，最近收藏的在前，和网易云的顺序一样 */
+export interface CollectedArtistsResponse {
+  artists: CollectedArtist[]
+}
+
+/** GET /api/albums/[id]：专辑页 */
+export interface AlbumResponse {
+  album: {
+    id: number
+    name: string
+    coverUrl: string
+    /** 专辑署名的歌手（网易云只给一位主要的） */
+    artist: Credit
+    /** 发行时间（毫秒） */
+    publishedAt: number
+    /** 简介；没有时是 null（nonhana/hana-music-api#59） */
+    description: string | null
+    /** 网易云写的歌曲数：本机存着的专辑页按它判断收藏的专辑变没变（和收藏的专辑列表里的 songCount 比） */
+    songCount: number
+  }
+  /** 曲目，按专辑里的顺序 */
+  songs: Song[]
+}
+
+/** 歌手页里的一张专辑 */
+export interface ArtistAlbum {
+  id: number
+  name: string
+  coverUrl: string
+  /** 发行时间（毫秒） */
+  publishedAt: number
+}
+
+/** 歌手页的专辑一次取这么多张。专辑最多的歌手有五千多张（#23 留言），一次全取太大 */
+export const ARTIST_ALBUMS_PER_REQUEST = 100
+
+/** GET /api/artists/[id]：歌手页的头部、热门歌曲（网易云给 50 首）和第一页专辑（新的在前） */
+export interface ArtistResponse {
+  artist: {
+    id: number
+    name: string
+    /** 正方形的头像 */
+    avatarUrl: string
+    songCount: number
+    albumCount: number
+  }
+  hotSongs: Song[]
+  albums: ArtistAlbum[]
+  /** 后面还有专辑：用 /api/artists/[id]/albums 接着取 */
+  moreAlbums: boolean
+}
+
+/** GET /api/artists/[id]/albums?offset=：歌手页从第 offset 张往后的一页专辑 */
+export interface ArtistAlbumsResponse {
+  albums: ArtistAlbum[]
+  /** 后面还有 */
+  more: boolean
 }

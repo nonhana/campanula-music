@@ -1,19 +1,21 @@
-import type { Playlist, Song } from '$lib/api/library'
+import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } from '$lib/api/library'
 
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。
 // 之后的播放队列、下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 3
+const VERSION = 4
 /** 登录会话的小事，按名字存 */
 const SESSION = 'session'
-/** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists */
+/** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
 const LIBRARY = 'library'
 /** 每张歌单的曲目，按歌单编号存 */
 const TRACKS = 'tracks'
 /** 歌曲信息，按歌曲编号存；几张歌单里都有的歌只存一份 */
 const SONGS = 'songs'
-const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS]
+/** 打开过的收藏的专辑的专辑页，按专辑编号存（#23 留言：专辑页不在后台整批同步） */
+const ALBUM_PAGES = 'albumPages'
+const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS, ALBUM_PAGES]
 
 /** 一张歌单在本机的曲目 */
 export interface PlaylistTracks {
@@ -39,6 +41,12 @@ export interface Replica {
   tracks: Map<number, PlaylistTracks>
   /** 按歌曲编号 */
   songs: Map<number, Song>
+  /** 收藏的专辑，最近收藏的在前 */
+  albums: CollectedAlbum[] | null
+  /** 收藏的歌手，最近收藏的在前 */
+  artists: CollectedArtist[] | null
+  /** 打开过的收藏的专辑的专辑页，按专辑编号；不再收藏时删掉 */
+  albumPages: Map<number, AlbumResponse>
 }
 
 export interface LocalDb {
@@ -56,6 +64,11 @@ export interface LocalDb {
   savePlaylists: (owner: number, playlists: Playlist[]) => Promise<boolean>
   saveTracks: (owner: number, playlistId: number, tracks: PlaylistTracks) => Promise<boolean>
   saveSongs: (owner: number, songs: Song[]) => Promise<boolean>
+  /** 收藏的专辑：不再收藏的专辑，存着的专辑页在同一个事务里一起删 */
+  saveCollectedAlbums: (owner: number, albums: CollectedAlbum[]) => Promise<boolean>
+  saveCollectedArtists: (owner: number, artists: CollectedArtist[]) => Promise<boolean>
+  /** 专辑页：同一个事务里核对它还在收藏的专辑里，不在就不存 */
+  saveAlbumPage: (owner: number, page: AlbumResponse) => Promise<boolean>
 }
 
 function settled<T>(request: IDBRequest<T>): Promise<T> {
@@ -91,6 +104,9 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
         library.put(playlists.map(playlist => ({ ...playlist, creator: '', private: false }) satisfies Playlist), 'playlists')
     }
   }
+  // 4（#23）：收藏的专辑和歌手的列表存在 LIBRARY 里，打开过的专辑页另存一处
+  if (from < 4)
+    database.createObjectStore(ALBUM_PAGES)
 }
 
 export function createLocalDb(indexedDB: IDBFactory): LocalDb {
@@ -158,13 +174,17 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
     async readLibrary() {
       const transaction = (await database()).transaction(LIBRARY_STORES)
       const library = transaction.objectStore(LIBRARY)
-      const [owner, hearts, playlists, trackKeys, trackValues, songs] = await Promise.all([
+      const [owner, hearts, playlists, collectedAlbums, collectedArtists, trackKeys, trackValues, songs, albumKeys, albumValues] = await Promise.all([
         settled(library.get('owner')) as Promise<number | undefined>,
         settled(library.get('hearts')) as Promise<number[] | undefined>,
         settled(library.get('playlists')) as Promise<Playlist[] | undefined>,
+        settled(library.get('collectedAlbums')) as Promise<CollectedAlbum[] | undefined>,
+        settled(library.get('collectedArtists')) as Promise<CollectedArtist[] | undefined>,
         settled(transaction.objectStore(TRACKS).getAllKeys()) as Promise<number[]>,
         settled(transaction.objectStore(TRACKS).getAll()) as Promise<PlaylistTracks[]>,
         settled(transaction.objectStore(SONGS).getAll()) as Promise<Song[]>,
+        settled(transaction.objectStore(ALBUM_PAGES).getAllKeys()) as Promise<number[]>,
+        settled(transaction.objectStore(ALBUM_PAGES).getAll()) as Promise<AlbumResponse[]>,
       ])
       if (owner === undefined)
         return null
@@ -174,6 +194,9 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
         playlists: playlists ?? null,
         tracks: new Map(trackKeys.map((key, index) => [key, trackValues[index]])),
         songs: new Map(songs.map(song => [song.id, song])),
+        albums: collectedAlbums ?? null,
+        artists: collectedArtists ?? null,
+        albumPages: new Map(albumKeys.map((key, index) => [key, albumValues[index]])),
       }
     },
     resetLibrary: owner => write(LIBRARY_STORES, (transaction) => {
@@ -200,5 +223,30 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       for (const song of songs)
         store.put(song)
     }),
+    saveCollectedAlbums: (owner, albums) => writeLibrary(owner, [ALBUM_PAGES], (transaction) => {
+      transaction.objectStore(LIBRARY).put(albums, 'collectedAlbums')
+      const pages = transaction.objectStore(ALBUM_PAGES)
+      const kept = new Set(albums.map(album => album.id))
+      const keys = pages.getAllKeys()
+      keys.onsuccess = () => {
+        for (const key of keys.result as number[]) {
+          if (!kept.has(key))
+            pages.delete(key)
+        }
+      }
+    }),
+    saveCollectedArtists: (owner, artists) => writeLibrary(owner, [], transaction => transaction.objectStore(LIBRARY).put(artists, 'collectedArtists')),
+    async saveAlbumPage(owner, page) {
+      let saved = false
+      const mine = await writeLibrary(owner, [ALBUM_PAGES], (transaction) => {
+        const collected = transaction.objectStore(LIBRARY).get('collectedAlbums')
+        collected.onsuccess = () => {
+          saved = (collected.result as CollectedAlbum[] | undefined)?.some(album => album.id === page.album.id) ?? false
+          if (saved)
+            transaction.objectStore(ALBUM_PAGES).put(page, page.album.id)
+        }
+      })
+      return mine && saved
+    },
   }
 }

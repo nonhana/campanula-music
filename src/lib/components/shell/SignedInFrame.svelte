@@ -1,6 +1,6 @@
 <!--
   登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）和图标侧栏（曲库，设置在最下面）；
-  手机是 logo 行（右边是设置），设置、歌单页这类二级页面换成返回栏；曲库（我喜欢、歌单）下面有文字标签。搜索、每日推荐、已下载由之后的票放进来。
+  手机是 logo 行（右边是设置），设置、歌单页、专辑页、歌手页这类二级页面换成返回栏；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签。搜索、每日推荐、已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { Account } from '$lib/api/account'
@@ -20,18 +20,26 @@
   const { account, children }: { account: Account, children: Snippet } = $props()
 
   const pathname = $derived(page.url.pathname)
-  /** 歌单页：标题是歌单名，返回栏只说这是哪一类页面 */
-  const onPlaylistPage = $derived(pathname.startsWith(`${resolve('/playlists')}/`))
+  /** 歌单页、专辑页、歌手页：标题是歌单名、专辑名、歌手名，返回栏只说这是哪一类页面 */
+  const detailPage = $derived(
+    pathname.startsWith(`${resolve('/playlists')}/`)
+      ? '歌单'
+      : pathname.startsWith(`${resolve('/albums')}/`)
+      ? '专辑'
+      : pathname.startsWith(`${resolve('/artists')}/`) ? '歌手' : undefined,
+  )
   /** 二级页面：手机上顶行换成返回栏 */
-  const secondary = $derived(pathname === resolve('/settings') ? '设置' : onPlaylistPage ? '歌单' : undefined)
-  /** 曲库的文字标签（专辑、歌手由之后的票加）。换标签不留浏览记录：返回键离开曲库，不在标签之间来回 */
+  const secondary = $derived(pathname === resolve('/settings') ? '设置' : detailPage)
+  /** 曲库的文字标签。换标签不留浏览记录：返回键离开曲库，不在标签之间来回 */
   const LIBRARY_TABS = [
     { route: '/', label: '我喜欢' },
     { route: '/playlists', label: '歌单' },
+    { route: '/albums', label: '专辑' },
+    { route: '/artists', label: '歌手' },
   ] as const
   const onLibrary = $derived(LIBRARY_TABS.some(tab => resolve(tab.route) === pathname))
-  /** 桌面侧栏的“曲库”：首页、歌单标签和歌单页都算 */
-  const inLibrary = $derived(onLibrary || onPlaylistPage)
+  /** 桌面侧栏的“曲库”：曲库的各个标签和歌单页、专辑页、歌手页都算 */
+  const inLibrary = $derived(onLibrary || detailPage !== undefined)
 
   let railExpanded = $state(false)
 
@@ -106,7 +114,7 @@
     {#snippet header()}
       {#if secondary}
         <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
-        <svelte:element this={onPlaylistPage ? 'p' : 'h1'} class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{secondary}</svelte:element>
+        <svelte:element this={detailPage ? 'p' : 'h1'} class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{secondary}</svelte:element>
       {:else}
         <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
         <span class='flex-1'></span>

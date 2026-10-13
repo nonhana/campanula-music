@@ -1,12 +1,13 @@
 <!--
   曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页）
-  和歌单的封面网格。返回这一页时，歌单的筛选和滚动位置都回到原来的样子
+  、歌单的封面网格和收藏的专辑、歌手两排横向架子。返回这一页时，歌单的筛选和滚动位置都回到原来的样子
 -->
 <script lang='ts'>
   import type { PlaylistFilter } from '$lib/components/library/view'
   import { resolve } from '$app/paths'
   import { getAppView } from '$lib/components/app-context.svelte'
   import { desktopLayout } from '$lib/components/layout'
+  import CollectedGrid from '$lib/components/library/CollectedGrid.svelte'
   import Cover from '$lib/components/library/Cover.svelte'
   import LikedStates from '$lib/components/library/LikedStates.svelte'
   import PhoneLiked from '$lib/components/library/PhoneLiked.svelte'
@@ -114,6 +115,22 @@
           <h2 id='playlists-heading' class='text-title text-neutral-900 font-600'>歌单</h2>
         {/snippet}
       </PlaylistGrid>
+    </section>
+
+    <section class='mt-10' aria-labelledby='albums-heading'>
+      <div class='mb-4 flex items-center gap-3'>
+        <h2 id='albums-heading' class='text-title text-neutral-900 font-600'>专辑</h2>
+        {#if library.albums}<span class='text-caption text-neutral-500 tabular-nums'>{formatCount(library.albums.length)} 张</span>{/if}
+      </div>
+      <CollectedGrid {library} kind='albums' layout='shelf' />
+    </section>
+
+    <section class='mt-10 pb-12' aria-labelledby='artists-heading'>
+      <div class='mb-4 flex items-center gap-3'>
+        <h2 id='artists-heading' class='text-title text-neutral-900 font-600'>歌手</h2>
+        {#if library.artists}<span class='text-caption text-neutral-500 tabular-nums'>{formatCount(library.artists.length)} 位</span>{/if}
+      </div>
+      <CollectedGrid {library} kind='artists' layout='shelf' />
     </section>
   {:else}
     <h1 class='sr-only'>我喜欢的音乐</h1>

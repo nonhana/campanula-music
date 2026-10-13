@@ -11,7 +11,7 @@ export const RECORDED_ACCOUNT = { id: 10000001, nickname: '测试听众', avatar
 export const ANOTHER_ACCOUNT = { ...RECORDED_ACCOUNT, id: 10000002, nickname: '另一位听众' }
 
 /** 登录后 App 在后台同步曲库时调的网易云模块（tests/library.test.ts 专门测）：只看登录会话的测试把它们去掉 */
-export const LIBRARY_SYNC_MODULES: ReadonlySet<string> = new Set(['likelist', 'user_playlist', 'playlist_detail', 'song_detail'])
+export const LIBRARY_SYNC_MODULES: ReadonlySet<string> = new Set(['likelist', 'user_playlist', 'album_sublist', 'artist_sublist', 'playlist_detail', 'song_detail'])
 
 /** Set-Cookie 的有效期属性：Max-Age 和 Expires 都写，和网易云下发的一样 */
 function expires(days: number): string {

@@ -53,7 +53,7 @@ function failureStatus(module: string, code: unknown): number | undefined {
   return code > 100 && code < 600 ? code : 400
 }
 
-// 照 SDK 2.4.0 classifyConsumedRateLimit 认出网易云限流：返回码 429，或 405 且说明里有“操作频繁”“操作过于频繁”
+// 照 SDK 2.7.1 classifyConsumedRateLimit 认出网易云限流：返回码 429，或 405 且说明里有“操作频繁”“操作过于频繁”（不看 HTTP 状态）
 function rateLimited(code: unknown, body: unknown): boolean {
   const message = field(body, 'msg') ?? field(body, 'message')
   return code === 429 || (code === 405 && typeof message === 'string' && /操作(?:过于)?频繁/.test(message))

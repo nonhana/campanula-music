@@ -45,3 +45,10 @@ export async function readIds(request: Request, name: string, max: number): Prom
     error(400, `${name} 要有 1 到 ${max} 个编号`)
   return ids
 }
+
+/** 读网址里分页的 offset：从第几个起，0 或正整数 */
+export function readOffset(value: string | null): number {
+  if (!/^\d{1,6}$/.test(value ?? ''))
+    error(400, 'offset 的格式不对')
+  return Number(value)
+}
