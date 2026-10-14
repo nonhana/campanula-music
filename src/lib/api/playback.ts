@@ -21,3 +21,37 @@ export type PlayUrlResponse
   }
   /** 网易云没给地址：无版权，或者这个账号放不了 */
   | { playable: false }
+
+/** 逐字歌词里的一个词：一个字，或者带着后面空格的一个单词 */
+export interface LyricWord {
+  /** 开始唱的时刻（秒） */
+  start: number
+  /** 唱完的时刻（秒） */
+  end: number
+  text: string
+}
+
+/** 一行歌词 */
+export interface LyricLine {
+  /** 这一行开始的时刻（秒）：点这一行就从这里放 */
+  start: number
+  text: string
+  /** 逐字歌词里每个词的起止；逐行歌词、作词作曲这类署名行是 null */
+  words: LyricWord[] | null
+  /** 这一行的翻译；这首歌没有翻译、这一行没配上时是 null */
+  translation: string | null
+  /** 这一行的音译（日文假名、粤语等注的罗马字）；没有时是 null */
+  romanization: string | null
+}
+
+/** GET /api/songs/[id]/lyrics：一首歌的歌词 */
+export type LyricsResponse
+  /** 网易云标着是纯音乐 */
+  = | { kind: 'pureMusic' }
+  /** 网易云没有这首的歌词 */
+    | { kind: 'none' }
+  /**
+   * word：有逐字歌词；line：只有逐行的。lines 按开始的时刻排。
+   * translated、romanized：有没有一行配上了翻译、音译（没有时界面禁用开关）
+   */
+    | { kind: 'word' | 'line', lines: LyricLine[], translated: boolean, romanized: boolean }

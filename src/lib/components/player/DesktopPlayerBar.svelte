@@ -1,35 +1,23 @@
 <!--
-  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名，右边音量；
-  顶边一条 2px 的薄荷进度线。点开播放页（#25）、播放模式和播放队列（#26）由之后的票加。放在 DesktopShell 的 bar 里
+  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页），右边音量；
+  顶边一条 2px 的薄荷进度线。播放模式和播放队列（#26）由之后的票加。放在 DesktopShell 的 bar 里
 -->
 <script lang='ts'>
-  import { SkipBack, SkipForward, Volume1, Volume2, VolumeX } from '@lucide/svelte'
+  import { SkipBack, SkipForward } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import Cover from '../library/Cover.svelte'
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, langOf } from '../library/view'
   import IconButton from '../ui/IconButton.svelte'
   import PlayButton from './PlayButton.svelte'
-  import PlayerNotice from './PlayerNotice.svelte'
+  import { openPlayerPage } from './player-page.svelte'
   import ProgressLine from './ProgressLine.svelte'
   import { currentSong, formatSeconds, shownDuration } from './view'
-  import VolumeSlider from './VolumeSlider.svelte'
+  import VolumeControl from './VolumeControl.svelte'
 
   const view = getAppView()
   const player = $derived(view.state.player)
   const song = $derived(currentSong(player))
-  /** 静音前的音量：取消静音时回到它 */
-  let unmuted = 1
-
-  function toggleMute() {
-    if (player.volume > 0) {
-      unmuted = player.volume
-      view.app.setVolume(0)
-    }
-    else {
-      view.app.setVolume(unmuted)
-    }
-  }
 </script>
 
 <ProgressLine edge='top' />
@@ -46,7 +34,7 @@
   </div>
 
   {#if song}
-    <div class='min-w-0 flex items-center gap-3'>
+    <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-150 mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' onclick={openPlayerPage}>
       <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
       <span class='min-w-0'>
         <span class='min-w-0 flex items-center gap-2'>
@@ -55,13 +43,10 @@
         </span>
         <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
       </span>
-    </div>
+    </button>
   {/if}
 
   <div class='flex items-center justify-end gap-1.5'>
-    <IconButton icon={player.volume === 0 ? VolumeX : player.volume < 0.5 ? Volume1 : Volume2} label={player.volume === 0 ? '取消静音' : '静音'} onclick={toggleMute} />
-    <VolumeSlider class='w-24' />
+    <VolumeControl class='w-24' />
   </div>
 </div>
-
-<PlayerNotice />

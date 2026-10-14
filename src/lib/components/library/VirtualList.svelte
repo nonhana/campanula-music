@@ -1,5 +1,6 @@
 <!--
-  等高行的虚拟列表：跟随页面滚动，只渲染视口附近的几十行（几千首也一样）。
+  等高行的虚拟列表：只渲染视口附近的几十行（几千首也一样）。默认跟随页面滚动；
+  放在自己的滚动容器里（播放页的播放队列）时传 scrollParent，跟随它滚动。
   滚动、窗口大小变化、列表变化时重算要渲染哪几行。
 -->
 <script lang='ts' generics='T'>
@@ -11,11 +12,13 @@
     itemHeight: number
     /** 视口上下多渲染的行数 */
     overscan?: number
+    /** 列表所在的滚动容器；不传就是页面 */
+    scrollParent?: HTMLElement
     getKey: (item: T, index: number) => string | number
     row: Snippet<[T, number]>
   }
 
-  const { items, itemHeight, overscan = 8, getKey, row }: Props = $props()
+  const { items, itemHeight, overscan = 8, scrollParent, getKey, row }: Props = $props()
 
   let host = $state<HTMLElement>()
   let range = $state({ start: 0, end: 0 })
@@ -23,9 +26,10 @@
   function measure() {
     if (!host)
       return
-    const viewTop = -host.getBoundingClientRect().top
+    const viewport = scrollParent ? { top: scrollParent.getBoundingClientRect().top, height: scrollParent.clientHeight } : { top: 0, height: window.innerHeight }
+    const viewTop = viewport.top - host.getBoundingClientRect().top
     const start = Math.max(0, Math.floor(viewTop / itemHeight) - overscan)
-    const end = Math.min(items.length, Math.ceil((viewTop + window.innerHeight) / itemHeight) + overscan)
+    const end = Math.min(items.length, Math.ceil((viewTop + viewport.height) / itemHeight) + overscan)
     if (start !== range.start || end !== range.end)
       range = { start, end }
   }
@@ -37,10 +41,11 @@
   })
 
   $effect(() => {
-    window.addEventListener('scroll', measure, { passive: true })
+    const scroller = scrollParent ?? window
+    scroller.addEventListener('scroll', measure, { passive: true })
     window.addEventListener('resize', measure)
     return () => {
-      window.removeEventListener('scroll', measure)
+      scroller.removeEventListener('scroll', measure)
       window.removeEventListener('resize', measure)
     }
   })

@@ -1,7 +1,8 @@
 <!--
   登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）、图标侧栏（曲库，设置在最下面）和底部播放条；
   手机是 logo 行（右边是设置），设置、歌单页、专辑页、歌手页这类二级页面换成返回栏；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；
-  底部是迷你播放条。播放条在播放队列里有歌时才有。搜索、每日推荐、已下载由之后的票放进来。
+  底部是迷你播放条。播放条在播放队列里有歌时才有，从它打开播放页（盖住整个骨架，开着时骨架不能操作）。
+  播放的提示浮在最上面，播放页开着时也看得见。搜索、每日推荐、已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { Account } from '$lib/api/account'
@@ -16,6 +17,8 @@
   import { desktopLayout } from '../layout'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
+  import PlayerNotice from '../player/PlayerNotice.svelte'
+  import PlayerPage from '../player/PlayerPage.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
   import DesktopShell from './DesktopShell.svelte'
@@ -25,6 +28,8 @@
   const view = getAppView()
   /** 播放队列里有歌：才有播放条 */
   const hasQueue = $derived(view.state.player.queue.length > 0)
+  /** 播放页开着（浅路由，见 player-page.svelte.ts） */
+  const playerOpen = $derived(hasQueue && page.state.player !== undefined)
 
   const pathname = $derived(page.url.pathname)
   /** 歌单页、专辑页、歌手页：标题是歌单名、专辑名、歌手名，返回栏只说这是哪一类页面 */
@@ -108,36 +113,43 @@
   <PhoneMiniPlayer />
 {/snippet}
 
-{#if desktopLayout.current}
-  <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
-    {#snippet header()}
-      <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
-      <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
-      <span class='flex-1'></span>
-      <AccountMenu {account} />
-    {/snippet}
-    {#snippet rail()}
-      <a href={resolve('/')} {...railItem(resolve('/'), '曲库', inLibrary)}>{@render railContent('曲库', House)}</a>
-      <div class='mt-auto'>
-        <a href={resolve('/settings')} {...railItem(resolve('/settings'), '设置')}>{@render railContent('设置', Settings)}</a>
-      </div>
-    {/snippet}
-    {@render children()}
-  </DesktopShell>
-{:else}
-  <PhoneShell tabs={onLibrary ? libraryTabs : undefined} bar={hasQueue ? miniPlayer : undefined}>
-    {#snippet header()}
-      {#if secondary}
-        <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
-        <svelte:element this={detailPage ? 'p' : 'h1'} class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{secondary}</svelte:element>
-      {:else}
+<div class='contents' inert={playerOpen}>
+  {#if desktopLayout.current}
+    <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
+      {#snippet header()}
+        <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
         <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
         <span class='flex-1'></span>
-        <a href={resolve('/settings')} class='grid size-11 place-items-center rounded-full text-neutral-700 active:bg-primary-100' aria-label='设置'>
-          <Settings size={22} aria-hidden='true' />
-        </a>
-      {/if}
-    {/snippet}
-    {@render children()}
-  </PhoneShell>
+        <AccountMenu {account} />
+      {/snippet}
+      {#snippet rail()}
+        <a href={resolve('/')} {...railItem(resolve('/'), '曲库', inLibrary)}>{@render railContent('曲库', House)}</a>
+        <div class='mt-auto'>
+          <a href={resolve('/settings')} {...railItem(resolve('/settings'), '设置')}>{@render railContent('设置', Settings)}</a>
+        </div>
+      {/snippet}
+      {@render children()}
+    </DesktopShell>
+  {:else}
+    <PhoneShell tabs={onLibrary ? libraryTabs : undefined} bar={hasQueue ? miniPlayer : undefined}>
+      {#snippet header()}
+        {#if secondary}
+          <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
+          <svelte:element this={detailPage ? 'p' : 'h1'} class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{secondary}</svelte:element>
+        {:else}
+          <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
+          <span class='flex-1'></span>
+          <a href={resolve('/settings')} class='grid size-11 place-items-center rounded-full text-neutral-700 active:bg-primary-100' aria-label='设置'>
+            <Settings size={22} aria-hidden='true' />
+          </a>
+        {/if}
+      {/snippet}
+      {@render children()}
+    </PhoneShell>
+  {/if}
+</div>
+
+{#if playerOpen}
+  <PlayerPage />
 {/if}
+<PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />

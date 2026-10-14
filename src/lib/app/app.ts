@@ -5,11 +5,13 @@ import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { LibraryState, PlaylistSearch } from './library'
 import type { LoginState } from './login'
+import type { LyricsState } from './lyrics'
 import type { PlayerState, PlaySource } from './player'
 import { createApi } from './api'
 import { createLibrary, searchPlaylist } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
+import { createLyrics } from './lyrics'
 import { createBackgroundLane } from './pacing'
 import { createPlayer, INITIAL_PLAYER } from './player'
 
@@ -44,6 +46,8 @@ export interface AppState {
   library: LibraryState | null
   /** 播放队列和正在放的歌 */
   player: PlayerState
+  /** 最近打开的那首歌的歌词：听众看歌词时才取 */
+  lyrics: LyricsState | null
 }
 
 /** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
@@ -97,16 +101,24 @@ export interface App {
   togglePlay: () => void
   next: () => void
   previous: () => void
+  /** 在播放队列里点一首：放这一首，播放队列不变。正在放的那首、无版权的不动 */
+  playFromQueue: (index: number) => void
+  /** 当前这首跳到第 position 秒（波浪进度条）：在放就从那里接着放，停着就等按播放；超出的算开头、结尾 */
+  seek: (position: number) => void
+  /** 当前这首从第 position 秒开始放（点歌词的一行）：停着的也接着放 */
+  playFrom: (position: number) => void
   /** 音量，0 到 1 */
   setVolume: (volume: number) => void
   /** 关掉播放的提示 */
   dismissPlayerNotice: () => void
+  /** 看这首歌的歌词（播放页上显示歌词时）：已经取到、正在取就不再取，拉到哪了看 state.lyrics；没取成时再调一次就是重试 */
+  openLyrics: (songId: number) => Promise<void>
 }
 
 export function createApp(browser: BrowserCapabilities): App {
   const api = createApi(browser)
   const local = createLocalDb(browser.indexedDB)
-  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER }
+  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null }
   const listeners = new Set<() => void>()
 
   function update(next: Partial<AppState>) {
@@ -156,6 +168,13 @@ export function createApp(browser: BrowserCapabilities): App {
     loginExpired,
   })
 
+  const lyrics = createLyrics({
+    api,
+    read: () => state.lyrics,
+    write: next => update({ lyrics: next }),
+    loginExpired,
+  })
+
   const login = createLogin({
     api,
     clock: browser.clock,
@@ -173,6 +192,7 @@ export function createApp(browser: BrowserCapabilities): App {
     login.stopQr()
     library.leave()
     player.stop()
+    lyrics.clear()
     update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
   }
 
@@ -203,6 +223,7 @@ export function createApp(browser: BrowserCapabilities): App {
   function loginExpired(): void {
     sessions += 1
     library.leave()
+    lyrics.clear()
     update({ session: { status: 'loginExpired' }, library: null })
   }
 
@@ -295,7 +316,11 @@ export function createApp(browser: BrowserCapabilities): App {
     togglePlay: player.toggle,
     next: player.next,
     previous: player.previous,
+    playFromQueue: player.jump,
+    seek: player.seek,
+    playFrom: player.playFrom,
     setVolume: player.setVolume,
     dismissPlayerNotice: player.dismissNotice,
+    openLyrics: lyrics.open,
   }
 }

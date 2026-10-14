@@ -5,6 +5,7 @@
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
   import { User } from '@lucide/svelte'
+  import { thumbnailUrl } from './library/view'
 
   interface Props {
     url: string
@@ -15,7 +16,7 @@
 
   const { url, size, class: klass }: Props = $props()
   let broken = $state(false)
-  const source = $derived(`${url.replace(/^http:/, 'https:')}?param=${size * 2}y${size * 2}`)
+  const source = $derived(thumbnailUrl(url, size * 2))
 </script>
 
 <span class={['grid flex-none place-items-center overflow-hidden rounded-full bg-primary-100 text-primary-950', klass]} style:width='{size}px' style:height='{size}px'>
