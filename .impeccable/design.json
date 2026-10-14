@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T13:08:22.000Z",
+  "generatedAt": "2026-10-14T20:00:00.000Z",
   "title": "Design System: Campanula",
   "extensions": {
     "colorMeta": {
@@ -490,7 +490,72 @@
       {
         "name": "ease-out-soft",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "按钮轻缩、标签指示块滑动、确认框浮现（200–360ms）。"
+        "purpose": "飘入和移动：先快后慢、不回弹。页面和面板飘入、封面飞行、标签指示块、歌词 / 播放队列轨道、换碟、按钮轻缩。"
+      },
+      {
+        "name": "ease-in-soft",
+        "value": "cubic-bezier(0.4, 0, 1, 1)",
+        "purpose": "飘出：越走越快，时长约是飘入的六成。"
+      },
+      {
+        "name": "duration-feedback",
+        "value": "120ms",
+        "purpose": "按下、图标切换（播放和暂停之间交叉淡化，新图标 85% → 100%）、滚动条淡入。"
+      },
+      {
+        "name": "duration-state",
+        "value": "200ms in / 120ms out",
+        "purpose": "行状态（三根竖条长出、歌名变色）、菜单、提示条、通知条展开、滚动条淡出。"
+      },
+      {
+        "name": "duration-panel",
+        "value": "360ms in / 200ms out",
+        "purpose": "换页、歌词 / 播放队列轨道、手机封面 ↔ 歌词、弹窗、播放条第一次浮上来、标签下划线。抽屉保持 380ms。整段换页不超过 0.5 秒。"
+      },
+      {
+        "name": "duration-focal",
+        "value": "600ms (player page cover wheel); 480ms (wheel in player bars, cover flights)",
+        "purpose": "主角动作：换碟、封面飞到页头、封面飞进播放条。"
+      },
+      {
+        "name": "float",
+        "value": "in: opacity 0 → 1 + translate 12px (pages 16px) from the coming side, ease-out-soft; out: opacity 1 → 0 + translate 6px (pages 8px) toward the leaving side, ease-in-soft; the incoming float starts 60ms after the outgoing one",
+        "purpose": "全站的飘入飘出。方向：进入下一层从下往上，返回从上往下，同一层按左右顺序，下一首往左。"
+      },
+      {
+        "name": "stagger",
+        "value": "30ms per item, first 6 items only, first reveal only",
+        "purpose": "骨架换成内容时依次飘入；虚拟列表滚动时新挂上的行、换页时的整页不逐个飘。"
+      },
+      {
+        "name": "image-in",
+        "value": "opacity 0 → 1 over 240ms after load; none when already decoded at mount",
+        "purpose": "封面加载完从薄荷底上淡入，缓存里的不再淡一次。"
+      },
+      {
+        "name": "page-transition",
+        "value": "same-document View Transitions on the content area (view-transition-name: page), direction via transition types; forward: old up 8px out 200ms, new from 16px below in 360ms; back reversed; lateral ±24px; shared cover 480ms ease-out-soft",
+        "purpose": "换页（ADR-0011）。顶栏、侧栏、播放条不动；从格子进歌单、专辑、歌手时封面飞到页头，返回飞回仍在屏幕里的格子；hasUAVisualTransition 时跳过；过渡中再换页 skipTransition()。"
+      },
+      {
+        "name": "cover-wheel",
+        "value": "pivot below the cover center at 1.6 × cover size; 28° between covers; next = counter-clockwise; 600ms (player page) / 480ms (player bars) ease-out-soft; title, artist, album follow 80ms later (out 12px left, in from 16px right); tint crossfade 700ms; played wave drains to start in 200ms",
+        "purpose": "签名动作“换碟”。方向看 App 发布的换歌原因；只在自己那一栏里转；可打断，从此刻的角度直接转向最新那首。手机播放页左右滑封面：拖过一格的 1/4 或每秒 1000px 一甩就切歌，否则 240ms 转回原位；横着挪过 6px 才算拖。"
+      },
+      {
+        "name": "cover-flight",
+        "value": "song row cover → player bar cover slot, 480ms ease-out-soft along a shallow arc; bar title and artist swap on landing; first appearance of the bar: translateY(100%) → 0 in 360ms, leaves in 200ms",
+        "purpose": "点歌时封面飞进播放条。点的是正在放的那首、在播放页的播放队列里点歌时不飞；连续快点只有最后一首在飞。"
+      },
+      {
+        "name": "cover-relay",
+        "value": "player bar cover ↔ player page cover, translate + scale interpolated by the drawer position, radius 8px → 16px",
+        "purpose": "拉开、收起、拖动播放页时，小封面长成大封面、再缩回去。"
+      },
+      {
+        "name": "panel-track",
+        "value": "lyrics / queue panels side by side, track translateX 0 ↔ -50% over 360ms ease-out-soft, in step with the tab indicator",
+        "purpose": "桌面播放页右栏换标签。两块都一直挂着，看不见的那块不能被 Tab 到。"
       },
       {
         "name": "sheet-in",
@@ -499,17 +564,22 @@
       },
       {
         "name": "popover-in",
-        "value": "160ms, easing 1 - (1 - t)^3, from translateY(-4px)",
+        "value": "200ms ease-out-soft from 4px off the anchor side and scale 0.98; out: 120ms fade",
         "purpose": "桌面浮动菜单、搜索下拉。"
       },
       {
+        "name": "dialog-in",
+        "value": "backdrop fade 200ms; dialog from 8px below and scale 0.98 in 360ms ease-out-soft; out: 200ms fade",
+        "purpose": "编辑、删除确认这类弹窗。"
+      },
+      {
         "name": "morning-row",
-        "value": "--p 260ms linear (registered <number> custom property)",
-        "purpose": "晨光行随播放进度推进，只重绘不重排。"
+        "value": "--p 260ms linear (registered <number> custom property); on song change the old light fades out over 300ms, the new light fades in from the left edge over 200ms",
+        "purpose": "晨光行随播放进度推进，只重绘不重排；换歌时不一帧消失。"
       },
       {
         "name": "now-bars",
-        "value": "0.9–1.3s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate",
+        "value": "0.9–1.3s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; grow from scaleY(0) in 200ms when a row becomes current, shrink back in 120ms",
         "purpose": "正在播放的三根竖条；暂停时停住。"
       },
       {
@@ -525,7 +595,7 @@
       {
         "name": "lyric-line",
         "value": "font-size / line-height / color 300ms; scrollTo current line at 38% of the lyric area, behavior: smooth",
-        "purpose": "换到下一行歌词：当前行变大变深，滚到约 38% 的高度停住；听众自己滚动歌词后，3 秒内不跟着当前行走。减少动态效果时直接跳过去不平滑滚动，字号和颜色不渐变。"
+        "purpose": "换到下一行歌词：当前行变大变深，滚到约 38% 的高度停住；听众自己滚动歌词后，3 秒内不跟着当前行走。减少动态效果时直接跳过去不平滑滚动，字号直接变，颜色在 150ms 内渐变。"
       },
       {
         "name": "player-page-drawer",
@@ -538,9 +608,14 @@
         "purpose": "加载中的骨架（歌曲行、封面格子、歌词）：一道很淡的光从左扫到右；减少动态效果时不动。"
       },
       {
+        "name": "scrollbar",
+        "value": "native scrollbars hidden (scrollbar-width: none); overlay thumb 4px graphite-soft at 45% at rest → 8px mint-stem on hover (16px edge zone) or drag; fades in 120ms on scroll, out 200ms after 1s idle",
+        "purpose": "自绘滚动条（ADR-0012），不占宽度，锁住滚动时页面不横移。拖滑块、点空白处翻一屏；不进 Tab 顺序；除了听众操作从不写滚动位置。触屏只在滚动时显示。"
+      },
+      {
         "name": "reduced-motion",
-        "value": "prefers-reduced-motion: reduce → animations off, transitions instant",
-        "purpose": "所有循环动画和位移过渡都尊重“减少动态效果”：波浪不流动、骨架不扫光、逐字点亮和游标跟着报的进度跳、歌词滚动不平滑、封面染底直接换、播放页和播放队列弹层打开和收起时直接到位（拖动时照样跟着手走）。"
+        "value": "prefers-reduced-motion: reduce → no translation, rotation, scale, flights or loops; opacity and color changes stay, at most 150ms",
+        "purpose": "减少动态效果是“更少、更轻”，不是全部关掉：波浪不流动、三根竖条和骨架不动、逐字点亮和游标跟着报的进度跳、歌词滚动不平滑、换页和换碟只交叉淡化、不飞封面、封面染底 150ms 交叉淡化、抽屉和弹层打开收起直接到位；拖动时照样跟着手走。"
       }
     ],
     "breakpoints": [
@@ -655,7 +730,9 @@
       "颜色有固定分工：薄荷 = 选中与进度，珊瑚 = 红心，蜜桃 = 本机与下载；封面是画面里最饱和的东西。",
       "胶囊形按钮：主要动作是实心深绿，下载是浅蜜桃，次要是描边白。",
       "Noto 可变字体（自托管），只用 400 / 500 / 600 三个真实字重；日文、繁体按 lang 切换字体。",
-      "签名动作“晨光行”：正在播放的那一行，被一层浅薄荷光从歌名开始往右慢慢铺开。"
+      "签名动作“晨光行”：正在播放的那一行，被一层浅薄荷光从歌名开始往右慢慢铺开。",
+      "动效是“飘入飘出”：东西从来的方向轻轻飘来、停稳，离开时先淡再走，不弹跳；封面是主角，动效跟着封面走。",
+      "第二个签名动作“换碟”：切歌时，封面像挂在一个看不见的转盘上，下一张沿弧线转到正中。"
     ],
     "rules": [
       {
@@ -692,6 +769,16 @@
         "name": "The Light-Only Fog Rule",
         "body": "封面染底永远是浅色的：白纱不低于 80%，深色封面上的次要文字也要保持 4.5:1。不做深色播放页。",
         "section": "elevation"
+      },
+      {
+        "name": "The Float Rule",
+        "body": "来有来处，去有去向：每个飘入都从它来的方向来，每个飘出都朝它去的方向走；不弹、不晃、不为好看而转。去掉以后听众会看不懂刚才发生了什么的动效，才值得做。",
+        "section": "overview"
+      },
+      {
+        "name": "The Cover Leads Rule",
+        "body": "封面是主角，同一时刻只有一张封面在飞；飞行只落在已经加载好的图片上，终点看不见或图片没到，就退回普通的飘入。",
+        "section": "overview"
       }
     ],
     "dos": [
@@ -701,7 +788,9 @@
       "Do 统一用 Lucide 线条图标；文案里提到“更多”菜单时，画出同一个图标，或者直接写“更多”。",
       "Do 显示歌名、歌手、专辑、歌单名时带上 lang。",
       "Do 加载中用形状一致的骨架行，放在列表本来的位置上；空、出错、离线都要写清楚发生了什么、能怎么办。",
-      "Do 头部的首数、已下载数和下面实际显示的列表对得上。"
+      "Do 头部的首数、已下载数和下面实际显示的列表对得上。",
+      "Do 每个动效都说得出它在解释什么：操作生效了、东西从哪来到哪去、现在是什么状态（The Float Rule）。",
+      "Do 新的动效同时写好“减少动态效果”时的样子：去掉位移，留下 150ms 以内的淡入淡出。"
     ],
     "donts": [
       "Don't 在薄荷、蜜桃、珊瑚的粉彩底上放白字。",
@@ -712,7 +801,11 @@
       "Don't 给不需要专注的任务开居中弹窗：桌面搜索挂在顶栏下面，结果是内容区里的一页；弹窗只给编辑、删除确认这类要打断一下的操作。",
       "Don't 在页面一打开时弹出无关提示，也不要让浮动按钮压住列表。",
       "Don't 让 logo 一直旋转，也不要改它的图形和颜色。",
-      "Don't 做深色模式，或为深色模式预留变量（ADR-0008）。"
+      "Don't 做深色模式，或为深色模式预留变量（ADR-0008）。",
+      "Don't 用回弹、弹簧、来回晃的曲线，也不要为好看让东西转圈、闪烁（换碟的转盘有含义，不算）。",
+      "Don't 让听众等动画：内容到了就显示，不为了编排先藏起来；整段换页不超过 0.5 秒。",
+      "Don't 接管滚轮和触控板的滚动手感，也不要用 JS 模拟滚动（ADR-0012）。",
+      "Don't 给虚拟列表的每一行加入场动画。"
     ]
   }
 }
