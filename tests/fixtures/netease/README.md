@@ -17,7 +17,7 @@
   - `005`–`007`：まらしぃ的歌手页（收藏的歌手里专辑刚过一页的）：热门歌曲，专辑一页一页取到底（100 张 + 1 张）。
   - `008`–`010`：专辑页，每张之间隔 4 秒（连着取会回“操作频繁”，nonhana/hana-music-api#60）：收藏的「Keep The Village Alive」（3149073）、收藏的「月に寄りそう乙女の作法2 COMPLETE SOUNDTRACK」（3154337，没有简介，`description` 是 null，nonhana/hana-music-api#59）、没收藏的 YOASOBI「THE BOOK for,」（379547126）。
   - `011`：成对操作（Spec #11 交付方式第 2 条）：用 SDK 收藏「THE BOOK for,」，取收藏的专辑（56 张，它排在最前）录下，马上取消收藏，再取一次确认回到 55 张（没录）。收藏、取消收藏的返回没录（`like-collect/album_sub.*` 已有）。
-  - 专辑页的 `album.info.commentThread.resourceInfo.userId` 是 -1（没有这个人）。第一次录制时脱敏把它当成了一个人，`008`–`010` 没写成；修好 `scripts/netease-record.mjs` 后几分钟内只读重录了这三张，所以它们的 `recordedAt` 比 `011` 晚。
+  - 专辑页的 `album.info.commentThread.resourceInfo.userId` 是 -1（没有这个人）。第一次录制时脱敏把它当成了一个人，`008`–`010` 没写成；修好录制脚本（现在的 `scripts/netease-record.mts`）后几分钟内只读重录了这三张，所以它们的 `recordedAt` 比 `011` 晚。
 - nonhana/campanula-music#24（2026-10-14 北京时间）：`playback/liked/` 下我喜欢的音乐里 6 首歌的在线播放地址（`song_url_v1`，极高音质 `exhigh`）。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.8.0`，只读，每首 1 次；文件名前的序号是调用的先后：
   - `001`–`003`：我喜欢的音乐的第 1～3 首（3433267939、2662577181、4208408）。
   - `004`、`005`：无版权的「Sea Of Tired（Slowed）」（2108191414）前后各一首（2092188841、2044505920）。
@@ -76,23 +76,24 @@
 
 ## 录制
 
-新的录制用 `scripts/netease-record.mjs`，每张票只写一个一次性脚本决定调哪些模块（不进仓库）：
+新的录制用 `scripts/netease-record.mts`，每张票只写一个一次性脚本决定调哪些模块，放在 `_notes/scripts/`（不进仓库），用 `pnpm tsx _notes/scripts/<文件>.mts` 跑：
 
-```js
-import process from 'node:process'
-import { loadIdentity } from './scripts/fixture-identity.mjs'
-import { createRecorder, openSession } from './scripts/netease-record.mjs'
+```ts
+import { loadIdentity } from '../../scripts/fixture-identity.mts'
+import { createRecorder, openSession } from '../../scripts/netease-record.mts'
 
-// 浏览器开发者工具里复制 campanula_login 的值；凭据只在内存里
-const invoke = await openSession(process.env.CAMPANULA_LOGIN)
+// 登录 Cookie 从 _notes/campanula-login 读，见下面第一条
+const invoke = await openSession()
 const recorder = createRecorder({ invoke, dir: 'tests/fixtures/netease/library/sync/after', viewer: 'vip-qr' })
-const list = await recorder.call('user_playlist', { uid: loadIdentity().self.uid, limit: 1000 })
-// …按 list.body 决定接着调什么
+const list = await recorder.call('user_playlist', { uid: loadIdentity()!.self.uid, limit: 1000 })
+// list.ok 时 list.body 是 SDK 收窄过的返回，按它决定接着调什么
 const { written, problems } = recorder.save() // problems 不为空：那几个文件有残留，没写
 ```
 
-- `save()` 按上面「脱敏」的规则处理，写之前用 `scripts/fixture-identity.mjs` 查残留；对照表在作者本机的 `_notes/fixture-identity.json`（本人的 uid、昵称、歌手编号和名字，本人歌单、作品、其他听众的真假编号对照）。录到新的人、本人新的歌单和作品时补进对照表，之后的录制沿用同一套假编号。
-- 提交时 `lint-staged` 对暂存的录制跑同一个检查，有残留就拦下；没有对照表的机器（CI）跳过。手动查全部：`node scripts/fixture-identity.mjs`。
+- tsx 只跑不查类型。一次性脚本要查类型，就先放进 `scripts/` 跑一次 `pnpm check`（`scripts/**/*.mts` 在类型检查里），再挪回 `_notes/scripts/`。
+- 登录 Cookie：作者在浏览器开发者工具（Application → Cookies）里复制 `campanula_login` 的值，存进作者本机的 `_notes/campanula-login`。录制脚本只从这个文件读，值不出现在命令行和对话里；文件不在时 `openSession()` 报错，停下来请作者存。
+- `save()` 按上面「脱敏」的规则处理，写之前用 `scripts/fixture-identity.mts` 查残留；对照表在作者本机的 `_notes/fixture-identity.json`（本人的 uid、昵称、歌手编号和名字，本人歌单、作品、其他听众的真假编号对照）。录到新的人、本人新的歌单和作品时补进对照表，之后的录制沿用同一套假编号。
+- 提交时 `lint-staged` 对暂存的录制跑同一个检查，有残留就拦下；没有对照表的机器（CI）跳过。手动查全部：`pnpm tsx scripts/fixture-identity.mts`。
 - 对照表不在了要重建：本人身份用 `/api/account`，本人歌单的真实编号用浏览器里的 `/api/playlists`，作品的真实编号用本机副本里歌手是本人的歌，按名字和录制里 `99999999` 的歌对上。
 
 ## 构造的数据
