@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { MEDIA_ERR_NETWORK, MEDIA_ERR_SRC_NOT_SUPPORTED } from './harness/browser'
+import { held, never } from './harness/hold'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -36,9 +37,6 @@ const NO_COPYRIGHT = 2108191414
 /** 匿名录的专辑（library/album.json）：只有一首，非会员只能试听；它的试听片段地址（30 秒） */
 const TRIAL_ALBUM = { id: 84072830, song: 1409311773 }
 const TRIAL_URL = 'playback/song_url_v1.anon-trial.json'
-
-/** 网易云压着不回 */
-const never = () => new Promise<void>(() => {})
 
 async function readRecording(path: string): Promise<{ response: { body: any } }> {
   const bytes = await readFile(new URL(`./fixtures/netease/${path}`, import.meta.url))
@@ -147,15 +145,6 @@ describe('点歌', () => {
     expect(playUrlRequests(device)).toHaveLength(3)
   })
 })
-
-/** 一个压着不回的网易云返回：release() 了才回 */
-function held() {
-  let release = (): void => {}
-  const until = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  return { until, release }
-}
 
 /** 登录，后台同步停在我喜欢的音乐的曲目编号 */
 async function signInHeldAtLiked(device: Device): Promise<Tab> {
@@ -580,6 +569,39 @@ describe('上一首、下一首、暂停', () => {
     expect(playUrlRequests(device)).toHaveLength(2)
   })
 
+  it('播放队列只有一首、地址已经过期时按下一首：重新取地址，从头放；取地址时旧的那个还在报进度也不影响', async () => {
+    const device = world.device()
+    const tab = await signInHeldAtLiked(device)
+    const { app } = tab
+    await world.netease.reply('library/album.json')
+    await app.openAlbum(TRIAL_ALBUM.id)
+    await world.netease.reply(TRIAL_URL)
+    app.play({ kind: 'album', id: TRIAL_ALBUM.id }, TRIAL_ALBUM.song)
+    await world.settle()
+    const player = tab.audio.find(audio => !audio.paused)!
+    player.ready(30.04)
+    await world.settle()
+    // 试听片段的地址 1,200 秒后过期（提前 1 分钟当作过期）
+    await world.clock.advance(20 * 60_000)
+
+    const slow = held()
+    await world.netease.reply(TRIAL_URL, { until: slow.until })
+    app.next()
+    await world.settle()
+    expect(app.state.player.status).toBe('loading')
+    player.progress(18)
+    expect(app.state.player.position).toBe(0)
+    slow.release()
+    await world.settle()
+    const restarted = tab.audio.find(audio => audio !== player)!
+    expect(restarted.paused).toBe(false)
+    expect(restarted.currentTime).toBe(0)
+    restarted.ready(30.04)
+    await world.settle()
+    expect(tab.sounding()).toBe(restarted)
+    expect(app.state.player).toMatchObject({ status: 'playing', position: 0 })
+  })
+
   it('退出登录：停下，清空播放队列', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
@@ -589,6 +611,133 @@ describe('上一首、下一首、暂停', () => {
     await app.logout()
     expect(tab.sounding()).toBeUndefined()
     expect(app.state.player).toMatchObject({ queue: [], current: null, status: 'paused' })
+  })
+})
+
+describe('跳到某个位置（波浪进度条、点歌词的一行）', () => {
+  it('在放时跳：当前的播放器从那里接着放，进度马上跟着变', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    player.progress(10)
+
+    app.seek(95.5)
+    expect(player.currentTime).toBe(95.5)
+    expect(app.state.player).toMatchObject({ status: 'playing', position: 95.5 })
+    await world.settle()
+    expect(tab.sounding()).toBe(player)
+  })
+
+  it('超出这首的长度：最早到开头，最晚到结尾', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+
+    app.seek(-3)
+    expect(player.currentTime).toBe(0)
+    expect(app.state.player.position).toBe(0)
+    app.seek(1000)
+    expect(player.currentTime).toBe(FIRST.duration)
+    expect(app.state.player.position).toBe(FIRST.duration)
+  })
+
+  it('停着时跳：按播放从跳到的地方接着放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    player.progress(42)
+    app.togglePlay()
+    await world.settle()
+
+    app.seek(120)
+    expect(app.state.player).toMatchObject({ status: 'paused', position: 120 })
+    app.togglePlay()
+    await world.settle()
+    expect(tab.sounding()).toBe(player)
+    expect(player.currentTime).toBe(120)
+    expect(app.state.player).toMatchObject({ status: 'playing', position: 120 })
+  })
+
+  it('还在取播放地址时跳：取到后从跳到的地方开始放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const slow = held()
+    await world.netease.reply(FIRST.url, { until: slow.until })
+    app.play(LIKED, FIRST.id)
+    await world.settle()
+
+    app.seek(30)
+    expect(app.state.player).toMatchObject({ status: 'loading', position: 30 })
+    await world.netease.reply(SECOND.url)
+    slow.release()
+    await world.settle()
+    const player = tab.audio.find(audio => !audio.paused)!
+    player.ready(FIRST.duration)
+    await world.settle()
+    expect(tab.sounding()).toBe(player)
+    expect(player.currentTime).toBe(30)
+    expect(app.state.player).toMatchObject({ status: 'playing', position: 30 })
+  })
+
+  it('快放完、下一首已经开始交接时往回跳：交接取消，当前这首从跳到的地方接着放；再放到结尾照样交接', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    player.progress(188)
+    await world.settle()
+    expect(spare.paused).toBe(false)
+
+    app.seek(60)
+    await world.settle()
+    expect(spare.paused).toBe(true)
+    spare.ready(SECOND.duration)
+    await world.settle()
+    expect(tab.sounding()).toBe(player)
+    expect(player.currentTime).toBe(60)
+    expect(current(app)).toBe(FIRST.id)
+    expect(app.state.player).toMatchObject({ status: 'playing', position: 60 })
+
+    await world.netease.reply(THIRD.url)
+    player.progress(191.7)
+    await world.settle()
+    expect(tab.sounding()).toBe(spare)
+    expect(spare.currentTime).toBe(0)
+    expect(current(app)).toBe(SECOND.id)
+  })
+})
+
+describe('播放队列', () => {
+  it('在播放队列里点一首：放这一首，播放队列不变', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+    const queue = queueIds(app)
+
+    await world.netease.reply(THIRD.url)
+    app.playFromQueue(2)
+    await world.settle()
+    expect(current(app)).toBe(THIRD.id)
+    expect(queueIds(app)).toEqual(queue)
+    expect(tab.audio.find(audio => !audio.paused)?.src).toBe(await recordedUrl(THIRD.url))
+  })
+
+  it('点播放队列里无版权的歌：不放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+
+    app.playFromQueue(queueIds(app).indexOf(NO_COPYRIGHT))
+    await world.settle()
+    expect(current(app)).toBe(FIRST.id)
+    expect(app.state.player.status).toBe('playing')
   })
 })
 

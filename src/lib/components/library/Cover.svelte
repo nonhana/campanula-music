@@ -7,6 +7,7 @@
   import type { LucideIcon } from '@lucide/svelte'
   import type { ClassValue } from 'svelte/elements'
   import { Music } from '@lucide/svelte'
+  import { thumbnailUrl } from './view'
 
   interface Props {
     url: string
@@ -22,7 +23,7 @@
 
   const { url, size, fluid = false, class: klass, eager = false, fallback: Fallback = Music }: Props = $props()
   let broken = $state(false)
-  const source = $derived(`${url.replace(/^http:/, 'https:')}?param=${size * 2}y${size * 2}`)
+  const source = $derived(thumbnailUrl(url, size * 2))
 </script>
 
 <span

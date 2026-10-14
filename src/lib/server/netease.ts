@@ -2,11 +2,12 @@ import type { Account } from '$lib/api/account'
 import type { NeteaseFailure } from '$lib/api/errors'
 import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '$lib/api/library'
 import type { QrResponse } from '$lib/api/login'
-import type { PlayUrlResponse, Quality } from '$lib/api/playback'
+import type { LyricsResponse, PlayUrlResponse, Quality } from '$lib/api/playback'
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
 import { env } from '$env/dynamic/private'
 import { ARTIST_ALBUMS_PER_REQUEST } from '$lib/api/library'
 import { invokeModule } from 'hana-music-api'
+import { lyricsOf } from './lyrics'
 
 // 网易云适配层（Spec #11“服务端：网易云适配层”）：服务端里只有这里调 hana-music-api。
 // 每次调用都带上听众的凭据和 deviceId，站长配了真实国内 IP 就作为 realIP 传入；
@@ -359,6 +360,12 @@ export async function fetchPlayUrl(songId: number, quality: Quality, listener: L
   if (!item?.url)
     return { playable: false }
   return { playable: true, url: item.url.replace(/^http:\/\//, 'https://'), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
+}
+
+/** 一首歌的歌词：逐字、逐行、翻译、音译（lyric_new；旧的 lyric 模块 SDK 没有收窄，不用） */
+export async function fetchLyrics(songId: number, listener: Listener): Promise<LyricsResponse> {
+  const { body } = await call('lyric_new', { id: songId }, listener)
+  return lyricsOf(body)
 }
 
 /** 收藏的专辑、歌手一次要这么多（#23 实测网易云接受 1,000，作者的 55 张、236 位一次取完）；网易云说还有（hasMore）就接着要 */

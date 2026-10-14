@@ -2,6 +2,7 @@ import type { Device, SentRequest } from './harness/device'
 import { readdir, readFile } from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
 import { describe, expect, it, vi } from 'vitest'
+import { held } from './harness/hold'
 import { ANOTHER_ACCOUNT, LIBRARY_SYNC_MODULES, RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -100,15 +101,6 @@ async function syncWithRejectedPage(device: Device) {
   await signIn(world, app)
   await device.idle()
   return app
-}
-
-/** 一个压着不回的网易云返回：release() 了才回 */
-function held() {
-  let release = (): void => {}
-  const until = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  return { until, release }
 }
 
 /** 网易云依次回：红心、歌单列表、收藏的专辑和歌手、我喜欢的音乐的曲目编号 */

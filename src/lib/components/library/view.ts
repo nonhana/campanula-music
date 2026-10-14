@@ -123,6 +123,11 @@ export function syncFailureText(failure: SyncFailure): string {
   return `曲库没能同步完。${failureText(failure)}`
 }
 
+/** 网易云图片的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */
+export function thumbnailUrl(url: string, pixels: number): string {
+  return `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
+}
+
 const KANA = /[\u3040-\u30FF\u31F0-\u31FF\uFF66-\uFF9F]/
 /** 常见的繁体专用字，用来粗略认出繁体中文（视觉原型 data.ts 的做法） */
 const TRADITIONAL = /[們個說這樣對時會從來發現與機關點經國長開門問間聽見東車為讓過還進遠運達選隨實寫學愛戲遊類歲鄧紫倫傑煉幸倔強偷頭風雲夢裡麼妳嗎號鐘覺緣戀憶漸靈雙聲歡]/

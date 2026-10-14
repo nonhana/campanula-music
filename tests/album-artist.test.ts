@@ -1,6 +1,7 @@
 import type { App } from '$lib/app/app'
 import type { Device } from './harness/device'
 import { describe, expect, it, vi } from 'vitest'
+import { never } from './harness/hold'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -27,8 +28,6 @@ const MARASY = { id: 14786, songs: `${DIR}/005-artist_top_song.json.gz`, albums:
 const HEARTS = 'library/likelist.json'
 const PLAYLISTS = 'library/sync/before/001-user_playlist.json.gz'
 const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-/** 网易云压着不回：后台同步停在这一步 */
-const never = () => new Promise<void>(() => {})
 
 /** 登录，后台同步拿到收藏的专辑和歌手后停在我喜欢的音乐 */
 async function signInUntilCollected(device: Device, albums = COLLECTED_ALBUMS): Promise<App> {

@@ -95,6 +95,12 @@ export interface Player {
   toggle: () => void
   next: () => void
   previous: () => void
+  /** 放播放队列里的第 index 首，播放队列不变。正在放的那首、无版权的不动 */
+  jump: (index: number) => void
+  /** 当前这首跳到第 position 秒（超出的算开头、结尾）：在放就从那里接着放，停着就等按播放 */
+  seek: (position: number) => void
+  /** 当前这首从第 position 秒开始放：跳过去，停着的也接着放（点歌词的一行） */
+  playFrom: (position: number) => void
   setVolume: (volume: number) => void
   dismissNotice: () => void
   /** 退出登录：停下，清空播放队列 */
@@ -140,6 +146,8 @@ export function createPlayer(context: PlayerContext): Player {
   let handoverFailed = false
   /** 每换一次要放的歌、每暂停一次就加一：在取的地址回来时已经换了或停了，就不放了 */
   let attempt = 0
+  /** 正在换过去的那首从第几秒开始放：start 定下，还在取地址时听众又跳到别处（seek）就改它 */
+  let startAt = 0
   /** 每准备一次空闲的播放器就加一：准备到一半又换了歌，就不往里装了 */
   let preparing = 0
   /** 当前这首已经准备过下一首 */
@@ -174,9 +182,12 @@ export function createPlayer(context: PlayerContext): Player {
 
   /**
    * 这个播放器放的是当前这首，它的事件才算数。听众要放的那首还没出声时，当前这首在正在换过去的那个播放器上；
-   * 换歌时旧的那个还在出声，直到新的出声：它的进度、放完、出错都不算到新的这首上
+   * 换歌时旧的那个还在出声，直到新的出声：它的进度、放完、出错都不算到新的这首上。
+   * 在取当前这首的地址时（loading）哪个都不算：单曲的播放队列换到自己时，旧的那个放的也是这首
    */
   function isCurrent(deck: Deck): boolean {
+    if (state.status === 'loading')
+      return false
     const shown = incoming && !incoming.handover ? incoming.deck : active
     return deck === shown && state.current !== null && deck.song?.id === state.queue[state.current].song.id
   }
@@ -271,6 +282,7 @@ export function createPlayer(context: PlayerContext): Player {
     incoming = null
     stopSlow()
     const { song } = state.queue[index]
+    startAt = position
     publish({ current: index, position, duration: null, trial: false, notice })
     if (!holds(spare, song)) {
       let url = urls.get(song.id) ?? null
@@ -287,7 +299,8 @@ export function createPlayer(context: PlayerContext): Player {
       }
       load(spare, song, url)
     }
-    spare.audio.currentTime = position
+    // 不读 state.position：单曲的播放队列换到自己时，旧的播放器放的是同一首，取地址期间它还在报进度
+    spare.audio.currentTime = startAt
     incoming = { deck: spare, index, handover: false }
     publish({ status: 'buffering', duration: durationOf(spare), trial: spare.url!.trial })
     play(spare)
@@ -502,6 +515,26 @@ export function createPlayer(context: PlayerContext): Player {
     void start(index, state.position)
   }
 
+  /** 当前这首跳到第 position 秒（见 Player.seek） */
+  function seek(position: number): void {
+    if (state.current === null)
+      return
+    const { song } = state.queue[state.current]
+    const at = Math.min(Math.max(0, position), state.duration ?? song.duration / 1000)
+    if (incoming?.handover) {
+      // 快放完时空闲的播放器已经开始放下一首：往回跳就不交接了，它停下等着，再放到结尾时重新交接
+      incoming.deck.audio.pause()
+      incoming.deck.audio.currentTime = 0
+      incoming = null
+    }
+    // 正在换过去的播放器（还没出声）、装着这首的当前播放器直接跳；都不是的（在取地址、地址过期了）放的时候从这里开始
+    const deck = incoming?.deck ?? (holds(active, song) ? active : null)
+    if (deck)
+      deck.audio.currentTime = at
+    startAt = at
+    publish({ position: at })
+  }
+
   return {
     play(source, songs, songId, complete) {
       const index = songs.findIndex(song => song.id === songId)
@@ -556,6 +589,19 @@ export function createPlayer(context: PlayerContext): Player {
       const index = state.current === null ? null : playableFrom(state.current, -1)
       if (index !== null)
         void start(index, 0)
+    },
+    jump(index) {
+      const entry = state.queue[index]
+      if (entry && index !== state.current && entry.song.availability !== 'noCopyright')
+        void start(index, 0)
+    },
+    seek,
+    playFrom(position) {
+      if (state.current === null)
+        return
+      seek(position)
+      if (state.status === 'paused')
+        resume()
     },
     setVolume(volume) {
       active.audio.volume = volume

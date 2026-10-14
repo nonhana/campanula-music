@@ -1,9 +1,11 @@
 import type { Song } from '$lib/api/library'
-import type { PlayerNotice, PlayerState } from '$lib/app/player'
+import type { LyricLine, LyricWord } from '$lib/api/playback'
+import type { LibraryState } from '$lib/app/library'
+import type { PlayerNotice, PlayerState, PlaySource } from '$lib/app/player'
 import { failureText } from '../failure'
-import { formatDuration } from '../library/view'
+import { formatDuration, playlistName } from '../library/view'
 
-// 播放条、晨光行上怎么显示：界面组件只照着画
+// 播放条、晨光行、播放页上怎么显示：界面组件只照着画
 
 /** 当前这首；播放队列是空的时是 null */
 export function currentSong(player: PlayerState): Song | null {
@@ -24,6 +26,57 @@ export function progressOf(player: PlayerState): number {
 /** 秒 → 分:秒 */
 export function formatSeconds(seconds: number): string {
   return formatDuration(seconds * 1000)
+}
+
+/** 播放来源叫什么（“来自「我喜欢的音乐」”）；曲库里找不到（歌单在网易云里删掉了、专辑页还没打开过）时是 null */
+export function sourceName(library: LibraryState | null, source: PlaySource): string | null {
+  if (!library)
+    return null
+  switch (source.kind) {
+    case 'playlist': {
+      const playlist = library.playlists?.find(each => each.id === source.id)
+      return playlist ? playlistName(playlist) : null
+    }
+    case 'album': {
+      const page = library.albumPage(source.id)
+      return page?.status === 'shown' ? page.content.album.name : library.albums?.find(album => album.id === source.id)?.name ?? null
+    }
+    case 'artist': {
+      const page = library.artistPage(source.id)
+      return page?.status === 'shown' ? page.content.artist.name : library.artists?.find(artist => artist.id === source.id)?.name ?? null
+    }
+    default: {
+      const unhandled: never = source.kind
+      throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)
+    }
+  }
+}
+
+/** 正在唱的那一行：已经开始的最后一行（间奏时还是上一行）；第一行开始之前是 -1 */
+export function lineIndexAt(lines: readonly LyricLine[], at: number): number {
+  let low = 0
+  let high = lines.length - 1
+  let found = -1
+  while (low <= high) {
+    const middle = (low + high) >> 1
+    if (lines[middle].start <= at) {
+      found = middle
+      low = middle + 1
+    }
+    else {
+      high = middle - 1
+    }
+  }
+  return found
+}
+
+/** 一个词唱到了几成，0 到 1 */
+export function wordProgress(word: LyricWord, at: number): number {
+  if (at <= word.start)
+    return 0
+  if (at >= word.end)
+    return 1
+  return (at - word.start) / (word.end - word.start)
 }
 
 /** 播放的提示说什么：发生了什么、能怎么办 */
