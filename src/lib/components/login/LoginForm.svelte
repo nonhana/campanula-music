@@ -60,7 +60,7 @@
         aria-controls='login-panel'
         tabindex={active ? 0 : -1}
         class={[
-          'flex-1 rounded-full text-label font-500 transition-colors duration-150',
+          'flex-1 rounded-full text-label font-500 transition-colors duration-feedback',
           active ? 'bg-primary-200 text-primary-950' : 'text-neutral-600 mouse:hover:text-neutral-900',
         ]}
         onclick={() => choose(item.key)}

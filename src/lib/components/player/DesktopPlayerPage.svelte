@@ -54,7 +54,7 @@
     tabindex='-1'
     {@attach gripHandle}
   >
-    <span class='h-1 w-10 rounded-full bg-neutral-400 transition-colors duration-150 mouse:group-hover:bg-neutral-600' aria-hidden='true'></span>
+    <span class='h-1 w-10 rounded-full bg-neutral-400 transition-colors duration-feedback mouse:group-hover:bg-neutral-600' aria-hidden='true'></span>
   </button>
 </header>
 
@@ -96,7 +96,7 @@
           aria-selected={selected}
           aria-controls='{uid}-panel'
           tabindex={selected ? 0 : -1}
-          class={['relative h-9 w-28 rounded-full text-label font-500 transition-colors duration-200 motion-reduce:transition-none', selected ? 'text-primary-950' : 'text-neutral-700 mouse:hover:text-neutral-900']}
+          class={['relative h-9 w-28 rounded-full text-label font-500 transition-colors duration-state', selected ? 'text-primary-950' : 'text-neutral-700 mouse:hover:text-neutral-900']}
           onclick={() => (choices.panel = panel.key)}
           onkeydown={onTabKey}
         >{panel.label}</button>
@@ -123,12 +123,6 @@
   }
 
   .indicator {
-    transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .indicator {
-      transition: none;
-    }
+    transition: transform var(--move-panel) var(--ease-out-soft);
   }
 </style>

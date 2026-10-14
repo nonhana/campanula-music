@@ -10,7 +10,7 @@
 
 <button
   type='button'
-  class={['grid w-16 flex-none place-items-center rounded-full bg-primary-100 text-primary-950 transition-[background-color,transform] duration-150 ease-out active:scale-98 mouse:hover:bg-primary-200', phone ? 'h-14' : 'h-12']}
+  class={['grid w-16 flex-none place-items-center rounded-full bg-primary-100 text-primary-950 transition-[background-color,transform] duration-feedback press mouse:hover:bg-primary-200', phone ? 'h-14' : 'h-12']}
   aria-label={direction === 'previous' ? '上一首' : '下一首'}
   onclick={() => (direction === 'previous' ? view.app.previous() : view.app.next())}
 >

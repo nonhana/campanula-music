@@ -49,12 +49,6 @@
     inset: 0 0 0 var(--start);
     background: linear-gradient(90deg, var(--tone) calc(var(--wash-progress) * 100% - 40px), transparent calc(var(--wash-progress) * 100%));
     mask-image: linear-gradient(90deg, transparent 0, #000 16px);
-    transition: --wash-progress 260ms linear;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .light {
-      transition: none;
-    }
+    transition: --wash-progress var(--move-morning-row) linear;
   }
 </style>

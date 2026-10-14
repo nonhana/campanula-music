@@ -25,7 +25,7 @@
     role={notice.kind === 'slow' ? 'status' : 'alert'}
   >
     {#if notice.kind === 'slow'}
-      <LoaderCircle size={18} class='flex-none text-primary-900 motion-safe:animate-spin' aria-hidden='true' />
+      <LoaderCircle size={18} class='flex-none animate-spin text-primary-900' aria-hidden='true' />
     {:else}
       <CircleAlert size={18} class='flex-none text-error-700' aria-hidden='true' />
     {/if}

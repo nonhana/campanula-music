@@ -117,7 +117,7 @@
           <li>
             <a
               href={resolve('/playlists/[id]', { id: String(item.id) })}
-              class={['block rounded-xl p-4 transition-colors duration-150', current ? 'bg-primary-100' : 'mouse:hover:bg-white']}
+              class={['block rounded-xl p-4 transition-colors duration-feedback', current ? 'bg-primary-100' : 'mouse:hover:bg-white']}
               aria-current={current ? 'page' : undefined}
             >
               <Cover url={item.coverUrl} size={176} fluid class='rounded-lg' />

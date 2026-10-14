@@ -10,10 +10,9 @@
   import type { Playhead } from './playhead.svelte'
   import { page } from '$app/state'
   import { ChevronDown, MicVocal } from '@lucide/svelte'
-  import { prefersReducedMotion } from 'svelte/motion'
-  import { fade } from 'svelte/transition'
   import Cover from '../library/Cover.svelte'
   import { langOf } from '../library/view'
+  import { fade } from '../motion'
   import { createDrawer } from './drawer.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
@@ -26,7 +25,6 @@
   const { song, source, playhead }: { song: Song, source: string | null, playhead: Playhead } = $props()
 
   const queueOpen = $derived(page.state.player === 'queue')
-  const swap = $derived(prefersReducedMotion.current ? 0 : 200)
 
   /** 播放队列弹层占屏幕高度的这么多 */
   const SHEET_HEIGHT = 0.86
@@ -78,11 +76,11 @@
     <!-- 封面和歌词轮流占这一块 -->
     <div class='relative min-h-0 flex-1'>
       {#if choices.phoneLyrics}
-        <div class='absolute inset-0 flex flex-col pt-1' transition:fade={{ duration: swap }}>
+        <div class='absolute inset-0 flex flex-col pt-1' transition:fade>
           <Lyrics {song} {playhead} compact class='min-h-0 flex-1' />
         </div>
       {:else}
-        <div class='stage absolute inset-0 grid place-items-center' transition:fade={{ duration: swap }}>
+        <div class='stage absolute inset-0 grid place-items-center' transition:fade>
           <button type='button' class='face rounded-xl' aria-label='显示歌词' onclick={() => (choices.phoneLyrics = true)}>
             <Cover url={song.album.coverUrl} size={360} fluid eager class='rounded-xl shadow-float' />
           </button>

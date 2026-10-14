@@ -42,11 +42,11 @@
       <img
         src={image}
         alt={verifying ? '安全验证二维码' : '登录二维码'}
-        class={['block [image-rendering:pixelated] transition-[filter,opacity] duration-300', size, dimmed && 'opacity-15 blur-[1.5px]']}
+        class={['block [image-rendering:pixelated] transition-[filter,opacity] duration-state', size, dimmed && 'opacity-15 blur-[1.5px]']}
       />
       <span class='pointer-events-none absolute inset-1 bg-primary-950 mix-blend-lighten' aria-hidden='true'></span>
     {:else}
-      <span class={['block rounded-lg bg-neutral-100', size, qr?.step === 'loading' && 'animate-pulse']} aria-hidden='true'></span>
+      <span class={['block rounded-lg', size, qr?.step === 'loading' ? 'bone' : 'bg-neutral-100']} aria-hidden='true'></span>
     {/if}
 
     {#if qr?.step === 'scanned'}
@@ -59,7 +59,7 @@
     {:else if qr?.step === 'expired' || qr?.step === 'failed'}
       <button type='button' class='group absolute inset-0 grid place-items-center rounded-xl text-center' onclick={refresh}>
         <span class='flex flex-col items-center'>
-          <span class='grid size-12 place-items-center rounded-full bg-primary-900 text-white transition-colors duration-150 mouse:group-hover:bg-primary-950'>
+          <span class='grid size-12 place-items-center rounded-full bg-primary-900 text-white transition-colors duration-feedback mouse:group-hover:bg-primary-950'>
             <RotateCw size={20} aria-hidden='true' />
           </span>
           <span class='mt-2.5 text-label text-neutral-900 font-500'>{qr.step === 'expired' ? '点击刷新' : '重试'}</span>
@@ -71,13 +71,13 @@
   <div class='mt-4 max-w-[300px] flex flex-col items-center text-center'>
     <p class='flex items-center gap-2 text-label' role='status'>
       {#if !qr || qr.step === 'loading'}
-        <LoaderCircle size={15} class='animate-spin text-primary-800 motion-reduce:animate-none' aria-hidden='true' />
+        <LoaderCircle size={15} class='animate-spin text-primary-800' aria-hidden='true' />
         <span class='text-neutral-900 font-500'>正在获取二维码</span>
       {:else if qr.step === 'waiting'}
         <span class='qr-dot size-2 rounded-full bg-current text-primary-600' aria-hidden='true'></span>
         <span class='text-neutral-900 font-500'>等待扫码</span>
       {:else if qr.step === 'scanned'}
-        <LoaderCircle size={15} class='animate-spin text-primary-800 motion-reduce:animate-none' aria-hidden='true' />
+        <LoaderCircle size={15} class='animate-spin text-primary-800' aria-hidden='true' />
         <span class='text-neutral-900 font-500'>已扫码，请在手机上确认</span>
       {:else if qr.step === 'expired'}
         <span class='text-error-700 font-500'>二维码已过期，点击刷新</span>
@@ -119,12 +119,12 @@
         <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- data: 地址的图片，下载用，不是页面 -->
         <a href={image}
            download={verifying ? 'campanula-安全验证二维码.png' : 'campanula-登录二维码.png'}
-           class='h-11 inline-flex items-center rounded-full bg-secondary-100 px-5 text-label text-secondary-900 font-500 transition-colors duration-150 active:bg-secondary-200 mouse:hover:bg-secondary-200'
+           class='h-11 inline-flex items-center rounded-full bg-secondary-100 px-5 text-label text-secondary-900 font-500 transition-colors duration-feedback active:bg-secondary-200 mouse:hover:bg-secondary-200'
         >保存二维码</a>
       {/if}
       {#if qr?.step === 'verifying'}
         <Button variant='primary' disabled={qr.checking} onclick={() => void view.app.continueQrLogin()}>
-          {#if qr.checking}<LoaderCircle size={17} class='animate-spin motion-reduce:animate-none' aria-hidden='true' />正在确认{:else}继续登录{/if}
+          {#if qr.checking}<LoaderCircle size={17} class='animate-spin' aria-hidden='true' />正在确认{:else}继续登录{/if}
         </Button>
       {/if}
     </div>
@@ -134,7 +134,8 @@
 <style>
   /* 等待扫码的小点：新芽绿（只做装饰，DESIGN.md），一圈圈向外淡开；颜色取自元素的 currentColor */
   .qr-dot {
-    animation: qr-dot 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    animation: qr-dot var(--loop-qr-dot) var(--ease-out-soft) infinite;
+    animation-play-state: var(--loop-state);
   }
 
   @keyframes qr-dot {
@@ -144,12 +145,6 @@
     70%,
     100% {
       box-shadow: 0 0 0 7px transparent;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .qr-dot {
-      animation: none;
     }
   }
 </style>

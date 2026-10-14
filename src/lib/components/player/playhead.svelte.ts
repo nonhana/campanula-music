@@ -1,5 +1,5 @@
 import type { PlayerState } from '$lib/app/player'
-import { prefersReducedMotion } from 'svelte/motion'
+import { reducedMotion } from '../motion'
 
 export interface Playhead {
   /** 当前这首放到第几秒 */
@@ -22,7 +22,7 @@ export function createPlayhead(read: () => PlayerState): Playhead {
     const from = position
     const end = duration
     now = from
-    if (!playing || prefersReducedMotion.current)
+    if (!playing || reducedMotion())
       return
     const since = performance.now()
     let frame = requestAnimationFrame(function tick(at) {

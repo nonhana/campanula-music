@@ -8,8 +8,10 @@
   import type { Playhead } from './playhead.svelte'
   import { untrack } from 'svelte'
   import { cubicOut } from 'svelte/easing'
-  import { prefersReducedMotion, Tween } from 'svelte/motion'
+  import { Tween } from 'svelte/motion'
   import { getAppView } from '../app-context.svelte'
+  import { moveMs } from '../motion'
+  import { DURATIONS } from '../motion-tokens'
   import { createSeekSlider } from './seek-slider.svelte'
   import { formatSeconds } from './view'
 
@@ -19,9 +21,6 @@
   const WAVELENGTH = 24
   const MIDDLE = 12
   const AMPLITUDE = 7
-  /** 暂停时抹平、播放时起伏回来的时长 */
-  const FLATTEN_MS = 160
-  const RISE_MS = 420
 
   const uid = $props.id()
   const view = getAppView()
@@ -37,7 +36,7 @@
 
   /** 起伏的高度：暂停时马上抹平，播放时渐渐起来；一打开就是当前的样子，不从平的长出来 */
   const amplitude = new Tween(untrack(() => (waving ? AMPLITUDE : 0)), {
-    duration: (_, to) => (prefersReducedMotion.current ? 0 : to === 0 ? FLATTEN_MS : RISE_MS),
+    duration: (_, to) => moveMs(to === 0 ? DURATIONS['wave-flatten'] : DURATIONS['wave-rise']),
     easing: cubicOut,
   })
   $effect(() => {
@@ -113,12 +112,12 @@
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
-    animation: flow 1.8s linear infinite;
+    animation: flow var(--loop-wave-flow) linear infinite;
     animation-play-state: paused;
   }
 
   .flow.live {
-    animation-play-state: running;
+    animation-play-state: var(--loop-state);
   }
 
   .thumb {
@@ -133,12 +132,6 @@
 
   .touch .times {
     margin-top: -4px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .flow {
-      animation: none;
-    }
   }
 
   @keyframes flow {

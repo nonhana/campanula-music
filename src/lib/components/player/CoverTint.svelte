@@ -1,12 +1,12 @@
 <!--
   播放页的封面染底（DESIGN.md Elevation & Depth）：当前封面放大、重度模糊（64px，饱和度 1.15），盖一层 80% 的白纱，
-  每首歌把页面染成自己的颜色，同时保持明亮、字可读（The Light-Only Fog Rule）。换歌时交叉淡入；减少动态效果时直接换。
+  每首歌把页面染成自己的颜色，同时保持明亮、字可读（The Light-Only Fog Rule）。换歌时交叉淡化（700ms，减少动态效果时 150ms）。
   模糊得很重，取一张小缩略图就够。铺满 position: relative（或 fixed）的容器
 -->
 <script lang='ts'>
-  import { prefersReducedMotion } from 'svelte/motion'
-  import { fade } from 'svelte/transition'
   import { thumbnailUrl } from '../library/view'
+  import { fade } from '../motion'
+  import { DURATIONS } from '../motion-tokens'
 
   const { coverUrl }: { coverUrl: string } = $props()
   const source = $derived(thumbnailUrl(coverUrl, 240))
@@ -14,7 +14,7 @@
 
 <div class='tint' aria-hidden='true'>
   {#key source}
-    <img src={source} alt='' draggable='false' transition:fade={{ duration: prefersReducedMotion.current ? 0 : 700 }} />
+    <img src={source} alt='' draggable='false' transition:fade={{ duration: DURATIONS.tint }} />
   {/key}
   <div class='veil'></div>
 </div>

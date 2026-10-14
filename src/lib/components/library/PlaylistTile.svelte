@@ -18,7 +18,7 @@
 </script>
 
 <a href={resolve('/playlists/[id]', { id: String(playlist.id) })} class='group block min-w-0 rounded-lg'>
-  <Cover url={playlist.coverUrl} size={200} fluid class='rounded-lg shadow-ambient transition-[filter] duration-150 mouse:group-hover:brightness-95' />
+  <Cover url={playlist.coverUrl} size={200} fluid class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
   <span class={['mt-2.5 block truncate text-neutral-900 font-500', phone ? 'text-body' : 'text-label']} lang={langOf(name)}>{name}</span>
   <span class='mt-0.5 min-w-0 flex items-center gap-1 text-caption text-neutral-600'>
     <span class='flex-none tabular-nums'>{formatCount(playlist.trackCount)} 首</span>

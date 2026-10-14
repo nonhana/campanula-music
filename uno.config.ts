@@ -6,8 +6,10 @@ import {
   transformerDirectives,
   transformerVariantGroup,
 } from 'unocss'
+import { DELAYS, DURATIONS, EASINGS, LOOPS, PRESS_SCALE, REDUCED_FADE_MS } from './src/lib/components/motion-tokens'
 
-// 设计系统的源头（DESIGN.md、.impeccable/design.json）：颜色、两档阴影、圆角、字号阶梯和全局基础样式都在这里。
+// 设计系统的源头（DESIGN.md、.impeccable/design.json）：颜色、两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
+// 动效的数字在 src/lib/components/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类。
 // 字体随项目打包（src/routes/+layout.svelte 引入 @fontsource-variable），不从网络加载。
 
 /** 拉丁 → 简体 → 日文 → 繁体；日文、繁体按元素的 lang 把各自的字体提前（The Mixed Script Rule） */
@@ -17,6 +19,29 @@ const FONT_TC = `'Noto Sans Variable', 'Noto Sans TC Variable', 'Noto Sans SC Va
 
 /** 悬停效果只给能悬停的精确指针（鼠标、触控板）：触屏上 :hover 会粘在点过的元素上 */
 const MOUSE_MEDIA = '@media (hover: hover) and (pointer: fine)'
+
+/**
+ * 动效令牌的 CSS 变量。减少动态效果只在这里处理（DESIGN.md Motion）：透明度、颜色的时长（--duration-*）最多 150ms，
+ * 位移、缩放、宽高的时长（--move-*）变成 0，循环（--loop-state）停住，按钮按下（--press-scale）不缩。组件里不写这条媒体查询
+ */
+function motionVariables(reduced: boolean): string {
+  const lines = [
+    ...Object.entries(DURATIONS).flatMap(([name, ms]) => [
+      `--duration-${name}: ${reduced ? Math.min(ms, REDUCED_FADE_MS) : ms}ms;`,
+      `--move-${name}: ${reduced ? 0 : ms}ms;`,
+    ]),
+    `--loop-state: ${reduced ? 'paused' : 'running'};`,
+    `--press-scale: ${reduced ? 1 : PRESS_SCALE};`,
+  ]
+  if (!reduced) {
+    lines.push(
+      ...Object.entries(EASINGS).map(([name, curve]) => `--ease-${name}: cubic-bezier(${curve.join(', ')});`),
+      ...Object.entries(DELAYS).map(([name, ms]) => `--delay-${name}: ${ms}ms;`),
+      ...Object.entries(LOOPS).map(([name, ms]) => `--loop-${name}: ${ms}ms;`),
+    )
+  }
+  return lines.join('\n')
+}
 
 /** 色板：作者定义的源头。DESIGN.md 的颜色名都落在这几条色阶上，例如晨光底 morning-ground = primary-50 */
 const colors = {
@@ -123,6 +148,16 @@ export default defineConfig<Theme>({
     presetRemToPx(),
   ],
   transformers: [transformerDirectives(), transformerVariantGroup()],
+  // 按下时轻轻缩一点（DESIGN.md Buttons）：可点的元素加 press（按钮常写 enabled:press）
+  shortcuts: {
+    press: 'active:scale-[var(--press-scale)]',
+  },
+  // 动效只用令牌（The Float Rule 的地基）：零散的时长、曲线和逐个组件的“减少动态效果”写法不生成，lint 报错
+  blocklist: [
+    [/^(?:transition-)?(?:duration|delay)-\d+$/, { message: '时长用动效令牌：duration-feedback / state / panel / focal 或具名的（src/lib/components/motion-tokens.ts）' }],
+    [/^(?:transition-)?ease-(?:in|out|in-out)$/, { message: '曲线用 ease-out-soft（默认）或 ease-in-soft' }],
+    [/^motion-(?:reduce|safe):/, { message: '减少动态效果由动效令牌统一处理（uno.config.ts 的 motionVariables、src/lib/components/motion.ts），组件里不写' }],
+  ],
   variants: [
     // mouse:hover:bg-primary-100：操作细节按输入方式切换，不按宽度（DESIGN.md Layout）
     {
@@ -162,6 +197,26 @@ export default defineConfig<Theme>({
       'headline': ['28px', { 'line-height': '36px', 'letter-spacing': '-0.01em' }],
     }
     theme.fontFamily = { ...theme.fontFamily, sans: FONT_SANS }
+    // 时长、曲线、转圈只留动效令牌：duration-state、duration-move-panel、ease-in-soft、animate-spin（见 motionVariables）
+    theme.duration = {
+      DEFAULT: 'var(--duration-feedback)',
+      ...Object.fromEntries(Object.keys(DURATIONS).flatMap(name => [
+        [name, `var(--duration-${name})`],
+        [`move-${name}`, `var(--move-${name})`],
+      ])),
+    }
+    theme.easing = {
+      DEFAULT: 'var(--ease-out-soft)',
+      linear: 'linear',
+      ...Object.fromEntries(Object.keys(EASINGS).map(name => [name, `var(--ease-${name})`])),
+    }
+    theme.animation = {
+      keyframes: { spin: '{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}' },
+      durations: { spin: 'var(--loop-spin)' },
+      timingFns: { spin: 'linear' },
+      counts: { spin: 'infinite' },
+      properties: { spin: { 'animation-play-state': 'var(--loop-state)' } },
+    }
   },
   theme: {
     boxShadow: {
@@ -179,6 +234,16 @@ export default defineConfig<Theme>({
     {
       // 在 @unocss/reset 之后、工具类之前生效（见 src/routes/+layout.svelte 的引入顺序）
       getCSS: () => `
+        :root {
+          ${motionVariables(false)}
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          :root {
+            ${motionVariables(true)}
+          }
+        }
+
         html {
           font-family: ${FONT_SANS};
           color: ${colors.neutral[900]};
@@ -212,12 +277,13 @@ export default defineConfig<Theme>({
           outline-offset: 2px;
         }
 
-        /* 加载中的骨架（歌曲行、封面格子）：一道很淡的光从左扫到右；减少动态效果时不动 */
+        /* 加载中的骨架（歌曲行、封面格子、歌词、二维码）：一道很淡的光从左扫到右；减少动态效果时停住 */
         .bone {
           display: block;
           background: linear-gradient(90deg, #e3eae6 0%, #f0f5f2 40%, #e3eae6 80%);
           background-size: 240% 100%;
-          animation: bone-sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          animation: bone-sweep var(--loop-bone) ease-in-out infinite;
+          animation-play-state: var(--loop-state);
         }
 
         @keyframes bone-sweep {
@@ -226,12 +292,6 @@ export default defineConfig<Theme>({
           }
           to {
             background-position: -140% 0;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .bone {
-            animation: none;
           }
         }
       `,
