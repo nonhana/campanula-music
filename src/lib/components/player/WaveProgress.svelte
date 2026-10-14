@@ -1,18 +1,26 @@
 <!--
   播放页的波浪进度条（DESIGN.md Wave Progress）：已播放的部分是一条缓缓起伏的正弦线（茎绿，3px），未播放的部分是一条平的发丝线；
-  游标是 4×18px 的深薄荷圆角竖条，下面两端是等宽数字的时间。只在播放时流动，暂停时压平成小振幅；减少动态效果时不流动。
+  游标是 4×18px 的深薄荷圆角竖条，下面两端是等宽数字的时间。只在播放时起伏、流动；暂停（和拖动游标）时马上抹平成一条直线（160ms），
+  再播放时 420ms 里渐渐起伏回来。抹平改的是起伏的高度，线一直是 3px 粗。减少动态效果时不流动，起伏直接切换。
   真正的滑块：拖动、点按跳转，←/→ 快退快进 5 秒，Home / End 跳到头尾。touch：手机上点按区域更高
 -->
 <script lang='ts'>
   import type { Playhead } from './playhead.svelte'
+  import { untrack } from 'svelte'
+  import { cubicOut } from 'svelte/easing'
+  import { prefersReducedMotion, Tween } from 'svelte/motion'
   import { getAppView } from '../app-context.svelte'
   import { formatSeconds, shownDuration } from './view'
 
   const { playhead, touch = false }: { playhead: Playhead, touch?: boolean } = $props()
 
-  /** 一个起伏的长度、线所在的高度（px） */
+  /** 一个起伏的长度、线所在的高度、起伏的高度（px） */
   const WAVELENGTH = 24
   const MIDDLE = 12
+  const AMPLITUDE = 7
+  /** 暂停时抹平、播放时起伏回来的时长 */
+  const FLATTEN_MS = 160
+  const RISE_MS = 420
   /** ←/→ 一次跳几秒 */
   const STEP = 5
 
@@ -30,11 +38,21 @@
   const ratio = $derived(dragging ?? (duration > 0 ? Math.min(1, playhead.now / duration) : 0))
   const x = $derived(ratio * width)
   const shownTime = $derived(ratio * duration)
+  const waving = $derived(live && dragging === null)
+
+  /** 起伏的高度：暂停时马上抹平，播放时渐渐起来；一打开就是当前的样子，不从平的长出来 */
+  const amplitude = new Tween(untrack(() => (waving ? AMPLITUDE : 0)), {
+    duration: (_, to) => (prefersReducedMotion.current ? 0 : to === 0 ? FLATTEN_MS : RISE_MS),
+    easing: cubicOut,
+  })
+  $effect(() => {
+    amplitude.target = waving ? AMPLITUDE : 0
+  })
 
   /** 比整条线两头各多一个波长，流动时两端不露空 */
   const wavePath = $derived.by(() => {
     const half = WAVELENGTH / 2
-    let path = `M ${-WAVELENGTH} ${MIDDLE} q ${half / 2} -7 ${half} 0`
+    let path = `M ${-WAVELENGTH} ${MIDDLE} q ${half / 2} ${-amplitude.current} ${half} 0`
     for (let at = -WAVELENGTH + half; at < width + WAVELENGTH; at += half)
       path += ` t ${half} 0`
     return path
@@ -112,9 +130,7 @@
         </defs>
         <line class='rest' x1={Math.min(width, x + 6)} y1={MIDDLE} x2={width} y2={MIDDLE} />
         <g clip-path='url(#{uid}-played)'>
-          <g class={['amplitude', live && dragging === null && 'live']}>
-            <path class='flow' d={wavePath} />
-          </g>
+          <path class={['flow', waving && 'live']} d={wavePath} />
         </g>
         <rect class='thumb' x={x - 2} y='3' width='4' height='18' rx='2' />
       </svg>
@@ -155,16 +171,6 @@
     stroke-linecap: round;
   }
 
-  .amplitude {
-    transform-origin: 0 12px;
-    transform: scaleY(0.25);
-    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .amplitude.live {
-    transform: scaleY(1);
-  }
-
   .flow {
     fill: none;
     stroke: theme('colors.primary.800');
@@ -175,7 +181,7 @@
     animation-play-state: paused;
   }
 
-  .live .flow {
+  .flow.live {
     animation-play-state: running;
   }
 
@@ -196,10 +202,6 @@
   @media (prefers-reduced-motion: reduce) {
     .flow {
       animation: none;
-    }
-
-    .amplitude {
-      transition: none;
     }
   }
 
