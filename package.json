@@ -11,7 +11,7 @@
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "lint": "eslint .",
+    "lint": "eslint . && tsx scripts/check-design-tokens.mts",
     "lint:fix": "eslint . --fix",
     "test": "vitest run"
   },
@@ -55,6 +55,7 @@
   },
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored",
+    "src/**/*.{svelte,ts}": "tsx scripts/check-design-tokens.mts",
     "tests/fixtures/**/*.{json,gz}": "tsx scripts/fixture-identity.mts"
   }
 }
