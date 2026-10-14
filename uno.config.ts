@@ -265,6 +265,15 @@ export default defineConfig<Theme>({
           accent-color: ${colors.primary[800]};
         }
 
+        /* 系统滚动条一律隐藏、不占宽度，换成自绘的（ADR-0012、ui/Scrollbar.svelte）：播放页、弹窗锁住滚动时页面不横移 */
+        * {
+          scrollbar-width: none;
+        }
+
+        ::-webkit-scrollbar {
+          display: none;
+        }
+
         :lang(ja) {
           font-family: ${FONT_JA};
         }

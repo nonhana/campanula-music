@@ -1,5 +1,6 @@
 <script lang='ts'>
   import Brand from '$lib/components/Brand.svelte'
+  import Scrollbar from '$lib/components/ui/Scrollbar.svelte'
 
   const origin = window.location.origin
 </script>
@@ -15,3 +16,4 @@
     <li>在本机试用或开发：用 <code class='rounded-sm bg-neutral-100 px-1'>http://localhost</code> 打开，不需要 HTTPS。</li>
   </ul>
 </main>
+<Scrollbar page={{ top: '0px', bottom: '0px' }} />

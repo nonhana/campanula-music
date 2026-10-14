@@ -14,6 +14,7 @@
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, formatCount, formatDuration, langOf } from '../library/view'
   import VirtualList from '../library/VirtualList.svelte'
+  import Scrollbar from '../ui/Scrollbar.svelte'
   import MorningWash from './MorningWash.svelte'
   import NowBars from './NowBars.svelte'
   import { sourceName } from './view'
@@ -50,29 +51,33 @@
     </p>
   </header>
 
-  <div bind:this={scroller} class='min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2'>
-    <VirtualList items={queue} itemHeight={ROW} scrollParent={scroller} getKey={(entry: QueueEntry, i: number) => `${entry.song.id}-${i}`}>
-      {#snippet row(entry: QueueEntry, i: number)}
-        {@const now = i === current}
-        {@const off = entry.song.availability === 'noCopyright'}
-        <div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
-          {#if now}<MorningWash start={92} />{/if}
-          <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto] h-full items-center gap-3 pl-2 pr-3', off && 'opacity-45']}>
-            <span class='grid place-items-center text-caption text-neutral-500 tabular-nums'>
-              {#if now}<NowBars />{:else}{i + 1}{/if}
-            </span>
-            <Cover url={entry.song.album.coverUrl} size={40} class='rounded-md' />
-            <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.playFromQueue(i)}>
-              <span class='min-w-0 flex items-center gap-2'>
-                <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(entry.song.name)}>{entry.song.name}</span>
-                <SongBadge availability={entry.song.availability} />
+  <!-- 底下的 8px 留在滚动区外面：滚动条的下端不伸进面板的圆角 -->
+  <div bind:this={scroller} class='mb-2 min-h-0 flex-1 overflow-y-auto overscroll-contain'>
+    <Scrollbar />
+    <div class='px-2'>
+      <VirtualList items={queue} itemHeight={ROW} scrollParent={scroller} getKey={(entry: QueueEntry, i: number) => `${entry.song.id}-${i}`}>
+        {#snippet row(entry: QueueEntry, i: number)}
+          {@const now = i === current}
+          {@const off = entry.song.availability === 'noCopyright'}
+          <div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
+            {#if now}<MorningWash start={92} />{/if}
+            <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto] h-full items-center gap-3 pl-2 pr-3', off && 'opacity-45']}>
+              <span class='grid place-items-center text-caption text-neutral-500 tabular-nums'>
+                {#if now}<NowBars />{:else}{i + 1}{/if}
               </span>
-              <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(entry.song))}>{artistLine(entry.song)}</span>
-            </PlayTarget>
-            <span class='text-caption text-neutral-500 tabular-nums'>{formatDuration(entry.song.duration)}</span>
+              <Cover url={entry.song.album.coverUrl} size={40} class='rounded-md' />
+              <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.playFromQueue(i)}>
+                <span class='min-w-0 flex items-center gap-2'>
+                  <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(entry.song.name)}>{entry.song.name}</span>
+                  <SongBadge availability={entry.song.availability} />
+                </span>
+                <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(entry.song))}>{artistLine(entry.song)}</span>
+              </PlayTarget>
+              <span class='text-caption text-neutral-500 tabular-nums'>{formatDuration(entry.song.duration)}</span>
+            </div>
           </div>
-        </div>
-      {/snippet}
-    </VirtualList>
+        {/snippet}
+      </VirtualList>
+    </div>
   </div>
 </section>

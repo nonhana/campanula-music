@@ -214,16 +214,11 @@
   .scroll {
     container-type: size;
     mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 82%, transparent 100%);
-    scrollbar-width: none;
   }
 
   /* 和脚本里的 ANCHOR 一致 */
   .anchor {
     padding-block: 38cqh 62cqh;
-  }
-
-  .scroll::-webkit-scrollbar {
-    display: none;
   }
 
   /* 换到下一行：当前行变大变深（字号是移动，减少动态效果时直接变；颜色是淡入淡出，最多 150ms） */

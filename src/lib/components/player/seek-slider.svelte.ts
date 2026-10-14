@@ -1,5 +1,5 @@
 import { getAppView } from '../app-context.svelte'
-import { pressBroken, watchPress } from './press'
+import { pressBroken, watchPress } from '../press'
 import { formatSeconds, shownDuration } from './view'
 
 // 播放进度的滑块（播放页的波浪进度条、桌面底栏顶边的进度线共用）：按住拖动、点按都跳到那里，松手才跳（App.seek），

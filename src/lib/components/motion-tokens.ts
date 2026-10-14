@@ -47,12 +47,14 @@ export const DURATIONS = {
   'tick': 250,
 } as const
 
-/** 等多久才出现（ms），减少动态效果时不变。CSS 变量 --delay-<名字> */
+/** 等多久才出现或消失（ms），减少动态效果时不变。CSS 变量 --delay-<名字> */
 export const DELAYS = {
   /** 取地址、缓冲超过这么久，播放键才淡入转圈：不在每次点歌时闪一下 */
   spinner: 300,
   /** 打开 App 时 logo 晚这么久才淡入：通常请求先回来，看不到这一闪 */
   opening: 400,
+  /** 滚动停下（或鼠标离开、松开滑块）这么久以后，自绘滚动条才淡出 */
+  scrollbar: 1000,
 } as const
 
 /** 循环动画一圈的时长（ms）。CSS 变量 --loop-<名字>；写循环的地方都加 animation-play-state: var(--loop-state)，减少动态效果时停住 */
