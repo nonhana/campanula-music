@@ -1,4 +1,4 @@
-import { pressBroken } from './press'
+import { pressBroken } from '../press'
 
 // 抽屉的拖动手势核心（Spec #11 的第二个测试接入点）：不碰页面、不碰 Svelte 的纯逻辑。
 // 抽屉从底下升起、缩回底下，位置 0 是整个拉开，1 是收在下面看不见；开没开着由浅路由说了算（settle）。

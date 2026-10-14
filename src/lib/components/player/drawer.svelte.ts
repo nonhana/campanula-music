@@ -5,8 +5,8 @@ import { quartOut } from 'svelte/easing'
 import { Tween } from 'svelte/motion'
 import { moveMs } from '../motion'
 import { DURATIONS } from '../motion-tokens'
+import { watchPress } from '../press'
 import { createDrawerCore } from './drawer-core'
-import { watchPress } from './press'
 
 // 从底下升起、缩回底下的抽屉（播放页、手机的播放队列弹层）。拖动怎么判断全在 drawer-core.ts（Spec #11 的第二个测试接入点），
 // 这里只接上浏览器：抽屉本身（panel）的位置和底下垫的那一截、拖动来源（grip）的指针事件和指针捕获、

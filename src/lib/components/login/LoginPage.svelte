@@ -6,6 +6,7 @@
 <script lang='ts'>
   import Brand from '../Brand.svelte'
   import { desktopLayout } from '../layout'
+  import Scrollbar from '../ui/Scrollbar.svelte'
   import LoginForm from './LoginForm.svelte'
 
   interface Props {
@@ -29,4 +30,6 @@
       <LoginForm phone={!desktopLayout.current} />
     </section>
   </main>
+  <!-- 窗口矮时登录卡片要滚：没有顶栏、底栏挡着，滚动条从窗口顶贴到底 -->
+  <Scrollbar page={{ top: '0px', bottom: '0px' }} />
 </div>

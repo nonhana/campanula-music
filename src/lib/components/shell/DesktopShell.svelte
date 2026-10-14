@@ -1,9 +1,11 @@
 <!--
   桌面骨架（768px 及以上，DESIGN.md Layout）：晨光底上 64px 顶栏、72px 图标侧栏（展开 220px，内容区跟着让位）、
   内容区（最大宽 1280px、左右 32px）、80px 底部通栏。只管区域和尺寸；顶栏、侧栏、底栏里放什么由调用方传进来。
+  页面的滚动条贴着窗口右边，从顶栏下沿到底栏上沿；顶栏下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import Scrollbar from '../ui/Scrollbar.svelte'
 
   interface Props {
     /** 侧栏展开成带文字的 220px */
@@ -18,6 +20,15 @@
   }
 
   const { railExpanded, header, rail, bar, children }: Props = $props()
+
+  // Tab 到、定位到的东西不藏在顶栏底下，焦点环也露得出来
+  $effect(() => {
+    const { style } = document.documentElement
+    style.scrollPaddingTop = '72px'
+    return () => {
+      style.scrollPaddingTop = ''
+    }
+  })
 </script>
 
 <div class='bg-primary-50 min-h-dvh' style:--rail-width={railExpanded ? '220px' : '72px'}>
@@ -37,4 +48,5 @@
       {@render bar()}
     </div>
   {/if}
+  <Scrollbar page={{ top: '64px', bottom: bar ? '80px' : '0px' }} />
 </div>

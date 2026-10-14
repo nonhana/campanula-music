@@ -13,7 +13,9 @@
   import Cover from '$lib/components/library/Cover.svelte'
   import PlaylistSongs from '$lib/components/library/PlaylistSongs.svelte'
   import { formatCount, langOf, playlistName, playlistView } from '$lib/components/library/view'
+  import { scrollBehavior } from '$lib/components/motion'
   import { scrollSnapshot } from '$lib/components/snapshot'
+  import Scrollbar from '$lib/components/ui/Scrollbar.svelte'
   import SearchField from '$lib/components/ui/SearchField.svelte'
   import StateBlock from '$lib/components/ui/StateBlock.svelte'
   import { ListMusic, Lock } from '@lucide/svelte'
@@ -57,8 +59,10 @@
     return [creator, kind === 'own' ? '自建歌单' : kind === 'collected' ? '收藏的歌单' : '', count].filter(Boolean)
   })
 
-  // 桌面左栏：打开时、歌单列表到了时，把当前这张滚进左栏的视野里（只滚左栏，不动页面，免得打乱返回时恢复的滚动位置）
+  // 桌面左栏：打开时、歌单列表到了时、换了一张歌单时，把当前这张滚进左栏的视野里（只滚左栏，不动页面，免得打乱返回时恢复的滚动位置）。
+  // 刚打开时直接定位过去；之后（前进、后退到别的歌单）平滑地滚过去，减少动态效果时直接跳
   let sideNav = $state<HTMLElement>()
+  let sidePlaced = false
   $effect(() => {
     void id
     void listReady
@@ -66,7 +70,8 @@
     if (!sideNav || !current)
       return
     if (current.offsetTop < sideNav.scrollTop || current.offsetTop + current.offsetHeight > sideNav.scrollTop + sideNav.clientHeight)
-      sideNav.scrollTop = current.offsetTop - 8
+      sideNav.scrollTo({ top: current.offsetTop - 8, behavior: sidePlaced ? scrollBehavior() : 'auto' })
+    sidePlaced = true
   })
 </script>
 
@@ -109,7 +114,8 @@
       <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query /></div>
     </div>
 
-    <nav bind:this={sideNav} class='side sticky top-20 hidden max-h-[calc(100dvh-112px)] overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block' aria-label='曲库里的歌单'>
+    <nav bind:this={sideNav} class='sticky top-20 hidden max-h-[calc(100dvh-112px)] overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block' aria-label='曲库里的歌单'>
+      <Scrollbar />
       <ul class='flex flex-col gap-1 px-2'>
         {#each library.playlists ?? [] as item (item.id)}
           {@const current = item.id === id}
@@ -139,9 +145,3 @@
   {/if}
   <PlaylistSongs {library} playlistId={id} bind:query phone />
 {/if}
-
-<style>
-  .side {
-    scrollbar-width: none;
-  }
-</style>

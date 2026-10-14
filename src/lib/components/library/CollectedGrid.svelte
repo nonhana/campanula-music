@@ -1,13 +1,14 @@
 <!--
   曲库里收藏的专辑或歌手：手机的专辑、歌手标签（两列 / 三列网格），桌面直接打开这两个地址时的网格，桌面首页的横向架子。
   列表还没拿到时是形状一致的骨架，没拿到就出错时能重试，一个都没有时说明在网易云音乐里收藏的会出现在这里。
-  架子能横向滚动：键盘 Tab 到哪一项就把它滚进视野
+  架子能横向滚动，底边是自绘的滚动条（拖动、点空白处翻一屏）；键盘 Tab 到哪一项就把它滚进视野
 -->
 <script lang='ts'>
   import type { LibraryState } from '$lib/app/library'
   import { Disc3, UserRound } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
+  import Scrollbar from '../ui/Scrollbar.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import AlbumTile from './AlbumTile.svelte'
   import ArtistTile from './ArtistTile.svelte'
@@ -32,7 +33,7 @@
 
   const listClass = $derived(
     layout === 'shelf'
-      ? ['shelf -mx-2 flex overflow-x-auto px-2 pb-3 pt-1', look.shelf]
+      ? ['flex px-2 pb-3 pt-1', look.shelf]
       : layout === 'phone'
       ? ['grid gap-x-3 gap-y-5 px-4 pt-4', look.phoneCols]
       : ['grid gap-x-5 gap-y-6', look.gridCols],
@@ -42,16 +43,32 @@
 
   /** 键盘焦点移到架子里看不全的一项：把它滚进视野 */
   function reveal(event: FocusEvent) {
-    if (layout === 'shelf' && event.target instanceof HTMLElement)
+    if (event.target instanceof HTMLElement)
       event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }
 </script>
+
+{#snippet tiles()}
+  {#if kind === 'albums' && library.albums}
+    {#each library.albums as album (album.id)}
+      <li class={itemClass}>
+        <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} phone={layout === 'phone'} />
+      </li>
+    {/each}
+  {:else if kind === 'artists' && library.artists}
+    {#each library.artists as artist (artist.id)}
+      <li class={itemClass}>
+        <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} />
+      </li>
+    {/each}
+  {/if}
+{/snippet}
 
 {#if items === null}
   {#if library.sync.status === 'failed'}
     <StateBlock kind='error' title={`收藏的${look.noun}没能同步`} body={failureText(library.sync.failure)} action={{ label: '重试', run: () => view.app.retrySync() }} />
   {:else}
-    <div class={listClass} role='status' aria-busy='true' aria-label={`正在加载收藏的${look.noun}`}>
+    <div class={[listClass, layout === 'shelf' && '-mx-2 overflow-hidden']} role='status' aria-busy='true' aria-label={`正在加载收藏的${look.noun}`}>
       {#each { length: layout === 'phone' ? look.phoneBones : 6 }, i (i)}
         <div class={itemClass}>
           <span class={['bone aspect-square w-full', look.round ? 'rounded-full' : 'rounded-lg']}></span>
@@ -63,26 +80,16 @@
   {/if}
 {:else if items.length === 0}
   <StateBlock kind='empty' icon={look.icon} title={`还没有收藏的${look.noun}`} body={`在网易云音乐里收藏的${look.noun}，会同步到这里。`} />
+{:else if layout === 'shelf'}
+  <!-- 滚动的是外面这层，内边距在里面的列表上：滚动条贴着架子的底边 -->
+  <div class='overflow-x-auto -mx-2'>
+    <Scrollbar axis='x' />
+    <ul class={[listClass, 'w-max']} aria-label={`收藏的${look.noun}`} onfocusin={reveal}>
+      {@render tiles()}
+    </ul>
+  </div>
 {:else}
-  <ul class={listClass} aria-label={`收藏的${look.noun}`} onfocusin={reveal}>
-    {#if kind === 'albums' && library.albums}
-      {#each library.albums as album (album.id)}
-        <li class={itemClass}>
-          <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} phone={layout === 'phone'} />
-        </li>
-      {/each}
-    {:else if kind === 'artists' && library.artists}
-      {#each library.artists as artist (artist.id)}
-        <li class={itemClass}>
-          <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} />
-        </li>
-      {/each}
-    {/if}
+  <ul class={listClass} aria-label={`收藏的${look.noun}`}>
+    {@render tiles()}
   </ul>
 {/if}
-
-<style>
-  .shelf {
-    scrollbar-width: thin;
-  }
-</style>

@@ -6,6 +6,7 @@
   import type { RequestFailure } from '$lib/app/api'
   import Brand from './Brand.svelte'
   import { failureText } from './failure'
+  import Scrollbar from './ui/Scrollbar.svelte'
   import StateBlock from './ui/StateBlock.svelte'
 
   interface Props {
@@ -46,4 +47,5 @@
   <main class='pt-[8vh]'>
     <StateBlock kind='error' title={message.title} body={message.body} action={{ label: '重试', run: onretry }} />
   </main>
+  <Scrollbar page={{ top: '0px', bottom: '0px' }} />
 </div>

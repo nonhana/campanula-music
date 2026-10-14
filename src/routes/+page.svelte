@@ -164,13 +164,8 @@
     column-gap: 8px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    scrollbar-width: none;
     /* 露出的半列淡进面板里，读作“还有更多”，不是被截断 */
     mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
-  }
-
-  .strip::-webkit-scrollbar {
-    display: none;
   }
 
   .cell {
