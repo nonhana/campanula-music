@@ -28,7 +28,7 @@
   ] as const
 
   const uid = $props.id()
-  const grabHandle = playerDrawer.grab({ from: 'open', commit: closePlayerPage, tap: closePlayerPage })
+  const gripHandle = playerDrawer.grip({ from: 'open', commit: closePlayerPage, tap: closePlayerPage })
 
   /** 标签之间用 ←/→ 切换（WAI-ARIA 标签页的做法），焦点跟着走 */
   function onTabKey(event: KeyboardEvent) {
@@ -48,11 +48,11 @@
   <!-- 给鼠标用的把手：键盘用旁边的收起键和 Esc，所以不进 Tab 顺序（和遮罩一样） -->
   <button
     type='button'
-    class='group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab touch-none place-items-center rounded-full -translate-x-1/2'
+    class='group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab place-items-center rounded-full -translate-x-1/2'
     aria-label='拖动把手：往下拖或点按，收起播放页'
     title='往下拖或点按，收起播放页'
     tabindex='-1'
-    {...grabHandle}
+    {@attach gripHandle}
   >
     <span class='h-1 w-10 rounded-full bg-neutral-400 transition-colors duration-150 mouse:group-hover:bg-neutral-600' aria-hidden='true'></span>
   </button>

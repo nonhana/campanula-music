@@ -1,4 +1,4 @@
-import type { GrabHandlers } from './drawer.svelte'
+import type { Attachment } from 'svelte/attachments'
 import { pushState } from '$app/navigation'
 import { page } from '$app/state'
 import { createDrawer } from './drawer.svelte'
@@ -6,12 +6,12 @@ import { createDrawer } from './drawer.svelte'
 // 播放页开没开着记在浅路由里（page.state.player）：打开时压一条浏览记录，
 // 手机的返回手势、浏览器的后退、Esc、收起键和拖动把手都是退回这一条。手机上拉开播放队列再压一条，返回先收起播放队列
 
-/** 播放页这层抽屉：盖住整页，按视口的高度滑 */
+/** 播放页这层抽屉：盖住整页 */
 export const playerDrawer = createDrawer(() => window.innerHeight)
 
 /** 播放条上封面和歌名那一块：点按打开播放页，按住往上拖拉开它。每个播放条一份，在组件初始化时调用 */
-export function grabToOpenPlayerPage(): GrabHandlers {
-  return playerDrawer.grab({ from: 'closed', commit: openPlayerPage, tap: openPlayerPage })
+export function gripToOpenPlayerPage(): Attachment<HTMLElement> {
+  return playerDrawer.grip({ from: 'closed', commit: openPlayerPage, tap: openPlayerPage })
 }
 
 export function openPlayerPage(): void {

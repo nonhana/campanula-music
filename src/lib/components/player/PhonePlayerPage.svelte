@@ -28,14 +28,17 @@
   const queueOpen = $derived(page.state.player === 'queue')
   const swap = $derived(prefersReducedMotion.current ? 0 : 200)
 
+  /** 播放队列弹层占屏幕高度的这么多 */
+  const SHEET_HEIGHT = 0.86
+
   let handle = $state<HTMLButtonElement>()
   let sheet = $state<HTMLElement>()
 
-  /** 播放队列弹层（86% 屏幕高），按自己的高度滑 */
-  const sheetDrawer = createDrawer(() => sheet?.offsetHeight ?? window.innerHeight)
-  const grabTitle = playerDrawer.grab({ from: 'open', commit: closePlayerPage })
-  const grabQueueBar = sheetDrawer.grab({ from: 'closed', commit: openQueueSheet, tap: openQueueSheet })
-  const grabSheet = sheetDrawer.grab({ from: 'open', commit: closeQueueSheet, tap: closeQueueSheet })
+  /** 播放队列弹层：从底下的“播放队列”往上拖的头几帧它还没画出来，按屏幕高度的 86% 算 */
+  const sheetDrawer = createDrawer(() => window.innerHeight * SHEET_HEIGHT)
+  const gripTitle = playerDrawer.grip({ from: 'open', commit: closePlayerPage })
+  const gripQueueBar = sheetDrawer.grip({ from: 'closed', commit: openQueueSheet, tap: openQueueSheet })
+  const gripSheet = sheetDrawer.grip({ from: 'open', commit: closeQueueSheet, tap: closeQueueSheet })
 
   // 浅路由说拉开着就升起来，说收起就缩回去（返回、Esc、拉手、遮罩都走这里）
   $effect(() => sheetDrawer.settle(queueOpen))
@@ -54,7 +57,7 @@
     <button type='button' class='grid size-12 place-items-center rounded-full text-neutral-800 active:bg-white/60' aria-label='收起播放页' onclick={closePlayerPage}>
       <ChevronDown size={26} aria-hidden='true' />
     </button>
-    <div class='min-w-0 touch-none text-center' {...grabTitle}>
+    <div class='min-w-0 text-center' {@attach gripTitle}>
       <p class='text-body text-neutral-900 font-500'>正在播放</p>
       {#if source}
         <p class='truncate text-caption text-neutral-700'>来自「<span lang={langOf(source)}>{source}</span>」</p>
@@ -105,10 +108,10 @@
   <button
     bind:this={handle}
     type='button'
-    class='relative h-14 flex flex-none flex-col touch-none items-center rounded-t-sheet bg-white/90 pt-2 shadow-float'
+    class='relative h-14 flex flex-none flex-col items-center rounded-t-sheet bg-white/90 pt-2 shadow-float'
     aria-haspopup='dialog'
     aria-expanded={queueOpen}
-    {...grabQueueBar}
+    {@attach gripQueueBar}
   >
     <span class='h-1 w-9 rounded-full bg-neutral-300' aria-hidden='true'></span>
     <span class='mt-2 text-label text-neutral-800 font-500'>播放队列</span>
@@ -119,14 +122,15 @@
   <button type='button' class='fixed inset-0 z-1 bg-neutral-900/30' style:opacity={1 - sheetDrawer.position} aria-label='收起播放队列' tabindex='-1' onclick={closeQueueSheet}></button>
   <div
     bind:this={sheet}
-    class='fixed inset-x-0 bottom-0 z-2 h-[86dvh] flex flex-col rounded-t-sheet bg-white pb-[env(safe-area-inset-bottom)] shadow-float will-change-transform'
-    style:transform='translateY({sheetDrawer.position * 100}%)'
+    class='fixed inset-x-0 z-2 flex flex-col rounded-t-sheet bg-white shadow-float'
+    style:top='{(1 - SHEET_HEIGHT) * 100}dvh'
+    {@attach sheetDrawer.panel}
     role='dialog'
     aria-modal='true'
     aria-label='播放队列'
     inert={!queueOpen}
   >
-    <button type='button' class='grid mx-auto h-7 w-16 flex-none touch-none place-items-center rounded-full' aria-label='收起播放队列' title='往下拖或点按，收起播放队列' {...grabSheet}>
+    <button type='button' class='grid mx-auto h-7 w-16 flex-none place-items-center rounded-full' aria-label='收起播放队列' title='往下拖或点按，收起播放队列' {@attach gripSheet}>
       <span class='h-1 w-9 rounded-full bg-neutral-300' aria-hidden='true'></span>
     </button>
     <QueueList class='min-h-0 flex-1' />

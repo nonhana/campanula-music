@@ -7,7 +7,7 @@
    - 每个画面和规则要读的网易云字段，各自在 `node_modules/hana-music-api/dist/client.generated-*.d.ts` 里有没有声明（ADR-0005）。有没声明的：开 SDK 票，标好阻塞，停下来告诉作者；
    - 已有的录制和还缺的录制；
    - 要改的文件。
-2. **测试**：用 `/tdd`，测试只写在唯一的测试接入点“去掉界面的整个 App”上（`tests/harness/world.ts`，用法看 `World`、`Device`、`Tab` 的注释）。
+2. **测试**：用 `/tdd`，测试写在测试接入点“去掉界面的整个 App”上（`tests/harness/world.ts`，用法看 `World`、`Device`、`Tab` 的注释）。抽屉的拖动手势是唯一的例外，写在第二个接入点 `src/lib/components/player/drawer-core.ts` 上（`tests/drawer-core.test.ts`，Spec #11 Testing Decisions）。
    - 网易云的返回只用验证关卡录下、脱敏过的数据（`tests/fixtures/netease/`），用 `world.netease.reply()` 放进去，不连真实账号。
    - 缺录制数据时用 `scripts/netease-record.mts`（`pnpm tsx` 跑）录，做法和脱敏规则见 `tests/fixtures/netease/README.md`「录制」。
    - SDK 的成败规矩看 `tests/harness/netease-sdk.ts` 和 `fixtures.ts` 的注释；上游 README 还没写，见 nonhana/hana-music-api#43。

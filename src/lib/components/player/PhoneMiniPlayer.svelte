@@ -10,19 +10,19 @@
   import { artistLine, langOf } from '../library/view'
   import IconButton from '../ui/IconButton.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { grabToOpenPlayerPage } from './player-page.svelte'
+  import { gripToOpenPlayerPage } from './player-page.svelte'
   import ProgressLine from './ProgressLine.svelte'
   import { currentSong } from './view'
 
   const view = getAppView()
   const player = $derived(view.state.player)
   const song = $derived(currentSong(player))
-  const grabSong = grabToOpenPlayerPage()
+  const gripSong = gripToOpenPlayerPage()
 </script>
 
 <div class='h-full flex items-center gap-1 pl-2 pr-1.5'>
   {#if song}
-    <button type='button' class='h-full min-w-0 flex flex-1 touch-none items-center gap-3 rounded-lg text-left active:bg-neutral-50' aria-label='打开播放页：{song.name}' {...grabSong}>
+    <button type='button' class='h-full min-w-0 flex flex-1 items-center gap-3 rounded-lg text-left active:bg-neutral-50' aria-label='打开播放页：{song.name}' {@attach gripSong}>
       <Cover url={song.album.coverUrl} size={44} class='rounded-md' />
       <span class='min-w-0'>
         <span class='min-w-0 flex items-center gap-1.5'>
