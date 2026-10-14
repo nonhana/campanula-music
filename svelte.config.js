@@ -12,7 +12,11 @@ const adapter = process.env.VERCEL
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
-  kit: { adapter },
+  kit: {
+    adapter,
+    // scripts/ 下的 .mts（用 tsx 跑）也做类型检查
+    typescript: { config: config => ({ ...config, include: [...config.include, '../scripts/**/*.mts'] }) },
+  },
 }
 
 export default config

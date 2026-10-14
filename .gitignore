@@ -1,24 +1,21 @@
 node_modules
 
-# Output
 .output
 .vercel
 /.svelte-kit
 /build
 
-# OS
 .DS_Store
 Thumbs.db
 
-# Env
 .env
 .env.*
 !.env.example
 !.env.test
 
-# Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# 作者本机的笔记。它也在作者的全局 gitignore 里，但 ESLint 只读这个文件
+.vitest/
+
 _notes/

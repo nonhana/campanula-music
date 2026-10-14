@@ -36,6 +36,7 @@ catalog:
   svelte: ^5.57.1
   svelte-check: ^4.7.6
   tough-cookie: ^6.0.2
+  tsx: ^4.23.15
   typescript: 6.0.3
   unocss: ^66.10.5
   vite: ^8.3.2
