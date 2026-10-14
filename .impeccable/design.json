@@ -471,9 +471,14 @@
         "purpose": "菜单、底部弹层、弹窗、播放条、搜索下拉、播放页大封面。"
       },
       {
+        "name": "chip",
+        "value": "0 1px 3px rgb(17 24 39 / 0.18)",
+        "purpose": "封面上“正在播放”的白色小圆片（shadow-chip），压在什么封面上都分得开；是标记，不算一层纵深。"
+      },
+      {
         "name": "cover-fog",
         "value": "cover image, inset -20%, filter: blur(64px) saturate(1.15); veil rgb(255 255 255 / 0.8)",
-        "purpose": "播放页由当前封面染出的浅雾，换歌时交叉淡入 700ms；减少动态效果时直接换。"
+        "purpose": "播放页由当前封面染出的浅雾，换歌时交叉淡化 700ms；减少动态效果时 150ms 交叉淡化。"
       },
       {
         "name": "focus-ring",

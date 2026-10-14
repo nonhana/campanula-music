@@ -152,11 +152,16 @@ export default defineConfig<Theme>({
   shortcuts: {
     press: 'active:scale-[var(--press-scale)]',
   },
-  // 动效只用令牌（The Float Rule 的地基）：零散的时长、曲线和逐个组件的“减少动态效果”写法不生成，lint 报错
+  // 只用设计系统的档位：零散的时长、曲线，逐个组件的“减少动态效果”写法，阶梯以外的字号、圆角、阴影、颜色都不生成。
+  // scripts/check-design-tokens.mts 在 pnpm lint 里查所有写法（eslint 的 unocss/blocklist 只看得到纯字符串的 class）
   blocklist: [
     [/^(?:transition-)?(?:duration|delay)-\d+$/, { message: '时长用动效令牌：duration-feedback / state / panel / focal 或具名的（src/lib/components/motion-tokens.ts）' }],
     [/^(?:transition-)?ease-(?:in|out|in-out)$/, { message: '曲线用 ease-out-soft（默认）或 ease-in-soft' }],
     [/^motion-(?:reduce|safe):/, { message: '减少动态效果由动效令牌统一处理（uno.config.ts 的 motionVariables、src/lib/components/motion.ts），组件里不写' }],
+    [/^text-\[/, { message: '字号用八档 text-<档名>（DESIGN.md Typography），颜色用色板' }],
+    [/^rounded(?:-[trblse]{1,2})?-\[/, { message: '圆角用 rounded-sm / md / lg / xl / sheet / full（DESIGN.md Shapes）' }],
+    [/^shadow-\[/, { message: '阴影用 shadow-ambient / float / chip / field-focus（DESIGN.md Elevation & Depth）' }],
+    [/^(?:bg|border|ring|outline|fill|stroke)-\[(?:#|rgb|hsl)/, { message: '颜色用 uno.config.ts 的色板（DESIGN.md Colors）' }],
   ],
   variants: [
     // mouse:hover:bg-primary-100：操作细节按输入方式切换，不按宽度（DESIGN.md Layout）
@@ -224,6 +229,8 @@ export default defineConfig<Theme>({
       'ambient': '0 1px 2px rgb(17 24 39 / 0.04), 0 4px 16px -4px rgb(17 24 39 / 0.07)',
       // 浮起：只给浮在内容上、可以关掉的层（菜单、弹层、弹窗、播放条、搜索下拉）
       'float': '0 2px 8px rgb(17 24 39 / 0.06), 0 16px 40px -12px rgb(17 24 39 / 0.18)',
+      // 小圆片：封面上“正在播放”的白色小圆片，压在什么封面上都分得开（design.json Morning Row）
+      'chip': '0 1px 3px rgb(17 24 39 / 0.18)',
       // 输入框、搜索框获得焦点：配 1px 边框加粗成 2px，外面一圈 3px 的浅色光环；出错时换成出错红
       'field-focus': `inset 0 0 0 1px ${colors.primary[800]}, 0 0 0 3px ${colors.primary[100]}`,
       'field-focus-error': `inset 0 0 0 1px ${colors.error[700]}, 0 0 0 3px ${colors.error[50]}`,

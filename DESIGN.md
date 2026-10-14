@@ -231,7 +231,7 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 - **不动布局**：只动 `transform`、`opacity`、`filter`、`clip-path`；不对 `width`、`height`、`top`、`margin` 做动画。例外只有一次性的布局变化：侧栏展开（200ms）、会推开内容的通知条展开和收起（200ms）。
 - **图片**：封面、头像加载完时从薄荷底上淡入（240ms）；这次打开以来加载过的（缓存里有，例如虚拟列表滚回来）直接显示，不再淡一次；加载不出来的图标同样淡入。
 - **减少动态效果**（系统设置里打开时）：去掉所有位移、旋转、缩放、飞行和循环动画（波浪流动、三根竖条、骨架扫光、转圈）；保留 150ms 以内的淡入淡出和颜色变化，状态变化仍然看得出来。拖动（抽屉、转盘）照样跟着手走，松手后直接到位。
-- **写在哪**：时长、曲线只在 `src/lib/components/motion-tokens.ts` 写数字。UnoCSS 里写 `duration-<档名>`（透明度、颜色）、`duration-move-<档名>`（位移、缩放、宽高、字号）、`ease-out-soft`（默认，可不写）/ `ease-in-soft`，按钮按下写 `press`；组件的 CSS 里写 `var(--duration-…)`、`var(--move-…)`、`var(--ease-…)`，循环加 `animation-play-state: var(--loop-state)`；Svelte 过渡用 `src/lib/components/motion.ts` 的 `float`（飘入飘出，带方向和距离）、`fade`、`iconSwap`。减少动态效果由令牌自己变（`--duration-*` 最多 150ms、`--move-*` 为 0、循环停住、按下不缩），组件里不写这条媒体查询；`duration-150`、`ease-out`、`motion-reduce:` 这类写法 lint 报错。
+- **写在哪**：时长、曲线只在 `src/lib/components/motion-tokens.ts` 写数字。UnoCSS 里写 `duration-<档名>`（透明度、颜色）、`duration-move-<档名>`（位移、缩放、宽高、字号）、`ease-out-soft`（默认，可不写）/ `ease-in-soft`，按钮按下写 `press`；组件的 CSS 里写 `var(--duration-…)`、`var(--move-…)`、`var(--ease-…)`，循环加 `animation-play-state: var(--loop-state)`；Svelte 过渡用 `src/lib/components/motion.ts` 的 `float`（飘入飘出，带方向和距离）、`fade`、`iconSwap`。减少动态效果由令牌自己变（`--duration-*` 最多 150ms、`--move-*` 为 0、循环停住、按下不缩），组件里不写这条媒体查询。`duration-150`、`ease-out`、`motion-reduce:`、`150ms`、`cubic-bezier(…)` 和阶梯以外的 `text-[…]`、`rounded-[…]`、`shadow-[…]`、`bg-[#…]` 都会让 `pnpm lint` 报错（`scripts/check-design-tokens.mts` 查所有 class 写法、`<style>` 和 TS）。
 
 ### Named Rules
 
@@ -338,6 +338,7 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 
 - **环境光**（`box-shadow: 0 1px 2px rgb(17 24 39 / 0.04), 0 4px 16px -4px rgb(17 24 39 / 0.07)`）：静止的白色面板、网格里的封面、搜索框。
 - **浮起**（`box-shadow: 0 2px 8px rgb(17 24 39 / 0.06), 0 16px 40px -12px rgb(17 24 39 / 0.18)`）：菜单、底部弹层、弹窗、底部播放条、手机迷你播放条、搜索下拉、播放页的大封面。
+- **小圆片**（`box-shadow: 0 1px 3px rgb(17 24 39 / 0.18)`，`shadow-chip`）：只给封面上“正在播放”的白色小圆片，压在什么颜色的封面上都分得开。它是标记，不算一层纵深。
 
 ### Named Rules
 

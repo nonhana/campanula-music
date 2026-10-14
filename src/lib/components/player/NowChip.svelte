@@ -6,5 +6,5 @@
 </script>
 
 <span class='pointer-events-none absolute inset-0 grid place-items-center' aria-hidden='true'>
-  <span class='grid size-7 place-items-center rounded-full bg-white/92 shadow-[0_1px_3px_rgb(17_24_39/0.18)]'><NowBars /></span>
+  <span class='grid size-7 place-items-center rounded-full bg-white/92 shadow-chip'><NowBars /></span>
 </span>
