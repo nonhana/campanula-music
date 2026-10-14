@@ -36,4 +36,4 @@
   <PlayButton />
   <IconButton icon={SkipForward} filled label='下一首' onclick={() => view.app.next()} />
 </div>
-<ProgressLine edge='bottom' />
+<ProgressLine />

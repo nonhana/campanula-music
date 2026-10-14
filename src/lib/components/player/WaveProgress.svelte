@@ -2,7 +2,7 @@
   播放页的波浪进度条（DESIGN.md Wave Progress）：已播放的部分是一条缓缓起伏的正弦线（茎绿，3px），未播放的部分是一条平的发丝线；
   游标是 4×18px 的深薄荷圆角竖条，下面两端是等宽数字的时间。只在播放时起伏、流动；暂停（和拖动游标）时马上抹平成一条直线（160ms），
   再播放时 420ms 里渐渐起伏回来。抹平改的是起伏的高度，线一直是 3px 粗。减少动态效果时不流动，起伏直接切换。
-  真正的滑块：拖动、点按跳转，←/→ 快退快进 5 秒，Home / End 跳到头尾。touch：手机上点按区域更高
+  真正的滑块（seek-slider.svelte.ts）：拖动、点按跳转，←/→ 快退快进 5 秒，Home / End 跳到头尾。touch：手机上点按区域更高
 -->
 <script lang='ts'>
   import type { Playhead } from './playhead.svelte'
@@ -10,7 +10,8 @@
   import { cubicOut } from 'svelte/easing'
   import { prefersReducedMotion, Tween } from 'svelte/motion'
   import { getAppView } from '../app-context.svelte'
-  import { formatSeconds, shownDuration } from './view'
+  import { createSeekSlider } from './seek-slider.svelte'
+  import { formatSeconds } from './view'
 
   const { playhead, touch = false }: { playhead: Playhead, touch?: boolean } = $props()
 
@@ -21,24 +22,18 @@
   /** 暂停时抹平、播放时起伏回来的时长 */
   const FLATTEN_MS = 160
   const RISE_MS = 420
-  /** ←/→ 一次跳几秒 */
-  const STEP = 5
 
   const uid = $props.id()
   const view = getAppView()
-  const player = $derived(view.state.player)
-  const duration = $derived(shownDuration(player))
-  const live = $derived(player.status === 'playing')
+  const slider = createSeekSlider()
+  const live = $derived(view.state.player.status === 'playing')
 
   let width = $state(0)
-  let track = $state<HTMLElement>()
-  /** 拖动中游标在哪（0 到 1）；没在拖时是 null */
-  let dragging = $state<number | null>(null)
 
-  const ratio = $derived(dragging ?? (duration > 0 ? Math.min(1, playhead.now / duration) : 0))
+  const ratio = $derived(slider.ratio(playhead.now))
   const x = $derived(ratio * width)
-  const shownTime = $derived(ratio * duration)
-  const waving = $derived(live && dragging === null)
+  const shownTime = $derived(ratio * slider.duration)
+  const waving = $derived(live && slider.dragging === null)
 
   /** 起伏的高度：暂停时马上抹平，播放时渐渐起来；一打开就是当前的样子，不从平的长出来 */
   const amplitude = new Tween(untrack(() => (waving ? AMPLITUDE : 0)), {
@@ -57,69 +52,10 @@
       path += ` t ${half} 0`
     return path
   })
-
-  function ratioAt(clientX: number): number {
-    const rect = track!.getBoundingClientRect()
-    return rect.width > 0 ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0
-  }
-
-  function onpointerdown(event: PointerEvent) {
-    if (duration <= 0 || event.button !== 0)
-      return
-    track!.setPointerCapture(event.pointerId)
-    dragging = ratioAt(event.clientX)
-  }
-
-  function onpointermove(event: PointerEvent) {
-    if (dragging !== null)
-      dragging = ratioAt(event.clientX)
-  }
-
-  function onpointerup() {
-    if (dragging === null)
-      return
-    view.app.seek(dragging * duration)
-    dragging = null
-  }
-
-  function onkeydown(event: KeyboardEvent) {
-    if (duration <= 0)
-      return
-    const at = player.position
-    const to = {
-      ArrowRight: at + STEP,
-      ArrowUp: at + STEP,
-      ArrowLeft: at - STEP,
-      ArrowDown: at - STEP,
-      Home: 0,
-      End: duration,
-    }[event.key]
-    if (to === undefined)
-      return
-    event.preventDefault()
-    view.app.seek(to)
-  }
 </script>
 
 <div class={['wave', touch && 'touch']}>
-  <div
-    bind:this={track}
-    bind:clientWidth={width}
-    class='track'
-    role='slider'
-    tabindex='0'
-    aria-label='播放进度'
-    aria-valuemin={0}
-    aria-valuemax={Math.round(duration)}
-    aria-valuenow={Math.round(shownTime)}
-    aria-valuetext='{formatSeconds(shownTime)} / {formatSeconds(duration)}'
-    aria-disabled={duration <= 0}
-    {onpointerdown}
-    {onpointermove}
-    {onpointerup}
-    onpointercancel={() => (dragging = null)}
-    {onkeydown}
-  >
+  <div bind:clientWidth={width} class='track' {...slider.attributes(ratio)}>
     {#if width > 0}
       <svg {width} height='24' viewBox='0 0 {width} 24' aria-hidden='true'>
         <defs>
@@ -138,7 +74,7 @@
   </div>
   <div class='times text-caption text-neutral-700 tabular-nums' aria-hidden='true'>
     <span>{formatSeconds(shownTime)}</span>
-    <span>{formatSeconds(duration)}</span>
+    <span>{formatSeconds(slider.duration)}</span>
   </div>
 </div>
 
