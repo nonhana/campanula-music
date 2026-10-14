@@ -4,7 +4,7 @@
   当前行更大、更深，停在高度约 38% 的位置；听众自己滚动后 3 秒内不跟着走。点一行就从这一行开始放。
   翻译、音译各一个开关，这首歌没有时开关禁用，写明“无翻译”“无音译”。纯音乐、没有歌词时说明；加载中是骨架，没取到时说明原因、能重试。
   字色不浅于石墨（封面染底上石墨淡不到 4.5:1，The Light-Only Fog Rule）。
-  减少动态效果时：滚到当前行不平滑滚动，字号、颜色不渐变，逐字点亮跟着报的进度跳。compact：手机播放页里换掉封面那块时的字号
+  减少动态效果时：滚到当前行不平滑滚动，字号直接变，颜色 150ms 内渐变，逐字点亮跟着报的进度跳。compact：手机播放页里换掉封面那块时的字号
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
@@ -12,10 +12,10 @@
   import type { ClassValue } from 'svelte/elements'
   import type { Playhead } from './playhead.svelte'
   import { Check, Music } from '@lucide/svelte'
-  import { prefersReducedMotion } from 'svelte/motion'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { langOf } from '../library/view'
+  import { scrollBehavior } from '../motion'
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import { playerPageChoices as choices } from './player-page.svelte'
@@ -67,7 +67,7 @@
       return
     const line = active < 0 ? null : scroller.querySelector<HTMLElement>(`[data-line="${active}"]`)
     const top = line ? line.offsetTop - scroller.clientHeight * ANCHOR : 0
-    scroller.scrollTo({ top, behavior: smooth && !prefersReducedMotion.current ? 'smooth' : 'auto' })
+    scroller.scrollTo({ top, behavior: smooth ? scrollBehavior() : 'auto' })
   }
 
   // 换了当前行、开关了翻译音译（行高变了）、滚动区高度变了：把当前行放回 38%
@@ -159,7 +159,7 @@
           >
             <span
               class={[
-                'block font-600 transition-[font-size,line-height,color] duration-300 motion-reduce:transition-none',
+                'line-text block font-600',
                 current
                   ? [compact ? 'text-title' : 'text-headline', line.words ? 'text-neutral-600' : 'text-primary-950']
                   : [compact ? 'text-title-sm' : 'text-title', 'text-neutral-600 mouse:group-hover:text-neutral-800'],
@@ -224,6 +224,14 @@
 
   .scroll::-webkit-scrollbar {
     display: none;
+  }
+
+  /* 换到下一行：当前行变大变深（字号是移动，减少动态效果时直接变；颜色是淡入淡出，最多 150ms） */
+  .line-text {
+    transition:
+      font-size var(--move-lyric-line) var(--ease-out-soft),
+      line-height var(--move-lyric-line) var(--ease-out-soft),
+      color var(--duration-lyric-line) var(--ease-out-soft);
   }
 
   .word {

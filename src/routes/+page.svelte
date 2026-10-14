@@ -17,6 +17,7 @@
   import SongBadge from '$lib/components/library/SongBadge.svelte'
   import SyncNotice from '$lib/components/library/SyncNotice.svelte'
   import { artistLine, formatCount, langOf, likedView, syncNotice } from '$lib/components/library/view'
+  import { scrollBehavior } from '$lib/components/motion'
   import NowChip from '$lib/components/player/NowChip.svelte'
   import { currentSong } from '$lib/components/player/view'
   import { scrollSnapshot } from '$lib/components/snapshot'
@@ -58,7 +59,7 @@
   })
 
   function turn(dir: 1 | -1) {
-    stripEl?.scrollBy({ left: dir * stripEl.clientWidth, behavior: 'smooth' })
+    stripEl?.scrollBy({ left: dir * stripEl.clientWidth, behavior: scrollBehavior() })
   }
 </script>
 
@@ -82,7 +83,7 @@
             <IconButton icon={ChevronRight} label='下一页' disabled={atEnd} onclick={() => turn(1)} />
           {/if}
           {#if library.liked}
-            <a href={resolve('/playlists/[id]', { id: String(library.liked.playlist.id) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-150 mouse:hover:(bg-primary-100 text-primary-950)'>查看全部</a>
+            <a href={resolve('/playlists/[id]', { id: String(library.liked.playlist.id) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)'>查看全部</a>
           {/if}
         </div>
       </div>

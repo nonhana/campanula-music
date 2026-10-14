@@ -33,19 +33,19 @@
 
   .rail {
     height: 2px;
-    transition: height 150ms ease-out;
+    transition: height var(--move-feedback) var(--ease-out-soft);
   }
 
-  .fill,
-  .thumb {
-    transition-property: width, left;
-    transition-duration: 250ms;
-    transition-timing-function: linear;
+  /* 跟着播放器报的进度匀速走，下一次报之前刚好走到 */
+  .fill {
+    transition: width var(--move-tick) linear;
   }
 
   .thumb {
     opacity: 0;
-    transition-property: left, opacity;
+    transition:
+      left var(--move-tick) linear,
+      opacity var(--duration-feedback) var(--ease-out-soft);
   }
 
   .seek:focus-visible .rail,
@@ -64,9 +64,12 @@
   }
 
   /* 拖动时游标跟着指针走，不追着过渡 */
-  .dragging .fill,
-  .dragging .thumb {
+  .dragging .fill {
     transition: none;
+  }
+
+  .dragging .thumb {
+    transition: opacity var(--duration-feedback) var(--ease-out-soft);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -76,14 +79,6 @@
 
     .seek:not([aria-disabled='true']):hover .thumb {
       opacity: 1;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .rail,
-    .fill,
-    .thumb {
-      transition: none;
     }
   }
 </style>

@@ -148,6 +148,6 @@
   {/if}
 
   <Button type='submit' variant='primary' class='mt-5 w-full md:h-11' disabled={submit.status === 'submitting'}>
-    {#if submit.status === 'submitting'}<LoaderCircle size={17} class='animate-spin motion-reduce:animate-none' aria-hidden='true' />正在登录{:else}登录{/if}
+    {#if submit.status === 'submitting'}<LoaderCircle size={17} class='animate-spin' aria-hidden='true' />正在登录{:else}登录{/if}
   </Button>
 </form>

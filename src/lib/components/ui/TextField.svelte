@@ -32,7 +32,7 @@
   <div class='mt-1.5 flex gap-2'>
     <div
       class={[
-        'h-11 min-w-0 flex flex-1 items-center border rounded-lg bg-white transition-[border-color,box-shadow] duration-120',
+        'h-11 min-w-0 flex flex-1 items-center border rounded-lg bg-white transition-[border-color,box-shadow] duration-feedback',
         // 获得焦点时边框加粗成 2px：茎绿（出错时仍是出错红），外面一圈 3px 的浅色光环
         error
           ? 'border-error-700 focus-within:shadow-field-focus-error'

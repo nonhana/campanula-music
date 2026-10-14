@@ -40,7 +40,7 @@
   </div>
 
   {#if song}
-    <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-150 mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
+    <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
       <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
       <span class='min-w-0'>
         <span class='min-w-0 flex items-center gap-2'>

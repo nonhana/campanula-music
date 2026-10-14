@@ -38,7 +38,7 @@
           <span class='min-w-0 flex-1'>{notice.text}</span>
           <button type='button' class='h-11 flex-none rounded-full px-2 text-primary-900 font-500 -mr-2 active:bg-primary-100' onclick={() => view.app.retrySync()}>重试</button>
         {:else}
-          <RefreshCw size={14} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800 motion-reduce:animate-none' : 'text-neutral-500']} aria-hidden='true' />
+          <RefreshCw size={14} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800' : 'text-neutral-500']} aria-hidden='true' />
           <span class='min-w-0 flex-1 truncate'>{notice.kind === 'syncing' ? '正在同步曲库' : `同步暂停 · ${PAUSED[notice.kind]}`}</span>
           {#if progress}
             <span class='flex-none tabular-nums'>{formatCount(progress.songs.done)} / {formatCount(progress.songs.total)}</span>
@@ -58,7 +58,7 @@
         <p class='min-w-0 flex-1 text-label text-neutral-900 font-500'>{notice.text}</p>
         <Button variant='outline' class='h-9! md:h-9!' onclick={() => view.app.retrySync()}>重试</Button>
       {:else}
-        <RefreshCw size={18} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800 motion-reduce:animate-none' : 'text-neutral-500']} aria-hidden='true' />
+        <RefreshCw size={18} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800' : 'text-neutral-500']} aria-hidden='true' />
         <p class='min-w-0 flex-1 truncate text-label text-neutral-900 font-500'>
           {notice.kind === 'syncing' ? '正在同步曲库' : '同步暂停'}<span class='ml-2 text-neutral-600 font-400'>{notice.kind === 'syncing' ? '已经同步的歌先显示出来，可以先搜' : PAUSED[notice.kind]}</span>
         </p>

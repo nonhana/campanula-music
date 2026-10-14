@@ -2,17 +2,16 @@ import type { Attachment } from 'svelte/attachments'
 import type { GripSource, PointerSample } from './drawer-core'
 import { untrack } from 'svelte'
 import { quartOut } from 'svelte/easing'
-import { prefersReducedMotion, Tween } from 'svelte/motion'
+import { Tween } from 'svelte/motion'
+import { moveMs } from '../motion'
+import { DURATIONS } from '../motion-tokens'
 import { createDrawerCore } from './drawer-core'
 import { watchPress } from './press'
 
 // 从底下升起、缩回底下的抽屉（播放页、手机的播放队列弹层）。拖动怎么判断全在 drawer-core.ts（Spec #11 的第二个测试接入点），
 // 这里只接上浏览器：抽屉本身（panel）的位置和底下垫的那一截、拖动来源（grip）的指针事件和指针捕获、
 // 按住断了的几种情况（press.ts）、动画、拖着时整页的光标和选字。
-// 动画 380ms 先快后慢，中途松手按剩下的距离算；减少动态效果时直接到位（拖动时照样跟手）
-
-/** 从收着到整个拉开的时长 */
-const FULL_MS = 380
+// 动画 380ms（DURATIONS.drawer）先快后慢，中途松手按剩下的距离算；减少动态效果时直接到位（拖动时照样跟手）
 
 /**
  * 抽屉底下多垫这么多 px（背景和抽屉一样）：往拉开那边拉过头时抽屉会往上走一点（有阻尼），
@@ -43,7 +42,8 @@ export interface Drawer {
 /** estimate：抽屉还没画出来时（从播放条往上拖的头几帧）按多高算（px），画出来以后量它自己 */
 export function createDrawer(estimate: () => number): Drawer {
   const position = new Tween(1, {
-    duration: (from, to) => (prefersReducedMotion.current ? 0 : Math.max(120, FULL_MS * Math.abs(to - from))),
+    // 中途松手时按剩下的距离算，最短也有一下反馈（120ms）
+    duration: (from, to) => moveMs(Math.max(DURATIONS.feedback, DURATIONS.drawer * Math.abs(to - from))),
     easing: quartOut,
   })
   let panel: HTMLElement | null = null

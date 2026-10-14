@@ -27,24 +27,26 @@
     border-radius: 1px;
     background: theme('colors.primary.900');
     transform-origin: bottom;
-    animation: rise 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+    animation: rise var(--loop-now-bars) ease-in-out infinite alternate;
+    animation-play-state: var(--loop-state);
   }
 
+  /* 三根快慢、起点各不相同，起伏不齐 */
   .bars span:nth-child(1) {
     transform: scaleY(0.55);
-    animation-delay: -0.35s;
+    animation-delay: calc(var(--loop-now-bars) * -0.3);
   }
 
   .bars span:nth-child(2) {
     transform: scaleY(0.95);
-    animation-delay: -0.8s;
-    animation-duration: 0.9s;
+    animation-duration: calc(var(--loop-now-bars) * 0.8);
+    animation-delay: calc(var(--loop-now-bars) * -0.7);
   }
 
   .bars span:nth-child(3) {
     transform: scaleY(0.4);
-    animation-delay: -0.1s;
-    animation-duration: 1.3s;
+    animation-duration: calc(var(--loop-now-bars) * 1.2);
+    animation-delay: calc(var(--loop-now-bars) * -0.1);
   }
 
   .paused span {
@@ -57,12 +59,6 @@
     }
     to {
       transform: scaleY(1);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bars span {
-      animation: none;
     }
   }
 </style>

@@ -11,5 +11,5 @@
 </script>
 
 <div class='absolute inset-x-0 bottom-0 h-[2px] bg-primary-100' aria-hidden='true'>
-  <div class='h-full bg-primary-700 transition-[width] duration-250 ease-linear motion-reduce:transition-none' style:width='{progress * 100}%'></div>
+  <div class='h-full bg-primary-700 transition-[width] duration-move-tick ease-linear' style:width='{progress * 100}%'></div>
 </div>

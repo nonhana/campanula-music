@@ -23,7 +23,7 @@
 
 <div
   class={[
-    'h-11 flex items-center gap-3 border border-neutral-200 rounded-full bg-white pl-4 pr-1.5 shadow-ambient transition-[border-color,box-shadow] duration-120 focus-within:(border-primary-800 shadow-field-focus)',
+    'h-11 flex items-center gap-3 border border-neutral-200 rounded-full bg-white pl-4 pr-1.5 shadow-ambient transition-[border-color,box-shadow] duration-feedback focus-within:(border-primary-800 shadow-field-focus)',
     disabled && 'opacity-50',
     klass,
   ]}

@@ -87,7 +87,7 @@
   <button
     bind:this={trigger}
     type='button'
-    class='rounded-full transition-transform duration-150 active:scale-98 mouse:hover:brightness-95'
+    class='press rounded-full transition-transform duration-move-feedback mouse:hover:brightness-95'
     aria-label='账号：{account.nickname}'
     aria-haspopup='menu'
     aria-expanded={open}

@@ -1,6 +1,6 @@
 <!--
   打开 App、问服务端当前账号的这一小会儿：还不知道该显示登录页还是曲库，只放 logo。
-  logo 晚 400ms 才淡入，通常请求先回来，听众看不到这一闪。
+  logo 晚 400ms 才淡入（--delay-opening），通常请求先回来，听众看不到这一闪。
 -->
 <script lang='ts'>
   import Logo from './svg/Logo.svelte'
@@ -13,18 +13,12 @@
 
 <style>
   .appear {
-    animation: appear 240ms ease-out 400ms both;
+    animation: appear var(--duration-reveal) var(--ease-out-soft) var(--delay-opening) both;
   }
 
   @keyframes appear {
     from {
       opacity: 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .appear {
-      animation: none;
     }
   }
 </style>

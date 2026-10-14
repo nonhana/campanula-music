@@ -12,7 +12,8 @@ const BROWSER_GLOBALS = ['window', 'self', 'document', 'navigator', 'location', 
 export default antfu(
   {
     svelte: true,
-    unocss: true,
+    // strict：uno.config.ts 的 blocklist（零散的动效时长、曲线等）在 lint 里报错
+    unocss: { strict: true },
     pnpm: true,
     // 录下来的网易云真实返回，原样保留（歌名里的全角空格等不能被 lint 改掉）
     ignores: ['tests/fixtures/**/*.json'],

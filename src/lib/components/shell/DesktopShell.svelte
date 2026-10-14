@@ -24,10 +24,10 @@
   <header class='fixed inset-x-0 top-0 z-40 h-16 flex items-center gap-3 bg-primary-50 pl-4 pr-6'>
     {@render header()}
   </header>
-  <nav class={['fixed left-0 top-16 z-30 w-[var(--rail-width)] flex flex-col overflow-hidden px-3 pb-4 pt-2 transition-[width] duration-200 ease-out', bar ? 'bottom-20' : 'bottom-0']} aria-label='主导航'>
+  <nav class={['fixed left-0 top-16 z-30 w-[var(--rail-width)] flex flex-col overflow-hidden px-3 pb-4 pt-2 transition-[width] duration-move-state', bar ? 'bottom-20' : 'bottom-0']} aria-label='主导航'>
     {@render rail()}
   </nav>
-  <main class={['pl-[var(--rail-width)] pt-16 transition-[padding] duration-200 ease-out', bar ? 'pb-28' : 'pb-12']}>
+  <main class={['pl-[var(--rail-width)] pt-16 transition-[padding] duration-move-state', bar ? 'pb-28' : 'pb-12']}>
     <div class='mx-auto max-w-[1280px] px-8 pt-4'>
       {@render children()}
     </div>
@@ -38,12 +38,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  @media (prefers-reduced-motion: reduce) {
-    nav,
-    main {
-      transition: none;
-    }
-  }
-</style>
