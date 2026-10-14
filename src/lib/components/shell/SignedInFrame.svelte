@@ -1,7 +1,7 @@
 <!--
   登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）、图标侧栏（曲库，设置在最下面）和底部播放条；
   手机是 logo 行（右边是设置），设置、歌单页、专辑页、歌手页这类二级页面换成返回栏；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；
-  底部是迷你播放条。播放条在播放队列里有歌时才有，从它打开播放页（盖住整个骨架，开着时骨架不能操作）。
+  底部是迷你播放条。播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
   播放的提示浮在最上面，播放页开着时也看得见。搜索、每日推荐、已下载由之后的票放进来。
 -->
 <script lang='ts'>
@@ -17,6 +17,7 @@
   import { desktopLayout } from '../layout'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
+  import { playerDrawer } from '../player/player-page.svelte'
   import PlayerNotice from '../player/PlayerNotice.svelte'
   import PlayerPage from '../player/PlayerPage.svelte'
   import IconButton from '../ui/IconButton.svelte'
@@ -30,6 +31,11 @@
   const hasQueue = $derived(view.state.player.queue.length > 0)
   /** 播放页开着（浅路由，见 player-page.svelte.ts） */
   const playerOpen = $derived(hasQueue && page.state.player !== undefined)
+  /** 播放页要画出来：开着，或者正在升起、缩回、被拖着 */
+  const playerShown = $derived(hasQueue && (playerOpen || playerDrawer.visible))
+
+  // 浅路由说开着就升起来，说关了就缩回去（返回手势、后退、Esc、收起键都走这里）
+  $effect(() => playerDrawer.settle(playerOpen))
 
   const pathname = $derived(page.url.pathname)
   /** 歌单页、专辑页、歌手页：标题是歌单名、专辑名、歌手名，返回栏只说这是哪一类页面 */
@@ -149,7 +155,7 @@
   {/if}
 </div>
 
-{#if playerOpen}
-  <PlayerPage />
+{#if playerShown}
+  <PlayerPage open={playerOpen} />
 {/if}
 <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />

@@ -1,5 +1,5 @@
 <!--
-  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页），右边音量；
+  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开），右边音量；
   顶边一条 2px 的薄荷进度线。播放模式和播放队列（#26）由之后的票加。放在 DesktopShell 的 bar 里
 -->
 <script lang='ts'>
@@ -10,7 +10,7 @@
   import { artistLine, langOf } from '../library/view'
   import IconButton from '../ui/IconButton.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { openPlayerPage } from './player-page.svelte'
+  import { grabToOpenPlayerPage } from './player-page.svelte'
   import ProgressLine from './ProgressLine.svelte'
   import { currentSong, formatSeconds, shownDuration } from './view'
   import VolumeControl from './VolumeControl.svelte'
@@ -18,6 +18,7 @@
   const view = getAppView()
   const player = $derived(view.state.player)
   const song = $derived(currentSong(player))
+  const grabSong = grabToOpenPlayerPage()
 </script>
 
 <ProgressLine edge='top' />
@@ -34,7 +35,7 @@
   </div>
 
   {#if song}
-    <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-150 mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' onclick={openPlayerPage}>
+    <button type='button' class='min-w-0 flex touch-none items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-150 mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {...grabSong}>
       <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
       <span class='min-w-0'>
         <span class='min-w-0 flex items-center gap-2'>

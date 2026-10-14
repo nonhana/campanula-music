@@ -1,5 +1,6 @@
 <!--
-  桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“正在播放 · 来自「…」”；
+  桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“正在播放 · 来自「…」”，正中一个拖动把手
+  （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
   左列封面、歌名、波浪进度条、上一首 / 播放 / 下一首、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）。整页放进视口，不滚动。
   红心（#30）、“更多”菜单和播放模式（#26）由之后的票加。放在 PlayerPage 里
 -->
@@ -13,7 +14,7 @@
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { playerPageChoices as choices, closePlayerPage } from './player-page.svelte'
+  import { playerPageChoices as choices, closePlayerPage, playerDrawer } from './player-page.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
   import VolumeControl from './VolumeControl.svelte'
@@ -27,6 +28,7 @@
   ] as const
 
   const uid = $props.id()
+  const grabHandle = playerDrawer.grab({ from: 'open', commit: closePlayerPage, tap: closePlayerPage })
 
   /** 标签之间用 ←/→ 切换（WAI-ARIA 标签页的做法），焦点跟着走 */
   function onTabKey(event: KeyboardEvent) {
@@ -43,6 +45,17 @@
   <p class='min-w-0 truncate text-label text-neutral-700'>
     <span class='text-neutral-900 font-500'>正在播放</span>{#if source}<span class='mx-1.5' aria-hidden='true'>·</span>来自「<span lang={langOf(source)}>{source}</span>」{/if}
   </p>
+  <!-- 给鼠标用的把手：键盘用旁边的收起键和 Esc，所以不进 Tab 顺序（和遮罩一样） -->
+  <button
+    type='button'
+    class='group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab touch-none place-items-center rounded-full -translate-x-1/2'
+    aria-label='拖动把手：往下拖或点按，收起播放页'
+    title='往下拖或点按，收起播放页'
+    tabindex='-1'
+    {...grabHandle}
+  >
+    <span class='h-1 w-10 rounded-full bg-neutral-400 transition-colors duration-150 mouse:group-hover:bg-neutral-600' aria-hidden='true'></span>
+  </button>
 </header>
 
 <!-- 窄于 1024px 时两栏按比例分，右栏的歌词不至于挤成一两个字一行 -->
