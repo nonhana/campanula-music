@@ -1,0 +1,89 @@
+<!--
+  桌面底栏顶边的进度线，也是滑块（DESIGN.md Player Bars）：平时是一条 2px 的薄荷线；鼠标移上去、键盘聚焦、拖动时往下加粗到 4px，
+  露出 4×14px 的深薄荷游标（和波浪进度条的游标同一个样子）。点按、拖动跳到那里（seek-slider.svelte.ts），
+  拖动时底栏左边的时间跟着走。点按区域是顶边上下 16px 高的一条，往上只伸出 6px，少挡住上面的内容。
+  放在 position: fixed 的底栏里，slider 由底栏创建（它的时间也要跟着拖动变）
+-->
+<script lang='ts'>
+  import type { SeekSlider } from './seek-slider.svelte'
+  import { getAppView } from '../app-context.svelte'
+
+  const { slider }: { slider: SeekSlider } = $props()
+  const view = getAppView()
+  const ratio = $derived(slider.ratio(view.state.player.position))
+  const percent = $derived(`${ratio * 100}%`)
+</script>
+
+<div class={['seek absolute inset-x-0 -top-1.5 h-4 cursor-pointer touch-none', slider.dragging !== null && 'dragging']} {...slider.attributes(ratio)}>
+  <div class='rail absolute inset-x-0 top-1.5 bg-primary-100' aria-hidden='true'>
+    <div class='fill h-full bg-primary-700' style:width={percent}></div>
+  </div>
+  <span class='thumb absolute top-px h-3.5 w-1 rounded-full bg-primary-900' style:left='calc({percent} - 2px)' aria-hidden='true'></span>
+</div>
+
+<style>
+  .seek[aria-disabled='true'] {
+    cursor: default;
+  }
+
+  /* 焦点环画在游标上，不围着整条 16px 高的点按区域 */
+  .seek:focus-visible {
+    outline: none;
+  }
+
+  .rail {
+    height: 2px;
+    transition: height 150ms ease-out;
+  }
+
+  .fill,
+  .thumb {
+    transition-property: width, left;
+    transition-duration: 250ms;
+    transition-timing-function: linear;
+  }
+
+  .thumb {
+    opacity: 0;
+    transition-property: left, opacity;
+  }
+
+  .seek:focus-visible .rail,
+  .dragging .rail {
+    height: 4px;
+  }
+
+  .seek:focus-visible .thumb,
+  .dragging .thumb {
+    opacity: 1;
+  }
+
+  .seek:focus-visible .thumb {
+    outline: 2px solid theme('colors.primary.800');
+    outline-offset: 2px;
+  }
+
+  /* 拖动时游标跟着指针走，不追着过渡 */
+  .dragging .fill,
+  .dragging .thumb {
+    transition: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .seek:not([aria-disabled='true']):hover .rail {
+      height: 4px;
+    }
+
+    .seek:not([aria-disabled='true']):hover .thumb {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rail,
+    .fill,
+    .thumb {
+      transition: none;
+    }
+  }
+</style>
