@@ -11,7 +11,7 @@
   import { artistLine, langOf } from '../library/view'
   import IconButton from '../ui/IconButton.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { grabToOpenPlayerPage } from './player-page.svelte'
+  import { gripToOpenPlayerPage } from './player-page.svelte'
   import { createSeekSlider } from './seek-slider.svelte'
   import SeekLine from './SeekLine.svelte'
   import { currentSong, formatSeconds } from './view'
@@ -20,7 +20,7 @@
   const view = getAppView()
   const player = $derived(view.state.player)
   const song = $derived(currentSong(player))
-  const grabSong = grabToOpenPlayerPage()
+  const gripSong = gripToOpenPlayerPage()
   const slider = createSeekSlider()
   /** 左边的时间：拖动进度线时显示拖到哪 */
   const shownTime = $derived(slider.dragging === null ? player.position : slider.dragging * slider.duration)
@@ -40,7 +40,7 @@
   </div>
 
   {#if song}
-    <button type='button' class='min-w-0 flex touch-none items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-150 mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {...grabSong}>
+    <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-150 mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
       <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
       <span class='min-w-0'>
         <span class='min-w-0 flex items-center gap-2'>

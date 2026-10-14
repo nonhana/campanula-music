@@ -4,9 +4,9 @@
 /** 按住结束后还挡多久右键菜单：拖着时按下右键，浏览器先报按住断了，菜单随后才来（Windows 上要等右键松开） */
 const MENU_GRACE_MS = 300
 
-/** 拖动中的这次移动说明按住已经断了：主键（鼠标左键、手指、笔尖）没按着了，或者又按下了右键 */
-export function pressBroken(event: PointerEvent): boolean {
-  return (event.buttons & 1) === 0 || (event.buttons & 2) !== 0
+/** 拖动中移动时的 buttons（PointerEvent.buttons）说明按住已经断了：主键（鼠标左键、手指、笔尖）没按着了，或者又按下了右键 */
+export function pressBroken(buttons: number): boolean {
+  return (buttons & 1) === 0 || (buttons & 2) !== 0
 }
 
 /**

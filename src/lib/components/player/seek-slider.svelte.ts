@@ -71,7 +71,7 @@ export function createSeekSlider(): SeekSlider {
   function onpointermove(event: PointerEvent) {
     if (dragging === null)
       return
-    if (pressBroken(event))
+    if (pressBroken(event.buttons))
       return finish()
     dragging = ratioAt(event)
   }
