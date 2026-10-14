@@ -1,8 +1,10 @@
 import { getAppView } from '../app-context.svelte'
+import { pressBroken, watchPress } from './press'
 import { formatSeconds, shownDuration } from './view'
 
 // 播放进度的滑块（播放页的波浪进度条、桌面底栏顶边的进度线共用）：按住拖动、点按都跳到那里，松手才跳（App.seek），
-// 拖动时游标和时间跟着走；←/→（↑/↓）快退快进 5 秒，Home / End 跳到头尾。这首的长度还不知道时不能用
+// 拖动时游标和时间跟着走；←/→（↑/↓）快退快进 5 秒，Home / End 跳到头尾。这首的长度还不知道时不能用。
+// 按住断了（右键菜单、切走窗口、页面藏起来、指针捕获被收回、移动时按键已经松开）就作废，不跳
 
 /** ←/→ 一次跳几秒 */
 const STEP = 5
@@ -31,6 +33,7 @@ export interface SliderAttributes {
   'onpointermove': (event: PointerEvent) => void
   'onpointerup': () => void
   'onpointercancel': () => void
+  'onlostpointercapture': () => void
   'onkeydown': (event: KeyboardEvent) => void
 }
 
@@ -39,6 +42,8 @@ export function createSeekSlider(): SeekSlider {
   const view = getAppView()
   const duration = $derived(shownDuration(view.state.player))
   let dragging = $state<number | null>(null)
+  /** 停止盯着这次按住（press.ts）；没按着时是 null */
+  let unwatch: (() => void) | null = null
 
   /** 指针在滑块上的哪里（0 到 1）；按下时捕获了指针，拖出滑块外面也按它的左右算 */
   function ratioAt(event: PointerEvent): number {
@@ -46,24 +51,36 @@ export function createSeekSlider(): SeekSlider {
     return rect.width > 0 ? Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)) : 0
   }
 
+  /** 按住结束或作废：不再盯着，游标回到播放进度 */
+  function finish() {
+    dragging = null
+    unwatch?.()
+    unwatch = null
+  }
+
   function onpointerdown(event: PointerEvent) {
     if (duration <= 0 || event.button !== 0)
       return
+    finish()
     const target = event.currentTarget as Element
     target.setPointerCapture(event.pointerId)
     dragging = ratioAt(event)
+    unwatch = watchPress(finish)
   }
 
   function onpointermove(event: PointerEvent) {
-    if (dragging !== null)
-      dragging = ratioAt(event)
+    if (dragging === null)
+      return
+    if (pressBroken(event))
+      return finish()
+    dragging = ratioAt(event)
   }
 
   function onpointerup() {
     if (dragging === null)
       return
     view.app.seek(dragging * duration)
-    dragging = null
+    finish()
   }
 
   function onkeydown(event: KeyboardEvent) {
@@ -106,7 +123,8 @@ export function createSeekSlider(): SeekSlider {
         onpointerdown,
         onpointermove,
         onpointerup,
-        'onpointercancel': () => (dragging = null),
+        'onpointercancel': finish,
+        'onlostpointercapture': finish,
         onkeydown,
       }
     },

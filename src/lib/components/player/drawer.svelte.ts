@@ -1,10 +1,12 @@
 import { untrack } from 'svelte'
 import { quartOut } from 'svelte/easing'
 import { prefersReducedMotion, Tween } from 'svelte/motion'
+import { pressBroken, watchPress } from './press'
 
 // 从底下升起、缩回底下的抽屉（播放页、手机的播放队列弹层），按自己的高度滑：位置 0 是整个拉开，1 是收在下面看不见。
 // 开没开着由浅路由说了算（settle）。拖动把手、播放条时跟着手走；松手时从按下的地方拖过自己高度的 1/4、或者往一个方向一甩，
 // 就拉开或收起（改浅路由），不到就回到浅路由说的那一头（拖着时按了 Esc、返回，松手就收起）。
+// 按住断了（右键菜单、切走窗口、页面藏起来、指针捕获被收回、移动时按键已经松开）就作废：回到浅路由说的那一头。
 // 整段动画 380ms，中途松手按剩下的距离算；减少动态效果时直接到位
 
 /** 从收着到整个拉开的时长 */
@@ -33,6 +35,7 @@ export interface GrabHandlers {
   onpointermove: (event: PointerEvent) => void
   onpointerup: (event: PointerEvent) => void
   onpointercancel: (event: PointerEvent) => void
+  onlostpointercapture: (event: PointerEvent) => void
   onclick?: (event: MouseEvent) => void
 }
 
@@ -97,28 +100,45 @@ export function createDrawer(height: () => number): Drawer {
       const target = from === 'open' ? 1 : 0
       const commitDirection = target === 1 ? 1 : -1
       let gesture: Gesture | null = null
-      /** 刚拖完、或者按下后往横里挪开了：跟着来的那次指针 click 不算点按 */
+      /** 停止盯着这次按住（press.ts）；没按着时是 null */
+      let unwatch: (() => void) | null = null
+      /** 刚拖完、作废了、或者按下后往横里挪开了：跟着来的那次指针 click 不算点按（下次按下时清掉） */
       let swallowClick = false
 
-      function release(event: PointerEvent, cancelled: boolean) {
-        if (gesture?.id !== event.pointerId)
-          return
-        const { moved, start, samples } = gesture
+      /** 这次按住结束了：不再盯着；拖动过的，光标、选字放开，返回这次按住（没拖动过返回 null） */
+      function finish(): Gesture | null {
+        const ended = gesture
         gesture = null
-        if (!moved)
-          return
-        // 指针被取消时不会再有 click
-        swallowClick = !cancelled
+        unwatch?.()
+        unwatch = null
+        if (!ended?.moved)
+          return null
+        swallowClick = true
         dragging = false
         holdPage(false)
-        const recent = samples.filter(sample => event.timeStamp - sample.t <= VELOCITY_WINDOW_MS)
+        return ended
+      }
+
+      /** 按住断了：作废，回到浅路由说的那一头 */
+      function abandon() {
+        if (finish())
+          moveTo(wanted)
+      }
+
+      function release(event: PointerEvent) {
+        if (gesture?.id !== event.pointerId)
+          return
+        const ended = finish()
+        if (!ended)
+          return
+        const recent = ended.samples.filter(sample => event.timeStamp - sample.t <= VELOCITY_WINDOW_MS)
         const first = recent[0]
         const last = recent.at(-1)
         /** 往下为正 */
         const velocity = first && last && last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0
-        const travelled = position.current - start
+        const travelled = position.current - ended.start
         /** 往下（收起）为 1，往上（拉开）为 -1，没拉到为 0 */
-        const toward = cancelled ? 0 : Math.abs(velocity) >= FLICK ? Math.sign(velocity) : Math.abs(travelled) >= THRESHOLD ? Math.sign(travelled) : 0
+        const toward = Math.abs(velocity) >= FLICK ? Math.sign(velocity) : Math.abs(travelled) >= THRESHOLD ? Math.sign(travelled) : 0
         if (toward === commitDirection && wanted !== target) {
           moveTo(target)
           commit()
@@ -132,13 +152,18 @@ export function createDrawer(height: () => number): Drawer {
         onpointerdown(event) {
           if (!event.isPrimary || event.button !== 0)
             return
+          abandon()
           swallowClick = false
           gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, start: 0, moved: false, samples: [] }
-          ;(event.currentTarget as Element).setPointerCapture(event.pointerId)
+          unwatch = watchPress(abandon)
+          const element = event.currentTarget as Element
+          element.setPointerCapture(event.pointerId)
         },
         onpointermove(event) {
           if (gesture?.id !== event.pointerId)
             return
+          if (pressBroken(event))
+            return abandon()
           const dy = event.clientY - gesture.y
           if (!gesture.moved) {
             const dx = event.clientX - gesture.x
@@ -146,7 +171,7 @@ export function createDrawer(height: () => number): Drawer {
               return
             if (Math.abs(dy) < Math.abs(dx)) {
               // 先往横里挪的：不是拖抽屉，也不是点按
-              gesture = null
+              finish()
               swallowClick = true
               return
             }
@@ -159,8 +184,12 @@ export function createDrawer(height: () => number): Drawer {
           void position.set(Math.min(1, Math.max(0, gesture.start + dy / height())), { duration: 0 })
           gesture.samples = [...gesture.samples.filter(sample => event.timeStamp - sample.t <= VELOCITY_WINDOW_MS), { y: event.clientY, t: event.timeStamp }]
         },
-        onpointerup: event => release(event, false),
-        onpointercancel: event => release(event, true),
+        onpointerup: release,
+        onpointercancel: abandon,
+        onlostpointercapture: (event) => {
+          if (gesture?.id === event.pointerId)
+            abandon()
+        },
         ...(tap && {
           onclick(event: MouseEvent) {
             // 键盘按出来的 click（detail 是 0）一定算点按

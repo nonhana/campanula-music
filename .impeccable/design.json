@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T12:49:24.000Z",
+  "generatedAt": "2026-10-14T13:08:22.000Z",
   "title": "Design System: Campanula",
   "extensions": {
     "colorMeta": {
@@ -530,7 +530,7 @@
       {
         "name": "player-page-drawer",
         "value": "drawer: translateY(100%) ↔ 0 over 380ms quart-out (after a drag release: 380ms × remaining distance, at least 120ms); top radius grows 0 → 24px as it leaves the top; library behind dims up to 20%",
-        "purpose": "播放页是一层抽屉，打开时从底下升起、收起时缩回底下。拖动把手（桌面顶上正中、手机的“正在播放”）或播放条时跟着手走，松手时从按下的地方拖过自身高度的 1/4 或一甩（每秒 1000px）就拉开 / 收起，不到就回到浅路由说的那一头。减少动态效果时直接到位。"
+        "purpose": "播放页是一层抽屉，打开时从底下升起、收起时缩回底下。拖动把手（桌面顶上正中、手机的“正在播放”）或播放条时跟着手走，松手时从按下的地方拖过自身高度的 1/4 或一甩（每秒 1000px）就拉开 / 收起，不到就回到浅路由说的那一头。按住断了（右键、切走窗口、松开没传到页面）就作废、弹回。减少动态效果时直接到位。"
       },
       {
         "name": "bone-sweep",
