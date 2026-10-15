@@ -39,8 +39,9 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 - 手机视口和桌面视口互换（`emulate` 的 `mobile` 变了）会重新加载页面：页面里装的脚本、播放队列都没了。先换视口，再放歌、再装脚本。
 - `emulate` 没有“减少动态效果”。用 `sweep.py` 的 `reduced=True` 模拟：它让样式表里真正那条媒体查询生效，读到的是真的 CSS 变量；但仍是模拟，交付时请作者在 DevTools 的 Rendering 面板里真开一次。模拟装在页面里，换回正常动效要重新打开页面（`motion`、`slow` 会自己做，还在就报错）。
 - 页面藏到后台：在这个 Chrome 连接下开新标签页，原来的页面仍是 `visible`。用 `sweep.py` 的 `hidden()`（或 `HIDE_JS` / `SHOW_JS`）在页面里改 `visibilityState`。
+- 量帧时间、长任务用 `pnpm build && pnpm preview`：开发服务器上 Svelte 的开发模式检查会把数字放大。
 
-## 4. 验收截图：交给子代理成批拍
+## 4. 验收截图：只拍票里列出的，交给子代理成批拍
 
 用 `task` 开一个子代理拍截图，主会话不进截图循环。给子代理的内容：这个 skill 的名字、票号、截图清单（每张写画面、视口和状态）、第 2 步记下的对照要点、开发服务器已经开着。子代理在 Python eval 里：
 
@@ -56,10 +57,7 @@ report = await shoot(22, [...])   # 票号用数字或字符串都行；每张�
 
 `shoot` 按清单换视口、装拦截、打开页面，等画面出现后再截图，存到 `_notes/screenshots/issue-<票号>/<名字>-<宽x高>.png`。它只返回每张的结果，图片留在文件里。等不到画面、拦截没装上、本机数据库没清掉时直接报错，不会存一张错的图。
 
-清单要覆盖：
-- 这张票的每个画面，390×844（`phone`）和 1440×900（`desktop`）各一张。`name` 用对应基准图的文件名去掉 `-mobile` / `-desktop`，例如 `library-playlists`，对照时一眼能配上；
-- 加载中、空、出错、搜不到这几种状态；
-- 这张票新加或改过的页面，在 `768`、`1024` 下各一张（结果里的 `overflow` 要为空）。
+清单只拍票里列出的画面和状态；票里没列时，拍这张票改过的每个画面。每个画面 390×844（`phone`）和 1440×900（`desktop`）各一张，`name` 用对应基准图的文件名去掉 `-mobile` / `-desktop`，例如 `library-playlists`，对照时一眼能配上。票里没列的状态（加载中、空、出错、搜不到）和 `768`、`1024` 宽度，等作者要时再拍。
 
 拦截规则写在每张的 `intercept` 里，格式是 `{'path': 地址正则, 'after': 前几个放行, 'reply': 'hold' 或 {'status', 'body'}}`（详见 `scripts/intercept.js` 开头）。**规则按先后匹配，第一条命中的生效**：针对某张歌单的规则放在前面，通配的放在后面。
 
@@ -77,7 +75,7 @@ report = await shoot(22, [...])   # 票号用数字或字符串都行；每张�
 
 ### 动效逐帧
 
-改了动效的票（DESIGN.md Motion），每个改过的动效拍一组逐帧，再在“减少动态效果”下拍一组。同一个 eval 里：
+作者要看动效（DESIGN.md Motion）时，给他点名的每个动效拍一组逐帧；要看“减少动态效果”时，再在 `reduced=True` 下拍一组。同一个 eval 里：
 
 ```python
 r = await motion(51, 'wheel-page-next', 'desktop', [0, 60, 150, 300, 600],
@@ -95,7 +93,7 @@ r = await motion(51, 'wheel-page-next', 'desktop', [0, 60, 150, 300, 600],
 - 静态截图要在“减少动态效果”下拍，`shoot` 每张加 `'reduced': True`。
 - 看图用 `sheet(票号, 名字, [glob…], crop=…, height=…)` 把一组拼成一张，`read` 一次看完；每张缩放到 `height` 高，裁得很小也会放大。只看播放条时裁底部，例如桌面底栏 `crop=(0.335, 0.905, 0.5, 0.995), height=200`。
 
-完成标准：清单里每张都拍了；结果里没有报错、`overflow` 为空；改过的每个动效都有一组逐帧和一组“减少动态效果”，`anims` 和 DESIGN.md 对得上；每张都对照过，不一致的已修好重拍，或者写明了原因。
+完成标准：清单里每张都拍了；结果里没有报错、`overflow` 为空；每张都对照过，不一致的已修好重拍，或者写明了原因。作者要了逐帧时，每组的 `anims` 和 DESIGN.md 对得上。
 
 ## 5. 交给作者
 
