@@ -1,26 +1,32 @@
 <!--
   歌曲行里点歌的按钮（DESIGN.md Song Row）：盖住整行，单击（轻点）整行就播放。放在 position: relative 的行里。
+  给了 cover（这一行的封面）的，点了换歌时封面飞进播放条（player/cover-flight.svelte.ts）；播放队列里的不给，在播放页里换碟。
   键盘焦点环画在行内，不压到相邻的行（DESIGN.md Buttons · Focus）。无版权的歌不能点
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
+  import { getAppView } from '../app-context.svelte'
+  import { pick } from '../player/cover-flight.svelte'
 
   interface Props {
     disabled: boolean
     /** 正在播放这首 */
     now: boolean
     onplay: () => void
+    /** 这一行的封面：点了换歌时它飞进播放条 */
+    cover?: HTMLElement
     /** 行是圆角的（白色面板里） */
     rounded?: boolean
     class?: ClassValue
     children: Snippet
   }
 
-  const { disabled, now, onplay, rounded = false, class: klass, children }: Props = $props()
+  const { disabled, now, onplay, cover, rounded = false, class: klass, children }: Props = $props()
+  const view = getAppView()
 </script>
 
-<button type='button' class={['play-target text-left', rounded && 'rounded', klass]} {disabled} aria-current={now ? 'true' : undefined} onclick={onplay}>
+<button type='button' class={['play-target text-left', rounded && 'rounded', klass]} {disabled} aria-current={now ? 'true' : undefined} onclick={() => pick(view, onplay, cover)}>
   {@render children()}
 </button>
 

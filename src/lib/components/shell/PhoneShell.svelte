@@ -5,9 +5,13 @@
   页面的滚动条贴着窗口右边，从顶行（连着标签）下沿到迷你播放条上沿；顶行下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）。
   页面里的歌曲列表从上下文拿 ScrollLookup，按住滚动条拖时气泡写它最上面那首。
   换页时（uno.config.ts）：顶行（logo 行 ↔ 返回栏）、标签行交叉淡化，迷你播放条和它下面的渐隐原地不动，只有内容在动
+  迷你播放条在播放队列里第一次有歌时从屏幕底下浮上来、渐隐跟着淡入，清空（包括退出登录，整个骨架拿掉时）沉下去（motion.ts 的 dock）
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import { getAppView } from '../app-context.svelte'
+  import { dock, fade } from '../motion'
+  import { DURATIONS } from '../motion-tokens'
   import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
 
@@ -23,6 +27,12 @@
 
   const { header, tabs, bar, children }: Props = $props()
   const lookup = setScrollLookup({ markAt: null })
+  const view = getAppView()
+  /**
+   * 播放队列真的空了（清空、退出登录）：迷你播放条收起时才沉下去，换成桌面布局、登录失效时跟着骨架直接拿掉。
+   * 收起的那一刻直接读 App 的状态：骨架整个拿掉时，组件里的 $derived 停在旧的值上
+   */
+  const emptied = () => view.app.state.player.queue.length === 0
 
   /** 吸在顶上的那一块（顶行，曲库里连着文字标签）有多高 */
   let top = $state(0)
@@ -56,8 +66,18 @@
       style:view-transition-name='bar-fade'
       style:view-transition-class='still'
       aria-hidden='true'
+      in:fade={{ duration: DURATIONS.panel }}
+      out:fade|global={{ duration: emptied() ? DURATIONS['panel-out'] : 0 }}
     ></div>
-    <div class='fixed inset-x-2 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 h-16 overflow-hidden rounded-xl bg-white shadow-float' style:view-transition-name='player-bar' style:view-transition-class='still'>
+    <!-- data-player-bar：点歌时封面飞到这里（cover-flight.svelte.ts） -->
+    <div
+      class='fixed inset-x-2 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 h-16 overflow-hidden rounded-xl bg-white shadow-float'
+      style:view-transition-name='player-bar'
+      style:view-transition-class='still'
+      data-player-bar
+      in:dock
+      out:dock|global={{ gone: emptied() }}
+    >
       {@render bar()}
     </div>
   {/if}

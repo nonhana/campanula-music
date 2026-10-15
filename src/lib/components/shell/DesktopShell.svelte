@@ -4,10 +4,13 @@
   页面的滚动条贴着窗口右边，从顶栏下沿到底栏上沿；顶栏下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）。
   页面里的歌曲列表从上下文拿 ScrollLookup，按住滚动条拖（平板触屏）时气泡写它最上面那首。
   换页时只有内容区在动：顶栏、侧栏、底栏各自起了名字，过渡里原地不动（view-transition-class still，见 uno.config.ts）。
-  侧栏收起时先等文字淡出（SignedInFrame），再变窄
+  侧栏收起时先等文字淡出（SignedInFrame），再变窄。
+  播放条在播放队列里第一次有歌时从屏幕底下浮上来，清空（包括退出登录，整个骨架拿掉时）沉下去（motion.ts 的 dock）
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import { getAppView } from '../app-context.svelte'
+  import { dock } from '../motion'
   import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
 
@@ -25,6 +28,12 @@
 
   const { railExpanded, header, rail, bar, children }: Props = $props()
   const lookup = setScrollLookup({ markAt: null })
+  const view = getAppView()
+  /**
+   * 播放队列真的空了（清空、退出登录）：播放条收起时才沉下去，换成手机布局、登录失效时跟着骨架直接拿掉。
+   * 收起的那一刻直接读 App 的状态：骨架整个拿掉时，组件里的 $derived 停在旧的值上
+   */
+  const emptied = () => view.app.state.player.queue.length === 0
 
   // Tab 到、定位到的东西不藏在顶栏底下，焦点环也露得出来
   $effect(() => {
@@ -57,7 +66,15 @@
     </div>
   </main>
   {#if bar}
-    <div class='fixed inset-x-0 bottom-0 z-40 h-20 bg-white px-5 shadow-float' style:view-transition-name='player-bar' style:view-transition-class='still'>
+    <!-- data-player-bar：点歌时封面飞到这里（cover-flight.svelte.ts） -->
+    <div
+      class='fixed inset-x-0 bottom-0 z-40 h-20 bg-white px-5 shadow-float'
+      style:view-transition-name='player-bar'
+      style:view-transition-class='still'
+      data-player-bar
+      in:dock
+      out:dock|global={{ gone: emptied() }}
+    >
       {@render bar()}
     </div>
   {/if}

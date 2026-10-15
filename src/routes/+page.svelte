@@ -43,6 +43,8 @@
   })
 
   let stripEl = $state<HTMLElement>()
+  /** 歌曲格的封面，按格子的先后：点歌时那一格的封面飞进播放条 */
+  const covers = $state<HTMLElement[]>([])
   let atStart = $state(true)
   let atEnd = $state(false)
 
@@ -108,19 +110,19 @@
                 onscroll={measureStrip}
                 data-reveal-group
               >
-                {#each strip as song (song.id)}
+                {#each strip as song, i (song.id)}
                   {@const off = song.availability === 'noCopyright'}
                   {@const now = song.id === nowId}
                   {@const source = { kind: 'playlist', id: library.liked!.playlist.id } as const}
                   <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']} oncontextmenu={event => openSongMenuAt(event, song, source)}>
                     <div class={['grid grid-cols-[48px_minmax(0,1fr)_32px] h-full items-center gap-3 pl-1.5 pr-1', off && 'opacity-45']}>
-                      <span class='relative size-12'>
+                      <span class='relative size-12' bind:this={covers[i]}>
                         <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
                         {#if now}<NowChip />{/if}
                       </span>
-                      <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.play(source, song.id)}>
+                      <PlayTarget class='min-w-0' rounded disabled={off} {now} cover={covers[i]} onplay={() => view.app.play(source, song.id)}>
                         <span class='min-w-0 flex items-center gap-1.5'>
-                          <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
+                          <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
                           <SongBadge availability={song.availability} />
                         </span>
                         <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>

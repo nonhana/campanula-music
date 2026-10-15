@@ -1,10 +1,13 @@
 <!--
   晨光行（DESIGN.md Morning Row）：正在播放的那一行，一层浅薄荷光从歌名左边缘往右铺开，长度等于播放进度；
   起点 16px 渐入，前沿 40px 渐隐。白色面板上用薄荷雾，晨光底上（手机）用薄荷玻璃。
-  放在 position: relative 的行里，行的内容叠在它上面。减少动态效果时光只跳到位
+  放在 position: relative 的行里，行的内容叠在它上面。换歌时旧行的光在 300ms 里散掉（停在散掉那一刻的进度上），
+  新行的光先淡入（200ms），再随进度往右铺；挂上时已经在放的（虚拟列表滚出来的行）不淡。减少动态效果时光只跳到位
 -->
 <script lang='ts'>
   import { getAppView } from '../app-context.svelte'
+  import { fade } from '../motion'
+  import { DURATIONS } from '../motion-tokens'
   import { progressOf } from './view'
 
   interface Props {
@@ -19,7 +22,7 @@
   const progress = $derived(progressOf(view.state.player))
 </script>
 
-<span class='wash' class:ground={onGround} style:--start='{start}px' aria-hidden='true'>
+<span class='wash' class:ground={onGround} style:--start='{start}px' aria-hidden='true' in:fade out:fade={{ duration: DURATIONS['wash-out'] }}>
   <span class='light' style:--wash-progress={progress}></span>
 </span>
 
