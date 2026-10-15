@@ -6,7 +6,7 @@ import type { BrowserCapabilities } from './browser'
 import type { LibraryState, PlaylistSearch } from './library'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
-import type { PlayerState, PlaySource } from './player'
+import type { PlayerState, PlayMode, PlaySource } from './player'
 import { createApi } from './api'
 import { createLibrary, searchPlaylist } from './library'
 import { createLocalDb } from './local'
@@ -103,6 +103,24 @@ export interface App {
   previous: () => void
   /** 在播放队列里点一首：放这一首，播放队列不变。正在放的那首、无版权的不动 */
   playFromQueue: (index: number) => void
+  /**
+   * 下一首播放（GLOSSARY）：排在当前这首后面，等它放完再放；连续几次时后加的先放（规则⑤），随机模式下也是下一首（规则③）。
+   * source 是这首歌的播放来源。播放队列是空的就直接开始放（规则①）
+   */
+  playNext: (source: PlaySource, song: Song) => void
+  /** 加入播放队列：排到最后，随机模式下也最后放（规则③）。播放队列是空的就直接开始放（规则①） */
+  addToQueue: (source: PlaySource, song: Song) => void
+  /** 插播（GLOSSARY，入口在搜索里）：排在当前这首后面并立即播放；被打断的那首不续播（规则④） */
+  interject: (source: PlaySource, song: Song) => void
+  /** 从播放队列移出第 index 首（播放队列面板）。正在放的那首移不掉 */
+  removeFromQueue: (index: number) => void
+  /** 清空播放队列（播放队列面板）：停下，播放条收起 */
+  clearQueue: () => void
+  /**
+   * 换播放模式：列表循环、单曲循环（放完从头再放这首，按下一首照样换歌）、随机播放（另排一份播放顺序，播放队列的先后不变）。
+   * 换成随机播放时当前这首和还没放到的“下一首播放”留在最前
+   */
+  setPlayMode: (mode: PlayMode) => void
   /** 当前这首跳到第 position 秒（波浪进度条）：在放就从那里接着放，停着就等按播放；超出的算开头、结尾 */
   seek: (position: number) => void
   /** 当前这首从第 position 秒开始放（点歌词的一行）：停着的也接着放 */
@@ -317,6 +335,12 @@ export function createApp(browser: BrowserCapabilities): App {
     next: player.next,
     previous: player.previous,
     playFromQueue: player.jump,
+    playNext: player.playNext,
+    addToQueue: player.addToQueue,
+    interject: player.interject,
+    removeFromQueue: player.removeFromQueue,
+    clearQueue: player.clearQueue,
+    setPlayMode: player.setMode,
     seek: player.seek,
     playFrom: player.playFrom,
     setVolume: player.setVolume,

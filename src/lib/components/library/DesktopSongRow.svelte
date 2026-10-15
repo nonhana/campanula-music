@@ -1,19 +1,25 @@
 <!--
-  桌面歌曲行（56px，DESIGN.md Song Row）：序号、封面和歌名歌手、专辑、状态（红心）、时长。单击整行就播放。
-  正在播放的那行是晨光行：序号换成三根小竖条。无版权的整行降到 45%、不能点，徽标写明原因。更多菜单由之后的票加
+  桌面歌曲行（56px，DESIGN.md Song Row）：序号、封面和歌名歌手、专辑、状态（红心）、时长、•••。单击整行就播放；
+  ••• 始终可见，右键（键盘的菜单键）打开同一份“更多”菜单。
+  正在播放的那行是晨光行：序号换成三根小竖条。无版权的整行降到 45%、不能点，徽标写明原因（••• 照样能点）
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
+  import type { PlaySource } from '$lib/app/player'
   import { Heart } from '@lucide/svelte'
   import MorningWash from '../player/MorningWash.svelte'
   import NowBars from '../player/NowBars.svelte'
+  import { openSongMenuAt } from '../song-menu.svelte'
   import Cover from './Cover.svelte'
   import PlayTarget from './PlayTarget.svelte'
   import SongBadge from './SongBadge.svelte'
+  import SongMoreButton from './SongMoreButton.svelte'
   import { artistLine, formatDuration, langOf } from './view'
 
   interface Props {
     song: Song
+    /** 这一行所在的列表：从“更多”菜单放进播放队列时的播放来源 */
+    source: PlaySource
     /** 序号，从 1 开始 */
     n: number
     hearted: boolean
@@ -22,13 +28,13 @@
     onplay: () => void
   }
 
-  const { song, n, hearted, now, onplay }: Props = $props()
+  const { song, source, n, hearted, now, onplay }: Props = $props()
   const off = $derived(song.availability === 'noCopyright')
 </script>
 
-<div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
+<div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']} role='presentation' oncontextmenu={event => openSongMenuAt(event, song, source)}>
   {#if now}<MorningWash start={104} />{/if}
-  <div class={['relative grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px] h-full items-center gap-4 pl-2 pr-3', off && 'opacity-45']}>
+  <div class={['relative grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-full items-center gap-4 pl-2 pr-1', off && 'opacity-45']}>
     <span class='grid place-items-center text-caption text-neutral-500 tabular-nums'>
       {#if now}<NowBars />{:else}{n}{/if}
     </span>
@@ -50,5 +56,6 @@
       {/if}
     </span>
     <span class='text-right text-caption text-neutral-500 tabular-nums'>{formatDuration(song.duration)}</span>
+    <SongMoreButton {song} {source} size='desktop' />
   </div>
 </div>

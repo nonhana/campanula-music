@@ -20,6 +20,7 @@
   import { playerDrawer } from '../player/player-page.svelte'
   import PlayerNotice from '../player/PlayerNotice.svelte'
   import PlayerPage from '../player/PlayerPage.svelte'
+  import SongMenu from '../SongMenu.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
   import DesktopShell from './DesktopShell.svelte'
@@ -169,3 +170,4 @@
   <PlayerPage open={playerOpen} />
 {/if}
 <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
+<SongMenu />

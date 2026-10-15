@@ -10,6 +10,7 @@
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
   import type { LibraryState } from '$lib/app/library'
+  import type { PlaySource } from '$lib/app/player'
   import { CircleAlert, Heart, ListMusic, SearchX } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
@@ -42,7 +43,8 @@
   /** 列表里显示的歌：搜索时是搜到的 */
   const songs = $derived(result ? result.songs : shown.kind === 'songs' ? shown.songs : [])
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
-  const play = (song: Song) => () => view.app.play({ kind: 'playlist', id: playlistId }, song.id)
+  const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
+  const play = (song: Song) => () => view.app.play(source, song.id)
   const INCOMPLETE = '这张歌单还没同步完，结果可能不全'
 
   function retry() {
@@ -92,9 +94,9 @@
           <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id} markOf={songMark}>
             {#snippet row(song: Song, i: number)}
               {#if phone}
-                <PhoneSongRow {song} now={song.id === nowId} onplay={play(song)} />
+                <PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} />
               {:else}
-                <DesktopSongRow {song} n={i + 1} hearted={library.hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} />
+                <DesktopSongRow {song} {source} n={i + 1} hearted={library.hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} />
               {/if}
             {/snippet}
           </VirtualList>
@@ -114,12 +116,13 @@
   <div class='pt-2'>{@render list()}</div>
 {:else}
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
-    <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px] h-9 items-center gap-4 pl-2 pr-3 text-caption text-neutral-500'>
+    <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-9 items-center gap-4 pl-2 pr-1 text-caption text-neutral-500'>
       <span class='text-center'>#</span>
       <span class='truncate pl-[52px]' role='status'>{#if result}{@render found()}{:else}标题{/if}</span>
       <span>专辑</span>
       <span>状态</span>
       <span class='text-right'>时长</span>
+      <span></span>
     </div>
     {@render list()}
   </div>

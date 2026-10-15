@@ -1,9 +1,9 @@
 <!--
   桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“正在播放 · 来自「…」”，正中一个拖动把手
   （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
-  左列封面、歌名、波浪进度条、上一首 / 播放 / 下一首、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）。整页放进视口，不滚动。
-  换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
-  红心（#30）、“更多”菜单和播放模式（#26）由之后的票加。放在 PlayerPage 里
+  左列封面、歌名、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）。
+  整页放进视口，不滚动。换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
+  红心（#30）和“更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
@@ -18,6 +18,7 @@
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
   import { playerPageChoices as choices, closePlayerPage, playerDrawer } from './player-page.svelte'
+  import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
   import VolumeControl from './VolumeControl.svelte'
@@ -78,10 +79,14 @@
       <WaveProgress {playhead} />
     </div>
 
-    <div class='mt-3 flex items-center justify-center gap-4'>
-      <SkipButton direction='previous' />
-      <PlayButton size={64} />
-      <SkipButton direction='next' />
+    <div class='mt-3 flex items-center justify-between'>
+      <PlayModeButton kind='repeat' />
+      <div class='flex items-center gap-2 lg:gap-4'>
+        <SkipButton direction='previous' />
+        <PlayButton size={64} />
+        <SkipButton direction='next' />
+      </div>
+      <PlayModeButton kind='shuffle' />
     </div>
 
     <div class='mt-4 flex items-center gap-2 -ml-2.5'>

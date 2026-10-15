@@ -1,23 +1,26 @@
 <!--
-  播放页里的播放队列（自己滚动的虚拟列表）：头部写明有几首、都来自同一个播放来源时写来自哪里；
-  56px 一行：序号（正在放的换成三根小竖条）、封面、歌名歌手、时长。轻点一行就放这一首，播放队列不变；
-  正在放的那行是晨光行；无版权的整行降到 45%、不能点。打开时当前这首停在第二行的位置。
-  移出某首、清空和播放模式由 #26 加
+  播放页里的播放队列（自己滚动的虚拟列表，原型 QueueList）：头部写明有几首、都来自同一个播放来源时写来自哪里，右边“清空”；
+  56px 一行：序号（正在放的换成三根小竖条）、封面、歌名歌手、时长、移出键。轻点一行就放这一首，播放队列不变；
+  正在放的那行是晨光行，它移不掉（移出键的位置空着）；无版权的整行降到 45%、不能点，但能移出。打开时当前这首停在第二行的位置。
+  清空：播放队列空了、停下，播放页跟着收起（播放条沉下去）。移出一首后焦点落在下一首的移出键上（最后一首时是上一首的，那是正在放的那首时落在“清空”上）
 -->
 <script lang='ts'>
   import type { QueueEntry } from '$lib/app/player'
   import type { ClassValue } from 'svelte/elements'
-  import { untrack } from 'svelte'
+  import { ListX, X } from '@lucide/svelte'
+  import { tick, untrack } from 'svelte'
   import { getAppView } from '../app-context.svelte'
   import Cover from '../library/Cover.svelte'
   import PlayTarget from '../library/PlayTarget.svelte'
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, formatCount, formatDuration, langOf, songMark } from '../library/view'
   import VirtualList from '../library/VirtualList.svelte'
+  import Button from '../ui/Button.svelte'
   import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
   import MorningWash from './MorningWash.svelte'
   import NowBars from './NowBars.svelte'
+  import { closePlayerPage } from './player-page.svelte'
   import { sourceName } from './view'
 
   const { class: klass }: { class?: ClassValue } = $props()
@@ -44,27 +47,46 @@
     if (scroller)
       scroller.scrollTop = Math.max(0, (untrack(() => current) ?? 0) * ROW - ROW)
   })
+
+  let section = $state<HTMLElement>()
+
+  async function remove(index: number) {
+    view.app.removeFromQueue(index)
+    await tick()
+    // 下一首的移出键；移的是最后一首就是上一首的；它是正在放的那首（没有移出键）时落在“清空”上
+    const next = Math.min(index, view.state.player.queue.length - 1)
+    const target = scroller?.querySelector<HTMLElement>(`[data-remove="${next}"]`) ?? section?.querySelector<HTMLElement>('[data-clear]')
+    target?.focus()
+  }
+
+  function clear() {
+    closePlayerPage()
+    view.app.clearQueue()
+  }
 </script>
 
-<section class={['flex min-h-0 flex-col', klass]} aria-labelledby='{uid}-title'>
-  <header class='flex-none px-5 pb-2 pt-4'>
-    <h2 id='{uid}-title' class='text-title-sm text-neutral-900 font-600'>播放队列</h2>
-    <p class='truncate text-caption text-neutral-600'>
-      {#if source}来自「<span lang={langOf(source)}>{source}</span>」<span class='mr-1' aria-hidden='true'>·</span>{/if}<span class='tabular-nums'>{formatCount(queue.length)} 首</span>
-    </p>
+<section bind:this={section} class={['flex min-h-0 flex-col', klass]} aria-labelledby='{uid}-title'>
+  <header class='flex flex-none items-center gap-3 px-5 pb-2 pt-4'>
+    <div class='min-w-0 flex-1'>
+      <h2 id='{uid}-title' class='text-title-sm text-neutral-900 font-600'>播放队列</h2>
+      <p class='truncate text-caption text-neutral-600'>
+        {#if source}来自「<span lang={langOf(source)}>{source}</span>」<span class='mr-1' aria-hidden='true'>·</span>{/if}<span class='tabular-nums'>{formatCount(queue.length)} 首</span>
+      </p>
+    </div>
+    <Button variant='outline' icon={ListX} class='h-9! pl-3.5! pr-4! md:h-9!' data-clear onclick={clear}>清空</Button>
   </header>
 
   <!-- 底下的 8px 留在滚动区外面：滚动条的下端不伸进面板的圆角 -->
   <div bind:this={scroller} class='mb-2 min-h-0 flex-1 overflow-y-auto overscroll-contain'>
     <Scrollbar {lookup} />
     <div class='px-2'>
-      <VirtualList items={queue} itemHeight={ROW} scrollParent={scroller} getKey={(entry: QueueEntry, i: number) => `${entry.song.id}-${i}`} markOf={(entry: QueueEntry, i: number) => songMark(entry.song, i)}>
+      <VirtualList items={queue} itemHeight={ROW} scrollParent={scroller} getKey={(entry: QueueEntry) => entry.song.id} markOf={(entry: QueueEntry, i: number) => songMark(entry.song, i)}>
         {#snippet row(entry: QueueEntry, i: number)}
           {@const now = i === current}
           {@const off = entry.song.availability === 'noCopyright'}
           <div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
             {#if now}<MorningWash start={92} />{/if}
-            <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto] h-full items-center gap-3 pl-2 pr-3', off && 'opacity-45']}>
+            <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto_36px] h-full items-center gap-3 pl-2 pr-1', off && 'opacity-45']}>
               <span class='grid place-items-center text-caption text-neutral-500 tabular-nums'>
                 {#if now}<NowBars />{:else}{i + 1}{/if}
               </span>
@@ -77,6 +99,19 @@
                 <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(entry.song))}>{artistLine(entry.song)}</span>
               </PlayTarget>
               <span class='text-caption text-neutral-500 tabular-nums'>{formatDuration(entry.song.duration)}</span>
+              {#if now}
+                <span aria-hidden='true'></span>
+              {:else}
+                <button
+                  type='button'
+                  class='relative z-1 grid size-9 place-items-center rounded-lg text-neutral-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)'
+                  aria-label='从播放队列移出：{entry.song.name}'
+                  data-remove={i}
+                  onclick={() => remove(i)}
+                >
+                  <X size={16} aria-hidden='true' />
+                </button>
+              {/if}
             </div>
           </div>
         {/snippet}

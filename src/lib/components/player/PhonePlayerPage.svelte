@@ -1,9 +1,9 @@
 <!--
   手机播放页（DESIGN.md Layout · 播放页，照 Auxio 的结构，原型 PhonePlayer），一屏放下、不滚动：
   顶上收起键、“正在播放 / 来自「…」”（按住往下拖也能收起播放页）、歌词键；中间一大块是封面，按歌词键或点封面换成歌词，再按换回；
-  下面左对齐的歌名、歌手、专辑，波浪进度条，上一首 / 播放 / 下一首；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
+  下面左对齐的歌名、歌手、专辑，波浪进度条，循环 / 上一首 / 播放 / 下一首 / 随机播放；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
   弹层按自己的高度滑进滑出，拉手往下拖、点按都收起（返回也先收起它）。换歌时封面换碟（CoverWheel），转出屏幕的部分被裁掉。
-  红心（#30）、“更多”菜单和播放模式（#26）由之后的票加。放在 PlayerPage 里
+  红心（#30）和“更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
@@ -20,6 +20,7 @@
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
   import { playerPageChoices as choices, closePlayerPage, closeQueueSheet, openQueueSheet, playerDrawer } from './player-page.svelte'
+  import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
   import WaveProgress from './WaveProgress.svelte'
@@ -97,10 +98,14 @@
         <WaveProgress {playhead} touch />
       </div>
 
-      <div class='mt-3 flex items-center justify-center gap-5'>
-        <SkipButton direction='previous' phone />
-        <PlayButton size={72} />
-        <SkipButton direction='next' phone />
+      <div class='mt-3 flex items-center justify-between'>
+        <PlayModeButton kind='repeat' phone />
+        <div class='flex items-center gap-4'>
+          <SkipButton direction='previous' phone />
+          <PlayButton size={72} />
+          <SkipButton direction='next' phone />
+        </div>
+        <PlayModeButton kind='shuffle' phone />
       </div>
     </div>
   </div>

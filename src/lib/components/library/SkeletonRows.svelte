@@ -20,7 +20,7 @@
   {#each { length: count }, i (i)}
     {@const w = widths[i % widths.length]}
     {#if phone}
-      <div class='grid grid-cols-[48px_minmax(0,1fr)] h-14 items-center gap-3.5 pl-4 pr-4'>
+      <div class='grid grid-cols-[48px_minmax(0,1fr)_44px] h-14 items-center gap-3.5 pl-4 pr-1'>
         <span class='bone size-12 rounded-md'></span>
         <span class='flex flex-col gap-2'>
           <span class='bone h-3.5 rounded-full' style:width='{w}%'></span>
@@ -28,7 +28,7 @@
         </span>
       </div>
     {:else}
-      <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px] h-14 items-center gap-4 pl-2 pr-3'>
+      <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-14 items-center gap-4 pl-2 pr-1'>
         <span class='bone mx-auto h-3 w-4 rounded-full'></span>
         <span class='flex items-center gap-3'>
           <span class='bone size-10 flex-none rounded-md'></span>

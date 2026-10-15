@@ -1,7 +1,7 @@
 import type { Song } from '$lib/api/library'
 import type { LyricLine, LyricWord } from '$lib/api/playback'
 import type { LibraryState } from '$lib/app/library'
-import type { PlayerNotice, PlayerState, PlaySource, SongChange } from '$lib/app/player'
+import type { PlayerNotice, PlayerState, PlayMode, PlaySource, SongChange } from '$lib/app/player'
 import { failureText } from '../failure'
 import { formatDuration, playlistName } from '../library/view'
 
@@ -107,6 +107,12 @@ export function wordProgress(word: LyricWord, at: number): number {
     return 1
   return (at - word.start) / (word.end - word.start)
 }
+
+/** 播放模式叫什么（原型 playModeLabel） */
+export const PLAY_MODE_LABEL: Record<PlayMode, string> = { loop: '列表循环', one: '单曲循环', shuffle: '随机播放' }
+
+/** 播放条上的播放模式键按一下换成哪一种：列表循环 → 单曲循环 → 随机播放 → 列表循环 */
+export const NEXT_PLAY_MODE: Record<PlayMode, PlayMode> = { loop: 'one', one: 'shuffle', shuffle: 'loop' }
 
 /** 播放的提示说什么：发生了什么、能怎么办 */
 export function noticeText(notice: PlayerNotice, player: PlayerState): string {
