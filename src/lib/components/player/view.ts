@@ -29,28 +29,31 @@ export function neighborSong(player: PlayerState, direction: keyof PlayerState['
  */
 export const SMALL_COVER = 48
 
-/** 换歌时封面、歌名往哪边走（DESIGN.md Cover Wheel）：left 往左转、right 往右转，fade 原地交叉淡化 */
-export type Turn = 'left' | 'right' | 'fade'
+/**
+ * 换歌时封面、歌名往哪边走（DESIGN.md Cover Wheel）：left 往左转、right 往右转；
+ * land 是列表里点的歌、那一行的封面飞进播放条落下了（cover-flight.svelte.ts）：封面直接换上，旧歌名往上飘出、新的从下面飘入
+ */
+export type Turn = 'left' | 'right' | 'land'
 
 /** 换碟在哪：page 是播放页，bar 是播放条（桌面底栏、手机迷你条） */
 export type Place = 'page' | 'bar'
 
 /**
- * 换碟往哪转，只看 App 发布的换歌原因：下一首、自动接续、跳过往左，上一首往右；没有原因（还没换过歌）时直接换上。
- * 点选：播放页里是在播放队列里点的，往左转；播放条上是在列表里点的，那一行的封面会飞进来（#53），这之前先交叉淡化
+ * 换碟往哪转，只看 App 发布的换歌原因：下一首、自动接续、跳过、点选往左，上一首往右；没有原因（还没换过歌）时直接换上。
+ * 点选在播放页里是在播放队列里点的；在播放条上是在列表里点的，那一行的封面飞进来、落下时是 land（cover-flight.svelte.ts），
+ * 飞不了的（减少动态效果、那一行的封面还没加载出来）照常往左转（The Cover Leads Rule：退回普通的换歌）
  */
-export function turnOf(change: SongChange | null, place: Place): Turn | null {
+export function turnOf(change: SongChange | null): Turn | null {
   switch (change) {
     case null:
       return null
     case 'next':
     case 'continue':
     case 'skip':
+    case 'pick':
       return 'left'
     case 'previous':
       return 'right'
-    case 'pick':
-      return place === 'page' ? 'left' : 'fade'
     default: {
       const unhandled: never = change
       throw new Error(`不认识的换歌原因：${JSON.stringify(unhandled)}`)

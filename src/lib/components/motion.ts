@@ -184,6 +184,33 @@ export function iconSwap(_node: Element, _params?: undefined, options: Transitio
   }
 }
 
+/**
+ * 正在播放的三根竖条从底下长出来（状态 200ms），换走时缩回去（退场 120ms）（DESIGN.md Song Row · 点歌）。
+ * 缩放的原点由调用的地方放在底边。减少动态效果时竖条不长，只淡入淡出
+ */
+export function grow(_node: Element, _params?: undefined, options: TransitionOptions = {}): TransitionConfig {
+  const ms = options.direction === 'out' ? DURATIONS['state-out'] : DURATIONS.state
+  const easing = easingOf(options)
+  if (reducedMotion())
+    return { duration: fadeMs(ms), easing, css: t => `opacity: ${t}` }
+  return { duration: moveMs(ms), easing, css: t => `scale: 1 ${t}` }
+}
+
+/**
+ * 播放条出现、收起（DESIGN.md Player Bars · 出现和换歌）：播放队列里第一次有歌时从屏幕底下浮上来（面板 360ms），
+ * 清空（包括退出登录）时沉下去（退场 200ms）。漂多远按它离屏幕底边多远算，整个藏到屏幕下面；
+ * 漂动写在 translate 上（float），点歌时飞来的封面按它算播放条停稳的位置（player/cover-flight.svelte.ts 的 restingRect）。
+ * 用 in:dock 和 out:dock|global：骨架整个拿掉时（退出登录）也沉下去。gone 是播放队列真的空了；不是的话
+ * （换了手机 / 桌面布局、登录失效）跟着骨架直接拿掉。减少动态效果时只淡入淡出
+ */
+export function dock(node: Element, { gone = true }: { gone?: boolean } = {}, options: TransitionOptions = {}): TransitionConfig {
+  const out = options.direction === 'out'
+  if (out && !gone)
+    return {}
+  const distance = innerHeight - node.getBoundingClientRect().top
+  return float(node, { toward: out ? 'down' : 'up', distance, duration: DURATIONS[out ? 'panel-out' : 'panel'] }, options)
+}
+
 /** 浮动菜单飘出来时从多远（px）、多大开始 */
 const POP_DISTANCE = 4
 const POP_FROM_SCALE = 0.98

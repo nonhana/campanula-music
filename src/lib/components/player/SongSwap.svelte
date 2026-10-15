@@ -1,9 +1,10 @@
 <!--
   换歌时歌名、歌手、专辑跟着换碟横着飘（DESIGN.md Cover Wheel、Player Bars）：比封面晚 80ms，旧的往转走的那边飘出，
-  新的从另一边飘进来（飘出开始 60ms 后，飘入飘出按“状态”的时长）；turn 是 fade 时原地交叉淡化，null 时直接换上。
+  新的从另一边飘进来（飘出开始 60ms 后，飘入飘出按“状态”的时长）；turn 是 null 时直接换上。
+  turn 是 land（列表里点的歌，封面飞进播放条落下了）时，旧的马上往上飘出、新的从下面飘入（DESIGN.md Song Row · 点歌）。
   连着快换几首时，还没开始飘进来的那首直接拿掉，不露一下中间那首的歌名。
   place：page 是播放页（飘出 12px、飘入 16px），bar 是播放条（飘入飘出的默认距离）。
-  新旧叠在同一个网格格子里，换的这一会儿高度按高的那个算，不跳
+  song 是 null 时空着（第一次点歌，封面还在往播放条飞）。新旧叠在同一个网格格子里，换的这一会儿高度按高的那个算，不跳
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
@@ -11,11 +12,11 @@
   import type { TransitionConfig } from 'svelte/transition'
   import type { TransitionOptions } from '../motion'
   import type { Place, Turn } from './view'
-  import { fade, float } from '../motion'
-  import { DURATIONS, FLOAT_IN_DELAY, WHEEL } from '../motion-tokens'
+  import { float } from '../motion'
+  import { FLOAT_IN_DELAY, WHEEL } from '../motion-tokens'
 
   interface Props {
-    song: Song
+    song: Song | null
     turn: Turn | null
     place: Place
     children: Snippet<[Song]>
@@ -29,9 +30,9 @@
   function enter(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
     if (turn === null)
       return {}
-    if (turn === 'fade')
-      return fade(node, { duration: DURATIONS.state }, options)
     waiting.add(node)
+    if (turn === 'land')
+      return float(node, { toward: 'up', delay: FLOAT_IN_DELAY }, options)
     return float(node, { toward: turn, distance: place === 'page' ? WHEEL.textIn : undefined, delay: WHEEL.textDelay + FLOAT_IN_DELAY }, options)
   }
 
@@ -39,17 +40,17 @@
   function leave(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
     if (turn === null || waiting.has(node))
       return {}
-    if (turn === 'fade')
-      return fade(node, { duration: DURATIONS['state-out'] }, options)
+    if (turn === 'land')
+      return float(node, { toward: 'up' }, options)
     return float(node, { toward: turn, distance: place === 'page' ? WHEEL.textOut : undefined, delay: WHEEL.textDelay }, options)
   }
 </script>
 
 <!-- span：播放条上放在按钮里 -->
 <span class='swap'>
-  {#key song.id}
+  {#key song?.id}
     <span class='slot' in:enter out:leave onintrostart={event => waiting.delete(event.currentTarget)}>
-      {@render children(song)}
+      {#if song}{@render children(song)}{/if}
     </span>
   {/key}
 </span>

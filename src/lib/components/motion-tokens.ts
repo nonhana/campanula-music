@@ -50,6 +50,8 @@ export const DURATIONS = {
   'lyric-line': 300,
   /** 晨光行跟着播放进度往右铺 */
   'morning-row': 260,
+  /** 换歌时旧的晨光行散掉 */
+  'wash-out': 300,
   /** 封面染底换歌时交叉淡化 */
   'tint': 700,
   /** 播放器报一次进度的间隔（timeupdate，约 250ms）：进度线匀速跟上 */
@@ -119,6 +121,12 @@ export const LANDING_WAIT = 100
  * 歌名、歌手、专辑比封面晚 textDelay ms 横着飘：播放页旧的飘出 textOut px、新的飘进 textIn px（播放条用飘入飘出的默认距离）
  */
 export const WHEEL = { pivot: 1.6, pitch: 28, textDelay: 80, textOut: 12, textIn: 16 } as const
+
+/**
+ * 点歌时那一行的封面飞进播放条（DESIGN.md Song Row · 点歌）走的弧线有多弯：控制点离起止两点连线的正中 FLIGHT_ARC 倍连线长，
+ * 弧线正中离直线约一半远，往上鼓
+ */
+export const FLIGHT_ARC = 0.12
 
 /** 按钮按下时轻轻缩到这么大；减少动态效果时不缩。CSS 变量 --press-scale，工具类 press */
 export const PRESS_SCALE = 0.98

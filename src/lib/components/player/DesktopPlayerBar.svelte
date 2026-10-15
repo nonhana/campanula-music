@@ -2,7 +2,8 @@
   桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开），
   右边播放模式（按一下换一种）、音量、播放队列（打开播放页的播放队列）；
   顶边一条 2px 的薄荷进度线，也是滑块：点按、拖动跳到那里，拖动时左边的时间跟着走（SeekLine）。
-  换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）。放在 DesktopShell 的 bar 里
+  换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）；在列表里点歌时那一行的封面飞进小窗，
+  落下时才换上新的歌名（cover-flight.svelte.ts）。放在 DesktopShell 的 bar 里
 -->
 <script lang='ts'>
   import { ListMusic, SkipBack, SkipForward } from '@lucide/svelte'
@@ -11,6 +12,7 @@
   import { artistLine, langOf } from '../library/view'
   import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
+  import { landingOf } from './cover-flight.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import PlayButton from './PlayButton.svelte'
   import { gripToOpenPlayerPage, openPlayerPage, playerPageChoices } from './player-page.svelte'
@@ -18,13 +20,17 @@
   import { createSeekSlider } from './seek-slider.svelte'
   import SeekLine from './SeekLine.svelte'
   import SongSwap from './SongSwap.svelte'
-  import { currentSong, formatSeconds, turnOf } from './view'
+  import { currentSong, formatSeconds } from './view'
   import VolumeControl from './VolumeControl.svelte'
 
   const view = getAppView()
   const player = $derived(view.state.player)
+  /** 当前这首：按钮的名字跟着它，不等封面飞完 */
   const song = $derived(currentSong(player))
-  const turn = $derived(turnOf(player.change, 'bar'))
+  /** 封面小窗多大（px）：封面按这么大取，飞来的封面也按这么大落下 */
+  const COVER_SIZE = 48
+  /** 封面小窗和歌名显示的那首、怎么换上来的 */
+  const landing = landingOf(view, COVER_SIZE)
   const gripSong = gripToOpenPlayerPage()
   const slider = createSeekSlider()
   /** 左边的时间：拖动进度线时显示拖到哪 */
@@ -46,10 +52,12 @@
 
   {#if song}
     <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
-      <span class='size-12 flex-none overflow-hidden rounded-md'>
-        <CoverWheel {song} {turn} duration={DURATIONS['focal-bar']} size={48} class='rounded-md' />
+      <span class='size-12 flex-none overflow-hidden rounded-md' {@attach landing.slot}>
+        {#if landing.song}
+          <CoverWheel song={landing.song} turn={landing.turn} duration={DURATIONS['focal-bar']} size={COVER_SIZE} eager class='rounded-md' />
+        {/if}
       </span>
-      <SongSwap {song} {turn} place='bar'>
+      <SongSwap song={landing.song} turn={landing.turn} place='bar'>
         {#snippet children(shown)}
           <span class='min-w-0 flex items-center gap-2'>
             <span class='truncate text-label text-neutral-900 font-500' lang={langOf(shown.name)}>{shown.name}</span>

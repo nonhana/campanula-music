@@ -31,7 +31,7 @@
   const song = $derived(currentSong(player))
   const source = $derived(player.current === null ? null : sourceName(view.state.library, player.queue[player.current].source))
   /** 换歌时封面往哪转、歌名往哪飘 */
-  const turn = $derived(turnOf(player.change, 'page'))
+  const turn = $derived(turnOf(player.change))
   const playhead = createPlayhead(() => view.state.player)
   const radius = $derived(Math.max(0, Math.min(RADIUS, playerDrawer.position * (innerHeight.current ?? 0))))
 

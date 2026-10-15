@@ -2,8 +2,8 @@
   换碟（DESIGN.md Cover Wheel）：封面挂在一个看不见的转盘边上，轴心在封面正下方、离封面中心 1.6 倍边长，相邻两张隔 28°。
   当前这首换了就转一格：往左转时旧封面沿弧线转向左下、边转边淡出，新的从右下转到正中、边转边淡入；往右反过来。
   转到一半又换了：每张从此刻的样子接着走，新的那首直接转到正中，中间的歌不补转；新的那首正好还在转来的那一边（刚转走又换回来），就把那张转回来。
-  turn 是 fade 时原地交叉淡化（播放条上的点选 200ms），减少动态效果时也只交叉淡化（150ms）；
-  turn 是 null（还没换过歌）或者页面在后台时直接换上，回来不补放。歌没变（播放队列里只有一首）不转。
+  减少动态效果时原地交叉淡化（150ms）；
+  turn 是 null（还没换过歌）、land（列表里点的歌，飞来的封面正好落在这里）或者页面在后台时直接换上，回来不补放。歌没变（播放队列里只有一首）不转。
   手机播放页上按住封面左右拖（drag）：转盘跟着手转，上一首、下一首的封面从两边转进来，离正中越远越淡；
   拖起来时动画还在半路就从那里接着转，最多转到旁边那张停在正中。松手切了歌，换碟从拖到的样子接着转（旁边那张就是转回来的那张）；
   没切就 240ms 转回原位（减少动态效果时直接到位），两边那两张转回去、拿掉。拖动时减少动态效果也照样跟手。
@@ -173,21 +173,21 @@
         discs = discs.map(disc => (disc === shown ? { ...disc, song: incoming } : disc))
       return
     }
-    if (turn === null || unseen())
+    if (turn === null || turn === 'land' || unseen())
       return settle(incoming)
-    const fading = turn === 'fade' || reducedMotion()
+    const fading = reducedMotion()
     /** 转盘本来停着（单独换一首）：新的那首马上取大图；转着、拖着时又换了（连着切歌），等停下来再取 */
     const calm = held === null && running.size === 0 && entering.size === 0
     frontReady = false
     /** 往左转：新的从右边（角度为正）转进来，整个转盘逆时针转 */
     const side = turn === 'right' ? -1 : 1
     const poses = new Map(discs.map(disc => [disc.key, poseOf(disc.key)]))
-    // 交叉淡化时不转，不把半路上的那张转回来：旧的淡出、新的一张在正中淡入
+    // 交叉淡化（减少动态效果）时不转，不把半路上的那张转回来：旧的淡出、新的一张在正中淡入
     const back = fading ? undefined : discs.find(disc => disc.song.id === incoming.id && poses.get(disc.key)!.angle * side >= 0)
     const from = back ? poses.get(back.key)! : { angle: fading ? 0 : WHEEL.pitch * side, opacity: 0 }
     /** 整个转盘再转多少度：把新的那首转到正中 */
     const delta = fading ? 0 : -from.angle
-    const ms = fading ? fadeMs(turn === 'fade' ? DURATIONS.state : duration) : duration
+    const ms = fading ? fadeMs(duration) : duration
     for (const disc of discs) {
       if (disc === back)
         continue

@@ -19,7 +19,7 @@
   import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
   import MorningWash from './MorningWash.svelte'
-  import NowBars from './NowBars.svelte'
+  import NowIndex from './NowIndex.svelte'
   import { closePlayerPage } from './player-page.svelte'
   import { sourceName } from './view'
 
@@ -87,13 +87,11 @@
           <div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
             {#if now}<MorningWash start={92} />{/if}
             <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto_36px] h-full items-center gap-3 pl-2 pr-1', off && 'opacity-45']}>
-              <span class='grid place-items-center text-caption text-neutral-500 tabular-nums'>
-                {#if now}<NowBars />{:else}{i + 1}{/if}
-              </span>
+              <NowIndex n={i + 1} {now} />
               <Cover url={entry.song.album.coverUrl} size={40} class='rounded-md' />
               <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.playFromQueue(i)}>
                 <span class='min-w-0 flex items-center gap-2'>
-                  <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(entry.song.name)}>{entry.song.name}</span>
+                  <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(entry.song.name)}>{entry.song.name}</span>
                   <SongBadge availability={entry.song.availability} />
                 </span>
                 <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(entry.song))}>{artistLine(entry.song)}</span>
