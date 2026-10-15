@@ -137,13 +137,19 @@ function pageTransitionCss(ground: string): string {
         page-drift-in var(--move-panel) var(--ease-out-soft) var(--delay-float-in) backwards;
     }
 
-    /* 同一种页面之间（桌面歌单页左栏换歌单）：同样快慢的交叉淡化，两页一样的地方（左栏）不闪 */
+    /*
+     * 同一种页面之间（桌面歌单页左栏换歌单）：同样快慢的交叉淡化，两页一样的地方（左栏）不闪。
+     * 浏览器自带的交叉淡化靠 plus-lighter 把两张叠成一张，它写在默认的 animation 里，这里改了 animation 就要自己补上；
+     * 没有它，淡到一半两页都半透明，透出底色，整个内容区像刷新了一下
+     */
     html:active-view-transition-type(fade)::view-transition-old(root) {
       animation: page-fade-out var(--duration-state) var(--ease-out-soft) both;
+      mix-blend-mode: plus-lighter;
     }
 
     html:active-view-transition-type(fade)::view-transition-new(root) {
       animation: page-fade-in var(--duration-state) var(--ease-out-soft) both;
+      mix-blend-mode: plus-lighter;
     }
 
     /*

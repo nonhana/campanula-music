@@ -122,13 +122,15 @@
         {#each library.playlists ?? [] as item (item.id)}
           {@const current = item.id === id}
           {@const itemName = playlistName(item)}
+          {@const itemPage = resolve('/playlists/[id]', { id: String(item.id) })}
           <li>
             <a
-              href={resolve('/playlists/[id]', { id: String(item.id) })}
+              href={itemPage}
               class={['block rounded-xl p-4 transition-colors duration-feedback', current ? 'bg-primary-100' : 'mouse:hover:bg-white']}
               aria-current={current ? 'page' : undefined}
             >
-              <Cover url={item.coverUrl} size={176} fluid class='rounded-lg' />
+              <!-- 左栏的封面也是格子：点了飞到右边页头，返回时飞回这里（Cover 的 flight） -->
+              <Cover url={item.coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={itemPage} class='rounded-lg' />
               <span class={['mt-2.5 block truncate text-label font-500', current ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(itemName)}>{itemName}</span>
               <span class={['mt-0.5 block text-caption tabular-nums', current ? 'text-primary-900' : 'text-neutral-600']}>{formatCount(current ? listedCount ?? item.trackCount : item.trackCount)} 首</span>
             </a>
