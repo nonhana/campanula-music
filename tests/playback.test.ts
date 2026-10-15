@@ -475,7 +475,7 @@ describe('两个播放器交替（ADR-0010）', () => {
 
     player.end()
     await world.settle()
-    expect(app.state.player).toMatchObject({ status: 'paused', position: 0, notice: { kind: 'streamFailed' } })
+    expect(app.state.player).toMatchObject({ status: 'paused', position: 0, notice: { kind: 'streamFailed' }, change: 'continue' })
     expect(current(app)).toBe(SECOND.id)
 
     app.togglePlay()
@@ -738,6 +738,143 @@ describe('播放队列', () => {
     await world.settle()
     expect(current(app)).toBe(FIRST.id)
     expect(app.state.player.status).toBe('playing')
+  })
+})
+
+// 换碟（#51，DESIGN.md Cover Wheel）往哪转看 App 发布的换歌原因，不靠前后序号猜（随机播放时序号不连续）
+describe('换歌原因', () => {
+  it('在列表里点歌：点选；还没换过歌时没有原因', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    expect(app.state.player.change).toBeNull()
+
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.play(LIKED, FIRST.id)
+    expect(app.state.player).toMatchObject({ change: 'pick', status: 'loading' })
+    expect(current(app)).toBe(FIRST.id)
+  })
+
+  it('下一首、上一首：各自的原因；在播放队列里点歌：点选', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+
+    app.next()
+    expect(current(app)).toBe(SECOND.id)
+    expect(app.state.player.change).toBe('next')
+    await world.settle()
+
+    app.previous()
+    expect(current(app)).toBe(FIRST.id)
+    expect(app.state.player.change).toBe('previous')
+    await world.settle()
+
+    await world.netease.reply(THIRD.url)
+    app.playFromQueue(2)
+    expect(current(app)).toBe(THIRD.id)
+    expect(app.state.player.change).toBe('pick')
+  })
+
+  it('连按 3 次下一首：当前这首直接是第 3 首；中间那首缓冲好了也不出声，晚回来的地址不放，最后出声的就是显示的那首', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    // 从最后一首开始：往后三首（列表循环回到第 1～3 首）都有录制
+    const player = await playUntilSounding(tab, LAST, FIRST)
+    const spare = other(tab, player)
+    const second = held()
+    const third = held()
+    await world.netease.reply(SECOND.url, { until: second.until })
+    await world.netease.reply(THIRD.url, { until: third.until })
+
+    app.next()
+    app.next()
+    app.next()
+    expect(current(app)).toBe(THIRD.id)
+    expect(app.state.player).toMatchObject({ change: 'next', status: 'loading' })
+    await world.settle()
+    // 第 1 次按下时空闲的播放器开始放第一首，它的数据这时才够
+    spare.ready(FIRST.duration)
+    await world.settle()
+    expect(spare.sounding).toBe(false)
+    expect(tab.sounding()).toBe(player)
+
+    third.release()
+    await world.settle()
+    expect(spare.src).toBe(await recordedUrl(THIRD.url))
+    spare.ready(THIRD.duration)
+    await world.settle()
+    second.release()
+    await world.settle()
+    expect(player.sounding).toBe(false)
+    expect(tab.sounding()).toBe(spare)
+    expect(spare.src).toBe(await recordedUrl(THIRD.url))
+    expect(current(app)).toBe(THIRD.id)
+    expect(app.state.player).toMatchObject({ change: 'next', status: 'playing' })
+  })
+
+  it('放完自动接续：下一首的地址没取到、没法交接，当前这首放完才换下一首', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await world.netease.reply(FIRST.url)
+    await world.netease.reply(SECOND.url, { until: never() })
+    app.play(LIKED, FIRST.id)
+    await world.settle()
+    const player = tab.audio.find(audio => !audio.paused)!
+    player.ready(FIRST.duration)
+    await world.settle()
+
+    player.end()
+    await world.settle()
+    expect(current(app)).toBe(SECOND.id)
+    expect(app.state.player).toMatchObject({ change: 'continue', status: 'loading' })
+  })
+
+  it('交接时空闲的播放器先出声：自动接续', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    spare.ready(SECOND.duration)
+    await world.netease.reply(THIRD.url)
+    player.progress(191.7)
+    expect(current(app)).toBe(FIRST.id)
+    await world.settle()
+    expect(tab.sounding()).toBe(spare)
+    expect(current(app)).toBe(SECOND.id)
+    expect(app.state.player.change).toBe('continue')
+  })
+
+  it('交接时旧的先放完、下一首还在缓冲：自动接续', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    player.progress(188)
+    await world.settle()
+
+    player.end()
+    await world.settle()
+    expect(current(app)).toBe(SECOND.id)
+    expect(app.state.player).toMatchObject({ change: 'continue', status: 'buffering' })
+  })
+
+  it('网易云没给点的那首的播放地址：跳过它放下一首，原因是跳过', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await world.netease.reply('playback/song_url_v1.no-copyright.json')
+    await world.netease.reply(SECOND.url, { until: never() })
+    app.play(LIKED, FIRST.id)
+    expect(app.state.player.change).toBe('pick')
+
+    await world.settle()
+    expect(current(app)).toBe(SECOND.id)
+    expect(app.state.player).toMatchObject({ change: 'skip', status: 'loading', notice: { kind: 'skipped', song: { id: FIRST.id } } })
   })
 })
 

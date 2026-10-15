@@ -1,5 +1,6 @@
 import type { Attachment } from 'svelte/attachments'
 import { untrack } from 'svelte'
+import { unseen } from './motion'
 
 /** loading：还没好，透明；cached：加载过、缓存里有，直接显示；loaded：刚加载完，淡入；broken：加载不出来，换成图标 */
 export type ImageStatus = 'loading' | 'cached' | 'loaded' | 'broken'
@@ -19,8 +20,8 @@ export interface ImageReveal {
 
 /**
  * 网络图片（封面、头像）从加载到显示（DESIGN.md Motion · 图片）：加载完从底色上淡入（240ms）；
- * 加载过的（虚拟列表滚回来、刚看过的）直接显示，不再淡一次；加载不出来时调用方换成图标。
- * 按地址记：换了一张图就从头来，上一张没加载出来不连累下一张。source 是 img 的地址，要在组件初始化时调用
+ * 加载过的（虚拟列表滚回来、刚看过的）直接显示，不再淡一次；页面在后台时加载完的也直接显示，回来时不补一次淡入。
+ * 加载不出来时调用方换成图标。按地址记：换了一张图就从头来，上一张没加载出来不连累下一张。source 是 img 的地址，要在组件初始化时调用
  */
 export function createImageReveal(source: () => string): ImageReveal {
   let seen = $state<{ source: string, status: Exclude<ImageStatus, 'loading'> } | null>(null)
@@ -40,7 +41,7 @@ export function createImageReveal(source: () => string): ImageReveal {
       const onload = () => {
         loaded.add(src)
         if (seen?.source !== src)
-          seen = { source: src, status: 'loaded' }
+          seen = { source: src, status: unseen() ? 'cached' : 'loaded' }
       }
       // 缓存里的也可能已经被浏览器清掉、重新取时失败
       const onerror = () => (seen = { source: src, status: 'broken' })

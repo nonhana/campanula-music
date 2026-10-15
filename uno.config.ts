@@ -6,7 +6,7 @@ import {
   transformerDirectives,
   transformerVariantGroup,
 } from 'unocss'
-import { AXES, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/motion-tokens'
+import { AXES, cssEasing, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/motion-tokens'
 
 // 设计系统的源头（DESIGN.md、.impeccable/design.json）：颜色、两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
 // 动效的数字在 src/lib/components/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类。
@@ -37,7 +37,7 @@ function motionVariables(reduced: boolean): string {
   ]
   if (!reduced) {
     lines.push(
-      ...Object.entries(EASINGS).map(([name, curve]) => `--ease-${name}: cubic-bezier(${curve.join(', ')});`),
+      ...(Object.keys(EASINGS) as (keyof typeof EASINGS)[]).map(name => `--ease-${name}: ${cssEasing(name)};`),
       ...Object.entries(DELAYS).map(([name, ms]) => `--delay-${name}: ${ms}ms;`),
       ...Object.entries(LOOPS).map(([name, ms]) => `--loop-${name}: ${ms}ms;`),
     )

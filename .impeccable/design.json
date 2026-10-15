@@ -559,7 +559,7 @@
       },
       {
         "name": "cover-wheel",
-        "value": "pivot below the cover center at 1.6 × cover size; 28° between covers; next = counter-clockwise; 600ms (player page) / 480ms (player bars) ease-out-soft; title, artist, album follow 80ms later (out 12px left, in from 16px right); tint crossfade 700ms; played wave drains to start in 200ms",
+        "value": "pivot below the cover center at 1.6 × cover size; 28° between covers; next = counter-clockwise; 600ms (player page) / 480ms (player bars) ease-out-soft, Web Animations from each cover's current pose so it can be interrupted; title, artist, album follow 80ms later (out 12px left over 120ms, in from 16px right over 200ms starting 60ms after; bars use the default float distances; a title still waiting to float in is dropped when the song changes again); tint crossfade 700ms; played wave drains to start in 200ms; desktop player page masks the wheel to the left column, fading over half the column gap on each side; bar pick (until the cover flight) and reduced motion crossfade in place (200ms / 150ms, opacity only); page hidden: swap at once",
         "purpose": "签名动作“换碟”。方向看 App 发布的换歌原因；只在自己那一栏里转；可打断，从此刻的角度直接转向最新那首。手机播放页左右滑封面：拖过一格的 1/4 或每秒 1000px 一甩就切歌，否则 240ms 转回原位；横着挪过 6px 才算拖。"
       },
       {

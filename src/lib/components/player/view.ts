@@ -1,7 +1,7 @@
 import type { Song } from '$lib/api/library'
 import type { LyricLine, LyricWord } from '$lib/api/playback'
 import type { LibraryState } from '$lib/app/library'
-import type { PlayerNotice, PlayerState, PlaySource } from '$lib/app/player'
+import type { PlayerNotice, PlayerState, PlaySource, SongChange } from '$lib/app/player'
 import { failureText } from '../failure'
 import { formatDuration, playlistName } from '../library/view'
 
@@ -15,6 +15,35 @@ export function currentSong(player: PlayerState): Song | null {
 /** 显示的时长（秒）：音频还没加载出来、还不知道时长时，用歌曲信息里的 */
 export function shownDuration(player: PlayerState): number {
   return player.duration ?? (currentSong(player)?.duration ?? 0) / 1000
+}
+
+/** 换歌时封面、歌名往哪边走（DESIGN.md Cover Wheel）：left 往左转、right 往右转，fade 原地交叉淡化 */
+export type Turn = 'left' | 'right' | 'fade'
+
+/** 换碟在哪：page 是播放页，bar 是播放条（桌面底栏、手机迷你条） */
+export type Place = 'page' | 'bar'
+
+/**
+ * 换碟往哪转，只看 App 发布的换歌原因：下一首、自动接续、跳过往左，上一首往右；没有原因（还没换过歌）时直接换上。
+ * 点选：播放页里是在播放队列里点的，往左转；播放条上是在列表里点的，那一行的封面会飞进来（#53），这之前先交叉淡化
+ */
+export function turnOf(change: SongChange | null, place: Place): Turn | null {
+  switch (change) {
+    case null:
+      return null
+    case 'next':
+    case 'continue':
+    case 'skip':
+      return 'left'
+    case 'previous':
+      return 'right'
+    case 'pick':
+      return place === 'page' ? 'left' : 'fade'
+    default: {
+      const unhandled: never = change
+      throw new Error(`不认识的换歌原因：${JSON.stringify(unhandled)}`)
+    }
+  }
 }
 
 /** 播放进度，0 到 1 */

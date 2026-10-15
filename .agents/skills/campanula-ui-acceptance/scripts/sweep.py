@@ -35,32 +35,46 @@ REDUCED_SCRIPT = r"""(() => { const q = /prefers-reduced-motion:\s*reduce/; cons
   document.addEventListener('DOMContentLoaded', flip); setInterval(flip, 300) })();"""
 REDUCED_CHECK = "() => getComputedStyle(document.documentElement).getPropertyValue('--move-panel').trim()"
 
-# 冻结动画：抓到的动画（Svelte 过渡、CSS 过渡和一次性的 CSS 动画；不含转圈、骨架这类循环）停在第 t 毫秒。
-# load 设成选择器时，页面一加载就把这些元素新开始的 CSS 过渡冻住（封面淡入）
+# 冻结动画：抓到的动画（Svelte 过渡、CSS 过渡、Web Animations 和一次性的 CSS 动画；不含转圈、骨架这类循环）停在第 t 毫秒。
+# load 设成选择器时，页面一加载就把这些元素新开始的 CSS 过渡冻住（封面淡入）。
+# 触发后抓到的（waitAndGrab）拍到某一帧时已经走完的，就让它真的走完：带 delay 的 Svelte 过渡先放一段空动画等 delay，
+# 它走完才开始真正的那段；真正那段在同一个元素上新开始，冻在“从空动画走完那一刻算起”的位置。走完的出场过渡会把元素拿掉，和真的一样
 FREEZE_SCRIPT = """(() => { if (window.__campanulaFreeze) return;
   const next = () => new Promise(r => requestAnimationFrame(r));
   const loop = a => a.effect?.getComputedTiming().iterations === Infinity;
-  const F = window.__campanulaFreeze = { frozen: [], at: 0, load: null,
-    hold(a) { if (loop(a) || F.frozen.includes(a)) return; a.pause(); a.currentTime = F.at; F.frozen.push(a) },
+  const F = window.__campanulaFreeze = { frozen: [], start: new Map(), born: new WeakMap(), armed: false, at: 0, load: null,
+    hold(a, start = 0) { if (loop(a) || F.frozen.includes(a)) return; a.pause(); F.start.set(a, start); a.currentTime = Math.max(0, F.at - start); F.frozen.push(a) },
     grab(selector) { for (const el of document.querySelectorAll(selector)) for (const a of el.getAnimations()) F.hold(a); return F.frozen.length },
-    frame(t) { F.at = t; for (const a of F.frozen) a.currentTime = t; return F.frozen.length },
+    async frame(t) { F.at = t;
+      for (let round = 0; round < 6; round++) { let ended = false;
+        for (const a of [...F.frozen]) { const start = F.start.get(a) ?? 0, end = start + a.effect.getComputedTiming().endTime;
+          if (F.armed && t >= end && end > start) { F.frozen.splice(F.frozen.indexOf(a), 1); if (a.effect.target) F.born.set(a.effect.target, end); a.finish(); ended = true }
+          else a.currentTime = Math.max(0, t - start) }
+        if (!ended) break;
+        await next(); await next() }
+      return F.frozen.length },
     describe() { return F.frozen.map(a => a.effect.getTiming().duration + 'ms ' + [...new Set(a.effect.getKeyframes().flatMap(k => Object.keys(k)).filter(x => !['offset', 'computedOffset', 'easing', 'composite'].includes(x)))].join(',')) },
-    release() { F.load = null; for (const a of F.frozen) { try { a.finish() } catch {} } F.frozen = []; F.at = 0; return true },
+    release() { F.load = null; F.armed = false; for (const a of F.frozen) { try { a.finish() } catch {} } F.frozen = []; F.start.clear(); F.born = new WeakMap(); F.at = 0; return true },
     async waitAndGrab(grab, when, timeout) { const t0 = performance.now();
       const live = () => [...document.querySelectorAll(when)].some(el => el.getAnimations().some(a => !loop(a) && a.playState === 'running'));
       while (!live()) { if (performance.now() - t0 > timeout) return null; await next() }
       for (let i = 0; i < 3; i++) { F.grab(grab); await next() }
-      F.frame(0); return { afterMs: Math.round(performance.now() - t0), anims: F.describe() } },
+      await F.frame(0); F.armed = true; return { afterMs: Math.round(performance.now() - t0), anims: F.describe() } },
     async waitLoaded(count, timeout) { const t0 = performance.now();
       while (F.frozen.length < count && performance.now() - t0 < timeout) await new Promise(r => setTimeout(r, 100));
       if (F.frozen.length < count) return null;
-      await new Promise(r => setTimeout(r, 400)); F.frame(0); return { frozen: F.frozen.length, anims: [...new Set(F.describe())] } },
+      await new Promise(r => setTimeout(r, 400)); await F.frame(0); return { frozen: F.frozen.length, anims: [...new Set(F.describe())] } },
     async waitTurn(timeout) { const t0 = performance.now();
       const turning = () => document.getAnimations().filter(a => a.effect?.pseudoElement?.startsWith('::view-transition'));
       while (turning().length === 0) { if (performance.now() - t0 > timeout) return null; await next() }
-      for (const a of turning()) F.hold(a); F.frame(0);
+      for (const a of turning()) F.hold(a); await F.frame(0);
       return { afterMs: Math.round(performance.now() - t0), types: [...(document.activeViewTransition?.types ?? [])],
         anims: F.frozen.map(a => { const t = a.effect.getComputedTiming(); return `${a.effect.pseudoElement} ${a.animationName} ${t.duration}ms +${t.delay}ms` }) } } };
+  const animate = Element.prototype.animate;
+  Element.prototype.animate = function (keyframes, options) { const a = animate.call(this, keyframes, options);
+    const born = F.armed ? F.born.get(this) : undefined;
+    if (born !== undefined) { F.born.delete(this); F.hold(a, born) }
+    return a };
   document.addEventListener('transitionrun', e => { if (F.load && e.target.matches?.(F.load)) for (const a of e.target.getAnimations()) F.hold(a) }, true) })();"""
 
 # 拍“图片加载完淡入”时让每张网络图片都重新下载：地址后面加一个随机参数。不加的话，
