@@ -1,6 +1,7 @@
 import type { Credit, Playlist, Song } from '$lib/api/library'
 import type { RequestFailure } from '$lib/app/api'
 import type { LibraryState, PlaylistSongs, SyncFailure } from '$lib/app/library'
+import type { ScrollMark } from '../ui/scroll-marks'
 import { failureText } from '../failure'
 
 // 曲库界面上怎么显示：同步条说什么、歌单是加载中、空、出错还是列表。界面组件只照着画
@@ -164,6 +165,11 @@ export function yearOf(publishedAt: number): number | null {
 /** 首数等：千位加逗号（4,984） */
 export function formatCount(count: number): string {
   return count.toLocaleString('en-US')
+}
+
+/** 歌曲列表里的一首在滚动条气泡里怎么写：第几首、歌名 */
+export function songMark(song: Song, index: number): ScrollMark {
+  return { caption: `第 ${formatCount(index + 1)} 首`, title: song.name, lang: langOf(song.name) }
 }
 
 /** 时长：分:秒 */

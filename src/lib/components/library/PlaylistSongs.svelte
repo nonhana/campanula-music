@@ -19,7 +19,7 @@
   import DesktopSongRow from './DesktopSongRow.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
-  import { formatCount, playlistView } from './view'
+  import { formatCount, playlistView, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
 
   interface Props {
@@ -85,7 +85,7 @@
         body={result?.incomplete ? '这张歌单还没同步完，还没同步到的歌里可能有，同步完再搜一次。' : '只搜了这张歌单里的歌名、歌手和专辑。'}
       />
     {:else}
-      <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id}>
+      <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id} markOf={songMark}>
         {#snippet row(song: Song, i: number)}
           {#if phone}
             <PhoneSongRow {song} now={song.id === nowId} onplay={play(song)} />

@@ -12,8 +12,9 @@
   import Cover from '../library/Cover.svelte'
   import PlayTarget from '../library/PlayTarget.svelte'
   import SongBadge from '../library/SongBadge.svelte'
-  import { artistLine, formatCount, formatDuration, langOf } from '../library/view'
+  import { artistLine, formatCount, formatDuration, langOf, songMark } from '../library/view'
   import VirtualList from '../library/VirtualList.svelte'
+  import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
   import MorningWash from './MorningWash.svelte'
   import NowBars from './NowBars.svelte'
@@ -24,6 +25,8 @@
   const ROW = 56
   const uid = $props.id()
   const view = getAppView()
+  /** 按住滚动条拖时，气泡问队列最上面是哪一首 */
+  const lookup = setScrollLookup({ markAt: null })
   const queue = $derived(view.state.player.queue)
   const current = $derived(view.state.player.current)
   /** 播放队列里的歌都来自同一个播放来源时，它叫什么 */
@@ -53,9 +56,9 @@
 
   <!-- 底下的 8px 留在滚动区外面：滚动条的下端不伸进面板的圆角 -->
   <div bind:this={scroller} class='mb-2 min-h-0 flex-1 overflow-y-auto overscroll-contain'>
-    <Scrollbar />
+    <Scrollbar {lookup} />
     <div class='px-2'>
-      <VirtualList items={queue} itemHeight={ROW} scrollParent={scroller} getKey={(entry: QueueEntry, i: number) => `${entry.song.id}-${i}`}>
+      <VirtualList items={queue} itemHeight={ROW} scrollParent={scroller} getKey={(entry: QueueEntry, i: number) => `${entry.song.id}-${i}`} markOf={(entry: QueueEntry, i: number) => songMark(entry.song, i)}>
         {#snippet row(entry: QueueEntry, i: number)}
           {@const now = i === current}
           {@const off = entry.song.availability === 'noCopyright'}
