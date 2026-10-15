@@ -23,6 +23,12 @@ export function neighborSong(player: PlayerState, direction: keyof PlayerState['
   return index === null ? null : player.queue[index].song
 }
 
+/**
+ * 封面的小缩略图按多大取（Cover 的 size，取的是 96px 的图）：手机上歌曲行、播放队列里的封面就是它。播放页的封面染底、
+ * 换碟时大图加载好以前先铺的也用它：同一个地址只下载一次，从歌单里点着放、往下切时，后面几首的多半已经在列表里加载过了
+ */
+export const SMALL_COVER = 48
+
 /** 换歌时封面、歌名往哪边走（DESIGN.md Cover Wheel）：left 往左转、right 往右转，fade 原地交叉淡化 */
 export type Turn = 'left' | 'right' | 'fade'
 

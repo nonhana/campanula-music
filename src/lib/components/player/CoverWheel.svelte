@@ -7,6 +7,9 @@
   手机播放页上按住封面左右拖（drag）：转盘跟着手转，上一首、下一首的封面从两边转进来，离正中越远越淡；
   拖起来时动画还在半路就从那里接着转，最多转到旁边那张停在正中。松手切了歌，换碟从拖到的样子接着转（旁边那张就是转回来的那张）；
   没切就 240ms 转回原位（减少动态效果时直接到位），两边那两张转回去、拿掉。拖动时减少动态效果也照样跟手。
+  大图（几百 KB 一张）先铺小缩略图（SMALL_COVER，多半已经有了），大图到了从小图上淡入。转盘本来停着、单独换一首时新的那首马上取大图；
+  连着切歌（转着、拖着时又换了）时一路转过去的歌只用小图、不去下载大图，等转盘停下来才取最后那首的，它不用排在别的大图后面。
+  转盘停稳、正中那张的大图到了，再在后台取上一首、下一首的大图。
   铺满父元素：父元素定大小、决定裁不裁切（播放条的圆角小窗、桌面播放页左列的遮罩）
 -->
 <script lang='ts'>
@@ -14,9 +17,10 @@
   import type { ClassValue } from 'svelte/elements'
   import type { Turn } from './view'
   import { untrack } from 'svelte'
-  import Cover, { preloadCover } from '../library/Cover.svelte'
+  import Cover, { coverLoaded, preloadCover } from '../library/Cover.svelte'
   import { fadeMs, moveMs, reducedMotion, unseen } from '../motion'
   import { cssEasing, DURATIONS, WHEEL } from '../motion-tokens'
+  import { SMALL_COVER } from './view'
 
   interface Props {
     song: Song
@@ -39,10 +43,11 @@
 
   const { song, turn, duration, size, fluid = false, eager = false, class: klass, drag = null, previous = null, next = null }: Props = $props()
 
-  /** 转盘上的一张封面。key 区分同一首歌的两张（刚从一边转走，又从另一边转回来） */
+  /** 转盘上的一张封面。key 区分同一首歌的两张（刚从一边转走，又从另一边转回来）；sharp：取了大图（之前加载过，或者停在正中过） */
   interface Disc {
     key: number
     song: Song
+    sharp: boolean
   }
 
   /** 一张封面此刻的样子：从正中转开了多少度（顺时针为正，往右下），透明度 */
@@ -54,13 +59,19 @@
   /** 停在正中 */
   const REST: Pose = { angle: 0, opacity: 1 }
 
-  let discs = $state<Disc[]>([{ key: 0, song: untrack(() => song) }])
+  /** 这首的大图用不用等：小转盘（播放条）的大图就是小缩略图；加载过的直接用 */
+  const sharpNow = (s: Song) => size <= SMALL_COVER || coverLoaded(s.album.coverUrl, size)
+
+  let discs = $state.raw<Disc[]>([{ key: 0, song: untrack(() => song), sharp: true }])
+  /** 正中那张的大图到了、没在拖：这时才在后台取上一首、下一首的大图，不和正中那张抢网速；连着切歌时正中是小图，就不去取 */
+  let frontReady = $state(false)
   /** 正中的那张，放的是当前这首；其余的都在转走、淡出，转完就拿掉（拖着时露出来的上一首、下一首除外） */
   let front = $state(0)
   let keys = 1
   /* eslint-disable svelte/prefer-svelte-reactivity -- 下面几个只给动画、拖动用，不驱动界面更新 */
   const elements = new Map<number, HTMLElement>()
-  const running = new Map<number, Animation>()
+  /** 正在走的动画和它从哪走到哪：此刻的样子按动画进度算，不读元素的计算样式（读一次就要把整页的样式重算一遍） */
+  const running = new Map<number, { animation: Animation, from: Pose, to: Pose }>()
   /** 刚加上、还没挂进页面的那张：挂上时从哪转进来、转多久 */
   const entering = new Map<number, { from: Pose, ms: number }>()
   /** 拖着时手摆着的那几张各转开了多少度（写在元素的 style 上；还没挂上的挂上时照着摆） */
@@ -77,15 +88,18 @@
     return { angle, opacity: Math.max(0, 1 - Math.abs(angle) / WHEEL.pitch) }
   }
 
+  /** 一张封面此刻的样子：手摆着的；正在走的按动画进度在起止之间取（和画出来的一样）；还没挂上的在转进来的地方；其余停在正中 */
   function poseOf(key: number): Pose {
-    const element = elements.get(key)
-    if (!element) {
-      const angle = posed.get(key)
-      return angle === undefined ? entering.get(key)?.from ?? REST : dragged(angle)
-    }
-    const style = getComputedStyle(element)
-    const matrix = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform)
-    return { angle: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI, opacity: Number(style.opacity) }
+    const angle = posed.get(key)
+    if (angle !== undefined)
+      return dragged(angle)
+    const motion = running.get(key)
+    if (!motion)
+      return entering.get(key)?.from ?? REST
+    // 走完了、还没等到 onfinish 的：停在终点
+    const progress = motion.animation.effect?.getComputedTiming().progress ?? (motion.animation.playState === 'finished' ? 1 : 0)
+    const { from, to } = motion
+    return { angle: from.angle + (to.angle - from.angle) * progress, opacity: from.opacity + (to.opacity - from.opacity) * progress }
   }
 
   /** 拖着时直接摆在元素的 style 上；null 是拿掉，交回动画和样式表 */
@@ -95,7 +109,7 @@
   }
 
   function stop(key: number): void {
-    running.get(key)?.cancel()
+    running.get(key)?.animation.cancel()
     running.delete(key)
   }
 
@@ -110,39 +124,61 @@
       }
       return
     }
-    running.get(key)?.cancel()
+    running.get(key)?.animation.cancel()
     const turning = from.angle !== 0 || to.angle !== 0
     const keyframe = ({ angle, opacity }: Pose): Keyframe => (turning ? { transform: `rotate(${angle}deg)`, opacity } : { opacity })
     const animation = element.animate([keyframe(from), keyframe(to)], { duration: ms, easing, fill: leaving ? 'forwards' : 'none' })
-    running.set(key, animation)
+    running.set(key, { animation, from, to })
     animation.onfinish = () => {
+      // 已经被接走了（拖起来时把转走的那张接过来、又换了一段动画）：不归这段管
+      if (running.get(key)?.animation !== animation)
+        return
       running.delete(key)
       if (leaving)
         discs = discs.filter(disc => disc.key !== key)
+      else if (key === front && !held)
+        sharpen()
     }
+  }
+
+  /** 正中那张取大图（转盘停下来时，或者它本来就是大图）；它到了（或者加载不出来）、没在拖，再取上一首、下一首的（下面的 effect） */
+  function sharpen(): void {
+    const shown = discs.find(disc => disc.key === front)!
+    if (!shown.sharp)
+      discs = discs.map(disc => (disc === shown ? { ...disc, sharp: true } : disc))
+    const key = front
+    void preloadCover(shown.song.album.coverUrl, size).then(() => {
+      if (key === front && !held)
+        frontReady = true
+    })
   }
 
   /** 直接换上：不转，正在转的都拿掉 */
   function settle(incoming: Song): void {
-    for (const animation of running.values())
+    for (const { animation } of running.values())
       animation.cancel()
     running.clear()
     entering.clear()
     const key = keys++
-    discs = [{ key, song: incoming }]
+    discs = [{ key, song: incoming, sharp: true }]
     front = key
+    sharpen()
   }
 
   function change(incoming: Song): void {
     const shown = discs.find(disc => disc.key === front)!
     if (shown.song.id === incoming.id) {
-      // 同一首歌的信息更新了（例如曲库同步换了封面地址）：照着换，不转
-      shown.song = incoming
+      // 同一首歌的信息更新了（例如曲库同步换了封面地址）：照着换，不转。拖着时每次移动都走到这里，没变就什么都不做
+      if (shown.song !== incoming)
+        discs = discs.map(disc => (disc === shown ? { ...disc, song: incoming } : disc))
       return
     }
     if (turn === null || unseen())
       return settle(incoming)
     const fading = turn === 'fade' || reducedMotion()
+    /** 转盘本来停着（单独换一首）：新的那首马上取大图；转着、拖着时又换了（连着切歌），等停下来再取 */
+    const calm = held === null && running.size === 0 && entering.size === 0
+    frontReady = false
     /** 往左转：新的从右边（角度为正）转进来，整个转盘逆时针转 */
     const side = turn === 'right' ? -1 : 1
     const poses = new Map(discs.map(disc => [disc.key, poseOf(disc.key)]))
@@ -156,22 +192,36 @@
       if (disc === back)
         continue
       const pose = poses.get(disc.key)!
+      // 已经看不见的（转走淡完了、拖着时转出一格的）直接拿掉：连着切歌时转盘上不堆着一摞透明的封面
+      if (pose.opacity < 0.01) {
+        stop(disc.key)
+        discs = discs.filter(other => other.key !== disc.key)
+        continue
+      }
       move(disc.key, pose, { angle: pose.angle + delta, opacity: 0 }, ms, cssEasing(fading ? 'in-soft' : 'out-soft'), true)
     }
     if (back) {
       front = back.key
+      // 拖进来的那张：拖着时它的大图可能刚加载好
+      if (!back.sharp && sharpNow(back.song))
+        discs = discs.map(disc => (disc === back ? { ...disc, sharp: true } : disc))
       move(back.key, from, REST, ms, cssEasing('out-soft'), false)
-      return
     }
-    const key = keys++
-    entering.set(key, { from, ms })
-    discs.push({ key, song: incoming })
-    front = key
+    else {
+      const key = keys++
+      entering.set(key, { from, ms })
+      discs = [...discs, { key, song: incoming, sharp: calm || sharpNow(incoming) }]
+      front = key
+    }
+    // 新的那首已经是大图（拖进来时就是、单独换一首）：等它到了就取两边的；不然等转盘停下来
+    if (discs.find(disc => disc.key === front)!.sharp)
+      sharpen()
   }
 
   /** 拖起来：正中那张停在此刻的样子；上一首、下一首摆到它两边（刚转走、还在淡出的那张正好是它，就把那张接过来） */
   function hold(): NonNullable<typeof held> {
     const base = poseOf(front).angle / WHEEL.pitch
+    frontReady = false
     stop(front)
     entering.delete(front)
     const sides: (readonly [key: number, side: -1 | 1])[] = []
@@ -185,7 +235,7 @@
         continue
       }
       const key = keys++
-      discs.push({ key, song: neighbor })
+      discs = [...discs, { key, song: neighbor, sharp: sharpNow(neighbor) }]
       sides.push([key, side])
     }
     return { front, base, sides }
@@ -246,10 +296,17 @@
     })
   })
 
+  sharpen()
+
+  // 上一首、下一首：小图马上取（很小，拖起来、切过去时先铺它）；大图等正中那张的大图到了再取
   $effect(() => {
+    const ready = frontReady
     for (const neighbor of [previous, next]) {
-      if (neighbor)
-        preloadCover(neighbor.album.coverUrl, size)
+      if (!neighbor)
+        continue
+      void preloadCover(neighbor.album.coverUrl, SMALL_COVER)
+      if (ready)
+        void preloadCover(neighbor.album.coverUrl, size)
     }
   })
 
@@ -267,7 +324,7 @@
         move(key, start.from, REST, start.ms, cssEasing('out-soft'), false)
       }
       return () => {
-        running.get(key)?.cancel()
+        running.get(key)?.animation.cancel()
         running.delete(key)
         elements.delete(key)
       }
@@ -278,8 +335,10 @@
 <!-- span：播放条、手机播放页上放在按钮里 -->
 <span class='wheel' style:--pivot='{50 + WHEEL.pivot * 100}%'>
   {#each discs as disc (disc.key)}
-    <span class={['disc', disc.key === front && 'front']} aria-hidden={disc.key !== front} {@attach mount(disc.key)}>
-      <Cover url={disc.song.album.coverUrl} {size} {fluid} {eager} class={klass} />
+    <!-- 换了一张封面的信息（取大图、曲库同步换了地址）时 disc 是新的对象：挂载只看不变的 key，不然会重新挂一次、把正在走的动画停掉 -->
+    {@const key = disc.key}
+    <span class={['disc', key === front && 'front']} aria-hidden={key !== front} {@attach mount(key)}>
+      <Cover url={disc.song.album.coverUrl} {size} {fluid} {eager} class={klass} placeholder={SMALL_COVER} load={disc.sharp} />
     </span>
   {/each}
 </span>

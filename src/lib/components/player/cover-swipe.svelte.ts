@@ -30,12 +30,13 @@ export interface CoverSwipe {
 /** 在组件初始化时调用 */
 export function createCoverSwipe({ current, has, commit, tap }: CoverSwipeOptions): CoverSwipe {
   let turned = $state<number | null>(null)
-  let face: HTMLElement | null = null
+  /** 封面按钮多宽（px）：尺寸变了由 ResizeObserver 记下，拖动时不读排版（读一次就可能把整页排版重算一遍） */
+  let width = 0
   const holdPage = createPageHold()
 
   const core = createWheelCore({
     // 手指挪过的距离就是封面中心沿转盘弧线走的距离：一格是半径（轴心到封面中心，1.6 倍边长）乘上 28° 的弧度
-    notch: () => WHEEL.pivot * (face?.offsetWidth ?? 0) * WHEEL.pitch * Math.PI / 180,
+    notch: () => WHEEL.pivot * width * WHEEL.pitch * Math.PI / 180,
     has,
     commit,
     tap,
@@ -56,12 +57,12 @@ export function createCoverSwipe({ current, has, commit, tap }: CoverSwipeOption
       return turned
     },
     grip(element) {
-      face = element
       const detach = attach(element)
+      const observer = new ResizeObserver(([entry]) => (width = entry.borderBoxSize[0].inlineSize))
+      observer.observe(element)
       return () => {
         detach?.()
-        if (face === element)
-          face = null
+        observer.disconnect()
       }
     },
   }
