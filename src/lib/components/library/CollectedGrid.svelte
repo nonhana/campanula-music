@@ -1,6 +1,7 @@
 <!--
   曲库里收藏的专辑或歌手：手机的专辑、歌手标签（两列 / 三列网格），桌面直接打开这两个地址时的网格，桌面首页的横向架子。
   列表还没拿到时是形状一致的骨架，没拿到就出错时能重试，一个都没有时说明在网易云音乐里收藏的会出现在这里。
+  骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）。
   架子能横向滚动，底边是自绘的滚动条（拖动、点空白处翻一屏）；键盘 Tab 到哪一项就把它滚进视野
 -->
 <script lang='ts'>
@@ -8,6 +9,7 @@
   import { Disc3, UserRound } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
+  import { fadeAway, reveal } from '../motion'
   import Scrollbar from '../ui/Scrollbar.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import AlbumTile from './AlbumTile.svelte'
@@ -42,7 +44,7 @@
   const itemClass = $derived(['min-w-0', layout === 'shelf' && [look.cell, 'flex-none']])
 
   /** 键盘焦点移到架子里看不全的一项：把它滚进视野 */
-  function reveal(event: FocusEvent) {
+  function keepInView(event: FocusEvent) {
     if (event.target instanceof HTMLElement)
       event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }
@@ -64,32 +66,35 @@
   {/if}
 {/snippet}
 
-{#if items === null}
-  {#if library.sync.status === 'failed'}
-    <StateBlock kind='error' title={`收藏的${look.noun}没能同步`} body={failureText(library.sync.failure)} action={{ label: '重试', run: () => view.app.retrySync() }} />
-  {:else}
-    <div class={[listClass, layout === 'shelf' && '-mx-2 overflow-hidden']} role='status' aria-busy='true' aria-label={`正在加载收藏的${look.noun}`}>
-      {#each { length: layout === 'phone' ? look.phoneBones : 6 }, i (i)}
-        <div class={itemClass}>
-          <span class={['bone aspect-square w-full', look.round ? 'rounded-full' : 'rounded-lg']}></span>
-          <span class={['bone mt-3 h-3.5 rounded-full', look.round ? 'mx-auto w-2/3' : 'w-3/4']}></span>
-          {#if !look.round}<span class='bone mt-2 h-3 w-1/2 rounded-full'></span>{/if}
-        </div>
-      {/each}
-    </div>
-  {/if}
-{:else if items.length === 0}
-  <StateBlock kind='empty' icon={look.icon} title={`还没有收藏的${look.noun}`} body={`在网易云音乐里收藏的${look.noun}，会同步到这里。`} />
-{:else if layout === 'shelf'}
-  <!-- 滚动的是外面这层，内边距在里面的列表上：滚动条贴着架子的底边 -->
-  <div class='overflow-x-auto -mx-2'>
-    <Scrollbar axis='x' />
-    <ul class={[listClass, 'w-max']} aria-label={`收藏的${look.noun}`} onfocusin={reveal}>
-      {@render tiles()}
-    </ul>
+<!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放 -->
+{#if items === null && library.sync.status === 'failed'}
+  <div in:reveal><StateBlock kind='error' title={`收藏的${look.noun}没能同步`} body={failureText(library.sync.failure)} action={{ label: '重试', run: () => view.app.retrySync() }} /></div>
+{:else if items === null}
+  <div class={[listClass, layout === 'shelf' && '-mx-2 overflow-hidden']} role='status' aria-busy='true' aria-label={`正在加载收藏的${look.noun}`} out:fadeAway>
+    {#each { length: layout === 'phone' ? look.phoneBones : 6 }, i (i)}
+      <div class={itemClass}>
+        <span class={['bone aspect-square w-full', look.round ? 'rounded-full' : 'rounded-lg']}></span>
+        <span class={['bone mt-3 h-3.5 rounded-full', look.round ? 'mx-auto w-2/3' : 'w-3/4']}></span>
+        {#if !look.round}<span class='bone mt-2 h-3 w-1/2 rounded-full'></span>{/if}
+      </div>
+    {/each}
   </div>
 {:else}
-  <ul class={listClass} aria-label={`收藏的${look.noun}`}>
-    {@render tiles()}
-  </ul>
+  <div in:reveal>
+    {#if items.length === 0}
+      <StateBlock kind='empty' icon={look.icon} title={`还没有收藏的${look.noun}`} body={`在网易云音乐里收藏的${look.noun}，会同步到这里。`} />
+    {:else if layout === 'shelf'}
+      <!-- 滚动的是外面这层，内边距在里面的列表上：滚动条贴着架子的底边 -->
+      <div class='overflow-x-auto -mx-2'>
+        <Scrollbar axis='x' />
+        <ul class={[listClass, 'w-max']} aria-label={`收藏的${look.noun}`} onfocusin={keepInView} data-reveal-group>
+          {@render tiles()}
+        </ul>
+      </div>
+    {:else}
+      <ul class={listClass} aria-label={`收藏的${look.noun}`} data-reveal-group>
+        {@render tiles()}
+      </ul>
+    {/if}
+  </div>
 {/if}

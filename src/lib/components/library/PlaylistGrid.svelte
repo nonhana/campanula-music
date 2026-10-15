@@ -1,7 +1,7 @@
 <!--
   曲库里的歌单（自建的、收藏的，不含我喜欢的音乐）：全部 / 自建 / 收藏 筛选加封面网格。
   手机的歌单标签和桌面首页的歌单区块共用；歌单列表还没拿到时是骨架，没拿到就出错时能重试，筛完一张都没有时说明。
-  heading：桌面放在筛选左边的区块标题
+  骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）。heading：桌面放在筛选左边的区块标题
 -->
 <script lang='ts'>
   import type { LibraryState } from '$lib/app/library'
@@ -10,6 +10,7 @@
   import { ListMusic } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
+  import { fadeAway, reveal } from '../motion'
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
@@ -44,26 +45,29 @@
   </div>
 </div>
 
-{#if shown === null}
-  {#if library.sync.status === 'failed'}
-    <StateBlock kind='error' title='歌单列表没能同步' body={failureText(library.sync.failure)} action={{ label: '重试', run: () => view.app.retrySync() }} />
-  {:else}
-    <div class={gridClass} role='status' aria-busy='true' aria-label='正在加载歌单'>
-      {#each { length: phone ? 4 : 6 }, i (i)}
-        <div>
-          <span class='bone aspect-square w-full rounded-lg'></span>
-          <span class='bone mt-3 h-3.5 w-3/4 rounded-full'></span>
-          <span class='bone mt-2 h-3 w-1/3 rounded-full'></span>
-        </div>
-      {/each}
-    </div>
-  {/if}
-{:else if shown.length === 0}
-  <StateBlock kind='empty' icon={ListMusic} title={EMPTY[filter].title} body={EMPTY[filter].body} />
-{:else}
-  <ul class={gridClass} aria-label='歌单'>
-    {#each shown as playlist (playlist.id)}
-      <li class='min-w-0'><PlaylistTile {playlist} {phone} /></li>
+<!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放 -->
+{#if shown === null && library.sync.status === 'failed'}
+  <div in:reveal><StateBlock kind='error' title='歌单列表没能同步' body={failureText(library.sync.failure)} action={{ label: '重试', run: () => view.app.retrySync() }} /></div>
+{:else if shown === null}
+  <div class={gridClass} role='status' aria-busy='true' aria-label='正在加载歌单' out:fadeAway>
+    {#each { length: phone ? 4 : 6 }, i (i)}
+      <div>
+        <span class='bone aspect-square w-full rounded-lg'></span>
+        <span class='bone mt-3 h-3.5 w-3/4 rounded-full'></span>
+        <span class='bone mt-2 h-3 w-1/3 rounded-full'></span>
+      </div>
     {/each}
-  </ul>
+  </div>
+{:else}
+  <div in:reveal>
+    {#if shown.length === 0}
+      <StateBlock kind='empty' icon={ListMusic} title={EMPTY[filter].title} body={EMPTY[filter].body} />
+    {:else}
+      <ul class={gridClass} aria-label='歌单' data-reveal-group>
+        {#each shown as playlist (playlist.id)}
+          <li class='min-w-0'><PlaylistTile {playlist} {phone} /></li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
 {/if}

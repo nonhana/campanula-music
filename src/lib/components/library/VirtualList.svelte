@@ -3,6 +3,7 @@
   放在自己的滚动容器里（播放页的播放队列）时传 scrollParent，跟随它滚动。
   滚动、窗口大小变化、列表变化时重算要渲染哪几行。
   传了 markOf 时，告诉所在滚动区域的滚动条某个高度上是哪一行（ui/scroll-marks.ts），按住滚动条拖时气泡里写它。
+  行是依次飘入的一组（motion.ts 的 reveal）：骨架换成列表时前几行依次飘入，之后滚出来的行不飘
 -->
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
@@ -82,7 +83,7 @@
   })
 </script>
 
-<div bind:this={host} class='relative' style:height='{items.length * itemHeight}px'>
+<div bind:this={host} class='relative' style:height='{items.length * itemHeight}px' data-reveal-group>
   {#each visible as { item, index } (getKey(item, index))}
     <div class='absolute inset-x-0' style:top='{index * itemHeight}px' style:height='{itemHeight}px'>
       {@render row(item, index)}

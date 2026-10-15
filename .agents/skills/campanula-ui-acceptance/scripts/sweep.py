@@ -1,6 +1,7 @@
 # 一次 eval 拍完一批验收截图（Python eval 里 `%load .agents/skills/campanula-ui-acceptance/scripts/sweep.py`）。
 # shoot：静态画面。每张：换视口 → 写拦截规则、按需清空本机副本 → 打开页面 → 等到页面画出来 → 跑检查 → 截图存文件。
-# motion：动效逐帧。触发一个变化，把动画停在第 0 / 60 / 120… 毫秒各拍一张。sheet：把一组截图拼成一张，read 一次看完。
+# motion：动效逐帧。触发一个变化，把动画停在第 0 / 60 / 120… 毫秒各拍一张。turn：换页（View Transitions）逐帧。
+# sheet：把一组截图拼成一张，read 一次看完。
 # 只把每张的检查结果打回上下文，图片留在文件里，要看哪张再单独 read。
 import json
 import pathlib
@@ -34,25 +35,32 @@ REDUCED_SCRIPT = r"""(() => { const q = /prefers-reduced-motion:\s*reduce/; cons
   document.addEventListener('DOMContentLoaded', flip); setInterval(flip, 300) })();"""
 REDUCED_CHECK = "() => getComputedStyle(document.documentElement).getPropertyValue('--move-panel').trim()"
 
-# 冻结动画：抓到的动画（Svelte 过渡、CSS 过渡；不含转圈、骨架这类循环）停在第 t 毫秒。
+# 冻结动画：抓到的动画（Svelte 过渡、CSS 过渡和一次性的 CSS 动画；不含转圈、骨架这类循环）停在第 t 毫秒。
 # load 设成选择器时，页面一加载就把这些元素新开始的 CSS 过渡冻住（封面淡入）
 FREEZE_SCRIPT = """(() => { if (window.__campanulaFreeze) return;
   const next = () => new Promise(r => requestAnimationFrame(r));
+  const loop = a => a.effect?.getComputedTiming().iterations === Infinity;
   const F = window.__campanulaFreeze = { frozen: [], at: 0, load: null,
-    hold(a) { if (a instanceof CSSAnimation || F.frozen.includes(a)) return; a.pause(); a.currentTime = F.at; F.frozen.push(a) },
+    hold(a) { if (loop(a) || F.frozen.includes(a)) return; a.pause(); a.currentTime = F.at; F.frozen.push(a) },
     grab(selector) { for (const el of document.querySelectorAll(selector)) for (const a of el.getAnimations()) F.hold(a); return F.frozen.length },
     frame(t) { F.at = t; for (const a of F.frozen) a.currentTime = t; return F.frozen.length },
     describe() { return F.frozen.map(a => a.effect.getTiming().duration + 'ms ' + [...new Set(a.effect.getKeyframes().flatMap(k => Object.keys(k)).filter(x => !['offset', 'computedOffset', 'easing', 'composite'].includes(x)))].join(',')) },
     release() { F.load = null; for (const a of F.frozen) { try { a.finish() } catch {} } F.frozen = []; F.at = 0; return true },
     async waitAndGrab(grab, when, timeout) { const t0 = performance.now();
-      const live = () => [...document.querySelectorAll(when)].some(el => el.getAnimations().some(a => !(a instanceof CSSAnimation) && a.playState === 'running'));
+      const live = () => [...document.querySelectorAll(when)].some(el => el.getAnimations().some(a => !loop(a) && a.playState === 'running'));
       while (!live()) { if (performance.now() - t0 > timeout) return null; await next() }
       for (let i = 0; i < 3; i++) { F.grab(grab); await next() }
       F.frame(0); return { afterMs: Math.round(performance.now() - t0), anims: F.describe() } },
     async waitLoaded(count, timeout) { const t0 = performance.now();
       while (F.frozen.length < count && performance.now() - t0 < timeout) await new Promise(r => setTimeout(r, 100));
       if (F.frozen.length < count) return null;
-      await new Promise(r => setTimeout(r, 400)); F.frame(0); return { frozen: F.frozen.length, anims: [...new Set(F.describe())] } } };
+      await new Promise(r => setTimeout(r, 400)); F.frame(0); return { frozen: F.frozen.length, anims: [...new Set(F.describe())] } },
+    async waitTurn(timeout) { const t0 = performance.now();
+      const turning = () => document.getAnimations().filter(a => a.effect?.pseudoElement?.startsWith('::view-transition'));
+      while (turning().length === 0) { if (performance.now() - t0 > timeout) return null; await next() }
+      for (const a of turning()) F.hold(a); F.frame(0);
+      return { afterMs: Math.round(performance.now() - t0), types: [...(document.activeViewTransition?.types ?? [])],
+        anims: F.frozen.map(a => { const t = a.effect.getComputedTiming(); return `${a.effect.pseudoElement} ${a.animationName} ${t.duration}ms +${t.delay}ms` }) } } };
   document.addEventListener('transitionrun', e => { if (F.load && e.target.matches?.(F.load)) for (const a of e.target.getAnimations()) F.hold(a) }, true) })();"""
 
 # 拍“图片加载完淡入”时让每张网络图片都重新下载：地址后面加一个随机参数。不加的话，
@@ -148,11 +156,12 @@ async def shoot(issue, shots, check_overflow=('768', '1024')):
     return report
 
 
-async def motion(issue, name, viewport, times, *, grab, trigger=None, when=None, path=None, setup=None, reduced=False, network=None, on_load=False, count=6):
+async def motion(issue, name, viewport, times, *, grab=None, trigger=None, when=None, path=None, setup=None, reduced=False, network=None, on_load=False, count=6):
     """
     动效逐帧：把一个变化里的动画停在 times 里的每个毫秒数拍一张，存成 <name>-f<毫秒>-<宽x高>.png。
       viewport  'phone' | 'desktop' | '768' | '1024'。手机和桌面互换会重新加载页面，播放队列也会丢，所以先换视口再做 setup
-      grab      要冻住的元素（CSS 选择器），例如播放键里的两个图标 'div.fixed.bottom-0 button > span'
+      grab      要冻住的元素（CSS 选择器），例如播放键里的两个图标 'div.fixed.bottom-0 button > span'。
+                不写就是换页：trigger 点链接或 history.back()，冻住 View Transition（::view-transition-* 上）的动画，结果里有 types（方向）
       trigger   () => ... 函数，触发变化（点一下）。等 when 匹配的元素有动画在跑，再把 grab 的动画冻在第 0 毫秒
       when      默认同 grab。例如转圈：grab 是两个图标，when 是 'button > span:has(.lucide-loader-circle)'
       path      先打开这个地址；reduced、on_load 时不写就是当前地址
@@ -197,10 +206,11 @@ async def motion(issue, name, viewport, times, *, grab, trigger=None, when=None,
         else:
             if network:
                 await devtools('emulate', viewport=size_arg, networkConditions=network)
+            wait = f'F.waitAndGrab({json.dumps(grab)}, {json.dumps(when or grab)}, 15000)' if grab else 'F.waitTurn(15000)'
             caught = await run(f"""async () => {{ const F = window.__campanulaFreeze; F.release(); await ({trigger})();
-              return await F.waitAndGrab({json.dumps(grab)}, {json.dumps(when or grab)}, 15000) }}""", stable=False)
+              return await {wait} }}""", stable=False)
         if not caught or not caught.get('anims'):
-            raise RuntimeError(f'{name}：等不到 {when or grab} 上的动画，没拍')
+            raise RuntimeError(f'{name}：等不到 {when or grab or "换页"} 上的动画，没拍')
         entry.update(caught)
         entry['files'] = []
         for t in times:

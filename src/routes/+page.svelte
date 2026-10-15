@@ -1,7 +1,7 @@
 <!--
   曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页，
   点一首就用整个我喜欢的音乐替换播放队列）、歌单的封面网格和收藏的专辑、歌手两排横向架子。
-  返回这一页时，歌单的筛选和滚动位置都回到原来的样子
+  返回这一页时，歌单的筛选和滚动位置都回到原来的样子。骨架换成内容时骨架淡出、前几格依次飘入（DESIGN.md Motion）
 -->
 <script lang='ts'>
   import type { PlaylistFilter } from '$lib/components/library/view'
@@ -14,10 +14,11 @@
   import PhoneLiked from '$lib/components/library/PhoneLiked.svelte'
   import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte'
   import PlayTarget from '$lib/components/library/PlayTarget.svelte'
+  import SkeletonRows from '$lib/components/library/SkeletonRows.svelte'
   import SongBadge from '$lib/components/library/SongBadge.svelte'
   import SyncNotice from '$lib/components/library/SyncNotice.svelte'
   import { artistLine, formatCount, langOf, likedView, syncNotice } from '$lib/components/library/view'
-  import { scrollBehavior } from '$lib/components/motion'
+  import { reveal, scrollBehavior } from '$lib/components/motion'
   import NowChip from '$lib/components/player/NowChip.svelte'
   import { currentSong } from '$lib/components/player/view'
   import { scrollSnapshot } from '$lib/components/snapshot'
@@ -89,39 +90,46 @@
       </div>
 
       <div class='min-w-0 rounded-xl bg-white p-2 shadow-ambient'>
-        {#if liked.kind === 'songs'}
-          <!-- 能横向滚动的容器 Chrome 会放进 Tab 顺序：给它名字，键盘焦点在上面时 ←/→ 也能翻 -->
-          <div
-            bind:this={stripEl}
-            class='strip'
-            role='list'
-            aria-label='我喜欢的音乐的前 {strip.length} 首'
-            style:--fade-l={atStart ? '0px' : '32px'}
-            style:--fade-r={atEnd ? '0px' : '48px'}
-            onscroll={measureStrip}
-          >
-            {#each strip as song (song.id)}
-              {@const off = song.availability === 'noCopyright'}
-              {@const now = song.id === nowId}
-              <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
-                <div class={['grid grid-cols-[48px_minmax(0,1fr)] h-full items-center gap-3 pl-1.5 pr-2', off && 'opacity-45']}>
-                  <span class='relative size-12'>
-                    <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
-                    {#if now}<NowChip />{/if}
-                  </span>
-                  <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.play({ kind: 'playlist', id: library.liked!.playlist.id }, song.id)}>
-                    <span class='min-w-0 flex items-center gap-1.5'>
-                      <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
-                      <SongBadge availability={song.availability} />
-                    </span>
-                    <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
-                  </PlayTarget>
-                </div>
-              </div>
-            {/each}
-          </div>
+        {#if liked.kind === 'loading'}
+          <SkeletonRows count={3} label='正在加载我喜欢的音乐' />
         {:else}
-          <LikedStates {liked} rows={3} />
+          <div in:reveal>
+            {#if liked.kind === 'songs'}
+              <!-- 能横向滚动的容器 Chrome 会放进 Tab 顺序：给它名字，键盘焦点在上面时 ←/→ 也能翻 -->
+              <div
+                bind:this={stripEl}
+                class='strip'
+                role='list'
+                aria-label='我喜欢的音乐的前 {strip.length} 首'
+                style:--fade-l={atStart ? '0px' : '32px'}
+                style:--fade-r={atEnd ? '0px' : '48px'}
+                onscroll={measureStrip}
+                data-reveal-group
+              >
+                {#each strip as song (song.id)}
+                  {@const off = song.availability === 'noCopyright'}
+                  {@const now = song.id === nowId}
+                  <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
+                    <div class={['grid grid-cols-[48px_minmax(0,1fr)] h-full items-center gap-3 pl-1.5 pr-2', off && 'opacity-45']}>
+                      <span class='relative size-12'>
+                        <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
+                        {#if now}<NowChip />{/if}
+                      </span>
+                      <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.play({ kind: 'playlist', id: library.liked!.playlist.id }, song.id)}>
+                        <span class='min-w-0 flex items-center gap-1.5'>
+                          <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
+                          <SongBadge availability={song.availability} />
+                        </span>
+                        <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
+                      </PlayTarget>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              <LikedStates {liked} />
+            {/if}
+          </div>
         {/if}
       </div>
     </section>

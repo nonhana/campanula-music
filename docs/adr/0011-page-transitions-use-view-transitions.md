@@ -1,6 +1,6 @@
 # 页面切换用浏览器的 View Transitions，不用 Svelte 的过渡或动画库
 
-换页时，在 SvelteKit 的 `onNavigate` 里调用 `document.startViewTransition`：浏览器先拍下旧页面，等 SvelteKit 渲染好新页面，再把新旧两帧交给 CSS 做交接动画。只有内容区（`view-transition-name: page`）参与，顶栏、侧栏、播放条原地不动；从格子点进歌单、专辑、歌手时，被点的那张封面和页头的大封面用同一个名字，飞行路线由浏览器算。方向（进入下一层、返回、同一层之间）用 View Transitions 的 `types` 交给 CSS。动效方向 B「封面是主角」由作者在 2026-10-14 选定，规则写在 DESIGN.md。Campanula 只支持 Chrome 和 Edge（PRODUCT.md），它们早已支持同一文档内的 View Transitions；其他浏览器直接换页，没有动画，功能不受影响。
+换页时，在 SvelteKit 的 `onNavigate` 里调用 `document.startViewTransition`：浏览器先拍下旧页面，等 SvelteKit 渲染好新页面，再把新旧两帧交给 CSS 做交接动画。只有内容区参与，顶栏、侧栏、播放条原地不动；从格子点进歌单、专辑、歌手时，被点的那张封面和页头的大封面用同一个名字，飞行路线由浏览器算。方向（进入下一层、返回、同一层之间）用 View Transitions 的 `types` 交给 CSS。动效方向 B「封面是主角」由作者在 2026-10-14 选定，规则写在 DESIGN.md。Campanula 只支持 Chrome 和 Edge（PRODUCT.md），它们早已支持同一文档内的 View Transitions；其他浏览器直接换页，没有动画，功能不受影响。
 
 ## Considered Options
 
@@ -11,9 +11,10 @@
 ## Consequences
 
 - 同一时刻文档里一个名字只能有一个元素。封面的名字只在点下去的那一刻给被点的格子，页头只给大封面；返回时只有还在屏幕里的那个格子拿到名字，格子滚出屏幕就只做整页飘入。
+- 内容区用根元素（root）的快照，不给内容区单独起名（#49 实现时改）：页面是窗口在滚（ADR-0012），给 `main` 起名的话，浏览器按它在视口里的位置拍，滚过的页面拍出来位置不对，新旧两页对不上。整个视口的快照不受滚动位置影响；顶栏、侧栏、播放条、播放提示各自起名、带 `view-transition-class: still`，不在快照里，原地不动，新的一帧是活的（进度线照常走）。
 - 两头的封面要用同一个缩略图地址（同样的尺寸），终点的图已在缓存里，飞到位时不会落在空的薄荷底上。手机的页头和歌手页现在取的尺寸要和格子对齐。
-- 浏览器拍新页面之前，要等 SvelteKit 渲染完、滚动位置恢复完。返回时 `snapshot.ts` 在下一帧才恢复滚动位置，过渡要等它（实现时验证）。
+- 浏览器拍新页面之前，要等 SvelteKit 渲染完、滚动位置恢复完。`snapshot.ts` 恢复状态后当场画好、当场滚，过渡等 `navigation.complete` 就够了（#49 验证过：返回时第一帧就在原来的位置）。
 - Android 上 Chrome 的系统返回手势可能自己放一段“预览上一页”的动画（`hasUAVisualTransition` 为真），这时跳过我们的，免得叠两层；要在真机上确认。
-- 过渡中又换了页，用 `skipTransition()` 直接结束上一个，不排队。
+- 过渡中又换了页，用 `skipTransition()` 直接结束上一个，不排队。过渡中 Chrome 把所有点按都交给 `<html>`，链接、按钮点不到：按下时结束过渡，松开后的点按交给手指下面真正的元素，快速连点照常生效。
 - 播放页的开关是浅路由，不触发 `onNavigate`，继续由抽屉负责。
 - 减少动态效果时，换页只做 150ms 的交叉淡化，没有位移和封面飞行。
