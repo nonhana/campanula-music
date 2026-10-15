@@ -62,7 +62,14 @@ export function openSongMenuAt(event: MouseEvent, song: Song, source: PlaySource
   open({ song, source, from: focused, anchor })
 }
 
-/** 关掉菜单：底部弹层退回压的那条浏览记录（收起交给返回）；焦点回到打开它的地方 */
+/** 菜单关上：焦点回到打开它的地方（还在页面上的话） */
+export function dismissSongMenu(request: SongMenuRequest): void {
+  songMenu.request = null
+  if (request.from?.isConnected)
+    request.from.focus({ preventScroll: true })
+}
+
+/** 关掉菜单：底部弹层退回压的那条浏览记录（收起交给返回）；浮动菜单直接关上 */
 export function closeSongMenu(): void {
   const request = songMenu.request
   if (!request)
@@ -71,7 +78,5 @@ export function closeSongMenu(): void {
     history.back()
     return
   }
-  songMenu.request = null
-  if (request.from?.isConnected)
-    request.from.focus({ preventScroll: true })
+  dismissSongMenu(request)
 }

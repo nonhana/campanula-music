@@ -667,10 +667,16 @@ export function createPlayer(context: PlayerContext): Player {
     return state.current === null ? null : state.queue[state.current].song.id
   }
 
-  /** 播放队列变了：当前这首按编号找回位置（播放队列里同一首歌只有一份） */
+  /**
+   * 播放队列变了：当前这首按编号找回位置（播放队列里同一首歌只有一份）。
+   * 调用的地方都把当前这首留在播放队列里（正在放的那首移不掉、挪不走）；找不到就是这条约定被打破了，明确报错
+   */
   function publishQueue(queue: readonly QueueEntry[]): void {
     const id = currentId()
-    publish({ queue, current: queue.findIndex(entry => entry.song.id === id) })
+    const current = queue.findIndex(entry => entry.song.id === id)
+    if (current === -1)
+      throw new Error(`播放队列变了，当前这首（${id}）不在新的播放队列里`)
+    publish({ queue, current })
   }
 
   /**
@@ -683,7 +689,8 @@ export function createPlayer(context: PlayerContext): Player {
       return
     const id = currentId()
     if (id === null) {
-      order = order && [song.id]
+      if (order)
+        order = [song.id]
       publish({ queue: [{ song, source }] })
       void start(0, 0, 'pick')
       return
@@ -734,7 +741,8 @@ export function createPlayer(context: PlayerContext): Player {
     preparing += 1
     handoverFailed = false
     upNext = []
-    order = order && []
+    if (order)
+      order = []
     filling = null
     pauseAll()
     unavailable.clear()
@@ -809,7 +817,8 @@ export function createPlayer(context: PlayerContext): Player {
         return
       const { id } = state.queue[index].song
       upNext = upNext.filter(each => each !== id)
-      order = order && order.filter(each => each !== id)
+      if (order)
+        order = order.filter(each => each !== id)
       publishQueue(state.queue.filter((_, i) => i !== index))
       queueChanged()
     },
