@@ -13,7 +13,7 @@
   import AlbumDescription from '$lib/components/library/AlbumDescription.svelte'
   import Cover from '$lib/components/library/Cover.svelte'
   import SongList from '$lib/components/library/SongList.svelte'
-  import { formatCount, langOf, yearOf } from '$lib/components/library/view'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '$lib/components/library/view'
   import { fadeAway, reveal } from '$lib/components/motion'
   import { scrollSnapshot } from '$lib/components/snapshot'
   import StateBlock from '$lib/components/ui/StateBlock.svelte'
@@ -26,6 +26,8 @@
   const album = $derived(content?.album ?? null)
   const year = $derived(album && yearOf(album.publishedAt))
   const description = $derived(album?.description?.trim() || null)
+  /** 页头大封面代表这一页：从格子点进来时，格子的封面飞到这里（Cover 的 flight） */
+  const here = $derived(resolve('/albums/[id]', { id: String(id) }))
 
   export const snapshot = scrollSnapshot(() => null, () => {})
 
@@ -76,7 +78,7 @@
     <div class='pt-2'>
       {#if album}
         <header class='flex gap-7' in:reveal>
-          <Cover url={album.coverUrl} size={200} eager class='rounded-xl shadow-ambient' />
+          <Cover url={album.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
           <div class='min-w-0 flex flex-1 flex-col pt-1'>
             <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(album.name)}>{album.name}</h1>
             {@render metaLine(false)}
@@ -97,7 +99,7 @@
   {:else}
     {#if album}
       <header class='px-4 pt-2 text-center' in:reveal>
-        <Cover url={album.coverUrl} size={168} eager class='mx-auto rounded-xl shadow-ambient' />
+        <Cover url={album.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
         <h1 class='line-clamp-2 mt-4 break-words text-headline-sm text-neutral-900 font-600' lang={langOf(album.name)}>{album.name}</h1>
         {@render metaLine(true)}
       </header>

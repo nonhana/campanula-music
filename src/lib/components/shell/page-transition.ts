@@ -2,6 +2,8 @@ import type { RouteId } from '$app/types'
 import type { Toward } from '../motion'
 import { onNavigate } from '$app/navigation'
 import { onMount } from 'svelte'
+import { reducedMotion } from '../motion'
+import { LANDING_WAIT } from '../motion-tokens'
 
 /** 换页往哪边走：内容往 up / down / left / right 漂（同 motion.ts 的 Toward），fade 只淡入淡出 */
 type PageTurn = Toward | 'fade'
@@ -25,24 +27,126 @@ function pageTurn(from: RouteId, to: RouteId, delta: number | undefined, tabs: r
   return toTab >= 0 ? 'down' : 'up'
 }
 
+/** 换页时飞的那张封面的名字（uno.config.ts）。同一时刻文档里只有一个元素叫这个名字，只有一张封面在飞（The Cover Leads Rule） */
+const COVER = 'cover'
+
+/** 封面的图已经加载好：飞到位时不是空的薄荷底（The Cover Leads Rule） */
+function loaded(img: HTMLImageElement | null): img is HTMLImageElement {
+  return img !== null && img.complete && img.naturalWidth > 0
+}
+
+/** 降落那一头的图：缓存里的等它标成加载好（最多 LANDING_WAIT），再等它解码好 */
+async function landingReady(img: HTMLImageElement): Promise<boolean> {
+  if (!img.complete) {
+    await new Promise<void>((done) => {
+      const timer = setTimeout(done, LANDING_WAIT)
+      const finish = () => {
+        clearTimeout(timer)
+        done()
+      }
+      img.addEventListener('load', finish, { once: true })
+      img.addEventListener('error', finish, { once: true })
+    })
+  }
+  return loaded(img) && img.decode().then(() => true, () => false)
+}
+
+/**
+ * 封面正中那一点露在内容区里：在窗口里、在顶栏下面（两种骨架都把顶栏的高度写在 scroll-padding-top 上），
+ * 没被架子这类滚动容器裁掉。按位置算：拍新的一帧之前，浏览器的点按测试只认 <html>
+ */
+function exposed(cover: HTMLElement): boolean {
+  const { left, top, width, height } = cover.getBoundingClientRect()
+  const x = left + width / 2
+  const y = top + height / 2
+  const topBar = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0
+  if (x < 0 || x > innerWidth || y < topBar || y > innerHeight)
+    return false
+  for (let box = cover.parentElement; box && box !== document.body; box = box.parentElement) {
+    if (getComputedStyle(box).overflow === 'visible')
+      continue
+    const clip = box.getBoundingClientRect()
+    if (x < clip.left || x > clip.right || y < clip.top || y > clip.bottom)
+      return false
+  }
+  return true
+}
+
+/** 页面里代表 page 这一页的封面（Cover 的 flight）：格子里是点开它的那一格，它自己的页头是大封面 */
+function coversOf(page: string): HTMLElement[] {
+  return [...document.querySelectorAll<HTMLElement>(`[data-flight="${CSS.escape(page)}"]`)]
+}
+
 /**
  * 换页用浏览器的 View Transitions（ADR-0011），要在组件初始化时调用。tabs 是曲库标签的地址，从左到右。
  * - 浏览器先拍下旧页面，等 SvelteKit 渲染好新页面、返回时恢复好滚动位置（snapshot.ts 同步恢复），再拍新的一帧；
+ * - 从格子点开歌单、专辑、歌手：被点的那张封面飞到页头（两头同名），回到格子所在的那一页时飞回去。
+ *   直接打开、从别处进来的详情页，返回时只整页飘入；
  * - 过渡中又换了页：上一个立刻结束，不排队；
  * - Android 的返回手势自己放了“预览上一页”的动画（hasUAVisualTransition）：不再叠一层，直接换；
  * - 不支持的浏览器直接换页。播放页的开关是浅路由，不经过这里
  */
 export function pageTransitions(tabs: readonly RouteId[]): void {
   let running: ViewTransition | null = null
+  /** 最近一次点按到的链接：点的是格子，它的封面飞到新页的页头 */
+  let pressed: HTMLAnchorElement | null = null
+  /**
+   * 从格子点进去的页面（地址 → 格子所在那一页的地址）：从这一页回到那一页时飞回格子（DESIGN.md Navigation · 页面切换）。
+   * 一层层点进去（歌手格子 → 歌手页里的专辑）也一层层飞回来；直接打开、从别处进来的不在这里，返回时只整页飘入
+   */
+  const grids = new Map<string, string>()
+  /** 现在叫 COVER 的封面；换页、过渡结束时去掉名字，免得下一次换页时两个元素同名 */
+  let named: HTMLElement | null = null
+
+  function name(cover: HTMLElement | null) {
+    if (named)
+      named.style.viewTransitionName = ''
+    named = cover
+    if (cover)
+      cover.style.viewTransitionName = COVER
+  }
+
+  /**
+   * 起飞：点的是格子（link 是点到的链接），飞的是被点的那一格；回到格子所在的那一页，飞的是页头的大封面。
+   * 减少动态效果时不飞（只剩交叉淡化）。返回两头共用的页面地址
+   */
+  function takeOff(link: HTMLAnchorElement | null, from: URL, to: URL): string | null {
+    const tile = link?.querySelector<HTMLElement>(`[data-flight="${CSS.escape(to.pathname)}"]`) ?? null
+    if (tile)
+      grids.set(to.href, from.href)
+    const page = tile ? to.pathname : grids.get(from.href) === to.href ? from.pathname : null
+    const cover = tile ?? (page === null ? null : coversOf(page).find(exposed))
+    if (page === null || reducedMotion() || !cover || !exposed(cover) || !loaded(cover.querySelector('img')))
+      return null
+    name(cover)
+    return page
+  }
+
+  /**
+   * 降落：新页面画好、滚动位置恢复好以后，找到代表同一页、露在屏幕里的那一张，等它的图加载好、解码好，名字从起飞的那张交给它。
+   * 找不到（页头还是骨架、格子滚出了屏幕、图没到）就只有起飞那一头，它跟着旧页一起飘出（uno.config.ts）。
+   * current：这次过渡还没被下一次换页顶掉；顶掉了名字归下一次管
+   */
+  async function land(page: string, current: () => boolean) {
+    const cover = coversOf(page).find(exposed)
+    const img = cover?.querySelector('img')
+    if (cover && img && await landingReady(img) && current())
+      name(cover)
+  }
 
   onNavigate((navigation) => {
     running?.skipTransition()
+    running = null
+    name(null)
+    const link = navigation.type === 'link' ? pressed : null
+    pressed = null
     const { from, to } = navigation
     if (!document.startViewTransition || !from?.route.id || !to?.route.id || from.url.href === to.url.href)
       return
     if (navigation.type === 'popstate' && navigation.event.hasUAVisualTransition)
       return
     const turn = pageTurn(from.route.id, to.route.id, navigation.delta, tabs)
+    const flight = takeOff(link, from.url, to.url)
 
     return new Promise<void>((captured) => {
       const transition = document.startViewTransition({
@@ -50,15 +154,19 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
         update: async () => {
           captured()
           // 被下一次换页打断时 complete 会失败：这一页不用等了，下一次换页会把这个过渡结束掉
-          await navigation.complete.catch(() => {})
+          const done = await navigation.complete.then(() => true, () => false)
+          if (flight && done)
+            await land(flight, () => running === transition)
         },
       })
       running = transition
       // 被跳过（又换了一页、页面在后台）时 ready 会失败，是预期的
       transition.ready.catch(() => {})
       void transition.finished.then(() => {
-        if (running === transition)
-          running = null
+        if (running !== transition)
+          return
+        running = null
+        name(null)
       })
     })
   })
@@ -72,6 +180,8 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
       running?.skipTransition()
     }
     const click = (event: MouseEvent) => {
+      if (event.target instanceof Element)
+        pressed = event.target.closest('a')
       if (!interrupted || event.target !== document.documentElement)
         return
       interrupted = false

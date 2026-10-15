@@ -101,5 +101,11 @@ export const AXES = {
  */
 export const FLOAT_IN_DELAY = 60
 
+/**
+ * 封面飞到页头（shell/page-transition.ts）：降落那一头的图在缓存里，但新挂上的 img 偶尔要过几毫秒才标成加载好。
+ * 最多等这么久（ms），等不到就不飞；等的时候画面停在旧的一帧上，所以要短
+ */
+export const LANDING_WAIT = 100
+
 /** 按钮按下时轻轻缩到这么大；减少动态效果时不缩。CSS 变量 --press-scale，工具类 press */
 export const PRESS_SCALE = 0.98

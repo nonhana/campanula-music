@@ -129,6 +129,13 @@ export function thumbnailUrl(url: string, pixels: number): string {
   return `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
 }
 
+/**
+ * 歌单、专辑、歌手的格子和它们页头的大封面都按这个尺寸（px）取缩略图：两头是同一个地址，
+ * 从格子飞到页头时终点的图已经在缓存里，不会落在空的薄荷底上（ADR-0011）。
+ * 页头比它小的（手机 168px）写成 fluid 再限宽，仍取这一张
+ */
+export const FLIGHT_COVER_SIZE = 200
+
 const KANA = /[\u3040-\u30FF\u31F0-\u31FF\uFF66-\uFF9F]/
 /** 常见的繁体专用字，用来粗略认出繁体中文（视觉原型 data.ts 的做法） */
 const TRADITIONAL = /[們個說這樣對時會從來發現與機關點經國長開門問間聽見東車為讓過還進遠運達選隨實寫學愛戲遊類歲鄧紫倫傑煉幸倔強偷頭風雲夢裡麼妳嗎號鐘覺緣戀憶漸靈雙聲歡]/
