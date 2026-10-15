@@ -32,6 +32,8 @@ export const DURATIONS = {
   // 下面是有专门含义的
   /** 内容出现：封面加载完从薄荷底上淡入、骨架换成内容 */
   'reveal': 240,
+  /** 桌面侧栏展开时文字淡入 */
+  'rail-label': 160,
   /** 抽屉（播放页、底部弹层）从收着到整个拉开 */
   'drawer': 380,
   /** 波浪进度线暂停时抹平、播放时起伏回来 */
@@ -50,11 +52,13 @@ export const DURATIONS = {
 /** 等多久才出现或消失（ms），减少动态效果时不变。CSS 变量 --delay-<名字> */
 export const DELAYS = {
   /** 取地址、缓冲超过这么久，播放键才淡入转圈：不在每次点歌时闪一下 */
-  spinner: 300,
+  'spinner': 300,
   /** 打开 App 时 logo 晚这么久才淡入：通常请求先回来，看不到这一闪 */
-  opening: 400,
+  'opening': 400,
   /** 滚动停下（或鼠标离开、松开滑块）这么久以后，自绘滚动条才淡出 */
-  scrollbar: 1000,
+  'scrollbar': 1000,
+  /** 桌面侧栏展开时，宽度开始变化这么久以后文字才淡入 */
+  'rail-label': 60,
 } as const
 
 /** 循环动画一圈的时长（ms）。CSS 变量 --loop-<名字>；写循环的地方都加 animation-play-state: var(--loop-state)，减少动态效果时停住 */
@@ -74,8 +78,28 @@ export const LOOPS = {
 /** 减少动态效果时，淡入淡出、颜色变化最长这么久（ms） */
 export const REDUCED_FADE_MS = 150
 
-/** 飘入、飘出漂多远（px）；整页的是 16 / 8 */
+/** 飘入、飘出漂多远（px） */
 export const FLOAT_DISTANCE = { in: 12, out: 6 } as const
+
+/** 换页时整页漂多远（px）：进入下一层、返回时上下飘入 16、飘出 8；同一层之间（手机曲库标签）横着飘入 24 */
+export const PAGE_DISTANCE = { in: 16, out: 8, lateral: 24 } as const
+
+/** 依次飘入（骨架换成内容）：前 count 个依次晚 step ms，其余和第 count 个一起 */
+export const STAGGER = { step: 30, count: 6 } as const
+
+/** 往哪边走（x, y）：飘出往这边漂，飘入从反方向来。进入下一层 up，返回 down，同一层按左右顺序，下一首 left */
+export const AXES = {
+  up: [0, -1],
+  down: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+} as const
+
+/**
+ * 换页时，旧页飘出开始这么久以后新页才飘入（ms，DESIGN.md Motion · 飘出）。CSS 变量 --delay-float-in；
+ * 减少动态效果时是 0：新旧两页同时开始，只剩交叉淡化
+ */
+export const FLOAT_IN_DELAY = 60
 
 /** 按钮按下时轻轻缩到这么大；减少动态效果时不缩。CSS 变量 --press-scale，工具类 press */
 export const PRESS_SCALE = 0.98

@@ -2,7 +2,7 @@
   歌手页：圆形头像的头部（歌手名、“歌手 · 几首歌 · 几张专辑”）、热门歌曲、专辑网格（新的在前，后面还有时“显示更多专辑”）。
   桌面头像在左；手机是二级页面：返回栏、居中的头像头部、Auxio 式歌曲行、两列专辑。
   本机副本到了、换了一位歌手时打开（App 的 openArtist：这次登录还没拉过就拉，没拉成时再打开就是重试）。
-  返回这一页时滚动位置回到原来的样子
+  骨架换成内容时骨架淡出，头部、热门歌曲、专辑格子各自依次飘入（DESIGN.md Motion）。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
   import { page } from '$app/state'
@@ -13,6 +13,7 @@
   import Cover from '$lib/components/library/Cover.svelte'
   import SongList from '$lib/components/library/SongList.svelte'
   import { formatCount, langOf, yearOf } from '$lib/components/library/view'
+  import { fadeAway, reveal } from '$lib/components/motion'
   import { scrollSnapshot } from '$lib/components/snapshot'
   import Button from '$lib/components/ui/Button.svelte'
   import StateBlock from '$lib/components/ui/StateBlock.svelte'
@@ -52,8 +53,8 @@
 <svelte:head><title>{artist?.name ?? '歌手'} · Campanula</title></svelte:head>
 
 {#snippet header(phone: boolean)}
-  <header class={phone ? 'px-4 pt-2 text-center' : 'flex items-center gap-8'}>
-    {#if artist}
+  {#if artist}
+    <header class={phone ? 'px-4 pt-2 text-center' : 'flex items-center gap-8'} in:reveal>
       <Cover url={artist.avatarUrl} size={phone ? 168 : 200} eager fallback={UserRound} class={['rounded-full shadow-ambient', phone && 'mx-auto']} />
       <div class='min-w-0 flex-1'>
         <h1 class={['line-clamp-2 break-words text-neutral-900 font-600', phone ? 'mt-4 text-headline-sm' : 'text-headline']} lang={langOf(artist.name)}>{artist.name}</h1>
@@ -61,24 +62,26 @@
           歌手 · {formatCount(artist.songCount)} 首歌 · {formatCount(artist.albumCount)} 张专辑
         </p>
       </div>
-    {:else}
-      <span class={['bone flex-none rounded-full', phone ? 'mx-auto size-[168px]' : 'size-[200px]']} aria-hidden='true'></span>
-      <div class='min-w-0 flex-1' aria-hidden='true'>
+    </header>
+  {:else}
+    <div class={phone ? 'px-4 pt-2' : 'flex items-center gap-8'} aria-hidden='true' out:fadeAway>
+      <span class={['bone flex-none rounded-full', phone ? 'mx-auto size-[168px]' : 'size-[200px]']}></span>
+      <div class='min-w-0 flex-1'>
         <span class={['bone h-7 w-2/5 rounded-full', phone ? 'mx-auto mt-5' : '']}></span>
         <span class={['bone mt-4 h-3.5 w-1/4 rounded-full', phone && 'mx-auto']}></span>
       </div>
-    {/if}
-  </header>
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet albums(phone: boolean)}
   {#if content}
-    <section class={phone ? 'pt-6' : 'mt-10 pb-6'} aria-labelledby='artist-albums'>
+    <section class={phone ? 'pt-6' : 'mt-10 pb-6'} aria-labelledby='artist-albums' in:reveal>
       <h2 id='artist-albums' class={['text-neutral-900 font-600', phone ? 'px-4 text-title-sm' : 'text-title']}>专辑</h2>
       {#if content.albums.length === 0 && !more}
         <p class={['text-label text-neutral-600', phone ? 'px-4 pt-3' : 'mt-3']}>网易云音乐里这位歌手还没有专辑。</p>
       {/if}
-      <ul bind:this={albumList} class={['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-3' : 'mt-3 grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-x-5 gap-y-6']}>
+      <ul bind:this={albumList} class={['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-3' : 'mt-3 grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-x-5 gap-y-6']} data-reveal-group>
         {#each content.albums as album (album.id)}
           {@const year = yearOf(album.publishedAt)}
           <li class='min-w-0'>

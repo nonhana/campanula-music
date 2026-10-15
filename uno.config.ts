@@ -6,7 +6,7 @@ import {
   transformerDirectives,
   transformerVariantGroup,
 } from 'unocss'
-import { DELAYS, DURATIONS, EASINGS, LOOPS, PRESS_SCALE, REDUCED_FADE_MS } from './src/lib/components/motion-tokens'
+import { AXES, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/motion-tokens'
 
 // 设计系统的源头（DESIGN.md、.impeccable/design.json）：颜色、两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
 // 动效的数字在 src/lib/components/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类。
@@ -22,7 +22,8 @@ const MOUSE_MEDIA = '@media (hover: hover) and (pointer: fine)'
 
 /**
  * 动效令牌的 CSS 变量。减少动态效果只在这里处理（DESIGN.md Motion）：透明度、颜色的时长（--duration-*）最多 150ms，
- * 位移、缩放、宽高的时长（--move-*）变成 0，循环（--loop-state）停住，按钮按下（--press-scale）不缩。组件里不写这条媒体查询
+ * 位移、缩放、宽高的时长（--move-*）变成 0，循环（--loop-state）停住，按钮按下（--press-scale）不缩，
+ * 换页的新页不再晚一步（--delay-float-in）。组件里不写这条媒体查询
  */
 function motionVariables(reduced: boolean): string {
   const lines = [
@@ -32,6 +33,7 @@ function motionVariables(reduced: boolean): string {
     ]),
     `--loop-state: ${reduced ? 'paused' : 'running'};`,
     `--press-scale: ${reduced ? 1 : PRESS_SCALE};`,
+    `--delay-float-in: ${reduced ? 0 : FLOAT_IN_DELAY}ms;`,
   ]
   if (!reduced) {
     lines.push(
@@ -41,6 +43,125 @@ function motionVariables(reduced: boolean): string {
     )
   }
   return lines.join('\n')
+}
+
+/**
+ * 依次飘入（DESIGN.md Motion）：骨架换成内容时，一组里前 6 个依次晚 30ms 从下面飘上来，其余和第 6 个一起。
+ * src/lib/components/motion.ts 的 reveal 只在这一小会儿给这一组挂上 .revealing，之后才挂上的（虚拟列表滚出来的行）不飘
+ */
+function revealCss(): string {
+  const delays = Array.from({ length: STAGGER.count - 1 }, (_, i) => {
+    const nth = i + 2
+    return `.revealing > :nth-child(${nth === STAGGER.count ? `n+${nth}` : nth}) { animation-delay: ${(i + 1) * STAGGER.step}ms; }`
+  })
+  return `
+    .revealing > * {
+      animation:
+        reveal-fade var(--duration-reveal) var(--ease-out-soft) backwards,
+        reveal-drift var(--move-reveal) var(--ease-out-soft) backwards;
+    }
+
+    ${delays.join('\n')}
+
+    @keyframes reveal-fade {
+      from { opacity: 0; }
+    }
+
+    @keyframes reveal-drift {
+      from { translate: 0 ${FLOAT_DISTANCE.in}px; }
+    }
+  `
+}
+
+/**
+ * 换页（ADR-0011、DESIGN.md Navigation · 页面切换）。src/lib/components/shell/page-transition.ts 把方向放进 types：
+ * up 进入下一层、down 返回、left / right 同一层之间按左右顺序（内容往哪边走）、fade 只淡入淡出。
+ * 内容区就是根元素（root）的快照：页面是窗口在滚（ADR-0012），只有整个视口的快照不受滚动位置影响；
+ * 顶栏、侧栏、播放条各自起了名字，不在这张快照里。它们带 view-transition-class：
+ * still 原地不动、只放新的一帧（它是活的，播放条的进度线照常走）；crossfade 交叉淡化（手机顶行、标签行）。
+ * 减少动态效果时位移的时长（--move-*）是 0、淡入淡出最多 150ms，只剩交叉淡化。ground 是整页的底色（晨光底）
+ */
+function pageTransitionCss(ground: string): string {
+  const reach = { up: PAGE_DISTANCE.in, down: PAGE_DISTANCE.in, left: PAGE_DISTANCE.lateral, right: PAGE_DISTANCE.lateral }
+  return `
+    /* 新旧两页都半透明的那一会儿，底下透出来的是晨光底，不是白 */
+    ::view-transition {
+      background: ${ground};
+    }
+
+    ::view-transition-group(*.still) {
+      animation: none;
+    }
+
+    ::view-transition-old(*.still) {
+      display: none;
+    }
+
+    ::view-transition-new(*.still) {
+      animation: none;
+    }
+
+    ::view-transition-group(*.crossfade) {
+      animation-duration: var(--duration-state);
+      animation-timing-function: var(--ease-out-soft);
+    }
+
+    /* 手机曲库标签下的薄荷短线：滑到新标签下面；跟着标签行出现、消失时只淡入淡出 */
+    ::view-transition-group(tab-line) {
+      animation-duration: var(--move-panel);
+      animation-timing-function: var(--ease-out-soft);
+    }
+
+    ::view-transition-old(tab-line):only-child,
+    ::view-transition-new(tab-line):only-child {
+      animation-duration: var(--duration-state);
+    }
+
+    ${Object.entries(AXES).map(([type, [x, y]]) => `
+    html:active-view-transition-type(${type}) {
+      --page-x: ${x};
+      --page-y: ${y};
+      --page-in: ${reach[type as keyof typeof AXES]}px;
+    }`).join('\n')}
+
+    /* 旧页往去的方向飘出，新页晚一点从来的方向飘入 */
+    ::view-transition-old(root) {
+      animation:
+        page-fade-out var(--duration-panel-out) var(--ease-in-soft) both,
+        page-drift-out var(--move-panel-out) var(--ease-in-soft);
+    }
+
+    ::view-transition-new(root) {
+      animation:
+        page-fade-in var(--duration-panel) var(--ease-out-soft) var(--delay-float-in) both,
+        page-drift-in var(--move-panel) var(--ease-out-soft) var(--delay-float-in) backwards;
+    }
+
+    /* 同一种页面之间（桌面歌单页左栏换歌单）：同样快慢的交叉淡化，两页一样的地方（左栏）不闪 */
+    html:active-view-transition-type(fade)::view-transition-old(root) {
+      animation: page-fade-out var(--duration-state) var(--ease-out-soft) both;
+    }
+
+    html:active-view-transition-type(fade)::view-transition-new(root) {
+      animation: page-fade-in var(--duration-state) var(--ease-out-soft) both;
+    }
+
+    @keyframes page-fade-out {
+      to { opacity: 0; }
+    }
+
+    @keyframes page-fade-in {
+      from { opacity: 0; }
+    }
+
+    @keyframes page-drift-out {
+      to { translate: calc(var(--page-x) * ${PAGE_DISTANCE.out}px) calc(var(--page-y) * ${PAGE_DISTANCE.out}px); }
+    }
+
+    @keyframes page-drift-in {
+      from { translate: calc(var(--page-x) * -1 * var(--page-in)) calc(var(--page-y) * -1 * var(--page-in)); }
+    }
+  `
 }
 
 /** 色板：作者定义的源头。DESIGN.md 的颜色名都落在这几条色阶上，例如晨光底 morning-ground = primary-50 */
@@ -310,6 +431,10 @@ export default defineConfig<Theme>({
             background-position: -140% 0;
           }
         }
+
+        ${revealCss()}
+
+        ${pageTransitionCss(colors.primary[50])}
       `,
     },
   ],

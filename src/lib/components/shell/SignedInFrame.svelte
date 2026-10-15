@@ -23,6 +23,7 @@
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
   import DesktopShell from './DesktopShell.svelte'
+  import { pageTransitions } from './page-transition'
   import PhoneShell from './PhoneShell.svelte'
 
   const { account, children }: { account: Account, children: Snippet } = $props()
@@ -56,6 +57,8 @@
     { route: '/artists', label: '歌手' },
   ] as const
   const onLibrary = $derived(LIBRARY_TABS.some(tab => resolve(tab.route) === pathname))
+  // 换页用 View Transitions：进入下一层、返回、标签之间各有方向（ADR-0011）
+  pageTransitions(LIBRARY_TABS.map(tab => tab.route))
   /** 桌面侧栏的“曲库”：曲库的各个标签和歌单页、专辑页、歌手页都算 */
   const inLibrary = $derived(onLibrary || detailPage !== undefined)
 
@@ -89,7 +92,13 @@
 
 {#snippet railContent(label: string, Icon: LucideIcon)}
   <Icon size={22} class='flex-none' aria-hidden='true' />
-  <span class={['whitespace-nowrap text-label font-500', !railExpanded && 'sr-only']}>{label}</span>
+  <!-- 展开时宽度开始变化一会儿以后文字才淡入；收起时文字先淡出，侧栏再变窄（DesktopShell）。收起时链接的名字在 aria-label 上 -->
+  <span
+    class={[
+      'whitespace-nowrap text-label font-500 transition-opacity',
+      railExpanded ? 'duration-rail-label delay-[var(--delay-rail-label)]' : 'opacity-0 duration-state-out ease-in-soft',
+    ]}
+  >{label}</span>
 {/snippet}
 
 {#snippet libraryTabs()}
@@ -104,7 +113,8 @@
       >
         {tab.label}
         {#if current}
-          <span class='absolute bottom-1 left-1/2 h-[3px] w-4 rounded-full bg-primary-800 -translate-x-1/2' aria-hidden='true'></span>
+          <!-- 换标签时这条短线滑到新标签下面：换页的过渡把新旧两条叫同一个名字（uno.config.ts） -->
+          <span class='absolute bottom-1 left-1/2 h-[3px] w-4 rounded-full bg-primary-800 -translate-x-1/2' style:view-transition-name='tab-line' aria-hidden='true'></span>
         {/if}
       </a>
     {/each}

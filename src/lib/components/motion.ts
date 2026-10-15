@@ -1,6 +1,6 @@
 import type { TransitionConfig } from 'svelte/transition'
 import { prefersReducedMotion } from 'svelte/motion'
-import { DURATIONS, EASINGS, FLOAT_DISTANCE, REDUCED_FADE_MS } from './motion-tokens'
+import { AXES, DURATIONS, EASINGS, FLOAT_DISTANCE, REDUCED_FADE_MS, STAGGER } from './motion-tokens'
 
 // 组件里的 JS 动效（Svelte 过渡、Tween、程序滚动）从这里取时长和曲线，减少动态效果也在这里统一处理（DESIGN.md Motion）：
 // 位移、缩放、平滑滚动去掉，淡入淡出和颜色变化留着、最多 150ms。组件里不再自己判断。CSS 那一半在 uno.config.ts
@@ -85,15 +85,44 @@ export function fade(_node: Element, { duration = DURATIONS.state }: { duration?
   }
 }
 
-/** 往哪边走：飘入从反方向来，飘出往这边去。进入下一层 up，返回 down，同一层按左右顺序，下一首 left */
-export type Toward = 'up' | 'down' | 'left' | 'right'
-
-const AXES: Record<Toward, readonly [number, number]> = {
-  up: [0, -1],
-  down: [0, 1],
-  left: [-1, 0],
-  right: [1, 0],
+/**
+ * 骨架淡出（DESIGN.md Motion · 依次飘入）：写成 out:fadeAway，放在被内容替换掉的骨架上（骨架是上下排列里的一块）。
+ * 淡出的这一会儿（退场 120ms）不再占高度：下边距减掉自己的高度，后面换上来的内容马上从骨架的位置开始，
+ * 不会先被骨架往下推一下；骨架还留在排版里，上面的东西变高变矮时跟着一起走。点按穿过它落到内容上
+ */
+export function fadeAway(node: HTMLElement, _params?: undefined, options: TransitionOptions = {}): TransitionConfig {
+  node.style.marginBottom = `calc(${getComputedStyle(node).marginBottom} - ${node.offsetHeight}px)`
+  node.style.pointerEvents = 'none'
+  return {
+    duration: fadeMs(DURATIONS['state-out']),
+    easing: easingOf(options),
+    css: t => `opacity: ${t}`,
+  }
 }
+
+/** 依次飘入的一组：node 里标了 data-reveal-group 的元素（虚拟列表、网格），没有就是 node 自己 */
+const REVEAL_GROUP = '[data-reveal-group]'
+
+/**
+ * 骨架换成内容时依次飘入（DESIGN.md Motion）：写成 in:reveal，放在骨架所在 {#if} 的另一个分支里。
+ * 本地过渡只在骨架换成内容（或空、出错）时播放；页面打开时内容已经在了就不播，换页时整页一起飘。
+ * 飘的是一组的直接子元素：前 6 个依次晚 30ms 从下面飘上来，其余和第 6 个一起（uno.config.ts 的 .revealing）。
+ * .revealing 只在这一小会儿挂着，之后才挂上的（虚拟列表滚出来的行）不飘。减少动态效果时只淡入
+ */
+export function reveal(node: HTMLElement): TransitionConfig {
+  const found = [...node.querySelectorAll(REVEAL_GROUP)]
+  const groups = found.length > 0 ? found : [node]
+  for (const group of groups)
+    group.classList.add('revealing')
+  node.addEventListener('introend', () => {
+    for (const group of groups)
+      group.classList.remove('revealing')
+  }, { once: true })
+  return { duration: STAGGER.step * (STAGGER.count - 1) + DURATIONS.reveal }
+}
+
+/** 往哪边走：飘入从反方向来，飘出往这边去。进入下一层 up，返回 down，同一层按左右顺序，下一首 left */
+export type Toward = keyof typeof AXES
 
 export interface FloatParams {
   toward: Toward

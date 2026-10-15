@@ -1,8 +1,10 @@
 <!--
   加载中的骨架行，形状和真实歌曲行一致（手机、桌面都是 56px），一道很淡的光从左扫到右；
-  减少动态效果时不动。放在列表本来的位置上。
+  减少动态效果时不动。放在列表本来的位置上；被内容换掉时原地淡出（motion.ts 的 fadeAway）。
 -->
 <script lang='ts'>
+  import { fadeAway } from '../motion'
+
   interface Props {
     count: number
     phone?: boolean
@@ -14,7 +16,7 @@
   const widths = [72, 54, 81, 63, 48, 76, 58, 69, 51, 66]
 </script>
 
-<div role='status' aria-busy='true' aria-label={label}>
+<div role='status' aria-busy='true' aria-label={label} out:fadeAway>
   {#each { length: count }, i (i)}
     {@const w = widths[i % widths.length]}
     {#if phone}

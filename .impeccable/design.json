@@ -534,7 +534,7 @@
       },
       {
         "name": "stagger",
-        "value": "30ms per item, first 6 items only, first reveal only",
+        "value": "skeleton fades out in place over 120ms (out:fadeAway, gives up its height at once); content floats up 12px over 240ms (in:reveal), 30ms per item, first 6 items only, the rest with the 6th; first reveal only (a page opened with its content already there does not stagger)",
         "purpose": "骨架换成内容时依次飘入；虚拟列表滚动时新挂上的行、换页时的整页不逐个飘。"
       },
       {
@@ -554,8 +554,8 @@
       },
       {
         "name": "page-transition",
-        "value": "same-document View Transitions on the content area (view-transition-name: page), direction via transition types; forward: old up 8px out 200ms, new from 16px below in 360ms; back reversed; lateral ±24px; shared cover 480ms ease-out-soft",
-        "purpose": "换页（ADR-0011）。顶栏、侧栏、播放条不动；从格子进歌单、专辑、歌手时封面飞到页头，返回飞回仍在屏幕里的格子；hasUAVisualTransition 时跳过；过渡中再换页 skipTransition()。"
+        "value": "same-document View Transitions; the content area is the root snapshot (the window scrolls, so only a viewport-sized capture is scroll-proof); header, rail, player bars and the player notice carry view-transition-class still (old hidden, new shown live, no animation), the phone top row and tab row carry crossfade (200ms); direction via transition types up / down / left / right / fade; forward: old up 8px out 200ms ease-in-soft, new from 16px below in 360ms ease-out-soft starting 60ms later (420ms in all); back reversed; lateral ±24px in; desktop playlist rail switch: matched 200ms crossfade; phone tab line (view-transition-name tab-line) slides 360ms; shared cover 480ms ease-out-soft",
+        "purpose": "换页（ADR-0011）。顶栏、侧栏、播放条不动，进度线照常走；从格子进歌单、专辑、歌手时封面飞到页头，返回飞回仍在屏幕里的格子；返回时滚动位置在拍新的一帧前恢复；hasUAVisualTransition 时跳过；过渡中再换页 skipTransition()；过渡中按下就结束过渡，点按交给新页面上手指下的元素。减少动态效果：只剩 150ms 交叉淡化。"
       },
       {
         "name": "cover-wheel",

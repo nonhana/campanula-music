@@ -85,6 +85,8 @@ r = await motion(47, 'play-crossfade', 'desktop', [0, 60, 120],
 - `motion` 触发变化，等 `grab`（或 `when`）上的动画开始，把它们停在 `times` 的每个毫秒数各拍一张，存成 `<名字>-f<毫秒>-<宽x高>.png`。转圈、骨架这类循环不冻。各参数见 `sweep.py` 里 `motion` 的注释。
 - 结果里的 `anims` 是冻住的每个动画的时长和动的属性，对照 DESIGN.md 的数字；`reduced=True` 时只能有 `opacity`，不超过 150ms。
 - 限速才看得到的（转圈晚 300ms 出现、封面淡入）加 `network='Slow 4G'`，拍完自己取消。封面淡入用 `on_load=True, grab='main img'`：它让网络图片重新下载，冻住新开始的淡入。
+- 换页（View Transitions）不写 `grab`：`trigger` 点链接或 `history.back()`，冻住的是 `::view-transition-*` 上的动画，结果里的 `types` 是方向（up / down / left / right / fade）。冻着的时候新的一帧仍是活的（播放条的进度照常走）；过渡里 Chrome 把点按都交给 `<html>`，要点东西先拍完。
+- 骨架换成内容：`grab='.revealing > *, [aria-busy=true]', when='.revealing > *'`，`setup` 里把那个请求拖慢一两秒（包一层 `window.fetch`），再从别的页面点进去，才看得到骨架。
 - 静态截图要在“减少动态效果”下拍，`shoot` 每张加 `'reduced': True`。
 - 看图用 `sheet(票号, 名字, [glob…], crop=…)` 把一组拼成一张，`read` 一次看完；只看播放条时裁底部，例如 `crop=(0, 0.88, 0.3, 1)`。
 

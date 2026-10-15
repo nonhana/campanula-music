@@ -1,6 +1,6 @@
 <!--
   播放的提示：浮在播放条上方，说清发生了什么、能怎么办（按播放键重试）。网络慢是状态，其余是出了问题；可以关掉。
-  手机上播放页开着时挪到顶上，不压住控制键
+  手机上播放页开着时挪到顶上，不压住控制键。换页时和播放条一样原地不动（uno.config.ts 的 still）
 -->
 <script lang='ts'>
   import { CircleAlert, LoaderCircle, X } from '@lucide/svelte'
@@ -22,6 +22,8 @@
         ? ['inset-x-2', overPlayerPage ? 'top-16' : 'bottom-[calc(80px+env(safe-area-inset-bottom))]']
         : 'bottom-24 left-1/2 max-w-[min(560px,calc(100vw-48px))] w-max -translate-x-1/2',
     ]}
+    style:view-transition-name='player-notice'
+    style:view-transition-class='still'
     role={notice.kind === 'slow' ? 'status' : 'alert'}
   >
     {#if notice.kind === 'slow'}
