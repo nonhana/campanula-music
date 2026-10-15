@@ -31,13 +31,14 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 
 ## 3. 开发时看渲染
 
-开发服务器（`pnpm dev`，端口 5173）开着，用 Chrome DevTools 工具看作者那个 Chrome 标签页（`list_pages` 里的编号，通常是 1）。
+开发服务器（`pnpm dev`，端口 5173）开着，用 Chrome DevTools 工具看作者那个 Chrome 标签页：`list_pages` 里打开着 `localhost:5173` 的那个，编号会随浏览器重连变（`sweep.py` 自己找）。
 
 - 一次 `evaluate_script` 里做完一串操作和检查（输入、点击、滚动、读结果），不要每一步一个调用。
 - `navigate_page` 返回时页面可能还没画出来，先等要看的元素出现再 `take_screenshot`，否则会截到白屏。
 - 手机曲库的“我喜欢 / 歌单”标签用 `replaceState` 切换，不留浏览记录。在标签页上 `history.back()` 会离开 App，测“返回恢复滚动”要从歌单页返回。
 - 手机视口和桌面视口互换（`emulate` 的 `mobile` 变了）会重新加载页面：页面里装的脚本、播放队列都没了。先换视口，再放歌、再装脚本。
-- `emulate` 没有“减少动态效果”。用 `sweep.py` 的 `reduced=True` 模拟：它让样式表里真正那条媒体查询生效，读到的是真的 CSS 变量；但仍是模拟，交付时请作者在 DevTools 的 Rendering 面板里真开一次。
+- `emulate` 没有“减少动态效果”。用 `sweep.py` 的 `reduced=True` 模拟：它让样式表里真正那条媒体查询生效，读到的是真的 CSS 变量；但仍是模拟，交付时请作者在 DevTools 的 Rendering 面板里真开一次。模拟装在页面里，换回正常动效要重新打开页面（`motion`、`slow` 会自己做，还在就报错）。
+- 页面藏到后台：在这个 Chrome 连接下开新标签页，原来的页面仍是 `visible`。用 `sweep.py` 的 `hidden()`（或 `HIDE_JS` / `SHOW_JS`）在页面里改 `visibilityState`。
 
 ## 4. 验收截图：交给子代理成批拍
 
@@ -50,6 +51,8 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 ```python
 report = await shoot(22, [...])   # 票号用数字或字符串都行；每张的字段见 sweep.py 里 shoot 的注释
 ```
+
+调 `shoot`、`motion`、`slow` 的 eval 单元格给 `timeout: 300`：一组要调几十次 DevTools，默认 30 秒会超时，超时会清掉 eval 里定义的东西，要重新 `%load`。
 
 `shoot` 按清单换视口、装拦截、打开页面，等画面出现后再截图，存到 `_notes/screenshots/issue-<票号>/<名字>-<宽x高>.png`。它只返回每张的结果，图片留在文件里。等不到画面、拦截没装上、本机数据库没清掉时直接报错，不会存一张错的图。
 
@@ -77,18 +80,20 @@ report = await shoot(22, [...])   # 票号用数字或字符串都行；每张�
 改了动效的票（DESIGN.md Motion），每个改过的动效拍一组逐帧，再在“减少动态效果”下拍一组。同一个 eval 里：
 
 ```python
-r = await motion(47, 'play-crossfade', 'desktop', [0, 60, 120],
-                 path='/', setup=放一首再停下, trigger="() => document.querySelector('div.fixed.bottom-0 button[aria-label=播放]').click()",
-                 grab='div.fixed.bottom-0 button > span')
+r = await motion(51, 'wheel-page-next', 'desktop', [0, 60, 150, 300, 600],
+                 path='/', setup='play-open', trigger='page-next', grab='page')
 ```
 
-- `motion` 触发变化，等 `grab`（或 `when`）上的动画开始，把它们停在 `times` 的每个毫秒数各拍一张，存成 `<名字>-f<毫秒>-<宽x高>.png`。转圈、骨架这类循环不冻。各参数见 `sweep.py` 里 `motion` 的注释。
+- `motion` 触发变化，等 `grab`（或 `when`）上的动画开始，把它们停在 `times` 的每个毫秒数各拍一张，存成 `<名字>-f<毫秒>-<宽x高>.png`。带延迟的（歌名晚 80ms 才飘）也拍得到，拍到某一帧时已经走完的会真的走完。转圈、骨架这类循环不冻。各参数见 `sweep.py` 里 `motion` 的注释。
+- `setup`、`trigger`、`grab` 可以写 `sweep.py` 里 `SETUPS`、`TRIGGERS`、`GRABS` 的名字（`'play'`、`'play-open'`、`'page-next'`、`'bar-previous'`、`'pick-other'`、`'page'`、`'bar'`…），也可以写自己的函数、选择器。播放页开着时播放条被盖住：拍播放条的组用 `setup='play'`、`path='/'` 重新打开。
 - 结果里的 `anims` 是冻住的每个动画的时长和动的属性，对照 DESIGN.md 的数字；`reduced=True` 时只能有 `opacity`，不超过 150ms。
+- 打断、连续触发（连按三次下一首、转到一半又切歌）用 `slow(票号, 名字, 视口, [(秒, 触发)…], [截图的秒…])`：动画放慢 10 倍，按墙上的时间触发和截图，文件名里的毫秒是折回的动效时刻。
+- 看不见时不动：先 `await run(SETUPS['play-open'])` 摆好页面，再 `await hidden(['page-next', 'page-next'])`，后台期间和回来以后新开始的动画都应是 0，画面上只剩一张封面、一块歌名。
 - 限速才看得到的（转圈晚 300ms 出现、封面淡入）加 `network='Slow 4G'`，拍完自己取消。封面淡入用 `on_load=True, grab='main img'`：它让网络图片重新下载，冻住新开始的淡入。
 - 换页（View Transitions）不写 `grab`：`trigger` 点链接或 `history.back()`，冻住的是 `::view-transition-*` 上的动画，结果里的 `types` 是方向（up / down / left / right / fade）。冻着的时候新的一帧仍是活的（播放条的进度照常走）；过渡里 Chrome 把点按都交给 `<html>`，要点东西先拍完。
 - 骨架换成内容：`grab='.revealing > *, [aria-busy=true]', when='.revealing > *'`，`setup` 里把那个请求拖慢一两秒（包一层 `window.fetch`），再从别的页面点进去，才看得到骨架。
 - 静态截图要在“减少动态效果”下拍，`shoot` 每张加 `'reduced': True`。
-- 看图用 `sheet(票号, 名字, [glob…], crop=…)` 把一组拼成一张，`read` 一次看完；只看播放条时裁底部，例如 `crop=(0, 0.88, 0.3, 1)`。
+- 看图用 `sheet(票号, 名字, [glob…], crop=…, height=…)` 把一组拼成一张，`read` 一次看完；每张缩放到 `height` 高，裁得很小也会放大。只看播放条时裁底部，例如桌面底栏 `crop=(0.335, 0.905, 0.5, 0.995), height=200`。
 
 完成标准：清单里每张都拍了；结果里没有报错、`overflow` 为空；改过的每个动效都有一组逐帧和一组“减少动态效果”，`anims` 和 DESIGN.md 对得上；每张都对照过，不一致的已修好重拍，或者写明了原因。
 
