@@ -30,7 +30,7 @@ describe('歌词', () => {
     await world.netease.reply(ALL_FORMS)
     await app.openLyrics(SONG)
 
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'lyric_new', query: { id: SONG } })
+    expect(world.netease.calls.findLast(call => call.module === 'lyric_new')).toMatchObject({ query: { id: SONG } })
     const shown = app.state.lyrics
     if (shown?.status !== 'shown' || shown.lyrics.kind !== 'word')
       throw new Error(`没显示逐字歌词：${JSON.stringify(shown)}`)

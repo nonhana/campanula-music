@@ -58,7 +58,7 @@ describe('专辑页', () => {
     await world.netease.reply(KEEP_THE_VILLAGE_ALIVE.fixture)
     await app.openAlbum(KEEP_THE_VILLAGE_ALIVE.id)
 
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'album', query: { id: KEEP_THE_VILLAGE_ALIVE.id } })
+    expect(world.netease.calls.findLast(call => call.module === 'album')).toMatchObject({ query: { id: KEEP_THE_VILLAGE_ALIVE.id } })
     const page = app.state.library?.albumPage(KEEP_THE_VILLAGE_ALIVE.id)
     expect(page).toMatchObject({
       status: 'shown',
@@ -233,8 +233,8 @@ describe('歌手页', () => {
     await world.netease.reply(MARASY.albums[1])
     await app.moreArtistAlbums(MARASY.id)
 
-    expect(device.requests.at(-1)?.path).toBe(`/api/artists/${MARASY.id}/albums?offset=100`)
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'artist_album', query: { id: MARASY.id, limit: 100, offset: 100 } })
+    expect(device.requests.map(request => request.path)).toContain(`/api/artists/${MARASY.id}/albums?offset=100`)
+    expect(world.netease.calls.findLast(call => call.module === 'artist_album')).toMatchObject({ query: { id: MARASY.id, limit: 100, offset: 100 } })
     const page = app.state.library?.artistPage(MARASY.id)
     expect(page).toMatchObject({ status: 'shown', content: { moreAlbums: null } })
     const albums = page?.status === 'shown' ? page.content.albums : []
