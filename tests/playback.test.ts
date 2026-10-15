@@ -879,6 +879,31 @@ describe('下一首播放、加入播放队列、插播', () => {
     expect(playUrlRequests(device)).toHaveLength(requests)
   })
 
+  it('暂停着的当前这首再被插播：从暂停的地方接着放，不从头放；下一首播放、加入播放队列仍然什么都不变（逻辑原型 addSong）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    player.progress(100)
+    app.togglePlay()
+    await world.settle()
+    expect(app.state.player.status).toBe('paused')
+    const paused = app.state.player
+    const requests = playUrlRequests(device).length
+
+    app.playNext(ALBUM, songOf(app, FIRST.id))
+    app.addToQueue(ALBUM, songOf(app, FIRST.id))
+    await world.settle()
+    expect(app.state.player).toBe(paused)
+
+    app.interject(ALBUM, songOf(app, FIRST.id))
+    await world.settle()
+    expect(tab.sounding()).toBe(player)
+    expect(player.currentTime).toBe(100)
+    expect(app.state.player).toMatchObject({ status: 'playing', position: 100, queue: paused.queue, current: paused.current })
+    expect(playUrlRequests(device)).toHaveLength(requests)
+  })
+
   it('插播：排在当前这首紧后面并立即放，被打断的那首不续播（规则④）：插播的放完接着放原来的下一首，退回去也从头放', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)

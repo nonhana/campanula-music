@@ -16,7 +16,7 @@
   import { pop } from './motion'
   import { createDrawer } from './player/drawer.svelte'
   import { currentSong } from './player/view'
-  import { closeSongMenu, songMenu } from './song-menu.svelte'
+  import { closeSongMenu, dismissSongMenu, songMenu } from './song-menu.svelte'
 
   /** 浮动菜单离视口边至少这么远（px） */
   const MARGIN = 8
@@ -54,12 +54,8 @@
 
   // 返回手势、后退收起了底部弹层：菜单关上，焦点回到打开它的那个按钮
   $effect(() => {
-    if (sheetRequest && !page.state.songSheet) {
-      const { from } = sheetRequest
-      songMenu.request = null
-      if (from?.isConnected)
-        from.focus({ preventScroll: true })
-    }
+    if (sheetRequest && !page.state.songSheet)
+      dismissSongMenu(sheetRequest)
   })
 
   // 浮动菜单：点外面（打开它的那个按钮除外：再点一下是关上）、滚动、窗口变了、换页都关上，焦点留在点到的地方
