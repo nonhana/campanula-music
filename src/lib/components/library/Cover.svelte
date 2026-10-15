@@ -39,8 +39,9 @@
   data-flight={flight}
 >
   {#if reveal.status === 'broken'}
-    <span class='grid' in:fade={{ duration: DURATIONS.reveal }}>
-      <Fallback size={Math.round(size * 0.4)} aria-hidden='true' />
+    <!-- 图标占显示宽度的 40%：fluid 时 size 只决定取多大的缩略图，不是显示的大小 -->
+    <span class='grid w-2/5' in:fade={{ duration: DURATIONS.reveal }}>
+      <Fallback class='h-auto w-full' aria-hidden='true' />
     </span>
   {:else}
     {#key source}

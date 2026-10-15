@@ -32,7 +32,10 @@ export function createImageReveal(source: () => string): ImageReveal {
     },
     image(img) {
       const src = untrack(source)
-      if (loaded.has(src) || (img.complete && img.naturalWidth > 0))
+      // 挂上时已经加载好的也记下：同一个地址再挂上时直接显示、不从透明淡入（例如封面从格子飞到页头，页头那张大封面）
+      if (img.complete && img.naturalWidth > 0)
+        loaded.add(src)
+      if (loaded.has(src))
         seen = { source: src, status: 'cached' }
       const onload = () => {
         loaded.add(src)
