@@ -48,9 +48,9 @@
             <li class='h-14 flex items-center'>
               {#if numbered}
                 <span class='w-9 flex-none pl-4 text-caption text-neutral-500 tabular-nums' aria-hidden='true'>{i + 1}</span>
-                <div class='h-full min-w-0 flex-1 -ml-2'><PhoneSongRow {song} now={song.id === nowId} onplay={play(song)} /></div>
+                <div class='h-full min-w-0 flex-1 -ml-2'><PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} /></div>
               {:else}
-                <div class='h-full min-w-0 flex-1'><PhoneSongRow {song} now={song.id === nowId} onplay={play(song)} /></div>
+                <div class='h-full min-w-0 flex-1'><PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} /></div>
               {/if}
             </li>
           {/each}
@@ -60,12 +60,13 @@
   {/if}
 {:else}
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
-    <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px] h-9 items-center gap-4 pl-2 pr-3 text-caption text-neutral-500' aria-hidden='true'>
+    <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-9 items-center gap-4 pl-2 pr-1 text-caption text-neutral-500' aria-hidden='true'>
       <span class='text-center'>#</span>
       <span class='pl-[52px]'>标题</span>
       <span>专辑</span>
       <span>状态</span>
       <span class='text-right'>时长</span>
+      <span></span>
     </div>
     {#if songs === null}
       <SkeletonRows count={9} label={loadingLabel} />
@@ -76,7 +77,7 @@
         {:else}
           <ul data-reveal-group>
             {#each songs as song, i (song.id)}
-              <li class='h-14'><DesktopSongRow {song} n={i + 1} hearted={hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} /></li>
+              <li class='h-14'><DesktopSongRow {song} {source} n={i + 1} hearted={hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} /></li>
             {/each}
           </ul>
         {/if}

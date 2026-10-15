@@ -1,9 +1,10 @@
+import type { Song } from '$lib/api/library'
 import type { App } from '$lib/app/app'
 import type { FakeAudio } from './harness/browser'
 import type { Device, Tab } from './harness/device'
 import { readFile } from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MEDIA_ERR_NETWORK, MEDIA_ERR_SRC_NOT_SUPPORTED } from './harness/browser'
 import { held, never } from './harness/hold'
 import { signIn } from './harness/sign-in'
@@ -229,6 +230,36 @@ describe('只同步了一部分的歌单', () => {
     expect(queueIds(app)).toEqual(rhythm.songs.map(song => song.id))
     expect(queueIds(app)[33]).toBe(1401042579)
     expect(current(app)).toBe(first)
+  })
+
+  it('点歌后又选了下一首播放、加入播放队列、移出：同步完补上时这些照旧，补上的歌不插到“下一首播放”的前面', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const RHYTHM = { kind: 'playlist', id: 900000009 } as const
+    await world.netease.reply('library/sync/before/013-playlist_detail.json.gz')
+    const missingPage = held()
+    await world.netease.reply('library/sync/before/014-song_detail.json.gz', { until: missingPage.until })
+    void app.openPlaylist(RHYTHM.id)
+    await world.settle()
+    const partial = app.state.library!.songsOf(RHYTHM.id)!.songs.map(song => song.id)
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.play(RHYTHM, partial[0])
+    await world.settle()
+
+    // 歌单的最后一首（第 35 首）选下一首播放；补上的第 34 首在歌单里排在它前面
+    const last = app.state.player.queue.at(-1)!.song
+    const elsewhere = app.state.library!.liked!.songs.find(song => !partial.includes(song.id))!
+    app.playNext(RHYTHM, last)
+    app.addToQueue(LIKED, elsewhere)
+    app.removeFromQueue(queueIds(app).indexOf(partial[5]))
+    missingPage.release()
+    await world.settle()
+    const rhythm = app.state.library!.songsOf(RHYTHM.id)!.songs.map(song => song.id)
+    expect(rhythm).toHaveLength(35)
+    expect(rhythm[34]).toBe(last.id)
+    expect(queueIds(app)).toEqual([rhythm[0], last.id, ...rhythm.slice(1, 34).filter(id => id !== partial[5]), elsewhere.id])
+    expect(app.state.player.current).toBe(0)
   })
 })
 
@@ -741,6 +772,265 @@ describe('播放队列', () => {
   })
 })
 
+/** 我喜欢的音乐里这首歌的歌曲信息 */
+function songOf(app: App, id: number): Song {
+  return app.state.library!.liked!.songs.find(song => song.id === id)!
+}
+
+/** 另一个播放来源（一张专辑）：歌从这里放进播放队列时，播放来源跟着它 */
+const ALBUM = { kind: 'album', id: TRIAL_ALBUM.id } as const
+
+// 下一首播放、加入播放队列、插播（#26，逻辑原型定下的规则①–⑤）。插播的入口在搜索里（#31），这里直接调 App
+describe('下一首播放、加入播放队列、插播', () => {
+  it.each([['下一首播放', 'playNext'], ['加入播放队列', 'addToQueue'], ['插播', 'interject']] as const)('播放队列是空的时选“%s”：队列里只有这一首，直接开始放（规则①）', async (_, action) => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const song = songOf(app, SECOND.id)
+
+    await world.netease.reply(SECOND.url)
+    app[action](ALBUM, song)
+    expect(app.state.player.queue).toEqual([{ song, source: ALBUM }])
+    expect(app.state.player).toMatchObject({ current: 0, status: 'loading', change: 'pick' })
+    await world.settle()
+    expect(tab.audio.find(audio => !audio.paused)?.src).toBe(await recordedUrl(SECOND.url))
+    expect(app.state.player.status).toBe('buffering')
+  })
+
+  it('下一首播放排在当前这首紧后面，加入播放队列排到最后，其余歌的先后不变；每首记着自己的播放来源', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.addToQueue(LIKED, songOf(app, FIRST.id))
+    app.addToQueue(LIKED, songOf(app, SECOND.id))
+    app.addToQueue(ALBUM, songOf(app, THIRD.id))
+    expect(queueIds(app)).toEqual([FIRST.id, SECOND.id, THIRD.id])
+
+    app.playNext(ALBUM, songOf(app, LAST.id))
+    expect(queueIds(app)).toEqual([FIRST.id, LAST.id, SECOND.id, THIRD.id])
+    expect(app.state.player.queue.map(entry => entry.source)).toEqual([LIKED, ALBUM, LIKED, ALBUM])
+    expect(current(app)).toBe(FIRST.id)
+    expect(app.state.player.status).toBe('loading')
+  })
+
+  it('连续几次下一首播放：后加的先放（规则⑤），放完它们再接着原来的顺序', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.addToQueue(LIKED, songOf(app, FIRST.id))
+    app.addToQueue(LIKED, songOf(app, SECOND.id))
+    app.playNext(LIKED, songOf(app, THIRD.id))
+    app.playNext(LIKED, songOf(app, LAST.id))
+    expect(queueIds(app)).toEqual([FIRST.id, LAST.id, THIRD.id, SECOND.id])
+
+    const played = []
+    for (let i = 0; i < 3; i++) {
+      app.next()
+      played.push(current(app))
+    }
+    expect(played).toEqual([LAST.id, THIRD.id, SECOND.id])
+  })
+
+  it('要放的歌本来就在播放队列里：从原位置挪过来，只留一份，播放来源改成新的（规则②）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.play(LIKED, FIRST.id)
+    const length = app.state.player.queue.length
+    const count = (id: number) => queueIds(app).filter(each => each === id).length
+
+    app.playNext(ALBUM, songOf(app, THIRD.id))
+    expect(app.state.player.queue[1]).toEqual({ song: songOf(app, THIRD.id), source: ALBUM })
+    app.addToQueue(ALBUM, songOf(app, SECOND.id))
+    expect(app.state.player.queue.at(-1)).toEqual({ song: songOf(app, SECOND.id), source: ALBUM })
+    expect(app.state.player.queue).toHaveLength(length)
+    expect([count(THIRD.id), count(SECOND.id)]).toEqual([1, 1])
+    expect(current(app)).toBe(FIRST.id)
+
+    await world.netease.reply(LAST.url, { until: never() })
+    app.interject(ALBUM, songOf(app, LAST.id))
+    expect(app.state.player.queue[1]).toEqual({ song: songOf(app, LAST.id), source: ALBUM })
+    expect(app.state.player.queue).toHaveLength(length)
+    expect(count(LAST.id)).toBe(1)
+    expect(app.state.player.current).toBe(1)
+    expect(queueIds(app).slice(0, 3)).toEqual([FIRST.id, LAST.id, THIRD.id])
+  })
+
+  it('正在放的那首再被插播、下一首播放、加入播放队列：什么都不变，不从头放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    player.progress(100)
+    await world.settle()
+    const before = app.state.player
+    const requests = playUrlRequests(device).length
+
+    app.interject(ALBUM, songOf(app, FIRST.id))
+    app.playNext(ALBUM, songOf(app, FIRST.id))
+    app.addToQueue(ALBUM, songOf(app, FIRST.id))
+    await world.settle()
+    expect(app.state.player).toBe(before)
+    expect(tab.sounding()).toBe(player)
+    expect(player.currentTime).toBe(100)
+    expect(playUrlRequests(device)).toHaveLength(requests)
+  })
+
+  it('插播：排在当前这首紧后面并立即放，被打断的那首不续播（规则④）：插播的放完接着放原来的下一首，退回去也从头放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    player.progress(100)
+    await world.settle()
+
+    await world.netease.reply(THIRD.url)
+    app.interject(ALBUM, songOf(app, THIRD.id))
+    expect(app.state.player).toMatchObject({ current: 1, status: 'loading', change: 'pick' })
+    expect(queueIds(app).slice(0, 3)).toEqual([FIRST.id, THIRD.id, SECOND.id])
+    await world.settle()
+    const third = other(tab, player)
+    expect(third.src).toBe(await recordedUrl(THIRD.url))
+    third.ready(THIRD.duration)
+    await world.settle()
+    expect(tab.sounding()).toBe(third)
+    expect(current(app)).toBe(THIRD.id)
+
+    third.end()
+    await world.settle()
+    expect(current(app)).toBe(SECOND.id)
+    app.previous()
+    app.previous()
+    expect(current(app)).toBe(FIRST.id)
+    expect(app.state.player.position).toBe(0)
+  })
+
+  it('下一首变了：空闲的播放器重新准备新的下一首，快放完时交接给它（ADR-0010）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    expect(spare.src).toBe(await recordedUrl(SECOND.url))
+
+    await world.netease.reply(THIRD.url)
+    app.playNext(ALBUM, songOf(app, THIRD.id))
+    await world.settle()
+    expect(spare.src).toBe(await recordedUrl(THIRD.url))
+    spare.ready(THIRD.duration)
+    player.progress(191.7)
+    await world.settle()
+    expect(tab.sounding()).toBe(spare)
+    expect(current(app)).toBe(THIRD.id)
+  })
+
+  it('已经开始交接给下一首、它还没出声时下一首变了：不交接给它，改准备新的下一首', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    // 下一首还没缓冲好：剩 5 秒就开始交接
+    player.progress(188)
+    await world.settle()
+    expect(spare.paused).toBe(false)
+
+    await world.netease.reply(THIRD.url)
+    app.addToQueue(ALBUM, songOf(app, SECOND.id))
+    await world.settle()
+    expect(spare.src).toBe(await recordedUrl(THIRD.url))
+    expect(spare.paused).toBe(true)
+    spare.ready(THIRD.duration)
+    player.progress(191.7)
+    await world.settle()
+    expect(tab.sounding()).toBe(spare)
+    expect(current(app)).toBe(THIRD.id)
+    expect(queueIds(app).at(-1)).toBe(SECOND.id)
+  })
+
+  it('无版权的歌：下一首播放、加入播放队列、插播都不放进播放队列', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const song = songOf(app, NO_COPYRIGHT)
+
+    app.addToQueue(LIKED, song)
+    expect(app.state.player.queue).toEqual([])
+    await queueOf(app, [FIRST, SECOND])
+    app.playNext(LIKED, song)
+    app.addToQueue(LIKED, song)
+    app.interject(LIKED, song)
+    expect(queueIds(app)).toEqual([FIRST.id, SECOND.id])
+    expect(current(app)).toBe(FIRST.id)
+  })
+})
+
+describe('移出、清空播放队列', () => {
+  it('移出某首：其余的先后不变，当前这首不变；移出的在当前这首前面时位置跟着变；正在放的那首移不掉', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await world.netease.reply(SECOND.url, { until: never() })
+    app.play(LIKED, SECOND.id)
+    const ids = queueIds(app)
+
+    app.removeFromQueue(2)
+    expect(queueIds(app)).toEqual([ids[0], ids[1], ...ids.slice(3)])
+    expect(app.state.player.current).toBe(1)
+    app.removeFromQueue(0)
+    expect(queueIds(app)).toEqual([ids[1], ...ids.slice(3)])
+    expect(app.state.player.current).toBe(0)
+    expect(current(app)).toBe(SECOND.id)
+
+    const before = app.state.player
+    app.removeFromQueue(0)
+    expect(app.state.player).toBe(before)
+  })
+
+  it('移出的是下一首：空闲的播放器改准备新的下一首', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+
+    await world.netease.reply(THIRD.url)
+    app.removeFromQueue(1)
+    await world.settle()
+    expect(spare.src).toBe(await recordedUrl(THIRD.url))
+  })
+
+  it('清空：播放队列空了、停下，两个播放器都不出声，还在取的地址回来也不放；之后选下一首播放又直接开始放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const third = held()
+    await world.netease.reply(THIRD.url, { until: third.until })
+    app.next()
+    app.next()
+    await world.settle()
+    expect(app.state.player.status).toBe('loading')
+
+    app.clearQueue()
+    expect(app.state.player).toMatchObject({ queue: [], current: null, status: 'paused', notice: null })
+    third.release()
+    await world.settle()
+    expect(tab.sounding()).toBeUndefined()
+    expect(player.paused).toBe(true)
+    expect(app.state.player.queue).toEqual([])
+
+    await world.netease.reply(SECOND.url)
+    app.playNext(ALBUM, songOf(app, SECOND.id))
+    await world.settle()
+    expect(queueIds(app)).toEqual([SECOND.id])
+    expect(app.state.player.status).toBe('buffering')
+  })
+})
+
 // 换碟（#51，DESIGN.md Cover Wheel）往哪转看 App 发布的换歌原因，不靠前后序号猜（随机播放时序号不连续）
 describe('换歌原因', () => {
   it('在列表里点歌：点选；还没换过歌时没有原因', async () => {
@@ -878,18 +1168,154 @@ describe('换歌原因', () => {
   })
 })
 
-describe('随机操作检查（借鉴逻辑原型）', () => {
-  /** 可重现的伪随机数（mulberry32）：失败时按打出来的种子重跑同一串操作 */
-  function seeded(seed: number): () => number {
-    let state = seed
-    return () => {
-      state = (state + 0x6D2B79F5) | 0
-      let next = Math.imul(state ^ (state >>> 15), 1 | state)
-      next = (next + Math.imul(next ^ (next >>> 7), 61 | next)) ^ next
-      return ((next ^ (next >>> 14)) >>> 0) / 4294967296
-    }
+/** 可重现的伪随机数（mulberry32）：失败时按打出来的种子重跑同一串操作；也拿来顶替 Math.random，让随机播放的顺序固定 */
+function seeded(seed: number): () => number {
+  let state = seed
+  return () => {
+    state = (state + 0x6D2B79F5) | 0
+    let next = Math.imul(state ^ (state >>> 15), 1 | state)
+    next = (next + Math.imul(next ^ (next >>> 7), 61 | next)) ^ next
+    return ((next ^ (next >>> 14)) >>> 0) / 4294967296
   }
+}
 
+/** 用“加入播放队列”从空的播放队列放起：队列里就是这几首，从第一首开始（它的地址一直在取） */
+async function queueOf(app: App, songs: readonly Recorded[]): Promise<void> {
+  await world.netease.reply(songs[0].url, { until: never() })
+  for (const song of songs)
+    app.addToQueue(LIKED, songOf(app, song.id))
+}
+
+/** 连按 times 次下一首，依次换上来的歌 */
+function nextTimes(app: App, times: number): (number | null)[] {
+  return Array.from({ length: times }, () => {
+    app.next()
+    return current(app)
+  })
+}
+
+describe('播放模式', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('一开始是列表循环；清空播放队列也不变', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    expect(app.state.player.mode).toBe('loop')
+    app.setPlayMode('one')
+    app.clearQueue()
+    expect(app.state.player.mode).toBe('one')
+  })
+
+  it('单曲循环：这首快放完时交接给同一首、从头再放；按下一首照样换到列表里的下一首', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    const requests = playUrlRequests(device).length
+
+    app.setPlayMode('one')
+    await world.settle()
+    expect(spare.src).toBe(await recordedUrl(FIRST.url))
+    expect(playUrlRequests(device)).toHaveLength(requests)
+    spare.ready(FIRST.duration)
+    player.progress(191.7)
+    await world.settle()
+    expect(tab.sounding()).toBe(spare)
+    expect(current(app)).toBe(FIRST.id)
+    expect(app.state.player).toMatchObject({ change: 'continue', position: 0 })
+
+    app.next()
+    expect(current(app)).toBe(SECOND.id)
+  })
+
+  it('随机播放：点歌先放点的那首，接下来不按列表的顺序；退回上一首就是刚才放的那首', async () => {
+    vi.spyOn(Math, 'random').mockImplementation(seeded(26))
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    app.setPlayMode('shuffle')
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.play(LIKED, FIRST.id)
+    expect(current(app)).toBe(FIRST.id)
+
+    const played = nextTimes(app, 3)
+    const list = queueIds(app)
+    expect(played.map(id => list.indexOf(id!))).not.toEqual([1, 2, 3])
+    app.previous()
+    expect(current(app)).toBe(played[1])
+  })
+
+  it('随机播放：每首能放的都放一遍才回到开头那首', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await queueOf(app, RECORDED)
+    app.setPlayMode('shuffle')
+
+    const played = nextTimes(app, RECORDED.length)
+    expect(new Set(played.slice(0, -1))).toEqual(new Set(RECORDED.slice(1).map(song => song.id)))
+    expect(played.at(-1)).toBe(FIRST.id)
+  })
+
+  it('随机播放时选下一首播放：就是下一首；加入播放队列：排到最后，别的都放过了才放它（规则③）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const [added, ...rest] = RECORDED.slice(1)
+    await queueOf(app, [FIRST, ...rest])
+    app.setPlayMode('shuffle')
+
+    app.addToQueue(ALBUM, songOf(app, added.id))
+    expect(queueIds(app).at(-1)).toBe(added.id)
+    const elsewhere = app.state.library!.liked!.songs.find(song => song.availability === 'full' && !RECORDED.some(each => each.id === song.id))!
+    app.playNext(ALBUM, elsewhere)
+    expect(queueIds(app)[1]).toBe(elsewhere.id)
+
+    const played = nextTimes(app, rest.length + 2)
+    expect(played[0]).toBe(elsewhere.id)
+    expect(new Set(played.slice(1, -1))).toEqual(new Set(rest.map(song => song.id)))
+    expect(played.at(-1)).toBe(added.id)
+  })
+
+  it('切到随机播放：当前这首和还没放到的下一首播放留在最前；切回列表循环：从当前这首接着按列表往下', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await queueOf(app, [FIRST, SECOND, THIRD, BEFORE_NO_COPYRIGHT])
+    app.playNext(ALBUM, songOf(app, AFTER_NO_COPYRIGHT.id))
+    app.playNext(ALBUM, songOf(app, LAST.id))
+
+    app.setPlayMode('shuffle')
+    expect(nextTimes(app, 2)).toEqual([LAST.id, AFTER_NO_COPYRIGHT.id])
+    app.setPlayMode('loop')
+    expect(nextTimes(app, 2)).toEqual([SECOND.id, THIRD.id])
+  })
+
+  it('放到了的“下一首播放”就不再算（自动接续上来的也一样）：之后切到随机播放，按下一首会换歌', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    await world.netease.reply(THIRD.url)
+    app.playNext(ALBUM, songOf(app, THIRD.id))
+    await world.settle()
+    spare.ready(THIRD.duration)
+    player.progress(191.7)
+    await world.settle()
+    expect(current(app)).toBe(THIRD.id)
+
+    app.setPlayMode('shuffle')
+    app.next()
+    expect(current(app)).not.toBe(THIRD.id)
+  })
+})
+
+describe('随机操作检查（借鉴逻辑原型）', () => {
   it('随便怎么点歌、切歌、暂停，音频服务器怎么断流、出错，每一步之后：显示“取播放地址中”时，一定有一个取当前这首播放地址的请求在路上', async () => {
     // 全局的 Date 被世界的时钟冻结在同一时刻，不能拿来当种子
     const seed = Math.floor(Math.random() * 100_000)
@@ -994,6 +1420,95 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
       holds = []
       device.setOnline(true)
       await world.settle()
+    }
+  }, 120_000)
+
+  it('随便怎么点歌、下一首播放、加入播放队列、插播、移出、清空、换播放模式、切歌，每一步之后：同一首歌不会在播放队列里出现两次；按下一首会换歌，还没放到的“下一首播放”按下一首就是它（当前这首不会还记在“下一首播放”里）', async () => {
+    const seed = Math.floor(Math.random() * 100_000)
+    const random = seeded(seed)
+    const pick = <T>(items: readonly T[]): T => items[Math.floor(random() * items.length)]
+    const modes = ['loop', 'one', 'shuffle'] as const
+
+    for (let round = 0; round < 8; round++) {
+      const device = world.device()
+      const tab = await signInWithLiked(device)
+      const { app } = tab
+      // 播放地址都不回：这里只看播放队列，换上来的歌停在没取到地址
+      const songs = [...app.state.library!.liked!.songs.slice(0, 12), songOf(app, NO_COPYRIGHT)]
+      /** 听众选了“下一首播放”、还没放到的歌，后加的在前：照规则①②⑤和“退回上一首、点别的歌、点歌、清空后不再算”记的 */
+      let upNext: number[] = []
+      const steps: string[] = []
+
+      for (let step = 0; step < 120; step++) {
+        const { queue, current: at } = app.state.player
+        const now = current(app)
+        const song = pick(songs)
+        const off = song.availability === 'noCopyright'
+        const action = pick(['play', 'playNext', 'playNext', 'playNext', 'addToQueue', 'addToQueue', 'interject', 'remove', 'clear', 'mode', 'mode', 'mode', 'next', 'next', 'next', 'next', 'previous', 'jump'] as const)
+        let expected: number | undefined
+        /** 按了下一首，播放队列里还有别的能放的歌：要换歌 */
+        let moves = false
+        switch (action) {
+          case 'play':
+            app.play(LIKED, song.id)
+            if (!off)
+              upNext = []
+            break
+          case 'playNext':
+            app.playNext(pick([LIKED, ALBUM]), song)
+            if (!off && now !== null && song.id !== now)
+              upNext = [song.id, ...upNext.filter(id => id !== song.id)]
+            break
+          case 'addToQueue':
+          case 'interject':
+            app[action](pick([LIKED, ALBUM]), song)
+            upNext = upNext.filter(id => id !== song.id)
+            break
+          case 'remove': {
+            const index = Math.floor(random() * (queue.length + 1))
+            app.removeFromQueue(index)
+            if (index !== at && queue[index])
+              upNext = upNext.filter(id => id !== queue[index].song.id)
+            break
+          }
+          case 'clear':
+            app.clearQueue()
+            upNext = []
+            break
+          case 'mode':
+            app.setPlayMode(pick(modes))
+            break
+          case 'next':
+            expected = upNext[0]
+            moves = queue.filter(entry => entry.song.availability !== 'noCopyright').length > 1
+            app.next()
+            break
+          case 'previous':
+            app.previous()
+            upNext = []
+            break
+          case 'jump': {
+            const index = Math.floor(random() * queue.length)
+            app.playFromQueue(index)
+            if (index !== at && queue[index]?.song.availability !== 'noCopyright')
+              upNext = []
+            break
+          }
+        }
+        steps.push(`${action}${['play', 'playNext', 'addToQueue', 'interject'].includes(action) ? ` ${song.id}` : ''}`)
+        await world.settle()
+
+        const where = `种子 ${seed}，第 ${round} 轮，操作 ${steps.join(' → ')}`
+        const ids = queueIds(app)
+        expect(new Set(ids).size, `同一首歌不会在播放队列里出现两次（${where}）`).toBe(ids.length)
+        const { current: index } = app.state.player
+        expect(index === null ? ids.length === 0 : index >= 0 && index < ids.length, `当前这首在播放队列里（${where}）`).toBe(true)
+        if (moves)
+          expect(current(app), `按下一首会换歌（${where}）`).not.toBe(now)
+        if (expected !== undefined)
+          expect(current(app), `按下一首放的是还没放到的“下一首播放”里最后加的那首（${where}）`).toBe(expected)
+        upNext = upNext.filter(id => id !== current(app))
+      }
     }
   }, 120_000)
 })

@@ -16,12 +16,14 @@
   import PlayTarget from '$lib/components/library/PlayTarget.svelte'
   import SkeletonRows from '$lib/components/library/SkeletonRows.svelte'
   import SongBadge from '$lib/components/library/SongBadge.svelte'
+  import SongMoreButton from '$lib/components/library/SongMoreButton.svelte'
   import SyncNotice from '$lib/components/library/SyncNotice.svelte'
   import { artistLine, formatCount, langOf, likedView, syncNotice } from '$lib/components/library/view'
   import { reveal, scrollBehavior } from '$lib/components/motion'
   import NowChip from '$lib/components/player/NowChip.svelte'
   import { currentSong } from '$lib/components/player/view'
   import { scrollSnapshot } from '$lib/components/snapshot'
+  import { openSongMenuAt } from '$lib/components/song-menu.svelte'
   import IconButton from '$lib/components/ui/IconButton.svelte'
   import { ChevronLeft, ChevronRight } from '@lucide/svelte'
 
@@ -109,19 +111,21 @@
                 {#each strip as song (song.id)}
                   {@const off = song.availability === 'noCopyright'}
                   {@const now = song.id === nowId}
-                  <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
-                    <div class={['grid grid-cols-[48px_minmax(0,1fr)] h-full items-center gap-3 pl-1.5 pr-2', off && 'opacity-45']}>
+                  {@const source = { kind: 'playlist', id: library.liked!.playlist.id } as const}
+                  <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']} oncontextmenu={event => openSongMenuAt(event, song, source)}>
+                    <div class={['grid grid-cols-[48px_minmax(0,1fr)_32px] h-full items-center gap-3 pl-1.5 pr-1', off && 'opacity-45']}>
                       <span class='relative size-12'>
                         <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
                         {#if now}<NowChip />{/if}
                       </span>
-                      <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.play({ kind: 'playlist', id: library.liked!.playlist.id }, song.id)}>
+                      <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.play(source, song.id)}>
                         <span class='min-w-0 flex items-center gap-1.5'>
                           <span class={['truncate text-label font-500', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
                           <SongBadge availability={song.availability} />
                         </span>
                         <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
                       </PlayTarget>
+                      <SongMoreButton {song} {source} size='cell' />
                     </div>
                   </div>
                 {/each}

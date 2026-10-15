@@ -1,11 +1,11 @@
 <!--
-  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开），右边音量；
+  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开），
+  右边播放模式（按一下换一种）、音量、播放队列（打开播放页的播放队列）；
   顶边一条 2px 的薄荷进度线，也是滑块：点按、拖动跳到那里，拖动时左边的时间跟着走（SeekLine）。
-  换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）。
-  播放模式和播放队列（#26）由之后的票加。放在 DesktopShell 的 bar 里
+  换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）。放在 DesktopShell 的 bar 里
 -->
 <script lang='ts'>
-  import { SkipBack, SkipForward } from '@lucide/svelte'
+  import { ListMusic, SkipBack, SkipForward } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, langOf } from '../library/view'
@@ -13,7 +13,8 @@
   import IconButton from '../ui/IconButton.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { gripToOpenPlayerPage } from './player-page.svelte'
+  import { gripToOpenPlayerPage, openPlayerPage, playerPageChoices } from './player-page.svelte'
+  import PlayModeButton from './PlayModeButton.svelte'
   import { createSeekSlider } from './seek-slider.svelte'
   import SeekLine from './SeekLine.svelte'
   import SongSwap from './SongSwap.svelte'
@@ -61,6 +62,16 @@
   {/if}
 
   <div class='flex items-center justify-end gap-1.5'>
+    <PlayModeButton kind='cycle' />
     <VolumeControl class='w-24' />
+    <IconButton
+      icon={ListMusic}
+      label='播放队列'
+      class='ml-2'
+      onclick={() => {
+        playerPageChoices.panel = 'queue'
+        openPlayerPage()
+      }}
+    />
   </div>
 </div>

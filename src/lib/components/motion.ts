@@ -183,3 +183,24 @@ export function iconSwap(_node: Element, _params?: undefined, options: Transitio
     css: (t, u) => (scaled ? `opacity: ${t}; scale: ${1 - u * (1 - ICON_FROM_SCALE)}` : `opacity: ${t}`),
   }
 }
+
+/** 浮动菜单飘出来时从多远（px）、多大开始 */
+const POP_DISTANCE = 4
+const POP_FROM_SCALE = 0.98
+
+/**
+ * 浮动菜单、搜索下拉（DESIGN.md Overlays）：从锚点那一侧飘出来，从 4px 外、98% 大小到位（状态 200ms）；关掉时只淡出（退场 120ms）。
+ * below：菜单在锚点下面（从上面 4px 飘下来），否则在上面。用 in:pop 和 out:pop；缩放的原点由调用的地方用 transform-origin 定。
+ * 减少动态效果时只淡入淡出
+ */
+export function pop(_node: Element, { below }: { below: boolean }, options: TransitionOptions = {}): TransitionConfig {
+  if (options.direction === 'out')
+    return { duration: fadeMs(DURATIONS['state-out']), easing: easingOf(options), css: t => `opacity: ${t}` }
+  const moved = !reducedMotion()
+  const from = (below ? -1 : 1) * POP_DISTANCE
+  return {
+    duration: fadeMs(DURATIONS.state),
+    easing: easingOf(options),
+    css: (t, u) => (moved ? `opacity: ${t}; translate: 0 ${from * u}px; scale: ${1 - u * (1 - POP_FROM_SCALE)}` : `opacity: ${t}`),
+  }
+}
