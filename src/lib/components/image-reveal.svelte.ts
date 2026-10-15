@@ -12,22 +12,33 @@ export type ImageStatus = 'loading' | 'cached' | 'loaded' | 'broken'
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- 只在挂上 img 的那一刻查，不驱动界面更新，不用做成响应式
 const loaded = new Set<string>()
 
-/** 正在后台加载的图：留着引用，加载完（或失败）以前不被回收 */
+/** 正在后台加载的图，按地址：留着 img 的引用（加载完以前不被回收）和它加载完的那一刻；同一个地址只加载一次 */
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- 只是留着引用，不驱动界面更新
-const preloading = new Set<HTMLImageElement>()
+const preloading = new Map<string, { img: HTMLImageElement, done: Promise<void> }>()
 
-/** 先在后台把图加载好、记下来，之后挂上时直接显示（手机播放页的上一首、下一首封面：拖封面时一露出来就在） */
-export function preloadImage(src: string): void {
+/**
+ * 先在后台把图加载、解码好、记下来，之后挂上时直接显示（手机播放页的上一首、下一首封面：拖封面时一露出来就在）。
+ * 只等 load 不够：没解码的图第一次画出来时可能先空一帧。返回加载完（或者加载不出来）的那一刻
+ */
+export function preloadImage(src: string): Promise<void> {
   if (loaded.has(src))
-    return
-  const img = new Image()
-  preloading.add(img)
-  img.onload = () => {
-    loaded.add(src)
-    preloading.delete(img)
+    return Promise.resolve()
+  let pending = preloading.get(src)
+  if (!pending) {
+    const img = new Image()
+    img.src = src
+    const done = img.decode()
+      .then(() => void loaded.add(src), () => {})
+      .finally(() => preloading.delete(src))
+    pending = { img, done }
+    preloading.set(src, pending)
   }
-  img.onerror = () => preloading.delete(img)
-  img.src = src
+  return pending.done
+}
+
+/** 这次打开 App 以来加载过这个地址 */
+export function imageLoaded(src: string): boolean {
+  return loaded.has(src)
 }
 
 export interface ImageReveal {
