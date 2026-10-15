@@ -3,9 +3,11 @@
   下面可以跟文字标签（我喜欢 / 歌单 / 专辑 / 歌手），然后是内容；底部是离屏幕边 8px 浮起的迷你播放条，
   下面垫一层晨光底的渐隐。只管区域和尺寸；每块里放什么由调用方传进来。
   页面的滚动条贴着窗口右边，从顶行（连着标签）下沿到迷你播放条上沿；顶行下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）。
+  页面里的歌曲列表从上下文拿 ScrollLookup，按住滚动条拖时气泡写它最上面那首。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+  import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
 
   interface Props {
@@ -19,6 +21,7 @@
   }
 
   const { header, tabs, bar, children }: Props = $props()
+  const lookup = setScrollLookup({ markAt: null })
 
   /** 吸在顶上的那一块（顶行，曲库里连着文字标签）有多高 */
   let top = $state(0)
@@ -49,5 +52,5 @@
       {@render bar()}
     </div>
   {/if}
-  <Scrollbar page={{ top: `${top}px`, bottom: bar ? 'calc(72px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)' }} />
+  <Scrollbar page={{ top: `${top}px`, bottom: bar ? 'calc(72px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)' }} {lookup} />
 </div>

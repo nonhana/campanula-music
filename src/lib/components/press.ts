@@ -11,13 +11,14 @@ export function pressBroken(buttons: number): boolean {
 
 /**
  * 按下后开始盯着：要弹出右键菜单（不让它弹）、窗口失去焦点、页面藏起来时调用 abandon。
+ * 触屏上按着不动也会报一次菜单（长按），按住并没有断：只挡掉菜单，不调用 abandon。
  * 返回停止盯着的函数，拖动结束、作废时都要调用；停止后再挡 300ms 右键菜单，然后才放开
  */
 export function watchPress(abandon: () => void): () => void {
   let ended = false
   const oncontextmenu = (event: Event) => {
     event.preventDefault()
-    if (!ended)
+    if (!ended && !(event instanceof PointerEvent && event.pointerType === 'touch'))
       abandon()
   }
   const onvisibilitychange = () => {
