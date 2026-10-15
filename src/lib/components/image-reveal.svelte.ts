@@ -12,6 +12,24 @@ export type ImageStatus = 'loading' | 'cached' | 'loaded' | 'broken'
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- 只在挂上 img 的那一刻查，不驱动界面更新，不用做成响应式
 const loaded = new Set<string>()
 
+/** 正在后台加载的图：留着引用，加载完（或失败）以前不被回收 */
+// eslint-disable-next-line svelte/prefer-svelte-reactivity -- 只是留着引用，不驱动界面更新
+const preloading = new Set<HTMLImageElement>()
+
+/** 先在后台把图加载好、记下来，之后挂上时直接显示（手机播放页的上一首、下一首封面：拖封面时一露出来就在） */
+export function preloadImage(src: string): void {
+  if (loaded.has(src))
+    return
+  const img = new Image()
+  preloading.add(img)
+  img.onload = () => {
+    loaded.add(src)
+    preloading.delete(img)
+  }
+  img.onerror = () => preloading.delete(img)
+  img.src = src
+}
+
 export interface ImageReveal {
   readonly status: ImageStatus
   /** 挂到 img 上：`{#key source}<img src={source} {@attach reveal.image} />{/key}`，每张图一个元素 */

@@ -1,16 +1,16 @@
 import type { Attachment } from 'svelte/attachments'
-import type { GripSource, PointerSample } from './drawer-core'
+import type { GripSource } from './drawer-core'
 import { untrack } from 'svelte'
 import { quartOut } from 'svelte/easing'
 import { Tween } from 'svelte/motion'
 import { moveMs } from '../motion'
 import { DURATIONS } from '../motion-tokens'
-import { watchPress } from '../press'
+import { attachGrip, createPageHold } from '../press'
 import { createDrawerCore } from './drawer-core'
 
 // 从底下升起、缩回底下的抽屉（播放页、手机的播放队列弹层）。拖动怎么判断全在 drawer-core.ts（Spec #11 的第二个测试接入点），
-// 这里只接上浏览器：抽屉本身（panel）的位置和底下垫的那一截、拖动来源（grip）的指针事件和指针捕获、
-// 按住断了的几种情况（press.ts）、动画、拖着时整页的光标和选字。
+// 这里只接上浏览器：抽屉本身（panel）的位置和底下垫的那一截、动画、拖着时整页的光标和选字；
+// 拖动来源（grip）的指针事件、指针捕获和按住断了的几种情况交给 press.ts 的 attachGrip。
 // 动画 380ms（DURATIONS.drawer）先快后慢，中途松手按剩下的距离算；减少动态效果时直接到位（拖动时照样跟手）
 
 /**
@@ -47,20 +47,10 @@ export function createDrawer(estimate: () => number): Drawer {
     easing: quartOut,
   })
   let panel: HTMLElement | null = null
-  let held = false
+  const holdPage = createPageHold()
 
   /** 抽屉露出来的高度（不含底下垫的那一截） */
   const size = () => (panel ? panel.offsetHeight - BLEED : estimate())
-
-  /** 拖着时整页不选字，光标是抓着的手 */
-  function holdPage(hold: boolean) {
-    if (hold === held)
-      return
-    held = hold
-    const { style } = document.documentElement
-    style.cursor = hold ? 'grabbing' : ''
-    style.userSelect = hold ? 'none' : ''
-  }
 
   const core = createDrawerCore({
     size,
@@ -99,70 +89,6 @@ export function createDrawer(estimate: () => number): Drawer {
           panel = null
       }
     },
-    grip(source) {
-      const grip = core.grip(source)
-      return (element) => {
-        /** 停止盯着这次按住；没按着时是 null */
-        let unwatch: (() => void) | null = null
-        /** 这次按住结束了（松开、作废、按住断了）就不再盯着 */
-        const settleWatch = () => {
-          if (grip.holding)
-            return
-          unwatch?.()
-          unwatch = null
-        }
-        /** 右键菜单、切走窗口、页面藏起来：这次按住作废 */
-        const abandonPress = () => {
-          grip.abandon()
-          settleWatch()
-        }
-        const sample = (event: PointerEvent): PointerSample => ({
-          pointerId: event.pointerId,
-          pointerType: event.pointerType,
-          isPrimary: event.isPrimary,
-          button: event.button,
-          buttons: event.buttons,
-          x: event.clientX,
-          y: event.clientY,
-          time: event.timeStamp,
-        })
-        const listeners = {
-          pointerdown(event: PointerEvent) {
-            if (!grip.press(sample(event)))
-              return
-            unwatch?.()
-            unwatch = watchPress(abandonPress)
-            element.setPointerCapture(event.pointerId)
-          },
-          pointermove(event: PointerEvent) {
-            grip.move(sample(event))
-            settleWatch()
-          },
-          pointerup(event: PointerEvent) {
-            grip.release(sample(event))
-            settleWatch()
-          },
-          // 只管这根指针：第二根手指被取消、收回捕获不影响正在拖的这次。正常松开后浏览器也会收回捕获，那时这次按住已经结束
-          pointercancel(event: PointerEvent) {
-            grip.abandon(event.pointerId)
-            settleWatch()
-          },
-          lostpointercapture(event: PointerEvent) {
-            grip.abandon(event.pointerId)
-            settleWatch()
-          },
-          click: (event: MouseEvent) => grip.click(event.detail),
-        }
-        element.style.touchAction = 'none'
-        for (const [type, listener] of Object.entries(listeners))
-          element.addEventListener(type, listener as EventListener)
-        return () => {
-          for (const [type, listener] of Object.entries(listeners))
-            element.removeEventListener(type, listener as EventListener)
-          // 拖着时元素没了（例如播放队列被清空）：作废，光标、选字放开
-          abandonPress()
-        }
-      }
-    },
+    grip: source => attachGrip(core.grip(source)),
   }
 }

@@ -92,9 +92,16 @@ export interface PlayerState {
   /** 当前这首是因为什么换上来的；还没换过歌（播放队列是空的）时是 null */
   change: SongChange | null
   mode: PlayMode
+  /**
+   * 按上一首、下一首会换到播放队列里的第几首（随机播放时按另排的顺序，跳过放不了的）。手机播放页拖封面时，转盘上露出来的就是这两首。
+   * 没有别的能放的歌（播放队列是空的、只有当前这首能放）时是 null：这时按下一首只会从头再放这首
+   */
+  neighbors: { previous: number | null, next: number | null }
 }
 
-export const INITIAL_PLAYER: PlayerState = { queue: [], current: null, status: 'paused', position: 0, duration: null, trial: false, volume: 1, notice: null, change: null, mode: 'loop' }
+const NO_NEIGHBORS: PlayerState['neighbors'] = { previous: null, next: null }
+
+export const INITIAL_PLAYER: PlayerState = { queue: [], current: null, status: 'paused', position: 0, duration: null, trial: false, volume: 1, notice: null, change: null, mode: 'loop', neighbors: NO_NEIGHBORS }
 
 export interface PlayerContext {
   api: Api
@@ -265,10 +272,15 @@ export function createPlayer(context: PlayerContext): Player {
   let active = deck()
   let spare = deck()
 
+  /**
+   * 发布一次：每次都按播放顺序、放不了的歌重算 neighbors（它们变的时候都跟着一次发布）。
+   * 所以 state.current 要一直指着 queue 里的当前这首：换播放队列时 queue 和 current 一起发布（publishQueue、play）
+   */
   function publish(next: Partial<PlayerState>): void {
     state = { ...state, ...next }
     if (next.current !== undefined && upNext.length > 0)
       upNext = upNext.filter(id => id !== currentId())
+    state.neighbors = neighbors()
     context.write(state)
   }
 
@@ -347,6 +359,15 @@ export function createPlayer(context: PlayerContext): Player {
     if (state.mode === 'one' && playable(state.queue[state.current]))
       return state.current
     return playableFrom(state.current, 1)
+  }
+
+  /** 按上一首、下一首会换到哪首（PlayerState.neighbors）：转一圈回到当前这首自己不算 */
+  function neighbors(): PlayerState['neighbors'] {
+    const { current } = state
+    if (current === null)
+      return NO_NEIGHBORS
+    const other = (index: number | null) => (index === current ? null : index)
+    return { previous: other(playableFrom(current, -1)), next: other(playableFrom(current, 1)) }
   }
 
   /** 这首歌在播放队列里的位置（播放队列里同一首歌只有一份）；不在里面是 -1 */
@@ -758,7 +779,7 @@ export function createPlayer(context: PlayerContext): Player {
       upNext = []
       order = state.mode === 'shuffle' ? [songId, ...shuffled(songs.flatMap(song => song.id === songId ? [] : [song.id]))] : null
       filling = complete ? null : { playlistId: source.id, have: new Set(songs.map(song => song.id)) }
-      publish({ queue: songs.map(song => ({ song, source })) })
+      publish({ queue: songs.map(song => ({ song, source })), current: index })
       void start(index, 0, 'pick')
     },
     libraryChanged(songsOf) {

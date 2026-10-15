@@ -1,6 +1,7 @@
 <!--
   手机播放页（DESIGN.md Layout · 播放页，照 Auxio 的结构，原型 PhonePlayer），一屏放下、不滚动：
   顶上收起键、“正在播放 / 来自「…」”（按住往下拖也能收起播放页）、歌词键；中间一大块是封面，按歌词键或点封面换成歌词，再按换回；
+  按住封面左右拖切到上一首 / 下一首，转盘跟着手转（cover-swipe.svelte.ts、CoverWheel）；读屏和键盘用下面的上一首、下一首按钮。
   下面左对齐的歌名、歌手、专辑，波浪进度条，循环 / 上一首 / 播放 / 下一首 / 随机播放；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
   弹层按自己的高度滑进滑出，拉手往下拖、点按都收起（返回也先收起它）。换歌时封面换碟（CoverWheel），转出屏幕的部分被裁掉。
   红心（#30）和“更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
@@ -11,9 +12,11 @@
   import type { Turn } from './view'
   import { page } from '$app/state'
   import { ChevronDown, MicVocal } from '@lucide/svelte'
+  import { getAppView } from '../app-context.svelte'
   import { langOf } from '../library/view'
   import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
+  import { createCoverSwipe } from './cover-swipe.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import { createDrawer } from './drawer.svelte'
   import Lyrics from './Lyrics.svelte'
@@ -23,11 +26,24 @@
   import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
+  import { neighborSong } from './view'
   import WaveProgress from './WaveProgress.svelte'
 
   const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
 
+  const view = getAppView()
   const queueOpen = $derived(page.state.player === 'queue')
+  /** 拖封面时从左边、右边转进来的上一首、下一首 */
+  const previous = $derived(neighborSong(view.state.player, 'previous'))
+  const next = $derived(neighborSong(view.state.player, 'next'))
+
+  /** 左右拖封面切歌；轻点封面换成歌词 */
+  const swipe = createCoverSwipe({
+    current: () => song.id,
+    has: direction => view.state.player.neighbors[direction] !== null,
+    commit: direction => view.app[direction](),
+    tap: () => (choices.phoneLyrics = true),
+  })
 
   /** 播放队列弹层占屏幕高度的这么多 */
   const SHEET_HEIGHT = 0.86
@@ -84,8 +100,8 @@
         </div>
       {:else}
         <div class='stage absolute inset-0 grid place-items-center' transition:fade>
-          <button type='button' class='face rounded-xl' aria-label='显示歌词' onclick={() => (choices.phoneLyrics = true)}>
-            <CoverWheel {song} {turn} duration={DURATIONS.focal} size={360} fluid eager class='rounded-xl shadow-float' />
+          <button type='button' class='face rounded-xl' aria-label='显示歌词' {@attach swipe.grip}>
+            <CoverWheel {song} {turn} duration={DURATIONS.focal} size={360} fluid eager class='rounded-xl shadow-float' drag={swipe.turned} {previous} {next} />
           </button>
         </div>
       {/if}

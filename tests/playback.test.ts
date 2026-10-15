@@ -1193,6 +1193,74 @@ describe('换歌原因', () => {
   })
 })
 
+/** 播放页上露出来的上一首、下一首（编号）：按上一首、下一首会换到的那首 */
+function neighborIds(app: App): { previous: number | null, next: number | null } {
+  const { queue, neighbors } = app.state.player
+  const id = (index: number | null) => (index === null ? null : queue[index].song.id)
+  return { previous: id(neighbors.previous), next: id(neighbors.next) }
+}
+
+// 手机播放页左右拖封面（#52，DESIGN.md Cover Wheel）：转盘上露出来的那张，得是松手切过去的那首
+describe('按上一首、下一首会换到哪首', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('列表循环：列表里前后能放的那首，跳过无版权的、转一圈接上；网易云没给地址跳过的那首，在有歌出声之前也不算', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    expect(neighborIds(app)).toEqual({ previous: null, next: null })
+
+    await world.netease.reply(BEFORE_NO_COPYRIGHT.url)
+    app.play(LIKED, BEFORE_NO_COPYRIGHT.id)
+    const ids = queueIds(app)
+    expect(neighborIds(app)).toEqual({ previous: ids[ids.indexOf(BEFORE_NO_COPYRIGHT.id) - 1], next: AFTER_NO_COPYRIGHT.id })
+    await world.settle()
+
+    await world.netease.reply('playback/song_url_v1.no-copyright.json')
+    await world.netease.reply(SECOND.url, { until: never() })
+    app.play(LIKED, FIRST.id)
+    await world.settle()
+    expect(current(app)).toBe(SECOND.id)
+    expect(neighborIds(app)).toEqual({ previous: LAST.id, next: THIRD.id })
+  })
+
+  it('播放队列里只有一首：两边都没有（按下一首只会从头再放这首）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await queueOf(app, [FIRST])
+    expect(neighborIds(app)).toEqual({ previous: null, next: null })
+
+    app.addToQueue(LIKED, songOf(app, SECOND.id))
+    expect(neighborIds(app)).toEqual({ previous: SECOND.id, next: SECOND.id })
+  })
+
+  it('随机播放：是按另排的播放顺序换到的那首，不是列表里的前后；退回上一首也一样', async () => {
+    vi.spyOn(Math, 'random').mockImplementation(seeded(26))
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    app.setPlayMode('shuffle')
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.play(LIKED, FIRST.id)
+
+    const shown: (number | null)[] = []
+    for (let i = 0; i < 3; i++) {
+      const { next } = neighborIds(app)
+      shown.push(next)
+      app.next()
+      expect(current(app)).toBe(next)
+    }
+    const list = queueIds(app)
+    expect(shown.map(id => list.indexOf(id!))).not.toEqual([1, 2, 3])
+    expect(neighborIds(app).previous).toBe(shown[1])
+    app.previous()
+    expect(current(app)).toBe(shown[1])
+  })
+})
+
 /** 可重现的伪随机数（mulberry32）：失败时按打出来的种子重跑同一串操作；也拿来顶替 Math.random，让随机播放的顺序固定 */
 function seeded(seed: number): () => number {
   let state = seed
@@ -1448,7 +1516,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     }
   }, 120_000)
 
-  it('随便怎么点歌、下一首播放、加入播放队列、插播、移出、清空、换播放模式、切歌，每一步之后：同一首歌不会在播放队列里出现两次；按下一首会换歌，还没放到的“下一首播放”按下一首就是它（当前这首不会还记在“下一首播放”里）', async () => {
+  it('随便怎么点歌、下一首播放、加入播放队列、插播、移出、清空、换播放模式、切歌，每一步之后：同一首歌不会在播放队列里出现两次；按下一首会换歌，还没放到的“下一首播放”按下一首就是它（当前这首不会还记在“下一首播放”里）；按上一首、下一首换到的就是播放页上露出来的那首', async () => {
     const seed = Math.floor(Math.random() * 100_000)
     const random = seeded(seed)
     const pick = <T>(items: readonly T[]): T => items[Math.floor(random() * items.length)]
@@ -1467,6 +1535,8 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
       for (let step = 0; step < 120; step++) {
         const { queue, current: at } = app.state.player
         const now = current(app)
+        /** 播放页上露出来的上一首、下一首：没有时按了不换歌 */
+        const shown = neighborIds(app)
         const song = pick(songs)
         const off = song.availability === 'noCopyright'
         const action = pick(['play', 'playNext', 'playNext', 'playNext', 'addToQueue', 'addToQueue', 'interject', 'remove', 'clear', 'mode', 'mode', 'mode', 'next', 'next', 'next', 'next', 'previous', 'jump'] as const)
@@ -1532,6 +1602,8 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
           expect(current(app), `按下一首会换歌（${where}）`).not.toBe(now)
         if (expected !== undefined)
           expect(current(app), `按下一首放的是还没放到的“下一首播放”里最后加的那首（${where}）`).toBe(expected)
+        if (action === 'next' || action === 'previous')
+          expect(current(app), `按${action === 'next' ? '下' : '上'}一首换到的是露出来的那首（${where}）`).toBe(shown[action] ?? now)
         upNext = upNext.filter(id => id !== current(app))
       }
     }

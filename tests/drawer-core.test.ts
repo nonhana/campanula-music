@@ -1,8 +1,9 @@
-import type { DrawerPose, GripSource, PointerSample } from '$lib/components/player/drawer-core'
+import type { DrawerPose, GripSource } from '$lib/components/player/drawer-core'
+import type { PointerSample } from '$lib/components/press'
 import { createDrawerCore } from '$lib/components/player/drawer-core'
 import { describe, expect, it } from 'vitest'
 
-// 第二个测试接入点（Spec #11 Testing Decisions）：抽屉的拖动手势核心。
+// 第二个测试接入点“拖动手势核心”（Spec #11 Testing Decisions）的抽屉那一半，另一半是封面转盘（wheel-core.test.ts）。
 // 喂按下、移动、松开、点击、按住断了、浅路由开关，看抽屉跟手到哪、停在哪一头、改不改浅路由、算不算点按。
 // 位置 0 是整个拉开，1 是收在下面看不见；往下拖 y 变大
 
