@@ -6,7 +6,7 @@
   import { resolve } from '$app/paths'
   import { Lock } from '@lucide/svelte'
   import Cover from './Cover.svelte'
-  import { formatCount, langOf, playlistName } from './view'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName } from './view'
 
   interface Props {
     playlist: Playlist
@@ -15,10 +15,12 @@
 
   const { playlist, phone = false }: Props = $props()
   const name = $derived(playlistName(playlist))
+  /** 封面代表点开的那一页（Cover 的 flight）；链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
+  const page = $derived(resolve('/playlists/[id]', { id: String(playlist.id) }))
 </script>
 
 <a href={resolve('/playlists/[id]', { id: String(playlist.id) })} class='group block min-w-0 rounded-lg'>
-  <Cover url={playlist.coverUrl} size={200} fluid class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
+  <Cover url={playlist.coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={page} class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
   <span class={['mt-2.5 block truncate text-neutral-900 font-500', phone ? 'text-body' : 'text-label']} lang={langOf(name)}>{name}</span>
   <span class='mt-0.5 min-w-0 flex items-center gap-1 text-caption text-neutral-600'>
     <span class='flex-none tabular-nums'>{formatCount(playlist.trackCount)} 首</span>

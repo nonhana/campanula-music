@@ -12,7 +12,7 @@
   import { desktopLayout } from '$lib/components/layout'
   import Cover from '$lib/components/library/Cover.svelte'
   import PlaylistSongs from '$lib/components/library/PlaylistSongs.svelte'
-  import { formatCount, langOf, playlistName, playlistView } from '$lib/components/library/view'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName, playlistView } from '$lib/components/library/view'
   import { scrollBehavior } from '$lib/components/motion'
   import { scrollSnapshot } from '$lib/components/snapshot'
   import Scrollbar from '$lib/components/ui/Scrollbar.svelte'
@@ -25,6 +25,8 @@
   const id = $derived(Number(page.params.id))
   const playlist = $derived(library?.songsOf(id) ?? null)
   const shown = $derived(library && playlistView(library, id))
+  /** 页头大封面代表这一页：从格子点进来时，格子的封面飞到这里（Cover 的 flight） */
+  const here = $derived(resolve('/playlists/[id]', { id: String(id) }))
 
   let query = $state('')
   export const snapshot = scrollSnapshot(() => query, (value) => {
@@ -101,7 +103,7 @@
     <div class='min-w-0 pt-2 lg:col-start-2 lg:row-start-1'>
       {#if playlist}
         <header class='flex gap-7'>
-          <Cover url={playlist.playlist.coverUrl} size={200} eager class='rounded-xl shadow-ambient' />
+          <Cover url={playlist.playlist.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
           <div class='min-w-0 flex flex-1 flex-col pt-1'>
             <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
             {@render metaLine(false)}
@@ -138,7 +140,7 @@
 {:else if library}
   {#if playlist}
     <header class='px-4 pt-2 text-center'>
-      <Cover url={playlist.playlist.coverUrl} size={168} eager class='mx-auto rounded-xl shadow-ambient' />
+      <Cover url={playlist.playlist.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
       <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
       {@render metaLine(true)}
     </header>

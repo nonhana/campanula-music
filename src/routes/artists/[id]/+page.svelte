@@ -5,6 +5,7 @@
   骨架换成内容时骨架淡出，头部、热门歌曲、专辑格子各自依次飘入（DESIGN.md Motion）。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
+  import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { getAppView } from '$lib/components/app-context.svelte'
   import { failureText } from '$lib/components/failure'
@@ -12,7 +13,7 @@
   import AlbumTile from '$lib/components/library/AlbumTile.svelte'
   import Cover from '$lib/components/library/Cover.svelte'
   import SongList from '$lib/components/library/SongList.svelte'
-  import { formatCount, langOf, yearOf } from '$lib/components/library/view'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '$lib/components/library/view'
   import { fadeAway, reveal } from '$lib/components/motion'
   import { scrollSnapshot } from '$lib/components/snapshot'
   import Button from '$lib/components/ui/Button.svelte'
@@ -27,6 +28,8 @@
   const content = $derived(opened?.status === 'shown' ? opened.content : null)
   const artist = $derived(content?.artist ?? null)
   const more = $derived(content?.moreAlbums ?? null)
+  /** 页头头像代表这一页：从格子点进来时，格子的头像飞到这里（Cover 的 flight） */
+  const here = $derived(resolve('/artists/[id]', { id: String(id) }))
 
   export const snapshot = scrollSnapshot(() => null, () => {})
 
@@ -55,7 +58,7 @@
 {#snippet header(phone: boolean)}
   {#if artist}
     <header class={phone ? 'px-4 pt-2 text-center' : 'flex items-center gap-8'} in:reveal>
-      <Cover url={artist.avatarUrl} size={phone ? 168 : 200} eager fallback={UserRound} class={['rounded-full shadow-ambient', phone && 'mx-auto']} />
+      <Cover url={artist.avatarUrl} size={FLIGHT_COVER_SIZE} fluid={phone} eager flight={here} fallback={UserRound} class={['rounded-full shadow-ambient', phone && 'mx-auto max-w-[168px]']} />
       <div class='min-w-0 flex-1'>
         <h1 class={['line-clamp-2 break-words text-neutral-900 font-600', phone ? 'mt-4 text-headline-sm' : 'text-headline']} lang={langOf(artist.name)}>{artist.name}</h1>
         <p class={['text-neutral-600 tabular-nums', phone ? 'mt-1.5 text-caption' : 'mt-2 text-label']}>

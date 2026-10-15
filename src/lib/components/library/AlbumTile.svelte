@@ -5,7 +5,7 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import Cover from './Cover.svelte'
-  import { langOf } from './view'
+  import { FLIGHT_COVER_SIZE, langOf } from './view'
 
   interface Props {
     id: number
@@ -17,10 +17,12 @@
   }
 
   const { id, name, coverUrl, detail, phone = false }: Props = $props()
+  /** 封面代表点开的那一页（Cover 的 flight）；链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
+  const page = $derived(resolve('/albums/[id]', { id: String(id) }))
 </script>
 
 <a href={resolve('/albums/[id]', { id: String(id) })} class='group block min-w-0 rounded-lg'>
-  <Cover url={coverUrl} size={200} fluid class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
+  <Cover url={coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={page} class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
   <span class={['mt-2.5 block truncate text-neutral-900 font-500', phone ? 'text-body' : 'text-label']} lang={langOf(name)}>{name}</span>
   {#if detail}
     <span class='mt-0.5 block truncate text-caption text-neutral-600 tabular-nums' lang={langOf(detail)}>{detail}</span>
