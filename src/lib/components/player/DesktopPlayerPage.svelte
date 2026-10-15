@@ -2,15 +2,18 @@
   桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“正在播放 · 来自「…」”，正中一个拖动把手
   （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
   左列封面、歌名、波浪进度条、上一首 / 播放 / 下一首、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）。整页放进视口，不滚动。
+  换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
   红心（#30）、“更多”菜单和播放模式（#26）由之后的票加。放在 PlayerPage 里
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
   import type { Playhead } from './playhead.svelte'
+  import type { Turn } from './view'
   import { ChevronDown } from '@lucide/svelte'
-  import Cover from '../library/Cover.svelte'
   import { langOf } from '../library/view'
+  import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
+  import CoverWheel from './CoverWheel.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
@@ -20,7 +23,7 @@
   import VolumeControl from './VolumeControl.svelte'
   import WaveProgress from './WaveProgress.svelte'
 
-  const { song, source, playhead }: { song: Song, source: string | null, playhead: Playhead } = $props()
+  const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
 
   const PANELS = [
     { key: 'lyrics', label: '歌词' },
@@ -58,15 +61,17 @@
   </button>
 </header>
 
-<!-- 窄于 1024px 时两栏按比例分，右栏的歌词不至于挤成一两个字一行 -->
-<div class='relative grid grid-cols-[minmax(240px,1fr)_minmax(0,1.15fr)] mx-auto max-w-[1240px] min-h-0 w-full flex-1 gap-x-10 px-8 pb-8 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] lg:gap-x-20 lg:px-12'>
+<!-- 窄于 1024px 时两栏按比例分，右栏的歌词不至于挤成一两个字一行。栏间距写在 --gap 上，换碟的遮罩按它算 -->
+<div class='columns relative grid grid-cols-[minmax(240px,1fr)_minmax(0,1.15fr)] mx-auto max-w-[1240px] min-h-0 w-full flex-1 px-8 pb-8 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] lg:px-12'>
   <section class='min-h-0 flex flex-col justify-center' aria-label='播放控制'>
-    <div class='cover self-center'>
-      <Cover url={song.album.coverUrl} size={420} fluid eager class='rounded-xl shadow-float' />
+    <div class='stage'>
+      <div class='cover mx-auto'>
+        <CoverWheel {song} {turn} duration={DURATIONS.focal} size={420} fluid eager class='rounded-xl shadow-float' />
+      </div>
     </div>
 
     <div class='mt-6'>
-      <NowPlayingTitle {song} />
+      <NowPlayingTitle {song} {turn} />
     </div>
 
     <div class='mt-3'>
@@ -116,6 +121,31 @@
 </div>
 
 <style>
+  /* 换碟只在左列里转：遮罩从左列两边各伸出半个栏间距，伸出的这一截里渐渐淡掉，转出去的封面碰不到歌词。
+     上下多留出地方，转开的封面往下沉、封面的阴影都不被裁掉；它不接点按，盖着下面的歌名、进度条也不碍事 */
+  .columns {
+    --gap: 40px;
+
+    column-gap: var(--gap);
+  }
+
+  @media (min-width: 1024px) {
+    .columns {
+      --gap: 80px;
+    }
+  }
+
+  .stage {
+    --bleed: calc(var(--gap) / 2);
+    --rise: 48px;
+    --sink: 50%;
+
+    margin: calc(-1 * var(--rise)) calc(-1 * var(--bleed)) calc(-1 * var(--sink));
+    padding: var(--rise) var(--bleed) var(--sink);
+    mask-image: linear-gradient(to right, transparent, #000 var(--bleed), #000 calc(100% - var(--bleed)), transparent);
+    pointer-events: none;
+  }
+
   /* 封面不能把下面的控制键挤出视口：视口矮时跟着缩 */
   .cover {
     width: 100%;

@@ -16,7 +16,7 @@
   import PhonePlayerPage from './PhonePlayerPage.svelte'
   import { closePlayerPage, closeQueueSheet, playerDrawer } from './player-page.svelte'
   import { createPlayhead } from './playhead.svelte'
-  import { currentSong, sourceName } from './view'
+  import { currentSong, sourceName, turnOf } from './view'
 
   const { open }: { open: boolean } = $props()
 
@@ -30,6 +30,8 @@
   /** 播放队列里有歌时才有（SignedInFrame）；退出登录清空播放队列的那一刻还在，什么都不画 */
   const song = $derived(currentSong(player))
   const source = $derived(player.current === null ? null : sourceName(view.state.library, player.queue[player.current].source))
+  /** 换歌时封面往哪转、歌名往哪飘 */
+  const turn = $derived(turnOf(player.change, 'page'))
   const playhead = createPlayhead(() => view.state.player)
   const radius = $derived(Math.max(0, Math.min(RADIUS, playerDrawer.position * (innerHeight.current ?? 0))))
 
@@ -76,9 +78,9 @@
   {#if song}
     <CoverTint coverUrl={song.album.coverUrl} />
     {#if desktopLayout.current}
-      <DesktopPlayerPage {song} {source} {playhead} />
+      <DesktopPlayerPage {song} {source} {playhead} {turn} />
     {:else}
-      <PhonePlayerPage {song} {source} {playhead} />
+      <PhonePlayerPage {song} {source} {playhead} {turn} />
     {/if}
   {/if}
 </div>

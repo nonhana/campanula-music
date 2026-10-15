@@ -1,23 +1,28 @@
 <!--
-  播放页左对齐的歌名、歌手、专辑：歌名桌面用 Headline-sm、手机用 Title（DESIGN.md Typography），只放试听片段时跟着“试听”徽标
+  播放页左对齐的歌名、歌手、专辑：歌名桌面用 Headline-sm、手机用 Title（DESIGN.md Typography），只放试听片段时跟着“试听”徽标。
+  换歌时跟着换碟横着飘（SongSwap）
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
+  import type { Turn } from './view'
   import { getAppView } from '../app-context.svelte'
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, langOf } from '../library/view'
+  import SongSwap from './SongSwap.svelte'
 
-  const { song, phone = false }: { song: Song, phone?: boolean } = $props()
+  const { song, turn, phone = false }: { song: Song, turn: Turn | null, phone?: boolean } = $props()
   const view = getAppView()
 </script>
 
-<div class='min-w-0'>
-  <div class='min-w-0 flex items-center gap-2'>
-    <h2 class={['truncate text-neutral-900 font-600', phone ? 'text-title' : 'text-headline-sm']} lang={langOf(song.name)}>{song.name}</h2>
-    {#if view.state.player.trial}<SongBadge availability='trial' />{/if}
-  </div>
-  <p class='mt-0.5 truncate text-body text-neutral-700' lang={langOf(artistLine(song))}>{artistLine(song)}</p>
-  {#if song.album.name}
-    <p class='truncate text-label text-neutral-600 font-400' lang={langOf(song.album.name)}>{song.album.name}</p>
-  {/if}
-</div>
+<SongSwap {song} {turn} place='page'>
+  {#snippet children(shown)}
+    <div class='min-w-0 flex items-center gap-2'>
+      <h2 class={['truncate text-neutral-900 font-600', phone ? 'text-title' : 'text-headline-sm']} lang={langOf(shown.name)}>{shown.name}</h2>
+      {#if view.state.player.trial}<SongBadge availability='trial' />{/if}
+    </div>
+    <p class='mt-0.5 truncate text-body text-neutral-700' lang={langOf(artistLine(shown))}>{artistLine(shown)}</p>
+    {#if shown.album.name}
+      <p class='truncate text-label text-neutral-600 font-400' lang={langOf(shown.album.name)}>{shown.album.name}</p>
+    {/if}
+  {/snippet}
+</SongSwap>

@@ -11,6 +11,11 @@ export const EASINGS = {
   'in-soft': [0.4, 0, 1, 1],
 } as const
 
+/** 曲线的 CSS 写法：uno.config.ts 的 --ease-* 变量、Web Animations（element.animate 的 easing）都用它；组件的 CSS 里写 var(--ease-…) */
+export function cssEasing(name: keyof typeof EASINGS): string {
+  return `cubic-bezier(${EASINGS[name].join(', ')})`
+}
+
 /**
  * 时长（ms）。CSS 里每个都有两个变量：
  * --duration-<名字> 给透明度、颜色、模糊，减少动态效果时最多 150ms；
@@ -106,6 +111,12 @@ export const FLOAT_IN_DELAY = 60
  * 最多等这么久（ms），等不到就不飞；等的时候画面停在旧的一帧上，所以要短
  */
 export const LANDING_WAIT = 100
+
+/**
+ * 换碟（DESIGN.md Cover Wheel）：封面挂在转盘边上，轴心在封面正下方、离封面中心 pivot 倍封面边长，相邻两张隔 pitch 度。
+ * 歌名、歌手、专辑比封面晚 textDelay ms 横着飘：播放页旧的飘出 textOut px、新的飘进 textIn px（播放条用飘入飘出的默认距离）
+ */
+export const WHEEL = { pivot: 1.6, pitch: 28, textDelay: 80, textOut: 12, textIn: 16 } as const
 
 /** 按钮按下时轻轻缩到这么大；减少动态效果时不缩。CSS 变量 --press-scale，工具类 press */
 export const PRESS_SCALE = 0.98

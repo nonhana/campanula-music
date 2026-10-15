@@ -59,6 +59,15 @@ export type PlayerNotice
   /** 播放队列里没有能放的歌 */
     | { kind: 'nothingPlayable' }
 
+/**
+ * 当前这首是因为什么换上来的。界面换碟看它往哪转（DESIGN.md Cover Wheel），不靠前后序号猜：随机播放时序号不连续。
+ * - next / previous：听众按了下一首、上一首
+ * - pick：在列表里点歌、在播放队列里点歌
+ * - continue：当前这首放完，自动接着放下一首（包括快放完时两个播放器交接，ADR-0010）
+ * - skip：网易云没给要放的那首的播放地址，跳到它后面能放的
+ */
+export type SongChange = 'next' | 'previous' | 'pick' | 'continue' | 'skip'
+
 export interface PlayerState {
   queue: readonly QueueEntry[]
   /** 当前这首在播放队列里的位置；播放队列是空的时是 null */
@@ -73,9 +82,11 @@ export interface PlayerState {
   /** 音量，0 到 1 */
   volume: number
   notice: PlayerNotice | null
+  /** 当前这首是因为什么换上来的；还没换过歌（播放队列是空的）时是 null */
+  change: SongChange | null
 }
 
-export const INITIAL_PLAYER: PlayerState = { queue: [], current: null, status: 'paused', position: 0, duration: null, trial: false, volume: 1, notice: null }
+export const INITIAL_PLAYER: PlayerState = { queue: [], current: null, status: 'paused', position: 0, duration: null, trial: false, volume: 1, notice: null, change: null }
 
 export interface PlayerContext {
   api: Api
@@ -273,17 +284,23 @@ export function createPlayer(context: PlayerContext): Player {
     return state.notice?.kind === 'slow' ? null : state.notice
   }
 
-  /** 从 position 秒开始放播放队列里的第 index 首：在空闲的播放器上放，出声了再停旧的 */
-  async function start(index: number, position: number, notice: PlayerNotice | null = null): Promise<void> {
+  /**
+   * 从 position 秒开始放播放队列里的第 index 首：在空闲的播放器上放，出声了再停旧的。
+   * change：为什么换成这首；是 null 时是同一首接着放（暂停后、地址过期后），原因不变
+   */
+  async function start(index: number, position: number, change: SongChange | null, notice: PlayerNotice | null = null): Promise<void> {
     const mine = ++attempt
     preparing += 1
     prepared = false
     handoverFailed = false
+    const { song } = state.queue[index]
+    // 正在换过去、还没出声的那首不要了（连按几次下一首）：停下它，免得它缓冲好了和当前这首一起出声
+    if (incoming && !holds(incoming.deck, song))
+      incoming.deck.audio.pause()
     incoming = null
     stopSlow()
-    const { song } = state.queue[index]
     startAt = position
-    publish({ current: index, position, duration: null, trial: false, notice })
+    publish({ current: index, position, duration: null, trial: false, notice, change: change ?? state.change })
     if (!holds(spare, song)) {
       let url = urls.get(song.id) ?? null
       if (!fresh(url)) {
@@ -326,7 +343,7 @@ export function createPlayer(context: PlayerContext): Player {
       publish({ status: 'paused', notice: { kind: 'nothingPlayable' } })
       return
     }
-    void start(next, 0, { kind: 'skipped', song })
+    void start(next, 0, 'skip', { kind: 'skipped', song })
   }
 
   /** 当前这首出声了：空闲的播放器取好下一首的地址、缓冲着 */
@@ -381,8 +398,8 @@ export function createPlayer(context: PlayerContext): Player {
     play(spare)
   }
 
-  /** 正在换过去的播放器出声了：停掉旧的，它就是当前的 */
-  function arrived(deck: Deck, index: number): void {
+  /** 正在换过去的播放器出声了：停掉旧的，它就是当前的。快放完时交接的，这时才换成下一首 */
+  function arrived({ deck, index, handover }: Incoming): void {
     incoming = null
     stopSlow()
     if (deck !== active) {
@@ -394,7 +411,7 @@ export function createPlayer(context: PlayerContext): Player {
     prepared = false
     // 有歌出声了：之前没给地址的歌，下一轮再试一次（网易云偶尔一时不给）
     unavailable.clear()
-    publish({ current: index, status: 'playing', position: deck.audio.currentTime, duration: durationOf(deck), trial: deck.url!.trial, notice: noticeAfterSounding() })
+    publish({ current: index, status: 'playing', position: deck.audio.currentTime, duration: durationOf(deck), trial: deck.url!.trial, notice: noticeAfterSounding(), change: handover ? 'continue' : state.change })
     void prepareNext()
   }
 
@@ -405,7 +422,7 @@ export function createPlayer(context: PlayerContext): Player {
     if (incoming?.handover) {
       // 交接中、下一首还没出声：它就是当前这首了，等它出声
       incoming = { ...incoming, handover: false }
-      publish({ current: incoming.index, status: 'buffering', position: 0, duration: durationOf(incoming.deck), trial: incoming.deck.url!.trial })
+      publish({ current: incoming.index, status: 'buffering', position: 0, duration: durationOf(incoming.deck), trial: incoming.deck.url!.trial, change: 'continue' })
       startSlow()
       return
     }
@@ -414,21 +431,21 @@ export function createPlayer(context: PlayerContext): Player {
     const next = playableFrom(state.current, 1)
     if (handoverFailed) {
       handoverFailed = false
-      publish({ current: next ?? state.current, status: 'paused', position: 0, duration: null, notice: { kind: 'streamFailed' } })
+      publish({ current: next ?? state.current, status: 'paused', position: 0, duration: null, notice: { kind: 'streamFailed' }, change: next === null ? state.change : 'continue' })
       return
     }
     if (next === null) {
       publish({ status: 'paused', position: 0 })
       return
     }
-    void start(next, 0)
+    void start(next, 0, 'continue')
   }
 
   /** 当前这首的音频没加载下来 */
   function streamFailed(deck: Deck): void {
     // 地址过期了：重新取，从原来的位置接着放
     if (!fresh(deck.url) && state.current !== null) {
-      void start(state.current, state.position, state.notice)
+      void start(state.current, state.position, null, state.notice)
       return
     }
     pauseAll()
@@ -439,7 +456,7 @@ export function createPlayer(context: PlayerContext): Player {
     const { audio } = deck
     audio.addEventListener('playing', () => {
       if (incoming?.deck === deck)
-        return arrived(deck, incoming.index)
+        return arrived(incoming)
       if (incoming || !isCurrent(deck))
         return
       stopSlow()
@@ -512,7 +529,7 @@ export function createPlayer(context: PlayerContext): Player {
       play(active)
       return
     }
-    void start(index, state.position)
+    void start(index, state.position, null)
   }
 
   /** 当前这首跳到第 position 秒（见 Player.seek） */
@@ -543,7 +560,7 @@ export function createPlayer(context: PlayerContext): Player {
       unavailable.clear()
       filling = complete ? null : source.id
       publish({ queue: songs.map(song => ({ song, source })) })
-      void start(index, 0)
+      void start(index, 0, 'pick')
     },
     libraryChanged(songsOf) {
       if (filling === null)
@@ -583,17 +600,17 @@ export function createPlayer(context: PlayerContext): Player {
     next() {
       const index = state.current === null ? null : playableFrom(state.current, 1)
       if (index !== null)
-        void start(index, 0)
+        void start(index, 0, 'next')
     },
     previous() {
       const index = state.current === null ? null : playableFrom(state.current, -1)
       if (index !== null)
-        void start(index, 0)
+        void start(index, 0, 'previous')
     },
     jump(index) {
       const entry = state.queue[index]
       if (entry && index !== state.current && entry.song.availability !== 'noCopyright')
-        void start(index, 0)
+        void start(index, 0, 'pick')
     },
     seek,
     playFrom(position) {

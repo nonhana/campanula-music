@@ -2,17 +2,19 @@
   手机播放页（DESIGN.md Layout · 播放页，照 Auxio 的结构，原型 PhonePlayer），一屏放下、不滚动：
   顶上收起键、“正在播放 / 来自「…」”（按住往下拖也能收起播放页）、歌词键；中间一大块是封面，按歌词键或点封面换成歌词，再按换回；
   下面左对齐的歌名、歌手、专辑，波浪进度条，上一首 / 播放 / 下一首；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
-  弹层按自己的高度滑进滑出，拉手往下拖、点按都收起（返回也先收起它）。
+  弹层按自己的高度滑进滑出，拉手往下拖、点按都收起（返回也先收起它）。换歌时封面换碟（CoverWheel），转出屏幕的部分被裁掉。
   红心（#30）、“更多”菜单和播放模式（#26）由之后的票加。放在 PlayerPage 里
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
   import type { Playhead } from './playhead.svelte'
+  import type { Turn } from './view'
   import { page } from '$app/state'
   import { ChevronDown, MicVocal } from '@lucide/svelte'
-  import Cover from '../library/Cover.svelte'
   import { langOf } from '../library/view'
   import { fade } from '../motion'
+  import { DURATIONS } from '../motion-tokens'
+  import CoverWheel from './CoverWheel.svelte'
   import { createDrawer } from './drawer.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
@@ -22,7 +24,7 @@
   import SkipButton from './SkipButton.svelte'
   import WaveProgress from './WaveProgress.svelte'
 
-  const { song, source, playhead }: { song: Song, source: string | null, playhead: Playhead } = $props()
+  const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
 
   const queueOpen = $derived(page.state.player === 'queue')
 
@@ -82,14 +84,14 @@
       {:else}
         <div class='stage absolute inset-0 grid place-items-center' transition:fade>
           <button type='button' class='face rounded-xl' aria-label='显示歌词' onclick={() => (choices.phoneLyrics = true)}>
-            <Cover url={song.album.coverUrl} size={360} fluid eager class='rounded-xl shadow-float' />
+            <CoverWheel {song} {turn} duration={DURATIONS.focal} size={360} fluid eager class='rounded-xl shadow-float' />
           </button>
         </div>
       {/if}
     </div>
 
     <div class='flex-none pt-5'>
-      <NowPlayingTitle {song} phone />
+      <NowPlayingTitle {song} {turn} phone />
 
       <div class='mt-2'>
         <WaveProgress {playhead} touch />

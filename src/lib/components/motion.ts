@@ -2,22 +2,30 @@ import type { TransitionConfig } from 'svelte/transition'
 import { prefersReducedMotion } from 'svelte/motion'
 import { AXES, DURATIONS, EASINGS, FLOAT_DISTANCE, REDUCED_FADE_MS, STAGGER } from './motion-tokens'
 
-// 组件里的 JS 动效（Svelte 过渡、Tween、程序滚动）从这里取时长和曲线，减少动态效果也在这里统一处理（DESIGN.md Motion）：
-// 位移、缩放、平滑滚动去掉，淡入淡出和颜色变化留着、最多 150ms。组件里不再自己判断。CSS 那一半在 uno.config.ts
+// 组件里的 JS 动效（Svelte 过渡、Tween、换碟、程序滚动）从这里取时长和曲线，减少动态效果也在这里统一处理（DESIGN.md Motion）：
+// 位移、缩放、平滑滚动去掉，淡入淡出和颜色变化留着、最多 150ms。组件里不再自己判断。CSS 那一半在 uno.config.ts。
+// 看不见时不动：页面在后台（锁屏、切走）时时长都是 0，状态直接到位。浏览器在后台不画帧，这时开始的动画要等回到前台才播，就成了补放
 
 /** 系统设置里打开了“减少动态效果” */
 export function reducedMotion(): boolean {
   return prefersReducedMotion.current
 }
 
-/** 透明度、颜色的时长：减少动态效果时最多 150ms */
-function fadeMs(ms: number): number {
+/** 页面在后台（锁屏、切走）：动效直接到位，回来时不补放 */
+export function unseen(): boolean {
+  return document.visibilityState === 'hidden'
+}
+
+/** 透明度、颜色的时长：减少动态效果时最多 150ms，页面在后台时是 0 */
+export function fadeMs(ms: number): number {
+  if (unseen())
+    return 0
   return reducedMotion() ? Math.min(ms, REDUCED_FADE_MS) : ms
 }
 
-/** 位移、缩放、宽高的时长：减少动态效果时是 0，直接到位 */
+/** 位移、缩放、宽高的时长：减少动态效果、页面在后台时是 0，直接到位 */
 export function moveMs(ms: number): number {
-  return reducedMotion() ? 0 : ms
+  return reducedMotion() || unseen() ? 0 : ms
 }
 
 /** 程序滚动（翻页键、歌词跟着当前行走）：减少动态效果时直接跳过去 */
@@ -63,11 +71,11 @@ function cubicBezier([x1, y1, x2, y2]: readonly [number, number, number, number]
   return t => (t <= 0 ? 0 : t >= 1 ? 1 : y(solve(t)))
 }
 
-const easeOutSoft = cubicBezier(EASINGS['out-soft'])
+export const easeOutSoft = cubicBezier(EASINGS['out-soft'])
 const easeInSoft = cubicBezier(EASINGS['in-soft'])
 
 /** Svelte 传给过渡函数的第三个参数：in: / out: 各是 in / out，transition: 是 both（按飘入算） */
-interface TransitionOptions {
+export interface TransitionOptions {
   direction?: 'in' | 'out' | 'both'
 }
 
@@ -137,10 +145,12 @@ export interface FloatParams {
 /**
  * 飘入飘出（DESIGN.md Motion，The Float Rule）：透明度变化的同时朝 toward 那边漂。
  * 飘入从反方向漂过来停住，先快后慢；飘出往 toward 漂走，越走越快。用 in:float 和 out:float 分开写，进出各按各的规矩；
- * transition:float 两头都按飘入算。减少动态效果时不漂，只淡入淡出（最多 150ms）。
+ * transition:float 两头都按飘入算。减少动态效果时不漂，只淡入淡出（最多 150ms）；页面在后台时不等 delay，直接到位。
  * 漂动写在 translate 上，不碰元素自己的 transform
  */
 export function float(_node: Element, { toward, distance, duration, delay = 0 }: FloatParams, options: TransitionOptions = {}): TransitionConfig {
+  if (unseen())
+    return { duration: 0 }
   const out = options.direction === 'out'
   const ms = duration ?? (out ? DURATIONS['state-out'] : DURATIONS.state)
   const easing = easingOf(options)
