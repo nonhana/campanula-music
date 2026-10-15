@@ -17,6 +17,12 @@ export function shownDuration(player: PlayerState): number {
   return player.duration ?? (currentSong(player)?.duration ?? 0) / 1000
 }
 
+/** 按上一首、下一首会换到的那首（手机播放页拖封面时从两边转进来）；没有别的歌可换时是 null */
+export function neighborSong(player: PlayerState, direction: keyof PlayerState['neighbors']): Song | null {
+  const index = player.neighbors[direction]
+  return index === null ? null : player.queue[index].song
+}
+
 /** 换歌时封面、歌名往哪边走（DESIGN.md Cover Wheel）：left 往左转、right 往右转，fade 原地交叉淡化 */
 export type Turn = 'left' | 'right' | 'fade'
 

@@ -1,6 +1,7 @@
+import type { Grip } from '../press'
 import { pressBroken } from '../press'
 
-// 抽屉的拖动手势核心（Spec #11 的第二个测试接入点）：不碰页面、不碰 Svelte 的纯逻辑。
+// 抽屉的拖动手势核心（Spec #11 的第二个测试接入点“拖动手势核心”的一半，另一半是封面转盘的 wheel-core.ts）：不碰页面、不碰 Svelte 的纯逻辑。
 // 抽屉从底下升起、缩回底下，位置 0 是整个拉开，1 是收在下面看不见；开没开着由浅路由说了算（settle）。
 // 拖动来源（grip）把按下、移动、松开、点击交给它，它说抽屉跟手到哪、停在哪一头、要不要改浅路由、这次算不算点按。
 // 规则照主流的 Vaul（github.com/emilkowalski/vaul）：挪过起拖距离才开始拖，
@@ -14,21 +15,6 @@ export type DrawerPose
   = | { dragging: true, position: number }
     | { dragging: false, end: DrawerEnd }
 
-/** 一次指针事件里用得到的部分（PointerEvent 照抄过来） */
-export interface PointerSample {
-  pointerId: number
-  pointerType: string
-  isPrimary: boolean
-  /** 按下的是哪个键（0 主键） */
-  button: number
-  /** 现在按着哪些键（1 主键，2 右键） */
-  buttons: number
-  x: number
-  y: number
-  /** 毫秒（event.timeStamp） */
-  time: number
-}
-
 export interface GripSource {
   /** 从哪一头拖：把手是拉开着往下拖（open → 收起），播放条是收着往上拖（closed → 拉开） */
   from: 'open' | 'closed'
@@ -36,25 +22,6 @@ export interface GripSource {
   commit: () => void
   /** 没拖动、只是点按（键盘的 Enter、空格也算） */
   tap?: () => void
-}
-
-/** 一个拖动来源：把它收到的指针事件、点击原样交过来 */
-export interface Grip {
-  /** 正按着（认了的那次按下还没结束）：这时候才要捕获指针、盯着按住断没断 */
-  readonly holding: boolean
-  /** 按下：只认主指针（第一根手指）的主键；上一次没等到松开的先作废。返回认不认这次按下 */
-  press: (sample: PointerSample) => boolean
-  /** 移动：别的指针的不管；发现按住断了（主键松开了、又按了右键）就作废 */
-  move: (sample: PointerSample) => void
-  /** 松开：别的指针（第二根手指）的不管 */
-  release: (sample: PointerSample) => void
-  /**
-   * 按住断了：作废，拖着的回到浅路由说的那一头，跟着来的 click 不算点按。
-   * 给了 pointerId（pointercancel、指针捕获被收回）时只管这根指针；不给（右键菜单、切走窗口、页面藏起来）就是这次按住
-   */
-  abandon: (pointerId?: number) => void
-  /** 松开之后跟着来的 click；detail 照抄 MouseEvent.detail（键盘按出来的是 0） */
-  click: (detail: number) => void
 }
 
 export interface DrawerCore {

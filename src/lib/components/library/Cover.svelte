@@ -5,6 +5,21 @@
   fluid：宽度跟着容器（网格里的封面），size 只决定取多大的缩略图。
   flight：这张封面代表的页面地址（格子里是点开的那一页，页头是这一页）。换页时两头地址一样的封面从格子飞到页头、再飞回去（shell/page-transition.ts）
 -->
+<script lang='ts' module>
+  import { preloadImage } from '../image-reveal.svelte'
+  import { thumbnailUrl } from './view'
+
+  /** 按显示尺寸 size 取的缩略图地址：按 2 倍屏取 */
+  function sourceOf(url: string, size: number): string {
+    return thumbnailUrl(url, size * 2)
+  }
+
+  /** 先在后台把这张封面加载好（url、size 和之后挂上的 Cover 一样），挂上时直接显示、不从薄荷底上淡入 */
+  export function preloadCover(url: string, size: number): void {
+    preloadImage(sourceOf(url, size))
+  }
+</script>
+
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
   import type { ClassValue } from 'svelte/elements'
@@ -12,7 +27,6 @@
   import { createImageReveal } from '../image-reveal.svelte'
   import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
-  import { thumbnailUrl } from './view'
 
   interface Props {
     url: string
@@ -28,7 +42,7 @@
   }
 
   const { url, size, fluid = false, class: klass, eager = false, fallback: Fallback = Music, flight }: Props = $props()
-  const source = $derived(thumbnailUrl(url, size * 2))
+  const source = $derived(sourceOf(url, size))
   const reveal = createImageReveal(() => source)
 </script>
 
