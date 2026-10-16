@@ -3,7 +3,7 @@
   右边播放模式（按一下换一种）、音量、播放队列（打开播放页的播放队列）；
   顶边一条 2px 的薄荷进度线，也是滑块：点按、拖动跳到那里，拖动时左边的时间跟着走（SeekLine）。
   换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）；在列表里点歌时那一行的封面飞进小窗，
-  落下时才换上新的歌名（cover-flight.svelte.ts）。拉开、收起播放页时小窗里的封面长成播放页的大封面（CoverRelay），换了歌就先在后台取好那张大图。
+  落下时才换上新的歌名（cover-flight.svelte.ts）。换了歌就先在后台取好播放页那张大封面，拉开播放页时直接是大图。
   放在 DesktopShell 的 bar 里
 -->
 <script lang='ts'>
@@ -14,10 +14,9 @@
   import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
   import { landingOf } from './cover-flight.svelte'
-  import { coverRelaying, prefetchPageCover } from './CoverRelay.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { gripToOpenPlayerPage, openPlayerPage, playerPageChoices } from './player-page.svelte'
+  import { gripToOpenPlayerPage, openPlayerPage, playerPageChoices, prefetchPageCover } from './player-page.svelte'
   import PlayModeButton from './PlayModeButton.svelte'
   import { createSeekSlider } from './seek-slider.svelte'
   import SeekLine from './SeekLine.svelte'
@@ -55,8 +54,7 @@
 
   {#if song}
     <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
-      <!-- 拉开、收起播放页时这里藏着，封面跟着抽屉长成播放页的大封面（CoverRelay） -->
-      <span class='size-12 flex-none overflow-hidden rounded-md' style:opacity={coverRelaying() ? 0 : undefined} {@attach landing.slot}>
+      <span class='size-12 flex-none overflow-hidden rounded-md' {@attach landing.slot}>
         {#if landing.song}
           <CoverWheel song={landing.song} turn={landing.turn} duration={DURATIONS['focal-bar']} size={COVER_SIZE} eager class='rounded-md' />
         {/if}

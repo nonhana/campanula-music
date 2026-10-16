@@ -568,11 +568,6 @@
         "purpose": "点歌时封面飞进播放条。点的是正在放的那首、在播放页的播放队列里点歌时不飞；连续快点只有最后一首在飞。"
       },
       {
-        "name": "cover-relay",
-        "value": "player bar cover ↔ player page cover, translate + scale interpolated by the drawer position, radius 8px → 16px",
-        "purpose": "拉开、收起、拖动播放页时，小封面长成大封面、再缩回去。"
-      },
-      {
         "name": "panel-track",
         "value": "lyrics / queue panels side by side, track translateX 0 ↔ -50% over 360ms ease-out-soft, in step with the tab indicator",
         "purpose": "桌面播放页右栏换标签。两块都一直挂着，看不见的那块不能被 Tab 到。"

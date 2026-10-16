@@ -86,7 +86,7 @@ r = await motion(51, 'wheel-page-next', 'desktop', [0, 60, 150, 300, 600],
 - `setup`、`trigger`、`grab` 可以写 `sweep.py` 里 `SETUPS`、`TRIGGERS`、`GRABS` 的名字（`'play'`、`'play-open'`、`'page-next'`、`'bar-previous'`、`'pick-other'`、`'page'`、`'bar'`…），也可以写自己的函数、选择器。播放页开着时播放条被盖住：拍播放条的组用 `setup='play'`、`path='/'` 重新打开。
 - 结果里的 `anims` 是冻住的每个动画的时长和动的属性，对照 DESIGN.md 的数字；`reduced=True` 时只能有 `opacity`，不超过 150ms。
 - 打断、连续触发（连按三次下一首、转到一半又切歌）用 `slow(票号, 名字, 视口, [(秒, 触发)…], [截图的秒…])`：动画放慢 10 倍，按墙上的时间触发和截图，文件名里的毫秒是折回的动效时刻。
-- 抽屉（播放页、底部弹层）和跟着它的封面接力是 JS 补间，`motion`、`slow` 冻不住，用 `tween(票号, 名字, 视口, [毫秒…], trigger='bar-open', reset='page-close')`：每一帧从头触发一次，把补间停在那一毫秒拍，结果里的 `relay` 是那一刻接力封面的 transform。拖到一半松手弹回：`setup=drag_js(选择器, -200)`（按住往上拖 200px）、`trigger='release'`。先 `await run(SETUPS['play'])` 放好歌。
+- 抽屉（播放页、底部弹层）是 JS 补间，`motion`、`slow` 冻不住，用 `tween(票号, 名字, 视口, [毫秒…], trigger='bar-open', reset='page-close')`：每一帧从头触发一次，把补间停在那一毫秒拍。拖到一半松手弹回：`setup=drag_js(选择器, -200)`（按住往上拖 200px）、`trigger='release'`。先 `await run(SETUPS['play'])` 放好歌。
 - 看不见时不动：先 `await run(SETUPS['play-open'])` 摆好页面，再 `await hidden(['page-next', 'page-next'])`，后台期间和回来以后新开始的动画都应是 0，画面上只剩一张封面、一块歌名。
 - 限速才看得到的（转圈晚 300ms 出现、封面淡入）加 `network='Slow 4G'`，拍完自己取消。封面淡入用 `on_load=True, grab='main img'`：它让网络图片重新下载，冻住新开始的淡入。
 - 换页（View Transitions）不写 `grab`：`trigger` 点链接或 `history.back()`，冻住的是 `::view-transition-*` 上的动画，结果里的 `types` 是方向（up / down / left / right / fade）。冻着的时候新的一帧仍是活的（播放条的进度照常走）；过渡里 Chrome 把点按都交给 `<html>`，要点东西先拍完。

@@ -218,7 +218,7 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 
 ### Motion（飘入飘出）
 
-动效只回答三件事：刚才的操作生效了没有、东西从哪来到哪去、现在是什么状态。它像晨风里的花瓣和薄雾：轻轻飘来、停稳；离开时先淡、再走。封面是画面的主角，动效也跟着封面走：同一张封面从格子飞到页头、从歌曲行飞进播放条、从播放条长成播放页的大封面；切歌时换碟（见 Components 的 Cover Wheel）。
+动效只回答三件事：刚才的操作生效了没有、东西从哪来到哪去、现在是什么状态。它像晨风里的花瓣和薄雾：轻轻飘来、停稳；离开时先淡、再走。封面是画面的主角，动效也跟着封面走：同一张封面从格子飞到页头、从歌曲行飞进播放条；切歌时换碟（见 Components 的 Cover Wheel）。
 
 - **飘入**：透明度从 0 到 1，同时从来的方向漂过来停住（12px，整页 16px），先快后慢（`ease-out-soft`，`cubic-bezier(0.16, 1, 0.3, 1)`），不回弹。
 - **飘出**：透明度从 1 到 0，往去的方向漂走（6px，整页 8px），越走越快（`ease-in-soft`，`cubic-bezier(0.4, 0, 1, 1)`），时长约是飘入的六成。新内容不等旧内容走完：飘出开始 60ms 后飘入就开始。
@@ -233,7 +233,7 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 - **减少动态效果**（系统设置里打开时）：去掉所有位移、旋转、缩放、飞行和循环动画（波浪流动、三根竖条、骨架扫光、转圈）；保留 150ms 以内的淡入淡出和颜色变化，状态变化仍然看得出来。拖动（抽屉、转盘）照样跟着手走，松手后直接到位。
 - **写在哪**：时长、曲线只在 `src/lib/components/motion-tokens.ts` 写数字。UnoCSS 里写 `duration-<档名>`（透明度、颜色）、`duration-move-<档名>`（位移、缩放、宽高、字号）、`ease-out-soft`（默认，可不写）/ `ease-in-soft`，按钮按下写 `press`；组件的 CSS 里写 `var(--duration-…)`、`var(--move-…)`、`var(--ease-…)`，循环加 `animation-play-state: var(--loop-state)`；Svelte 过渡用 `src/lib/components/motion.ts` 的 `float`（飘入飘出，带方向和距离）、`fade`、`iconSwap`，骨架换成内容用 `out:fadeAway`（骨架）和 `in:reveal`（内容，一组标 `data-reveal-group`）。换页的过渡写在 `uno.config.ts`（方向由 `src/lib/components/shell/page-transition.ts` 给），换页时不动的块带 `view-transition-class: still`，跟着交叉淡化的带 `crossfade`。从格子飞到页头的封面：两头的 `Cover` 写 `flight`（这张封面代表哪一页的地址），尺寸用 `src/lib/components/library/view.ts` 的 `FLIGHT_COVER_SIZE`，名字由 `page-transition.ts` 在换页时给。换碟在 `src/lib/components/player/CoverWheel.svelte`（Web Animations，转盘的数字在令牌的 `WHEEL`，曲线用 `cssEasing`），歌名跟着飘用 `SongSwap.svelte`，往哪转由 `player/view.ts` 的 `turnOf` 按 App 发布的换歌原因（`PlayerState.change`）给。手机播放页左右拖封面：手势怎么判断在 `player/wheel-core.ts`（和抽屉的 `drawer-core.ts` 一样是不碰页面的手势核心，指针事件都由 `press.ts` 的 `attachGrip` 接上），`player/cover-swipe.svelte.ts` 把它接到封面按钮和 `CoverWheel` 的 `drag` 上；两边转进来的是 App 发布的 `PlayerState.neighbors`（按上一首、下一首会换到的那首）。转盘、拖动每一帧都不读页面的样式和排版（封面此刻的角度按动画进度算，封面宽度由 ResizeObserver 记下）：读一次就要把整页重算一遍，快速连切时会掉帧。大图先铺小图用 `Cover` 的 `placeholder` 和 `load`，小图的尺寸是 `player/view.ts` 的 `SMALL_COVER`（封面染底也用它）；后台先加载、解码好用 `preloadCover`。减少动态效果由令牌自己变（`--duration-*` 最多 150ms、`--move-*` 为 0、循环停住、按下不缩），组件里不写这条媒体查询。`duration-150`、`ease-out`、`motion-reduce:`、`150ms`、`cubic-bezier(…)` 和阶梯以外的 `text-[…]`、`rounded-[…]`、`shadow-[…]`、`bg-[#…]` 都会让 `pnpm lint` 报错（`scripts/check-design-tokens.mts` 查所有 class 写法、`<style>` 和 TS）。
 - **点歌写在哪**：那一行的封面飞进播放条在 `src/lib/components/player/cover-flight.svelte.ts`（Web Animations；播放条不在内容区里，不走 View Transitions）：行里的点歌按钮 `PlayTarget` 给 `cover`（这一行的封面），播放条用 `landingOf` 接住、封面小窗挂它的 `slot`，落下时的换歌是 `Turn` 的 `land`；弧线多弯是令牌的 `FLIGHT_ARC`。播放条浮上来、沉下去用 `motion.ts` 的 `dock`（`in:dock`、`out:dock|global`，只在播放队列真的空了时沉，退出登录时整个骨架拿掉也沉）；序号 ↔ 三根竖条用 `player/NowIndex.svelte`（竖条长出是 `grow`），小圆片、晨光行的淡入淡出写在 `NowChip`、`MorningWash` 自己身上。
-- **播放页里的过渡写在哪**：播放条 ↔ 播放页的封面接力在 `src/lib/components/player/CoverRelay.svelte`（放在 `PlayerPage` 里、抽屉外面）：抽屉离开一头时量一次两头，之后每一帧只按 `playerDrawer.position` 摆一张盖在最上面的封面（`transform` 和圆角），停到一头时同一帧换回那一头的封面；播放条那头是 `cover-flight.svelte.ts` 的 `barCover`（有封面正飞进播放条时不接力），播放页那头挂 `relayTarget`（手机上换成了歌词时没有，也不接力），两头在接力时自己藏起来（`style:opacity` 读 `coverRelaying()`）。播放条换了歌就用 `prefetchPageCover` 在后台取好大图，尺寸是 `player/view.ts` 的 `PAGE_COVER`。桌面右栏的轨道写在 `DesktopPlayerPage.svelte` 的样式里（看不见的那块 `inert`；减少动态效果时的交叉淡化用 `--duration-*` 减去 `--move-*` 得到，组件里不写媒体查询）；手机封面 ↔ 歌词是 `motion.ts` 的 `recede`（封面）和 `float`（歌词）。
+- **播放页里的过渡写在哪**：桌面右栏的轨道写在 `DesktopPlayerPage.svelte` 的样式里（看不见的那块 `inert`；减少动态效果时的交叉淡化用 `--duration-*` 减去 `--move-*` 得到，组件里不写媒体查询）；手机封面 ↔ 歌词是 `motion.ts` 的 `recede`（封面）和 `float`（歌词）。播放条换了歌就用 `player-page.svelte.ts` 的 `prefetchPageCover` 在后台取好播放页的大封面，尺寸是 `player/view.ts` 的 `PAGE_COVER`。
 
 ### Named Rules
 
@@ -415,7 +415,7 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 - **手机迷你播放条:** 64px、纸白、16px 圆角、浮起阴影，离屏幕边 8px；封面、歌名（500）、歌手、44px 圆形播放键、下一首，底边一条很细的进度线（只显示，跳进度在播放页）；轻点或往上拖打开播放页。
 - **出现和换歌:** 播放队列里第一次有歌时，播放条从屏幕底下浮上来（360ms），清空时沉下去（200ms）。换歌时封面小窗里也是一个小转盘（见 Cover Wheel，480ms），歌名、歌手按飘入飘出的默认距离横着飘（飘入 12px、飘出 6px），方向和换碟一样；在列表里点歌时是那一行的封面飞进来（见 Song Row）。
 - **播放键:** 播放和暂停两个图标之间交叉淡化，新图标从 85% 放大到位（120ms）；取地址、缓冲超过 300ms 才淡入转圈，不在每次点歌时闪一下。
-- **播放条 ↔ 播放页:** 拉开抽屉时，播放条上的小封面跟着抽屉拉开的比例长成播放页的大封面（位置、大小一起变，圆角 8px → 16px），收起时缩回去；拖动抽屉时同样跟着手走。减少动态效果时没有这段接力。
+- **播放条 ↔ 播放页:** 封面不接力：播放页整个跟着抽屉升起、缩回，播放条的小封面留在原地被盖住。播放条换了歌就在后台取好播放页的大封面，拉开时直接是大图。（2026-10-16 作者试过“小封面跟着抽屉长成大封面”，它和抽屉本身抢注意力，去掉了。）
 
 ### Cover Wheel（换碟，签名动作）
 

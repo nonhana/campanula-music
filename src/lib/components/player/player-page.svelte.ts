@@ -1,6 +1,8 @@
+import type { Song } from '$lib/api/library'
 import type { Attachment } from 'svelte/attachments'
 import { pushState } from '$app/navigation'
 import { page } from '$app/state'
+import { preloadCover } from '../library/Cover.svelte'
 import { createDrawer } from './drawer.svelte'
 
 // 播放页开没开着记在浅路由里（page.state.player）：打开时压一条浏览记录，
@@ -12,6 +14,20 @@ export const playerDrawer = createDrawer(() => window.innerHeight)
 /** 播放条上封面和歌名那一块：点按打开播放页，按住往上拖拉开它。每个播放条一份，在组件初始化时调用 */
 export function gripToOpenPlayerPage(): Attachment<HTMLElement> {
   return playerDrawer.grip({ from: 'closed', commit: openPlayerPage, tap: openPlayerPage })
+}
+
+/**
+ * 播放条（DesktopPlayerBar、PhoneMiniPlayer）初始化时调用：当前这首一变，就在后台取好播放页大封面（size）的缩略图，
+ * 拉开播放页时封面直接是大图，不从小图上淡入。播放页露着时不取：那时换碟自己取（连着切歌时不取一路转过去的）
+ */
+export function prefetchPageCover(song: () => Song | null, size: number): void {
+  const url = $derived(song()?.album.coverUrl)
+  // 抽屉动着时 position 每一帧都变，这里只看露没露出来
+  const pageShown = $derived(playerDrawer.visible)
+  $effect(() => {
+    if (url && !pageShown)
+      void preloadCover(url, size)
+  })
 }
 
 export function openPlayerPage(): void {
