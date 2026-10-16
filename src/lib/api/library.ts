@@ -39,6 +39,17 @@ export interface Credit {
   name: string | null
 }
 
+/** 歌手一行：没有名字的歌手（传到云盘、没匹配上曲库的歌）不列；一个都没有时写“未知歌手” */
+export function creditLine(credits: readonly Credit[]): string {
+  const names = credits.flatMap(artist => artist.name ?? [])
+  return names.length > 0 ? names.join(' / ') : '未知歌手'
+}
+
+/** 网易云图片（coverUrl、头像）的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */
+export function thumbnailUrl(url: string, pixels: number): string {
+  return `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
+}
+
 export interface Song {
   id: number
   name: string

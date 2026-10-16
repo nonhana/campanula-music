@@ -1,7 +1,8 @@
-import type { Credit, Playlist, Song } from '#lib/api/library.js'
+import type { Playlist, Song } from '#lib/api/library.js'
 import type { RequestFailure } from '#lib/app/api.js'
 import type { LibraryState, PlaylistSongs, SyncFailure } from '#lib/app/library.js'
 import type { ScrollMark } from '../ui/scroll-marks'
+import { creditLine } from '#lib/api/library.js'
 import { failureText } from '../failure'
 
 // 曲库界面上怎么显示：同步条说什么、歌单是加载中、空、出错还是列表。界面组件只照着画
@@ -124,11 +125,6 @@ export function syncFailureText(failure: SyncFailure): string {
   return `曲库没能同步完。${failureText(failure)}`
 }
 
-/** 网易云图片的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */
-export function thumbnailUrl(url: string, pixels: number): string {
-  return `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
-}
-
 /**
  * 歌单、专辑、歌手的格子（包括桌面歌单页的左栏）和它们页头的大封面都按这个尺寸（px）取缩略图：两头是同一个地址，
  * 从格子飞到页头时终点的图已经在缓存里，不会落在空的薄荷底上（ADR-0011）。
@@ -151,12 +147,6 @@ export function langOf(...texts: string[]): 'ja' | 'zh-TW' | undefined {
   if (TRADITIONAL.test(all))
     return 'zh-TW'
   return undefined
-}
-
-/** 歌手一行：没有名字的歌手（传到云盘、没匹配上曲库的歌）不列；一个都没有时写“未知歌手” */
-export function creditLine(credits: readonly Credit[]): string {
-  const names = credits.flatMap(artist => artist.name ?? [])
-  return names.length > 0 ? names.join(' / ') : '未知歌手'
 }
 
 /** 一首歌的歌手一行（见 creditLine） */

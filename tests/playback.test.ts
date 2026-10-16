@@ -633,7 +633,7 @@ describe('上一首、下一首、暂停', () => {
     expect(app.state.player).toMatchObject({ status: 'playing', position: 0 })
   })
 
-  it('退出登录：停下，清空播放队列', async () => {
+  it('退出登录：停下，清空播放队列；锁屏和通知栏上不再显示这首歌', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
@@ -642,6 +642,7 @@ describe('上一首、下一首、暂停', () => {
     await app.logout()
     expect(tab.sounding()).toBeUndefined()
     expect(app.state.player).toMatchObject({ queue: [], current: null, status: 'paused' })
+    expect(tab.mediaSession).toMatchObject({ metadata: null, playbackState: 'none', position: null })
   })
 })
 
@@ -1608,4 +1609,287 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
       }
     }
   }, 120_000)
+})
+
+// 后台播放与恢复（#27）：播放队列、当前这首、播放进度、这首已经听了多少秒都存在本机，重新打开时恢复（Spec #11“客户端：播放队列与播放”）
+
+/** 在这台设备上再开一个标签页：问当前账号（离上次续期不到 24 小时，不续期），后台同步停在红心，显示的都是本机副本 */
+async function openAnother(device: Device): Promise<Tab> {
+  await world.netease.reply('login/user_account.vip.json')
+  await world.netease.reply(HEARTS, { until: never() })
+  const tab = await device.open()
+  await world.settle()
+  return tab
+}
+
+/** 关掉这个标签页，再打开 App（见 openAnother） */
+async function reopen(device: Device, tab: Tab): Promise<Tab> {
+  await world.settle()
+  tab.close()
+  return openAnother(device)
+}
+
+/** 我喜欢的音乐里的一首 */
+function likedSong(app: App, id: number): Song {
+  return app.state.library!.liked!.songs.find(song => song.id === id)!
+}
+
+/** 本机存着的进度；没有时是 undefined */
+async function storedProgress(device: Device): Promise<unknown> {
+  const { player = [] } = await device.stored()
+  return player.find(([key]) => key === 'progress')?.[1]
+}
+
+describe('关掉再打开', () => {
+  it('恢复播放队列（每首的播放来源、还没放到的下一首播放、播放模式）和进度，停着等按播放，不算换歌；按播放重新取地址，从原来的位置接着放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const album = { kind: 'album', id: TRIAL_ALBUM.id } as const
+    await world.netease.reply(LAST.url)
+    app.playNext(album, likedSong(app, LAST.id))
+    app.setPlayMode('one')
+    player.progress(100)
+    const before = app.state.player
+
+    const { app: reopened, ...again } = await reopen(device, tab)
+    const sent = playUrlRequests(device).length
+    expect(reopened.state.player).toMatchObject({ queue: before.queue, current: before.current, position: 100, status: 'paused', mode: 'one', change: null, notice: null })
+    expect(reopened.state.player.queue[1]).toMatchObject({ song: { id: LAST.id }, source: album })
+    expect(again.sounding()).toBeUndefined()
+    // 还没放到的下一首播放照旧：切到随机播放时它留在最前
+    reopened.setPlayMode('shuffle')
+    expect(neighborIds(reopened).next).toBe(LAST.id)
+
+    await world.netease.reply(FIRST.url)
+    reopened.togglePlay()
+    expect(reopened.state.player.status).toBe('loading')
+    await world.settle()
+    expect(playUrlRequests(device).slice(sent)[0]).toBe(`/api/songs/${FIRST.id}/play-url?quality=exhigh`)
+    const resumed = again.audio.find(audio => !audio.paused)!
+    expect(resumed.src).toBe(await recordedUrl(FIRST.url))
+    expect(resumed.currentTime).toBe(100)
+    await world.netease.reply(LAST.url)
+    resumed.ready(FIRST.duration)
+    await world.settle()
+    expect(again.sounding()).toBe(resumed)
+    expect(reopened.state.player).toMatchObject({ status: 'playing', position: 100, change: null })
+  })
+
+  it('这首已经听了多少秒也存着：关掉时不算这首结束，再打开按播放后接着累计；按实际出声的时间算，跳过去的不算（听歌打卡按它算，规则⑥、#28）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(60_000)
+    player.progress(60)
+
+    const { app: reopened, ...again } = await reopen(device, tab)
+    expect(await storedProgress(device)).toMatchObject({ songId: FIRST.id, position: 60, listened: 60 })
+
+    await world.netease.reply(FIRST.url)
+    await world.netease.reply(SECOND.url)
+    reopened.togglePlay()
+    await world.settle()
+    const resumed = again.audio.find(audio => !audio.paused)!
+    resumed.ready(FIRST.duration)
+    await world.settle()
+    reopened.seek(150)
+    await world.clock.advance(30_000)
+    resumed.progress(180)
+    await world.settle()
+    expect(await storedProgress(device)).toMatchObject({ songId: FIRST.id, position: 180, listened: 90 })
+  })
+})
+
+describe('退出登录、换账号', () => {
+  it('主动退出：本机存着的播放队列删掉，别的标签页存的也删（这个标签页没在放）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const playing = await openAnother(device)
+    await playUntilSounding(playing, FIRST, SECOND)
+    await world.settle()
+    playing.close()
+    expect(await storedProgress(device)).toMatchObject({ songId: FIRST.id })
+
+    await world.netease.reply('login/logout.json')
+    await tab.app.logout()
+    await world.settle()
+    expect((await device.stored()).player).toEqual([])
+  })
+
+  /** 登录 Cookie 没了：下一个请求服务端说需要登录，整个 App 变成登录失效 */
+  async function expireLogin(device: Device, app: App): Promise<void> {
+    await device.setCookie('campanula_login=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict')
+    await app.openLyrics(FIRST.id)
+    if (app.state.session.status !== 'loginExpired')
+      throw new Error('登录没失效')
+  }
+
+  it('登录失效后换了另一个账号登录：清空播放队列（规则⑩），登录失效期间接着放的那首停下，本机存的也删；上一个账号取的播放地址不再用', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const song = likedSong(app, FIRST.id)
+    await expireLogin(device, app)
+    expect(tab.sounding()).toBe(player)
+
+    await world.netease.reply(HEARTS, { until: never() })
+    await signIn(world, app, { another: true })
+    await world.settle()
+    expect(app.state.player).toMatchObject({ queue: [], current: null, status: 'paused' })
+    expect(tab.sounding()).toBeUndefined()
+    expect((await device.stored()).player).toEqual([])
+
+    // 播放地址按账号给（会员和非会员不一样）：同一首歌换了账号要重新取
+    const sent = playUrlRequests(device).length
+    await world.netease.reply(FIRST.url, { until: never() })
+    app.interject(LIKED, song)
+    await world.settle()
+    expect(playUrlRequests(device).slice(sent)).toEqual([`/api/songs/${FIRST.id}/play-url?quality=exhigh`])
+  })
+
+  it('登录失效后同一个账号重新登录：播放队列照旧，接着放', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const queue = app.state.player.queue
+    await expireLogin(device, app)
+
+    await world.netease.reply(HEARTS, { until: never() })
+    await signIn(world, app)
+    await world.settle()
+    expect(app.state.player.queue).toBe(queue)
+    expect(current(app)).toBe(FIRST.id)
+    expect(tab.sounding()).toBe(player)
+  })
+
+  it('关掉时播放队列还在，再打开时登录已经失效，换了另一个账号登录：不恢复，本机存的删掉（规则⑩）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    await playUntilSounding(tab, FIRST, SECOND)
+    await world.settle()
+    tab.close()
+
+    await world.netease.reply('login/user_account.invalid.json')
+    await world.netease.reply('login/login_refresh.301-invalid.json')
+    const { app } = await device.open()
+    expect(app.state.session.status).toBe('loginExpired')
+    expect(app.state.player.queue).toEqual([])
+
+    await world.netease.reply(HEARTS, { until: never() })
+    await signIn(world, app, { another: true })
+    await world.settle()
+    expect(app.state.player.queue).toEqual([])
+    expect((await device.stored()).player).toEqual([])
+  })
+})
+
+// 通知栏和锁屏的控件用 Media Session（Spec #11）：显示封面、歌名，能暂停、切歌；交接后显示新的那首（ADR-0010）
+describe('锁屏和通知栏', () => {
+  it('显示正在放的那首的歌名、歌手、专辑、封面和进度；按暂停、播放就暂停、接着放；拖进度条就跳过去', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app, mediaSession } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    expect(mediaSession.metadata).toMatchObject({
+      title: '夏に溶ける (feat. 鏡音リン)',
+      artist: 'ごめんなさいが言えなくて / 鏡音リン',
+      album: '夏に溶ける',
+      artwork: [{ src: 'https://p4.music.126.net/Lw6wl5jXi7R7Bi5KI0-Tdg==/109951173904017056.jpg?param=512y512', sizes: '512x512' }],
+    })
+    expect(mediaSession.playbackState).toBe('playing')
+    expect(mediaSession.position).toEqual({ duration: FIRST.duration, position: 0, playbackRate: 1 })
+
+    mediaSession.press('pause')
+    await world.settle()
+    expect(app.state.player.status).toBe('paused')
+    expect(tab.sounding()).toBeUndefined()
+    expect(mediaSession.playbackState).toBe('paused')
+
+    mediaSession.press('play')
+    await world.settle()
+    expect(tab.sounding()).toBe(player)
+    expect(mediaSession.playbackState).toBe('playing')
+
+    mediaSession.press('seekto', { seekTime: 120 })
+    expect(player.currentTime).toBe(120)
+    expect(mediaSession.position).toEqual({ duration: FIRST.duration, position: 120, playbackRate: 1 })
+  })
+
+  it('快放完时交接给下一首：显示新的那首和它的时长；按下一首、上一首，换歌原因各是 next、previous（换碟往对的方向转）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app, mediaSession } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    spare.ready(SECOND.duration)
+    player.progress(190)
+    await world.netease.reply(THIRD.url)
+    player.progress(191.7)
+    await world.settle()
+    expect(tab.sounding()).toBe(spare)
+    expect(mediaSession.metadata).toMatchObject({ title: 'Theme Of Laura II', artist: '山岡晃', album: 'SILENT HILL 2 ORIGINAL SOUNDTRACK -2024-' })
+    expect(mediaSession.position).toEqual({ duration: SECOND.duration, position: 0, playbackRate: 1 })
+
+    mediaSession.press('nexttrack')
+    expect(current(app)).toBe(THIRD.id)
+    expect(app.state.player.change).toBe('next')
+    await world.settle()
+
+    mediaSession.press('previoustrack')
+    expect(current(app)).toBe(SECOND.id)
+    expect(app.state.player.change).toBe('previous')
+  })
+})
+
+/** 我喜欢的音乐里的一首（第 3,728 首），验证关卡①按各种音质录过它的播放地址 */
+const RECORDED_IN_QUALITIES = { id: 512359195, exhigh: 'playback/song_url_v1.vip-exhigh.json', lossless: 'playback/song_url_v1.vip-lossless.json' }
+
+describe('在线播放音质', () => {
+  it('一开始是极高；设成无损后按无损取播放地址，关掉再打开还是无损', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    expect(app.state.player.quality).toBe('exhigh')
+
+    app.setPlayQuality('lossless')
+    expect(app.state.player.quality).toBe('lossless')
+    await world.netease.reply(RECORDED_IN_QUALITIES.lossless, { until: never() })
+    app.play(LIKED, RECORDED_IN_QUALITIES.id)
+    await world.settle()
+    expect(playUrlRequests(device)).toEqual([`/api/songs/${RECORDED_IN_QUALITIES.id}/play-url?quality=lossless`])
+    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'song_url_v1', query: { id: RECORDED_IN_QUALITIES.id, level: 'lossless' } })
+
+    const { app: reopened, ...again } = await reopen(device, tab)
+    expect(reopened.state.player.quality).toBe('lossless')
+    const sent = playUrlRequests(device).length
+    await world.netease.reply(RECORDED_IN_QUALITIES.lossless)
+    reopened.togglePlay()
+    await world.settle()
+    expect(playUrlRequests(device).slice(sent)).toEqual([`/api/songs/${RECORDED_IN_QUALITIES.id}/play-url?quality=lossless`])
+    expect(again.audio.find(audio => !audio.paused)?.src).toBe(await recordedUrl(RECORDED_IN_QUALITIES.lossless))
+  })
+
+  it('放着时换音质：正在放的那首不换、不中断；空闲的播放器按新音质重新取下一首的地址', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    await world.netease.reply(RECORDED_IN_QUALITIES.exhigh)
+    app.playNext(LIKED, likedSong(app, RECORDED_IN_QUALITIES.id))
+    await world.settle()
+    expect(spare.src).toBe(await recordedUrl(RECORDED_IN_QUALITIES.exhigh))
+    const sent = playUrlRequests(device).length
+
+    await world.netease.reply(RECORDED_IN_QUALITIES.lossless)
+    app.setPlayQuality('lossless')
+    await world.settle()
+    expect(tab.sounding()).toBe(player)
+    expect(playUrlRequests(device).slice(sent)).toEqual([`/api/songs/${RECORDED_IN_QUALITIES.id}/play-url?quality=lossless`])
+    expect(spare.src).toBe(await recordedUrl(RECORDED_IN_QUALITIES.lossless))
+  })
 })

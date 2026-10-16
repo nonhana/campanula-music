@@ -366,9 +366,23 @@ export class FakeAudio extends EventTarget implements AudioCapability {
   /** 音频服务器给的数据够放了 */
   #ready = false
   #pending: PendingPlay[] = []
+  /** 所在的标签页关掉了 */
+  #closed = false
 
   constructor(private readonly tasks: MediaTasks) {
     super()
+  }
+
+  /**
+   * 标签页关掉了：文档没了，播放器跟着停下，不再出声、不再发事件，还没了结的 play() 也不会再了结。
+   * 依据 HTML 标准：媒体元素所在的文档不再 fully active 时停止播放（Playing the media resource）；
+   * 销毁文档时，它排着的任务直接丢掉、不再运行（destroy a document）
+   */
+  close(): void {
+    this.#closed = true
+    this.paused = true
+    this.sounding = false
+    this.#pending = []
   }
 
   get src(): string {
@@ -506,6 +520,7 @@ export class FakeAudio extends EventTarget implements AudioCapability {
   }
 
   #fire(type: string): void {
-    this.dispatchEvent(new Event(type))
+    if (!this.#closed)
+      this.dispatchEvent(new Event(type))
   }
 }

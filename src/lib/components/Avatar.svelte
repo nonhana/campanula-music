@@ -5,8 +5,8 @@
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
   import { User } from '@lucide/svelte'
+  import { thumbnailUrl } from '#lib/api/library.js'
   import { createImageReveal } from './image-reveal.svelte'
-  import { thumbnailUrl } from './library/view'
   import { fade } from './motion'
   import { DURATIONS } from './motion-tokens'
 

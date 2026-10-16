@@ -1,10 +1,12 @@
 import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } from '#lib/api/library.js'
+import type { Quality } from '#lib/api/playback.js'
+import type { SavedPlayer, SavedProgress, SavedQueue } from './player'
 
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。
-// 之后的播放队列、下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
+// 之后的下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 5
+const VERSION = 6
 /** 登录会话的小事，按名字存 */
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
@@ -16,6 +18,20 @@ const SONGS = 'songs'
 /** 打开过的收藏的专辑的专辑页，按专辑编号存（#23 留言：专辑页不在后台整批同步） */
 const ALBUM_PAGES = 'albumPages'
 const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS, ALBUM_PAGES]
+/** 播放队列和进度（#27），按名字存：queue（播放队列那一份，记着是哪个网易云账号的）、progress（当前这首放到哪了） */
+const PLAYER = 'player'
+/** 这台设备上的设置，按名字存：playQuality（在线播放音质）。不属于哪个网易云账号，退出、换账号都不删 */
+const SETTINGS = 'settings'
+
+/** 存着的播放队列那一份，加上它是哪个网易云账号的（换了别的账号登录就清空，规则⑩） */
+export type StoredQueue = SavedQueue & { owner: number }
+
+/** 存着的播放队列和进度 */
+export interface StoredPlayer {
+  /** 网易云账号的 uid */
+  owner: number
+  saved: SavedPlayer
+}
 
 /** 一张歌单在本机的曲目 */
 export interface PlaylistTracks {
@@ -69,6 +85,14 @@ export interface LocalDb {
   saveCollectedArtists: (owner: number, artists: CollectedArtist[]) => Promise<boolean>
   /** 专辑页：同一个事务里核对它还在收藏的专辑里，不在就不存 */
   saveAlbumPage: (owner: number, page: AlbumResponse) => Promise<boolean>
+  /** 存着的播放队列和进度；没存过、已经删了，或者两份对不上（当前这首不在播放队列里）时是 null */
+  readPlayer: () => Promise<StoredPlayer | null>
+  /** 存进度；播放队列那一份也变了时在同一个事务里一起存 */
+  savePlayer: (progress: SavedProgress, queue: StoredQueue | undefined) => Promise<void>
+  deletePlayer: () => Promise<void>
+  /** 在线播放音质；没设过时是 null */
+  playQuality: () => Promise<Quality | null>
+  savePlayQuality: (quality: Quality) => Promise<void>
 }
 
 function settled<T>(request: IDBRequest<T>): Promise<T> {
@@ -120,6 +144,11 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
       cursor.update({ ...(cursor.value as PlaylistTracks), complete: false } satisfies PlaylistTracks)
       cursor.continue()
     }
+  }
+  // 6（#27）：播放队列和进度、设置
+  if (from < 6) {
+    database.createObjectStore(PLAYER)
+    database.createObjectStore(SETTINGS)
   }
 }
 
@@ -262,5 +291,30 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       })
       return mine && saved
     },
+    async readPlayer() {
+      const store = (await database()).transaction(PLAYER).objectStore(PLAYER)
+      const [queue, progress] = await Promise.all([
+        settled(store.get('queue')) as Promise<StoredQueue | undefined>,
+        settled(store.get('progress')) as Promise<SavedProgress | undefined>,
+      ])
+      // 另一个标签页刚换了播放队列、这个标签页又存了一次自己的进度时，两份会对不上
+      if (!queue || !progress || !queue.entries.some(entry => entry.song.id === progress.songId))
+        return null
+      const { owner, ...saved } = queue
+      return { owner, saved: { queue: saved, progress } }
+    },
+    savePlayer: (progress, queue) => write([PLAYER], (transaction) => {
+      const store = transaction.objectStore(PLAYER)
+      if (queue)
+        store.put(queue, 'queue')
+      store.put(progress, 'progress')
+    }),
+    deletePlayer: () => write([PLAYER], transaction => transaction.objectStore(PLAYER).clear()),
+    async playQuality() {
+      const store = (await database()).transaction(SETTINGS).objectStore(SETTINGS)
+      const quality = await settled(store.get('playQuality')) as Quality | undefined
+      return quality ?? null
+    },
+    savePlayQuality: quality => write([SETTINGS], transaction => transaction.objectStore(SETTINGS).put(quality, 'playQuality')),
   }
 }
