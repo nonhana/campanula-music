@@ -23,6 +23,7 @@ catalog:
   '@sveltejs/vite-plugin-svelte': ^7.3.1
   '@types/node': ^26.6.3
   '@typescript-eslint/types': ^8.71.0
+  '@typescript/native': npm:typescript@^7.0.2
   '@unocss/eslint-plugin': ^66.10.5
   '@unocss/preset-rem-to-px': ^66.10.5
   '@unocss/reset': ^66.10.5
