@@ -1,17 +1,17 @@
-import type { Account } from '$lib/api/account'
-import type { NeteaseFailure } from '$lib/api/errors'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '$lib/api/library'
-import type { QrResponse } from '$lib/api/login'
-import type { LyricsResponse, PlayUrlResponse, Quality } from '$lib/api/playback'
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
-import { env } from '$env/dynamic/private'
-import { ARTIST_ALBUMS_PER_REQUEST } from '$lib/api/library'
+import type { Account } from '#lib/api/account.js'
+import type { NeteaseFailure } from '#lib/api/errors.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '#lib/api/library.js'
+import type { QrResponse } from '#lib/api/login.js'
+import type { LyricsResponse, PlayUrlResponse, Quality } from '#lib/api/playback.js'
+import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
+import { ARTIST_ALBUMS_PER_REQUEST } from '#lib/api/library.js'
 import { lyricsOf } from './lyrics'
 
 // 网易云适配层（Spec #11“服务端：网易云适配层”）：服务端里只有这里调 hana-music-api。
 // 每次调用都带上听众的凭据和 deviceId，站长配了真实国内 IP 就作为 realIP 传入；
-// 网易云的结果翻译成 Campanula 的错误约定（$lib/api/errors），返回体映射成界面要用的数据。
+// 网易云的结果翻译成 Campanula 的错误约定（#lib/api/errors），返回体映射成界面要用的数据。
 
 /** 网易云那边的这个听众 */
 export interface Listener {
@@ -87,7 +87,7 @@ async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, li
     cookie: listener.credentials ?? undefined,
     deviceId: listener.deviceId,
     state: { deviceId: listener.deviceId },
-    realIP: env.NETEASE_REAL_IP || undefined,
+    realIP: NETEASE_REAL_IP || undefined,
   }
   try {
     return await invokeModule(module, query, config)

@@ -1,4 +1,4 @@
-import type { App } from '$lib/app/app'
+import type { App } from '#lib/app/app.js'
 import type { World } from './world'
 
 /** 假的网易云登录凭据（录制数据去掉了 Cookie） */

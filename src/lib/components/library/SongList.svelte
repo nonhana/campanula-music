@@ -5,8 +5,8 @@
   骨架换成歌时骨架淡出、前几行依次飘入（DESIGN.md Motion）
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
-  import type { PlaySource } from '$lib/app/player'
+  import type { Song } from '#lib/api/library.js'
+  import type { PlaySource } from '#lib/app/player.js'
   import { ListMusic } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { reveal } from '../motion'

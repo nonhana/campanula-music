@@ -1,7 +1,7 @@
-import type { Song } from '$lib/api/library'
-import type { LyricLine, LyricWord } from '$lib/api/playback'
-import type { LibraryState } from '$lib/app/library'
-import type { PlayerNotice, PlayerState, PlayMode, PlaySource, SongChange } from '$lib/app/player'
+import type { Song } from '#lib/api/library.js'
+import type { LyricLine, LyricWord } from '#lib/api/playback.js'
+import type { LibraryState } from '#lib/app/library.js'
+import type { PlayerNotice, PlayerState, PlayMode, PlaySource, SongChange } from '#lib/app/player.js'
 import { failureText } from '../failure'
 import { formatDuration, playlistName } from '../library/view'
 

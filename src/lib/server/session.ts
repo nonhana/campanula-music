@@ -1,7 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 import type { LoginCookie } from './credentials'
 import type { Listener, SignedInListener } from './netease'
-import { json } from '@sveltejs/kit'
 import { readLogin, renewalDue, saveLogin } from './credentials'
 import { NeteaseError, renewLogin } from './netease'
 import { errorResponse, withNetease } from './respond'
@@ -49,5 +48,5 @@ export async function respondSignedIn(cookies: Cookies, call: (listener: Listene
   if (!login?.session)
     return errorResponse({ kind: 'needsLogin' })
   const signedIn = { ...login, session: login.session }
-  return withNetease(async () => json(await asSignedIn(cookies, signedIn, call)))
+  return withNetease(async () => Response.json(await asSignedIn(cookies, signedIn, call)))
 }

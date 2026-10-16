@@ -1,4 +1,4 @@
-import type { LyricsResponse } from '$lib/api/playback'
+import type { LyricsResponse } from '#lib/api/playback.js'
 import type { Api, RequestFailure } from './api'
 
 // 播放页的歌词（#25）：听众看歌词时才取（前台请求，不排队），只记着最近打开的那首。

@@ -139,6 +139,9 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
   }
 
   onNavigate((navigation) => {
+    if (navigation.shallow && navigation.type === 'goto')
+      return
+
     running?.skipTransition()
     running = null
     name(null)
@@ -149,7 +152,9 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
       return
     if (navigation.type === 'popstate' && navigation.event.hasUAVisualTransition)
       return
-    const turn = pageTurn(from.route.id, to.route.id, navigation.delta, tabs)
+
+    const delta = navigation.type === 'popstate' ? navigation.delta : undefined
+    const turn = pageTurn(from.route.id, to.route.id, delta, tabs)
     const flight = takeOff(link, from.url, to.url)
 
     return new Promise<void>((captured) => {

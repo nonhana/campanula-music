@@ -8,17 +8,17 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { getAppView } from '$lib/components/app-context.svelte'
-  import { desktopLayout } from '$lib/components/layout'
-  import Cover from '$lib/components/library/Cover.svelte'
-  import PlaylistSongs from '$lib/components/library/PlaylistSongs.svelte'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName, playlistView } from '$lib/components/library/view'
-  import { atOnce, reveal, scrollBehavior, stagger } from '$lib/components/motion'
-  import { scrollSnapshot } from '$lib/components/snapshot'
-  import Scrollbar from '$lib/components/ui/Scrollbar.svelte'
-  import SearchField from '$lib/components/ui/SearchField.svelte'
-  import StateBlock from '$lib/components/ui/StateBlock.svelte'
   import { ListMusic, Lock } from '@lucide/svelte'
+  import { getAppView } from '#lib/components/app-context.svelte.js'
+  import { desktopLayout } from '#lib/components/layout.js'
+  import Cover from '#lib/components/library/Cover.svelte'
+  import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName, playlistView } from '#lib/components/library/view.js'
+  import { atOnce, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
+  import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
+  import SearchField from '#lib/components/ui/SearchField.svelte'
+  import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const view = getAppView()
   const library = $derived(view.state.library)
@@ -33,7 +33,10 @@
     query = value
   })
   // 从左边换到另一张歌单：搜索词清空，直接到位（新的这一页里不再淡一次）。前进、后退由 snapshot 恢复
-  afterNavigate(({ type }) => {
+  afterNavigate(({ type, shallow }) => {
+    // 打开播放页、歌曲菜单是浅路由（goto 的 shallow），还在这一张歌单上，搜索词不清
+    if (shallow && type === 'goto')
+      return
     if (type !== 'popstate')
       atOnce(() => (query = ''))
   })

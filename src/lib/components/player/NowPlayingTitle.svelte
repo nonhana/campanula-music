@@ -3,7 +3,7 @@
   （开始放才知道是不是试听：徽标淡入）。换歌时跟着换碟横着飘（SongSwap）
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
+  import type { Song } from '#lib/api/library.js'
   import type { Turn } from './view'
   import { getAppView } from '../app-context.svelte'
   import SongBadge from '../library/SongBadge.svelte'

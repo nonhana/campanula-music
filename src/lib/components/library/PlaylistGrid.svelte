@@ -5,8 +5,8 @@
   （DESIGN.md Overlays · 筛选）。heading：桌面放在筛选左边的区块标题
 -->
 <script lang='ts'>
-  import type { LibraryState } from '$lib/app/library'
   import type { Snippet } from 'svelte'
+  import type { LibraryState } from '#lib/app/library.js'
   import type { PlaylistFilter } from './view'
   import { ListMusic } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'

@@ -2,7 +2,7 @@
   手机曲库首页的“我喜欢”标签：同步细条，下面是我喜欢的音乐的歌单内搜索和列表（和歌单页同一套）
 -->
 <script lang='ts'>
-  import type { LibraryState } from '$lib/app/library'
+  import type { LibraryState } from '#lib/app/library.js'
   import PlaylistSongs from './PlaylistSongs.svelte'
   import SyncNotice from './SyncNotice.svelte'
   import { playlistView } from './view'

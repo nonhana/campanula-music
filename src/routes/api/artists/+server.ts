@@ -1,7 +1,7 @@
-import type { CollectedArtistsResponse } from '$lib/api/library'
+import type { CollectedArtistsResponse } from '#lib/api/library.js'
 import type { RequestHandler } from './$types'
-import { fetchCollectedArtists } from '$lib/server/netease'
-import { respondSignedIn } from '$lib/server/session'
+import { fetchCollectedArtists } from '#lib/server/netease.js'
+import { respondSignedIn } from '#lib/server/session.js'
 
 // 收藏的歌手：曲库同步的一步
 export const GET: RequestHandler = ({ cookies }) =>

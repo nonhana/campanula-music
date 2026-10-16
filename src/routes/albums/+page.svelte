@@ -3,13 +3,13 @@
   手机上在曲库的文字标签下面；桌面没有标签（首页已经有专辑架子），直接打开这个地址时照样显示。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
-  import { getAppView } from '$lib/components/app-context.svelte'
-  import { desktopLayout } from '$lib/components/layout'
-  import CollectedGrid from '$lib/components/library/CollectedGrid.svelte'
-  import SyncNotice from '$lib/components/library/SyncNotice.svelte'
-  import { formatCount } from '$lib/components/library/view'
-  import { fade } from '$lib/components/motion'
-  import { scrollSnapshot } from '$lib/components/snapshot'
+  import { getAppView } from '#lib/components/app-context.svelte.js'
+  import { desktopLayout } from '#lib/components/layout.js'
+  import CollectedGrid from '#lib/components/library/CollectedGrid.svelte'
+  import SyncNotice from '#lib/components/library/SyncNotice.svelte'
+  import { formatCount } from '#lib/components/library/view.js'
+  import { fade } from '#lib/components/motion.js'
+  import { scrollSnapshot } from '#lib/components/snapshot.js'
 
   const view = getAppView()
   const library = $derived(view.state.library)

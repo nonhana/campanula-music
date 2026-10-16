@@ -4,12 +4,12 @@
   返回这一页时，筛选和滚动位置都回到原来的样子
 -->
 <script lang='ts'>
-  import type { PlaylistFilter } from '$lib/components/library/view'
-  import { getAppView } from '$lib/components/app-context.svelte'
-  import { desktopLayout } from '$lib/components/layout'
-  import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte'
-  import SyncNotice from '$lib/components/library/SyncNotice.svelte'
-  import { scrollSnapshot } from '$lib/components/snapshot'
+  import type { PlaylistFilter } from '#lib/components/library/view.js'
+  import { getAppView } from '#lib/components/app-context.svelte.js'
+  import { desktopLayout } from '#lib/components/layout.js'
+  import PlaylistGrid from '#lib/components/library/PlaylistGrid.svelte'
+  import SyncNotice from '#lib/components/library/SyncNotice.svelte'
+  import { scrollSnapshot } from '#lib/components/snapshot.js'
 
   const view = getAppView()
   const library = $derived(view.state.library)

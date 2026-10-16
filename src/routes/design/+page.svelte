@@ -4,18 +4,18 @@
   骨架里的虚线框只标出区域和尺寸，里面放什么由之后的票决定。
 -->
 <script lang='ts'>
-  import Brand from '$lib/components/Brand.svelte'
-  import { desktopLayout } from '$lib/components/layout'
-  import DesktopShell from '$lib/components/shell/DesktopShell.svelte'
-  import PhoneShell from '$lib/components/shell/PhoneShell.svelte'
-  import Button from '$lib/components/ui/Button.svelte'
-  import FilterChip from '$lib/components/ui/FilterChip.svelte'
-  import IconButton from '$lib/components/ui/IconButton.svelte'
-  import SearchField from '$lib/components/ui/SearchField.svelte'
-  import StateBlock from '$lib/components/ui/StateBlock.svelte'
-  import Tag from '$lib/components/ui/Tag.svelte'
-  import TextField from '$lib/components/ui/TextField.svelte'
   import { CircleArrowDown, Ellipsis, ListMusic, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
+  import Brand from '#lib/components/Brand.svelte'
+  import { desktopLayout } from '#lib/components/layout.js'
+  import DesktopShell from '#lib/components/shell/DesktopShell.svelte'
+  import PhoneShell from '#lib/components/shell/PhoneShell.svelte'
+  import Button from '#lib/components/ui/Button.svelte'
+  import FilterChip from '#lib/components/ui/FilterChip.svelte'
+  import IconButton from '#lib/components/ui/IconButton.svelte'
+  import SearchField from '#lib/components/ui/SearchField.svelte'
+  import StateBlock from '#lib/components/ui/StateBlock.svelte'
+  import Tag from '#lib/components/ui/Tag.svelte'
+  import TextField from '#lib/components/ui/TextField.svelte'
 
   // 颜色名照 DESIGN.md，类名照 uno.config.ts 的色阶
   const colorGroups = [

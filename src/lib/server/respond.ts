@@ -1,5 +1,4 @@
-import type { ApiError, ErrorBody } from '$lib/api/errors'
-import { json } from '@sveltejs/kit'
+import type { ApiError, ErrorBody } from '#lib/api/errors.js'
 import { NeteaseError } from './netease'
 
 const STATUS = {
@@ -14,7 +13,7 @@ const STATUS = {
 /** 按错误约定回 ErrorBody */
 export function errorResponse(error: ApiError): Response {
   const headers: Record<string, string> = error.kind === 'rateLimited' ? { 'retry-after': String(error.retryAfter) } : {}
-  return json({ error } satisfies ErrorBody, { status: STATUS[error.kind], headers })
+  return Response.json({ error } satisfies ErrorBody, { status: STATUS[error.kind], headers })
 }
 
 /** 跑接口的处理函数：调网易云失败时按错误约定回给客户端，其他错误照常抛出 */

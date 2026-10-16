@@ -1,4 +1,4 @@
-import type { PlayerState } from '$lib/app/player'
+import type { PlayerState } from '#lib/app/player.js'
 import { reducedMotion } from '../motion'
 
 export interface Playhead {

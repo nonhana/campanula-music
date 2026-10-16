@@ -1,5 +1,5 @@
-import type { Song } from '$lib/api/library'
 import type { Attachment } from 'svelte/attachments'
+import type { Song } from '#lib/api/library.js'
 import type { AppView } from '../app-context.svelte'
 import type { Turn } from './view'
 import { tick, untrack } from 'svelte'

@@ -1,5 +1,5 @@
-import type { Song } from '$lib/api/library'
-import type { App } from '$lib/app/app'
+import type { Song } from '#lib/api/library.js'
+import type { App } from '#lib/app/app.js'
 import type { FakeAudio } from './harness/browser'
 import type { Device, Tab } from './harness/device'
 import { readFile } from 'node:fs/promises'

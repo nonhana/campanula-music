@@ -5,8 +5,8 @@
   同步中、暂停、出错之间换的时候新的说明淡入
 -->
 <script lang='ts'>
-  import type { LibraryState } from '$lib/app/library'
   import type { ClassValue } from 'svelte/elements'
+  import type { LibraryState } from '#lib/app/library.js'
   import { CircleAlert, RefreshCw } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { fade, unfold } from '../motion'

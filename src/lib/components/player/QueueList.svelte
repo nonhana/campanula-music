@@ -5,8 +5,8 @@
   清空：播放队列空了、停下，播放页跟着收起（播放条沉下去）。移出一首后焦点落在下一首的移出键上（最后一首时是上一首的，那是正在放的那首时落在“清空”上）
 -->
 <script lang='ts'>
-  import type { QueueEntry } from '$lib/app/player'
   import type { ClassValue } from 'svelte/elements'
+  import type { QueueEntry } from '#lib/app/player.js'
   import { ListX, X } from '@lucide/svelte'
   import { tick, untrack } from 'svelte'
   import { getAppView } from '../app-context.svelte'

@@ -1,4 +1,4 @@
-import type { App } from '$lib/app/app'
+import type { App } from '#lib/app/app.js'
 import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
 import { held, never } from './harness/hold'

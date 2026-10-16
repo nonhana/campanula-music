@@ -1,6 +1,6 @@
-import type { Handle } from '@sveltejs/kit'
-import { cookieSecretConfigured, MIN_SECRET_LENGTH } from '$lib/server/credentials'
-import { errorResponse } from '$lib/server/respond'
+import type { Handle } from '@sveltejs/kit/hooks'
+import { cookieSecretConfigured, MIN_SECRET_LENGTH } from '#lib/server/credentials.js'
+import { errorResponse } from '#lib/server/respond.js'
 
 // 站长没配加密 Cookie 的密钥时，接口什么都做不了：一律回 cookieSecretMissing，页面上给站长看配置说明
 export const handle: Handle = ({ event, resolve }) => {

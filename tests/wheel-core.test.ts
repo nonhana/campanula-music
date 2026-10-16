@@ -1,7 +1,7 @@
-import type { WheelDirection, WheelPose } from '$lib/components/player/wheel-core'
-import type { PointerSample } from '$lib/components/press'
-import { createWheelCore } from '$lib/components/player/wheel-core'
+import type { WheelDirection, WheelPose } from '#lib/components/player/wheel-core.js'
+import type { PointerSample } from '#lib/components/press.js'
 import { describe, expect, it } from 'vitest'
+import { createWheelCore } from '#lib/components/player/wheel-core.js'
 
 // 第二个测试接入点“拖动手势核心”（Spec #11 Testing Decisions）的转盘那一半：手机播放页左右拖封面切歌（DESIGN.md Cover Wheel）。
 // 喂按下、移动、松开、点击、按住断了，看转盘跟手转了几格、松手切不切歌、往哪切、算不算点按。

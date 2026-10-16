@@ -13,8 +13,8 @@
   铺满父元素：父元素定大小、决定裁不裁切（播放条的圆角小窗、桌面播放页左列的遮罩）
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
   import type { ClassValue } from 'svelte/elements'
+  import type { Song } from '#lib/api/library.js'
   import type { Turn } from './view'
   import { untrack } from 'svelte'
   import Cover, { coverLoaded, preloadCover } from '../library/Cover.svelte'
