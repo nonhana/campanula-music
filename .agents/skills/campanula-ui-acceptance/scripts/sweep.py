@@ -65,6 +65,11 @@ TRIGGERS = {
     'page-previous': "() => document.querySelector('[role=dialog] button[aria-label=上一首]').click()",
     # 在列表里点另一首（第二首能放的）
     'pick-other': "() => document.querySelectorAll('main .play-target:not(:disabled)')[1].click()",
+    # 拉开、收起播放页（抽屉，tween 用）
+    'bar-open': "() => document.querySelector('[style*=\"player-bar\"] [aria-label^=\"打开播放页\"]').click()",
+    'page-close': "() => document.querySelector('[role=dialog] button[aria-label=收起播放页]').click()",
+    # 松开 drag_js 按住的拖动
+    'release': '() => window.__campanulaRelease()',
 }
 # 常用的冻结范围：播放页、播放条里的换碟（封面、歌名、封面染底）
 GRABS = {
@@ -361,6 +366,62 @@ async def slow(issue, name, viewport, actions, shots, *, factor=10, path=None, s
             entry['files'].append(file.name)
     finally:
         await run('() => { if (window.__campanulaSlow) window.__campanulaSlow.factor = 1; return true }', stable=False)
+    return entry
+
+
+# JS 补间（svelte/motion 的 Tween：播放页、底部弹层的抽屉，跟着抽屉的封面接力）每一帧在脚本里算，motion、slow 都管不到。
+# 换掉 performance.now（Svelte 的补间每一帧按它算走了多久）：rate 是它相对墙上时间走多快，0 就停住
+CLOCK_SCRIPT = """(() => { if (window.__campanulaClock) return; const real = performance.now.bind(performance);
+  const C = window.__campanulaClock = { rate: 1, base: real(), virt: real(),
+    now() { const r = real(); C.virt += (r - C.base) * C.rate; C.base = r; return C.virt },
+    set(rate) { C.now(); C.rate = rate } };
+  performance.now = () => C.now() })();"""
+
+
+def drag_js(selector, dy, steps=30):
+    """setup 用：在 selector 上按住，分 steps 步往下拖 dy px（负数往上），不松手；之后用触发 'release' 松开。只给鼠标指针（pointerId 1）"""
+    return f"""async () => {{ const el = document.querySelector({json.dumps(selector)}); const r = el.getBoundingClientRect();
+  const x = r.x + r.width / 2, y = r.y + r.height / 2, dy = {dy};
+  const ev = (type, at) => el.dispatchEvent(new PointerEvent(type, {{ bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: type === 'pointerup' ? 0 : 1, clientX: x, clientY: at }}));
+  ev('pointerdown', y);
+  for (let i = 1; i <= {steps}; i++) {{ await new Promise(r => setTimeout(r, 16)); ev('pointermove', y + dy * i / {steps}) }}
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  window.__campanulaRelease = () => ev('pointerup', y + dy); return true }}"""
+
+
+async def tween(issue, name, viewport, times, *, trigger, reset=None, setup=None, path=None, reduced=False, settle=1.0):
+    """
+    JS 补间逐帧（抽屉、封面接力）：触发后把补间停在 times 里的每个毫秒数拍一张，存成 <name>-f<毫秒>-<宽x高>.png。
+    每一帧都从头来一遍：setup（每帧都做，例如 drag_js 按住拖到一半）→ 时钟慢 10 倍、触发 → 走到第 t 毫秒停住、截图 →
+    放开时钟让它走完 → reset（回到触发前，例如 'page-close'）→ 等 settle 秒停稳。毫秒从触发那一刻算。
+      trigger、reset、setup  () => ... 函数或 TRIGGERS / SETUPS 里的名字；其余参数同 motion
+    返回：文件名，每一帧停住时 .relay（封面接力）的 transform
+    """
+    trigger, reset, setup = _named(trigger, TRIGGERS), _named(reset, TRIGGERS), _named(setup, SETUPS)
+    out_dir = ROOT / '_notes/screenshots' / f'issue-{issue}'
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _, size_name = await _prepare(name, viewport, path, reduced, CLOCK_SCRIPT)
+    await run(f'() => {{ {CLOCK_SCRIPT} return true }}', stable=False)
+    entry = {'name': name, 'size': size_name, 'files': [], 'relay': []}
+    try:
+        for t in times:
+            if setup:
+                await run(setup, stable=False)
+            frozen = await run(f"""async () => {{ const C = window.__campanulaClock; C.set(0.1); const t0 = C.now(); await ({trigger})();
+              while (C.now() - t0 < {t}) await new Promise(r => requestAnimationFrame(r));
+              C.set(0); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+              return document.querySelector('.relay')?.style.transform ?? null }}""", stable=False)
+            file = out_dir / f'{name}-f{t}-{size_name}.png'
+            await devtools('take_screenshot', filePath=str(file))
+            entry['files'].append(file.name)
+            entry['relay'].append(frozen)
+            await run('() => { window.__campanulaClock.set(1); return true }', stable=False)
+            await asyncio.sleep(settle)
+            if reset:
+                await run(f'async () => {{ await ({reset})(); return true }}', stable=False)
+                await asyncio.sleep(settle)
+    finally:
+        await run('() => { window.__campanulaClock?.set(1); return true }', stable=False)
     return entry
 
 
