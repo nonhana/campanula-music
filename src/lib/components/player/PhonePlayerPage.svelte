@@ -17,7 +17,6 @@
   import { float, recede } from '../motion'
   import { DURATIONS, FLOAT_IN_DELAY, PAGE_DISTANCE } from '../motion-tokens'
   import { createCoverSwipe } from './cover-swipe.svelte'
-  import { coverRelaying, relayTarget } from './CoverRelay.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import { createDrawer } from './drawer.svelte'
   import Lyrics from './Lyrics.svelte'
@@ -105,15 +104,7 @@
         </div>
       {:else}
         <div class='stage absolute inset-0 grid place-items-center' in:recede={{ delay: FLOAT_IN_DELAY }} out:recede>
-          <!-- 拉开、收起播放页时封面藏着，播放条的小封面跟着抽屉长成它（CoverRelay） -->
-          <button
-            type='button'
-            class='face rounded-xl'
-            style:opacity={coverRelaying() ? 0 : undefined}
-            aria-label='显示歌词'
-            {@attach swipe.grip}
-            {@attach relayTarget(PAGE_COVER.phone)}
-          >
+          <button type='button' class='face rounded-xl' aria-label='显示歌词' {@attach swipe.grip}>
             <CoverWheel {song} {turn} duration={DURATIONS.focal} size={PAGE_COVER.phone} fluid eager class='rounded-xl shadow-float' drag={swipe.turned} {previous} {next} />
           </button>
         </div>

@@ -135,14 +135,6 @@ function restingRect(slot: HTMLElement): DOMRect {
 }
 
 /**
- * 播放条上的封面小窗和它的封面按多大取，只在小窗正显示着当前这首时有（没有封面正飞过来、落下后也不再盖着）：
- * 拉开、收起播放页时封面从这里长成播放页的大封面（CoverRelay）
- */
-export function barCover(): { element: HTMLElement, size: number } | null {
-  return flight || plane ? null : landingSlot
-}
-
-/**
  * 从 from 沿一道往上鼓的浅弧线飞到 to（二次贝塞尔曲线，分 STEPS 段），边飞边从 from 的大小变成 to 的大小。
  * 飞的图摆在 to 上，缩放的原点在左上角
  */

@@ -30,8 +30,8 @@ export function neighborSong(player: PlayerState, direction: keyof PlayerState['
 export const SMALL_COVER = 48
 
 /**
- * 播放页的大封面按多大取（Cover 的 size）：桌面 420，手机 360。播放条上换了歌就在后台取好（CoverRelay 的 prefetchPageCover），
- * 拉开播放页时长大的封面、播放页上的封面直接是大图
+ * 播放页的大封面按多大取（Cover 的 size）：桌面 420，手机 360。播放条上换了歌就在后台取好（player-page.svelte.ts 的 prefetchPageCover），
+ * 拉开播放页时封面直接是大图
  */
 export const PAGE_COVER = { desktop: 420, phone: 360 } as const
 

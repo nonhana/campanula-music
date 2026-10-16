@@ -14,7 +14,6 @@
   import { langOf } from '../library/view'
   import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
-  import { coverRelaying, relayTarget } from './CoverRelay.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
@@ -69,8 +68,7 @@
 <div class='columns relative grid grid-cols-[minmax(240px,1fr)_minmax(0,1.15fr)] mx-auto max-w-[1240px] min-h-0 w-full flex-1 px-8 pb-8 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] lg:px-12'>
   <section class='min-h-0 flex flex-col justify-center' aria-label='播放控制'>
     <div class='stage'>
-      <!-- 拉开、收起播放页时这里藏着，播放条的小封面跟着抽屉长成它（CoverRelay） -->
-      <div class='cover mx-auto rounded-xl' style:opacity={coverRelaying() ? 0 : undefined} {@attach relayTarget(PAGE_COVER.desktop)}>
+      <div class='cover mx-auto'>
         <CoverWheel {song} {turn} duration={DURATIONS.focal} size={PAGE_COVER.desktop} fluid eager class='rounded-xl shadow-float' />
       </div>
     </div>
