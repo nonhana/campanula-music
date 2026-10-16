@@ -1,4 +1,4 @@
-import type { ApiError, ErrorBody } from '$lib/api/errors'
+import type { ApiError, ErrorBody } from '#lib/api/errors.js'
 import type { BrowserCapabilities } from './browser'
 
 /** 请求 Campanula 服务端没成功的原因：前三种是请求本身的问题，其余是服务端按错误约定回的 */

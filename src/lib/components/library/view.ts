@@ -1,6 +1,6 @@
-import type { Credit, Playlist, Song } from '$lib/api/library'
-import type { RequestFailure } from '$lib/app/api'
-import type { LibraryState, PlaylistSongs, SyncFailure } from '$lib/app/library'
+import type { Credit, Playlist, Song } from '#lib/api/library.js'
+import type { RequestFailure } from '#lib/app/api.js'
+import type { LibraryState, PlaylistSongs, SyncFailure } from '#lib/app/library.js'
 import type { ScrollMark } from '../ui/scroll-marks'
 import { failureText } from '../failure'
 

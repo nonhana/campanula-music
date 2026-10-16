@@ -1,4 +1,4 @@
-import type { RequestFailure } from '$lib/app/api'
+import type { RequestFailure } from '#lib/app/api.js'
 
 /** 一句话说清请求为什么没成功、能怎么办（文案平实，不卖萌） */
 export function failureText(failure: RequestFailure): string {

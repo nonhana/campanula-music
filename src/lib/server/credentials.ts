@@ -1,7 +1,7 @@
 import type { Cookies } from '@sveltejs/kit'
 import { Buffer } from 'node:buffer'
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto'
-import { env } from '$env/dynamic/private'
+import { COOKIE_SECRET } from '$app/env/private'
 
 // 登录 Cookie（ADR-0003）：网易云凭据、deviceId、续期时间用站长配置的密钥加密并签名，
 // 交给听众的浏览器保管（httpOnly、Secure）。服务器不存，每次请求解开用完即弃。
@@ -39,12 +39,12 @@ const OPTIONS = {
 
 /** 站长有没有配好密钥（环境变量 COOKIE_SECRET） */
 export function cookieSecretConfigured(): boolean {
-  return (env.COOKIE_SECRET ?? '').length >= MIN_SECRET_LENGTH
+  return COOKIE_SECRET.length >= MIN_SECRET_LENGTH
 }
 
 /** 加密用的密钥由站长的 COOKIE_SECRET 派生；没配好就明确失败（hooks.server.ts 已经先拦住了接口请求） */
 function key(): Buffer {
-  const secret = env.COOKIE_SECRET
+  const secret = COOKIE_SECRET
   if (!secret || secret.length < MIN_SECRET_LENGTH)
     throw new Error('没有配置 COOKIE_SECRET，不能加密登录 Cookie')
   return Buffer.from(hkdfSync('sha256', secret, '', 'campanula login cookie', 32))

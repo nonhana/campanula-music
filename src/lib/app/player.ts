@@ -1,5 +1,5 @@
-import type { Song } from '$lib/api/library'
-import type { PlayUrlResponse, Quality } from '$lib/api/playback'
+import type { Song } from '#lib/api/library.js'
+import type { PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { Api, RequestFailure } from './api'
 import type { AudioCapability, Clock } from './browser'
 import type { PlaylistSongs } from './library'

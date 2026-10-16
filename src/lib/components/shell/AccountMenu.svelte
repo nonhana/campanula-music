@@ -4,7 +4,7 @@
   键盘：Enter / 空格 / ↓ 打开并聚焦第一项，↑↓ 在菜单项之间移动，Esc 关上并回到头像，Tab 离开时关上。
 -->
 <script lang='ts'>
-  import type { Account } from '$lib/api/account'
+  import type { Account } from '#lib/api/account.js'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { LogOut, Settings } from '@lucide/svelte'
@@ -80,7 +80,7 @@
 
   function logout() {
     hide(false)
-    void goto(resolve('/'), { replaceState: true })
+    void goto(resolve('/'), { replace: true })
     void view.app.logout()
   }
 </script>

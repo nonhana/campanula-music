@@ -7,7 +7,7 @@
   红心（#30）和“更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
+  import type { Song } from '#lib/api/library.js'
   import type { Playhead } from './playhead.svelte'
   import type { Turn } from './view'
   import { page } from '$app/state'

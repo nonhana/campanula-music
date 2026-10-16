@@ -5,8 +5,8 @@
   无版权的整行降到 45%、不能点，徽标写明原因（••• 照样能点）
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
-  import type { PlaySource } from '$lib/app/player'
+  import type { Song } from '#lib/api/library.js'
+  import type { PlaySource } from '#lib/app/player.js'
   import { Heart } from '@lucide/svelte'
   import MorningWash from '../player/MorningWash.svelte'
   import NowIndex from '../player/NowIndex.svelte'

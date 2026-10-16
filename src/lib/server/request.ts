@@ -1,6 +1,6 @@
-import type { Quality } from '$lib/api/playback'
-import { QUALITIES } from '$lib/api/playback'
+import type { Quality } from '#lib/api/playback.js'
 import { error } from '@sveltejs/kit'
+import { QUALITIES } from '#lib/api/playback.js'
 
 /** 中国大陆手机号（+86）：1 开头的 11 位数字 */
 export const PHONE = /^1\d{10}$/

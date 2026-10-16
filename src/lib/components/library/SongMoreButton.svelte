@@ -3,8 +3,8 @@
   压在整行的点歌按钮上面。手机 44px 的圆，桌面歌曲行 36px、首页歌曲格 32px 的圆角方块
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
-  import type { PlaySource } from '$lib/app/player'
+  import type { Song } from '#lib/api/library.js'
+  import type { PlaySource } from '#lib/app/player.js'
   import { Ellipsis } from '@lucide/svelte'
   import { openSongMenuFrom, songMenu } from '../song-menu.svelte'
 

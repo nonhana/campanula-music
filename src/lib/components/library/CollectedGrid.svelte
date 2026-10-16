@@ -5,7 +5,7 @@
   架子能横向滚动，底边是自绘的滚动条（拖动、点空白处翻一屏）；键盘 Tab 到哪一项就把它滚进视野
 -->
 <script lang='ts'>
-  import type { LibraryState } from '$lib/app/library'
+  import type { LibraryState } from '#lib/app/library.js'
   import { Disc3, UserRound } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'

@@ -1,9 +1,9 @@
-import type { App } from '$lib/app/app'
-import type { BrowserCapabilities, Clock } from '$lib/app/browser'
 import type { Cookie } from 'tough-cookie'
-import { createApp } from '$lib/app/app'
+import type { App } from '#lib/app/app.js'
+import type { BrowserCapabilities, Clock } from '#lib/app/browser.js'
 import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
 import { CookieJar } from 'tough-cookie'
+import { createApp } from '#lib/app/app.js'
 import { FakeAudio, FakeBroadcast, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage, MediaTasks } from './browser'
 
 export interface SentRequest {

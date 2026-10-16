@@ -7,8 +7,8 @@
   song 是 null 时空着（第一次点歌，封面还在往播放条飞）。新旧叠在同一个网格格子里，换的这一会儿高度按高的那个算，不跳
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
   import type { Snippet } from 'svelte'
+  import type { Song } from '#lib/api/library.js'
   import type { MotionConfig, TransitionOptions } from '../motion'
   import type { Place, Turn } from './view'
   import { float } from '../motion'

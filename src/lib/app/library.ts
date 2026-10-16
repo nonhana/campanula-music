@@ -1,9 +1,9 @@
-import type { Account } from '$lib/api/account'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, HeartsResponse, Playlist, PlaylistsResponse, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '$lib/api/library'
+import type { Account } from '#lib/api/account.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, HeartsResponse, Playlist, PlaylistsResponse, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '#lib/api/library.js'
 import type { Api, RequestFailure, Result } from './api'
 import type { LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
-import { SONGS_PER_REQUEST } from '$lib/api/library'
+import { SONGS_PER_REQUEST } from '#lib/api/library.js'
 
 // 曲库副本和同步（Spec #11“客户端：曲库副本”，ADR-0007）：登录后先显示本机副本，再在后台和网易云同步。
 // 同步一步一步来：红心 → 歌单列表 → 收藏的专辑 → 收藏的歌手 → 每张歌单（我喜欢的音乐在最前，然后按歌单列表的顺序）。

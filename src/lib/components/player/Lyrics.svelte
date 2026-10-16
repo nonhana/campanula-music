@@ -8,9 +8,9 @@
   加载中、歌词、纯音乐、没取到之间交叉淡化（新旧叠在同一格里）；打开翻译、音译时那几行淡入（DESIGN.md Motion）
 -->
 <script lang='ts'>
-  import type { Song } from '$lib/api/library'
-  import type { LyricLine } from '$lib/api/playback'
   import type { ClassValue } from 'svelte/elements'
+  import type { Song } from '#lib/api/library.js'
+  import type { LyricLine } from '#lib/api/playback.js'
   import type { Playhead } from './playhead.svelte'
   import { Check, Music } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'

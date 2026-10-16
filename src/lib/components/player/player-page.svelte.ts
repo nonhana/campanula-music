@@ -1,8 +1,8 @@
-import type { Song } from '$lib/api/library'
 import type { Attachment } from 'svelte/attachments'
-import { pushState } from '$app/navigation'
+import type { Song } from '#lib/api/library.js'
 import { page } from '$app/state'
 import { preloadCover } from '../library/Cover.svelte'
+import { pushShallowState } from '../shallow-state'
 import { createDrawer } from './drawer.svelte'
 
 // 播放页开没开着记在浅路由里（page.state.player）：打开时压一条浏览记录，
@@ -32,7 +32,7 @@ export function prefetchPageCover(song: () => Song | null, size: number): void {
 
 export function openPlayerPage(): void {
   if (!page.state.player)
-    pushState('', { player: 'open' })
+    pushShallowState({ player: 'open' })
 }
 
 export function closePlayerPage(): void {
@@ -42,7 +42,7 @@ export function closePlayerPage(): void {
 
 export function openQueueSheet(): void {
   if (page.state.player === 'open')
-    pushState('', { player: 'queue' })
+    pushShallowState({ player: 'queue' })
 }
 
 export function closeQueueSheet(): void {

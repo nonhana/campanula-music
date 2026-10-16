@@ -5,9 +5,9 @@
   播放的提示浮在最上面，播放页开着时也看得见。搜索、每日推荐、已下载由之后的票放进来。
 -->
 <script lang='ts'>
-  import type { Account } from '$lib/api/account'
   import type { LucideIcon } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
+  import type { Account } from '#lib/api/account.js'
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
@@ -67,14 +67,17 @@
 
   // 从 App 里别的页面进来的，返回就退回去；直接打开二级页面的，返回到曲库
   let cameFromApp = $state(false)
-  afterNavigate(({ from }) => {
+  afterNavigate(({ from, shallow, type }) => {
+    // 打开播放页、歌曲菜单是浅路由（goto 的 shallow），没有换页
+    if (shallow && type === 'goto')
+      return
     cameFromApp = from !== null
   })
   function back() {
     if (cameFromApp)
       history.back()
     else
-      void goto(resolve('/'), { replaceState: true })
+      void goto(resolve('/'), { replace: true })
   }
 
   /** 侧栏的一项：当前项是薄荷玻璃底；收起时只有图标，名字给读屏和悬停提示 */

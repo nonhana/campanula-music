@@ -7,16 +7,16 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { getAppView } from '$lib/components/app-context.svelte'
-  import { failureText } from '$lib/components/failure'
-  import { desktopLayout } from '$lib/components/layout'
-  import AlbumDescription from '$lib/components/library/AlbumDescription.svelte'
-  import Cover from '$lib/components/library/Cover.svelte'
-  import SongList from '$lib/components/library/SongList.svelte'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '$lib/components/library/view'
-  import { fadeAway, reveal } from '$lib/components/motion'
-  import { scrollSnapshot } from '$lib/components/snapshot'
-  import StateBlock from '$lib/components/ui/StateBlock.svelte'
+  import { getAppView } from '#lib/components/app-context.svelte.js'
+  import { failureText } from '#lib/components/failure.js'
+  import { desktopLayout } from '#lib/components/layout.js'
+  import AlbumDescription from '#lib/components/library/AlbumDescription.svelte'
+  import Cover from '#lib/components/library/Cover.svelte'
+  import SongList from '#lib/components/library/SongList.svelte'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
+  import { fadeAway, reveal } from '#lib/components/motion.js'
+  import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const view = getAppView()
   const library = $derived(view.state.library)

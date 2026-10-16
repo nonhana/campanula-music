@@ -1,6 +1,6 @@
 <script lang='ts'>
-  import Brand from '$lib/components/Brand.svelte'
-  import Scrollbar from '$lib/components/ui/Scrollbar.svelte'
+  import Brand from '#lib/components/Brand.svelte'
+  import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
 
   const origin = window.location.origin
 </script>

@@ -1,5 +1,5 @@
-import type { AudioCapability, ChannelCapability, Clock, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '$lib/app/browser'
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
+import type { AudioCapability, ChannelCapability, Clock, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '#lib/app/browser.js'
 
 // 浏览器能力替身：行为照浏览器标准写。
 // 浏览器直连网易云的传输、Background Fetch 由最早用到它们的票加上。

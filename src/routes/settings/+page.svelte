@@ -2,17 +2,17 @@
 <script lang='ts'>
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { getAppView } from '$lib/components/app-context.svelte'
-  import Avatar from '$lib/components/Avatar.svelte'
-  import { desktopLayout } from '$lib/components/layout'
-  import Button from '$lib/components/ui/Button.svelte'
   import { LogOut } from '@lucide/svelte'
+  import { getAppView } from '#lib/components/app-context.svelte.js'
+  import Avatar from '#lib/components/Avatar.svelte'
+  import { desktopLayout } from '#lib/components/layout.js'
+  import Button from '#lib/components/ui/Button.svelte'
 
   const view = getAppView()
   const account = $derived(view.state.session.status === 'signedIn' ? view.state.session.account : null)
 
   function logout() {
-    void goto(resolve('/'), { replaceState: true })
+    void goto(resolve('/'), { replace: true })
     void view.app.logout()
   }
 </script>

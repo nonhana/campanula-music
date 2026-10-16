@@ -1,4 +1,4 @@
-import type { LyricLine, LyricsResponse, LyricWord } from '$lib/api/playback'
+import type { LyricLine, LyricsResponse, LyricWord } from '#lib/api/playback.js'
 
 // 把网易云 lyric_new 的歌词整理成一行一行的（格式照录制，tests/fixtures/netease/playback/lyric_new.*.json）：
 // - lrc、tlyric、romalrc、ytlrc、yromalrc 是 LRC：每行前面一个或几个 [分:秒.小数] 时间标签；

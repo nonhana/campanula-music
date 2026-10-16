@@ -1,4 +1,4 @@
-import type { App, AppState } from '$lib/app/app'
+import type { App, AppState } from '#lib/app/app.js'
 import { createContext } from 'svelte'
 import { createSubscriber } from 'svelte/reactivity'
 

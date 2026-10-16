@@ -1,7 +1,7 @@
 <!-- 站长没配置加密 Cookie 的密钥：给站长看的配置说明（和 HttpsRequired 一样，是部署出了问题，不是听众能修的） -->
 <script lang='ts'>
-  import Brand from '$lib/components/Brand.svelte'
-  import Scrollbar from '$lib/components/ui/Scrollbar.svelte'
+  import Brand from '#lib/components/Brand.svelte'
+  import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
 </script>
 
 <main class='mx-auto max-w-xl px-6 py-12 text-body text-neutral-700 leading-relaxed'>

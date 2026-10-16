@@ -3,7 +3,7 @@
   站长没配密钥时根布局显示 CookieSecretRequired，不到这里
 -->
 <script lang='ts'>
-  import type { RequestFailure } from '$lib/app/api'
+  import type { RequestFailure } from '#lib/app/api.js'
   import Brand from './Brand.svelte'
   import { failureText } from './failure'
   import Scrollbar from './ui/Scrollbar.svelte'

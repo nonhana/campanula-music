@@ -1,4 +1,4 @@
-import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } from '$lib/api/library'
+import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } from '#lib/api/library.js'
 
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。
 // 之后的播放队列、下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。

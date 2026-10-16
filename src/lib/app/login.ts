@@ -1,5 +1,5 @@
-import type { Account } from '$lib/api/account'
-import type { CaptchaRequest, CaptchaResponse, QrCheckRequest, QrCheckResponse, QrResponse, SmsLoginRequest, SmsLoginResponse } from '$lib/api/login'
+import type { Account } from '#lib/api/account.js'
+import type { CaptchaRequest, CaptchaResponse, QrCheckRequest, QrCheckResponse, QrResponse, SmsLoginRequest, SmsLoginResponse } from '#lib/api/login.js'
 import type { Api, RequestFailure, Result } from './api'
 import type { Clock, PageVisibility } from './browser'
 

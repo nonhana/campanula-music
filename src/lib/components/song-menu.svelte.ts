@@ -1,8 +1,8 @@
-import type { Song } from '$lib/api/library'
-import type { PlaySource } from '$lib/app/player'
-import { pushState } from '$app/navigation'
+import type { Song } from '#lib/api/library.js'
+import type { PlaySource } from '#lib/app/player.js'
 import { page } from '$app/state'
 import { desktopLayout } from './layout'
+import { pushShallowState } from './shallow-state'
 
 // 歌曲的“更多”菜单（DESIGN.md Song Row、Overlays）：歌曲行、首页歌曲格的 ••• 和右键打开同一份。
 // 怎么出现按输入方式切换，不按宽度（Spec #11 界面）：触屏点 ••• 是底部弹层；鼠标点 •••、右键是贴着锚点的浮动菜单（窄窗口里也是）；
@@ -27,7 +27,7 @@ export const songMenu: { request: SongMenuRequest | null } = $state({ request: n
 function open(request: SongMenuRequest): void {
   songMenu.request = request
   if (!request.anchor && !page.state.songSheet)
-    pushState('', { ...page.state, songSheet: true })
+    pushShallowState({ ...page.state, songSheet: true })
 }
 
 /** 从 ••• 打开的浮动菜单离按钮这么远（px） */

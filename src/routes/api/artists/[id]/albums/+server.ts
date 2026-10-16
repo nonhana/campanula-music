@@ -1,8 +1,8 @@
-import type { ArtistAlbumsResponse } from '$lib/api/library'
+import type { ArtistAlbumsResponse } from '#lib/api/library.js'
 import type { RequestHandler } from './$types'
-import { fetchArtistAlbums } from '$lib/server/netease'
-import { readId, readOffset } from '$lib/server/request'
-import { respondSignedIn } from '$lib/server/session'
+import { fetchArtistAlbums } from '#lib/server/netease.js'
+import { readId, readOffset } from '#lib/server/request.js'
+import { respondSignedIn } from '#lib/server/session.js'
 
 // 歌手页后面的专辑：从第 offset 张起的一页
 export const GET: RequestHandler = ({ params, url, cookies }) => {

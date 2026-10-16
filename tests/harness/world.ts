@@ -1,5 +1,5 @@
 import type { AddressInfo } from 'node:net'
-import type { Plugin } from 'vite'
+import type { Plugin, RunnableDevEnvironment } from 'vite'
 import type { Device } from './device'
 import type { Call } from './netease-sdk'
 import { AsyncLocalStorage } from 'node:async_hooks'
@@ -133,8 +133,10 @@ async function startWorld() {
     await vite.close()
   }
 
-  const fake = await vite.ssrLoadModule(FAKE_SDK) as typeof import('./netease-sdk')
-  const probe = await vite.ssrLoadModule(SDK_PROBE) as Pick<typeof import('./netease-sdk'), 'invokeModule'>
+  // 和服务端路由走同一个模块加载器（SvelteKit 3 起用 SSR 环境的 runner，不再是 ssrLoadModule；两边缓存不通，拿到的就是两份替身）
+  const { runner } = vite.environments.ssr as RunnableDevEnvironment
+  const fake = await runner.import(FAKE_SDK) as typeof import('./netease-sdk')
+  const probe = await runner.import(SDK_PROBE) as Pick<typeof import('./netease-sdk'), 'invokeModule'>
   if (probe.invokeModule !== fake.invokeModule) {
     await closeServers()
     throw new Error('服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云')

@@ -2,7 +2,7 @@
   歌单网格里的一格：封面、歌单名、首数（隐私歌单加一把锁，收藏的歌单写是谁的）。点开是歌单页
 -->
 <script lang='ts'>
-  import type { Playlist } from '$lib/api/library'
+  import type { Playlist } from '#lib/api/library.js'
   import { resolve } from '$app/paths'
   import { Lock } from '@lucide/svelte'
   import Cover from './Cover.svelte'

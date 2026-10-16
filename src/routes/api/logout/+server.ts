@@ -1,8 +1,7 @@
-import type { LogoutResponse } from '$lib/api/login'
+import type { LogoutResponse } from '#lib/api/login.js'
 import type { RequestHandler } from './$types'
-import { clearLogin, readLogin } from '$lib/server/credentials'
-import { logout, NeteaseError } from '$lib/server/netease'
-import { json } from '@sveltejs/kit'
+import { clearLogin, readLogin } from '#lib/server/credentials.js'
+import { logout, NeteaseError } from '#lib/server/netease.js'
 
 // 退出登录：带着凭据调网易云的退出，然后回过期的登录 Cookie。
 // 网易云那边没退成（断网、出错、本来就失效了）也照样删掉 Cookie：听众要的是这个浏览器不再登录；
@@ -19,5 +18,5 @@ export const POST: RequestHandler = async ({ cookies }) => {
     }
   }
   clearLogin(cookies)
-  return json({ signedOut: true } satisfies LogoutResponse)
+  return Response.json({ signedOut: true } satisfies LogoutResponse)
 }

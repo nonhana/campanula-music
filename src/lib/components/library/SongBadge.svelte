@@ -1,6 +1,6 @@
 <!-- 跟在歌名后面的徽标（DESIGN.md Chips · Badges）：只能试听（琥珀）、无版权（淡发丝底） -->
 <script lang='ts'>
-  import type { Availability } from '$lib/api/library'
+  import type { Availability } from '#lib/api/library.js'
 
   const { availability }: { availability: Availability } = $props()
 </script>
