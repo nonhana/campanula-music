@@ -8,8 +8,8 @@
   flight：这张封面代表的页面地址（格子里是点开的那一页，页头是这一页）。换页时两头地址一样的封面从格子飞到页头、再飞回去（shell/page-transition.ts）
 -->
 <script lang='ts' module>
+  import { thumbnailUrl } from '#lib/api/library.js'
   import { imageLoaded, preloadImage } from '../image-reveal.svelte'
-  import { thumbnailUrl } from './view'
 
   /** 按显示尺寸 size 取的缩略图地址：按 2 倍屏取 */
   export function coverSource(url: string, size: number): string {

@@ -1,6 +1,6 @@
 import type { Cookie } from 'tough-cookie'
 import type { App } from '#lib/app/app.js'
-import type { BrowserCapabilities, Clock } from '#lib/app/browser.js'
+import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } from '#lib/app/browser.js'
 import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
 import { CookieJar } from 'tough-cookie'
 import { createApp } from '#lib/app/app.js'
@@ -20,6 +20,13 @@ export interface Tab {
   hide: () => void
   /** 页面回到前台 */
   show: () => void
+  /**
+   * 关掉这个标签页（关掉浏览器标签页、划掉 App）：页面先被隐藏，之后页面里的脚本不再运行：
+   * 播放器停下不出声、不再发事件，定时不再触发，收不到广播和联网状态的变化。
+   * 依据 HTML 标准的 unload a document（先发 visibilitychange 变成 hidden）和 destroy a document（排着的任务丢掉，事件循环不再为它跑任务）。
+   * 替身没做到的：在路上的请求、排着的锁、本机数据库的连接不会跟着断，所以关之前先等设备停下（world.settle）
+   */
+  close: () => void
   mediaSession: FakeMediaSession
   /** 这个标签页的播放器，按 App 新建的先后 */
   audio: readonly FakeAudio[]
@@ -152,17 +159,46 @@ export function createDevice(origin: string, clock: Clock): Device {
       const page = new FakePage()
       const mediaSession = new FakeMediaSession()
       const audio: FakeAudio[] = []
+      // 关掉以后页面里的脚本不再运行：定时、广播、联网状态的变化都送不到这个标签页
+      let closed = false
+      const alive = (callback: () => void) => () => {
+        if (!closed)
+          callback()
+      }
+      const channels: ChannelCapability[] = []
+      /** 按事件类型，App 加的监听 → 实际挂在设备上的那个 */
+      const networkListeners = { online: new Map<() => void, () => void>(), offline: new Map<() => void, () => void>() }
+      const tabNetwork: NetworkStatus = {
+        get onLine() {
+          return network.onLine
+        },
+        addEventListener(type, listener) {
+          const gated = networkListeners[type].get(listener) ?? alive(listener)
+          networkListeners[type].set(listener, gated)
+          network.addEventListener(type, gated)
+        },
+        removeEventListener(type, listener) {
+          const gated = networkListeners[type].get(listener)
+          if (gated)
+            network.removeEventListener(type, gated)
+          networkListeners[type].delete(listener)
+        },
+      }
       const app = createApp({
         fetch: deviceFetch,
-        clock,
+        clock: { now: clock.now, after: (ms, callback) => clock.after(ms, alive(callback)) },
         indexedDB: deviceIndexedDB,
-        network,
+        network: tabNetwork,
         page,
         storage,
         mediaSession,
         MediaMetadata: FakeMediaMetadata,
         locks,
-        broadcastChannel: broadcast.channel,
+        broadcastChannel: (name) => {
+          const channel = broadcast.channel(name)
+          channels.push(channel)
+          return channel
+        },
         audio: () => {
           const player = new FakeAudio(mediaTasks)
           audio.push(player)
@@ -174,6 +210,14 @@ export function createDevice(origin: string, clock: Clock): Device {
         app,
         hide: () => page.set('hidden'),
         show: () => page.set('visible'),
+        close: () => {
+          page.set('hidden')
+          closed = true
+          for (const player of audio)
+            player.close()
+          for (const channel of channels)
+            channel.close()
+        },
         mediaSession,
         audio,
         sounding: () => audio.find(player => player.sounding),

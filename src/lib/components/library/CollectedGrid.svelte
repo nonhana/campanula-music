@@ -7,6 +7,7 @@
 <script lang='ts'>
   import type { LibraryState } from '#lib/app/library.js'
   import { Disc3, UserRound } from '@lucide/svelte'
+  import { creditLine } from '#lib/api/library.js'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { fadeAway, reveal } from '../motion'
@@ -14,7 +15,6 @@
   import StateBlock from '../ui/StateBlock.svelte'
   import AlbumTile from './AlbumTile.svelte'
   import ArtistTile from './ArtistTile.svelte'
-  import { creditLine } from './view'
 
   interface Props {
     library: LibraryState

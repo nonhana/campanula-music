@@ -1,6 +1,7 @@
 import type { Account, AccountResponse } from '#lib/api/account.js'
 import type { Song } from '#lib/api/library.js'
 import type { LogoutResponse } from '#lib/api/login.js'
+import type { Quality } from '#lib/api/playback.js'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { LibraryState, PlaylistSearch } from './library'
@@ -12,6 +13,7 @@ import { createLibrary, searchPlaylist } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 import { createLyrics } from './lyrics'
+import { connectMediaSession } from './media-session'
 import { createBackgroundLane } from './pacing'
 import { createPlayer, INITIAL_PLAYER } from './player'
 
@@ -67,7 +69,7 @@ export interface App {
   sendCaptcha: (phone: string) => Promise<void>
   loginWithCaptcha: (phone: string, captcha: string) => Promise<void>
   /**
-   * 退出登录：App 马上当作未登录。服务端调网易云的退出、回过期的登录 Cookie；
+   * 退出登录：App 马上当作未登录，删除本机的曲库副本和播放队列（设置留着）。服务端调网易云的退出、回过期的登录 Cookie；
    * 断网或服务端出错时 Cookie 删不掉，记下来，联网后、下次打开时再发（ADR-0003）
    */
   logout: () => Promise<void>
@@ -127,6 +129,8 @@ export interface App {
   playFrom: (position: number) => void
   /** 音量，0 到 1 */
   setVolume: (volume: number) => void
+  /** 换在线播放音质（设置页）：存在这台设备上，退出、换账号都不变。从下一首起生效，正在放的那首照旧放完 */
+  setPlayQuality: (quality: Quality) => void
   /** 关掉播放的提示 */
   dismissPlayerNotice: () => void
   /** 看这首歌的歌词（播放页上显示歌词时）：已经取到、正在取就不再取，拉到哪了看 state.lyrics；没取成时再调一次就是重试 */
@@ -166,13 +170,33 @@ export function createApp(browser: BrowserCapabilities): App {
   }
   browser.network.addEventListener('online', () => void finishLogout())
 
+  /**
+   * 播放队列是哪个网易云账号的：登录时定下，登录失效时不变，退出时清掉。
+   * 登录失效后换了别的账号登录就清空播放队列（规则⑩）；只有登录了才能放歌，所以播放队列不空时它一定不是 null
+   */
+  let queueOwner: number | null = null
+
   const player = createPlayer({
     api,
     clock: browser.clock,
     audio: browser.audio,
-    write: next => update({ player: next }),
+    write: (next) => {
+      update({ player: next })
+      showOnLockScreen(next)
+    },
+    save(progress, queue) {
+      if (queue && queueOwner === null)
+        throw new Error('播放队列不属于任何网易云账号：只有登录了才能放歌')
+      void local.savePlayer(progress, queue && { ...queue, owner: queueOwner! })
+    },
+    forget: () => void local.deletePlayer(),
     loginExpired,
   })
+  const lockScreen = connectMediaSession({ session: browser.mediaSession, MediaMetadata: browser.MediaMetadata, clock: browser.clock, player, read: () => state.player })
+  /** 锁屏和通知栏上显示的跟着播放状态变。写成函数声明：锁屏的按钮要用播放器，播放器发布时又要用锁屏，两边互相引用 */
+  function showOnLockScreen(next: PlayerState): void {
+    lockScreen(next)
+  }
 
   const lane = createBackgroundLane(browser)
   const library = createLibrary({
@@ -210,6 +234,7 @@ export function createApp(browser: BrowserCapabilities): App {
     login.stopQr()
     library.leave()
     player.stop()
+    queueOwner = null
     lyrics.clear()
     update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
   }
@@ -245,13 +270,28 @@ export function createApp(browser: BrowserCapabilities): App {
     update({ session: { status: 'loginExpired' }, library: null })
   }
 
-  /** 登录了：先拿出这个账号的曲库副本，和登录状态一起显示，再在后台同步 */
+  /**
+   * 登录了：先拿出这个账号的曲库副本，和登录状态一起显示，再在后台同步。
+   * 播放队列：同一个账号接着用；这次打开后第一次登录时恢复本机存着的；别的账号的清空（规则⑩）
+   */
   async function signedIn(account: Account): Promise<void> {
     sessions += 1
     const mine = sessions
-    const shown = await library.enter(account)
+    const [shown, stored, quality] = await Promise.all([library.enter(account), local.readPlayer(), local.playQuality()])
     if (mine !== sessions)
       return
+    if (quality)
+      player.setQuality(quality)
+    if (queueOwner !== account.id) {
+      // 播放地址按账号给（会员和非会员不一样）：上一个账号取的不能接着用，所以不只是清空播放队列
+      if (queueOwner !== null)
+        player.stop()
+      queueOwner = account.id
+      if (stored?.owner === account.id)
+        player.restore(stored.saved)
+      else if (stored)
+        void local.deletePlayer()
+    }
     update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN, library: shown })
     library.sync()
   }
@@ -313,7 +353,7 @@ export function createApp(browser: BrowserCapabilities): App {
     async logout() {
       await local.setPendingLogout(true)
       signedOut()
-      await local.deleteLibrary()
+      await Promise.all([local.deleteLibrary(), local.deletePlayer()])
       sessionChannel.postMessage({ type: 'signedOut' } satisfies SessionMessage)
       await finishLogout()
     },
@@ -344,6 +384,10 @@ export function createApp(browser: BrowserCapabilities): App {
     seek: player.seek,
     playFrom: player.playFrom,
     setVolume: player.setVolume,
+    setPlayQuality(quality) {
+      player.setQuality(quality)
+      void local.savePlayQuality(quality)
+    },
     dismissPlayerNotice: player.dismissNotice,
     openLyrics: lyrics.open,
   }
