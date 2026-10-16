@@ -22,6 +22,8 @@ pnpm dev
 
 提交前钩子会对暂存的文件跑 `eslint --fix`；`pnpm lint`、`pnpm check` 在 CI 里也会跑。
 
+编码代理按 [Svelte 官方 AI 工具](https://svelte.dev/docs/ai/overview) 配置：提示写在 `AGENTS.md`，omp 用的 Svelte MCP 服务器和 `svelte-file-editor` 子代理在 `.omp/`。
+
 ### License
 
 [MIT](./LICENSE)
