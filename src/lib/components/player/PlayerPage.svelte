@@ -1,7 +1,7 @@
 <!--
   播放页：盖住整个 App 的一层抽屉（对话框），打开时从底下升起，收起时缩回底下（drawer.svelte.ts）；
   底色由当前封面染出（CoverTint），里面按布局放桌面版或手机版。离开顶部时露出 24px 的圆角，后面的曲库跟着压暗一点；
-  抽屉的位置和底下垫的那一截由 playerDrawer.panel 管。
+  抽屉的位置和底下垫的那一截由 playerDrawer.panel 管。升起、缩回、被拖着时，播放条上的小封面跟着长成大封面（CoverRelay，盖在抽屉上面）。
   open：浅路由说开着。开着时页面本身不滚动，焦点进来（收起键），关掉后回到打开它的那个按钮；
   还在升起前（从播放条往上拖）、正在缩回时不能操作。Esc 先收起手机上的播放队列，再关掉播放页。
   在 SignedInFrame 里，播放队列里有歌、抽屉没完全收起时才有
@@ -11,6 +11,7 @@
   import { innerHeight } from 'svelte/reactivity/window'
   import { getAppView } from '../app-context.svelte'
   import { desktopLayout } from '../layout'
+  import CoverRelay from './CoverRelay.svelte'
   import CoverTint from './CoverTint.svelte'
   import DesktopPlayerPage from './DesktopPlayerPage.svelte'
   import PhonePlayerPage from './PhonePlayerPage.svelte'
@@ -84,3 +85,7 @@
     {/if}
   {/if}
 </div>
+<!-- 拉开、收起时播放条的小封面长成播放页的大封面：盖在抽屉上面 -->
+{#if song}
+  <CoverRelay {song} panel={root} />
+{/if}

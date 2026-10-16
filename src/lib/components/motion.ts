@@ -84,7 +84,7 @@ function easingOf(options: TransitionOptions): (t: number) => number {
   return options.direction === 'out' ? easeInSoft : easeOutSoft
 }
 
-/** 淡入淡出：同一块地方换内容时交叉淡化（封面染底、手机播放页的封面 ↔ 歌词），加载不出来的图标淡入。duration 默认 200ms（状态） */
+/** 淡入淡出：同一块地方换内容时交叉淡化（封面染底），加载不出来的图标淡入。duration 默认 200ms（状态） */
 export function fade(_node: Element, { duration = DURATIONS.state }: { duration?: number } = {}, options: TransitionOptions = {}): TransitionConfig {
   return {
     duration: fadeMs(duration),
@@ -194,6 +194,23 @@ export function grow(_node: Element, _params?: undefined, options: TransitionOpt
   if (reducedMotion())
     return { duration: fadeMs(ms), easing, css: t => `opacity: ${t}` }
   return { duration: moveMs(ms), easing, css: t => `scale: 1 ${t}` }
+}
+
+/** 手机播放页的封面换成歌词时缩到这么大 */
+const RECEDE_SCALE = 0.96
+
+/**
+ * 手机播放页封面 ↔ 歌词（DESIGN.md Lyrics）：封面换成歌词时缩到 96% 并淡出（退场 200ms），换回时从 96% 放大到位、淡入（面板 360ms）。
+ * 用 in:recede 和 out:recede，delay 给换回时的封面（飘出开始 60ms 后才进来）；缩放的原点是元素中心。减少动态效果时只淡入淡出
+ */
+export function recede(_node: Element, { delay = 0 }: { delay?: number } = {}, options: TransitionOptions = {}): TransitionConfig {
+  if (unseen())
+    return { duration: 0 }
+  const ms = options.direction === 'out' ? DURATIONS['panel-out'] : DURATIONS.panel
+  const easing = easingOf(options)
+  if (reducedMotion())
+    return { delay, duration: fadeMs(ms), easing, css: t => `opacity: ${t}` }
+  return { delay, duration: ms, easing, css: (t, u) => `opacity: ${t}; scale: ${1 - u * (1 - RECEDE_SCALE)}` }
 }
 
 /**
