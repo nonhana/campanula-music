@@ -73,7 +73,8 @@
 
 {#if library}
   {#if opened?.status === 'failed'}
-    {@render failed()}
+    <!-- 骨架换成出错时出错的说明飘入（本地过渡只认眼前这个 if，所以写在这里，不写在 failed 里面） -->
+    <div in:reveal>{@render failed()}</div>
   {:else if desktopLayout.current}
     <div class='pt-2'>
       {#if album}

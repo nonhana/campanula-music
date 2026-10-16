@@ -1,5 +1,6 @@
 <!--
   桌面顶栏右边的头像（视觉原型 DesktopShell）：点开是账号菜单，显示头像和昵称，可以去设置、退出登录。
+  菜单从头像下面飘出来，关上时淡出（DESIGN.md Overlays，motion.ts 的 pop）；连点头像时从此刻的样子掉头，不留残影。
   键盘：Enter / 空格 / ↓ 打开并聚焦第一项，↑↓ 在菜单项之间移动，Esc 关上并回到头像，Tab 离开时关上。
 -->
 <script lang='ts'>
@@ -9,6 +10,7 @@
   import { LogOut, Settings } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import Avatar from '../Avatar.svelte'
+  import { pop } from '../motion'
 
   const { account }: { account: Account } = $props()
   const view = getAppView()
@@ -105,7 +107,8 @@
       role='menu'
       aria-label='账号'
       tabindex='-1'
-      class='absolute right-0 top-[calc(100%+8px)] z-50 w-64 rounded-xl bg-white p-2 shadow-float'
+      class='absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right rounded-xl bg-white p-2 shadow-float'
+      transition:pop={{ below: true }}
       onkeydown={onMenuKey}
     >
       <div class='flex items-center gap-3 px-2 pb-3 pt-1.5'>

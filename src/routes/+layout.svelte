@@ -7,6 +7,8 @@
   import CookieSecretRequired from '$lib/components/CookieSecretRequired.svelte'
   import HttpsRequired from '$lib/components/HttpsRequired.svelte'
   import LoginPage from '$lib/components/login/LoginPage.svelte'
+  import { fade, fadeAway } from '$lib/components/motion'
+  import { DURATIONS } from '$lib/components/motion-tokens'
   import SignedInFrame from '$lib/components/shell/SignedInFrame.svelte'
   // 字体随项目打包（Noto Sans 可变字体，拉丁 → SC → JP → TC），不从网络加载
   import '@fontsource-variable/noto-sans'
@@ -39,24 +41,45 @@
   }
 
   open()
+
+  /** 整个 App 现在是哪一屏：换屏时交叉淡化（打开中 → 曲库 / 登录页、登录 → 曲库、退出登录、登录失效） */
+  const screen = $derived(
+    !session
+      ? 'https'
+      : failedUnexpectedly
+      ? 'failed'
+      : session.status === 'checking'
+      ? 'opening'
+      : session.status === 'checkFailed'
+      ? 'checkFailed'
+      : session.status === 'signedIn' ? 'signedIn' : 'login',
+  )
 </script>
 
-{#if !session}
-  <HttpsRequired />
-{:else if failedUnexpectedly}
-  <AppOpenFailed failure={{ kind: 'appError' }} onretry={open} />
-{:else if session.status === 'checking'}
-  <AppOpening />
-{:else if session.status === 'checkFailed'}
-  {#if session.failure.kind === 'cookieSecretMissing'}
-    <CookieSecretRequired />
-  {:else}
-    <AppOpenFailed failure={session.failure} onretry={open} />
-  {/if}
-{:else if session.status === 'signedIn'}
-  <SignedInFrame account={session.account}>
-    {@render children()}
-  </SignedInFrame>
-{:else}
-  <LoginPage expired={session.status === 'loginExpired'} />
-{/if}
+<!--
+  换屏时新的一屏淡入（面板 360ms），旧的一屏原地淡出（200ms）、马上不占高度，新的一屏从窗口顶上开始（motion.ts 的 fadeAway）。
+  旧的在下面、新的盖在上面
+-->
+{#key screen}
+  <div in:fade={{ duration: DURATIONS.panel }} out:fadeAway={{ duration: DURATIONS['panel-out'] }}>
+    {#if !session}
+      <HttpsRequired />
+    {:else if failedUnexpectedly}
+      <AppOpenFailed failure={{ kind: 'appError' }} onretry={open} />
+    {:else if session.status === 'checking'}
+      <AppOpening />
+    {:else if session.status === 'checkFailed'}
+      {#if session.failure.kind === 'cookieSecretMissing'}
+        <CookieSecretRequired />
+      {:else}
+        <AppOpenFailed failure={session.failure} onretry={open} />
+      {/if}
+    {:else if session.status === 'signedIn'}
+      <SignedInFrame account={session.account}>
+        {@render children()}
+      </SignedInFrame>
+    {:else}
+      <LoginPage expired={session.status === 'loginExpired'} />
+    {/if}
+  </div>
+{/key}

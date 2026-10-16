@@ -29,7 +29,7 @@
 <button
   {type}
   class={[
-    'h-11 inline-flex flex-none items-center justify-center gap-2 whitespace-nowrap rounded-full text-label font-500 transition-[background-color,border-color,transform] duration-feedback md:h-10 enabled:press disabled:cursor-not-allowed',
+    'h-11 inline-flex flex-none items-center justify-center gap-2 whitespace-nowrap rounded-full text-label font-500 transition-[background-color,border-color,color,opacity,transform] duration-feedback md:h-10 enabled:press disabled:cursor-not-allowed',
     Icon ? 'pl-4 pr-5' : 'px-5',
     look[variant],
     klass,

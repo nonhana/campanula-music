@@ -6,6 +6,8 @@
   - 点一首歌（搜索结果里点也一样）就用整张歌单替换播放队列。
   - 加载中、空、出错、搜不到都有各自的样子；已经有一部分歌时，没拉完、没拉成在列表上方说明。
   - 骨架换成歌（或空、出错）时骨架淡出、前几行依次飘入；带着歌打开这一页时不飘（DESIGN.md Motion）。
+  - 开始搜、清空搜索、搜不到时，列表那一块交叉淡化；接着打字时结果原地换。“找到几首”、“没加载完”推开下面的列表时展开、收起
+    （motion.ts 的 unfold），桌面表头的“标题”和“找到几首”交叉淡化。
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
@@ -14,7 +16,7 @@
   import { CircleAlert, Heart, ListMusic, SearchX } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
-  import { reveal } from '../motion'
+  import { fade, reveal, unfold } from '../motion'
   import { currentSong } from '../player/view'
   import Button from '../ui/Button.svelte'
   import SearchField from '../ui/SearchField.svelte'
@@ -42,6 +44,8 @@
   const result = $derived(term && shown.kind === 'songs' ? view.app.searchPlaylist(playlistId, term) : null)
   /** 列表里显示的歌：搜索时是搜到的 */
   const songs = $derived(result ? result.songs : shown.kind === 'songs' ? shown.songs : [])
+  /** 列表那一块显示什么：整张歌单、搜到的歌、一首都没搜到。换的时候交叉淡化 */
+  const mode = $derived(result === null ? 'all' : songs.length === 0 ? 'none' : 'found')
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
   const play = (song: Song) => () => view.app.play(source, song.id)
@@ -75,32 +79,43 @@
         {/if}
       {:else if shown.kind === 'songs'}
         {#if opening?.status === 'failed'}
-          <div class='flex items-center gap-3 px-3 py-2 text-caption text-neutral-700' role='alert'>
-            <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
-            <span class='min-w-0 flex-1'>这张歌单没加载完。{failureText(opening.failure)}</span>
-            <Button variant='outline' class='h-9! md:h-9!' onclick={retry}>重试</Button>
+          <div transition:unfold>
+            <div class='flex items-center gap-3 px-3 py-2 text-caption text-neutral-700' role='alert'>
+              <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
+              <span class='min-w-0 flex-1'>这张歌单没加载完。{failureText(opening.failure)}</span>
+              <Button variant='outline' class='h-9! md:h-9!' onclick={retry}>重试</Button>
+            </div>
           </div>
         {:else if opening?.status === 'loading'}
-          <p class='px-3 py-2 text-caption text-neutral-600' role='status'>正在加载这张歌单的其余歌曲…</p>
+          <div transition:unfold>
+            <p class='px-3 py-2 text-caption text-neutral-600' role='status'>正在加载这张歌单的其余歌曲…</p>
+          </div>
         {/if}
-        {#if songs.length === 0}
-          <StateBlock
-            kind='empty'
-            icon={SearchX}
-            title={`这张歌单里没有“${term}”`}
-            body={result?.incomplete ? '这张歌单还没同步完，还没同步到的歌里可能有，同步完再搜一次。' : '只搜了这张歌单里的歌名、歌手和专辑。'}
-          />
-        {:else}
-          <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id} markOf={songMark}>
-            {#snippet row(song: Song, i: number)}
-              {#if phone}
-                <PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} />
+        <!-- 新旧两块叠在同一格里交叉淡化：换的这一会儿高度按高的那块算 -->
+        <div class='grid grid-cols-[minmax(0,1fr)]'>
+          {#key mode}
+            <div class='col-start-1 row-start-1 min-w-0' transition:fade>
+              {#if songs.length === 0}
+                <StateBlock
+                  kind='empty'
+                  icon={SearchX}
+                  title={`这张歌单里没有“${term}”`}
+                  body={result?.incomplete ? '这张歌单还没同步完，还没同步到的歌里可能有，同步完再搜一次。' : '只搜了这张歌单里的歌名、歌手和专辑。'}
+                />
               {:else}
-                <DesktopSongRow {song} {source} n={i + 1} hearted={library.hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} />
+                <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id} markOf={songMark}>
+                  {#snippet row(song: Song, i: number)}
+                    {#if phone}
+                      <PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} />
+                    {:else}
+                      <DesktopSongRow {song} {source} n={i + 1} hearted={library.hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} />
+                    {/if}
+                  {/snippet}
+                </VirtualList>
               {/if}
-            {/snippet}
-          </VirtualList>
-        {/if}
+            </div>
+          {/key}
+        </div>
       {/if}
     </div>
   {/if}
@@ -110,7 +125,9 @@
   <div class='px-4 pt-3'>
     <SearchField label='在歌单里搜索' bind:value={query} disabled={shown.kind !== 'songs'} />
     {#if result}
-      <p class='px-1 pt-2.5 text-caption text-neutral-600 tabular-nums' role='status'>{@render found()}</p>
+      <div transition:unfold>
+        <p class='px-1 pt-2.5 text-caption text-neutral-600 tabular-nums' role='status'>{@render found()}</p>
+      </div>
     {/if}
   </div>
   <div class='pt-2'>{@render list()}</div>
@@ -118,7 +135,13 @@
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
     <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-9 items-center gap-4 pl-2 pr-1 text-caption text-neutral-500'>
       <span class='text-center'>#</span>
-      <span class='truncate pl-[52px]' role='status'>{#if result}{@render found()}{:else}标题{/if}</span>
+      <span class='grid grid-cols-[minmax(0,1fr)] pl-[52px]' role='status'>
+        {#if result}
+          <span class='col-start-1 row-start-1 truncate' transition:fade>{@render found()}</span>
+        {:else}
+          <span class='col-start-1 row-start-1 truncate' transition:fade>标题</span>
+        {/if}
+      </span>
       <span>专辑</span>
       <span>状态</span>
       <span class='text-right'>时长</span>

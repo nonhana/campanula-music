@@ -2,10 +2,12 @@
   表单输入框（DESIGN.md Inputs）：歌单名称、手机号、验证码这类。纸白底、1px 发丝线、12px 圆角，44px 高，
   标签在上面，可以带一段固定的前缀（例如手机号的 +86），右边可以跟一个按钮（例如“获取验证码”）。
   获得焦点时边框换成茎绿，外面一圈 3px 薄荷雾光环；出错时边框和说明文字用出错红；禁用降到 50%。
+  下面的报错、提示推开下面的内容：出现时展开、收起时淡出再收（motion.ts 的 unfold），报错和提示之间换的时候一个收一个展
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { HTMLInputAttributes } from 'svelte/elements'
+  import { unfold } from '../motion'
 
   interface Props extends Omit<HTMLInputAttributes, 'value' | 'id' | 'prefix'> {
     id: string
@@ -32,7 +34,7 @@
   <div class='mt-1.5 flex gap-2'>
     <div
       class={[
-        'h-11 min-w-0 flex flex-1 items-center border rounded-lg bg-white transition-[border-color,box-shadow] duration-feedback',
+        'h-11 min-w-0 flex flex-1 items-center border rounded-lg bg-white transition-[border-color,box-shadow,opacity] duration-feedback',
         // 获得焦点时边框加粗成 2px：茎绿（出错时仍是出错红），外面一圈 3px 的浅色光环
         error
           ? 'border-error-700 focus-within:shadow-field-focus-error'
@@ -57,8 +59,12 @@
     {@render action?.()}
   </div>
   {#if error}
-    <p id='{id}-error' class='mt-1.5 text-caption text-error-700'>{error}</p>
+    <div transition:unfold>
+      <p id='{id}-error' class='pt-1.5 text-caption text-error-700'>{error}</p>
+    </div>
   {:else if hint}
-    <p id='{id}-hint' class='mt-1.5 text-caption text-neutral-600' role='status'>{hint}</p>
+    <div transition:unfold>
+      <p id='{id}-hint' class='pt-1.5 text-caption text-neutral-600' role='status'>{hint}</p>
+    </div>
   {/if}
 </div>

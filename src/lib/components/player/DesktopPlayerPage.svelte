@@ -12,6 +12,7 @@
   import type { Turn } from './view'
   import { ChevronDown } from '@lucide/svelte'
   import { langOf } from '../library/view'
+  import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
   import CoverWheel from './CoverWheel.svelte'
@@ -49,7 +50,7 @@
 <header class='relative h-16 flex flex-none items-center gap-3 px-6'>
   <IconButton icon={ChevronDown} label='收起播放页' title='收起（Esc）' onclick={closePlayerPage} />
   <p class='min-w-0 truncate text-label text-neutral-700'>
-    <span class='text-neutral-900 font-500'>正在播放</span>{#if source}<span class='mx-1.5' aria-hidden='true'>·</span>来自「<span lang={langOf(source)}>{source}</span>」{/if}
+    <span class='text-neutral-900 font-500'>正在播放</span>{#if source}<span transition:fade><span class='mx-1.5' aria-hidden='true'>·</span>来自「<span lang={langOf(source)}>{source}</span>」</span>{/if}
   </p>
   <!-- 给鼠标用的把手：键盘用旁边的收起键和 Esc，所以不进 Tab 顺序（和遮罩一样） -->
   <button

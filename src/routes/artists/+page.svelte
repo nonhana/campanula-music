@@ -8,6 +8,7 @@
   import CollectedGrid from '$lib/components/library/CollectedGrid.svelte'
   import SyncNotice from '$lib/components/library/SyncNotice.svelte'
   import { formatCount } from '$lib/components/library/view'
+  import { fade } from '$lib/components/motion'
   import { scrollSnapshot } from '$lib/components/snapshot'
 
   const view = getAppView()
@@ -22,7 +23,7 @@
     <SyncNotice {library} failureShown={library.artists === null} />
     <div class='mb-4 mt-6 flex items-center gap-3'>
       <h1 class='text-headline text-neutral-900 font-600'>歌手</h1>
-      {#if library.artists}<span class='text-caption text-neutral-500 tabular-nums'>{formatCount(library.artists.length)} 位</span>{/if}
+      {#if library.artists}<span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(library.artists.length)} 位</span>{/if}
     </div>
     <CollectedGrid {library} kind='artists' layout='grid' />
   {:else}

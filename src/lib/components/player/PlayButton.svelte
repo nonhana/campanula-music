@@ -46,7 +46,7 @@
 >
   {#key icon}
     <!-- 新旧图标叠在同一格里交叉淡化 -->
-    <span class='grid col-start-1 row-start-1' in:iconSwap out:iconSwap>
+    <span class='grid col-start-1 row-start-1' transition:iconSwap>
       {#if icon === 'spinner'}
         <LoaderCircle size={look.icon} class='animate-spin' aria-hidden='true' />
       {:else if icon === 'pause'}

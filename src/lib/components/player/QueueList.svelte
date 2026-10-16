@@ -15,6 +15,7 @@
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, formatCount, formatDuration, langOf, songMark } from '../library/view'
   import VirtualList from '../library/VirtualList.svelte'
+  import { fade } from '../motion'
   import Button from '../ui/Button.svelte'
   import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
@@ -55,7 +56,7 @@
     await tick()
     // 下一首的移出键；移的是最后一首就是上一首的；它是正在放的那首（没有移出键）时落在“清空”上
     const next = Math.min(index, view.state.player.queue.length - 1)
-    const target = scroller?.querySelector<HTMLElement>(`[data-remove="${next}"]`) ?? section?.querySelector<HTMLElement>('[data-clear]')
+    const target = scroller?.querySelector<HTMLElement>(`[data-remove="${next}"]:not([inert])`) ?? section?.querySelector<HTMLElement>('[data-clear]')
     target?.focus()
   }
 
@@ -70,7 +71,7 @@
     <div class='min-w-0 flex-1'>
       <h2 id='{uid}-title' class='text-title-sm text-neutral-900 font-600'>播放队列</h2>
       <p class='truncate text-caption text-neutral-600'>
-        {#if source}来自「<span lang={langOf(source)}>{source}</span>」<span class='mr-1' aria-hidden='true'>·</span>{/if}<span class='tabular-nums'>{formatCount(queue.length)} 首</span>
+        {#if source}<span transition:fade>来自「<span lang={langOf(source)}>{source}</span>」<span class='mr-1' aria-hidden='true'>·</span></span>{/if}<span class='tabular-nums'>{formatCount(queue.length)} 首</span>
       </p>
     </div>
     <Button variant='outline' icon={ListX} class='h-9! pl-3.5! pr-4! md:h-9!' data-clear onclick={clear}>清空</Button>
@@ -97,19 +98,21 @@
                 <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(entry.song))}>{artistLine(entry.song)}</span>
               </PlayTarget>
               <span class='text-caption text-neutral-500 tabular-nums'>{formatDuration(entry.song.duration)}</span>
-              {#if now}
-                <span aria-hidden='true'></span>
-              {:else}
-                <button
-                  type='button'
-                  class='relative z-1 grid size-9 place-items-center rounded-lg text-neutral-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)'
-                  aria-label='从播放队列移出：{entry.song.name}'
-                  data-remove={i}
-                  onclick={() => remove(i)}
-                >
-                  <X size={16} aria-hidden='true' />
-                </button>
-              {/if}
+              <!-- 正在放的那首没有移出键：换歌时新旧两行的移出键一个淡出、一个淡入 -->
+              <span class='grid size-9'>
+                {#if !now}
+                  <button
+                    type='button'
+                    class='relative z-1 grid size-9 place-items-center rounded-lg text-neutral-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)'
+                    aria-label='从播放队列移出：{entry.song.name}'
+                    data-remove={i}
+                    onclick={() => remove(i)}
+                    transition:fade
+                  >
+                    <X size={16} aria-hidden='true' />
+                  </button>
+                {/if}
+              </span>
             </div>
           </div>
         {/snippet}

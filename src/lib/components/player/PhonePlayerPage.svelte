@@ -14,7 +14,7 @@
   import { ChevronDown, MicVocal } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { langOf } from '../library/view'
-  import { float, recede } from '../motion'
+  import { fade, float, recede } from '../motion'
   import { DURATIONS, FLOAT_IN_DELAY, PAGE_DISTANCE } from '../motion-tokens'
   import { createCoverSwipe } from './cover-swipe.svelte'
   import CoverWheel from './CoverWheel.svelte'
@@ -77,12 +77,12 @@
     <div class='min-w-0 text-center' {@attach gripTitle}>
       <p class='text-body text-neutral-900 font-500'>正在播放</p>
       {#if source}
-        <p class='truncate text-caption text-neutral-700'>来自「<span lang={langOf(source)}>{source}</span>」</p>
+        <p class='truncate text-caption text-neutral-700' transition:fade>来自「<span lang={langOf(source)}>{source}</span>」</p>
       {/if}
     </div>
     <button
       type='button'
-      class={['size-12 grid place-items-center rounded-full', choices.phoneLyrics ? 'bg-primary-100 text-primary-950' : 'text-neutral-800 active:bg-white/60']}
+      class={['size-12 grid place-items-center rounded-full transition-colors duration-feedback', choices.phoneLyrics ? 'bg-primary-100 text-primary-950' : 'text-neutral-800 active:bg-white/60']}
       aria-label='歌词'
       aria-pressed={choices.phoneLyrics}
       onclick={() => (choices.phoneLyrics = !choices.phoneLyrics)}

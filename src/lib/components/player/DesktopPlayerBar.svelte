@@ -11,6 +11,7 @@
   import { getAppView } from '../app-context.svelte'
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, langOf } from '../library/view'
+  import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
   import { landingOf } from './cover-flight.svelte'
@@ -63,7 +64,7 @@
         {#snippet children(shown)}
           <span class='min-w-0 flex items-center gap-2'>
             <span class='truncate text-label text-neutral-900 font-500' lang={langOf(shown.name)}>{shown.name}</span>
-            {#if player.trial}<SongBadge availability='trial' />{/if}
+            {#if player.trial}<span class='flex flex-none' transition:fade><SongBadge availability='trial' /></span>{/if}
           </span>
           <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(shown))}>{artistLine(shown)}</span>
         {/snippet}

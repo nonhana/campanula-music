@@ -2,12 +2,14 @@
   播放模式键（DESIGN.md Buttons · Icon，原型 DesktopBar、DesktopPlayer、PhonePlayer）。
   cycle：播放条上的一个键，按一下换一种（列表循环 → 单曲循环 → 随机播放），不是列表循环时图标是森林墨，看得出换过。
   播放页上分成两个开关，夹在上一首、下一首两边，开着时薄荷底：
-  repeat 是循环（图标是列表循环或单曲循环，按一下在两者之间换；随机播放时它关着，按它回到列表循环），shuffle 是随机播放（再按回到列表循环）
+  repeat 是循环（图标是列表循环或单曲循环，按一下在两者之间换；随机播放时它关着，按它回到列表循环），shuffle 是随机播放（再按回到列表循环）。
+  换图标时新旧交叉淡化（motion.ts 的 iconSwap）
 -->
 <script lang='ts'>
   import type { PlayMode } from '$lib/app/player'
   import { Repeat, Repeat1, Shuffle } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
+  import { iconSwap } from '../motion'
   import IconButton from '../ui/IconButton.svelte'
   import { NEXT_PLAY_MODE, PLAY_MODE_LABEL } from './view'
 
@@ -45,6 +47,8 @@
     title='{toggle.label}（点按换成{PLAY_MODE_LABEL[toggle.to]}）'
     onclick={() => view.app.setPlayMode(toggle.to)}
   >
-    <toggle.icon size={phone ? 20 : 18} aria-hidden='true' />
+    {#key toggle.icon}
+      <span class='grid col-start-1 row-start-1' transition:iconSwap><toggle.icon size={phone ? 20 : 18} aria-hidden='true' /></span>
+    {/key}
   </button>
 {/if}
