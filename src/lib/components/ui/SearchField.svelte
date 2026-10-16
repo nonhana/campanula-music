@@ -1,10 +1,12 @@
 <!--
   搜索框（DESIGN.md Inputs · input-search）：顶栏搜索、歌单内搜索。纸白底、1px 发丝线、胶囊形，44px 高；
-  左边搜索图标，有内容时右边出现清除按钮。获得焦点时边框换成茎绿，外面一圈 3px 薄荷雾光环。
+  左边搜索图标，有内容时右边的清除按钮淡入（清空时淡出）。获得焦点时边框换成茎绿，外面一圈 3px 薄荷雾光环；禁用时降到 50%
 -->
 <script lang='ts'>
   import type { HTMLInputAttributes } from 'svelte/elements'
   import { Search, X } from '@lucide/svelte'
+  import { fade } from '../motion'
+  import { DURATIONS } from '../motion-tokens'
 
   interface Props extends Omit<HTMLInputAttributes, 'value' | 'type' | 'aria-label'> {
     value: string
@@ -23,7 +25,7 @@
 
 <div
   class={[
-    'h-11 flex items-center gap-3 border border-neutral-200 rounded-full bg-white pl-4 pr-1.5 shadow-ambient transition-[border-color,box-shadow] duration-feedback focus-within:(border-primary-800 shadow-field-focus)',
+    'h-11 flex items-center gap-3 border border-neutral-200 rounded-full bg-white pl-4 pr-1.5 shadow-ambient transition-[border-color,box-shadow,opacity] duration-feedback focus-within:(border-primary-800 shadow-field-focus)',
     disabled && 'opacity-50',
     klass,
   ]}
@@ -42,7 +44,7 @@
     {...rest}
   />
   {#if value && !disabled}
-    <button type='button' class='grid size-8 flex-none place-items-center rounded-full text-neutral-600 mouse:hover:(bg-primary-100 text-primary-950)' aria-label='清除搜索词' onclick={clear}>
+    <button type='button' class='grid size-8 flex-none place-items-center rounded-full text-neutral-600 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)' aria-label='清除搜索词' onclick={clear} transition:fade={{ duration: DURATIONS.feedback }}>
       <X size={16} aria-hidden='true' />
     </button>
   {/if}

@@ -141,9 +141,9 @@
       {/snippet}
       {#snippet rail()}
         <a href={resolve('/')} {...railItem(resolve('/'), '曲库', inLibrary)}>{@render railContent('曲库', House)}</a>
-        <div class='mt-auto'>
-          <a href={resolve('/settings')} {...railItem(resolve('/settings'), '设置')}>{@render railContent('设置', Settings)}</a>
-        </div>
+      {/snippet}
+      {#snippet railEnd()}
+        <a href={resolve('/settings')} {...railItem(resolve('/settings'), '设置')}>{@render railContent('设置', Settings)}</a>
       {/snippet}
       {@render children()}
     </DesktopShell>

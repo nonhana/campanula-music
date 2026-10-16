@@ -494,7 +494,7 @@
     "motion": [
       {
         "name": "motion-tokens",
-        "value": "numbers live only in src/lib/components/motion-tokens.ts; uno.config.ts turns them into CSS variables (--ease-*, --duration-*, --move-*, --delay-*, --loop-*, --loop-state, --press-scale) and utilities (duration-<tier>, duration-move-<tier>, ease-out-soft as the default, ease-in-soft, press, animate-spin); Svelte transitions use float / fade / iconSwap from src/lib/components/motion.ts",
+        "value": "numbers live only in src/lib/components/motion-tokens.ts; uno.config.ts turns them into CSS variables (--ease-*, --duration-*, --move-*, --delay-*, --loop-*, --loop-state, --press-scale) and utilities (duration-<tier>, duration-move-<tier>, ease-out-soft as the default, ease-in-soft, press, animate-spin); Svelte transitions use float / fade / iconSwap / pop / toast / unfold / fadeThrough / stagger from src/lib/components/motion.ts, written as transition: (one directive, direction-aware, reverses from the current state; delay applies to the intro only) when the element can be toggled back mid-way; atOnce() applies restored page state instantly",
         "purpose": "一处定义时长和曲线；--duration-* 给透明度、颜色、模糊，--move-* 给位移、缩放、宽高、字号。零散的 duration-150、ease-out、motion-reduce: 在 uno.config.ts 的 blocklist 里，lint 报错。"
       },
       {
@@ -579,8 +579,38 @@
       },
       {
         "name": "popover-in",
-        "value": "200ms ease-out-soft from 4px off the anchor side and scale 0.98; out: 120ms fade",
-        "purpose": "桌面浮动菜单、搜索下拉。"
+        "value": "200ms ease-out-soft from 4px off the anchor side and scale 0.98; out: 120ms fade (motion.ts pop, transition:pop, reverses mid-way)",
+        "purpose": "桌面浮动菜单（账号菜单、歌曲的“更多”菜单）、搜索下拉。连点时从此刻的样子掉头，不留残影。"
+      },
+      {
+        "name": "toast",
+        "value": "notice bars float in 12px from their edge over 200ms ease-out-soft, fade out over 120ms ease-in-soft; when the bar changes place (phone player page opens / closes) the old one fades out and the new one only fades in (motion.ts toast, moved)",
+        "purpose": "播放提示、以后的“已加入歌单”；“登录已经失效”跟着登录页从上面飘进来。"
+      },
+      {
+        "name": "unfold",
+        "value": "a strip that pushes content below: height 0 → auto over 200ms (ease-out-soft in, ease-in-soft out) on a wrapper without margin / padding; content fades in during the second half and drifts 12px down, fades out first on the way out; opacity and drift follow the height so it reverses smoothly; reduced motion: height jumps, 150ms fade",
+        "purpose": "首次同步的通知条、歌单内搜索的“找到几首”“没加载完”、表单的报错和提示：“不动布局”的例外。"
+      },
+      {
+        "name": "fade-through",
+        "value": "old content fades out over 120ms, then the new content fades in over 240ms; both stacked in one grid cell (motion.ts fadeThrough)",
+        "purpose": "歌单的 全部 / 自建 / 收藏 筛选：整个格子换，不让格子各自挪位。"
+      },
+      {
+        "name": "crossfade-in-place",
+        "value": "old and new stacked in one grid cell (grid-cols-[minmax(0,1fr)], col-start-1 row-start-1), in 200ms / out 120ms; app screens (opening, login, library, errors): new screen fades in over 360ms, the old one fades out in place over 200ms and gives up its height at once (out:fadeAway)",
+        "purpose": "歌单内搜索的列表、二维码各步骤、歌词的加载中 ↔ 歌词、图标按钮换图标、整个 App 换屏。登录方式换的时候横着走（360 / 200ms），卡片高度跟着变（360ms）。"
+      },
+      {
+        "name": "stagger-more",
+        "value": "items appended to a shown group float up 12px over 240ms, 30ms apart for the first 6 (motion.ts stagger)",
+        "purpose": "歌手页“显示更多专辑”、首次同步时桌面歌单页左栏的歌单。"
+      },
+      {
+        "name": "description-expand",
+        "value": "album description height animates from its current height to the new one (open 360ms, close 200ms, ease-out-soft) and reverses mid-way; clamps to 3 / 4 lines only after closing",
+        "purpose": "专辑简介展开、收起：下面的歌曲跟着平稳地挪。"
       },
       {
         "name": "dialog-in",

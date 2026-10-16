@@ -1,7 +1,8 @@
 <!--
   曲库里的歌单（自建的、收藏的，不含我喜欢的音乐）：全部 / 自建 / 收藏 筛选加封面网格。
   手机的歌单标签和桌面首页的歌单区块共用；歌单列表还没拿到时是骨架，没拿到就出错时能重试，筛完一张都没有时说明。
-  骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）。heading：桌面放在筛选左边的区块标题
+  骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）；换筛选时整个格子先淡出再淡入，不让一个个格子各自挪位
+  （DESIGN.md Overlays · 筛选）。heading：桌面放在筛选左边的区块标题
 -->
 <script lang='ts'>
   import type { LibraryState } from '$lib/app/library'
@@ -10,7 +11,7 @@
   import { ListMusic } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
-  import { fadeAway, reveal } from '../motion'
+  import { fadeAway, fadeThrough, reveal } from '../motion'
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
@@ -60,14 +61,21 @@
   </div>
 {:else}
   <div in:reveal>
-    {#if shown.length === 0}
-      <StateBlock kind='empty' icon={ListMusic} title={EMPTY[filter].title} body={EMPTY[filter].body} />
-    {:else}
-      <ul class={gridClass} aria-label='歌单' data-reveal-group>
-        {#each shown as playlist (playlist.id)}
-          <li class='min-w-0'><PlaylistTile {playlist} {phone} /></li>
-        {/each}
-      </ul>
-    {/if}
+    <!-- 新旧两份格子叠在同一格里：换筛选的这一会儿高度按高的那份算，淡完旧的才换成新的高度 -->
+    <div class='grid grid-cols-[minmax(0,1fr)]'>
+      {#key filter}
+        <div class='col-start-1 row-start-1 min-w-0' transition:fadeThrough>
+          {#if shown.length === 0}
+            <StateBlock kind='empty' icon={ListMusic} title={EMPTY[filter].title} body={EMPTY[filter].body} />
+          {:else}
+            <ul class={gridClass} aria-label='歌单' data-reveal-group>
+              {#each shown as playlist (playlist.id)}
+                <li class='min-w-0'><PlaylistTile {playlist} {phone} /></li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      {/key}
+    </div>
   </div>
 {/if}

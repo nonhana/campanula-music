@@ -161,8 +161,7 @@
     {onkeydown}
     {@attach place}
     {@attach focusFirst}
-    in:pop={{ below: fitsBelow(floating.anchor!, items.length) }}
-    out:pop={{ below: true }}
+    transition:pop={{ below: floating ? fitsBelow(floating.anchor!, items.length) : true }}
   >
     {#each items as item (item.label)}
       <button

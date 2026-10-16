@@ -5,7 +5,8 @@
   页面里的歌曲列表从上下文拿 ScrollLookup，按住滚动条拖（平板触屏）时气泡写它最上面那首。
   换页时只有内容区在动：顶栏、侧栏、底栏各自起了名字，过渡里原地不动（view-transition-class still，见 uno.config.ts）。
   侧栏收起时先等文字淡出（SignedInFrame），再变窄。
-  播放条在播放队列里第一次有歌时从屏幕底下浮上来，清空（包括退出登录，整个骨架拿掉时）沉下去（motion.ts 的 dock）
+  播放条在播放队列里第一次有歌时从屏幕底下浮上来，清空（包括退出登录，整个骨架拿掉时）沉下去（motion.ts 的 dock）；
+  侧栏最下面的（设置）跟着它一起上去、下来（只动 transform），不跳
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
@@ -19,14 +20,16 @@
     railExpanded: boolean
     /** 顶栏：菜单键、logo、返回、正中的搜索框、头像 */
     header: Snippet
-    /** 图标侧栏：曲库、每日推荐、已下载，设置在最下面 */
+    /** 图标侧栏上面的：曲库、每日推荐、已下载 */
     rail: Snippet
+    /** 图标侧栏最下面的：设置 */
+    railEnd?: Snippet
     /** 底部通栏（播放条）；播放队列为空时不传，内容区不留底 */
     bar?: Snippet
     children: Snippet
   }
 
-  const { railExpanded, header, rail, bar, children }: Props = $props()
+  const { railExpanded, header, rail, railEnd, bar, children }: Props = $props()
   const lookup = setScrollLookup({ markAt: null })
   const view = getAppView()
   /**
@@ -49,13 +52,20 @@
   <header class='fixed inset-x-0 top-0 z-40 h-16 flex items-center gap-3 bg-primary-50 pl-4 pr-6' style:view-transition-name='shell-header' style:view-transition-class='still'>
     {@render header()}
   </header>
+  <!-- 侧栏一直通到窗口底，播放条盖在它上面 -->
   <nav
-    class={['fixed left-0 top-16 z-30 w-[var(--rail-width)] flex flex-col overflow-hidden px-3 pb-4 pt-2 transition-[width] duration-move-state', !railExpanded && 'delay-state-out', bar ? 'bottom-20' : 'bottom-0']}
+    class={['fixed bottom-0 left-0 top-16 z-30 w-[var(--rail-width)] flex flex-col overflow-hidden px-3 pb-4 pt-2 transition-[width] duration-move-state', !railExpanded && 'delay-state-out']}
     style:view-transition-name='shell-rail'
     style:view-transition-class='still'
     aria-label='主导航'
   >
     {@render rail()}
+    <!-- 最下面的让出播放条的位置：播放条浮上来时一起上去（360ms），沉下去时一起下来（200ms），不跳 -->
+    {#if railEnd}
+      <div class={['mt-auto transition-transform', bar ? 'duration-move-panel -translate-y-20' : 'duration-move-panel-out ease-in-soft']}>
+        {@render railEnd()}
+      </div>
+    {/if}
   </nav>
   <main class={['pt-16 transition-[padding] duration-move-state', bar ? 'pb-28' : 'pb-12']}>
     <!-- 跟着侧栏让位：和侧栏一样，收起时等文字淡出再变 -->

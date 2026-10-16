@@ -4,7 +4,8 @@
   当前行更大、更深，停在高度约 38% 的位置；听众自己滚动后 3 秒内不跟着走。点一行就从这一行开始放。
   翻译、音译各一个开关，这首歌没有时开关禁用，写明“无翻译”“无音译”。纯音乐、没有歌词时说明；加载中是骨架，没取到时说明原因、能重试。
   字色不浅于石墨（封面染底上石墨淡不到 4.5:1，The Light-Only Fog Rule）。
-  减少动态效果时：滚到当前行不平滑滚动，字号直接变，颜色 150ms 内渐变，逐字点亮跟着报的进度跳。compact：手机播放页里换掉封面那块时的字号
+  减少动态效果时：滚到当前行不平滑滚动，字号直接变，颜色 150ms 内渐变，逐字点亮跟着报的进度跳。compact：手机播放页里换掉封面那块时的字号。
+  加载中、歌词、纯音乐、没取到之间交叉淡化（新旧叠在同一格里）；打开翻译、音译时那几行淡入（DESIGN.md Motion）
 -->
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
@@ -15,7 +16,8 @@
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { langOf } from '../library/view'
-  import { scrollBehavior } from '../motion'
+  import { fade, scrollBehavior } from '../motion'
+  import { DURATIONS } from '../motion-tokens'
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import { playerPageChoices as choices } from './player-page.svelte'
@@ -120,73 +122,75 @@
   }
 </script>
 
-<div class={['flex min-h-0 flex-col', klass]}>
+<div class={['grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]', klass]}>
   {#if lines}
-    <div class={['flex flex-none flex-wrap items-center gap-2', compact ? 'pb-1' : 'pb-2']}>
-      {#each toggles as toggle (toggle.label)}
-        <FilterChip
-          selected={toggle.on}
-          disabled={!toggle.has}
-          class='gap-1.5'
-          title={toggle.has ? undefined : toggle.reason}
-          onclick={() => toggle.set(!toggle.on)}
-        >
-          {#if toggle.on}<Check size={16} strokeWidth={2.4} aria-hidden='true' />{/if}
-          {toggle.has ? toggle.label : `无${toggle.label}`}
-          {#if !toggle.has}<span class='sr-only'>：{toggle.reason}</span>{/if}
-        </FilterChip>
-      {/each}
-      <span class='ml-1 text-caption text-neutral-600'>{lyrics?.kind === 'word' ? '逐字歌词' : '逐行歌词'}</span>
-    </div>
-
-    <!-- 滚动区往两边各伸出 8px，行的焦点环有地方画，字和上面的开关对齐 -->
-    <div
-      bind:this={scroller}
-      bind:clientHeight={height}
-      class='scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain -mx-2'
-      role='group'
-      aria-label='歌词'
-    >
-      <div class='anchor'>
-        {#each lines as line, i (i)}
-          {@const current = i === active}
-          <button
-            type='button'
-            data-line={i}
-            class={['line group block w-full rounded-xl px-2 text-left', compact ? 'py-2' : 'py-3']}
-            aria-current={current ? 'true' : undefined}
-            onclick={() => playFrom(line)}
+    <div class='col-start-1 row-start-1 min-h-0 flex flex-col' transition:fade>
+      <div class={['flex flex-none flex-wrap items-center gap-2', compact ? 'pb-1' : 'pb-2']}>
+        {#each toggles as toggle (toggle.label)}
+          <FilterChip
+            selected={toggle.on}
+            disabled={!toggle.has}
+            class='gap-1.5'
+            title={toggle.has ? undefined : toggle.reason}
+            onclick={() => toggle.set(!toggle.on)}
           >
-            <span
-              class={[
-                'line-text block font-600',
-                current
-                  ? [compact ? 'text-title' : 'text-headline', line.words ? 'text-neutral-600' : 'text-primary-950']
-                  : [compact ? 'text-title-sm' : 'text-title', 'text-neutral-600 mouse:group-hover:text-neutral-800'],
-              ]}
-              lang={langOf(line.text)}
-            >
-              {#if current && line.words}
-                {#each line.words as word, k (k)}
-                  {@const sung = wordProgress(word, playhead.now)}
-                  <span class='word'>{word.text}{#if sung > 0}<span class='fill text-primary-950' aria-hidden='true' style:clip-path='inset(-0.25em {100 - sung * 100}% -0.25em 0)'>{word.text}</span>{/if}</span>
-                {/each}
-              {:else}
-                {line.text}
-              {/if}
-            </span>
-            {#if showRomanization && line.romanization}
-              <span class={['mt-1 block', compact ? 'text-caption' : 'text-label', current ? 'text-neutral-800' : 'text-neutral-600']}>{line.romanization}</span>
-            {/if}
-            {#if showTranslation && line.translation}
-              <span class={['mt-1 block', compact ? 'text-label' : 'text-body', current ? 'text-neutral-800' : 'text-neutral-600']}>{line.translation}</span>
-            {/if}
-          </button>
+            {#if toggle.on}<span class='grid' transition:fade={{ duration: DURATIONS.feedback }}><Check size={16} strokeWidth={2.4} aria-hidden='true' /></span>{/if}
+            {toggle.has ? toggle.label : `无${toggle.label}`}
+            {#if !toggle.has}<span class='sr-only'>：{toggle.reason}</span>{/if}
+          </FilterChip>
         {/each}
+        <span class='ml-1 text-caption text-neutral-600'>{lyrics?.kind === 'word' ? '逐字歌词' : '逐行歌词'}</span>
+      </div>
+
+      <!-- 滚动区往两边各伸出 8px，行的焦点环有地方画，字和上面的开关对齐 -->
+      <div
+        bind:this={scroller}
+        bind:clientHeight={height}
+        class='scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain -mx-2'
+        role='group'
+        aria-label='歌词'
+      >
+        <div class='anchor'>
+          {#each lines as line, i (i)}
+            {@const current = i === active}
+            <button
+              type='button'
+              data-line={i}
+              class={['line group block w-full rounded-xl px-2 text-left', compact ? 'py-2' : 'py-3']}
+              aria-current={current ? 'true' : undefined}
+              onclick={() => playFrom(line)}
+            >
+              <span
+                class={[
+                  'line-text block font-600',
+                  current
+                    ? [compact ? 'text-title' : 'text-headline', line.words ? 'text-neutral-600' : 'text-primary-950']
+                    : [compact ? 'text-title-sm' : 'text-title', 'text-neutral-600 mouse:group-hover:text-neutral-800'],
+                ]}
+                lang={langOf(line.text)}
+              >
+                {#if current && line.words}
+                  {#each line.words as word, k (k)}
+                    {@const sung = wordProgress(word, playhead.now)}
+                    <span class='word'>{word.text}{#if sung > 0}<span class='fill text-primary-950' aria-hidden='true' style:clip-path='inset(-0.25em {100 - sung * 100}% -0.25em 0)'>{word.text}</span>{/if}</span>
+                  {/each}
+                {:else}
+                  {line.text}
+                {/if}
+              </span>
+              {#if showRomanization && line.romanization}
+                <span class={['mt-1 block', compact ? 'text-caption' : 'text-label', current ? 'text-neutral-800' : 'text-neutral-600']} in:fade>{line.romanization}</span>
+              {/if}
+              {#if showTranslation && line.translation}
+                <span class={['mt-1 block', compact ? 'text-label' : 'text-body', current ? 'text-neutral-800' : 'text-neutral-600']} in:fade>{line.translation}</span>
+              {/if}
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
   {:else if shown?.status === 'shown'}
-    <div class='flex flex-1 flex-col items-center justify-center gap-3 text-center'>
+    <div class='col-start-1 row-start-1 flex flex-col items-center justify-center gap-3 text-center' transition:fade>
       {#if shown.lyrics.kind === 'pureMusic'}
         <span class='grid size-12 place-items-center rounded-full bg-white/60 text-primary-950'>
           <Music size={22} aria-hidden='true' />
@@ -197,11 +201,11 @@
       {/if}
     </div>
   {:else if shown?.status === 'failed'}
-    <div class='flex flex-1 flex-col justify-center'>
+    <div class='col-start-1 row-start-1 flex flex-col justify-center' transition:fade>
       <StateBlock kind='error' title='歌词没加载出来' body={failureText(shown.failure)} action={{ label: '重试', run: () => void view.app.openLyrics(song.id) }} />
     </div>
   {:else}
-    <div class={['flex flex-1 flex-col justify-center', compact ? 'gap-5' : 'gap-7']} role='status' aria-busy='true' aria-label='正在加载歌词'>
+    <div class={['col-start-1 row-start-1 flex flex-col justify-center', compact ? 'gap-5' : 'gap-7']} role='status' aria-busy='true' aria-label='正在加载歌词' transition:fade>
       {#each [62, 78, 54, 70, 46] as width, i (i)}
         <span class={['bone rounded-full', compact ? 'h-4' : 'h-5']} style:width='{width}%'></span>
       {/each}

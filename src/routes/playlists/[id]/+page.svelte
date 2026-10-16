@@ -13,7 +13,7 @@
   import Cover from '$lib/components/library/Cover.svelte'
   import PlaylistSongs from '$lib/components/library/PlaylistSongs.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName, playlistView } from '$lib/components/library/view'
-  import { scrollBehavior } from '$lib/components/motion'
+  import { atOnce, reveal, scrollBehavior, stagger } from '$lib/components/motion'
   import { scrollSnapshot } from '$lib/components/snapshot'
   import Scrollbar from '$lib/components/ui/Scrollbar.svelte'
   import SearchField from '$lib/components/ui/SearchField.svelte'
@@ -32,10 +32,10 @@
   export const snapshot = scrollSnapshot(() => query, (value) => {
     query = value
   })
-  // 从左边换到另一张歌单：搜索词清空。前进、后退由 snapshot 恢复
+  // 从左边换到另一张歌单：搜索词清空，直接到位（新的这一页里不再淡一次）。前进、后退由 snapshot 恢复
   afterNavigate(({ type }) => {
     if (type !== 'popstate')
-      query = ''
+      atOnce(() => (query = ''))
   })
 
   // 歌单列表到了（首次同步时要等它）、换了一张歌单：还没同步全就马上拉
@@ -90,19 +90,22 @@
 {/snippet}
 
 {#if library && shown?.kind === 'missing'}
-  <StateBlock
-    kind='empty'
-    icon={ListMusic}
-    title='曲库里没有这张歌单'
-    body='它可能已经在网易云音乐里删掉了，或者取消了收藏。'
-    action={{ label: '回到曲库', run: () => goto(resolve('/')) }}
-  />
+  <div in:reveal>
+    <StateBlock
+      kind='empty'
+      icon={ListMusic}
+      title='曲库里没有这张歌单'
+      body='它可能已经在网易云音乐里删掉了，或者取消了收藏。'
+      action={{ label: '回到曲库', run: () => goto(resolve('/')) }}
+    />
+  </div>
 {:else if library && desktopLayout.current}
   <!-- 左栏在视觉上排在前面，但 Tab 先到这张歌单（搜索、列表），不用先走完几十张歌单 -->
   <div class='grid items-start gap-8 lg:grid-cols-[208px_minmax(0,1fr)]'>
     <div class='min-w-0 pt-2 lg:col-start-2 lg:row-start-1'>
+      <!-- 首次同步时歌单列表到了才有页头：飘进来，不一下冒出来；带着页头打开这一页时不飘 -->
       {#if playlist}
-        <header class='flex gap-7'>
+        <header class='flex gap-7' in:reveal>
           <Cover url={playlist.playlist.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
           <div class='min-w-0 flex flex-1 flex-col pt-1'>
             <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
@@ -119,11 +122,12 @@
     <nav bind:this={sideNav} class='sticky top-20 hidden max-h-[calc(100dvh-112px)] overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block' aria-label='曲库里的歌单'>
       <Scrollbar />
       <ul class='flex flex-col gap-1 px-2'>
-        {#each library.playlists ?? [] as item (item.id)}
+        {#each library.playlists ?? [] as item, i (item.id)}
           {@const current = item.id === id}
           {@const itemName = playlistName(item)}
           {@const itemPage = resolve('/playlists/[id]', { id: String(item.id) })}
-          <li>
+          <!-- 首次同步时歌单列表到了，左栏的歌单依次飘入；之后同步来的新歌单也飘进来 -->
+          <li in:stagger={{ order: i }}>
             <a
               href={itemPage}
               class={['block rounded-xl p-4 transition-colors duration-feedback', current ? 'bg-primary-100' : 'mouse:hover:bg-white']}
@@ -141,7 +145,7 @@
   </div>
 {:else if library}
   {#if playlist}
-    <header class='px-4 pt-2 text-center'>
+    <header class='px-4 pt-2 text-center' in:reveal>
       <Cover url={playlist.playlist.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
       <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
       {@render metaLine(true)}

@@ -9,8 +9,7 @@
 <script lang='ts'>
   import type { Song } from '$lib/api/library'
   import type { Snippet } from 'svelte'
-  import type { TransitionConfig } from 'svelte/transition'
-  import type { TransitionOptions } from '../motion'
+  import type { MotionConfig, TransitionOptions } from '../motion'
   import type { Place, Turn } from './view'
   import { float } from '../motion'
   import { FLOAT_IN_DELAY, WHEEL } from '../motion-tokens'
@@ -27,7 +26,7 @@
   /** 等着飘进来（还在 delay 里）的那一块：introstart 时才露面 */
   const waiting = new WeakSet<Element>()
 
-  function enter(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
+  function enter(node: Element, _params: undefined, options: TransitionOptions): MotionConfig {
     if (turn === null)
       return {}
     waiting.add(node)
@@ -37,7 +36,7 @@
   }
 
   // 飘出的那一块 Svelte 会标成 inert：读屏只读到新的歌名
-  function leave(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
+  function leave(node: Element, _params: undefined, options: TransitionOptions): MotionConfig {
     if (turn === null || waiting.has(node))
       return {}
     if (turn === 'land')

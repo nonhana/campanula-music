@@ -18,8 +18,8 @@
   import SongBadge from '$lib/components/library/SongBadge.svelte'
   import SongMoreButton from '$lib/components/library/SongMoreButton.svelte'
   import SyncNotice from '$lib/components/library/SyncNotice.svelte'
-  import { artistLine, formatCount, langOf, likedView, syncNotice } from '$lib/components/library/view'
-  import { reveal, scrollBehavior } from '$lib/components/motion'
+  import { artistLine, formatCount, langOf, likedView } from '$lib/components/library/view'
+  import { fade, reveal, scrollBehavior } from '$lib/components/motion'
   import NowChip from '$lib/components/player/NowChip.svelte'
   import { currentSong } from '$lib/components/player/view'
   import { scrollSnapshot } from '$lib/components/snapshot'
@@ -31,7 +31,6 @@
   const library = $derived(view.state.library)
   const liked = $derived(library && likedView(library))
   const failureShown = $derived(liked?.kind === 'failed')
-  const hasNotice = $derived(library !== null && syncNotice(library, failureShown) !== null)
   const strip = $derived(liked?.kind === 'songs' ? liked.songs.slice(0, 36) : [])
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
 
@@ -73,22 +72,26 @@
 {#if library && liked}
   {#if desktopLayout.current}
     <h1 class='sr-only'>曲库</h1>
-    <SyncNotice {library} {failureShown} />
-    <section class={hasNotice ? 'mt-10' : undefined} aria-labelledby='liked-heading'>
+    <!-- 提示和下面的区块隔开 40px：间距算在提示里，提示展开、收起时跟着变 -->
+    <SyncNotice {library} {failureShown} class='pb-10' />
+    <section aria-labelledby='liked-heading'>
       <div class='mb-4 flex items-center gap-3'>
         <h2 id='liked-heading' class='text-title text-neutral-900 font-600'>我喜欢的音乐</h2>
+        <!-- 首数、翻页键、“查看全部”跟着歌一起出现：淡入，不一下冒出来 -->
         {#if liked.kind === 'songs'}
-          <span class='text-caption text-neutral-500 tabular-nums'>{formatCount(liked.total)} 首</span>
+          <span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(liked.total)} 首</span>
         {:else if liked.kind === 'empty'}
-          <span class='text-caption text-neutral-500 tabular-nums'>0 首</span>
+          <span class='text-caption text-neutral-500 tabular-nums' in:fade>0 首</span>
         {/if}
         <div class='ml-auto flex items-center gap-2'>
           {#if liked.kind === 'songs'}
-            <IconButton icon={ChevronLeft} label='上一页' disabled={atStart} onclick={() => turn(-1)} />
-            <IconButton icon={ChevronRight} label='下一页' disabled={atEnd} onclick={() => turn(1)} />
+            <span class='flex items-center gap-2' in:fade>
+              <IconButton icon={ChevronLeft} label='上一页' disabled={atStart} onclick={() => turn(-1)} />
+              <IconButton icon={ChevronRight} label='下一页' disabled={atEnd} onclick={() => turn(1)} />
+            </span>
           {/if}
           {#if library.liked}
-            <a href={resolve('/playlists/[id]', { id: String(library.liked.playlist.id) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)'>查看全部</a>
+            <a href={resolve('/playlists/[id]', { id: String(library.liked.playlist.id) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)' in:fade>查看全部</a>
           {/if}
         </div>
       </div>
@@ -151,7 +154,7 @@
     <section class='mt-10' aria-labelledby='albums-heading'>
       <div class='mb-4 flex items-center gap-3'>
         <h2 id='albums-heading' class='text-title text-neutral-900 font-600'>专辑</h2>
-        {#if library.albums}<span class='text-caption text-neutral-500 tabular-nums'>{formatCount(library.albums.length)} 张</span>{/if}
+        {#if library.albums}<span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(library.albums.length)} 张</span>{/if}
       </div>
       <CollectedGrid {library} kind='albums' layout='shelf' />
     </section>
@@ -159,7 +162,7 @@
     <section class='mt-10 pb-12' aria-labelledby='artists-heading'>
       <div class='mb-4 flex items-center gap-3'>
         <h2 id='artists-heading' class='text-title text-neutral-900 font-600'>歌手</h2>
-        {#if library.artists}<span class='text-caption text-neutral-500 tabular-nums'>{formatCount(library.artists.length)} 位</span>{/if}
+        {#if library.artists}<span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(library.artists.length)} 位</span>{/if}
       </div>
       <CollectedGrid {library} kind='artists' layout='shelf' />
     </section>

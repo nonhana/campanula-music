@@ -1,11 +1,13 @@
 <!--
   短信验证码登录（视觉原型 welcome-sms）：+86 手机号，获取验证码后 60 秒才能重发，填验证码登录。
   发不出去、登录被拒时说明原因；网易云因为风控拒绝时原样显示它的说明，听众可以改用扫码。
+  这些说明推开下面的登录键：出现时展开，走时淡出再收起（motion.ts 的 unfold）
 -->
 <script lang='ts'>
   import { LoaderCircle } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText, loginFailureText } from '../failure'
+  import { unfold } from '../motion'
   import Button from '../ui/Button.svelte'
   import TextField from '../ui/TextField.svelte'
 
@@ -135,15 +137,19 @@
   </TextField>
 
   {#if captchaStatus.status === 'failed'}
-    <p class='mt-1.5 text-caption text-error-700' role='alert'>验证码没发出去。{loginFailureText(captchaStatus.failure)}</p>
+    <div transition:unfold>
+      <p class='pt-1.5 text-caption text-error-700' role='alert'>验证码没发出去。{loginFailureText(captchaStatus.failure)}</p>
+    </div>
   {/if}
 
   {#if submit.status === 'failed'}
-    <div class='mt-4 text-caption text-error-700' role='alert'>
-      <p>没登录上。{failureText(submit.failure)}</p>
-      {#if submit.failure.kind === 'rejected'}
-        <button type='button' class='mt-1 rounded-sm text-primary-900 font-500 underline underline-offset-2' onclick={onswitch}>改用扫码登录</button>
-      {/if}
+    <div transition:unfold>
+      <div class='pt-4 text-caption text-error-700' role='alert'>
+        <p>没登录上。{failureText(submit.failure)}</p>
+        {#if submit.failure.kind === 'rejected'}
+          <button type='button' class='mt-1 rounded-sm text-primary-900 font-500 underline underline-offset-2' onclick={onswitch}>改用扫码登录</button>
+        {/if}
+      </div>
     </div>
   {/if}
 
