@@ -14,9 +14,10 @@
   import { ChevronDown, MicVocal } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { langOf } from '../library/view'
-  import { fade } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
+  import { float, recede } from '../motion'
+  import { DURATIONS, FLOAT_IN_DELAY, PAGE_DISTANCE } from '../motion-tokens'
   import { createCoverSwipe } from './cover-swipe.svelte'
+  import { coverRelaying, relayTarget } from './CoverRelay.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import { createDrawer } from './drawer.svelte'
   import Lyrics from './Lyrics.svelte'
@@ -26,7 +27,7 @@
   import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
-  import { neighborSong } from './view'
+  import { neighborSong, PAGE_COVER } from './view'
   import WaveProgress from './WaveProgress.svelte'
 
   const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
@@ -92,16 +93,28 @@
   </div>
 
   <div class='relative min-h-0 flex flex-1 flex-col px-6 pb-3'>
-    <!-- 封面和歌词轮流占这一块 -->
+    <!-- 封面和歌词轮流占这一块：换成歌词时封面缩到 96% 淡出，歌词从下面浮上来；换回反过来，歌词往下沉，封面放大回来 -->
     <div class='relative min-h-0 flex-1'>
       {#if choices.phoneLyrics}
-        <div class='absolute inset-0 flex flex-col pt-1' transition:fade>
+        <div
+          class='absolute inset-0 flex flex-col pt-1'
+          in:float={{ toward: 'up', distance: PAGE_DISTANCE.in, duration: DURATIONS.panel, delay: FLOAT_IN_DELAY }}
+          out:float={{ toward: 'down', distance: PAGE_DISTANCE.out, duration: DURATIONS['panel-out'] }}
+        >
           <Lyrics {song} {playhead} compact class='min-h-0 flex-1' />
         </div>
       {:else}
-        <div class='stage absolute inset-0 grid place-items-center' transition:fade>
-          <button type='button' class='face rounded-xl' aria-label='显示歌词' {@attach swipe.grip}>
-            <CoverWheel {song} {turn} duration={DURATIONS.focal} size={360} fluid eager class='rounded-xl shadow-float' drag={swipe.turned} {previous} {next} />
+        <div class='stage absolute inset-0 grid place-items-center' in:recede={{ delay: FLOAT_IN_DELAY }} out:recede>
+          <!-- 拉开、收起播放页时封面藏着，播放条的小封面跟着抽屉长成它（CoverRelay） -->
+          <button
+            type='button'
+            class='face rounded-xl'
+            style:opacity={coverRelaying() ? 0 : undefined}
+            aria-label='显示歌词'
+            {@attach swipe.grip}
+            {@attach relayTarget(PAGE_COVER.phone)}
+          >
+            <CoverWheel {song} {turn} duration={DURATIONS.focal} size={PAGE_COVER.phone} fluid eager class='rounded-xl shadow-float' drag={swipe.turned} {previous} {next} />
           </button>
         </div>
       {/if}

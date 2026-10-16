@@ -1,7 +1,8 @@
 <!--
   桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“正在播放 · 来自「…」”，正中一个拖动把手
   （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
-  左列封面、歌名、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）。
+  左列封面、歌名、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）：
+  两块并排放在一条轨道上、一直挂着，换标签时轨道和指示块一起横着滑，看不见的那块 Tab 不到、读屏读不到。
   整页放进视口，不滚动。换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
   红心（#30）和“更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
 -->
@@ -13,6 +14,7 @@
   import { langOf } from '../library/view'
   import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
+  import { coverRelaying, relayTarget } from './CoverRelay.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
@@ -21,6 +23,7 @@
   import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
+  import { PAGE_COVER } from './view'
   import VolumeControl from './VolumeControl.svelte'
   import WaveProgress from './WaveProgress.svelte'
 
@@ -66,8 +69,9 @@
 <div class='columns relative grid grid-cols-[minmax(240px,1fr)_minmax(0,1.15fr)] mx-auto max-w-[1240px] min-h-0 w-full flex-1 px-8 pb-8 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] lg:px-12'>
   <section class='min-h-0 flex flex-col justify-center' aria-label='播放控制'>
     <div class='stage'>
-      <div class='cover mx-auto'>
-        <CoverWheel {song} {turn} duration={DURATIONS.focal} size={420} fluid eager class='rounded-xl shadow-float' />
+      <!-- 拉开、收起播放页时这里藏着，播放条的小封面跟着抽屉长成它（CoverRelay） -->
+      <div class='cover mx-auto rounded-xl' style:opacity={coverRelaying() ? 0 : undefined} {@attach relayTarget(PAGE_COVER.desktop)}>
+        <CoverWheel {song} {turn} duration={DURATIONS.focal} size={PAGE_COVER.desktop} fluid eager class='rounded-xl shadow-float' />
       </div>
     </div>
 
@@ -104,7 +108,7 @@
           id='{uid}-{panel.key}-tab'
           role='tab'
           aria-selected={selected}
-          aria-controls='{uid}-panel'
+          aria-controls='{uid}-{panel.key}'
           tabindex={selected ? 0 : -1}
           class={['relative h-9 w-28 rounded-full text-label font-500 transition-colors duration-state', selected ? 'text-primary-950' : 'text-neutral-700 mouse:hover:text-neutral-900']}
           onclick={() => (choices.panel = panel.key)}
@@ -113,14 +117,20 @@
       {/each}
     </div>
 
-    <div id='{uid}-panel' role='tabpanel' aria-labelledby='{uid}-{choices.panel}-tab' class='mt-5 min-h-0 flex flex-1 flex-col'>
-      {#if choices.panel === 'queue'}
-        <div class='min-h-0 flex flex-1 flex-col rounded-xl bg-white shadow-ambient'>
-          <QueueList class='flex-1' />
+    <!-- 歌词、播放队列并排放在一条轨道上，两块都一直挂着（歌词的滚动位置不丢），换标签时和指示块一起横着滑；看不见的那块 inert -->
+    <div class='track mt-5 min-h-0 flex-1' style:--shown={PANELS.findIndex(panel => panel.key === choices.panel)}>
+      {#each PANELS as panel, index (panel.key)}
+        {@const selected = choices.panel === panel.key}
+        <div id='{uid}-{panel.key}' role='tabpanel' aria-labelledby='{uid}-{panel.key}-tab' class={['slide min-h-0 flex flex-col', !selected && 'away']} style:--slot={index} inert={!selected}>
+          {#if panel.key === 'queue'}
+            <div class='min-h-0 flex flex-1 flex-col rounded-xl bg-white shadow-ambient'>
+              <QueueList class='flex-1' />
+            </div>
+          {:else}
+            <Lyrics {song} {playhead} class='flex-1' />
+          {/if}
         </div>
-      {:else}
-        <Lyrics {song} {playhead} class='flex-1' />
-      {/if}
+      {/each}
     </div>
   </section>
 </div>
@@ -159,5 +169,37 @@
 
   .indicator {
     transition: transform var(--move-panel) var(--ease-out-soft);
+  }
+
+  /* 右栏的轨道：两块叠在同一格里，各自按离显示的那块隔几格横着摆（一格是自己的宽度再加 --track-gap），和指示块一起滑（面板 360ms）。
+     左右各多留 --bleed 再裁掉，歌词行的焦点环、播放队列面板的阴影不被切掉；两块隔得比两倍 --bleed 宽，看不见的那块不露边。
+     看不见的那块是透明的：减少动态效果时轨道不滑（--move-* 是 0），换成原地交叉淡化（最多 150ms）。
+     下面两处时长、延迟用 --duration-* 减去 --move-*：正常时是 0，整条轨道不透明地滑；减少动态效果时就是淡入淡出的时长 */
+  .track {
+    --bleed: 16px;
+    --track-gap: 48px;
+
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    margin-inline: calc(-1 * var(--bleed));
+    padding-inline: var(--bleed);
+    overflow-x: clip;
+  }
+
+  /* 进来的：正常时一下变不透明再滑进来；减少动态效果时在原地淡入 */
+  .slide {
+    grid-area: 1 / 1;
+    translate: calc((var(--slot) - var(--shown)) * (100% + var(--track-gap)));
+    transition:
+      translate var(--move-panel) var(--ease-out-soft),
+      opacity calc(var(--duration-panel) - var(--move-panel)) var(--ease-out-soft);
+  }
+
+  /* 出去的：正常时滑出去以后才变透明；减少动态效果时先在原地淡出，淡完再挪开 */
+  .slide.away {
+    opacity: 0;
+    transition:
+      translate var(--move-panel) var(--ease-out-soft) calc(var(--duration-panel-out) - var(--move-panel-out)),
+      opacity var(--duration-panel-out) var(--ease-in-soft) var(--move-panel);
   }
 </style>
