@@ -10,6 +10,7 @@ import type { PendingCheckIn } from './local'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
 import type { CheckIn, PlayerState, PlayMode } from './player'
+import type { SearchState } from './search'
 import { playable } from '#lib/api/library.js'
 import { createApi } from './api'
 import { createCheckIns } from './check-ins'
@@ -21,6 +22,7 @@ import { createLyrics } from './lyrics'
 import { connectMediaSession } from './media-session'
 import { createBackgroundLane } from './pacing'
 import { createPlayer, INITIAL_PLAYER } from './player'
+import { createSearch, INITIAL_SEARCH } from './search'
 
 /**
  * 会改登录 Cookie 的请求排队用的跨标签页的锁：问当前账号（服务端可能在这一步续期、写回新的登录 Cookie）和退出。
@@ -34,6 +36,9 @@ const SESSION_CHANNEL = 'campanula:session'
 type SessionMessage
   /** 这个浏览器退出登录了 */
   = | { type: 'signedOut' }
+
+/** 列表的播放来源：点一首歌时用整个列表替换播放队列（一次搜索不是列表，点歌是插播） */
+type ListSource = Exclude<PlaySource, { kind: 'search' }>
 
 /** 登录会话。刚打开时要先问服务端，才知道有没有当前账号 */
 export type Session
@@ -57,6 +62,8 @@ export interface AppState {
   lyrics: LyricsState | null
   /** 每日推荐：听众打开过才有，只在这次登录期间记着 */
   daily: DailyState | null
+  /** 搜索：搜索历史（存在这台设备上）、建议、最后一次搜的词的单曲结果 */
+  search: SearchState
 }
 
 /** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
@@ -106,12 +113,26 @@ export interface App {
    * 只在这次登录期间记着、不存本机，断网时没拉成；没拉成时再调一次就是重试
    */
   openDaily: () => Promise<void>
+  /** 搜索框里的字变了（边输入边给建议）：停手一会儿才问网易云，只要最后打的词的建议，看 state.search.suggestions；空的就收起 */
+  suggest: (keyword: string) => void
+  /** 按搜索（回车、点“搜索”、点建议或搜索历史里的词）：把词记进搜索历史（存在这台设备上），打开这个词的单曲结果 */
+  search: (keyword: string) => Promise<void>
   /**
-   * 在列表里点一首歌：用整个列表（歌单、专辑的曲目、歌手的热门歌曲、每日推荐）替换播放队列，从这首开始放。
-   * 歌单还没同步全时先用已经同步的部分，同步全了把后面的补上（规则⑫）。无版权的歌不能点
+   * 打开一个词的单曲结果（结果页）：这个词的结果显示着、正在拉就不再拉，否则用前台请求拉，拉到哪了看 state.search.results。
+   * 只记着最后一次搜的词的；没拉成时再调一次就是重试
+   */
+  openSearch: (keyword: string) => Promise<void>
+  /** 清空搜索历史，这台设备上存的也删 */
+  clearSearchHistory: () => Promise<void>
+  /**
+   * 点一首歌（点歌规则，Spec #11）：
+   * - 在列表里点：用整个列表（歌单、专辑的曲目、歌手的热门歌曲、每日推荐）替换播放队列，从这首开始放。
+   *   歌单还没同步全时先用已经同步的部分，同步全了把后面的补上（规则⑫）；
+   * - 在搜索结果里点：插播这一首（见 interject），播放队列其余的不变，播放来源是这次搜索。
+   * 无版权的歌不能点
    */
   play: (source: PlaySource, songId: number) => void
-  /** 播放全部：和点列表里第一首能放的歌（不是无版权的）一样。一首能放的都没有就什么都不做 */
+  /** 播放全部：和点列表里第一首能放的歌（不是无版权的）一样。一首能放的都没有就什么都不做。搜索结果没有播放全部 */
   playAll: (source: PlaySource) => void
   /** 在放就暂停，停着就接着放（出了问题停下时就是重试） */
   togglePlay: () => void
@@ -154,7 +175,7 @@ export interface App {
 export function createApp(browser: BrowserCapabilities): App {
   const api = createApi(browser)
   const local = createLocalDb(browser.indexedDB)
-  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null }
+  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null, search: INITIAL_SEARCH }
   const listeners = new Set<() => void>()
 
   function update(next: Partial<AppState>) {
@@ -264,6 +285,15 @@ export function createApp(browser: BrowserCapabilities): App {
     loginExpired,
   })
 
+  const search = createSearch({
+    api,
+    clock: browser.clock,
+    local,
+    read: () => state.search,
+    write: next => update({ search: next }),
+    loginExpired,
+  })
+
   const login = createLogin({
     api,
     clock: browser.clock,
@@ -285,11 +315,12 @@ export function createApp(browser: BrowserCapabilities): App {
     player.stop()
     lyrics.clear()
     daily.clear()
+    search.clear()
     update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
   }
 
   /** 点歌时的整个列表；还没打开、没显示出来时是 null */
-  function listOf(source: PlaySource): { songs: readonly Song[], complete: boolean } | null {
+  function listOf(source: ListSource): { songs: readonly Song[], complete: boolean } | null {
     const shown = state.library
     if (!shown)
       return null
@@ -313,12 +344,19 @@ export function createApp(browser: BrowserCapabilities): App {
     }
   }
 
+  /** 这次搜索的单曲结果里的这一首；结果不是这个词的、还没显示出来时是 undefined */
+  function searchedSong(keyword: string, songId: number): Song | undefined {
+    const results = state.search.results
+    return results?.status === 'shown' && results.keyword === keyword ? results.songs.find(song => song.id === songId) : undefined
+  }
+
   /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
   function loginExpired(): void {
     sessions += 1
     library.leave()
     lyrics.clear()
     daily.clear()
+    search.clear()
     update({ session: { status: 'loginExpired' }, library: null })
   }
 
@@ -329,7 +367,7 @@ export function createApp(browser: BrowserCapabilities): App {
   async function signedIn(account: Account): Promise<void> {
     sessions += 1
     const mine = sessions
-    const [shown, stored, quality] = await Promise.all([library.enter(account), local.readPlayer(), local.playQuality()])
+    const [shown, stored, quality, history] = await Promise.all([library.enter(account), local.readPlayer(), local.playQuality(), local.searchHistory()])
     if (mine !== sessions)
       return
     if (quality)
@@ -344,7 +382,7 @@ export function createApp(browser: BrowserCapabilities): App {
       else if (stored)
         void local.deletePlayer()
     }
-    update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN, library: shown })
+    update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN, library: shown, search: { ...state.search, history } })
     library.sync()
     // 登录失效期间、断网时记下的打卡补发给这个账号；别的账号的丢弃
     checkIns.send()
@@ -426,12 +464,24 @@ export function createApp(browser: BrowserCapabilities): App {
     openArtist: library.openArtist,
     moreArtistAlbums: library.moreArtistAlbums,
     openDaily: daily.open,
+    suggest: search.suggest,
+    search: search.search,
+    openSearch: search.open,
+    clearSearchHistory: search.clearHistory,
     play(source, songId) {
+      if (source.kind === 'search') {
+        const song = searchedSong(source.keyword, songId)
+        if (song)
+          player.interject(source, song)
+        return
+      }
       const list = listOf(source)
       if (list)
         player.play(source, list.songs, songId, list.complete)
     },
     playAll(source) {
+      if (source.kind === 'search')
+        throw new Error('搜索结果没有播放全部：在搜索里点歌是插播')
       const list = listOf(source)
       const first = list?.songs.find(playable)
       if (list && first)

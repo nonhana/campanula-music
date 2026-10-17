@@ -1,8 +1,9 @@
 <!--
-  登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）、图标侧栏（曲库、每日推荐，设置在最下面）和底部播放条；
-  手机是 logo 行（右边是每日推荐的日历按钮、设置），设置、每日推荐、歌单页、专辑页、歌手页这类二级页面换成返回栏；
-  曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；底部是迷你播放条。播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
-  播放的提示浮在最上面，播放页开着时也看得见。搜索、已下载由之后的票放进来。
+  登录后的骨架：桌面是顶栏（菜单键、logo、正中的搜索框、头像菜单）、图标侧栏（曲库、每日推荐，设置在最下面）和底部播放条；
+  手机是 logo 行（右边是搜索、每日推荐的日历按钮、设置），设置、每日推荐、歌单页、专辑页、歌手页这类二级页面换成返回栏，
+  搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；底部是迷你播放条。
+  播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
+  播放的提示浮在最上面，播放页开着时也看得见。已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -11,7 +12,7 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { ArrowLeft, Calendar, CalendarDays, House, Menu, Settings } from '@lucide/svelte'
+  import { ArrowLeft, Calendar, CalendarDays, House, Menu, Search, Settings } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
   import DailyNumber from '../daily/DailyNumber.svelte'
@@ -22,6 +23,9 @@
   import { playerDrawer } from '../player/player-page.svelte'
   import PlayerNotice from '../player/PlayerNotice.svelte'
   import PlayerPage from '../player/PlayerPage.svelte'
+  import DesktopSearchBox from '../search/DesktopSearchBox.svelte'
+  import PhoneSearchBar from '../search/PhoneSearchBar.svelte'
+  import { resetSearchBox } from '../search/search-box.svelte'
   import SongMenu from '../SongMenu.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
@@ -54,6 +58,8 @@
   const detailPage = $derived(libraryPage ?? (pathname === resolve('/daily') ? '每日推荐' : undefined))
   /** 二级页面：手机上顶行换成返回栏 */
   const secondary = $derived(pathname === resolve('/settings') ? '设置' : detailPage)
+  /** 手机搜索页：顶行是返回加搜索框 */
+  const searching = $derived(pathname === resolve('/search'))
   /** 每日推荐的日期：手机日历按钮里的数字和它的名字 */
   const calendar = $derived(dailyCalendarDay(view.state.daily))
   /** 曲库的文字标签。换标签不留浏览记录：返回键离开曲库，不在标签之间来回 */
@@ -78,7 +84,11 @@
     if (shallow && type === 'goto')
       return
     cameFromApp = from !== null
+    // 搜索框里换成这一页搜的词（搜索结果页）或空的
+    resetSearchBox(view.app)
   })
+  // 骨架在打开 App 问完账号后才挂上，那时第一次换页已经过去了：直接打开（刷新）搜索结果页时，搜索框里也要是这一页搜的词
+  resetSearchBox(view.app)
   function back() {
     if (cameFromApp)
       history.back()
@@ -145,7 +155,7 @@
       {#snippet header()}
         <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
         <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
-        <span class='flex-1'></span>
+        <DesktopSearchBox />
         <AccountMenu {account} />
       {/snippet}
       {#snippet rail()}
@@ -160,12 +170,17 @@
   {:else}
     <PhoneShell tabs={onLibrary ? libraryTabs : undefined} bar={hasQueue ? miniPlayer : undefined}>
       {#snippet header()}
-        {#if secondary}
+        {#if searching}
+          <PhoneSearchBar onback={back} />
+        {:else if secondary}
           <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
           <svelte:element this={detailPage ? 'p' : 'h1'} class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{secondary}</svelte:element>
         {:else}
           <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
           <span class='flex-1'></span>
+          <a href={resolve('/search')} class='grid size-11 place-items-center rounded-full text-neutral-700 active:bg-primary-100' aria-label='搜索'>
+            <Search size={22} aria-hidden='true' />
+          </a>
           <a href={resolve('/daily')} class='relative grid size-11 place-items-center rounded-full text-neutral-700 active:bg-primary-100' aria-label='每日推荐 · {calendar.month}月{calendar.day}日 {calendar.weekday}'>
             <Calendar size={24} strokeWidth={1.8} aria-hidden='true' />
             <DailyNumber day={calendar.day} size='icon' class='absolute inset-x-0 top-[19px] text-center' />

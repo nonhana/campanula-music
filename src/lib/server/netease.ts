@@ -5,9 +5,11 @@ import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
+import type { SearchSongsResponse, Suggestion, SuggestionsResponse } from '#lib/api/search.js'
 import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
 import { ARTIST_ALBUMS_PER_REQUEST } from '#lib/api/library.js'
+import { SEARCH_SONGS_PER_REQUEST } from '#lib/api/search.js'
 import { lyricsOf } from './lyrics'
 
 // 网易云适配层（Spec #11“服务端：网易云适配层”）：服务端里只有这里调 hana-music-api。
@@ -304,7 +306,10 @@ interface NeteaseSong {
   dt: number
 }
 
-/** 网易云的权限信息里 Campanula 用到的：st 小于 0 是无版权（录到的都是 -200），pl 是能在线放的最高码率，0 是放不了完整的 */
+/**
+ * 网易云的权限信息里 Campanula 用到的：st 小于 0 是无版权（登录后录到的都是 -200），pl 是能在线放的最高码率，0 是放不了完整的。
+ * 没登录时单曲搜索里每首歌的 st 都是 -100（#31 留言），Campanula 只在登录后搜，不会遇到
+ */
 interface Privilege {
   st: number
   pl: number
@@ -328,7 +333,7 @@ function songOf(song: NeteaseSong, privilege: Privilege): Song {
   }
 }
 
-/** 专辑页、热门歌曲、每日推荐里每首歌带着自己的权限信息 */
+/** 专辑页、热门歌曲、每日推荐、单曲搜索里每首歌带着自己的权限信息 */
 function songWithPrivilegeOf(song: NeteaseSong & { privilege: Privilege }): Song {
   return songOf(song, song.privilege)
 }
@@ -371,9 +376,11 @@ function checkInSourceOf(source: PlaySource): { source: string, sourceid: number
     case 'album':
     case 'artist':
       return { source: source.kind, sourceid: source.id }
-    // 每日推荐没有稳定的编号：SDK 文档说传 0
+    // 每日推荐、一次搜索都没有稳定的编号：SDK 文档说传 0
     case 'daily':
       return { source: 'recommend', sourceid: 0 }
+    case 'search':
+      return { source: 'search', sourceid: 0 }
     default: {
       const unhandled: never = source
       throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)
@@ -383,7 +390,7 @@ function checkInSourceOf(source: PlaySource): { source: string, sourceid: number
 
 /**
  * 听歌打卡。网易云回 200 不等于计入了听歌排行，计入有 10–30 分钟延迟
- * （验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31；#28、#29 真账号上确认计入）
+ * （验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31；#28、#29、#31（从搜索来的）真账号上确认计入）
  */
 export async function checkIn(songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<void> {
   await call('scrobble', { id: songId, ...checkInSourceOf(source), time: seconds }, listener)
@@ -485,4 +492,27 @@ export async function fetchArtistAlbums(artistId: number, offset: number, listen
 export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
   const { body } = await call('recommend_songs', {}, listener)
   return { songs: body.data.dailySongs.map(songWithPrivilegeOf) }
+}
+
+// 搜索（Spec #11“服务端：Campanula API”搜索一项，#31）
+
+/**
+ * 边输入边给的建议（网页版的建议，分单曲、歌手、专辑；没有“歌单”，SDK 没声明）。网易云说的先后（order）SDK 没声明，
+ * 这里固定成单曲、歌手、专辑（#31 录到的两次网易云都是这个顺序）；点建议就是搜它的名字，所以同一个名字只留第一条
+ */
+export async function fetchSuggestions(keywords: string, listener: Listener): Promise<SuggestionsResponse> {
+  const { body } = await call('search_suggest', { keywords }, listener)
+  const { songs = [], artists = [], albums = [] } = body.result
+  const all: Suggestion[] = [
+    ...songs.map(song => ({ kind: 'song' as const, name: song.name })),
+    ...artists.map(artist => ({ kind: 'artist' as const, name: artist.name })),
+    ...albums.map(album => ({ kind: 'album' as const, name: album.name })),
+  ]
+  return { suggestions: all.filter((suggestion, index) => all.findIndex(each => each.name === suggestion.name) === index) }
+}
+
+/** 单曲搜索的前 SEARCH_SONGS_PER_REQUEST 首。一首都没搜到时网易云不给 songs */
+export async function searchSongs(keywords: string, listener: Listener): Promise<SearchSongsResponse> {
+  const { body } = await call('cloudsearch', { keywords, type: 1, limit: SEARCH_SONGS_PER_REQUEST }, listener)
+  return { songs: (body.result.songs ?? []).map(songWithPrivilegeOf) }
 }
