@@ -9,6 +9,7 @@
   import type { QueueEntry } from '#lib/app/player.js'
   import { ListX, X } from '@lucide/svelte'
   import { tick, untrack } from 'svelte'
+  import { sameSource } from '#lib/api/playback.js'
   import { getAppView } from '../app-context.svelte'
   import Cover from '../library/Cover.svelte'
   import PlayTarget from '../library/PlayTarget.svelte'
@@ -36,7 +37,7 @@
   /** 播放队列里的歌都来自同一个播放来源时，它叫什么 */
   const source = $derived.by(() => {
     const first = queue[0]?.source
-    if (!first || !queue.every(entry => entry.source.kind === first.kind && entry.source.id === first.id))
+    if (!first || !queue.every(entry => sameSource(entry.source, first)))
       return null
     return sourceName(view.state.library, first)
   })

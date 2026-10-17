@@ -15,6 +15,7 @@
   import { desktopLayout } from '#lib/components/layout.js'
   import AlbumTile from '#lib/components/library/AlbumTile.svelte'
   import Cover from '#lib/components/library/Cover.svelte'
+  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import SongList from '#lib/components/library/SongList.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
   import { fade, fadeAway, reveal, stagger } from '#lib/components/motion.js'
@@ -68,6 +69,9 @@
         <p class={['text-neutral-600 tabular-nums', phone ? 'mt-1.5 text-caption' : 'mt-2 text-label']}>
           歌手 · {formatCount(artist.songCount)} 首歌 · {formatCount(artist.albumCount)} 张专辑
         </p>
+        <div class={['flex items-center gap-2', phone ? 'mt-4 justify-center' : 'mt-6']}>
+          <PlayAllButton songs={content?.hotSongs ?? null} source={{ kind: 'artist', id }} label='播放热门歌曲' />
+        </div>
       </div>
     </header>
   {:else}

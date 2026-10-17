@@ -12,6 +12,7 @@
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import Cover from '#lib/components/library/Cover.svelte'
+  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName, playlistView } from '#lib/components/library/view.js'
   import { atOnce, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
@@ -92,6 +93,10 @@
   </p>
 {/snippet}
 
+{#snippet playAll()}
+  <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
+{/snippet}
+
 {#if library && shown?.kind === 'missing'}
   <div in:reveal>
     <StateBlock
@@ -113,7 +118,8 @@
           <div class='min-w-0 flex flex-1 flex-col pt-1'>
             <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
             {@render metaLine(false)}
-            <div class='mt-auto flex justify-end pt-4'>
+            <div class='mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'>
+              {@render playAll()}
               <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
             </div>
           </div>
@@ -152,6 +158,7 @@
       <Cover url={playlist.playlist.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
       <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
       {@render metaLine(true)}
+      <div class='mt-4 flex items-center justify-center gap-2'>{@render playAll()}</div>
     </header>
   {/if}
   <PlaylistSongs {library} playlistId={id} bind:query phone />

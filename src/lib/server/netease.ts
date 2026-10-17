@@ -1,5 +1,6 @@
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
 import type { Account } from '#lib/api/account.js'
+import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
@@ -327,7 +328,7 @@ function songOf(song: NeteaseSong, privilege: Privilege): Song {
   }
 }
 
-/** 专辑页、热门歌曲里每首歌带着自己的权限信息 */
+/** 专辑页、热门歌曲、每日推荐里每首歌带着自己的权限信息 */
 function songWithPrivilegeOf(song: NeteaseSong & { privilege: Privilege }): Song {
   return songOf(song, song.privilege)
 }
@@ -362,15 +363,30 @@ export async function fetchPlayUrl(songId: number, quality: Quality, listener: L
   return { playable: true, url: item.url.replace(/^http:\/\//, 'https://'), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
 }
 
-/** 打卡时告诉网易云的来源类型（SDK scrobble 的 source，照它文档里的“播放来源”） */
-const CHECK_IN_SOURCES = { playlist: 'list', album: 'album', artist: 'artist' } as const satisfies Record<PlaySource['kind'], string>
+/** 打卡时告诉网易云的播放来源（SDK scrobble 的 source、sourceid，照它文档的“播放来源”） */
+function checkInSourceOf(source: PlaySource): { source: string, sourceid: number } {
+  switch (source.kind) {
+    case 'playlist':
+      return { source: 'list', sourceid: source.id }
+    case 'album':
+    case 'artist':
+      return { source: source.kind, sourceid: source.id }
+    // 每日推荐没有稳定的编号：SDK 文档说传 0
+    case 'daily':
+      return { source: 'recommend', sourceid: 0 }
+    default: {
+      const unhandled: never = source
+      throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)
+    }
+  }
+}
 
 /**
- * 听歌打卡：sourceid 是播放来源的歌单、专辑、歌手编号。网易云回 200 不等于计入了听歌排行，
- * 计入有 10–30 分钟延迟（验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31）
+ * 听歌打卡。网易云回 200 不等于计入了听歌排行，计入有 10–30 分钟延迟
+ * （验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31；#28、#29 真账号上确认计入）
  */
 export async function checkIn(songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<void> {
-  await call('scrobble', { id: songId, sourceid: source.id, source: CHECK_IN_SOURCES[source.kind], time: seconds }, listener)
+  await call('scrobble', { id: songId, ...checkInSourceOf(source), time: seconds }, listener)
 }
 
 /** 一首歌的歌词：逐字、逐行、翻译、音译（lyric_new；旧的 lyric 模块 SDK 没有收窄，不用） */
@@ -460,4 +476,13 @@ export async function fetchArtist(artistId: number, listener: Listener): Promise
 export async function fetchArtistAlbums(artistId: number, offset: number, listener: Listener): Promise<ArtistAlbumsResponse> {
   const { body } = await artistAlbums(artistId, offset, listener)
   return { albums: body.hotAlbums.map(artistAlbumOf), more: body.more }
+}
+
+/**
+ * 每日推荐。凭据失效时网易云照样回 200，给的是 30 首通用推荐（验证关卡①），这里认不出来：
+ * 登录失效靠打开 App 时问账号、后台同步时的红心（回 301）发现
+ */
+export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
+  const { body } = await call('recommend_songs', {}, listener)
+  return { songs: body.data.dailySongs.map(songWithPrivilegeOf) }
 }

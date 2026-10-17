@@ -1,6 +1,6 @@
 <!--
   曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页，
-  点一首就用整个我喜欢的音乐替换播放队列）、歌单的封面网格和收藏的专辑、歌手两排横向架子。
+  点一首、播放全部都用整个我喜欢的音乐替换播放队列）和右侧的每日推荐方块、歌单的封面网格和收藏的专辑、歌手两排横向架子。
   返回这一页时，歌单的筛选和滚动位置都回到原来的样子。骨架换成内容时骨架淡出、前几格依次飘入（DESIGN.md Motion）
 -->
 <script lang='ts'>
@@ -8,11 +8,13 @@
   import { resolve } from '$app/paths'
   import { ChevronLeft, ChevronRight } from '@lucide/svelte'
   import { getAppView } from '#lib/components/app-context.svelte.js'
+  import DailyTile from '#lib/components/daily/DailyTile.svelte'
   import { desktopLayout } from '#lib/components/layout.js'
   import CollectedGrid from '#lib/components/library/CollectedGrid.svelte'
   import Cover from '#lib/components/library/Cover.svelte'
   import LikedStates from '#lib/components/library/LikedStates.svelte'
   import PhoneLiked from '#lib/components/library/PhoneLiked.svelte'
+  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import PlaylistGrid from '#lib/components/library/PlaylistGrid.svelte'
   import PlayTarget from '#lib/components/library/PlayTarget.svelte'
   import SkeletonRows from '#lib/components/library/SkeletonRows.svelte'
@@ -91,55 +93,61 @@
             </span>
           {/if}
           {#if library.liked}
-            <a href={resolve('/playlists/[id]', { id: String(library.liked.playlist.id) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)' in:fade>查看全部</a>
+            {@const likedId = library.liked.playlist.id}
+            <a href={resolve('/playlists/[id]', { id: String(likedId) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)' in:fade>查看全部</a>
+            <PlayAllButton songs={library.liked.songs} source={{ kind: 'playlist', id: likedId }} />
           {/if}
         </div>
       </div>
 
-      <div class='min-w-0 rounded-xl bg-white p-2 shadow-ambient'>
-        {#if liked.kind === 'loading'}
-          <SkeletonRows count={3} label='正在加载我喜欢的音乐' />
-        {:else}
-          <div in:reveal>
-            {#if liked.kind === 'songs'}
-              <!-- 能横向滚动的容器 Chrome 会放进 Tab 顺序：给它名字，键盘焦点在上面时 ←/→ 也能翻 -->
-              <div
-                bind:this={stripEl}
-                class='strip'
-                role='list'
-                aria-label='我喜欢的音乐的前 {strip.length} 首'
-                style:--fade-l={atStart ? '0px' : '32px'}
-                style:--fade-r={atEnd ? '0px' : '48px'}
-                onscroll={measureStrip}
-                data-reveal-group
-              >
-                {#each strip as song, i (song.id)}
-                  {@const off = song.availability === 'noCopyright'}
-                  {@const now = song.id === nowId}
-                  {@const source = { kind: 'playlist', id: library.liked!.playlist.id } as const}
-                  <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']} oncontextmenu={event => openSongMenuAt(event, song, source)}>
-                    <div class={['grid grid-cols-[48px_minmax(0,1fr)_32px] h-full items-center gap-3 pl-1.5 pr-1', off && 'opacity-45']}>
-                      <span class='relative size-12' bind:this={covers[i]}>
-                        <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
-                        {#if now}<NowChip />{/if}
-                      </span>
-                      <PlayTarget class='min-w-0' rounded disabled={off} {now} cover={covers[i]} onplay={() => view.app.play(source, song.id)}>
-                        <span class='min-w-0 flex items-center gap-1.5'>
-                          <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
-                          <SongBadge availability={song.availability} />
+      <!-- 窄于 1280px 时方块排到歌曲格下面：并排时歌曲格一屏 3.25 列，每格窄到放不下歌名 -->
+      <div class='grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]'>
+        <div class='min-w-0 rounded-xl bg-white p-2 shadow-ambient'>
+          {#if liked.kind === 'loading'}
+            <SkeletonRows count={3} label='正在加载我喜欢的音乐' />
+          {:else}
+            <div in:reveal>
+              {#if liked.kind === 'songs'}
+                <!-- 能横向滚动的容器 Chrome 会放进 Tab 顺序：给它名字，键盘焦点在上面时 ←/→ 也能翻 -->
+                <div
+                  bind:this={stripEl}
+                  class='strip'
+                  role='list'
+                  aria-label='我喜欢的音乐的前 {strip.length} 首'
+                  style:--fade-l={atStart ? '0px' : '32px'}
+                  style:--fade-r={atEnd ? '0px' : '48px'}
+                  onscroll={measureStrip}
+                  data-reveal-group
+                >
+                  {#each strip as song, i (song.id)}
+                    {@const off = song.availability === 'noCopyright'}
+                    {@const now = song.id === nowId}
+                    {@const source = { kind: 'playlist', id: library.liked!.playlist.id } as const}
+                    <div role='listitem' class={['cell relative h-[60px] rounded-lg', !off && 'mouse:hover:bg-neutral-50']} oncontextmenu={event => openSongMenuAt(event, song, source)}>
+                      <div class={['grid grid-cols-[48px_minmax(0,1fr)_32px] h-full items-center gap-3 pl-1.5 pr-1', off && 'opacity-45']}>
+                        <span class='relative size-12' bind:this={covers[i]}>
+                          <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
+                          {#if now}<NowChip />{/if}
                         </span>
-                        <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
-                      </PlayTarget>
-                      <SongMoreButton {song} {source} size='cell' />
+                        <PlayTarget class='min-w-0' rounded disabled={off} {now} cover={covers[i]} onplay={() => view.app.play(source, song.id)}>
+                          <span class='min-w-0 flex items-center gap-1.5'>
+                            <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
+                            <SongBadge availability={song.availability} />
+                          </span>
+                          <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
+                        </PlayTarget>
+                        <SongMoreButton {song} {source} size='cell' />
+                      </div>
                     </div>
-                  </div>
-                {/each}
-              </div>
-            {:else}
-              <LikedStates {liked} />
-            {/if}
-          </div>
-        {/if}
+                  {/each}
+                </div>
+              {:else}
+                <LikedStates {liked} />
+              {/if}
+            </div>
+          {/if}
+        </div>
+        <DailyTile />
       </div>
     </section>
 

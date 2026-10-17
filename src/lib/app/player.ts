@@ -910,7 +910,12 @@ export function createPlayer(context: PlayerContext): Player {
       unavailable.clear()
       upNext = []
       order = state.mode === 'shuffle' ? [songId, ...shuffled(songs.flatMap(song => song.id === songId ? [] : [song.id]))] : null
-      filling = complete ? null : { playlistId: source.id, have: new Set(songs.map(song => song.id)) }
+      filling = null
+      if (!complete) {
+        if (source.kind !== 'playlist')
+          throw new Error(`只有歌单会没同步全，${source.kind} 的列表要一次拿全`)
+        filling = { playlistId: source.id, have: new Set(songs.map(song => song.id)) }
+      }
       // 换播放队列之前：正在听的那首是旧播放队列里的
       endListen()
       publish({ queue: songs.map(song => ({ song, source })), current: index })

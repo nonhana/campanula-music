@@ -1,6 +1,6 @@
-import type { CheckInRequest, Quality } from '#lib/api/playback.js'
+import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
 import { error } from '@sveltejs/kit'
-import { PLAY_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
+import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
 
 /** 中国大陆手机号（+86）：1 开头的 11 位数字 */
 export const PHONE = /^1\d{10}$/
@@ -63,15 +63,23 @@ export function readQuality(value: string | null): Quality {
   return quality
 }
 
+/** 读请求里的播放来源：每日推荐没有编号，其余要带编号 */
+function readSource(source: unknown): PlaySource {
+  const { kind, id } = (typeof source === 'object' && source !== null ? source : {}) as Partial<Record<'kind' | 'id', unknown>>
+  if (kind === 'daily')
+    return { kind }
+  const numbered = NUMBERED_SOURCE_KINDS.find(each => each === kind)
+  if (!numbered || !isNeteaseId(id))
+    error(400, 'source 的格式不对')
+  return { kind: numbered, id }
+}
+
 /** 读听歌打卡的请求体（JSON）：播放来源，实际听了多少秒（正整数） */
 export async function readCheckIn(request: Request): Promise<CheckInRequest> {
   const body: unknown = await request.json().catch(() => null)
   const { source, seconds } = (typeof body === 'object' && body !== null ? body : {}) as Partial<Record<keyof CheckInRequest, unknown>>
-  const { kind, id } = (typeof source === 'object' && source !== null ? source : {}) as Partial<Record<keyof CheckInRequest['source'], unknown>>
-  const known = PLAY_SOURCE_KINDS.find(each => each === kind)
-  if (!known || !isNeteaseId(id))
-    error(400, 'source 的格式不对')
+  const playSource = readSource(source)
   if (!Number.isSafeInteger(seconds) || (seconds as number) <= 0)
     error(400, 'seconds 要是正整数')
-  return { source: { kind: known, id }, seconds: seconds as number }
+  return { source: playSource, seconds: seconds as number }
 }
