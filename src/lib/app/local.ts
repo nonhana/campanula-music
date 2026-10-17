@@ -1,12 +1,12 @@
 import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } from '#lib/api/library.js'
 import type { Quality } from '#lib/api/playback.js'
-import type { SavedPlayer, SavedProgress, SavedQueue } from './player'
+import type { CheckIn, SavedPlayer, SavedProgress, SavedQueue } from './player'
 
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。
 // 之后的下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 6
+const VERSION = 7
 /** 登录会话的小事，按名字存 */
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
@@ -22,9 +22,14 @@ const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS, ALBUM_PAGES]
 const PLAYER = 'player'
 /** 这台设备上的设置，按名字存：playQuality（在线播放音质）。不属于哪个网易云账号，退出、换账号都不删 */
 const SETTINGS = 'settings'
+/** 要发的听歌打卡（#28），按记下的先后自动编号：记着是哪个网易云账号的，发成了、丢弃时删掉 */
+const CHECK_INS = 'checkIns'
 
 /** 存着的播放队列那一份，加上它是哪个网易云账号的（换了别的账号登录就清空，规则⑩） */
 export type StoredQueue = SavedQueue & { owner: number }
+
+/** 要发的听歌打卡，加上它是哪个网易云账号的：只补发给这个账号 */
+export type PendingCheckIn = CheckIn & { owner: number }
 
 /** 存着的播放队列和进度 */
 export interface StoredPlayer {
@@ -87,9 +92,15 @@ export interface LocalDb {
   saveAlbumPage: (owner: number, page: AlbumResponse) => Promise<boolean>
   /** 存着的播放队列和进度；没存过、已经删了，或者两份对不上（当前这首不在播放队列里）时是 null */
   readPlayer: () => Promise<StoredPlayer | null>
-  /** 存进度；播放队列那一份也变了时在同一个事务里一起存 */
-  savePlayer: (progress: SavedProgress, queue: StoredQueue | undefined) => Promise<void>
-  deletePlayer: () => Promise<void>
+  /** 存进度；播放队列那一份也变了、有歌听完了时，在同一个事务里一起存播放队列、记下要发的打卡 */
+  savePlayer: (progress: SavedProgress, queue: StoredQueue | undefined, checkIns: readonly PendingCheckIn[]) => Promise<void>
+  /** 删掉存着的播放队列和进度；播放队列空之前有歌听完了，在同一个事务里记下要发的打卡 */
+  deletePlayer: (checkIns?: readonly PendingCheckIn[]) => Promise<void>
+  /** 要发的听歌打卡，按记下的先后；key 用来删 */
+  pendingCheckIns: () => Promise<{ key: number, checkIn: PendingCheckIn }[]>
+  deleteCheckIn: (key: number) => Promise<void>
+  /** 要发的听歌打卡全部丢弃（退出登录） */
+  clearCheckIns: () => Promise<void>
   /** 在线播放音质；没设过时是 null */
   playQuality: () => Promise<Quality | null>
   savePlayQuality: (quality: Quality) => Promise<void>
@@ -150,6 +161,9 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
     database.createObjectStore(PLAYER)
     database.createObjectStore(SETTINGS)
   }
+  // 7（#28）：要发的听歌打卡
+  if (from < 7)
+    database.createObjectStore(CHECK_INS, { autoIncrement: true })
 }
 
 export function createLocalDb(indexedDB: IDBFactory): LocalDb {
@@ -200,6 +214,13 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
   const clearLibrary = (transaction: IDBTransaction) => {
     for (const store of LIBRARY_STORES)
       transaction.objectStore(store).clear()
+  }
+
+  /** 有要记下的打卡时，播放器那一份的事务也要能写打卡 */
+  const playerStores = (checkIns: readonly PendingCheckIn[]) => (checkIns.length > 0 ? [PLAYER, CHECK_INS] : [PLAYER])
+  const addCheckIns = (transaction: IDBTransaction, checkIns: readonly PendingCheckIn[]) => {
+    for (const checkIn of checkIns)
+      transaction.objectStore(CHECK_INS).add(checkIn)
   }
 
   return {
@@ -303,13 +324,27 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       const { owner, ...saved } = queue
       return { owner, saved: { queue: saved, progress } }
     },
-    savePlayer: (progress, queue) => write([PLAYER], (transaction) => {
+    savePlayer: (progress, queue, checkIns) => write(playerStores(checkIns), (transaction) => {
       const store = transaction.objectStore(PLAYER)
       if (queue)
         store.put(queue, 'queue')
       store.put(progress, 'progress')
+      addCheckIns(transaction, checkIns)
     }),
-    deletePlayer: () => write([PLAYER], transaction => transaction.objectStore(PLAYER).clear()),
+    deletePlayer: (checkIns = []) => write(playerStores(checkIns), (transaction) => {
+      transaction.objectStore(PLAYER).clear()
+      addCheckIns(transaction, checkIns)
+    }),
+    async pendingCheckIns() {
+      const store = (await database()).transaction(CHECK_INS).objectStore(CHECK_INS)
+      const [keys, values] = await Promise.all([
+        settled(store.getAllKeys()) as Promise<number[]>,
+        settled(store.getAll()) as Promise<PendingCheckIn[]>,
+      ])
+      return keys.map((key, index) => ({ key, checkIn: values[index] }))
+    },
+    deleteCheckIn: key => write([CHECK_INS], transaction => transaction.objectStore(CHECK_INS).delete(key)),
+    clearCheckIns: () => write([CHECK_INS], transaction => transaction.objectStore(CHECK_INS).clear()),
     async playQuality() {
       const store = (await database()).transaction(SETTINGS).objectStore(SETTINGS)
       const quality = await settled(store.get('playQuality')) as Quality | undefined

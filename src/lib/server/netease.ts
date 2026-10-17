@@ -3,7 +3,7 @@ import type { Account } from '#lib/api/account.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
-import type { LyricsResponse, PlayUrlResponse, Quality } from '#lib/api/playback.js'
+import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
 import { ARTIST_ALBUMS_PER_REQUEST } from '#lib/api/library.js'
@@ -360,6 +360,17 @@ export async function fetchPlayUrl(songId: number, quality: Quality, listener: L
   if (!item?.url)
     return { playable: false }
   return { playable: true, url: item.url.replace(/^http:\/\//, 'https://'), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
+}
+
+/** 打卡时告诉网易云的来源类型（SDK scrobble 的 source，照它文档里的“播放来源”） */
+const CHECK_IN_SOURCES = { playlist: 'list', album: 'album', artist: 'artist' } as const satisfies Record<PlaySource['kind'], string>
+
+/**
+ * 听歌打卡：sourceid 是播放来源的歌单、专辑、歌手编号。网易云回 200 不等于计入了听歌排行，
+ * 计入有 10–30 分钟延迟（验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31）
+ */
+export async function checkIn(songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<void> {
+  await call('scrobble', { id: songId, sourceid: source.id, source: CHECK_IN_SOURCES[source.kind], time: seconds }, listener)
 }
 
 /** 一首歌的歌词：逐字、逐行、翻译、音译（lyric_new；旧的 lyric 模块 SDK 没有收窄，不用） */

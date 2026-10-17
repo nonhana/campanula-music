@@ -1,5 +1,5 @@
 import type { Song } from '#lib/api/library.js'
-import type { PlaySource } from '#lib/app/player.js'
+import type { PlaySource } from '#lib/api/playback.js'
 import { page } from '$app/state'
 import { desktopLayout } from './layout'
 import { pushShallowState } from './shallow-state'

@@ -1,6 +1,6 @@
-import type { Quality } from '#lib/api/playback.js'
+import type { CheckInRequest, Quality } from '#lib/api/playback.js'
 import { error } from '@sveltejs/kit'
-import { QUALITIES } from '#lib/api/playback.js'
+import { PLAY_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
 
 /** 中国大陆手机号（+86）：1 开头的 11 位数字 */
 export const PHONE = /^1\d{10}$/
@@ -61,4 +61,17 @@ export function readQuality(value: string | null): Quality {
   if (!quality)
     error(400, 'quality 的格式不对')
   return quality
+}
+
+/** 读听歌打卡的请求体（JSON）：播放来源，实际听了多少秒（正整数） */
+export async function readCheckIn(request: Request): Promise<CheckInRequest> {
+  const body: unknown = await request.json().catch(() => null)
+  const { source, seconds } = (typeof body === 'object' && body !== null ? body : {}) as Partial<Record<keyof CheckInRequest, unknown>>
+  const { kind, id } = (typeof source === 'object' && source !== null ? source : {}) as Partial<Record<keyof CheckInRequest['source'], unknown>>
+  const known = PLAY_SOURCE_KINDS.find(each => each === kind)
+  if (!known || !isNeteaseId(id))
+    error(400, 'source 的格式不对')
+  if (!Number.isSafeInteger(seconds) || (seconds as number) <= 0)
+    error(400, 'seconds 要是正整数')
+  return { source: { kind: known, id }, seconds: seconds as number }
 }

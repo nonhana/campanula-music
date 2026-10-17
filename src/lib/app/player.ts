@@ -1,5 +1,5 @@
 import type { Song } from '#lib/api/library.js'
-import type { PlayUrlResponse, Quality } from '#lib/api/playback.js'
+import type { PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { Api, RequestFailure } from './api'
 import type { AudioCapability, Clock } from './browser'
 import type { PlaylistSongs } from './library'
@@ -11,6 +11,7 @@ import type { PlaylistSongs } from './library'
 // 播放队列一变（下一首播放、插播、移出、换播放模式、补上没同步完的歌）、换了在线播放音质，就重新准备空闲的播放器。
 // 下一首播放、加入播放队列、插播的边角照逻辑原型定下的规则①–⑤（docs/prototype/logic.md）。
 // 播放队列和进度存在本机（App 按网易云账号存），重新打开时恢复。
+// 一首歌听完了（播完或切走）就交出一次听歌打卡，和进度存在一起（Spec #11“客户端：听歌打卡”，#28）。
 
 /** 当前这首剩这么多秒时，空闲的播放器开始放下一首（探针在真机上验证过 1 秒，ADR-0010） */
 const HANDOVER_LEAD = 1
@@ -24,13 +25,6 @@ const SLOW_BUFFERING_MS = 8_000
 const PREPARE_AGAIN_LEAD = 20
 /** 再准备之间至少隔这么久 */
 const PREPARE_AGAIN_INTERVAL_MS = 5_000
-
-/** 播放来源（GLOSSARY）：这首歌是从哪个列表放进播放队列的。我喜欢的音乐也是一张歌单；artist 是歌手的热门歌曲 */
-export interface PlaySource {
-  kind: 'playlist' | 'album' | 'artist'
-  /** 歌单、专辑、歌手的编号 */
-  id: number
-}
 
 /** 播放队列里的一首：每首各自记着播放来源 */
 export interface QueueEntry {
@@ -132,18 +126,25 @@ export interface SavedPlayer {
   progress: SavedProgress
 }
 
+/** 一次听歌打卡：一首歌听完了（播完或切走，放到一半关掉 App 不算），实际听了多少秒（取整，至少 1 秒），带上这首自己的播放来源 */
+export interface CheckIn {
+  songId: number
+  source: PlaySource
+  seconds: number
+}
+
 export interface PlayerContext {
   api: Api
   clock: Clock
   audio: () => AudioCapability
   write: (player: PlayerState) => void
   /**
-   * 进度变了（放着时每过一秒、暂停、跳转、换歌）：存进本机。播放队列那一份也变了时 queue 一起给，没变是 undefined。
-   * 两份要存在一起（同一个事务），重新打开时才对得上
+   * 进度变了（放着时每过一秒、暂停、跳转、换歌）：存进本机。播放队列那一份也变了时 queue 一起给，没变是 undefined；
+   * 上次存过之后有歌听完了，它们的打卡在 checkIns 里。几样要存在一起（同一个事务）：重新打开时才对得上，打卡也不会记两次、漏记
    */
-  save: (progress: SavedProgress, queue: SavedQueue | undefined) => void
-  /** 播放队列空了（清空、退出登录）：本机存着的删掉 */
-  forget: () => void
+  save: (progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]) => void
+  /** 播放队列空了（清空、退出登录）：本机存着的删掉；空之前听完的那首的打卡在 checkIns 里，和删在同一个事务里存下 */
+  forget: (checkIns: readonly CheckIn[]) => void
   /** 取播放地址时网易云说需要登录，续期也没成功 */
   loginExpired: () => void
 }
@@ -336,6 +337,8 @@ export function createPlayer(context: PlayerContext): Player {
   let heard = 0
   /** 正在出声的这一段从什么时候开始（毫秒）；没在出声时是 null */
   let soundingSince: number | null = null
+  /** 上次存进本机之后听完的歌的打卡：下次存进度时一起存 */
+  let finished: CheckIn[] = []
 
   /**
    * 发布一次：每次都按播放顺序、放不了的歌重算 neighbors（它们变的时候都跟着一次发布）。
@@ -363,35 +366,46 @@ export function createPlayer(context: PlayerContext): Player {
     return heard + (soundingSince === null ? 0 : (clock.now() - soundingSince) / 1000)
   }
 
-  /** 换了一首歌来听（不是同一首接着放）：从 0 秒算起 */
-  function newListen(): void {
+  /**
+   * 当前这首听完了（播完或切走；暂停、地址过期后接着放的是同一首，不算）：按实际出声的秒数取整记一次打卡，
+   * 下次存进度时一起存；取整后不到 1 秒的不记。之后从 0 秒算起
+   */
+  function endListen(): void {
+    const seconds = Math.round(listened())
+    if (seconds > 0 && state.current !== null) {
+      const { song, source } = state.queue[state.current]
+      finished.push({ songId: song.id, source, seconds })
+    }
     heard = 0
     soundingSince = null
   }
 
   /**
-   * 播放队列或进度变了就存进本机（重新打开时恢复）。进度按整秒看：放着时每秒存一次，暂停、跳转、换歌时马上存；
+   * 播放队列或进度变了、有歌听完了就存进本机（重新打开时恢复）。进度按整秒看：放着时每秒存一次，暂停、跳转、换歌时马上存；
    * 播放队列那一份只在它变了时重存。播放队列空了就删掉存着的
    */
   function persist(): void {
+    const checkIns = finished
+    finished = []
     if (state.current === null) {
-      if (savedQueue) {
+      if (savedQueue || checkIns.length > 0) {
         savedQueue = null
         savedProgressKey = ''
-        context.forget()
+        context.forget(checkIns)
       }
       return
     }
     const queueChanged = savedQueue === null || savedQueue.entries !== state.queue || savedQueue.mode !== state.mode || savedQueue.order !== order || savedQueue.upNext !== upNext || savedQueue.filling !== filling
     const { song } = state.queue[state.current]
     const key = progressKey(song.id, state)
-    if (!queueChanged && key === savedProgressKey)
+    if (!queueChanged && key === savedProgressKey && checkIns.length === 0)
       return
     savedProgressKey = key
     savedQueue = { entries: state.queue, mode: state.mode, order, upNext, filling }
     context.save(
       { songId: song.id, position: state.position, duration: state.duration, trial: state.trial, listened: listened() },
       queueChanged ? { ...savedQueue, filling: filling && { playlistId: filling.playlistId, have: [...filling.have] } } : undefined,
+      checkIns,
     )
   }
 
@@ -544,7 +558,7 @@ export function createPlayer(context: PlayerContext): Player {
     stopSlow()
     startAt = position
     if (change !== null)
-      newListen()
+      endListen()
     publish({ current: index, position, duration: null, trial: false, notice, change: change ?? state.change })
     if (!holds(spare, song)) {
       let url = urls.get(song.id) ?? null
@@ -656,7 +670,7 @@ export function createPlayer(context: PlayerContext): Player {
     // 有歌出声了：之前没给地址的歌，下一轮再试一次（网易云偶尔一时不给）
     unavailable.clear()
     if (handover)
-      newListen()
+      endListen()
     publish({ current: indexOfSong(deck.song!.id), status: 'playing', position: deck.audio.currentTime, duration: durationOf(deck), trial: deck.url!.trial, notice: noticeAfterSounding(), change: handover ? 'continue' : state.change })
     void prepareNext()
   }
@@ -668,7 +682,7 @@ export function createPlayer(context: PlayerContext): Player {
     if (incoming?.handover) {
       // 交接中、下一首还没出声：它就是当前这首了，等它出声
       incoming = { ...incoming, handover: false }
-      newListen()
+      endListen()
       publish({ current: indexOfSong(incoming.deck.song!.id), status: 'buffering', position: 0, duration: durationOf(incoming.deck), trial: incoming.deck.url!.trial, change: 'continue' })
       startSlow()
       return
@@ -676,7 +690,7 @@ export function createPlayer(context: PlayerContext): Player {
     if (incoming)
       return
     const next = following()
-    newListen()
+    endListen()
     if (handoverFailed) {
       handoverFailed = false
       publish({ current: next ?? state.current, status: 'paused', position: 0, duration: null, notice: { kind: 'streamFailed' }, change: next === null ? state.change : 'continue' })
@@ -884,7 +898,7 @@ export function createPlayer(context: PlayerContext): Player {
     filling = null
     pauseAll()
     unavailable.clear()
-    newListen()
+    endListen()
     publish({ ...INITIAL_PLAYER, volume: state.volume, mode: state.mode, quality: state.quality })
   }
 
@@ -897,6 +911,8 @@ export function createPlayer(context: PlayerContext): Player {
       upNext = []
       order = state.mode === 'shuffle' ? [songId, ...shuffled(songs.flatMap(song => song.id === songId ? [] : [song.id]))] : null
       filling = complete ? null : { playlistId: source.id, have: new Set(songs.map(song => song.id)) }
+      // 换播放队列之前：正在听的那首是旧播放队列里的
+      endListen()
       publish({ queue: songs.map(song => ({ song, source })), current: index })
       void start(index, 0, 'pick')
     },

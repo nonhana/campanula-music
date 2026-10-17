@@ -7,7 +7,7 @@ import { gunzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MEDIA_ERR_NETWORK, MEDIA_ERR_SRC_NOT_SUPPORTED } from './harness/browser'
 import { held, never } from './harness/hold'
-import { signIn } from './harness/sign-in'
+import { RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
@@ -87,7 +87,7 @@ async function signInWithLiked(device: Device): Promise<Tab> {
 
 /** 取过哪些歌的播放地址，按先后 */
 function playUrlRequests(device: Device): string[] {
-  return device.requests.flatMap(request => request.path.startsWith('/api/songs/') ? [request.path] : [])
+  return device.requests.flatMap(request => request.path.includes('/play-url') ? [request.path] : [])
 }
 
 /** 当前这首的编号 */
@@ -1891,5 +1891,260 @@ describe('在线播放音质', () => {
     expect(tab.sounding()).toBe(player)
     expect(playUrlRequests(device).slice(sent)).toEqual([`/api/songs/${RECORDED_IN_QUALITIES.id}/play-url?quality=lossless`])
     expect(spare.src).toBe(await recordedUrl(RECORDED_IN_QUALITIES.lossless))
+  })
+})
+
+// 听歌打卡（#28，Spec #11“客户端：听歌打卡”）：每首歌结束（播完或切走）时按实际听的整数秒打卡，带上这首自己的播放来源。
+// 要发的打卡先记在本机（记着是哪个网易云账号的），经后台通道发给同一个账号，发成了再删
+
+/** 网易云回打卡成功（#28 用 SDK 2.9.0 的新接口录的，真账号上确认计入了听歌排行） */
+const CHECK_IN = 'playback/check-in/001-scrobble.json.gz'
+
+/** 这台设备发出的打卡：哪首、请求体，按先后 */
+function checkIns(device: Device): { songId: number, body: unknown }[] {
+  return device.requests.flatMap((request) => {
+    const match = /^\/api\/songs\/(\d+)\/check-in$/.exec(request.path)
+    return match ? [{ songId: Number(match[1]), body: request.body }] : []
+  })
+}
+
+/** 服务端调网易云打卡时的参数，按先后 */
+function neteaseCheckIns(): unknown[] {
+  return world.netease.calls.flatMap(call => call.module === 'scrobble' ? [call.query] : [])
+}
+
+/** 本机记着、还没发出去的打卡 */
+async function storedCheckIns(device: Device): Promise<unknown[]> {
+  const { checkIns = [] } = await device.stored()
+  return checkIns.map(([, value]) => value)
+}
+
+describe('听歌打卡', () => {
+  it('切走一首（按下一首）：按实际出声的秒数取整打卡，带上这首自己的播放来源；暂停着的时间不算。发成了本机不再留着', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(30_400)
+    app.togglePlay()
+    await world.settle()
+    await world.clock.advance(60_000)
+    app.togglePlay()
+    await world.settle()
+    expect(app.state.player.status).toBe('playing')
+    await world.clock.advance(10_000)
+
+    await world.netease.reply(CHECK_IN)
+    app.next()
+    await world.settle()
+    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 40 } }])
+    expect(neteaseCheckIns()).toEqual([{ id: FIRST.id, sourceid: LIKED.id, source: 'list', time: 40 }])
+    expect(await storedCheckIns(device)).toEqual([])
+  })
+
+  it('放完（快放完时交接给下一首）：这首按实际出声的秒数打卡；接着放的那首从 0 秒另算', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    const spare = other(tab, player)
+    spare.ready(SECOND.duration)
+    await world.clock.advance(191_700)
+
+    await world.netease.reply(CHECK_IN)
+    await world.netease.reply(THIRD.url)
+    player.progress(191.7)
+    await world.settle()
+    expect(tab.sounding()).toBe(spare)
+    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 192 } }])
+
+    await world.clock.advance(3_000)
+    await world.netease.reply(CHECK_IN)
+    app.next()
+    await world.settle()
+    expect(checkIns(device).at(-1)).toEqual({ songId: SECOND.id, body: { source: LIKED, seconds: 3 } })
+  })
+
+  it('被插播打断的那首：当场按实际出声的秒数打卡（规则④）；插播进来的那首打卡时带着它自己的播放来源', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(25_000)
+
+    await world.netease.reply(CHECK_IN)
+    await world.netease.reply(LAST.url)
+    app.interject(ALBUM, songOf(app, LAST.id))
+    await world.settle()
+    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 25 } }])
+
+    other(tab, player).ready(LAST.duration)
+    await world.settle()
+    expect(current(app)).toBe(LAST.id)
+    await world.clock.advance(10_000)
+    await world.netease.reply(CHECK_IN)
+    app.next()
+    await world.settle()
+    expect(neteaseCheckIns()).toEqual([
+      { id: FIRST.id, sourceid: LIKED.id, source: 'list', time: 25 },
+      { id: LAST.id, sourceid: ALBUM.id, source: 'album', time: 10 },
+    ])
+  })
+
+  it('断网时听完的歌：打卡记在本机，记着是哪个账号的；联网后补发，发成了再删', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(30_000)
+    device.setOnline(false)
+    app.next()
+    await world.settle()
+    expect(checkIns(device)).toEqual([])
+    expect(await storedCheckIns(device)).toEqual([{ songId: FIRST.id, source: LIKED, seconds: 30, owner: RECORDED_ACCOUNT.id }])
+
+    await world.netease.reply(CHECK_IN)
+    device.setOnline(true)
+    await world.settle()
+    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 30 } }])
+    expect(await storedCheckIns(device)).toEqual([])
+  })
+
+  /** 放 40 秒第一首，按下一首时才发现登录 Cookie 没了：打卡被说需要登录，App 变成登录失效 */
+  async function expireWhileCheckingIn(device: Device, tab: Tab): Promise<FakeAudio> {
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(40_000)
+    await device.setCookie('campanula_login=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict')
+    tab.app.next()
+    await world.settle()
+    if (tab.app.state.session.status !== 'loginExpired')
+      throw new Error('登录没失效')
+    return player
+  }
+
+  it('发打卡时才知道登录失效（续期也没成功）：App 变成登录失效，打卡留在本机；登录失效期间接着听完的也记着，同一个账号重新登录后按先后补发', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const player = await expireWhileCheckingIn(device, tab)
+    expect(checkIns(device)).toHaveLength(1)
+    expect(neteaseCheckIns()).toEqual([])
+    expect(await storedCheckIns(device)).toEqual([{ songId: FIRST.id, source: LIKED, seconds: 40, owner: RECORDED_ACCOUNT.id }])
+
+    // 缓冲好的下一首接着放
+    other(tab, player).ready(SECOND.duration)
+    await world.settle()
+    expect(current(app)).toBe(SECOND.id)
+    await world.clock.advance(20_000)
+    app.next()
+    await world.settle()
+    expect(checkIns(device)).toHaveLength(1)
+    expect(await storedCheckIns(device)).toEqual([
+      { songId: FIRST.id, source: LIKED, seconds: 40, owner: RECORDED_ACCOUNT.id },
+      { songId: SECOND.id, source: LIKED, seconds: 20, owner: RECORDED_ACCOUNT.id },
+    ])
+
+    await world.netease.reply(HEARTS, { until: never() })
+    await world.netease.reply(CHECK_IN)
+    await world.netease.reply(CHECK_IN)
+    await signIn(world, app)
+    await world.settle()
+    expect(checkIns(device).slice(1)).toEqual([
+      { songId: FIRST.id, body: { source: LIKED, seconds: 40 } },
+      { songId: SECOND.id, body: { source: LIKED, seconds: 20 } },
+    ])
+    expect(neteaseCheckIns()).toHaveLength(2)
+    expect(await storedCheckIns(device)).toEqual([])
+  })
+
+  it('补发前换了另一个账号登录：上一个账号的打卡丢弃，不会记到新账号头上', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    await expireWhileCheckingIn(device, tab)
+    expect(await storedCheckIns(device)).toHaveLength(1)
+
+    await world.netease.reply(HEARTS, { until: never() })
+    await signIn(world, tab.app, { another: true })
+    await world.settle()
+    expect(checkIns(device)).toHaveLength(1)
+    expect(neteaseCheckIns()).toEqual([])
+    expect(await storedCheckIns(device)).toEqual([])
+  })
+
+  it('补发前退出了（断网时退出）：打卡丢弃；联网后、同一个账号再登录也不补发', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(30_000)
+    device.setOnline(false)
+    app.next()
+    await world.settle()
+    expect(await storedCheckIns(device)).toHaveLength(1)
+
+    await app.logout()
+    await world.settle()
+    expect(app.state.session.status).toBe('signedOut')
+    expect(await storedCheckIns(device)).toEqual([])
+
+    await world.netease.reply('login/logout.json')
+    device.setOnline(true)
+    await world.settle()
+    await world.netease.reply(HEARTS, { until: never() })
+    await signIn(world, app)
+    await world.settle()
+    expect(checkIns(device)).toEqual([])
+    expect(await storedCheckIns(device)).toEqual([])
+  })
+
+  it('放到一半关掉 App 不算结束，不打卡；再打开接着放，听完时之前听的秒数合成一条（规则⑥）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const player = await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(60_000)
+    player.progress(60)
+
+    const { app: reopened, ...again } = await reopen(device, tab)
+    expect(checkIns(device)).toEqual([])
+    expect(await storedCheckIns(device)).toEqual([])
+
+    await world.netease.reply(FIRST.url)
+    await world.netease.reply(SECOND.url)
+    reopened.togglePlay()
+    await world.settle()
+    again.audio.find(audio => !audio.paused)!.ready(FIRST.duration)
+    await world.settle()
+    await world.clock.advance(30_000)
+    await world.netease.reply(CHECK_IN)
+    reopened.next()
+    await world.settle()
+    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 90 } }])
+  })
+
+  it('联网时主动退出：正在放的那首算结束，先把它的打卡发出去，再删曲库副本和播放队列、退出；界面马上变成未登录', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+    await world.clock.advance(50_000)
+
+    const slow = held()
+    await world.netease.reply(CHECK_IN, { until: slow.until })
+    await world.netease.reply('login/logout.json')
+    const loggingOut = app.logout()
+    await world.settle()
+    expect(app.state.session.status).toBe('signedOut')
+    expect(tab.sounding()).toBeUndefined()
+    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 50 } }])
+    expect(device.requests.some(request => request.path === '/api/logout')).toBe(false)
+    expect((await device.stored()).library).not.toEqual([])
+
+    slow.release()
+    await loggingOut
+    await world.settle()
+    expect(device.requests.at(-1)?.path).toBe('/api/logout')
+    expect(neteaseCheckIns()).toEqual([{ id: FIRST.id, sourceid: LIKED.id, source: 'list', time: 50 }])
+    const stored = await device.stored()
+    expect([stored.library, stored.player, stored.checkIns]).toEqual([[], [], []])
   })
 })

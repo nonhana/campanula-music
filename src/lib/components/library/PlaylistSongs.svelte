@@ -11,8 +11,8 @@
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
+  import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
-  import type { PlaySource } from '#lib/app/player.js'
   import { CircleAlert, Heart, ListMusic, SearchX } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'

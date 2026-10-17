@@ -5,6 +5,29 @@ export const QUALITIES = ['standard', 'higher', 'exhigh', 'lossless', 'hires'] a
 
 export type Quality = typeof QUALITIES[number]
 
+/** 播放来源的种类：歌单（我喜欢的音乐也是一张歌单）、专辑、歌手的热门歌曲 */
+export const PLAY_SOURCE_KINDS = ['playlist', 'album', 'artist'] as const
+
+/** 播放来源（GLOSSARY）：这首歌是从哪个列表放进播放队列的 */
+export interface PlaySource {
+  kind: typeof PLAY_SOURCE_KINDS[number]
+  /** 歌单、专辑、歌手的编号 */
+  id: number
+}
+
+/** POST /api/songs/[id]/check-in 的请求：听歌打卡，这首歌听完了（播完或切走） */
+export interface CheckInRequest {
+  /** 这首歌自己的播放来源 */
+  source: PlaySource
+  /** 实际听了多少秒，正整数 */
+  seconds: number
+}
+
+/** POST /api/songs/[id]/check-in：网易云收下了这次打卡（计入听歌排行有 10–30 分钟延迟） */
+export interface CheckInResponse {
+  checkedIn: true
+}
+
 /**
  * GET /api/songs/[id]/play-url?quality=：一首歌的播放地址，浏览器拿它直连网易云的音频服务器。
  * 这个账号放不了完整的（会员歌对非会员）时是试听片段的地址

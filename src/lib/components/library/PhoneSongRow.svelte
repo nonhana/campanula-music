@@ -6,7 +6,7 @@
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
-  import type { PlaySource } from '#lib/app/player.js'
+  import type { PlaySource } from '#lib/api/playback.js'
   import MorningWash from '../player/MorningWash.svelte'
   import NowChip from '../player/NowChip.svelte'
   import { openSongMenuAt } from '../song-menu.svelte'

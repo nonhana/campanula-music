@@ -1,14 +1,16 @@
 import type { Account, AccountResponse } from '#lib/api/account.js'
 import type { Song } from '#lib/api/library.js'
 import type { LogoutResponse } from '#lib/api/login.js'
-import type { Quality } from '#lib/api/playback.js'
+import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { LibraryState, PlaylistSearch } from './library'
+import type { PendingCheckIn } from './local'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
-import type { PlayerState, PlayMode, PlaySource } from './player'
+import type { CheckIn, PlayerState, PlayMode } from './player'
 import { createApi } from './api'
+import { createCheckIns } from './check-ins'
 import { createLibrary, searchPlaylist } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
@@ -158,6 +160,8 @@ export function createApp(browser: BrowserCapabilities): App {
     finishingLogout ??= browser.locks.request(LOGIN_COOKIE_LOCK, async () => {
       if (!await local.pendingLogout())
         return null
+      // 退出了：还没发出去的打卡都丢弃，之后同一个账号再登录也不补发
+      await local.clearCheckIns()
       const result = await api.post<LogoutResponse>('/api/logout')
       if (!result.ok)
         return result.failure
@@ -176,6 +180,26 @@ export function createApp(browser: BrowserCapabilities): App {
    */
   let queueOwner: number | null = null
 
+  const lane = createBackgroundLane(browser)
+  const checkIns = createCheckIns({
+    api,
+    lane,
+    local,
+    locks: browser.locks,
+    account: () => (state.session.status === 'signedIn' ? state.session.account.id : null),
+    loginExpired,
+  })
+  /** 听完的歌记成播放队列的账号的打卡；没登录（退出了）时不打卡 */
+  function withOwner(finished: readonly CheckIn[]): PendingCheckIn[] {
+    const owner = queueOwner
+    return owner === null ? [] : finished.map(checkIn => ({ ...checkIn, owner }))
+  }
+  /** 有新的打卡记进本机了：发出去 */
+  function sendRecorded(pending: readonly PendingCheckIn[]): void {
+    if (pending.length > 0)
+      checkIns.send()
+  }
+
   const player = createPlayer({
     api,
     clock: browser.clock,
@@ -184,12 +208,16 @@ export function createApp(browser: BrowserCapabilities): App {
       update({ player: next })
       showOnLockScreen(next)
     },
-    save(progress, queue) {
+    save(progress, queue, finished) {
       if (queue && queueOwner === null)
         throw new Error('播放队列不属于任何网易云账号：只有登录了才能放歌')
-      void local.savePlayer(progress, queue && { ...queue, owner: queueOwner! })
+      const pending = withOwner(finished)
+      void local.savePlayer(progress, queue && { ...queue, owner: queueOwner! }, pending).then(() => sendRecorded(pending))
     },
-    forget: () => void local.deletePlayer(),
+    forget(finished) {
+      const pending = withOwner(finished)
+      void local.deletePlayer(pending).then(() => sendRecorded(pending))
+    },
     loginExpired,
   })
   const lockScreen = connectMediaSession({ session: browser.mediaSession, MediaMetadata: browser.MediaMetadata, clock: browser.clock, player, read: () => state.player })
@@ -198,7 +226,6 @@ export function createApp(browser: BrowserCapabilities): App {
     lockScreen(next)
   }
 
-  const lane = createBackgroundLane(browser)
   const library = createLibrary({
     api,
     lane,
@@ -233,8 +260,9 @@ export function createApp(browser: BrowserCapabilities): App {
     sessions += 1
     login.stopQr()
     library.leave()
-    player.stop()
+    // 先放下账号再停：没登录时听完的歌不打卡（主动退出的那个标签页在这之前已经把最后一首记下了）
     queueOwner = null
+    player.stop()
     lyrics.clear()
     update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
   }
@@ -294,6 +322,8 @@ export function createApp(browser: BrowserCapabilities): App {
     }
     update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN, library: shown })
     library.sync()
+    // 登录失效期间、断网时记下的打卡补发给这个账号；别的账号的丢弃
+    checkIns.send()
   }
 
   // 一个标签页退出，同一浏览器里开着的其他标签页跟着变成未登录（退出请求由退出的那个标签页发）
@@ -352,9 +382,14 @@ export function createApp(browser: BrowserCapabilities): App {
     loginWithCaptcha: login.loginWithCaptcha,
     async logout() {
       await local.setPendingLogout(true)
+      // 正在放的那首算结束：播放队列还是这个账号的时候停下，它的打卡记下来，删曲库副本和播放队列之前先发出去
+      const owner = queueOwner
+      player.stop()
       signedOut()
-      await Promise.all([local.deleteLibrary(), local.deletePlayer()])
       sessionChannel.postMessage({ type: 'signedOut' } satisfies SessionMessage)
+      if (owner !== null)
+        await checkIns.sendBeforeLogout(owner)
+      await Promise.all([local.deleteLibrary(), local.deletePlayer()])
       await finishLogout()
     },
     retrySync: library.retry,
