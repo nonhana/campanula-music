@@ -97,6 +97,8 @@ export function sourceName(library: LibraryState | null, source: PlaySource): st
     }
     case 'daily':
       return '每日推荐'
+    case 'search':
+      return `搜索“${source.keyword}”`
     default: {
       const unhandled: never = source
       throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)

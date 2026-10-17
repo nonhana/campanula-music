@@ -20,7 +20,7 @@ const ALBUM_PAGES = 'albumPages'
 const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS, ALBUM_PAGES]
 /** 播放队列和进度（#27），按名字存：queue（播放队列那一份，记着是哪个网易云账号的）、progress（当前这首放到哪了） */
 const PLAYER = 'player'
-/** 这台设备上的设置，按名字存：playQuality（在线播放音质）。不属于哪个网易云账号，退出、换账号都不删 */
+/** 这台设备上的设置和搜索历史，按名字存：playQuality（在线播放音质）、searchHistory（#31）。不属于哪个网易云账号，退出、换账号都不删 */
 const SETTINGS = 'settings'
 /** 要发的听歌打卡（#28），按记下的先后自动编号：记着是哪个网易云账号的，发成了、丢弃时删掉 */
 const CHECK_INS = 'checkIns'
@@ -104,6 +104,10 @@ export interface LocalDb {
   /** 在线播放音质；没设过时是 null */
   playQuality: () => Promise<Quality | null>
   savePlayQuality: (quality: Quality) => Promise<void>
+  /** 搜索历史，新的在前；没搜过时是空的 */
+  searchHistory: () => Promise<string[]>
+  /** 在一个事务里读出搜索历史、按 change 改好再存（别的标签页刚记下的不会被盖掉），返回存下的 */
+  changeSearchHistory: (change: (history: string[]) => string[]) => Promise<string[]>
 }
 
 function settled<T>(request: IDBRequest<T>): Promise<T> {
@@ -351,5 +355,22 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       return quality ?? null
     },
     savePlayQuality: quality => write([SETTINGS], transaction => transaction.objectStore(SETTINGS).put(quality, 'playQuality')),
+    async searchHistory() {
+      const store = (await database()).transaction(SETTINGS).objectStore(SETTINGS)
+      const history = await settled(store.get('searchHistory')) as string[] | undefined
+      return history ?? []
+    },
+    async changeSearchHistory(change) {
+      let changed: string[] = []
+      await write([SETTINGS], (transaction) => {
+        const store = transaction.objectStore(SETTINGS)
+        const stored = store.get('searchHistory')
+        stored.onsuccess = () => {
+          changed = change((stored.result as string[] | undefined) ?? [])
+          store.put(changed, 'searchHistory')
+        }
+      })
+      return changed
+    },
   }
 }

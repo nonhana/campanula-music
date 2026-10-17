@@ -27,6 +27,11 @@
 - nonhana/campanula-music#29（2026-10-17 北京时间）：`discover/daily/` 下每日推荐和从每日推荐来的一次打卡。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.9.0`，**不截短**（测试要核对“整份每日推荐”）；文件名前的序号是调用的先后：
   - `001-recommend_songs`：当天的每日推荐，31 首，都能放完整的（`privilege.st` 都是 0、`pl` 都大于 0）。只读 1 次。
   - `002-scrobble`：打卡的播放来源照 SDK 文档「播放来源」：`source: 'recommend'`、`sourceid: 0`（每日推荐没有稳定的编号），`time` 是整首的整数秒，**只打卡 1 次**（13:06）。打卡对象是本周听歌排行的最后一首《Only U》（3364306023），打卡前本周 1 次、得分 14；**17.6 分钟后变成 2 次、得分 28**，计入了排行。前后读排行用的 `user_record`、`user_detail` 都只读，没有录进仓库。
+- nonhana/campanula-music#31（2026-10-17 北京时间）：`search/songs/` 下的搜索建议和单曲搜索、`search/check-in/` 下从搜索来的一次打卡。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.9.0`，参数和 Campanula 服务端发的一样；文件名前的序号是调用的先后：
+  - `001`、`002-search_suggest`：先打了“夜に”、再打完“夜に駆ける”时的建议，只读各 1 次。
+  - `003-cloudsearch`：搜“夜に駆ける”的单曲（`limit: 100`，截到前 30 首）；`004-cloudsearch`：搜“Sea Of Tired Slowed”（28 首，不截短），最后 3 首无版权。登录后单曲搜索里能放的歌 `privilege.st` 是 0、无版权的是 -200，和歌曲信息一样；验证关卡①匿名录的 `search/cloudsearch.song.json` 里 3 首都是 -100，那是没登录的样子，不代表无版权。
+  - 想找一个一首都搜不到的词没找到：试了 9 个乱码一样的词，7 个网易云都模糊搜出了几首到几百首；另外 2 个（`𓀀𓀁𓀂𓀃`、`⌘⌥⇧⌃⎋⏏`）的第 49 首没有 `al.name`，SDK 2.9.0 把整页拒掉（502，nonhana/hana-music-api#79），没录。
+  - `search/check-in/001-scrobble`：打卡的播放来源照 SDK 文档「播放来源」：`source: 'search'`、`sourceid: 0`（一次搜索没有稳定的编号），`time` 是整首的整数秒，**只打卡 1 次**（19:34）。打卡对象是本周听歌排行的最后一首《好景不长》（3410153999），打卡前本周 1 次、得分 14；**24.5 分钟后变成 2 次、得分 28**，计入了排行。前后读排行用的 `user_record`、`user_detail` 都只读，没有录进仓库。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
@@ -36,7 +41,7 @@
 - 扫码时要求行为验证的 8821 这次没有出现，没有录到。测试 8821 分支用的是构造的数据，见下面“构造的数据”。
 - `login/login_cellphone.10004-risk.json` 是短信登录被风控拦下的真实返回；`login/captcha_sent.502-anonymous-registration.json` 是 SDK 1.4.0 匿名注册失败时的返回（报错原文里的“MUSIC_A”只是文字，不是凭据）。
 - 首次同步时“我喜欢的音乐”的歌单详情原始返回约 3.1 MB、一次 1,000 首的歌曲信息约 2.1 MB；验证关卡①②的文件只留了前 30 项，原长度见 `context.truncated`。
-- `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。#22 的 `library/sync/`、#23 的 `library/album-artist/`、#24 的 `playback/liked/`、#28 的 `playback/check-in/`、#29 的 `discover/daily/` 也是 `.json.gz`。
+- `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。#22 的 `library/sync/`、#23 的 `library/album-artist/`、#24 的 `playback/liked/`、#28 的 `playback/check-in/`、#29 的 `discover/daily/`、#31 的 `search/songs/`、`search/check-in/` 也是 `.json.gz`。
 - `library/song_detail.liked-page4.*`：第 4 页里有 3 首传到云盘、没匹配上曲库的歌（1984488794、1959160688、1916897283），网易云回的 `ar[0].name`、`al.name` 是 null。`hana-music-api@2.3.0` 要求它们是字符串，**整页 1,000 首都被拒掉**（502 `UnexpectedUpstreamShape`）；2.4.0 起原样返回（nonhana/hana-music-api#48）。不带后缀的 `song_detail.liked-page4.json.gz` 是网易云原样的返回（SDK 校验之前截下），2.4.0 能通过结构校验；`.502-null-artist` 是 2.3.0 真实的拒绝，2.4.0 下别人看云盘上传的歌（歌名也是 null）时照样这样拒，测试拿它当“这一页没取到”。
 - 凭据无效时（#21，编造的 `MUSIC_U`）：`likelist` 回 301；`user_playlist`、`playlist_detail` 回 200 的匿名视角，每张歌单的 `subscribed` 是 null（已登录时是 true / false）；`song_detail` 照常 200。2.3.0 把匿名视角当结构不符报 502，2.4.0 起原样返回，Campanula 的服务端认出 `subscribed` 是 null 就当作需要登录（`library/user_playlist.anonymous-view.json.gz`）。
 - `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。

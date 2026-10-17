@@ -63,11 +63,24 @@ export function readQuality(value: string | null): Quality {
   return quality
 }
 
-/** 读请求里的播放来源：每日推荐没有编号，其余要带编号 */
+/** 读网址里的搜索关键词：去掉首尾空白后不能是空的 */
+export function readKeywords(value: string | null): string {
+  const keywords = value?.trim() ?? ''
+  if (!keywords)
+    error(400, 'keywords 不能是空的')
+  return keywords
+}
+
+/** 读请求里的播放来源：每日推荐没有编号，一次搜索带着搜的词，其余要带编号 */
 function readSource(source: unknown): PlaySource {
-  const { kind, id } = (typeof source === 'object' && source !== null ? source : {}) as Partial<Record<'kind' | 'id', unknown>>
+  const { kind, id, keyword } = (typeof source === 'object' && source !== null ? source : {}) as Partial<Record<'kind' | 'id' | 'keyword', unknown>>
   if (kind === 'daily')
     return { kind }
+  if (kind === 'search') {
+    if (typeof keyword !== 'string' || !keyword.trim())
+      error(400, 'source 的格式不对')
+    return { kind, keyword }
+  }
   const numbered = NUMBERED_SOURCE_KINDS.find(each => each === kind)
   if (!numbered || !isNeteaseId(id))
     error(400, 'source 的格式不对')
