@@ -32,10 +32,9 @@
   - `003-cloudsearch`：搜“夜に駆ける”的单曲（`limit: 100`，截到前 30 首）；`004-cloudsearch`：搜“Sea Of Tired Slowed”（28 首，不截短），最后 3 首无版权。登录后单曲搜索里能放的歌 `privilege.st` 是 0、无版权的是 -200，和歌曲信息一样；验证关卡①匿名录的 `search/cloudsearch.song.json` 里 3 首都是 -100，那是没登录的样子，不代表无版权。
   - 想找一个一首都搜不到的词没找到：试了 9 个乱码一样的词，7 个网易云都模糊搜出了几首到几百首；另外 2 个（`𓀀𓀁𓀂𓀃`、`⌘⌥⇧⌃⎋⏏`）的第 49 首没有 `al.name`，SDK 2.9.0 把整页拒掉（502，nonhana/hana-music-api#79），没录。
   - `search/check-in/001-scrobble`：打卡的播放来源照 SDK 文档「播放来源」：`source: 'search'`、`sourceid: 0`（一次搜索没有稳定的编号），`time` 是整首的整数秒，**只打卡 1 次**（19:34）。打卡对象是本周听歌排行的最后一首《好景不长》（3410153999），打卡前本周 1 次、得分 14；**24.5 分钟后变成 2 次、得分 28**，计入了排行。前后读排行用的 `user_record`、`user_detail` 都只读，没有录进仓库。
-- nonhana/campanula-music#31 验收不通过后的返工（2026-10-18 北京时间）：`search/kinds/` 下建议里的四类、歌手 / 歌单 / 专辑结果和一位歌手的粉丝数，给 SDK 声明新字段做契约测试数据，也给建议下拉和搜索结果页（综合 + 四类）的测试用。一次性脚本同样用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.9.0`，全部只读、各 1 次，截到前 30 项：
+- nonhana/campanula-music#31 验收不通过后的返工（2026-10-18 北京时间）：`search/kinds/` 下建议里的四类和歌手 / 歌单 / 专辑结果，给 SDK 声明新字段做契约测试数据（nonhana/hana-music-api#82），也给建议下拉和搜索结果页（综合 + 四类）的测试用。一次性脚本同样用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.9.0`，全部只读、各 1 次，截到前 30 项：
   - `001-search_suggest`：“真夜中”。网易云给了单曲 4、专辑 2、歌单 2，**没有歌手**（`order` 是 `songs`、`albums`、`playlists`）；第 2、3 首歌名看着一样，一个用 `～`（U+FF5E）、一个用 `〜`（U+301C）。`002-search_suggest`：“周杰伦”，单曲 4、歌手 1、专辑 2、歌单 2。网易云只在搜的词就是歌手名时才在建议里给歌手（另外只读试过 YOASOBI、椎名林檎，各给 1 位，没录）。
-  - `003`–`005-cloudsearch`：“真夜中”的歌手（`type: 100`，共 27 位）、歌单（`1000`，共 188 张）、专辑（`10`，共 503 张）。歌单带 `playCount`；歌手的 `fansSize` 登录后也都是 null（验证关卡①匿名录的 `cloudsearch.artist.json` 一样）。
-  - `006-artist_follow_count`：歌手结果第一名（ずっと真夜中でいいのに。，15021101）的粉丝数 `data.fansCnt`（791,646）。`isFollow` 是作者自己是否关注了这位歌手。
+  - `003`–`005-cloudsearch`：“真夜中”的歌手（`type: 100`，共 27 位）、歌单（`1000`，共 188 张）、专辑（`10`，共 503 张）。歌单带 `playCount`；歌手的 `fansSize` 登录后也都是 null（验证关卡①匿名录的 `cloudsearch.artist.json` 一样），搜索结果里拿不到粉丝数。
   - 另外只读试过 `cloudsearch` 的 `type: 1018`（综合）和 `search_multimatch`（最佳匹配），返回都是空的（`result` 没有内容、`orders` 是空数组），用不了，没录。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
