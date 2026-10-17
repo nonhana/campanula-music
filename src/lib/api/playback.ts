@@ -5,14 +5,21 @@ export const QUALITIES = ['standard', 'higher', 'exhigh', 'lossless', 'hires'] a
 
 export type Quality = typeof QUALITIES[number]
 
-/** 播放来源的种类：歌单（我喜欢的音乐也是一张歌单）、专辑、歌手的热门歌曲 */
-export const PLAY_SOURCE_KINDS = ['playlist', 'album', 'artist'] as const
+/** 带编号的播放来源的种类：歌单（我喜欢的音乐也是一张歌单）、专辑、歌手的热门歌曲 */
+export const NUMBERED_SOURCE_KINDS = ['playlist', 'album', 'artist'] as const
 
 /** 播放来源（GLOSSARY）：这首歌是从哪个列表放进播放队列的 */
-export interface PlaySource {
-  kind: typeof PLAY_SOURCE_KINDS[number]
-  /** 歌单、专辑、歌手的编号 */
-  id: number
+export type PlaySource
+  /** 歌单、专辑、歌手：带着它的编号 */
+  = | { kind: typeof NUMBERED_SOURCE_KINDS[number], id: number }
+  /** 每日推荐：每天换一份，没有编号 */
+    | { kind: 'daily' }
+
+/** 两个播放来源是不是同一个列表 */
+export function sameSource(a: PlaySource, b: PlaySource): boolean {
+  if (a.kind === 'daily' || b.kind === 'daily')
+    return a.kind === b.kind
+  return a.kind === b.kind && a.id === b.id
 }
 
 /** POST /api/songs/[id]/check-in 的请求：听歌打卡，这首歌听完了（播完或切走） */

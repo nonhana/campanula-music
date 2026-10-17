@@ -12,6 +12,7 @@
   import { desktopLayout } from '#lib/components/layout.js'
   import AlbumDescription from '#lib/components/library/AlbumDescription.svelte'
   import Cover from '#lib/components/library/Cover.svelte'
+  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import SongList from '#lib/components/library/SongList.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
   import { fadeAway, reveal } from '#lib/components/motion.js'
@@ -71,6 +72,10 @@
   {/if}
 {/snippet}
 
+{#snippet playAll()}
+  <PlayAllButton songs={content?.songs ?? null} source={{ kind: 'album', id }} />
+{/snippet}
+
 {#if library}
   {#if opened?.status === 'failed'}
     <!-- 骨架换成出错时出错的说明飘入（本地过渡只认眼前这个 if，所以写在这里，不写在 failed 里面） -->
@@ -83,6 +88,7 @@
           <div class='min-w-0 flex flex-1 flex-col pt-1'>
             <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(album.name)}>{album.name}</h1>
             {@render metaLine(false)}
+            <div class='mt-auto flex items-center gap-2 pt-4'>{@render playAll()}</div>
           </div>
         </header>
       {:else}
@@ -103,6 +109,7 @@
         <Cover url={album.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
         <h1 class='line-clamp-2 mt-4 break-words text-headline-sm text-neutral-900 font-600' lang={langOf(album.name)}>{album.name}</h1>
         {@render metaLine(true)}
+        <div class='mt-3 flex items-center justify-center gap-2'>{@render playAll()}</div>
       </header>
     {:else}
       <div class='px-4 pt-2' aria-hidden='true' out:fadeAway>

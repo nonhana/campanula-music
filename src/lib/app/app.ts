@@ -4,13 +4,16 @@ import type { LogoutResponse } from '#lib/api/login.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
+import type { DailyState } from './daily'
 import type { LibraryState, PlaylistSearch } from './library'
 import type { PendingCheckIn } from './local'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
 import type { CheckIn, PlayerState, PlayMode } from './player'
+import { playable } from '#lib/api/library.js'
 import { createApi } from './api'
 import { createCheckIns } from './check-ins'
+import { createDaily } from './daily'
 import { createLibrary, searchPlaylist } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
@@ -52,6 +55,8 @@ export interface AppState {
   player: PlayerState
   /** 最近打开的那首歌的歌词：听众看歌词时才取 */
   lyrics: LyricsState | null
+  /** 每日推荐：听众打开过才有，只在这次登录期间记着 */
+  daily: DailyState | null
 }
 
 /** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
@@ -97,10 +102,17 @@ export interface App {
   /** 歌手页取后面的一页专辑；没取成时再调一次就是重试 */
   moreArtistAlbums: (artistId: number) => Promise<void>
   /**
-   * 在列表里点一首歌：用整个列表（歌单、专辑的曲目、歌手的热门歌曲）替换播放队列，从这首开始放。
+   * 打开每日推荐：今天这份（网易云北京时间 6:00 换）还没拉过就用前台请求拉，拉到哪了看 state.daily。
+   * 只在这次登录期间记着、不存本机，断网时没拉成；没拉成时再调一次就是重试
+   */
+  openDaily: () => Promise<void>
+  /**
+   * 在列表里点一首歌：用整个列表（歌单、专辑的曲目、歌手的热门歌曲、每日推荐）替换播放队列，从这首开始放。
    * 歌单还没同步全时先用已经同步的部分，同步全了把后面的补上（规则⑫）。无版权的歌不能点
    */
   play: (source: PlaySource, songId: number) => void
+  /** 播放全部：和点列表里第一首能放的歌（不是无版权的）一样。一首能放的都没有就什么都不做 */
+  playAll: (source: PlaySource) => void
   /** 在放就暂停，停着就接着放（出了问题停下时就是重试） */
   togglePlay: () => void
   next: () => void
@@ -142,7 +154,7 @@ export interface App {
 export function createApp(browser: BrowserCapabilities): App {
   const api = createApi(browser)
   const local = createLocalDb(browser.indexedDB)
-  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null }
+  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null }
   const listeners = new Set<() => void>()
 
   function update(next: Partial<AppState>) {
@@ -244,6 +256,14 @@ export function createApp(browser: BrowserCapabilities): App {
     loginExpired,
   })
 
+  const daily = createDaily({
+    api,
+    clock: browser.clock,
+    read: () => state.daily,
+    write: next => update({ daily: next }),
+    loginExpired,
+  })
+
   const login = createLogin({
     api,
     clock: browser.clock,
@@ -264,6 +284,7 @@ export function createApp(browser: BrowserCapabilities): App {
     queueOwner = null
     player.stop()
     lyrics.clear()
+    daily.clear()
     update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
   }
 
@@ -283,8 +304,10 @@ export function createApp(browser: BrowserCapabilities): App {
         const page = shown.artistPage(source.id)
         return page?.status === 'shown' ? { songs: page.content.hotSongs, complete: true } : null
       }
+      case 'daily':
+        return state.daily?.status === 'shown' ? { songs: state.daily.songs, complete: true } : null
       default: {
-        const unhandled: never = source.kind
+        const unhandled: never = source
         throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)
       }
     }
@@ -295,6 +318,7 @@ export function createApp(browser: BrowserCapabilities): App {
     sessions += 1
     library.leave()
     lyrics.clear()
+    daily.clear()
     update({ session: { status: 'loginExpired' }, library: null })
   }
 
@@ -401,10 +425,17 @@ export function createApp(browser: BrowserCapabilities): App {
     openAlbum: library.openAlbum,
     openArtist: library.openArtist,
     moreArtistAlbums: library.moreArtistAlbums,
+    openDaily: daily.open,
     play(source, songId) {
       const list = listOf(source)
       if (list)
         player.play(source, list.songs, songId, list.complete)
+    },
+    playAll(source) {
+      const list = listOf(source)
+      const first = list?.songs.find(playable)
+      if (list && first)
+        player.play(source, list.songs, first.id, list.complete)
     },
     togglePlay: player.toggle,
     next: player.next,

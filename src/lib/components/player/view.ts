@@ -95,8 +95,10 @@ export function sourceName(library: LibraryState | null, source: PlaySource): st
       const page = library.artistPage(source.id)
       return page?.status === 'shown' ? page.content.artist.name : library.artists?.find(artist => artist.id === source.id)?.name ?? null
     }
+    case 'daily':
+      return '每日推荐'
     default: {
-      const unhandled: never = source.kind
+      const unhandled: never = source
       throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)
     }
   }

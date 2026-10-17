@@ -72,6 +72,11 @@ export interface Song {
 
 export type Availability = 'full' | 'trial' | 'noCopyright'
 
+/** 能点来放：无版权的不能（只能放试听片段的也能放） */
+export function playable(song: Song): boolean {
+  return song.availability !== 'noCopyright'
+}
+
 /**
  * POST /api/songs 一次最多取这么多首。网易云一次 1,000 首的原始返回约 2.1 MB，
  * 离 Vercel 单次响应 4.5 MB 的上限不远（验证关卡①），所以服务端只回 Song 里的字段

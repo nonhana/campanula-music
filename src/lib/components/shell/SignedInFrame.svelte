@@ -1,8 +1,8 @@
 <!--
-  登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）、图标侧栏（曲库，设置在最下面）和底部播放条；
-  手机是 logo 行（右边是设置），设置、歌单页、专辑页、歌手页这类二级页面换成返回栏；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；
-  底部是迷你播放条。播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
-  播放的提示浮在最上面，播放页开着时也看得见。搜索、每日推荐、已下载由之后的票放进来。
+  登录后的骨架：桌面是顶栏（菜单键、logo、头像菜单）、图标侧栏（曲库、每日推荐，设置在最下面）和底部播放条；
+  手机是 logo 行（右边是每日推荐的日历按钮、设置），设置、每日推荐、歌单页、专辑页、歌手页这类二级页面换成返回栏；
+  曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；底部是迷你播放条。播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
+  播放的提示浮在最上面，播放页开着时也看得见。搜索、已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -11,9 +11,11 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { ArrowLeft, House, Menu, Settings } from '@lucide/svelte'
+  import { ArrowLeft, Calendar, CalendarDays, House, Menu, Settings } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
+  import DailyNumber from '../daily/DailyNumber.svelte'
+  import { dailyCalendarDay } from '../daily/view'
   import { desktopLayout } from '../layout'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
@@ -40,16 +42,20 @@
   $effect(() => playerDrawer.settle(playerOpen))
 
   const pathname = $derived(page.url.pathname)
-  /** 歌单页、专辑页、歌手页：标题是歌单名、专辑名、歌手名，返回栏只说这是哪一类页面 */
-  const detailPage = $derived(
+  /** 歌单页、专辑页、歌手页（属于曲库）：标题是歌单名、专辑名、歌手名 */
+  const libraryPage = $derived(
     pathname.startsWith(`${resolve('/playlists')}/`)
       ? '歌单'
       : pathname.startsWith(`${resolve('/albums')}/`)
       ? '专辑'
       : pathname.startsWith(`${resolve('/artists')}/`) ? '歌手' : undefined,
   )
+  /** 页面里有自己的标题（h1）的二级页面：返回栏只说这是哪一类页面 */
+  const detailPage = $derived(libraryPage ?? (pathname === resolve('/daily') ? '每日推荐' : undefined))
   /** 二级页面：手机上顶行换成返回栏 */
   const secondary = $derived(pathname === resolve('/settings') ? '设置' : detailPage)
+  /** 每日推荐的日期：手机日历按钮里的数字和它的名字 */
+  const calendar = $derived(dailyCalendarDay(view.state.daily))
   /** 曲库的文字标签。换标签不留浏览记录：返回键离开曲库，不在标签之间来回 */
   const LIBRARY_TABS = [
     { route: '/', label: '我喜欢' },
@@ -61,7 +67,7 @@
   // 换页用 View Transitions：进入下一层、返回、标签之间各有方向（ADR-0011）
   pageTransitions(LIBRARY_TABS.map(tab => tab.route))
   /** 桌面侧栏的“曲库”：曲库的各个标签和歌单页、专辑页、歌手页都算 */
-  const inLibrary = $derived(onLibrary || detailPage !== undefined)
+  const inLibrary = $derived(onLibrary || libraryPage !== undefined)
 
   let railExpanded = $state(false)
 
@@ -144,6 +150,7 @@
       {/snippet}
       {#snippet rail()}
         <a href={resolve('/')} {...railItem(resolve('/'), '曲库', inLibrary)}>{@render railContent('曲库', House)}</a>
+        <a href={resolve('/daily')} {...railItem(resolve('/daily'), '每日推荐')}>{@render railContent('每日推荐', CalendarDays)}</a>
       {/snippet}
       {#snippet railEnd()}
         <a href={resolve('/settings')} {...railItem(resolve('/settings'), '设置')}>{@render railContent('设置', Settings)}</a>
@@ -159,6 +166,10 @@
         {:else}
           <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
           <span class='flex-1'></span>
+          <a href={resolve('/daily')} class='relative grid size-11 place-items-center rounded-full text-neutral-700 active:bg-primary-100' aria-label='每日推荐 · {calendar.month}月{calendar.day}日 {calendar.weekday}'>
+            <Calendar size={24} strokeWidth={1.8} aria-hidden='true' />
+            <DailyNumber day={calendar.day} size='icon' class='absolute inset-x-0 top-[19px] text-center' />
+          </a>
           <a href={resolve('/settings')} class='grid size-11 place-items-center rounded-full text-neutral-700 active:bg-primary-100' aria-label='设置'>
             <Settings size={22} aria-hidden='true' />
           </a>
