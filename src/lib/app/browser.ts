@@ -20,6 +20,12 @@ export interface BrowserCapabilities {
   broadcastChannel: (name: string) => ChannelCapability
   /** 新建一个播放器，同 new Audio()：浏览器直连网易云的音频服务器放歌 */
   audio: () => AudioCapability
+  /**
+   * 收藏歌单前现取一枚网易云的反作弊令牌（#30 留言）：网易云官方的 Watchman（网易易盾）给的，页面里只初始化一次，
+   * 每次都重新取，不缓存、不复用。令牌随请求交给服务端，服务端只透传给 SDK。Watchman 没加载出来（断网、被浏览器插件拦了）、
+   * 迟迟不给时失败
+   */
+  checkToken: () => Promise<string>
 }
 
 /** 播放器发的事件里 App 用到的 */
@@ -80,6 +86,86 @@ export interface PageVisibility {
   removeEventListener: (type: 'visibilitychange', listener: () => void) => void
 }
 
+/** 网易云官方的 Watchman：脚本、产品号，和收藏歌单用的业务编号（官方网页版用的这一组，hana-music-api#77 在真账号上验证过） */
+const WATCHMAN = {
+  script: 'https://acstatic-dun.126.net/tool.min.js',
+  product: 'YD00000558929251',
+  business: 'bd5d2f973ef74cd2a61325a412ae54d9',
+  /** 加载、取令牌最多等这么久（毫秒）：网络慢、被拦了时不干等 */
+  timeout: 10_000,
+}
+
+interface Watchman {
+  getToken: (business: string, callback: (token: string) => void) => void
+}
+
+declare global {
+  interface Window {
+    initWatchman?: (options: { auto: boolean, productNumber: string, protocol: string, onload: (instance?: Watchman) => void, onerror: (error: unknown) => void }) => void
+    WM?: Watchman
+  }
+}
+
+function withTimeout<T>(work: Promise<T>, what: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(`${what}超时`)), WATCHMAN.timeout)
+    work.then(resolve, reject).finally(() => window.clearTimeout(timer))
+  })
+}
+
+/** 页面里 Watchman 的脚本：只加载一次；没加载出来时下次再试 */
+let watchmanScript: Promise<void> | undefined
+function loadWatchmanScript(): Promise<void> {
+  watchmanScript ??= new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = WATCHMAN.script
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => {
+      script.remove()
+      reject(new Error('Watchman 的脚本没加载出来'))
+    }
+    document.head.append(script)
+  }).catch((error: unknown) => {
+    watchmanScript = undefined
+    throw error
+  })
+  return watchmanScript
+}
+
+/**
+ * 页面里的 Watchman：整个页面只初始化一次，之后一直用这一个（每次新建等于换一台设备，网易云会回 405，#30 留言）。
+ * 初始化没成（网络、被拦）时下次再试；已经有 window.WM 就直接用它
+ */
+let watchman: Promise<Watchman> | undefined
+function loadWatchman(): Promise<Watchman> {
+  watchman ??= withTimeout(loadWatchmanScript().then(() => window.WM ?? new Promise<Watchman>((resolve, reject) => window.initWatchman!({
+    auto: true,
+    productNumber: WATCHMAN.product,
+    protocol: 'https',
+    onload: (instance) => {
+      const ready = instance ?? window.WM
+      if (ready)
+        resolve(ready)
+      else
+        reject(new Error('Watchman 初始化了，但没有给出实例'))
+    },
+    onerror: reject,
+  }))), '加载 Watchman ').catch((error: unknown) => {
+    watchman = undefined
+    throw error
+  })
+  return watchman
+}
+
+async function watchmanToken(): Promise<string> {
+  const instance = await loadWatchman()
+  const token = await withTimeout(new Promise<string>(resolve => instance.getToken(WATCHMAN.business, resolve)), '取反作弊令牌')
+  if (!token)
+    throw new Error('Watchman 给了一个空的令牌')
+  return token
+}
+
 export function realBrowserCapabilities(): BrowserCapabilities {
   return {
     fetch: (path, init) => window.fetch(path, init),
@@ -105,5 +191,6 @@ export function realBrowserCapabilities(): BrowserCapabilities {
     locks: navigator.locks,
     broadcastChannel: name => new BroadcastChannel(name),
     audio: () => new Audio(),
+    checkToken: watchmanToken,
   }
 }

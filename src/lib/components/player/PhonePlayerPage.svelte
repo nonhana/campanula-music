@@ -2,9 +2,9 @@
   手机播放页（DESIGN.md Layout · 播放页，照 Auxio 的结构，原型 PhonePlayer），一屏放下、不滚动：
   顶上收起键、“正在播放 / 来自「…」”（按住往下拖也能收起播放页）、歌词键；中间一大块是封面，按歌词键或点封面换成歌词，再按换回；
   按住封面左右拖切到上一首 / 下一首，转盘跟着手转（cover-swipe.svelte.ts、CoverWheel）；读屏和键盘用下面的上一首、下一首按钮。
-  下面左对齐的歌名、歌手、专辑，波浪进度条，循环 / 上一首 / 播放 / 下一首 / 随机播放；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
+  下面左对齐的歌名、歌手、专辑（右边是红心键），波浪进度条，循环 / 上一首 / 播放 / 下一首 / 随机播放；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
   弹层按自己的高度滑进滑出，拉手往下拖、点按都收起（返回也先收起它）。换歌时封面换碟（CoverWheel），转出屏幕的部分被裁掉。
-  红心（#30）和“更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
+  “更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
@@ -13,6 +13,7 @@
   import { page } from '$app/state'
   import { ChevronDown, MicVocal } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
+  import HeartButton from '../library/HeartButton.svelte'
   import { langOf } from '../library/view'
   import { fade, float, recede } from '../motion'
   import { DURATIONS, FLOAT_IN_DELAY, PAGE_DISTANCE } from '../motion-tokens'
@@ -112,7 +113,12 @@
     </div>
 
     <div class='flex-none pt-5'>
-      <NowPlayingTitle {song} {turn} phone />
+      <div class='flex items-start gap-1'>
+        <div class='min-w-0 flex-1'>
+          <NowPlayingTitle {song} {turn} phone />
+        </div>
+        <HeartButton {song} size='phone-page' />
+      </div>
 
       <div class='mt-2'>
         <WaveProgress {playhead} touch />

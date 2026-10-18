@@ -70,6 +70,62 @@ export interface Replica {
   albumPages: Map<number, AlbumResponse>
 }
 
+/**
+ * 改曲库副本的一步：给了的部分整个换掉，tracks、songs、albumPages 按编号换掉给了的那几项。
+ * 换了歌单列表时，不在列表里的歌单的曲目一起删；换了收藏的专辑时，不再收藏的专辑存着的专辑页一起删；
+ * 专辑页只存还在收藏的专辑里的（本机数据库里核对：别的标签页可能刚取消收藏）
+ */
+export interface LibraryPatch {
+  hearts?: number[]
+  playlists?: Playlist[]
+  tracks?: ReadonlyMap<number, PlaylistTracks>
+  songs?: readonly Song[]
+  albums?: CollectedAlbum[]
+  artists?: CollectedArtist[]
+  albumPages?: ReadonlyMap<number, AlbumResponse>
+}
+
+/** 什么都不改 */
+export function emptyPatch(patch: LibraryPatch): boolean {
+  return Object.values(patch).every(part => part === undefined)
+}
+
+/** 副本改过以后的样子（和 LocalDb.saveLibrary 写进本机数据库的一样）：不改原来的，改到的部分换成新的 */
+export function patched(replica: Replica, patch: LibraryPatch): Replica {
+  let { tracks, songs, albumPages } = replica
+  if (patch.tracks || patch.playlists) {
+    tracks = new Map(tracks)
+    for (const [id, playlistTracks] of patch.tracks ?? [])
+      tracks.set(id, playlistTracks)
+    if (patch.playlists) {
+      const kept = new Set(patch.playlists.map(playlist => playlist.id))
+      for (const id of tracks.keys()) {
+        if (!kept.has(id))
+          tracks.delete(id)
+      }
+    }
+  }
+  if (patch.songs?.length) {
+    songs = new Map(songs)
+    for (const song of patch.songs)
+      songs.set(song.id, song)
+  }
+  if (patch.albums || patch.albumPages) {
+    const collected = new Set((patch.albums ?? replica.albums ?? []).map(album => album.id))
+    albumPages = new Map([...albumPages, ...patch.albumPages ?? []].filter(([id]) => collected.has(id)))
+  }
+  return {
+    ...replica,
+    hearts: patch.hearts ?? replica.hearts,
+    playlists: patch.playlists ?? replica.playlists,
+    tracks,
+    songs,
+    albums: patch.albums ?? replica.albums,
+    artists: patch.artists ?? replica.artists,
+    albumPages,
+  }
+}
+
 export interface LocalDb {
   /** 退出时服务端还没回过期的登录 Cookie（断网、服务端出错）：要再发一次退出，在那之前 App 当作未登录 */
   pendingLogout: () => Promise<boolean>
@@ -79,17 +135,11 @@ export interface LocalDb {
   /** 换成 owner 的空副本：原来的（别的账号的）整个删掉 */
   resetLibrary: (owner: number) => Promise<void>
   deleteLibrary: () => Promise<void>
-  // 往副本里写同步拿到的东西：同一个事务里先核对副本还是不是 owner 的，不是（别的标签页退出删了、换了账号）就什么都不写，返回 false
-  saveHearts: (owner: number, songIds: number[]) => Promise<boolean>
-  /** 歌单列表：网易云那边删掉的歌单（不在列表里了），它的曲目在同一个事务里一起删 */
-  savePlaylists: (owner: number, playlists: Playlist[]) => Promise<boolean>
-  saveTracks: (owner: number, playlistId: number, tracks: PlaylistTracks) => Promise<boolean>
-  saveSongs: (owner: number, songs: Song[]) => Promise<boolean>
-  /** 收藏的专辑：不再收藏的专辑，存着的专辑页在同一个事务里一起删 */
-  saveCollectedAlbums: (owner: number, albums: CollectedAlbum[]) => Promise<boolean>
-  saveCollectedArtists: (owner: number, artists: CollectedArtist[]) => Promise<boolean>
-  /** 专辑页：同一个事务里核对它还在收藏的专辑里，不在就不存 */
-  saveAlbumPage: (owner: number, page: AlbumResponse) => Promise<boolean>
+  /**
+   * 改曲库副本（同步拿到的、听众改了并且网易云确认了的），见 LibraryPatch：同一个事务里先核对副本还是不是 owner 的，
+   * 不是（别的标签页退出删了、换了账号）就什么都不写，返回 false
+   */
+  saveLibrary: (owner: number, patch: LibraryPatch) => Promise<boolean>
   /** 存着的播放队列和进度；没存过、已经删了，或者两份对不上（当前这首不在播放队列里）时是 null */
   readPlayer: () => Promise<StoredPlayer | null>
   /** 存进度；播放队列那一份也变了、有歌听完了时，在同一个事务里一起存播放队列、记下要发的打卡 */
@@ -123,6 +173,27 @@ function committed(transaction: IDBTransaction): Promise<void> {
     transaction.onerror = () => reject(transaction.error)
     transaction.onabort = () => reject(transaction.error)
   })
+}
+
+/** 写这一步要用到的存储区（LIBRARY 总要用：核对副本的主人） */
+function storesFor(patch: LibraryPatch): string[] {
+  return [
+    ...(patch.tracks || patch.playlists ? [TRACKS] : []),
+    ...(patch.songs ? [SONGS] : []),
+    ...(patch.albums || patch.albumPages ? [ALBUM_PAGES] : []),
+  ]
+}
+
+/** 按编号存的存储区里，只留 kept 里有的那几项 */
+function dropAllBut(store: IDBObjectStore, kept: readonly { id: number }[]): void {
+  const ids = new Set(kept.map(item => item.id))
+  const keys = store.getAllKeys()
+  keys.onsuccess = () => {
+    for (const key of keys.result as number[]) {
+      if (!ids.has(key))
+        store.delete(key)
+    }
+  }
 }
 
 /** 存进本机以后才加的歌单字段：版本 3 加了创建者、是否隐私，版本 8 加了播放次数、简介、标签 */
@@ -276,50 +347,41 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       transaction.objectStore(LIBRARY).put(owner, 'owner')
     }),
     deleteLibrary: () => write(LIBRARY_STORES, clearLibrary),
-    saveHearts: (owner, songIds) => writeLibrary(owner, [], transaction => transaction.objectStore(LIBRARY).put(songIds, 'hearts')),
-    savePlaylists: (owner, playlists) => writeLibrary(owner, [TRACKS], (transaction) => {
-      transaction.objectStore(LIBRARY).put(playlists, 'playlists')
-      const tracks = transaction.objectStore(TRACKS)
-      const kept = new Set(playlists.map(playlist => playlist.id))
-      const keys = tracks.getAllKeys()
-      keys.onsuccess = () => {
-        for (const key of keys.result as number[]) {
-          if (!kept.has(key))
-            tracks.delete(key)
+    saveLibrary: (owner, patch) => writeLibrary(owner, storesFor(patch), (transaction) => {
+      const library = transaction.objectStore(LIBRARY)
+      if (patch.hearts)
+        library.put(patch.hearts, 'hearts')
+      if (patch.artists)
+        library.put(patch.artists, 'collectedArtists')
+      if (patch.songs) {
+        const songs = transaction.objectStore(SONGS)
+        for (const song of patch.songs)
+          songs.put(song)
+      }
+      if (patch.tracks || patch.playlists) {
+        const tracks = transaction.objectStore(TRACKS)
+        for (const [id, playlistTracks] of patch.tracks ?? [])
+          tracks.put(playlistTracks, id)
+        if (patch.playlists) {
+          library.put(patch.playlists, 'playlists')
+          dropAllBut(tracks, patch.playlists)
         }
       }
-    }),
-    saveTracks: (owner, playlistId, tracks) => writeLibrary(owner, [TRACKS], transaction => transaction.objectStore(TRACKS).put(tracks, playlistId)),
-    saveSongs: (owner, songs) => writeLibrary(owner, [SONGS], (transaction) => {
-      const store = transaction.objectStore(SONGS)
-      for (const song of songs)
-        store.put(song)
-    }),
-    saveCollectedAlbums: (owner, albums) => writeLibrary(owner, [ALBUM_PAGES], (transaction) => {
-      transaction.objectStore(LIBRARY).put(albums, 'collectedAlbums')
-      const pages = transaction.objectStore(ALBUM_PAGES)
-      const kept = new Set(albums.map(album => album.id))
-      const keys = pages.getAllKeys()
-      keys.onsuccess = () => {
-        for (const key of keys.result as number[]) {
-          if (!kept.has(key))
-            pages.delete(key)
-        }
-      }
-    }),
-    saveCollectedArtists: (owner, artists) => writeLibrary(owner, [], transaction => transaction.objectStore(LIBRARY).put(artists, 'collectedArtists')),
-    async saveAlbumPage(owner, page) {
-      let saved = false
-      const mine = await writeLibrary(owner, [ALBUM_PAGES], (transaction) => {
-        const collected = transaction.objectStore(LIBRARY).get('collectedAlbums')
+      if (patch.albums || patch.albumPages) {
+        const pages = transaction.objectStore(ALBUM_PAGES)
+        if (patch.albums)
+          library.put(patch.albums, 'collectedAlbums')
+        const collected = library.get('collectedAlbums')
         collected.onsuccess = () => {
-          saved = (collected.result as CollectedAlbum[] | undefined)?.some(album => album.id === page.album.id) ?? false
-          if (saved)
-            transaction.objectStore(ALBUM_PAGES).put(page, page.album.id)
+          const albums = (collected.result as CollectedAlbum[] | undefined) ?? []
+          for (const [id, page] of patch.albumPages ?? []) {
+            if (albums.some(album => album.id === id))
+              pages.put(page, id)
+          }
+          dropAllBut(pages, albums)
         }
-      })
-      return mine && saved
-    },
+      }
+    }),
     async readPlayer() {
       const store = (await database()).transaction(PLAYER).objectStore(PLAYER)
       const [queue, progress] = await Promise.all([

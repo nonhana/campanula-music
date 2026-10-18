@@ -1,10 +1,11 @@
 import type { Account, AccountResponse } from '#lib/api/account.js'
-import type { Song } from '#lib/api/library.js'
+import type { CollectedAlbum, CollectedArtist, Playlist, Song } from '#lib/api/library.js'
 import type { LogoutResponse } from '#lib/api/login.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
-import type { SearchKind } from '#lib/api/search.js'
+import type { SearchedItems, SearchKind } from '#lib/api/search.js'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
+import type { PlaylistSeed } from './changes'
 import type { DailyState } from './daily'
 import type { LibraryState, PlaylistSearch } from './library'
 import type { PendingCheckIn } from './local'
@@ -40,6 +41,12 @@ type SessionMessage
 
 /** 列表的播放来源：点一首歌时用整个列表替换播放队列（一次搜索不是列表，点歌是插播） */
 type ListSource = Exclude<PlaySource, { kind: 'search' }>
+
+/** 收藏、取消收藏的是哪样东西 */
+export interface CollectTarget {
+  kind: 'playlist' | 'album' | 'artist'
+  id: number
+}
 
 /** 登录会话。刚打开时要先问服务端，才知道有没有当前账号 */
 export type Session
@@ -174,6 +181,24 @@ export interface App {
   dismissPlayerNotice: () => void
   /** 看这首歌的歌词（播放页上显示歌词时）：已经取到、正在取就不再取，拉到哪了看 state.lyrics；没取成时再调一次就是重试 */
   openLyrics: (songId: number) => Promise<void>
+  /**
+   * 红心或取消红心一首歌（只能一首一首点）：先改本地、立即生效，再提交给网易云；没改成时改回原样，原因看 state.library.notice。
+   * 断网时不改，直接说没改成（规则⑨）；网易云说需要登录（续期也没成功）时整个 App 变成登录失效
+   */
+  heart: (song: Song, hearted: boolean) => Promise<void>
+  /**
+   * 加入歌单：自建歌单，或我喜欢的音乐（等于红心）。和红心一样先改本地，成了提示一句“已加入”；
+   * 网易云说这张歌单已经不在了（在别处删掉了）：改回原样，马上同步一次
+   */
+  addToPlaylist: (playlistId: number, song: Song) => Promise<void>
+  /**
+   * 收藏或取消收藏歌单、专辑、歌手：曲库里的、打开着的页（不在曲库里的歌单、专辑页、歌手页）和搜索结果里的都行。
+   * 和红心一样先改本地；收藏歌单时先现取一枚网易云的反作弊令牌。收藏了打开着的不在曲库里的歌单，它连同已经取到的曲目进曲库；
+   * 取消收藏后照常显示刚才的样子
+   */
+  collect: (target: CollectTarget, collected: boolean) => Promise<void>
+  /** 关掉改曲库的提示 */
+  dismissLibraryNotice: () => void
 }
 
 export function createApp(browser: BrowserCapabilities): App {
@@ -272,6 +297,8 @@ export function createApp(browser: BrowserCapabilities): App {
       player.libraryChanged(playlistId => playlistSongsOf(next, playlistId))
     },
     loginExpired,
+    online: () => browser.network.onLine,
+    checkToken: browser.checkToken,
   })
 
   const lyrics = createLyrics({
@@ -353,6 +380,60 @@ export function createApp(browser: BrowserCapabilities): App {
     const results = state.search.results
     const songs = results?.keyword === keyword ? results.songs : null
     return songs?.status === 'shown' ? songs.items.find(song => song.id === songId) : undefined
+  }
+
+  /** 这次搜索结果里（已经取到的那些）的这一项；不是搜索结果时是 undefined */
+  function searchedItem<K extends Exclude<SearchKind, 'songs'>>(kind: K, id: number): SearchedItems[K] | undefined {
+    const list = state.search.results?.[kind]
+    return list?.status === 'shown' ? (list.items as SearchedItems[K][]).find(item => item.id === id) : undefined
+  }
+
+  /**
+   * 收藏、取消收藏的这张歌单在曲库里的样子：曲库里的照旧；打开着的不在曲库里的歌单连同已经取到的曲目；
+   * 搜索结果里的只有头部。都不是时是 null
+   */
+  function playlistToCollect(shown: LibraryState, id: number): { playlist: Playlist, seed: PlaylistSeed | null } | null {
+    const listed = shown.playlists?.find(playlist => playlist.id === id)
+    if (listed)
+      return { playlist: listed, seed: null }
+    const page = shown.neteasePlaylist(id)
+    if (page?.status === 'shown') {
+      const { playlist, trackIds, tracksUpdatedAt, songs, complete } = page.content
+      return {
+        playlist: { ...playlist, kind: 'collected', private: false, trackCount: trackIds.length, tracksUpdatedAt },
+        seed: { tracks: { version: tracksUpdatedAt, trackIds: [...trackIds], complete }, songs },
+      }
+    }
+    const searched = searchedItem('playlists', id)
+    // 搜索结果里没有简介、标签和曲目最后变动的时间（SDK 没声明）：先空着、记成 0，打开它时、下一次同步时拿到真的
+    return searched ? { playlist: { ...searched, description: null, tags: [], kind: 'collected', private: false, tracksUpdatedAt: 0 }, seed: null } : null
+  }
+
+  /** 收藏、取消收藏的这张专辑：曲库里的照旧，或者打开着的专辑页、搜索结果里的；都不是时是 null */
+  function albumToCollect(shown: LibraryState, id: number): CollectedAlbum | null {
+    const listed = shown.albums?.find(album => album.id === id)
+    if (listed)
+      return listed
+    const page = shown.albumPage(id)
+    if (page?.status === 'shown') {
+      const { name, coverUrl, artist, songCount } = page.content.album
+      return { id, name, coverUrl, artists: [artist], songCount }
+    }
+    const searched = searchedItem('albums', id)
+    // 搜索结果里没有歌曲数（SDK 没声明）：记成 0，下一次同步收藏的专辑时拿到真的
+    return searched ? { id, name: searched.name, coverUrl: searched.coverUrl, artists: searched.artists, songCount: 0 } : null
+  }
+
+  /** 收藏、取消收藏的这位歌手：曲库里的照旧，或者打开着的歌手页、搜索结果里的；都不是时是 null */
+  function artistToCollect(shown: LibraryState, id: number): CollectedArtist | null {
+    const listed = shown.artists?.find(artist => artist.id === id)
+    if (listed)
+      return listed
+    const page = shown.artistPage(id)
+    if (page?.status === 'shown')
+      return { id, name: page.content.artist.name, avatarUrl: page.content.artist.avatarUrl }
+    const searched = searchedItem('artists', id)
+    return searched ? { id, name: searched.name, avatarUrl: searched.avatarUrl } : null
   }
 
   /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
@@ -512,5 +593,43 @@ export function createApp(browser: BrowserCapabilities): App {
     },
     dismissPlayerNotice: player.dismissNotice,
     openLyrics: lyrics.open,
+    heart: (song, hearted) => library.change({ kind: 'heart', song, hearted }),
+    async addToPlaylist(playlistId, song) {
+      const playlist = state.library?.playlists?.find(item => item.id === playlistId)
+      if (!playlist || playlist.kind === 'collected')
+        throw new Error(`只能加入自建歌单和我喜欢的音乐：${playlistId}`)
+      return library.change({ kind: 'add', playlist, song })
+    },
+    async collect(target, collected) {
+      const shown = state.library
+      if (!shown)
+        return
+      switch (target.kind) {
+        case 'playlist': {
+          const found = playlistToCollect(shown, target.id)
+          if (found?.playlist.kind === 'collected')
+            return library.change({ kind: 'collectPlaylist', playlist: found.playlist, collected, seed: found.seed })
+          break
+        }
+        case 'album': {
+          const album = albumToCollect(shown, target.id)
+          if (album)
+            return library.change({ kind: 'collectAlbum', album, collected })
+          break
+        }
+        case 'artist': {
+          const artist = artistToCollect(shown, target.id)
+          if (artist)
+            return library.change({ kind: 'collectArtist', artist, collected })
+          break
+        }
+        default: {
+          const unhandled: never = target.kind
+          throw new Error(`不认识要收藏的东西：${JSON.stringify(unhandled)}`)
+        }
+      }
+      throw new Error(`界面上没有这样东西，收藏不了：${JSON.stringify(target)}`)
+    },
+    dismissLibraryNotice: library.dismissNotice,
   }
 }

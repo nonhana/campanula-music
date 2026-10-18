@@ -103,7 +103,7 @@
           <ul class={['grid', grids.artists]} aria-label={words.label} data-reveal-group>
             {#each shown.items as artist, i (artist.id)}
               <li class='min-w-0' in:stagger={{ order: i - appendedAt }}>
-                <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首单曲`} />
+                <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首单曲`} collectable />
               </li>
             {/each}
           </ul>
@@ -111,7 +111,7 @@
           <ul class={['grid', grids.albums]} aria-label={words.label} data-reveal-group>
             {#each shown.items as album, i (album.id)}
               <li class='min-w-0' in:stagger={{ order: i - appendedAt }}>
-                <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} year={yearOf(album.publishedAt)} {phone} />
+                <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} year={yearOf(album.publishedAt)} {phone} collectable />
               </li>
             {/each}
           </ul>

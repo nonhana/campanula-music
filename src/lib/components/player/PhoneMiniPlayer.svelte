@@ -1,5 +1,5 @@
 <!--
-  手机迷你播放条（64px，DESIGN.md Player Bars）：封面、歌名、歌手，44px 圆形播放键、下一首，底边一条很细的进度线。
+  手机迷你播放条（64px，DESIGN.md Player Bars）：封面、歌名、歌手，红心键、44px 圆形播放键、下一首，底边一条很细的进度线。
   轻点封面和歌名那一块打开播放页，按住往上拖也能拉开。换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）；
   在列表里点歌时那一行的封面飞进小窗，落下时才换上新的歌名（cover-flight.svelte.ts）。换了歌就先在后台取好播放页那张大封面，
   拉开播放页时直接是大图。放在 PhoneShell 的 bar 里
@@ -7,6 +7,7 @@
 <script lang='ts'>
   import { SkipForward } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
+  import HeartButton from '../library/HeartButton.svelte'
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, langOf } from '../library/view'
   import { fade } from '../motion'
@@ -50,6 +51,7 @@
         {/snippet}
       </SongSwap>
     </button>
+    <HeartButton {song} size='phone' />
   {/if}
   <PlayButton />
   <IconButton icon={SkipForward} filled label='下一首' onclick={() => view.app.next()} />

@@ -2,7 +2,8 @@
   专辑页：桌面是 200px 封面的头部（专辑名、“专辑 · 歌手 · 年份 · 几首”）、下面一段简介、白色面板里带曲序的歌曲行；
   手机是二级页面：返回栏、居中的封面头部、卡片里的简介、带曲序的歌曲行。
   本机副本到了、换了一张专辑时打开它（App 的 openAlbum：这次登录还没拉过就拉，没拉成时再打开就是重试）。
-  骨架换成内容时骨架淡出，头部、简介、歌曲各自依次飘入（DESIGN.md Motion）。返回这一页时滚动位置回到原来的样子
+  骨架换成内容时骨架淡出，头部、简介、歌曲各自依次飘入（DESIGN.md Motion）。返回这一页时滚动位置回到原来的样子。
+  头部播放全部旁边是“收藏 / 已收藏”（手机也是带文字的胶囊，照视觉原型 PhoneAlbum），点“已收藏”直接取消收藏、不确认
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -10,6 +11,7 @@
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
+  import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Cover from '#lib/components/library/Cover.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
@@ -72,8 +74,9 @@
   {/if}
 {/snippet}
 
-{#snippet playAll()}
+{#snippet actions()}
   <PlayAllButton songs={content?.songs ?? null} source={{ kind: 'album', id }} />
+  <CollectButton target={{ kind: 'album', id }} name={album?.name ?? ''} look='pill' />
 {/snippet}
 
 {#if library}
@@ -88,7 +91,7 @@
           <div class='min-w-0 flex flex-1 flex-col pt-1'>
             <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(album.name)}>{album.name}</h1>
             {@render metaLine(false)}
-            <div class='mt-auto flex items-center gap-2 pt-4'>{@render playAll()}</div>
+            <div class='mt-auto flex items-center gap-2 pt-4'>{@render actions()}</div>
           </div>
         </header>
       {:else}
@@ -109,7 +112,7 @@
         <Cover url={album.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
         <h1 class='line-clamp-2 mt-4 break-words text-headline-sm text-neutral-900 font-600' lang={langOf(album.name)}>{album.name}</h1>
         {@render metaLine(true)}
-        <div class='mt-3 flex items-center justify-center gap-2'>{@render playAll()}</div>
+        <div class='mt-3 flex items-center justify-center gap-2'>{@render actions()}</div>
       </header>
     {:else}
       <div class='px-4 pt-2' aria-hidden='true' out:fadeAway>

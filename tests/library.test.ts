@@ -583,6 +583,42 @@ describe('歌单', () => {
     expect(trackIdRequests(device).slice(sentTrackIds)).toEqual([3136952023])
   })
 
+  it('往歌单加歌时网易云说它已经不在了（在别处删掉了）：改回原样、说明原因，马上同步一次，曲库里就没有它了', async () => {
+    const device = world.device()
+    await syncWholeLibrary(device)
+    // 作者在官方 App 里改过 poems（这一批里它还在）
+    const app = await reopenWith(device, AFTER)
+    const song = app.state.library!.liked!.songs[0]
+    const sent = syncRequests(device).length
+
+    // 作者已经在官方 App 里删掉了 poems
+    await world.netease.reply(HEARTS)
+    await world.netease.reply(DELETED.list)
+    await replyCollected()
+    await replyPlaylists(DELETED.playlists)
+    const reply = held()
+    await world.netease.reply('playlist-edit/playlist_tracks.add-deleted-playlist.json', { until: reply.until })
+    const adding = app.addToPlaylist(POEMS_ID, song)
+    expect(app.state.library?.songsOf(POEMS_ID)?.songs[0]).toEqual(song)
+    reply.release()
+    await adding
+    await device.idle()
+
+    expect(app.state.library?.notice).toMatchObject({ kind: 'playlistMissing', change: { kind: 'add', playlist: { id: POEMS_ID }, song } })
+    expect(syncRequests(device).slice(sent).map(request => `${request.method} ${request.path}`)).toEqual([
+      `POST /api/playlists/${POEMS_ID}/tracks`,
+      'GET /api/hearts?uid=10000001',
+      'GET /api/playlists?uid=10000001',
+      'GET /api/albums',
+      'GET /api/artists',
+      ...DELETED.playlists.map(playlist => `GET /api/playlists/${playlist.id}/track-ids`),
+    ])
+    expect(app.state.library?.playlists?.map(playlist => playlist.id)).not.toContain(POEMS_ID)
+    expect(app.state.library?.songsOf(POEMS_ID)).toBeNull()
+    expect((await device.stored()).tracks.map(([id]) => id)).not.toContain(POEMS_ID)
+    expect(app.state.library?.sync).toEqual({ status: 'synced' })
+  })
+
   /** 登录并同步：我喜欢的音乐同步完了，后台正在等 poems 的曲目编号（压着不回） */
   async function syncUntilPoems(device: Device) {
     const { app } = await device.open()

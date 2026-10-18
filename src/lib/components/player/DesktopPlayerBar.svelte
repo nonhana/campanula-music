@@ -1,5 +1,6 @@
 <!--
-  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开），
+  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开）、
+  靠这一栏右边的红心键（不在打开播放页的按钮里），
   右边播放模式（按一下换一种）、音量、播放队列（打开播放页的播放队列）；
   顶边一条 2px 的薄荷进度线，也是滑块：点按、拖动跳到那里，拖动时左边的时间跟着走（SeekLine）。
   换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）；在列表里点歌时那一行的封面飞进小窗，
@@ -9,6 +10,7 @@
 <script lang='ts'>
   import { ListMusic, SkipBack, SkipForward } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
+  import HeartButton from '../library/HeartButton.svelte'
   import SongBadge from '../library/SongBadge.svelte'
   import { artistLine, langOf } from '../library/view'
   import { fade } from '../motion'
@@ -42,7 +44,7 @@
 
 <SeekLine {slider} />
 
-<!-- 两边的按键、时间不缩，窄窗口（768）里中间的歌名让位 -->
+<!-- 两边的按键、时间不缩，窄窗口（768）里中间的歌名让位，红心键不让 -->
 <div class='grid grid-cols-[minmax(max-content,1fr)_minmax(0,440px)_minmax(max-content,1fr)] h-full items-center gap-6'>
   <div class='flex items-center gap-1.5'>
     <IconButton icon={SkipBack} filled label='上一首' onclick={() => view.app.previous()} />
@@ -54,22 +56,25 @@
   </div>
 
   {#if song}
-    <button type='button' class='min-w-0 flex items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
-      <span class='size-12 flex-none overflow-hidden rounded-md' {@attach landing.slot}>
-        {#if landing.song}
-          <CoverWheel song={landing.song} turn={landing.turn} duration={DURATIONS['focal-bar']} size={COVER_SIZE} eager class='rounded-md' />
-        {/if}
-      </span>
-      <SongSwap song={landing.song} turn={landing.turn} place='bar'>
-        {#snippet children(shown)}
-          <span class='min-w-0 flex items-center gap-2'>
-            <span class='truncate text-label text-neutral-900 font-500' lang={langOf(shown.name)}>{shown.name}</span>
-            {#if player.trial}<span class='flex flex-none' transition:fade><SongBadge availability='trial' /></span>{/if}
-          </span>
-          <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(shown))}>{artistLine(shown)}</span>
-        {/snippet}
-      </SongSwap>
-    </button>
+    <div class='min-w-0 flex items-center gap-1'>
+      <button type='button' class='min-w-0 flex flex-1 items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
+        <span class='size-12 flex-none overflow-hidden rounded-md' {@attach landing.slot}>
+          {#if landing.song}
+            <CoverWheel song={landing.song} turn={landing.turn} duration={DURATIONS['focal-bar']} size={COVER_SIZE} eager class='rounded-md' />
+          {/if}
+        </span>
+        <SongSwap song={landing.song} turn={landing.turn} place='bar'>
+          {#snippet children(shown)}
+            <span class='min-w-0 flex items-center gap-2'>
+              <span class='truncate text-label text-neutral-900 font-500' lang={langOf(shown.name)}>{shown.name}</span>
+              {#if player.trial}<span class='flex flex-none' transition:fade><SongBadge availability='trial' /></span>{/if}
+            </span>
+            <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(shown))}>{artistLine(shown)}</span>
+          {/snippet}
+        </SongSwap>
+      </button>
+      <HeartButton {song} size='desktop' />
+    </div>
   {/if}
 
   <div class='flex items-center justify-end gap-1.5'>

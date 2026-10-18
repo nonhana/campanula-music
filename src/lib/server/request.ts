@@ -1,3 +1,4 @@
+import type { CollectRequest, HeartRequest, PlaylistCollectRequest } from '#lib/api/library.js'
 import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchKind } from '#lib/api/search.js'
 import { error } from '@sveltejs/kit'
@@ -10,6 +11,8 @@ export const PHONE = /^1\d{10}$/
 export const CAPTCHA = /^\d{4,6}$/
 /** 二维码的 key（网易云给的 UUID） */
 export const QR_KEY = /^[\w-]{1,64}$/
+/** 网易云的反作弊令牌（Watchman 给的，实测 170 个字符）：可见的 ASCII 字符，不含空白 */
+const CHECK_TOKEN = /^[\x21-\x7E]{1,1024}$/
 
 // 界面发请求前已经检查过格式，到这里还不对，说明请求不是 Campanula 的页面发的：回 400
 
@@ -105,4 +108,36 @@ export async function readCheckIn(request: Request): Promise<CheckInRequest> {
   if (!Number.isSafeInteger(seconds) || (seconds as number) <= 0)
     error(400, 'seconds 要是正整数')
   return { source: playSource, seconds: seconds as number }
+}
+
+/** 读请求体（JSON）里的一个对象；不是对象时当作空的 */
+async function readObject(request: Request): Promise<Record<string, unknown>> {
+  const body: unknown = await request.json().catch(() => null)
+  return typeof body === 'object' && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : {}
+}
+
+/** 读红心的请求体（JSON）：哪首歌，红心还是取消红心 */
+export async function readHeart(request: Request): Promise<HeartRequest> {
+  const { songId, hearted } = await readObject(request)
+  if (!isNeteaseId(songId) || typeof hearted !== 'boolean')
+    error(400, '要有 songId 和 hearted')
+  return { songId, hearted }
+}
+
+/** 读收藏专辑、歌手的请求体（JSON）：收藏还是取消收藏 */
+export async function readCollect(request: Request): Promise<CollectRequest> {
+  const { collected } = await readObject(request)
+  if (typeof collected !== 'boolean')
+    error(400, '要有 collected')
+  return { collected }
+}
+
+/** 读收藏歌单的请求体（JSON）：收藏时要带着反作弊令牌，取消收藏不带 */
+export async function readPlaylistCollect(request: Request): Promise<PlaylistCollectRequest> {
+  const { collected, checkToken } = await readObject(request)
+  if (collected === false)
+    return { collected }
+  if (collected !== true || typeof checkToken !== 'string' || !CHECK_TOKEN.test(checkToken))
+    error(400, '收藏歌单要有 collected 和 checkToken')
+  return { collected, checkToken }
 }

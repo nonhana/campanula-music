@@ -3,7 +3,7 @@
   桌面头像在左；手机是二级页面：返回栏、居中的头像头部、Auxio 式歌曲行、两列专辑。
   本机副本到了、换了一位歌手时打开（App 的 openArtist：这次登录还没拉过就拉，没拉成时再打开就是重试）。
   骨架换成内容时骨架淡出，头部、热门歌曲、专辑格子各自依次飘入（DESIGN.md Motion）；“显示更多专辑”加载进来的那些也依次飘入，没加载成的说明淡入，
-  取完了按钮淡出。返回这一页时滚动位置回到原来的样子
+  取完了按钮淡出。返回这一页时滚动位置回到原来的样子。头部播放热门歌曲旁边是“收藏 / 已收藏”，点“已收藏”直接取消收藏、不确认
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -14,6 +14,7 @@
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import AlbumTile from '#lib/components/library/AlbumTile.svelte'
+  import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Cover from '#lib/components/library/Cover.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import SongList from '#lib/components/library/SongList.svelte'
@@ -71,6 +72,7 @@
         </p>
         <div class={['flex items-center gap-2', phone ? 'mt-4 justify-center' : 'mt-6']}>
           <PlayAllButton songs={content?.hotSongs ?? null} source={{ kind: 'artist', id }} label='播放热门歌曲' />
+          <CollectButton target={{ kind: 'artist', id }} name={artist.name} look='pill' />
         </div>
       </div>
     </header>

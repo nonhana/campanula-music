@@ -49,6 +49,7 @@
   - `010`：“Sea Of Tired Slowed”的歌手：一位都没有，网易云不给 `artists`，只给 `artistCount: 0`。之前只读探了一次，没录。
   - 网易云翻页时会把前面已经给过的又给一次：第一次录（18:20，那时录制用的登录已经失效，录到的是匿名视角，那批删了）“初音ミク”的第 2 页里有 3 位第 1 页已经有了；登录后连着录了 5 对第 1、2 页都没有重复（没录）。#31 返工时录的 `search/kinds/005`（专辑第 1 页）和今天的 `007` 有 5 张重复，测试拿它们当“隔了一阵才显示更多”。
   - 想录一页真实的出错返回给“综合里一块出错”的测试用：nonhana/hana-music-api#79 里会被整页拒掉的两个词（`⌘⌥⇧⌃⎋⏏`、`𓀀𓀁𓀂𓀃`），SDK 2.12.0 下第 1、2 页都正常返回了，没录到。作者定不构造，这条只测断网。
+- nonhana/campanula-music#30（2026-10-18）：收藏歌单在真账号上成功、取消成功的返回不是本仓库录的，从 hana-music-api 仓库的 `tests/fixtures/netease/playlist_subscribe/` 原样拷来（作者录的，已经去掉 Cookie、自己的歌单编号已换成假的）：`like-collect/playlist_subscribe.subscribe-token.json`（`subscribe-token.json`，2026-10-18 带 Watchman 现取的 170 字符反作弊令牌收藏别人的歌单，官方网页版的写法）、`like-collect/playlist_subscribe.unsubscribe.json`（`unsubscribe.json`，取消收藏，不带令牌）、`like-collect/playlist_subscribe.own-private.json`（`own.json`，收藏自己新建的临时歌单，网易云回 401“歌单创建者已设置隐私”，测试拿它当“网易云拒绝收藏”）。它们的 `context` 照 hana-music-api 的写法（`viewer` 是 `authenticated`），没有改。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
@@ -61,10 +62,10 @@
 - `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。#22 的 `library/sync/`、#23 的 `library/album-artist/`、#24 的 `playback/liked/`、#28 的 `playback/check-in/`、#29 的 `discover/daily/`、#31 的 `search/songs/`、`search/check-in/`、`search/kinds/`、#56 的 `library/netease-playlist/`、#32 的 `search/results/` 也是 `.json.gz`。
 - `library/song_detail.liked-page4.*`：第 4 页里有 3 首传到云盘、没匹配上曲库的歌（1984488794、1959160688、1916897283），网易云回的 `ar[0].name`、`al.name` 是 null。`hana-music-api@2.3.0` 要求它们是字符串，**整页 1,000 首都被拒掉**（502 `UnexpectedUpstreamShape`）；2.4.0 起原样返回（nonhana/hana-music-api#48）。不带后缀的 `song_detail.liked-page4.json.gz` 是网易云原样的返回（SDK 校验之前截下），2.4.0 能通过结构校验；`.502-null-artist` 是 2.3.0 真实的拒绝，2.4.0 下别人看云盘上传的歌（歌名也是 null）时照样这样拒，测试拿它当“这一页没取到”。
 - 凭据无效时（#21，编造的 `MUSIC_U`）：`likelist` 回 301；`user_playlist`、`playlist_detail` 回 200 的匿名视角，每张歌单的 `subscribed` 是 null（已登录时是 true / false）；`song_detail` 照常 200。2.3.0 把匿名视角当结构不符报 502，2.4.0 起原样返回，Campanula 的服务端认出 `subscribed` 是 null 就当作需要登录（`library/user_playlist.anonymous-view.json.gz`）。
-- `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。
+- `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。SDK 2.x 的 `decodeResponse` 遇到这一层就取里面的 `body` 再判断成败、校验结构，测试替身（`tests/harness/fixtures.ts`）照做，录制文件保持原样（#30）。
 - `playlist-edit/song_order_update.whole-4967-reversed.json`、`…whole-4967-shuffled.json`：一次改动几千首位置的排序，网易云约 3.3 秒后回 HTTP 400 / `-1`“请求异常，请稍后重试”，但新顺序其实已经生效（重新读歌单确认过）。只挪动几首时同样大小的请求 0.5 秒回 200（`…whole-4967-small-change.json`）。`…missing-one.json`（少提交一首、其余倒序）同样回 `-1`，2 秒后重读时新顺序还没有完全生效。
 - `playlist-edit/playlist_detail.deleted.json`：已删除的歌单仍回 200 和完整歌单，只有 `playlist.status` 是 10（正常歌单是 0）。对已删除的歌单加歌、移除、排序回 404“歌单不存在”；改名称、简介、标签、封面和再删一次都回 200。
-- `like-collect/playlist_subscribe.*`：验证关卡②里用 SDK 1.4.0 收藏歌单一律回 405“操作过于频繁，请稍后再试”：自己的、别人的歌单，eapi、weapi，默认伪装 IP、真实国内 IP，隔 20 分钟再试，都一样；同一时间作者在官方 App 里收藏、取消都正常，专辑、歌手、红心也都正常。所以这些文件代表的是 SDK 发的请求被拒的样子，不是收藏歌单成功的返回（见 #15 留言）。原因由 nonhana/hana-music-api#32 查明：设备身份 `os=pc`、写死的 checkToken，任一个都会被拒。`hana-music-api@2.0.0` 已改写法，修复后的模块还没在真账号上成功过（nonhana/hana-music-api#33）。收藏成功、取消成功的返回在 hana-music-api 仓库的 `tests/fixtures/netease/playlist_subscribe/`。
+- `like-collect/playlist_subscribe.*`：验证关卡②里用 SDK 1.4.0 收藏歌单一律回 405“操作过于频繁，请稍后再试”：自己的、别人的歌单，eapi、weapi，默认伪装 IP、真实国内 IP，隔 20 分钟再试，都一样；同一时间作者在官方 App 里收藏、取消都正常，专辑、歌手、红心也都正常。所以这些文件代表的是 SDK 发的请求被拒的样子，不是收藏歌单成功的返回（见 #15 留言），测试拿 `.405.json` 当“网易云说操作频繁”。原因由 nonhana/hana-music-api#32、#77 查明：设备身份和令牌不对都会被拒；SDK 2.12.0 起照官方网页版的写法，收藏时带浏览器里官方 Watchman 现取的反作弊令牌（`checkToken`）。成功、取消的返回见上面 #30 一条（`.subscribe-token.json`、`.unsubscribe.json`）。
 - `playlist-edit/nos_upload.*` 不是 SDK 调用，是浏览器拿 `image_upload_token` 的凭证直传网易云图片存储（`nosup-hz1.127.net`）的返回：`query` 写图片的尺寸、字节数和 JPEG 质量。
 - 每批录制分别脱敏，假编号不跨批次对应：比如验证关卡①②两边的 `900000002` 不是同一张歌单。
 - `login/*.invalid.json`、`login/login_refresh.301-invalid.json`：凭据无效时，`user_account` 照样回 200，只是 `account`、`profile` 都是 null；`login_refresh` 回 301，同时下发一条新的 `NMTID`（没有收录）。所以“需要登录”要看 `user_account` 有没有账号，或者看接口回不回 301（#14 留言）。
@@ -237,6 +238,9 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 | `like-collect/playlist_subscribe.own.json` | `playlist_subscribe` | vip-qr | hkg1 / default | 405 |  | 收藏自己的歌单：回 405“操作过于频繁”（这一轮收藏任何歌单都是 405，见 #15 留言） |
 | `like-collect/playlist_subscribe.real-ip.json` | `playlist_subscribe` | vip-qr | hkg1 / real | 405 |  | 改用真实国内 IP（realIP） |
 | `like-collect/playlist_subscribe.subscribe.json` | `playlist_subscribe` | vip-qr | hkg1 / default | 405 |  | 上一次 405 之后隔了约 20 分钟再试 |
+| `like-collect/playlist_subscribe.own-private.json` | `playlist_subscribe` | authenticated | local / default | 200 |  | 从 hana-music-api 拷来（#30）：收藏自己的临时歌单，业务码 401“歌单创建者已设置隐私” |
+| `like-collect/playlist_subscribe.subscribe-token.json` | `playlist_subscribe` | authenticated | local / default | 200 |  | 从 hana-music-api 拷来（#30）：带 Watchman 现取的反作弊令牌收藏别人的歌单，成功 |
+| `like-collect/playlist_subscribe.unsubscribe.json` | `playlist_subscribe` | authenticated | local / default | 200 |  | 从 hana-music-api 拷来（#30）：取消收藏，不带令牌，成功 |
 | `playlist-edit/image_upload_token.json` | `image_upload_token` | vip-qr | hkg1 / default | 200 |  |  |
 | `playlist-edit/nos_upload.31mb.json` | `nos_upload` | vip-qr | browser | 200 |  | 3200×3200、31,030,986 字节的 JPEG：直传成功，图片服务器能正常输出原图（6.5 MB）和缩略图；没有设为封面 |
 | `playlist-edit/nos_upload.61mb.json` | `nos_upload` | vip-qr | browser | 200 |  | 4500×4500、61,399,534 字节的 JPEG：直传成功，但图片服务器拒绝输出（FileTooBig），设为封面后显示不出来 |

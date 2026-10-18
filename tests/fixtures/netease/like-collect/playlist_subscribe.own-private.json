@@ -1,0 +1,22 @@
+{
+  "module": "playlist_subscribe",
+  "query": {
+    "id": 900000033,
+    "t": 1
+  },
+  "context": {
+    "sdk": "hana-music-api@2.9.0 源码 590bd18：公开 SDK client.playlistSubscribe，eapi、固定 iPhone 身份、业务请求体只有 id",
+    "region": "local",
+    "ip": "default",
+    "viewer": "authenticated",
+    "recordedAt": "2026-10-17T06:50:36.858Z",
+    "note": "收藏本次新建的自己的临时歌单，创建时使用默认 privacy=0，已通过 playlistDetail 确认归属；上游 HTTP 200、业务 code 401，SDK 以 status 401 拒绝且正文不变。这是该账号设置下的实测返回，不推断所有自建歌单都相同。临时歌单已删除，列表恢复原状；歌单 ID 已替换，无 Cookie"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 401,
+      "message": "歌单创建者已设置隐私"
+    }
+  }
+}

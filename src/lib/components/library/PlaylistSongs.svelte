@@ -115,7 +115,7 @@
                     {#if phone}
                       <PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} />
                     {:else}
-                      <DesktopSongRow {song} {source} n={i + 1} hearted={library.hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} />
+                      <DesktopSongRow {song} {source} n={i + 1} now={song.id === nowId} onplay={play(song)} />
                     {/if}
                   {/snippet}
                 </VirtualList>
