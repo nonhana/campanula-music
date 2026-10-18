@@ -838,7 +838,8 @@ describe('下一首播放、加入播放队列、插播', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    await world.netease.reply(FIRST.url, { until: never() })
+    // 没等 FIRST 的请求到服务端就插播 LAST：两个请求谁先到不固定，按歌曲编号对上
+    await world.netease.reply(FIRST.url, { until: never(), when: { id: FIRST.id } })
     app.play(LIKED, FIRST.id)
     const length = app.state.player.queue.length
     const count = (id: number) => queueIds(app).filter(each => each === id).length
@@ -851,7 +852,7 @@ describe('下一首播放、加入播放队列、插播', () => {
     expect([count(THIRD.id), count(SECOND.id)]).toEqual([1, 1])
     expect(current(app)).toBe(FIRST.id)
 
-    await world.netease.reply(LAST.url, { until: never() })
+    await world.netease.reply(LAST.url, { until: never(), when: { id: LAST.id } })
     app.interject(ALBUM, songOf(app, LAST.id))
     expect(app.state.player.queue[1]).toEqual({ song: songOf(app, LAST.id), source: ALBUM })
     expect(app.state.player.queue).toHaveLength(length)
