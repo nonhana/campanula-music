@@ -14,6 +14,10 @@ const world = useWorld()
 /** 先打了“夜に”、再打完“夜に駆ける”时网易云给的建议 */
 const SUGGEST_YORU_NI = 'search/songs/001-search_suggest.json.gz'
 const SUGGEST_YORU_NI_KAKERU = 'search/songs/002-search_suggest.json.gz'
+/** 打了“周杰伦”时网易云给的建议：单曲 4、歌手 1、专辑 2、歌单 2 */
+const SUGGEST_JAY = 'search/kinds/002-search_suggest.json.gz'
+/** 打了“真夜中”时网易云给的建议：单曲 4、专辑 2、歌单 2，没有歌手；第 2、3 首歌名一个用 ～（U+FF5E）、一个用 〜（U+301C） */
+const SUGGEST_MAYONAKA = 'search/kinds/001-search_suggest.json.gz'
 /** 搜“夜に駆ける”的单曲结果：100 首截到 30 首，都能放完整的 */
 const SONGS_YORU_NI_KAKERU = 'search/songs/003-cloudsearch.json.gz'
 /** 搜“Sea Of Tired Slowed”的单曲结果：28 首，第 26、27、28 首无版权 */
@@ -72,8 +76,16 @@ async function searchShown(app: App, keyword: string, fixture: string): Promise<
   return results.songs
 }
 
+/** 打了 keyword、停手后网易云回录下的建议；返回显示出来的建议 */
+async function suggested(app: App, keyword: string, fixture: string): Promise<unknown> {
+  await world.netease.reply(fixture)
+  app.suggest(keyword)
+  await world.clock.advance(SUGGEST_DELAY)
+  return app.state.search.suggestions
+}
+
 describe('边输入边出建议', () => {
-  it('停手一会儿才问网易云，只问最后打的词；建议按单曲、歌手、专辑排，同一个名字只出现一次', async () => {
+  it('停手一会儿才问网易云，只问最后打的词；不跨类别去重，和歌同名的歌手、专辑照样列出来', async () => {
     const { app } = await signInHeld(world.device())
 
     app.suggest('夜')
@@ -85,13 +97,52 @@ describe('边输入边出建议', () => {
     await world.netease.reply(SUGGEST_YORU_NI)
     await world.clock.advance(1)
     expect(suggestedKeywords()).toEqual([{ keywords: '夜に' }])
-    // 网易云给了 3 首歌、1 位歌手、2 张专辑；歌手和专辑的名字都和前面的歌重了
+    // 网易云给了 3 首歌、1 位歌手、2 张专辑；歌手和专辑的名字都和前面的歌一样
     expect(app.state.search.suggestions).toEqual({
       keyword: '夜に',
       items: [
         { kind: 'song', name: '夜に駆ける' },
         { kind: 'song', name: '夜に浮かぶ' },
         { kind: 'song', name: '夜に駆ける (feat. 宵崎奏 & 初音ミク)' },
+        { kind: 'artist', id: 37063847, name: '夜に駆ける' },
+        { kind: 'album', id: 84072830, name: '夜に駆ける' },
+        { kind: 'album', id: 97136563, name: '夜に浮かぶ' },
+      ],
+    })
+  })
+
+  it('照网易云给的列：单曲、歌手、专辑、歌单依次排；歌手、专辑、歌单带上编号（点了进它的页面）', async () => {
+    const { app } = await signInHeld(world.device())
+
+    expect(await suggested(app, '周杰伦', SUGGEST_JAY)).toEqual({
+      keyword: '周杰伦',
+      items: [
+        { kind: 'song', name: '布拉格广场' },
+        { kind: 'song', name: '屋顶' },
+        { kind: 'song', name: '默 (Live)' },
+        { kind: 'song', name: '想你就写信 (Live)' },
+        { kind: 'artist', id: 6452, name: '周杰伦' },
+        { kind: 'album', id: 21330, name: 'J-Top冠军精选' },
+        { kind: 'album', id: 21349, name: '看我72变' },
+        { kind: 'playlist', id: 11860849, name: '周杰伦最全歌曲集' },
+        { kind: 'playlist', id: 2247605201, name: '周杰伦丨在网易云音乐最后的倔强' },
+      ],
+    })
+  })
+
+  it('单曲之间名字看起来一样的只留第一条；网易云没给的那类（这次没有歌手）就没有', async () => {
+    const { app } = await signInHeld(world.device())
+
+    expect(await suggested(app, '真夜中', SUGGEST_MAYONAKA)).toEqual({
+      keyword: '真夜中',
+      items: [
+        { kind: 'song', name: '真夜中のドア〜stay with me (シングルver.)' },
+        { kind: 'song', name: '真夜中のドア～stay with me' },
+        { kind: 'song', name: '真夜中のドア〜stay with me 2024' },
+        { kind: 'album', id: 251727242, name: '真夜中のドア〜stay with me 2024' },
+        { kind: 'album', id: 2379020, name: '真夜中は純潔' },
+        { kind: 'playlist', id: 3172143658, name: 'ずっと真夜中でいいのに。歌曲合辑' },
+        { kind: 'playlist', id: 2887236905, name: 'ずっと真夜中でいいのに。' },
       ],
     })
   })
@@ -116,6 +167,9 @@ describe('边输入边出建议', () => {
         { kind: 'song', name: '夜に駆ける' },
         { kind: 'song', name: '夜に駆ける (feat. 宵崎奏 & 初音ミク)' },
         { kind: 'song', name: '夜に駆ける - From THE FIRST TAKE' },
+        { kind: 'artist', id: 37063847, name: '夜に駆ける' },
+        { kind: 'album', id: 84072830, name: '夜に駆ける' },
+        { kind: 'album', id: 175014930, name: '夜に駆ける - From THE FIRST TAKE' },
       ],
     })
   })

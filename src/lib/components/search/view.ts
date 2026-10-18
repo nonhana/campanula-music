@@ -5,7 +5,7 @@ import { failureText } from '../failure'
 // 搜索在界面上怎么写：建议是哪一类、哪一段和搜索框里一样，没搜成时怎么说
 
 /** 建议是哪一类 */
-export const SUGGESTION_KINDS: Record<Suggestion['kind'], string> = { song: '单曲', artist: '歌手', album: '专辑' }
+export const SUGGESTION_KINDS: Record<Suggestion['kind'], string> = { song: '单曲', artist: '歌手', album: '专辑', playlist: '歌单' }
 
 /** 名字里和搜索框里的字一样的那一段（不分大小写）：[前面, 一样的, 后面]；网易云按拼音、简繁这类找到的没有一样的，整段在前面 */
 export function matchedParts(name: string, typed: string): [string, string, string] {

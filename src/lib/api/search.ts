@@ -2,13 +2,15 @@ import type { Song } from './library'
 
 // 搜索的接口（Spec #11“服务端：Campanula API”搜索一项）。都要登录；关键词放在 keywords 里
 
-/** 边输入边给的一条建议：点它就是搜这个名字（#31） */
-export interface Suggestion {
-  kind: 'song' | 'artist' | 'album'
-  name: string
-}
+/**
+ * 边输入边给的一条建议（#31）：点单曲是搜这首的名字；歌手、专辑、歌单带编号，点了进它的页面
+ * （歌单不在曲库里时联网现取，#56）
+ */
+export type Suggestion
+  = | { kind: 'song', name: string }
+    | { kind: 'artist' | 'album' | 'playlist', id: number, name: string }
 
-/** GET /api/search/suggestions?keywords=：网易云给的建议，单曲、歌手、专辑依次排，同一个名字只出现一次 */
+/** GET /api/search/suggestions?keywords=：网易云给的建议，单曲、歌手、专辑、歌单依次排 */
 export interface SuggestionsResponse {
   suggestions: Suggestion[]
 }

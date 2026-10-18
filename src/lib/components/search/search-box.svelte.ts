@@ -19,11 +19,8 @@ export function shownKeyword(): string {
   return page.url.pathname === resolve('/search') ? (page.url.searchParams.get('q') ?? '').trim() : ''
 }
 
-/** 建议列表的一行：第一行是“搜索 <搜索框里的字>”，后面是网易云给的建议。点它就是搜 name */
-export interface SuggestionRow {
-  kind: 'search' | Suggestion['kind']
-  name: string
-}
+/** 建议列表的一行：第一行是“搜索 <搜索框里的字>”，后面是网易云给的建议（单曲、歌手、专辑、歌单） */
+export type SuggestionRow = { kind: 'search', name: string } | Suggestion
 
 /** 搜索框里有字时建议列表的每一行（还没回来的建议先留着上一个词的） */
 export function suggestionRows(draft: string, suggestions: Suggestions | null): SuggestionRow[] {
@@ -73,12 +70,35 @@ export function submitSearch(app: App, keyword: string): void {
   void goto(resolve(`/search?q=${encodeURIComponent(searched)}`), { replace: page.url.pathname === resolve('/search') })
 }
 
+/**
+ * 点了建议列表的一行、搜索历史里的词（当作 { kind: 'search', name }）：
+ * “搜索…”那一行、单曲、搜过的词就搜这个名字；歌手、专辑、歌单直接打开它的页面（不在曲库里的歌单由那一页现取，#56）。
+ * 打开页面不算搜索：不记进搜索历史，也不先清空搜索框（换页后 afterNavigate 会换回来）
+ */
+export function pickSuggestion(app: App, row: SuggestionRow): void {
+  switch (row.kind) {
+    case 'search':
+    case 'song':
+      submitSearch(app, row.name)
+      break
+    case 'artist':
+      void goto(resolve('/artists/[id]', { id: String(row.id) }))
+      break
+    case 'album':
+      void goto(resolve('/albums/[id]', { id: String(row.id) }))
+      break
+    case 'playlist':
+      void goto(resolve('/playlists/[id]', { id: String(row.id) }))
+      break
+  }
+}
+
 /** 输入法还在拼字：这时的回车、方向键是给输入法的。Safari 按回车上屏的那一下 isComposing 是 false，只能看 keyCode 229 */
 function composing(event: KeyboardEvent): boolean {
   return event.isComposing || event.keyCode === 229
 }
 
-/** 搜索框里按键：↑↓ 在建议之间选（到头了绕回来），回车搜选中的那一行或搜索框里的字。处理了返回 true */
+/** 搜索框里按键：↑↓ 在建议之间选（到头了绕回来），回车点选中的那一行（没选就是“搜索…”那一行，见 pickSuggestion）。处理了返回 true */
 export function searchBoxKey(event: KeyboardEvent, app: App): boolean {
   if (composing(event))
     return false
@@ -93,7 +113,7 @@ export function searchBoxKey(event: KeyboardEvent, app: App): boolean {
   }
   if (event.key === 'Enter' && rows.length > 0) {
     event.preventDefault()
-    submitSearch(app, rows[Math.max(at, 0)].name)
+    pickSuggestion(app, rows[Math.max(at, 0)])
     return true
   }
   return false
