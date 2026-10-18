@@ -1,6 +1,8 @@
 import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
+import type { SearchKind } from '#lib/api/search.js'
 import { error } from '@sveltejs/kit'
 import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
+import { SEARCH_KINDS } from '#lib/api/search.js'
 
 /** 中国大陆手机号（+86）：1 开头的 11 位数字 */
 export const PHONE = /^1\d{10}$/
@@ -69,6 +71,14 @@ export function readKeywords(value: string | null): string {
   if (!keywords)
     error(400, 'keywords 不能是空的')
   return keywords
+}
+
+/** 读网址里搜索结果是哪一类（单曲、歌单、歌手、专辑） */
+export function readSearchKind(value: string): SearchKind {
+  const kind = SEARCH_KINDS.find(each => each === value)
+  if (!kind)
+    error(400, 'kind 的格式不对')
+  return kind
 }
 
 /** 读请求里的播放来源：每日推荐没有编号，一次搜索带着搜的词，其余要带编号 */
