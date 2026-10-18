@@ -15,7 +15,7 @@ import { playable } from '#lib/api/library.js'
 import { createApi } from './api'
 import { createCheckIns } from './check-ins'
 import { createDaily } from './daily'
-import { createLibrary, searchPlaylist } from './library'
+import { createLibrary, playlistSongsOf, searchPlaylist } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 import { createLyrics } from './lyrics'
@@ -91,12 +91,13 @@ export interface App {
   retrySync: () => void
   /**
    * 打开一张歌单：本机还没有它最新、完整的曲目（没同步到、只同步了一部分），就马上用前台请求拉，不等后台同步。
-   * 拉到哪了看 state.library.opening；没拉成时再调一次就是重试
+   * 拉到哪了看 state.library.opening；没拉成时再调一次就是重试。
+   * 不在曲库里的歌单（歌单列表里没有）每次打开都联网取，不存进本机副本，拉到哪了看 state.library.neteasePlaylist
    */
   openPlaylist: (playlistId: number) => Promise<void>
   /**
-   * 歌单内搜索：在本机副本里即时完成。歌名、歌手、专辑都搜，不分大小写和全角半角；
-   * 歌单还没同步全时结果标“可能不全”。不在歌单列表里的歌单是 null
+   * 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成。歌名、歌手、专辑都搜，不分大小写和全角半角；
+   * 歌单还没同步全、还没取全时结果标“可能不全”。不在歌单列表里、也没打开过的歌单是 null
    */
   searchPlaylist: (playlistId: number, query: string) => PlaylistSearch | null
   /**
@@ -127,7 +128,7 @@ export interface App {
   /**
    * 点一首歌（点歌规则，Spec #11）：
    * - 在列表里点：用整个列表（歌单、专辑的曲目、歌手的热门歌曲、每日推荐）替换播放队列，从这首开始放。
-   *   歌单还没同步全时先用已经同步的部分，同步全了把后面的补上（规则⑫）；
+   *   歌单还没同步全、不在曲库里的歌单还没取全时先用已经有的部分，有全了把后面的补上（规则⑫）；
    * - 在搜索结果里点：插播这一首（见 interject），播放队列其余的不变，播放来源是这次搜索。
    * 无版权的歌不能点
    */
@@ -265,7 +266,7 @@ export function createApp(browser: BrowserCapabilities): App {
     local,
     write: (next) => {
       update({ library: next })
-      player.libraryChanged(next.songsOf)
+      player.libraryChanged(playlistId => playlistSongsOf(next, playlistId))
     },
     loginExpired,
   })
@@ -326,7 +327,7 @@ export function createApp(browser: BrowserCapabilities): App {
       return null
     switch (source.kind) {
       case 'playlist':
-        return shown.songsOf(source.id)
+        return playlistSongsOf(shown, source.id)
       case 'album': {
         const page = shown.albumPage(source.id)
         return page?.status === 'shown' ? { songs: page.content.songs, complete: true } : null
@@ -457,7 +458,7 @@ export function createApp(browser: BrowserCapabilities): App {
     retrySync: library.retry,
     openPlaylist: library.open,
     searchPlaylist(playlistId, query) {
-      const playlist = state.library?.songsOf(playlistId)
+      const playlist = state.library && playlistSongsOf(state.library, playlistId)
       return playlist ? searchPlaylist(playlist, query) : null
     },
     openAlbum: library.openAlbum,

@@ -152,8 +152,11 @@ export interface PlayerContext {
 export interface Player {
   /** 在列表里点一首歌：用整个列表替换播放队列，从这首开始放。列表还没同步全（complete 是 false）时同步全了再补上（规则⑫） */
   play: (source: PlaySource, songs: readonly Song[], songId: number, complete: boolean) => void
-  /** 曲库变了：点歌时还没同步全的歌单同步全了，就把还没进播放队列的歌补回它们在歌单里的位置（规则⑫） */
-  libraryChanged: (songsOf: (playlistId: number) => PlaylistSongs | null) => void
+  /**
+   * 曲库变了：点歌时还没同步全（不在曲库里的歌单：还没取全）的歌单有全了，就把还没进播放队列的歌补回它们在歌单里的位置（规则⑫）。
+   * songsOf 找的是曲库里的和打开着的不在曲库里的歌单
+   */
+  libraryChanged: (songsOf: (playlistId: number) => PlaylistSongs<{ id: number }> | null) => void
   /** 在放就暂停，停着就接着放 */
   toggle: () => void
   next: () => void
@@ -249,7 +252,7 @@ function progressKey(songId: number, state: Pick<PlayerState, 'position' | 'dura
  * 已经同步的部分不一定在歌单最前面（别的歌单里同步过的歌也有歌曲信息）。点歌后听众移出的歌（在 have 里）不再补回来。
  * 还没放到的“下一首播放”（upNext，紧跟在当前这首后面）不当作位置，补上的歌也不插到它们前面。没有要补的就原样返回
  */
-function fillIn(queue: readonly QueueEntry[], playlist: PlaylistSongs, have: ReadonlySet<number>, upNext: readonly number[]): readonly QueueEntry[] {
+function fillIn(queue: readonly QueueEntry[], playlist: PlaylistSongs<{ id: number }>, have: ReadonlySet<number>, upNext: readonly number[]): readonly QueueEntry[] {
   const inQueue = new Set(queue.map(entry => entry.song.id))
   const source: PlaySource = { kind: 'playlist', id: playlist.playlist.id }
   /** 要补在某首前面的歌，按歌单的先后 */

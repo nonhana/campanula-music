@@ -2,7 +2,7 @@ import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-
 import type { Account } from '#lib/api/account.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, Song } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchSongsResponse, Suggestion, SuggestionsResponse } from '#lib/api/search.js'
@@ -295,6 +295,38 @@ export async function fetchPlaylists(uid: number, listener: Listener): Promise<P
 export async function fetchTrackIds(playlistId: number, listener: Listener): Promise<number[]> {
   const { body } = await call('playlist_detail', { id: playlistId }, listener)
   return body.playlist.trackIds.map(track => track.id)
+}
+
+/** 已删除的歌单的 status：网易云照样回 200 和完整歌单，正常的是 0（验证关卡②，#56 录制里创建者本人看、别人看都是 10） */
+const DELETED_PLAYLIST = 10
+/** playlist_detail 打不开时网易云的返回码（#56 录制）：不存在 404“歌单不存在”，别人的隐私歌单 401“该歌单已被创建者设置为隐私” */
+const UNAVAILABLE_CODES: Readonly<Record<number, PlaylistUnavailable>> = { 404: 'missing', 401: 'private' }
+
+/** 不在曲库里的一张歌单：头部和全部曲目编号；已删除、不存在、别人的隐私歌单说明打不开的原因 */
+export async function fetchPlaylistPage(playlistId: number, listener: Listener): Promise<PlaylistPageResponse> {
+  const playlist = await call('playlist_detail', { id: playlistId }, listener).then(({ body }) => body.playlist, (error: unknown) => {
+    const reason = error instanceof NeteaseError && error.failure.kind === 'rejected' ? UNAVAILABLE_CODES[error.failure.code] : undefined
+    if (!reason)
+      throw error
+    return reason
+  })
+  if (typeof playlist === 'string')
+    return { kind: 'unavailable', reason: playlist }
+  if (playlist.status === DELETED_PLAYLIST)
+    return { kind: 'unavailable', reason: 'deleted' }
+  return {
+    kind: 'shown',
+    playlist: {
+      id: playlist.id,
+      name: playlist.name,
+      coverUrl: playlist.coverImgUrl,
+      creator: playlist.creator.nickname,
+      playCount: playlist.playCount,
+      description: playlist.description,
+      tags: [...playlist.tags],
+    },
+    trackIds: playlist.trackIds.map(track => track.id),
+  }
 }
 
 /** 网易云的歌（歌曲信息、专辑页、热门歌曲里的结构一样） */

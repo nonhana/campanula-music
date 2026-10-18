@@ -2,30 +2,38 @@
   歌单页（我喜欢的音乐也是这一页）。桌面沿用原来的两栏：左边是曲库里的歌单，右边是 200px 大封面的头部和虚拟列表
   （窄于 1024px 时左栏收起，DESIGN.md Layout）；手机是二级页面：返回栏、居中的封面头部、歌单内搜索、歌曲行。
   打开时这张歌单还没同步全，就马上用前台请求拉它（App 的 openPlaylist），不等后台同步。
+  不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取，页头分类写“网易云歌单”；桌面页头还显示简介和标签；
+  已删除、不存在、别人的隐私歌单打不开时说明原因。
   返回这一页时，搜索词和滚动位置都回到原来的样子（存在 SvelteKit 的 snapshot 里，跟着浏览历史走）
 -->
 <script lang='ts'>
+  import type { LucideIcon } from '@lucide/svelte'
+  import type { PlaylistUnavailable } from '#lib/api/library.js'
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { ListMusic, Lock } from '@lucide/svelte'
+  import { ListX, Lock, SearchX } from '@lucide/svelte'
   import { getAppView } from '#lib/components/app-context.svelte.js'
+  import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import Cover from '#lib/components/library/Cover.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName, playlistView } from '#lib/components/library/view.js'
-  import { atOnce, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName, playlistView } from '#lib/components/library/view.js'
+  import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
   import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
   import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
+  import Tag from '#lib/components/ui/Tag.svelte'
 
   const view = getAppView()
   const library = $derived(view.state.library)
   const id = $derived(Number(page.params.id))
-  const playlist = $derived(library?.songsOf(id) ?? null)
   const shown = $derived(library && playlistView(library, id))
+  /** 不在曲库里的歌单（歌单列表已经拿到、里面没有它） */
+  const outside = $derived(library?.playlists != null && !library.songsOf(id))
+  const header = $derived(library && shown ? playlistHeader(library, id, shown) : null)
   /** 页头大封面代表这一页：从格子点进来时，格子的封面飞到这里（Cover 的 flight） */
   const here = $derived(resolve('/playlists/[id]', { id: String(id) }))
 
@@ -42,28 +50,28 @@
       atOnce(() => (query = ''))
   })
 
-  // 歌单列表到了（首次同步时要等它）、换了一张歌单：还没同步全就马上拉
+  // 歌单列表到了（首次同步时要等它）、换了一张歌单：还没同步全就马上拉。
+  // 打开着的时候同步发现它不在曲库里了（取消了收藏、删掉了），改成联网取，已删除的就说明原因
   const listReady = $derived(library?.playlists != null)
   $effect(() => {
+    void outside
     if (listReady)
       void view.app.openPlaylist(id)
   })
 
-  const name = $derived(playlist ? playlistName(playlist.playlist) : '')
+  const name = $derived(header?.name ?? '')
   /**
    * 下面列表里的首数（同步完了是实际有的歌，还在同步时是一共几首）；列表还没出来时不写，
    * 头部和左栏当前这一项都用它，和列表对得上（DESIGN.md Do's）
    */
   const listedCount = $derived(shown?.kind === 'songs' ? shown.total : shown?.kind === 'empty' ? 0 : null)
-  const meta = $derived.by(() => {
-    if (!playlist)
-      return []
-    const { creator, kind } = playlist.playlist
-    const count = shown?.kind === 'songs' && !shown.complete
-      ? `已同步 ${formatCount(shown.songs.length)} / ${formatCount(shown.total)} 首`
-      : listedCount === null ? '' : `${formatCount(listedCount)} 首`
-    return [creator, kind === 'own' ? '自建歌单' : kind === 'collected' ? '收藏的歌单' : '', count].filter(Boolean)
-  })
+
+  /** 打不开的歌单：说明为什么 */
+  const UNAVAILABLE = {
+    deleted: { icon: ListX, title: '这张歌单已被删除', body: '创建者在网易云音乐里删掉了它，打不开了。' },
+    missing: { icon: SearchX, title: '没有这张歌单', body: '网易云音乐里找不到这张歌单，可能是地址不对。' },
+    private: { icon: Lock, title: '这是别人的隐私歌单', body: '创建者把它设成了隐私歌单，只有创建者自己能打开。' },
+  } satisfies Record<PlaylistUnavailable, { icon: LucideIcon, title: string, body: string }>
 
   // 桌面左栏：打开时、歌单列表到了时、换了一张歌单时，把当前这张滚进左栏的视野里（只滚左栏，不动页面，免得打乱返回时恢复的滚动位置）。
   // 刚打开时直接定位过去；之后（前进、后退到别的歌单）平滑地滚过去，减少动态效果时直接跳
@@ -84,27 +92,40 @@
 <svelte:head><title>{name || '歌单'} · Campanula</title></svelte:head>
 
 {#snippet metaLine(phone: boolean)}
-  <p class={['flex flex-wrap items-center gap-x-1.5 text-neutral-600', phone ? 'mt-1.5 justify-center text-caption' : 'mt-2 text-label']}>
-    {#each meta as part, i (i)}
-      {#if i > 0}<span aria-hidden='true'>·</span>{/if}
-      <span class='tabular-nums' lang={i === 0 ? langOf(part) : undefined}>{part}</span>
-    {/each}
-    {#if playlist?.playlist.private}<span class='inline-flex items-center gap-1'><Lock size={13} aria-hidden='true' />隐私</span>{/if}
-  </p>
+  {#if header}
+    <p class={['flex flex-wrap items-center gap-x-1.5 text-neutral-600', phone ? 'mt-1.5 justify-center text-caption' : 'mt-2 text-label']}>
+      {#each header.meta as part, i (i)}
+        {#if i > 0}<span aria-hidden='true'>·</span>{/if}
+        <span class='tabular-nums' lang={i === 0 ? langOf(part) : undefined}>{part}</span>
+      {/each}
+      {#if header.private}<span class='inline-flex items-center gap-1'><Lock size={13} aria-hidden='true' />隐私</span>{/if}
+    </p>
+  {/if}
 {/snippet}
 
 {#snippet playAll()}
   <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
 {/snippet}
 
-{#if library && shown?.kind === 'missing'}
+{#if library && shown?.kind === 'unavailable'}
+  {@const why = UNAVAILABLE[shown.reason]}
   <div in:reveal>
     <StateBlock
       kind='empty'
-      icon={ListMusic}
-      title='曲库里没有这张歌单'
-      body='它可能已经在网易云音乐里删掉了，或者取消了收藏。'
+      icon={why.icon}
+      title={why.title}
+      body={why.body}
       action={{ label: '回到曲库', run: () => goto(resolve('/')) }}
+    />
+  </div>
+{:else if library && outside && shown?.kind === 'failed'}
+  <!-- 第一次打开就什么都没取到 -->
+  <div in:reveal>
+    <StateBlock
+      kind='error'
+      title='这张歌单没能打开'
+      body={shown.failure.kind === 'offline' ? '这张歌单不在你的曲库里，要联网才能打开。连上网络后再试。' : failureText(shown.failure)}
+      action={{ label: '重试', run: () => void view.app.openPlaylist(id) }}
     />
   </div>
 {:else if library && desktopLayout.current}
@@ -112,18 +133,28 @@
   <div class='grid items-start gap-8 lg:grid-cols-[208px_minmax(0,1fr)]'>
     <div class='min-w-0 pt-2 lg:col-start-2 lg:row-start-1'>
       <!-- 首次同步时歌单列表到了才有页头：飘进来，不一下冒出来；带着页头打开这一页时不飘 -->
-      {#if playlist}
+      {#if header}
         <header class='flex gap-7' in:reveal>
-          <Cover url={playlist.playlist.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
+          <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
           <div class='min-w-0 flex flex-1 flex-col pt-1'>
             <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
             {@render metaLine(false)}
+            {#if header.description}<p class='mt-2 max-w-[60ch] truncate text-label text-neutral-600' lang={langOf(header.description)}>{header.description}</p>{/if}
+            {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
             <div class='mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'>
               {@render playAll()}
               <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
             </div>
           </div>
         </header>
+      {:else if outside}
+        <div class='flex gap-7' aria-hidden='true' out:fadeAway>
+          <span class='bone size-[200px] flex-none rounded-xl'></span>
+          <div class='min-w-0 flex flex-1 flex-col pt-2'>
+            <span class='bone h-7 w-2/5 rounded-full'></span>
+            <span class='bone mt-4 h-3.5 w-1/4 rounded-full'></span>
+          </div>
+        </div>
       {/if}
       <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query /></div>
     </div>
@@ -153,13 +184,19 @@
     </nav>
   </div>
 {:else if library}
-  {#if playlist}
+  {#if header}
     <header class='px-4 pt-2 text-center' in:reveal>
-      <Cover url={playlist.playlist.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
+      <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
       <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
       {@render metaLine(true)}
       <div class='mt-4 flex items-center justify-center gap-2'>{@render playAll()}</div>
     </header>
+  {:else if outside}
+    <div class='px-4 pt-2' aria-hidden='true' out:fadeAway>
+      <span class='bone mx-auto size-[168px] rounded-xl'></span>
+      <span class='bone mx-auto mt-5 h-6 w-1/2 rounded-full'></span>
+      <span class='bone mx-auto mt-3 h-3 w-1/3 rounded-full'></span>
+    </div>
   {/if}
   <PlaylistSongs {library} playlistId={id} bind:query phone />
 {/if}
