@@ -89,8 +89,11 @@ function bodyOf(init: RequestInit | undefined): Pick<SentRequest, 'body'> {
   return typeof init?.body === 'string' ? { body: JSON.parse(init.body) as unknown } : {}
 }
 
-/** origin：测试进程里服务端的地址；clock：世界的时钟 */
-export function createDevice(origin: string, clock: Clock): Device {
+/** 请求头：App 发出这个请求时的序号（stamp），服务端按它记请求是什么时候发出的（world.ts，网易云替身查对不上号用） */
+export const SENT_HEADER = 'x-test-sent'
+
+/** origin：测试进程里服务端的地址；clock：世界的时钟；stamp：取一个只增不减的序号（网易云替身的 nextOrder） */
+export function createDevice(origin: string, clock: Clock, stamp: () => number): Device {
   const jar = new CookieJar()
   const requests: SentRequest[] = []
   const pending: SentRequest[] = []
@@ -121,9 +124,12 @@ export function createDevice(origin: string, clock: Clock): Device {
 
   // 和浏览器的同源请求一样：带上这台设备的 Cookie，存下服务端设的 Cookie
   async function send(path: string, init?: RequestInit): Promise<Response> {
+    // App 调 fetch 的这一刻就盖上序号（下面一 await，几个同时发的请求到服务端的先后就不定了）
+    const sentAt = stamp()
     if (!network.onLine)
       throw new TypeError('Failed to fetch')
     const request = new Request(new URL(path, origin), init)
+    request.headers.set(SENT_HEADER, String(sentAt))
     const url = new URL(request.url)
     const sent: SentRequest = { method: request.method, path: url.pathname + url.search, ...bodyOf(init) }
     requests.push(sent)

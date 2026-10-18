@@ -768,6 +768,8 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     // 全局的 Date 被世界的时钟冻结在同一时刻，不能拿来当种子
     const seed = Math.floor(Math.random() * 100_000)
     const random = seeded(seed)
+    // 回答按“下一次调用”排、一半随机压着：同时发出的请求谁拿到哪份本来就是随机的一部分，每一步之后的检查对哪种都要成立
+    world.netease.anyOrder()
     const pick = <T>(items: readonly T[]): T => items[Math.floor(random() * items.length)]
     /** 压着的网易云返回，随机地放出来 */
     let holds: (() => void)[] = []

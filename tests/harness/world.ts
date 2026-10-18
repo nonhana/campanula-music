@@ -1,7 +1,7 @@
 import type { AddressInfo } from 'node:net'
 import type { Plugin, RunnableDevEnvironment } from 'vite'
 import type { Device } from './device'
-import type { Call } from './netease-sdk'
+import type { Call, RequestSpan } from './netease-sdk'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { createServer as createHttpServer } from 'node:http'
 import process from 'node:process'
@@ -12,7 +12,7 @@ import { sveltekit } from '@sveltejs/kit/vite'
 import { createServer } from 'vite'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { clockOn } from './browser'
-import { createDevice } from './device'
+import { createDevice, SENT_HEADER } from './device'
 import { loadFixture } from './fixtures'
 
 // 测试接入点“去掉界面的整个 App”（Spec #11 Testing Decisions）：
@@ -48,11 +48,14 @@ export interface World {
      * 录下的是失败返回时，替身像真的 SDK 一样把它抛出来。
      * 录制数据去掉了 Cookie（Spec #11 交付方式第 5 条）；要网易云下发 Cookie（例如登录成功）时，用 cookie 放进 Set-Cookie。
      * until：等它了结才回，模拟网易云回得慢。
-     * when：只回查询参数里这几项都相等的那次调用（同一个模块几个请求一起发、到服务端的先后不固定时按参数对上）
+     * when：只回查询参数里这几项都相等的那次调用（同一个模块几个请求一起发、到服务端的先后不固定时按参数对上）。
+     * 两个同时发出的请求调同一个模块、先后一对调就会拿反时，这条测试结束时报错，要求加 when
      */
     reply: (fixture: string, options?: { cookie?: string[], until?: Promise<void>, when?: Record<string, unknown> }) => Promise<void>
     /** 正在等 until 了结、还没回的调用 */
     readonly held: number
+    /** 这条测试的回答谁拿都行，不查对不上号：只给随机操作检查用（哪个请求拿到哪份回答本来就是随机的一部分） */
+    anyOrder: () => void
   }
   /** 服务端打的日志 */
   readonly serverLogs: readonly ServerLog[]
@@ -96,7 +99,7 @@ function replaceSdk(): Plugin {
 
 /* eslint-disable no-console -- 依赖库也可能用 console.log 打日志，都算服务器日志，所以接管全部方法 */
 /** 记下服务端处理请求时打的日志，照常打印出来方便排查 */
-function captureServerLogs(serving: AsyncLocalStorage<true>) {
+function captureServerLogs(serving: AsyncLocalStorage<RequestSpan>) {
   const logs: ServerLog[] = []
   const originals = LOG_METHODS.map(level => [level, console[level]] as const)
   for (const [level, original] of originals) {
@@ -124,8 +127,21 @@ async function startWorld() {
     server: { middlewareMode: true, hmr: false, ws: false, watch: null },
     plugins: [replaceSdk(), sveltekit()],
   })
-  const serving = new AsyncLocalStorage<true>()
-  const http = createHttpServer((req, res) => serving.run(true, () => vite.middlewares(req, res)))
+  // 和服务端路由走同一个模块加载器（SvelteKit 3 起用 SSR 环境的 runner，不再是 ssrLoadModule；两边缓存不通，拿到的就是两份替身）
+  const { runner } = vite.environments.ssr as RunnableDevEnvironment
+  const fake = await runner.import(FAKE_SDK) as typeof import('./netease-sdk')
+  const probe = await runner.import(SDK_PROBE) as Pick<typeof import('./netease-sdk'), 'invokeModule'>
+  if (probe.invokeModule !== fake.invokeModule) {
+    await vite.close()
+    throw new Error('服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云')
+  }
+
+  // 服务端正在处理哪个请求：日志只收服务端的；网易云替身靠它看两个请求是不是同时发出的（App 发出时的序号，设备放在请求头里）
+  const serving = new AsyncLocalStorage<RequestSpan>()
+  const http = createHttpServer((req, res) => {
+    const sent = Number(req.headers[SENT_HEADER])
+    serving.run({ start: Number.isInteger(sent) ? sent : fake.nextOrder() }, () => vite.middlewares(req, res))
+  })
   await new Promise<void>(resolve => http.listen(0, 'localhost', resolve))
   const { port } = http.address() as AddressInfo
   const closeServers = async () => {
@@ -133,15 +149,7 @@ async function startWorld() {
     await new Promise(resolve => http.close(resolve))
     await vite.close()
   }
-
-  // 和服务端路由走同一个模块加载器（SvelteKit 3 起用 SSR 环境的 runner，不再是 ssrLoadModule；两边缓存不通，拿到的就是两份替身）
-  const { runner } = vite.environments.ssr as RunnableDevEnvironment
-  const fake = await runner.import(FAKE_SDK) as typeof import('./netease-sdk')
-  const probe = await runner.import(SDK_PROBE) as Pick<typeof import('./netease-sdk'), 'invokeModule'>
-  if (probe.invokeModule !== fake.invokeModule) {
-    await closeServers()
-    throw new Error('服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云')
-  }
+  fake.trackRequests(() => serving.getStore())
 
   const serverLogs = captureServerLogs(serving)
   // 只换掉全局的 Date（服务端和 Cookie 过期用它）；App 的定时用这个时钟自己的 setTimeout。
@@ -200,12 +208,18 @@ export function useWorld(): World {
       quiet = pending > current().fake.heldCalls() || devices.some(device => device.busy()) ? 0 : quiet + 1
     }
   }
-  // 每条测试结束时等这条测试的设备停下，免得后台同步之类的请求落进下一条测试
-  afterEach(settle)
+  // 每条测试结束时等这条测试的设备停下，免得后台同步之类的请求落进下一条测试；
+  // 网易云替身发现两个同时在路上的请求对不上号（回答没用 when 对上），这条测试就算失败，免得谁先到一变就时好时坏
+  afterEach(async () => {
+    await settle()
+    const ambiguous = current().fake.ambiguities()
+    if (ambiguous.length > 0)
+      throw new Error(`网易云替身：同一个模块被两个请求同时调用，给 world.netease.reply() 加 when 按查询参数对上：\n${ambiguous.join('\n')}`)
+  })
 
   return {
     device: () => {
-      const device = createDevice(current().origin, clockOn(current().timers))
+      const device = createDevice(current().origin, clockOn(current().timers), () => current().fake.nextOrder())
       devices.push(device)
       return device
     },
@@ -215,10 +229,13 @@ export function useWorld(): World {
       },
       async reply(path, { cookie = [], until, when } = {}) {
         const { module, outcome } = await loadFixture(path)
-        current().fake.queueReply(module, { ...outcome, response: { ...outcome.response, cookie }, until, when })
+        current().fake.queueReply(module, { ...outcome, response: { ...outcome.response, cookie }, until, when, fixture: path })
       },
       get held() {
         return current().fake.heldCalls()
+      },
+      anyOrder() {
+        current().fake.allowAnyOrder()
       },
     },
     get serverLogs() {
