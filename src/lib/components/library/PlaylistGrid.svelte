@@ -15,6 +15,7 @@
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
+  import TileBone from './TileBone.svelte'
   import { filterPlaylists, PLAYLIST_FILTERS, playlistName } from './view'
 
   interface Props {
@@ -52,11 +53,7 @@
 {:else if shown === null}
   <div class={gridClass} role='status' aria-busy='true' aria-label='正在加载歌单' out:fadeAway>
     {#each { length: phone ? 4 : 6 }, i (i)}
-      <div>
-        <span class='bone aspect-square w-full rounded-lg'></span>
-        <span class='bone mt-3 h-3.5 w-3/4 rounded-full'></span>
-        <span class='bone mt-2 h-3 w-1/3 rounded-full'></span>
-      </div>
+      <TileBone {phone} />
     {/each}
   </div>
 {:else}

@@ -77,7 +77,8 @@
     <!-- 提示和下面的区块隔开 40px：间距算在提示里，提示展开、收起时跟着变 -->
     <SyncNotice {library} {failureShown} class='pb-10' />
     <section aria-labelledby='liked-heading'>
-      <div class='mb-4 flex items-center gap-3'>
+      <!-- 至少和翻页键一样高（40px）：键跟着歌一起出现时，下面的东西不被往下推 -->
+      <div class='mb-4 min-h-10 flex items-center gap-3'>
         <h2 id='liked-heading' class='text-title text-neutral-900 font-600'>我喜欢的音乐</h2>
         <!-- 首数、翻页键、“查看全部”跟着歌一起出现：淡入，不一下冒出来 -->
         {#if liked.kind === 'songs'}
@@ -104,7 +105,8 @@
       <div class='grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]'>
         <div class='min-w-0 rounded-xl bg-white p-2 shadow-ambient'>
           {#if liked.kind === 'loading'}
-            <SkeletonRows count={3} label='正在加载我喜欢的音乐' />
+            <!-- 和歌曲格一样排成 3 行、每行 60px（.strip），歌出来时面板不变高 -->
+            <SkeletonRows count={3} label='正在加载我喜欢的音乐' class='grid grid-rows-[repeat(3,60px)] items-center' />
           {:else}
             <div in:reveal>
               {#if liked.kind === 'songs'}

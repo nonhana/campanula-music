@@ -17,6 +17,7 @@
   import PlaylistTile from '../library/PlaylistTile.svelte'
   import Shelf from '../library/Shelf.svelte'
   import SkeletonRows from '../library/SkeletonRows.svelte'
+  import TileBone from '../library/TileBone.svelte'
   import { formatCount, yearOf } from '../library/view'
   import { fade, fadeAway, reveal } from '../motion'
   import StateBlock from '../ui/StateBlock.svelte'
@@ -96,11 +97,7 @@
 {#snippet tileBones(count: number, listClass: string, cellClass: (index: number) => (string | false)[], round: boolean)}
   <div class={listClass} role='status' aria-busy='true' aria-label='正在搜索' out:fadeAway>
     {#each { length: count }, i (i)}
-      <div class={cellClass(i)}>
-        <span class={['bone aspect-square w-full', round ? 'rounded-full' : 'rounded-lg']}></span>
-        <span class={['bone mt-3 h-3.5 rounded-full', round ? 'mx-auto w-2/3' : 'w-3/4']}></span>
-        <span class={['bone mt-2 h-3 w-1/2 rounded-full', round && 'mx-auto']}></span>
-      </div>
+      <TileBone class={cellClass(i)} {round} {phone} />
     {/each}
   </div>
 {/snippet}

@@ -14,6 +14,7 @@
   import AlbumTile from '../library/AlbumTile.svelte'
   import ArtistTile from '../library/ArtistTile.svelte'
   import SkeletonRows from '../library/SkeletonRows.svelte'
+  import TileBone from '../library/TileBone.svelte'
   import { formatCount, yearOf } from '../library/view'
   import { fadeAway, reveal, stagger } from '../motion'
   import StateBlock from '../ui/StateBlock.svelte'
@@ -70,11 +71,7 @@
     {#if kind === 'artists' || kind === 'albums'}
       <div class={['grid', grids[kind]]} role='status' aria-busy='true' aria-label={`正在搜索${words.label}`} out:fadeAway>
         {#each { length: phone ? 6 : 12 }, i (i)}
-          <div>
-            <span class={['bone aspect-square w-full', kind === 'artists' ? 'rounded-full' : 'rounded-lg']}></span>
-            <span class={['bone mt-3 h-3.5 rounded-full', kind === 'artists' ? 'mx-auto w-2/3' : 'w-3/4']}></span>
-            <span class={['bone mt-2 h-3 w-1/2 rounded-full', kind === 'artists' && 'mx-auto']}></span>
-          </div>
+          <TileBone round={kind === 'artists'} {phone} />
         {/each}
       </div>
     {:else if kind === 'playlists'}
