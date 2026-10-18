@@ -15,6 +15,7 @@
   import AlbumTile from './AlbumTile.svelte'
   import ArtistTile from './ArtistTile.svelte'
   import Shelf from './Shelf.svelte'
+  import TileBone from './TileBone.svelte'
 
   interface Props {
     library: LibraryState
@@ -66,11 +67,7 @@
 {:else if items === null}
   <div class={[listClass, layout === 'shelf' && '-mx-2 overflow-hidden']} role='status' aria-busy='true' aria-label={`正在加载收藏的${look.noun}`} out:fadeAway>
     {#each { length: layout === 'phone' ? look.phoneBones : 6 }, i (i)}
-      <div class={itemClass}>
-        <span class={['bone aspect-square w-full', look.round ? 'rounded-full' : 'rounded-lg']}></span>
-        <span class={['bone mt-3 h-3.5 rounded-full', look.round ? 'mx-auto w-2/3' : 'w-3/4']}></span>
-        {#if !look.round}<span class='bone mt-2 h-3 w-1/2 rounded-full'></span>{/if}
-      </div>
+      <TileBone class={itemClass} round={look.round} detail={!look.round} phone={layout === 'phone'} />
     {/each}
   </div>
 {:else}
