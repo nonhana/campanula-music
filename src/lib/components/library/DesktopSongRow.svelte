@@ -1,17 +1,17 @@
 <!--
-  桌面歌曲行（56px，DESIGN.md Song Row）：序号、封面和歌名歌手、专辑、状态（红心）、时长、•••。单击整行就播放；
-  ••• 始终可见，右键（键盘的菜单键）打开同一份“更多”菜单。
+  桌面歌曲行（56px，DESIGN.md Song Row）：序号、封面和歌名歌手、专辑、状态（红心键，始终可见）、时长、•••。单击整行就播放；
+  ••• 始终可见，右键（键盘的菜单键）打开同一份“更多”菜单。红心键和 ••• 压在整行的点歌按钮上面，点它们不放歌。
   正在播放的那行是晨光行：序号换成三根小竖条，歌名变成森林墨。点歌时这一行的封面飞进播放条（PlayTarget 的 cover）。
-  无版权的整行降到 45%、不能点，徽标写明原因（••• 照样能点）
+  无版权的整行降到 45%、不能点，徽标写明原因（红心键、••• 照样能点）
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
-  import { Heart } from '@lucide/svelte'
   import MorningWash from '../player/MorningWash.svelte'
   import NowIndex from '../player/NowIndex.svelte'
   import { openSongMenuAt } from '../song-menu.svelte'
   import Cover from './Cover.svelte'
+  import HeartButton from './HeartButton.svelte'
   import PlayTarget from './PlayTarget.svelte'
   import SongBadge from './SongBadge.svelte'
   import SongMoreButton from './SongMoreButton.svelte'
@@ -23,13 +23,12 @@
     source: PlaySource
     /** 序号，从 1 开始 */
     n: number
-    hearted: boolean
     /** 正在播放这首 */
     now: boolean
     onplay: () => void
   }
 
-  const { song, source, n, hearted, now, onplay }: Props = $props()
+  const { song, source, n, now, onplay }: Props = $props()
   const off = $derived(song.availability === 'noCopyright')
   /** 这一行的封面：点歌时它飞进播放条 */
   let cover = $state<HTMLElement>()
@@ -50,12 +49,7 @@
       </PlayTarget>
     </span>
     <span class='truncate text-caption text-neutral-600' lang={langOf(song.album.name ?? '')}>{song.album.name}</span>
-    <span class='flex items-center'>
-      {#if hearted}
-        <Heart size={15} class='flex-none text-accent-600' fill='currentColor' aria-hidden='true' />
-        <span class='sr-only'>已红心</span>
-      {/if}
-    </span>
+    <span class='flex items-center'><HeartButton {song} size='row' /></span>
     <span class='text-right text-caption text-neutral-500 tabular-nums'>{formatDuration(song.duration)}</span>
     <SongMoreButton {song} {source} size='desktop' />
   </div>

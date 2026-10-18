@@ -1,0 +1,21 @@
+{
+  "module": "playlist_subscribe",
+  "query": {
+    "id": 2889745179,
+    "t": 0
+  },
+  "context": {
+    "sdk": "hana-music-api@2.9.0 源码 590bd18：公开 SDK client.playlistSubscribe，eapi、固定 iPhone 身份、业务请求体只有 id",
+    "region": "local",
+    "ip": "default",
+    "viewer": "authenticated",
+    "recordedAt": "2026-10-17T06:49:45.104Z",
+    "note": "取消刚收藏的歌单成功；关闭缓存读取 userPlaylist，确认目标消失，收藏数 36 → 35，全部歌单 ID 和收藏状态恢复原状；原始 HTTP 返回，无 Cookie"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

@@ -6,6 +6,42 @@ export interface HeartsResponse {
   songIds: number[]
 }
 
+/** POST /api/hearts：红心或取消红心一首歌（一次只能一首，hana-music-api 的 like 只收一个编号） */
+export interface HeartRequest {
+  songId: number
+  hearted: boolean
+}
+
+export interface HeartResponse {
+  hearted: boolean
+}
+
+/** POST /api/playlists/[id]/tracks：加入歌单（自建歌单；我喜欢的音乐用红心）。1 到 SONGS_PER_REQUEST 首 */
+export interface AddTracksRequest {
+  songIds: number[]
+}
+
+/** 加好了（已经在歌单里的歌也算加好了）；这张歌单在网易云里已经不在了（被删掉了）是 missing */
+export type AddTracksResponse = { kind: 'added' } | { kind: 'missing' }
+
+/** POST /api/albums/[id]/collect、/api/artists/[id]/collect：收藏或取消收藏 */
+export interface CollectRequest {
+  collected: boolean
+}
+
+/**
+ * POST /api/playlists/[id]/collect：收藏歌单要带网易云的反作弊令牌（浏览器里的官方 Watchman 现取，服务端只透传给 SDK、不记不存），
+ * 取消收藏不带（官方网页版就是这样，#30 留言）
+ */
+export type PlaylistCollectRequest = { collected: true, checkToken: string } | { collected: false }
+
+export interface CollectResponse {
+  collected: boolean
+}
+
+/** 收藏、取消收藏歌单：做好了；这张歌单在网易云里已经不在了（被创建者删掉了）是 missing */
+export type PlaylistCollectResponse = { kind: 'done' } | { kind: 'missing' }
+
 /**
  * 一张歌单头部的信息：曲库里的、不在曲库里的都一样（网易云的歌单列表和歌单详情给的是同一份歌单，SDK 的 PlaylistSummary）
  */
@@ -48,10 +84,10 @@ export type PlaylistUnavailable = 'deleted' | 'missing' | 'private'
 
 /**
  * GET /api/playlists/[id]：不在曲库里的一张歌单，每次打开都联网取（ADR-0007）。头部和全部曲目编号（按歌单里的顺序），
- * 歌曲信息另外按页取（/api/songs）；打不开时说明原因
+ * 歌曲信息另外按页取（/api/songs）；打不开时说明原因。tracksUpdatedAt 和歌单列表里的一样：收藏后它进了曲库，本机副本照它判断曲目变没变
  */
 export type PlaylistPageResponse
-  = | { kind: 'shown', playlist: PlaylistInfo, trackIds: number[] }
+  = | { kind: 'shown', playlist: PlaylistInfo, trackIds: number[], tracksUpdatedAt: number }
     | { kind: 'unavailable', reason: PlaylistUnavailable }
 
 /** 署名的歌手。传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48） */
@@ -134,8 +170,8 @@ export interface CollectedAlbumsResponse {
 export interface CollectedArtist {
   id: number
   name: string
-  /** 网易云的原图地址，不一定是正方形；显示时按尺寸取正方形的缩略图 */
-  avatarUrl: string
+  /** 网易云的原图地址，不一定是正方形；显示时按尺寸取正方形的缩略图。在搜索结果里收藏的、没有头像的歌手是 null */
+  avatarUrl: string | null
 }
 
 /** GET /api/artists：收藏的歌手，最近收藏的在前，和网易云的顺序一样 */

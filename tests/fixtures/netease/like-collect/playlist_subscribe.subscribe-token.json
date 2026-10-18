@@ -1,0 +1,21 @@
+{
+  "module": "playlist_subscribe",
+  "query": {
+    "id": 2889745179,
+    "t": 1
+  },
+  "context": {
+    "sdk": "hana-music-api working tree：公开模块，weapi、os=web，正文 checkToken，HTTP 头 X-antiCheatToken，令牌由 campanula 真实 origin 的官方 Watchman 现取（170 字符）",
+    "region": "local",
+    "ip": "default",
+    "viewer": "authenticated",
+    "recordedAt": "2026-10-17T18:08:49.372Z",
+    "note": "与官方现代 web player 的收藏请求同形；收藏他人的未收藏歌单成功，关闭缓存读取 userPlaylist 确认目标出现，收藏数 54 → 55；随后 weapi 取消恢复 54/36。原始 HTTP 返回，无 Cookie"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200
+    }
+  }
+}

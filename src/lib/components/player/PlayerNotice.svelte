@@ -1,9 +1,16 @@
 <!--
   播放的提示：浮在播放条上方，说清发生了什么、能怎么办（按播放键重试）。网络慢是状态，其余是出了问题；可以关掉。
   手机上播放页开着时挪到顶上，不压住控制键。换页时和播放条一样原地不动（uno.config.ts 的 still）。
-  出现时从它贴着的那条边飘进来，走时淡出；播放页打开、收起时在旧位置淡出、新位置淡入，不跳（DESIGN.md Overlays，motion.ts 的 toast）
+  出现时从它贴着的那条边飘进来，走时淡出；播放页打开、收起时在旧位置淡出、新位置淡入，不跳（DESIGN.md Overlays，motion.ts 的 toast）。
+  量出自己多高（playerNoticeBox）：改曲库的提示（library/LibraryNotice.svelte）同时在时排在它外侧，不重叠
 -->
+<script lang='ts' module>
+  /** 播放提示有多高（px）；提示走了留着上一次的，改曲库的提示看播放提示在不在再用它 */
+  export const playerNoticeBox = $state({ height: 0 })
+</script>
+
 <script lang='ts'>
+  import type { Attachment } from 'svelte/attachments'
   import { CircleAlert, LoaderCircle, X } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { toast } from '../motion'
@@ -28,6 +35,16 @@
     arrival.moved = lastPlace !== null && now !== null && now !== lastPlace
     lastPlace = now
   })
+
+  /** 量出提示多高；换位置时正在淡出的那块（Svelte 标成 inert）不算 */
+  const measure: Attachment<HTMLElement> = (node) => {
+    const observer = new ResizeObserver(() => {
+      if (!node.inert)
+        playerNoticeBox.height = node.offsetHeight
+    })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }
 </script>
 
 {#if notice}
@@ -42,6 +59,7 @@
       ]}
       role={notice.kind === 'slow' ? 'status' : 'alert'}
       transition:toast|global={{ edge: place === 'top' ? 'top' : 'bottom', moved: arrival.moved }}
+      {@attach measure}
     >
       {#if notice.kind === 'slow'}
         <LoaderCircle size={18} class='flex-none animate-spin text-primary-900' aria-hidden='true' />

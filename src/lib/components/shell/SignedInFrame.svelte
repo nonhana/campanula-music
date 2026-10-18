@@ -4,7 +4,8 @@
   搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签，搜索结果下面是结果的标签（综合 / 单曲 / 歌单 / 歌手 / 专辑）；
   底部是迷你播放条。
   播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
-  播放的提示浮在最上面，播放页开着时也看得见。已下载由之后的票放进来。
+  播放的提示浮在最上面，播放页开着时也看得见；改曲库（红心、加入歌单、收藏）的提示同样浮着，两条都在时排在播放提示外侧。
+  “更多”菜单和从它打开的加入歌单盖在播放页上面。已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -14,11 +15,13 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { ArrowLeft, Calendar, CalendarDays, House, Menu, Search, Settings } from '@lucide/svelte'
+  import AddToPlaylist from '../AddToPlaylist.svelte'
   import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
   import DailyNumber from '../daily/DailyNumber.svelte'
   import { dailyCalendarDay } from '../daily/view'
   import { desktopLayout } from '../layout'
+  import LibraryNotice from '../library/LibraryNotice.svelte'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
   import { playerDrawer } from '../player/player-page.svelte'
@@ -206,4 +209,6 @@
   <PlayerPage open={playerOpen} />
 {/if}
 <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
+<LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
 <SongMenu />
+<AddToPlaylist />

@@ -2,7 +2,7 @@ import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf, PlaylistSumm
 import type { Account } from '#lib/api/account.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistInfo, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
@@ -82,7 +82,10 @@ function describe(failure: NeteaseFailure): string {
   }
 }
 
-async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, listener: Listener): Promise<ModuleResponseOf<K>> {
+/** 只有个别模块要的调用配置：收藏歌单的反作弊令牌（只透传，不记日志，见 describe） */
+type ExtraConfig = Pick<ModuleCallConfig, 'checkToken'>
+
+async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, listener: Listener, extra: ExtraConfig = {}): Promise<ModuleResponseOf<K>> {
   // state 里的 deviceId 用在每次请求的 Cookie 头里。顶层的 deviceId 不在 SDK 的类型里，是给隐式匿名注册用的：
   // 没登录的调用由 SDK 先匿名注册，拿到的匿名身份 SDK 自己存在进程里，同一个实例里之后的匿名调用都共用它，
   // 所以只有实例里第一次匿名注册用到这个 deviceId（SDK 2.2.0 ensureAnonymousEffect）。Campanula 自己不存任何状态
@@ -91,6 +94,7 @@ async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, li
     deviceId: listener.deviceId,
     state: { deviceId: listener.deviceId },
     realIP: NETEASE_REAL_IP || undefined,
+    ...extra,
   }
   try {
     return await invokeModule(module, query, config)
@@ -324,7 +328,7 @@ export async function fetchPlaylistPage(playlistId: number, listener: Listener):
     return { kind: 'unavailable', reason: playlist }
   if (playlist.status === DELETED_PLAYLIST)
     return { kind: 'unavailable', reason: 'deleted' }
-  return { kind: 'shown', playlist: playlistInfo(playlist), trackIds: playlist.trackIds.map(track => track.id) }
+  return { kind: 'shown', playlist: playlistInfo(playlist), trackIds: playlist.trackIds.map(track => track.id), tracksUpdatedAt: playlist.trackUpdateTime }
 }
 
 /** 网易云的歌（歌曲信息、专辑页、热门歌曲里的结构一样） */
@@ -522,6 +526,70 @@ export async function fetchArtistAlbums(artistId: number, offset: number, listen
 export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
   const { body } = await call('recommend_songs', {}, listener)
   return { songs: body.data.dailySongs.map(songWithPrivilegeOf) }
+}
+
+// 写操作（Spec #11“服务端：Campanula API”写操作一项，#30）。同一件事重复做（已经红心的再红心、已经收藏的再收藏），
+// 网易云多半照样回 200（验证关卡②）；回的不是 200 但结果已经是听众要的样子的，也当成做好了
+
+/** 红心或取消红心一首歌（like 一次只收一首）。重复做都回 200（验证关卡②） */
+export async function heart(songId: number, hearted: boolean, listener: Listener): Promise<void> {
+  await call('like', { id: songId, like: hearted }, listener)
+}
+
+/** 网易云拒绝时的返回码：加歌时整批都已经在歌单里、歌单已经被删掉（验证关卡②） */
+const TRACKS_DUPLICATE = 502
+const PLAYLIST_MISSING = 404
+/** 已经取消收藏的专辑再取消：网易云回 404“用户未收藏此专辑”（验证关卡②） */
+const ALBUM_NOT_COLLECTED = 404
+
+/** 网易云拒绝时的返回码；别的失败是 null */
+function rejectedCode(error: unknown): number | null {
+  return error instanceof NeteaseError && error.failure.kind === 'rejected' ? error.failure.code : null
+}
+
+/**
+ * 加入自建歌单：新加的排在最前，已经在歌单里的网易云跳过；整批都已经在歌单里时网易云回 502“歌单内歌曲重复”，也算加好了。
+ * 歌单已经被删掉时网易云回 404“歌单不存在”（验证关卡②）
+ */
+export async function addTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<AddTracksResponse> {
+  try {
+    await call('playlist_tracks', { op: 'add', pid: playlistId, tracks: songIds.join(',') }, listener)
+  }
+  catch (error) {
+    const code = rejectedCode(error)
+    if (code === PLAYLIST_MISSING)
+      return { kind: 'missing' }
+    if (code !== TRACKS_DUPLICATE)
+      throw error
+  }
+  return { kind: 'added' }
+}
+
+export async function collectAlbum(albumId: number, collected: boolean, listener: Listener): Promise<void> {
+  await call('album_sub', { id: albumId, t: collected ? 1 : 0 }, listener).catch((error: unknown) => {
+    if (collected || rejectedCode(error) !== ALBUM_NOT_COLLECTED)
+      throw error
+  })
+}
+
+export async function collectArtist(artistId: number, collected: boolean, listener: Listener): Promise<void> {
+  await call('artist_sub', { id: artistId, t: collected ? 1 : 0 }, listener)
+}
+
+/**
+ * 收藏歌单带上浏览器现取的反作弊令牌（官方网页版的写法，SDK 2.12.0），取消收藏不带（#30 留言）。
+ * 歌单已经被删掉：照加歌、歌单详情的样子当成网易云回 404“歌单不存在”（收藏时的这种返回还没录到过）
+ */
+export async function collectPlaylist(playlistId: number, change: PlaylistCollectRequest, listener: Listener): Promise<PlaylistCollectResponse> {
+  try {
+    await call('playlist_subscribe', { id: playlistId, t: change.collected ? 1 : 0 }, listener, change.collected ? { checkToken: change.checkToken } : {})
+  }
+  catch (error) {
+    if (rejectedCode(error) !== PLAYLIST_MISSING)
+      throw error
+    return { kind: 'missing' }
+  }
+  return { kind: 'done' }
 }
 
 // 搜索（Spec #11“服务端：Campanula API”搜索一项，#31）

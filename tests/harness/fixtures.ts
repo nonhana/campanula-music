@@ -59,10 +59,20 @@ function rateLimited(code: unknown, body: unknown): boolean {
   return code === 429 || (code === 405 && typeof message === 'string' && /操作(?:过于)?频繁/.test(message))
 }
 
+/**
+ * SDK 1.4.0 的 playlist_tracks 把返回多包了一层 { status, body: { code, … }, cookie }（tests/fixtures/netease/README.md）。
+ * SDK 2.x 的 decodeResponse 遇到这层就取里面的 body 再判断成败、校验结构，这里照做：录制文件保持原样
+ */
+function unwrapped(module: string, body: unknown): unknown {
+  const inner = module === 'playlist_tracks' ? field(body, 'body') : undefined
+  return typeof inner === 'object' && inner !== null ? inner : body
+}
+
 /** 录制数据的文件：以 .gz 结尾的是 gzip 压缩的（几千首的整页录制，见 tests/fixtures/netease/README.md） */
 async function readFixture(path: string): Promise<Fixture> {
   const bytes = await readFile(new URL(`../fixtures/netease/${path}`, import.meta.url))
-  return JSON.parse((path.endsWith('.gz') ? gunzipSync(bytes) : bytes).toString('utf8')) as Fixture
+  const fixture = JSON.parse((path.endsWith('.gz') ? gunzipSync(bytes) : bytes).toString('utf8')) as Fixture
+  return { ...fixture, response: { ...fixture.response, body: unwrapped(fixture.module, fixture.response.body) } }
 }
 
 async function load(path: string): Promise<{ module: string, outcome: Outcome }> {

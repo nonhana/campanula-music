@@ -30,7 +30,6 @@
 
   const { songs, source, loadingLabel, empty, phone = false, numbered = false }: Props = $props()
   const view = getAppView()
-  const hearts = $derived(view.state.library?.hearts ?? null)
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
   const play = (song: Song) => () => view.app.play(source, song.id)
 </script>
@@ -77,7 +76,7 @@
         {:else}
           <ul data-reveal-group>
             {#each songs as song, i (song.id)}
-              <li class='h-14'><DesktopSongRow {song} {source} n={i + 1} hearted={hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} /></li>
+              <li class='h-14'><DesktopSongRow {song} {source} n={i + 1} now={song.id === nowId} onplay={play(song)} /></li>
             {/each}
           </ul>
         {/if}

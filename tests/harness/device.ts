@@ -4,7 +4,7 @@ import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } fro
 import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
 import { CookieJar } from 'tough-cookie'
 import { createApp } from '#lib/app/app.js'
-import { FakeAudio, FakeBroadcast, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage, MediaTasks } from './browser'
+import { FakeAudio, FakeBroadcast, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
 
 export interface SentRequest {
   method: string
@@ -28,6 +28,8 @@ export interface Tab {
    */
   close: () => void
   mediaSession: FakeMediaSession
+  /** 这个标签页里网易云的反作弊令牌（Watchman） */
+  watchman: FakeWatchman
   /** 这个标签页的播放器，按 App 新建的先后 */
   audio: readonly FakeAudio[]
   /** 正在出声的播放器；没有就是 undefined */
@@ -165,6 +167,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
       const page = new FakePage()
       const mediaSession = new FakeMediaSession()
       const audio: FakeAudio[] = []
+      const watchman = new FakeWatchman()
       // 关掉以后页面里的脚本不再运行：定时、广播、联网状态的变化都送不到这个标签页
       let closed = false
       const alive = (callback: () => void) => () => {
@@ -210,6 +213,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
           audio.push(player)
           return player
         },
+        checkToken: () => watchman.checkToken(),
       })
       await app.open()
       return {
@@ -225,6 +229,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
             channel.close()
         },
         mediaSession,
+        watchman,
         audio,
         sounding: () => audio.find(player => player.sounding),
       }

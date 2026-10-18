@@ -73,6 +73,24 @@ export class FakeStorage implements StorageCapability {
   }
 }
 
+/**
+ * 网易云的反作弊令牌（官方 Watchman）：一个标签页一个。每次取一枚新的、170 个字符（和真的一样长）；
+ * available 设成 false 时取不到（Watchman 没加载出来，例如被浏览器插件拦了）
+ */
+export class FakeWatchman {
+  available = true
+  /** 发出去的令牌，按先后 */
+  readonly issued: string[] = []
+
+  async checkToken(): Promise<string> {
+    if (!this.available)
+      throw new Error('Watchman 的脚本没加载出来')
+    const token = `${this.issued.length + 1}`.padStart(170, 'W')
+    this.issued.push(token)
+    return token
+  }
+}
+
 /** 锁，同 Lock：名字和模式 */
 class FakeLock implements Lock {
   constructor(readonly name: string, readonly mode: LockMode) {}

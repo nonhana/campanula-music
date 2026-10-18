@@ -25,7 +25,6 @@
   const view = getAppView()
   /** 在结果里点歌、从“更多”菜单放进播放队列时的播放来源：这次搜索 */
   const source = $derived<PlaySource>({ kind: 'search', keyword })
-  const hearts = $derived(view.state.library?.hearts ?? null)
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
   const play = (song: Song) => () => view.app.play(source, song.id)
 </script>
@@ -36,7 +35,7 @@
       {#if phone}
         <PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} />
       {:else}
-        <DesktopSongRow {song} {source} n={i + 1} hearted={hearts?.has(song.id) ?? false} now={song.id === nowId} onplay={play(song)} />
+        <DesktopSongRow {song} {source} n={i + 1} now={song.id === nowId} onplay={play(song)} />
       {/if}
     </li>
   {/each}

@@ -6,6 +6,7 @@
   打开时这张歌单还没同步全，就马上用前台请求拉它（App 的 openPlaylist），不等后台同步。
   不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取，页头分类写“网易云歌单”；
   已删除、不存在、别人的隐私歌单打不开时说明原因。
+  头部播放全部旁边是收藏开关：不在曲库里的写“收藏”，收藏的写“已收藏”（点了直接取消收藏、不确认）；我喜欢的音乐、自建歌单没有。
   返回这一页时，搜索词和滚动位置都回到原来的样子（存在 SvelteKit 的 snapshot 里，跟着浏览历史走）
 -->
 <script lang='ts'>
@@ -19,6 +20,7 @@
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
+  import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Cover from '#lib/components/library/Cover.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
@@ -107,8 +109,11 @@
   {/if}
 {/snippet}
 
-{#snippet playAll()}
-  <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
+{#snippet actions()}
+  <div class='flex items-center gap-2'>
+    <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
+    <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
+  </div>
 {/snippet}
 
 {#snippet mainColumn(library: LibraryState)}
@@ -121,7 +126,7 @@
         {@render metaLine(false)}
         {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
         <div class='mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'>
-          {@render playAll()}
+          {@render actions()}
           <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
         </div>
       </div>
@@ -200,7 +205,7 @@
       <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
       {@render metaLine(true)}
       {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap justify-center gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
-      <div class='mt-4 flex items-center justify-center gap-2'>{@render playAll()}</div>
+      <div class='mt-4 flex justify-center'>{@render actions()}</div>
     </header>
   {:else if outside}
     <div class='px-4 pt-2' aria-hidden='true' out:fadeAway>

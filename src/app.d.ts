@@ -10,6 +10,8 @@ declare global {
       player?: 'open' | 'queue'
       /** 歌曲的“更多”菜单以底部弹层开着（触屏），同样压了一条浏览记录：返回先收起它 */
       songSheet?: true
+      /** 加入歌单以底部弹层开着（从底部弹层的“更多”菜单打开，换掉菜单压的那条浏览记录）：返回先收起它 */
+      playlistSheet?: true
     }
     // interface Platform {}
   }
