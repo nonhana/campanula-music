@@ -15,7 +15,7 @@
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
-  import { filterPlaylists, PLAYLIST_FILTERS } from './view'
+  import { filterPlaylists, PLAYLIST_FILTERS, playlistName } from './view'
 
   interface Props {
     library: LibraryState
@@ -70,7 +70,17 @@
           {:else}
             <ul class={gridClass} aria-label='歌单' data-reveal-group>
               {#each shown as playlist (playlist.id)}
-                <li class='min-w-0'><PlaylistTile {playlist} {phone} /></li>
+                <li class='min-w-0'>
+                  <PlaylistTile
+                    id={playlist.id}
+                    name={playlistName(playlist)}
+                    coverUrl={playlist.coverUrl}
+                    trackCount={playlist.trackCount}
+                    creator={playlist.kind === 'collected' ? playlist.creator : null}
+                    locked={playlist.private}
+                    {phone}
+                  />
+                </li>
               {/each}
             </ul>
           {/if}

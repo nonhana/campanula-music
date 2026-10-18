@@ -14,6 +14,11 @@ export interface Outcome {
   response: SdkResponse
   /** 有的话等它了结才回：模拟网易云回得慢，测请求之间的先后 */
   until?: Promise<void>
+  /**
+   * 有的话只回查询参数里这几项都相等的调用，别的调用跳过它、轮到后面的：
+   * 同一个模块几个请求一起发（搜索结果的综合同时搜四类）时，到服务端的先后不固定，按参数对上
+   */
+  when?: Record<string, unknown>
 }
 
 /**
@@ -58,7 +63,9 @@ export function reset(): void {
 // 和 SDK 的 invokeModule 同名同参数（config 默认是空对象）
 export async function invokeModule(module: string, query: unknown, config: CallConfig = {}): Promise<SdkResponse> {
   calls.push({ module, query, config: structuredClone(config) })
-  const outcome = outcomes.get(module)?.shift()
+  const queued = outcomes.get(module) ?? []
+  const at = queued.findIndex(({ when }) => !when || Object.entries(when).every(([key, value]) => (query as Record<string, unknown>)[key] === value))
+  const outcome = at < 0 ? undefined : queued.splice(at, 1)[0]
   if (!outcome)
     throw new Error(`网易云替身：没有为 ${module} 准备录制数据`)
   if (outcome.until) {

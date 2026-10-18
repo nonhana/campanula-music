@@ -94,9 +94,8 @@
       {/if}
       <ul bind:this={albumList} class={['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-3' : 'mt-3 grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-x-5 gap-y-6']} data-reveal-group>
         {#each content.albums as album, i (album.id)}
-          {@const year = yearOf(album.publishedAt)}
           <li class='min-w-0' in:stagger={{ order: i - appendedAt }}>
-            <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={year === null ? '' : String(year)} {phone} />
+            <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail='' year={yearOf(album.publishedAt)} {phone} />
           </li>
         {/each}
       </ul>

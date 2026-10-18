@@ -1,7 +1,8 @@
 <!--
   登录后的骨架：桌面是顶栏（菜单键、logo、正中的搜索框、头像菜单）、图标侧栏（曲库、每日推荐，设置在最下面）和底部播放条；
   手机是 logo 行（右边是搜索、每日推荐的日历按钮、设置），设置、每日推荐、歌单页、专辑页、歌手页这类二级页面换成返回栏，
-  搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签；底部是迷你播放条。
+  搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签，搜索结果下面是结果的标签（综合 / 单曲 / 歌单 / 歌手 / 专辑）；
+  底部是迷你播放条。
   播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
   播放的提示浮在最上面，播放页开着时也看得见。已下载由之后的票放进来。
 -->
@@ -25,7 +26,9 @@
   import PlayerPage from '../player/PlayerPage.svelte'
   import DesktopSearchBox from '../search/DesktopSearchBox.svelte'
   import PhoneSearchBar from '../search/PhoneSearchBar.svelte'
-  import { resetSearchBox } from '../search/search-box.svelte'
+  import { resetSearchBox, showingResults, shownKeyword } from '../search/search-box.svelte'
+  import SearchTabs from '../search/SearchTabs.svelte'
+  import { searchTabOf } from '../search/view'
   import SongMenu from '../SongMenu.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
@@ -141,6 +144,10 @@
   </nav>
 {/snippet}
 
+{#snippet searchTabs()}
+  <SearchTabs keyword={shownKeyword()} tab={searchTabOf(page.url.searchParams.get('type'))} phone />
+{/snippet}
+
 {#snippet desktopBar()}
   <DesktopPlayerBar />
 {/snippet}
@@ -168,7 +175,7 @@
       {@render children()}
     </DesktopShell>
   {:else}
-    <PhoneShell tabs={onLibrary ? libraryTabs : undefined} bar={hasQueue ? miniPlayer : undefined}>
+    <PhoneShell tabs={onLibrary ? libraryTabs : searching && showingResults() ? searchTabs : undefined} bar={hasQueue ? miniPlayer : undefined}>
       {#snippet header()}
         {#if searching}
           <PhoneSearchBar onback={back} />

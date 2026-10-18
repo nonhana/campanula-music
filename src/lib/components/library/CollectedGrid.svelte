@@ -2,7 +2,7 @@
   曲库里收藏的专辑或歌手：手机的专辑、歌手标签（两列 / 三列网格），桌面直接打开这两个地址时的网格，桌面首页的横向架子。
   列表还没拿到时是形状一致的骨架，没拿到就出错时能重试，一个都没有时说明在网易云音乐里收藏的会出现在这里。
   骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）。
-  架子能横向滚动，底边是自绘的滚动条（拖动、点空白处翻一屏）；键盘 Tab 到哪一项就把它滚进视野
+  架子见 Shelf
 -->
 <script lang='ts'>
   import type { LibraryState } from '#lib/app/library.js'
@@ -11,10 +11,10 @@
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { fadeAway, reveal } from '../motion'
-  import Scrollbar from '../ui/Scrollbar.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import AlbumTile from './AlbumTile.svelte'
   import ArtistTile from './ArtistTile.svelte'
+  import Shelf from './Shelf.svelte'
 
   interface Props {
     library: LibraryState
@@ -42,12 +42,6 @@
   )
   /** 架子上一格的宽度；网格里跟着列宽 */
   const itemClass = $derived(['min-w-0', layout === 'shelf' && [look.cell, 'flex-none']])
-
-  /** 键盘焦点移到架子里看不全的一项：把它滚进视野 */
-  function keepInView(event: FocusEvent) {
-    if (event.target instanceof HTMLElement)
-      event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }
 </script>
 
 {#snippet tiles()}
@@ -84,13 +78,7 @@
     {#if items.length === 0}
       <StateBlock kind='empty' icon={look.icon} title={`还没有收藏的${look.noun}`} body={`在网易云音乐里收藏的${look.noun}，会同步到这里。`} />
     {:else if layout === 'shelf'}
-      <!-- 滚动的是外面这层，内边距在里面的列表上：滚动条贴着架子的底边 -->
-      <div class='overflow-x-auto -mx-2'>
-        <Scrollbar axis='x' />
-        <ul class={[listClass, 'w-max']} aria-label={`收藏的${look.noun}`} onfocusin={keepInView} data-reveal-group>
-          {@render tiles()}
-        </ul>
-      </div>
+      <Shelf label={`收藏的${look.noun}`} class={look.shelf}>{@render tiles()}</Shelf>
     {:else}
       <ul class={listClass} aria-label={`收藏的${look.noun}`} data-reveal-group>
         {@render tiles()}

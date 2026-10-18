@@ -1,7 +1,10 @@
 import type { Song } from '#lib/api/library.js'
+import type { SearchKind } from '#lib/api/search.js'
 import type { App } from '#lib/app/app.js'
+import type { SearchList } from '#lib/app/search.js'
 import type { Device, Tab } from './harness/device'
 import { describe, expect, it } from 'vitest'
+import { SEARCH_KINDS } from '#lib/api/search.js'
 import { SUGGEST_DELAY } from '#lib/app/search.js'
 import { held, never } from './harness/hold'
 import { signIn } from './harness/sign-in'
@@ -9,8 +12,8 @@ import { useWorld } from './harness/world'
 
 const world = useWorld()
 
-// 搜索单曲与插播（#31）：边输入边给建议，按搜索后拉单曲结果，在结果里点一首歌是插播。
-// 录制见 tests/fixtures/netease/README.md 的 #31 一条
+// 搜索（#31、#32）：边输入边给建议；按搜索后拉四类结果（单曲、歌单、歌手、专辑，综合由它们拼成），每类一页一页地取；
+// 在结果里点一首歌是插播。录制见 tests/fixtures/netease/README.md 的 #31、#32 两条
 /** 先打了“夜に”、再打完“夜に駆ける”时网易云给的建议 */
 const SUGGEST_YORU_NI = 'search/songs/001-search_suggest.json.gz'
 const SUGGEST_YORU_NI_KAKERU = 'search/songs/002-search_suggest.json.gz'
@@ -18,10 +21,29 @@ const SUGGEST_YORU_NI_KAKERU = 'search/songs/002-search_suggest.json.gz'
 const SUGGEST_JAY = 'search/kinds/002-search_suggest.json.gz'
 /** 打了“真夜中”时网易云给的建议：单曲 4、专辑 2、歌单 2，没有歌手；第 2、3 首歌名一个用 ～（U+FF5E）、一个用 〜（U+301C） */
 const SUGGEST_MAYONAKA = 'search/kinds/001-search_suggest.json.gz'
-/** 搜“夜に駆ける”的单曲结果：100 首截到 30 首，都能放完整的 */
+/** 搜“夜に駆ける”的单曲第一页：录的是 limit 100、截到 30 首，都能放完整的 */
 const SONGS_YORU_NI_KAKERU = 'search/songs/003-cloudsearch.json.gz'
-/** 搜“Sea Of Tired Slowed”的单曲结果：28 首，第 26、27、28 首无版权 */
+/** 搜“Sea Of Tired Slowed”的单曲：28 首，一页就完，第 26、27、28 首无版权 */
 const SONGS_SEA_OF_TIRED = 'search/songs/004-cloudsearch.json.gz'
+// #32 同一批录的“真夜中”（2026-10-18 18:3x 北京时间），前后页对得上
+/** “真夜中”的单曲第 1、2 页（每页 30 首，网易云说共 330 首） */
+const SONGS_MAYONAKA = 'search/results/001-cloudsearch.json.gz'
+const SONGS_MAYONAKA_2 = 'search/results/002-cloudsearch.json.gz'
+/** “真夜中”的歌单第 1、2 页（共 189 张） */
+const PLAYLISTS_MAYONAKA = 'search/results/003-cloudsearch.json.gz'
+const PLAYLISTS_MAYONAKA_2 = 'search/results/004-cloudsearch.json.gz'
+/** “真夜中”的歌手：27 位，一页就完；第 2 位没有头像 */
+const ARTISTS_MAYONAKA = 'search/results/005-cloudsearch.json.gz'
+/** “真夜中”的专辑第 1、2 页（共 503 张） */
+const ALBUMS_MAYONAKA = 'search/results/006-cloudsearch.json.gz'
+const ALBUMS_MAYONAKA_2 = 'search/results/007-cloudsearch.json.gz'
+/** 前一天（#31 返工时）录的“真夜中”专辑第 1 页：网易云的先后变了，和今天的第 2 页有 5 张重复 */
+const ALBUMS_MAYONAKA_DAY_BEFORE = 'search/kinds/005-cloudsearch.json.gz'
+/** “初音ミク”的歌手：第 1 页 30 位、第 2 页 10 位（共 40 位） */
+const ARTISTS_MIKU = 'search/results/008-cloudsearch.json.gz'
+const ARTISTS_MIKU_2 = 'search/results/009-cloudsearch.json.gz'
+/** “Sea Of Tired Slowed”的歌手：一位都没有（网易云不给列表，只说共 0 位） */
+const ARTISTS_NONE = 'search/results/010-cloudsearch.json.gz'
 /** 网易云回打卡成功（#31 真账号上从搜索打卡 1 次时录的） */
 const CHECK_IN = 'search/check-in/001-scrobble.json.gz'
 /** 搜索结果的第一首（YOASOBI 的《夜に駆ける》）的试听片段地址（匿名录的，30 秒） */
@@ -49,11 +71,38 @@ async function reopen(device: Device): Promise<App> {
   return app
 }
 
-/** 按搜索，网易云压着单曲结果不回：只看搜索历史 */
-async function searchHeld(app: App, keyword: string): Promise<void> {
-  await world.netease.reply(SONGS_YORU_NI_KAKERU, { until: never() })
+/** 每类结果是网易云 cloudsearch 的哪个 type */
+const TYPES: Record<SearchKind, number> = { songs: 1, playlists: 1000, artists: 100, albums: 10 }
+
+/**
+ * 网易云对四类搜索各回什么：给了录制的回录制，没给的压着不回（用哪份录制都一样，永远不回）。
+ * 四类一起发出去，到服务端的先后不固定，按 type 对上
+ */
+async function replySearch(fixtures: Partial<Record<SearchKind, string>>): Promise<void> {
+  for (const kind of SEARCH_KINDS) {
+    const fixture = fixtures[kind]
+    await world.netease.reply(fixture ?? SONGS_MAYONAKA, { when: { type: TYPES[kind] }, until: fixture ? undefined : never() })
+  }
+}
+
+/** 按搜索，网易云按 fixtures 回（没给的压着），等回来的都处理完 */
+async function searchFor(app: App, keyword: string, fixtures: Partial<Record<SearchKind, string>>): Promise<void> {
+  await replySearch(fixtures)
   void app.search(keyword)
   await world.settle()
+}
+
+/** 按搜索，网易云压着四类结果都不回：只看搜索历史 */
+async function searchHeld(app: App, keyword: string): Promise<void> {
+  await searchFor(app, keyword, {})
+}
+
+/** 显示着的一类结果；没显示就报错 */
+function shownList<K extends SearchKind>(app: App, kind: K): Extract<SearchList<K>, { status: 'shown' }> {
+  const list = app.state.search.results?.[kind]
+  if (list?.status !== 'shown')
+    throw new Error(`${kind} 没显示：${JSON.stringify(list)}`)
+  return list as Extract<SearchList<K>, { status: 'shown' }>
 }
 
 /** 问过网易云哪些词的建议 */
@@ -61,19 +110,15 @@ function suggestedKeywords(): unknown[] {
   return world.netease.calls.filter(call => call.module === 'search_suggest').map(call => call.query)
 }
 
-/** 网易云被问了哪些词的单曲结果 */
-function searchedSongs(): unknown[] {
-  return world.netease.calls.filter(call => call.module === 'cloudsearch').map(call => call.query)
+/** 网易云被问了哪些词的这类结果（查询参数），按先后 */
+function searched(kind: SearchKind): unknown[] {
+  return world.netease.calls.filter(call => call.module === 'cloudsearch' && (call.query as { type: number }).type === TYPES[kind]).map(call => call.query)
 }
 
-/** 按搜索，网易云回录下的单曲结果；返回显示出来的歌 */
+/** 按搜索，网易云回录下的单曲结果（别的几类压着）；返回显示出来的歌 */
 async function searchShown(app: App, keyword: string, fixture: string): Promise<readonly Song[]> {
-  await world.netease.reply(fixture)
-  await app.search(keyword)
-  const results = app.state.search.results
-  if (results?.status !== 'shown')
-    throw new Error(`单曲结果没显示：${JSON.stringify(results)}`)
-  return results.songs
+  await searchFor(app, keyword, { songs: fixture })
+  return shownList(app, 'songs').items
 }
 
 /** 打了 keyword、停手后网易云回录下的建议；返回显示出来的建议 */
@@ -238,99 +283,257 @@ describe('搜索历史', () => {
 })
 
 describe('单曲结果', () => {
-  it('按搜索：用前台请求问网易云这个词的前 100 首单曲，歌曲只留界面用得到的字段', async () => {
+  it('按搜索：用前台请求问网易云这个词的第一页（30 首），歌曲只留界面用得到的字段，总数是网易云给的', async () => {
     const { app } = await signInHeld(world.device())
 
-    await world.netease.reply(SONGS_YORU_NI_KAKERU)
-    await app.search('夜に駆ける')
+    await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
 
-    expect(searchedSongs()).toEqual([{ keywords: '夜に駆ける', type: 1, limit: 100 }])
-    const results = app.state.search.results
-    if (results?.status !== 'shown')
-      throw new Error(`单曲结果没显示：${JSON.stringify(results)}`)
-    expect(results.keyword).toBe('夜に駆ける')
-    expect(results.songs).toHaveLength(30)
-    expect(results.songs[0]).toEqual({
-      id: 1409311773,
-      name: '夜に駆ける',
-      artists: [{ id: 33927412, name: 'YOASOBI' }],
-      album: { id: 84072830, name: '夜に駆ける', coverUrl: 'http://p4.music.126.net/3xWlqwYmfwRFebeiONUpGg==/109951164546210608.jpg' },
-      duration: 261013,
+    expect(searched('songs')).toEqual([{ keywords: '真夜中', type: 1, limit: 30, offset: 0 }])
+    expect(app.state.search.results?.keyword).toBe('真夜中')
+    const songs = shownList(app, 'songs')
+    expect(songs.total).toBe(330)
+    expect(songs.items).toHaveLength(30)
+    expect(songs.items[0]).toEqual({
+      id: 1317285056,
+      name: '真夜中のドア〜stay with me (シングルver.)',
+      artists: [{ id: 160053, name: '松原みき' }],
+      album: { id: 73881727, name: 'Light Mellow 松原みき', coverUrl: 'http://p3.music.126.net/rddYSzo2ZLxZ3HMerP_-0A==/109951172387752494.jpg' },
+      duration: 274400,
       availability: 'full',
     })
   })
 
-  it('无版权的歌标出来（网易云的权限信息 st 小于 0）', async () => {
+  it('无版权的歌标出来（网易云的权限信息 st 小于 0）；一页就取完了，没有“显示更多”', async () => {
     const { app } = await signInHeld(world.device())
 
-    await world.netease.reply(SONGS_SEA_OF_TIRED)
-    await app.search('Sea Of Tired Slowed')
+    const songs = await searchShown(app, 'Sea Of Tired Slowed', SONGS_SEA_OF_TIRED)
 
-    const results = app.state.search.results
-    if (results?.status !== 'shown')
-      throw new Error(`单曲结果没显示：${JSON.stringify(results)}`)
-    expect(results.songs.filter(song => song.availability === 'noCopyright').map(song => song.id)).toEqual([2108191414, 26864092, 2108191413])
-    expect(results.songs.filter(song => song.availability === 'full')).toHaveLength(25)
+    expect(songs.filter(song => song.availability === 'noCopyright').map(song => song.id)).toEqual([2108191414, 26864092, 2108191413])
+    expect(songs.filter(song => song.availability === 'full')).toHaveLength(25)
+    expect(shownList(app, 'songs')).toMatchObject({ total: 28, more: null })
   })
 
-  it('打开结果页（返回到这一页、刷新）：这个词的结果显示着、正在拉就不再问，也不记进搜索历史', async () => {
+  it('显示更多：从已经取到的地方接着问网易云下一页，接在后面；后面还有就还能再取', async () => {
     const { app } = await signInHeld(world.device())
-    await world.netease.reply(SONGS_YORU_NI_KAKERU)
-    await app.search('夜に駆ける')
+    await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
 
-    await app.openSearch('夜に駆ける')
-    expect(searchedSongs()).toHaveLength(1)
+    await world.netease.reply(SONGS_MAYONAKA_2)
+    await app.moreSearchResults('真夜中', 'songs')
 
-    await world.netease.reply(SONGS_SEA_OF_TIRED)
-    await app.openSearch('Sea Of Tired Slowed')
-    expect(searchedSongs()).toHaveLength(2)
-    expect(app.state.search.results).toMatchObject({ keyword: 'Sea Of Tired Slowed', status: 'shown' })
-    expect(app.state.search.history).toEqual(['夜に駆ける'])
+    expect(searched('songs')).toEqual([
+      { keywords: '真夜中', type: 1, limit: 30, offset: 0 },
+      { keywords: '真夜中', type: 1, limit: 30, offset: 30 },
+    ])
+    const songs = shownList(app, 'songs')
+    expect(songs.items).toHaveLength(60)
+    // 第一页的最后一首、第二页的第一首和最后一首
+    expect([songs.items[29].id, songs.items[30].id, songs.items[59].id]).toEqual([1873231849, 1325356411, 1819306501])
+    expect(songs.more).toEqual({ status: 'notLoaded' })
+  })
+})
+
+describe('结果页：四类一起拉', () => {
+  it('按搜索：四类的第一页一起问网易云，各拉各的，慢的那类还在加载时别的照常显示', async () => {
+    const { app } = await signInHeld(world.device())
+    const slow = held()
+    await world.netease.reply(SONGS_MAYONAKA, { when: { type: TYPES.songs } })
+    await world.netease.reply(PLAYLISTS_MAYONAKA, { when: { type: TYPES.playlists }, until: slow.until })
+    await world.netease.reply(ARTISTS_MAYONAKA, { when: { type: TYPES.artists } })
+    await world.netease.reply(ALBUMS_MAYONAKA, { when: { type: TYPES.albums } })
+
+    void app.search('真夜中')
+    await world.settle()
+
+    expect(world.netease.calls.filter(call => call.module === 'cloudsearch').map(call => call.query)).toEqual(expect.arrayContaining(
+      SEARCH_KINDS.map(kind => ({ keywords: '真夜中', type: TYPES[kind], limit: 30, offset: 0 })),
+    ))
+    expect(app.state.search.results?.playlists).toEqual({ status: 'loading' })
+    expect([shownList(app, 'songs').total, shownList(app, 'artists').total, shownList(app, 'albums').total]).toEqual([330, 27, 503])
+
+    slow.release()
+    await world.settle()
+    expect(shownList(app, 'playlists').total).toBe(189)
+  })
+
+  it('打开结果页（返回到这一页、刷新）：这个词的结果记着就不再问，也不记进搜索历史；换了词四类都重新问', async () => {
+    const { app } = await signInHeld(world.device())
+    await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA, playlists: PLAYLISTS_MAYONAKA, artists: ARTISTS_MAYONAKA, albums: ALBUMS_MAYONAKA })
+
+    await app.openSearch('真夜中')
+    expect(world.netease.calls.filter(call => call.module === 'cloudsearch')).toHaveLength(4)
+
+    await replySearch({ songs: SONGS_SEA_OF_TIRED, artists: ARTISTS_NONE })
+    void app.openSearch('Sea Of Tired Slowed')
+    await world.settle()
+    expect(world.netease.calls.filter(call => call.module === 'cloudsearch')).toHaveLength(8)
+    expect(app.state.search.results).toMatchObject({ keyword: 'Sea Of Tired Slowed', songs: { status: 'shown', total: 28 }, playlists: { status: 'loading' } })
+    expect(app.state.search.history).toEqual(['真夜中'])
   })
 
   it('接着又搜了别的词：先搜的晚回来也不显示', async () => {
     const { app } = await signInHeld(world.device())
     const slow = held()
-    await world.netease.reply(SONGS_YORU_NI_KAKERU, { until: slow.until })
-    await world.netease.reply(SONGS_SEA_OF_TIRED)
-
+    await world.netease.reply(SONGS_YORU_NI_KAKERU, { when: { type: TYPES.songs }, until: slow.until })
+    for (const kind of ['playlists', 'artists', 'albums'] as const)
+      await world.netease.reply(SONGS_YORU_NI_KAKERU, { when: { type: TYPES[kind] }, until: never() })
     void app.search('夜に駆ける')
     await world.settle()
-    expect(app.state.search.results).toEqual({ keyword: '夜に駆ける', status: 'loading' })
-    await app.search('Sea Of Tired Slowed')
+    expect(app.state.search.results).toMatchObject({ keyword: '夜に駆ける', songs: { status: 'loading' } })
+
+    await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
     slow.release()
     await world.settle()
 
-    expect(app.state.search.results).toMatchObject({ keyword: 'Sea Of Tired Slowed', status: 'shown' })
+    expect(app.state.search.results?.keyword).toBe('真夜中')
+    expect(shownList(app, 'songs').items[0].id).toBe(1317285056)
   })
 
-  it('断网时没搜成，说明是断网（不连网易云），词照样记进搜索历史；联网后再打开就搜到了', async () => {
+  it('断网时四类都没搜成，说明是断网（不连网易云），词照样记进搜索历史；联网后再打开，四类重新问', async () => {
     const device = world.device()
     const { app } = await signInHeld(device)
 
     device.setOnline(false)
-    await app.search('夜に駆ける')
-    expect(app.state.search.results).toEqual({ keyword: '夜に駆ける', status: 'failed', failure: { kind: 'offline' } })
-    expect(app.state.search.history).toEqual(['夜に駆ける'])
-    expect(searchedSongs()).toEqual([])
+    await app.search('真夜中')
+    const offline = { status: 'failed', failure: { kind: 'offline' } }
+    expect(app.state.search.results).toEqual({ keyword: '真夜中', songs: offline, playlists: offline, artists: offline, albums: offline })
+    expect(app.state.search.history).toEqual(['真夜中'])
+    expect(world.netease.calls.filter(call => call.module === 'cloudsearch')).toEqual([])
 
     device.setOnline(true)
-    await world.netease.reply(SONGS_YORU_NI_KAKERU)
-    await app.openSearch('夜に駆ける')
-    expect(app.state.search.results).toMatchObject({ keyword: '夜に駆ける', status: 'shown' })
+    await replySearch({ songs: SONGS_MAYONAKA, playlists: PLAYLISTS_MAYONAKA, artists: ARTISTS_MAYONAKA, albums: ALBUMS_MAYONAKA })
+    await app.openSearch('真夜中')
+    expect(SEARCH_KINDS.map(kind => app.state.search.results?.[kind].status)).toEqual(['shown', 'shown', 'shown', 'shown'])
   })
 
   it('退出登录：建议和结果都不再显示，搜索历史留着', async () => {
     const { app } = await signInHeld(world.device())
-    await world.netease.reply(SONGS_YORU_NI_KAKERU)
-    await app.search('夜に駆ける')
+    await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
     await world.netease.reply(SUGGEST_YORU_NI)
     app.suggest('夜に')
     await world.clock.advance(SUGGEST_DELAY)
 
     await world.netease.reply('login/logout.json')
     await app.logout()
-    expect(app.state.search).toEqual({ history: ['夜に駆ける'], suggestions: null, results: null })
+    expect(app.state.search).toEqual({ history: ['真夜中'], suggestions: null, results: null })
+  })
+})
+
+describe('歌单、歌手、专辑结果', () => {
+  it('歌单：封面、名字、创建者、首数、播放次数；显示更多接着取下一页', async () => {
+    const { app } = await signInHeld(world.device())
+    await searchFor(app, '真夜中', { playlists: PLAYLISTS_MAYONAKA })
+    expect(shownList(app, 'playlists').items[0]).toEqual({
+      id: 8668352551,
+      name: '听·ずっと真夜中でいいのに。热门精选|あいつら全員同窓会',
+      coverUrl: expect.stringMatching(/^http:\/\/p1\.music\.126\.net\/iUoVqfWMQ0y03ROTBVBSpQ==\/109951170268045811\.jpg/),
+      creator: '用户332',
+      trackCount: 30,
+      playCount: 912449,
+    })
+
+    await world.netease.reply(PLAYLISTS_MAYONAKA_2)
+    await app.moreSearchResults('真夜中', 'playlists')
+
+    expect(searched('playlists')).toEqual([
+      { keywords: '真夜中', type: 1000, limit: 30, offset: 0 },
+      { keywords: '真夜中', type: 1000, limit: 30, offset: 30 },
+    ])
+    const playlists = shownList(app, 'playlists')
+    expect(playlists.items).toHaveLength(60)
+    expect(playlists.items[30].id).toBe(8198343746)
+    expect(playlists).toMatchObject({ total: 189, more: { status: 'notLoaded' } })
+  })
+
+  it('歌手：头像、名字、单曲数，没有头像的是 null；一页就取完了，没有“显示更多”', async () => {
+    const { app } = await signInHeld(world.device())
+
+    await searchFor(app, '真夜中', { artists: ARTISTS_MAYONAKA })
+
+    const artists = shownList(app, 'artists')
+    expect(artists.items.slice(0, 2)).toEqual([
+      { id: 15021101, name: 'ずっと真夜中でいいのに。', avatarUrl: 'https://p4.music.126.net/it3tUtCfcRLZTxNhkjplRA==/109951165115946920.jpg', songCount: 332 },
+      { id: 57866432, name: 'ずっと真夜中だと光合成できない', avatarUrl: null, songCount: 25 },
+    ])
+    expect(artists).toMatchObject({ total: 27, more: null })
+    expect(artists.items).toHaveLength(27)
+  })
+
+  it('显示更多：取到网易云说的总数就没有更多了', async () => {
+    const { app } = await signInHeld(world.device())
+    await searchFor(app, '初音ミク', { artists: ARTISTS_MIKU })
+    expect(shownList(app, 'artists')).toMatchObject({ total: 40, more: { status: 'notLoaded' } })
+
+    await world.netease.reply(ARTISTS_MIKU_2)
+    await app.moreSearchResults('初音ミク', 'artists')
+
+    const artists = shownList(app, 'artists')
+    expect(artists.items).toHaveLength(40)
+    expect(artists.items.slice(30, 32).map(artist => artist.id)).toEqual([15396, 14640])
+    expect(artists).toMatchObject({ total: 40, more: null })
+  })
+
+  it('隔了一阵才显示更多：网易云的先后变了，下一页里前面已经列过的不再列一遍，再下一页照样从第 60 个起', async () => {
+    const { app } = await signInHeld(world.device())
+    await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA_DAY_BEFORE })
+
+    await world.netease.reply(ALBUMS_MAYONAKA_2)
+    await app.moreSearchResults('真夜中', 'albums')
+
+    const albums = shownList(app, 'albums')
+    // 今天的第 2 页里 404416635、404201264、404113313、404243129、404201263 前一天在第 1 页
+    expect(albums.items).toHaveLength(55)
+    expect(albums.items.slice(30, 33).map(album => album.id)).toEqual([246353308, 366972781, 278596184])
+    expect(new Set(albums.items.map(album => album.id)).size).toBe(55)
+
+    await world.netease.reply(ALBUMS_MAYONAKA_2, { until: never() })
+    void app.moreSearchResults('真夜中', 'albums')
+    await world.settle()
+    expect(searched('albums').map(query => (query as { offset: number }).offset)).toEqual([0, 30, 60])
+  })
+
+  it('一位都没搜到：这一类是空的，总数 0，没有“显示更多”', async () => {
+    const { app } = await signInHeld(world.device())
+
+    await searchFor(app, 'Sea Of Tired Slowed', { artists: ARTISTS_NONE })
+
+    expect(shownList(app, 'artists')).toEqual({ status: 'shown', items: [], total: 0, offset: 0, more: null })
+  })
+
+  it('专辑：封面、名字、歌手、发行时间；显示更多接着取下一页', async () => {
+    const { app } = await signInHeld(world.device())
+    await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA })
+    expect(shownList(app, 'albums').items[0]).toEqual({
+      id: 82815921,
+      name: '潜潜話',
+      coverUrl: 'https://p4.music.126.net/yY7dfLy85x5shoR_5jqQNQ==/109951171178918869.jpg',
+      artists: [{ id: 15021101, name: 'ずっと真夜中でいいのに。' }],
+      publishedAt: 1572278400000,
+    })
+
+    await world.netease.reply(ALBUMS_MAYONAKA_2)
+    await app.moreSearchResults('真夜中', 'albums')
+
+    const albums = shownList(app, 'albums')
+    expect(albums.items).toHaveLength(60)
+    expect(albums.items[30].id).toBe(246353308)
+    expect(albums).toMatchObject({ total: 503, more: { status: 'notLoaded' } })
+  })
+
+  it('显示更多没取成（断网）：已经有的照常显示，说明原因；联网后再取一次就是重试', async () => {
+    const device = world.device()
+    const { app } = await signInHeld(device)
+    await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA })
+
+    device.setOnline(false)
+    await app.moreSearchResults('真夜中', 'albums')
+    expect(shownList(app, 'albums')).toMatchObject({ more: { status: 'failed', failure: { kind: 'offline' } } })
+    expect(shownList(app, 'albums').items).toHaveLength(30)
+
+    device.setOnline(true)
+    await world.netease.reply(ALBUMS_MAYONAKA_2)
+    await app.moreSearchResults('真夜中', 'albums')
+    expect(shownList(app, 'albums').items).toHaveLength(60)
+    expect(searched('albums').map(query => (query as { offset: number }).offset)).toEqual([0, 30])
   })
 })
 
@@ -376,5 +579,21 @@ describe('在结果里点歌是插播', () => {
     const sent = device.requests.filter(request => request.path.endsWith('/check-in'))
     expect(sent).toEqual([{ method: 'POST', path: `/api/songs/${songs[0].id}/check-in`, body: { source: SEARCHED, seconds: 10 } }])
     expect(world.netease.calls.filter(call => call.module === 'scrobble').map(call => call.query)).toEqual([{ id: songs[0].id, sourceid: 0, source: 'search', time: 10 }])
+  })
+
+  it('“显示更多”加进来的歌，点了也是插播', async () => {
+    const device = world.device()
+    const { app } = await signInHeld(device)
+    await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
+    await world.netease.reply(SONGS_MAYONAKA_2)
+    await app.moreSearchResults('真夜中', 'songs')
+    const song = shownList(app, 'songs').items[30]
+
+    await world.netease.reply(SOME_PLAY_URL, { until: never() })
+    app.play({ kind: 'search', keyword: '真夜中' }, song.id)
+    await world.settle()
+
+    expect(app.state.player.queue.map(entry => entry.song.id)).toEqual([song.id])
+    expect(device.requests.at(-1)?.path).toBe(`/api/songs/${song.id}/play-url?quality=exhigh`)
   })
 })
