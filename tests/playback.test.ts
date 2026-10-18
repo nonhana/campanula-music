@@ -1102,8 +1102,9 @@ describe('换歌原因', () => {
     const spare = other(tab, player)
     const second = held()
     const third = held()
-    await world.netease.reply(SECOND.url, { until: second.until })
-    await world.netease.reply(THIRD.url, { until: third.until })
+    // 两首的地址几乎同时去取，到服务端的先后不固定：按歌曲编号对上（CI 上碰到过第 3 首拿到第 2 首的地址）
+    await world.netease.reply(SECOND.url, { until: second.until, when: { id: SECOND.id } })
+    await world.netease.reply(THIRD.url, { until: third.until, when: { id: THIRD.id } })
 
     app.next()
     app.next()
