@@ -1,5 +1,5 @@
 import type { Account } from '#lib/api/account.js'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, HeartsResponse, NeteasePlaylist, Playlist, PlaylistPageResponse, PlaylistsResponse, PlaylistUnavailable, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, HeartsResponse, Playlist, PlaylistInfo, PlaylistPageResponse, PlaylistsResponse, PlaylistUnavailable, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '#lib/api/library.js'
 import type { Api, RequestFailure, Result } from './api'
 import type { LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
@@ -34,7 +34,7 @@ export type SyncStatus
   /** 和网易云一致了 */
     | { status: 'synced' }
 
-/** 一张歌单在本机的样子；不在曲库里的歌单（P 是 NeteasePlaylist）是打开时联网取到的样子 */
+/** 一张歌单在本机的样子；不在曲库里的歌单（P 是 PlaylistInfo）是打开时联网取到的样子 */
 export interface PlaylistSongs<P = Playlist> {
   playlist: P
   /** 已经有歌曲信息的歌，按歌单里的顺序；同步时一页一页地多起来 */
@@ -73,7 +73,7 @@ export interface ArtistPage {
 }
 
 /** 不在曲库里的歌单（界面上的类别写“网易云歌单”）：已经取到的歌，和其余的歌取到哪了 */
-export interface NeteasePlaylistSongs extends PlaylistSongs<NeteasePlaylist> {
+export interface NeteasePlaylistSongs extends PlaylistSongs<PlaylistInfo> {
   /** 其余的歌正在取、或者没取成（再打开一次就是重试）；都取过了是 null */
   more: PlaylistOpening | null
 }
@@ -256,7 +256,7 @@ export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string):
 }
 
 /** 点歌、歌单内搜索、补上还没同步的歌（规则⑫）时的这张歌单：曲库里的看本机副本，不在曲库里的看打开时取到的；都还没有是 null */
-export function playlistSongsOf(library: LibraryState, playlistId: number): PlaylistSongs<Playlist | NeteasePlaylist> | null {
+export function playlistSongsOf(library: LibraryState, playlistId: number): PlaylistSongs<PlaylistInfo> | null {
   const page = library.neteasePlaylist(playlistId)
   return library.songsOf(playlistId) ?? (page?.status === 'shown' ? page.content : null)
 }

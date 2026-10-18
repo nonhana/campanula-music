@@ -31,7 +31,7 @@ catalog:
   eslint-plugin-svelte: ^3.23.1
   fake-indexeddb: ^6.2.5
   globals: ^17.13.0
-  hana-music-api: ^2.11.0
+  hana-music-api: ^2.12.0
   lint-staged: ^17.6.0
   simple-git-hooks: ^2.14.0
   svelte: ^5.57.2

@@ -6,7 +6,7 @@ import type { CheckIn, SavedPlayer, SavedProgress, SavedQueue } from './player'
 // 之后的下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 7
+const VERSION = 8
 /** 登录会话的小事，按名字存 */
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
@@ -125,6 +125,9 @@ function committed(transaction: IDBTransaction): Promise<void> {
   })
 }
 
+/** 存进本机以后才加的歌单字段：版本 3 加了创建者、是否隐私，版本 8 加了播放次数、简介、标签 */
+type StoredLater = 'creator' | 'private' | 'playCount' | 'description' | 'tags'
+
 function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: number): void {
   if (from < 1)
     database.createObjectStore(SESSION)
@@ -133,14 +136,15 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
     database.createObjectStore(TRACKS)
     database.createObjectStore(SONGS, { keyPath: 'id' })
   }
-  // 3（#22）：歌单多了创建者和是否隐私。存着的歌单列表补上空的值，曲库照样能先显示，下一次同步拿到真的值
-  if (from === 2) {
+  // 3（#22）：歌单多了创建者和是否隐私；8（#56）：多了播放次数、简介和标签。存着的歌单列表补上空的值，
+  // 曲库照样能先显示，下一次同步拿到真的值。两次一起补，免得前一次补的被后一次读到的旧列表盖掉
+  if (from >= 2 && from < 8) {
     const library = transaction.objectStore(LIBRARY)
     const stored = library.get('playlists')
     stored.onsuccess = () => {
-      const playlists = stored.result as Omit<Playlist, 'creator' | 'private'>[] | undefined
+      const playlists = stored.result as (Omit<Playlist, StoredLater> & Partial<Pick<Playlist, StoredLater>>)[] | undefined
       if (playlists)
-        library.put(playlists.map(playlist => ({ ...playlist, creator: '', private: false }) satisfies Playlist), 'playlists')
+        library.put(playlists.map(playlist => ({ creator: '', private: false, playCount: 0, description: null, tags: [], ...playlist }) satisfies Playlist), 'playlists')
     }
   }
   // 4（#23）：收藏的专辑和歌手的列表存在 LIBRARY 里，打开过的专辑页另存一处

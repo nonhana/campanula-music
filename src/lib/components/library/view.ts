@@ -1,4 +1,4 @@
-import type { Playlist, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import type { Playlist, PlaylistInfo, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { RequestFailure } from '#lib/app/api.js'
 import type { LibraryState, PlaylistOpening, PlaylistSongs, SyncFailure } from '#lib/app/library.js'
 import type { ScrollMark } from '../ui/scroll-marks'
@@ -75,41 +75,39 @@ export function openingOf(library: LibraryState, playlistId: number): PlaylistOp
   return page?.status === 'shown' ? page.content.more : null
 }
 
-/** 歌单页的头部：曲库里的看歌单列表，不在曲库里的看打开时取到的 */
+/** 歌单页的头部：曲库里的看歌单列表，不在曲库里的看打开时取到的；两种歌单写的东西一样，只有类别不同 */
 export interface PlaylistHeader {
   name: string
   coverUrl: string
-  /** 名字下面的一行：创建者、类别、首数，不在曲库里的还有播放次数 */
+  /** 名字下面的一行：创建者、类别、首数、播放次数 */
   meta: string[]
   private: boolean
-  /** 简介和标签：不在曲库里的歌单才有 */
+  /** 简介：没写（或只有空白）时是 null */
   description: string | null
   tags: readonly string[]
 }
 
 /**
  * 歌单页的头部；还没拿到歌单列表、不在曲库里的歌单还没取到时是 null。
- * 首数和下面的列表对得上（DESIGN.md Do's）：有全了是实际有的歌，还在拉时写拉到了几首，列表还没出来时不写
+ * 首数和下面的列表对得上（DESIGN.md Do's）：有全了是实际有的歌，还在拉时写拉到了几首，列表还没出来时不写。
+ * 播放次数是 0 时不写：新歌单，或者刚从旧版本升上来、还没同步到真的值
  */
 export function playlistHeader(library: LibraryState, playlistId: number, shown: PlaylistView): PlaylistHeader | null {
-  const inLibrary = library.songsOf(playlistId)
-  const count = (fetched: string) => shown.kind === 'songs' && !shown.complete
-    ? `${fetched} ${formatCount(shown.songs.length)} / ${formatCount(shown.total)} 首`
-    : shown.kind === 'songs' ? `${formatCount(shown.total)} 首` : shown.kind === 'empty' ? '0 首' : ''
-  if (inLibrary) {
-    const { playlist } = inLibrary
-    const kind = playlist.kind === 'own' ? '自建歌单' : playlist.kind === 'collected' ? '收藏的歌单' : ''
-    return { name: playlistName(playlist), coverUrl: playlist.coverUrl, meta: [playlist.creator, kind, count('已同步')].filter(Boolean), private: playlist.private, description: null, tags: [] }
-  }
+  const inLibrary = library.songsOf(playlistId)?.playlist
   const page = library.neteasePlaylist(playlistId)
-  if (page?.status !== 'shown')
+  const playlist: PlaylistInfo | undefined = inLibrary ?? (page?.status === 'shown' ? page.content.playlist : undefined)
+  if (!playlist)
     return null
-  const { playlist } = page.content
+  const count = shown.kind === 'songs' && !shown.complete
+    ? `${inLibrary ? '已同步' : '已加载'} ${formatCount(shown.songs.length)} / ${formatCount(shown.total)} 首`
+    : shown.kind === 'songs' ? `${formatCount(shown.total)} 首` : shown.kind === 'empty' ? '0 首' : ''
+  const kind = !inLibrary ? '网易云歌单' : inLibrary.kind === 'own' ? '自建歌单' : inLibrary.kind === 'collected' ? '收藏的歌单' : ''
+  const plays = playlist.playCount > 0 ? `播放 ${formatPlays(playlist.playCount)}` : ''
   return {
-    name: playlist.name,
+    name: inLibrary ? playlistName(inLibrary) : playlist.name,
     coverUrl: playlist.coverUrl,
-    meta: [playlist.creator, '网易云歌单', count('已加载'), `播放 ${formatPlays(playlist.playCount)}`].filter(Boolean),
-    private: false,
+    meta: [playlist.creator, kind, count, plays].filter(Boolean),
+    private: inLibrary?.private ?? false,
     description: playlist.description?.trim() || null,
     tags: playlist.tags,
   }
