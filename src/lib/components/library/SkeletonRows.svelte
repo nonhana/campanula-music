@@ -1,8 +1,10 @@
 <!--
   加载中的骨架行，形状和真实歌曲行一致（手机、桌面都是 56px），一道很淡的光从左扫到右；
-  减少动态效果时不动。放在列表本来的位置上；被内容换掉时原地淡出（motion.ts 的 fadeAway）。
+  减少动态效果时不动。放在列表本来的位置上；被内容换掉时原地淡出（motion.ts 的 fadeAway），淡出写在它自己的最外层，
+  外面不要再包一层 out:fadeAway；要放在面板里整块淡出时，面板的样式用 class 给它。
 -->
 <script lang='ts'>
+  import type { ClassValue } from 'svelte/elements'
   import { fadeAway } from '../motion'
 
   interface Props {
@@ -10,13 +12,15 @@
     phone?: boolean
     /** 读屏读出的“正在加载什么” */
     label: string
+    /** 最外层的样式（例如白色面板） */
+    class?: ClassValue
   }
 
-  const { count, phone = false, label }: Props = $props()
+  const { count, phone = false, label, class: klass }: Props = $props()
   const widths = [72, 54, 81, 63, 48, 76, 58, 69, 51, 66]
 </script>
 
-<div role='status' aria-busy='true' aria-label={label} out:fadeAway>
+<div class={klass} role='status' aria-busy='true' aria-label={label} out:fadeAway>
   {#each { length: count }, i (i)}
     {@const w = widths[i % widths.length]}
     {#if phone}

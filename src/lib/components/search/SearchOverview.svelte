@@ -77,14 +77,15 @@
           onclick={event => seeAll(event, kind)}
         >查看全部</a>
       </div>
-      <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放 -->
+      <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放。
+           淡出（out:fadeAway）写在每种骨架自己的最外层，这里不再包一层：两层都会让出高度，后面的内容被往上拉一截 -->
       {#if list.status === 'failed'}
         {@const failed = searchFailure(list.failure)}
         <div in:reveal>
           <StateBlock kind='error' title={failed.title} body={failed.body} action={{ label: '重试', run: () => void view.app.openSearch(keyword) }} />
         </div>
       {:else if list.status === 'loading'}
-        <div out:fadeAway>{@render bones()}</div>
+        {@render bones()}
       {:else}
         <div in:reveal>{@render body()}</div>
       {/if}
@@ -93,7 +94,7 @@
 {/snippet}
 
 {#snippet tileBones(count: number, listClass: string, cellClass: (index: number) => (string | false)[], round: boolean)}
-  <div class={listClass} role='status' aria-busy='true' aria-label='正在搜索'>
+  <div class={listClass} role='status' aria-busy='true' aria-label='正在搜索' out:fadeAway>
     {#each { length: count }, i (i)}
       <div class={cellClass(i)}>
         <span class={['bone aspect-square w-full', round ? 'rounded-full' : 'rounded-lg']}></span>
@@ -113,9 +114,8 @@
 {/snippet}
 
 {#snippet songsBones()}
-  <div class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}>
-    <SkeletonRows count={OVERVIEW_COUNTS.songs} {phone} label='正在搜索单曲' />
-  </div>
+  <!-- 白色面板就是 SkeletonRows 自己的最外层：整块一起淡出、让出高度 -->
+  <SkeletonRows count={OVERVIEW_COUNTS.songs} {phone} label='正在搜索单曲' class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'} />
 {/snippet}
 
 {#snippet playlistsBody()}
@@ -143,11 +143,13 @@
 {/snippet}
 
 {#snippet playlistsBones()}
-  {#if phone}
-    {@render tileBones(3, shelfBones(shelves.playlists.gap), () => [shelves.playlists.cell, 'flex-none'], false)}
-  {:else}
-    {@render tileBones(OVERVIEW_COUNTS.playlists, PLAYLIST_ROW, playlistCell, false)}
-  {/if}
+  <!-- 手机、桌面不用 {#if} 分开：{#if} 里面的 out:fadeAway 在骨架换成内容时不播 -->
+  {@render tileBones(
+    phone ? 3 : OVERVIEW_COUNTS.playlists,
+    phone ? shelfBones(shelves.playlists.gap) : PLAYLIST_ROW,
+    phone ? () => [shelves.playlists.cell, 'flex-none'] : playlistCell,
+    false,
+  )}
 {/snippet}
 
 {#snippet artistsBody()}

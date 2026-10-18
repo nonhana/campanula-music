@@ -189,7 +189,9 @@ function fadeThroughOnce(node: Element, _params: undefined, options: TransitionO
 /**
  * 骨架淡出（DESIGN.md Motion · 依次飘入）：写成 out:fadeAway，放在被内容替换掉的骨架上（骨架是上下排列里的一块）。
  * 淡出的这一会儿（退场 120ms）不再占高度：下边距减掉自己的高度，后面换上来的内容马上从骨架的位置开始，
- * 不会先被骨架往下推一下；骨架还留在排版里，上面的东西变高变矮时跟着一起走。点按穿过它落到内容上
+ * 不会先被骨架往下推一下；骨架还留在排版里，上面的东西变高变矮时跟着一起走。点按穿过它落到内容上。
+ * 一块骨架只在最外层写一次，不要套在另一个 out:fadeAway 里面（SkeletonRows 自己带）：隔着 {@render}、{:else if}、组件时
+ * 里外两层会一起播，外层先量出整块的高度减掉，里层再减一次把外层压扁，后面的内容就被往上拉了里层那么高（#32 综合的单曲）
  */
 export function fadeAway(node: HTMLElement, { duration = DURATIONS['state-out'] }: { duration?: number } = {}, options: TransitionOptions = {}): TransitionConfig {
   node.style.marginBottom = `calc(${getComputedStyle(node).marginBottom} - ${node.offsetHeight}px)`
