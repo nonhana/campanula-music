@@ -33,6 +33,31 @@ export interface TrackIdsResponse {
   trackIds: number[]
 }
 
+/** 不在曲库里的一张歌单（界面上的类别写“网易云歌单”）的头部 */
+export interface NeteasePlaylist {
+  id: number
+  name: string
+  /** 网易云的原图地址；显示时按尺寸取缩略图 */
+  coverUrl: string
+  /** 创建者的昵称 */
+  creator: string
+  playCount: number
+  /** 简介；没写时是 null */
+  description: string | null
+  tags: string[]
+}
+
+/** 打不开的歌单：已被删除、不存在（地址不对）、别人的隐私歌单 */
+export type PlaylistUnavailable = 'deleted' | 'missing' | 'private'
+
+/**
+ * GET /api/playlists/[id]：不在曲库里的一张歌单，每次打开都联网取（ADR-0007）。头部和全部曲目编号（按歌单里的顺序），
+ * 歌曲信息另外按页取（/api/songs）；打不开时说明原因
+ */
+export type PlaylistPageResponse
+  = | { kind: 'shown', playlist: NeteasePlaylist, trackIds: number[] }
+    | { kind: 'unavailable', reason: PlaylistUnavailable }
+
 /** 署名的歌手。传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48） */
 export interface Credit {
   id: number

@@ -1,5 +1,5 @@
 import type { Account } from '#lib/api/account.js'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, HeartsResponse, Playlist, PlaylistsResponse, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, HeartsResponse, NeteasePlaylist, Playlist, PlaylistPageResponse, PlaylistsResponse, PlaylistUnavailable, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '#lib/api/library.js'
 import type { Api, RequestFailure, Result } from './api'
 import type { LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
@@ -14,6 +14,7 @@ import { SONGS_PER_REQUEST } from '#lib/api/library.js'
 // 在网易云里删掉的歌单，拿到歌单列表时就从本机副本里删掉。
 // 专辑页、歌手页是听众打开时用前台请求拉的（#23 留言）：专辑页一张一个请求，连着取会被网易云说操作频繁，所以不在后台整批同步；
 // 收藏的专辑打开过就存进本机副本，断网也能看，不再收藏时删掉。歌手页是网易云对这位歌手的介绍，不是曲库，只在这次登录期间记着。
+// 不在曲库里的歌单（别人的歌单，#56）每次打开都联网取，不存进本机副本，收藏了才进（ADR-0007）：打开过的只在这次登录期间记着。
 
 /** 同步没成功的原因（需要登录另外处理：整个 App 变成登录失效） */
 export type SyncFailure = Exclude<RequestFailure, { kind: 'needsLogin' | 'rateLimited' | 'offline' }>
@@ -33,9 +34,9 @@ export type SyncStatus
   /** 和网易云一致了 */
     | { status: 'synced' }
 
-/** 一张歌单在本机的样子 */
-export interface PlaylistSongs {
-  playlist: Playlist
+/** 一张歌单在本机的样子；不在曲库里的歌单（P 是 NeteasePlaylist）是打开时联网取到的样子 */
+export interface PlaylistSongs<P = Playlist> {
+  playlist: P
   /** 已经有歌曲信息的歌，按歌单里的顺序；同步时一页一页地多起来 */
   songs: readonly Song[]
   /** 一共几首：拿到曲目编号后是编号数，之前是网易云写的歌曲数（我喜欢的音乐的会少几首，#21 留言） */
@@ -71,6 +72,15 @@ export interface ArtistPage {
   moreAlbums: MoreAlbums | null
 }
 
+/** 不在曲库里的歌单（界面上的类别写“网易云歌单”）：已经取到的歌，和其余的歌取到哪了 */
+export interface NeteasePlaylistSongs extends PlaylistSongs<NeteasePlaylist> {
+  /** 其余的歌正在取、或者没取成（再打开一次就是重试）；都取过了是 null */
+  more: PlaylistOpening | null
+}
+
+/** 不在曲库里的歌单拉到哪了；打不开（已删除、不存在、别人的隐私歌单）时说明原因 */
+export type NeteasePlaylistPage = PageState<NeteasePlaylistSongs> | { status: 'unavailable', reason: PlaylistUnavailable }
+
 /** 界面看到的曲库 */
 export interface LibraryState {
   /** 歌单列表：首次同步还没拿到时是 null */
@@ -91,6 +101,8 @@ export interface LibraryState {
   albumPage: (albumId: number) => PageState<AlbumResponse> | null
   /** 歌手页：只在这次登录期间记着，不存在本机；没打开过是 null */
   artistPage: (artistId: number) => PageState<ArtistPage> | null
+  /** 不在曲库里的歌单：打开过的只在这次登录期间记着，不存在本机；没打开过是 null */
+  neteasePlaylist: (playlistId: number) => NeteasePlaylistPage | null
   sync: SyncStatus
 }
 
@@ -119,7 +131,10 @@ export interface Library {
   sync: () => void
   /** 同步没成功时重试：从停下的地方接着来 */
   retry: () => void
-  /** 听众打开一张歌单：本机还没有它最新、完整的曲目，就马上用前台请求拉；没拉成时再调一次就是重试 */
+  /**
+   * 听众打开一张歌单：本机还没有它最新、完整的曲目，就马上用前台请求拉；没拉成时再调一次就是重试。
+   * 歌单列表里没有的（不在曲库里的歌单）每次打开都联网取，见 openNetease
+   */
   open: (playlistId: number) => Promise<void>
   /**
    * 听众打开一张专辑：这次登录还没拉过就用前台请求拉。收藏的专辑打开过就存在本机：
@@ -174,10 +189,11 @@ function skippable(failure: SyncFailure): boolean {
   }
 }
 
-/** 这次登录打开过的专辑页、歌手页 */
+/** 这次登录打开过的专辑页、歌手页、不在曲库里的歌单 */
 interface Pages {
   albums: ReadonlyMap<number, PageState<AlbumResponse>>
   artists: ReadonlyMap<number, PageState<ArtistPage>>
+  playlists: ReadonlyMap<number, NeteasePlaylistPage>
 }
 
 function songsOf(replica: Replica, playlist: Playlist): PlaylistSongs {
@@ -205,6 +221,7 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
   const stored = new Map(replica.albumPages)
   const albumPages = new Map(pages.albums)
   const artistPages = new Map(pages.artists)
+  const neteasePages = new Map(pages.playlists)
   return {
     playlists: replica.playlists,
     hearts: replica.hearts && new Set(replica.hearts),
@@ -218,6 +235,7 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
       return albumPages.get(albumId) ?? (content ? { status: 'shown', content } : null)
     },
     artistPage: artistId => artistPages.get(artistId) ?? null,
+    neteasePlaylist: playlistId => neteasePages.get(playlistId) ?? null,
     sync,
   }
 }
@@ -227,14 +245,20 @@ function folded(text: string): string {
   return text.normalize('NFKC').toLowerCase()
 }
 
-/** 歌单内搜索：在本机副本里即时完成 */
-export function searchPlaylist(playlist: PlaylistSongs, query: string): PlaylistSearch {
+/** 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成 */
+export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch {
   const term = folded(query.trim())
   const matches = (text: string | null) => text !== null && folded(text).includes(term)
   return {
     songs: playlist.songs.filter(song => matches(song.name) || matches(song.album.name) || song.artists.some(artist => matches(artist.name))),
     incomplete: !playlist.complete,
   }
+}
+
+/** 点歌、歌单内搜索、补上还没同步的歌（规则⑫）时的这张歌单：曲库里的看本机副本，不在曲库里的看打开时取到的；都还没有是 null */
+export function playlistSongsOf(library: LibraryState, playlistId: number): PlaylistSongs<Playlist | NeteasePlaylist> | null {
+  const page = library.neteasePlaylist(playlistId)
+  return library.songsOf(playlistId) ?? (page?.status === 'shown' ? page.content : null)
 }
 
 function waitingStatus(waiting: Waiting): SyncStatus {
@@ -269,10 +293,14 @@ export function createLibrary(context: LibraryContext): Library {
   /** 拉歌单时正在后台通道里等着的请求：听众打开这张歌单时叫它别等了，改成前台请求马上发 */
   const waiting = new Map<number, AbortController>()
   let opening = new Map<number, PlaylistOpening>()
-  /** 这次登录打开过的专辑页（本机存着、这次还没拉的不在这里）、歌手页 */
-  const pages = { albums: new Map<number, PageState<AlbumResponse>>(), artists: new Map<number, PageState<ArtistPage>>() }
+  /** 这次登录打开过的专辑页（本机存着、这次还没拉的不在这里）、歌手页、不在曲库里的歌单 */
+  const pages = { albums: new Map<number, PageState<AlbumResponse>>(), artists: new Map<number, PageState<ArtistPage>>(), playlists: new Map<number, NeteasePlaylistPage>() }
   /** 正在拉的专辑页：本机存着的专辑页拉的时候照常显示存着的，不记成加载中，所以另外记 */
   const fetchingAlbums = new Set<number>()
+  /** 正在联网取的不在曲库里的歌单：打开过的再打开时照常显示记着的，所以另外记 */
+  const fetchingPlaylists = new Set<number>()
+  /** 不在曲库里的歌单取到的歌曲信息：这次登录期间记着（不存本机），再打开时只取还没有的 */
+  const neteaseSongs = new Map<number, Song>()
 
   function publish(next: SyncStatus = status): void {
     status = next
@@ -483,6 +511,69 @@ export function createLibrary(context: LibraryContext): Library {
     running = running.then(() => run(mine))
   }
 
+  /**
+   * 打开不在曲库里的歌单：每次打开都联网取头部和全部曲目编号，再按页取还没有的歌曲信息，取到一页就显示一页。
+   * 打开过的再打开时先显示记着的，取到了换成新的；没取成也照样显示记着的，歌还没取全时说没取成。
+   * 重取的这一会儿，记着的那一版取全了就照样算取全：这时点歌放的是听众看到的这一版（和曲库里的歌单一样），重取到的新歌不补进播放队列。
+   * 上一次打开还在取（取几千首的歌曲信息要几秒）：它就是刚联网取的，不再取一遍。
+   * 已删除、不存在、别人的隐私歌单说明打不开的原因
+   */
+  async function openNetease(playlistId: number): Promise<void> {
+    if (fetchingPlaylists.has(playlistId))
+      return
+    const mine = generation
+    fetchingPlaylists.add(playlistId)
+    const show = (page: NeteasePlaylistPage) => {
+      pages.playlists.set(playlistId, page)
+      publish()
+    }
+    const before = pages.playlists.get(playlistId)
+    const shown = before?.status === 'shown' ? before.content : null
+    if (!shown)
+      show({ status: 'loading' })
+    else if (shown.more)
+      show({ status: 'shown', content: { ...shown, more: { status: 'loading' } } })
+
+    const fetched = settle(mine, await api.get<PlaylistPageResponse>(`/api/playlists/${playlistId}`))
+    if (!fetched)
+      return
+    if (!fetched.ok) {
+      fetchingPlaylists.delete(playlistId)
+      if (!shown)
+        show({ status: 'failed', failure: fetched.failure })
+      else if (!shown.complete)
+        show({ status: 'shown', content: { ...shown, more: { status: 'failed', failure: fetched.failure } } })
+      return
+    }
+    const page = fetched.value
+    if (page.kind === 'unavailable') {
+      fetchingPlaylists.delete(playlistId)
+      return show({ status: 'unavailable', reason: page.reason })
+    }
+    const { playlist, trackIds } = page
+    const contentOf = (more: PlaylistOpening | null): NeteasePlaylistSongs => ({
+      playlist,
+      songs: trackIds.flatMap(id => neteaseSongs.get(id) ?? []),
+      total: trackIds.length,
+      complete: more === null,
+      more,
+    })
+    for (const ids of chunks(trackIds.filter(id => !neteaseSongs.has(id)), SONGS_PER_REQUEST)) {
+      show({ status: 'shown', content: contentOf({ status: 'loading' }) })
+      const songs = settle(mine, await api.post<SongsResponse>('/api/songs', { ids } satisfies SongsRequest))
+      if (!songs)
+        return
+      if (!songs.ok) {
+        fetchingPlaylists.delete(playlistId)
+        return show({ status: 'shown', content: contentOf({ status: 'failed', failure: songs.failure }) })
+      }
+      for (const song of songs.value.songs)
+        neteaseSongs.set(song.id, song)
+    }
+    fetchingPlaylists.delete(playlistId)
+    show({ status: 'shown', content: contentOf(null) })
+  }
+
   /** 换了一轮（登录、退出、登录失效）：上一轮打开、正在拉的都不算了 */
   function forget(): void {
     pulling.clear()
@@ -491,7 +582,10 @@ export function createLibrary(context: LibraryContext): Library {
     opening = new Map()
     pages.albums.clear()
     pages.artists.clear()
+    pages.playlists.clear()
     fetchingAlbums.clear()
+    fetchingPlaylists.clear()
+    neteaseSongs.clear()
   }
 
   return {
@@ -521,8 +615,12 @@ export function createLibrary(context: LibraryContext): Library {
     },
     async open(playlistId) {
       const current = replica
-      const playlist = current?.playlists?.find(item => item.id === playlistId)
-      if (!current || !playlist || upToDate(current, playlist))
+      if (!current?.playlists)
+        return
+      const playlist = current.playlists.find(item => item.id === playlistId)
+      if (!playlist)
+        return openNetease(playlistId)
+      if (upToDate(current, playlist))
         return
       const mine = generation
       urgent.add(playlistId)

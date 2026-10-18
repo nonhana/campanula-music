@@ -1,6 +1,6 @@
-import type { Playlist, Song } from '#lib/api/library.js'
+import type { Playlist, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { RequestFailure } from '#lib/app/api.js'
-import type { LibraryState, PlaylistSongs, SyncFailure } from '#lib/app/library.js'
+import type { LibraryState, PlaylistOpening, PlaylistSongs, SyncFailure } from '#lib/app/library.js'
 import type { ScrollMark } from '../ui/scroll-marks'
 import { creditLine } from '#lib/api/library.js'
 import { failureText } from '../failure'
@@ -18,7 +18,7 @@ export type SongsView
   /** total：一共几首。还在同步时比 songs 多；同步完了就是 songs 的首数（网易云没给的歌不算），和列表对得上 */
     | { kind: 'songs', songs: readonly Song[], total: number, complete: boolean }
 
-function songsView(playlist: PlaylistSongs, failure: RequestFailure | null): SongsView {
+function songsView(playlist: PlaylistSongs<unknown>, failure: RequestFailure | null): SongsView {
   if (playlist.songs.length > 0)
     return { kind: 'songs', songs: playlist.songs, total: playlist.complete ? playlist.songs.length : playlist.total, complete: playlist.complete }
   if (playlist.complete)
@@ -34,8 +34,8 @@ export function likedView(library: LibraryState): SongsView {
   return songsView(liked, failure)
 }
 
-/** 歌单页：歌单列表里没有这张歌单（在网易云里删掉了、地址不对）时是 missing */
-export type PlaylistView = SongsView | { kind: 'missing' }
+/** 歌单页：不在曲库里的歌单打不开（已被删除、不存在、别人的隐私歌单）时是 unavailable */
+export type PlaylistView = SongsView | { kind: 'unavailable', reason: PlaylistUnavailable }
 
 export function playlistView(library: LibraryState, playlistId: number): PlaylistView {
   const { sync } = library
@@ -43,11 +43,76 @@ export function playlistView(library: LibraryState, playlistId: number): Playlis
   if (!library.playlists)
     return syncFailure ? { kind: 'failed', failure: syncFailure } : { kind: 'loading' }
   const playlist = library.songsOf(playlistId)
-  if (!playlist)
-    return { kind: 'missing' }
-  // 打开时拉过：以它为准；没拉过（还没到能拉的时候）才看后台同步
-  const opening = library.opening.get(playlistId)
-  return songsView(playlist, opening ? (opening.status === 'failed' ? opening.failure : null) : syncFailure)
+  if (playlist) {
+    // 打开时拉过：以它为准；没拉过（还没到能拉的时候）才看后台同步
+    const opening = library.opening.get(playlistId)
+    return songsView(playlist, opening ? (opening.status === 'failed' ? opening.failure : null) : syncFailure)
+  }
+  // 不在曲库里的歌单：还没打开（页面马上就打开）也算加载中
+  const page = library.neteasePlaylist(playlistId)
+  switch (page?.status) {
+    case undefined:
+    case 'loading':
+      return { kind: 'loading' }
+    case 'failed':
+      return { kind: 'failed', failure: page.failure }
+    case 'unavailable':
+      return { kind: 'unavailable', reason: page.reason }
+    case 'shown':
+      return songsView(page.content, page.content.more?.status === 'failed' ? page.content.more.failure : null)
+    default: {
+      const unhandled: never = page
+      throw new Error(`不认识的歌单状态：${JSON.stringify(unhandled)}`)
+    }
+  }
+}
+
+/** 歌单还在拉其余的歌、或者没拉成（列表上方的说明）：曲库里的看 opening，不在曲库里的看它自己的 */
+export function openingOf(library: LibraryState, playlistId: number): PlaylistOpening | null {
+  if (library.songsOf(playlistId))
+    return library.opening.get(playlistId) ?? null
+  const page = library.neteasePlaylist(playlistId)
+  return page?.status === 'shown' ? page.content.more : null
+}
+
+/** 歌单页的头部：曲库里的看歌单列表，不在曲库里的看打开时取到的 */
+export interface PlaylistHeader {
+  name: string
+  coverUrl: string
+  /** 名字下面的一行：创建者、类别、首数，不在曲库里的还有播放次数 */
+  meta: string[]
+  private: boolean
+  /** 简介和标签：不在曲库里的歌单才有 */
+  description: string | null
+  tags: readonly string[]
+}
+
+/**
+ * 歌单页的头部；还没拿到歌单列表、不在曲库里的歌单还没取到时是 null。
+ * 首数和下面的列表对得上（DESIGN.md Do's）：有全了是实际有的歌，还在拉时写拉到了几首，列表还没出来时不写
+ */
+export function playlistHeader(library: LibraryState, playlistId: number, shown: PlaylistView): PlaylistHeader | null {
+  const inLibrary = library.songsOf(playlistId)
+  const count = (fetched: string) => shown.kind === 'songs' && !shown.complete
+    ? `${fetched} ${formatCount(shown.songs.length)} / ${formatCount(shown.total)} 首`
+    : shown.kind === 'songs' ? `${formatCount(shown.total)} 首` : shown.kind === 'empty' ? '0 首' : ''
+  if (inLibrary) {
+    const { playlist } = inLibrary
+    const kind = playlist.kind === 'own' ? '自建歌单' : playlist.kind === 'collected' ? '收藏的歌单' : ''
+    return { name: playlistName(playlist), coverUrl: playlist.coverUrl, meta: [playlist.creator, kind, count('已同步')].filter(Boolean), private: playlist.private, description: null, tags: [] }
+  }
+  const page = library.neteasePlaylist(playlistId)
+  if (page?.status !== 'shown')
+    return null
+  const { playlist } = page.content
+  return {
+    name: playlist.name,
+    coverUrl: playlist.coverUrl,
+    meta: [playlist.creator, '网易云歌单', count('已加载'), `播放 ${formatPlays(playlist.playCount)}`].filter(Boolean),
+    private: false,
+    description: playlist.description?.trim() || null,
+    tags: playlist.tags,
+  }
 }
 
 /** 歌单的名字：我喜欢的音乐在网易云里叫“某某喜欢的音乐”，界面上统一叫我喜欢的音乐 */
@@ -162,6 +227,18 @@ export function yearOf(publishedAt: number): number | null {
 /** 首数等：千位加逗号（4,984） */
 export function formatCount(count: number): string {
   return count.toLocaleString('en-US')
+}
+
+/**
+ * 播放次数：一万以上按“万”写、一亿以上按“亿”写，不到一百（万、亿）留一位小数（27.3 万、1618 万、2.5 亿、253 亿），
+ * 一万以下照写（9,999）。网易云自己的歌单有播放两百多亿次的（私人雷达）
+ */
+export function formatPlays(count: number): string {
+  if (count < 10_000)
+    return formatCount(count)
+  const [unit, label] = count < 100_000_000 ? [10_000, '万'] : [100_000_000, '亿']
+  const value = count / unit
+  return `${value.toFixed(value >= 100 ? 0 : 1)} ${label}`
 }
 
 /** 歌曲列表里的一首在滚动条气泡里怎么写：第几首、歌名 */

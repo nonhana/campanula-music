@@ -1,5 +1,6 @@
 <!--
   一张歌单（包括我喜欢的音乐）的歌曲列表和歌单内搜索：歌单页和手机曲库的“我喜欢”标签共用。
+  也用于不在曲库里的歌单：歌是打开时联网一页一页取的，提示里说“加载”，不说“同步”。
   - 手机：搜索框和“找到几首”在列表上面；桌面：搜索框在歌单页的头部（调用方放，绑定同一个 query），
     “找到几首”在白色面板的表头里。
   - 搜索在本机副本里即时完成；歌单还没同步全时结果标“可能不全”。
@@ -24,7 +25,7 @@
   import DesktopSongRow from './DesktopSongRow.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
-  import { formatCount, playlistView, songMark } from './view'
+  import { formatCount, openingOf, playlistView, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
 
   interface Props {
@@ -39,7 +40,9 @@
   const view = getAppView()
   const shown = $derived(playlistView(library, playlistId))
   const liked = $derived(library.songsOf(playlistId)?.playlist.kind === 'liked')
-  const opening = $derived(library.opening.get(playlistId))
+  const opening = $derived(openingOf(library, playlistId))
+  /** 不在曲库里的歌单：歌是打开时联网取的，说“加载”，不说“同步” */
+  const outside = $derived(!library.songsOf(playlistId))
   const term = $derived(query.trim())
   const result = $derived(term && shown.kind === 'songs' ? view.app.searchPlaylist(playlistId, term) : null)
   /** 列表里显示的歌：搜索时是搜到的 */
@@ -49,7 +52,7 @@
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
   const play = (song: Song) => () => view.app.play(source, song.id)
-  const INCOMPLETE = '这张歌单还没同步完，结果可能不全'
+  const incompleteText = $derived(outside ? '这张歌单还没加载完，结果可能不全' : '这张歌单还没同步完，结果可能不全')
 
   function retry() {
     if (library.playlists)
@@ -61,7 +64,7 @@
 
 {#snippet found()}
   <!-- 元素开头的普通空格 Svelte 会去掉，分隔符前用不换行空格 -->
-  找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'>&nbsp;· {INCOMPLETE}</span>{/if}
+  找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'>&nbsp;· {incompleteText}</span>{/if}
 {/snippet}
 
 {#snippet list()}
@@ -74,6 +77,8 @@
       {:else if shown.kind === 'empty'}
         {#if liked}
           <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' body='在网易云音乐里红心的歌，会同步到这里。' />
+        {:else if outside}
+          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='创建者还没有往里面加歌。' />
         {:else}
           <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='在网易云音乐里加进这张歌单的歌，会同步到这里。' />
         {/if}
@@ -100,7 +105,9 @@
                   kind='empty'
                   icon={SearchX}
                   title={`这张歌单里没有“${term}”`}
-                  body={result?.incomplete ? '这张歌单还没同步完，还没同步到的歌里可能有，同步完再搜一次。' : '只搜了这张歌单里的歌名、歌手和专辑。'}
+                  body={result?.incomplete
+                    ? outside ? '这张歌单还没加载完，还没加载到的歌里可能有，加载完再搜一次。' : '这张歌单还没同步完，还没同步到的歌里可能有，同步完再搜一次。'
+                    : '只搜了这张歌单里的歌名、歌手和专辑。'}
                 />
               {:else}
                 <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id} markOf={songMark}>
