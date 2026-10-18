@@ -1,14 +1,17 @@
 <!--
-  歌单页（我喜欢的音乐也是这一页）。桌面沿用原来的两栏：左边是曲库里的歌单，右边是 200px 大封面的头部和虚拟列表
-  （窄于 1024px 时左栏收起，DESIGN.md Layout）；手机是二级页面：返回栏、居中的封面头部、歌单内搜索、歌曲行。
+  歌单页（我喜欢的音乐也是这一页）。桌面上曲库里的歌单沿用原来的两栏：左边是曲库里的歌单，右边是 200px 大封面的头部和虚拟列表
+  （窄于 1024px 时左栏收起，DESIGN.md Layout）；不在曲库里的歌单和专辑页一样是一栏，不显示左栏，和自己的歌单区分开。
+  手机是二级页面：返回栏、居中的封面头部、简介卡片、歌单内搜索、歌曲行。
+  每张歌单都在信息行下面显示标签，在头部下面显示简介（和专辑页共用的 Description，截断后可以展开），手机也一样。
   打开时这张歌单还没同步全，就马上用前台请求拉它（App 的 openPlaylist），不等后台同步。
-  不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取，页头分类写“网易云歌单”；桌面页头还显示简介和标签；
+  不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取，页头分类写“网易云歌单”；
   已删除、不存在、别人的隐私歌单打不开时说明原因。
   返回这一页时，搜索词和滚动位置都回到原来的样子（存在 SvelteKit 的 snapshot 里，跟着浏览历史走）
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
   import type { PlaylistUnavailable } from '#lib/api/library.js'
+  import type { LibraryState } from '#lib/app/library.js'
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
@@ -17,6 +20,7 @@
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import Cover from '#lib/components/library/Cover.svelte'
+  import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName, playlistView } from '#lib/components/library/view.js'
@@ -107,6 +111,35 @@
   <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
 {/snippet}
 
+{#snippet mainColumn(library: LibraryState)}
+  <!-- 首次同步时歌单列表到了才有页头：飘进来，不一下冒出来；带着页头打开这一页时不飘 -->
+  {#if header}
+    <header class='flex gap-7' in:reveal>
+      <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
+      <div class='min-w-0 flex flex-1 flex-col pt-1'>
+        <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
+        {@render metaLine(false)}
+        {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
+        <div class='mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'>
+          {@render playAll()}
+          <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
+        </div>
+      </div>
+    </header>
+  {:else if outside}
+    <div class='flex gap-7' aria-hidden='true' out:fadeAway>
+      <span class='bone size-[200px] flex-none rounded-xl'></span>
+      <div class='min-w-0 flex flex-1 flex-col pt-2'>
+        <span class='bone h-7 w-2/5 rounded-full'></span>
+        <span class='bone mt-4 h-3.5 w-1/4 rounded-full'></span>
+      </div>
+    </div>
+  {/if}
+  <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
+  {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} />{/key}</div>{/if}
+  <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query /></div>
+{/snippet}
+
 {#if library && shown?.kind === 'unavailable'}
   {@const why = UNAVAILABLE[shown.reason]}
   <div in:reveal>
@@ -128,36 +161,13 @@
       action={{ label: '重试', run: () => void view.app.openPlaylist(id) }}
     />
   </div>
+{:else if library && desktopLayout.current && outside}
+  <!-- 不在曲库里的歌单：和专辑页一样一栏，不显示左栏 -->
+  <div class='pt-2'>{@render mainColumn(library)}</div>
 {:else if library && desktopLayout.current}
   <!-- 左栏在视觉上排在前面，但 Tab 先到这张歌单（搜索、列表），不用先走完几十张歌单 -->
   <div class='grid items-start gap-8 lg:grid-cols-[208px_minmax(0,1fr)]'>
-    <div class='min-w-0 pt-2 lg:col-start-2 lg:row-start-1'>
-      <!-- 首次同步时歌单列表到了才有页头：飘进来，不一下冒出来；带着页头打开这一页时不飘 -->
-      {#if header}
-        <header class='flex gap-7' in:reveal>
-          <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
-          <div class='min-w-0 flex flex-1 flex-col pt-1'>
-            <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
-            {@render metaLine(false)}
-            {#if header.description}<p class='mt-2 max-w-[60ch] truncate text-label text-neutral-600' lang={langOf(header.description)}>{header.description}</p>{/if}
-            {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
-            <div class='mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'>
-              {@render playAll()}
-              <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
-            </div>
-          </div>
-        </header>
-      {:else if outside}
-        <div class='flex gap-7' aria-hidden='true' out:fadeAway>
-          <span class='bone size-[200px] flex-none rounded-xl'></span>
-          <div class='min-w-0 flex flex-1 flex-col pt-2'>
-            <span class='bone h-7 w-2/5 rounded-full'></span>
-            <span class='bone mt-4 h-3.5 w-1/4 rounded-full'></span>
-          </div>
-        </div>
-      {/if}
-      <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query /></div>
-    </div>
+    <div class='min-w-0 pt-2 lg:col-start-2 lg:row-start-1'>{@render mainColumn(library)}</div>
 
     <nav bind:this={sideNav} class='sticky top-20 hidden max-h-[calc(100dvh-112px)] overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block' aria-label='曲库里的歌单'>
       <Scrollbar />
@@ -189,6 +199,7 @@
       <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
       <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
       {@render metaLine(true)}
+      {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap justify-center gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
       <div class='mt-4 flex items-center justify-center gap-2'>{@render playAll()}</div>
     </header>
   {:else if outside}
@@ -198,5 +209,7 @@
       <span class='bone mx-auto mt-3 h-3 w-1/3 rounded-full'></span>
     </div>
   {/if}
+  <!-- 换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
+  {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} phone />{/key}</div>{/if}
   <PlaylistSongs {library} playlistId={id} bind:query phone />
 {/if}

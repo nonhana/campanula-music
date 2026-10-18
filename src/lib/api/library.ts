@@ -6,15 +6,25 @@ export interface HeartsResponse {
   songIds: number[]
 }
 
-/** 曲库里的一张歌单 */
-export interface Playlist {
+/**
+ * 一张歌单头部的信息：曲库里的、不在曲库里的都一样（网易云的歌单列表和歌单详情给的是同一份歌单，SDK 的 PlaylistSummary）
+ */
+export interface PlaylistInfo {
   id: number
   name: string
   /** 网易云的原图地址；显示时按尺寸取缩略图 */
   coverUrl: string
-  kind: 'liked' | 'own' | 'collected'
-  /** 创建者的昵称：收藏的歌单下面写是谁的 */
+  /** 创建者的昵称：收藏的、不在曲库里的歌单下面写是谁的 */
   creator: string
+  playCount: number
+  /** 简介；没写时是 null */
+  description: string | null
+  tags: string[]
+}
+
+/** 曲库里的一张歌单 */
+export interface Playlist extends PlaylistInfo {
+  kind: 'liked' | 'own' | 'collected'
   /** 隐私歌单：只有自己看得到 */
   private: boolean
   /** 网易云写的歌曲数。我喜欢的音乐的这个数会比曲目编号少几首（验证关卡①：4,965 对 4,968），拿到编号后以编号为准 */
@@ -33,20 +43,6 @@ export interface TrackIdsResponse {
   trackIds: number[]
 }
 
-/** 不在曲库里的一张歌单（界面上的类别写“网易云歌单”）的头部 */
-export interface NeteasePlaylist {
-  id: number
-  name: string
-  /** 网易云的原图地址；显示时按尺寸取缩略图 */
-  coverUrl: string
-  /** 创建者的昵称 */
-  creator: string
-  playCount: number
-  /** 简介；没写时是 null */
-  description: string | null
-  tags: string[]
-}
-
 /** 打不开的歌单：已被删除、不存在（地址不对）、别人的隐私歌单 */
 export type PlaylistUnavailable = 'deleted' | 'missing' | 'private'
 
@@ -55,7 +51,7 @@ export type PlaylistUnavailable = 'deleted' | 'missing' | 'private'
  * 歌曲信息另外按页取（/api/songs）；打不开时说明原因
  */
 export type PlaylistPageResponse
-  = | { kind: 'shown', playlist: NeteasePlaylist, trackIds: number[] }
+  = | { kind: 'shown', playlist: PlaylistInfo, trackIds: number[] }
     | { kind: 'unavailable', reason: PlaylistUnavailable }
 
 /** 署名的歌手。传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48） */

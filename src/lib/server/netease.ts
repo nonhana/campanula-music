@@ -1,8 +1,8 @@
-import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
+import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf, PlaylistSummary } from 'hana-music-api'
 import type { Account } from '#lib/api/account.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistInfo, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchSongsResponse, Suggestion, SuggestionsResponse } from '#lib/api/search.js'
@@ -262,6 +262,19 @@ const LIKED_SPECIAL_TYPE = 5
 /** 隐私歌单的 privacy（公开的是 0，验证关卡②） */
 const PRIVATE_PLAYLIST = 10
 
+/** 歌单头部的信息：歌单列表（user_playlist）和歌单详情（playlist_detail）给的是同一份歌单（SDK 2.12.0），曲库里的、不在曲库里的都用这一份 */
+function playlistInfo(playlist: PlaylistSummary): PlaylistInfo {
+  return {
+    id: playlist.id,
+    name: playlist.name,
+    coverUrl: playlist.coverImgUrl,
+    creator: playlist.creator.nickname,
+    playCount: playlist.playCount,
+    description: playlist.description,
+    tags: [...playlist.tags],
+  }
+}
+
 /**
  * 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样。
  * 凭据已经失效时网易云不报错，回 200 的匿名视角：每张歌单的 subscribed 都是 null（已登录时是 true / false，#21 实测），
@@ -276,11 +289,8 @@ export async function fetchPlaylists(uid: number, listener: Listener): Promise<P
       throw new NeteaseError({ kind: 'needsLogin' }, body)
     for (const playlist of body.playlist) {
       playlists.push({
-        id: playlist.id,
-        name: playlist.name,
-        coverUrl: playlist.coverImgUrl,
+        ...playlistInfo(playlist),
         kind: playlist.specialType === LIKED_SPECIAL_TYPE ? 'liked' : playlist.creator.userId === uid ? 'own' : 'collected',
-        creator: playlist.creator.nickname,
         private: playlist.privacy === PRIVATE_PLAYLIST,
         trackCount: playlist.trackCount,
         tracksUpdatedAt: playlist.trackUpdateTime,
@@ -314,19 +324,7 @@ export async function fetchPlaylistPage(playlistId: number, listener: Listener):
     return { kind: 'unavailable', reason: playlist }
   if (playlist.status === DELETED_PLAYLIST)
     return { kind: 'unavailable', reason: 'deleted' }
-  return {
-    kind: 'shown',
-    playlist: {
-      id: playlist.id,
-      name: playlist.name,
-      coverUrl: playlist.coverImgUrl,
-      creator: playlist.creator.nickname,
-      playCount: playlist.playCount,
-      description: playlist.description,
-      tags: [...playlist.tags],
-    },
-    trackIds: playlist.trackIds.map(track => track.id),
-  }
+  return { kind: 'shown', playlist: playlistInfo(playlist), trackIds: playlist.trackIds.map(track => track.id) }
 }
 
 /** 网易云的歌（歌曲信息、专辑页、热门歌曲里的结构一样） */

@@ -2,7 +2,7 @@ import type { Device, SentRequest } from './harness/device'
 import { readdir, readFile } from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
 import { describe, expect, it, vi } from 'vitest'
-import { held } from './harness/hold'
+import { held, never } from './harness/hold'
 import { ANOTHER_ACCOUNT, LIBRARY_SYNC_MODULES, RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -28,6 +28,8 @@ const POEMS_ID = 900000019
 const RHYTHM_ID = 900000009
 /** 作者收藏的一张别人的歌单 */
 const COLLECTED_ID = 2483057410
+/** 作者的一张自建歌单：写了简介，没打标签 */
+const BANG_DREAM_OWN_ID = 900000004
 /** 作者收藏的专辑（55 张，最近收藏的在前）、收藏的歌手（236 位）：#23 录制，各一次取完 */
 const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
 const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
@@ -197,6 +199,27 @@ describe('首次同步', () => {
     })
     // 服务端只回界面用得到的字段：网易云的原始返回一页歌曲信息约 2.1 MB、曲目编号约 3.1 MB，Vercel 单次响应的上限是 4.5 MB
     expect(Math.max(...device.responseBodies.map(body => body.length))).toBeLessThan(1_000_000)
+  })
+
+  it('歌单列表里每张歌单都带着简介、标签和播放次数：自建的、收藏的，和不在曲库里的歌单一样（user_playlist 和 playlist_detail 是同一份歌单，SDK 2.12.0）', async () => {
+    const device = world.device()
+    const { app } = await device.open()
+    await world.netease.reply(HEARTS)
+    await world.netease.reply(PLAYLISTS)
+    await replyCollected()
+    await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
+    await signIn(world, app)
+    await world.settle()
+
+    const playlists = app.state.library?.playlists ?? []
+    expect(playlists.find(playlist => playlist.id === COLLECTED_ID)).toMatchObject({
+      kind: 'collected',
+      description: '忙碌的春天终于过去了，接下来的几个月，踏上Jazz Hip Hop的热浪，一起Chill一下。\n\nJazz Jazz-HipHop Chill-HipHop Blues',
+      tags: ['爵士', '夜晚', '怀旧'],
+      playCount: 6173606,
+    })
+    expect(playlists.find(playlist => playlist.id === BANG_DREAM_OWN_ID)).toMatchObject({ kind: 'own', description: '谢谢你带给我的感动！！', tags: [], playCount: 13 })
+    expect(playlists.find(playlist => playlist.id === RHYTHM_ID)).toMatchObject({ kind: 'own', description: null, tags: [], playCount: 439 })
   })
 
   it('收藏的专辑和歌手各一次拿全，最近收藏的在前，存进本机副本；再次打开 App 先显示副本，不等同步，断网也照样在', async () => {

@@ -10,8 +10,8 @@
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
-  import AlbumDescription from '#lib/components/library/AlbumDescription.svelte'
   import Cover from '#lib/components/library/Cover.svelte'
+  import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import SongList from '#lib/components/library/SongList.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
@@ -100,7 +100,7 @@
           </div>
         </div>
       {/if}
-      {#if description}<div in:reveal><AlbumDescription text={description} /></div>{/if}
+      {#if description}<div in:reveal><Description text={description} /></div>{/if}
       <div class='mt-6'><SongList songs={content?.songs ?? null} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' empty={EMPTY} numbered /></div>
     </div>
   {:else}
@@ -118,7 +118,7 @@
         <span class='bone mx-auto mt-3 h-3 w-1/3 rounded-full'></span>
       </div>
     {/if}
-    {#if description}<div in:reveal><AlbumDescription text={description} phone /></div>{/if}
+    {#if description}<div in:reveal><Description text={description} phone /></div>{/if}
     <div class='pt-3'><SongList songs={content?.songs ?? null} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' empty={EMPTY} phone numbered /></div>
   {/if}
 {/if}
