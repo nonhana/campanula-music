@@ -38,10 +38,11 @@
    */
   const emptied = () => view.app.state.player.queue.length === 0
 
-  // Tab 到、定位到的东西不藏在顶栏底下，焦点环也露得出来
+  // Tab 到、定位到的东西不藏在顶栏底下，焦点环也露得出来。页面里吸在顶栏下面的一行（搜索结果的标签）把自己的高度写在
+  // --sticky-below-header 上，一起让出来
   $effect(() => {
     const { style } = document.documentElement
-    style.scrollPaddingTop = '72px'
+    style.scrollPaddingTop = 'calc(72px + var(--sticky-below-header, 0px))'
     return () => {
       style.scrollPaddingTop = ''
     }

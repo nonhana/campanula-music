@@ -1,9 +1,11 @@
 import type { Suggestion } from '#lib/api/search.js'
 import type { App } from '#lib/app/app.js'
 import type { Suggestions } from '#lib/app/search.js'
+import type { SearchTab } from './view'
 import { goto } from '$app/navigation'
 import { resolve } from '$app/paths'
 import { page } from '$app/state'
+import { searchPath, searchTabId } from './view'
 
 // 搜索框（桌面顶栏正中的、手机搜索页顶上的）：里面的字、用 ↑↓ 选中的那一行建议、按键和按搜索。
 // 手机的搜索框在骨架的顶行里，搜索历史、建议和结果在页面里，两边读写同一份
@@ -39,6 +41,18 @@ export const searchBox: {
 export function activeSuggestionId(app: App): string | undefined {
   const rows = suggestionRows(searchBox.draft, app.state.search.suggestions)
   return searchBox.active >= 0 && searchBox.active < rows.length ? suggestionId(searchBox.active) : undefined
+}
+
+/** 搜索结果页上显示着结果（手机上不是建议、搜索历史）：框里正是这一页搜的词 */
+export function showingResults(): boolean {
+  const keyword = shownKeyword()
+  return keyword !== '' && searchBox.draft.trim() === keyword
+}
+
+/** 换到结果页的另一个标签：不留浏览记录（返回直接离开搜索），回到页面顶上，焦点落在选中的标签上 */
+export async function selectSearchTab(keyword: string, tab: SearchTab): Promise<void> {
+  await goto(resolve(searchPath(keyword, tab)), { replace: true })
+  document.getElementById(searchTabId(tab))?.focus()
 }
 
 /** 换页了、收起了：搜索框里换回这一页搜的词（搜索结果页）或空的，不再要建议 */

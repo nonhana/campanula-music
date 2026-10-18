@@ -47,9 +47,10 @@ export interface World {
      * 网易云对这个模块的下一次调用，回这份录制数据（tests/fixtures/netease/ 下的相对路径）。
      * 录下的是失败返回时，替身像真的 SDK 一样把它抛出来。
      * 录制数据去掉了 Cookie（Spec #11 交付方式第 5 条）；要网易云下发 Cookie（例如登录成功）时，用 cookie 放进 Set-Cookie。
-     * until：等它了结才回，模拟网易云回得慢
+     * until：等它了结才回，模拟网易云回得慢。
+     * when：只回查询参数里这几项都相等的那次调用（同一个模块几个请求一起发、到服务端的先后不固定时按参数对上）
      */
-    reply: (fixture: string, options?: { cookie?: string[], until?: Promise<void> }) => Promise<void>
+    reply: (fixture: string, options?: { cookie?: string[], until?: Promise<void>, when?: Record<string, unknown> }) => Promise<void>
     /** 正在等 until 了结、还没回的调用 */
     readonly held: number
   }
@@ -212,9 +213,9 @@ export function useWorld(): World {
       get calls() {
         return current().fake.calls
       },
-      async reply(path, { cookie = [], until } = {}) {
+      async reply(path, { cookie = [], until, when } = {}) {
         const { module, outcome } = await loadFixture(path)
-        current().fake.queueReply(module, { ...outcome, response: { ...outcome.response, cookie }, until })
+        current().fake.queueReply(module, { ...outcome, response: { ...outcome.response, cookie }, until, when })
       },
       get held() {
         return current().fake.heldCalls()

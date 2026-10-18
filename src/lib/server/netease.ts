@@ -5,11 +5,11 @@ import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistInfo, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
-import type { SearchSongsResponse, SuggestionsResponse } from '#lib/api/search.js'
+import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
 import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
 import { ARTIST_ALBUMS_PER_REQUEST } from '#lib/api/library.js'
-import { SEARCH_SONGS_PER_REQUEST } from '#lib/api/search.js'
+import { SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.js'
 import { lyricsOf } from './lyrics'
 
 // 网易云适配层（Spec #11“服务端：网易云适配层”）：服务端里只有这里调 hana-music-api。
@@ -550,8 +550,44 @@ export async function fetchSuggestions(keywords: string, listener: Listener): Pr
   }
 }
 
-/** 单曲搜索的前 SEARCH_SONGS_PER_REQUEST 首。一首都没搜到时网易云不给 songs */
-export async function searchSongs(keywords: string, listener: Listener): Promise<SearchSongsResponse> {
-  const { body } = await call('cloudsearch', { keywords, type: 1, limit: SEARCH_SONGS_PER_REQUEST }, listener)
-  return { songs: (body.result.songs ?? []).map(songWithPrivilegeOf) }
+/** 每类结果是网易云 cloudsearch 的哪个 type */
+const CLOUDSEARCH_TYPES: Record<SearchKind, number> = { songs: 1, playlists: 1000, artists: 100, albums: 10 }
+
+/** 这类结果从网易云的第 offset 个起的一页。一个都没搜到时网易云不给列表，只给总数 0（#32 录制） */
+async function cloudsearch(kind: SearchKind, keywords: string, offset: number, listener: Listener) {
+  const { body } = await call('cloudsearch', { keywords, type: CLOUDSEARCH_TYPES[kind], limit: SEARCH_RESULTS_PER_REQUEST, offset }, listener)
+  return body.result
+}
+
+/** 四类搜索结果的一页，只留界面用得到的字段 */
+export const searches: { [K in SearchKind]: (keywords: string, offset: number, listener: Listener) => Promise<SearchPageResponse<K>> } = {
+  async songs(keywords, offset, listener) {
+    const { songs = [], songCount = 0 } = await cloudsearch('songs', keywords, offset, listener)
+    return { items: songs.map(songWithPrivilegeOf), total: songCount }
+  },
+  async playlists(keywords, offset, listener) {
+    const { playlists = [], playlistCount = 0 } = await cloudsearch('playlists', keywords, offset, listener)
+    return {
+      items: playlists.map(playlist => ({
+        id: playlist.id,
+        name: playlist.name,
+        coverUrl: playlist.coverImgUrl,
+        creator: playlist.creator.nickname,
+        trackCount: playlist.trackCount,
+        playCount: playlist.playCount,
+      })),
+      total: playlistCount,
+    }
+  },
+  async artists(keywords, offset, listener) {
+    const { artists = [], artistCount = 0 } = await cloudsearch('artists', keywords, offset, listener)
+    return { items: artists.map(artist => ({ id: artist.id, name: artist.name, avatarUrl: artist.picUrl, songCount: artist.musicSize })), total: artistCount }
+  },
+  async albums(keywords, offset, listener) {
+    const { albums = [], albumCount = 0 } = await cloudsearch('albums', keywords, offset, listener)
+    return {
+      items: albums.map(album => ({ id: album.id, name: album.name, coverUrl: album.picUrl, artists: album.artists.map(creditOf), publishedAt: album.publishTime })),
+      total: albumCount,
+    }
+  },
 }

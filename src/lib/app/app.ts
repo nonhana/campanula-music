@@ -2,6 +2,7 @@ import type { Account, AccountResponse } from '#lib/api/account.js'
 import type { Song } from '#lib/api/library.js'
 import type { LogoutResponse } from '#lib/api/login.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
+import type { SearchKind } from '#lib/api/search.js'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { DailyState } from './daily'
@@ -116,13 +117,15 @@ export interface App {
   openDaily: () => Promise<void>
   /** 搜索框里的字变了（边输入边给建议）：停手一会儿才问网易云，只要最后打的词的建议，看 state.search.suggestions；空的就收起 */
   suggest: (keyword: string) => void
-  /** 按搜索（回车、点“搜索”、点建议或搜索历史里的词）：把词记进搜索历史（存在这台设备上），打开这个词的单曲结果 */
+  /** 按搜索（回车、点“搜索”、点建议或搜索历史里的词）：把词记进搜索历史（存在这台设备上），打开这个词的结果 */
   search: (keyword: string) => Promise<void>
   /**
-   * 打开一个词的单曲结果（结果页）：这个词的结果显示着、正在拉就不再拉，否则用前台请求拉，拉到哪了看 state.search.results。
-   * 只记着最后一次搜的词的；没拉成时再调一次就是重试
+   * 打开一个词的结果（结果页）：单曲、歌单、歌手、专辑四类的第一页一起用前台请求拉，各拉各的，拉到哪了看 state.search.results。
+   * 只记着最后一次搜的词的；这个词的结果记着时只重拉第一页没拉成的那几类（再打开一次就是重试）
    */
   openSearch: (keyword: string) => Promise<void>
+  /** 一类搜索结果“显示更多”：取下一页接在后面；没取成时再调一次就是重试 */
+  moreSearchResults: (keyword: string, kind: SearchKind) => Promise<void>
   /** 清空搜索历史，这台设备上存的也删 */
   clearSearchHistory: () => Promise<void>
   /**
@@ -345,10 +348,11 @@ export function createApp(browser: BrowserCapabilities): App {
     }
   }
 
-  /** 这次搜索的单曲结果里的这一首；结果不是这个词的、还没显示出来时是 undefined */
+  /** 这次搜索的单曲结果里（已经取到的那些）的这一首；结果不是这个词的、还没显示出来时是 undefined */
   function searchedSong(keyword: string, songId: number): Song | undefined {
     const results = state.search.results
-    return results?.status === 'shown' && results.keyword === keyword ? results.songs.find(song => song.id === songId) : undefined
+    const songs = results?.keyword === keyword ? results.songs : null
+    return songs?.status === 'shown' ? songs.items.find(song => song.id === songId) : undefined
   }
 
   /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
@@ -468,6 +472,7 @@ export function createApp(browser: BrowserCapabilities): App {
     suggest: search.suggest,
     search: search.search,
     openSearch: search.open,
+    moreSearchResults: search.more,
     clearSearchHistory: search.clearHistory,
     play(source, songId) {
       if (source.kind === 'search') {

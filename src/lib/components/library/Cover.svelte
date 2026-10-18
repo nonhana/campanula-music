@@ -3,7 +3,8 @@
   加载完从薄荷底上淡入，缓存里有的直接显示（image-reveal.svelte.ts）。
   placeholder：大图加载好以前先铺同一张封面的小缩略图（例如歌曲行里那张，多半已经加载过），大图加载完从小图上淡入；
   load 为 false 时只铺小图、先不去下载大图（换碟时转盘还没停下的封面）。
-  圆角由调用方用 class 决定；图片加载不出来时淡入一个图标（默认音符，歌手头像传人像），不留破图，换了一张图再重新加载。
+  圆角由调用方用 class 决定；图片加载不出来、或者网易云没给图（url 是 null，例如有的歌手没有头像）时淡入一个图标（默认音符，歌手头像传人像），
+  不留破图，换了一张图再重新加载。
   fluid：宽度跟着容器（网格里的封面），size 只决定取多大的缩略图。
   flight：这张封面代表的页面地址（格子里是点开的那一页，页头是这一页）。换页时两头地址一样的封面从格子飞到页头、再飞回去（shell/page-transition.ts）
 -->
@@ -36,7 +37,8 @@
   import { DURATIONS } from '../motion-tokens'
 
   interface Props {
-    url: string
+    /** 网易云的原图地址；没有图时是 null，直接显示图标 */
+    url: string | null
     /** 显示尺寸（px）；fluid 时是大概的最大宽度 */
     size: number
     fluid?: boolean
@@ -53,8 +55,8 @@
   }
 
   const { url, size, fluid = false, class: klass, eager = false, fallback: Fallback = Music, flight, placeholder, load = true }: Props = $props()
-  const source = $derived(coverSource(url, size))
-  const small = $derived(placeholder !== undefined && placeholder < size ? coverSource(url, placeholder) : null)
+  const source = $derived(url === null ? '' : coverSource(url, size))
+  const small = $derived(url !== null && placeholder !== undefined && placeholder < size ? coverSource(url, placeholder) : null)
   const reveal = createImageReveal(() => source)
 </script>
 
@@ -64,7 +66,7 @@
   style:height={fluid ? undefined : `${size}px`}
   data-flight={flight}
 >
-  {#if reveal.status === 'broken'}
+  {#if url === null || reveal.status === 'broken'}
     <!-- 图标占显示宽度的 40%：fluid 时 size 只决定取多大的缩略图，不是显示的大小 -->
     <span class='grid w-2/5' in:fade={{ duration: DURATIONS.reveal }}>
       <Fallback class='h-auto w-full' aria-hidden='true' />
