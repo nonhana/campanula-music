@@ -55,7 +55,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",
-    "pre-push": "pnpm check && pnpm test"
+    "pre-push": "pnpm check && pnpm test && pnpm build"
   },
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored",

@@ -1,8 +1,14 @@
-# 一次 eval 拍完一批验收截图（Python eval 里 `%load .agents/skills/campanula-ui-acceptance/scripts/sweep.py`）。
-# shoot：静态画面。每张：换视口 → 写拦截规则、按需清空本机副本 → 打开页面 → 等到页面画出来 → 跑检查 → 截图存文件。
+# 一次 eval 拍完一批验收截图、做完一批检查（Python eval 里 `%load .agents/skills/campanula-ui-acceptance/scripts/sweep.py`）。
+# 浏览器是专用窗口（scripts/axi：chrome-devtools-axi 的 campanula 会话，作者在里面扫码登录过）。
+# shoot：静态画面。每张：换视口 → 写拦截规则、按需清空本机副本 → 打开页面 → 等到页面画出来、骨架都换成内容 → 跑检查 → 截图存文件。
+#        每张都报布局偏移（没人操作时东西自己挪了位置）和页面里的报错。
+# roundtrip：点进去再返回，比返回前后的滚动位置、横向架子、选中的标签。keys：按一串键，报每次焦点落在哪。
 # motion：动效逐帧。触发一个变化，把动画停在第 0 / 60 / 120… 毫秒各拍一张；不写 grab 时拍换页（View Transitions）。
 # slow：慢放一串操作（连按几次、拖到一半），按墙上的时间截图，看打断和连续触发。
 # sheet：把一组截图拼成一张，read 一次看完。
+# 接口数据重放：每个 /api/ 的 GET 第一次真去问（开发服务器再去问网易云），成功的存进 _notes/replay/issue-<票号>.json，
+# 之后打开页面都从这里回（晚 REPLAY_DELAY 毫秒，骨架照样出现再换成内容），一批截图只问网易云几次，不会被限流。
+# 要最新的数据就删掉这个文件。
 # 只把每张的检查结果打回上下文，图片留在文件里，要看哪张再单独 read。
 # 这些函数一次要调很多次 DevTools，eval 的单元格默认 30 秒就超时，超时会把这里定义的东西清掉：调的时候给单元格 timeout=300
 import asyncio
@@ -12,12 +18,16 @@ import re
 import subprocess
 import tempfile
 import time
+import urllib.error
+import urllib.request
 
 ROOT = pathlib.Path(subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True, check=True).stdout.strip())
 BASE = 'http://localhost:5173'
-# 作者那个 Chrome 标签页在 list_pages 里的编号：第一次调 DevTools 前自动找打开着 BASE 的那个（_page()）；
-# 编号会随浏览器重连变，找不到时报错。要指定就在 eval 里直接给 PAGE 赋值
+# 专用窗口里打开着 BASE 的那个标签页在 list_pages 里的编号：第一次调 DevTools 前自动找（_page()），没有就开一个；
+# 浏览器重开后编号会变，call() 连不上时会重新找
 PAGE = None
+# 专用浏览器桥接进程的端口：第一次调 DevTools 前用 scripts/axi port 拿（没开就开）
+_PORT = None
 VIEWPORTS = {
     'phone': ('390x844x2,mobile,touch', '390x844'),
     'desktop': ('1440x900x1', '1440x900'),
@@ -26,6 +36,42 @@ VIEWPORTS = {
 }
 # 拦截脚本的内容直接作为 initScript，在页面脚本之前装上（这个目录不在 Vite 开发服务器的允许名单里，不能从 /@fs/ 读）
 INIT_SCRIPT = (ROOT / '.agents/skills/campanula-ui-acceptance/scripts/intercept.js').read_text()
+REPLAY_DIR = ROOT / '_notes/replay'
+# 重放的回答晚这么多毫秒：骨架照样出现，再换成内容（布局偏移要在这一下里量）
+REPLAY_DELAY = 600
+# 比这大的回答（几千首歌的整页）不存，每次照样真去问
+REPLAY_MAX = 300_000
+
+# 挪位置和报错：打开页面前装上。每一帧记下页面里各块（main 里的标题、section、标签管的内容区）在排版里的位置，
+# 没人操作（最近 500ms 没有按键、点按）时哪块挪了超过 1px 就记一条：谁、什么时候、挪了多少（dy 正数是往下）。
+# 骨架换成内容时下面的东西被推下去、拉上来，记的就是这个。位置沿 offsetParent 一层层加 offsetTop 算：滚动不算，
+# 动画的 translate、transform 也不算（#32 用 getBoundingClientRect 时，简介飘入往上漂的那 12px 被误记成挪了 2px）。
+# 不用浏览器自带的布局偏移记录（layout-shift）：#32 试过，骨架换成内容时下面的标题挪了 112px，它一条都没记。
+# console.error、没接住的异常也记下来
+WATCH_SCRIPT = """(() => { if (window.__campanulaWatch) return; const W = window.__campanulaWatch = { moves: [], errors: [] };
+  const name = el => { const label = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || '';
+    return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (label ? '[' + label + ']' : '') + (el.tagName.startsWith('H') ? ' ' + el.textContent.trim().slice(0, 12) : '') };
+  const layoutTop = el => { let top = 0; for (let n = el; n; n = n.offsetParent) top += n.offsetTop; return top };
+  let input = -Infinity, last = new Map();
+  for (const type of ['pointerdown', 'keydown', 'wheel']) addEventListener(type, () => { input = performance.now() }, true);
+  const tick = () => { const now = performance.now(), seen = new Map();
+    for (const el of document.querySelectorAll('main h1, main h2, main section, main [role=tabpanel]')) {
+      if (!el.offsetHeight) continue;
+      const top = layoutTop(el), before = last.get(el); seen.set(el, top);
+      if (before !== undefined && Math.abs(top - before) > 1 && now - input > 500 && W.moves.length < 50) W.moves.push({ at: Math.round(now), node: name(el), dy: top - before }) }
+    last = seen; requestAnimationFrame(tick) };
+  requestAnimationFrame(tick);
+  const error = console.error; console.error = function (...args) { W.errors.push(args.map(a => a instanceof Error ? a.message : String(a)).join(' ').slice(0, 200)); return error.apply(this, args) };
+  addEventListener('error', e => W.errors.push(String(e.message).slice(0, 200)));
+  addEventListener('unhandledrejection', e => W.errors.push('unhandledrejection: ' + String(e.reason?.message ?? e.reason).slice(0, 200))) })();"""
+
+# 等页面停下来：连续 900ms 里 main 没有加载中（aria-busy）、也没有还没回来的 /api/ 请求（intercept.js 数着），
+# 骨架都换成了内容、淡出和飘入也走完了。最多等 10 秒，settled 是 False 说明还在加载
+SETTLE_JS = """async () => { const t0 = performance.now(); let since = t0;
+  const busy = () => document.querySelector('main [aria-busy=true]') || (window.__campanulaFetching ?? 0) > 0;
+  while (performance.now() - t0 < 10000) { if (busy()) since = performance.now(); else if (performance.now() - since >= 900) break;
+    await new Promise(r => setTimeout(r, 50)) }
+  return { settled: !busy() && performance.now() - since >= 900, ms: Math.round(performance.now() - t0) } }"""
 
 # 横向溢出：页面比视口宽，或者 main 里有元素伸出视口（768、1024 抽查用）
 OVERFLOW_JS = """() => { const w = document.documentElement.clientWidth;
@@ -133,23 +179,54 @@ FRESH_IMAGES_SCRIPT = """(() => { const tag = '_fresh=' + Date.now();
   Element.prototype.setAttribute = function (n, v) { return setAttribute.call(this, n, this instanceof HTMLImageElement && n === 'src' ? fresh(v) : v) } })();"""
 
 
+def _post(name, args):
+    request = urllib.request.Request(f'http://127.0.0.1:{_PORT}/call', data=json.dumps({'name': name, 'args': args}).encode(),
+                                     headers={'content-type': 'application/json'})
+    with urllib.request.urlopen(request, timeout=120) as response:
+        reply = json.loads(response.read())
+    if 'error' in reply:
+        raise RuntimeError(f"DevTools {name}：{reply['error'][:400]}")
+    return reply['result']
+
+
+async def call(name, args):
+    """调一个 DevTools 工具（chrome-devtools-mcp 的名字和参数，经专用浏览器的桥接进程），返回它的文字结果。
+    桥接进程重开过（端口变了、连不上）就重新拿端口、重新找标签页，再试一次"""
+    global _PORT, PAGE
+    for attempt in (1, 2):
+        if _PORT is None:
+            got = subprocess.run([str(ROOT / 'scripts/axi'), 'port'], capture_output=True, text=True)
+            if got.returncode != 0 or not got.stdout.strip():
+                raise RuntimeError(f'专用浏览器开不起来：{got.stderr.strip()[-400:]}')
+            _PORT = int(got.stdout.strip())
+        try:
+            return await asyncio.to_thread(_post, name, args)
+        except (urllib.error.URLError, ConnectionError):
+            if attempt == 2:
+                raise
+            _PORT, PAGE = None, None
+
+
 async def _page():
-    """作者那个标签页的编号：PAGE 没给就从 list_pages 里找打开着 BASE 的那个"""
+    """专用窗口里打开着 BASE 的那个标签页的编号；没有就新开一个"""
     global PAGE
     if PAGE is None:
-        result = await tool.write(path='xd://mcp__chrome_devtools_list_pages', content='{}', i='DevTools list_pages')
-        text = result['text'] if isinstance(result, dict) else str(result)
+        text = await call('list_pages', {})
         found = [int(m.group(1)) for m in re.finditer(r'^(\d+): .*\(' + re.escape(BASE), text, re.M)]
         if not found:
-            raise RuntimeError(f'没有打开着 {BASE} 的标签页，先在作者的 Chrome 里打开它：\n{text[-400:]}')
+            text = await call('new_page', {'url': BASE + '/'})
+            found = [int(m.group(1)) for m in re.finditer(r'^(\d+): .*\(' + re.escape(BASE) + r'.*\[selected\]', text, re.M)]
+        if not found:
+            raise RuntimeError(f'专用窗口里打不开 {BASE}（开发服务器开着吗）：\n{text[-400:]}')
         PAGE = found[0]
     return PAGE
 
 
 async def devtools(name, **args):
-    """调一个 Chrome DevTools 工具，返回它的文字结果"""
-    result = await tool.write(path=f'xd://mcp__chrome_devtools_{name}', content=json.dumps({'pageId': await _page(), **args}), i=f'DevTools {name}')
-    return result['text'] if isinstance(result, dict) else str(result)
+    """在专用窗口的那个标签页上调一个 DevTools 工具，返回它的文字结果"""
+    if PAGE is None:
+        await _page()
+    return await call(name, {'pageId': PAGE, **args})
 
 
 async def run(js, stable=True):
@@ -170,19 +247,50 @@ def _wait_js(ready, text, timeout_ms):
   return {{ ready: !!ok(), ms: Math.round(performance.now() - t0) }} }}"""
 
 
+def _replay_file(issue):
+    return REPLAY_DIR / f'issue-{issue}.json'
+
+
+def _init(issue, extra=''):
+    """打开页面前装上的脚本：布局偏移和报错的记录、这张票存下的接口回答、拦截（intercept.js），再加 extra"""
+    file = _replay_file(issue)
+    store = json.loads(file.read_text()) if file.exists() else {}
+    replay = f'window.__campanulaReplay = {{ delay: {REPLAY_DELAY}, max: {REPLAY_MAX}, store: {json.dumps(store, ensure_ascii=False)}, recorded: {{}} }};'
+    return ';\n'.join([WATCH_SCRIPT, replay, INIT_SCRIPT, extra])
+
+
+async def _keep_replies(issue):
+    """这一页真去问到的接口回答存进 _notes/replay/issue-<票号>.json，之后打开页面都从这里回"""
+    recorded = await run('() => window.__campanulaReplay?.recorded ?? {}', stable=False)
+    if not recorded:
+        return
+    file = _replay_file(issue)
+    store = json.loads(file.read_text()) if file.exists() else {}
+    store.update(recorded)
+    REPLAY_DIR.mkdir(parents=True, exist_ok=True)
+    file.write_text(json.dumps(store, ensure_ascii=False))
+
+
+async def _watched():
+    """打开页面以来没人操作时挪了位置的块（moves）和报错（errors）"""
+    return await run('() => window.__campanulaWatch ?? { moves: [], errors: [] }', stable=False)
+
+
 async def shoot(issue, shots, check_overflow=('768', '1024')):
     """
     shots：一组 dict，每张一个：
       name      文件名前缀，存成 _notes/screenshots/issue-<issue>/<name>-<宽x高>.png
       path      地址，例如 '/playlists/123'
       viewport  'phone' | 'desktop' | '768' | '1024'
-      ready     等这个 CSS 选择器出现再截（默认 'main'），例如加载中的骨架 '[aria-busy=true]'、出错的 'main [role=alert]'
+      ready     等这个 CSS 选择器出现再截（默认 'main'），例如加载中的骨架 '[aria-busy=true]'、出错的 'main [role=alert]'。
+                不是等加载中的，还要等骨架都换成内容（SETTLE_JS）才截
       text      再等 main 里出现这段文字，例如空状态的标题“这张歌单还没有歌”
-      intercept intercept.js 的规则列表（不写就不拦）
-      fresh     True：先清空本机副本（IndexedDB），让歌单回到“还没同步”
+      intercept intercept.js 的规则列表（不写就不拦）：先于重放，命中的按规则回
+      fresh     True：先清空本机副本（IndexedDB），让歌单回到“还没同步”（之后整个曲库要真的重新同步，约 100 个请求）
       act       截图前在页面里跑的 () => ... 函数（或 SETUPS 里的名字，例如 'play-open'），它的返回值放进结果
       reduced   True：模拟“减少动态效果”打开（REDUCED_SCRIPT）
-    返回每张的结果：文件、等了多久、act 的返回值、视口抽查时的溢出情况
+    返回每张的结果：文件、等了多久、act 的返回值、没人操作时挪了位置的块（moves，应为空）、页面里的报错（errors，应为空）、
+    视口抽查时的溢出情况
     """
     out_dir = ROOT / '_notes/screenshots' / f'issue-{issue}'
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -204,10 +312,15 @@ async def shoot(issue, shots, check_overflow=('768', '1024')):
           setTimeout(() => resolve('timeout'), 5000) }})""")
         if cleared not in ('kept', 'cleared'):
             raise RuntimeError(f"{shot['name']}：本机数据库没清掉（{cleared}），换个时机再拍")
-        await devtools('navigate_page', type='url', url=BASE + shot['path'], initScript=INIT_SCRIPT + (';\n' + REDUCED_SCRIPT if shot.get('reduced') else ''))
-        waited = await run(_wait_js(shot.get('ready', 'main'), shot.get('text', ''), 15000))
+        await devtools('navigate_page', type='url', url=BASE + shot['path'], initScript=_init(issue, REDUCED_SCRIPT if shot.get('reduced') else ''))
+        ready = shot.get('ready', 'main')
+        waited = await run(_wait_js(ready, shot.get('text', ''), 15000))
         if not waited['ready']:
-            raise RuntimeError(f"{shot['name']}：等了 15 秒，页面没出现 {shot.get('ready', 'main')} {shot.get('text', '')}，截出来的不是要的画面")
+            raise RuntimeError(f"{shot['name']}：等了 15 秒，页面没出现 {ready} {shot.get('text', '')}，截出来的不是要的画面")
+        if 'aria-busy' not in ready:
+            settled = await run(SETTLE_JS)
+            if not settled['settled']:
+                raise RuntimeError(f"{shot['name']}：等了 10 秒还有在加载的（aria-busy），截出来的不是加载完的画面")
         if shot.get('reduced') and await run(REDUCED_CHECK) != '0ms':
             raise RuntimeError(f"{shot['name']}：减少动态效果没模拟上，截出来的不是要的状态")
         if rules and not await run('() => window.__campanulaIntercept === true'):
@@ -215,18 +328,72 @@ async def shoot(issue, shots, check_overflow=('768', '1024')):
         entry = {'name': shot['name'], 'size': size_name, **waited}
         if shot.get('act'):
             entry['act'] = await run(_named(shot['act'], SETUPS))
+        entry.update(await _watched())
         if shot['viewport'] in check_overflow:
             entry['overflow'] = await run(OVERFLOW_JS)
         file = out_dir / f"{shot['name']}-{size_name}.png"
         await devtools('take_screenshot', filePath=str(file))
         entry['file'] = str(file.relative_to(ROOT))
+        await _keep_replies(issue)
         report.append(entry)
-    # 拦截规则只给这一批用：清掉规则、换回桌面视口、重新打开首页（不带拦截），
-    # 被 fresh 清空的本机副本照常重新同步，作者的浏览器回到正常
+    # 拦截规则只给这一批用
     await run("() => { localStorage.removeItem('campanula-intercept'); return 'ok' }")
-    await devtools('emulate', viewport=VIEWPORTS['desktop'][0])
-    await devtools('navigate_page', type='url', url=BASE + '/')
     return report
+
+
+# 返回前后要比的：地址、窗口滚动位置、横向架子（Shelf 的 data-shelf）的滚动位置、选中的标签
+_PLACE_JS = """() => ({ url: location.pathname + location.search, y: Math.round(scrollY),
+  shelves: Object.fromEntries([...document.querySelectorAll('[data-shelf]')].map(s => [s.dataset.shelf, Math.round(s.scrollLeft)])),
+  tab: [...document.querySelectorAll('[role=tab][aria-selected=true]')].map(t => t.textContent.trim()).join(' / ') })"""
+
+
+async def roundtrip(issue, path, link, *, viewport='desktop', shelf=None):
+    """
+    点进去再返回（ADR-0012：返回时滚动位置回到原来的样子）：打开 path，把 link（CSS 选择器）滚到窗口中间
+    （shelf 给了就先把那个横向架子横着滚这么多 px），点它，等新页面加载完，history.back()，等原来的页面加载完，比前后。
+    返回：点进去的地址、前后的位置（地址、窗口滚动、横向架子、选中的标签）、same（都一样）、布局偏移和报错
+    """
+    await _prepare(issue, 'roundtrip', viewport, path, False)
+    shelf_js = (f"[...document.querySelectorAll('[data-shelf]')].find(s => s.dataset.shelf === {json.dumps(shelf[0], ensure_ascii=False)}).scrollLeft = {shelf[1]};"
+                if shelf else '')
+    target = await run(f"""async () => {{ {shelf_js} const a = document.querySelector({json.dumps(link)});
+      if (!a) return null; a.scrollIntoView({{ block: 'center', inline: 'center' }}); await new Promise(r => setTimeout(r, 400)); return a.getAttribute('href') }}""")
+    if target is None:
+        raise RuntimeError(f'{path} 上没有 {link}')
+    before = await run(_PLACE_JS)
+    await run(f'() => {{ document.querySelector({json.dumps(link)}).click(); return true }}')
+    await run(f"""async () => {{ const t0 = performance.now(); while (location.pathname + location.search === {json.dumps(before['url'])} && performance.now() - t0 < 10000)
+      await new Promise(r => setTimeout(r, 100)); return true }}""")
+    await run(SETTLE_JS)
+    page = await run('() => location.pathname + location.search')
+    await run('() => { history.back(); return true }')
+    await run(f"""async () => {{ const t0 = performance.now(); while (location.pathname + location.search !== {json.dumps(before['url'])} && performance.now() - t0 < 10000)
+      await new Promise(r => setTimeout(r, 100)); return true }}""")
+    await run(SETTLE_JS)
+    after = await run(_PLACE_JS)
+    await _keep_replies(issue)
+    return {'page': page, 'before': before, 'after': after, 'same': before == after, **await _watched()}
+
+
+# 焦点落在哪：标签名、id、role、前 20 个字、是否选中、焦点环看不看得见（:focus-visible）
+_FOCUS_JS = """() => { const el = document.activeElement; return { url: location.pathname + location.search,
+  focus: el === document.body ? 'body' : el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.getAttribute('role') ? '[' + el.getAttribute('role') + ']' : '') + ' ' + (el.getAttribute('aria-label') || el.textContent).trim().slice(0, 20),
+  selected: el.getAttribute('aria-selected'), ring: el.matches(':focus-visible') } }"""
+
+
+async def keys(sequence, *, focus=None):
+    """
+    在当前页面上按一串键（'Tab'、'ArrowRight'、'Enter'、'Shift+Tab'…），每按一次报焦点落在哪：地址、焦点、是否选中、焦点环看不看得见。
+    focus 给了就先把焦点放到这个 CSS 选择器上
+    """
+    if focus:
+        await run(f'() => {{ document.querySelector({json.dumps(focus)}).focus(); return true }}')
+    steps = []
+    for key in sequence:
+        await devtools('press_key', key=key)
+        await asyncio.sleep(0.3)
+        steps.append({'key': key, **await run(_FOCUS_JS)})
+    return steps
 
 
 def _named(value, table):
@@ -234,16 +401,18 @@ def _named(value, table):
     return table.get(value, value) if isinstance(value, str) else value
 
 
-async def _prepare(name, viewport, path, reduced, init=''):
-    """换视口；要换地址、要（或要去掉）减少动态效果时重新打开页面。返回 (size_arg, size_name)。
+async def _prepare(issue, name, viewport, path, reduced, init=''):
+    """换视口；要换地址、要（或要去掉）减少动态效果时重新打开页面（装上 _init），等到页面停下来。返回 (size_arg, size_name)。
     上一次 reduced=True 装的模拟留在页面里：这次不要它时重新打开、不带它，再确认真的没了"""
     size_arg, size_name = VIEWPORTS[viewport]
     await devtools('emulate', viewport=size_arg)
     stale = not reduced and await run(REDUCED_CHECK, stable=False) == '0ms'
     if path or reduced or stale:
         url = BASE + path if path else await run('() => location.href')
-        await devtools('navigate_page', type='url', url=url, initScript=init + (REDUCED_SCRIPT if reduced else ''))
+        await devtools('navigate_page', type='url', url=url, initScript=_init(issue, init + (REDUCED_SCRIPT if reduced else '')))
         await run(_wait_js('main', '', 15000))
+        # 重放的回答晚 600ms 才到：等骨架都换成内容，setup、trigger 要点的东西才在
+        await run(SETTLE_JS)
     moving = await run(REDUCED_CHECK, stable=False)
     if reduced and moving != '0ms':
         raise RuntimeError(f'{name}：减少动态效果没模拟上')
@@ -278,14 +447,14 @@ async def motion(issue, name, viewport, times, *, grab=None, trigger=None, when=
             await devtools('emulate', viewport=size_arg)
             # 先不限速打开，再限速、忽略缓存重新加载，装上“新开始的过渡就冻住”
             if path:
-                await devtools('navigate_page', type='url', url=BASE + path)
+                await devtools('navigate_page', type='url', url=BASE + path, initScript=_init(issue))
                 await run(_wait_js('main', '', 15000))
             if network:
                 await devtools('emulate', viewport=size_arg, networkConditions=network)
             await devtools('navigate_page', type='reload', ignoreCache=True, timeout=30000,
-                           initScript=FRESH_IMAGES_SCRIPT + FREEZE_SCRIPT + extra + f'window.__campanulaFreeze.load = {json.dumps(grab)};')
+                           initScript=_init(issue, FRESH_IMAGES_SCRIPT + FREEZE_SCRIPT + extra + f'window.__campanulaFreeze.load = {json.dumps(grab)};'))
         else:
-            await _prepare(name, viewport, path, reduced, FREEZE_SCRIPT)
+            await _prepare(issue, name, viewport, path, reduced, FREEZE_SCRIPT)
         await run(f'() => {{ {FREEZE_SCRIPT} return true }}', stable=False)
         if on_load and (await run(REDUCED_CHECK, stable=False) == '0ms') != reduced:
             raise RuntimeError(f'{name}：减少动态效果和要的不一样（reduced={reduced}），拍出来的不是要的状态')
@@ -346,7 +515,7 @@ async def slow(issue, name, viewport, actions, shots, *, factor=10, path=None, s
     setup = _named(setup, SETUPS)
     out_dir = ROOT / '_notes/screenshots' / f'issue-{issue}'
     out_dir.mkdir(parents=True, exist_ok=True)
-    _, size_name = await _prepare(name, viewport, path, reduced, SLOW_SCRIPT)
+    _, size_name = await _prepare(issue, name, viewport, path, reduced, SLOW_SCRIPT)
     await run(f'() => {{ {SLOW_SCRIPT} return true }}', stable=False)
     entry = {'name': name, 'size': size_name}
     if setup:
@@ -400,7 +569,7 @@ async def tween(issue, name, viewport, times, *, trigger, reset=None, setup=None
     trigger, reset, setup = _named(trigger, TRIGGERS), _named(reset, TRIGGERS), _named(setup, SETUPS)
     out_dir = ROOT / '_notes/screenshots' / f'issue-{issue}'
     out_dir.mkdir(parents=True, exist_ok=True)
-    _, size_name = await _prepare(name, viewport, path, reduced, CLOCK_SCRIPT)
+    _, size_name = await _prepare(issue, name, viewport, path, reduced, CLOCK_SCRIPT)
     await run(f'() => {{ {CLOCK_SCRIPT} return true }}', stable=False)
     entry = {'name': name, 'size': size_name, 'files': []}
     try:

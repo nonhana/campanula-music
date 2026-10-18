@@ -19,8 +19,10 @@ const PLACEHOLDER = 'https://p1.music.126.net/placeholder/avatar.jpg'
 const IMG_ID = 109951000000000000
 /** README「脱敏」：超过 30 项的数组只留前 30 项（整页录制要测分页时传 truncate: false） */
 const KEEP = 30
-/** 作者在浏览器开发者工具里复制 campanula_login Cookie 的值，存进这个文件（_notes/ 不进 git）。录制脚本从这里读，值不经过命令行 */
+/** 登录 Cookie 存在这个文件（_notes/ 不进 git）：pnpm tsx scripts/take-login.mts 从专用浏览器（scripts/axi）取。录制脚本从这里读，值不经过命令行 */
 const LOGIN_FILE = join(ROOT, '_notes/campanula-login')
+/** 登录 Cookie 不在、解不开、已经失效时怎么办 */
+const RENEW = '请作者在专用窗口（scripts/axi，开发服务器开着）里扫码登录，再跑 pnpm tsx scripts/take-login.mts'
 
 type QueryOf<K extends ModuleIdentifier> = Parameters<typeof invokeModule<K>>[1]
 
@@ -36,12 +38,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * 解开作者存在 LOGIN_FILE 里的登录 Cookie，拿到调 SDK 用的凭据。
+ * 解开 LOGIN_FILE 里的登录 Cookie，拿到调 SDK 用的凭据，先只读问一次 user_account 确认登录有效：
+ * 凭据失效时网易云照样回 200，只是账号是 null（README「录制」），不先查就会录成匿名看到的数据。
  * 和 src/lib/server/credentials.ts 的加密对应：COOKIE_SECRET 派生的 AES-256-GCM。凭据只在内存里
  */
 export async function openSession(): Promise<Invoke> {
   if (!existsSync(LOGIN_FILE))
-    throw new Error(`没有 ${LOGIN_FILE}：请作者在开发者工具里复制 campanula_login 的值，存进这个文件`)
+    throw new Error(`没有 ${LOGIN_FILE}：${RENEW}`)
   const sealed = readFileSync(LOGIN_FILE, 'utf8').trim()
   const line = readFileSync(join(ROOT, '.env'), 'utf8').match(/^COOKIE_SECRET=(.*)$/m)
   if (!line)
@@ -51,13 +54,19 @@ export async function openSession(): Promise<Invoke> {
   const key = Buffer.from(hkdfSync('sha256', secret, '', 'campanula login cookie', 32))
   const decipher = createDecipheriv('aes-256-gcm', key, raw.subarray(0, 12))
   decipher.setAuthTag(raw.subarray(raw.length - 16))
-  const login = JSON.parse(Buffer.concat([decipher.update(raw.subarray(12, raw.length - 16)), decipher.final()]).toString('utf8')) as LoginCookie
+  let login: LoginCookie
+  try {
+    login = JSON.parse(Buffer.concat([decipher.update(raw.subarray(12, raw.length - 16)), decipher.final()]).toString('utf8')) as LoginCookie
+  }
+  catch {
+    throw new Error(`${LOGIN_FILE} 用本机 .env 的 COOKIE_SECRET 解不开（不是这个开发服务器发的 Cookie）：${RENEW}`)
+  }
   if (!login.session)
-    throw new Error('这个登录 Cookie 里没有登录')
+    throw new Error(`这个登录 Cookie 里没有登录：${RENEW}`)
   // 和 src/lib/server/netease.ts 的 call() 一样：顶层的 deviceId 不在 SDK 的类型里，给隐式匿名注册用
   const config: ModuleCallConfig & { deviceId: string } = { cookie: login.session.credentials, deviceId: login.deviceId, state: { deviceId: login.deviceId } }
   /** 调一个 SDK 模块；SDK 抛出的失败（带 status 和 body）当作一次返回 */
-  return async function invoke<K extends ModuleIdentifier>(module: K, query: QueryOf<K>): Promise<Outcome<K>> {
+  async function invoke<K extends ModuleIdentifier>(module: K, query: QueryOf<K>): Promise<Outcome<K>> {
     try {
       const response = await invokeModule(module, query, config)
       return { ok: true, status: response.status, body: response.body }
@@ -68,6 +77,10 @@ export async function openSession(): Promise<Invoke> {
       throw thrown
     }
   }
+  const account = await invoke('user_account', {})
+  if (!account.ok || !account.body.account || account.body.account.anonimousUser || !account.body.profile)
+    throw new Error(`登录已经失效（user_account 没有账号）：${RENEW}`)
+  return invoke
 }
 
 function wholeNumber(number: number | string): RegExp {
