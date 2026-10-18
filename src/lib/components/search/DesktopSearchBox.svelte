@@ -1,17 +1,18 @@
 <!--
   桌面顶栏正中的搜索框（视觉原型 DesktopSearchBox，DESIGN.md 桌面搜索）：点进去、Tab 进去或按 Ctrl K（Mac 上 ⌘ K）时，
   框下面挂出下拉，没有遮罩、不挡页面：空着时是搜索历史，打字时是建议（SearchSuggestions）。
-  回车、点建议或搜索历史里的词就搜，结果在内容区单独成页（/search?q=）；在结果页上框里是这次搜的词。
+  回车、点建议或搜索历史里的词就搜，结果在内容区单独成页（/search?q=）；点歌手、专辑、歌单的建议直接打开它的页面。在结果页上框里是这次搜的词。
   下拉从框下面飘出来，关上时淡出（motion.ts 的 pop）。Esc、点别处、焦点离开时收起，框里换回这一页搜的词。
   键盘：↑↓ 在建议之间选，回车搜；下拉里的搜索历史、“清空”用 Tab 走到，Esc 收起后回到搜索框
 -->
 <script lang='ts'>
+  import type { SuggestionRow } from './search-box.svelte'
   import { on } from 'svelte/events'
   import { getAppView } from '../app-context.svelte'
   import { langOf } from '../library/view'
   import { pop } from '../motion'
   import SearchField from '../ui/SearchField.svelte'
-  import { activeSuggestionId, resetSearchBox, searchBox, searchBoxKey, submitSearch, SUGGESTION_LIST_ID, typeInSearchBox } from './search-box.svelte'
+  import { activeSuggestionId, pickSuggestion, resetSearchBox, searchBox, searchBoxKey, SUGGESTION_LIST_ID, typeInSearchBox } from './search-box.svelte'
   import SearchSuggestions from './SearchSuggestions.svelte'
 
   const view = getAppView()
@@ -36,11 +37,11 @@
     resetSearchBox(view.app)
   }
 
-  /** 搜这个词：下拉收起，焦点离开搜索框，内容区换成结果页 */
-  function pick(keyword: string) {
+  /** 点了一行：下拉收起，焦点离开搜索框，内容区换成结果页或歌手、专辑、歌单的页面 */
+  function pick(row: SuggestionRow) {
     open = false
     input?.blur()
-    submitSearch(view.app, keyword)
+    pickSuggestion(view.app, row)
   }
 
   function onkeydown(event: KeyboardEvent) {

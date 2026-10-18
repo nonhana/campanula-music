@@ -5,12 +5,13 @@
   框里是这一页搜的词时是结果。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
+  import type { SuggestionRow } from '#lib/components/search/search-box.svelte.js'
   import { page } from '$app/state'
   import { Search } from '@lucide/svelte'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import { langOf } from '#lib/components/library/view.js'
-  import { searchBox, submitSearch } from '#lib/components/search/search-box.svelte.js'
+  import { pickSuggestion, searchBox } from '#lib/components/search/search-box.svelte.js'
   import SearchSuggestions from '#lib/components/search/SearchSuggestions.svelte'
   import SongResults from '#lib/components/search/SongResults.svelte'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
@@ -31,11 +32,11 @@
       void view.app.openSearch(keyword)
   })
 
-  /** 手机上点了搜索历史里的词、建议：搜它，收起键盘 */
-  function pick(word: string) {
+  /** 手机上点了搜索历史里的词、建议：收起键盘，搜它或打开歌手、专辑、歌单的页面 */
+  function pick(row: SuggestionRow) {
     if (document.activeElement instanceof HTMLElement)
       document.activeElement.blur()
-    submitSearch(view.app, word)
+    pickSuggestion(view.app, row)
   }
 </script>
 

@@ -1,11 +1,13 @@
 <!--
   搜索框下面的那一块（视觉原型 SearchPanel）：桌面是顶栏搜索框的下拉，手机是搜索页的内容。
   搜索框空着时是搜索历史（只保存在这台设备上，能清空；点一个词就搜它）；
-  有字时是建议列表：第一行“搜索“…””，后面是网易云给的建议（单曲、歌手、专辑，和搜索框里一样的那一段标出来），点哪一行就搜哪个词。
+  有字时是建议列表：第一行“搜索“…””，后面是网易云给的建议（单曲、歌手、专辑、歌单，和搜索框里一样的那一段标出来）。
+  点“搜索…”那一行、单曲就搜这个名字，点歌手、专辑、歌单就打开它的页面。
   建议列表是搜索框的 listbox：键盘留在搜索框里，↑↓ 选中哪一行由 searchBox.active 决定（search-box.svelte.ts）
 -->
 <script lang='ts'>
-  import { Disc3, History, Music, Search, UserRound } from '@lucide/svelte'
+  import type { SuggestionRow } from './search-box.svelte'
+  import { Disc3, History, ListMusic, Music, Search, UserRound } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { langOf } from '../library/view'
   import FilterChip from '../ui/FilterChip.svelte'
@@ -14,8 +16,8 @@
 
   interface Props {
     phone?: boolean
-    /** 点了搜索历史里的词、建议列表的一行：搜这个词 */
-    onpick: (keyword: string) => void
+    /** 点了搜索历史里的词（当作“搜索…”那一行）、建议列表的一行 */
+    onpick: (row: SuggestionRow) => void
   }
 
   const { phone = false, onpick }: Props = $props()
@@ -23,7 +25,7 @@
   const history = $derived(view.state.search.history)
   const typed = $derived(searchBox.draft.trim())
   const rows = $derived(suggestionRows(searchBox.draft, view.state.search.suggestions))
-  const ICONS = { search: Search, song: Music, artist: UserRound, album: Disc3 }
+  const ICONS = { search: Search, song: Music, artist: UserRound, album: Disc3, playlist: ListMusic }
 
   /** 清空搜索历史。这个按钮跟着就没了：用键盘按的，焦点回到搜索框（输入框是 combobox），不掉到页面最外面 */
   function clearHistory(event: MouseEvent) {
@@ -50,7 +52,7 @@
       <ul class='mt-3 flex flex-wrap gap-2' aria-label='搜过的词'>
         {#each history as word (word)}
           <li>
-            <FilterChip class='max-w-full gap-1.5 pl-3 pr-3.5' onclick={() => onpick(word)}>
+            <FilterChip class='max-w-full gap-1.5 pl-3 pr-3.5' onclick={() => onpick({ kind: 'search', name: word })}>
               <History size={14} class='flex-none text-neutral-500' aria-hidden='true' />
               <span class='truncate' lang={langOf(word)}>{word}</span>
             </FilterChip>
@@ -63,7 +65,8 @@
   </section>
 {:else}
   <div id={SUGGESTION_LIST_ID} role='listbox' aria-label='搜索建议' class={phone ? 'py-1' : 'p-2'}>
-    {#each rows as row, i (`${row.kind}:${row.name}`)}
+    <!-- 网易云的建议会重名（同名的单曲和专辑、两张同名专辑），按下标认每一行 -->
+    {#each rows as row, i (i)}
       {@const Icon = ICONS[row.kind]}
       {@const [before, matched, after] = matchedParts(row.name, typed)}
       <button
@@ -77,7 +80,7 @@
           phone ? 'h-13 px-4 active:bg-primary-100' : 'h-11 rounded-lg px-3',
           searchBox.active === i && 'bg-primary-100',
         ]}
-        onclick={() => onpick(row.name)}
+        onclick={() => onpick(row)}
         onpointermove={(event) => {
           if (event.pointerType === 'mouse')
             searchBox.active = i

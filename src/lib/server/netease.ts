@@ -5,7 +5,7 @@ import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistInfo, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
-import type { SearchSongsResponse, Suggestion, SuggestionsResponse } from '#lib/api/search.js'
+import type { SearchSongsResponse, SuggestionsResponse } from '#lib/api/search.js'
 import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
 import { ARTIST_ALBUMS_PER_REQUEST } from '#lib/api/library.js'
@@ -526,19 +526,28 @@ export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
 
 // 搜索（Spec #11“服务端：Campanula API”搜索一项，#31）
 
+/** 比较歌名是否看起来一样时用的写法：全角半角归一（NFKC），波浪线的几种写法（～〜∼~）当成一个 */
+function lookalike(name: string): string {
+  return name.normalize('NFKC').replace(/[\u301C\u223C]/g, '~')
+}
+
 /**
- * 边输入边给的建议（网页版的建议，分单曲、歌手、专辑；没有“歌单”，SDK 没声明）。网易云说的先后（order）SDK 没声明，
- * 这里固定成单曲、歌手、专辑（#31 录到的两次网易云都是这个顺序）；点建议就是搜它的名字，所以同一个名字只留第一条
+ * 边输入边给的建议（网页版的建议）：网易云给了哪类就列哪类，不另外补，也不跨类别去重。网易云说的先后（order）SDK 没声明，
+ * 这里固定成单曲、歌手、专辑、歌单（#31 录到的几次网易云都是这个顺序）。
+ * 点单曲是搜这首的名字：名字看起来一样的几首（例如一个用 ～、一个用 〜）只留第一首
  */
 export async function fetchSuggestions(keywords: string, listener: Listener): Promise<SuggestionsResponse> {
   const { body } = await call('search_suggest', { keywords }, listener)
-  const { songs = [], artists = [], albums = [] } = body.result
-  const all: Suggestion[] = [
-    ...songs.map(song => ({ kind: 'song' as const, name: song.name })),
-    ...artists.map(artist => ({ kind: 'artist' as const, name: artist.name })),
-    ...albums.map(album => ({ kind: 'album' as const, name: album.name })),
-  ]
-  return { suggestions: all.filter((suggestion, index) => all.findIndex(each => each.name === suggestion.name) === index) }
+  const { songs = [], artists = [], albums = [], playlists = [] } = body.result
+  const looks = songs.map(song => lookalike(song.name))
+  return {
+    suggestions: [
+      ...songs.filter((_, index) => looks.indexOf(looks[index]) === index).map(song => ({ kind: 'song' as const, name: song.name })),
+      ...artists.map(artist => ({ kind: 'artist' as const, id: artist.id, name: artist.name })),
+      ...albums.map(album => ({ kind: 'album' as const, id: album.id, name: album.name })),
+      ...playlists.map(playlist => ({ kind: 'playlist' as const, id: playlist.id, name: playlist.name })),
+    ],
+  }
 }
 
 /** 单曲搜索的前 SEARCH_SONGS_PER_REQUEST 首。一首都没搜到时网易云不给 songs */
