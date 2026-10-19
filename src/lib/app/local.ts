@@ -136,6 +136,15 @@ export interface LocalDb {
   resetLibrary: (owner: number) => Promise<void>
   deleteLibrary: () => Promise<void>
   /**
+   * 这个账号有改动还没确认的歌单（晚一点才提交的修改，#35）：下次打开时要从网易云重拉这几张、丢掉本地改动。
+   * 存在 LIBRARY 里，退出、换账号时跟着副本一起清掉
+   */
+  pendingChanges: (owner: number) => Promise<number[]>
+  /** 记下这张歌单有改动还没确认（只加这一张，别的标签页记下的不动）；副本不是 owner 的时什么都不写，返回 false */
+  addPendingChange: (owner: number, playlistId: number) => Promise<boolean>
+  /** 这张歌单的改动确认了、恢复了或者撤销了：划掉这一张，别的标签页记下的不动 */
+  removePendingChange: (owner: number, playlistId: number) => Promise<boolean>
+  /**
    * 改曲库副本（同步拿到的、听众改了并且网易云确认了的），见 LibraryPatch：同一个事务里先核对副本还是不是 owner 的，
    * 不是（别的标签页退出删了、换了账号）就什么都不写，返回 false
    */
@@ -347,6 +356,35 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       transaction.objectStore(LIBRARY).put(owner, 'owner')
     }),
     deleteLibrary: () => write(LIBRARY_STORES, clearLibrary),
+    async pendingChanges(owner) {
+      const store = (await database()).transaction(LIBRARY).objectStore(LIBRARY)
+      const [storedOwner, pending] = await Promise.all([
+        settled(store.get('owner')) as Promise<number | undefined>,
+        settled(store.get('pendingChanges')) as Promise<number[] | undefined>,
+      ])
+      return storedOwner === owner ? pending ?? [] : []
+    },
+    addPendingChange: (owner, playlistId) => writeLibrary(owner, [], (transaction) => {
+      const store = transaction.objectStore(LIBRARY)
+      const stored = store.get('pendingChanges')
+      stored.onsuccess = () => {
+        const ids = (stored.result as number[] | undefined) ?? []
+        if (!ids.includes(playlistId))
+          store.put([...ids, playlistId], 'pendingChanges')
+      }
+    }),
+    removePendingChange: (owner, playlistId) => writeLibrary(owner, [], (transaction) => {
+      const store = transaction.objectStore(LIBRARY)
+      const stored = store.get('pendingChanges')
+      stored.onsuccess = () => {
+        const ids = (stored.result as number[] | undefined) ?? []
+        const kept = ids.filter(id => id !== playlistId)
+        if (kept.length > 0)
+          store.put(kept, 'pendingChanges')
+        else
+          store.delete('pendingChanges')
+      }
+    }),
     saveLibrary: (owner, patch) => writeLibrary(owner, storesFor(patch), (transaction) => {
       const library = transaction.objectStore(LIBRARY)
       if (patch.hearts)

@@ -3,13 +3,13 @@ import type { CoverCrop } from '#lib/api/cover.js'
 import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
 import type { LogoutResponse } from '#lib/api/login.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
-import type { SearchedItems, SearchKind } from '#lib/api/search.js'
-import type { RequestFailure } from './api'
+import type { SearchedItems, SearchKind, SearchPageResponse } from '#lib/api/search.js'
+import type { RequestFailure, Result } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { PlaylistEdit, PlaylistSeed } from './changes'
 import type { CoverOutcome, CoverState } from './cover'
 import type { DailyState } from './daily'
-import type { CreateOutcome, LibraryState, PlaylistSearch } from './library'
+import type { AddSongsOutcome, CreateOutcome, LibraryState, PlaylistSearch } from './library'
 import type { PendingCheckIn } from './local'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
@@ -198,6 +198,32 @@ export interface App {
    */
   addToPlaylist: (playlistId: number, song: Song) => Promise<void>
   /**
+   * 一次把几首加入自建歌单（多选、添加歌曲选择器）：先改本地、立即生效，一个请求带上全部编号；
+   * 已经在歌单里的不再提交，全都已经在里面时什么都不发。断网、网易云拒绝时改回原样并说明
+   */
+  addSongsToPlaylist: (playlistId: number, songs: readonly Song[]) => Promise<AddSongsOutcome>
+  /**
+   * 批量“加入歌单”的目标：除了当前歌单以外的自建歌单（我喜欢的音乐、收藏的歌单不出现，不做批量红心）。
+   * 歌单列表还没拿到时是 null
+   */
+  addTargets: (currentPlaylistId: number) => Playlist[] | null
+  /**
+   * 从自建歌单移除几首（多选）：先从本地拿掉，提示条留 5 秒撤销，没撤销才提交；失败放回原位、可以重试。
+   * 我喜欢的音乐、收藏的歌单没有移除：不是自建歌单时抛错。断网时不改本地、直接说没改成
+   */
+  removeFromPlaylist: (playlistId: number, songIds: readonly number[]) => void
+  /** 撤销刚才的移除：放回原位，什么都不提交 */
+  undoRemove: () => void
+  /** 重试刚才没成功的移除：重新拿掉并马上提交 */
+  retryRemove: () => Promise<void>
+  /** 离开这张歌单：还没提交的移除立即提交（页面隐藏时 App 自己会做） */
+  flushPlaylist: (playlistId: number) => Promise<void>
+  /**
+   * 选择器里搜索单曲：只要网易云的第一页，不记搜索历史、不动搜索结果页（state.search）。
+   * 没搜到、断网、网易云拒绝时说明原因
+   */
+  searchSongs: (keyword: string) => Promise<Result<readonly Song[]>>
+  /**
    * 收藏或取消收藏歌单、专辑、歌手：曲库里的、打开着的页（不在曲库里的歌单、专辑页、歌手页）和搜索结果里的都行。
    * 和红心一样先改本地；收藏歌单时先现取一枚网易云的反作弊令牌。收藏了打开着的不在曲库里的歌单，它连同已经取到的曲目进曲库；
    * 取消收藏后照常显示刚才的样子
@@ -205,10 +231,11 @@ export interface App {
   collect: (target: CollectTarget, collected: boolean) => Promise<void>
   /**
    * 新建自建歌单（GLOSSARY）：名称去掉首尾空白后最多 40 个宽度（汉字算 2），不合规、断网时不提交，说明原因。
-   * 不先改本地：等网易云建好（给了编号）才进曲库，排在我喜欢的音乐后面，是空的。带着 song（从加入歌单里新建）时建好接着把这首加进去，
-   * 和加入歌单一样先改本地、成了提示一句。退出、登录失效时是 null
+   * 不先改本地：等网易云建好（给了编号）才进曲库，排在我喜欢的音乐后面，是空的。
+   * 带着 songs（从加入歌单、多选里新建）时建好接着一次把这几首加进去，和加入歌单一样先改本地、成了提示一句。
+   * 退出、登录失效时是 null
    */
-  createPlaylist: (draft: CreatePlaylistRequest, song?: Song) => Promise<CreateOutcome | null>
+  createPlaylist: (draft: CreatePlaylistRequest, songs?: readonly Song[]) => Promise<CreateOutcome | null>
   /**
    * 编辑自建歌单的名称、简介、标签：名称、简介去掉首尾空白，和现在一样的不提交。有一样不合规（名称是空的、超过 40 个宽度，
    * 简介超过 1,000 个字，标签超过 3 个）就整次都不提交，原因看 state.library.notice。其余和红心一样先改本地、立即生效，
@@ -335,6 +362,7 @@ export function createApp(browser: BrowserCapabilities): App {
     api,
     lane,
     local,
+    clock: browser.clock,
     write: (next) => {
       update({ library: next })
       player.libraryChanged(playlistId => playlistSongsOf(next, playlistId))
@@ -342,6 +370,12 @@ export function createApp(browser: BrowserCapabilities): App {
     loginExpired,
     online: () => browser.network.onLine,
     checkToken: browser.checkToken,
+  })
+
+  // 页面被隐藏（切到后台、锁屏、关页面）：晚一点才提交的修改立即提交，不等计时器（#35）
+  browser.page.addEventListener('visibilitychange', () => {
+    if (browser.page.visibilityState === 'hidden')
+      void library.flush()
   })
 
   const cover = createCover({
@@ -681,7 +715,29 @@ export function createApp(browser: BrowserCapabilities): App {
       const playlist = state.library?.playlists?.find(item => item.id === playlistId)
       if (!playlist || playlist.kind === 'collected')
         throw new Error(`只能加入自建歌单和我喜欢的音乐：${playlistId}`)
+      // 5 秒撤销窗口里把这首加回来：撤掉待提交的移除就行，它还在网易云上，不用再发加入
+      if (playlist.kind === 'own' && library.restorePending(playlistId, [song.id]).has(song.id))
+        return
       return library.change({ kind: 'add', playlist, song })
+    },
+    addSongsToPlaylist: async (playlistId, songs) => library.addSongs(ownPlaylist(playlistId), songs),
+    addTargets: library.addTargets,
+    removeFromPlaylist(playlistId, songIds) {
+      library.removeSongs(ownPlaylist(playlistId), songIds)
+    },
+    undoRemove: library.undoRemove,
+    retryRemove: library.retryRemove,
+    flushPlaylist: playlistId => library.flush(playlistId),
+    async searchSongs(keyword) {
+      const searched = keyword.trim()
+      if (!searched)
+        return { ok: true, value: [] }
+      const result = await api.get<SearchPageResponse<'songs'>>(`/api/search/songs?keywords=${encodeURIComponent(searched)}&offset=0`)
+      if (result.ok)
+        return { ok: true, value: result.value.items }
+      if (result.failure.kind === 'needsLogin')
+        loginExpired()
+      return result
     },
     async collect(target, collected) {
       const shown = state.library

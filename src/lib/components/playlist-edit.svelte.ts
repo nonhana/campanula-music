@@ -20,9 +20,9 @@ export interface PlaylistMenuRequest extends OverlayRequest {
 
 export const playlistMenu = new OverlayLayer<PlaylistMenuRequest>('playlistMenuSheet')
 
-/** 编辑什么：新建（从加入歌单里新建时带着这首歌，建好接着加进去），或者一张自建歌单的信息、改公开、删除；关掉后焦点回到 from */
+/** 编辑什么：新建（从加入歌单、多选里新建时带着这几首歌，建好接着加进去），或者一张自建歌单的信息、改公开、删除；关掉后焦点回到 from */
 export type EditorRequest
-  = | { mode: 'new', song: Song | null, from: HTMLElement | null }
+  = | { mode: 'new', songs: readonly Song[], from: HTMLElement | null }
     | { mode: 'info' | 'public' | 'delete', playlistId: number, from: HTMLElement | null }
 
 class PlaylistEditor {
@@ -35,7 +35,7 @@ class PlaylistEditor {
   open = (request: EditorRequest): void => {
     this.request = request
     this.sheet = !desktopLayout.current
-    const fromSheet = page.state.playlistMenuSheet === true || page.state.playlistSheet === true
+    const fromSheet = page.state.playlistMenuSheet === true || page.state.playlistSheet === true || page.state.batchSheet === true
     if (!this.sheet) {
       // 桌面布局上用触屏打开的菜单是底部弹层，弹窗不压浏览记录：退掉菜单压的那一条
       if (fromSheet)
@@ -47,6 +47,7 @@ class PlaylistEditor {
     const state: App.PageState = { ...page.state, editorSheet: true }
     delete state.playlistMenuSheet
     delete state.playlistSheet
+    delete state.batchSheet
     pushShallowState(state, { replace: fromSheet })
   }
 

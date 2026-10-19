@@ -18,6 +18,10 @@ export type Change
   = | { kind: 'heart', song: Song, hearted: boolean }
   /** 加入歌单：自建歌单，或我喜欢的音乐（等于红心） */
     | { kind: 'add', playlist: Playlist, song: Song }
+  /** 一次加入几首（多选、添加歌曲选择器，#35）：自建歌单，一个请求带上全部编号 */
+    | { kind: 'addMany', playlist: Playlist, songs: readonly Song[] }
+  /** 从自建歌单移除几首（#35）：先在本地拿掉，提示条留 5 秒撤销，没撤销才提交 */
+    | { kind: 'remove', playlist: Playlist, songIds: number[] }
     | { kind: 'collectAlbum', album: CollectedAlbum, collected: boolean }
     | { kind: 'collectArtist', artist: CollectedArtist, collected: boolean }
     | { kind: 'collectPlaylist', playlist: Playlist, collected: boolean, seed: PlaylistSeed | null }
@@ -74,6 +78,8 @@ export function changeProblem(change: Change): PlaylistEditProblem | null {
       return change.tags.length > PLAYLIST_TAGS_MAX ? 'tooManyTags' : null
     case 'heart':
     case 'add':
+    case 'addMany':
+    case 'remove':
     case 'collectAlbum':
     case 'collectArtist':
     case 'collectPlaylist':
@@ -107,6 +113,10 @@ export function targetOf(change: Change): string {
   switch (change.kind) {
     case 'add':
       return `add:${change.playlist.id}:${change.song.id}`
+    case 'addMany':
+    case 'remove':
+      // 批量加歌、移除都是同一张歌单的曲目：按先后一次一次提交，免得后发的先到
+      return `tracks:${change.playlist.id}`
     case 'collectAlbum':
       return `album:${change.album.id}`
     case 'collectArtist':
@@ -136,6 +146,25 @@ function prepended(ids: number[], id: number): number[] {
 function tracksWith(replica: Replica, playlistId: number, songId: number): PlaylistTracks | null {
   const tracks = replica.tracks.get(playlistId)
   return tracks && !tracks.trackIds.includes(songId) ? { ...tracks, trackIds: [songId, ...tracks.trackIds] } : null
+}
+
+/** 一张歌单的曲目最前面加上这几首（按勾选的先后）；本机还没有这张歌单的曲目、或者都已经在里面了是 null */
+function tracksWithMany(replica: Replica, playlistId: number, songs: readonly Song[]): PlaylistTracks | null {
+  const tracks = replica.tracks.get(playlistId)
+  if (!tracks)
+    return null
+  const fresh = songs.filter(song => !tracks.trackIds.includes(song.id)).map(song => song.id)
+  return fresh.length > 0 ? { ...tracks, trackIds: [...fresh, ...tracks.trackIds] } : null
+}
+
+/** 一张歌单的曲目去掉这几首；本机还没有这张歌单的曲目、或者一首都不在里面是 null */
+function tracksWithout(replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null {
+  const tracks = replica.tracks.get(playlistId)
+  if (!tracks)
+    return null
+  const removed = new Set(songIds)
+  const kept = tracks.trackIds.filter(id => !removed.has(id))
+  return kept.length !== tracks.trackIds.length ? { ...tracks, trackIds: kept } : null
 }
 
 /** 本机还没有的歌曲信息 */
@@ -200,6 +229,14 @@ export function changePatch(replica: Replica, change: ConfirmedChange): LibraryP
     case 'add': {
       const tracks = tracksWith(replica, change.playlist.id, change.song.id)
       return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined, songs: missingSongs(replica, [change.song]) }
+    }
+    case 'addMany': {
+      const tracks = tracksWithMany(replica, change.playlist.id, change.songs)
+      return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined, songs: missingSongs(replica, change.songs) }
+    }
+    case 'remove': {
+      const tracks = tracksWithout(replica, change.playlist.id, change.songIds)
+      return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined }
     }
     case 'collectAlbum':
       return { albums: toggled(replica.albums, change.album, change.collected) }

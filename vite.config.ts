@@ -22,5 +22,8 @@ export default defineConfig({
   ],
   test: {
     include: ['tests/**/*.test.ts'],
+    // 每个测试文件都会起一个 Vite 世界，共用 node_modules/.vite 的依赖缓存：并行启动时会在临时目录改名上打架（ENOTEMPTY），
+    // 几条大曲库测试也会被挤到超时。文件一个一个跑，整轮 30 秒左右，稳定
+    fileParallelism: false,
   },
 })

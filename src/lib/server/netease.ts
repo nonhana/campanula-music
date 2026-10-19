@@ -3,7 +3,7 @@ import type { Account } from '#lib/api/account.js'
 import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksResponse, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
@@ -626,13 +626,32 @@ export async function addTracks(playlistId: number, songIds: readonly number[], 
     await call('playlist_tracks', { op: 'add', pid: playlistId, tracks: songIds.join(',') }, listener)
   }
   catch (error) {
-    const code = rejectedCode(error)
-    if (code === PLAYLIST_MISSING)
-      return { kind: 'missing' }
-    if (code !== TRACKS_DUPLICATE)
-      throw error
+    if (error instanceof NeteaseError && error.failure.kind === 'rejected') {
+      if (error.failure.code === PLAYLIST_MISSING)
+        return { kind: 'missing' }
+      // 只有“整批都已经在歌单里”这一种 502 算加好了；别的 502 是网易云拒绝，不能当成成功
+      if (error.failure.code === TRACKS_DUPLICATE && error.failure.message.includes('歌单内歌曲重复'))
+        return { kind: 'added' }
+    }
+    throw error
   }
   return { kind: 'added' }
+}
+
+/**
+ * 从自建歌单移除歌：不在歌单里的歌网易云也照样回 200（验证关卡②）。
+ * 歌单已经被删掉时网易云回 404“歌单不存在”（验证关卡②）；别的失败原样交给调用方
+ */
+export async function removeTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<RemoveTracksResponse> {
+  try {
+    await call('playlist_tracks', { op: 'del', pid: playlistId, tracks: songIds.join(',') }, listener)
+  }
+  catch (error) {
+    if (rejectedCode(error) === PLAYLIST_MISSING)
+      return { kind: 'missing' }
+    throw error
+  }
+  return { kind: 'removed' }
 }
 
 export async function collectAlbum(albumId: number, collected: boolean, listener: Listener): Promise<void> {

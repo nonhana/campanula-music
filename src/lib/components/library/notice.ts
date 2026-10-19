@@ -3,7 +3,7 @@ import type { Change } from '#lib/app/changes.js'
 import type { ChangeFailure, LibraryNotice } from '#lib/app/library.js'
 import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
 import { failureText } from '../failure'
-import { playlistName } from './view'
+import { formatCount, playlistName } from './view'
 
 // 改曲库的提示（LibraryNotice.svelte）说什么（#30、#33）：没改成时说哪件事没成、为什么；歌单不在了说清楚、正在重新同步；
 // 加入歌单成功说加进了哪里。歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
@@ -20,6 +20,10 @@ function attempted(change: Change): string {
       return `没能${change.hearted ? '' : '取消'}红心《${change.song.name}》：`
     case 'add':
       return `没能加入${playlistInText(change.playlist)}：`
+    case 'addMany':
+      return `没能把 ${formatCount(change.songs.length)} 首歌加入${playlistInText(change.playlist)}：`
+    case 'remove':
+      return `没能从${playlistInText(change.playlist)}移除 ${formatCount(change.songIds.length)} 首歌：`
     case 'collectAlbum':
       return `没能${change.collected ? '' : '取消'}收藏专辑「${change.album.name}」：`
     case 'collectArtist':
@@ -54,6 +58,8 @@ export function editProblemText(problem: PlaylistEditProblem): string {
       return `简介最多 ${PLAYLIST_DESCRIPTION_LENGTH} 个字。`
     case 'tooManyTags':
       return `标签最多选 ${PLAYLIST_TAGS_MAX} 个。`
+    case 'tooManySongs':
+      return '一次最多改 9,000 首歌，少选一些再试。'
     default: {
       const unhandled: never = problem
       throw new Error(`不认识的问题：${JSON.stringify(unhandled)}`)
@@ -78,11 +84,23 @@ export function libraryNoticeText(notice: LibraryNotice): string {
     case 'notChanged':
       return attempted(notice.change) + changeFailureText(notice.failure)
     case 'playlistMissing': {
-      const failed = notice.change.kind === 'add' ? '没能加入' : notice.change.collected ? '没能收藏' : '没能取消收藏'
+      const failed = notice.change.kind === 'add' || notice.change.kind === 'addMany'
+        ? '没能加入'
+        : notice.change.kind === 'remove' ? '没能移除' : notice.change.collected ? '没能收藏' : '没能取消收藏'
       return `${playlistInText(notice.change.playlist)}已经不在了（可能在网易云音乐里删掉了），${failed}。正在重新同步曲库。`
     }
-    case 'added':
-      return `已加入${playlistInText(notice.change.playlist)}`
+    case 'added': {
+      const count = notice.change.kind === 'addMany' ? notice.change.songs.length : 1
+      return count > 1 ? `已加入${playlistInText(notice.change.playlist)} ${formatCount(count)} 首` : `已加入${playlistInText(notice.change.playlist)}`
+    }
+    case 'alreadyAdded':
+      return `这些歌都已经在${playlistInText(notice.playlist)}里了`
+    case 'removed':
+      return `已从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首`
+    case 'removeFailed':
+      return `没能从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首${notice.restored ? '，已经放回原位' : ''}：${changeFailureText(notice.failure)}`
+    case 'recovered':
+      return '上次关闭前的修改没保存成功，已恢复原样。'
     default: {
       const unhandled: never = notice
       throw new Error(`不认识的提示：${JSON.stringify(unhandled)}`)

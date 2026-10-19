@@ -15,8 +15,11 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { ArrowLeft, Calendar, CalendarDays, House, Menu, Search, Settings } from '@lucide/svelte'
+  import { addSongsDialog } from '../add-songs.svelte'
+  import AddSongs from '../AddSongs.svelte'
   import AddToPlaylist from '../AddToPlaylist.svelte'
   import { getAppView } from '../app-context.svelte'
+  import BatchAddToPlaylist from '../BatchAddToPlaylist.svelte'
   import Brand from '../Brand.svelte'
   import { coverEditor } from '../cover-edit.svelte'
   import CoverEditor from '../CoverEditor.svelte'
@@ -24,6 +27,9 @@
   import { dailyCalendarDay } from '../daily/view'
   import { desktopLayout } from '../layout'
   import LibraryNotice from '../library/LibraryNotice.svelte'
+  import PhoneSelectBar from '../library/PhoneSelectBar.svelte'
+  import PhoneSelectionBar from '../library/PhoneSelectionBar.svelte'
+  import { leaveSelection, playlistSelection } from '../library/playlist-selection.svelte'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
   import { playerDrawer } from '../player/player-page.svelte'
@@ -55,8 +61,8 @@
 
   // 浅路由说开着就升起来，说关了就缩回去（返回手势、后退、Esc、收起键都走这里）
   $effect(() => playerDrawer.settle(playerOpen))
-  /** 歌单编辑（新建、编辑信息、改公开、删除）或换封面的裁剪页开着：后面的都不能操作 */
-  const editorOpen = $derived(playlistEditor.request !== null || coverEditor.request !== null)
+  /** 歌单编辑（新建、编辑信息、改公开、删除）、添加歌曲或换封面的裁剪页开着：后面的都不能操作 */
+  const editorOpen = $derived(playlistEditor.request !== null || coverEditor.request !== null || addSongsDialog.request !== null)
 
   const pathname = $derived(page.url.pathname)
   /** 歌单页、专辑页、歌手页（属于曲库）：标题是歌单名、专辑名、歌手名 */
@@ -89,6 +95,36 @@
   const inLibrary = $derived(onLibrary || libraryPage !== undefined)
 
   let railExpanded = $state(false)
+
+  // 手机上进了多选、按返回：浅路由退掉以后清掉勾选（不额外退一条历史）
+  let selectionAcknowledged = false
+  $effect(() => {
+    if (!playlistSelection.mode) {
+      selectionAcknowledged = false
+      return
+    }
+    if (page.state.playlistSelect) {
+      selectionAcknowledged = true
+    }
+    else if (selectionAcknowledged) {
+      selectionAcknowledged = false
+      playlistSelection.exit()
+    }
+  })
+
+  // 多选时按 Esc 退出（桌面“完成”的键盘做法）；弹层里的 Esc 已经 preventDefault 的不再抢
+  $effect(() => {
+    if (!playlistSelection.mode && playlistSelection.size === 0)
+      return
+    const onkeydown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented)
+        return
+      event.preventDefault()
+      leaveSelection()
+    }
+    window.addEventListener('keydown', onkeydown)
+    return () => window.removeEventListener('keydown', onkeydown)
+  })
 
   // 从 App 里别的页面进来的，返回就退回去；直接打开二级页面的，返回到曲库
   let cameFromApp = $state(false)
@@ -166,6 +202,10 @@
   <PhoneMiniPlayer />
 {/snippet}
 
+{#snippet selectionBar()}
+  <PhoneSelectionBar />
+{/snippet}
+
 <div class='contents' inert={playerOpen || editorOpen}>
   {#if desktopLayout.current}
     <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
@@ -185,9 +225,14 @@
       {@render children()}
     </DesktopShell>
   {:else}
-    <PhoneShell tabs={onLibrary ? libraryTabs : searching && showingResults() ? searchTabs : undefined} bar={hasQueue ? miniPlayer : undefined}>
+    <PhoneShell
+      tabs={onLibrary ? libraryTabs : searching && showingResults() ? searchTabs : undefined}
+      bar={playlistSelection.mode ? selectionBar : hasQueue ? miniPlayer : undefined}
+    >
       {#snippet header()}
-        {#if searching}
+        {#if playlistSelection.mode}
+          <PhoneSelectBar />
+        {:else if searching}
           <PhoneSearchBar onback={back} />
         {:else if secondary}
           <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
@@ -217,10 +262,14 @@
     <PlayerPage open={playerOpen} />
   {/if}
 </div>
-<PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
-<LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
+<div class='contents' inert={editorOpen}>
+  <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
+  <LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
+</div>
 <SongMenu />
 <AddToPlaylist />
+<BatchAddToPlaylist />
 <PlaylistMenu />
 <PlaylistEditor />
+<AddSongs />
 <CoverEditor />
