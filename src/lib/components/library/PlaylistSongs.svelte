@@ -22,7 +22,7 @@
   import Button from '../ui/Button.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
-  import DesktopSongRow from './DesktopSongRow.svelte'
+  import DesktopSongRow, { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
   import { formatCount, openingOf, playlistView, songMark } from './view'
@@ -140,18 +140,18 @@
   <div class='pt-2'>{@render list()}</div>
 {:else}
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
-    <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-9 items-center gap-4 pl-2 pr-1 text-caption text-neutral-500'>
-      <span class='text-center'>#</span>
-      <span class='grid grid-cols-[minmax(0,1fr)] pl-[52px]' role='status'>
+    <div class={[SONG_GRID, 'h-9 text-caption text-neutral-500']}>
+      <span class={SONG_COLUMNS.index}>#</span>
+      <span class={['grid grid-cols-[minmax(0,1fr)] pl-[52px]', SONG_COLUMNS.title]} role='status'>
         {#if result}
           <span class='col-start-1 row-start-1 truncate' transition:fade>{@render found()}</span>
         {:else}
           <span class='col-start-1 row-start-1 truncate' transition:fade>标题</span>
         {/if}
       </span>
-      <span>专辑</span>
-      <span>状态</span>
-      <span class='text-right'>时长</span>
+      <span class={SONG_COLUMNS.album}>专辑</span>
+      <span class={SONG_COLUMNS.status}>状态</span>
+      <span class={SONG_COLUMNS.duration}>时长</span>
       <span></span>
     </div>
     {@render list()}

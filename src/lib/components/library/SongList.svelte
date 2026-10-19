@@ -12,7 +12,7 @@
   import { reveal } from '../motion'
   import { currentSong } from '../player/view'
   import StateBlock from '../ui/StateBlock.svelte'
-  import DesktopSongRow from './DesktopSongRow.svelte'
+  import DesktopSongRow, { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
 
@@ -59,12 +59,12 @@
   {/if}
 {:else}
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
-    <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-9 items-center gap-4 pl-2 pr-1 text-caption text-neutral-500' aria-hidden='true'>
-      <span class='text-center'>#</span>
-      <span class='pl-[52px]'>标题</span>
-      <span>专辑</span>
-      <span>状态</span>
-      <span class='text-right'>时长</span>
+    <div class={[SONG_GRID, 'h-9 text-caption text-neutral-500']} aria-hidden='true'>
+      <span class={SONG_COLUMNS.index}>#</span>
+      <span class={['pl-[52px]', SONG_COLUMNS.title]}>标题</span>
+      <span class={SONG_COLUMNS.album}>专辑</span>
+      <span class={SONG_COLUMNS.status}>状态</span>
+      <span class={SONG_COLUMNS.duration}>时长</span>
       <span></span>
     </div>
     {#if songs === null}

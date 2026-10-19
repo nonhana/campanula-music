@@ -6,6 +6,7 @@
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
   import { fadeAway } from '../motion'
+  import { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
 
   interface Props {
     count: number
@@ -32,8 +33,8 @@
         </span>
       </div>
     {:else}
-      <div class='grid grid-cols-[36px_minmax(0,1.25fr)_minmax(0,1fr)_112px_48px_40px] h-14 items-center gap-4 pl-2 pr-1'>
-        <span class='bone mx-auto h-3 w-4 rounded-full'></span>
+      <div class={[SONG_GRID, 'h-14']}>
+        <span class={['bone h-3 w-4 rounded-full', SONG_COLUMNS.index]}></span>
         <span class='flex items-center gap-3'>
           <span class='bone size-10 flex-none rounded-md'></span>
           <span class='flex flex-1 flex-col gap-2'>
@@ -43,7 +44,7 @@
         </span>
         <span class='bone h-3 rounded-full' style:width='{Math.round(w * 0.7)}%'></span>
         <span></span>
-        <span class='bone ml-auto h-3 w-8 rounded-full'></span>
+        <span class={['bone h-3 w-8 rounded-full', SONG_COLUMNS.duration]}></span>
       </div>
     {/if}
   {/each}
