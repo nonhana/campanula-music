@@ -34,8 +34,8 @@ export type CoverFailure
     | { kind: 'exportFailed' }
 
 export interface CoverUpload {
-  /** 正在做、或者失败的那一步 */
-  step: CoverStep
+  /** 正在做、或者失败的那一步；导出 JPEG 就在上传之前失败了的话，还没开始任何一步，是 null */
+  step: CoverStep | null
   /** 已经直传成功的图片编号：第三步失败后重试只再设一次 */
   imgId: string | null
   /** 失败了；还在做是 null */
@@ -65,7 +65,7 @@ export type CoverState
 /** 一次上传的结果；取消时是 null */
 export type CoverOutcome
   = | { ok: true, coverUrl: string }
-    | { ok: false, step: CoverStep, failure: CoverFailure }
+    | { ok: false, step: CoverStep | null, failure: CoverFailure }
 
 export interface CoverContext {
   api: Api
@@ -128,21 +128,24 @@ export function createCover(context: CoverContext): Cover {
     context.write(next)
   }
 
-  function cropped(): CoverCropped | null {
-    if (!attempt)
-      return null
-    return { playlistId: attempt.playlistId, image: attempt.image, small: attempt.small, resized: attempt.resized }
+  function cropped(work: Attempt): CoverCropped {
+    return { playlistId: work.playlistId, image: work.image, small: work.small, resized: work.resized }
   }
 
-  function uploading(step: CoverStep, failure: CoverFailure | null = null): void {
-    const base = cropped()
-    if (!base || !attempt)
+  function uploading(step: CoverStep | null, failure: CoverFailure | null = null): void {
+    const work = attempt
+    if (!work)
       return
-    const next: CoverUpload = { step, imgId: attempt.uploaded ? attempt.imgId : null, failure }
+    const next: CoverUpload = { step, imgId: work.uploaded ? work.imgId : null, failure }
     if (failure)
-      write({ status: 'failed', ...base, upload: { ...next, failure } })
+      write({ status: 'failed', ...cropped(work), upload: { ...next, failure } })
     else
-      write({ status: 'uploading', ...base, upload: { ...next, failure: null } })
+      write({ status: 'uploading', ...cropped(work), upload: { ...next, failure: null } })
+  }
+
+  /** 这一轮已经作废（取消、换图、关掉、退出）：之前发出去的结果不要 */
+  function stale(work: Attempt, mine: number): boolean {
+    return work.canceled || attempt !== work || mine !== generation
   }
 
   function release(): void {
@@ -159,7 +162,7 @@ export function createCover(context: CoverContext): Cover {
   }
 
   /** 记下哪一步失败；需要登录时整个 App 变成登录失效，返回 null */
-  function failed(step: CoverStep, failure: CoverFailure | RequestFailure): CoverOutcome | null {
+  function failed(step: CoverStep | null, failure: CoverFailure | RequestFailure): CoverOutcome | null {
     if (!attempt)
       return null
     if (failure.kind === 'needsLogin') {
@@ -213,19 +216,17 @@ export function createCover(context: CoverContext): Cover {
       canceled: false,
       running: false,
     }
-    write({ status: 'cropping', ...cropped()! })
+    write({ status: 'cropping', ...cropped(attempt) })
   }
 
   /** 导出裁剪好的 JPEG；导出失败返回 false */
-  async function exportJpeg(): Promise<boolean> {
-    if (!attempt)
-      return false
-    if (attempt.jpeg)
+  async function exportJpeg(work: Attempt): Promise<boolean> {
+    if (work.jpeg)
       return true
     try {
-      const blob = await images.exportJpeg(attempt.image, attempt.crop)
-      if (!attempt.canceled)
-        attempt.jpeg = blob
+      const blob = await images.exportJpeg(work.image, work.crop)
+      if (!work.canceled)
+        work.jpeg = blob
       return true
     }
     catch {
@@ -245,19 +246,18 @@ export function createCover(context: CoverContext): Cover {
     let step = from
     try {
       if (step !== 'set') {
-        if (!work.jpeg && !await exportJpeg()) {
-          if (mine !== generation || attempt !== work || work.canceled)
+        if (!work.jpeg && !await exportJpeg(work)) {
+          if (stale(work, mine))
             return null
-          return failed('token', { kind: 'exportFailed' })
+          return failed(null, { kind: 'exportFailed' })
         }
-        if (work.canceled || attempt !== work || mine !== generation)
+        if (stale(work, mine))
           return null
       }
       if (step === 'token') {
-        work.uploaded = false
         uploading('token')
         const result = await context.api.post<CoverTokenResponse>(`/api/playlists/${work.playlistId}/cover/token`, {})
-        if (mine !== generation || attempt !== work || work.canceled)
+        if (stale(work, mine))
           return null
         if (!result.ok)
           return failed('token', result.failure)
@@ -271,25 +271,23 @@ export function createCover(context: CoverContext): Cover {
           await context.upload(work.token!.uploadUrl, work.jpeg!, work.token!.token, work.controller.signal)
         }
         catch {
-          if (work.canceled || attempt !== work || mine !== generation)
+          if (stale(work, mine))
             return null
           return failed('upload', { kind: 'uploadFailed' })
         }
-        if (work.canceled || attempt !== work || mine !== generation)
+        if (stale(work, mine))
           return null
         work.uploaded = true
         step = 'set'
       }
       uploading('set')
       const result = await context.api.post<SetCoverResponse>(`/api/playlists/${work.playlistId}/cover`, { imgId: work.imgId! } satisfies SetCoverRequest)
-      if (attempt !== work)
-        return null
-      if (mine !== generation)
+      if (stale(work, mine))
         return null
       if (!result.ok)
         return failed('set', result.failure)
       await context.changed(work.playlistId, result.value.url)
-      if (mine !== generation)
+      if (stale(work, mine))
         return null
       images.release(work.image)
       attempt = null
@@ -335,7 +333,7 @@ export function createCover(context: CoverContext): Cover {
         canceled: false,
         running: false,
       }
-      write({ status: 'cropping', ...cropped()! })
+      write({ status: 'cropping', ...cropped(attempt) })
     },
     async retry() {
       if (!attempt || state?.status !== 'failed')
