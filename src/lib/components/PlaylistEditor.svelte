@@ -4,12 +4,13 @@
   手机是底部弹层，和播放页同一套抽屉：拉手、标题按住往下拖收起，点遮罩、返回、Esc 也收起。表单是接近全屏的弹层，确认贴着底边。
   正在等网易云建好新歌单时关不掉：拖下去会弹回来，返回会再压回那条浅路由（只有零点几秒）。
   开着时后面的骨架和播放页都不能操作（SignedInFrame 设 inert），打开时焦点落在名称输入框（确认时落在取消上），关上后回到打开它的地方。
-  放在 SignedInFrame 里，盖在所有东西上面
+  放在 SignedInFrame 里，盖在所有东西上面；换封面的裁剪页（CoverEditor）盖在它上面
 -->
 <script lang='ts'>
   import type { Attachment } from 'svelte/attachments'
   import type { EditorRequest } from './playlist-edit.svelte'
   import { page } from '$app/state'
+  import { coverEditor } from './cover-edit.svelte'
   import { dialog, fade } from './motion'
   import { DURATIONS } from './motion-tokens'
   import { createDrawer } from './player/drawer.svelte'
@@ -21,6 +22,8 @@
   const CONFIRM_SHEET_ESTIMATE = 320
 
   const request = $derived(playlistEditor.request)
+  /** 换封面的裁剪页盖在上面：下面的编辑不能操作 */
+  const behindCover = $derived(coverEditor.request !== null)
   /** 关上的动画里还画着刚才那一个 */
   let shown = $state<EditorRequest | null>(null)
   $effect.pre(() => {
@@ -81,6 +84,7 @@
       aria-modal='true'
       aria-labelledby='playlist-editor-title'
       tabindex='-1'
+      inert={behindCover}
       {onkeydown}
       {@attach focusFirst}
       transition:dialog
@@ -99,7 +103,7 @@
     tabindex='-1'
     aria-modal='true'
     aria-labelledby='playlist-editor-title'
-    inert={!sheetOpen}
+    inert={!sheetOpen || behindCover}
     {onkeydown}
     {@attach focusFirst}
   >

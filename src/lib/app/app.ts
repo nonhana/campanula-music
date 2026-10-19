@@ -1,4 +1,5 @@
 import type { Account, AccountResponse } from '#lib/api/account.js'
+import type { CoverCrop } from '#lib/api/cover.js'
 import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
 import type { LogoutResponse } from '#lib/api/login.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
@@ -6,6 +7,7 @@ import type { SearchedItems, SearchKind } from '#lib/api/search.js'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { PlaylistEdit, PlaylistSeed } from './changes'
+import type { CoverOutcome, CoverState } from './cover'
 import type { DailyState } from './daily'
 import type { CreateOutcome, LibraryState, PlaylistSearch } from './library'
 import type { PendingCheckIn } from './local'
@@ -17,6 +19,7 @@ import { playable } from '#lib/api/library.js'
 import { createApi } from './api'
 import { changeProblem, playlistEdits } from './changes'
 import { createCheckIns } from './check-ins'
+import { createCover } from './cover'
 import { createDaily } from './daily'
 import { createLibrary, playlistSongsOf, searchPlaylist } from './library'
 import { createLocalDb } from './local'
@@ -73,6 +76,8 @@ export interface AppState {
   daily: DailyState | null
   /** 搜索：搜索历史（存在这台设备上）、建议、最后一次搜的词的单曲结果 */
   search: SearchState
+  /** 换封面的裁剪页：没打开时是 null */
+  cover: CoverState | null
 }
 
 /** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
@@ -219,6 +224,22 @@ export interface App {
   deletePlaylist: (playlistId: number) => Promise<void>
   /** 编辑歌单信息时取网易云的标签库：这次登录还没取到过就用前台请求取，拉到哪了看 state.library.playlistTags；没取成时再调一次就是重试 */
   openPlaylistTags: () => Promise<void>
+  /**
+   * 换封面（GLOSSARY：封面；Spec #11 用户故事 90–92）：读选好的图片，能用在 state.cover 里给裁剪页的预览和尺寸；
+   * 不是图片、超过 20 MB、HEIC 解不开、读不出来时说明原因。长边超过 3200 的先缩小再裁
+   */
+  prepareCover: (playlistId: number, file: File) => Promise<void>
+  /**
+   * 把取景框里的部分裁成 800×800 JPEG，三步上传：申请上传凭证（服务器）→ 浏览器直传网易云的图片存储 → 设为封面（服务器）。
+   * 前两步取消后回到裁剪；第三步已经发出，不能取消。成功时封面马上换成设封面返回的地址
+   */
+  uploadCover: (crop: CoverCrop) => Promise<CoverOutcome | null>
+  /** 取消前两步（申请凭证、直传）：回到裁剪 */
+  cancelCover: () => void
+  /** 第三步失败后重试只再设一次，不重新上传；别的失败从没成的那一步重来 */
+  retryCover: () => Promise<CoverOutcome | null>
+  /** 关掉裁剪页：释放图片；正在设为封面时关不掉 */
+  closeCover: () => void
   /** 关掉改曲库的提示 */
   dismissLibraryNotice: () => void
 }
@@ -226,7 +247,7 @@ export interface App {
 export function createApp(browser: BrowserCapabilities): App {
   const api = createApi(browser)
   const local = createLocalDb(browser.indexedDB)
-  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null, search: INITIAL_SEARCH }
+  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null, search: INITIAL_SEARCH, cover: null }
   const listeners = new Set<() => void>()
 
   function update(next: Partial<AppState>) {
@@ -323,6 +344,15 @@ export function createApp(browser: BrowserCapabilities): App {
     checkToken: browser.checkToken,
   })
 
+  const cover = createCover({
+    api,
+    images: browser.images,
+    upload: browser.uploadCoverImage,
+    write: next => update({ cover: next }),
+    loginExpired,
+    changed: (playlistId, coverUrl) => library.setCover(playlistId, coverUrl),
+  })
+
   const lyrics = createLyrics({
     api,
     read: () => state.lyrics,
@@ -362,6 +392,7 @@ export function createApp(browser: BrowserCapabilities): App {
   function signedOut(): void {
     sessions += 1
     login.stopQr()
+    cover.leave()
     library.leave()
     // 先放下账号再停：没登录时听完的歌不打卡（主动退出的那个标签页在这之前已经把最后一首记下了）
     queueOwner = null
@@ -469,6 +500,7 @@ export function createApp(browser: BrowserCapabilities): App {
   /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
   function loginExpired(): void {
     sessions += 1
+    cover.leave()
     library.leave()
     lyrics.clear()
     daily.clear()
@@ -580,6 +612,14 @@ export function createApp(browser: BrowserCapabilities): App {
     openArtist: library.openArtist,
     moreArtistAlbums: library.moreArtistAlbums,
     openPlaylistTags: library.openPlaylistTags,
+    prepareCover(playlistId, file) {
+      ownPlaylist(playlistId)
+      return cover.prepare(playlistId, file)
+    },
+    uploadCover: cover.upload,
+    cancelCover: cover.cancel,
+    retryCover: cover.retry,
+    closeCover: cover.close,
     createPlaylist: library.create,
     async editPlaylist(playlistId, edit) {
       const changes = playlistEdits(ownPlaylist(playlistId), edit)

@@ -5,7 +5,7 @@
   底部是迷你播放条。
   播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
   播放的提示浮在最上面，播放页开着时也看得见；改曲库（红心、加入歌单、收藏、歌单的增删改）的提示同样浮着，两条都在时排在播放提示外侧。
-  “更多”菜单、从它打开的加入歌单、歌单页的 ••• 盖在播放页上面；歌单编辑（PlaylistEditor）盖在所有东西上面，开着时后面的都不能操作。已下载由之后的票放进来。
+  “更多”菜单、从它打开的加入歌单、歌单页的 ••• 盖在播放页上面；歌单编辑（PlaylistEditor）盖在所有东西上面，换封面的裁剪页（CoverEditor）再盖在编辑上面；开着时后面的都不能操作。已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -18,6 +18,8 @@
   import AddToPlaylist from '../AddToPlaylist.svelte'
   import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
+  import { coverEditor } from '../cover-edit.svelte'
+  import CoverEditor from '../CoverEditor.svelte'
   import DailyNumber from '../daily/DailyNumber.svelte'
   import { dailyCalendarDay } from '../daily/view'
   import { desktopLayout } from '../layout'
@@ -53,8 +55,8 @@
 
   // 浅路由说开着就升起来，说关了就缩回去（返回手势、后退、Esc、收起键都走这里）
   $effect(() => playerDrawer.settle(playerOpen))
-  /** 歌单编辑（新建、编辑信息、改公开、删除）开着：后面的都不能操作 */
-  const editorOpen = $derived(playlistEditor.request !== null)
+  /** 歌单编辑（新建、编辑信息、改公开、删除）或换封面的裁剪页开着：后面的都不能操作 */
+  const editorOpen = $derived(playlistEditor.request !== null || coverEditor.request !== null)
 
   const pathname = $derived(page.url.pathname)
   /** 歌单页、专辑页、歌手页（属于曲库）：标题是歌单名、专辑名、歌手名 */
@@ -221,3 +223,4 @@
 <AddToPlaylist />
 <PlaylistMenu />
 <PlaylistEditor />
+<CoverEditor />

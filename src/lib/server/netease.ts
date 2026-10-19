@@ -1,5 +1,6 @@
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf, PlaylistSummary } from 'hana-music-api'
 import type { Account } from '#lib/api/account.js'
+import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
@@ -341,6 +342,26 @@ export async function tagPlaylist(playlistId: number, tags: readonly string[], l
 /** 隐私歌单改公开：已经是公开的再改一次也回 200（验证关卡②） */
 export async function publishPlaylist(playlistId: number, listener: Listener): Promise<void> {
   await call('playlist_privacy', { id: playlistId }, listener)
+}
+
+/**
+ * 申请封面的上传凭证（#34）：imgId 是这张图的编号，token 直传时放进 x-nos-token，uploadUrl 是图片存储的地址。
+ * token 是凭据，只交给浏览器、不记日志（ADR-0003；hana-music-api 的 image_upload_token）
+ */
+export async function coverUploadToken(listener: Listener): Promise<CoverTokenResponse> {
+  const { body } = await call('image_upload_token', {}, listener)
+  return { imgId: String(body.data.imgId), token: body.data.token, uploadUrl: body.data.uploadUrl }
+}
+
+/**
+ * 用直传成功的图片编号设为封面（#34）：返回新封面的地址，用它显示（刚设完读歌单详情有时还是旧的，验证关卡②）。
+ * 网易云不检查图片：只申请了凭证、没直传也回 200，所以调用方只在直传成功后调它
+ */
+export async function setPlaylistCover(playlistId: number, imgId: string, listener: Listener): Promise<SetCoverResponse> {
+  const { body } = await call('playlist_cover_update', { id: playlistId, imgId }, listener)
+  if (body.code !== 200)
+    throw new NeteaseError({ kind: 'rejected', code: body.code, message: body.msg }, body)
+  return { url: body.data.url }
 }
 
 /** 一张歌单的全部曲目编号（SDK 的 playlist_detail 一次要 10 万首）。我喜欢的音乐约 5,000 首时网易云原始返回约 3.1 MB，这里只留编号 */

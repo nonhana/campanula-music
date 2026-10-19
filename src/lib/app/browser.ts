@@ -1,3 +1,6 @@
+import type { CoverCrop } from '#lib/api/cover.js'
+import { COVER_OUTPUT_MAX_BYTES, COVER_OUTPUT_MIN_QUALITY, COVER_OUTPUT_QUALITY, COVER_OUTPUT_SIZE, COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
+
 /**
  * App 用到的浏览器能力。App 只从这里拿，不直接用 window、navigator、document 这些全局对象，
  * 测试接入点里整个换成替身（Spec #11 Testing Decisions）。
@@ -26,6 +29,37 @@ export interface BrowserCapabilities {
    * 迟迟不给时失败
    */
   checkToken: () => Promise<string>
+  /** 换封面用的图片处理（#34）：读图、预览、裁成正方形导出 JPEG。App 不直接用 canvas、createImageBitmap */
+  images: ImageCapability
+  /**
+   * 浏览器直连网易云的图片存储（#34）：把导出的 JPEG 传到 uploadUrl（跨域 POST），带上传凭证，可以中途取消。
+   * 只用于换封面的第二步；#38 的音频下载是另一类传输，到时候再加
+   */
+  uploadCoverImage: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
+}
+
+/** 一张已经解码、按 EXIF 摆正的图片（换封面用） */
+export interface DecodedImage {
+  /** 预览图的地址（blob: URL），关掉裁剪页时释放 */
+  readonly url: string
+  /** 工作位图的宽高：长边已经缩到 COVER_WORK_MAX_SIDE 以内，裁剪坐标按它算 */
+  readonly width: number
+  readonly height: number
+  /** 原图的宽高（缩小之前） */
+  readonly origWidth: number
+  readonly origHeight: number
+}
+
+export interface ImageCapability {
+  /**
+   * 读选好的文件：按 EXIF 摆正，长边超过 COVER_WORK_MAX_SIDE 的先缩小，另做一张长边最多 1600px 的预览图。
+   * 解不开时抛错（是不是 HEIC、是不是图片由 App 按文件类型和扩展名判断，能不能用以这里成功为准）
+   */
+  decode: (file: File) => Promise<DecodedImage>
+  /** 释放预览地址和位图 */
+  release: (image: DecodedImage) => void
+  /** 从工作位图里裁出正方形，导出 COVER_OUTPUT_SIZE 的正方形 JPEG；超过 1 MB 就降质量重压（最低 0.6） */
+  exportJpeg: (image: DecodedImage, crop: CoverCrop) => Promise<Blob>
 }
 
 /** 播放器发的事件里 App 用到的 */
@@ -166,6 +200,99 @@ async function watchmanToken(): Promise<string> {
   return token
 }
 
+/** 预览图的边长上限（px）：超大照片直接塞进 <img> 会让手机卡一下 */
+const COVER_PREVIEW_MAX = 1600
+/** 预览图、导出用的 canvas 都是 JPEG，透明的地方铺白（JPEG 没有透明） */
+const WHITE = '#fff'
+
+interface Decoded {
+  bitmap: ImageBitmap
+  url: string
+}
+
+/** 解码出来的位图和预览地址：DecodedImage 只有界面要用的尺寸和地址，位图留在这里给裁切用 */
+const decoded = new WeakMap<DecodedImage, Decoded>()
+
+function drawWhite(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+  const context = canvas.getContext('2d')
+  if (!context)
+    throw new Error('浏览器不给 canvas 的绘图上下文')
+  context.fillStyle = WHITE
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.imageSmoothingQuality = 'high'
+  return context
+}
+
+function toJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('浏览器没能导出 JPEG')), 'image/jpeg', quality))
+}
+
+async function decodeImage(file: File): Promise<DecodedImage> {
+  // imageOrientation: 'from-image' 让手机竖拍的照片按 EXIF 摆正
+  let bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  const origWidth = bitmap.width
+  const origHeight = bitmap.height
+  const longest = Math.max(origWidth, origHeight)
+  if (longest > COVER_WORK_MAX_SIDE) {
+    const scale = COVER_WORK_MAX_SIDE / longest
+    const smaller = await createImageBitmap(bitmap, { resizeWidth: Math.round(origWidth * scale), resizeHeight: Math.round(origHeight * scale), resizeQuality: 'high' })
+    bitmap.close()
+    bitmap = smaller
+  }
+  const previewScale = Math.min(1, COVER_PREVIEW_MAX / Math.max(bitmap.width, bitmap.height))
+  const preview = document.createElement('canvas')
+  preview.width = Math.round(bitmap.width * previewScale)
+  preview.height = Math.round(bitmap.height * previewScale)
+  drawWhite(preview).drawImage(bitmap, 0, 0, preview.width, preview.height)
+  const blob = await toJpeg(preview, 0.85)
+  const image: DecodedImage = {
+    url: URL.createObjectURL(blob),
+    width: bitmap.width,
+    height: bitmap.height,
+    origWidth,
+    origHeight,
+  }
+  decoded.set(image, { bitmap, url: image.url })
+  return image
+}
+
+function releaseImage(image: DecodedImage): void {
+  const entry = decoded.get(image)
+  if (!entry)
+    return
+  decoded.delete(image)
+  entry.bitmap.close()
+  URL.revokeObjectURL(entry.url)
+}
+
+async function exportCoverJpeg(image: DecodedImage, crop: CoverCrop): Promise<Blob> {
+  const entry = decoded.get(image)
+  if (!entry)
+    throw new Error('这张图已经释放了，不能再裁')
+  const canvas = document.createElement('canvas')
+  canvas.width = COVER_OUTPUT_SIZE
+  canvas.height = COVER_OUTPUT_SIZE
+  drawWhite(canvas).drawImage(entry.bitmap, crop.x, crop.y, crop.size, crop.size, 0, 0, COVER_OUTPUT_SIZE, COVER_OUTPUT_SIZE)
+  let quality = COVER_OUTPUT_QUALITY
+  let blob = await toJpeg(canvas, quality)
+  while (blob.size > COVER_OUTPUT_MAX_BYTES && quality > COVER_OUTPUT_MIN_QUALITY) {
+    quality = Math.max(COVER_OUTPUT_MIN_QUALITY, Math.round((quality - 0.08) * 100) / 100)
+    blob = await toJpeg(canvas, quality)
+  }
+  return blob
+}
+
+async function uploadCoverImage(url: string, jpeg: Blob, token: string, signal: AbortSignal): Promise<void> {
+  const response = await window.fetch(url, {
+    method: 'POST',
+    headers: { 'x-nos-token': token, 'content-type': 'image/jpeg' },
+    body: jpeg,
+    signal,
+  })
+  if (!response.ok)
+    throw new Error(`图片存储回了 ${response.status}`)
+}
+
 export function realBrowserCapabilities(): BrowserCapabilities {
   return {
     fetch: (path, init) => window.fetch(path, init),
@@ -192,5 +319,7 @@ export function realBrowserCapabilities(): BrowserCapabilities {
     broadcastChannel: name => new BroadcastChannel(name),
     audio: () => new Audio(),
     checkToken: watchmanToken,
+    images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
+    uploadCoverImage,
   }
 }

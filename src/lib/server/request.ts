@@ -1,3 +1,4 @@
+import type { SetCoverRequest } from '#lib/api/cover.js'
 import type { CollectRequest, CreatePlaylistRequest, DescribePlaylistRequest, HeartRequest, PlaylistCollectRequest, RenamePlaylistRequest, TagPlaylistRequest } from '#lib/api/library.js'
 import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchKind } from '#lib/api/search.js'
@@ -182,4 +183,12 @@ export async function readPlaylistTags(request: Request): Promise<TagPlaylistReq
   if (!Array.isArray(tags) || tags.length > PLAYLIST_TAGS_MAX || !tags.every(tag => typeof tag === 'string' && TAG.test(tag)) || new Set(tags).size !== tags.length)
     error(400, `tags 要有 0 到 ${PLAYLIST_TAGS_MAX} 个不重复的标签`)
   return { tags }
+}
+
+/** 读设为封面的请求体（JSON）：直传成功的图片编号（网易云给的一长串数字，超出 JavaScript 的安全整数，按字符串收） */
+export async function readCoverImage(request: Request): Promise<SetCoverRequest> {
+  const { imgId } = await readObject(request)
+  if (typeof imgId !== 'string' || !/^\d{1,20}$/.test(imgId))
+    error(400, 'imgId 的格式不对')
+  return { imgId }
 }
