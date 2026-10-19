@@ -2,7 +2,7 @@
   歌单编辑里面的内容（外壳是 PlaylistEditor：桌面居中弹窗、手机底部弹层；原型 PlaylistEditor）。每次打开都重新建，表单按打开时的歌单填好。
   - 新建：名称（最多 40 个宽度，汉字算 2，写满会说明）、设为隐私歌单。按“创建”等网易云建好（按钮写“正在新建…”）才关上，
     没建成就留在这里说明原因，填好的不丢；从加入歌单里新建的，建好接着把那首歌加进去（App 的 createPlaylist）。
-  - 编辑歌单信息：封面（换封面由 #34 加）、名称、简介（最多 1,000 个字）、标签（TagPicker，打开时取网易云的标签库）。
+  - 编辑歌单信息：封面（点它或下面的“换封面”选图，打开换封面的裁剪页，#34）、名称、简介（最多 1,000 个字）、标签（TagPicker，打开时取网易云的标签库）。
     按“保存”交给 App（先改本地、立即生效，没成会自己改回并在提示条里说明）马上关上；名称不合规时不能保存。
   - 改为公开：说清楚公开后谁看得到、改了就改不回隐私，确认键是主按钮。
   - 删除：说清楚歌曲和红心不受影响、删了不能恢复，确认键是出错红（DESIGN.md Buttons · Destructive）。
@@ -21,6 +21,7 @@
   import { untrack } from 'svelte'
   import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH } from '#lib/api/library.js'
   import { getAppView } from './app-context.svelte'
+  import { coverEditor } from './cover-edit.svelte'
   import Cover from './library/Cover.svelte'
   import { changeFailureText, editProblemText } from './library/notice'
   import TagPicker from './library/TagPicker.svelte'
@@ -58,6 +59,9 @@
   let isPrivate = $state(false)
   /** 上一次没建成的原因 */
   let failure = $state<ChangeFailure | null>(null)
+  /** 换封面的入口：封面本身和下面的文字都是这一个按钮；隐藏的文件选择框由它打开 */
+  let coverButton = $state<HTMLButtonElement>()
+  let coverInput = $state<HTMLInputElement>()
 
   const problem = $derived(nameProblem(name.trim()))
   const nameError = $derived(problem === 'nameTooLong' ? editProblemText(problem) : undefined)
@@ -98,6 +102,21 @@
       return
     void view.app.editPlaylist(playlist.id, { name, description, tags })
     playlistEditor.close()
+  }
+
+  /** 换封面：先选图，选到了才打开裁剪页（取消选择就什么都不做） */
+  function chooseCover(): void {
+    coverInput?.click()
+  }
+
+  function onCoverPicked(event: Event): void {
+    const element = event.currentTarget as HTMLInputElement
+    const file = element.files?.[0]
+    element.value = ''
+    if (!file || !playlist)
+      return
+    coverEditor.open({ playlistId: playlist.id, from: coverButton ?? null })
+    void view.app.prepareCover(playlist.id, file)
   }
 
   function submit(event: SubmitEvent) {
@@ -168,7 +187,19 @@
       {/if}
     {:else if playlist}
       <div class={sheet ? 'flex flex-col gap-5' : 'grid grid-cols-[152px_minmax(0,1fr)] gap-6'}>
-        <Cover url={playlist.coverUrl} size={sheet ? 96 : 152} class={['rounded-xl shadow-ambient', sheet ? 'size-24' : 'size-38']} />
+        <div class='flex flex-col items-start gap-2'>
+          <button
+            type='button'
+            bind:this={coverButton}
+            class='group flex flex-col items-start gap-2 rounded-xl text-left'
+            aria-label='换封面'
+            onclick={chooseCover}
+          >
+            <Cover url={playlist.coverUrl} size={sheet ? 96 : 152} class={['rounded-xl shadow-ambient', sheet ? 'size-24' : 'size-38']} />
+            <span class='text-caption text-neutral-700 font-500 group-hover:text-primary-900'>换封面</span>
+          </button>
+          <input bind:this={coverInput} type='file' accept='image/*' class='sr-only' tabindex='-1' aria-hidden='true' onchange={onCoverPicked} />
+        </div>
         <div class='min-w-0 flex flex-col gap-5'>
           {@render nameField()}
           <div class='flex flex-col'>

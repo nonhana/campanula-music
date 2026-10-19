@@ -32,8 +32,14 @@ export type Change
   /** 删除自建歌单 */
     | { kind: 'delete', playlist: Playlist }
 
-/** 网易云确认了、要写进副本的：听众做的修改，和网易云建好的自建歌单（没有先改本地这一步） */
-export type ConfirmedChange = Change | { kind: 'create', playlist: Playlist }
+/**
+ * 网易云确认了、要写进副本的：听众做的修改，网易云建好的自建歌单（没有先改本地这一步），
+ * 和换好的封面（图先传上去、网易云确认才拿到新地址，也没有先改本地这一步）
+ */
+export type ConfirmedChange
+  = | Change
+    | { kind: 'create', playlist: Playlist }
+    | { kind: 'cover', playlistId: number, coverUrl: string }
 
 /** 编辑歌单信息时填的名称、简介、标签：没给的不改 */
 export interface PlaylistEdit {
@@ -229,6 +235,8 @@ export function changePatch(replica: Replica, change: ConfirmedChange): LibraryP
     case 'delete':
       // 曲目跟着歌单列表一起删（patched）
       return { playlists: replica.playlists?.filter(item => item.id !== change.playlist.id) }
+    case 'cover':
+      return editedPatch(replica, change.playlistId, playlist => ({ ...playlist, coverUrl: change.coverUrl }))
     default:
       throw new Error(`不认识的修改：${JSON.stringify(change)}`)
   }

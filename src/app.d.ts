@@ -16,6 +16,8 @@ declare global {
       playlistMenuSheet?: true
       /** 歌单编辑（新建、编辑信息、改公开、删除）以底部弹层开着（手机布局）：返回先收起它 */
       editorSheet?: true
+      /** 换封面的裁剪页以全屏开着（手机布局），压在歌单编辑上面：返回先收起它 */
+      coverSheet?: true
     }
     // interface Platform {}
   }

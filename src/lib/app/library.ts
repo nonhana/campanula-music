@@ -189,6 +189,8 @@ export interface Library {
    * 网易云说要加歌的歌单已经不在了：改回原样，马上同步一次
    */
   change: (change: Change) => Promise<void>
+  /** 换封面成功：用网易云返回的封面地址写进副本（马上显示）；同步拿回来的旧数据上也会叠回去 */
+  setCover: (playlistId: number, coverUrl: string) => Promise<void>
   /**
    * 新建自建歌单：名称去掉首尾空白，不合规、断网时不提交。等网易云建好（给了编号）才进曲库，排在我喜欢的音乐后面；
    * 带着 song（从加入歌单里新建）时建好接着加入这首（和 change 的加入歌单一样）。这一轮作废了（退出、登录失效）是 null
@@ -779,6 +781,19 @@ export function createLibrary(context: LibraryContext): Library {
     }
   }
 
+  /**
+   * 网易云确认了、没有先改本地这一步的修改（新建好的歌单、换好的封面）：记下来、立即显示，
+   * 再写进副本；同步拿回来的、比它旧的歌单列表上也会叠回去
+   */
+  async function confirm(mine: number, change: ConfirmedChange): Promise<boolean> {
+    const entry: PendingChange = { change, confirmedAt: ++tick, saved: false }
+    changes.push(entry)
+    publish()
+    return save(mine, now => changePatch(now, entry.change), () => {
+      entry.saved = true
+    })
+  }
+
   /** 网易云确认了这个修改：写进副本。收藏专辑时打开着它的专辑页，专辑页一起存（断网也能看） */
   function confirmedPatch(current: Replica, change: Change): LibraryPatch {
     const patch = changePatch(current, change)
@@ -997,6 +1012,11 @@ export function createLibrary(context: LibraryContext): Library {
       publish()
     },
     change: applyChange,
+    async setCover(playlistId, coverUrl) {
+      if (!replica)
+        return
+      await confirm(generation, { kind: 'cover', playlistId, coverUrl })
+    },
     async create(draft, song) {
       const name = draft.name.trim()
       const problem = nameProblem(name)
@@ -1014,10 +1034,7 @@ export function createLibrary(context: LibraryContext): Library {
         return result
       const { playlist } = result.value
       // 网易云建好了：直接是确认过的修改，写进副本；确认之前发出的同步拿回来的歌单列表里没有它，照样叠回去
-      const entry: PendingChange = { change: { kind: 'create', playlist }, confirmedAt: ++tick, saved: false }
-      changes.push(entry)
-      publish()
-      if (!await save(mine, now => changePatch(now, entry.change), () => (entry.saved = true)))
+      if (!await confirm(mine, { kind: 'create', playlist }))
         return null
       if (song)
         void applyChange({ kind: 'add', playlist, song })

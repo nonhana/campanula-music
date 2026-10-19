@@ -1,8 +1,10 @@
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
-import type { AudioCapability, ChannelCapability, Clock, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '#lib/app/browser.js'
+import type { CoverCrop } from '#lib/api/cover.js'
+import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '#lib/app/browser.js'
+import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
 
 // 浏览器能力替身：行为照浏览器标准写。
-// 浏览器直连网易云的传输、Background Fetch 由最早用到它们的票加上。
+// 浏览器直连网易云的图片传输（#34）在这里；音频下载、Background Fetch 由最早用到它们的票加上。
 
 /** App 的时钟：和世界的假时钟走同一个时间，定时按到期先后触发 */
 export function clockOn(timers: FakeTimers): Clock {
@@ -88,6 +90,127 @@ export class FakeWatchman {
     const token = `${this.issued.length + 1}`.padStart(170, 'W')
     this.issued.push(token)
     return token
+  }
+}
+
+/** 测试里造的一张图片：只有 App 读的 name、type、size，解码由 FakeImages 按这里写的尺寸给 */
+export interface FakeImageFile {
+  name?: string
+  type?: string
+  bytes?: number
+  width?: number
+  height?: number
+  /** false：浏览器解不开（HEIC、损坏的文件） */
+  decodable?: boolean
+}
+
+export interface FakeCoverUpload {
+  url: string
+  jpeg: Blob
+  token: string
+  signal: AbortSignal
+  /** 被取消了 */
+  aborted: boolean
+}
+
+interface WaitingUpload {
+  resolve: () => void
+  reject: (error: Error) => void
+}
+
+/**
+ * 换封面的浏览器能力替身（#34）：造测试图片、解码（按写的尺寸，长边缩到 3200）、导出 JPEG、直传网易云图片存储。
+ * 直传可以压着不回（取消用）、设成失败、看传了什么；导出的大小可以设。
+ */
+export class FakeImages {
+  /** 直传失败：设成错误后，下一次直传以它失败 */
+  uploadError: Error | null = null
+  /** 直传压着不回：releaseUpload() 才完成 */
+  holdUploads = false
+  /** 导出的 JPEG 有多少字节（默认 300 KB） */
+  exportBytes = 300_000
+  /** 导出失败 */
+  exportError: Error | null = null
+  /** 直传过的，按先后 */
+  readonly uploads: FakeCoverUpload[] = []
+  /** 导出过的，按先后 */
+  readonly exports: { image: DecodedImage, crop: CoverCrop }[] = []
+  /** 释放过的图片地址 */
+  readonly released: string[] = []
+  #files = new WeakMap<File, FakeImageFile>()
+  #images = new Map<DecodedImage, { released: boolean }>()
+  #waiting: WaitingUpload[] = []
+  #count = 0
+
+  /** 一张测试图片：App 只看 name、type、size，不解码真数据 */
+  file(spec: FakeImageFile = {}): File {
+    const { name = 'photo.jpg', type = 'image/jpeg', bytes = 1_000_000 } = spec
+    const file = { name, type, size: bytes } as File
+    this.#files.set(file, spec)
+    return file
+  }
+
+  async decode(file: File): Promise<DecodedImage> {
+    const spec = this.#files.get(file)
+    if (!spec || spec.decodable === false)
+      throw new DOMException('不能解码', 'InvalidStateError')
+    const origWidth = spec.width ?? 800
+    const origHeight = spec.height ?? 800
+    const scale = Math.min(1, COVER_WORK_MAX_SIDE / Math.max(origWidth, origHeight))
+    const image: DecodedImage = {
+      url: `blob:fake-cover-${++this.#count}`,
+      width: Math.round(origWidth * scale),
+      height: Math.round(origHeight * scale),
+      origWidth,
+      origHeight,
+    }
+    this.#images.set(image, { released: false })
+    return image
+  }
+
+  release(image: DecodedImage): void {
+    const entry = this.#images.get(image)
+    if (!entry || entry.released)
+      return
+    entry.released = true
+    this.released.push(image.url)
+  }
+
+  async exportJpeg(image: DecodedImage, crop: CoverCrop): Promise<Blob> {
+    if (this.exportError)
+      throw this.exportError
+    this.exports.push({ image, crop })
+    return new Blob([new Uint8Array(this.exportBytes)], { type: 'image/jpeg' })
+  }
+
+  uploadCoverImage(url: string, jpeg: Blob, token: string, signal: AbortSignal): Promise<void> {
+    const upload: FakeCoverUpload = { url, jpeg, token, signal, aborted: false }
+    this.uploads.push(upload)
+    if (this.uploadError)
+      return Promise.reject(this.uploadError)
+    return new Promise<void>((resolve, reject) => {
+      const abort = () => {
+        upload.aborted = true
+        reject(new DOMException('直传被取消', 'AbortError'))
+      }
+      if (signal.aborted)
+        return abort()
+      signal.addEventListener('abort', abort, { once: true })
+      if (!this.holdUploads)
+        resolve()
+      else
+        this.#waiting.push({ resolve, reject })
+    })
+  }
+
+  /** 放行一个压着的直传 */
+  releaseUpload(): void {
+    this.#waiting.shift()?.resolve()
+  }
+
+  /** 让一个压着的直传失败 */
+  failUpload(error: Error): void {
+    this.#waiting.shift()?.reject(error)
   }
 }
 

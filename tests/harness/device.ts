@@ -4,7 +4,7 @@ import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } fro
 import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
 import { CookieJar } from 'tough-cookie'
 import { createApp } from '#lib/app/app.js'
-import { FakeAudio, FakeBroadcast, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
+import { FakeAudio, FakeBroadcast, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
 
 export interface SentRequest {
   method: string
@@ -56,6 +56,8 @@ export interface Device {
   setOnline: (online: boolean) => void
   /** 存储空间：已用、配额、persist() 会不会被同意，测试可以改 */
   storage: FakeStorage
+  /** 换封面用的图片解码、导出和直传替身（#34） */
+  images: FakeImages
   /**
    * 等这台设备上正在发的请求都回来、排着的锁回调、标签页之间的广播和播放器的事件都跑完、本机数据库的读写都做完、
    * App 处理完（处理时又发的也等）
@@ -106,6 +108,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
   const locks = new FakeLocks()
   const broadcast = new FakeBroadcast()
   const mediaTasks = new MediaTasks()
+  const images = new FakeImages()
   const inFlight = new Set<Promise<unknown>>()
 
   function track(work: Promise<unknown>): void {
@@ -214,6 +217,12 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
           return player
         },
         checkToken: () => watchman.checkToken(),
+        images,
+        uploadCoverImage(url, jpeg, token, signal) {
+          const work = images.uploadCoverImage(url, jpeg, token, signal)
+          track(work)
+          return work
+        },
       })
       await app.open()
       return {
@@ -263,6 +272,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
     },
     setOnline: online => network.set(online),
     storage,
+    images,
     async idle() {
       // 先让一轮：刚调的 App 操作可能还没来得及发请求、开事务
       do {
