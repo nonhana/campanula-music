@@ -271,7 +271,7 @@
         <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>
         <button
           type='button'
-          class='h-8 inline-flex items-center gap-1.5 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
+          class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
           title='Esc'
           onclick={() => leaveSelection()}
         ><X size={14} aria-hidden='true' />取消选择</button>

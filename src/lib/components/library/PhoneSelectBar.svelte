@@ -17,7 +17,7 @@
   >
     <X size={22} aria-hidden='true' />
   </button>
-  <span class='min-w-0 inline-flex flex-1 items-center gap-1.5 truncate text-body text-neutral-900 font-500 tabular-nums' role='status'>
+  <span class='min-w-0 inline-flex flex-1 items-center gap-1.5 text-body text-neutral-900 font-500 tabular-nums' role='status'>
     <ListChecks size={16} class='flex-none' aria-hidden='true' />
     <span class='min-w-0 truncate'>{playlistSelection.size > 0 ? `已选 ${formatCount(playlistSelection.size)} 首` : '选择歌曲'}</span>
   </span>
