@@ -3,6 +3,7 @@ import type { App } from '#lib/app/app.js'
 import type { Device, Tab } from './harness/device'
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
+import { canSortPlaylist } from '#lib/api/library.js'
 import { held } from './harness/hold'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
@@ -84,6 +85,12 @@ const orderRequests = (device: Device) => device.requests.filter(request => requ
 const orderCalls = () => world.netease.calls.filter(call => call.module === 'song_order_update')
 
 describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
+  it('我喜欢的音乐和自建歌单能排序，收藏的歌单不能', () => {
+    expect(canSortPlaylist('liked')).toBe(true)
+    expect(canSortPlaylist('own')).toBe(true)
+    expect(canSortPlaylist('collected')).toBe(false)
+  })
+
   it('拖完先改本地；2 秒内连拖两次只提交一次，提交的是最后的新顺序；成功后写进本机副本', async () => {
     const device = world.device()
     const songs = songsFrom([2_100_000_001, 2_100_000_002, 2_100_000_003, 2_100_000_004])
