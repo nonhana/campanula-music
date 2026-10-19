@@ -613,7 +613,9 @@ export function createApp(browser: BrowserCapabilities): App {
     moreArtistAlbums: library.moreArtistAlbums,
     openPlaylistTags: library.openPlaylistTags,
     prepareCover(playlistId, file) {
-      ownPlaylist(playlistId)
+      // 歌单可能刚在别处被删掉、同步还没走完：这时不打开裁剪页
+      if (state.library?.playlists?.find(item => item.id === playlistId)?.kind !== 'own')
+        return Promise.resolve()
       return cover.prepare(playlistId, file)
     },
     uploadCover: cover.upload,
