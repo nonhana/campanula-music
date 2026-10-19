@@ -14,7 +14,7 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
-  import { CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SearchX } from '@lucide/svelte'
+  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, ListX, SearchX, X } from '@lucide/svelte'
   import { addSongsDialog } from '../add-songs.svelte'
   import { getAppView } from '../app-context.svelte'
   import { batchPicker } from '../batch-picker.svelte'
@@ -242,12 +242,17 @@
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
     {#if selection.mode || selection.size > 0}
       <div class='h-9 flex items-center gap-1.5 rounded-lg bg-primary-50 pl-3 pr-1' role='toolbar' aria-label='对选中的歌'>
-        <span class='text-caption text-neutral-900 font-500 tabular-nums' role='status'>已选 {formatCount(selection.size)} 首</span>
+        <span class='inline-flex flex-none items-center gap-1.5 text-caption text-neutral-900 font-500 tabular-nums' role='status'>
+          <ListChecks size={14} aria-hidden='true' />已选 {formatCount(selection.size)} 首
+        </span>
         <button
           type='button'
-          class='h-8 rounded-full px-2.5 text-caption text-primary-900 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
+          class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-primary-900 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
           onclick={() => selection.selectAll()}
-        >{selection.allOn ? '全不选' : `全选 ${formatCount(songs.length)} 首`}</button>
+        >
+          {#if selection.allOn}<ListX size={14} aria-hidden='true' />{:else}<CheckCheck size={14} aria-hidden='true' />{/if}
+          {selection.allOn ? '全不选' : `全选 ${formatCount(songs.length)} 首`}
+        </button>
         <span class='flex-1'></span>
         <button
           type='button'
@@ -266,10 +271,10 @@
         <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>
         <button
           type='button'
-          class='h-8 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
+          class='h-8 inline-flex items-center gap-1.5 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
           title='Esc'
           onclick={() => leaveSelection()}
-        >{selection.mode ? '完成' : '取消选择'}</button>
+        ><X size={14} aria-hidden='true' />取消选择</button>
       </div>
     {:else}
       <div class={[SONG_GRID, 'h-9 text-caption text-neutral-500']}>

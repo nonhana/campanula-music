@@ -112,7 +112,7 @@
     }
   })
 
-  // 多选时按 Esc 退出（桌面“完成”的键盘做法）；弹层里的 Esc 已经 preventDefault 的不再抢
+  // 多选时按 Esc 退出（桌面“取消选择”的键盘做法）；弹层里的 Esc 已经 preventDefault 的不再抢
   $effect(() => {
     if (!playlistSelection.mode && playlistSelection.size === 0)
       return

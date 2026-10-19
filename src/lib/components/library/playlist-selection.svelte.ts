@@ -7,7 +7,8 @@ import { pushShallowState } from '../shallow-state'
 // 多选（#35，Spec #11“多选、拖拽与换封面”方案 C）：一张歌单里的勾选状态，歌单页、歌曲列表、两种工具条共用。
 // - 手机上长按一行 400ms、点“多选”进入，顶栏换成选择栏，底部换成操作条；压一条浅路由历史，返回手势先退出多选
 // - 桌面上点“多选”进入；不进多选也能用 ⌘/Ctrl 点选、Shift 连选（这时 mode 还是 false）
-// - 退出：手机点关闭、返回手势，桌面点“完成”、按 Esc；关闭、“完成”、Esc 用 history.back() 把浅路由用掉
+// - 两个入口进入的是同一个勾选状态，工具条只有一套；退出：手机点关闭、返回手势，桌面点“取消选择”、按 Esc
+// - 关闭、“取消选择”、Esc 用 history.back() 把浅路由用掉
 // 换到别的歌单、离开歌单时清掉
 
 class PlaylistSelection {
@@ -124,7 +125,7 @@ export function enterSelection(playlistId: number, id?: number, from: HTMLElemen
   }
 }
 
-/** 听众主动退出（关闭、完成、Esc、操作完）：清掉勾选，焦点还给打开它的按钮；手机上进多选时压的那条历史也退掉 */
+/** 听众主动退出（关闭、取消选择、Esc、操作完）：清掉勾选，焦点还给打开它的按钮；手机上进多选时压的那条历史也退掉 */
 export function leaveSelection(): void {
   const from = playlistSelection.from
   const shallow = page.state.playlistSelect === true
