@@ -216,7 +216,15 @@ export interface App {
   undoRemove: () => void
   /** 重试刚才没成功的移除：重新拿掉并马上提交 */
   retryRemove: () => Promise<void>
-  /** 离开这张歌单：还没提交的移除立即提交（页面隐藏时 App 自己会做） */
+  /**
+   * 多选里的拖动排序（#36）：把勾选的几首挪到 before 那一首前面（null 是最后），按列表里的先后一起挪。
+   * 先改本地、立即生效，停手 2 秒才把整张歌单的新顺序一次提交；页面隐藏、离开歌单时立即提交。
+   * 能排序的只有自建歌单和我喜欢的音乐；断网时不改本地、直接说没改成。返回顺序有没有改
+   */
+  moveSongs: (playlistId: number, songIds: readonly number[], before: number | null) => boolean
+  /** 重试刚才没保存成功的排序：恢复刚才的顺序并马上提交 */
+  retryOrder: () => Promise<void>
+  /** 离开这张歌单：还没提交的移除和排序立即提交（页面隐藏时 App 自己会做） */
   flushPlaylist: (playlistId: number) => Promise<void>
   /**
    * 选择器里搜索单曲：只要网易云的第一页，不记搜索历史、不动搜索结果页（state.search）。
@@ -727,6 +735,8 @@ export function createApp(browser: BrowserCapabilities): App {
     },
     undoRemove: library.undoRemove,
     retryRemove: library.retryRemove,
+    moveSongs: library.moveSongs,
+    retryOrder: library.retryOrder,
     flushPlaylist: playlistId => library.flush(playlistId),
     async searchSongs(keyword) {
       const searched = keyword.trim()

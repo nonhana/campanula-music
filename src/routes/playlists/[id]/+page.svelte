@@ -18,6 +18,7 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { Ellipsis, ListChecks, ListX, Lock, Plus, SearchX } from '@lucide/svelte'
+  import { canSortPlaylist } from '#lib/api/library.js'
   import { addSongsDialog } from '#lib/components/add-songs.svelte.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
@@ -80,6 +81,9 @@
   const listedCount = $derived(shown?.kind === 'songs' ? shown.total : shown?.kind === 'empty' ? 0 : null)
   /** 自建歌单：有 •••，能编辑、删除 */
   const own = $derived(library?.songsOf(id)?.playlist.kind === 'own')
+  /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：入口写“多选 · 排序”（#36） */
+  const playlistKind = $derived(library?.songsOf(id)?.playlist.kind ?? null)
+  const sortableList = $derived(playlistKind !== null && canSortPlaylist(playlistKind))
 
   /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上 */
   function openMenu(event: MouseEvent) {
@@ -152,7 +156,7 @@
       <Button variant='outline' icon={Plus} data-add-songs-entry onclick={openAddSongs}>添加歌曲</Button>
     {/if}
     {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !playlistSelection.mode}
-      <Button variant='outline' icon={ListChecks} data-multiselect-entry onclick={openMulti}>多选</Button>
+      <Button variant='outline' icon={ListChecks} data-multiselect-entry onclick={openMulti}>{sortableList ? '多选 · 排序' : '多选'}</Button>
     {/if}
     <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
     {#if own}

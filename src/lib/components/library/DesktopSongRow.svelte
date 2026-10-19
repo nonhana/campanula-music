@@ -20,6 +20,7 @@
 </script>
 
 <script lang='ts'>
+  import type { Snippet } from 'svelte'
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import { Check } from '@lucide/svelte'
@@ -27,6 +28,7 @@
   import NowIndex from '../player/NowIndex.svelte'
   import { openSongMenuAt } from '../song-menu.svelte'
   import Cover from './Cover.svelte'
+  import DragCountBadge from './DragCountBadge.svelte'
   import HeartButton from './HeartButton.svelte'
   import PlayTarget from './PlayTarget.svelte'
   import SongBadge from './SongBadge.svelte'
@@ -47,9 +49,14 @@
     selected?: boolean
     /** 桌面的 ⌘/Ctrl 点选、Shift 连选：会进入同一个多选状态 */
     onselect?: (event: MouseEvent) => void
+    /** 拖动把手（#36）：多选里能排序的歌单才有；给了就替换右边的 ••• */
+    grip?: Snippet<[Song]>
+    /** 浮起的复制行：影子、不接指针，一起拖几首时显示数量 */
+    ghost?: boolean
+    count?: number
   }
 
-  const { song, source, n, now, onplay, selecting = false, selected = false, onselect }: Props = $props()
+  const { song, source, n, now, onplay, selecting = false, selected = false, onselect, grip, ghost = false, count = 1 }: Props = $props()
   const off = $derived(song.availability === 'noCopyright')
   /** 这一行的封面：点歌时它飞进播放条 */
   let cover = $state<HTMLElement>()
@@ -61,8 +68,8 @@
   }
 </script>
 
-<div class={['relative h-full rounded-lg', selected ? 'bg-primary-100' : !off && 'mouse:hover:bg-neutral-50']} role='presentation' oncontextmenu={event => openSongMenuAt(event, song, source)} onclick={rowclick}>
-  {#if now}<MorningWash start={104} />{/if}
+<div class={['relative h-full rounded-lg', selected ? 'bg-primary-100' : !off && 'mouse:hover:bg-neutral-50', ghost && 'bg-white shadow-float']} role='presentation' data-song-id={song.id} oncontextmenu={event => openSongMenuAt(event, song, source)} onclick={rowclick}>
+  {#if now && !ghost}<MorningWash start={104} />{/if}
   <div class={['relative h-full', SONG_GRID, off && !selected && 'opacity-45']}>
     <span class={SONG_COLUMNS.index}>
       {#if selecting}
@@ -80,8 +87,11 @@
       {/if}
     </span>
     <span class={['min-w-0 flex items-center gap-3', SONG_COLUMNS.title]}>
-      <span class='flex-none' bind:this={cover}><Cover url={song.album.coverUrl} size={40} class='rounded-md' /></span>
-      <PlayTarget class='min-w-0 flex-1' rounded disabled={off && !selecting && !onselect} unplayable={off} {now} {cover} {onplay} {selecting} {selected} {onselect}>
+      <span class='relative flex-none' bind:this={cover}>
+        <Cover url={song.album.coverUrl} size={40} class='rounded-md' />
+        <DragCountBadge {count} />
+      </span>
+      <PlayTarget class='min-w-0 flex-1' rounded disabled={off && !selecting && !onselect} unplayable={off} {now} {cover} {onplay} {selecting} {selected} {onselect} keyshortcuts={grip ? 'Alt+ArrowUp Alt+ArrowDown' : undefined}>
         <span class='min-w-0 flex items-center gap-2'>
           <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
           <SongBadge availability={song.availability} />
@@ -92,6 +102,10 @@
     <span class={['truncate text-caption text-neutral-600', SONG_COLUMNS.album]} lang={langOf(song.album.name ?? '')}>{song.album.name}</span>
     <span class={['flex items-center', SONG_COLUMNS.status]}><HeartButton {song} size='row' /></span>
     <span class={['text-caption text-neutral-500 tabular-nums', SONG_COLUMNS.duration]}>{formatDuration(song.duration)}</span>
-    <SongMoreButton {song} {source} size='desktop' />
+    {#if grip}
+      {@render grip(song)}
+    {:else}
+      <SongMoreButton {song} {source} size='desktop' />
+    {/if}
   </div>
 </div>

@@ -5,6 +5,7 @@
   无版权的整行降到 45%、不能点，徽标写明原因（••• 照样能点）
 -->
 <script lang='ts'>
+  import type { Snippet } from 'svelte'
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import { Check } from '@lucide/svelte'
@@ -12,6 +13,7 @@
   import NowChip from '../player/NowChip.svelte'
   import { openSongMenuAt } from '../song-menu.svelte'
   import Cover from './Cover.svelte'
+  import DragCountBadge from './DragCountBadge.svelte'
   import PlayTarget from './PlayTarget.svelte'
   import SongBadge from './SongBadge.svelte'
   import SongMoreButton from './SongMoreButton.svelte'
@@ -29,9 +31,14 @@
     selected?: boolean
     /** 长按到 400ms（还没挪动）：进入多选并选中这一首 */
     onlongpress?: () => void
+    /** 拖动把手（#36）：多选里能排序的歌单才有；给了就替换右边的 ••• */
+    grip?: Snippet<[Song]>
+    /** 浮起的复制行：影子、不接指针，一起拖几首时显示数量 */
+    ghost?: boolean
+    count?: number
   }
 
-  const { song, source, now, onplay, selecting = false, selected = false, onlongpress }: Props = $props()
+  const { song, source, now, onplay, selecting = false, selected = false, onlongpress, grip, ghost = false, count = 1 }: Props = $props()
   const off = $derived(song.availability === 'noCopyright')
   /** 这一行的封面：点歌时它飞进播放条 */
   let cover = $state<HTMLElement>()
@@ -61,7 +68,7 @@
   }
 
   function down(event: PointerEvent): void {
-    if (selecting || event.pointerType === 'mouse' || (event.target as Element).closest('[data-more]'))
+    if (ghost || selecting || event.pointerType === 'mouse' || (event.target as Element).closest('[data-more], [data-grip]'))
       return
     origin = { x: event.clientX, y: event.clientY }
     longPressed = false
@@ -93,8 +100,9 @@
 </script>
 
 <div
-  class={['row relative h-full rounded-lg', selected && 'bg-primary-100']}
+  class={['row relative h-full rounded-lg', selected && 'bg-primary-100', ghost && 'bg-white shadow-float']}
   role='presentation'
+  data-song-id={song.id}
   oncontextmenu={event => openSongMenuAt(event, song, source)}
   onclick={rowclick}
   onpointerdown={down}
@@ -103,8 +111,8 @@
   onpointercancel={cancelLongPress}
   onpointerleave={cancelLongPress}
 >
-  {#if now}<MorningWash start={selecting ? 104 : 70} onGround />{/if}
-  <div class={['relative grid h-full items-center', selecting ? 'grid-cols-[22px_48px_minmax(0,1fr)] gap-3 pl-3 pr-1' : 'grid-cols-[48px_minmax(0,1fr)_44px] gap-3.5 pl-4 pr-1', off && !selected && 'opacity-45']}>
+  {#if now && !ghost}<MorningWash start={selecting ? 104 : 70} onGround />{/if}
+  <div class={['relative grid h-full items-center', selecting ? (grip ? 'grid-cols-[22px_48px_minmax(0,1fr)_44px] gap-3 pl-3 pr-1' : 'grid-cols-[22px_48px_minmax(0,1fr)] gap-3 pl-3 pr-1') : 'grid-cols-[48px_minmax(0,1fr)_44px] gap-3.5 pl-4 pr-1', off && !selected && 'opacity-45']}>
     {#if selecting}
       <span
         class={[
@@ -118,16 +126,19 @@
     {/if}
     <span class='relative size-12' bind:this={cover}>
       <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
-      {#if now}<NowChip />{/if}
+      {#if now && !ghost}<NowChip />{/if}
+      <DragCountBadge {count} />
     </span>
-    <PlayTarget class='min-w-0' disabled={off && !selecting} unplayable={off} {now} {cover} {selecting} {selected} onplay={activate}>
+    <PlayTarget class='min-w-0' disabled={off && !selecting} unplayable={off} {now} {cover} {selecting} {selected} onplay={activate} keyshortcuts={grip ? 'Alt+ArrowUp Alt+ArrowDown' : undefined}>
       <span class='min-w-0 flex items-center gap-1.5'>
         <span class={['truncate text-body font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
         <SongBadge availability={song.availability} />
       </span>
       <span class='mt-0.5 block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
     </PlayTarget>
-    {#if !selecting}
+    {#if grip}
+      {@render grip(song)}
+    {:else if !selecting}
       <SongMoreButton {song} {source} size='phone' />
     {/if}
   </div>

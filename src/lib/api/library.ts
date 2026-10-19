@@ -38,6 +38,23 @@ export interface RemoveTracksRequest {
 /** 移除了（不在歌单里的歌网易云也照样接受）；这张歌单在网易云里已经不在了（被删掉了）是 missing */
 export type RemoveTracksResponse = { kind: 'removed' } | { kind: 'missing' }
 
+/**
+ * 一次提交整张歌单的新顺序最多几首（Spec #11：整张歌单的新顺序一次提交）。
+ * 验证关卡②录到 4,967 首可以；上限没有验证过，这里拦在远大于实际曲库的数，防止请求体失控
+ */
+export const SONGS_PER_ORDER = 20000
+
+/** POST /api/playlists/[id]/order：整张歌单的新顺序（自建歌单、我喜欢的音乐），按歌单里的先后排列 */
+export interface SongOrderRequest {
+  songIds: number[]
+}
+
+/**
+ * 新顺序提交了；这张歌单在网易云里已经不在了是 missing；
+ * 网易云回 -1“请求异常，请稍后重试”时是 unconfirmed：几千首位置都变的排序其实已经生效，要重新读一次这张歌单确认
+ */
+export type SongOrderResponse = { kind: 'ordered' } | { kind: 'missing' } | { kind: 'unconfirmed' }
+
 /** POST /api/albums/[id]/collect、/api/artists/[id]/collect：收藏或取消收藏 */
 export interface CollectRequest {
   collected: boolean
@@ -81,6 +98,11 @@ export interface Playlist extends PlaylistInfo {
   trackCount: number
   /** 曲目最后一次变动的时间（毫秒）：和本机副本里的比，变了才重拉曲目 */
   tracksUpdatedAt: number
+}
+
+/** 这张歌单能不能手动排序：自建歌单和我喜欢的音乐（#36）；收藏的歌单不能 */
+export function canSortPlaylist(kind: Playlist['kind']): boolean {
+  return kind === 'own' || kind === 'liked'
 }
 
 /** GET /api/playlists?uid=:歌单列表，我喜欢的音乐在最前，然后是自建的、收藏的，和网易云的顺序一样；在网易云里删掉的歌单不在里面 */

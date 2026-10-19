@@ -49,7 +49,7 @@
 
 <div class={['min-h-dvh bg-primary-50', bar ? 'pb-[calc(96px+env(safe-area-inset-bottom))]' : 'pb-[calc(32px+env(safe-area-inset-bottom))]']}>
   <!-- 顶行、标签行自己也铺上底色：换页时它们单独成块，不透明才盖得住下面飘动的内容 -->
-  <div class='sticky top-0 z-20 bg-primary-50' bind:clientHeight={top}>
+  <div class='sticky top-0 z-20 bg-primary-50' bind:clientHeight={top} data-page-top>
     <header class='h-14 flex items-center gap-1 bg-primary-50 pl-4 pr-2' style:view-transition-name='phone-top' style:view-transition-class='crossfade'>
       {@render header()}
     </header>

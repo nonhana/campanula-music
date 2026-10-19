@@ -25,11 +25,13 @@
     cover?: HTMLElement
     /** 行是圆角的（白色面板里） */
     rounded?: boolean
+    /** 能排序的列表里，这一行的键盘排序快捷键（Alt + ↑ / ↓） */
+    keyshortcuts?: string
     class?: ClassValue
     children: Snippet
   }
 
-  const { disabled, now, onplay, selecting = false, selected = false, onselect, unplayable = false, cover, rounded = false, class: klass, children }: Props = $props()
+  const { disabled, now, onplay, selecting = false, selected = false, onselect, unplayable = false, cover, rounded = false, keyshortcuts, class: klass, children }: Props = $props()
   const view = getAppView()
 
   function activate(event: MouseEvent): void {
@@ -56,6 +58,7 @@
   aria-disabled={unplayable && !selecting ? 'true' : undefined}
   role={selecting ? 'checkbox' : undefined}
   aria-checked={selecting ? selected : undefined}
+  aria-keyshortcuts={selecting ? keyshortcuts : undefined}
   data-select-row={selecting ? '' : undefined}
   aria-current={now ? 'true' : undefined}
   onclick={activate}

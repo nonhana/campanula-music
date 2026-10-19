@@ -4,6 +4,8 @@
   滚动、窗口大小变化、列表变化时重算要渲染哪几行。
   传了 markOf 时，告诉所在滚动区域的滚动条某个高度上是哪一行（ui/scroll-marks.ts），按住滚动条拖时气泡里写它。
   行是依次飘入的一组（motion.ts 的 reveal）：骨架换成列表时前几行依次飘入，之后滚出来的行不飘
+  拖动排序（#36）：placeOf 给出每一行放在哪个高度（拖动时让开空位），keep 让被拖的行一直挂载（Android 上手指底下的元素不能卸载），
+  total 是列表一共几个位置（被拖的行从列表里拿掉后留一个空位）
 -->
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
@@ -22,13 +24,25 @@
     row: Snippet<[T, number]>
     /** 这一行在滚动条的气泡里怎么写 */
     markOf?: (item: T, index: number) => ScrollMark
+    /** 拖动排序时这一行放在哪个高度（px）；不传就按 index * itemHeight */
+    placeOf?: (item: T, index: number) => number
+    /** 拖动排序时一直渲染的行（被拖的那几行不能被卸载） */
+    keep?: (item: T, index: number) => boolean
+    /** 列表一共几个位置；不传就是 items.length */
+    total?: number
+    /** 拖动排序时每一行移动的过渡；不拖时不加，滚出来、换列表时直接到位 */
+    animatePlace?: boolean
+    /** 这一行藏起来（被拖的行留在原位、仍挂载，但看不见） */
+    hidden?: (item: T, index: number) => boolean
   }
 
-  const { items, itemHeight, overscan = 8, scrollParent, getKey, row, markOf }: Props = $props()
+  const { items, itemHeight, overscan = 8, scrollParent, getKey, row, markOf, placeOf, keep, total, animatePlace = false, hidden }: Props = $props()
   const lookup = hasScrollLookup() ? getScrollLookup() : null
 
   let host = $state<HTMLElement>()
   let range = $state({ start: 0, end: 0 })
+
+  const slots = $derived(total ?? items.length)
 
   function measure() {
     if (!host)
@@ -36,7 +50,7 @@
     const viewport = scrollParent ? { top: scrollParent.getBoundingClientRect().top, height: scrollParent.clientHeight } : { top: 0, height: window.innerHeight }
     const viewTop = viewport.top - host.getBoundingClientRect().top
     const start = Math.max(0, Math.floor(viewTop / itemHeight) - overscan)
-    const end = Math.min(items.length, Math.ceil((viewTop + viewport.height) / itemHeight) + overscan)
+    const end = Math.min(slots, Math.ceil((viewTop + viewport.height) / itemHeight) + overscan)
     if (start !== range.start || end !== range.end)
       range = { start, end }
   }
@@ -44,6 +58,7 @@
   $effect(() => {
     // 列表变了（同步进来新的歌）也要重算
     void items.length
+    void slots
     measure()
   })
 
@@ -76,16 +91,22 @@
 
   const visible = $derived.by(() => {
     const out: { item: T, index: number }[] = []
-    const end = Math.min(range.end, items.length)
-    for (let i = range.start; i < end; i++)
-      out.push({ item: items[i], index: i })
+    for (let i = 0; i < items.length; i += 1) {
+      if ((i >= range.start && i < Math.min(range.end, items.length)) || keep?.(items[i]!, i))
+        out.push({ item: items[i]!, index: i })
+    }
     return out
   })
 </script>
 
-<div bind:this={host} class='relative' style:height='{items.length * itemHeight}px' data-reveal-group>
+<div bind:this={host} class='relative' style:height='{slots * itemHeight}px' data-reveal-group>
   {#each visible as { item, index } (getKey(item, index))}
-    <div class='absolute inset-x-0' style:top='{index * itemHeight}px' style:height='{itemHeight}px'>
+    <div
+      class={['absolute inset-x-0', animatePlace && 'transition-transform duration-move-state ease-out-soft']}
+      style:transform='translateY({placeOf?.(item, index) ?? index * itemHeight}px)'
+      style:height='{itemHeight}px'
+      style:visibility={hidden?.(item, index) ? 'hidden' : undefined}
+    >
       {@render row(item, index)}
     </div>
   {/each}

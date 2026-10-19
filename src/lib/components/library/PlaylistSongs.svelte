@@ -15,6 +15,8 @@
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
   import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, ListX, SearchX, X } from '@lucide/svelte'
+  import { untrack } from 'svelte'
+  import { canSortPlaylist } from '#lib/api/library.js'
   import { addSongsDialog } from '../add-songs.svelte'
   import { getAppView } from '../app-context.svelte'
   import { batchPicker } from '../batch-picker.svelte'
@@ -29,6 +31,8 @@
   import PhoneSongRow from './PhoneSongRow.svelte'
   import { enterSelection, leaveSelection, playlistSelection } from './playlist-selection.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
+  import { SONG_ROW_HEIGHT, SongDrag } from './song-drag.svelte'
+  import SongGrip from './SongGrip.svelte'
   import { formatCount, openingOf, playlistView, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
 
@@ -61,8 +65,52 @@
   const kind = $derived(library.songsOf(playlistId)?.playlist.kind ?? null)
   /** 这张歌单能不能移除：只有自建歌单有（我喜欢的音乐、收藏的歌单没有） */
   const own = $derived(kind === 'own')
+  /** 能排序的列表（自建歌单、我喜欢的音乐）：入口写“多选 · 排序”（#36） */
+  const sortableList = $derived(kind !== null && canSortPlaylist(kind))
+  /**
+   * 现在能不能拖：歌都同步全了、每一首都有歌曲信息（不然列表和整张歌单对不上），也没在搜索、没在重新拉
+   */
+  const sortable = $derived(sortableList && shown.kind === 'songs' && shown.complete && shown.songs.length === shown.total && result === null && opening === null)
+  /** 能排序的列表现在拖不了：说清楚是搜索结果，还是还没同步完 */
+  const sortBlockedText = $derived.by(() => {
+    if (result !== null)
+      return '搜索结果里不能拖动排序，清空搜索后再拖。'
+    if (shown.kind === 'songs' && shown.complete)
+      return '还有歌没取到，取到才能拖动排序。'
+    return '这张歌单还没同步完，同步完才能拖动排序。'
+  })
   /** 勾选的是整张歌单里的歌，不只是搜索出来的这些 */
   const picked = $derived(shown.kind === 'songs' ? shown.songs.filter(song => selection.has(song.id)) : [])
+
+  /** 拖动排序（#36）：只在多选里、按每行的把手拖；勾选的几首一起拖，保持原来的先后 */
+  let listHost = $state<HTMLElement>()
+  const drag = new SongDrag({
+    songs: () => songs,
+    selection,
+    move: (songIds, before) => view.app.moveSongs(playlistId, songIds, before),
+    host: () => listHost,
+  })
+  /** 拖动时虚拟列表的行：没被拿走的按空位挪开，被拖的几首留在原位、藏起来（一直挂载） */
+  const dragItems = $derived(drag.dragging ? [...drag.rest, ...drag.moved] : songs)
+
+  // 退出多选、换了列表（搜索、歌单加载完重排）：拖动作废，不提交
+  $effect(() => {
+    if (!selection.mode || !sortable)
+      untrack(() => drag.cancel())
+  })
+
+  /** 桌面：焦点在某一行时 Alt + ↑ / ↓ 移一位（#36）；走的和拖动是同一个 App 操作 */
+  function onListKeydown(event: KeyboardEvent): void {
+    if (!sortable || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown'))
+      return
+    const row = (event.target as Element).closest<HTMLElement>('[data-song-id]')
+    if (!row)
+      return
+    if (drag.moveByKeyboard(Number(row.dataset.songId), event.key === 'ArrowUp' ? -1 : 1)) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+  }
 
   $effect(() => selection.follow(playlistId))
   $effect(() => selection.setVisible(songs.map(song => song.id)))
@@ -128,6 +176,45 @@
   找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'>&nbsp;· {incompleteText}</span>{/if}
 {/snippet}
 
+{#snippet rowGrip(song: Song)}
+  <SongGrip {song} size={phone ? 'phone' : 'desktop'} attach={drag.handle(song)} />
+{/snippet}
+
+{#snippet ghostGrip(song: Song)}
+  <SongGrip {song} size={phone ? 'phone' : 'desktop'} ghost />
+{/snippet}
+
+{#snippet ghostRow()}
+  {#if drag.ghostSong}
+    {#if phone}
+      <PhoneSongRow
+        song={drag.ghostSong}
+        {source}
+        now={false}
+        selecting
+        selected={selection.has(drag.ghostSong.id)}
+        grip={ghostGrip}
+        ghost
+        count={drag.moved.length}
+        onplay={() => {}}
+      />
+    {:else}
+      <DesktopSongRow
+        song={drag.ghostSong}
+        {source}
+        n={drag.position}
+        now={false}
+        selecting
+        selected={selection.has(drag.ghostSong.id)}
+        grip={ghostGrip}
+        ghost
+        count={drag.moved.length}
+        onplay={() => {}}
+      />
+    {/if}
+  {/if}
+{/snippet}
+
 {#snippet list()}
   {#if shown.kind === 'loading'}
     <SkeletonRows count={phone ? 8 : 10} {phone} label='正在加载歌单' />
@@ -165,6 +252,9 @@
             <p class='px-3 py-2 text-caption text-neutral-600' role='status'>正在加载这张歌单的其余歌曲…</p>
           </div>
         {/if}
+        {#if selection.mode && sortableList && !sortable}
+          <p class='px-3 py-2 text-caption text-neutral-600' role='status'>{sortBlockedText}</p>
+        {/if}
         <!-- 新旧两块叠在同一格里交叉淡化：换的这一会儿高度按高的那块算 -->
         <div class='grid grid-cols-[minmax(0,1fr)]'>
           {#key mode}
@@ -179,32 +269,55 @@
                     : '只搜了这张歌单里的歌名、歌手和专辑。'}
                 />
               {:else}
-                <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id} markOf={songMark}>
-                  {#snippet row(song: Song, i: number)}
-                    {#if phone}
-                      <PhoneSongRow
-                        {song}
-                        {source}
-                        now={song.id === nowId}
-                        selecting={selection.mode}
-                        selected={selection.has(song.id)}
-                        onlongpress={() => enterSelection(playlistId, song.id)}
-                        onplay={() => activate(song)}
-                      />
-                    {:else}
-                      <DesktopSongRow
-                        {song}
-                        {source}
-                        n={i + 1}
-                        now={song.id === nowId}
-                        selecting={selection.mode}
-                        selected={selection.has(song.id)}
-                        onselect={event => selectWithModifiers(song, event)}
-                        onplay={() => activate(song)}
-                      />
-                    {/if}
-                  {/snippet}
-                </VirtualList>
+                <!-- 拖动排序：#36。清空右侧按钮的淡出只在手机上；拖动中列表照常跟手滚动 -->
+                <!-- 按键从行里的按钮冒泡上来（事件委托），列表本身不需要能获得焦点 -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <div
+                  bind:this={listHost}
+                  class={['relative', phone && drag.dragging && 'clear-rail']}
+                  role='group'
+                  aria-label='歌单里的歌曲'
+                  onkeydown={onListKeydown}
+                >
+                  <VirtualList
+                    items={dragItems}
+                    itemHeight={SONG_ROW_HEIGHT}
+                    getKey={(song: Song) => song.id}
+                    markOf={drag.dragging ? undefined : songMark}
+                    placeOf={drag.dragging ? drag.placeOf : undefined}
+                    keep={drag.dragging ? drag.keep : undefined}
+                    total={drag.dragging ? drag.rest.length + drag.moved.length : undefined}
+                    animatePlace={drag.dragging}
+                    hidden={drag.dragging ? drag.keep : undefined}
+                  >
+                    {#snippet row(song: Song, i: number)}
+                      {#if phone}
+                        <PhoneSongRow
+                          {song}
+                          {source}
+                          now={song.id === nowId}
+                          selecting={selection.mode}
+                          selected={selection.has(song.id)}
+                          grip={sortable && selection.mode ? rowGrip : undefined}
+                          onlongpress={() => enterSelection(playlistId, song.id)}
+                          onplay={() => activate(song)}
+                        />
+                      {:else}
+                        <DesktopSongRow
+                          {song}
+                          {source}
+                          n={i + 1}
+                          now={song.id === nowId}
+                          selecting={selection.mode}
+                          selected={selection.has(song.id)}
+                          grip={sortable && selection.mode ? rowGrip : undefined}
+                          onselect={event => selectWithModifiers(song, event)}
+                          onplay={() => activate(song)}
+                        />
+                      {/if}
+                    {/snippet}
+                  </VirtualList>
+                </div>
               {/if}
             </div>
           {/key}
@@ -233,7 +346,7 @@
             data-multiselect-entry
             onclick={openMulti}
           >
-            <ListChecks size={16} aria-hidden='true' />多选
+            <ListChecks size={16} aria-hidden='true' />{sortableList ? '多选 · 排序' : '多选'}
           </button>
         {/if}
       </div>
@@ -297,3 +410,65 @@
     {@render list()}
   </div>
 {/if}
+
+<!-- 浮起的行跟着指针；“移到第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
+{#if drag.dragging}
+  <div
+    class='pointer-events-none fixed left-0 top-0 z-[60] h-14'
+    style:left='{drag.ghostLeft}px'
+    style:width='{drag.ghostWidth}px'
+    style:transform='translate3d(0, {drag.ghostY}px, 0)'
+    class:transition-transform={drag.settling}
+    class:duration-move-state={drag.settling}
+    class:ease-out-soft={drag.settling}
+  >
+    <div class='h-full scale-[1.02]' inert aria-hidden='true'>
+      {@render ghostRow()}
+    </div>
+    {#if !drag.settling}
+      <span
+        class={[
+          'absolute z-[70] -top-3.5 h-6 inline-flex items-center rounded-full bg-primary-950 px-2.5 text-caption text-white font-500 whitespace-nowrap shadow-float tabular-nums',
+          phone ? 'right-[52px]' : 'right-3',
+        ]}
+        role='status'
+        aria-live='polite'
+      >{drag.label}</span>
+    {/if}
+  </div>
+{/if}
+
+<!-- 快速定位：拖到右侧窄条按比例跳。从窄条里开始拖时，先往左离开窄条才接手（手机上把手正好在窄条里） -->
+{#if drag.dragging && !drag.settling}
+  <div
+    class='pointer-events-none fixed right-0 z-[65] w-11 select-none'
+    style:top='{drag.railTop}px'
+    style:bottom='{drag.railBottom}px'
+    aria-hidden='true'
+  >
+    <span class='absolute inset-x-0 top-0 h-6 text-center text-caption text-neutral-600 font-500 tabular-nums'>1</span>
+    <span class='absolute inset-x-0 bottom-6 top-6'>
+      <span
+        class={['absolute left-1/2 inset-y-0 w-2 -ml-1 rounded-full transition-[scale,background-color] duration-move-feedback ease-out-soft', drag.scrubbing ? 'bg-primary-200' : 'bg-primary-100']}
+        style:scale={drag.scrubbing ? '1 1' : '0.5 1'}
+      ></span>
+      <span
+        class='absolute left-1/2 size-5 border-2 border-white rounded-full bg-primary-800 shadow-ambient -ml-2.5 -mt-2.5'
+        style:top='{(drag.target / Math.max(1, drag.rest.length)) * 100}%'
+      ></span>
+    </span>
+    <span class='absolute inset-x-0 bottom-0 h-6 text-center text-caption text-neutral-600 font-500 tabular-nums'>{formatCount(drag.railTotal)}</span>
+    {#if drag.railArmed && !drag.scrubbing}
+      <span class='absolute right-12 whitespace-nowrap rounded-xl bg-white px-2.5 py-1.5 text-center text-caption text-neutral-700 leading-4 shadow-ambient -translate-y-1/2' style:top={drag.hintTop}>拖到这里<br />快速定位</span>
+    {/if}
+  </div>
+{/if}
+
+<style>
+  /* 手机上拖动时，其余行右边的按钮（更多、把手）淡出，不和快速定位窄条叠在一起 */
+  .clear-rail :global([data-more]),
+  .clear-rail :global([data-grip]) {
+    opacity: 0;
+    transition: opacity var(--duration-feedback) var(--ease-out-soft);
+  }
+</style>
