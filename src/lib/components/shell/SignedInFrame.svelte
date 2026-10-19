@@ -4,8 +4,8 @@
   搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签，搜索结果下面是结果的标签（综合 / 单曲 / 歌单 / 歌手 / 专辑）；
   底部是迷你播放条。
   播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
-  播放的提示浮在最上面，播放页开着时也看得见；改曲库（红心、加入歌单、收藏）的提示同样浮着，两条都在时排在播放提示外侧。
-  “更多”菜单和从它打开的加入歌单盖在播放页上面。已下载由之后的票放进来。
+  播放的提示浮在最上面，播放页开着时也看得见；改曲库（红心、加入歌单、收藏、歌单的增删改）的提示同样浮着，两条都在时排在播放提示外侧。
+  “更多”菜单、从它打开的加入歌单、歌单页的 ••• 盖在播放页上面；歌单编辑（PlaylistEditor）盖在所有东西上面，开着时后面的都不能操作。已下载由之后的票放进来。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -27,6 +27,9 @@
   import { playerDrawer } from '../player/player-page.svelte'
   import PlayerNotice from '../player/PlayerNotice.svelte'
   import PlayerPage from '../player/PlayerPage.svelte'
+  import { playlistEditor } from '../playlist-edit.svelte'
+  import PlaylistEditor from '../PlaylistEditor.svelte'
+  import PlaylistMenu from '../PlaylistMenu.svelte'
   import DesktopSearchBox from '../search/DesktopSearchBox.svelte'
   import PhoneSearchBar from '../search/PhoneSearchBar.svelte'
   import { resetSearchBox, showingResults, shownKeyword } from '../search/search-box.svelte'
@@ -50,6 +53,8 @@
 
   // 浅路由说开着就升起来，说关了就缩回去（返回手势、后退、Esc、收起键都走这里）
   $effect(() => playerDrawer.settle(playerOpen))
+  /** 歌单编辑（新建、编辑信息、改公开、删除）开着：后面的都不能操作 */
+  const editorOpen = $derived(playlistEditor.request !== null)
 
   const pathname = $derived(page.url.pathname)
   /** 歌单页、专辑页、歌手页（属于曲库）：标题是歌单名、专辑名、歌手名 */
@@ -159,7 +164,7 @@
   <PhoneMiniPlayer />
 {/snippet}
 
-<div class='contents' inert={playerOpen}>
+<div class='contents' inert={playerOpen || editorOpen}>
   {#if desktopLayout.current}
     <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
       {#snippet header()}
@@ -205,10 +210,14 @@
   {/if}
 </div>
 
-{#if playerShown}
-  <PlayerPage open={playerOpen} />
-{/if}
+<div class='contents' inert={editorOpen}>
+  {#if playerShown}
+    <PlayerPage open={playerOpen} />
+  {/if}
+</div>
 <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
 <LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
 <SongMenu />
 <AddToPlaylist />
+<PlaylistMenu />
+<PlaylistEditor />

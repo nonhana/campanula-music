@@ -50,6 +50,11 @@
   - 网易云翻页时会把前面已经给过的又给一次：第一次录（18:20，那时录制用的登录已经失效，录到的是匿名视角，那批删了）“初音ミク”的第 2 页里有 3 位第 1 页已经有了；登录后连着录了 5 对第 1、2 页都没有重复（没录）。#31 返工时录的 `search/kinds/005`（专辑第 1 页）和今天的 `007` 有 5 张重复，测试拿它们当“隔了一阵才显示更多”。
   - 想录一页真实的出错返回给“综合里一块出错”的测试用：nonhana/hana-music-api#79 里会被整页拒掉的两个词（`⌘⌥⇧⌃⎋⏏`、`𓀀𓀁𓀂𓀃`），SDK 2.12.0 下第 1、2 页都正常返回了，没录到。作者定不构造，这条只测断网。
 - nonhana/campanula-music#30（2026-10-18）：收藏歌单在真账号上成功、取消成功的返回不是本仓库录的，从 hana-music-api 仓库的 `tests/fixtures/netease/playlist_subscribe/` 原样拷来（作者录的，已经去掉 Cookie、自己的歌单编号已换成假的）：`like-collect/playlist_subscribe.subscribe-token.json`（`subscribe-token.json`，2026-10-18 带 Watchman 现取的 170 字符反作弊令牌收藏别人的歌单，官方网页版的写法）、`like-collect/playlist_subscribe.unsubscribe.json`（`unsubscribe.json`，取消收藏，不带令牌）、`like-collect/playlist_subscribe.own-private.json`（`own.json`，收藏自己新建的临时歌单，网易云回 401“歌单创建者已设置隐私”，测试拿它当“网易云拒绝收藏”）。它们的 `context` 照 hana-music-api 的写法（`viewer` 是 `authenticated`），没有改。
+- nonhana/campanula-music#33（2026-10-19 北京时间）：`playlist-edit/create/` 下新建歌单的录制，作者同意。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.12.0`，只在临时新建的隐私歌单上做、做完删掉（Spec #11 交付方式第 1 条）；文件名前的序号是调用的先后：
+  - `001-playlist_create`：新建隐私歌单「Campanula 测试 · 可删除」（假编号 `900000023`，接着 #22 那套对照表编，和 `library/sync/` 的歌单列表对得上）。返回里 `playlist.creator` 是 null，SDK 只声明了 `id`、`playlist.id`、`playlist.name`，所以服务端新建后再读一次详情。`002-playlist_detail`：紧接着读这张歌单的详情：`status` 0、`privacy` 10、`trackCount` 0、`trackUpdateTime` 0，和歌单列表里的写法一样。
+  - `003-playlist_create`：0.4 秒后用 41 个宽度（全是 ASCII）的名称再新建一次，网易云回 405“操作过于频繁，请稍后再试”，什么都没建成。名称超长本该回 400（改名时是这样），这次先撞上了“操作频繁”：连着新建两张就会这样（#56 第一次新建也回过 405），测试拿它当“新建时网易云说操作频繁”。
+  - `004`、`005-playlist_desc_update`：简介写 1,000 个汉字、1,001 个汉字，都回 200。简介的上限至少 1,001 个字，界面照原型限 1,000 个字。
+  - `006-playlist_delete`：删掉这张歌单。`007-playlist_privacy`：对删掉的歌单改公开，照样回 200（和改名称、简介、标签一样）。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
@@ -125,7 +130,7 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 
 ## 构造的数据
 
-文件名带 `.constructed` 的不是录制，`context.constructed` 是 `true`：8821 那三份是 #19 为了测 8821 分支构造的（作者同意，2026-10-11），真遇到 8821 时录下来替换掉；另一个账号是 #21 构造的（作者同意，2026-10-12，作者只有一个账号）；限流那份是 #21 为了测“操作频繁”的退避构造的，真遇到限流时录下来替换掉。
+文件名带 `.constructed` 的不是录制，`context.constructed` 是 `true`：8821 那三份是 #19 为了测 8821 分支构造的（作者同意，2026-10-11），真遇到 8821 时录下来替换掉；另一个账号是 #21 构造的（作者同意，2026-10-12，作者只有一个账号）；限流那份是 #21 为了测“操作频繁”的退避构造的，真遇到限流时录下来替换掉；删除、改公开、改简介的 405 是 #33 为了测这三种修改的失败回滚构造的（作者同意，2026-10-19：这三个模块录不到失败的返回，对已删除的歌单也回 200），真遇到失败时录下来替换掉。
 
 | 文件 | 构造了什么、依据 |
 |---|---|
@@ -134,6 +139,7 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 | `login/verify_getQr.constructed.json` | 照 SDK 2.2.0 的 `verify_getQr`：网易云只给 `data.qrCode`，`qrurl` 是 SDK 用 `qrCode` 和查询参数拼的，`qrimg` 是 `qrurl` 的二维码（用 SDK 依赖的 `qrcode` 生成）。过 SDK 的 `VerifyGetQrBody` 校验 |
 | `login/login_cellphone.200.another-account.constructed.json` | 同一台设备上换另一个网易云账号登录。作者只有一个账号：复制 `login/login_cellphone.200.json`，只把账号的 uid（10000001 → 10000002）和昵称（“另一位听众”）换掉 |
 | `library/song_detail.405-rate-limited.constructed.json` | 网易云对接口限流的返回没有录到过（验证关卡①首次同步没遇到）。复制 `like-collect/playlist_subscribe.405.json` 的返回体（405“操作过于频繁，请稍后再试”，`hana-music-api@2.3.0` 认作限流，抛出时加上 `retryAfter`），只把模块换成 `song_detail`。注意那份 405 本身是请求写法被拒，不一定是真的限流（见上面 `like-collect/playlist_subscribe.*`） |
+| `playlist-edit/playlist_delete.405-rate-limited.constructed.json`、`playlist-edit/playlist_privacy.405-rate-limited.constructed.json`、`playlist-edit/playlist_desc_update.405-rate-limited.constructed.json` | 删除、改公开、改简介被网易云拒绝。复制 `playlist-edit/create/003-playlist_create.json.gz` 的返回体（#33 连着新建两张歌单时网易云回的 405“操作过于频繁，请稍后再试”，SDK 2.12.0 认作“操作频繁”，抛出时加上 `retryAfter`），只把模块换成对应的那个 |
 
 它们不进下面的清单。
 

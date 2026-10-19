@@ -1,5 +1,5 @@
 <!--
-  曲库里的歌单（自建的、收藏的，不含我喜欢的音乐）：全部 / 自建 / 收藏 筛选加封面网格。
+  曲库里的歌单（自建的、收藏的，不含我喜欢的音乐）：全部 / 自建 / 收藏 筛选加封面网格，筛选右边是“新建歌单”（#33，打开 PlaylistEditor）。
   手机的歌单标签和桌面首页的歌单区块共用；歌单列表还没拿到时是骨架，没拿到就出错时能重试，筛完一张都没有时说明。
   骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）；换筛选时整个格子先淡出再淡入，不让一个个格子各自挪位
   （DESIGN.md Overlays · 筛选）。heading：桌面放在筛选左边的区块标题
@@ -8,10 +8,12 @@
   import type { Snippet } from 'svelte'
   import type { LibraryState } from '#lib/app/library.js'
   import type { PlaylistFilter } from './view'
-  import { ListMusic } from '@lucide/svelte'
+  import { ListMusic, Plus } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { fadeAway, fadeThrough, reveal } from '../motion'
+  import { playlistEditor } from '../playlist-edit.svelte'
+  import Button from '../ui/Button.svelte'
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
@@ -32,8 +34,8 @@
   const gridClass = $derived(['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-4' : 'grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-x-5 gap-y-6'])
 
   const EMPTY = {
-    all: { title: '曲库里还没有歌单', body: '在网易云音乐里新建或收藏的歌单，会同步到这里。' },
-    own: { title: '还没有自建歌单', body: '在网易云音乐里新建的歌单，会同步到这里。' },
+    all: { title: '曲库里还没有歌单', body: '点“新建歌单”建一张；在网易云音乐里新建或收藏的歌单也会同步到这里。' },
+    own: { title: '还没有自建歌单', body: '点“新建歌单”建一张；在网易云音乐里新建的歌单也会同步到这里。' },
     collected: { title: '还没有收藏的歌单', body: '在网易云音乐里收藏的歌单，会同步到这里。' },
   }
 </script>
@@ -45,6 +47,7 @@
       <FilterChip selected={filter === item.key} onclick={() => (filter = item.key)}>{item.label}</FilterChip>
     {/each}
   </div>
+  <Button variant='outline' icon={Plus} class='ml-auto' onclick={event => playlistEditor.open({ mode: 'new', song: null, from: event.currentTarget })}>新建歌单</Button>
 </div>
 
 <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放 -->

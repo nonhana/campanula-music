@@ -74,6 +74,81 @@ export interface PlaylistsResponse {
   playlists: Playlist[]
 }
 
+// 歌单的增删改（#33）：新建、删除自建歌单，改名称、简介、标签，隐私歌单改公开。界面先拦不合规的，服务端再拦（回 400）
+
+/** 歌单名称最多这么宽（验证关卡②：40 个英文字母、20 个汉字可以，多一个网易云就回“标题字数异常”） */
+export const PLAYLIST_NAME_WIDTH = 40
+/** 简介最多这么多字：原型定的；网易云收 1,001 个汉字（#33 录制），上限比这个大 */
+export const PLAYLIST_DESCRIPTION_LENGTH = 1000
+/** 一张歌单最多几个标签（验证关卡②：4 个回“标签数据非法”） */
+export const PLAYLIST_TAGS_MAX = 3
+
+/**
+ * 歌单名称有多宽：ASCII 字符算 1，别的（汉字、假名、全角符号）算 2。按 UTF-16 码元数，表情这类占两个码元的算 4：
+ * 网易云怎么算表情不知道，往宽里算，不放过网易云会拒的名称
+ */
+export function nameWidth(name: string): number {
+  let width = 0
+  for (let index = 0; index < name.length; index += 1)
+    width += name.charCodeAt(index) < 0x80 ? 1 : 2
+  return width
+}
+
+/** 新建歌单、改名称、简介、标签时不能提交的原因 */
+export type PlaylistEditProblem = 'nameEmpty' | 'nameTooLong' | 'descriptionTooLong' | 'tooManyTags'
+
+/** 歌单名称（去掉首尾空白后的）不能提交的原因；能提交是 null */
+export function nameProblem(name: string): PlaylistEditProblem | null {
+  if (!name)
+    return 'nameEmpty'
+  return nameWidth(name) > PLAYLIST_NAME_WIDTH ? 'nameTooLong' : null
+}
+
+/** POST /api/playlists：新建自建歌单。name 去掉了首尾空白，1 到 PLAYLIST_NAME_WIDTH 个宽度 */
+export interface CreatePlaylistRequest {
+  name: string
+  private: boolean
+}
+
+/** 新建好的歌单：网易云建好后再读一次它的详情（新建的返回里只有编号和名称是 SDK 声明过的，ADR-0005） */
+export interface CreatePlaylistResponse {
+  playlist: Playlist
+}
+
+/** POST /api/playlists/[id]/name：改自建歌单的名称，和新建一样去掉了首尾空白、1 到 PLAYLIST_NAME_WIDTH 个宽度 */
+export interface RenamePlaylistRequest {
+  name: string
+}
+
+/** POST /api/playlists/[id]/description：改简介，最多 PLAYLIST_DESCRIPTION_LENGTH 个字；空字符串是清空 */
+export interface DescribePlaylistRequest {
+  description: string
+}
+
+/** POST /api/playlists/[id]/tags：换一组标签，0 到 PLAYLIST_TAGS_MAX 个，从标签库里选的（不在标签库里的网易云会悄悄丢掉，验证关卡②） */
+export interface TagPlaylistRequest {
+  tags: string[]
+}
+
+/**
+ * POST /api/playlists/[id]/name、description、tags、public（隐私歌单改公开）、delete（删除自建歌单）都回它：做好了。
+ * 歌单已经被删掉时网易云照样回 200（验证关卡②、#33 录制），要等下一次同步发现它不在歌单列表里了
+ */
+export interface PlaylistChangeResponse {
+  done: true
+}
+
+/** 标签库里的一类（语种、风格、场景、情感、主题），标签照网易云的顺序 */
+export interface PlaylistTagGroup {
+  name: string
+  tags: string[]
+}
+
+/** GET /api/playlist-tags：网易云的歌单标签库，每次都从网易云取，不写死（Spec #11；验证关卡②录到 70 个、5 类） */
+export interface PlaylistTagsResponse {
+  groups: PlaylistTagGroup[]
+}
+
 /** GET /api/playlists/[id]/track-ids：这张歌单的全部曲目编号，按歌单里的顺序 */
 export interface TrackIdsResponse {
   trackIds: number[]

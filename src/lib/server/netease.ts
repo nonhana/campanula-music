@@ -2,7 +2,7 @@ import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf, PlaylistSumm
 import type { Account } from '#lib/api/account.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
@@ -279,6 +279,17 @@ function playlistInfo(playlist: PlaylistSummary): PlaylistInfo {
   }
 }
 
+/** 曲库里的一张歌单：歌单列表里的、新建后读回的详情里的是同一份 */
+function libraryPlaylist(playlist: PlaylistSummary, kind: Playlist['kind']): Playlist {
+  return {
+    ...playlistInfo(playlist),
+    kind,
+    private: playlist.privacy === PRIVATE_PLAYLIST,
+    trackCount: playlist.trackCount,
+    tracksUpdatedAt: playlist.trackUpdateTime,
+  }
+}
+
 /**
  * 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样。
  * 凭据已经失效时网易云不报错，回 200 的匿名视角：每张歌单的 subscribed 都是 null（已登录时是 true / false，#21 实测），
@@ -291,18 +302,45 @@ export async function fetchPlaylists(uid: number, listener: Listener): Promise<P
     const { body } = await call('user_playlist', { uid, limit: PLAYLISTS_PER_CALL, offset }, listener)
     if (body.playlist.length > 0 && body.playlist.every(playlist => playlist.subscribed === null))
       throw new NeteaseError({ kind: 'needsLogin' }, body)
-    for (const playlist of body.playlist) {
-      playlists.push({
-        ...playlistInfo(playlist),
-        kind: playlist.specialType === LIKED_SPECIAL_TYPE ? 'liked' : playlist.creator.userId === uid ? 'own' : 'collected',
-        private: playlist.privacy === PRIVATE_PLAYLIST,
-        trackCount: playlist.trackCount,
-        tracksUpdatedAt: playlist.trackUpdateTime,
-      })
-    }
+    for (const playlist of body.playlist)
+      playlists.push(libraryPlaylist(playlist, playlist.specialType === LIKED_SPECIAL_TYPE ? 'liked' : playlist.creator.userId === uid ? 'own' : 'collected'))
     if (!body.more)
       return playlists
   }
+}
+
+/**
+ * 新建自建歌单。新建的返回里 SDK 只声明了编号和名称（creator 是 null，#33 录制），封面、隐私、曲目更新时间都要读：
+ * 建好马上读一次它的详情（和歌单列表里的写法一样）。连着新建两张网易云会回 405“操作过于频繁”（#33 录制）
+ */
+export async function createPlaylist(name: string, isPrivate: boolean, listener: Listener): Promise<Playlist> {
+  const { body: { id } } = await call('playlist_create', { name, privacy: String(isPrivate ? PRIVATE_PLAYLIST : 0) }, listener)
+  const { body } = await call('playlist_detail', { id }, listener)
+  return libraryPlaylist(body.playlist, 'own')
+}
+
+// 改自建歌单（#33）。歌单已经被删掉时这几样网易云都照样回 200（验证关卡②、#33 录制），要等下一次同步才发现
+
+export async function deletePlaylist(playlistId: number, listener: Listener): Promise<void> {
+  await call('playlist_delete', { id: playlistId }, listener)
+}
+
+export async function renamePlaylist(playlistId: number, name: string, listener: Listener): Promise<void> {
+  await call('playlist_name_update', { id: playlistId, name }, listener)
+}
+
+export async function describePlaylist(playlistId: number, description: string, listener: Listener): Promise<void> {
+  await call('playlist_desc_update', { id: playlistId, desc: description }, listener)
+}
+
+/** 网易云要的是用分号连起来的一串标签 */
+export async function tagPlaylist(playlistId: number, tags: readonly string[], listener: Listener): Promise<void> {
+  await call('playlist_tags_update', { id: playlistId, tags: tags.join(';') }, listener)
+}
+
+/** 隐私歌单改公开：已经是公开的再改一次也回 200（验证关卡②） */
+export async function publishPlaylist(playlistId: number, listener: Listener): Promise<void> {
+  await call('playlist_privacy', { id: playlistId }, listener)
 }
 
 /** 一张歌单的全部曲目编号（SDK 的 playlist_detail 一次要 10 万首）。我喜欢的音乐约 5,000 首时网易云原始返回约 3.1 MB，这里只留编号 */
@@ -329,6 +367,17 @@ export async function fetchPlaylistPage(playlistId: number, listener: Listener):
   if (playlist.status === DELETED_PLAYLIST)
     return { kind: 'unavailable', reason: 'deleted' }
   return { kind: 'shown', playlist: playlistInfo(playlist), trackIds: playlist.trackIds.map(track => track.id), tracksUpdatedAt: playlist.trackUpdateTime }
+}
+
+/**
+ * 歌单的标签库（编辑歌单的标签只能从这里选）：网易云的分类（categories，编号 → 名字）按编号排，
+ * 每类里是标签（sub 里 category 是这一类的），照网易云的顺序
+ */
+export async function fetchPlaylistTags(listener: Listener): Promise<PlaylistTagGroup[]> {
+  const { body } = await call('playlist_catlist', {}, listener)
+  return Object.entries(body.categories)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([category, name]) => ({ name, tags: body.sub.filter(tag => tag.category === Number(category)).map(tag => tag.name) }))
 }
 
 /** 网易云的歌（歌曲信息、专辑页、热门歌曲里的结构一样） */

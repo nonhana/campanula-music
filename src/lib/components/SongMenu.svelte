@@ -3,7 +3,7 @@
   无版权的歌、正在放的那首前两项不能选（放不进来、什么都不变）。没登录（曲库是 null）时没有后两项；红心还没同步到时红心不能选。
   红心了的写“取消红心”，心形是珊瑚色实心（DESIGN.md Colors：珊瑚只给红心）。
   点“加入歌单”关上菜单，在同一个地方打开加入歌单（AddToPlaylist），焦点交给它。
-  浮动菜单、底部弹层、键盘怎么用见 SongOverlay。放在 SignedInFrame 里，盖在播放页上面
+  浮动菜单、底部弹层、键盘怎么用见 MenuOverlay。放在 SignedInFrame 里，盖在播放页上面
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -12,9 +12,9 @@
   import { getAppView } from './app-context.svelte'
   import Cover from './library/Cover.svelte'
   import { artistLine, langOf } from './library/view'
+  import MenuOverlay from './MenuOverlay.svelte'
   import { currentSong } from './player/view'
   import { openPlaylistPicker, songMenu } from './song-menu.svelte'
-  import SongOverlay from './SongOverlay.svelte'
 
   /** 浮动菜单一项的高度和上下内边距（px）：还没画出来时按它估计高度，决定往下还是往上飘 */
   const FLOATING_ITEM = 36
@@ -100,4 +100,4 @@
   {/each}
 {/snippet}
 
-<SongOverlay layer={songMenu} label={({ song }) => `更多操作：${song.name}`} width='w-62' {estimate} {sheetHeader} {content} />
+<MenuOverlay layer={songMenu} label={({ song }) => `更多操作：${song.name}`} width='w-62' {estimate} {sheetHeader} {content} />

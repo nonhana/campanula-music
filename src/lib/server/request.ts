@@ -1,7 +1,8 @@
-import type { CollectRequest, HeartRequest, PlaylistCollectRequest } from '#lib/api/library.js'
+import type { CollectRequest, CreatePlaylistRequest, DescribePlaylistRequest, HeartRequest, PlaylistCollectRequest, RenamePlaylistRequest, TagPlaylistRequest } from '#lib/api/library.js'
 import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchKind } from '#lib/api/search.js'
 import { error } from '@sveltejs/kit'
+import { nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
 import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
 import { SEARCH_KINDS } from '#lib/api/search.js'
 
@@ -140,4 +141,45 @@ export async function readPlaylistCollect(request: Request): Promise<PlaylistCol
   if (collected !== true || typeof checkToken !== 'string' || !CHECK_TOKEN.test(checkToken))
     error(400, '收藏歌单要有 collected 和 checkToken')
   return { collected, checkToken }
+}
+
+/** 读歌单名称：去掉首尾空白后要能提交（不是空的，不超过 PLAYLIST_NAME_WIDTH 个宽度） */
+function readPlaylistName(name: unknown): string {
+  const trimmed = typeof name === 'string' ? name.trim() : ''
+  if (nameProblem(trimmed))
+    error(400, `name 要有 1 到 ${PLAYLIST_NAME_WIDTH} 个宽度（汉字算 2）`)
+  return trimmed
+}
+
+/** 读新建歌单的请求体（JSON）：名称，是不是隐私歌单 */
+export async function readPlaylistDraft(request: Request): Promise<CreatePlaylistRequest> {
+  const { name, private: isPrivate } = await readObject(request)
+  if (typeof isPrivate !== 'boolean')
+    error(400, '要有 private')
+  return { name: readPlaylistName(name), private: isPrivate }
+}
+
+/** 读改名称的请求体（JSON） */
+export async function readPlaylistRename(request: Request): Promise<RenamePlaylistRequest> {
+  const { name } = await readObject(request)
+  return { name: readPlaylistName(name) }
+}
+
+/** 读改简介的请求体（JSON）：最多 PLAYLIST_DESCRIPTION_LENGTH 个字，可以是空的（清空） */
+export async function readPlaylistDescription(request: Request): Promise<DescribePlaylistRequest> {
+  const { description } = await readObject(request)
+  if (typeof description !== 'string' || description.length > PLAYLIST_DESCRIPTION_LENGTH)
+    error(400, `description 最多 ${PLAYLIST_DESCRIPTION_LENGTH} 个字`)
+  return { description }
+}
+
+/** 一个标签：不是空的；网易云用分号把几个标签连起来交上去，所以不能有分号 */
+const TAG = /^[^;\s][^;]*$/
+
+/** 读换标签的请求体（JSON）：0 到 PLAYLIST_TAGS_MAX 个不重复的标签 */
+export async function readPlaylistTags(request: Request): Promise<TagPlaylistRequest> {
+  const { tags } = await readObject(request)
+  if (!Array.isArray(tags) || tags.length > PLAYLIST_TAGS_MAX || !tags.every(tag => typeof tag === 'string' && TAG.test(tag)) || new Set(tags).size !== tags.length)
+    error(400, `tags 要有 0 到 ${PLAYLIST_TAGS_MAX} 个不重复的标签`)
+  return { tags }
 }

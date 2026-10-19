@@ -1,29 +1,29 @@
 <!--
-  歌曲浮层的外壳（song-menu.svelte.ts 的 SongLayer）：“更多”菜单（SongMenu）和加入歌单（AddToPlaylist）共用。
+  菜单类浮层的外壳（overlay-layer.svelte.ts 的 OverlayLayer）：歌曲的“更多”菜单（SongMenu）、加入歌单（AddToPlaylist）、歌单页的 •••（PlaylistMenu）共用。
   鼠标打开的是贴着锚点的浮动菜单：从锚点那一侧飘出来，关掉时淡出（DESIGN.md Overlays），
   点外面、滚动（菜单里面自己滚不算）、窗口变了、换页都关上；触屏是底部弹层：和播放页同一套抽屉，
   按住拉手或上面那一块往下拖、点按拉手或遮罩都收起，返回也先收起它。
   键盘：打开时焦点落在第一项能选的，↑/↓、Home/End 移动，Esc 关上并回到打开它的地方，Tab 离开时关上。
   里面画什么由用的地方给：content 是菜单项（role menuitem），sheetHeader 是底部弹层拉手下面、能按住往下拖的那一块
 -->
-<script lang='ts'>
+<script lang='ts' generics='R extends OverlayRequest'>
   import type { Snippet } from 'svelte'
   import type { Attachment } from 'svelte/attachments'
-  import type { SongLayer, SongMenuRequest } from './song-menu.svelte'
+  import type { OverlayLayer, OverlayRequest } from './overlay-layer.svelte'
   import { page } from '$app/state'
   import { pop } from './motion'
   import { createDrawer } from './player/drawer.svelte'
 
   interface Props {
-    layer: SongLayer
+    layer: OverlayLayer<R>
     /** 读屏读出的名字 */
-    label: (request: SongMenuRequest) => string
+    label: (request: R) => string
     /** 浮动菜单的宽度（class） */
     width: string
     /** 还没画出来时按多高算（px）：浮动菜单决定往下还是往上飘，底部弹层打开的头一帧 */
-    estimate: (request: SongMenuRequest, sheet: boolean) => number
-    sheetHeader: Snippet<[SongMenuRequest]>
-    content: Snippet<[SongMenuRequest, boolean]>
+    estimate: (request: R, sheet: boolean) => number
+    sheetHeader: Snippet<[R]>
+    content: Snippet<[R, boolean]>
   }
 
   const { layer, label, width, estimate, sheetHeader, content }: Props = $props()
@@ -36,8 +36,8 @@
   const sheetRequest = $derived(request && !request.anchor ? request : null)
   /** 底部弹层开着：浅路由也说开着 */
   const sheetOpen = $derived(sheetRequest !== null && page.state[layer.sheet] === true)
-  /** 收起的动画里还画着刚才那首 */
-  let sheetShown = $state<SongMenuRequest | null>(null)
+  /** 收起的动画里还画着刚才那一层 */
+  let sheetShown = $state<R | null>(null)
   /** 菜单本身（浮动菜单，或者底部弹层里的那一列）：在里面找菜单项 */
   let menu = $state<HTMLElement>()
   const drawer = createDrawer(() => (sheetShown ? estimate(sheetShown, true) : 0))
@@ -51,7 +51,7 @@
   $effect(() => drawer.settle(sheetOpen))
 
   /** 浅路由已经说过开着的那一次：压浏览记录要等一会儿，刚打开的那一下它还没说开着，不算收起 */
-  let acknowledged: SongMenuRequest | null = null
+  let acknowledged: R | null = null
 
   // 返回手势、后退收起了底部弹层：关上，焦点回到打开它的那个按钮
   $effect(() => {
@@ -126,7 +126,7 @@
   }
 
   /** 菜单在锚点下面放得下（按估计的高度）：往下飘，放不下就翻到锚点上面 */
-  function fitsBelow(shown: SongMenuRequest): boolean {
+  function fitsBelow(shown: R): boolean {
     return shown.anchor!.y + estimate(shown, false) <= window.innerHeight - MARGIN
   }
 
