@@ -14,7 +14,7 @@
   import type { CoverRequest } from './cover-edit.svelte'
   import { page } from '$app/state'
   import { Check, CircleAlert, ImageOff, LoaderCircle, X } from '@lucide/svelte'
-  import { untrack } from 'svelte'
+  import { onDestroy, untrack } from 'svelte'
   import { COVER_INPUT_MAX_BYTES, COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
   import { getAppView } from './app-context.svelte'
   import { centerCrop } from './cover-crop'
@@ -23,6 +23,7 @@
   import { failureText } from './failure'
   import { desktopLayout } from './layout'
   import { dialog, fade, float } from './motion'
+  import { PAGE_DISTANCE } from './motion-tokens'
   import { pushShallowState } from './shallow-state'
   import Button from './ui/Button.svelte'
   import IconButton from './ui/IconButton.svelte'
@@ -30,6 +31,12 @@
 
   const view = getAppView()
   const request = $derived(coverEditor.request)
+
+  // 退出、登录失效时 SignedInFrame 整个拿掉，这个组件不会看到 library 变 null；请求是单例，得在这里清掉，
+  // 不然下次登录后 behindCover 一直为真、整个 App 都是 inert
+  onDestroy(() => {
+    coverEditor.request = null
+  })
   const cover = $derived(view.state.cover)
   const sheet = $derived(!desktopLayout.current)
   /** 第三步已经发给服务器，停不下来 */
@@ -241,7 +248,8 @@
       role='dialog'
       aria-modal='true'
       aria-labelledby='cover-title'
-      transition:float={{ toward: 'down', panel: true }}
+      in:float={{ toward: 'down', distance: PAGE_DISTANCE.in, panel: true }}
+      out:float={{ toward: 'down', distance: PAGE_DISTANCE.out, panel: true }}
     >
       <header class='h-14 flex flex-none items-center gap-1 px-1'>
         <IconButton
@@ -393,7 +401,7 @@
     {:else if cover.status === 'uploading'}
       <div class={sheet ? 'grid gap-2' : 'flex justify-end gap-2'}>
         {#if cover.upload.step === 'set'}
-          <Button variant='primary' aria-disabled='true' data-autofocus class='pointer-events-none'>正在设为封面</Button>
+          <Button variant='primary' aria-disabled='true' data-autofocus class='pointer-events-none opacity-70'>正在设为封面</Button>
         {:else}
           <Button variant='outline' onclick={() => view.app.cancelCover()} data-autofocus>取消上传</Button>
         {/if}
