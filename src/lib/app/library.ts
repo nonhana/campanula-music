@@ -1,11 +1,11 @@
 import type { Account } from '#lib/api/account.js'
-import type { AddTracksRequest, AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, CollectRequest, CollectResponse, HeartRequest, HeartResponse, HeartsResponse, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistsResponse, PlaylistUnavailable, Song, SongsRequest, SongsResponse, TrackIdsResponse } from '#lib/api/library.js'
+import type { AddTracksRequest, AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, CollectRequest, CollectResponse, CreatePlaylistRequest, CreatePlaylistResponse, DescribePlaylistRequest, HeartRequest, HeartResponse, HeartsResponse, Playlist, PlaylistChangeResponse, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistEditProblem, PlaylistInfo, PlaylistPageResponse, PlaylistsResponse, PlaylistTagGroup, PlaylistTagsResponse, PlaylistUnavailable, RenamePlaylistRequest, Song, SongsRequest, SongsResponse, TagPlaylistRequest, TrackIdsResponse } from '#lib/api/library.js'
 import type { Api, RequestFailure, Result } from './api'
-import type { Change } from './changes'
+import type { Change, ConfirmedChange } from './changes'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
-import { SONGS_PER_REQUEST } from '#lib/api/library.js'
-import { changePatch, heartOf, targetOf } from './changes'
+import { nameProblem, SONGS_PER_REQUEST } from '#lib/api/library.js'
+import { changePatch, changeProblem, heartOf, targetOf } from './changes'
 import { emptyPatch, patched } from './local'
 
 // 曲库副本和同步（Spec #11“客户端：曲库副本”，ADR-0007）：登录后先显示本机副本，再在后台和网易云同步。
@@ -18,8 +18,9 @@ import { emptyPatch, patched } from './local'
 // 专辑页、歌手页是听众打开时用前台请求拉的（#23 留言）：专辑页一张一个请求，连着取会被网易云说操作频繁，所以不在后台整批同步；
 // 收藏的专辑打开过就存进本机副本，断网也能看，不再收藏时删掉。歌手页是网易云对这位歌手的介绍，不是曲库，只在这次登录期间记着。
 // 不在曲库里的歌单（别人的歌单，#56）每次打开都联网取，不存进本机副本，收藏了才进（ADR-0007）：打开过的只在这次登录期间记着。
-// 听众改曲库（红心、加入歌单、收藏，#30）：先叠在显示着的副本上、立即生效，再用前台请求提交给网易云；网易云确认了才写进副本，
-// 没成就改回原样并说明原因（提示）。断网时不改、直接说没改成（规则⑨）。同步拿回来的数据是请求发出那一刻的网易云，
+// 听众改曲库（红心、加入歌单、收藏，#30；删除歌单，改名称、简介、标签，改公开，#33）：先叠在显示着的副本上、立即生效，
+// 再用前台请求提交给网易云；网易云确认了才写进副本，没成就改回原样并说明原因（提示）。断网时不改、直接说没改成（规则⑨）。
+// 新建歌单等网易云建好、给了编号才进副本（#33）。同步拿回来的数据是请求发出那一刻的网易云，
 // 比那一刻晚确认的修改要叠回去，不然刚加进歌单的歌会从界面上消失（逻辑原型证明必须这样做）
 
 /** 同步没成功的原因（需要登录另外处理：整个 App 变成登录失效） */
@@ -28,8 +29,14 @@ export type SyncFailure = Exclude<RequestFailure, { kind: 'needsLogin' | 'rateLi
 /** 打开歌单时没拉成的原因：前台请求不等，断网、操作频繁都直接说 */
 export type OpenFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
 
-/** 改曲库没改成的原因：请求没成功，或者收藏歌单前没取到网易云的反作弊令牌（Watchman 没加载出来，可能被浏览器插件拦了） */
-export type ChangeFailure = OpenFailure | { kind: 'checkTokenUnavailable' }
+/**
+ * 改曲库没改成的原因：请求没成功；收藏歌单前没取到网易云的反作弊令牌（Watchman 没加载出来，可能被浏览器插件拦了）；
+ * 歌单的名称、简介、标签不合规（界面先拦了，到这里是兜底）
+ */
+export type ChangeFailure = OpenFailure | { kind: 'checkTokenUnavailable' } | { kind: 'invalid', problem: PlaylistEditProblem }
+
+/** 新建歌单的结果：建好了，或者没建成的原因 */
+export type CreateOutcome = { ok: true, playlistId: number } | { ok: false, failure: ChangeFailure }
 
 /** 改曲库后要告诉听众的事 */
 export type LibraryNotice
@@ -124,6 +131,8 @@ export interface LibraryState {
   artistPage: (artistId: number) => PageState<ArtistPage> | null
   /** 不在曲库里的歌单：打开过的只在这次登录期间记着，不存在本机；没打开过是 null */
   neteasePlaylist: (playlistId: number) => NeteasePlaylistPage | null
+  /** 网易云的歌单标签库（编辑歌单信息时取）：只在这次登录期间记着；没取过是 null */
+  playlistTags: PageState<PlaylistTagGroup[]> | null
   sync: SyncStatus
   /** 改曲库（红心、加入歌单、收藏）后要告诉听众的事；关掉或有了新的就换掉 */
   notice: LibraryNotice | null
@@ -173,11 +182,18 @@ export interface Library {
   openArtist: (artistId: number) => Promise<void>
   /** 歌手页取后面的一页专辑；没取成时再调一次就是重试 */
   moreArtistAlbums: (artistId: number) => Promise<void>
+  /** 取网易云的歌单标签库：这次登录还没取到过就用前台请求取；没取成时再调一次就是重试 */
+  openPlaylistTags: () => Promise<void>
   /**
    * 改曲库（红心、加入歌单、收藏）：先改显示着的、立即生效，再提交给网易云；成了写进本机副本，没成改回原样并说明原因（state.notice）。
    * 网易云说要加歌的歌单已经不在了：改回原样，马上同步一次
    */
   change: (change: Change) => Promise<void>
+  /**
+   * 新建自建歌单：名称去掉首尾空白，不合规、断网时不提交。等网易云建好（给了编号）才进曲库，排在我喜欢的音乐后面；
+   * 带着 song（从加入歌单里新建）时建好接着加入这首（和 change 的加入歌单一样）。这一轮作废了（退出、登录失效）是 null
+   */
+  create: (draft: CreatePlaylistRequest, song?: Song) => Promise<CreateOutcome | null>
   dismissNotice: () => void
   /** 退出、登录失效：停下同步。本机副本留着，退出时由 App 另外删 */
   leave: () => void
@@ -189,9 +205,9 @@ type Outcome<T, F> = { ok: true, value: T } | { ok: false, failure: F } | null
 /** 拉一张歌单的结果 */
 type Pulled = Outcome<void, OpenFailure>
 
-/** 听众做的一个修改：网易云确认的那一刻（还没确认是 null），写进副本了没有 */
+/** 写进副本的一个修改（听众做的，或者网易云建好的新歌单）：网易云确认的那一刻（还没确认是 null），写进副本了没有 */
 interface PendingChange {
-  change: Change
+  change: ConfirmedChange
   confirmedAt: number | null
   saved: boolean
 }
@@ -229,11 +245,12 @@ function skippable(failure: SyncFailure): boolean {
   }
 }
 
-/** 这次登录打开过的专辑页、歌手页、不在曲库里的歌单 */
+/** 这次登录打开过的专辑页、歌手页、不在曲库里的歌单，取过的标签库 */
 interface Pages {
   albums: ReadonlyMap<number, PageState<AlbumResponse>>
   artists: ReadonlyMap<number, PageState<ArtistPage>>
   playlists: ReadonlyMap<number, NeteasePlaylistPage>
+  tags: PageState<PlaylistTagGroup[]> | null
 }
 
 function songsOf(replica: Replica, playlist: Playlist): PlaylistSongs {
@@ -276,6 +293,7 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
     },
     artistPage: artistId => artistPages.get(artistId) ?? null,
     neteasePlaylist: playlistId => neteasePages.get(playlistId) ?? null,
+    playlistTags: pages.tags,
     sync,
     notice,
   }
@@ -334,8 +352,8 @@ export function createLibrary(context: LibraryContext): Library {
   /** 拉歌单时正在后台通道里等着的请求：听众打开这张歌单时叫它别等了，改成前台请求马上发 */
   const waiting = new Map<number, AbortController>()
   let opening = new Map<number, PlaylistOpening>()
-  /** 这次登录打开过的专辑页（本机存着、这次还没拉的不在这里）、歌手页、不在曲库里的歌单 */
-  const pages = { albums: new Map<number, PageState<AlbumResponse>>(), artists: new Map<number, PageState<ArtistPage>>(), playlists: new Map<number, NeteasePlaylistPage>() }
+  /** 这次登录打开过的专辑页（本机存着、这次还没拉的不在这里）、歌手页、不在曲库里的歌单，取过的标签库 */
+  const pages = { albums: new Map<number, PageState<AlbumResponse>>(), artists: new Map<number, PageState<ArtistPage>>(), playlists: new Map<number, NeteasePlaylistPage>(), tags: null as PageState<PlaylistTagGroup[]> | null }
   /** 正在拉的专辑页：本机存着的专辑页拉的时候照常显示存着的，不记成加载中，所以另外记 */
   const fetchingAlbums = new Set<number>()
   /** 正在联网取的不在曲库里的歌单：打开过的再打开时照常显示记着的，所以另外记 */
@@ -710,6 +728,26 @@ export function createLibrary(context: LibraryContext): Library {
         const result = await post<PlaylistCollectResponse>(`/api/playlists/${change.playlist.id}/collect`, body)
         return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
       }
+      case 'rename': {
+        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/name`, { name: change.name } satisfies RenamePlaylistRequest)
+        return result && done(result)
+      }
+      case 'describe': {
+        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/description`, { description: change.description ?? '' } satisfies DescribePlaylistRequest)
+        return result && done(result)
+      }
+      case 'tag': {
+        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/tags`, { tags: change.tags } satisfies TagPlaylistRequest)
+        return result && done(result)
+      }
+      case 'publish': {
+        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/public`, {})
+        return result && done(result)
+      }
+      case 'delete': {
+        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/delete`, {})
+        return result && done(result)
+      }
       default: {
         const unhandled: never = change
         throw new Error(`不认识的修改：${JSON.stringify(unhandled)}`)
@@ -754,8 +792,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 网易云回了这个修改：成了就写进副本（加入歌单再提示一句）；歌单已经不在了就改回原样，马上同步一次；
    * 没成就改回原样并说明原因，需要登录（续期也没成功）时整个 App 变成登录失效
    */
-  async function settleChange(mine: number, entry: PendingChange, result: Submitted): Promise<void> {
-    const { change } = entry
+  async function settleChange(mine: number, entry: PendingChange, change: Change, result: Submitted): Promise<void> {
     if (result.ok && result.value === 'done') {
       entry.confirmedAt = ++tick
       await save(mine, now => confirmedPatch(now, change), () => {
@@ -788,12 +825,42 @@ export function createLibrary(context: LibraryContext): Library {
     pages.albums.clear()
     pages.artists.clear()
     pages.playlists.clear()
+    pages.tags = null
     fetchingAlbums.clear()
     fetchingPlaylists.clear()
     neteaseSongs.clear()
     changes = []
     submitting.clear()
     notice = null
+  }
+
+  async function applyChange(change: Change): Promise<void> {
+    const current = replica
+    if (!current)
+      return
+    const mine = generation
+    // 不合规的（界面先拦了，这里兜底）、断网时：不改，直接说没改成（规则⑨）
+    const problem = changeProblem(change)
+    const failure: ChangeFailure | null = problem ? { kind: 'invalid', problem } : context.online() ? null : { kind: 'offline' }
+    if (failure) {
+      notice = { kind: 'notChanged', change, failure }
+      return publish()
+    }
+    keepPage(current, change)
+    const entry: PendingChange = { change, confirmedAt: null, saved: false }
+    changes.push(entry)
+    publish()
+    // 同一样东西的上一次修改连同写进副本做完了，才提交这一次；打开这张歌单（open）也等它做完
+    const target = targetOf(change)
+    const job = (submitting.get(target) ?? Promise.resolve()).then(async () => {
+      const result = await submit(mine, change)
+      if (result && mine === generation)
+        await settleChange(mine, entry, change, result)
+    })
+    submitting.set(target, job)
+    await job
+    if (submitting.get(target) === job)
+      submitting.delete(target)
   }
 
   return {
@@ -916,30 +983,45 @@ export function createLibrary(context: LibraryContext): Library {
       else
         show({ ...page, moreAlbums: { status: 'failed', failure: result.failure } })
     },
-    async change(change) {
-      const current = replica
-      if (!current)
+    async openPlaylistTags() {
+      const shown = pages.tags
+      if (!replica || shown?.status === 'loading' || shown?.status === 'shown')
         return
       const mine = generation
-      if (!context.online()) {
-        notice = { kind: 'notChanged', change, failure: { kind: 'offline' } }
-        return publish()
-      }
-      keepPage(current, change)
-      const entry: PendingChange = { change, confirmedAt: null, saved: false }
+      pages.tags = { status: 'loading' }
+      publish()
+      const result = settle(mine, await api.get<PlaylistTagsResponse>('/api/playlist-tags'))
+      if (!result)
+        return
+      pages.tags = result.ok ? { status: 'shown', content: result.value.groups } : { status: 'failed', failure: result.failure }
+      publish()
+    },
+    change: applyChange,
+    async create(draft, song) {
+      const name = draft.name.trim()
+      const problem = nameProblem(name)
+      if (problem)
+        return { ok: false, failure: { kind: 'invalid', problem } }
+      if (!replica)
+        return null
+      if (!context.online())
+        return { ok: false, failure: { kind: 'offline' } }
+      const mine = generation
+      const result = settle(mine, await api.post<CreatePlaylistResponse>('/api/playlists', { name, private: draft.private } satisfies CreatePlaylistRequest))
+      if (!result)
+        return null
+      if (!result.ok)
+        return result
+      const { playlist } = result.value
+      // 网易云建好了：直接是确认过的修改，写进副本；确认之前发出的同步拿回来的歌单列表里没有它，照样叠回去
+      const entry: PendingChange = { change: { kind: 'create', playlist }, confirmedAt: ++tick, saved: false }
       changes.push(entry)
       publish()
-      // 同一样东西的上一次修改连同写进副本做完了，才提交这一次；打开这张歌单（open）也等它做完
-      const target = targetOf(change)
-      const job = (submitting.get(target) ?? Promise.resolve()).then(async () => {
-        const result = await submit(mine, change)
-        if (result && mine === generation)
-          await settleChange(mine, entry, result)
-      })
-      submitting.set(target, job)
-      await job
-      if (submitting.get(target) === job)
-        submitting.delete(target)
+      if (!await save(mine, now => changePatch(now, entry.change), () => (entry.saved = true)))
+        return null
+      if (song)
+        void applyChange({ kind: 'add', playlist, song })
+      return { ok: true, playlistId: playlist.id }
     },
     dismissNotice() {
       notice = null

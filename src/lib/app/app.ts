@@ -1,13 +1,13 @@
 import type { Account, AccountResponse } from '#lib/api/account.js'
-import type { CollectedAlbum, CollectedArtist, Playlist, Song } from '#lib/api/library.js'
+import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
 import type { LogoutResponse } from '#lib/api/login.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchedItems, SearchKind } from '#lib/api/search.js'
 import type { RequestFailure } from './api'
 import type { BrowserCapabilities } from './browser'
-import type { PlaylistSeed } from './changes'
+import type { PlaylistEdit, PlaylistSeed } from './changes'
 import type { DailyState } from './daily'
-import type { LibraryState, PlaylistSearch } from './library'
+import type { CreateOutcome, LibraryState, PlaylistSearch } from './library'
 import type { PendingCheckIn } from './local'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
@@ -15,6 +15,7 @@ import type { CheckIn, PlayerState, PlayMode } from './player'
 import type { SearchState } from './search'
 import { playable } from '#lib/api/library.js'
 import { createApi } from './api'
+import { changeProblem, playlistEdits } from './changes'
 import { createCheckIns } from './check-ins'
 import { createDaily } from './daily'
 import { createLibrary, playlistSongsOf, searchPlaylist } from './library'
@@ -197,6 +198,27 @@ export interface App {
    * 取消收藏后照常显示刚才的样子
    */
   collect: (target: CollectTarget, collected: boolean) => Promise<void>
+  /**
+   * 新建自建歌单（GLOSSARY）：名称去掉首尾空白后最多 40 个宽度（汉字算 2），不合规、断网时不提交，说明原因。
+   * 不先改本地：等网易云建好（给了编号）才进曲库，排在我喜欢的音乐后面，是空的。带着 song（从加入歌单里新建）时建好接着把这首加进去，
+   * 和加入歌单一样先改本地、成了提示一句。退出、登录失效时是 null
+   */
+  createPlaylist: (draft: CreatePlaylistRequest, song?: Song) => Promise<CreateOutcome | null>
+  /**
+   * 编辑自建歌单的名称、简介、标签：名称、简介去掉首尾空白，和现在一样的不提交。有一样不合规（名称是空的、超过 40 个宽度，
+   * 简介超过 1,000 个字，标签超过 3 个）就整次都不提交，原因看 state.library.notice。其余和红心一样先改本地、立即生效，
+   * 三样各提交各的，哪样没成哪样改回原样。只有自建歌单能编辑：我喜欢的音乐不能改名，收藏的歌单不能编辑
+   */
+  editPlaylist: (playlistId: number, edit: PlaylistEdit) => Promise<void>
+  /** 隐私歌单改公开（改了就改不回去，界面先说清楚）：和红心一样先改本地、立即生效。只有自建歌单能改；已经公开的什么都不做 */
+  publishPlaylist: (playlistId: number) => Promise<void>
+  /**
+   * 删除自建歌单（界面先确认）：先从曲库里拿掉、立即生效，没删成就放回原处并说明原因。
+   * 我喜欢的音乐不能删；收藏的歌单不是删除，是取消收藏（collect）
+   */
+  deletePlaylist: (playlistId: number) => Promise<void>
+  /** 编辑歌单信息时取网易云的标签库：这次登录还没取到过就用前台请求取，拉到哪了看 state.library.playlistTags；没取成时再调一次就是重试 */
+  openPlaylistTags: () => Promise<void>
   /** 关掉改曲库的提示 */
   dismissLibraryNotice: () => void
 }
@@ -436,6 +458,14 @@ export function createApp(browser: BrowserCapabilities): App {
     return searched ? { id, name: searched.name, avatarUrl: searched.avatarUrl } : null
   }
 
+  /** 要改的这张自建歌单；不是自建歌单（我喜欢的音乐、收藏的、不在曲库里的）就是界面接错了 */
+  function ownPlaylist(playlistId: number): Playlist {
+    const playlist = state.library?.playlists?.find(item => item.id === playlistId)
+    if (playlist?.kind !== 'own')
+      throw new Error(`只有自建歌单能改、能删：${playlistId}`)
+    return playlist
+  }
+
   /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
   function loginExpired(): void {
     sessions += 1
@@ -549,6 +579,22 @@ export function createApp(browser: BrowserCapabilities): App {
     openAlbum: library.openAlbum,
     openArtist: library.openArtist,
     moreArtistAlbums: library.moreArtistAlbums,
+    openPlaylistTags: library.openPlaylistTags,
+    createPlaylist: library.create,
+    async editPlaylist(playlistId, edit) {
+      const changes = playlistEdits(ownPlaylist(playlistId), edit)
+      // 有一样不合规、断网时整次都不提交：交给 change 说明原因（只说一次，不让后一样的提示盖掉前一样的）
+      const refused = changes.find(change => changeProblem(change)) ?? (browser.network.onLine ? undefined : changes[0])
+      if (refused)
+        return library.change(refused)
+      await Promise.all(changes.map(change => library.change(change)))
+    },
+    async publishPlaylist(playlistId) {
+      const playlist = ownPlaylist(playlistId)
+      if (playlist.private)
+        await library.change({ kind: 'publish', playlist })
+    },
+    deletePlaylist: async playlistId => library.change({ kind: 'delete', playlist: ownPlaylist(playlistId) }),
     openDaily: daily.open,
     suggest: search.suggest,
     search: search.search,

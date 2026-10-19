@@ -7,6 +7,7 @@
   不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取，页头分类写“网易云歌单”；
   已删除、不存在、别人的隐私歌单打不开时说明原因。
   头部播放全部旁边是收藏开关：不在曲库里的写“收藏”，收藏的写“已收藏”（点了直接取消收藏、不确认）；我喜欢的音乐、自建歌单没有。
+  自建歌单在那里是 •••（PlaylistMenu）：编辑歌单信息、改为公开（隐私歌单才有）、删除歌单（#33）；我喜欢的音乐不能改名、不能删，没有它。
   返回这一页时，搜索词和滚动位置都回到原来的样子（存在 SvelteKit 的 snapshot 里，跟着浏览历史走）
 -->
 <script lang='ts'>
@@ -16,7 +17,7 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { ListX, Lock, SearchX } from '@lucide/svelte'
+  import { Ellipsis, ListX, Lock, SearchX } from '@lucide/svelte'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
@@ -27,7 +28,10 @@
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName, playlistView } from '#lib/components/library/view.js'
   import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
+  import { anchorBelow } from '#lib/components/overlay-layer.svelte.js'
+  import { playlistMenu } from '#lib/components/playlist-edit.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import IconButton from '#lib/components/ui/IconButton.svelte'
   import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
   import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
@@ -71,6 +75,16 @@
    * 头部和左栏当前这一项都用它，和列表对得上（DESIGN.md Do's）
    */
   const listedCount = $derived(shown?.kind === 'songs' ? shown.total : shown?.kind === 'empty' ? 0 : null)
+  /** 自建歌单：有 •••，能编辑、删除 */
+  const own = $derived(library?.songsOf(id)?.playlist.kind === 'own')
+
+  /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上 */
+  function openMenu(event: MouseEvent) {
+    const button = event.currentTarget as HTMLElement
+    if (playlistMenu.request?.from === button)
+      return playlistMenu.close()
+    playlistMenu.open({ playlistId: id, from: button, anchor: anchorBelow(event) })
+  }
 
   /** 打不开的歌单：说明为什么 */
   const UNAVAILABLE = {
@@ -113,6 +127,9 @@
   <div class='flex items-center gap-2'>
     <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
     <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
+    {#if own}
+      <IconButton icon={Ellipsis} label='歌单操作：{name}' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />
+    {/if}
   </div>
 {/snippet}
 

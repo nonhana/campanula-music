@@ -367,6 +367,28 @@ function popOnce(node: Element, { below }: { below: boolean }, options: Transiti
   }
 }
 
+/** 弹窗飘出来时从下面多远（px）开始 */
+const DIALOG_DISTANCE = 8
+
+/**
+ * 弹窗（DESIGN.md Overlays）：从下面 8px、98% 大小飘到位（面板 360ms）；关掉时淡出（面板退场 200ms）。
+ * 写 transition:dialog，遮罩另外写 transition:fade={{ duration: 200 }}。减少动态效果时只淡入淡出
+ */
+export function dialog(node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig {
+  return twoWay(dialogOnce, node, undefined, options)
+}
+
+function dialogOnce(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
+  if (options.direction === 'out')
+    return fadeOnce(node, { duration: DURATIONS['panel-out'] }, options)
+  const moved = !reducedMotion()
+  return {
+    duration: fadeMs(DURATIONS.panel),
+    easing: easingOf(options),
+    css: (t, u) => (moved ? `opacity: ${t}; translate: 0 ${DIALOG_DISTANCE * u}px; scale: ${1 - u * (1 - POP_FROM_SCALE)}` : `opacity: ${t}`),
+  }
+}
+
 interface ToastParams {
   /** 提示条贴着哪条边：bottom 从下面飘上来，top 从上面飘下来 */
   edge: 'top' | 'bottom'

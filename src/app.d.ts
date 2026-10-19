@@ -12,6 +12,10 @@ declare global {
       songSheet?: true
       /** 加入歌单以底部弹层开着（从底部弹层的“更多”菜单打开，换掉菜单压的那条浏览记录）：返回先收起它 */
       playlistSheet?: true
+      /** 歌单页的 ••• 以底部弹层开着（触屏）：返回先收起它 */
+      playlistMenuSheet?: true
+      /** 歌单编辑（新建、编辑信息、改公开、删除）以底部弹层开着（手机布局）：返回先收起它 */
+      editorSheet?: true
     }
     // interface Platform {}
   }
