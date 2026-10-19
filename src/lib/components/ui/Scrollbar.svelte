@@ -341,6 +341,11 @@
     .grip.grabbable {
       pointer-events: auto;
     }
+
+    /* 多选时右边这一条是拖动排序的把手（#36）：滚动条的触屏把手让开 */
+    :global(html[data-selecting]) .grip.grabbable {
+      pointer-events: none;
+    }
   }
 
   /* 气泡在滑块左边 56px，不被按着的手指挡住；淡入淡出 120ms */

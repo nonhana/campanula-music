@@ -112,6 +112,12 @@
     }
   })
 
+  // 多选时把页面右边 44px 的触屏滚动条把手让开：那里正好是每行的拖动把手（#36）
+  $effect(() => {
+    document.documentElement.toggleAttribute('data-selecting', playlistSelection.mode)
+    return () => document.documentElement.removeAttribute('data-selecting')
+  })
+
   // 多选时按 Esc 退出（桌面“取消选择”的键盘做法）；弹层里的 Esc 已经 preventDefault 的不再抢
   $effect(() => {
     if (!playlistSelection.mode)

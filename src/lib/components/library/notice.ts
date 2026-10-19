@@ -24,6 +24,8 @@ function attempted(change: Change): string {
       return `没能把 ${formatCount(change.songs.length)} 首歌加入${playlistInText(change.playlist)}：`
     case 'remove':
       return `没能从${playlistInText(change.playlist)}移除 ${formatCount(change.songIds.length)} 首歌：`
+    case 'order':
+      return `没能保存${playlistInText(change.playlist)}的顺序：`
     case 'collectAlbum':
       return `没能${change.collected ? '' : '取消'}收藏专辑「${change.album.name}」：`
     case 'collectArtist':
@@ -79,16 +81,31 @@ export function changeFailureText(failure: ChangeFailure): string {
   }
 }
 
+/** 歌单不在了时，没成的是哪件事 */
+function missingAction(change: Extract<Change, { kind: 'add' | 'addMany' | 'remove' | 'order' | 'collectPlaylist' }>): string {
+  switch (change.kind) {
+    case 'add':
+    case 'addMany':
+      return '没能加入'
+    case 'remove':
+      return '没能移除'
+    case 'order':
+      return '没能保存顺序'
+    case 'collectPlaylist':
+      return change.collected ? '没能收藏' : '没能取消收藏'
+    default: {
+      const unhandled: never = change
+      throw new Error(`不认识的修改：${JSON.stringify(unhandled)}`)
+    }
+  }
+}
+
 export function libraryNoticeText(notice: LibraryNotice): string {
   switch (notice.kind) {
     case 'notChanged':
       return attempted(notice.change) + changeFailureText(notice.failure)
-    case 'playlistMissing': {
-      const failed = notice.change.kind === 'add' || notice.change.kind === 'addMany'
-        ? '没能加入'
-        : notice.change.kind === 'remove' ? '没能移除' : notice.change.collected ? '没能收藏' : '没能取消收藏'
-      return `${playlistInText(notice.change.playlist)}已经不在了（可能在网易云音乐里删掉了），${failed}。正在重新同步曲库。`
-    }
+    case 'playlistMissing':
+      return `${playlistInText(notice.change.playlist)}已经不在了（可能在网易云音乐里删掉了），${missingAction(notice.change)}。正在重新同步曲库。`
     case 'added': {
       const count = notice.change.kind === 'addMany' ? notice.change.songs.length : 1
       return count > 1 ? `已加入${playlistInText(notice.change.playlist)} ${formatCount(count)} 首` : `已加入${playlistInText(notice.change.playlist)}`
@@ -99,6 +116,8 @@ export function libraryNoticeText(notice: LibraryNotice): string {
       return `已从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首`
     case 'removeFailed':
       return `没能从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首${notice.restored ? '，已经放回原位' : ''}：${changeFailureText(notice.failure)}`
+    case 'orderFailed':
+      return `没能保存${playlistInText(notice.playlist)}的顺序${notice.restored ? '，已经恢复原来的顺序' : ''}：${changeFailureText(notice.failure)}`
     case 'recovered':
       return '上次关闭前的修改没保存成功，已恢复原样。'
     default: {

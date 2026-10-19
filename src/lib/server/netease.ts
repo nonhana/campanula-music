@@ -3,7 +3,7 @@ import type { Account } from '#lib/api/account.js'
 import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksResponse, Song } from '#lib/api/library.js'
+import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksResponse, Song, SongOrderResponse } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
@@ -652,6 +652,29 @@ export async function removeTracks(playlistId: number, songIds: readonly number[
     throw error
   }
   return { kind: 'removed' }
+}
+
+/** 网易云整张歌单排序时回 -1“请求异常，请稍后重试”：几千首位置都变时其实已经生效（验证关卡②），要重读确认 */
+const ORDER_UNCONFIRMED = -1
+
+/**
+ * 整张歌单的新顺序（自建歌单、我喜欢的音乐）：一次提交全部曲目编号，按歌单里的先后排列。
+ * 歌单已经被删掉时网易云回 404“歌单不存在”。改动几千首位置时网易云约 3.3 秒后回 HTTP 400 / -1，但新顺序其实已经生效，
+ * 所以认成 unconfirmed，由客户端重新读一次这张歌单、和提交的顺序比一比
+ */
+export async function updateSongOrder(playlistId: number, songIds: readonly number[], listener: Listener): Promise<SongOrderResponse> {
+  try {
+    await call('song_order_update', { pid: playlistId, ids: JSON.stringify(songIds) }, listener)
+  }
+  catch (error) {
+    const code = rejectedCode(error)
+    if (code === PLAYLIST_MISSING)
+      return { kind: 'missing' }
+    if (code === ORDER_UNCONFIRMED)
+      return { kind: 'unconfirmed' }
+    throw error
+  }
+  return { kind: 'ordered' }
 }
 
 export async function collectAlbum(albumId: number, collected: boolean, listener: Listener): Promise<void> {

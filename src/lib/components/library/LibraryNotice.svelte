@@ -48,7 +48,15 @@
   })
 
   const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed' || notice?.kind === 'recovered')
-  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed')
+  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed')
+  /** 提示条里的“重试”：移除失败、排序失败共用同一个按钮 */
+  const retry = $derived.by(() => {
+    if (notice?.kind === 'removeFailed' && notice.retryable !== false)
+      return () => void view.app.retryRemove()
+    if (notice?.kind === 'orderFailed')
+      return () => void view.app.retryOrder()
+    return null
+  })
 </script>
 
 {#if notice}
@@ -77,11 +85,11 @@
             class='h-11 flex-none rounded-full px-3.5 text-label text-primary-900 font-600 transition-colors duration-feedback md:h-10 mouse:hover:bg-primary-100'
             onclick={() => view.app.undoRemove()}
           >撤销</button>
-        {:else if notice.kind === 'removeFailed' && notice.retryable !== false}
+        {:else if retry}
           <button
             type='button'
             class='h-11 flex-none rounded-full px-3.5 text-label text-primary-900 font-600 transition-colors duration-feedback md:h-10 mouse:hover:bg-primary-100'
-            onclick={() => void view.app.retryRemove()}
+            onclick={retry}
           >重试</button>
         {/if}
         <IconButton icon={X} label='关闭提示' onclick={() => view.app.dismissLibraryNotice()} />

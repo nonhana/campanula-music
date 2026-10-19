@@ -11,7 +11,7 @@ import { pushShallowState } from '../shallow-state'
 // - 关闭、“取消选择”、Esc 用 history.back() 把浅路由用掉
 // 换到别的歌单、离开歌单时清掉
 
-class PlaylistSelection {
+export class PlaylistSelection {
   /** 这张歌单（跟着歌曲列表变） */
   playlistId = $state<number | null>(null)
   /** 多选状态：手机长按、点“多选”、桌面 ⌘/Ctrl 点选都会设成 true */

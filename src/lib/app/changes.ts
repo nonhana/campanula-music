@@ -22,6 +22,8 @@ export type Change
     | { kind: 'addMany', playlist: Playlist, songs: readonly Song[] }
   /** 从自建歌单移除几首（#35）：先在本地拿掉，提示条留 5 秒撤销，没撤销才提交 */
     | { kind: 'remove', playlist: Playlist, songIds: number[] }
+  /** 整张歌单的新顺序（#36）：拖完先改本地，停手 2 秒才一次提交；自建歌单和我喜欢的音乐都能排 */
+    | { kind: 'order', playlist: Playlist, songIds: number[] }
     | { kind: 'collectAlbum', album: CollectedAlbum, collected: boolean }
     | { kind: 'collectArtist', artist: CollectedArtist, collected: boolean }
     | { kind: 'collectPlaylist', playlist: Playlist, collected: boolean, seed: PlaylistSeed | null }
@@ -80,6 +82,7 @@ export function changeProblem(change: Change): PlaylistEditProblem | null {
     case 'add':
     case 'addMany':
     case 'remove':
+    case 'order':
     case 'collectAlbum':
     case 'collectArtist':
     case 'collectPlaylist':
@@ -115,7 +118,8 @@ export function targetOf(change: Change): string {
       return `add:${change.playlist.id}:${change.song.id}`
     case 'addMany':
     case 'remove':
-      // 批量加歌、移除都是同一张歌单的曲目：按先后一次一次提交，免得后发的先到
+    case 'order':
+      // 批量加歌、移除、排序都是同一张歌单的曲目：按先后一次一次提交，免得后发的先到
       return `tracks:${change.playlist.id}`
     case 'collectAlbum':
       return `album:${change.album.id}`
@@ -171,6 +175,21 @@ function tracksWithout(replica: Replica, playlistId: number, songIds: readonly n
 function missingSongs(replica: Replica, songs: readonly Song[]): Song[] | undefined {
   const missing = songs.filter(song => !replica.songs.has(song.id))
   return missing.length > 0 ? missing : undefined
+}
+
+/**
+ * 一张歌单的曲目换成提交的顺序：提交的顺序过期时（之后又加、又移除了歌），只排还在歌单里的那几首，
+ * 没出现在提交里的歌按原来的先后接在后面。排序不会把歌加进来，也不会把已经移除的歌带回来
+ */
+function orderedTracks(replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null {
+  const tracks = replica.tracks.get(playlistId)
+  if (!tracks)
+    return null
+  const present = new Set(tracks.trackIds)
+  const ordered = songIds.filter(songId => present.has(songId))
+  const seen = new Set(ordered)
+  const kept = tracks.trackIds.filter(songId => !seen.has(songId))
+  return { ...tracks, trackIds: [...ordered, ...kept] }
 }
 
 function heartPatch(replica: Replica, song: Song, hearted: boolean): LibraryPatch {
@@ -236,6 +255,10 @@ export function changePatch(replica: Replica, change: ConfirmedChange): LibraryP
     }
     case 'remove': {
       const tracks = tracksWithout(replica, change.playlist.id, change.songIds)
+      return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined }
+    }
+    case 'order': {
+      const tracks = orderedTracks(replica, change.playlist.id, change.songIds)
       return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined }
     }
     case 'collectAlbum':
