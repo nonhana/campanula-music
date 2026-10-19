@@ -18,12 +18,11 @@
   import { COVER_INPUT_MAX_BYTES, COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
   import { getAppView } from './app-context.svelte'
   import { centerCrop } from './cover-crop'
-  import { coverClosable, coverEditor } from './cover-edit.svelte'
+  import { coverEditor } from './cover-edit.svelte'
   import CoverCropper from './CoverCropper.svelte'
   import { failureText } from './failure'
   import { desktopLayout } from './layout'
   import { dialog, fade, float } from './motion'
-  import { PAGE_DISTANCE } from './motion-tokens'
   import { pushShallowState } from './shallow-state'
   import Button from './ui/Button.svelte'
   import IconButton from './ui/IconButton.svelte'
@@ -33,7 +32,8 @@
   const request = $derived(coverEditor.request)
   const cover = $derived(view.state.cover)
   const sheet = $derived(!desktopLayout.current)
-  const closable = $derived(coverClosable(cover))
+  /** 第三步已经发给服务器，停不下来 */
+  const closable = $derived(!(cover?.status === 'uploading' && cover.upload.step === 'set'))
 
   const STEPS = [
     { key: 'token', label: '申请上传凭证' },
@@ -74,6 +74,16 @@
       untrack(() => close())
   })
 
+  // 歌单在别处被删掉、同步先发现了：收起裁剪页，别把整个 App 的 inert 留着。
+  // 第三步已经发出去时 close() 不动作，让它回来
+  $effect(() => {
+    const current = coverEditor.request
+    if (!current)
+      return
+    if (!view.state.library?.playlists?.some(playlist => playlist.id === current.playlistId && playlist.kind === 'own'))
+      untrack(() => close())
+  })
+
   // 手机布局上：返回手势退掉了 coverSheet，先收起这一层（第三步发出去时收不起来，压回去）。
   // 正在申请凭证、直传时，返回等于“取消上传”，停在裁剪页上
   let acknowledged: CoverRequest | null = null
@@ -87,7 +97,7 @@
     }
     if (acknowledged !== current)
       return
-    if (!coverClosable(cover)) {
+    if (!closable) {
       pushBack()
       return
     }
@@ -105,14 +115,21 @@
       pushShallowState({ ...page.state, coverSheet: true })
   }
 
-  /** 打开时焦点：裁剪页落在取景框上，别的落在主要按钮上 */
+  /** 焦点跟着状态和上传步骤走：裁剪页落在取景框上，上传/失败落在主要按钮上 */
+  const focusKey = $derived(
+    cover?.status === 'uploading'
+      ? `uploading:${cover.upload.step}`
+      : cover?.status === 'failed'
+      ? `failed:${cover.upload.failure.kind}`
+      : cover?.status ?? '',
+  )
   $effect(() => {
-    const status = cover?.status
-    if (!status)
+    const key = focusKey
+    if (!key)
       return
     queueMicrotask(() => {
-      const target = status === 'cropping' || status === 'uploading' || status === 'failed'
-        ? root?.querySelector<HTMLElement>('[role="application"]') ?? root?.querySelector<HTMLElement>('[data-autofocus]')
+      const target = key === 'cropping'
+        ? root?.querySelector<HTMLElement>('[role="application"]')
         : root?.querySelector<HTMLElement>('[data-autofocus]')
       target?.focus({ preventScroll: true })
     })
@@ -157,21 +174,15 @@
       close()
   }
 
-  function stepLook(state: 'done' | 'now' | 'todo' | 'fail'): string {
-    switch (state) {
-      case 'done':
-        return 'bg-primary-900 text-white'
-      case 'now':
-        return 'bg-primary-100 text-primary-950 ring-2 ring-primary-700'
-      case 'fail':
-        return 'bg-error-50 text-error-700 ring-2 ring-error-700'
-      case 'todo':
-        return 'bg-neutral-100 text-neutral-500'
-    }
-  }
+  const STEP_LOOK = {
+    done: 'bg-primary-900 text-white',
+    now: 'bg-primary-100 text-primary-950 ring-2 ring-primary-700',
+    fail: 'bg-error-50 text-error-700 ring-2 ring-error-700',
+    todo: 'bg-neutral-100 text-neutral-500',
+  } as const
 
   function stepState(step: CoverStep, upload: CoverUpload): 'done' | 'now' | 'todo' | 'fail' {
-    const current = orderOf(upload.step)
+    const current = upload.step === null ? -1 : orderOf(upload.step)
     const at = orderOf(step)
     if (upload.failure && at === current)
       return 'fail'
@@ -195,12 +206,14 @@
     }
   }
 
-  function uploadFailureText(step: CoverStep, failure: CoverFailure): string {
+  function uploadFailureText(step: CoverStep | null, failure: CoverFailure): string {
     if (failure.kind === 'uploadFailed')
       return '图片没能传上去：网络断了，或者连不上网易云的图片存储。检查网络后再试。'
     if (failure.kind === 'exportFailed')
       return '这张图片没能裁出来。再试一次，或者换一张图片。'
     const reason = failureText(failure as RequestFailure)
+    if (step === null)
+      return reason
     if (step === 'set')
       return `图片已经传上去了，但没能设为封面。${reason}重试只需要再设一次，不用重新上传。`
     return `没能申请上传凭证。${reason}`
@@ -228,7 +241,7 @@
       role='dialog'
       aria-modal='true'
       aria-labelledby='cover-title'
-      transition:float={{ toward: 'down', distance: PAGE_DISTANCE.in, panel: true }}
+      transition:float={{ toward: 'down', panel: true }}
     >
       <header class='h-14 flex flex-none items-center gap-1 px-1'>
         <IconButton
@@ -306,8 +319,8 @@
           {#if cover.small || cover.resized}
             <div class='w-full flex flex-col gap-1.5'>
               {#if cover.small}
-                <p class='flex items-start gap-2 rounded-lg bg-primary-50 px-3 py-2 text-caption text-neutral-700'>
-                  <CircleAlert size={16} class='mt-0.5 flex-none text-primary-900' aria-hidden='true' />
+                <p class='flex items-start gap-1.5 text-caption text-neutral-600'>
+                  <CircleAlert size={14} class='mt-0.5 flex-none' aria-hidden='true' />
                   这张图只有 {cover.image.origWidth}×{cover.image.origHeight}，放大成封面可能会糊。
                 </p>
               {/if}
@@ -322,7 +335,7 @@
               {#each STEPS as { key, label }, i (key)}
                 {@const state = stepState(key, cover.upload)}
                 <li class='flex items-center gap-2.5 text-label'>
-                  <span class={['size-5 grid flex-none place-items-center rounded-full text-caption font-600', stepLook(state)]}>
+                  <span class={['size-5 grid flex-none place-items-center rounded-full text-caption font-600', STEP_LOOK[state]]}>
                     {#if state === 'done'}
                       <Check size={13} aria-hidden='true' />
                     {:else if state === 'fail'}
@@ -380,7 +393,7 @@
     {:else if cover.status === 'uploading'}
       <div class={sheet ? 'grid gap-2' : 'flex justify-end gap-2'}>
         {#if cover.upload.step === 'set'}
-          <Button variant='primary' disabled>正在设为封面</Button>
+          <Button variant='primary' aria-disabled='true' data-autofocus class='pointer-events-none'>正在设为封面</Button>
         {:else}
           <Button variant='outline' onclick={() => view.app.cancelCover()} data-autofocus>取消上传</Button>
         {/if}

@@ -1,4 +1,3 @@
-import type { CoverState } from '#lib/app/cover.js'
 import { page } from '$app/state'
 import { desktopLayout } from './layout'
 import { pushShallowState } from './shallow-state'
@@ -39,8 +38,3 @@ class CoverEditor {
 }
 
 export const coverEditor = new CoverEditor()
-
-/** 现在能不能关：第三步已经发给服务器，停不下来 */
-export function coverClosable(cover: CoverState | null): boolean {
-  return !(cover?.status === 'uploading' && cover.upload.step === 'set')
-}

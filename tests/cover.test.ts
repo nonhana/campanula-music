@@ -20,6 +20,8 @@ const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
 /** 申请上传凭证、设为封面（验证关卡②录的，图片编号和歌单 jazz 对得上） */
 const TOKEN = 'playlist-edit/image_upload_token.json'
 const SET_COVER = 'playlist-edit/playlist_cover_update.imgid.json'
+/** 歌单已经被删掉时设封面：网易云照样回 200（验证关卡②） */
+const SET_COVER_DELETED = 'playlist-edit/playlist_cover_update.deleted-playlist.json'
 const UPLOAD_URL = 'https://nosup-hz1.127.net/yyimgs/h0MaD8lPOfhxfbHJMb7atA==/109951174079391436?offset=0&complete=true&version=1.0'
 const NEW_COVER = 'https://p1.music.126.net/h0MaD8lPOfhxfbHJMb7atA==/109951174079391436.jpg'
 
@@ -261,6 +263,35 @@ describe('三步失败和取消', () => {
     expect(device.images.uploads[0].aborted).toBe(true)
     expect(await uploading).toBeNull()
     expect(world.netease.calls.some(call => call.module === 'playlist_cover_update')).toBe(false)
+  })
+
+  it('导出 JPEG 没成：还没开始任何一步；重试会重新导出', async () => {
+    const device = world.device()
+    const { app } = await signInHeld(device)
+    await ready(device, app)
+    device.images.exportError = new Error('canvas 出错')
+
+    expect(await app.uploadCover(CROP)).toEqual({ ok: false, step: null, failure: { kind: 'exportFailed' } })
+    expect(app.state.cover).toMatchObject({ status: 'failed', upload: { step: null, failure: { kind: 'exportFailed' } } })
+    expect(device.images.uploads).toHaveLength(0)
+    expect(world.netease.calls.some(call => call.module === 'image_upload_token')).toBe(false)
+
+    device.images.exportError = null
+    await world.netease.reply(TOKEN)
+    await world.netease.reply(SET_COVER)
+    expect(await app.retryCover()).toEqual({ ok: true, coverUrl: NEW_COVER })
+    expect(device.images.exports).toHaveLength(1)
+  })
+
+  it('歌单已经被删掉时设封面也回 200：照常收下新封面地址，等下次同步才发现', async () => {
+    const device = world.device()
+    const { app } = await signInHeld(device)
+    await ready(device, app)
+    await world.netease.reply(TOKEN)
+    await world.netease.reply(SET_COVER_DELETED)
+
+    expect(await app.uploadCover(CROP)).toEqual({ ok: true, coverUrl: NEW_COVER })
+    expect(app.state.library?.playlists?.find(playlist => playlist.id === JAZZ)?.coverUrl).toBe(NEW_COVER)
   })
 
   it('第三步已经发出：取消和关闭都不算，等它回来', async () => {
