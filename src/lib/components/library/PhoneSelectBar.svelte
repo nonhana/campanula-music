@@ -3,7 +3,7 @@
   关闭用 history.back() 把进多选时压的那条浅路由用掉（Spec #11 验证关卡③）。
 -->
 <script lang='ts'>
-  import { X } from '@lucide/svelte'
+  import { CheckCheck, ListChecks, ListX, X } from '@lucide/svelte'
   import { leaveSelection, playlistSelection } from './playlist-selection.svelte'
   import { formatCount } from './view'
 </script>
@@ -17,12 +17,16 @@
   >
     <X size={22} aria-hidden='true' />
   </button>
-  <span class='min-w-0 flex-1 truncate text-body text-neutral-900 font-500 tabular-nums' role='status'>
-    {playlistSelection.size > 0 ? `已选 ${formatCount(playlistSelection.size)} 首` : '选择歌曲'}
+  <span class='min-w-0 inline-flex flex-1 items-center gap-1.5 truncate text-body text-neutral-900 font-500 tabular-nums' role='status'>
+    <ListChecks size={16} class='flex-none' aria-hidden='true' />
+    <span class='min-w-0 truncate'>{playlistSelection.size > 0 ? `已选 ${formatCount(playlistSelection.size)} 首` : '选择歌曲'}</span>
   </span>
   <button
     type='button'
-    class='h-11 flex-none rounded-full px-3.5 text-label text-primary-900 font-500 active:bg-primary-100'
+    class='h-11 inline-flex flex-none items-center gap-1.5 rounded-full px-3.5 text-label text-primary-900 font-500 active:bg-primary-100'
     onclick={() => playlistSelection.selectAll()}
-  >{playlistSelection.allOn ? '全不选' : '全选'}</button>
+  >
+    {#if playlistSelection.allOn}<ListX size={16} aria-hidden='true' />{:else}<CheckCheck size={16} aria-hidden='true' />{/if}
+    {playlistSelection.allOn ? '全不选' : '全选'}
+  </button>
 </div>

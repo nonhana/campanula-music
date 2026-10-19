@@ -33,13 +33,14 @@
   const view = getAppView()
 
   function activate(event: MouseEvent): void {
-    if (selecting) {
-      onplay()
-      return
-    }
+    // 两种入口（点“多选”、⌘/Ctrl 点选）共用同一个勾选状态：手动多选里 Shift 也要连选
     if (onselect && (event.metaKey || event.ctrlKey || event.shiftKey)) {
       event.preventDefault()
       onselect(event)
+      return
+    }
+    if (selecting) {
+      onplay()
       return
     }
     if (unplayable)
