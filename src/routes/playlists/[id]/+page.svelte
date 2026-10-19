@@ -17,7 +17,8 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { Ellipsis, ListX, Lock, SearchX } from '@lucide/svelte'
+  import { Ellipsis, ListChecks, ListX, Lock, Plus, SearchX } from '@lucide/svelte'
+  import { addSongsDialog } from '#lib/components/add-songs.svelte.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
@@ -25,12 +26,14 @@
   import Cover from '#lib/components/library/Cover.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
+  import { enterSelection, playlistSelection } from '#lib/components/library/playlist-selection.svelte.js'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName, playlistView } from '#lib/components/library/view.js'
   import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
   import { anchorBelow } from '#lib/components/overlay-layer.svelte.js'
   import { playlistMenu } from '#lib/components/playlist-edit.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
   import SearchField from '#lib/components/ui/SearchField.svelte'
@@ -86,6 +89,25 @@
     playlistMenu.open({ playlistId: id, from: button, anchor: anchorBelow(event) })
   }
 
+  /** 自建歌单的“添加歌曲”：桌面居中弹窗、手机底部弹层（add-songs.svelte.ts） */
+  function openAddSongs(event: MouseEvent) {
+    addSongsDialog.open({ playlistId: id, from: event.currentTarget as HTMLElement })
+  }
+
+  function openMulti(event: MouseEvent) {
+    enterSelection(id, undefined, event.currentTarget as HTMLElement)
+  }
+
+  // 离开这张歌单：还没提交的移除立即提交（页面隐藏时 App 自己会做）；多选的勾选也清掉
+  $effect(() => {
+    // 捕获旧值：从歌单 A 换到 B 时，cleanup 里读到的可能已经是 B
+    const leaving = id
+    return () => {
+      playlistSelection.exit()
+      void view.app.flushPlaylist(leaving)
+    }
+  })
+
   /** 打不开的歌单：说明为什么 */
   const UNAVAILABLE = {
     deleted: { icon: ListX, title: '这张歌单已被删除', body: '创建者在网易云音乐里删掉了它，打不开了。' },
@@ -124,8 +146,14 @@
 {/snippet}
 
 {#snippet actions()}
-  <div class='flex items-center gap-2'>
+  <div class='flex flex-wrap items-center gap-2'>
     <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
+    {#if own}
+      <Button variant='outline' icon={Plus} data-add-songs-entry onclick={openAddSongs}>添加歌曲</Button>
+    {/if}
+    {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !playlistSelection.mode}
+      <Button variant='outline' icon={ListChecks} data-multiselect-entry onclick={openMulti}>多选</Button>
+    {/if}
     <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
     {#if own}
       <IconButton icon={Ellipsis} label='歌单操作：{name}' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />

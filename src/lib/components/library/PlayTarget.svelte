@@ -14,6 +14,13 @@
     /** 正在播放这首 */
     now: boolean
     onplay: () => void
+    /** 多选：整行是一个勾选框，点了只勾选、不播放，也不飞封面 */
+    selecting?: boolean
+    selected?: boolean
+    /** 桌面不进多选时的 ⌘/Ctrl 点选、Shift 连选 */
+    onselect?: (event: MouseEvent) => void
+    /** 无版权：普通点按不播放，但多选、⌘/Ctrl 点选照样能勾 */
+    unplayable?: boolean
     /** 这一行的封面：点了换歌时它飞进播放条 */
     cover?: HTMLElement
     /** 行是圆角的（白色面板里） */
@@ -22,11 +29,36 @@
     children: Snippet
   }
 
-  const { disabled, now, onplay, cover, rounded = false, class: klass, children }: Props = $props()
+  const { disabled, now, onplay, selecting = false, selected = false, onselect, unplayable = false, cover, rounded = false, class: klass, children }: Props = $props()
   const view = getAppView()
+
+  function activate(event: MouseEvent): void {
+    if (selecting) {
+      onplay()
+      return
+    }
+    if (onselect && (event.metaKey || event.ctrlKey || event.shiftKey)) {
+      event.preventDefault()
+      onselect(event)
+      return
+    }
+    if (unplayable)
+      return
+    pick(view, onplay, cover)
+  }
 </script>
 
-<button type='button' class={['play-target text-left', rounded && 'rounded', klass]} {disabled} aria-current={now ? 'true' : undefined} onclick={() => pick(view, onplay, cover)}>
+<button
+  type='button'
+  class={['play-target text-left', rounded && 'rounded', klass]}
+  {disabled}
+  aria-disabled={unplayable && !selecting ? 'true' : undefined}
+  role={selecting ? 'checkbox' : undefined}
+  aria-checked={selecting ? selected : undefined}
+  data-select-row={selecting ? '' : undefined}
+  aria-current={now ? 'true' : undefined}
+  onclick={activate}
+>
   {@render children()}
 </button>
 

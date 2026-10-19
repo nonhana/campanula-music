@@ -14,16 +14,20 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
-  import { CircleAlert, Heart, ListMusic, SearchX } from '@lucide/svelte'
+  import { CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SearchX } from '@lucide/svelte'
+  import { addSongsDialog } from '../add-songs.svelte'
   import { getAppView } from '../app-context.svelte'
+  import { batchPicker } from '../batch-picker.svelte'
   import { failureText } from '../failure'
   import { fade, reveal, unfold } from '../motion'
+  import { anchorBelow } from '../overlay-layer.svelte'
   import { currentSong } from '../player/view'
   import Button from '../ui/Button.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import DesktopSongRow, { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
+  import { enterSelection, leaveSelection, playlistSelection } from './playlist-selection.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
   import { formatCount, openingOf, playlistView, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
@@ -51,8 +55,63 @@
   const mode = $derived(result === null ? 'all' : songs.length === 0 ? 'none' : 'found')
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
-  const play = (song: Song) => () => view.app.play(source, song.id)
   const incompleteText = $derived(outside ? '这张歌单还没加载完，结果可能不全' : '这张歌单还没同步完，结果可能不全')
+  const selection = playlistSelection
+  /** 曲库里的这张歌单是哪一类；不在曲库里的歌单是 null */
+  const kind = $derived(library.songsOf(playlistId)?.playlist.kind ?? null)
+  /** 这张歌单能不能移除：只有自建歌单有（我喜欢的音乐、收藏的歌单没有） */
+  const own = $derived(kind === 'own')
+  /** 勾选的是整张歌单里的歌，不只是搜索出来的这些 */
+  const picked = $derived(shown.kind === 'songs' ? shown.songs.filter(song => selection.has(song.id)) : [])
+
+  $effect(() => selection.follow(playlistId))
+  $effect(() => selection.setVisible(songs.map(song => song.id)))
+  // 列表没了（出错、换歌单）：勾选也清掉
+  $effect(() => {
+    if (shown.kind !== 'songs' && selection.size > 0)
+      selection.exit()
+  })
+
+  function activate(song: Song): void {
+    if (selection.mode)
+      selection.toggle(song.id)
+    else
+      void view.app.play(source, song.id)
+  }
+
+  /** 桌面不进多选时的 ⌘/Ctrl 点选、Shift 连选 */
+  function selectWithModifiers(song: Song, event: MouseEvent): void {
+    if (event.shiftKey)
+      selection.range(song.id)
+    else
+      selection.toggle(song.id)
+  }
+
+  function openMulti(event: MouseEvent): void {
+    enterSelection(playlistId, undefined, event.currentTarget as HTMLElement)
+  }
+
+  function openBatch(event: MouseEvent): void {
+    if (picked.length === 0)
+      return
+    batchPicker.open({
+      songs: picked,
+      currentPlaylistId: playlistId,
+      from: event.currentTarget as HTMLElement,
+      anchor: anchorBelow(event),
+    })
+  }
+
+  function removePicked(): void {
+    if (picked.length === 0)
+      return
+    view.app.removeFromPlaylist(playlistId, picked.map(song => song.id))
+    leaveSelection()
+  }
+
+  function openAddSongs(event?: MouseEvent): void {
+    addSongsDialog.open({ playlistId, from: event?.currentTarget as HTMLElement ?? null })
+  }
 
   function retry() {
     if (library.playlists)
@@ -79,8 +138,16 @@
           <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' body='在网易云音乐里红心的歌，会同步到这里。' />
         {:else if outside}
           <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='创建者还没有往里面加歌。' />
+        {:else if kind === 'own'}
+          <StateBlock
+            kind='empty'
+            icon={ListMusic}
+            title='这张歌单还没有歌'
+            body='点“添加歌曲”，从搜索或我喜欢的音乐里挑几首加进来。'
+            action={{ label: '添加歌曲', run: () => openAddSongs() }}
+          />
         {:else}
-          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='在网易云音乐里加进这张歌单的歌，会同步到这里。' />
+          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='创建者还没有往里面加歌。' />
         {/if}
       {:else if shown.kind === 'songs'}
         {#if opening?.status === 'failed'}
@@ -113,9 +180,26 @@
                 <VirtualList items={songs} itemHeight={56} getKey={(song: Song) => song.id} markOf={songMark}>
                   {#snippet row(song: Song, i: number)}
                     {#if phone}
-                      <PhoneSongRow {song} {source} now={song.id === nowId} onplay={play(song)} />
+                      <PhoneSongRow
+                        {song}
+                        {source}
+                        now={song.id === nowId}
+                        selecting={selection.mode}
+                        selected={selection.has(song.id)}
+                        onlongpress={() => enterSelection(playlistId, song.id)}
+                        onplay={() => activate(song)}
+                      />
                     {:else}
-                      <DesktopSongRow {song} {source} n={i + 1} now={song.id === nowId} onplay={play(song)} />
+                      <DesktopSongRow
+                        {song}
+                        {source}
+                        n={i + 1}
+                        now={song.id === nowId}
+                        selecting={selection.mode}
+                        selected={selection.has(song.id)}
+                        onselect={event => selectWithModifiers(song, event)}
+                        onplay={() => activate(song)}
+                      />
                     {/if}
                   {/snippet}
                 </VirtualList>
@@ -131,29 +215,78 @@
 {#if phone}
   <div class='px-4 pt-3'>
     <SearchField label='在歌单里搜索' bind:value={query} disabled={shown.kind !== 'songs'} />
-    {#if result}
-      <div transition:unfold>
-        <p class='px-1 pt-2.5 text-caption text-neutral-600 tabular-nums' role='status'>{@render found()}</p>
+    {#if result || (shown.kind === 'songs' && songs.length > 0)}
+      <div class='min-h-11 flex items-center gap-2 pt-1'>
+        <p class='min-w-0 flex-1 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
+          {#if result}
+            {@render found()}
+          {:else if shown.kind === 'songs'}
+            {formatCount(shown.total)} 首
+          {/if}
+        </p>
+        {#if !selection.mode && shown.kind === 'songs' && songs.length > 0}
+          <button
+            type='button'
+            class='h-11 inline-flex flex-none items-center gap-1.5 border border-neutral-200 rounded-full bg-white pl-3.5 pr-4 text-label text-neutral-800 font-500 active:bg-neutral-50'
+            data-multiselect-entry
+            onclick={openMulti}
+          >
+            <ListChecks size={16} aria-hidden='true' />多选
+          </button>
+        {/if}
       </div>
     {/if}
   </div>
   <div class='pt-2'>{@render list()}</div>
 {:else}
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
-    <div class={[SONG_GRID, 'h-9 text-caption text-neutral-500']}>
-      <span class={SONG_COLUMNS.index}>#</span>
-      <span class={['grid grid-cols-[minmax(0,1fr)] pl-[52px]', SONG_COLUMNS.title]} role='status'>
-        {#if result}
-          <span class='col-start-1 row-start-1 truncate' transition:fade>{@render found()}</span>
-        {:else}
-          <span class='col-start-1 row-start-1 truncate' transition:fade>标题</span>
+    {#if selection.mode || selection.size > 0}
+      <div class='h-9 flex items-center gap-1.5 rounded-lg bg-primary-50 pl-3 pr-1' role='toolbar' aria-label='对选中的歌'>
+        <span class='text-caption text-neutral-900 font-500 tabular-nums' role='status'>已选 {formatCount(selection.size)} 首</span>
+        <button
+          type='button'
+          class='h-8 rounded-full px-2.5 text-caption text-primary-900 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
+          onclick={() => selection.selectAll()}
+        >{selection.allOn ? '全不选' : `全选 ${formatCount(songs.length)} 首`}</button>
+        <span class='flex-1'></span>
+        <button
+          type='button'
+          class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
+          disabled={picked.length === 0}
+          onclick={openBatch}
+        ><ListPlus size={15} aria-hidden='true' />加入歌单</button>
+        {#if own}
+          <button
+            type='button'
+            class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
+            disabled={picked.length === 0}
+            onclick={removePicked}
+          ><ListMinus size={15} aria-hidden='true' />从歌单移除</button>
         {/if}
-      </span>
-      <span class={SONG_COLUMNS.album}>专辑</span>
-      <span class={SONG_COLUMNS.status}>状态</span>
-      <span class={SONG_COLUMNS.duration}>时长</span>
-      <span></span>
-    </div>
+        <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>
+        <button
+          type='button'
+          class='h-8 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
+          title='Esc'
+          onclick={() => leaveSelection()}
+        >{selection.mode ? '完成' : '取消选择'}</button>
+      </div>
+    {:else}
+      <div class={[SONG_GRID, 'h-9 text-caption text-neutral-500']}>
+        <span class={SONG_COLUMNS.index}>#</span>
+        <span class={['grid grid-cols-[minmax(0,1fr)] pl-[52px]', SONG_COLUMNS.title]} role='status'>
+          {#if result}
+            <span class='col-start-1 row-start-1 truncate' transition:fade>{@render found()}</span>
+          {:else}
+            <span class='col-start-1 row-start-1 truncate' transition:fade>标题</span>
+          {/if}
+        </span>
+        <span class={SONG_COLUMNS.album}>专辑</span>
+        <span class={SONG_COLUMNS.status}>状态</span>
+        <span class={SONG_COLUMNS.duration}>时长</span>
+        <span></span>
+      </div>
+    {/if}
     {@render list()}
   </div>
 {/if}

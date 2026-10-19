@@ -11,6 +11,8 @@ export interface SentRequest {
   path: string
   /** 请求体（JSON），没有就不写 */
   body?: unknown
+  /** 页面被隐藏也要发出去的请求（晚一点提交的修改）：只记带了的 */
+  keepalive?: true
 }
 
 /** 一个标签页：一个 App，加上只属于这个标签页的页面可见性、Media Session 和播放器 */
@@ -136,7 +138,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
     const request = new Request(new URL(path, origin), init)
     request.headers.set(SENT_HEADER, String(sentAt))
     const url = new URL(request.url)
-    const sent: SentRequest = { method: request.method, path: url.pathname + url.search, ...bodyOf(init) }
+    const sent: SentRequest = { method: request.method, path: url.pathname + url.search, ...bodyOf(init), ...(request.keepalive ? { keepalive: true as const } : {}) }
     requests.push(sent)
     pending.push(sent)
     try {

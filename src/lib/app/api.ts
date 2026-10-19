@@ -15,7 +15,11 @@ export type Result<T> = { ok: true, value: T } | { ok: false, failure: RequestFa
 
 export interface Api {
   get: <T>(path: string) => Promise<Result<T>>
-  post: <T>(path: string, body?: unknown) => Promise<Result<T>>
+  /**
+   * keepalive：页面被隐藏（切后台、锁屏、关页面）时也要发出去的请求（晚一点提交的修改）。
+   * 请求体超过 64 KiB 的浏览器会拒掉，调用方自己判断（#35）
+   */
+  post: <T>(path: string, body?: unknown, options?: { keepalive?: boolean }) => Promise<Result<T>>
 }
 
 function isErrorBody(body: unknown): body is ErrorBody {
@@ -57,10 +61,11 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
 
   return {
     get: path => request(path),
-    post: (path, body) => request(path, {
+    post: (path, body, options) => request(path, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body ?? {}),
+      keepalive: options?.keepalive ?? false,
     }),
   }
 }

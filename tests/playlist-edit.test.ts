@@ -177,12 +177,12 @@ describe('新建歌单', () => {
 
     await replyCreated()
     await world.netease.reply(ADD)
-    expect(await app.createPlaylist({ name: CREATED.name, private: true }, song)).toEqual({ ok: true, playlistId: CREATED.id })
+    expect(await app.createPlaylist({ name: CREATED.name, private: true }, [song])).toEqual({ ok: true, playlistId: CREATED.id })
     expect(app.state.library?.songsOf(CREATED.id)).toMatchObject({ songs: [song], total: 1 })
     await world.settle()
 
     expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${CREATED.id}/tracks`, body: { songIds: [song.id] } })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'added', change: { kind: 'add', playlist: { id: CREATED.id }, song } })
+    expect(app.state.library?.notice).toMatchObject({ kind: 'added', change: { kind: 'addMany', playlist: { id: CREATED.id }, songs: [song] } })
     expect(await storedTrackIds(device, CREATED.id)).toEqual([song.id])
   })
 

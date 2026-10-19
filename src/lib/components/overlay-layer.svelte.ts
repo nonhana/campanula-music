@@ -27,7 +27,7 @@ export interface OverlayRequest {
 export class OverlayLayer<R extends OverlayRequest> {
   request = $state<R | null>(null)
 
-  constructor(readonly sheet: 'songSheet' | 'playlistSheet' | 'playlistMenuSheet') {}
+  constructor(readonly sheet: 'songSheet' | 'playlistSheet' | 'playlistMenuSheet' | 'batchSheet') {}
 
   open = (request: R): void => {
     this.request = request

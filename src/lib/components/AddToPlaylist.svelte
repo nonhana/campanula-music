@@ -69,7 +69,7 @@
   /** 新建歌单：加入歌单关上（不把焦点还回去，交给新建），打开新建；关掉新建后焦点回到打开菜单的那个按钮 */
   function create(request: SongMenuRequest) {
     playlistPicker.request = null
-    playlistEditor.open({ mode: 'new', song: request.song, from: request.from })
+    playlistEditor.open({ mode: 'new', songs: [request.song], from: request.from })
   }
 
   function estimate(request: SongMenuRequest, sheet: boolean): number {

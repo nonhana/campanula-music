@@ -39,13 +39,16 @@
     lastPlace = now
   })
 
-  // 加入歌单成功：过一会儿自己走。换成了别的提示（新的一条也算）就重新来
+  // 加入歌单成功（包括都已经在歌单里）：过一会儿自己走。换成了别的提示（新的一条也算）就重新来
   $effect(() => {
-    if (notice?.kind !== 'added')
+    if (notice?.kind !== 'added' && notice?.kind !== 'alreadyAdded')
       return
     const timer = setTimeout(() => view.app.dismissLibraryNotice(), ADDED_SHOWN_MS)
     return () => clearTimeout(timer)
   })
+
+  const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed' || notice?.kind === 'recovered')
+  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed')
 </script>
 
 {#if notice}
@@ -58,16 +61,29 @@
           ? 'bottom-24 left-1/2 max-w-[min(560px,calc(100vw-48px))] w-max -translate-x-1/2'
           : ['inset-x-2', place === 'top' ? 'top-16' : 'bottom-[calc(80px+env(safe-area-inset-bottom))]'],
       ]}
-      role={notice.kind === 'added' ? 'status' : 'alert'}
+      role={alerting ? 'alert' : 'status'}
       transition:toast|global={{ edge: place === 'top' ? 'top' : 'bottom', moved: arrival.moved }}
     >
       <div class='flex items-center gap-2.5 rounded-xl bg-white py-1.5 pl-3.5 pr-1.5 shadow-float transition-transform duration-move-state ease-out-soft' style:transform={shift}>
-        {#if notice.kind === 'added'}
+        {#if informative}
           <Check size={18} class='flex-none text-primary-900' aria-hidden='true' />
         {:else}
           <CircleAlert size={18} class='flex-none text-error-700' aria-hidden='true' />
         {/if}
         <p class='min-w-0 flex-1 text-caption text-neutral-800'>{libraryNoticeText(notice)}</p>
+        {#if notice.kind === 'removed'}
+          <button
+            type='button'
+            class='h-11 flex-none rounded-full px-3.5 text-label text-primary-900 font-600 transition-colors duration-feedback md:h-10 mouse:hover:bg-primary-100'
+            onclick={() => view.app.undoRemove()}
+          >撤销</button>
+        {:else if notice.kind === 'removeFailed' && notice.retryable !== false}
+          <button
+            type='button'
+            class='h-11 flex-none rounded-full px-3.5 text-label text-primary-900 font-600 transition-colors duration-feedback md:h-10 mouse:hover:bg-primary-100'
+            onclick={() => void view.app.retryRemove()}
+          >重试</button>
+        {/if}
         <IconButton icon={X} label='关闭提示' onclick={() => view.app.dismissLibraryNotice()} />
       </div>
     </div>

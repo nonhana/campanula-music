@@ -47,7 +47,7 @@
       <FilterChip selected={filter === item.key} onclick={() => (filter = item.key)}>{item.label}</FilterChip>
     {/each}
   </div>
-  <Button variant='outline' icon={Plus} class='ml-auto' onclick={event => playlistEditor.open({ mode: 'new', song: null, from: event.currentTarget })}>新建歌单</Button>
+  <Button variant='outline' icon={Plus} class='ml-auto' onclick={event => playlistEditor.open({ mode: 'new', songs: [], from: event.currentTarget })}>新建歌单</Button>
 </div>
 
 <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放 -->

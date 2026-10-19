@@ -14,6 +14,12 @@ declare global {
       playlistSheet?: true
       /** 歌单页的 ••• 以底部弹层开着（触屏）：返回先收起它 */
       playlistMenuSheet?: true
+      /** 多选的“加入歌单”以底部弹层开着（触屏）：返回先收起它 */
+      batchSheet?: true
+      /** 添加歌曲的选择器以底部弹层开着（手机布局）：返回先收起它 */
+      addSongsSheet?: true
+      /** 歌单页在手机上进了多选：返回手势先退出多选 */
+      playlistSelect?: true
       /** 歌单编辑（新建、编辑信息、改公开、删除）以底部弹层开着（手机布局）：返回先收起它 */
       editorSheet?: true
       /** 换封面的裁剪页以全屏开着（手机布局），压在歌单编辑上面：返回先收起它 */

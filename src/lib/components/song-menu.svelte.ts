@@ -32,11 +32,14 @@ export function openSongMenuFrom(event: MouseEvent, song: Song, source: PlaySour
 
 /**
  * 歌曲行的 oncontextmenu：鼠标右键在指针处打开浮动菜单；键盘的菜单键贴着这一行打开。
- * 触屏长按不接（留给多选，Spec #11 多选），浏览器照常处理
+ * 触屏长按留给多选（#35）：拦掉系统的选择文字 / 上下文菜单，不打开歌曲菜单
  */
 export function openSongMenuAt(event: MouseEvent, song: Song, source: PlaySource): void {
-  if (event instanceof PointerEvent && event.pointerType === 'touch')
+  // 触屏长按留给多选（#35）：不要弹出系统的选择文字 / 上下文菜单
+  if (event instanceof PointerEvent && event.pointerType === 'touch') {
+    event.preventDefault()
     return
+  }
   event.preventDefault()
   const row = event.currentTarget as HTMLElement
   const keyboard = event.clientX === 0 && event.clientY === 0

@@ -16,13 +16,27 @@ export interface HeartResponse {
   hearted: boolean
 }
 
-/** POST /api/playlists/[id]/tracks：加入歌单（自建歌单；我喜欢的音乐用红心）。1 到 SONGS_PER_REQUEST 首 */
+/**
+ * 加入歌单、从歌单移除一次最多几首（验证关卡②：一次加 9,000 首成功；再大没验证过）。
+ * 批量加入、批量移除都是一次请求带上全部编号
+ */
+export const TRACKS_PER_CHANGE = 9000
+
+/** POST /api/playlists/[id]/tracks：加入歌单（自建歌单；我喜欢的音乐用红心）。1 到 TRACKS_PER_CHANGE 首 */
 export interface AddTracksRequest {
   songIds: number[]
 }
 
 /** 加好了（已经在歌单里的歌也算加好了）；这张歌单在网易云里已经不在了（被删掉了）是 missing */
 export type AddTracksResponse = { kind: 'added' } | { kind: 'missing' }
+
+/** POST /api/playlists/[id]/tracks/remove：从自建歌单移除歌。1 到 TRACKS_PER_CHANGE 首 */
+export interface RemoveTracksRequest {
+  songIds: number[]
+}
+
+/** 移除了（不在歌单里的歌网易云也照样接受）；这张歌单在网易云里已经不在了（被删掉了）是 missing */
+export type RemoveTracksResponse = { kind: 'removed' } | { kind: 'missing' }
 
 /** POST /api/albums/[id]/collect、/api/artists/[id]/collect：收藏或取消收藏 */
 export interface CollectRequest {
@@ -94,8 +108,8 @@ export function nameWidth(name: string): number {
   return width
 }
 
-/** 新建歌单、改名称、简介、标签时不能提交的原因 */
-export type PlaylistEditProblem = 'nameEmpty' | 'nameTooLong' | 'descriptionTooLong' | 'tooManyTags'
+/** 新建歌单、改名称、简介、标签，或者一次改太多首歌时不能提交的原因 */
+export type PlaylistEditProblem = 'nameEmpty' | 'nameTooLong' | 'descriptionTooLong' | 'tooManyTags' | 'tooManySongs'
 
 /** 歌单名称（去掉首尾空白后的）不能提交的原因；能提交是 null */
 export function nameProblem(name: string): PlaylistEditProblem | null {

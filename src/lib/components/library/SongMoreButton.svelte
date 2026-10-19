@@ -17,6 +17,7 @@
 <button
   bind:this={button}
   type='button'
+  data-more
   class={[
     'relative z-1 grid flex-none place-items-center text-neutral-600 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)',
     size === 'phone' ? 'size-11 rounded-full active:bg-primary-100' : size === 'desktop' ? 'size-9 rounded-lg' : 'size-8 rounded-lg',

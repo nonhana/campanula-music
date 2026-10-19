@@ -1,10 +1,11 @@
 import type { Account } from '#lib/api/account.js'
-import type { AddTracksRequest, AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, CollectRequest, CollectResponse, CreatePlaylistRequest, CreatePlaylistResponse, DescribePlaylistRequest, HeartRequest, HeartResponse, HeartsResponse, Playlist, PlaylistChangeResponse, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistEditProblem, PlaylistInfo, PlaylistPageResponse, PlaylistsResponse, PlaylistTagGroup, PlaylistTagsResponse, PlaylistUnavailable, RenamePlaylistRequest, Song, SongsRequest, SongsResponse, TagPlaylistRequest, TrackIdsResponse } from '#lib/api/library.js'
+import type { AddTracksRequest, AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, CollectRequest, CollectResponse, CreatePlaylistRequest, CreatePlaylistResponse, DescribePlaylistRequest, HeartRequest, HeartResponse, HeartsResponse, Playlist, PlaylistChangeResponse, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistEditProblem, PlaylistInfo, PlaylistPageResponse, PlaylistsResponse, PlaylistTagGroup, PlaylistTagsResponse, PlaylistUnavailable, RemoveTracksRequest, RemoveTracksResponse, RenamePlaylistRequest, Song, SongsRequest, SongsResponse, TagPlaylistRequest, TrackIdsResponse } from '#lib/api/library.js'
 import type { Api, RequestFailure, Result } from './api'
+import type { Clock } from './browser'
 import type { Change, ConfirmedChange } from './changes'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
-import { nameProblem, SONGS_PER_REQUEST } from '#lib/api/library.js'
+import { nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import { changePatch, changeProblem, heartOf, targetOf } from './changes'
 import { emptyPatch, patched } from './local'
 
@@ -38,14 +39,28 @@ export type ChangeFailure = OpenFailure | { kind: 'checkTokenUnavailable' } | { 
 /** 新建歌单的结果：建好了，或者没建成的原因 */
 export type CreateOutcome = { ok: true, playlistId: number } | { ok: false, failure: ChangeFailure }
 
+/** 批量加入歌单的结果：加了几首；一首都没加（都已经在歌单里了）也算成功。null：这一轮已经作废（退出、登录失效） */
+export type AddSongsOutcome
+  = | { ok: true, added: number }
+    | { ok: false, failure: ChangeFailure | { kind: 'missing' } }
+    | null
+
 /** 改曲库后要告诉听众的事 */
 export type LibraryNotice
   /** 没改成，已经改回原样 */
   = | { kind: 'notChanged', change: Change, failure: ChangeFailure }
   /** 要加歌、要收藏的歌单在网易云里已经不在了（在别处删掉了）：改回原样，马上同步一次曲库 */
-    | { kind: 'playlistMissing', change: Extract<Change, { kind: 'add' | 'collectPlaylist' }> }
-  /** 加入歌单成功 */
-    | { kind: 'added', change: Extract<Change, { kind: 'add' }> }
+    | { kind: 'playlistMissing', change: Extract<Change, { kind: 'add' | 'addMany' | 'remove' | 'collectPlaylist' }> }
+  /** 加入歌单成功（含一次加入几首） */
+    | { kind: 'added', change: Extract<Change, { kind: 'add' | 'addMany' }> }
+  /** 要加的歌都已经在歌单里了：什么都不发 */
+    | { kind: 'alreadyAdded', playlist: Playlist }
+  /** 多选移除：先从本地拿掉，5 秒内可以撤销 */
+    | { kind: 'removed', playlist: Playlist, count: number }
+  /** 移除没成功：restored 是已经从本地拿掉又放回原位；断网、超过上限时根本没拿掉。retryable 为 false 时提示里没有“重试” */
+    | { kind: 'removeFailed', playlist: Playlist, count: number, failure: ChangeFailure, restored: boolean, retryable?: boolean }
+  /** 上次关闭前的修改没保存成功：已经从网易云重拉这张歌单、恢复原样 */
+    | { kind: 'recovered' }
 
 export type SyncStatus
   /** 有一个同步请求在路上 */
@@ -64,6 +79,8 @@ export interface PlaylistSongs<P = Playlist> {
   playlist: P
   /** 已经有歌曲信息的歌，按歌单里的顺序；同步时一页一页地多起来 */
   songs: readonly Song[]
+  /** 全部曲目编号（按歌单里的顺序）：歌曲信息还没全部取到时，用它判断某首歌在不在歌单里、多选勾了哪些 */
+  trackIds: readonly number[]
   /** 一共几首：拿到曲目编号后是编号数，之前是网易云写的歌曲数（我喜欢的音乐的会少几首，#21 留言） */
   total: number
   /** 每首歌的信息都取过一遍了：网易云没给的歌（比如已经下架）不在 songs 里，所以 songs 可能比 total 少几首 */
@@ -150,6 +167,7 @@ export interface LibraryContext {
   api: Api
   lane: BackgroundLane
   local: LocalDb
+  clock: Clock
   /** 曲库变了（同步拿到了新的部分、同步的状态变了） */
   write: (library: LibraryState) => void
   /** 同步时网易云说需要登录，续期也没成功 */
@@ -189,13 +207,40 @@ export interface Library {
    * 网易云说要加歌的歌单已经不在了：改回原样，马上同步一次
    */
   change: (change: Change) => Promise<void>
+  /**
+   * 一次把几首加入自建歌单（多选、添加歌曲选择器）：先改本地、立即生效，再一个请求提交；
+   * 已经在歌单里的不再提交，全都已经在里面时什么都不发。网易云拒绝时改回原样并说明
+   */
+  addSongs: (playlist: Playlist, songs: readonly Song[]) => Promise<AddSongsOutcome>
+  /**
+   * 从自建歌单移除几首（#35）：先从本地拿掉，提示条留 5 秒撤销，没撤销才提交。
+   * 提交失败放回原位并说明、可以重试；页面隐藏、离开歌单时由 flush 立即提交（带 keepalive，请求体不超过 64 KiB）
+   */
+  removeSongs: (playlist: Playlist, songIds: readonly number[]) => void
+  /** 撤销刚才的移除：放回原位，什么都不提交 */
+  undoRemove: () => void
+  /**
+   * 5 秒撤销窗口里把这些歌重新加入同一张歌单：把待提交的移除里这几首拿掉、放回原位，返回拿掉的那几首。
+   * 它们还在网易云上，再发一次加入没有意义；调用方把它们从“要加的”里过滤掉
+   */
+  restorePending: (playlistId: number, songIds: readonly number[]) => Set<number>
+  /** 重试刚才没成功的移除：重新从本地拿掉，马上提交 */
+  retryRemove: () => Promise<void>
+  /** 页面被隐藏（切到后台、锁屏、关页面）或离开歌单：把还没提交的移除立即提交；给了 playlistId 只提交这一张的 */
+  flush: (playlistId?: number) => Promise<void>
+  /**
+   * 批量“加入歌单”的目标：除了当前歌单以外的自建歌单（我喜欢的音乐、收藏的歌单不出现，不做批量红心）。
+   * 歌单列表还没拿到时是 null
+   */
+  addTargets: (currentPlaylistId: number) => Playlist[] | null
   /** 换封面成功：用网易云返回的封面地址写进副本（马上显示）；同步拿回来的旧数据上也会叠回去 */
   setCover: (playlistId: number, coverUrl: string) => Promise<void>
   /**
    * 新建自建歌单：名称去掉首尾空白，不合规、断网时不提交。等网易云建好（给了编号）才进曲库，排在我喜欢的音乐后面；
-   * 带着 song（从加入歌单里新建）时建好接着加入这首（和 change 的加入歌单一样）。这一轮作废了（退出、登录失效）是 null
+   * 带着 songs（从加入歌单、多选里新建）时建好接着一次加入这几首（和 change 的加入歌单一样）。
+   * 这一轮作废了（退出、登录失效）是 null
    */
-  create: (draft: CreatePlaylistRequest, song?: Song) => Promise<CreateOutcome | null>
+  create: (draft: CreatePlaylistRequest, songs?: readonly Song[]) => Promise<CreateOutcome | null>
   dismissNotice: () => void
   /** 退出、登录失效：停下同步。本机副本留着，退出时由 App 另外删 */
   leave: () => void
@@ -260,6 +305,7 @@ function songsOf(replica: Replica, playlist: Playlist): PlaylistSongs {
   return {
     playlist,
     songs: tracks ? tracks.trackIds.flatMap(id => replica.songs.get(id) ?? []) : [],
+    trackIds: tracks ? tracks.trackIds : [],
     total: tracks ? tracks.trackIds.length : playlist.trackCount,
     complete: tracks?.complete ?? false,
   }
@@ -335,8 +381,27 @@ function waitingStatus(waiting: Waiting): SyncStatus {
   }
 }
 
+/** 多选移除的提示条留多久（毫秒）：这之内可以撤销，过了才提交 */
+const REMOVE_UNDO_MS = 5000
+/** 带 keepalive 的请求体最多这么大（字节）：浏览器只给 64 KiB，更大的只能用普通请求 */
+const KEEPALIVE_MAX_BYTES = 64 * 1024
+
+/** 一份还没提交的移除：本地已经拿掉，提示条里可以撤销，计时到了或者页面隐藏时提交 */
+interface DeferredRemoval {
+  playlist: Playlist
+  songIds: readonly number[]
+  change: Extract<Change, { kind: 'remove' }>
+  entry: PendingChange
+  /** 撤销、提交成功后取消计时 */
+  cancelTimer: () => void
+  /** 已经开始提交：同一份不重复发 */
+  sending: Promise<void> | null
+  /** 撤销了、或者已经处理完：不再提交 */
+  settled: boolean
+}
+
 export function createLibrary(context: LibraryContext): Library {
-  const { api, lane, local } = context
+  const { api, lane, local, clock } = context
   /** 显示着的副本；没登录时是 null */
   let replica: Replica | null = null
   let status: SyncStatus = { status: 'synced' }
@@ -348,7 +413,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 正在拉的歌单：拉的是哪个版本（tracksUpdatedAt）、拉完的结果。同一张歌单同时只有一处在拉，后台同步和听众打开共用；
    * 打开时用的可能是本机旧的歌单列表，版本不同的要等它拉完再拉
    */
-  const pulling = new Map<number, { version: number, job: Promise<Pulled> }>()
+  const pulling = new Map<number, { version: number, force: boolean, job: Promise<Pulled> }>()
   /** 听众打开着、要马上拉的歌单：拉它的请求不经过后台的节奏 */
   const urgent = new Set<number>()
   /** 拉歌单时正在后台通道里等着的请求：听众打开这张歌单时叫它别等了，改成前台请求马上发 */
@@ -364,6 +429,24 @@ export function createLibrary(context: LibraryContext): Library {
   const neteaseSongs = new Map<number, Song>()
   /** 改曲库后要告诉听众的事 */
   let notice: LibraryNotice | null = null
+  /**
+   * 多选移除（#35）：本地已经拿掉、还没提交的。提示条留 5 秒撤销，过了才提交；
+   * 页面隐藏、离开歌单时立即提交（带 keepalive，请求体不超过 64 KiB）
+   */
+  let deferred: DeferredRemoval[] = []
+  /** 提示条里的“撤销”对应哪一份；换了别的提示条就撤销不到了，但计时到了照样提交 */
+  let noticeRemoval: DeferredRemoval | null = null
+  /** 刚才没成功的移除：提示条里的“重试”重新拿掉、马上提交 */
+  let failedRemoval: { playlist: Playlist, songIds: readonly number[] } | null = null
+  /**
+   * 上次关闭前没确认的改动（本机存着的标记）：打开 App 时读出来，同步拿到歌单列表后先从网易云重拉这几张、
+   * 丢掉本地改动，再提示“已恢复原样”
+   */
+  let recovering = new Set<number>()
+  /** 这个标签页已经写进本机的标记：只增删自己写的那几张，别的标签页记下的不动 */
+  let writtenMarkers = new Set<number>()
+  /** 未确认标记一步一步写，免得几次写交错、后写的拿着旧的一组把前面的盖掉 */
+  let markerSaving: Promise<void> = Promise.resolve()
   /**
    * 听众改的、还没写进副本的修改（叠在显示着的副本上），和网易云确认过的修改（confirmedAt：确认的那一刻；
    * 同步拿回来的数据比它旧时要叠回去）。退出、换账号时清掉
@@ -384,6 +467,333 @@ export function createLibrary(context: LibraryContext): Library {
   /** 同步拿回来的是 at 那一刻的网易云：比它晚确认的修改叠回去 */
   function reapplied(view: Replica, at: number): Replica {
     return changes.filter(entry => entry.confirmedAt !== null && entry.confirmedAt > at).reduce((next, entry) => patched(next, changePatch(next, entry.change)), view)
+  }
+
+  /**
+   * 本机记的“这几张歌单有改动还没确认”：正在提交的、上次关掉前没确认完的。
+   * 只加/删这个标签页写过的，别的标签页同时在改别的歌单时不会被盖掉
+   */
+  function saveMarkers(mine: number): Promise<void> {
+    const current = replica
+    if (!current)
+      return Promise.resolve()
+    markerSaving = markerSaving.then(async () => {
+      if (mine !== generation || !replica)
+        return
+      const active = new Set([...recovering, ...deferred.map(item => item.playlist.id)])
+      for (const id of active) {
+        if (writtenMarkers.has(id))
+          continue
+        await local.addPendingChange(current.owner, id)
+        writtenMarkers.add(id)
+      }
+      for (const id of [...writtenMarkers]) {
+        if (active.has(id))
+          continue
+        await local.removePendingChange(current.owner, id)
+        writtenMarkers.delete(id)
+      }
+    }).catch(() => {})
+    return markerSaving
+  }
+
+  /** 一份移除处理完了（确认了、放回原位了、撤销了）：不再提交，标记可能可以划掉 */
+  function finishRemoval(mine: number, item: DeferredRemoval): void {
+    item.settled = true
+    item.cancelTimer()
+    deferred = deferred.filter(each => each !== item)
+    if (noticeRemoval === item)
+      noticeRemoval = null
+    void saveMarkers(mine)
+  }
+
+  /** 这个请求体带不带得动 keepalive：超过 64 KiB 的只能用普通请求（#35） */
+  function keepaliveAllowed(change: Change): boolean {
+    if (change.kind !== 'remove')
+      return false
+    const body = JSON.stringify({ songIds: change.songIds } satisfies RemoveTracksRequest)
+    return new TextEncoder().encode(body).byteLength <= KEEPALIVE_MAX_BYTES
+  }
+
+  /**
+   * 提交一份移除：成功后写进本机副本；网易云说歌单不在了就放回原位、马上同步；
+   * 其他失败放回原位并说明，提示条里可以重试。页面隐藏时带 keepalive
+   */
+  async function commitRemoval(mine: number, item: DeferredRemoval, { keepalive }: { keepalive: boolean }): Promise<void> {
+    if (item.settled)
+      return
+    if (item.sending)
+      return item.sending
+    item.cancelTimer()
+    if (noticeRemoval === item) {
+      noticeRemoval = null
+      if (notice?.kind === 'removed')
+        notice = null
+      publish()
+    }
+    const target = targetOf(item.change)
+    const job = (submitting.get(target) ?? Promise.resolve()).then(async () => {
+      try {
+        // 提交前先让“这张歌单有改动还没确认”落盘：这时关掉页面，下次打开才知道要恢复
+        await markerSaving
+        if (item.settled || mine !== generation)
+          return
+        const { change } = item
+        const result = await submit(mine, change, keepalive && keepaliveAllowed(change) ? { keepalive: true } : undefined)
+        if (!result || mine !== generation)
+          return
+        if (result.ok && result.value === 'done') {
+          item.entry.confirmedAt = ++tick
+          if (!await save(mine, now => changePatch(now, item.entry.change), () => {
+            item.entry.saved = true
+          }) || mine !== generation) {
+            return
+          }
+          failedRemoval = null
+          finishRemoval(mine, item)
+          publish()
+          return
+        }
+        // 失败、歌单不在了：本地已经改回原样
+        changes = changes.filter(each => each !== item.entry)
+        finishRemoval(mine, item)
+        if (result.ok) {
+          notice = { kind: 'playlistMissing', change }
+          publish()
+          return start()
+        }
+        if (result.failure.kind === 'needsLogin')
+          return context.loginExpired()
+        failedRemoval = { playlist: item.playlist, songIds: item.songIds }
+        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: result.failure, restored: true }
+        publish()
+      }
+      catch {
+        // 本机数据库、请求本身出了意料之外的错：也按没成功处理，放回原位、说明原因
+        if (item.settled || mine !== generation)
+          return
+        changes = changes.filter(each => each !== item.entry)
+        finishRemoval(mine, item)
+        failedRemoval = { playlist: item.playlist, songIds: item.songIds }
+        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: { kind: 'serverError' }, restored: true }
+        publish()
+      }
+    }).finally(() => {
+      if (submitting.get(target) === job)
+        submitting.delete(target)
+    })
+    submitting.set(target, job)
+    item.sending = job.finally(() => {
+      item.sending = null
+    })
+    return item.sending
+  }
+
+  /** 先从本地拿掉，记下未确认；undo 时提示条留 5 秒撤销，否则马上提交 */
+  function applyRemoval(mine: number, playlist: Playlist, songIds: readonly number[], { undo }: { undo: boolean }): DeferredRemoval {
+    // 5 秒内又移除了一批：同一张歌单合成一条提示（撤销两批一起放回，计时从头算）；
+    // 不同歌单的先提交上一批，别让它悄悄在后面提交、撤销不到了
+    if (undo) {
+      const previous = noticeRemoval
+      if (previous && !previous.settled && !previous.sending) {
+        if (previous.playlist.id === playlist.id) {
+          const combined = [...new Set([...previous.songIds, ...songIds])]
+          previous.songIds = combined
+          previous.change.songIds = combined
+          previous.cancelTimer()
+          previous.cancelTimer = clock.after(REMOVE_UNDO_MS, () => {
+            void commitRemoval(mine, previous, { keepalive: false })
+          })
+          noticeRemoval = previous
+          notice = { kind: 'removed', playlist, count: combined.length }
+          publish()
+          return previous
+        }
+        void commitRemoval(mine, previous, { keepalive: false })
+      }
+    }
+    const change: Extract<Change, { kind: 'remove' }> = { kind: 'remove', playlist, songIds: [...songIds] }
+    const entry: PendingChange = { change, confirmedAt: null, saved: false }
+    const item: DeferredRemoval = {
+      playlist,
+      songIds: [...songIds],
+      change,
+      entry,
+      cancelTimer: () => {},
+      sending: null,
+      settled: false,
+    }
+    changes.push(entry)
+    deferred.push(item)
+    if (undo) {
+      noticeRemoval = item
+      notice = { kind: 'removed', playlist, count: songIds.length }
+      item.cancelTimer = clock.after(REMOVE_UNDO_MS, () => {
+        void commitRemoval(mine, item, { keepalive: false })
+      })
+    }
+    else {
+      noticeRemoval = null
+      notice = null
+    }
+    publish()
+    const marked = saveMarkers(mine)
+    if (!undo)
+      void marked.then(() => commitRemoval(mine, item, { keepalive: false }))
+    return item
+  }
+
+  function removeSongs(playlist: Playlist, songIds: readonly number[]): void {
+    const current = replica
+    if (!current)
+      return
+    const tracks = current.tracks.get(playlist.id)
+    const present = new Set(tracks?.trackIds ?? [])
+    const ids = [...new Set(songIds)].filter(id => present.has(id))
+    if (ids.length === 0)
+      return
+    const mine = generation
+    failedRemoval = null
+    if (ids.length > TRACKS_PER_CHANGE) {
+      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'invalid', problem: 'tooManySongs' }, restored: false, retryable: false }
+      publish()
+      return
+    }
+    if (!context.online()) {
+      // 断网时的写操作直接说没改成，不改本地（规则⑨）
+      failedRemoval = { playlist, songIds: ids }
+      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'offline' }, restored: false }
+      publish()
+      return
+    }
+    applyRemoval(mine, playlist, ids, { undo: true })
+  }
+
+  function undoRemove(): void {
+    const item = noticeRemoval ?? deferred.at(-1) ?? null
+    if (!item)
+      return
+    item.settled = true
+    item.cancelTimer()
+    changes = changes.filter(each => each !== item.entry)
+    deferred = deferred.filter(each => each !== item)
+    if (noticeRemoval === item)
+      noticeRemoval = null
+    if (notice?.kind === 'removed')
+      notice = null
+    failedRemoval = null
+    publish()
+    void saveMarkers(generation)
+  }
+
+  /** 把一个待提交移除里的这几首拿掉（重新加入歌单时用）：别的歌继续按 5 秒计时，拿掉的放回原位 */
+  function restorePending(playlistId: number, songIds: readonly number[]): Set<number> {
+    const ids = new Set(songIds)
+    const restored = new Set<number>()
+    for (const item of [...deferred]) {
+      if (item.playlist.id !== playlistId || item.sending)
+        continue
+      const overlap = item.songIds.filter(id => ids.has(id))
+      if (overlap.length === 0)
+        continue
+      for (const id of overlap)
+        restored.add(id)
+      const remaining = item.songIds.filter(id => !ids.has(id))
+      if (remaining.length === 0) {
+        item.settled = true
+        item.cancelTimer()
+        changes = changes.filter(each => each !== item.entry)
+        deferred = deferred.filter(each => each !== item)
+        if (noticeRemoval === item)
+          noticeRemoval = null
+      }
+      else {
+        item.songIds = remaining
+        item.change.songIds = [...remaining]
+      }
+      if (notice?.kind === 'removed' && notice.playlist.id === playlistId) {
+        notice = remaining.length > 0 ? { kind: 'removed', playlist: item.playlist, count: remaining.length } : null
+      }
+    }
+    if (restored.size > 0) {
+      failedRemoval = null
+      const playlist = replica?.playlists?.find(item => item.id === playlistId)
+      if (playlist)
+        notice = { kind: 'alreadyAdded', playlist }
+      publish()
+      void saveMarkers(generation)
+    }
+    return restored
+  }
+
+  async function retryRemove(): Promise<void> {
+    const failed = failedRemoval
+    if (!failed)
+      return
+    const mine = generation
+    failedRemoval = null
+    if (!context.online()) {
+      failedRemoval = failed
+      notice = { kind: 'removeFailed', playlist: failed.playlist, count: failed.songIds.length, failure: { kind: 'offline' }, restored: false }
+      publish()
+      return
+    }
+    const item = applyRemoval(mine, failed.playlist, failed.songIds, { undo: false })
+    await commitRemoval(mine, item, { keepalive: false })
+  }
+
+  /** 页面被隐藏、离开歌单：还没提交的移除立即提交（带 keepalive，请求体太大的用普通请求） */
+  async function flush(playlistId?: number): Promise<void> {
+    const mine = generation
+    await Promise.all(deferred
+      .filter(item => playlistId === undefined || item.playlist.id === playlistId)
+      .map(item => commitRemoval(mine, item, { keepalive: true })))
+  }
+
+  /** 批量“加入歌单”的目标：除了当前歌单以外的自建歌单；歌单列表还没拿到时是 null */
+  function addTargets(currentPlaylistId: number): Playlist[] | null {
+    const playlists = replica?.playlists
+    if (!playlists)
+      return null
+    return playlists.filter(playlist => playlist.kind === 'own' && playlist.id !== currentPlaylistId)
+  }
+
+  /** 一次加入几首：已经在歌单里的不再提交；全都已经在里面时什么都不发 */
+  async function addSongs(playlist: Playlist, songs: readonly Song[]): Promise<AddSongsOutcome> {
+    const current = replica
+    if (!current)
+      return null
+    const seen = new Set<number>()
+    const unique = songs.filter((song) => {
+      if (seen.has(song.id))
+        return false
+      seen.add(song.id)
+      return true
+    })
+    const restored = restorePending(playlist.id, unique.map(song => song.id))
+    const have = new Set(shown(current).tracks.get(playlist.id)?.trackIds ?? [])
+    const fresh = unique.filter(song => !restored.has(song.id) && !have.has(song.id))
+    if (fresh.length === 0) {
+      notice = { kind: 'alreadyAdded', playlist }
+      publish()
+      return { ok: true, added: 0 }
+    }
+    if (fresh.length > TRACKS_PER_CHANGE) {
+      const failure = { kind: 'invalid', problem: 'tooManySongs' } as const
+      notice = { kind: 'notChanged', change: { kind: 'addMany', playlist, songs: fresh }, failure }
+      publish()
+      return { ok: false, failure }
+    }
+    const result = await applyChange({ kind: 'addMany', playlist, songs: fresh })
+    if (!result)
+      return null
+    if (result.ok && result.value === 'done')
+      return { ok: true, added: fresh.length }
+    if (result.ok)
+      return { ok: false, failure: { kind: 'missing' } }
+    if (result.failure.kind === 'needsLogin')
+      return null
+    return { ok: false, failure: result.failure }
   }
 
   function publish(next: SyncStatus = status): void {
@@ -480,7 +890,8 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 把一张歌单拉到和网易云一致：更新时间变了才重拉曲目编号，再取还没有的歌曲信息 */
-  async function pull(mine: number, current: Replica, playlist: Playlist): Promise<Pulled> {
+  /** force：上次关掉前有没确认的改动（#35），就算本机的版本看起来没变也从网易云重拉一遍 */
+  async function pull(mine: number, current: Replica, playlist: Playlist, force = false): Promise<Pulled> {
     const { id } = playlist
     /** 拉的时候新的歌单列表到了，这张已经在网易云里删掉：不再往本机写它的曲目（列表到的时候已经删过了） */
     const deleted = () => current.playlists !== null && !current.playlists.some(item => item.id === id)
@@ -488,7 +899,7 @@ export function createLibrary(context: LibraryContext): Library {
     /** 这张歌单的曲目，和它是哪一刻的：本机存着的就是现在的 */
     let tracks = current.tracks.get(id)
     let at = tick
-    if (tracks?.version !== playlist.tracksUpdatedAt) {
+    if (force || tracks?.version !== playlist.tracksUpdatedAt) {
       const request = stamped(() => api.get<TrackIdsResponse>(`/api/playlists/${id}/track-ids`))
       const fetched = await playlistRequest(mine, id, request.send)
       if (!fetched?.ok)
@@ -516,20 +927,20 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 拉一张歌单；同一个版本已经有一处在拉（后台同步、听众打开）就等它，不重拉；拉的是别的版本就等它拉完再拉这个 */
-  function load(mine: number, current: Replica, playlist: Playlist): Promise<Pulled> {
+  function load(mine: number, current: Replica, playlist: Playlist, force = false): Promise<Pulled> {
     const { id, tracksUpdatedAt: version } = playlist
     const existing = pulling.get(id)
-    if (existing?.version === version)
+    if (existing?.version === version && (existing.force || !force))
       return existing.job
     const before = existing?.job.catch(() => null) ?? Promise.resolve(null)
-    const job: Promise<Pulled> = before.then(() => pull(mine, current, playlist)).finally(() => {
+    const job: Promise<Pulled> = before.then(() => pull(mine, current, playlist, force)).finally(() => {
       // 退出、换账号时已经清掉了，那之后开始的拉取不归它管
       if (pulling.get(id)?.job === job) {
         pulling.delete(id)
         urgent.delete(id)
       }
     })
-    pulling.set(id, { version, job })
+    pulling.set(id, { version, force, job })
     return job
   }
 
@@ -561,6 +972,38 @@ export function createLibrary(context: LibraryContext): Library {
     return null
   }
 
+  /**
+   * 上次关掉前没确认的改动（#35）：歌单列表拿到以后，先把这几张从网易云重拉一遍、丢掉本地改动，再提示“已恢复原样”。
+   * 没拉成（网易云返回认不出、断网时后台通道会等着）就留着标记，下一轮同步再试
+   */
+  async function recoverPending(mine: number, current: Replica): Promise<void> {
+    if (recovering.size === 0)
+      return
+    let recovered = false
+    for (const id of [...recovering]) {
+      if (mine !== generation)
+        return
+      const playlist = current.playlists?.find(item => item.id === id)
+      if (!playlist) {
+        recovering.delete(id)
+        recovered = true
+        continue
+      }
+      const result = await load(mine, current, playlist, true)
+      if (!result)
+        return
+      if (!result.ok)
+        continue
+      recovering.delete(id)
+      recovered = true
+    }
+    if (recovered && mine === generation) {
+      notice = { kind: 'recovered' }
+      publish()
+    }
+    await saveMarkers(mine)
+  }
+
   async function run(mine: number): Promise<void> {
     const current = replica
     if (mine !== generation || !current)
@@ -590,6 +1033,9 @@ export function createLibrary(context: LibraryContext): Library {
       }
     }
     if (!await save(mine, now => ({ playlists: reapplied({ ...now, playlists: list.value.playlists }, listRequest.at()).playlists! }), removeDeleted))
+      return
+    await recoverPending(mine, current)
+    if (mine !== generation)
       return
 
     const albums = await syncCollected<CollectedAlbumsResponse>(mine, '/api/albums', (value, now, at) => ({ albums: reapplied({ ...now, albums: value.albums }, at).albums! }))
@@ -687,7 +1133,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 提交一个修改的结果：做好了，或者要加歌的歌单已经不在了（missing） */
-  type Submitted = { ok: true, value: 'done' | 'missing' } | { ok: false, failure: RequestFailure | { kind: 'checkTokenUnavailable' } }
+  type Submitted = { ok: true, value: 'done' | 'missing' } | { ok: false, failure: ChangeFailure | Extract<RequestFailure, { kind: 'needsLogin' }> }
 
   function done(result: Result<unknown>): Submitted {
     return result.ok ? { ok: true, value: 'done' } : result
@@ -697,8 +1143,8 @@ export function createLibrary(context: LibraryContext): Library {
    * 把一个修改提交给网易云（前台请求，马上发）。收藏歌单先现取一枚反作弊令牌。
    * 发之前这一轮已经作废（退出、登录失效、换账号，可能就在排队或取令牌的时候）就不发，返回 null
    */
-  async function submit(mine: number, change: Change): Promise<Submitted | null> {
-    const post = async <T>(path: string, body: unknown): Promise<Result<T> | null> => (mine === generation ? api.post<T>(path, body) : null)
+  async function submit(mine: number, change: Change, options?: { keepalive?: boolean }): Promise<Submitted | null> {
+    const post = async <T>(path: string, body: unknown): Promise<Result<T> | null> => (mine === generation ? api.post<T>(path, body, options) : null)
     const heart = heartOf(change)
     if (heart) {
       const result = await post<HeartResponse>('/api/hearts', { songId: heart.song.id, hearted: heart.hearted } satisfies HeartRequest)
@@ -709,6 +1155,14 @@ export function createLibrary(context: LibraryContext): Library {
         throw new Error('红心在上面已经提交了')
       case 'add': {
         const result = await post<AddTracksResponse>(`/api/playlists/${change.playlist.id}/tracks`, { songIds: [change.song.id] } satisfies AddTracksRequest)
+        return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
+      }
+      case 'addMany': {
+        const result = await post<AddTracksResponse>(`/api/playlists/${change.playlist.id}/tracks`, { songIds: change.songs.map(song => song.id) } satisfies AddTracksRequest)
+        return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
+      }
+      case 'remove': {
+        const result = await post<RemoveTracksResponse>(`/api/playlists/${change.playlist.id}/tracks/remove`, { songIds: change.songIds } satisfies RemoveTracksRequest)
         return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
       }
       case 'collectAlbum': {
@@ -812,7 +1266,7 @@ export function createLibrary(context: LibraryContext): Library {
       entry.confirmedAt = ++tick
       await save(mine, now => confirmedPatch(now, change), () => {
         entry.saved = true
-        if (change.kind === 'add')
+        if (change.kind === 'add' || change.kind === 'addMany')
           notice = { kind: 'added', change }
       })
       return
@@ -820,7 +1274,7 @@ export function createLibrary(context: LibraryContext): Library {
     changes = changes.filter(each => each !== entry)
     if (result.ok) {
       // 要加歌、要收藏的歌单在别处被删掉了：马上同步一次，曲库里也就没有它了
-      if (change.kind === 'add' || change.kind === 'collectPlaylist')
+      if (change.kind === 'add' || change.kind === 'addMany' || change.kind === 'collectPlaylist')
         notice = { kind: 'playlistMissing', change }
       publish()
       return start()
@@ -844,22 +1298,30 @@ export function createLibrary(context: LibraryContext): Library {
     fetchingAlbums.clear()
     fetchingPlaylists.clear()
     neteaseSongs.clear()
+    for (const item of deferred)
+      item.cancelTimer()
+    deferred = []
+    noticeRemoval = null
+    failedRemoval = null
+    recovering.clear()
+    writtenMarkers.clear()
     changes = []
     submitting.clear()
     notice = null
   }
 
-  async function applyChange(change: Change): Promise<void> {
+  async function applyChange(change: Change): Promise<Submitted | null> {
     const current = replica
     if (!current)
-      return
+      return null
     const mine = generation
     // 不合规的（界面先拦了，这里兜底）、断网时：不改，直接说没改成（规则⑨）
     const problem = changeProblem(change)
     const failure: ChangeFailure | null = problem ? { kind: 'invalid', problem } : context.online() ? null : { kind: 'offline' }
     if (failure) {
       notice = { kind: 'notChanged', change, failure }
-      return publish()
+      publish()
+      return { ok: false, failure }
     }
     keepPage(current, change)
     const entry: PendingChange = { change, confirmedAt: null, saved: false }
@@ -867,15 +1329,19 @@ export function createLibrary(context: LibraryContext): Library {
     publish()
     // 同一样东西的上一次修改连同写进副本做完了，才提交这一次；打开这张歌单（open）也等它做完
     const target = targetOf(change)
+    let submitted: Submitted | null = null
     const job = (submitting.get(target) ?? Promise.resolve()).then(async () => {
       const result = await submit(mine, change)
-      if (result && mine === generation)
+      if (result && mine === generation) {
+        submitted = result
         await settleChange(mine, entry, change, result)
+      }
     })
     submitting.set(target, job)
     await job
     if (submitting.get(target) === job)
       submitting.delete(target)
+    return submitted
   }
 
   return {
@@ -883,7 +1349,7 @@ export function createLibrary(context: LibraryContext): Library {
       generation += 1
       forget()
       const mine = generation
-      const stored = await local.readLibrary()
+      const [stored, pending] = await Promise.all([local.readLibrary(), local.pendingChanges(account.id)])
       const shown: Replica = stored?.owner === account.id
         ? stored
         : { owner: account.id, hearts: null, playlists: null, tracks: new Map(), songs: new Map(), albums: null, artists: null, albumPages: new Map() }
@@ -891,6 +1357,9 @@ export function createLibrary(context: LibraryContext): Library {
         await local.resetLibrary(account.id)
       if (mine === generation) {
         replica = shown
+        // 上次关掉前有没确认的改动：同步拿到歌单列表以后重拉这几张、恢复原样（#35）
+        recovering = new Set(stored?.owner === account.id ? pending : [])
+        writtenMarkers = new Set(recovering)
         status = { status: 'syncing' }
         lane.resume()
       }
@@ -1011,13 +1480,22 @@ export function createLibrary(context: LibraryContext): Library {
       pages.tags = result.ok ? { status: 'shown', content: result.value.groups } : { status: 'failed', failure: result.failure }
       publish()
     },
-    change: applyChange,
+    async change(change) {
+      await applyChange(change)
+    },
+    addSongs,
+    removeSongs,
+    undoRemove,
+    restorePending,
+    retryRemove,
+    flush,
+    addTargets,
     async setCover(playlistId, coverUrl) {
       if (!replica)
         return
       await confirm(generation, { kind: 'cover', playlistId, coverUrl })
     },
-    async create(draft, song) {
+    async create(draft, songs = []) {
       const name = draft.name.trim()
       const problem = nameProblem(name)
       if (problem)
@@ -1036,11 +1514,15 @@ export function createLibrary(context: LibraryContext): Library {
       // 网易云建好了：直接是确认过的修改，写进副本；确认之前发出的同步拿回来的歌单列表里没有它，照样叠回去
       if (!await confirm(mine, { kind: 'create', playlist }))
         return null
-      if (song)
-        void applyChange({ kind: 'add', playlist, song })
+      if (songs.length > 0)
+        void addSongs(playlist, songs)
       return { ok: true, playlistId: playlist.id }
     },
     dismissNotice() {
+      if (notice?.kind === 'removed')
+        noticeRemoval = null
+      if (notice?.kind === 'removeFailed')
+        failedRemoval = null
       notice = null
       publish()
     },

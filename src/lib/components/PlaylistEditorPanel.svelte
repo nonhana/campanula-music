@@ -89,7 +89,7 @@
       return
     playlistEditor.busy = true
     failure = null
-    const outcome = await view.app.createPlaylist({ name, private: isPrivate }, request.song ?? undefined)
+    const outcome = await view.app.createPlaylist({ name, private: isPrivate }, request.songs)
     playlistEditor.busy = false
     if (outcome && !outcome.ok)
       failure = outcome.failure
@@ -177,8 +177,10 @@
           <span class='mt-0.5 block text-caption text-neutral-600'>只有你自己能看到。以后可以改为公开，但公开后不能再改回隐私。</span>
         </span>
       </label>
-      {#if request.song}
-        <p class='text-caption text-neutral-600'>建好后会把<span lang={langOf(request.song.name)}>《{request.song.name}》</span>加进去。</p>
+      {#if request.songs.length === 1}
+        <p class='text-caption text-neutral-600'>建好后会把<span lang={langOf(request.songs[0]!.name)}>《{request.songs[0]!.name}》</span>加进去。</p>
+      {:else if request.songs.length > 1}
+        <p class='text-caption text-neutral-600'>建好后会把选中的 {formatCount(request.songs.length)} 首歌加进去。</p>
       {/if}
       {#if failure}
         <div transition:unfold>

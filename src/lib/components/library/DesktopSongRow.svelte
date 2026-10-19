@@ -22,6 +22,7 @@
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
+  import { Check } from '@lucide/svelte'
   import MorningWash from '../player/MorningWash.svelte'
   import NowIndex from '../player/NowIndex.svelte'
   import { openSongMenuAt } from '../song-menu.svelte'
@@ -41,21 +42,48 @@
     /** 正在播放这首 */
     now: boolean
     onplay: () => void
+    /** 多选模式：每行前面是勾选框 */
+    selecting?: boolean
+    selected?: boolean
+    /** 不进多选时的 ⌘/Ctrl 点选、Shift 连选 */
+    onselect?: (event: MouseEvent) => void
   }
 
-  const { song, source, n, now, onplay }: Props = $props()
+  const { song, source, n, now, onplay, selecting = false, selected = false, onselect }: Props = $props()
   const off = $derived(song.availability === 'noCopyright')
   /** 这一行的封面：点歌时它飞进播放条 */
   let cover = $state<HTMLElement>()
+
+  /** 多选时整行都能点：点在按钮（点歌、红心、•••）上时不重复处理 */
+  function rowclick(event: MouseEvent): void {
+    if (selecting && !(event.target as Element).closest('button'))
+      onplay()
+  }
 </script>
 
-<div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']} role='presentation' oncontextmenu={event => openSongMenuAt(event, song, source)}>
+<div class={['relative h-full rounded-lg', selected ? 'bg-primary-100' : !off && 'mouse:hover:bg-neutral-50']} role='presentation' oncontextmenu={event => openSongMenuAt(event, song, source)} onclick={rowclick}>
   {#if now}<MorningWash start={104} />{/if}
-  <div class={['relative h-full', SONG_GRID, off && 'opacity-45']}>
-    <span class={SONG_COLUMNS.index}><NowIndex {n} {now} /></span>
+  <div class={['relative h-full', SONG_GRID, off && !selected && 'opacity-45']}>
+    <span class={SONG_COLUMNS.index}>
+      {#if selecting}
+        <span
+          class={[
+            'grid size-[18px] place-items-center rounded-sm border-[1.5px]',
+            selected ? 'border-primary-900 bg-primary-900 text-white' : 'border-neutral-500 bg-white',
+          ]}
+          aria-hidden='true'
+        >
+          {#if selected}<Check size={12} strokeWidth={3} />{/if}
+        </span>
+      {:else if selected}
+        <Check size={16} strokeWidth={2.5} class='text-primary-900' aria-hidden='true' />
+      {:else}
+        <NowIndex {n} {now} />
+      {/if}
+    </span>
     <span class={['min-w-0 flex items-center gap-3', SONG_COLUMNS.title]}>
       <span class='flex-none' bind:this={cover}><Cover url={song.album.coverUrl} size={40} class='rounded-md' /></span>
-      <PlayTarget class='min-w-0 flex-1' rounded disabled={off} {now} {cover} {onplay}>
+      <PlayTarget class='min-w-0 flex-1' rounded disabled={off && !selecting && !onselect} unplayable={off} {now} {cover} {onplay} {selecting} {selected} {onselect}>
         <span class='min-w-0 flex items-center gap-2'>
           <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
           <SongBadge availability={song.availability} />
