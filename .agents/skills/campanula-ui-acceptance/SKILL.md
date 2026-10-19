@@ -1,9 +1,12 @@
 ---
 name: campanula-ui-acceptance
-description: Campanula 界面票的设计参照、浏览器检查和验收截图。Use when 实现或验收改界面的票、对照原型的截图基准、拍 390×844 / 1440×900 验收截图、截加载中/空/出错状态、在浏览器里查返回恢复位置、键盘、加载时挪位置。
+description: Campanula 界面票的设计参照，和作者点名时的截图、浏览器检查工具。Use when 写界面票前读原型源码；作者要求拍截图、对照原型基准、查骨架挪位置、返回恢复位置、键盘焦点、动效逐帧。
 ---
 
-界面票从设计参照到交给作者看截图的做法。目标是 **省**：设计从原型的源码读（文字，一次读完），基准图的对照要点存成文字，浏览器里的检查和截图交给子代理成批做、结果落在文件里，主会话只看结论。
+两种用法：
+
+- **写界面票**：只用第 1 步，从原型源码读设计。验收由作者亲手试用（`docs/agents/delivery.md` 第 3、6 步），截图和浏览器检查不是交付步骤。
+- **作者点名**（“拍一下 …”“查一下返回位置”“拍这个动效的逐帧”）：只做作者点到的那几项，用第 2–5 步的工具。目标是 **省**：基准图的对照要点存成文字，成批的检查和截图交给子代理，结果落在文件里，主会话只看结论。
 
 ## 1. 设计参照：读原型源码
 
@@ -34,7 +37,10 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 
 ## 3. 浏览器：专用窗口
 
-浏览器是专用窗口 `scripts/axi`（chrome-devtools-axi 的 campanula 会话，看得见的窗口；作者在里面扫码登录过，登录存在 `~/.cache/campanula-axi/chrome-profile`，关掉重开还在）。开发服务器（`pnpm dev`，端口 5173）要开着。作者平时用的 Chrome 不碰。
+浏览器是专用窗口 `scripts/axi`（chrome-devtools-axi 的 campanula 会话，看得见的窗口；作者在里面扫码登录过，登录存在 `~/.cache/campanula-axi/chrome-profile`，关掉重开还在）。开发服务器（`pnpm dev`，端口 5173）要开着。作者平时用的 Chrome 不碰。这个窗口连的是作者的真账号：
+
+- 点红心、收藏、加入歌单这类按钮会真的写进网易云。检查和截图里不点它们；要拍它们的状态，先装拦截（第 4 步），或者断网（`emulate` 的 `networkConditions: 'Offline'`，App 断网时不发请求）。
+- 拦截按路径匹配、不分请求方法：`/api/hearts` 的同步读取和红心写入是同一个路径，拦不开，红心只能断网拍。收藏、加歌的路径（`/api/(playlists|albums|artists)/\d+/(collect|tracks)`）只有写入，拦得开（#30）。
 
 - 开发时看一眼：`scripts/axi eval "<js>"`、`scripts/axi screenshot <文件>`、`scripts/axi emulate --viewport 390x844x2,mobile,touch`。几步连着做就写进一次 `scripts/axi run <<'EOF' … EOF`（脚本里 `await page.open(地址)`、`await page.eval(() => …)`、`console.log` 结果）。`scripts/axi open` 每次都打印整页结构（最多 16k 字），只换页面时用 `run` 里的 `page.open`。
 - 每打开一次页面，开发服务器都用作者的账号问网易云（账号、曲库同步、页面要的数据）。连着重开十几次会被网易云限流（#32）；反复开页面的检查和截图走第 4 步的 sweep.py，它重放存下的回答。
@@ -43,13 +49,13 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 - 浏览器卡住、连不上：`scripts/axi stop`，再跑任意一条 `scripts/axi` 命令会重开（登录还在）。
 - 手机曲库的“我喜欢 / 歌单”标签用 `replaceState` 切换，不留浏览记录。在标签页上 `history.back()` 会离开 App，测“返回恢复滚动”要从歌单页返回。
 - 手机视口和桌面视口互换（`emulate` 的 `mobile` 变了）会重新加载页面：页面里装的脚本、播放队列都没了。先换视口，再放歌、再装脚本。
-- `emulate` 没有“减少动态效果”。用 `sweep.py` 的 `reduced=True` 模拟：它让样式表里真正那条媒体查询生效，读到的是真的 CSS 变量；但仍是模拟，交付时请作者在 DevTools 的 Rendering 面板里真开一次。模拟装在页面里，换回正常动效要重新打开页面（`motion`、`slow` 会自己做，还在就报错）。
+- `emulate` 没有“减少动态效果”。用 `sweep.py` 的 `reduced=True` 模拟：它让样式表里真正那条媒体查询生效，读到的是真的 CSS 变量；但仍是模拟，回给作者时说明这一点，真的效果要他在 DevTools 的 Rendering 面板里开。模拟装在页面里，换回正常动效要重新打开页面（`motion`、`slow` 会自己做，还在就报错）。
 - 页面藏到后台：开新标签页不会让原来的页面变成 `hidden`。用 `sweep.py` 的 `hidden()`（或 `HIDE_JS` / `SHOW_JS`）在页面里改 `visibilityState`。
 - 量帧时间、长任务用 `pnpm build && pnpm preview`：开发服务器上 Svelte 的开发模式检查会把数字放大。
 
-## 4. 检查和截图：交给子代理，用 sweep.py
+## 4. 检查和截图：作者点名时交给子代理，用 sweep.py
 
-用 `task` 开一个子代理做，主会话不进这个循环、不看截图。给子代理的内容：这个 skill 的名字、票号、下面这张清单里这张票要做的每一项（画面、视口、状态、要点的链接）、第 2 步的对照要点、开发服务器已经开着。子代理在 Python eval 里：
+只做作者点到的那几项。用 `task` 开一个子代理做，主会话不进这个循环、不看截图。给子代理的内容：这个 skill 的名字、票号、作者要的那几项（画面、视口、状态、要点的链接）、第 2 步的对照要点、开发服务器已经开着；页面上有会写账号的按钮时，再给它第 3 步那两条和要装的拦截规则。子代理在 Python eval 里：
 
 ```python
 %load .agents/skills/campanula-ui-acceptance/scripts/sweep.py
@@ -61,9 +67,9 @@ report = await shoot(22, [...])   # 票号用数字或字符串都行；每张�
 
 调 `shoot`、`roundtrip`、`motion`、`slow` 的 eval 单元格给 `timeout: 300`：一组要调几十次 DevTools，默认 30 秒会超时，超时会清掉 eval 里定义的东西，要重新 `%load`。
 
-### 清单：按票里新加的东西定
+### 清单：作者点到哪项做哪项
 
-| 票里有的 | 做什么 | 完成标准 |
+| 作者要的 | 做什么 | 完成标准 |
 |---|---|---|
 | 新的、改过的画面 | `shoot`：每个画面 390×844（`phone`）和 1440×900（`desktop`）各一张 | 每张 `moves`、`errors` 都是空的；逐张对照过 |
 | 新的骨架（加载中） | 同上：`shoot` 等骨架换成内容再截，这一下里各块挪没挪位置记在 `moves` | `moves` 是空的 |
@@ -71,7 +77,7 @@ report = await shoot(22, [...])   # 票号用数字或字符串都行；每张�
 | 新的标签、菜单、键盘操作 | `keys(['Tab', 'ArrowRight', …], focus=起点的选择器)` | 每一步焦点落在该落的地方，`ring` 是 True |
 | 换了宽度会变的布局 | `shoot` 抽查 `768`、`1024` | `overflow.pageWider` 是 False（横向架子里的格子伸出视口不算） |
 
-票里没列的状态（加载中、空、出错、搜不到）等作者要时再拍。`name` 用对应基准图的文件名去掉 `-mobile` / `-desktop`，例如 `library-playlists`，对照时一眼能配上。截图存在 `_notes/screenshots/issue-<票号>/<名字>-<宽x高>.png`，`shoot` 只返回每张的结果。等不到画面、拦截没装上、本机数据库没清掉、等了 10 秒还在加载时直接报错，不会存一张错的图。
+`name` 用对应基准图的文件名去掉 `-mobile` / `-desktop`，例如 `library-playlists`，对照时一眼能配上。截图存在 `_notes/screenshots/issue-<票号>/<名字>-<宽x高>.png`，`shoot` 只返回每张的结果。等不到画面、拦截没装上、本机数据库没清掉、等了 10 秒还在加载时直接报错，不会存一张错的图。
 
 ### 接口重放
 
@@ -118,8 +124,8 @@ r = await motion(51, 'wheel-page-next', 'desktop', [0, 60, 150, 300, 600],
 - 静态截图要在“减少动态效果”下拍，`shoot` 每张加 `'reduced': True`。
 - 看图用 `sheet(票号, 名字, [glob…], crop=…, height=…)` 把一组拼成一张，`read` 一次看完；每张缩放到 `height` 高，裁得很小也会放大。只看播放条时裁底部，例如桌面底栏 `crop=(0.335, 0.905, 0.5, 0.995), height=200`。
 
-完成标准：清单里这张票要的每一项都做了，表里的完成标准都满足，结果里没有报错；每张截图都对照过，不一致的已修好重拍，或者写明了原因。作者要了逐帧时，每组的 `anims` 和 DESIGN.md 对得上。
+完成标准：作者点到的每一项都做了，表里的完成标准都满足，结果里没有报错；每张截图都对照过，不一致的写清哪张、哪里、什么样。作者要了逐帧时，每组的 `anims` 和 DESIGN.md 对得上。
 
 ## 5. 交给作者
 
-截图留在 `_notes/screenshots/issue-<票号>/`。这个目录不进 git，作者在本机看。票里的留言列出截图的文件名和每张拍的是什么，不贴图、不贴链接。
+截图留在 `_notes/screenshots/issue-<票号>/`。这个目录不进 git，作者在本机看。回复里列出截图的文件名和每张拍的是什么，不贴图、不贴链接。

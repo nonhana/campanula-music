@@ -191,7 +191,7 @@ function fadeThroughOnce(node: Element, _params: undefined, options: TransitionO
  * 淡出的这一会儿（退场 120ms）不再占高度：下边距减掉自己的高度，后面换上来的内容马上从骨架的位置开始，
  * 不会先被骨架往下推一下；骨架还留在排版里，上面的东西变高变矮时跟着一起走。点按穿过它落到内容上。
  * 一块骨架只在最外层写一次（SkeletonRows 自己带）：隔着 {@render}、{:else if}、组件时里外两层会一起播，外层先量出整块的高度减掉，
- * 里层再减一次把外层压扁，后面的内容就被往上拉了里层那么高（#32 综合的单曲）。开发时套了两层会在控制台报错，验收截图（sweep.py）会报出来
+ * 里层再减一次把外层压扁，后面的内容就被往上拉了里层那么高（#32 综合的单曲）。开发时套了两层会在控制台报错，作者试用时在控制台看得到
  */
 export function fadeAway(node: HTMLElement, { duration = DURATIONS['state-out'] }: { duration?: number } = {}, options: TransitionOptions = {}): TransitionConfig {
   if (import.meta.env.DEV)
