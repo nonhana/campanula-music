@@ -17,7 +17,7 @@
     /** 多选：整行是一个勾选框，点了只勾选、不播放，也不飞封面 */
     selecting?: boolean
     selected?: boolean
-    /** 桌面不进多选时的 ⌘/Ctrl 点选、Shift 连选 */
+    /** 桌面的 ⌘/Ctrl 点选、Shift 连选：会进入同一个多选状态 */
     onselect?: (event: MouseEvent) => void
     /** 无版权：普通点按不播放，但多选、⌘/Ctrl 点选照样能勾 */
     unplayable?: boolean

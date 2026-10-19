@@ -68,7 +68,7 @@
   $effect(() => selection.setVisible(songs.map(song => song.id)))
   // 列表没了（出错、换歌单）：勾选也清掉
   $effect(() => {
-    if (shown.kind !== 'songs' && selection.size > 0)
+    if (shown.kind !== 'songs' && selection.mode)
       selection.exit()
   })
 
@@ -79,8 +79,10 @@
       void view.app.play(source, song.id)
   }
 
-  /** 桌面不进多选时的 ⌘/Ctrl 点选、Shift 连选 */
+  /** 桌面的 ⌘/Ctrl 点选、Shift 连选：第一次也进入同一个多选状态 */
   function selectWithModifiers(song: Song, event: MouseEvent): void {
+    if (!selection.mode)
+      enterSelection(playlistId)
     if (event.shiftKey)
       selection.range(song.id)
     else
@@ -240,7 +242,7 @@
   <div class='pt-2'>{@render list()}</div>
 {:else}
   <div class='rounded-xl bg-white p-2 shadow-ambient'>
-    {#if selection.mode || selection.size > 0}
+    {#if selection.mode}
       <div class='h-9 flex items-center gap-1.5 rounded-lg bg-primary-50 pl-3 pr-1' role='toolbar' aria-label='对选中的歌'>
         <span class='inline-flex flex-none items-center gap-1.5 text-caption text-neutral-900 font-500 tabular-nums' role='status'>
           <ListChecks size={14} aria-hidden='true' />已选 {formatCount(selection.size)} 首

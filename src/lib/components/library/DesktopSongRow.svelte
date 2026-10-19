@@ -45,7 +45,7 @@
     /** 多选模式：每行前面是勾选框 */
     selecting?: boolean
     selected?: boolean
-    /** 不进多选时的 ⌘/Ctrl 点选、Shift 连选 */
+    /** 桌面的 ⌘/Ctrl 点选、Shift 连选：会进入同一个多选状态 */
     onselect?: (event: MouseEvent) => void
   }
 
@@ -75,8 +75,6 @@
         >
           {#if selected}<Check size={12} strokeWidth={3} />{/if}
         </span>
-      {:else if selected}
-        <Check size={16} strokeWidth={2.5} class='text-primary-900' aria-hidden='true' />
       {:else}
         <NowIndex {n} {now} />
       {/if}

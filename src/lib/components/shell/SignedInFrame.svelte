@@ -114,7 +114,7 @@
 
   // 多选时按 Esc 退出（桌面“取消选择”的键盘做法）；弹层里的 Esc 已经 preventDefault 的不再抢
   $effect(() => {
-    if (!playlistSelection.mode && playlistSelection.size === 0)
+    if (!playlistSelection.mode)
       return
     const onkeydown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented)
