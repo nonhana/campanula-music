@@ -18,7 +18,7 @@ Single-context: one root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/domain
 
 ### Delivery
 
-Before implementing a ticket, read `docs/agents/delivery.md`: branch, test seam, screenshots, real-account rules, hand-off.
+Before implementing a ticket, read `docs/agents/delivery.md`: branch, test seam, real-account rules, and hand-off with a trial checklist for the author (the author verifies by trying it; screenshots only on request).
 
 ## Svelte
 
