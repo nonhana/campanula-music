@@ -2,7 +2,7 @@
   歌单编辑里面的内容（外壳是 PlaylistEditor：桌面居中弹窗、手机底部弹层；原型 PlaylistEditor）。每次打开都重新建，表单按打开时的歌单填好。
   - 新建：名称（最多 40 个宽度，汉字算 2，写满会说明）、设为隐私歌单。按“创建”等网易云建好（按钮写“正在新建…”）才关上，
     没建成就留在这里说明原因，填好的不丢；从加入歌单里新建的，建好接着把那首歌加进去（App 的 createPlaylist）。
-  - 编辑歌单信息：封面（点它或下面的“换封面”选图，打开换封面的裁剪页，#34）、名称、简介（最多 1,000 个字）、标签（TagPicker，打开时取网易云的标签库）。
+  - 编辑歌单信息：封面（右下角的相机键，点整张封面也能选图，打开换封面的裁剪页，#34）、名称、简介（最多 1,000 个字）、标签（TagPicker，打开时取网易云的标签库）。
     按“保存”交给 App（先改本地、立即生效，没成会自己改回并在提示条里说明）马上关上；名称不合规时不能保存。
   - 改为公开：说清楚公开后谁看得到、改了就改不回隐私，确认键是主按钮。
   - 删除：说清楚歌曲和红心不受影响、删了不能恢复，确认键是出错红（DESIGN.md Buttons · Destructive）。
@@ -17,7 +17,7 @@
   import type { EditorRequest } from './playlist-edit.svelte'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { Lock, X } from '@lucide/svelte'
+  import { Camera, Lock, X } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH } from '#lib/api/library.js'
   import { getAppView } from './app-context.svelte'
@@ -187,16 +187,29 @@
       {/if}
     {:else if playlist}
       <div class={sheet ? 'flex flex-col gap-5' : 'grid grid-cols-[152px_minmax(0,1fr)] gap-6'}>
-        <div class='flex flex-col items-start gap-2'>
+        <div class='flex flex-col items-start'>
           <button
             type='button'
             bind:this={coverButton}
-            class='group flex flex-col items-start gap-2 rounded-xl text-left'
-            aria-label='换封面'
+            class='group relative block rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-700 focus-visible:ring-offset-white'
+            aria-label='更换封面'
+            title='更换封面'
             onclick={chooseCover}
           >
-            <Cover url={playlist.coverUrl} size={sheet ? 96 : 152} class={['rounded-xl shadow-ambient', sheet ? 'size-24' : 'size-38']} />
-            <span class='text-caption text-neutral-700 font-500 group-hover:text-primary-900'>换封面</span>
+            <Cover
+              url={playlist.coverUrl}
+              size={sheet ? 96 : 152}
+              class={['rounded-xl shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95', sheet ? 'size-24' : 'size-38']}
+            />
+            <span
+              class={[
+                'absolute grid place-items-center rounded-full bg-white text-primary-900 shadow-chip ring-1 ring-neutral-900/10 transition-colors duration-feedback mouse:group-hover:bg-primary-50',
+                sheet ? '-bottom-1 -right-1 size-7' : '-bottom-1.5 -right-1.5 size-8',
+              ]}
+              aria-hidden='true'
+            >
+              <Camera size={sheet ? 14 : 16} aria-hidden='true' />
+            </span>
           </button>
           <input bind:this={coverInput} type='file' accept='image/*' class='sr-only' tabindex='-1' aria-hidden='true' onchange={onCoverPicked} />
         </div>
