@@ -88,9 +88,17 @@ async function pages(): Promise<string> {
 }
 
 function pageIdOf(text: string, target: string): number | null {
-  const escaped = target.replaceAll('.', '\\.')
-  const match = new RegExp(`^(\\d+): .*\\(${escaped}`, 'm').exec(text)
-  return match ? Number(match[1]) : null
+  // 桥接进程的 list_pages 两种格式都见过：`1: title (url)` 和 `1: url`；CLI 的 pages 是 `1,url`
+  for (const line of text.split('\n')) {
+    const match = /^(\d+): (.*)$/.exec(line.trim())
+    if (!match)
+      continue
+    const rest = match[2]!.replace(/ \[selected\]$/, '')
+    const url = /\(([^)]+)\)$/.exec(rest)?.[1] ?? rest
+    if (url === target || url.startsWith(`${target}/`))
+      return Number(match[1])
+  }
+  return null
 }
 
 async function ensurePage(path = '/'): Promise<number> {
@@ -116,10 +124,24 @@ function cli(args: string[]): string {
   return execFileSync('chrome-devtools-axi', args, { env: envOf(), encoding: 'utf8' })
 }
 
+function parseNested(output: string): unknown {
+  let current: unknown = output
+  for (let depth = 0; depth < 4 && typeof current === 'string'; depth += 1) {
+    try {
+      current = JSON.parse(current)
+    }
+    catch {
+      break
+    }
+  }
+  return current
+}
+
 async function evaluate(pageId: number, expression: string): Promise<string> {
   await selectPage(pageId)
-  const output = cli(['eval', expression])
-  return output.replace(/\nhelp\[[\s\S]*$/, '').replace(/^result:\s*/, '').trim()
+  const output = cli(['eval', expression]).replace(/\nhelp\[[\s\S]*$/, '').replace(/^result:\s*/, '').trim()
+  const parsed = parseNested(output)
+  return typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
 }
 
 async function navigate(pageId: number, url: string): Promise<void> {
@@ -142,8 +164,9 @@ async function postMock(path: string, body?: unknown): Promise<void> {
 }
 
 async function accountSignedIn(pageId: number): Promise<{ signedIn: boolean, text: string }> {
-  const text = await evaluate(pageId, `(async () => { const r = await fetch('/api/account', { cache: 'no-store' }); const b = await r.json(); return JSON.stringify({ status: r.status, account: b.account ?? null }) })()`)
-  return { signedIn: text.includes('"account":{"id"'), text }
+  const output = await evaluate(pageId, `(async () => { const r = await fetch('/api/account', { cache: 'no-store' }); const b = await r.json(); return JSON.stringify({ status: r.status, account: b.account ? { id: b.account.id, nickname: b.account.nickname } : null }) })()`)
+  const state = JSON.parse(output) as { status: number, account: { id: number, nickname: string } | null }
+  return { signedIn: state.account !== null, text: JSON.stringify(state) }
 }
 
 async function main(): Promise<void> {
