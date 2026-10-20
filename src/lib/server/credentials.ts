@@ -93,6 +93,22 @@ export function saveLogin(cookies: Cookies, deviceId: string, credentials: Recor
   writeLogin(cookies, { deviceId, session: { credentials, renewedAt: Date.now() } })
 }
 
+/**
+ * 同一条登录 Cookie 的 Set-Cookie 值：mock 的自动登录入口绕过 SvelteKit 的 cookies.set，
+ * 但走的仍是同一套加密和属性（#58：假登录复用 App 真实的加密 Cookie 流程）。
+ */
+export function loginCookieHeader(deviceId: string, credentials: Record<string, string>): string {
+  const value = seal({ deviceId, session: { credentials, renewedAt: Date.now() } })
+  const attributes = [
+    `Path=${OPTIONS.path}`,
+    OPTIONS.httpOnly && 'HttpOnly',
+    `SameSite=${OPTIONS.sameSite}`,
+    `Max-Age=${OPTIONS.maxAge}`,
+    OPTIONS.secure && 'Secure',
+  ].filter(Boolean)
+  return `${COOKIE_NAME}=${encodeURIComponent(value)}; ${attributes.join('; ')}`
+}
+
 /** 离上次续期满 24 小时了 */
 export function renewalDue(session: NonNullable<LoginCookie['session']>): boolean {
   return Date.now() - session.renewedAt >= RENEW_INTERVAL_MS

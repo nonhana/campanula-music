@@ -1,5 +1,6 @@
 # 一次 eval 拍完一批验收截图、做完一批检查（Python eval 里 `%load .agents/skills/campanula-ui-acceptance/scripts/sweep.py`）。
-# 浏览器是专用窗口（scripts/axi：chrome-devtools-axi 的 campanula 会话，作者在里面扫码登录过）。
+# 浏览器默认是 mock（scripts/browser：campanula-mock 会话，不需要登录，写入安全）。
+# 真账号只用 scripts/browser --real 走专用窗口 scripts/axi，交付前由作者试用；reviewer 不自己开 Chrome。
 # shoot：静态画面。每张：换视口 → 写拦截规则、按需清空本机副本 → 打开页面 → 等到页面画出来、骨架都换成内容 → 跑检查 → 截图存文件。
 #        每张都报布局偏移（没人操作时东西自己挪了位置）和页面里的报错。
 # roundtrip：点进去再返回，比返回前后的滚动位置、横向架子、选中的标签。keys：按一串键，报每次焦点落在哪。
@@ -13,6 +14,7 @@
 # 这些函数一次要调很多次 DevTools，eval 的单元格默认 30 秒就超时，超时会把这里定义的东西清掉：调的时候给单元格 timeout=300
 import asyncio
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -22,11 +24,12 @@ import urllib.error
 import urllib.request
 
 ROOT = pathlib.Path(subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True, check=True).stdout.strip())
-BASE = 'http://localhost:5173'
+REAL_BROWSER = os.environ.get('CAMPANULA_BROWSER') == 'real'
+BASE = os.environ.get('CAMPANULA_BROWSER_ORIGIN', 'http://localhost:5173' if REAL_BROWSER else 'http://localhost:5174')
 # 专用窗口里打开着 BASE 的那个标签页在 list_pages 里的编号：第一次调 DevTools 前自动找（_page()），没有就开一个；
 # 浏览器重开后编号会变，call() 连不上时会重新找
 PAGE = None
-# 专用浏览器桥接进程的端口：第一次调 DevTools 前用 scripts/axi port 拿（没开就开）
+# 浏览器桥接进程的端口：第一次调 DevTools 前用 scripts/browser port 拿（没开就先开；mock 默认）
 _PORT = None
 VIEWPORTS = {
     'phone': ('390x844x2,mobile,touch', '390x844'),
@@ -189,15 +192,19 @@ def _post(name, args):
     return reply['result']
 
 
+def _browser_args():
+    return [str(ROOT / 'scripts/browser'), *(['--real'] if REAL_BROWSER else [])]
+
+
 async def call(name, args):
-    """调一个 DevTools 工具（chrome-devtools-mcp 的名字和参数，经专用浏览器的桥接进程），返回它的文字结果。
+    """调一个 DevTools 工具（chrome-devtools-mcp 的名字和参数，经浏览器桥接进程），返回它的文字结果。
     桥接进程重开过（端口变了、连不上）就重新拿端口、重新找标签页，再试一次"""
     global _PORT, PAGE
     for attempt in (1, 2):
         if _PORT is None:
-            got = subprocess.run([str(ROOT / 'scripts/axi'), 'port'], capture_output=True, text=True)
+            got = subprocess.run([*_browser_args(), 'port'], capture_output=True, text=True)
             if got.returncode != 0 or not got.stdout.strip():
-                raise RuntimeError(f'专用浏览器开不起来：{got.stderr.strip()[-400:]}')
+                raise RuntimeError(f'浏览器开不起来：{got.stderr.strip()[-400:]}')
             _PORT = int(got.stdout.strip())
         try:
             return await asyncio.to_thread(_post, name, args)
@@ -214,8 +221,11 @@ async def _page():
         text = await call('list_pages', {})
         found = [int(m.group(1)) for m in re.finditer(r'^(\d+): .*\(' + re.escape(BASE), text, re.M)]
         if not found:
-            text = await call('new_page', {'url': BASE + '/'})
-            found = [int(m.group(1)) for m in re.finditer(r'^(\d+): .*\(' + re.escape(BASE) + r'.*\[selected\]', text, re.M)]
+            opened = subprocess.run([*_browser_args(), 'open', '/'], capture_output=True, text=True)
+            if opened.returncode != 0:
+                raise RuntimeError(f'打不开 {BASE}（开发服务器开着吗）：{opened.stderr.strip()[-400:]}')
+            text = await call('list_pages', {})
+            found = [int(m.group(1)) for m in re.finditer(r'^(\d+): .*\(' + re.escape(BASE), text, re.M)]
         if not found:
             raise RuntimeError(f'专用窗口里打不开 {BASE}（开发服务器开着吗）：\n{text[-400:]}')
         PAGE = found[0]
