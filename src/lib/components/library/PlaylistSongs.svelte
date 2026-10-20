@@ -90,13 +90,14 @@
     move: (songIds, before) => view.app.moveSongs(playlistId, songIds, before),
     host: () => listHost,
   })
-  /** 拖动时虚拟列表的行：没被拿走的按空位挪开，被拖的几首留在原位、藏起来（一直挂载） */
-  const dragItems = $derived(drag.dragging ? [...drag.rest, ...drag.moved] : songs)
+  // 拖动期间虚拟列表的 items 保持原顺序，只改每一行的 placeOf；
+  // 不能把被拖的行挪到数组末尾：DOM 节点被移走会丢指针捕获（#36 真实输入验证）
 
   // 退出多选、换了列表（搜索、歌单加载完重排）：拖动作废，不提交
   $effect(() => {
     if (!selection.mode || !sortable)
       untrack(() => drag.cancel())
+    return () => drag.cancel()
   })
 
   /** 桌面：焦点在某一行时 Alt + ↑ / ↓ 移一位（#36）；走的和拖动是同一个 App 操作 */
@@ -215,6 +216,33 @@
   {/if}
 {/snippet}
 
+{#snippet songRow(song: Song, i: number)}
+  {#if phone}
+    <PhoneSongRow
+      {song}
+      {source}
+      now={song.id === nowId}
+      selecting={selection.mode}
+      selected={selection.has(song.id)}
+      grip={sortable && selection.mode ? rowGrip : undefined}
+      onlongpress={() => enterSelection(playlistId, song.id)}
+      onplay={() => activate(song)}
+    />
+  {:else}
+    <DesktopSongRow
+      {song}
+      {source}
+      n={i + 1}
+      now={song.id === nowId}
+      selecting={selection.mode}
+      selected={selection.has(song.id)}
+      grip={sortable && selection.mode ? rowGrip : undefined}
+      onselect={event => selectWithModifiers(song, event)}
+      onplay={() => activate(song)}
+    />
+  {/if}
+{/snippet}
+
 {#snippet list()}
   {#if shown.kind === 'loading'}
     <SkeletonRows count={phone ? 8 : 10} {phone} label='正在加载歌单' />
@@ -280,43 +308,16 @@
                   onkeydown={onListKeydown}
                 >
                   <VirtualList
-                    items={dragItems}
+                    items={songs}
                     itemHeight={SONG_ROW_HEIGHT}
                     getKey={(song: Song) => song.id}
                     markOf={drag.dragging ? undefined : songMark}
                     placeOf={drag.dragging ? drag.placeOf : undefined}
-                    keep={drag.dragging ? drag.keep : undefined}
-                    total={drag.dragging ? drag.rest.length + drag.moved.length : undefined}
-                    animatePlace={drag.dragging}
-                    hidden={drag.dragging ? drag.keep : undefined}
-                  >
-                    {#snippet row(song: Song, i: number)}
-                      {#if phone}
-                        <PhoneSongRow
-                          {song}
-                          {source}
-                          now={song.id === nowId}
-                          selecting={selection.mode}
-                          selected={selection.has(song.id)}
-                          grip={sortable && selection.mode ? rowGrip : undefined}
-                          onlongpress={() => enterSelection(playlistId, song.id)}
-                          onplay={() => activate(song)}
-                        />
-                      {:else}
-                        <DesktopSongRow
-                          {song}
-                          {source}
-                          n={i + 1}
-                          now={song.id === nowId}
-                          selecting={selection.mode}
-                          selected={selection.has(song.id)}
-                          grip={sortable && selection.mode ? rowGrip : undefined}
-                          onselect={event => selectWithModifiers(song, event)}
-                          onplay={() => activate(song)}
-                        />
-                      {/if}
-                    {/snippet}
-                  </VirtualList>
+                    keep={drag.dragging || drag.settling ? drag.keep : undefined}
+                    animatePlace={drag.dragging || drag.settling}
+                    hidden={drag.dragging || drag.settling ? drag.keep : undefined}
+                    row={songRow}
+                  ></VirtualList>
                 </div>
               {/if}
             </div>
@@ -411,8 +412,8 @@
   </div>
 {/if}
 
-<!-- 浮起的行跟着指针；“移到第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
-{#if drag.dragging}
+<!-- 浮起的行跟着指针；松手后落进空位。“移到第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
+{#if drag.dragging || drag.settling}
   <div
     class='pointer-events-none fixed left-0 top-0 z-[60] h-14'
     style:left='{drag.ghostLeft}px'
