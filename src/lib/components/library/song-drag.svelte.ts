@@ -3,7 +3,7 @@ import type { Song } from '#lib/api/library.js'
 import type { PlaylistSelection } from './playlist-selection.svelte'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 import { DURATIONS } from '../motion-tokens'
-import { attachGrip, createPageHold } from '../press'
+import { attachWindowGrip, createPageHold } from '../press'
 import { formatCount } from './view'
 
 // 多选里的拖动排序（#36，Spec #11“多选、拖拽与换封面”，原型 docs/prototype/dnd.md）：
@@ -32,7 +32,7 @@ const MAX_SPEED = 1600
 /** 停在边缘 3 秒内最多加速到几倍 */
 const ACCEL = 8
 const ACCEL_TIME = 3000
-/** 松手后浮起的行落进空位的时长（ms，和 duration-move-state 一样），落稳了才换真正的顺序 */
+/** 松手提交后浮起的行落进空位的视觉时长（ms，和 duration-move-state 一样） */
 const SETTLE_MS = DURATIONS.state
 
 interface SongDragOptions {
@@ -50,7 +50,7 @@ function clamp(value: number, low: number, high: number): number {
 }
 
 export class SongDrag {
-  /** 拖着（包括松手后落位的 160ms） */
+  /** 正在拖着 */
   dragging = $state(false)
   /** 已经松手，浮起的行在落进空位 */
   settling = $state(false)
@@ -76,7 +76,8 @@ export class SongDrag {
   /** 一起拖几首时，开始拖动为了让开上面的行往上滚了多少（取消时滚回去） */
   private scrollAdjust = 0
   private pointer: number | null = null
-  private originY = new SvelteMap<number, number>()
+  /** 没被拖的歌在 rest 里的下标：拖动时用它算视觉位置，不改 items 的顺序 */
+  private restIndex = new SvelteMap<number, number>()
   private startTarget = 0
   private grabY = 0
   private pointerX = 0
@@ -106,22 +107,22 @@ export class SongDrag {
     return `${this.scrubbing ? '定位到' : '移到'}第 ${formatCount(this.position)} 首`
   }
 
-  /** 被拖的这几行在列表里的原来位置（拖动时藏起来，但仍挂载）：只有被拖的歌才查，查不到就是坏了不变量 */
-  originOf(songId: number): number {
-    return this.originY.get(songId)!
-  }
-
-  /** 列表里这一行放哪（拖动时让开空位；被拖的几首留在原位、藏起来） */
+  /**
+   * 列表里这一行放哪（拖动时让开空位；被拖的几首留在原位、藏起来）。
+   * items 一直是原顺序，所以没被拖的行按 rest 下标排；被拖的行留在自己的原下标上。
+   * 松手后 dragging 变 false，所有行回到新顺序的 index * ROW，靠 animatePlace 过渡。
+   */
   placeOf = (song: Song, index: number): number => {
     if (!this.dragging)
       return index * ROW
-    if (index < this.rest.length)
-      return (index < this.target ? index : index + 1) * ROW
-    return this.originOf(song.id)
+    if (this.movedIds.has(song.id))
+      return index * ROW
+    const restIndex = this.restIndex.get(song.id)!
+    return (restIndex < this.target ? restIndex : restIndex + 1) * ROW
   }
 
-  /** 被拖的行：一直挂载（keep），同时藏起来（hidden）——同一个谓词，原来的位置留空 */
-  keep = (song: Song): boolean => this.dragging && this.movedIds.has(song.id)
+  /** 被拖的行：拖动/落位期间一直挂载（keep），同时藏起来（hidden）——同一个谓词，原来的位置留空 */
+  keep = (song: Song): boolean => (this.dragging || this.settling) && this.movedIds.has(song.id)
 
   /** 拖动时浮起的行显示哪一首：手指按住的那首 */
   get ghostSong(): Song | null {
@@ -142,12 +143,12 @@ export class SongDrag {
         let activePointer: number | null = null
         /** 鼠标按下还没挪动：等挪过 5px 才开始拖（只看画面上浮起、还没动，不该像已经开始拖） */
         let pending: { x: number, y: number } | null = null
-        return attachGrip({
+        return attachWindowGrip({
           get holding() {
             return pressed
           },
           press: (sample) => {
-            if (pressed || this.dragging || sample.button !== 0)
+            if (pressed || this.dragging || this.settling || sample.button !== 0)
               return false
             activePointer = sample.pointerId
             if (sample.pointerType === 'mouse') {
@@ -208,8 +209,11 @@ export class SongDrag {
   }
 
   private start(song: Song, row: HTMLElement, sample: { pointerId: number, x: number, y: number }): boolean {
-    // 另一根手指已经开始了拖动（第二根手指按下的把手也在等挪动）：这次不算
-    if (this.dragging || this.pointer !== null)
+    // 另一根手指已经开始了拖动（第二根手指按下的把手也在等挪动），或者还在落位：这次不算
+    if (this.dragging || this.settling || this.pointer !== null)
+      return false
+    // 还没挪够 5px 时多选退出了、行被虚拟列表卸掉了：这次按住不算，别拿一个已经不在页面的行开始拖
+    if (!this.options.selection.mode || !row.isConnected)
       return false
     const list = this.options.songs()
     const index = list.findIndex(item => item.id === song.id)
@@ -225,9 +229,9 @@ export class SongDrag {
       return false
     const hostRect = host.getBoundingClientRect()
 
-    this.originY = new SvelteMap(list.flatMap((item, at) => (movingIds.includes(item.id) ? [[item.id, at * ROW] as const] : [])))
     this.rest = list.filter(item => !movingIds.includes(item.id))
     this.moved = list.filter(item => movingIds.includes(item.id))
+    this.restIndex = new SvelteMap(this.rest.map((item, at) => [item.id, at] as const))
     this.grabbed = list[index]!
     // 一起拖的几首前面也有被拿走的行：页面往回滚同样的高度，手指底下的空隙不跳
     const scrollTop = window.scrollY
@@ -299,14 +303,20 @@ export class SongDrag {
       this.reset()
       return
     }
-    // 浮起的行落进空位（160ms），落稳了再换成真正的顺序
-    this.settling = true
-    this.ghostY = this.listTop() + this.target * ROW
     const before = this.rest[this.target]?.id ?? null
     const songIds = this.moved.map(song => song.id)
+    // 松手这一刻提交顺序；下面 200ms 只是浮起的行和新列表落位的视觉，不再改数据
+    if (!this.options.move(songIds, before)) {
+      this.undoScroll()
+      this.reset()
+      return
+    }
+    this.scrollAdjust = 0
+    this.dragging = false
+    this.settling = true
+    this.ghostY = this.listTop() + this.target * ROW
     this.settleTimer = setTimeout(() => {
       this.settleTimer = undefined
-      this.options.move(songIds, before)
       this.reset()
     }, SETTLE_MS)
   }
@@ -342,7 +352,7 @@ export class SongDrag {
 
   /** 键盘：焦点所在这一行 Alt + ↑ / ↓ 移一位（桌面） */
   moveByKeyboard(songId: number, delta: -1 | 1): boolean {
-    if (this.dragging)
+    if (this.dragging || this.settling)
       return false
     const list = this.options.songs()
     const index = list.findIndex(song => song.id === songId)
@@ -366,7 +376,7 @@ export class SongDrag {
     this.rest = []
     this.moved = []
     this.grabbed = null
-    this.originY = new SvelteMap()
+    this.restIndex = new SvelteMap()
     this.holdAtEdge = 0
     this.scrollAdjust = 0
   }

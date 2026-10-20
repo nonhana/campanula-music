@@ -6,6 +6,8 @@ import type { Attachment } from 'svelte/attachments'
 
 /** 按住结束后还挡多久右键菜单：拖着时按下右键，浏览器先报按住断了，菜单随后才来（Windows 上要等右键松开） */
 const MENU_GRACE_MS = 300
+/** 松手后挡 click 的时长：click 紧跟 pointerup，挡太久会吞掉紧接着的下一次点按 */
+const CLICK_GRACE_MS = 80
 
 /** 拖动中移动时的 buttons（PointerEvent.buttons）说明按住已经断了：主键（鼠标左键、手指、笔尖）没按着了，或者又按下了右键 */
 export function pressBroken(buttons: number): boolean {
@@ -155,6 +157,122 @@ export function attachGrip(grip: Grip): Attachment<HTMLElement> {
         element.removeEventListener(type, listener as EventListener)
       // 拖着时元素没了（例如播放队列被清空）：作废，光标、选字放开
       abandonPress()
+    }
+  }
+}
+
+/**
+ * 和 attachGrip 一样把元素变成拖动来源，但按住后的 move / up / cancel 听在 window 上，不设 pointer capture。
+ * 给会被虚拟列表重建的把手（拖动排序）用：元素被 Svelte 重建、被隐藏、滚出虚拟范围，都不影响事件。
+ * 元素自己的 pointerdown 和 touch-action: none 还是要有；元素被拿掉时不会作废这次按住，松手/作废时统一收掉 window 监听。
+ */
+export function attachWindowGrip(grip: Grip): Attachment<HTMLElement> {
+  return (element) => {
+    let stop: (() => void) | null = null
+    /** 认下来的那根指针；别的指针的松开、取消不能收掉这次按住 */
+    let activePointer: number | null = null
+    let swallowClick = false
+    let clickTimer: ReturnType<typeof setTimeout> | undefined
+    /** 松手的位置：只挡这一下跟来的 click，不吞掉别处紧接着的点按 */
+    let clickAt = { x: 0, y: 0 }
+    const sample = (event: PointerEvent): PointerSample => ({
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      isPrimary: event.isPrimary,
+      button: event.button,
+      buttons: event.buttons,
+      x: event.clientX,
+      y: event.clientY,
+      time: event.timeStamp,
+    })
+    const onClick = (event: MouseEvent) => {
+      if (!swallowClick || event.detail === 0)
+        return
+      if (Math.abs(event.clientX - clickAt.x) > 6 || Math.abs(event.clientY - clickAt.y) > 6)
+        return
+      swallowClick = false
+      event.preventDefault()
+      event.stopPropagation()
+      clearTimeout(clickTimer)
+      window.removeEventListener('click', onClick, true)
+    }
+    const pointerdown = (event: PointerEvent) => {
+      const accepted = sample(event)
+      if (!grip.press(accepted))
+        return
+      activePointer = event.pointerId
+      clearTimeout(clickTimer)
+      let end: () => void = () => {}
+      const move = (e: PointerEvent) => {
+        if (e.pointerId !== activePointer)
+          return
+        // 鼠标按住断了（主键松开、又按了右键）或没等到松开：作废，不能提交
+        if (pressBroken(e.buttons)) {
+          grip.abandon(activePointer)
+          end()
+          return
+        }
+        grip.move(sample(e))
+      }
+      const up = (e: PointerEvent) => {
+        if (e.pointerId !== activePointer)
+          return
+        if (e.button !== 0) {
+          grip.abandon(activePointer)
+          end()
+          return
+        }
+        clickAt = { x: e.clientX, y: e.clientY }
+        grip.release(sample(e))
+        end()
+      }
+      const cancel = (e: PointerEvent) => {
+        if (e.pointerId !== activePointer)
+          return
+        grip.abandon(activePointer)
+        end()
+      }
+      // 鼠标拖出窗口后松开：按住断了，收掉监听；还按着（例如自动滚动拖到窗口外）不动
+      const leave = (e: PointerEvent) => {
+        if (e.pointerId !== activePointer || e.pointerType !== 'mouse' || !pressBroken(e.buttons))
+          return
+        grip.abandon(activePointer)
+        end()
+      }
+      const unwatch = watchPress(() => {
+        grip.abandon()
+        end()
+      })
+      end = () => {
+        if (!stop)
+          return
+        stop = null
+        activePointer = null
+        unwatch()
+        window.removeEventListener('pointermove', move, true)
+        window.removeEventListener('pointerup', up, true)
+        window.removeEventListener('pointercancel', cancel, true)
+        document.documentElement.removeEventListener('pointerleave', leave, true)
+        // 松手后跟着来的 click 不算点按：等它来，或者最多挡一小会儿
+        clearTimeout(clickTimer)
+        clickTimer = setTimeout(() => {
+          swallowClick = false
+          window.removeEventListener('click', onClick, true)
+        }, CLICK_GRACE_MS)
+      }
+      stop = end
+      swallowClick = true
+      window.addEventListener('click', onClick, true)
+      window.addEventListener('pointermove', move, true)
+      window.addEventListener('pointerup', up, true)
+      window.addEventListener('pointercancel', cancel, true)
+      document.documentElement.addEventListener('pointerleave', leave, true)
+    }
+    element.addEventListener('pointerdown', pointerdown)
+    element.style.touchAction = 'none'
+    return () => {
+      element.removeEventListener('pointerdown', pointerdown)
+      // 不主动停 window 监听：拖动中元素被重建时，这次按住要接着走
     }
   }
 }
