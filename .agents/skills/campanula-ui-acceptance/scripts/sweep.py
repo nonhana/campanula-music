@@ -214,18 +214,33 @@ async def call(name, args):
             _PORT, PAGE = None, None
 
 
+def _page_ids(text):
+    """list_pages 的两种格式：`1: title (url)` 和 `1: url`"""
+    found = []
+    for line in text.splitlines():
+        match = re.match(r'^(\d+): (.*)$', line.strip())
+        if not match:
+            continue
+        rest = re.sub(r' \[selected\]$', '', match.group(2))
+        url_match = re.search(r'\(([^)]+)\)$', rest)
+        url = url_match.group(1) if url_match else rest
+        if url == BASE or url.startswith(BASE + '/'):
+            found.append(int(match.group(1)))
+    return found
+
+
 async def _page():
     """专用窗口里打开着 BASE 的那个标签页的编号；没有就新开一个"""
     global PAGE
     if PAGE is None:
         text = await call('list_pages', {})
-        found = [int(m.group(1)) for m in re.finditer(r'^(\d+): .*\(' + re.escape(BASE), text, re.M)]
+        found = _page_ids(text)
         if not found:
             opened = subprocess.run([*_browser_args(), 'open', '/'], capture_output=True, text=True)
             if opened.returncode != 0:
                 raise RuntimeError(f'打不开 {BASE}（开发服务器开着吗）：{opened.stderr.strip()[-400:]}')
             text = await call('list_pages', {})
-            found = [int(m.group(1)) for m in re.finditer(r'^(\d+): .*\(' + re.escape(BASE), text, re.M)]
+            found = _page_ids(text)
         if not found:
             raise RuntimeError(f'专用窗口里打不开 {BASE}（开发服务器开着吗）：\n{text[-400:]}')
         PAGE = found[0]

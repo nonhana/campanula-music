@@ -26,10 +26,22 @@ async function call(name: string, args: Record<string, unknown>): Promise<string
 }
 
 const pages = await call('list_pages', {})
-const page = new RegExp(`^(\\d+): .*\\(${BASE.replaceAll('.', '\\.')}`, 'm').exec(pages)
-if (!page)
-  throw new Error(`专用窗口里没有打开着 ${BASE} 的标签页：开发服务器开着吗？用 scripts/axi open ${BASE}/ 打开，在里面扫码登录`)
-const pageId = Number(page[1])
+
+/** 桥接进程的 list_pages 两种格式都见过：`1: title (url)` 和 `1: url` */
+function pageIdOf(text: string, target: string): number {
+  for (const line of text.split('\n')) {
+    const match = /^(\d+): (.*)$/.exec(line.trim())
+    if (!match)
+      continue
+    const rest = match[2]!.replace(/ \[selected\]$/, '')
+    const url = /\(([^)]+)\)$/.exec(rest)?.[1] ?? rest
+    if (url === target || url.startsWith(`${target}/`))
+      return Number(match[1])
+  }
+  throw new Error(`专用窗口里没有打开着 ${target} 的标签页：开发服务器开着吗？用 scripts/axi open ${target}/ 打开，在里面扫码登录`)
+}
+
+const pageId = pageIdOf(pages, BASE)
 
 // 地址带一次性的参数：页面若是 sweep.py 打开的，同样地址的回答会从重放文件里回，不真的发出去，DevTools 里就没有这条请求
 const probe = `/api/account?take-login=${Date.now()}`
