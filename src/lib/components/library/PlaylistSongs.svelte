@@ -28,11 +28,11 @@
   import SearchField from '../ui/SearchField.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import DesktopSongRow, { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
+  import DragGrip from './DragGrip.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
   import { enterSelection, leaveSelection, playlistSelection } from './playlist-selection.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
   import { SONG_ROW_HEIGHT, SongDrag } from './song-drag.svelte'
-  import SongGrip from './SongGrip.svelte'
   import { formatCount, openingOf, playlistView, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
 
@@ -178,11 +178,11 @@
 {/snippet}
 
 {#snippet rowGrip(song: Song)}
-  <SongGrip {song} size={phone ? 'phone' : 'desktop'} attach={drag.handle(song)} />
+  <DragGrip label={song.name} size={phone ? 'phone' : 'desktop'} attach={drag.handle(song)} />
 {/snippet}
 
 {#snippet ghostGrip(song: Song)}
-  <SongGrip {song} size={phone ? 'phone' : 'desktop'} ghost />
+  <DragGrip label={song.name} size={phone ? 'phone' : 'desktop'} ghost />
 {/snippet}
 
 {#snippet ghostRow()}

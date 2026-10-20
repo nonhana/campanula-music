@@ -55,6 +55,25 @@ export interface SongOrderRequest {
  */
 export type SongOrderResponse = { kind: 'ordered' } | { kind: 'missing' } | { kind: 'unconfirmed' }
 
+/**
+ * 一次提交曲库里能排序的歌单最多几张：只有我喜欢的音乐和自建歌单，数量很小；
+ * 这里拦在远大于实际的数，防止请求体失控
+ */
+export const PLAYLISTS_PER_ORDER = 1000
+
+/**
+ * POST /api/library/order：曲库里能排序的歌单的新顺序（#37）。
+ * playlistIds 是我喜欢的音乐和全部自建歌单的编号，按新的先后排列；我喜欢的音乐必须在最前，收藏的歌单不传
+ */
+export interface PlaylistOrderRequest {
+  playlistIds: number[]
+}
+
+/** 新顺序提交了（网易云会忽略已经删掉的歌单） */
+export interface PlaylistOrderResponse {
+  kind: 'ordered'
+}
+
 /** POST /api/albums/[id]/collect、/api/artists/[id]/collect：收藏或取消收藏 */
 export interface CollectRequest {
   collected: boolean
@@ -100,9 +119,41 @@ export interface Playlist extends PlaylistInfo {
   tracksUpdatedAt: number
 }
 
+/** 我喜欢的音乐在网易云 user_playlist 里的 specialType（和曲库同步、mock 共用） */
+export const LIKED_SPECIAL_TYPE = 5
+
+/** 从 user_playlist 的 specialType 和创建者认出这张歌单是哪一类（和曲库同步、mock 共用） */
+export function playlistKindOf(specialType: number, creatorUserId: number, uid: number): Playlist['kind'] {
+  if (specialType === LIKED_SPECIAL_TYPE)
+    return 'liked'
+  return creatorUserId === uid ? 'own' : 'collected'
+}
+
 /** 这张歌单能不能手动排序：自建歌单和我喜欢的音乐（#36）；收藏的歌单不能 */
 export function canSortPlaylist(kind: Playlist['kind']): boolean {
   return kind === 'own' || kind === 'liked'
+}
+
+/**
+ * 把提交的顺序套到一组歌单上（#37）：只排 isSortable 的那些，别的原位不动；
+ * 提交里没出现的按原来的先后接在后面，已经不在列表里的编号忽略。返回新的列表，不改原来的。
+ * 曲库副本、提交前补齐和 mock 的写入共用这一条规则
+ */
+export function reorderSortable<T extends { id: number }>(items: readonly T[], ids: readonly number[], isSortable: (item: T) => boolean): T[] {
+  const byId = new Map(items.map(item => [item.id, item]))
+  const ordered: T[] = []
+  for (const id of ids) {
+    const item = byId.get(id)
+    if (item && isSortable(item))
+      ordered.push(item)
+  }
+  const seen = new Set(ordered.map(item => item.id))
+  for (const item of items) {
+    if (isSortable(item) && !seen.has(item.id))
+      ordered.push(item)
+  }
+  let next = 0
+  return items.map(item => isSortable(item) ? ordered[next++]! : item)
 }
 
 /** GET /api/playlists?uid=:歌单列表，我喜欢的音乐在最前，然后是自建的、收藏的，和网易云的顺序一样；在网易云里删掉的歌单不在里面 */

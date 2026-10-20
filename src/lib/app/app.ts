@@ -224,6 +224,14 @@ export interface App {
   moveSongs: (playlistId: number, songIds: readonly number[], before: number | null) => boolean
   /** 重试刚才没保存成功的排序：恢复刚才的顺序并马上提交 */
   retryOrder: () => Promise<void>
+  /**
+   * 曲库里自建歌单之间的排序（#37）：playlistIds 是我喜欢的音乐和全部自建歌单的新先后，
+   * 我喜欢的音乐必须在最前，收藏的歌单不传。先改本地、立即生效，停手 2 秒才一次提交；
+   * 页面隐藏时 App 自己会立即提交。断网时不改本地、直接说没改成。返回顺序有没有改
+   */
+  orderPlaylists: (playlistIds: readonly number[]) => boolean
+  /** 重试刚才没保存成功的自建歌单顺序：恢复刚才的顺序并马上提交 */
+  retryPlaylistOrder: () => Promise<void>
   /** 离开这张歌单：还没提交的移除和排序立即提交（页面隐藏时 App 自己会做） */
   flushPlaylist: (playlistId: number) => Promise<void>
   /**
@@ -737,6 +745,8 @@ export function createApp(browser: BrowserCapabilities): App {
     retryRemove: library.retryRemove,
     moveSongs: library.moveSongs,
     retryOrder: library.retryOrder,
+    orderPlaylists: library.orderPlaylists,
+    retryPlaylistOrder: library.retryPlaylistOrder,
     flushPlaylist: playlistId => library.flush(playlistId),
     async searchSongs(keyword) {
       const searched = keyword.trim()

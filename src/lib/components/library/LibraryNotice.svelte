@@ -48,13 +48,15 @@
   })
 
   const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed' || notice?.kind === 'recovered')
-  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed')
+  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed' || notice?.kind === 'playlistOrderFailed')
   /** 提示条里的“重试”：移除失败、排序失败共用同一个按钮 */
   const retry = $derived.by(() => {
     if (notice?.kind === 'removeFailed' && notice.retryable !== false)
       return () => void view.app.retryRemove()
     if (notice?.kind === 'orderFailed')
       return () => void view.app.retryOrder()
+    if (notice?.kind === 'playlistOrderFailed')
+      return () => void view.app.retryPlaylistOrder()
     return null
   })
 </script>
