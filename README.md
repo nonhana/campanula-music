@@ -15,8 +15,11 @@ v1 正在 `rewrite/v1` 分支上从零重写，还不能使用。
 ```bash
 pnpm install
 cp .env.example .env   # 填上 COOKIE_SECRET：openssl rand -base64 32
-pnpm dev
+pnpm dev               # 真账号，端口 5173
+pnpm dev:mock          # mock 测试数据，端口 5174，不需要登录
 ```
+
+mock 的账号、歌单、红心、搜索、播放地址都来自 `tests/fixtures/netease/`，写操作只改内存状态，可重置；详见 `docs/agents/mock.md`。
 
 站长要配的环境变量见 `.env.example`：`COOKIE_SECRET`（必填，加密登录 Cookie 的密钥，至少 32 个字符，升级时保留同一个，换了所有听众都要重新登录）、`NETEASE_REAL_IP`（可选，真实的国内 IP）。
 

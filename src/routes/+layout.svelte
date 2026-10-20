@@ -10,6 +10,7 @@
   import { DURATIONS } from '#lib/components/motion-tokens.js'
   import { fade, fadeAway } from '#lib/components/motion.js'
   import SignedInFrame from '#lib/components/shell/SignedInFrame.svelte'
+  import { mock } from '#lib/mock-flag.js'
   // 字体随项目打包（Noto Sans 可变字体，拉丁 → SC → JP → TC），不从网络加载
   import '@fontsource-variable/noto-sans'
   import '@fontsource-variable/noto-sans-sc'
@@ -83,3 +84,7 @@
     {/if}
   </div>
 {/key}
+
+{#if mock}
+  <div class='fixed bottom-3 left-3 z-50 rounded-full bg-neutral-900 px-3 py-1 text-caption text-white shadow-lg' aria-label='Mock 测试数据'>Mock · 测试数据</div>
+{/if}

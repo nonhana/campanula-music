@@ -35,18 +35,18 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 
 完成标准：这张票要的每张基准图，notes.md 里都有一段。
 
-## 3. 浏览器：专用窗口
+## 3. 浏览器：日常 mock，真账号只给交付
 
-浏览器是专用窗口 `scripts/axi`（chrome-devtools-axi 的 campanula 会话，看得见的窗口；作者在里面扫码登录过，登录存在 `~/.cache/campanula-axi/chrome-profile`，关掉重开还在）。开发服务器（`pnpm dev`，端口 5173）要开着。作者平时用的 Chrome 不碰。这个窗口连的是作者的真账号：
+**默认走 mock**：`pnpm dev:mock`（端口 5174）加 `scripts/browser`（会话 `campanula-mock`，不需要登录；打开页面自动用测试账号登录，左下角显示 `Mock · 测试数据`）。mock 的歌曲、封面、音频都来自本地，写操作只改 mock 内存状态，安全。详见 `docs/agents/mock.md` 和 `docs/agents/browser.md`。
 
-- 点红心、收藏、加入歌单这类按钮会真的写进网易云。检查和截图里不点它们；要拍它们的状态，先装拦截（第 4 步），或者断网（`emulate` 的 `networkConditions: 'Offline'`，App 断网时不发请求）。
-- 拦截按路径匹配、不分请求方法：`/api/hearts` 的同步读取和红心写入是同一个路径，拦不开，红心只能断网拍。收藏、加歌的路径（`/api/(playlists|albums|artists)/\d+/(collect|tracks)`）只有写入，拦得开（#30）。
-
-- 开发时看一眼：`scripts/axi eval "<js>"`、`scripts/axi screenshot <文件>`、`scripts/axi emulate --viewport 390x844x2,mobile,touch`。几步连着做就写进一次 `scripts/axi run <<'EOF' … EOF`（脚本里 `await page.open(地址)`、`await page.eval(() => …)`、`console.log` 结果）。`scripts/axi open` 每次都打印整页结构（最多 16k 字），只换页面时用 `run` 里的 `page.open`。
-- 每打开一次页面，开发服务器都用作者的账号问网易云（账号、曲库同步、页面要的数据）。连着重开十几次会被网易云限流（#32）；反复开页面的检查和截图走第 4 步的 sweep.py，它重放存下的回答。
-- 专用窗口没登录了（扫码过期）：`scripts/axi run` 打开 `http://localhost:5173/`，停下来请作者在那个窗口里扫码。
+- 开发时看一眼：`scripts/browser open /`、`scripts/browser exec "<js>"`、`scripts/browser screenshot <文件>`、`scripts/browser reset`、`scripts/browser scenario <场景>`。同一时间只允许一个 agent（文件锁）。
+- 反复开页面不会碰网易云：mock 的所有回答都来自录制，想补数据跑 `scripts/browser coverage` 看缺什么。
+- **真账号**只在作者交付前试用时用：`scripts/browser check --real` 先查 `/api/account`，不是登录态就停下请作者在专用窗口（`scripts/axi`）扫码，不继续开新窗口。真账号会真的写进网易云：
+  - 点红心、收藏、加入歌单这类按钮会真的写进网易云。检查和截图里不点它们；要拍它们的状态，先装拦截（第 4 步），或者断网（`scripts/browser offline on`，App 断网时不发请求）。
+  - 拦截按路径匹配、不分请求方法：`/api/hearts` 的同步读取和红心写入是同一个路径，拦不开，红心只能断网拍。收藏、加歌的路径（`/api/(playlists|albums|artists)/\d+/(collect|tracks)`）只有写入，拦得开（#30）。
+- reviewer 不自己启动 Chrome：静态 review 不碰浏览器；要画面时由父 agent 用 mock 拍好，把结论和截图路径交给 reviewer。
 - 页面里的等待都要有上限：等元素、等文字用轮询，最多几秒；等图片看 `img.complete`，不用 `await img.decode()`（#32 一直不返回，把 DevTools 连接卡死，之后七次调用全失败）。
-- 浏览器卡住、连不上：`scripts/axi stop`，再跑任意一条 `scripts/axi` 命令会重开（登录还在）。
+- 浏览器卡住、连不上：`scripts/axi stop`（真账号）或 `chrome-devtools-axi` 的会话停止命令；mock 直接重开 `scripts/browser open /`。
 - 手机曲库的“我喜欢 / 歌单”标签用 `replaceState` 切换，不留浏览记录。在标签页上 `history.back()` 会离开 App，测“返回恢复滚动”要从歌单页返回。
 - 手机视口和桌面视口互换（`emulate` 的 `mobile` 变了）会重新加载页面：页面里装的脚本、播放队列都没了。先换视口，再放歌、再装脚本。
 - `emulate` 没有“减少动态效果”。用 `sweep.py` 的 `reduced=True` 模拟：它让样式表里真正那条媒体查询生效，读到的是真的 CSS 变量；但仍是模拟，回给作者时说明这一点，真的效果要他在 DevTools 的 Rendering 面板里开。模拟装在页面里，换回正常动效要重新打开页面（`motion`、`slow` 会自己做，还在就报错）。
@@ -55,7 +55,7 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 
 ## 4. 检查和截图：作者点名时交给子代理，用 sweep.py
 
-只做作者点到的那几项。用 `task` 开一个子代理做，主会话不进这个循环、不看截图。给子代理的内容：这个 skill 的名字、票号、作者要的那几项（画面、视口、状态、要点的链接）、第 2 步的对照要点、开发服务器已经开着；页面上有会写账号的按钮时，再给它第 3 步那两条和要装的拦截规则。子代理在 Python eval 里：
+只做作者点到的那几项。用 `task` 开一个子代理做，主会话不进这个循环、不看截图。给子代理的内容：这个 skill 的名字、票号、作者要的那几项（画面、视口、状态、要点的链接）、第 2 步的对照要点、mock 开发服务器（`pnpm dev:mock`，5174）已经开着；要拍真账号时另说，并先 `scripts/browser check --real`。页面上有会写账号的按钮时，再给它第 3 步那两条和要装的拦截规则。子代理在 Python eval 里：
 
 ```python
 %load .agents/skills/campanula-ui-acceptance/scripts/sweep.py
@@ -81,7 +81,7 @@ report = await shoot(22, [...])   # 票号用数字或字符串都行；每张�
 
 ### 接口重放
 
-每个 `/api/` 的 GET 第一次真去问（开发服务器再用作者的账号问网易云），成功的回答存进 `_notes/replay/issue-<票号>.json`，之后打开页面都从这里回，晚 600ms（骨架照样出现，再换成内容）。一批截图、检查只问网易云几次。要最新的数据就删掉这个文件；比 300 KB 大的回答（几千首歌的整页）不存，每次照样真去问。
+每个 `/api/` 的 GET 第一次真去问（默认是 mock，不会碰网易云；只有设了 `CAMPANULA_BROWSER=real` 才是真账号），成功的回答存进 `_notes/replay/issue-<票号>.json`，之后打开页面都从这里回，晚 600ms（骨架照样出现，再换成内容）。mock 下可以随时删掉这个文件拿最新种子。比 300 KB 大的回答（几千首歌的整页）不存。
 
 ### 挪位置和报错
 

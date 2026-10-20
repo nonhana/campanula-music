@@ -58,6 +58,17 @@
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 
+## 索引
+
+`index.json` 是给 mock 开发环境用的机器可读索引：每份录制的模块、查询键（长编号列表只留摘要）、成败、是否截短/构造。生成和检查：
+
+```sh
+pnpm fixtures:index         # 重新生成
+pnpm fixtures:index:check   # 和文件对不上就失败（CI 可跑）
+```
+
+生成时每份录制都过 SDK 的结构定义校验；SDK 还没导出结构的模块（例如 `artist_detail`）记为 `validated: false`，mock 不拿它当可用录制。录制增删后记得重新生成并提交 `index.json`。
+
 ## 使用前须知
 
 - `playback/scrobble.json`：SDK 1.4.0 旧接口的返回。网易云回了 `{"code":200,"data":"success"}`，但这次打卡**没有计入**听歌排行（41 分钟后仍未变化，见 #14 留言）。它只代表“接口返回的样子”，不代表打卡有效。能计入的新接口的返回是 `playback/check-in/001-scrobble.json.gz`（#28）。

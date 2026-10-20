@@ -1,6 +1,8 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
+  /** dev:mock 时 Vite 的 define 设成 true；生产构建是 false（#58） */
+  const __CAMPANULA_MOCK__: boolean
   namespace App {
     // interface Error {}
     // interface Locals {}

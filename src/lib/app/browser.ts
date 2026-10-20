@@ -1,5 +1,6 @@
 import type { CoverCrop } from '#lib/api/cover.js'
 import { COVER_OUTPUT_MAX_BYTES, COVER_OUTPUT_MIN_QUALITY, COVER_OUTPUT_QUALITY, COVER_OUTPUT_SIZE, COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
+import { mock } from '#lib/mock-flag.js'
 
 /**
  * App 用到的浏览器能力。App 只从这里拿，不直接用 window、navigator、document 这些全局对象，
@@ -193,6 +194,9 @@ function loadWatchman(): Promise<Watchman> {
 }
 
 async function watchmanToken(): Promise<string> {
+  // mock 开发环境不向网易云加载 Watchman 脚本（#58：mock 不发外网请求）；服务端也接受这个固定令牌
+  if (mock)
+    return 'mock-watchman-token'
   const instance = await loadWatchman()
   const token = await withTimeout(new Promise<string>(resolve => instance.getToken(WATCHMAN.business, resolve)), '取反作弊令牌')
   if (!token)

@@ -9,11 +9,15 @@
   },
   "scripts": {
     "dev": "vite dev",
+    "dev:mock": "CAMPANULA_MOCK=1 COOKIE_SECRET=campanula-mock-development-secret-0123456789abcdef vite dev --port 5174 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo",
+    "check:mock-isolation": "tsx scripts/check-mock-isolation.mts",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo --watch",
+    "fixtures:index": "tsx scripts/fixture-index.mts",
+    "fixtures:index:check": "tsx scripts/fixture-index.mts --check",
     "lint": "eslint . && tsx scripts/check-design-tokens.mts",
     "lint:fix": "eslint . --fix",
     "test": "vitest run"
@@ -55,7 +59,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",
-    "pre-push": "pnpm check && pnpm test && pnpm build"
+    "pre-push": "pnpm check && pnpm test && pnpm build && pnpm check:mock-isolation"
   },
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored",
