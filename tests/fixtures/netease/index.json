@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@2.12.0",
-  "recordings": 318,
+  "recordings": 319,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -284,8 +284,9 @@
       }
     },
     "playlist_order_update": {
-      "count": 2,
+      "count": 3,
       "outcomes": {
+        "rateLimited": 1,
         "ok": 2
       }
     },
@@ -5120,6 +5121,22 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@1.4.0",
       "note": "名称 41 个字符：英文和空格 10 个、汉字 31 个，宽度 72（汉字算 2），超过上限 40"
+    },
+    {
+      "path": "playlist-edit/playlist_order_update.405-rate-limited.constructed.json",
+      "module": "playlist_order_update",
+      "queryKey": "{\"ids\":\"[900000001,900000018,900000002,900000003,900000004,900000005,900000006,900000007,900000008,900000009,900000010,900000011,900000012,900000013,900000014,900000015,900000016,900000017]\"}",
+      "query": {
+        "ids": "[900000001,900000018,900000002,900000003,900000004,900000005,900000006,900000007…"
+      },
+      "status": 405,
+      "outcome": "rateLimited",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.12.0",
+      "note": "构造：playlist_order_update 没录到过失败的返回。照 playlist_delete.405-rate-limited.constructed.json（#33 新建歌单时网易云回的 405“操作过于频繁”，SDK 2.12.0 认作“操作频繁”）的返回体，只把模块写成 playlist_order_update；查询是测试里提交的顺序"
     },
     {
       "path": "playlist-edit/playlist_order_update.json",

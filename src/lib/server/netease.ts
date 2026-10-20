@@ -3,13 +3,13 @@ import type { Account } from '#lib/api/account.js'
 import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksResponse, Song, SongOrderResponse } from '#lib/api/library.js'
+import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistOrderResponse, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksResponse, Song, SongOrderResponse } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
 import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
-import { ARTIST_ALBUMS_PER_REQUEST } from '#lib/api/library.js'
+import { ARTIST_ALBUMS_PER_REQUEST, playlistKindOf } from '#lib/api/library.js'
 import { SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.js'
 import { lyricsOf } from './lyrics'
 
@@ -262,8 +262,6 @@ export async function fetchHearts(uid: number, listener: Listener): Promise<numb
 
 /** user_playlist 一次最多要这么多张；网易云说还有（more）就接着要 */
 const PLAYLISTS_PER_CALL = 1000
-/** 我喜欢的音乐在 user_playlist 里的 specialType */
-const LIKED_SPECIAL_TYPE = 5
 /** 隐私歌单的 privacy（公开的是 0，验证关卡②） */
 const PRIVATE_PLAYLIST = 10
 
@@ -304,7 +302,7 @@ export async function fetchPlaylists(uid: number, listener: Listener): Promise<P
     if (body.playlist.length > 0 && body.playlist.every(playlist => playlist.subscribed === null))
       throw new NeteaseError({ kind: 'needsLogin' }, body)
     for (const playlist of body.playlist)
-      playlists.push(libraryPlaylist(playlist, playlist.specialType === LIKED_SPECIAL_TYPE ? 'liked' : playlist.creator.userId === uid ? 'own' : 'collected'))
+      playlists.push(libraryPlaylist(playlist, playlistKindOf(playlist.specialType, playlist.creator.userId, uid)))
     if (!body.more)
       return playlists
   }
@@ -674,6 +672,16 @@ export async function updateSongOrder(playlistId: number, songIds: readonly numb
       return { kind: 'unconfirmed' }
     throw error
   }
+  return { kind: 'ordered' }
+}
+
+/**
+ * 曲库里能排序的歌单的新顺序（#37）：一次提交我喜欢的音乐和全部自建歌单的编号，我喜欢的音乐在最前。
+ * 已经删掉的歌单网易云会忽略、照样回 200（验证关卡②录到了这种返回），所以没有 missing；
+ * 别的失败原样交给调用方，客户端退回原来的顺序
+ */
+export async function updatePlaylistOrder(playlistIds: readonly number[], listener: Listener): Promise<PlaylistOrderResponse> {
+  await call('playlist_order_update', { ids: JSON.stringify(playlistIds) }, listener)
   return { kind: 'ordered' }
 }
 

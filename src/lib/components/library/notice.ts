@@ -26,6 +26,8 @@ function attempted(change: Change): string {
       return `没能从${playlistInText(change.playlist)}移除 ${formatCount(change.songIds.length)} 首歌：`
     case 'order':
       return `没能保存${playlistInText(change.playlist)}的顺序：`
+    case 'playlistOrder':
+      return '没能保存自建歌单的顺序：'
     case 'collectAlbum':
       return `没能${change.collected ? '' : '取消'}收藏专辑「${change.album.name}」：`
     case 'collectArtist':
@@ -118,6 +120,8 @@ export function libraryNoticeText(notice: LibraryNotice): string {
       return `没能从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首${notice.restored ? '，已经放回原位' : ''}：${changeFailureText(notice.failure)}`
     case 'orderFailed':
       return `没能保存${playlistInText(notice.playlist)}的顺序${notice.restored ? '，已经恢复原来的顺序' : ''}：${changeFailureText(notice.failure)}`
+    case 'playlistOrderFailed':
+      return `没能保存自建歌单的顺序${notice.restored ? '，已经恢复原来的顺序' : ''}：${changeFailureText(notice.failure)}`
     case 'recovered':
       return '上次关闭前的修改没保存成功，已恢复原样。'
     default: {

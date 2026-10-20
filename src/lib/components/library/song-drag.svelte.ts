@@ -4,6 +4,7 @@ import type { PlaylistSelection } from './playlist-selection.svelte'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 import { DURATIONS, STAGGER } from '../motion-tokens'
 import { attachWindowGrip, createPageHold } from '../press'
+import { edgeScroll } from '../scroll-edge'
 import { formatCount } from './view'
 
 // 多选里的拖动排序（#36，Spec #11“多选、拖拽与换封面”，原型 docs/prototype/dnd.md）：
@@ -25,13 +26,6 @@ const ROW = SONG_ROW_HEIGHT
 const RAIL = 44
 /** “移到第 N 首”的标签在浮起的行上面多高（px） */
 const LABEL_GAP = 14
-/** 拖到边缘多深开始自动滚动（px） */
-const EDGE = 72
-/** 自动滚动最快多少 px/秒 */
-const MAX_SPEED = 1600
-/** 停在边缘 3 秒内最多加速到几倍 */
-const ACCEL = 8
-const ACCEL_TIME = 3000
 /** 拿起后，被拖的行往浮起的行收拢、淡出的时长（ms，和 duration-state 一样） */
 const LIFT_MS = DURATIONS.state
 /** 松手提交后浮起的行落进空位的视觉时长（ms，和 duration-move-state 一样） */
@@ -509,25 +503,10 @@ export class SongDrag {
       this.holdAtEdge = 0
     }
     else {
-      let direction = 0
-      let depth = 0
-      if (this.pointerY < top + EDGE) {
-        direction = -1
-        depth = clamp((top + EDGE - this.pointerY) / EDGE, 0, 1)
-      }
-      else if (this.pointerY > bottom - EDGE) {
-        direction = 1
-        depth = clamp((this.pointerY - (bottom - EDGE)) / EDGE, 0, 1)
-      }
-      if (direction !== 0) {
-        this.holdAtEdge += dt
-        // 越深越快（平方），停在边缘越久越快（按深度加权，轻轻碰到边缘时不会突然飞起来）
-        const ramp = 1 + (ACCEL - 1) * clamp(this.holdAtEdge / (ACCEL_TIME / 1000), 0, 1) * depth
-        window.scrollBy(0, direction * MAX_SPEED * depth * depth * ramp * dt)
-      }
-      else {
-        this.holdAtEdge = 0
-      }
+      const scroll = edgeScroll(dt, this.pointerY, top, bottom, this.holdAtEdge)
+      this.holdAtEdge = scroll.hold
+      if (scroll.amount !== 0)
+        window.scrollBy(0, scroll.amount)
       // 浮起的行别顶到吸在顶上的顶栏：给上面的“移到第 N 首”留出位置
       this.ghostY = clamp(this.pointerY - this.grabY, top + LABEL_GAP, bottom - ROW)
       const center = this.ghostY + ROW / 2 - this.listTop()

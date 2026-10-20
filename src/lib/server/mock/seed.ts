@@ -104,6 +104,7 @@ export interface SeedData {
     playlistAdd: RawFixture['response']['body']
     playlistRemove: RawFixture['response']['body']
     playlistOrder: RawFixture['response']['body']
+    playlistOrderUpdate: RawFixture['response']['body']
     playlistCreate: RawFixture['response']['body']
     playlistDelete: RawFixture['response']['body']
     playlistName: RawFixture['response']['body']
@@ -302,6 +303,7 @@ export async function buildSeed(seed: SeedName): Promise<SeedData> {
     playlistAdd: fixtureOutcome('playlist_tracks', (await readFixture('playlist-edit/playlist_tracks.add.json')).response).response.body,
     playlistRemove: fixtureOutcome('playlist_tracks', (await readFixture('playlist-edit/playlist_tracks.del.json')).response).response.body,
     playlistOrder: bodyOf(await readFixture('playlist-edit/song_order_update.whole-4967-small-change.json')),
+    playlistOrderUpdate: bodyOf(await readFixture('playlist-edit/playlist_order_update.json')),
     playlistCreate: bodyOf(await readFixture('playlist-edit/create/001-playlist_create.json.gz')),
     playlistDelete: bodyOf(await readFixture('playlist-edit/playlist_delete.json')),
     playlistName: bodyOf(await readFixture('playlist-edit/playlist_name_update.json')),

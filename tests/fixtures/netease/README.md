@@ -151,6 +151,7 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 | `login/login_cellphone.200.another-account.constructed.json` | 同一台设备上换另一个网易云账号登录。作者只有一个账号：复制 `login/login_cellphone.200.json`，只把账号的 uid（10000001 → 10000002）和昵称（“另一位听众”）换掉 |
 | `library/song_detail.405-rate-limited.constructed.json` | 网易云对接口限流的返回没有录到过（验证关卡①首次同步没遇到）。复制 `like-collect/playlist_subscribe.405.json` 的返回体（405“操作过于频繁，请稍后再试”，`hana-music-api@2.3.0` 认作限流，抛出时加上 `retryAfter`），只把模块换成 `song_detail`。注意那份 405 本身是请求写法被拒，不一定是真的限流（见上面 `like-collect/playlist_subscribe.*`） |
 | `playlist-edit/playlist_delete.405-rate-limited.constructed.json`、`playlist-edit/playlist_privacy.405-rate-limited.constructed.json`、`playlist-edit/playlist_desc_update.405-rate-limited.constructed.json` | 删除、改公开、改简介被网易云拒绝。复制 `playlist-edit/create/003-playlist_create.json.gz` 的返回体（#33 连着新建两张歌单时网易云回的 405“操作过于频繁，请稍后再试”，SDK 2.12.0 认作“操作频繁”，抛出时加上 `retryAfter`），只把模块换成对应的那个 |
+| `playlist-edit/playlist_order_update.405-rate-limited.constructed.json` | 曲库里的自建歌单排序被网易云拒绝（#37 要求覆盖失败回滚，作者要求 2026-10-21；这个模块只录到过成功返回）。复制上面那三份的 405 返回体，只把模块换成 `playlist_order_update` |
 
 它们不进下面的清单。
 

@@ -1,6 +1,6 @@
 import type { CollectedAlbum, CollectedArtist, Playlist, PlaylistEditProblem, Song } from '#lib/api/library.js'
 import type { LibraryPatch, PlaylistTracks, Replica } from './local'
-import { nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
+import { canSortPlaylist, nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_TAGS_MAX, reorderSortable } from '#lib/api/library.js'
 
 // 听众在 Campanula 里改曲库（红心、加入歌单、收藏，#30；歌单的增删改，#33，Spec #11“客户端：曲库副本”）：每种修改对副本做什么。
 // 只算不做：显示时叠在副本上（还没确认的），网易云确认了写进副本，同步拿回来的旧数据上再叠一次（确认得比它晚的）。
@@ -24,6 +24,8 @@ export type Change
     | { kind: 'remove', playlist: Playlist, songIds: number[] }
   /** 整张歌单的新顺序（#36）：拖完先改本地，停手 2 秒才一次提交；自建歌单和我喜欢的音乐都能排 */
     | { kind: 'order', playlist: Playlist, songIds: number[] }
+  /** 曲库里自建歌单之间的顺序（#37）：我喜欢的音乐和全部自建歌单的编号，我喜欢的音乐在最前；收藏的歌单不参与 */
+    | { kind: 'playlistOrder', playlistIds: number[] }
     | { kind: 'collectAlbum', album: CollectedAlbum, collected: boolean }
     | { kind: 'collectArtist', artist: CollectedArtist, collected: boolean }
     | { kind: 'collectPlaylist', playlist: Playlist, collected: boolean, seed: PlaylistSeed | null }
@@ -83,6 +85,7 @@ export function changeProblem(change: Change): PlaylistEditProblem | null {
     case 'addMany':
     case 'remove':
     case 'order':
+    case 'playlistOrder':
     case 'collectAlbum':
     case 'collectArtist':
     case 'collectPlaylist':
@@ -121,6 +124,9 @@ export function targetOf(change: Change): string {
     case 'order':
       // 批量加歌、移除、排序都是同一张歌单的曲目：按先后一次一次提交，免得后发的先到
       return `tracks:${change.playlist.id}`
+    case 'playlistOrder':
+      // 曲库的整个歌单列表是一样东西：两次拖动的顺序按先后提交
+      return 'playlists'
     case 'collectAlbum':
       return `album:${change.album.id}`
     case 'collectArtist':
@@ -261,6 +267,8 @@ export function changePatch(replica: Replica, change: ConfirmedChange): LibraryP
       const tracks = orderedTracks(replica, change.playlist.id, change.songIds)
       return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined }
     }
+    case 'playlistOrder':
+      return { playlists: replica.playlists ? reorderSortable(replica.playlists, change.playlistIds, playlist => canSortPlaylist(playlist.kind)) : undefined }
     case 'collectAlbum':
       return { albums: toggled(replica.albums, change.album, change.collected) }
     case 'collectArtist':
