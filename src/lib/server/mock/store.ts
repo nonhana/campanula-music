@@ -18,6 +18,19 @@ function summaryOf(data: SeedData, id: number): RawPlaylist | undefined {
   return data.byId.get(id)
 }
 
+/** RawPlaylist 有索引签名，`'ok' in` 收窄不了：用显式的守卫 */
+function isMockResult(value: MockResult | RawPlaylist): value is MockResult {
+  return typeof (value as { ok?: unknown }).ok === 'boolean'
+}
+
+/** 写歌单前先找它：不存在或已经删了就是 404，省得每个写方法重复一遍 */
+function playlistFor(data: SeedData, id: number): MockResult | RawPlaylist {
+  const playlist = summaryOf(data, id)
+  if (!playlist || playlist.status === DELETED)
+    return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+  return playlist
+}
+
 function partsOf(data: SeedData, trackIds: readonly number[]): SongPart[] {
   return trackIds.flatMap((id) => {
     const part = data.songs.get(id)
@@ -151,9 +164,10 @@ export class MockStore {
 
   async addTracks(playlistId: number, songIds: readonly number[]): Promise<MockResult> {
     const data = await this.load()
-    const playlist = summaryOf(data, playlistId)
-    if (!playlist || playlist.status === DELETED)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    const found = playlistFor(data, playlistId)
+    if (isMockResult(found))
+      return found
+    const playlist = found
     const existing = new Set(playlist.trackIds.map(track => track.id))
     const added = songIds.filter(id => !existing.has(id))
     if (added.length === 0)
@@ -165,9 +179,10 @@ export class MockStore {
 
   async removeTracks(playlistId: number, songIds: readonly number[]): Promise<MockResult> {
     const data = await this.load()
-    const playlist = summaryOf(data, playlistId)
-    if (!playlist || playlist.status === DELETED)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    const found = playlistFor(data, playlistId)
+    if (isMockResult(found))
+      return found
+    const playlist = found
     const remove = new Set(songIds)
     playlist.trackIds = playlist.trackIds.filter(track => !remove.has(track.id))
     syncSummary(playlist, data)
@@ -176,9 +191,10 @@ export class MockStore {
 
   async orderTracks(playlistId: number, songIds: readonly number[]): Promise<MockResult> {
     const data = await this.load()
-    const playlist = summaryOf(data, playlistId)
-    if (!playlist || playlist.status === DELETED)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    const found = playlistFor(data, playlistId)
+    if (isMockResult(found))
+      return found
+    const playlist = found
     const before = playlist.trackIds.map(track => track.id)
     if (before.length !== songIds.length || !before.every(id => songIds.includes(id)))
       return { ok: false, status: 400, body: clone(data.templates.orderUnconfirmed as Record<string, unknown>) }

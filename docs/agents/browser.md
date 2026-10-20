@@ -16,6 +16,7 @@ scripts/browser offline on|off # 浏览器真的离线 / 恢复
 scripts/browser port           # 桥接进程端口（sweep.py 用）
 ```
 
+- 一次性 smoke：`pnpm dev:mock` 开着时跑 `pnpm smoke:mock`（自动登录、同步、打开歌单、写入、刷新、重置）。
 - 默认是 mock：会话 `campanula-mock`，profile `~/.cache/campanula-axi/mock-profile`，开发服务器 `http://localhost:5174`（先 `pnpm dev:mock`）。
 - 真账号加 `--real`：复用专用浏览器 `scripts/axi`（会话 `campanula`，profile `~/.cache/campanula-axi/chrome-profile`，开发服务器 5173）。不会另开窗口。
 - 命令用 `~/.cache/campanula-axi/browser.lock` 加文件锁。锁被占时先看持锁的进程；确认它已经停了再删锁，不要并发操作。`sweep.py` 会直接调 DevTools，跑它的时候不要再开另一个 agent 操作同一个浏览器。

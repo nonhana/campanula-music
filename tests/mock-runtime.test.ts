@@ -32,6 +32,9 @@ describe('mock SDK 边界', () => {
     await validateBody('SongDetailBody', songs.body)
     expect((songs.body as { songs: unknown[] }).songs).toHaveLength(2)
 
+    const captcha = await invokeModule('captcha_sent', { ctcode: '86', phone: '13800000000' }, cookie)
+    expect((captcha.body as { code: number }).code).toBe(200)
+
     const search = await invokeModule('cloudsearch', { keywords: '夜に駆ける', type: 1, limit: 30, offset: 0 }, cookie)
     await validateBody('CloudsearchBody', search.body)
     expect(((search.body as { result: { songs: unknown[] } }).result.songs)).toHaveLength(30)
