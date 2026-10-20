@@ -79,13 +79,28 @@ export function readLogin(cookies: Cookies): LoginCookie | null {
   return value ? unseal(value) : null
 }
 
-/** 超过浏览器的上限就报错：浏览器会悄悄丢掉它，不能当作已经存好（验证关卡①的测试版丢过一次凭据） */
-function writeLogin(cookies: Cookies, login: LoginCookie): void {
+/** 加密并检查浏览器上限：超过就报错，不能当作已经存好（验证关卡①的测试版丢过一次凭据） */
+function sealedValue(login: LoginCookie): string {
   const value = seal(login)
   const bytes = COOKIE_NAME.length + 1 + value.length
   if (bytes > MAX_COOKIE_BYTES)
     throw new Error(`登录 Cookie 有 ${bytes} 字节，超过浏览器的上限 ${MAX_COOKIE_BYTES}，存不进去`)
-  cookies.set(COOKIE_NAME, value, OPTIONS)
+  return value
+}
+
+/** Cookie 属性只写一次：cookies.set 和 mock 的 Set-Cookie 头用同一份 */
+function cookieAttributes(): string {
+  return [
+    `Path=${OPTIONS.path}`,
+    OPTIONS.httpOnly && 'HttpOnly',
+    `SameSite=${OPTIONS.sameSite}`,
+    `Max-Age=${OPTIONS.maxAge}`,
+    OPTIONS.secure && 'Secure',
+  ].filter(Boolean).join('; ')
+}
+
+function writeLogin(cookies: Cookies, login: LoginCookie): void {
+  cookies.set(COOKIE_NAME, sealedValue(login), OPTIONS)
 }
 
 /** 登录或续期成功：凭据和 deviceId 加密进登录 Cookie，这一刻就是上次续期的时间 */
@@ -98,15 +113,8 @@ export function saveLogin(cookies: Cookies, deviceId: string, credentials: Recor
  * 但走的仍是同一套加密和属性（#58：假登录复用 App 真实的加密 Cookie 流程）。
  */
 export function loginCookieHeader(deviceId: string, credentials: Record<string, string>): string {
-  const value = seal({ deviceId, session: { credentials, renewedAt: Date.now() } })
-  const attributes = [
-    `Path=${OPTIONS.path}`,
-    OPTIONS.httpOnly && 'HttpOnly',
-    `SameSite=${OPTIONS.sameSite}`,
-    `Max-Age=${OPTIONS.maxAge}`,
-    OPTIONS.secure && 'Secure',
-  ].filter(Boolean)
-  return `${COOKIE_NAME}=${encodeURIComponent(value)}; ${attributes.join('; ')}`
+  const value = sealedValue({ deviceId, session: { credentials, renewedAt: Date.now() } })
+  return `${COOKIE_NAME}=${encodeURIComponent(value)}; ${cookieAttributes()}`
 }
 
 /** 离上次续期满 24 小时了 */

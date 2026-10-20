@@ -40,6 +40,13 @@ interface IndexEntry {
   validated: boolean
 }
 
+/** 同一个模块 + 查询可能录了失败和成功两份：优先成功，其次失败；没有校验过的录制不拿来回答 */
+function choose(entries: IndexEntry[]): IndexEntry | null {
+  return entries.find(entry => entry.validated && entry.outcome === 'ok')
+    ?? entries.find(entry => entry.validated)
+    ?? null
+}
+
 interface Index {
   recordings: number
   modules: Record<string, { count: number }>
@@ -96,7 +103,7 @@ async function entryFor(module: string, query: unknown): Promise<IndexEntry | nu
   const key = queryKey(query)
   const candidates = current.entries.filter(entry => entry.module === module && entry.queryKey === key)
   if (candidates.length > 0)
-    return candidates.find(entry => entry.validated) ?? candidates[0]!
+    return choose(candidates)
   // cloudsearch 的页面大小按票不一样（录到 100 的、5 的），服务端一律要 30：按关键词/类型/offset 找一页够大的
   if (module === 'cloudsearch') {
     const wanted = query as { keywords?: unknown, type?: unknown, offset?: unknown, limit?: unknown }
@@ -123,7 +130,7 @@ async function entryFor(module: string, query: unknown): Promise<IndexEntry | nu
 }
 
 async function fallback(module: string, query: unknown, { generic = false } = {}): Promise<unknown> {
-  const entry = await entryFor(module, query) ?? (generic ? (await index()).entries.find(item => item.module === module) : undefined)
+  const entry = await entryFor(module, query) ?? (generic ? choose((await index()).entries.filter(item => item.module === module)) : null)
   if (!entry)
     return miss(module, query)
   const loaded = await fixture(entry)

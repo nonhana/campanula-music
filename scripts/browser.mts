@@ -93,12 +93,12 @@ function pageIdOf(text: string, target: string): number | null {
   return match ? Number(match[1]) : null
 }
 
-async function ensurePage(): Promise<number> {
+async function ensurePage(path = '/'): Promise<number> {
   const text = await pages()
   const found = pageIdOf(text, origin)
   if (found !== null)
     return found
-  await call('new_page', { url: `${origin}/` })
+  await call('new_page', { url: `${origin}${path}` })
   const after = await pages()
   const created = pageIdOf(after, origin)
   if (created === null)
@@ -108,7 +108,8 @@ async function ensurePage(): Promise<number> {
 }
 
 async function selectPage(pageId: number): Promise<void> {
-  await call('select_page', { pageId })
+  // 用 CLI 的 selectpage：它会把选中的页写进 CLI 自己的状态，随后的 eval/screenshot 才认
+  cli(['selectpage', String(pageId), '--no-snapshot'])
 }
 
 function cli(args: string[]): string {
@@ -166,7 +167,8 @@ async function main(): Promise<void> {
           return
         }
         {
-          const pageId = await ensurePage()
+          // 真账号：先开 /api/account 这一页查登录，不加载 App、不触发曲库同步
+          const pageId = await ensurePage('/api/account')
           const account = await accountSignedIn(pageId)
           if (!account.signedIn) {
             console.error(`真账号没登录：请在专用窗口（scripts/axi）里扫码一次，再跑 scripts/browser check --real。${account.text}`)
@@ -187,7 +189,8 @@ async function main(): Promise<void> {
         }
         if (!real)
           await mockStatus()
-        const pageId = await ensurePage()
+        // 真账号先开 /api/account 查登录；确认登录了才导航到 App
+        const pageId = await ensurePage(real ? '/api/account' : '/')
         if (real) {
           const account = await accountSignedIn(pageId)
           if (!account.signedIn) {

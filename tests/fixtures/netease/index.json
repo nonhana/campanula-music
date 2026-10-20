@@ -75,7 +75,8 @@
       "count": 58,
       "outcomes": {
         "ok": 56,
-        "rejected": 2
+        "rateLimited": 1,
+        "rejected": 1
       }
     },
     "playlist_track_all": {
@@ -118,7 +119,8 @@
     "playlist_subscribe": {
       "count": 8,
       "outcomes": {
-        "rejected": 6,
+        "rateLimited": 5,
+        "rejected": 1,
         "ok": 2
       }
     },
@@ -226,28 +228,28 @@
       "count": 3,
       "outcomes": {
         "ok": 2,
-        "rejected": 1
+        "rateLimited": 1
       }
     },
     "playlist_desc_update": {
       "count": 5,
       "outcomes": {
         "ok": 4,
-        "rejected": 1
+        "rateLimited": 1
       }
     },
     "playlist_delete": {
       "count": 4,
       "outcomes": {
         "ok": 3,
-        "rejected": 1
+        "rateLimited": 1
       }
     },
     "playlist_privacy": {
       "count": 4,
       "outcomes": {
         "ok": 3,
-        "rejected": 1
+        "rateLimited": 1
       }
     },
     "image_upload_token": {
@@ -1011,7 +1013,7 @@
         "ids": "<一页 1,000 个编号>"
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": true,
@@ -3591,7 +3593,7 @@
         "t": 1
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": false,
@@ -3608,7 +3610,7 @@
         "t": 1
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": false,
@@ -3642,7 +3644,7 @@
         "t": 1
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": false,
@@ -3659,7 +3661,7 @@
         "t": 1
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": false,
@@ -3693,7 +3695,7 @@
         "t": 1
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": false,
@@ -4671,7 +4673,7 @@
         "privacy": "10"
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": false,
@@ -4948,7 +4950,7 @@
         "id": 900000023
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": true,
@@ -4997,7 +4999,7 @@
         "id": 900000023
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": true,
@@ -5159,7 +5161,7 @@
         "id": 900000023
       },
       "status": 405,
-      "outcome": "rejected",
+      "outcome": "rateLimited",
       "validated": true,
       "truncated": null,
       "constructed": true,

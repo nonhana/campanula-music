@@ -181,6 +181,18 @@ function addDetailSongs(songs: Map<number, SongPart>, detail: PlaylistDetailBody
   }
 }
 
+/** 歌单列表里的 tracks/trackIds 是 null：详情里才有曲目，把它们补进列表的头部 */
+function syncSummaries(playlists: RawPlaylist[], details: Map<number, PlaylistDetailBody>): void {
+  for (const playlist of playlists) {
+    const detail = details.get(playlist.id)
+    if (detail) {
+      playlist.trackIds = detail.playlist.trackIds
+      playlist.tracks = detail.playlist.tracks
+      playlist.trackCount = playlist.trackIds.length
+    }
+  }
+}
+
 /** 这张歌单的头部：新建、改过的歌单没有自己的录制，用模板拼出来 */
 function patchPlaylist(playlist: RawPlaylist, next: Partial<RawPlaylist>): RawPlaylist {
   return { ...structuredClone(playlist), ...next }
@@ -231,15 +243,7 @@ export async function buildSeed(seed: SeedName): Promise<SeedData> {
 
   const likedDetail = detailBody(await readFixture('library/playlist_detail.liked-full.json.gz'))
   details.set(LIKED_PLAYLIST, likedDetail)
-  // 歌单列表里的 tracks/trackIds 是 null：详情里才有曲目，把它们补进列表的头部
-  for (const playlist of playlists) {
-    const detail = details.get(playlist.id)
-    if (detail) {
-      playlist.trackIds = detail.playlist.trackIds
-      playlist.tracks = detail.playlist.tracks
-      playlist.trackCount = playlist.trackIds.length
-    }
-  }
+  syncSummaries(playlists, details)
   for (const page of [1, 2, 3, 4, 5])
     addSongs(songs, bodyOf(await readFixture(`library/song_detail.liked-page${page}.json.gz`)) as Record<string, unknown>)
   addDetailSongs(songs, likedDetail)
@@ -257,14 +261,7 @@ export async function buildSeed(seed: SeedName): Promise<SeedData> {
   }
 
   // 详情被改过（after 的 poems）时，列表里的头部也要跟着更新
-  for (const playlist of playlists) {
-    const detail = details.get(playlist.id)
-    if (detail) {
-      playlist.trackIds = detail.playlist.trackIds
-      playlist.tracks = detail.playlist.tracks
-      playlist.trackCount = playlist.trackIds.length
-    }
-  }
+  syncSummaries(playlists, details)
 
   // deleted 种子里 poems 已被删掉：歌单列表里没有它，直接打开详情时 status 是 10（#56 录制）
   if (seed === 'deleted') {

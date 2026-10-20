@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { mockPlugin } from '../src/lib/server/mock/vite-plugin.ts'
 
 // mock 开发服务器的 HTTP 行为：自动登录走真实加密 Cookie，写操作刷新后还在，reset 回种子。
-// 不连网易云，也不启动浏览器；浏览器 smoke 由 scripts/browser 在作者点名时做。
+// 不连网易云，也不启动浏览器；浏览器 smoke 用 pnpm smoke:mock（需要先开 pnpm dev:mock）。
 let origin = ''
 let closed: () => Promise<void>
 let cookie = ''
@@ -81,6 +81,12 @@ describe('mock 开发服务器', () => {
       body: JSON.stringify({ name: 'bogus' }),
     })
     expect(bad.status).toBe(400)
+    const prototype = await fetch(`${origin}/api/mock/scenario`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'toString' }),
+    })
+    expect(prototype.status).toBe(400)
     expect((await api('/api/account')).status).toBe(200)
   }, 30_000)
 

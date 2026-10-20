@@ -20,6 +20,7 @@
     "fixtures:index:check": "tsx scripts/fixture-index.mts --check",
     "lint": "eslint . && tsx scripts/check-design-tokens.mts",
     "lint:fix": "eslint . --fix",
+    "smoke:mock": "tsx scripts/mock-smoke.mts",
     "test": "vitest run"
   },
   "devDependencies": {

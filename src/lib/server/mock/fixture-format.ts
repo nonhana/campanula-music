@@ -64,7 +64,7 @@ export function fixtureOutcome(module: string, response: { status: number, body:
   const failedWith = failureStatus(module, code)
   const rejected = failedWith !== undefined
   const status = failedWith ?? response.status
-  if (rejected && rateLimited(code, response.body))
-    return { rejected, response: { status, body: { ...(body as object), retryAfter: DEFAULT_RETRY_AFTER } } }
+  if (rejected && rateLimited(code, body))
+    return { rejected, response: { status, body: { ...(body as object), retryAfter: DEFAULT_RETRY_AFTER }, retryAfter: DEFAULT_RETRY_AFTER } }
   return { rejected, response: { status, body } }
 }

@@ -6,6 +6,7 @@
 
 ```sh
 pnpm dev:mock
+pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同步、打开歌单、写入、刷新、重置）
 ```
 
 - 独立端口 `http://localhost:5174`，和普通的 `pnpm dev`（5173，真账号）同时开着也不冲突。

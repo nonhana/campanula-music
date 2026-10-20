@@ -33,23 +33,34 @@ export interface MockConfig {
   partialSync: boolean
 }
 
-const PRESETS: Record<ScenarioName, Omit<MockConfig, 'name'>> = {
-  'default': { seed: 'before', latencyMs: 0, offline: false, loginExpired: false, rateLimited: false, deletedPlaylist: false, emptyPlaylist: false, partialSync: false },
-  'after': { seed: 'after', latencyMs: 0, offline: false, loginExpired: false, rateLimited: false, deletedPlaylist: false, emptyPlaylist: false, partialSync: false },
-  'deleted': { seed: 'deleted', latencyMs: 0, offline: false, loginExpired: false, rateLimited: false, deletedPlaylist: false, emptyPlaylist: false, partialSync: false },
-  'login-expired': { seed: 'before', latencyMs: 0, offline: false, loginExpired: true, rateLimited: false, deletedPlaylist: false, emptyPlaylist: false, partialSync: false },
-  'rate-limited': { seed: 'before', latencyMs: 0, offline: false, loginExpired: false, rateLimited: true, deletedPlaylist: false, emptyPlaylist: false, partialSync: false },
-  'deleted-playlist': { seed: 'before', latencyMs: 0, offline: false, loginExpired: false, rateLimited: false, deletedPlaylist: true, emptyPlaylist: false, partialSync: false },
-  'empty-playlist': { seed: 'before', latencyMs: 0, offline: false, loginExpired: false, rateLimited: false, deletedPlaylist: false, emptyPlaylist: true, partialSync: false },
-  'partial-sync': { seed: 'before', latencyMs: 0, offline: false, loginExpired: false, rateLimited: false, deletedPlaylist: false, emptyPlaylist: false, partialSync: true },
-  'slow': { seed: 'before', latencyMs: 800, offline: false, loginExpired: false, rateLimited: false, deletedPlaylist: false, emptyPlaylist: false, partialSync: false },
-  'offline': { seed: 'before', latencyMs: 0, offline: true, loginExpired: false, rateLimited: false, deletedPlaylist: false, emptyPlaylist: false, partialSync: false },
+const DEFAULTS = {
+  seed: 'before',
+  latencyMs: 0,
+  offline: false,
+  loginExpired: false,
+  rateLimited: false,
+  deletedPlaylist: false,
+  emptyPlaylist: false,
+  partialSync: false,
+} as const
+
+const PRESETS: Record<ScenarioName, Partial<Omit<MockConfig, 'name'>>> = {
+  'default': {},
+  'after': { seed: 'after' },
+  'deleted': { seed: 'deleted' },
+  'login-expired': { loginExpired: true },
+  'rate-limited': { rateLimited: true },
+  'deleted-playlist': { deletedPlaylist: true },
+  'empty-playlist': { emptyPlaylist: true },
+  'partial-sync': { partialSync: true },
+  'slow': { latencyMs: 800 },
+  'offline': { offline: true },
 }
 
 export function isScenarioName(value: unknown): value is ScenarioName {
-  return typeof value === 'string' && value in PRESETS
+  return typeof value === 'string' && Object.hasOwn(PRESETS, value)
 }
 
 export function configOf(name: ScenarioName): MockConfig {
-  return { name, ...PRESETS[name] }
+  return { ...DEFAULTS, ...PRESETS[name], name }
 }
