@@ -57,6 +57,22 @@ mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确
 
 要补：按 `tests/fixtures/netease/README.md`「录制」用 `scripts/netease-record.mts` 录，再跑 `pnpm fixtures:index`。
 
+### 缺数据怎么处理
+
+先跑一遍要做的界面，让 mock 报错，`scripts/browser coverage` 会给出模块、查询、场景。按缺的东西分：
+
+| 缺什么 | 怎么做 |
+|---|---|
+| 整个模块没录过（新接口） | 先确认 `hana-music-api` 的类型里声明了这个模块（ADR-0005）；没有就先更新 SDK。再用一次性录制脚本只读录 1 次，过索引校验，mock 加 handler；有状态的加进 seed/store。 |
+| 同模块的新查询（新歌单/新分页/新关键词） | 只录这一个查询；索引按模块 + 查询匹配。歌单、红心、搜索这类有状态的最好补进 seed/store 生成，而不是堆原始录制。 |
+| 同模块已有录制，但缺新字段/结构变了 | 先更新 SDK 结构定义，再用当前 SDK 重录；不要手改旧录制来假装新结构。可选字段不影响行为就不补。 |
+| 失败/边界（限流、已删除、8821、二维码成功） | 能录到真实失败就录；录不到（比如限流不一定复现）才构造。构造要作者同意，文件名带 `.constructed`，`context.constructed: true`，写清依据，过 SDK 校验；真遇到时替换成录制。 |
+| 封面、音频、图片直传 | 不录制，mock 本地生成/保存；保证返回体里的外网地址都被本地化。 |
+
+录制前先 `pnpm tsx scripts/take-login.mts` 刷新 `_notes/campanula-login`。它只是录制用的快照，不影响浏览器登录；`openSession()` 会先只读查一次 `user_account`，登录失效就停下请作者扫码。写操作只在临时新建的隐私歌单上做，做完删掉（Spec #11 交付方式第 1 条）。
+
+录完跑 `pnpm fixtures:index`：每份录制都过 SDK 结构定义；没有结构的模块记 `validated: false`，mock 不拿它回答。最后补/跑对应测试，界面相关的再跑 `pnpm smoke:mock`。
+
 ## 限制
 
 - 状态在 mock 进程的内存里：重启 `dev:mock` 回到种子。
