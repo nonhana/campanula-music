@@ -217,30 +217,41 @@
 {/snippet}
 
 {#snippet songRow(song: Song, i: number)}
-  {#if phone}
-    <PhoneSongRow
-      {song}
-      {source}
-      now={song.id === nowId}
-      selecting={selection.mode}
-      selected={selection.has(song.id)}
-      grip={sortable && selection.mode ? rowGrip : undefined}
-      onlongpress={() => enterSelection(playlistId, song.id)}
-      onplay={() => activate(song)}
-    />
-  {:else}
-    <DesktopSongRow
-      {song}
-      {source}
-      n={i + 1}
-      now={song.id === nowId}
-      selecting={selection.mode}
-      selected={selection.has(song.id)}
-      grip={sortable && selection.mode ? rowGrip : undefined}
-      onselect={event => selectWithModifiers(song, event)}
-      onplay={() => activate(song)}
-    />
-  {/if}
+  {@const motion = drag.motionOf(song)}
+  <div
+    class='h-full origin-center'
+    class:relative={motion !== null}
+    class:z-10={motion !== null}
+    class:drag-row-pick={motion === 'pick'}
+    class:drag-row-land={motion === 'land'}
+    style:--drag-shift="{motion === 'pick' ? drag.liftShift(i) : motion === 'land' ? drag.landShift(song) : 0}px"
+    style:--drag-delay="{motion === 'land' ? drag.landDelay(song) : 0}ms"
+  >
+    {#if phone}
+      <PhoneSongRow
+        {song}
+        {source}
+        now={song.id === nowId}
+        selecting={selection.mode}
+        selected={selection.has(song.id)}
+        grip={sortable && selection.mode ? rowGrip : undefined}
+        onlongpress={() => enterSelection(playlistId, song.id)}
+        onplay={() => activate(song)}
+      />
+    {:else}
+      <DesktopSongRow
+        {song}
+        {source}
+        n={i + 1}
+        now={song.id === nowId}
+        selecting={selection.mode}
+        selected={selection.has(song.id)}
+        grip={sortable && selection.mode ? rowGrip : undefined}
+        onselect={event => selectWithModifiers(song, event)}
+        onplay={() => activate(song)}
+      />
+    {/if}
+  </div>
 {/snippet}
 
 {#snippet list()}
@@ -313,9 +324,9 @@
                     getKey={(song: Song) => song.id}
                     markOf={drag.dragging ? undefined : songMark}
                     placeOf={drag.dragging ? drag.placeOf : undefined}
-                    keep={drag.dragging || drag.settling ? drag.keep : undefined}
-                    animatePlace={drag.dragging || drag.settling}
-                    hidden={drag.dragging || drag.settling ? drag.keep : undefined}
+                    keep={drag.dragging || drag.settling || drag.expanding ? drag.keep : undefined}
+                    animatePlace={drag.dragging || drag.settling || drag.expanding}
+                    hidden={drag.dragging || drag.settling || drag.expanding ? drag.hideMoved : undefined}
                     row={songRow}
                   ></VirtualList>
                 </div>
@@ -413,7 +424,7 @@
 {/if}
 
 <!-- 浮起的行跟着指针；松手后落进空位。“移到第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
-{#if drag.dragging || drag.settling}
+{#if drag.dragging || drag.settling || drag.expanding}
   <div
     class='pointer-events-none fixed left-0 top-0 z-[60] h-14'
     style:left='{drag.ghostLeft}px'
@@ -421,12 +432,20 @@
     style:transform='translate3d(0, {drag.ghostY}px, 0)'
     class:transition-transform={drag.settling}
     class:duration-move-state={drag.settling}
-    class:ease-out-soft={drag.settling}
+    class:transition-opacity={drag.expanding}
+    class:duration-state={drag.expanding}
+    class:ease-out-soft={drag.settling || drag.expanding}
+    class:opacity-0={drag.expanding}
   >
-    <div class='h-full scale-[1.02]' inert aria-hidden='true'>
+    <div
+      class='ghost-in ghost-scale h-full origin-center'
+      style:scale={drag.expanding ? '0.96' : '1.02'}
+      inert
+      aria-hidden='true'
+    >
       {@render ghostRow()}
     </div>
-    {#if !drag.settling}
+    {#if !drag.settling && !drag.expanding}
       <span
         class={[
           'absolute z-[70] -top-3.5 h-6 inline-flex items-center rounded-full bg-primary-950 px-2.5 text-caption text-white font-500 whitespace-nowrap shadow-float tabular-nums',
@@ -466,6 +485,53 @@
 {/if}
 
 <style>
+  /* 拿起：被拖的行从自己的位置往浮起的行收拢、缩小、淡出；落位：再从浮起的行依次展开 */
+  .drag-row-pick {
+    transform: translateY(var(--drag-shift, 0px)) scale(0.92);
+    opacity: 0;
+    transition:
+      transform var(--move-state) var(--ease-out-soft),
+      opacity var(--duration-state) var(--ease-out-soft);
+  }
+
+  .drag-row-land {
+    animation:
+      drag-row-land-move var(--move-state) var(--ease-out-soft) both,
+      drag-row-land-fade var(--duration-state) var(--ease-out-soft) both;
+    animation-delay: var(--drag-delay);
+  }
+
+  @keyframes drag-row-land-move {
+    from { transform: translateY(var(--drag-shift, 0px)) scale(0.92); }
+    to { transform: translateY(0) scale(1); }
+  }
+
+  @keyframes drag-row-land-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 浮起的行：拿起时从 96% 长大，落位后缩小淡出 */
+  .ghost-scale {
+    transition: scale var(--move-state) var(--ease-out-soft);
+  }
+
+  .ghost-in {
+    animation:
+      ghost-in-move var(--move-state) var(--ease-out-soft),
+      ghost-in-fade var(--duration-state) var(--ease-out-soft);
+  }
+
+  @keyframes ghost-in-move {
+    from { scale: 0.96; }
+    to { scale: 1.02; }
+  }
+
+  @keyframes ghost-in-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   /* 手机上拖动时，其余行右边的按钮（更多、把手）淡出，不和快速定位窄条叠在一起 */
   .clear-rail :global([data-more]),
   .clear-rail :global([data-grip]) {

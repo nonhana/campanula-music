@@ -2,7 +2,7 @@ import type { Attachment } from 'svelte/attachments'
 import type { Song } from '#lib/api/library.js'
 import type { PlaylistSelection } from './playlist-selection.svelte'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
-import { DURATIONS } from '../motion-tokens'
+import { DURATIONS, STAGGER } from '../motion-tokens'
 import { attachWindowGrip, createPageHold } from '../press'
 import { formatCount } from './view'
 
@@ -32,8 +32,14 @@ const MAX_SPEED = 1600
 /** 停在边缘 3 秒内最多加速到几倍 */
 const ACCEL = 8
 const ACCEL_TIME = 3000
+/** 拿起后，被拖的行往浮起的行收拢、淡出的时长（ms，和 duration-state 一样） */
+const LIFT_MS = DURATIONS.state
 /** 松手提交后浮起的行落进空位的视觉时长（ms，和 duration-move-state 一样） */
 const SETTLE_MS = DURATIONS.state
+/** 落位后，被拖的行从浮起的行展开到新位置的时长（ms，和 duration-state 一样） */
+const EXPAND_MS = DURATIONS.state
+/** 展开时每一行晚一点开始（ms，和依次飘入的步长一样） */
+const EXPAND_STAGGER = STAGGER.step
 
 interface SongDragOptions {
   /** 列表里显示着的歌（搜索时不分心：能排序时没有搜索） */
@@ -52,8 +58,12 @@ function clamp(value: number, low: number, high: number): number {
 export class SongDrag {
   /** 正在拖着 */
   dragging = $state(false)
+  /** 刚拿起：被拖的行往浮起的行收拢、淡出 */
+  lifting = $state(false)
   /** 已经松手，浮起的行在落进空位 */
   settling = $state(false)
+  /** 浮起的行已经落进空位：被拖的行正从它展开到新位置 */
+  expanding = $state(false)
   /** 列表里没被拿走的歌，按原来的先后 */
   rest = $state.raw<readonly Song[]>([])
   /** 一起拖的几首，按列表里的先后 */
@@ -86,7 +96,9 @@ export class SongDrag {
   private raf = 0
   private lastFrame = 0
   private holdAtEdge = 0
+  private liftTimer: ReturnType<typeof setTimeout> | undefined
   private settleTimer: ReturnType<typeof setTimeout> | undefined
+  private expandTimer: ReturnType<typeof setTimeout> | undefined
   private readonly pageHold = createPageHold()
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- 每个把手一份、不会逐帧变的接线缓存，不参与渲染
   private readonly handles = new Map<number, Attachment<HTMLElement>>()
@@ -121,8 +133,47 @@ export class SongDrag {
     return (restIndex < this.target ? restIndex : restIndex + 1) * ROW
   }
 
-  /** 被拖的行：拖动/落位期间一直挂载（keep），同时藏起来（hidden）——同一个谓词，原来的位置留空 */
-  keep = (song: Song): boolean => (this.dragging || this.settling) && this.movedIds.has(song.id)
+  /** 被拖的行：拿起、拖动、落位、展开期间都挂载（keep） */
+  keep = (song: Song): boolean => (this.dragging || this.settling || this.expanding) && this.movedIds.has(song.id)
+
+  /** 被拖的行什么时候藏起来：收拢结束以后、落位途中；正在收拢和展开时看得见 */
+  hideMoved = (song: Song): boolean => this.keep(song) && !this.lifting && !this.expanding
+
+  /** 被拖的行用哪种过渡：拿起时收拢（pick），落位后展开（land）；拖动中藏起来的行保持 pick 的收拢样子 */
+  motionOf(song: Song): 'pick' | 'land' | null {
+    if (!this.movedIds.has(song.id))
+      return null
+    return this.expanding ? 'land' : 'pick'
+  }
+
+  /**
+   * 拿起时这一行往浮起的行收拢多少（px，相对它自己的位置）：浮起的行一开始就在按住的那一行上，
+   * 用 ghostY 和这一行当前在页面里的位置算，别的行和自动滚动都不会让落点偏。
+   */
+  liftShift(index: number): number {
+    if (!this.lifting)
+      return 0
+    return this.ghostY - (this.listTop() + index * ROW)
+  }
+
+  /**
+   * 展开时这一行从浮起的行出发，往上偏多少（px）：新顺序里被拖的几首紧挨着落在 target 开始的位置，
+   * 浮起的行停在 target 那一格，所以第 k 首从 -k 行的位置展开出来。
+   */
+  landShift(song: Song): number {
+    if (!this.expanding)
+      return 0
+    const k = this.moved.findIndex(item => item.id === song.id)
+    return k < 0 ? 0 : -k * ROW
+  }
+
+  /** 展开时第 k 首晚多少开始（ms），做成一叠行依次扇开 */
+  landDelay(song: Song): number {
+    if (!this.expanding)
+      return 0
+    const k = this.moved.findIndex(item => item.id === song.id)
+    return k < 0 ? 0 : k * EXPAND_STAGGER
+  }
 
   /** 拖动时浮起的行显示哪一首：手指按住的那首 */
   get ghostSong(): Song | null {
@@ -148,7 +199,7 @@ export class SongDrag {
             return pressed
           },
           press: (sample) => {
-            if (pressed || this.dragging || this.settling || sample.button !== 0)
+            if (pressed || this.dragging || this.settling || this.expanding || sample.button !== 0)
               return false
             activePointer = sample.pointerId
             if (sample.pointerType === 'mouse') {
@@ -209,8 +260,8 @@ export class SongDrag {
   }
 
   private start(song: Song, row: HTMLElement, sample: { pointerId: number, x: number, y: number }): boolean {
-    // 另一根手指已经开始了拖动（第二根手指按下的把手也在等挪动），或者还在落位：这次不算
-    if (this.dragging || this.settling || this.pointer !== null)
+    // 另一根手指已经开始了拖动（第二根手指按下的把手也在等挪动），或者还在落位/展开：这次不算
+    if (this.dragging || this.settling || this.expanding || this.pointer !== null)
       return false
     // 还没挪够 5px 时多选退出了、行被虚拟列表卸掉了：这次按住不算，别拿一个已经不在页面的行开始拖
     if (!this.options.selection.mode || !row.isConnected)
@@ -254,7 +305,13 @@ export class SongDrag {
     this.holdAtEdge = 0
     this.pointer = sample.pointerId
     this.dragging = true
+    this.lifting = true
     this.settling = false
+    this.expanding = false
+    this.liftTimer = setTimeout(() => {
+      this.liftTimer = undefined
+      this.lifting = false
+    }, LIFT_MS)
     this.railTop = this.topEdge() + 8
     this.railBottom = window.innerHeight - this.bottomEdge() + 8
     this.pageHold(true)
@@ -269,7 +326,7 @@ export class SongDrag {
       return
     this.pointerX = sample.x
     this.pointerY = sample.y
-    if (this.settling)
+    if (this.settling || this.expanding)
       return
     const railLeft = window.innerWidth - RAIL
     if (!this.railArmed) {
@@ -295,7 +352,12 @@ export class SongDrag {
     this.pointer = null
     this.stop()
     this.pageHold(false)
-    if (!this.dragging || this.settling)
+    if (this.liftTimer !== undefined) {
+      clearTimeout(this.liftTimer)
+      this.liftTimer = undefined
+    }
+    this.lifting = false
+    if (!this.dragging || this.settling || this.expanding)
       return
     const moved = this.target !== this.startTarget
     if (!moved) {
@@ -305,7 +367,7 @@ export class SongDrag {
     }
     const before = this.rest[this.target]?.id ?? null
     const songIds = this.moved.map(song => song.id)
-    // 松手这一刻提交顺序；下面 200ms 只是浮起的行和新列表落位的视觉，不再改数据
+    // 松手这一刻提交顺序；下面只是视觉：浮起的行先落进空位，再让被拖的几首从它展开
     if (!this.options.move(songIds, before)) {
       this.undoScroll()
       this.reset()
@@ -314,10 +376,16 @@ export class SongDrag {
     this.scrollAdjust = 0
     this.dragging = false
     this.settling = true
+    this.expanding = false
     this.ghostY = this.listTop() + this.target * ROW
     this.settleTimer = setTimeout(() => {
       this.settleTimer = undefined
-      this.reset()
+      this.settling = false
+      this.expanding = true
+      this.expandTimer = setTimeout(() => {
+        this.expandTimer = undefined
+        this.reset()
+      }, EXPAND_MS + Math.max(0, this.moved.length - 1) * EXPAND_STAGGER)
     }, SETTLE_MS)
   }
 
@@ -329,14 +397,26 @@ export class SongDrag {
 
   /** 拖动作废（Esc、页面藏起来、右键、指针被收回、多选退出）：回到原处，什么都不提交 */
   cancel(): void {
+    const wasActive = this.dragging || this.settling || this.expanding
+    if (this.liftTimer !== undefined) {
+      clearTimeout(this.liftTimer)
+      this.liftTimer = undefined
+    }
     if (this.settleTimer !== undefined) {
       clearTimeout(this.settleTimer)
       this.settleTimer = undefined
     }
+    if (this.expandTimer !== undefined) {
+      clearTimeout(this.expandTimer)
+      this.expandTimer = undefined
+    }
+    this.lifting = false
+    this.settling = false
+    this.expanding = false
     this.pointer = null
     this.stop()
     this.pageHold(false)
-    if (!this.dragging && !this.settling)
+    if (!wasActive)
       return
     this.undoScroll()
     this.reset()
@@ -352,7 +432,7 @@ export class SongDrag {
 
   /** 键盘：焦点所在这一行 Alt + ↑ / ↓ 移一位（桌面） */
   moveByKeyboard(songId: number, delta: -1 | 1): boolean {
-    if (this.dragging || this.settling)
+    if (this.dragging || this.settling || this.expanding)
       return false
     const list = this.options.songs()
     const index = list.findIndex(song => song.id === songId)
@@ -370,8 +450,22 @@ export class SongDrag {
   }
 
   private reset(): void {
+    if (this.liftTimer !== undefined) {
+      clearTimeout(this.liftTimer)
+      this.liftTimer = undefined
+    }
+    if (this.settleTimer !== undefined) {
+      clearTimeout(this.settleTimer)
+      this.settleTimer = undefined
+    }
+    if (this.expandTimer !== undefined) {
+      clearTimeout(this.expandTimer)
+      this.expandTimer = undefined
+    }
     this.dragging = false
+    this.lifting = false
     this.settling = false
+    this.expanding = false
     this.scrubbing = false
     this.rest = []
     this.moved = []

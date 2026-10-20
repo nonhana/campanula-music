@@ -101,7 +101,7 @@
 <div bind:this={host} class='relative' style:height='{slots * itemHeight}px' data-reveal-group>
   {#each visible as { item, index } (getKey(item, index))}
     <div
-      class={['absolute inset-x-0', animatePlace && 'transition-transform duration-move-state ease-out-soft']}
+      class={['absolute inset-x-0', animatePlace && 'drag-move']}
       style:transform='translateY({placeOf?.(item, index) ?? index * itemHeight}px)'
       style:height='{itemHeight}px'
       style:opacity={hidden?.(item, index) ? '0' : undefined}
@@ -110,3 +110,12 @@
     </div>
   {/each}
 </div>
+
+<style>
+  /* 拖动排序：行的位移和藏起来时的透明度都走动效令牌；减少动态效果时位移直接到位、只剩淡入淡出 */
+  .drag-move {
+    transition:
+      transform var(--move-state) var(--ease-out-soft),
+      opacity var(--duration-state) var(--ease-out-soft);
+  }
+</style>
