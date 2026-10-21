@@ -5,7 +5,7 @@ import type { MockConfig, ScenarioName } from './scenarios.ts'
 import type { SeedName } from './seed.ts'
 import type { MockResult } from './store.ts'
 import { readFile } from 'node:fs/promises'
-import { AUDIO_PREFIX, clearUploads, localize, UPLOAD_PATH, UPLOAD_PREFIX } from './assets.ts'
+import { AUDIO_PREFIX, audioWav, clearUploads, localize, UPLOAD_PATH, UPLOAD_PREFIX } from './assets.ts'
 import { fixtureOutcome } from './fixture-format.ts'
 import { queryKey } from './query-key.ts'
 import { readFixture } from './read-fixture.ts'
@@ -303,6 +303,19 @@ export async function invokeModule(module: string, query: Record<string, unknown
         expi: 1200,
         urlSource: 0,
       })
+      return { status: 200, body: localize(body), cookie: [] }
+    }
+    case 'song_download_url_v1': {
+      // 下载的是和在线播放同一段本地 WAV：size 要和它的字节数一样，浏览器下完会核对
+      const id = num(query.id)
+      const part = await state.store.songPart(id)
+      if (!part)
+        return { status: 200, body: localize(await fallback(module, query)), cookie: [] }
+      const body = clone(part.privilege.st < 0 ? templates.songDownloadUrlNoCopyright : templates.songDownloadUrl) as { data: Record<string, unknown> }
+      if (part.privilege.st < 0)
+        Object.assign(body.data, { id })
+      else
+        Object.assign(body.data, { id, url: `${AUDIO_PREFIX}/${id}.wav`, size: audioWav(id).length, md5: `mock-${id}`, type: 'wav', level: 'exhigh', encodeType: 'wav', expi: 1200 })
       return { status: 200, body: localize(body), cookie: [] }
     }
     case 'image_upload_token': {

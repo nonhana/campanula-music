@@ -4,7 +4,7 @@ import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapa
 import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
 
 // 浏览器能力替身：行为照浏览器标准写。
-// 浏览器直连网易云的图片传输（#34）在这里；音频下载、Background Fetch 由最早用到它们的票加上。
+// 浏览器直连网易云的图片传输（#34）、文件下载（#38）在这里；Background Fetch 由最早用到它的票加上。
 
 /** App 的时钟：和世界的假时钟走同一个时间，定时按到期先后触发 */
 export function clockOn(timers: FakeTimers): Clock {
@@ -211,6 +211,86 @@ export class FakeImages {
   /** 让一个压着的直传失败 */
   failUpload(error: Error): void {
     this.#waiting.shift()?.reject(error)
+  }
+}
+
+/** 网易云服务器上的一个文件：多少字节、什么类型 */
+export interface FakeFile {
+  bytes: number
+  type: string
+}
+
+/** 下一次下载这个文件时怎么传：until 了结之前只传一半；cut：传到一半连接断开 */
+export interface FakeTransfer {
+  until?: Promise<void>
+  cut?: boolean
+}
+
+/**
+ * 网易云的音频服务器、图片服务器（浏览器直连下载，#38）：一台设备一份，测试放上文件（地址 → 字节数、类型）。
+ * 照 Fetch 标准：断网时请求直接以 TypeError 失败（network error）；服务器上没有这个文件回 404，fetch 本身成功，
+ * 由 App 的下载能力当作失败；回 200 时按块传，传到一半连接断开（断网、服务器断开）时读响应体以 TypeError 失败。
+ * 每传一块调一次 onProgress（到这一刻一共收到多少字节）
+ */
+export class FakeFiles {
+  readonly #files = new Map<string, FakeFile>()
+  readonly #next = new Map<string, FakeTransfer>()
+  /** 下载过的地址，按先后（断网时没发出去的不算） */
+  readonly requests: string[] = []
+
+  constructor(private readonly network: NetworkStatus) {}
+
+  /** 服务器上放一个文件 */
+  put(url: string, file: FakeFile): void {
+    this.#files.set(url, file)
+  }
+
+  /** 下一次下载这个地址时：压着只传一半（until），或者传到一半断开（cut） */
+  next(url: string, transfer: FakeTransfer): void {
+    this.#next.set(url, transfer)
+  }
+
+  async download(url: string, onProgress: (received: number) => void): Promise<Blob> {
+    if (!this.network.onLine)
+      throw new TypeError('Failed to fetch')
+    this.requests.push(url)
+    const file = this.#files.get(url)
+    if (!file)
+      throw new Error('文件服务器回了 404')
+    const transfer = this.#next.get(url) ?? {}
+    this.#next.delete(url)
+    const half = Math.floor(file.bytes / 2)
+    if (transfer.until || transfer.cut) {
+      onProgress(half)
+      await transfer.until
+      if (transfer.cut || !this.network.onLine)
+        throw new TypeError('network error')
+    }
+    onProgress(file.bytes)
+    return new Blob([new Uint8Array(file.bytes)], { type: file.type })
+  }
+}
+
+/** 本机文件的地址（URL.createObjectURL）：一台设备一份，测试按地址找回是哪个文件、看哪些已经不用了 */
+export class FakeObjectUrls {
+  readonly #blobs = new Map<string, Blob>()
+  /** revokeObjectURL 过的地址 */
+  readonly revoked = new Set<string>()
+  #count = 0
+
+  create(blob: Blob): string {
+    const url = `blob:campanula/${++this.#count}`
+    this.#blobs.set(url, blob)
+    return url
+  }
+
+  revoke(url: string): void {
+    this.revoked.add(url)
+  }
+
+  /** 这个地址是哪个文件；不是 createObjectURL 给的是 undefined */
+  blobOf(url: string): Blob | undefined {
+    return this.#blobs.get(url)
   }
 }
 

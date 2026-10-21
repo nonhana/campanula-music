@@ -1,12 +1,11 @@
 import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } from '#lib/api/library.js'
-import type { Quality } from '#lib/api/playback.js'
+import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 import type { CheckIn, SavedPlayer, SavedProgress, SavedQueue } from './player'
 
-// 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。
-// 之后的下载也放在这里；结构变化时升版本号，在 upgradeneeded 里迁移。
+// 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 8
+const VERSION = 9
 /** 登录会话的小事，按名字存 */
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
@@ -24,18 +23,38 @@ const PLAYER = 'player'
 const SETTINGS = 'settings'
 /** 要发的听歌打卡（#28），按记下的先后自动编号：记着是哪个网易云账号的，发成了、丢弃时删掉 */
 const CHECK_INS = 'checkIns'
+/**
+ * 下载（#38）：这台设备上下载完的歌，按歌曲编号存：歌曲信息、完整音频、封面缩略图、歌词。
+ * 属于这台设备，不属于哪个网易云账号：退出、换账号都不删（ADR-0006）
+ */
+const DOWNLOADS = 'downloads'
 
-/** 存着的播放队列那一份，加上它是哪个网易云账号的（换了别的账号登录就清空，规则⑩） */
-export type StoredQueue = SavedQueue & { owner: number }
+/**
+ * 存着的播放队列那一份，加上它是哪个网易云账号的（换了别的账号登录就清空，规则⑩）。
+ * 没登录时放已下载的歌（#38）是 null：不属于任何账号，之后登录了就交给那个账号
+ */
+export type StoredQueue = SavedQueue & { owner: number | null }
 
 /** 要发的听歌打卡，加上它是哪个网易云账号的：只补发给这个账号 */
 export type PendingCheckIn = CheckIn & { owner: number }
 
 /** 存着的播放队列和进度 */
 export interface StoredPlayer {
-  /** 网易云账号的 uid */
-  owner: number
+  /** 网易云账号的 uid；没登录时放的是 null */
+  owner: number | null
   saved: SavedPlayer
+}
+
+/** 这台设备上的一首下载（#38）：断网、没登录时也完整可用（ADR-0006） */
+export interface StoredDownload {
+  song: Song
+  /** 完整音频：在线播放用的同一份普通格式（mp3、flac），不是 .ncm */
+  audio: Blob
+  /** 封面缩略图 */
+  cover: Blob
+  lyrics: LyricsResponse
+  /** 下载完的那一刻（毫秒）：已下载页按它排，最近下载完的在前 */
+  downloadedAt: number
 }
 
 /** 一张歌单在本机的曲目 */
@@ -167,6 +186,11 @@ export interface LocalDb {
   searchHistory: () => Promise<string[]>
   /** 在一个事务里读出搜索历史、按 change 改好再存（别的标签页刚记下的不会被盖掉），返回存下的 */
   changeSearchHistory: (change: (history: string[]) => string[]) => Promise<string[]>
+  /** 这台设备上的下载（#38），不分先后；没有下载时是空的 */
+  readDownloads: () => Promise<StoredDownload[]>
+  /** 存下一首下载完的歌（换掉同一首以前的）；存储空间不够时以 QuotaExceededError 失败 */
+  saveDownload: (download: StoredDownload) => Promise<void>
+  deleteDownload: (songId: number) => Promise<void>
 }
 
 function settled<T>(request: IDBRequest<T>): Promise<T> {
@@ -252,6 +276,9 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
   // 7（#28）：要发的听歌打卡
   if (from < 7)
     database.createObjectStore(CHECK_INS, { autoIncrement: true })
+  // 9（#38）：下载。版本 8 以前的什么都不用改
+  if (from < 9)
+    database.createObjectStore(DOWNLOADS)
 }
 
 export function createLocalDb(indexedDB: IDBFactory): LocalDb {
@@ -476,5 +503,11 @@ export function createLocalDb(indexedDB: IDBFactory): LocalDb {
       })
       return changed
     },
+    async readDownloads() {
+      const store = (await database()).transaction(DOWNLOADS).objectStore(DOWNLOADS)
+      return await settled(store.getAll()) as StoredDownload[]
+    },
+    saveDownload: download => write([DOWNLOADS], transaction => transaction.objectStore(DOWNLOADS).put(download, download.song.id)),
+    deleteDownload: songId => write([DOWNLOADS], transaction => transaction.objectStore(DOWNLOADS).delete(songId)),
   }
 }

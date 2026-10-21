@@ -147,6 +147,12 @@ export interface PlayerContext {
   forget: (checkIns: readonly CheckIn[]) => void
   /** 取播放地址时网易云说需要登录，续期也没成功 */
   loginExpired: () => void
+  /** 这首歌在这台设备上下载了（#38）：已下载的歌即使在线也放本机文件，断网、没登录时照样能放 */
+  downloaded: (songId: number) => boolean
+  /** 已下载的这首的本机文件地址（blob:） */
+  localFile: (songId: number) => string
+  /** 现在能不能在线放（联网、登录着）：不能时只放已下载的，没下载的跳过 */
+  streamable: () => boolean
 }
 
 export interface Player {
@@ -190,14 +196,25 @@ export interface Player {
    * 停着等按播放，不算换歌（change 是 null）；播放地址没存，按播放时重新取，从原来的位置接着放
    */
   restore: (saved: SavedPlayer) => void
+  /**
+   * 哪些歌能放变了（#38：断网、联网，登录、退出，下载完一首、删了一首下载）：重算上一首、下一首，
+   * 空闲的播放器按现在能放的重新准备（断网时下一首是没下载的，就换成后面下载了的）
+   */
+  availabilityChanged: () => void
+  /**
+   * 没登录时放着的播放队列（#38，只有已下载的歌）交给刚登录的账号：接着放，不换歌；
+   * 当前这首登录前已经听的秒数不算（不补记），从现在起重新算。整份播放队列重存一次，记成这个账号的
+   */
+  adopt: () => void
 }
 
-/** 取到的播放地址 */
+/** 取到的播放地址；已下载的歌是本机文件的地址（local），不过期 */
 interface PlayUrl {
   url: string
   trial: boolean
   /** 毫秒 */
   expiresAt: number
+  local: boolean
 }
 
 /** 取播放地址的结果；url 是 null：网易云没给地址 */
@@ -416,9 +433,14 @@ export function createPlayer(context: PlayerContext): Player {
     return url !== null && clock.now() < url.expiresAt - URL_EXPIRY_MARGIN_MS
   }
 
-  /** 播放器装着这首歌、地址没过期、没出错：可以直接放 */
+  /** 播放器装着这首歌、地址没过期、没出错：可以直接放。下载了的要装着本机文件，没下载的（删了下载）要装着网易云的地址 */
   function holds(deck: Deck, song: Song): boolean {
-    return deck.song?.id === song.id && fresh(deck.url) && !deck.audio.error
+    return deck.song?.id === song.id && fresh(deck.url) && !deck.audio.error && deck.url.local === context.downloaded(song.id)
+  }
+
+  /** 已下载的歌：本机文件的地址，不取播放地址、不过期；没下载是 null */
+  function localUrl(song: Song): PlayUrl | null {
+    return context.downloaded(song.id) ? { url: context.localFile(song.id), trial: false, expiresAt: Number.POSITIVE_INFINITY, local: true } : null
   }
 
   /**
@@ -433,9 +455,9 @@ export function createPlayer(context: PlayerContext): Player {
     return deck === shown && state.current !== null && deck.song?.id === state.queue[state.current].song.id
   }
 
-  /** 取一首歌的播放地址：没过期的直接用；同一首同时只取一次。取地址是听众在等的前台请求，马上发 */
+  /** 取一首歌的播放地址：已下载的用本机文件；没过期的直接用；同一首同时只取一次。取地址是听众在等的前台请求，马上发 */
   function playUrl(song: Song): Promise<Fetched> {
-    const cached = urls.get(song.id) ?? null
+    const cached = localUrl(song) ?? urls.get(song.id) ?? null
     if (fresh(cached))
       return Promise.resolve({ ok: true, url: cached })
     let request = fetching.get(song.id)
@@ -447,7 +469,7 @@ export function createPlayer(context: PlayerContext): Player {
           return result
         if (!result.value.playable)
           return { ok: true, url: null }
-        const url = { url: result.value.url, trial: result.value.trial, expiresAt: requestedAt + result.value.expiresIn * 1000 }
+        const url = { url: result.value.url, trial: result.value.trial, expiresAt: requestedAt + result.value.expiresIn * 1000, local: false }
         if (mine === epoch)
           urls.set(song.id, url)
         return { ok: true, url }
@@ -460,8 +482,17 @@ export function createPlayer(context: PlayerContext): Player {
     return request
   }
 
+  /**
+   * 这首现在能不能放（Spec #11：已下载的歌永久可播，ADR-0006）：下载了的总能放；没下载的要能在线放（联网、登录着），
+   * 无版权的不能放
+   */
+  function canPlay(song: Song): boolean {
+    return context.downloaded(song.id) || (song.availability !== 'noCopyright' && context.streamable())
+  }
+
+  /** 播放队列里这一首能不能放：现在能放，网易云也没说这首给不了地址（下载了的不用取地址） */
   function playable(entry: QueueEntry): boolean {
-    return entry.song.availability !== 'noCopyright' && !unavailable.has(entry.song.id)
+    return canPlay(entry.song) && (context.downloaded(entry.song.id) || !unavailable.has(entry.song.id))
   }
 
   /**
@@ -564,7 +595,7 @@ export function createPlayer(context: PlayerContext): Player {
       endListen()
     publish({ current: index, position, duration: null, trial: false, notice, change: change ?? state.change })
     if (!holds(spare, song)) {
-      let url = urls.get(song.id) ?? null
+      let url = localUrl(song) ?? urls.get(song.id) ?? null
       if (!fresh(url)) {
         publish({ status: 'loading' })
         const fetched = await playUrl(song)
@@ -840,7 +871,7 @@ export function createPlayer(context: PlayerContext): Player {
    * 正在放的那首什么都不变、不从头放；暂停着时插播它就是接着放。无版权的歌不放进来
    */
   function add(source: PlaySource, song: Song, how: 'next' | 'end' | 'now'): void {
-    if (song.availability === 'noCopyright')
+    if (!canPlay(song))
       return
     const id = currentId()
     if (id === null) {
@@ -908,7 +939,7 @@ export function createPlayer(context: PlayerContext): Player {
   return {
     play(source, songs, songId, complete) {
       const index = songs.findIndex(song => song.id === songId)
-      if (index === -1 || songs[index].availability === 'noCopyright')
+      if (index === -1 || !canPlay(songs[index]))
         return
       unavailable.clear()
       upNext = []
@@ -968,7 +999,7 @@ export function createPlayer(context: PlayerContext): Player {
     },
     jump(index) {
       const entry = state.queue[index]
-      if (!entry || index === state.current || entry.song.availability === 'noCopyright')
+      if (!entry || index === state.current || !playable(entry))
         return
       if (upNext.length > 0)
         upNext = []
@@ -1032,6 +1063,18 @@ export function createPlayer(context: PlayerContext): Player {
     },
     dismissNotice() {
       publish({ notice: null })
+    },
+    adopt() {
+      heard = 0
+      soundingSince = state.status === 'playing' ? clock.now() : null
+      savedQueue = null
+      persist()
+    },
+    availabilityChanged() {
+      if (state.current === null)
+        return
+      publish({})
+      queueChanged()
     },
     stop() {
       epoch += 1

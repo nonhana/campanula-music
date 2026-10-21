@@ -3,6 +3,7 @@ import type { AddTracksRequest, AddTracksResponse, AlbumResponse, ArtistAlbum, A
 import type { Api, RequestFailure, Result } from './api'
 import type { Clock } from './browser'
 import type { Change, ConfirmedChange } from './changes'
+import type { DownloadNotice } from './downloads'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
 import { canSortPlaylist, nameProblem, reorderSortable, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
@@ -45,7 +46,7 @@ export type AddSongsOutcome
     | { ok: false, failure: ChangeFailure | { kind: 'missing' } }
     | null
 
-/** 改曲库后要告诉听众的事 */
+/** 改曲库、下载（#38，和改曲库共用一条提示条）后要告诉听众的事 */
 export type LibraryNotice
   /** 没改成，已经改回原样 */
   = | { kind: 'notChanged', change: Change, failure: ChangeFailure }
@@ -65,6 +66,7 @@ export type LibraryNotice
     | { kind: 'playlistOrderFailed', playlistIds: readonly number[], failure: ChangeFailure, restored: boolean }
   /** 上次关闭前的修改没保存成功：已经从网易云重拉这张歌单、恢复原样 */
     | { kind: 'recovered' }
+    | DownloadNotice
 
 export type SyncStatus
   /** 有一个同步请求在路上 */
@@ -262,6 +264,8 @@ export interface Library {
    */
   create: (draft: CreatePlaylistRequest, songs?: readonly Song[]) => Promise<CreateOutcome | null>
   dismissNotice: () => void
+  /** 下载（#38）要告诉听众的事：放进同一条提示条，换掉之前的提示。没登录时没有提示条，不显示 */
+  notify: (notice: DownloadNotice) => void
   /** 退出、登录失效：停下同步。本机副本留着，退出时由 App 另外删 */
   leave: () => void
 }
@@ -372,14 +376,16 @@ function folded(text: string): string {
   return text.normalize('NFKC').toLowerCase()
 }
 
-/** 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成 */
-export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch {
+/** 在一串歌里搜索：歌名、歌手、专辑里有搜索词的，按原来的先后；不分大小写和全角半角。搜索词是空的就是全部 */
+export function searchSongs(songs: readonly Song[], query: string): Song[] {
   const term = folded(query.trim())
   const matches = (text: string | null) => text !== null && folded(text).includes(term)
-  return {
-    songs: playlist.songs.filter(song => matches(song.name) || matches(song.album.name) || song.artists.some(artist => matches(artist.name))),
-    incomplete: !playlist.complete,
-  }
+  return songs.filter(song => matches(song.name) || matches(song.album.name) || song.artists.some(artist => matches(artist.name)))
+}
+
+/** 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成 */
+export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch {
+  return { songs: searchSongs(playlist.songs, query), incomplete: !playlist.complete }
 }
 
 /** 点歌、歌单内搜索、补上还没同步的歌（规则⑫）时的这张歌单：曲库里的看本机副本，不在曲库里的看打开时取到的；都还没有是 null */
@@ -2164,6 +2170,12 @@ export function createLibrary(context: LibraryContext): Library {
       if (notice?.kind === 'playlistOrderFailed')
         failedPlaylistOrder = null
       notice = null
+      publish()
+    },
+    notify(next) {
+      if (!replica)
+        return
+      notice = next
       publish()
     },
     leave() {

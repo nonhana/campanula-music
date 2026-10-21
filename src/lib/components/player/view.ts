@@ -78,8 +78,10 @@ export function formatSeconds(seconds: number): string {
   return formatDuration(seconds * 1000)
 }
 
-/** 播放来源叫什么（“来自「我喜欢的音乐」”）；曲库里找不到（歌单在网易云里删掉了、专辑页还没打开过）时是 null */
+/** 播放来源叫什么（“来自「我喜欢的音乐」”）；曲库里找不到（歌单在网易云里删掉了、专辑页还没打开过）时是 null。已下载没登录时也有名字 */
 export function sourceName(library: LibraryState | null, source: PlaySource): string | null {
+  if (source.kind === 'downloads')
+    return '已下载'
   if (!library)
     return null
   switch (source.kind) {

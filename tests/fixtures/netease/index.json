@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@2.12.0",
-  "recordings": 319,
+  "recordings": 323,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -10,9 +10,9 @@
       }
     },
     "scrobble": {
-      "count": 4,
+      "count": 5,
       "outcomes": {
-        "ok": 4
+        "ok": 5
       }
     },
     "album_sublist": {
@@ -206,6 +206,12 @@
         "ok": 1
       }
     },
+    "song_download_url_v1": {
+      "count": 7,
+      "outcomes": {
+        "ok": 7
+      }
+    },
     "song_url_v1": {
       "count": 17,
       "outcomes": {
@@ -216,12 +222,6 @@
       "count": 7,
       "outcomes": {
         "ok": 7
-      }
-    },
-    "song_download_url_v1": {
-      "count": 4,
-      "outcomes": {
-        "ok": 4
       }
     },
     "playlist_create": {
@@ -4143,6 +4143,76 @@
       "constructed": false,
       "viewer": "vip-qr",
       "sdk": "hana-music-api@2.9.0",
+      "note": null
+    },
+    {
+      "path": "playback/downloads/001-scrobble.json.gz",
+      "module": "scrobble",
+      "queryKey": "{\"id\":3416515543,\"source\":\"download\",\"sourceid\":0,\"time\":207}",
+      "query": {
+        "id": 3416515543,
+        "source": "download",
+        "sourceid": 0,
+        "time": 207
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.12.0",
+      "note": null
+    },
+    {
+      "path": "playback/downloads/002-song_download_url_v1.json.gz",
+      "module": "song_download_url_v1",
+      "queryKey": "{\"id\":3433267939,\"level\":\"exhigh\"}",
+      "query": {
+        "id": 3433267939,
+        "level": "exhigh"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.12.0",
+      "note": null
+    },
+    {
+      "path": "playback/downloads/003-song_download_url_v1.json.gz",
+      "module": "song_download_url_v1",
+      "queryKey": "{\"id\":2662577181,\"level\":\"exhigh\"}",
+      "query": {
+        "id": 2662577181,
+        "level": "exhigh"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.12.0",
+      "note": null
+    },
+    {
+      "path": "playback/downloads/004-song_download_url_v1.json.gz",
+      "module": "song_download_url_v1",
+      "queryKey": "{\"id\":4208408,\"level\":\"exhigh\"}",
+      "query": {
+        "id": 4208408,
+        "level": "exhigh"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.12.0",
       "note": null
     },
     {

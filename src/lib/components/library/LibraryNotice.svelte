@@ -48,8 +48,8 @@
   })
 
   const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed' || notice?.kind === 'recovered')
-  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed' || notice?.kind === 'playlistOrderFailed')
-  /** 提示条里的“重试”：移除失败、排序失败共用同一个按钮 */
+  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed' || notice?.kind === 'playlistOrderFailed' || notice?.kind === 'downloadFailed')
+  /** 提示条里的“重试”：移除失败、排序失败、下载失败共用同一个按钮 */
   const retry = $derived.by(() => {
     if (notice?.kind === 'removeFailed' && notice.retryable !== false)
       return () => void view.app.retryRemove()
@@ -57,6 +57,13 @@
       return () => void view.app.retryOrder()
     if (notice?.kind === 'playlistOrderFailed')
       return () => void view.app.retryPlaylistOrder()
+    if (notice?.kind === 'downloadFailed') {
+      const { song } = notice
+      return () => {
+        view.app.dismissLibraryNotice()
+        view.app.download(song)
+      }
+    }
     return null
   })
 </script>

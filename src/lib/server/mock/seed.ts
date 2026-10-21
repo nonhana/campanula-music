@@ -83,6 +83,8 @@ export interface SeedData {
     songUrl: RawFixture['response']['body']
     songUrlNoCopyright: RawFixture['response']['body']
     likelist: RawFixture['response']['body']
+    songDownloadUrl: RawFixture['response']['body']
+    songDownloadUrlNoCopyright: RawFixture['response']['body']
     imageUploadToken: RawFixture['response']['body']
     coverUpdate: RawFixture['response']['body']
     emptyPlaylistDetail: PlaylistDetailBody
@@ -281,6 +283,8 @@ export async function buildSeed(seed: SeedName): Promise<SeedData> {
     songDetail: bodyOf(await readFixture('library/song_detail.liked-page1.json.gz')),
     songUrl: bodyOf(await readFixture('playback/song_url_v1.vip-exhigh.json')),
     songUrlNoCopyright: bodyOf(await readFixture('playback/song_url_v1.no-copyright.json')),
+    songDownloadUrl: bodyOf(await readFixture('playback/song_download_url_v1.vip-exhigh.json')),
+    songDownloadUrlNoCopyright: bodyOf(await readFixture('playback/song_download_url_v1.no-copyright.json')),
     likelist: bodyOf(await readFixture('library/likelist.json')),
     imageUploadToken: bodyOf(await readFixture('playlist-edit/image_upload_token.json')),
     coverUpdate: bodyOf(await readFixture('playlist-edit/playlist_cover_update.imgid.json')),

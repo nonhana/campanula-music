@@ -14,6 +14,8 @@ export type PlaySource
   = | { kind: typeof NUMBERED_SOURCE_KINDS[number], id: number }
   /** 每日推荐：每天换一份，没有编号 */
     | { kind: 'daily' }
+  /** 已下载（#38）：这台设备上下载的全部歌，没有编号 */
+    | { kind: 'downloads' }
   /** 一次搜索（#31）：搜的是哪个词 */
     | { kind: 'search', keyword: string }
 
@@ -21,7 +23,8 @@ export type PlaySource
 export function sameSource(a: PlaySource, b: PlaySource): boolean {
   switch (a.kind) {
     case 'daily':
-      return b.kind === 'daily'
+    case 'downloads':
+      return b.kind === a.kind
     case 'search':
       return b.kind === 'search' && a.keyword === b.keyword
     default:
@@ -58,6 +61,23 @@ export type PlayUrlResponse
   }
   /** 网易云没给地址：无版权，或者这个账号放不了 */
   | { playable: false }
+
+/** 下载音质：设置页的下载音质（#40）加上之前固定是极高，和在线播放音质分开（Spec #11“客户端：下载”） */
+export const DOWNLOAD_QUALITY: Quality = 'exhigh'
+
+/**
+ * GET /api/songs/[id]/download-url?quality=：下载一首用的地址，浏览器拿它直连网易云的音频服务器，把整首存进这台设备（#38）。
+ * 只给完整音频的地址：网易云没给（无版权、这个账号下不了完整的）时是 downloadable: false
+ */
+export type DownloadUrlResponse
+  = | {
+    downloadable: true
+    /** https 地址；约 20 分钟过期，拿到就下 */
+    url: string
+    /** 整首有多少字节：下完核对，对不上就是没下全 */
+    size: number
+  }
+  | { downloadable: false }
 
 /** 逐字歌词里的一个词：一个字，或者带着后面空格的一个单词 */
 export interface LyricWord {
