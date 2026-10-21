@@ -1,10 +1,9 @@
 <!--
   曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页，
   点一首、播放全部都用整个我喜欢的音乐替换播放队列）和右侧的每日推荐方块、歌单的封面网格和收藏的专辑、歌手两排横向架子。
-  返回这一页时，歌单的筛选和滚动位置都回到原来的样子。骨架换成内容时骨架淡出、前几格依次飘入（DESIGN.md Motion）
+  返回这一页时，滚动位置回到原来的样子。骨架换成内容时骨架淡出、前几格依次飘入（DESIGN.md Motion）
 -->
 <script lang='ts'>
-  import type { PlaylistFilter } from '#lib/components/library/view.js'
   import { resolve } from '$app/paths'
   import { ChevronLeft, ChevronRight } from '@lucide/svelte'
   import { getAppView } from '#lib/components/app-context.svelte.js'
@@ -36,11 +35,10 @@
   const strip = $derived(liked?.kind === 'songs' ? liked.songs.slice(0, 36) : [])
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
 
-  let filter = $state<PlaylistFilter>('all')
   /** 手机“我喜欢”标签里的歌单内搜索 */
   let query = $state('')
-  export const snapshot = scrollSnapshot(() => ({ filter, query }), (value) => {
-    ({ filter, query } = value)
+  export const snapshot = scrollSnapshot(() => query, (value) => {
+    query = value
   })
 
   let stripEl = $state<HTMLElement>()
@@ -154,7 +152,7 @@
     </section>
 
     <section class='mt-10' aria-labelledby='playlists-heading'>
-      <PlaylistGrid {library} bind:filter>
+      <PlaylistGrid {library} sectionLevel={3}>
         {#snippet heading()}
           <h2 id='playlists-heading' class='text-title text-neutral-900 font-600'>歌单</h2>
         {/snippet}
