@@ -54,18 +54,20 @@ export interface DownloadsState {
 }
 
 /**
- * 一首歌为什么现在不下：已经下载完、正在下；试听、无版权的不能下载（只下完整音频）；断网时下不了。
- * 能下（包括上次没下成、要重试的）是 null
+ * 一首歌为什么现在不下：已经下载完、正在下；试听、无版权的不能下载（只下完整音频）；没登录（退出了、登录失效）时
+ * 要不到下载地址；断网时下不了。能下（包括上次没下成、要重试的）是 null
  */
-export type DownloadBlock = 'downloaded' | 'downloading' | 'trial' | 'noCopyright' | 'offline'
+export type DownloadBlock = 'downloaded' | 'downloading' | 'trial' | 'noCopyright' | 'signedOut' | 'offline'
 
-export function downloadBlock(song: Song, downloads: DownloadsState, online: boolean): DownloadBlock | null {
+export function downloadBlock(song: Song, downloads: DownloadsState, { signedIn, online }: { signedIn: boolean, online: boolean }): DownloadBlock | null {
   if (downloads.has(song.id))
     return 'downloaded'
   if (downloads.tasks.get(song.id)?.status === 'downloading')
     return 'downloading'
   if (song.availability !== 'full')
     return song.availability
+  if (!signedIn)
+    return 'signedOut'
   return online ? null : 'offline'
 }
 
@@ -86,6 +88,8 @@ export interface DownloadsContext {
   clock: Clock
   browser: Pick<BrowserCapabilities, 'download' | 'objectUrl' | 'revokeObjectUrl'>
   online: () => boolean
+  /** 登录着：要下载地址要用这个账号；退出、登录失效时不能下载 */
+  signedIn: () => boolean
   write: (downloads: DownloadsState) => void
   notify: (notice: DownloadNotice) => void
   /** 取下载地址、歌词时网易云说需要登录，续期也没成功 */
@@ -178,9 +182,12 @@ export function createDownloads(context: DownloadsContext): Downloads {
     return (await lane.send(() => api.get<T>(path), () => {}))!
   }
 
-  /** 没拿到下载地址、歌词：网易云说需要登录（续期也没成功）时整个 App 变成登录失效 */
+  /**
+   * 没拿到下载地址、歌词：网易云说需要登录（续期也没成功）时整个 App 变成登录失效。
+   * 后台通道停了（退出、已经登录失效）时等着的请求也回需要登录：还登录着才是网易云说的（和听歌打卡一样）
+   */
   function refused(song: Song, failure: Extract<DownloadFailure, { kind: 'request' }>['failure']): void {
-    if (failure.kind === 'needsLogin')
+    if (failure.kind === 'needsLogin' && context.signedIn())
       context.loginExpired()
     fail(song, { kind: 'request', failure })
   }
@@ -250,7 +257,7 @@ export function createDownloads(context: DownloadsContext): Downloads {
       return loading
     },
     download(song) {
-      const blocked = downloadBlock(song, current(), context.online())
+      const blocked = downloadBlock(song, current(), { signedIn: context.signedIn(), online: context.online() })
       if (blocked)
         return blocked
       setTask({ status: 'downloading', song, received: 0, total: null })

@@ -7,8 +7,8 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { Play } from '@lucide/svelte'
-  import { playable } from '#lib/api/library.js'
   import { getAppView } from '../app-context.svelte'
+  import { songLook } from '../downloads/view'
   import Cover from '../library/Cover.svelte'
   import { formatCount } from '../library/view'
   import { fade } from '../motion'
@@ -66,7 +66,7 @@
     type='button'
     class='absolute inset-y-0 right-5 grid my-auto size-11 place-items-center rounded-full bg-primary-900 text-white transition-[background-color,color,transform] duration-feedback xl:(bottom-5 top-auto my-0) enabled:press disabled:(cursor-not-allowed bg-neutral-200 text-neutral-500) mouse:enabled:hover:bg-primary-950'
     aria-label='播放每日推荐'
-    disabled={!songs?.some(playable)}
+    disabled={!songs?.some(song => !songLook(view, song).off)}
     onclick={() => view.app.playAll(DAILY_SOURCE)}
   >
     <Play size={18} fill='currentColor' class='ml-0.5' aria-hidden='true' />

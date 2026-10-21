@@ -59,9 +59,10 @@
       return () => void view.app.retryPlaylistOrder()
     if (notice?.kind === 'downloadFailed') {
       const { song } = notice
+      // 开始重下了才关掉：断网、没登录时下不了，提示条留着（原因已经写在上面）
       return () => {
-        view.app.dismissLibraryNotice()
-        view.app.download(song)
+        if (view.app.download(song) === null)
+          view.app.dismissLibraryNotice()
       }
     }
     return null

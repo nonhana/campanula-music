@@ -1,7 +1,7 @@
 import type { Song } from '#lib/api/library.js'
 import type { DownloadBlock, DownloadFailure } from '#lib/app/downloads.js'
 import type { AppView } from '../app-context.svelte'
-import { downloadBlock } from '#lib/app/downloads.js'
+import { downloadBlock, playableNow } from '#lib/app/downloads.js'
 import { failureText } from '../failure'
 
 // 下载在界面上怎么显示（#38，DESIGN.md Song Row · 状态、Chips · Badges）：歌曲行的状态、徽标、“更多”菜单里下载那一项的文案，
@@ -28,29 +28,25 @@ export function streamable(view: AppView): boolean {
   return view.state.online && view.state.session.status === 'signedIn'
 }
 
-/** 一首歌在列表里现在是什么样子 */
+/** 一首歌在列表里现在是什么样子。能不能放和 App 用的是同一条规则（playableNow） */
 export function songLook(view: AppView, song: Song): SongLook {
   const { downloads } = view.state
   const downloaded = downloads.has(song.id)
-  const online = streamable(view)
   const task = downloads.tasks.get(song.id)
   const mark: DownloadMark | null = downloaded
     ? { kind: 'done' }
     : task?.status === 'downloading'
       ? { kind: 'downloading', percent: task.total ? Math.floor(task.received * 100 / task.total) : 0 }
       : task?.status === 'failed' ? { kind: 'failed' } : null
-  if (downloaded)
-    return { off: false, badge: null, mark }
-  if (song.availability === 'noCopyright')
-    return { off: true, badge: 'noCopyright', mark }
-  if (!online)
-    return { off: true, badge: 'notDownloaded', mark }
-  return { off: false, badge: song.availability === 'trial' ? 'trial' : null, mark }
+  const off = !playableNow(song, downloaded, streamable(view))
+  // 徽标：无版权优先；下载了的放本机的完整音频，不标试听
+  const badge: SongBadgeKind | null = downloaded ? null : song.availability === 'noCopyright' ? 'noCopyright' : off ? 'notDownloaded' : song.availability === 'trial' ? 'trial' : null
+  return { off, badge, mark }
 }
 
 /** “更多”菜单里下载那一项：文案，能不能点 */
 export function downloadItem(view: AppView, song: Song): { label: string, disabled: boolean } {
-  const block: DownloadBlock | null = downloadBlock(song, view.state.downloads, view.state.online)
+  const block: DownloadBlock | null = downloadBlock(song, view.state.downloads, { signedIn: view.state.session.status === 'signedIn', online: view.state.online })
   switch (block) {
     case null:
       return { label: view.state.downloads.tasks.get(song.id)?.status === 'failed' ? '重新下载' : '下载', disabled: false }
@@ -64,6 +60,8 @@ export function downloadItem(view: AppView, song: Song): { label: string, disabl
       return { label: '试听歌曲不能下载', disabled: true }
     case 'noCopyright':
       return { label: '无版权，不能下载', disabled: true }
+    case 'signedOut':
+      return { label: '登录后才能下载', disabled: true }
     case 'offline':
       return { label: '断网时不能下载', disabled: true }
     default: {

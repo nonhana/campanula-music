@@ -2,7 +2,8 @@
   没登录、登录失效时的已下载页外框（#38，原型 DesktopLoggedOut / PhoneLoggedOut 的已下载那一屏）：ADR-0006 说下载属于设备，
   这是“未登录只能看到登录页”的唯一例外。顶上一行是 logo（回到登录页）和右边的“登录”，没有侧栏、顶栏搜索；
   播放队列里有歌时底下是播放条（桌面 80px 通栏、手机浮起的迷你播放条），能打开播放页、能开“更多”菜单。
-  播放页、播放提示、“更多”菜单、改曲库的提示和登录后的骨架（SignedInFrame）一样放；播放页开着时后面的不能操作
+  播放页、播放提示、“更多”菜单和登录后的骨架（SignedInFrame）一样放；播放页开着时后面的不能操作。
+  改曲库、下载的提示条属于登录后（没登录时不能改曲库、不能下载），这里没有
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
@@ -11,7 +12,6 @@
   import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
   import { desktopLayout } from '../layout'
-  import LibraryNotice from '../library/LibraryNotice.svelte'
   import { dock, fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
@@ -45,7 +45,7 @@
       <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到登录页'><Brand /></a>
       <a
         href={resolve('/')}
-        class='ml-auto h-10 inline-flex items-center rounded-full bg-primary-900 px-5 text-label text-white font-500 transition-colors duration-feedback active:bg-primary-950 mouse:hover:bg-primary-950'
+        class='ml-auto h-11 inline-flex items-center rounded-full bg-primary-900 px-5 text-label text-white font-500 transition-colors duration-feedback md:h-10 active:bg-primary-950 mouse:hover:bg-primary-950'
       >登录</a>
     </header>
     <main class='md:pt-16'>
@@ -79,5 +79,4 @@
   <PlayerPage open={playerOpen} />
 {/if}
 <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
-<LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
 <SongMenu />
