@@ -118,19 +118,6 @@ export function playlistName(playlist: Playlist): string {
   return playlist.kind === 'liked' ? '我喜欢的音乐' : playlist.name
 }
 
-export type PlaylistFilter = 'all' | 'own' | 'collected'
-
-export const PLAYLIST_FILTERS: readonly { key: PlaylistFilter, label: string }[] = [
-  { key: 'all', label: '全部' },
-  { key: 'own', label: '自建' },
-  { key: 'collected', label: '收藏' },
-]
-
-/** 歌单标签、首页的歌单网格：我喜欢的音乐另有一块，不在里面 */
-export function filterPlaylists(playlists: readonly Playlist[], filter: PlaylistFilter): Playlist[] {
-  return playlists.filter(playlist => playlist.kind !== 'liked' && (filter === 'all' || playlist.kind === filter))
-}
-
 /** 首次同步的进度：整个曲库同步完了几张歌单、几首歌 */
 export interface SyncProgress {
   playlists: { done: number, total: number }
