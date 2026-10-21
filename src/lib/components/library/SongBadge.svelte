@@ -1,12 +1,14 @@
-<!-- 跟在歌名后面的徽标（DESIGN.md Chips · Badges）：只能试听（琥珀）、无版权（淡发丝底） -->
+<!--
+  跟在歌名后面的徽标（DESIGN.md Chips · Badges）：无版权、断网时没下载（#38，“未下载”）用淡发丝底，只能试听用琥珀。
+  一行只显示一个，先后见 downloads/view.ts 的 songLook
+-->
 <script lang='ts'>
-  import type { Availability } from '#lib/api/library.js'
+  import type { SongBadgeKind } from '../downloads/view'
 
-  const { availability }: { availability: Availability } = $props()
+  const { kind }: { kind: SongBadgeKind | null } = $props()
+  const LABELS: Record<SongBadgeKind, string> = { noCopyright: '无版权', notDownloaded: '未下载', trial: '试听' }
 </script>
 
-{#if availability === 'noCopyright'}
-  <span class='flex-none rounded-sm bg-neutral-100 px-1.5 text-micro text-neutral-700 font-500'>无版权</span>
-{:else if availability === 'trial'}
-  <span class='flex-none rounded-sm bg-warning-50 px-1.5 text-micro text-warning-900 font-500'>试听</span>
+{#if kind}
+  <span class={['flex-none rounded-sm px-1.5 text-micro font-500', kind === 'trial' ? 'bg-warning-50 text-warning-900' : 'bg-neutral-100 text-neutral-700']}>{LABELS[kind]}</span>
 {/if}

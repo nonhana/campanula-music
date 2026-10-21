@@ -1,8 +1,9 @@
 <!--
-  桌面歌曲行（56px，DESIGN.md Song Row）：序号、封面和歌名歌手、专辑、状态（红心键，始终可见）、时长、•••。单击整行就播放；
+  桌面歌曲行（56px，DESIGN.md Song Row）：序号、封面和歌名歌手、专辑、状态（红心键，始终可见；后面跟着下载标记）、时长、•••。单击整行就播放；
   ••• 始终可见，右键（键盘的菜单键）打开同一份“更多”菜单。红心键和 ••• 压在整行的点歌按钮上面，点它们不放歌。
   正在播放的那行是晨光行：序号换成三根小竖条，歌名变成森林墨。点歌时这一行的封面飞进播放条（PlayTarget 的 cover）。
-  无版权的整行降到 45%、不能点，徽标写明原因（红心键、••• 照样能点）。
+  现在放不了的整行降到 45%、不能点，徽标写明原因（无版权；断网、没登录时没下载的写“未下载”，#38）；红心键、••• 照样能点。
+  下载了的歌永远能放（ADR-0006）。
   六列的宽度和每列的对齐写在 SONG_GRID / SONG_COLUMNS 里，表头和骨架行用的是同一份
 -->
 <script module lang='ts'>
@@ -24,6 +25,9 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import { Check } from '@lucide/svelte'
+  import { getAppView } from '../app-context.svelte'
+  import DownloadMark from '../downloads/DownloadMark.svelte'
+  import { songLook } from '../downloads/view'
   import MorningWash from '../player/MorningWash.svelte'
   import NowIndex from '../player/NowIndex.svelte'
   import { openSongMenuAt } from '../song-menu.svelte'
@@ -57,7 +61,9 @@
   }
 
   const { song, source, n, now, onplay, selecting = false, selected = false, onselect, grip, ghost = false, count = 1 }: Props = $props()
-  const off = $derived(song.availability === 'noCopyright')
+  const view = getAppView()
+  const look = $derived(songLook(view, song))
+  const off = $derived(look.off)
   /** 这一行的封面：点歌时它飞进播放条 */
   let cover = $state<HTMLElement>()
 
@@ -94,13 +100,16 @@
       <PlayTarget class='min-w-0 flex-1' rounded disabled={off && !selecting && !onselect} unplayable={off} {now} {cover} {onplay} {selecting} {selected} {onselect} keyshortcuts={grip ? 'Alt+ArrowUp Alt+ArrowDown' : undefined}>
         <span class='min-w-0 flex items-center gap-2'>
           <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
-          <SongBadge availability={song.availability} />
+          <SongBadge kind={look.badge} />
         </span>
         <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
       </PlayTarget>
     </span>
     <span class={['truncate text-caption text-neutral-600', SONG_COLUMNS.album]} lang={langOf(song.album.name ?? '')}>{song.album.name}</span>
-    <span class={['flex items-center', SONG_COLUMNS.status]}><HeartButton {song} size='row' /></span>
+    <span class={['flex items-center gap-2', SONG_COLUMNS.status]}>
+      <HeartButton {song} size='row' />
+      {#if look.mark}<DownloadMark mark={look.mark} variant='column' />{/if}
+    </span>
     <span class={['text-caption text-neutral-500 tabular-nums', SONG_COLUMNS.duration]}>{formatDuration(song.duration)}</span>
     {#if grip}
       {@render grip(song)}

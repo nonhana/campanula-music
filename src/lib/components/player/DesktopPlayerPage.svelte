@@ -1,17 +1,19 @@
 <!--
   桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“正在播放 · 来自「…」”，正中一个拖动把手
   （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
-  左列封面、歌名（右边是红心键）、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）：
+  左列封面、歌名（右边是红心键和“更多”菜单）、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换（←/→ 换标签）：
   两块并排放在一条轨道上、一直挂着，换标签时轨道和指示块一起横着滑，看不见的那块 Tab 不到、读屏读不到。
   整页放进视口，不滚动。换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
-  “更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
+  “更多”菜单和歌曲行里的是同一份（#38：能在这里下载当前这首），播放来源是这首歌自己的。放在 PlayerPage 里
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
   import type { Playhead } from './playhead.svelte'
   import type { Turn } from './view'
   import { ChevronDown } from '@lucide/svelte'
+  import { getAppView } from '../app-context.svelte'
   import HeartButton from '../library/HeartButton.svelte'
+  import SongMoreButton from '../library/SongMoreButton.svelte'
   import { langOf } from '../library/view'
   import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
@@ -29,6 +31,9 @@
   import WaveProgress from './WaveProgress.svelte'
 
   const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
+  const view = getAppView()
+  /** 当前这首在播放队列里的那一项：“更多”菜单里放进播放队列时用它自己的播放来源 */
+  const entry = $derived(view.state.player.current === null ? null : view.state.player.queue[view.state.player.current])
 
   const PANELS = [
     { key: 'lyrics', label: '歌词' },
@@ -80,6 +85,7 @@
         <NowPlayingTitle {song} {turn} />
       </div>
       <HeartButton {song} size='desktop' />
+      {#if entry}<SongMoreButton song={entry.song} source={entry.source} size='desktop-page' />{/if}
     </div>
 
     <div class='mt-3'>

@@ -275,6 +275,39 @@ describe('下载属于这台设备', () => {
     expect(app.state.downloads.songs).toEqual([first])
     expect((await storedDownloads(device)).map(stored => stored.song.id)).toEqual([first.id])
   })
+
+  it('没登录时删掉正在放的那首下载：这首接着放完（文件已经在播放器里），之后放不了的不再放，不去取播放地址', async () => {
+    const device = world.device()
+    const signedIn = await signInWithLiked(device)
+    const first = await download(device, signedIn.app, FIRST)
+    const second = await download(device, signedIn.app, SECOND)
+    await world.netease.reply('login/logout.json')
+    await signedIn.app.logout()
+    await world.settle()
+    const { app } = signedIn
+
+    app.play(DOWNLOADS, first.id)
+    await world.settle()
+    const player = signedIn.audio.find(audio => !audio.paused)!
+    player.ready(192.648)
+    await world.settle()
+
+    await app.deleteDownload(first.id)
+    await world.settle()
+    expect(current(app)).toBe(first.id)
+    expect(app.state.player.neighbors).toEqual({ previous: 0, next: 0 })
+    await app.deleteDownload(second.id)
+    await world.settle()
+    expect(app.state.player.neighbors).toEqual({ previous: null, next: null })
+
+    player.end()
+    await world.settle()
+    expect(app.state.player.status).toBe('paused')
+    app.togglePlay()
+    await world.settle()
+    expect(app.state.player).toMatchObject({ status: 'paused', notice: { kind: 'nothingPlayable' } })
+    expect(playUrlRequests(device)).toEqual([])
+  })
 })
 
 describe('放已下载的歌', () => {
@@ -373,6 +406,19 @@ describe('放已下载的歌', () => {
     await world.settle()
     expect(app.state.online).toBe(true)
     expect(app.state.player.neighbors.next).toBe(1)
+  })
+
+  it('断网时播放全部：从歌单里第一首下载了的开始放', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const third = await download(device, app, THIRD)
+    device.setOnline(false)
+    await world.settle()
+
+    app.playAll(LIKED)
+    await world.settle()
+    expect(current(app)).toBe(third.id)
+    expect(app.state.player.queue).toHaveLength(app.state.library!.liked!.songs.length)
   })
 
   it('没登录时放着已下载的歌关掉 App：再打开时恢复播放队列和进度，停着等按播放', async () => {

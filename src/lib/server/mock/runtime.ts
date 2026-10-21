@@ -390,9 +390,13 @@ export async function invokeModule(module: string, query: Record<string, unknown
     case 'artist_album':
     case 'artist_top_song':
     case 'artist_detail':
-    case 'lyric_new':
     case 'cloudsearch':
       return { status: 200, body: await fallback(module, query), cookie: [] }
+    case 'lyric_new': {
+      // 录到过这首的歌词就回录制；没录到的（例如 4 首可播放歌单里的歌）回同一份录下的歌词，下载（#38）和播放页都要用
+      const entry = await entryFor(module, query)
+      return { status: 200, body: entry ? await fallback(module, query) : templates.lyric, cookie: [] }
+    }
     case 'search_suggest':
       return { status: 200, body: await fallback(module, query), cookie: [] }
     default:

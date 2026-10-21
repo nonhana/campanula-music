@@ -3,6 +3,7 @@ import type { PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { Api, RequestFailure } from './api'
 import type { AudioCapability, Clock } from './browser'
 import type { PlaylistSongs } from './library'
+import { playableNow } from './downloads'
 
 // 播放队列与播放（Spec #11“客户端：播放队列与播放”）。
 // 两个播放器轮流放（ADR-0010）：换歌时在空闲的那个上放，它出声了再停旧的，换歌的过程中一直有一个在放。
@@ -10,7 +11,8 @@ import type { PlaylistSongs } from './library'
 // 播放地址约 20 分钟过期：暂停很久后再放、或者放着放着过期了，重新取地址，从原来的位置接着放。
 // 播放队列一变（下一首播放、插播、移出、换播放模式、补上没同步完的歌）、换了在线播放音质，就重新准备空闲的播放器。
 // 下一首播放、加入播放队列、插播的边角照逻辑原型定下的规则①–⑤（docs/prototype/logic.md）。
-// 播放队列和进度存在本机（App 按网易云账号存），重新打开时恢复。
+// 播放队列和进度存在本机（App 按网易云账号存；没登录时放已下载的歌也存，不属于任何账号），重新打开时恢复。
+// 已下载的歌（#38）放本机文件，不取播放地址；断网、没登录时没下载的歌放不了，换歌时跳过，列表循环只在能放的歌里转。
 // 一首歌听完了（播完或切走）就交出一次听歌打卡，和进度存在一起（Spec #11“客户端：听歌打卡”，#28）。
 
 /** 当前这首剩这么多秒时，空闲的播放器开始放下一首（探针在真机上验证过 1 秒，ADR-0010） */
@@ -167,7 +169,7 @@ export interface Player {
   toggle: () => void
   next: () => void
   previous: () => void
-  /** 放播放队列里的第 index 首，播放队列不变。正在放的那首、无版权的不动 */
+  /** 放播放队列里的第 index 首，播放队列不变。正在放的那首、现在放不了的不动 */
   jump: (index: number) => void
   /** 下一首播放（GLOSSARY）：排在当前这首后面，等它放完再放。播放队列是空的就直接开始放（规则①） */
   playNext: (source: PlaySource, song: Song) => void
@@ -482,12 +484,9 @@ export function createPlayer(context: PlayerContext): Player {
     return request
   }
 
-  /**
-   * 这首现在能不能放（Spec #11：已下载的歌永久可播，ADR-0006）：下载了的总能放；没下载的要能在线放（联网、登录着），
-   * 无版权的不能放
-   */
+  /** 这首现在能不能放（playableNow）：下载了的总能放；没下载的要能在线放，无版权的不能放 */
   function canPlay(song: Song): boolean {
-    return context.downloaded(song.id) || (song.availability !== 'noCopyright' && context.streamable())
+    return playableNow(song, context.downloaded(song.id), context.streamable())
   }
 
   /** 播放队列里这一首能不能放：现在能放，网易云也没说这首给不了地址（下载了的不用取地址） */
@@ -815,9 +814,19 @@ export function createPlayer(context: PlayerContext): Player {
     return created
   }
 
+  /**
+   * 停着时按播放：当前这首接着放。它现在放不了了（#38：断网、没登录时它不是下载了的，比如刚删了下载），
+   * 就放后面第一首能放的；一首都没有就说明
+   */
   function resume(): void {
     const index = state.current!
     const { song } = state.queue[index]
+    if (!canPlay(song)) {
+      const next = playableFrom(index, 1)
+      if (next === null || next === index)
+        return publish({ notice: { kind: 'nothingPlayable' } })
+      return void start(next, 0, 'skip')
+    }
     if (holds(active, song) && !active.audio.ended) {
       // 暂停时下一首的地址可能过期了：出声后重新准备
       prepared = false
@@ -868,7 +877,7 @@ export function createPlayer(context: PlayerContext): Player {
   /**
    * 下一首播放（next）、加入播放队列（end）、插播（now）：播放队列是空的就只放这一首，直接开始放（规则①）；
    * 这首本来就在播放队列里的话，从原位置挪过来，播放来源改成新的（规则②）。
-   * 正在放的那首什么都不变、不从头放；暂停着时插播它就是接着放。无版权的歌不放进来
+   * 正在放的那首什么都不变、不从头放；暂停着时插播它就是接着放。现在放不了的歌不放进来
    */
   function add(source: PlaySource, song: Song, how: 'next' | 'end' | 'now'): void {
     if (!canPlay(song))

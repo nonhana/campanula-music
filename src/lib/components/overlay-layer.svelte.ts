@@ -23,9 +23,12 @@ export interface OverlayRequest {
   from: HTMLElement | null
 }
 
-/** 一层浮层开着的是什么；sheet 是它以底部弹层开着时压的那条浅路由记在 page.state 的哪一项 */
+/**
+ * 一层浮层开着的是什么；sheet 是它以底部弹层开着时压的那条浅路由记在 page.state 的哪一项。
+ * 请求原样存（$state.raw）：里面的歌、歌单要交回给 App，深层代理过的对象存不进本机数据库（结构化克隆失败，#38 下载时遇到）
+ */
 export class OverlayLayer<R extends OverlayRequest> {
-  request = $state<R | null>(null)
+  request = $state.raw<R | null>(null)
 
   constructor(readonly sheet: 'songSheet' | 'playlistSheet' | 'playlistMenuSheet' | 'batchSheet') {}
 

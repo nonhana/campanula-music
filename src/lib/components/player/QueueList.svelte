@@ -1,7 +1,7 @@
 <!--
   播放页里的播放队列（自己滚动的虚拟列表，原型 QueueList）：头部写明有几首、都来自同一个播放来源时写来自哪里，右边“清空”；
   56px 一行：序号（正在放的换成三根小竖条）、封面、歌名歌手、时长、移出键。轻点一行就放这一首，播放队列不变；
-  正在放的那行是晨光行，它移不掉（移出键的位置空着）；无版权的整行降到 45%、不能点，但能移出。打开时当前这首停在第二行的位置。
+  正在放的那行是晨光行，它移不掉（移出键的位置空着）；现在放不了的（无版权；断网、没登录时没下载的，#38）整行降到 45%、不能点，但能移出。打开时当前这首停在第二行的位置。
   清空：播放队列空了、停下，播放页跟着收起（播放条沉下去）。移出一首后焦点落在下一首的移出键上（最后一首时是上一首的，那是正在放的那首时落在“清空”上）
 -->
 <script lang='ts'>
@@ -11,6 +11,7 @@
   import { tick, untrack } from 'svelte'
   import { sameSource } from '#lib/api/playback.js'
   import { getAppView } from '../app-context.svelte'
+  import { songLook } from '../downloads/view'
   import Cover from '../library/Cover.svelte'
   import PlayTarget from '../library/PlayTarget.svelte'
   import SongBadge from '../library/SongBadge.svelte'
@@ -85,7 +86,8 @@
       <VirtualList items={queue} itemHeight={ROW} scrollParent={scroller} getKey={(entry: QueueEntry) => entry.song.id} markOf={(entry: QueueEntry, i: number) => songMark(entry.song, i)}>
         {#snippet row(entry: QueueEntry, i: number)}
           {@const now = i === current}
-          {@const off = entry.song.availability === 'noCopyright'}
+          {@const look = songLook(view, entry.song)}
+          {@const off = look.off}
           <div class={['relative h-full rounded-lg', !off && 'mouse:hover:bg-neutral-50']}>
             {#if now}<MorningWash start={92} />{/if}
             <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto_36px] h-full items-center gap-3 pl-2 pr-1', off && 'opacity-45']}>
@@ -94,7 +96,7 @@
               <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.playFromQueue(i)}>
                 <span class='min-w-0 flex items-center gap-2'>
                   <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(entry.song.name)}>{entry.song.name}</span>
-                  <SongBadge availability={entry.song.availability} />
+                  <SongBadge kind={look.badge} />
                 </span>
                 <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(entry.song))}>{artistLine(entry.song)}</span>
               </PlayTarget>

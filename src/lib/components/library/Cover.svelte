@@ -5,6 +5,7 @@
   load 为 false 时只铺小图、先不去下载大图（换碟时转盘还没停下的封面）。
   圆角由调用方用 class 决定；图片加载不出来、或者网易云没给图（url 是 null，例如有的歌手没有头像）时淡入一个图标（默认音符，歌手头像传人像），
   不留破图，换了一张图再重新加载。
+  这张封面有下载存着的缩略图（#38）时：大图加载好以前先铺它（它在本机，马上就有）；断网时大图加载不出来，就一直显示它，不换成图标。
   fluid：宽度跟着容器（网格里的封面），size 只决定取多大的缩略图。
   flight：这张封面代表的页面地址（格子里是点开的那一页，页头是这一页）。换页时两头地址一样的封面从格子飞到页头、再飞回去（shell/page-transition.ts）
 -->
@@ -32,6 +33,7 @@
   import type { LucideIcon } from '@lucide/svelte'
   import type { ClassValue } from 'svelte/elements'
   import { Music } from '@lucide/svelte'
+  import { getAppView } from '../app-context.svelte'
   import { createImageReveal } from '../image-reveal.svelte'
   import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
@@ -56,7 +58,10 @@
 
   const { url, size, fluid = false, class: klass, eager = false, fallback: Fallback = Music, flight, placeholder, load = true }: Props = $props()
   const source = $derived(url === null ? '' : coverSource(url, size))
-  const small = $derived(url !== null && placeholder !== undefined && placeholder < size ? coverSource(url, placeholder) : null)
+  const view = getAppView()
+  /** 下载存着的这张封面的缩略图（blob: 地址）；没有是 null */
+  const local = $derived(url === null ? null : view.state.downloads.coverOf(url))
+  const small = $derived(local ?? (url !== null && placeholder !== undefined && placeholder < size ? coverSource(url, placeholder) : null))
   const reveal = createImageReveal(() => source)
 </script>
 
@@ -66,13 +71,13 @@
   style:height={fluid ? undefined : `${size}px`}
   data-flight={flight}
 >
-  {#if url === null || reveal.status === 'broken'}
+  {#if url === null || (reveal.status === 'broken' && !local)}
     <!-- 图标占显示宽度的 40%：fluid 时 size 只决定取多大的缩略图，不是显示的大小 -->
     <span class='grid w-2/5' in:fade={{ duration: DURATIONS.reveal }}>
       <Fallback class='h-auto w-full' aria-hidden='true' />
     </span>
   {:else}
-    {#if small && reveal.status !== 'cached'}
+    {#if small && (reveal.status !== 'cached' || local)}
       <img src={small} alt='' class='col-start-1 row-start-1 size-full object-cover' decoding='async' draggable='false' />
     {/if}
     {#if load}
@@ -82,7 +87,7 @@
           alt=''
           width={size}
           height={size}
-          class={['col-start-1 row-start-1 size-full object-cover', reveal.status === 'loading' && 'opacity-0', reveal.status === 'loaded' && 'transition-opacity duration-reveal']}
+          class={['col-start-1 row-start-1 size-full object-cover', (reveal.status === 'loading' || reveal.status === 'broken') && 'opacity-0', reveal.status === 'loaded' && 'transition-opacity duration-reveal']}
           loading={eager ? 'eager' : 'lazy'}
           decoding='async'
           draggable='false'

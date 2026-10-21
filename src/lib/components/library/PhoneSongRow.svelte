@@ -1,14 +1,17 @@
 <!--
-  手机歌曲行（Auxio 式，56px，无分隔线，DESIGN.md Song Row）：封面、歌名、歌手、•••。轻点整行就播放；
+  手机歌曲行（Auxio 式，56px，无分隔线，DESIGN.md Song Row）：封面、歌名、歌手（下载了的前面有下载标记，#38）、•••。轻点整行就播放；
   ••• 始终可见，打开“更多”菜单（触屏是底部弹层）；窄窗口里用鼠标时右键打开同一份菜单。
   正在播放的那行是晨光行：封面中间压一枚白色小圆片，里面是三根小竖条，歌名变成森林墨。点歌时这一行的封面飞进播放条（PlayTarget 的 cover）。
-  无版权的整行降到 45%、不能点，徽标写明原因（••• 照样能点）
+  现在放不了的整行降到 45%、不能点，徽标写明原因（无版权；断网、没登录时没下载的写“未下载”）；••• 照样能点。下载了的歌永远能放
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import { Check } from '@lucide/svelte'
+  import { getAppView } from '../app-context.svelte'
+  import DownloadMark from '../downloads/DownloadMark.svelte'
+  import { songLook } from '../downloads/view'
   import MorningWash from '../player/MorningWash.svelte'
   import NowChip from '../player/NowChip.svelte'
   import { openSongMenuAt } from '../song-menu.svelte'
@@ -39,7 +42,9 @@
   }
 
   const { song, source, now, onplay, selecting = false, selected = false, onlongpress, grip, ghost = false, count = 1 }: Props = $props()
-  const off = $derived(song.availability === 'noCopyright')
+  const view = getAppView()
+  const look = $derived(songLook(view, song))
+  const off = $derived(look.off)
   /** 这一行的封面：点歌时它飞进播放条 */
   let cover = $state<HTMLElement>()
 
@@ -132,9 +137,12 @@
     <PlayTarget class='min-w-0' disabled={off && !selecting} unplayable={off} {now} {cover} {selecting} {selected} onplay={activate} keyshortcuts={grip ? 'Alt+ArrowUp Alt+ArrowDown' : undefined}>
       <span class='min-w-0 flex items-center gap-1.5'>
         <span class={['truncate text-body font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
-        <SongBadge availability={song.availability} />
+        <SongBadge kind={look.badge} />
       </span>
-      <span class='mt-0.5 block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
+      <span class='mt-0.5 flex items-center gap-1.5 text-caption text-neutral-600'>
+        {#if look.mark}<DownloadMark mark={look.mark} variant='inline' />{/if}
+        <span class='min-w-0 truncate' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
+      </span>
     </PlayTarget>
     {#if grip}
       {@render grip(song)}

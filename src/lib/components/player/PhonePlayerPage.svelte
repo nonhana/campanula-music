@@ -2,9 +2,9 @@
   手机播放页（DESIGN.md Layout · 播放页，照 Auxio 的结构，原型 PhonePlayer），一屏放下、不滚动：
   顶上收起键、“正在播放 / 来自「…」”（按住往下拖也能收起播放页）、歌词键；中间一大块是封面，按歌词键或点封面换成歌词，再按换回；
   按住封面左右拖切到上一首 / 下一首，转盘跟着手转（cover-swipe.svelte.ts、CoverWheel）；读屏和键盘用下面的上一首、下一首按钮。
-  下面左对齐的歌名、歌手、专辑（右边是红心键），波浪进度条，循环 / 上一首 / 播放 / 下一首 / 随机播放；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
+  下面左对齐的歌名、歌手、专辑（右边是红心键和“更多”菜单），波浪进度条，循环 / 上一首 / 播放 / 下一首 / 随机播放；最底下一条“播放队列”，点开或往上拖拉开底部弹层，
   弹层按自己的高度滑进滑出，拉手往下拖、点按都收起（返回也先收起它）。换歌时封面换碟（CoverWheel），转出屏幕的部分被裁掉。
-  “更多”菜单（等有了加入歌单、查看歌手这类对当前这首有用的项）由之后的票加。放在 PlayerPage 里
+  “更多”菜单和歌曲行里的是同一份（#38：能在这里下载当前这首），播放来源是这首歌自己的。放在 PlayerPage 里
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
@@ -14,6 +14,7 @@
   import { ChevronDown, MicVocal } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import HeartButton from '../library/HeartButton.svelte'
+  import SongMoreButton from '../library/SongMoreButton.svelte'
   import { langOf } from '../library/view'
   import { fade, float, recede } from '../motion'
   import { DURATIONS, FLOAT_IN_DELAY, PAGE_DISTANCE } from '../motion-tokens'
@@ -37,6 +38,8 @@
   /** 拖封面时从左边、右边转进来的上一首、下一首 */
   const previous = $derived(neighborSong(view.state.player, 'previous'))
   const next = $derived(neighborSong(view.state.player, 'next'))
+  /** 当前这首在播放队列里的那一项：“更多”菜单里放进播放队列时用它自己的播放来源 */
+  const entry = $derived(view.state.player.current === null ? null : view.state.player.queue[view.state.player.current])
 
   /** 左右拖封面切歌；轻点封面换成歌词 */
   const swipe = createCoverSwipe({
@@ -118,6 +121,7 @@
           <NowPlayingTitle {song} {turn} phone />
         </div>
         <HeartButton {song} size='phone-page' />
+        {#if entry}<SongMoreButton song={entry.song} source={entry.source} size='phone-page' />{/if}
       </div>
 
       <div class='mt-2'>
