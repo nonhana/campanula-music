@@ -16,13 +16,12 @@ import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
 import type { CheckIn, PlayerState, PlayMode } from './player'
 import type { SearchState } from './search'
-import { playable } from '#lib/api/library.js'
 import { createApi } from './api'
 import { changeProblem, playlistEdits } from './changes'
 import { createCheckIns } from './check-ins'
 import { createCover } from './cover'
 import { createDaily } from './daily'
-import { createDownloads, INITIAL_DOWNLOADS } from './downloads'
+import { createDownloads, INITIAL_DOWNLOADS, playableNow } from './downloads'
 import { createLibrary, playlistSongsOf, searchPlaylist, searchSongs } from './library'
 import { createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
@@ -152,16 +151,19 @@ export interface App {
    * - 在列表里点：用整个列表（歌单、专辑的曲目、歌手的热门歌曲、每日推荐）替换播放队列，从这首开始放。
    *   歌单还没同步全、不在曲库里的歌单还没取全时先用已经有的部分，有全了把后面的补上（规则⑫）；
    * - 在搜索结果里点：插播这一首（见 interject），播放队列其余的不变，播放来源是这次搜索。
-   * 无版权的歌不能点
+   * 现在放不了的歌不能点：无版权的；断网、没登录时没下载的（#38，下载了的总能放）。已下载里点歌也用整个已下载替换播放队列
    */
   play: (source: PlaySource, songId: number) => void
-  /** 播放全部：和点列表里第一首能放的歌（不是无版权的）一样。一首能放的都没有就什么都不做。搜索结果没有播放全部 */
+  /**
+   * 播放全部：和点列表里第一首现在能放的歌一样（无版权的不能放；断网、没登录时只有下载了的能放，#38）。
+   * 一首能放的都没有就什么都不做。搜索结果没有播放全部
+   */
   playAll: (source: PlaySource) => void
   /** 在放就暂停，停着就接着放（出了问题停下时就是重试） */
   togglePlay: () => void
   next: () => void
   previous: () => void
-  /** 在播放队列里点一首：放这一首，播放队列不变。正在放的那首、无版权的不动 */
+  /** 在播放队列里点一首：放这一首，播放队列不变。正在放的那首、现在放不了的（无版权，断网、没登录时没下载的）不动 */
   playFromQueue: (index: number) => void
   /**
    * 下一首播放（GLOSSARY）：排在当前这首后面，等它放完再放；连续几次时后加的先放（规则⑤），随机模式下也是下一首（规则③）。
@@ -364,6 +366,11 @@ export function createApp(browser: BrowserCapabilities): App {
       checkIns.send()
   }
 
+  /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放（#38） */
+  function streamable(): boolean {
+    return browser.network.onLine && state.session.status === 'signedIn'
+  }
+
   const downloads = createDownloads({
     api,
     lane,
@@ -396,7 +403,7 @@ export function createApp(browser: BrowserCapabilities): App {
     loginExpired,
     downloaded: songId => state.downloads.has(songId),
     localFile: songId => downloads.audioUrl(songId),
-    streamable: () => browser.network.onLine && state.session.status === 'signedIn',
+    streamable,
   })
   const lockScreen = connectMediaSession({ session: browser.mediaSession, MediaMetadata: browser.MediaMetadata, clock: browser.clock, player, read: () => state.player, localCover: coverUrl => state.downloads.coverOf(coverUrl) })
   /** 锁屏和通知栏上显示的跟着播放状态变。写成函数声明：锁屏的按钮要用播放器，播放器发布时又要用锁屏，两边互相引用 */
@@ -775,7 +782,7 @@ export function createApp(browser: BrowserCapabilities): App {
       if (source.kind === 'search')
         throw new Error('搜索结果没有播放全部：在搜索里点歌是插播')
       const list = listOf(source)
-      const first = list?.songs.find(playable)
+      const first = list?.songs.find(song => playableNow(song, state.downloads.has(song.id), streamable()))
       if (list && first)
         player.play(source, list.songs, first.id, list.complete)
     },

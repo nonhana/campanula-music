@@ -420,27 +420,25 @@ describe('断流和出错', () => {
     expect(tab.audio.every(audio => audio.paused)).toBe(true)
   })
 
-  it('断网时按播放、这首没下载（#38）：没取到播放地址，停下说明原因；联网后按播放重试', async () => {
+  it('断网时按播放、播放队列里一首都没下载（#38）：不去取播放地址，说明现在都放不了；联网后按播放接着放', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
     await playUntilSounding(tab, FIRST, SECOND)
     app.togglePlay()
     await world.settle()
-    // 暂停了很久，播放地址过期了
-    await world.clock.advance(20 * 60_000)
     device.setOnline(false)
+    await world.settle()
     app.togglePlay()
     await world.settle()
-    expect(app.state.player).toMatchObject({ status: 'paused', current: 0, notice: { kind: 'urlFailed', failure: { kind: 'offline' } } })
+    expect(app.state.player).toMatchObject({ status: 'paused', current: 0, notice: { kind: 'nothingPlayable' } })
+    expect(playUrlRequests(device)).toEqual([FIRST.id, SECOND.id].map(id => `/api/songs/${id}/play-url?quality=exhigh`))
 
     device.setOnline(true)
-    await world.netease.reply(FIRST.url)
-    await world.netease.reply(SECOND.url)
-    app.togglePlay()
-    expect(app.state.player).toMatchObject({ status: 'loading', notice: null })
     await world.settle()
-    expect(tab.audio.find(audio => !audio.paused)?.src).toBe(await recordedUrl(FIRST.url))
+    app.togglePlay()
+    await world.settle()
+    expect(app.state.player).toMatchObject({ status: 'playing', current: 0, notice: null })
   })
 })
 

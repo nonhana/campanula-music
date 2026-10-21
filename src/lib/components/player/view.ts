@@ -153,7 +153,7 @@ export function noticeText(notice: PlayerNotice, player: PlayerState): string {
     case 'skipped':
       return `网易云没给《${notice.song.name}》的播放地址，跳过了这首。`
     case 'nothingPlayable':
-      return '播放队列里的歌都放不了：无版权，或者网易云没给播放地址。换一个列表点歌试试。'
+      return '播放队列里的歌现在都放不了：无版权、网易云没给播放地址，或者断网、没登录时它们没下载。换一个列表点歌试试。'
     default: {
       const unhandled: never = notice
       throw new Error(`不认识的播放提示：${JSON.stringify(unhandled)}`)

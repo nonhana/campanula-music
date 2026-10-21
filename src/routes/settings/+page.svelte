@@ -1,13 +1,17 @@
-<!-- 设置：账号和退出登录（手机上退出登录在这里，桌面在头像菜单里也有）、在线播放音质 -->
+<!--
+  设置：账号和退出登录（手机上退出登录在这里，桌面在头像菜单里也有）、在线播放音质、下载（#38：进已下载页；手机上只有这一个入口，
+  作者 2026-10-21 定）
+-->
 <script lang='ts'>
   import type { Quality } from '#lib/api/playback.js'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { LogOut } from '@lucide/svelte'
+  import { ChevronRight, CircleArrowDown, LogOut } from '@lucide/svelte'
   import { QUALITIES } from '#lib/api/playback.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import Avatar from '#lib/components/Avatar.svelte'
   import { desktopLayout } from '#lib/components/layout.js'
+  import { formatCount } from '#lib/components/library/view.js'
   import Button from '#lib/components/ui/Button.svelte'
   import FilterChip from '#lib/components/ui/FilterChip.svelte'
 
@@ -17,6 +21,8 @@
   const view = getAppView()
   const account = $derived(view.state.session.status === 'signedIn' ? view.state.session.account : null)
   const quality = $derived(view.state.player.quality)
+  /** 这台设备上下载了几首；还没从本机读出来时是 null */
+  const downloaded = $derived(view.state.downloads.songs?.length ?? null)
 
   function logout() {
     void goto(resolve('/'), { replace: true })
@@ -57,5 +63,17 @@
       </div>
       <p class='mt-3 text-caption text-neutral-600'>音质越高越费流量。换了音质，从下一首开始生效；网易云给不了所选的音质时，会换成低一些的。</p>
     </div>
+  </section>
+  <section class='mt-8' aria-labelledby='settings-downloads'>
+    <h2 id='settings-downloads' class='px-1 text-title-sm text-neutral-900 font-600'>下载</h2>
+    <a
+      href={resolve('/downloads')}
+      class='mt-3 min-h-14 flex items-center gap-3 rounded-xl bg-white px-5 py-3 shadow-ambient transition-colors duration-feedback active:bg-neutral-50 mouse:hover:bg-neutral-50'
+    >
+      <CircleArrowDown size={20} class='flex-none text-secondary-800' aria-hidden='true' />
+      <span class='min-w-0 flex-1 text-body text-neutral-900 font-500'>已下载</span>
+      {#if downloaded !== null}<span class='text-caption text-neutral-600 tabular-nums'>{formatCount(downloaded)} 首</span>{/if}
+      <ChevronRight size={18} class='flex-none text-neutral-500' aria-hidden='true' />
+    </a>
   </section>
 </div>

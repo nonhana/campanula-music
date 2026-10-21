@@ -1,4 +1,6 @@
 <script lang='ts'>
+  import { resolve } from '$app/paths'
+  import { page } from '$app/state'
   import { createApp } from '#lib/app/app.js'
   import { realBrowserCapabilities } from '#lib/app/browser.js'
   import { setAppView, viewOf } from '#lib/components/app-context.svelte.js'
@@ -10,6 +12,7 @@
   import { DURATIONS } from '#lib/components/motion-tokens.js'
   import { fade, fadeAway } from '#lib/components/motion.js'
   import SignedInFrame from '#lib/components/shell/SignedInFrame.svelte'
+  import SignedOutFrame from '#lib/components/shell/SignedOutFrame.svelte'
   import { mock } from '#lib/mock-flag.js'
   // 字体随项目打包（Noto Sans 可变字体，拉丁 → SC → JP → TC），不从网络加载
   import '@fontsource-variable/noto-sans'
@@ -43,7 +46,10 @@
 
   open()
 
-  /** 整个 App 现在是哪一屏：换屏时交叉淡化（打开中 → 曲库 / 登录页、登录 → 曲库、退出登录、登录失效） */
+  /** 没登录、登录失效时打开的是已下载页（#38，ADR-0006：下载属于设备）：不换成登录页 */
+  const downloadsPage = $derived(page.url.pathname === resolve('/downloads'))
+
+  /** 整个 App 现在是哪一屏：换屏时交叉淡化（打开中 → 曲库 / 登录页、登录 → 曲库、退出登录、登录失效、登录页 ↔ 没登录时的已下载页） */
   const screen = $derived(
     !session
       ? 'https'
@@ -53,7 +59,7 @@
       ? 'opening'
       : session.status === 'checkFailed'
       ? 'checkFailed'
-      : session.status === 'signedIn' ? 'signedIn' : 'login',
+      : session.status === 'signedIn' ? 'signedIn' : downloadsPage ? 'signedOutDownloads' : 'login',
   )
 </script>
 
@@ -79,6 +85,10 @@
       <SignedInFrame account={session.account}>
         {@render children()}
       </SignedInFrame>
+    {:else if downloadsPage}
+      <SignedOutFrame>
+        {@render children()}
+      </SignedOutFrame>
     {:else}
       <LoginPage expired={session.status === 'loginExpired'} />
     {/if}

@@ -19,7 +19,7 @@
   {#snippet children(shown)}
     <div class='min-w-0 flex items-center gap-2'>
       <h2 class={['truncate text-neutral-900 font-600', phone ? 'text-title' : 'text-headline-sm']} lang={langOf(shown.name)}>{shown.name}</h2>
-      {#if view.state.player.trial}<span class='flex flex-none' transition:fade><SongBadge availability='trial' /></span>{/if}
+      {#if view.state.player.trial}<span class='flex flex-none' transition:fade><SongBadge kind='trial' /></span>{/if}
     </div>
     <p class='mt-0.5 truncate text-body text-neutral-700' lang={langOf(artistLine(shown))}>{artistLine(shown)}</p>
     {#if shown.album.name}

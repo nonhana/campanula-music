@@ -2,11 +2,15 @@
   登录页（未登录时看到的页面）：只有登录，没有介绍和示例曲库（作者 2026-10-11 定）。
   登录卡片只有一份，跨过 768px 时不重新挂载：听众选的登录方式、填了一半的手机号都还在。
   “登录已经失效”的提示条跟着登录页出现时从上面飘进来（DESIGN.md Overlays）。
-  “不登录，听已下载的”入口在有下载时出现（#38）。
+  这台设备上有下载时（#38），卡片下面是蜜桃色的“不登录，听已下载的 N 首”，进已下载页（ADR-0006：下载属于设备，不登录也能听）
 -->
 <script lang='ts'>
+  import { resolve } from '$app/paths'
+  import { ChevronRight, CircleArrowDown } from '@lucide/svelte'
+  import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
   import { desktopLayout } from '../layout'
+  import { formatCount } from '../library/view'
   import { float } from '../motion'
   import { FLOAT_IN_DELAY } from '../motion-tokens'
   import Scrollbar from '../ui/Scrollbar.svelte'
@@ -18,6 +22,8 @@
   }
 
   const { expired }: Props = $props()
+  const view = getAppView()
+  const downloaded = $derived(view.state.downloads.songs?.length ?? 0)
 </script>
 
 <div class='bg-primary-50 pb-[calc(32px+env(safe-area-inset-bottom))] min-h-dvh md:pb-16'>
@@ -33,6 +39,21 @@
       {/if}
       <LoginForm phone={!desktopLayout.current} />
     </section>
+    {#if downloaded > 0}
+      <div class='mx-auto mt-3 max-w-[420px] w-full md:mt-4'>
+        <a
+          href={resolve('/downloads')}
+          class='h-12 flex items-center gap-2.5 rounded-full bg-secondary-100 pl-4 pr-3 text-body text-secondary-900 font-500 transition-colors duration-feedback active:bg-secondary-200 mouse:hover:bg-secondary-200'
+        >
+          <CircleArrowDown size={18} class='flex-none text-secondary-800' aria-hidden='true' />
+          <span class='min-w-0 flex-1'>不登录，听已下载的 <span class='tabular-nums'>{formatCount(downloaded)}</span> 首</span>
+          <ChevronRight size={18} class='flex-none' aria-hidden='true' />
+        </a>
+        {#if desktopLayout.current}
+          <p class='mt-2 px-4 text-caption text-neutral-600'>下载的歌保存在这台设备上，不登录也能听。</p>
+        {/if}
+      </div>
+    {/if}
   </main>
   <!-- 窗口矮时登录卡片要滚：没有顶栏、底栏挡着，滚动条从窗口顶贴到底 -->
   <Scrollbar page={{ top: '0px', bottom: '0px' }} />
