@@ -227,8 +227,10 @@
     <div class='grid grid-cols-[minmax(0,1fr)]'>
       {#key phone ? (sorting ? 'sort' : filter) : filter}
         <div class='col-start-1 row-start-1 min-w-0' transition:fadeThrough>
-          {#if phone && sorting}
+          {#if sorting}
             <p class='sr-only' aria-live='polite'>{announcement}</p>
+          {/if}
+          {#if phone && sorting}
             <ul
               class='w-full flex flex-col gap-2 px-4 pb-8'
               aria-label='自建歌单，正在排序'
