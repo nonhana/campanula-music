@@ -213,6 +213,9 @@ export class PlaylistSort {
     const next = this.preview ?? this.startIds
     const moved = next.join() !== this.startIds.join()
     this.dragging = false
+    const id = this.grabbed?.id
+    if (id !== undefined)
+      requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-playlist-id="${id}"] a`)?.focus())
     const slotY = this.listTop + this.target * this.pitch
     this.settling = true
     this.settleY = slotY

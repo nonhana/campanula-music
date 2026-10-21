@@ -1,6 +1,8 @@
 <!--
   曲库里的歌单（自建的、收藏的，不含我喜欢的音乐）：全部 / 自建 / 收藏 筛选加封面网格，筛选右边是“新建歌单”（#33，打开 PlaylistEditor）。
-  #37：点“排序”把自建歌单换成列表，按每行右边的把手拖，点“完成”退出；我喜欢的音乐固定在最前，收藏的歌单不参与。
+  #37：点“排序”进入排序模式，点“完成”退出；我喜欢的音乐固定在最前，收藏的歌单不参与。
+  手机保持横版列表、按每行右边的把手拖；桌面保持原来的封面网格，每张封面右上角一个小白圆钮，按住它拖，
+  卡片浮起、原位置留薄荷封面空位、其余卡片让位。
   手机的歌单标签和桌面首页的歌单区块共用；歌单列表还没拿到时是骨架，没拿到就出错时能重试，筛完一张都没有时说明。
   骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）；换筛选时整个格子先淡出再淡入，不让一个个格子各自挪位
   （DESIGN.md Overlays · 筛选）。heading：桌面放在筛选左边的区块标题
@@ -24,10 +26,11 @@
   import StateBlock from '../ui/StateBlock.svelte'
   import Cover from './Cover.svelte'
   import DragGrip from './DragGrip.svelte'
+  import { PlaylistGridSort } from './playlist-grid-sort.svelte'
   import { PlaylistSort } from './playlist-sort.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
   import TileBone from './TileBone.svelte'
-  import { filterPlaylists, formatCount, langOf, PLAYLIST_FILTERS, playlistName } from './view'
+  import { filterPlaylists, FLIGHT_COVER_SIZE, formatCount, langOf, PLAYLIST_FILTERS, playlistName } from './view'
 
   interface Props {
     library: LibraryState
@@ -42,6 +45,10 @@
   const own = $derived(library.playlists?.filter(playlist => playlist.kind === 'own') ?? null)
   /** 只有自建歌单参与排序；一张、还没有时没有可排的 */
   const canOrder = $derived((own?.length ?? 0) > 1)
+  /** 手机是列表右边，桌面是卡片右上角 */
+  const hint = $derived(phone
+    ? '按住右边的把手拖动，排好后点“完成”。我喜欢的音乐固定在最前面，收藏的歌单不参与排序。'
+    : '按住卡片右上角的把手拖动，排好后点“完成”。我喜欢的音乐固定在最前面，收藏的歌单不参与排序。')
   /** 骨架和真的网格一样排（DESIGN.md Do's：形状一致的骨架） */
   const gridClass = $derived(['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-4' : 'grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-x-5 gap-y-6'])
 
@@ -51,18 +58,27 @@
   /** 键盘移动后给读屏的一句话 */
   let announcement = $state('')
 
-  const sort = new PlaylistSort({
+  const commitOrder = (ids: readonly number[]) => {
+    const liked = library.playlists?.find(playlist => playlist.kind === 'liked')
+    return liked ? view.app.orderPlaylists([liked.id, ...ids]) : false
+  }
+  const sortOptions = {
     ids: () => own?.map(playlist => playlist.id) ?? [],
-    playlistOf: id => own?.find(playlist => playlist.id === id),
-    commit: (ids) => {
-      const liked = library.playlists?.find(playlist => playlist.kind === 'liked')
-      return liked ? view.app.orderPlaylists([liked.id, ...ids]) : false
-    },
-  })
-  /** 排序时列表里显示的歌单：拖动的预览顺序，或者 App 里的顺序 */
+    playlistOf: (id: number) => own?.find(playlist => playlist.id === id),
+    commit: commitOrder,
+  }
+  /** 手机：横版列表的拖动 */
+  const sort = new PlaylistSort(sortOptions)
+  /** 桌面：封面网格的拖动 */
+  const gridSort = new PlaylistGridSort(sortOptions)
+  /** 排序时显示的歌单：拖动的预览顺序，或者 App 里的顺序 */
   const sorted = $derived(sort.order.map(id => own?.find(playlist => playlist.id === id)).filter(playlist => playlist !== undefined))
+  const gridSorted = $derived(gridSort.order.map(id => own?.find(playlist => playlist.id === id)).filter(playlist => playlist !== undefined))
 
-  $effect(() => () => sort.cancel())
+  $effect(() => () => {
+    sort.cancel()
+    gridSort.cancel()
+  })
 
   async function startSort() {
     if (!canOrder)
@@ -78,6 +94,7 @@
   async function finishSort() {
     sorting = false
     sort.cancel()
+    gridSort.cancel()
     if (filterBefore)
       filter = filterBefore
     filterBefore = null
@@ -88,7 +105,7 @@
 
   /** 排序期间按 Esc 退出（焦点在哪都行；拖动中的 Esc 由 PlaylistSort 先接住） */
   function onWindowKeydown(event: KeyboardEvent) {
-    if (!sorting || sort.dragging || event.defaultPrevented || event.key !== 'Escape')
+    if (!sorting || sort.dragging || gridSort.dragging || event.defaultPrevented || event.key !== 'Escape')
       return
     event.preventDefault()
     void finishSort()
@@ -102,14 +119,15 @@
     if (!row)
       return
     const id = Number(row.dataset.playlistId)
-    if (!sort.moveByKeyboard(id, event.key === 'ArrowUp' ? -1 : 1))
+    const sorter = phone ? sort : gridSort
+    if (!sorter.moveByKeyboard(id, event.key === 'ArrowUp' ? -1 : 1))
       return
     event.preventDefault()
-    // 行换了位置以后浏览器会把焦点丢回 body：等这一帧排好，再把焦点放回这一行
+    // 卡片换了位置以后浏览器会把焦点丢回 body：等这一帧排好，再把焦点放回这一张
     void tick().then(() => {
       document.querySelector<HTMLElement>(`[data-playlist-id="${id}"] a`)?.focus()
-      const order = sort.order
-      const name = sort.playlistOf(id)?.name ?? '歌单'
+      const order = sorter.order
+      const name = sorter.playlistOf(id)?.name ?? '歌单'
       announcement = `${name}移到第 ${order.indexOf(id) + 1} 张，共 ${order.length} 张`
     })
   }
@@ -120,6 +138,17 @@
     collected: { title: '还没有收藏的歌单', body: '在网易云音乐里收藏的歌单，会同步到这里。' },
   }
 </script>
+
+{#snippet sortGridCard(playlist: Playlist)}
+  <Cover url={playlist.coverUrl} size={FLIGHT_COVER_SIZE} fluid class='rounded-lg shadow-ambient' />
+  <span class='mt-2.5 block truncate text-label text-neutral-900 font-500' lang={langOf(playlist.name)}>{playlistName(playlist)}</span>
+  <span class='mt-0.5 min-w-0 flex items-center gap-1 text-caption text-neutral-600'>
+    <span class='flex-none tabular-nums'>{formatCount(playlist.trackCount)} 首</span>
+    {#if playlist.private}
+      <Lock size={12} class='flex-none' aria-hidden='true' /><span class='sr-only'>隐私歌单</span>
+    {/if}
+  </span>
+{/snippet}
 
 {#snippet sortRow(playlist: Playlist)}
   <Cover url={playlist.coverUrl} size={40} class='rounded-md' />
@@ -146,7 +175,7 @@
     <span class='text-caption text-neutral-500 tabular-nums'>{phone ? '' : '自建歌单 · '}{own?.length ?? 0} 张</span>
     <Button variant='primary' icon={Check} class='ml-auto' onclick={finishSort}>完成</Button>
   </div>
-  <p class={['text-caption text-neutral-600', phone ? 'px-4 pb-4 pt-2' : 'mb-4 max-w-[720px]']}>按住右边的把手拖动，排好后点“完成”。我喜欢的音乐固定在最前面，收藏的歌单不参与排序。</p>
+  <p class={['text-caption text-neutral-600', phone ? 'px-4 pb-4 pt-2' : 'mb-4 max-w-[720px]']}>{hint}</p>
 {:else}
   <div class={['flex items-center', phone ? 'gap-2 px-4 pt-3' : 'mb-4 gap-4']}>
     {@render heading?.()}
@@ -187,25 +216,56 @@
         <div class='col-start-1 row-start-1 min-w-0' transition:fadeThrough>
           {#if sorting}
             <p class='sr-only' aria-live='polite'>{announcement}</p>
-            <ul
-              class={['flex w-full flex-col gap-2', phone ? 'px-4 pb-8' : 'pb-4']}
-              aria-label='自建歌单，正在排序'
-              data-playlist-sort
-              {@attach sort.container}
-            >
-              {#each sorted as playlist (playlist.id)}
-                <li data-playlist-id={playlist.id} class='relative' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
-                  <div class={['h-14 flex items-center gap-3 rounded-xl pl-3 pr-2', sort.lifted(playlist.id) ? 'bg-primary-100' : 'bg-white shadow-ambient']}>
-                    <div class={['flex min-w-0 flex-1 items-center gap-3', sort.lifted(playlist.id) && 'invisible']}>
-                      <a href={resolve('/playlists/[id]', { id: String(playlist.id) })} class='min-w-0 flex flex-1 items-center gap-3 rounded-lg' onkeydown={onListKeydown}>
-                        {@render sortRow(playlist)}
-                      </a>
-                      <DragGrip label={playlistName(playlist)} size={phone ? 'phone' : 'desktop'} attach={sort.handle(playlist.id)} />
+            {#if phone}
+              <ul
+                class='w-full flex flex-col gap-2 px-4 pb-8'
+                aria-label='自建歌单，正在排序'
+                data-playlist-sort
+                {@attach sort.container}
+              >
+                {#each sorted as playlist (playlist.id)}
+                  <li data-playlist-id={playlist.id} class='relative' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
+                    <div class={['h-14 flex items-center gap-3 rounded-xl pl-3 pr-2', sort.lifted(playlist.id) ? 'bg-primary-100' : 'bg-white shadow-ambient']}>
+                      <div class={['flex min-w-0 flex-1 items-center gap-3', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
+                        <a href={resolve('/playlists/[id]', { id: String(playlist.id) })} class='min-w-0 flex flex-1 items-center gap-3 rounded-lg' onkeydown={onListKeydown}>
+                          {@render sortRow(playlist)}
+                        </a>
+                        <DragGrip label={playlistName(playlist)} size='phone' attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
+                      </div>
                     </div>
-                  </div>
-                </li>
-              {/each}
-            </ul>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <ul
+                class={[...gridClass, 'pb-8']}
+                aria-label='自建歌单，正在排序'
+                data-playlist-sort
+                {@attach gridSort.container}
+              >
+                {#each gridSorted as playlist (playlist.id)}
+                  <li data-playlist-id={playlist.id} class='relative min-w-0' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
+                    <div class={['transition-opacity', gridSort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
+                      <PlaylistTile
+                        id={playlist.id}
+                        name={playlistName(playlist)}
+                        coverUrl={playlist.coverUrl}
+                        trackCount={playlist.trackCount}
+                        creator={null}
+                        locked={playlist.private}
+                        onkeydown={onListKeydown}
+                      />
+                    </div>
+                    {#if gridSort.lifted(playlist.id)}
+                      <div class='pointer-events-none absolute inset-x-0 top-0 aspect-square rounded-lg bg-primary-100'></div>
+                    {/if}
+                    <span class={['absolute right-2 top-2 z-10', gridSort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
+                      <DragGrip label={playlistName(playlist)} size='desktop' overlay attach={gridSort.handle(playlist.id)} onkeydown={onListKeydown} />
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
           {:else if shown.length === 0}
             <StateBlock kind='empty' icon={ListMusic} title={EMPTY[filter].title} body={EMPTY[filter].body} />
           {:else}
@@ -231,7 +291,7 @@
   </div>
 {/if}
 
-{#if (sort.dragging || sort.settling) && sort.grabbed}
+{#if phone && (sort.dragging || sort.settling) && sort.grabbed}
   <div
     class='pointer-events-none fixed left-0 top-0 z-50'
     style:left='{sort.ghostLeft}px'
@@ -244,7 +304,24 @@
   >
     <div class='h-14 flex items-center gap-3 rounded-xl bg-white pl-3 pr-2 shadow-float'>
       {@render sortRow(sort.grabbed)}
-      <DragGrip label={sort.grabbed.name} size={phone ? 'phone' : 'desktop'} ghost />
+      <DragGrip label={sort.grabbed.name} size='phone' ghost />
+    </div>
+  </div>
+{:else if !phone && (gridSort.dragging || gridSort.settling) && gridSort.grabbed}
+  <div
+    class='pointer-events-none fixed left-0 top-0 z-50'
+    style:width='{gridSort.ghostWidth}px'
+    style:transform='translate3d({gridSort.settling ? gridSort.settleX : gridSort.ghostX}px, {gridSort.settling ? gridSort.settleY : gridSort.ghostY}px, 0)'
+    class:transition-transform={gridSort.settling}
+    class:duration-move-state={gridSort.settling}
+    class:ease-out-soft={gridSort.settling}
+    aria-hidden='true'
+  >
+    <div class='relative rounded-xl bg-white p-2 shadow-float'>
+      {@render sortGridCard(gridSort.grabbed)}
+      <span class='absolute right-4 top-4 z-10'>
+        <DragGrip label={gridSort.grabbed.name} size='desktop' overlay ghost />
+      </span>
     </div>
   </div>
 {/if}
