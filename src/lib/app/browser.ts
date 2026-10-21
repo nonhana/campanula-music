@@ -5,7 +5,7 @@ import { mock } from '#lib/mock-flag.js'
 /**
  * App 用到的浏览器能力。App 只从这里拿，不直接用 window、navigator、document 这些全局对象，
  * 测试接入点里整个换成替身（Spec #11 Testing Decisions）。
- * 浏览器直连网易云的传输（#34、#38）、Background Fetch（#41）由最早用到它们的票加上。
+ * Background Fetch（#41）由最早用到它的票加上。
  */
 export interface BrowserCapabilities {
   /** 向 Campanula 自己的服务端发请求：同源，浏览器自动带上 Cookie；断网时失败 */
@@ -34,9 +34,19 @@ export interface BrowserCapabilities {
   images: ImageCapability
   /**
    * 浏览器直连网易云的图片存储（#34）：把导出的 JPEG 传到 uploadUrl（跨域 POST），带上传凭证，可以中途取消。
-   * 只用于换封面的第二步；#38 的音频下载是另一类传输，到时候再加
+   * 只用于换封面的第二步
    */
   uploadCoverImage: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
+  /**
+   * 浏览器直连网易云的音频服务器、图片服务器下载一个文件（#38 的下载）：跨域 GET，两边都允许跨域（验证关卡③；#38 查过图片服务器回
+   * access-control-allow-origin: *），不带 Cookie。每收到一块数据就调 onProgress（到这一刻一共收到多少字节）。
+   * 服务器回的不是 2xx 时失败；断网、传到一半断开时以 TypeError 失败（Fetch 标准的 network error）
+   */
+  download: (url: string, onProgress: (received: number) => void) => Promise<Blob>
+  /** 这台设备上一个文件的地址（blob:），同 URL.createObjectURL：播放器、图片拿它放本机存着的下载 */
+  objectUrl: (blob: Blob) => string
+  /** 同 URL.revokeObjectURL：这个地址不再用了 */
+  revokeObjectUrl: (url: string) => void
 }
 
 /** 一张已经解码、按 EXIF 摆正的图片（换封面用） */
@@ -297,6 +307,21 @@ async function uploadCoverImage(url: string, jpeg: Blob, token: string, signal: 
     throw new Error(`图片存储回了 ${response.status}`)
 }
 
+async function download(url: string, onProgress: (received: number) => void): Promise<Blob> {
+  const response = await window.fetch(url)
+  if (!response.ok || !response.body)
+    throw new Error(`文件服务器回了 ${response.status}`)
+  const reader = response.body.getReader()
+  const chunks: Uint8Array<ArrayBuffer>[] = []
+  let received = 0
+  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+    chunks.push(chunk.value)
+    received += chunk.value.byteLength
+    onProgress(received)
+  }
+  return new Blob(chunks, { type: response.headers.get('content-type') ?? '' })
+}
+
 export function realBrowserCapabilities(): BrowserCapabilities {
   return {
     fetch: (path, init) => window.fetch(path, init),
@@ -325,5 +350,8 @@ export function realBrowserCapabilities(): BrowserCapabilities {
     checkToken: watchmanToken,
     images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
     uploadCoverImage,
+    download,
+    objectUrl: blob => URL.createObjectURL(blob),
+    revokeObjectUrl: url => URL.revokeObjectURL(url),
   }
 }

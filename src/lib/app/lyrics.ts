@@ -2,6 +2,7 @@ import type { LyricsResponse } from '#lib/api/playback.js'
 import type { Api, RequestFailure } from './api'
 
 // 播放页的歌词（#25）：听众看歌词时才取（前台请求，不排队），只记着最近打开的那首。
+// 下载了的歌（#38）用存在这台设备上的歌词，断网、没登录时也有
 
 /** 歌词没取到的原因（需要登录另外处理：整个 App 变成登录失效） */
 export type LyricsFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
@@ -19,6 +20,8 @@ export interface LyricsContext {
   write: (lyrics: LyricsState | null) => void
   /** 网易云说需要登录，续期也没成功 */
   loginExpired: () => void
+  /** 下载了的这首存着的歌词；没下载是 null */
+  stored: (songId: number) => LyricsResponse | null
 }
 
 export interface Lyrics {
@@ -39,6 +42,9 @@ export function createLyrics(context: LyricsContext): Lyrics {
       if (shown?.songId === songId && shown.status !== 'failed')
         return
       const mine = ++attempt
+      const stored = context.stored(songId)
+      if (stored)
+        return context.write({ songId, status: 'shown', lyrics: stored })
       context.write({ songId, status: 'loading' })
       const result = await api.get<LyricsResponse>(`/api/songs/${songId}/lyrics`)
       if (mine !== attempt)

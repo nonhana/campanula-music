@@ -5,7 +5,7 @@ import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistOrderResponse, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksResponse, Song, SongOrderResponse } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
-import type { LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
+import type { DownloadUrlResponse, LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
 import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
@@ -470,6 +470,19 @@ export async function fetchPlayUrl(songId: number, quality: Quality, listener: L
   return { playable: true, url: item.url.replace(/^http:\/\//, 'https://'), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
 }
 
+/**
+ * 下载一首用的地址（song_download_url_v1，SDK 声明了 url、size）。网易云没给地址（无版权，这个账号下不了完整的）时 url 是 null。
+ * 地址是 http 的，换成 https（音频服务器支持，验证关卡③）
+ */
+export async function fetchDownloadUrl(songId: number, quality: Quality, listener: Listener): Promise<DownloadUrlResponse> {
+  const { body } = await call('song_download_url_v1', { id: songId, level: quality }, listener)
+  if (body.data.id !== songId)
+    throw shapeChanged('song_download_url_v1', `要的是歌曲 ${songId}，回的是 ${body.data.id}`)
+  if (!body.data.url)
+    return { downloadable: false }
+  return { downloadable: true, url: body.data.url.replace(/^http:\/\//, 'https://'), size: body.data.size }
+}
+
 /** 打卡时告诉网易云的播放来源（SDK scrobble 的 source、sourceid，照它文档的“播放来源”） */
 function checkInSourceOf(source: PlaySource): { source: string, sourceid: number } {
   switch (source.kind) {
@@ -478,11 +491,13 @@ function checkInSourceOf(source: PlaySource): { source: string, sourceid: number
     case 'album':
     case 'artist':
       return { source: source.kind, sourceid: source.id }
-    // 每日推荐、一次搜索都没有稳定的编号：SDK 文档说传 0
+    // 每日推荐、一次搜索、已下载都没有稳定的编号：SDK 文档说传 0
     case 'daily':
       return { source: 'recommend', sourceid: 0 }
     case 'search':
       return { source: 'search', sourceid: 0 }
+    case 'downloads':
+      return { source: 'download', sourceid: 0 }
     default: {
       const unhandled: never = source
       throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)

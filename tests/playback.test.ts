@@ -420,12 +420,17 @@ describe('断流和出错', () => {
     expect(tab.audio.every(audio => audio.paused)).toBe(true)
   })
 
-  it('断网时点歌：没取到播放地址，停下说明原因；联网后按播放重试', async () => {
+  it('断网时按播放、这首没下载（#38）：没取到播放地址，停下说明原因；联网后按播放重试', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+    app.togglePlay()
+    await world.settle()
+    // 暂停了很久，播放地址过期了
+    await world.clock.advance(20 * 60_000)
     device.setOnline(false)
-    app.play(LIKED, FIRST.id)
+    app.togglePlay()
     await world.settle()
     expect(app.state.player).toMatchObject({ status: 'paused', current: 0, notice: { kind: 'urlFailed', failure: { kind: 'offline' } } })
 
@@ -516,7 +521,7 @@ describe('两个播放器交替（ADR-0010）', () => {
     expect(retried.error).toBeNull()
   })
 
-  it('取下一首的地址时断网了：当前这首剩 20 秒时再准备一次，照样交接', async () => {
+  it('取下一首的地址时断网了（#38：断网时没下载的下一首放不了，不取它的地址）：联网后马上再准备，照样交接', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
@@ -528,16 +533,10 @@ describe('两个播放器交替（ADR-0010）', () => {
     player.ready(FIRST.duration)
     await world.settle()
     expect(playUrlRequests(device)).toHaveLength(1)
+    expect(app.state.player.neighbors.next).toBeNull()
 
-    device.setOnline(true)
     await world.netease.reply(SECOND.url)
-    await world.clock.advance(150_000)
-    player.progress(150)
-    await world.settle()
-    expect(playUrlRequests(device)).toHaveLength(1)
-
-    await world.clock.advance(25_000)
-    player.progress(175)
+    device.setOnline(true)
     await world.settle()
     expect(playUrlRequests(device)).toEqual([FIRST.id, SECOND.id].map(id => `/api/songs/${id}/play-url?quality=exhigh`))
     const spare = other(tab, player)
@@ -1996,11 +1995,10 @@ describe('听歌打卡', () => {
   it('断网时听完的歌：打卡记在本机，记着是哪个账号的；联网后补发，发成了再删', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
-    const { app } = tab
-    await playUntilSounding(tab, FIRST, SECOND)
+    const player = await playUntilSounding(tab, FIRST, SECOND)
     await world.clock.advance(30_000)
     device.setOnline(false)
-    app.next()
+    player.end()
     await world.settle()
     expect(checkIns(device)).toEqual([])
     expect(await storedCheckIns(device)).toEqual([{ songId: FIRST.id, source: LIKED, seconds: 30, owner: RECORDED_ACCOUNT.id }])
@@ -2038,7 +2036,7 @@ describe('听歌打卡', () => {
     await world.settle()
     expect(current(app)).toBe(SECOND.id)
     await world.clock.advance(20_000)
-    app.next()
+    other(tab, player).end()
     await world.settle()
     expect(checkIns(device)).toHaveLength(1)
     expect(await storedCheckIns(device)).toEqual([
@@ -2077,10 +2075,10 @@ describe('听歌打卡', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    await playUntilSounding(tab, FIRST, SECOND)
+    const player = await playUntilSounding(tab, FIRST, SECOND)
     await world.clock.advance(30_000)
     device.setOnline(false)
-    app.next()
+    player.end()
     await world.settle()
     expect(await storedCheckIns(device)).toHaveLength(1)
 

@@ -2,11 +2,12 @@ import type { Playlist, PlaylistEditProblem } from '#lib/api/library.js'
 import type { Change } from '#lib/app/changes.js'
 import type { ChangeFailure, LibraryNotice } from '#lib/app/library.js'
 import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
+import { downloadFailureText } from '../downloads/view'
 import { failureText } from '../failure'
 import { formatCount, playlistName } from './view'
 
 // 改曲库的提示（LibraryNotice.svelte）说什么（#30、#33）：没改成时说哪件事没成、为什么；歌单不在了说清楚、正在重新同步；
-// 加入歌单成功说加进了哪里。歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
+// 加入歌单成功说加进了哪里；下载没下成（#38）说哪首、为什么。歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
 
 /** 句子里的一张歌单：我喜欢的音乐直接写，别的加「」 */
 function playlistInText(playlist: Playlist): string {
@@ -124,6 +125,8 @@ export function libraryNoticeText(notice: LibraryNotice): string {
       return `没能保存自建歌单的顺序${notice.restored ? '，已经恢复原来的顺序' : ''}：${changeFailureText(notice.failure)}`
     case 'recovered':
       return '上次关闭前的修改没保存成功，已恢复原样。'
+    case 'downloadFailed':
+      return `没能下载《${notice.song.name}》：${downloadFailureText(notice.failure)}`
     default: {
       const unhandled: never = notice
       throw new Error(`不认识的提示：${JSON.stringify(unhandled)}`)

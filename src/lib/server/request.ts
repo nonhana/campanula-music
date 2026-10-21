@@ -86,10 +86,10 @@ export function readSearchKind(value: string): SearchKind {
   return kind
 }
 
-/** 读请求里的播放来源：每日推荐没有编号，一次搜索带着搜的词，其余要带编号 */
+/** 读请求里的播放来源：每日推荐、已下载没有编号，一次搜索带着搜的词，其余要带编号 */
 function readSource(source: unknown): PlaySource {
   const { kind, id, keyword } = (typeof source === 'object' && source !== null ? source : {}) as Partial<Record<'kind' | 'id' | 'keyword', unknown>>
-  if (kind === 'daily')
+  if (kind === 'daily' || kind === 'downloads')
     return { kind }
   if (kind === 'search') {
     if (typeof keyword !== 'string' || !keyword.trim())

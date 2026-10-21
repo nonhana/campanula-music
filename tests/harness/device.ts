@@ -4,7 +4,7 @@ import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } fro
 import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
 import { CookieJar } from 'tough-cookie'
 import { createApp } from '#lib/app/app.js'
-import { FakeAudio, FakeBroadcast, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
+import { FakeAudio, FakeBroadcast, FakeFiles, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
 
 export interface SentRequest {
   method: string
@@ -60,6 +60,10 @@ export interface Device {
   storage: FakeStorage
   /** 换封面用的图片解码、导出和直传替身（#34） */
   images: FakeImages
+  /** 网易云的音频服务器、图片服务器：测试放上文件，App 下载时直连这里（#38） */
+  files: FakeFiles
+  /** 本机文件的地址（blob:）：按地址找回是哪个文件 */
+  objectUrls: FakeObjectUrls
   /**
    * 等这台设备上正在发的请求都回来、排着的锁回调、标签页之间的广播和播放器的事件都跑完、本机数据库的读写都做完、
    * App 处理完（处理时又发的也等）
@@ -112,6 +116,8 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
   const mediaTasks = new MediaTasks()
   const images = new FakeImages()
   const inFlight = new Set<Promise<unknown>>()
+  const files = new FakeFiles(network)
+  const objectUrls = new FakeObjectUrls()
 
   function track(work: Promise<unknown>): void {
     inFlight.add(work)
@@ -225,6 +231,13 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
           track(work)
           return work
         },
+        download(url, onProgress) {
+          const work = files.download(url, onProgress)
+          track(work)
+          return work
+        },
+        objectUrl: blob => objectUrls.create(blob),
+        revokeObjectUrl: url => objectUrls.revoke(url),
       })
       await app.open()
       return {
@@ -273,6 +286,8 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
       return Object.fromEntries(contents)
     },
     setOnline: online => network.set(online),
+    files,
+    objectUrls,
     storage,
     images,
     async idle() {
