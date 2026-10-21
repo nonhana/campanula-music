@@ -378,6 +378,7 @@ export function createApp(browser: BrowserCapabilities): App {
     clock: browser.clock,
     browser,
     online: () => browser.network.onLine,
+    signedIn: () => state.session.status === 'signedIn',
     write: next => update({ downloads: next }),
     notify: notifyDownload,
     loginExpired,

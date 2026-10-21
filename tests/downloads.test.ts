@@ -221,6 +221,52 @@ describe('下载一首', () => {
     expect(app.state.downloads.songs).toEqual([song])
     expect(await storedDownloads(device)).toHaveLength(1)
   })
+
+  it('网易云回得慢、下载地址还没回来时退出登录：回来的“需要登录”不算登录失效，App 是退出了；这首标成没下成', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    const slow = held()
+    await world.netease.reply(LOSER.downloadUrl, { until: slow.until })
+    await world.netease.reply(LYRICS, { until: slow.until })
+    app.download(song)
+    await world.settle()
+
+    await world.netease.reply('login/logout.json')
+    await app.logout()
+    await world.settle()
+    expect(app.state.session.status).toBe('signedOut')
+    slow.release()
+    await world.settle()
+    expect(app.state.session.status).toBe('signedOut')
+  })
+
+  it('后台通道停着时（登录失效）要下载地址：回“需要登录”，这首标成没下成；登录失效本身照常', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    // 登录 Cookie 被删掉：下一个请求网易云说需要登录，续期也没成功
+    await device.setCookie('campanula_login=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict')
+    app.download(song)
+    await world.settle()
+    expect(app.state.session.status).toBe('loginExpired')
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({ status: 'failed', failure: { kind: 'request', failure: { kind: 'needsLogin' } } })
+  })
+
+  it('退出登录以后不能下载：不发请求，说明要先登录', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    await world.netease.reply('login/logout.json')
+    await app.logout()
+    await world.settle()
+    const requested = device.requests.length
+
+    expect(app.download(song)).toBe('signedOut')
+    await world.settle()
+    expect(app.state.downloads.tasks.size).toBe(0)
+    expect(device.requests.slice(requested)).toEqual([])
+  })
 })
 
 describe('下载属于这台设备', () => {
@@ -338,6 +384,26 @@ describe('放已下载的歌', () => {
     // 再下一首（第 3 首）下载了：空闲的播放器装的是本机文件，不取播放地址
     expect(device.objectUrls.blobOf(player.src)?.size).toBe((await readRecording(THIRD.downloadUrl)).response.body.data.size)
     expect(playUrlRequests(device)).toEqual([`/api/songs/${SECOND.id}/play-url?quality=exhigh`])
+  })
+
+  it('正在在线放的那首下载完了：照样能拖进度，这首接着放完（换成本机文件从下一次放这首起）', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await world.netease.reply(FIRST.playUrl)
+    await world.netease.reply(SECOND.playUrl)
+    app.play(LIKED, FIRST.id)
+    await world.settle()
+    const player = tab.audio.find(audio => !audio.paused)!
+    player.ready(192.648)
+    await world.settle()
+
+    await download(device, app, FIRST)
+    app.seek(100)
+    await world.settle()
+    expect(player.currentTime).toBe(100)
+    expect(tab.sounding()).toBe(player)
+    expect(app.state.player).toMatchObject({ status: 'playing', position: 100 })
   })
 
   it('断网时下载的歌词、封面缩略图照样在：看歌词不发请求，锁屏上的封面是本机的', async () => {

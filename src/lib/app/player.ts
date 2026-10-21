@@ -435,9 +435,14 @@ export function createPlayer(context: PlayerContext): Player {
     return url !== null && clock.now() < url.expiresAt - URL_EXPIRY_MARGIN_MS
   }
 
-  /** 播放器装着这首歌、地址没过期、没出错：可以直接放。下载了的要装着本机文件，没下载的（删了下载）要装着网易云的地址 */
+  /** 播放器装着这首歌、地址没过期、没出错：正在放的这首可以接着放、拖进度（下载完、删了下载时照样，放完再换） */
   function holds(deck: Deck, song: Song): boolean {
-    return deck.song?.id === song.id && fresh(deck.url) && !deck.audio.error && deck.url.local === context.downloaded(song.id)
+    return deck.song?.id === song.id && fresh(deck.url) && !deck.audio.error
+  }
+
+  /** 要换成这首时，空闲的播放器装着的能直接用：装着这首，下载了的装的是本机文件，没下载的（删了下载）装的是网易云的地址 */
+  function primed(deck: Deck, song: Song): boolean {
+    return holds(deck, song) && deck.url!.local === context.downloaded(song.id)
   }
 
   /** 已下载的歌：本机文件的地址，不取播放地址、不过期；没下载是 null */
@@ -585,7 +590,7 @@ export function createPlayer(context: PlayerContext): Player {
     handoverFailed = false
     const { song } = state.queue[index]
     // 正在换过去、还没出声的那首不要了（连按几次下一首）：停下它，免得它缓冲好了和当前这首一起出声
-    if (incoming && !holds(incoming.deck, song))
+    if (incoming && !primed(incoming.deck, song))
       incoming.deck.audio.pause()
     incoming = null
     stopSlow()
@@ -593,7 +598,7 @@ export function createPlayer(context: PlayerContext): Player {
     if (change !== null)
       endListen()
     publish({ current: index, position, duration: null, trial: false, notice, change: change ?? state.change })
-    if (!holds(spare, song)) {
+    if (!primed(spare, song)) {
       let url = localUrl(song) ?? urls.get(song.id) ?? null
       if (!fresh(url)) {
         publish({ status: 'loading' })
@@ -648,7 +653,7 @@ export function createPlayer(context: PlayerContext): Player {
     if (index === null)
       return
     const { song } = state.queue[index]
-    if (holds(spare, song))
+    if (primed(spare, song))
       return
     const fetched = await playUrl(song)
     if (mine !== preparing)
@@ -676,7 +681,7 @@ export function createPlayer(context: PlayerContext): Player {
     if (next === null)
       return
     const remaining = active.audio.duration - active.audio.currentTime
-    if (!holds(spare, state.queue[next].song)) {
+    if (!primed(spare, state.queue[next].song)) {
       if (remaining <= PREPARE_AGAIN_LEAD && clock.now() - lastPrepare >= PREPARE_AGAIN_INTERVAL_MS) {
         prepared = false
         void prepareNext()

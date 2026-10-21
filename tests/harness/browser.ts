@@ -271,11 +271,12 @@ export class FakeFiles {
   }
 }
 
-/** 本机文件的地址（URL.createObjectURL）：一台设备一份，测试按地址找回是哪个文件、看哪些已经不用了 */
+/**
+ * 本机文件的地址（URL.createObjectURL），一台设备一份，测试按地址找回是哪个文件。照 File API 标准（§8.3 Blob URLs）：
+ * revokeObjectURL 以后这个地址就失效了，再按它找不到文件（浏览器里拿它加载会失败）
+ */
 export class FakeObjectUrls {
   readonly #blobs = new Map<string, Blob>()
-  /** revokeObjectURL 过的地址 */
-  readonly revoked = new Set<string>()
   #count = 0
 
   create(blob: Blob): string {
@@ -285,10 +286,10 @@ export class FakeObjectUrls {
   }
 
   revoke(url: string): void {
-    this.revoked.add(url)
+    this.#blobs.delete(url)
   }
 
-  /** 这个地址是哪个文件；不是 createObjectURL 给的是 undefined */
+  /** 这个地址是哪个文件；不是 createObjectURL 给的、已经 revoke 了的是 undefined */
   blobOf(url: string): Blob | undefined {
     return this.#blobs.get(url)
   }
