@@ -137,7 +137,7 @@
 <svelte:window onkeydown={onWindowKeydown} />
 
 {#if sorting}
-  <div class={['flex items-center', phone ? 'gap-2 px-4 pt-3' : 'mb-4 max-w-[720px] gap-4']}>
+  <div class={['flex items-center', phone ? 'gap-2 px-4 pt-3' : 'mb-4 gap-4']}>
     {#if phone}
       <h2 class='text-title-sm text-neutral-900 font-600'>自建歌单</h2>
     {:else}
@@ -188,7 +188,7 @@
           {#if sorting}
             <p class='sr-only' aria-live='polite'>{announcement}</p>
             <ul
-              class={['flex flex-col gap-2', phone ? 'px-4 pb-8' : 'max-w-[720px] pb-4']}
+              class={['flex w-full flex-col gap-2', phone ? 'px-4 pb-8' : 'pb-4']}
               aria-label='自建歌单，正在排序'
               data-playlist-sort
               {@attach sort.container}
