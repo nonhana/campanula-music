@@ -4,7 +4,7 @@
   骨架里的虚线框只标出区域和尺寸，里面放什么由之后的票决定。
 -->
 <script lang='ts'>
-  import { CircleArrowDown, Ellipsis, ListMusic, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
+  import { ArrowUpDown, CircleArrowDown, CirclePlus, Ellipsis, ListMusic, ListPlus, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
   import Brand from '#lib/components/Brand.svelte'
   import { desktopLayout } from '#lib/components/layout.js'
   import DesktopShell from '#lib/components/shell/DesktopShell.svelte'
@@ -15,6 +15,7 @@
   import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
   import Tag from '#lib/components/ui/Tag.svelte'
+  import TextButton from '#lib/components/ui/TextButton.svelte'
   import TextField from '#lib/components/ui/TextField.svelte'
 
   // 颜色名照 DESIGN.md，类名照 uno.config.ts 的色阶
@@ -180,7 +181,7 @@
     </section>
 
     <section>
-      {@render section('按钮', '手机 44px、桌面 40px 高；按下时缩到 98%；按 Tab 看焦点环。')}
+      {@render section('按钮', '胶囊看得见的都是 40px 高，点击范围 44px；按下时缩到 98%；按 Tab 看焦点环。')}
       <div class='mt-4 flex flex-wrap items-center gap-3'>
         <Button variant='primary' icon={Play}>播放全部</Button>
         <Button variant='download' icon={CircleArrowDown}>下载</Button>
@@ -197,6 +198,15 @@
         <IconButton icon={Ellipsis} label='更多操作' disabled />
       </div>
       <p class='mt-2 text-caption text-neutral-600'>第二行是禁用：实心按钮变成发丝线灰底、石墨淡字，其他按钮降到 50%。</p>
+      <div class='mt-4 flex flex-wrap items-center gap-2'>
+        <Button variant='primary' icon={Play}>播放全部</Button>
+        <Button variant='outline' icon={ListPlus} phoneLabel='添加歌曲'>添加歌曲</Button>
+        <Button variant='outline' icon={CirclePlus} phoneLabel='收藏'>收藏</Button>
+        <Button variant='outline' icon={ArrowUpDown} phoneLabel='排序'>排序</Button>
+        <TextButton>完成</TextButton>
+        <TextButton tone='neutral'>清空</TextButton>
+      </div>
+      <p class='mt-2 text-caption text-neutral-600'>手机上主操作是实心胶囊；和标题、数量排在一行的次级操作只留图标（窄于 768px 时看）；图标说不清、点错有代价的是文字按钮；选项用下面的 chip。</p>
     </section>
 
     <section>

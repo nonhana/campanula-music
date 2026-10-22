@@ -11,6 +11,7 @@
   import { getAppView } from '../app-context.svelte'
   import { fade, unfold } from '../motion'
   import Button from '../ui/Button.svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import { formatCount, syncNotice } from './view'
 
   interface Props {
@@ -46,7 +47,7 @@
                   <CircleAlert size={14} class='flex-none text-error-700' aria-hidden='true' />
                   <!-- 出错的说明不截断：讲清楚发生了什么、能怎么办 -->
                   <span class='min-w-0 flex-1'>{notice.text}</span>
-                  <button type='button' class='h-11 flex-none rounded-full px-2 text-primary-900 font-500 -mr-2 active:bg-primary-100' onclick={() => view.app.retrySync()}>重试</button>
+                  <TextButton class='-mr-3' onclick={() => view.app.retrySync()}>重试</TextButton>
                 {:else}
                   <RefreshCw size={14} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800' : 'text-neutral-500']} aria-hidden='true' />
                   <span class='min-w-0 flex-1 truncate'>{notice.kind === 'syncing' ? '正在同步曲库' : `同步暂停 · ${PAUSED[notice.kind]}`}</span>
@@ -70,7 +71,7 @@
               {#if notice.kind === 'failed'}
                 <CircleAlert size={18} class='flex-none text-error-700' aria-hidden='true' />
                 <p class='min-w-0 flex-1 text-label text-neutral-900 font-500'>{notice.text}</p>
-                <Button variant='outline' class='h-9! md:h-9!' onclick={() => view.app.retrySync()}>重试</Button>
+                <Button variant='outline' class='h-9!' onclick={() => view.app.retrySync()}>重试</Button>
               {:else}
                 <RefreshCw size={18} class={['flex-none', notice.kind === 'syncing' ? 'animate-spin text-primary-800' : 'text-neutral-500']} aria-hidden='true' />
                 <p class='min-w-0 flex-1 truncate text-label text-neutral-900 font-500'>

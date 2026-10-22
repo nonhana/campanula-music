@@ -10,6 +10,7 @@
   import { toast } from '../motion'
   import { playerNoticeBox } from '../player/PlayerNotice.svelte'
   import IconButton from '../ui/IconButton.svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import { libraryNoticeText } from './notice'
 
   /** 加入歌单成功的提示停留多久（ms） */
@@ -90,17 +91,9 @@
         {/if}
         <p class='min-w-0 flex-1 text-caption text-neutral-800'>{libraryNoticeText(notice)}</p>
         {#if notice.kind === 'removed'}
-          <button
-            type='button'
-            class='h-11 flex-none rounded-full px-3.5 text-label text-primary-900 font-600 transition-colors duration-feedback md:h-10 mouse:hover:bg-primary-100'
-            onclick={() => view.app.undoRemove()}
-          >撤销</button>
+          <TextButton strong class='md:h-10' onclick={() => view.app.undoRemove()}>撤销</TextButton>
         {:else if retry}
-          <button
-            type='button'
-            class='h-11 flex-none rounded-full px-3.5 text-label text-primary-900 font-600 transition-colors duration-feedback md:h-10 mouse:hover:bg-primary-100'
-            onclick={retry}
-          >重试</button>
+          <TextButton strong class='md:h-10' onclick={retry}>重试</TextButton>
         {/if}
         <IconButton icon={X} label='关闭提示' onclick={() => view.app.dismissLibraryNotice()} />
       </div>

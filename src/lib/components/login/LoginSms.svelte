@@ -129,7 +129,7 @@
     {#snippet action()}
       <Button
         variant='outline'
-        class='w-[124px] tabular-nums md:h-11'
+        class='w-[124px] tabular-nums h-11!'
         disabled={captchaStatus.status === 'sending' || waitSeconds > 0}
         onclick={() => void sendCaptcha()}
       >{sendLabel}</Button>
@@ -153,7 +153,7 @@
     </div>
   {/if}
 
-  <Button type='submit' variant='primary' class='mt-5 w-full md:h-11' disabled={submit.status === 'submitting'}>
+  <Button type='submit' variant='primary' class='mt-5 w-full h-11!' disabled={submit.status === 'submitting'}>
     {#if submit.status === 'submitting'}<LoaderCircle size={17} class='animate-spin' aria-hidden='true' />正在登录{:else}登录{/if}
   </Button>
 </form>

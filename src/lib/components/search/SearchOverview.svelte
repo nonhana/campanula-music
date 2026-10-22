@@ -25,6 +25,7 @@
   import { fade, fadeAway, reveal } from '../motion'
   import StateBlock from '../ui/StateBlock.svelte'
   import Tag from '../ui/Tag.svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import { selectSearchTab } from './search-box.svelte'
   import SongResults from './SongResults.svelte'
   import { KIND_WORDS, OVERVIEW_COUNTS, searchFailure, searchPath } from './view'
@@ -76,11 +77,7 @@
         {#if list.status === 'shown'}
           <span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(list.total)} {KIND_WORDS[kind].unit}</span>
         {/if}
-        <a
-          href={resolve(searchPath(keyword, kind))}
-          class={['ml-auto inline-flex items-center rounded-full text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)', phone ? '-mr-3 h-11 px-3' : '-mr-4 h-9 px-4']}
-          onclick={event => seeAll(event, kind)}
-        >查看全部</a>
+        <TextButton href={resolve(searchPath(keyword, kind))} class={['ml-auto -mr-3', !phone && 'md:h-9']} onclick={event => seeAll(event, kind)}>查看全部</TextButton>
       </div>
       <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放。
            淡出（out:fadeAway）写在每种骨架自己的最外层，这里不再包一层：两层都会让出高度，后面的内容被往上拉一截 -->

@@ -1,6 +1,7 @@
 <!--
   曲库里的歌单（自建的、收藏的，不含我喜欢的音乐）：上面一块自建，下面一块收藏，不再合成一张用按钮筛选。
-  自建那块右边是“新建歌单”；“排序”只在自建那块（#37）。点“排序”进入排序模式，点“完成”退出。
+  自建那块右边是“排序”和“新建歌单”（手机只留图标，#57）；“排序”只在自建那块（#37）。点“排序”进入排序模式，点“完成”退出
+  （桌面是实心胶囊，手机是文字按钮）。
   手机保持横版列表、按每行右边的把手拖；桌面保持原来的封面网格，每张自建歌单封面右上角一个小白圆钮，按住它拖，
   卡片浮起、原位置留薄荷封面空位、其余卡片让位。收藏的歌单在下面，没有把手、不参与排序。
   歌单列表还没拿到时两块都是骨架，没拿到就出错时能重试，一块一张都没有时说明。
@@ -22,6 +23,7 @@
   import { playlistEditor } from '../playlist-edit.svelte'
   import Button from '../ui/Button.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import Cover from './Cover.svelte'
   import DragGrip from './DragGrip.svelte'
   import { PlaylistGridSort } from './playlist-grid-sort.svelte'
@@ -177,13 +179,17 @@
         {#if !phone}
           <p class='min-w-0 flex-1 truncate text-caption text-neutral-600'>{hint}</p>
         {/if}
-        <Button variant='primary' icon={Check} class='ml-auto' onclick={finishSort}>完成</Button>
+        {#if phone}
+          <TextButton strong class='ml-auto -mr-3' onclick={finishSort}>完成</TextButton>
+        {:else}
+          <Button variant='primary' icon={Check} class='ml-auto' onclick={finishSort}>完成</Button>
+        {/if}
       {:else}
-        <div class='ml-auto flex items-center gap-2'>
+        <div class={['ml-auto flex items-center gap-2', phone && '-mr-3']}>
           {#if canOrder}
-            <Button variant='outline' icon={ArrowUpDown} onclick={startSort} data-sort-entry>排序</Button>
+            <Button variant='outline' icon={ArrowUpDown} phoneLabel='排序自建歌单' onclick={startSort} data-sort-entry>排序</Button>
           {/if}
-          <Button variant='outline' icon={Plus} onclick={event => playlistEditor.open({ mode: 'new', songs: [], from: event.currentTarget })}>新建歌单</Button>
+          <Button variant='outline' icon={Plus} phoneLabel='新建歌单' onclick={event => playlistEditor.open({ mode: 'new', songs: [], from: event.currentTarget })}>新建歌单</Button>
         </div>
       {/if}
     </div>
