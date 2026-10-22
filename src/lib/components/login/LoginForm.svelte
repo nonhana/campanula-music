@@ -3,11 +3,10 @@
   显示扫码时 App 查询扫码状态；切走或离开登录页就停止查询。
   换方式时按标签的左右顺序横着走：往右边的标签换，旧的往左飘出、新的从右边飘进来（DESIGN.md Motion · 方向）；
   上面的切换条是 ui/Segmented（标签页），选中那格下面的滑块跟着横着滑；
-  两种方式不一样高，卡片跟着变高变矮（面板 360ms），下面的说明不跳
+  两种方式不一样高，卡片跟着变高变矮（面板 360ms）
 -->
 <script lang='ts'>
   import type { Toward } from '../motion'
-  import { ShieldCheck } from '@lucide/svelte'
   import { flushSync } from 'svelte'
   import { getAppView } from '../app-context.svelte'
   import { animateHeight, float } from '../motion'
@@ -85,9 +84,4 @@
       </div>
     {/key}
   </div>
-
-  <p class='mt-6 flex gap-2.5 border-t border-neutral-100 pt-5 text-caption text-neutral-600'>
-    <ShieldCheck size={16} class='mt-0.5 flex-none text-primary-800' aria-hidden='true' />
-    <span>登录凭据加密后只保存在这个浏览器里，服务器不保存。Campanula 是开源软件（MIT），可以查看源代码确认。</span>
-  </p>
 </div>

@@ -1,6 +1,6 @@
 <!--
   桌面顶栏正中的搜索框（视觉原型 DesktopSearchBox，DESIGN.md 桌面搜索）：点进去、Tab 进去或按 Ctrl K（Mac 上 ⌘ K）时，
-  框下面挂出下拉，没有遮罩、不挡页面：空着时是搜索历史，打字时是建议（SearchSuggestions）。
+  框下面挂出下拉，没有遮罩、不挡页面：空着时是搜索历史（没有搜索历史就不挂出），打字时是建议（SearchSuggestions）。
   回车、点建议或搜索历史里的词就搜，结果在内容区单独成页（/search?q=）；点歌手、专辑、歌单的建议直接打开它的页面。在结果页上框里是这次搜的词。
   下拉从框下面飘出来，关上时淡出（motion.ts 的 pop）。Esc、点别处、焦点离开时收起，框里换回这一页搜的词。
   键盘：↑↓ 在建议之间选，回车搜；下拉里的搜索历史、“清空”用 Tab 走到，Esc 收起后回到搜索框
@@ -21,6 +21,8 @@
   let open = $state(false)
   /** 框里有字：下拉里是建议列表（不是搜索历史） */
   const suggesting = $derived(open && searchBox.draft.trim() !== '')
+  /** 下拉挂着：打字时是建议；空着时有搜索历史才挂 */
+  const dropped = $derived(suggesting || (open && view.state.search.history.length > 0))
   const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'
 
   /** 打开下拉：框里有字（在结果页上是这次搜的词）就给它的建议 */
@@ -96,10 +98,10 @@
       typeInSearchBox(view.app, value)
       open = true
     }}
-    label='搜索歌曲、歌手、专辑'
+    label='搜索'
     hint={open ? undefined : kbd}
     role='combobox'
-    aria-expanded={open}
+    aria-expanded={dropped}
     aria-controls={suggesting ? SUGGESTION_LIST_ID : undefined}
     aria-autocomplete='list'
     aria-activedescendant={suggesting ? activeSuggestionId(view.app) : undefined}
@@ -108,7 +110,7 @@
     onclick={show}
     {onkeydown}
   />
-  {#if open}
+  {#if dropped}
     <!-- 按在下拉里不抢走搜索框的焦点：键盘一直留在框里 -->
     <div
       class='absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-[min(560px,70vh)] origin-top overflow-y-auto overscroll-contain rounded-xl bg-white shadow-float'

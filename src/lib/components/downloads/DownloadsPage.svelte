@@ -1,10 +1,10 @@
 <!--
   “已下载”页（#38，原型 DesktopDownloads / PhoneDownloads，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前。
-  登录、没登录都是这一页：没登录时从登录页进来（外框是 SignedOutFrame），说明只能播放、加入播放队列和删除。
-  桌面：200px 的拼贴封面头部（前四首的封面），标题、首数、说明，播放全部和右边的搜索框；下面是白色面板里带表头的歌曲行。
+  登录、没登录都是这一页：没登录时从登录页进来（外框是 SignedOutFrame），提示登录后可以红心、加入歌单。
+  桌面：200px 的拼贴封面头部（前四首的封面），标题、首数（没登录时加那句提示），播放全部和右边的搜索框；下面是白色面板里带表头的歌曲行。
   手机：88px 的拼贴和标题一行，播放全部，下面单独一行搜索框，歌曲行直接放在晨光底上。
   点一首（搜索结果里点也一样）就用整个已下载替换播放队列，播放来源是“已下载”。行的“更多”菜单里有删除下载。
-  还没从本机读出来时是骨架；一首都没有、搜不到各有说明。头部的首数和列表对得上（DESIGN.md Do's）。
+  还没从本机读出来时是骨架；一首都没有、搜不到各有空状态，搜不到时清空靠搜索框里的 ✕。头部的首数和列表对得上（DESIGN.md Do's）。
   返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot）
 -->
 <script lang='ts'>
@@ -24,7 +24,7 @@
   import VirtualList from '../library/VirtualList.svelte'
   import { fade, reveal } from '../motion'
   import { currentSong } from '../player/view'
-  import Button from '../ui/Button.svelte'
+  import { pageHeading } from '../shell/back-title.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
 
@@ -76,7 +76,7 @@
 {#snippet signedOutNote(card: boolean)}
   <p class={['flex items-start gap-1.5 text-caption text-neutral-700', card && 'rounded-xl bg-white px-3.5 py-2.5 shadow-ambient']}>
     <Info size={15} class='mt-0.5 flex-none text-neutral-500' aria-hidden='true' />
-    <span>没登录时只能播放、加入播放队列和删除；登录后可以红心、加入歌单。</span>
+    <span>登录后可以红心、加入歌单</span>
   </p>
 {/snippet}
 
@@ -88,20 +88,16 @@
   <StateBlock
     kind='empty'
     icon={CircleArrowDown}
-    title='这台设备上还没有下载的歌'
-    body={`${signedIn ? '' : '登录后，'}在歌曲的“更多”菜单里点“下载”。下载的歌离线也能听。`}
+    title='还没有下载的歌'
+    body={`${signedIn ? '' : '登录后，'}在歌曲的“更多”菜单里下载，断网也能听`}
     action={{ label: signedIn ? '去曲库' : '登录', run: () => void goto(resolve('/')) }}
   />
 {/snippet}
 
-{#snippet notFound(phone: boolean)}
+{#snippet notFound()}
   <div class='flex flex-col items-center px-6 py-12 text-center' role='status'>
     <SearchX size={24} class='text-neutral-500' aria-hidden='true' />
-    <p class='mt-3 text-body text-neutral-900 font-500'>已下载里没有“{term}”</p>
-    <p class='mt-1 text-caption text-neutral-600'>换个歌名、歌手或专辑名试试</p>
-    {#if !phone}
-      <Button variant='outline' class='mt-4' onclick={() => (query = '')}>清除搜索</Button>
-    {/if}
+    <p class='mt-3 text-body text-neutral-900 font-500'>没有“{term}”</p>
   </div>
 {/snippet}
 
@@ -130,7 +126,7 @@
       {#key mode}
         <div class='col-start-1 row-start-1 min-w-0' transition:fade>
           {#if songs.length === 0}
-            {@render notFound(phone)}
+            {@render notFound()}
           {:else}
             {@render rows(songs, phone)}
           {/if}
@@ -146,13 +142,9 @@
     <div class='min-w-0 flex flex-1 flex-col'>
       <h1 class='text-headline text-neutral-900 font-600'>已下载</h1>
       <p class='mt-2 text-label text-neutral-600 tabular-nums'>{all === null ? '　' : `${formatCount(all.length)} 首`}</p>
-      <div class='mt-2'>
-        {#if signedIn}
-          <p class='text-caption text-neutral-600'>保存在这台设备上，离线也能听</p>
-        {:else}
-          {@render signedOutNote(false)}
-        {/if}
-      </div>
+      {#if !signedIn}
+        <div class='mt-2'>{@render signedOutNote(false)}</div>
+      {/if}
       <div class='mt-auto flex items-center gap-2 pt-4'>
         <PlayAllButton songs={all} source={SOURCE} />
         {#if all && all.length > 0}
@@ -172,7 +164,7 @@
         {/if}
       </span>
       <span class={SONG_COLUMNS.album}>专辑</span>
-      <span class={SONG_COLUMNS.status}>状态</span>
+      <span class={SONG_COLUMNS.status}></span>
       <span class={SONG_COLUMNS.duration}>时长</span>
       <span></span>
     </div>
@@ -183,7 +175,7 @@
     <div class='flex items-center gap-4'>
       {@render collage(88)}
       <div class='min-w-0'>
-        <h1 class='text-headline-sm text-neutral-900 font-600'>已下载</h1>
+        <h1 class='text-headline-sm text-neutral-900 font-600' {@attach pageHeading('已下载')}>已下载</h1>
         <p class='mt-0.5 text-caption text-neutral-600 tabular-nums'>{all === null ? '　' : `${formatCount(all.length)} 首`}</p>
       </div>
     </div>

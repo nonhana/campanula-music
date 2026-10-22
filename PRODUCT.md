@@ -63,7 +63,7 @@ v1 范围以 `.scratch/decisions.md` 第 2 节为准，Spec 写成后以 Spec �
 - **品牌语言**：纯粹、简单、优雅。
 - **Logo**：保留现有图形原样（Lucide 的 flower 四瓣花，薄荷绿描边，`src/lib/components/svg/Logo.svelte`），不再一直旋转。
 - **色板和字体**：以 `uno.config.ts` 为源头，由作者亲自定义：薄荷 primary、蜜桃 secondary、珊瑚 accent、灰 neutral，以及 success / warning / error；字体 Noto Sans / SC / TC / JP。具体用法写在 `DESIGN.md`。
-- **文案语气**：平实、克制、不卖萌，例如“已加入歌单”“网络已断开，只能播放已下载的歌”。报错讲清楚发生了什么、能怎么办。
+- **文案语气**：平实、克制、不卖萌，能少就少，例如“已加入歌单”“网络已断开，只能播放已下载的歌”。图标、控件和状态已经表达的不再写字；报错说清什么没成、为什么，能怎么办交给按钮，没有按钮时才写一句（规则见 `DESIGN.md` 的 Copy（文案），#59）。
 - **参照**：行为照网易云官方客户端；完成度以 Spotify 网页版为底线；手机交互方式参考 Auxio，只借交互方式，不借它的 Material You 外观；桌面布局以现有 Campanula 为蓝本。
 
 ## Evidence on Hand

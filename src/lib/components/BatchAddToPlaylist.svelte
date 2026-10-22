@@ -82,7 +82,6 @@
 {#snippet sheetHeader({ songs }: BatchPickerRequest)}
   <div class='px-4 pb-3 pt-1'>
     <p class='text-title-sm text-neutral-900 font-600'>加入歌单<span class='ml-1.5 text-body text-neutral-600 font-400 tabular-nums'>· {formatCount(songs.length)} 首</span></p>
-    <p class='text-caption text-neutral-600'>目标只能是自建歌单。</p>
   </div>
 {/snippet}
 

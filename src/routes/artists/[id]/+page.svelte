@@ -1,14 +1,15 @@
 <!--
-  歌手页：圆形头像的头部（歌手名、“歌手 · 几首歌 · 几张专辑”）、热门歌曲、专辑网格（新的在前，后面还有时“显示更多专辑”）。
+  歌手页：圆形头像的头部（歌手名、“几首歌 · 几张专辑”）、热门歌曲、专辑网格（新的在前，后面还有时“显示更多”）。
   桌面头像在左；手机是二级页面：返回栏、居中的头像头部、Auxio 式歌曲行、两列专辑。
   本机副本到了、换了一位歌手时打开（App 的 openArtist：这次登录还没拉过就拉，没拉成时再打开就是重试）。
-  骨架换成内容时骨架淡出，头部、热门歌曲、专辑格子各自依次飘入（DESIGN.md Motion）；“显示更多专辑”加载进来的那些也依次飘入，没加载成的说明淡入，
+  骨架换成内容时骨架淡出，头部、热门歌曲、专辑格子各自依次飘入（DESIGN.md Motion）；“显示更多”加载进来的那些也依次飘入，没加载成的说明淡入，
+  加载时按钮文字不变、转圈（没加载成时按钮是“重试”，重试时也还是“重试”），
   取完了按钮淡出。返回这一页时滚动位置回到原来的样子。头部播放热门歌曲旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标），点“已收藏”直接取消收藏、不确认
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { CircleAlert, UserRound } from '@lucide/svelte'
+  import { UserRound } from '@lucide/svelte'
   import { tick } from 'svelte'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
@@ -19,9 +20,10 @@
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import SongList from '#lib/components/library/SongList.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
-  import { fade, fadeAway, reveal, stagger } from '#lib/components/motion.js'
+  import { fadeAway, reveal, stagger } from '#lib/components/motion.js'
+  import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
-  import Button from '#lib/components/ui/Button.svelte'
+  import ShowMore from '#lib/components/ui/ShowMore.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const view = getAppView()
@@ -43,10 +45,10 @@
       void view.app.openArtist(id)
   })
 
-  const EMPTY = { title: '暂时没有热门歌曲', body: '网易云音乐里这位歌手还没有能显示的热门歌曲。' }
+  const EMPTY = { title: '暂时没有热门歌曲' }
 
   let albumList = $state<HTMLUListElement>()
-  /** 上一次“显示更多专辑”之前已经有几张：后加进来的从第几张开始依次飘入 */
+  /** 上一次“显示更多”之前已经有几张：后加进来的从第几张开始依次飘入 */
   let appendedAt = $state(0)
   async function showMore() {
     const shown = content?.albums.length ?? 0
@@ -66,9 +68,9 @@
     <header class={phone ? 'px-4 pt-2 text-center' : 'flex items-center gap-8'} in:reveal>
       <Cover url={artist.avatarUrl} size={FLIGHT_COVER_SIZE} fluid={phone} eager flight={here} fallback={UserRound} class={['rounded-full shadow-ambient', phone && 'mx-auto max-w-[168px]']} />
       <div class='min-w-0 flex-1'>
-        <h1 class={['line-clamp-2 break-words text-neutral-900 font-600', phone ? 'mt-4 text-headline-sm' : 'text-headline']} lang={langOf(artist.name)}>{artist.name}</h1>
+        <h1 class={['line-clamp-2 break-words text-neutral-900 font-600', phone ? 'mt-4 text-headline-sm' : 'text-headline']} lang={langOf(artist.name)} {@attach pageHeading(artist.name)}>{artist.name}</h1>
         <p class={['text-neutral-600 tabular-nums', phone ? 'mt-1.5 text-caption' : 'mt-2 text-label']}>
-          歌手 · {formatCount(artist.songCount)} 首歌 · {formatCount(artist.albumCount)} 张专辑
+          {formatCount(artist.songCount)} 首歌 · {formatCount(artist.albumCount)} 张专辑
         </p>
         <div class={['flex items-center gap-2', phone ? 'mt-4 justify-center' : 'mt-6']}>
           <PlayAllButton songs={content?.hotSongs ?? null} source={{ kind: 'artist', id }} label='播放热门歌曲' />
@@ -92,7 +94,7 @@
     <section class={phone ? 'pt-6' : 'mt-10 pb-6'} aria-labelledby='artist-albums' in:reveal>
       <h2 id='artist-albums' class={['text-neutral-900 font-600', phone ? 'px-4 text-title-sm' : 'text-title']}>专辑</h2>
       {#if content.albums.length === 0 && !more}
-        <p class={['text-label text-neutral-600', phone ? 'px-4 pt-3' : 'mt-3']}>网易云音乐里这位歌手还没有专辑。</p>
+        <p class={['text-label text-neutral-600', phone ? 'px-4 pt-3' : 'mt-3']}>还没有专辑</p>
       {/if}
       <ul bind:this={albumList} class={['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-3' : 'mt-3 grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-x-5 gap-y-6']} data-reveal-group>
         {#each content.albums as album, i (album.id)}
@@ -101,24 +103,7 @@
           </li>
         {/each}
       </ul>
-      {#if more}
-        <div class={['flex flex-wrap items-center gap-3 pt-5', phone ? 'justify-center px-4' : '']} out:fade>
-          {#if more.status === 'failed'}
-            <p class='min-w-0 flex items-center gap-2 text-caption text-neutral-700' role='alert' in:fade>
-              <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
-              <span>后面的专辑没能加载。{failureText(more.failure)}</span>
-            </p>
-          {/if}
-          <Button
-            variant='outline'
-            aria-disabled={more.status === 'loading'}
-            aria-busy={more.status === 'loading'}
-            onclick={showMore}
-          >
-            {more.status === 'loading' ? '正在加载…' : more.status === 'failed' ? '重试' : '显示更多专辑'}
-          </Button>
-        </div>
-      {/if}
+      <ShowMore {more} onmore={() => void showMore()} failed='没能加载更多专辑' class={['pt-5', phone && 'justify-center px-4']} />
     </section>
   {/if}
 {/snippet}

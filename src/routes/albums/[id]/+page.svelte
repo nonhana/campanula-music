@@ -1,5 +1,5 @@
 <!--
-  专辑页：桌面是 200px 封面的头部（专辑名、“专辑 · 歌手 · 年份 · 几首”）、下面一段简介、白色面板里带曲序的歌曲行；
+  专辑页：桌面是 200px 封面的头部（专辑名、“歌手 · 年份 · 几首”）、下面一段简介、白色面板里带曲序的歌曲行；
   手机是二级页面：返回栏、居中的封面头部、卡片里的简介、带曲序的歌曲行。
   本机副本到了、换了一张专辑时打开它（App 的 openAlbum：这次登录还没拉过就拉，没拉成时再打开就是重试）。
   骨架换成内容时骨架淡出，头部、简介、歌曲各自依次飘入（DESIGN.md Motion）。返回这一页时滚动位置回到原来的样子。
@@ -18,6 +18,7 @@
   import SongList from '#lib/components/library/SongList.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
   import { fadeAway, reveal } from '#lib/components/motion.js'
+  import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
@@ -44,7 +45,7 @@
       void view.app.openAlbum(id)
   })
 
-  const EMPTY = { title: '这张专辑暂时没有歌', body: '网易云音乐里这张专辑还没有能显示的歌。' }
+  const EMPTY = { title: '这张专辑暂时没有歌' }
 </script>
 
 <svelte:head><title>{album?.name ?? '专辑'} · Campanula</title></svelte:head>
@@ -52,7 +53,6 @@
 {#snippet metaLine(phone: boolean)}
   {#if album && content}
     <p class={['flex flex-wrap items-center gap-x-1.5 text-neutral-600', phone ? 'mt-1.5 justify-center text-caption' : 'mt-2 text-label']}>
-      {#if !phone}<span>专辑</span><span aria-hidden='true'>·</span>{/if}
       {#if album.artist.id > 0 && album.artist.name}
         <a
           href={resolve('/artists/[id]', { id: String(album.artist.id) })}
@@ -110,7 +110,7 @@
     {#if album}
       <header class='px-4 pt-2 text-center' in:reveal>
         <Cover url={album.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
-        <h1 class='line-clamp-2 mt-4 break-words text-headline-sm text-neutral-900 font-600' lang={langOf(album.name)}>{album.name}</h1>
+        <h1 class='line-clamp-2 mt-4 break-words text-headline-sm text-neutral-900 font-600' lang={langOf(album.name)} {@attach pageHeading(album.name)}>{album.name}</h1>
         {@render metaLine(true)}
         <div class='mt-3 flex items-center justify-center gap-2'>{@render actions()}</div>
       </header>

@@ -2,7 +2,7 @@
   结果页的一个标签（单曲、歌单、歌手、专辑，视觉原型 SearchPanel、DesktopSearchResults）：取到的全部，后面还有时“显示更多”。
   桌面放在白色面板里：单曲是带序号的桌面歌曲行，歌单是 64px 的行，歌手是圆头像网格，专辑是封面网格；
   手机放在晨光底上：Auxio 式歌曲行、歌单的行、三列歌手、两列专辑。
-  第一页还在拉时是形状一致的骨架，骨架换成内容时依次飘入；没拉成时说明原因、能重试；一个都没有时说明
+  第一页还在拉时是形状一致的骨架，骨架换成内容时依次飘入；没拉成时说明原因、能重试；一个都没有时只有“没有相关的…”的标题
 -->
 <script lang='ts'>
   import type { SearchKind } from '#lib/api/search.js'
@@ -17,9 +17,9 @@
   import TileBone from '../library/TileBone.svelte'
   import { formatCount, yearOf } from '../library/view'
   import { fadeAway, reveal, stagger } from '../motion'
+  import ShowMore from '../ui/ShowMore.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistResults from './PlaylistResults.svelte'
-  import ShowMore from './ShowMore.svelte'
   import SongResults from './SongResults.svelte'
   import { KIND_WORDS, searchFailure } from './view'
 
@@ -93,7 +93,7 @@
   {:else}
     <div in:reveal>
       {#if shown.items.length === 0}
-        <StateBlock kind='empty' icon={SearchX} title={`没有找到“${keyword}”相关的${words.label}`} body='换个词试试，或者看看别的分类。' />
+        <StateBlock kind='empty' icon={SearchX} title={`没有相关的${words.label}`} />
       {:else}
         {#if shown.kind === 'songs'}
           <SongResults {keyword} songs={shown.items} {phone} {appendedAt} />
@@ -103,7 +103,7 @@
           <ul class={['grid', grids.artists]} aria-label={words.label} data-reveal-group>
             {#each shown.items as artist, i (artist.id)}
               <li class='min-w-0' in:stagger={{ order: i - appendedAt }}>
-                <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首单曲`} collectable />
+                <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首`} collectable />
               </li>
             {/each}
           </ul>
@@ -117,7 +117,7 @@
           </ul>
         {/if}
         {#if list.status === 'shown'}
-          <ShowMore more={list.more} onmore={showMore} />
+          <ShowMore more={list.more} onmore={showMore} class='justify-center px-4 pb-2 pt-4' />
         {/if}
       {/if}
     </div>

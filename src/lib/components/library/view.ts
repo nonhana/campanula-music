@@ -75,11 +75,11 @@ export function openingOf(library: LibraryState, playlistId: number): PlaylistOp
   return page?.status === 'shown' ? page.content.more : null
 }
 
-/** 歌单页的头部：曲库里的看歌单列表，不在曲库里的看打开时取到的；两种歌单写的东西一样，只有类别不同 */
+/** 歌单页的头部：曲库里的看歌单列表，不在曲库里的看打开时取到的；两种歌单写的东西一样 */
 export interface PlaylistHeader {
   name: string
   coverUrl: string
-  /** 名字下面的一行：创建者、类别、首数、播放次数 */
+  /** 名字下面的一行：创建者、首数、播放次数（不写类别：方封面和旁边的按钮已经说明是歌单） */
   meta: string[]
   private: boolean
   /** 简介：没写（或只有空白）时是 null */
@@ -89,7 +89,7 @@ export interface PlaylistHeader {
 
 /**
  * 歌单页的头部；还没拿到歌单列表、不在曲库里的歌单还没取到时是 null。
- * 首数和下面的列表对得上（DESIGN.md Do's）：有全了是实际有的歌，还在拉时写拉到了几首，列表还没出来时不写。
+ * 首数和下面的列表对得上（DESIGN.md Do's）：有全了是实际有的歌，还在拉时写“拉到了几首 / 一共几首”，列表还没出来时不写。
  * 播放次数是 0 时不写：新歌单，或者刚从旧版本升上来、还没同步到真的值
  */
 export function playlistHeader(library: LibraryState, playlistId: number, shown: PlaylistView): PlaylistHeader | null {
@@ -99,14 +99,13 @@ export function playlistHeader(library: LibraryState, playlistId: number, shown:
   if (!playlist)
     return null
   const count = shown.kind === 'songs' && !shown.complete
-    ? `${inLibrary ? '已同步' : '已加载'} ${formatCount(shown.songs.length)} / ${formatCount(shown.total)} 首`
+    ? `${formatCount(shown.songs.length)} / ${formatCount(shown.total)} 首`
     : shown.kind === 'songs' ? `${formatCount(shown.total)} 首` : shown.kind === 'empty' ? '0 首' : ''
-  const kind = !inLibrary ? '网易云歌单' : inLibrary.kind === 'own' ? '自建歌单' : inLibrary.kind === 'collected' ? '收藏的歌单' : ''
   const plays = playlist.playCount > 0 ? `播放 ${formatPlays(playlist.playCount)}` : ''
   return {
     name: inLibrary ? playlistName(inLibrary) : playlist.name,
     coverUrl: playlist.coverUrl,
-    meta: [playlist.creator, kind, count, plays].filter(Boolean),
+    meta: [playlist.creator, count, plays].filter(Boolean),
     private: inLibrary?.private ?? false,
     description: playlist.description?.trim() || null,
     tags: playlist.tags,
@@ -118,9 +117,8 @@ export function playlistName(playlist: Playlist): string {
   return playlist.kind === 'liked' ? '我喜欢的音乐' : playlist.name
 }
 
-/** 首次同步的进度：整个曲库同步完了几张歌单、几首歌 */
+/** 首次同步的进度：整个曲库同步了几首歌（同步条只写“x / y 首”，进度条按它走） */
 export interface SyncProgress {
-  playlists: { done: number, total: number }
   songs: { done: number, total: number }
 }
 
@@ -154,7 +152,6 @@ export function syncNotice(library: LibraryState, failureShown = false): SyncNot
       return {
         kind: 'syncing',
         progress: playlists && {
-          playlists: { done: playlists.filter(playlist => playlist.complete).length, total: playlists.length },
           // 同步完的歌单按一共几首算：网易云没给的歌（下架了）不会再有，进度要能走到头
           songs: playlists.reduce((sum, { songs, total, complete }) => ({ done: sum.done + (complete ? total : songs.length), total: sum.total + total }), { done: 0, total: 0 }),
         },
@@ -170,9 +167,9 @@ export function syncNotice(library: LibraryState, failureShown = false): SyncNot
   }
 }
 
-/** 同步没成功的原因：已经同步的部分照常显示，所以只说哪里出了问题、重试就好 */
+/** 同步没成功的原因：已经同步的部分照常显示，所以只说哪里出了问题 */
 export function syncFailureText(failure: SyncFailure): string {
-  return `曲库没能同步完。${failureText(failure)}`
+  return `曲库没能同步完：${failureText(failure)}`
 }
 
 /**

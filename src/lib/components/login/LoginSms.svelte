@@ -1,12 +1,11 @@
 <!--
   短信验证码登录（视觉原型 welcome-sms）：+86 手机号，获取验证码后 60 秒才能重发，填验证码登录。
-  发不出去、登录被拒时说明原因；网易云因为风控拒绝时原样显示它的说明，听众可以改用扫码。
-  这些说明推开下面的登录键：出现时展开，走时淡出再收起（motion.ts 的 unfold）
+  发不出去、登录被拒时给出原因；网易云因为风控拒绝时原样显示它的说明，听众可以改用扫码。
+  发送、登录时按钮不换字，转圈（busy）。这些报错推开下面的登录键：出现时展开，走时淡出再收起（motion.ts 的 unfold）
 -->
 <script lang='ts'>
-  import { LoaderCircle } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
-  import { failureText, loginFailureText } from '../failure'
+  import { failureText } from '../failure'
   import { unfold } from '../motion'
   import Button from '../ui/Button.svelte'
   import TextField from '../ui/TextField.svelte'
@@ -91,11 +90,7 @@
   const captchaHint = $derived(
     captchaStatus.status === 'sent' && sentTo ? `验证码已发到 ${masked(sentTo)}` : undefined,
   )
-  const sendLabel = $derived(
-    captchaStatus.status === 'sending'
-      ? '正在发送'
-      : waitSeconds > 0 ? `${waitSeconds} 秒后重发` : sentTo ? '重新获取' : '获取验证码',
-  )
+  const sendLabel = $derived(waitSeconds > 0 ? `${waitSeconds} 秒后重发` : sentTo ? '重新获取' : '获取验证码')
 </script>
 
 <form class='flex flex-col' novalidate onsubmit={login}>
@@ -109,7 +104,6 @@
     type='tel'
     inputmode='numeric'
     autocomplete='tel-national'
-    placeholder='11 位手机号'
     oninput={onPhoneInput}
   />
 
@@ -123,14 +117,14 @@
     hint={captchaHint}
     inputmode='numeric'
     autocomplete='one-time-code'
-    placeholder='短信验证码'
     oninput={onCaptchaInput}
   >
     {#snippet action()}
       <Button
         variant='outline'
         class='w-[124px] tabular-nums h-11!'
-        disabled={captchaStatus.status === 'sending' || waitSeconds > 0}
+        busy={captchaStatus.status === 'sending'}
+        disabled={waitSeconds > 0}
         onclick={() => void sendCaptcha()}
       >{sendLabel}</Button>
     {/snippet}
@@ -138,22 +132,20 @@
 
   {#if captchaStatus.status === 'failed'}
     <div transition:unfold>
-      <p class='pt-1.5 text-caption text-error-700' role='alert'>验证码没发出去。{loginFailureText(captchaStatus.failure)}</p>
+      <p class='pt-1.5 text-caption text-error-700' role='alert'>验证码没发出去：{failureText(captchaStatus.failure)}</p>
     </div>
   {/if}
 
   {#if submit.status === 'failed'}
     <div transition:unfold>
       <div class='pt-4 text-caption text-error-700' role='alert'>
-        <p>没登录上。{failureText(submit.failure)}</p>
+        <p>没登录上：{failureText(submit.failure)}</p>
         {#if submit.failure.kind === 'rejected'}
-          <button type='button' class='mt-1 rounded-sm text-primary-900 font-500 underline underline-offset-2' onclick={onswitch}>改用扫码登录</button>
+          <button type='button' class='mt-1 rounded-sm text-primary-900 font-500 underline underline-offset-2' onclick={onswitch}>改用扫码</button>
         {/if}
       </div>
     </div>
   {/if}
 
-  <Button type='submit' variant='primary' class='mt-5 w-full h-11!' disabled={submit.status === 'submitting'}>
-    {#if submit.status === 'submitting'}<LoaderCircle size={17} class='animate-spin' aria-hidden='true' />正在登录{:else}登录{/if}
-  </Button>
+  <Button type='submit' variant='primary' class='mt-5 w-full h-11!' busy={submit.status === 'submitting'}>登录</Button>
 </form>

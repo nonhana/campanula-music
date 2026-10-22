@@ -1,7 +1,7 @@
 <!--
   专辑页、歌手页的歌曲列表（一次拿全，几十首，不用虚拟列表）。行和歌单页一样：
-  桌面是白色面板里带表头、序号的歌曲行；手机是 Auxio 式的行，numbered 时前面加序号（专辑的曲序）。
-  点一首歌就用整个列表替换播放队列，播放来源是 source。songs 是 null 时是形状一致的骨架，一首都没有时说明；
+  桌面是白色面板里带表头、序号的歌曲行（“状态”那一列表头不写字，心形和下载标记自己说话）；手机是 Auxio 式的行，numbered 时前面加序号（专辑的曲序）。
+  点一首歌就用整个列表替换播放队列，播放来源是 source。songs 是 null 时是形状一致的骨架，一首都没有时是空状态；
   骨架换成歌时骨架淡出、前几行依次飘入（DESIGN.md Motion）
 -->
 <script lang='ts'>
@@ -22,8 +22,8 @@
     source: PlaySource
     /** 骨架读屏读出的“正在加载什么” */
     loadingLabel: string
-    /** 一首都没有时的说明 */
-    empty: { title: string, body: string }
+    /** 一首都没有时的空状态：标题说清了就不写正文 */
+    empty: { title: string, body?: string }
     phone?: boolean
     numbered?: boolean
   }
@@ -63,7 +63,7 @@
       <span class={SONG_COLUMNS.index}>#</span>
       <span class={['pl-[52px]', SONG_COLUMNS.title]}>标题</span>
       <span class={SONG_COLUMNS.album}>专辑</span>
-      <span class={SONG_COLUMNS.status}>状态</span>
+      <span class={SONG_COLUMNS.status}></span>
       <span class={SONG_COLUMNS.duration}>时长</span>
       <span></span>
     </div>

@@ -4,8 +4,8 @@
   手机是二级页面：返回栏、居中的封面头部、简介卡片、歌单内搜索、歌曲行。
   每张歌单都在信息行下面显示标签，在头部下面显示简介（和专辑页共用的 Description，截断后可以展开），手机也一样。
   打开时这张歌单还没同步全，就马上用前台请求拉它（App 的 openPlaylist），不等后台同步。
-  不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取，页头分类写“网易云歌单”；
-  已删除、不存在、别人的隐私歌单打不开时说明原因。
+  不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取；页头信息行不写类别（方封面和旁边的按钮已经说明是歌单）。
+  已删除、不存在、别人的隐私歌单打不开时，标题说清是哪一种。
   头部播放全部旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标；点了已收藏直接取消收藏、不确认）：不在曲库里的和收藏的歌单有，我喜欢的音乐、自建歌单没有。
   自建歌单在那里是“添加歌曲”（手机只留图标）和 •••（PlaylistMenu）：编辑歌单信息、改为公开（隐私歌单才有）、删除歌单（#33）；我喜欢的音乐不能改名、不能删，没有它们。
   返回这一页时，搜索词和滚动位置都回到原来的样子（存在 SvelteKit 的 snapshot 里，跟着浏览历史走）
@@ -33,6 +33,7 @@
   import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
   import { anchorBelow } from '#lib/components/overlay-layer.svelte.js'
   import { playlistMenu } from '#lib/components/playlist-edit.svelte.js'
+  import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
   import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
@@ -113,12 +114,12 @@
     }
   })
 
-  /** 打不开的歌单：说明为什么 */
+  /** 打不开的歌单：标题说清是哪一种，只有“不存在”补一句 */
   const UNAVAILABLE = {
-    deleted: { icon: ListMusic, title: '这张歌单已被删除', body: '创建者在网易云音乐里删掉了它，打不开了。' },
-    missing: { icon: SearchX, title: '没有这张歌单', body: '网易云音乐里找不到这张歌单，可能是地址不对。' },
-    private: { icon: Lock, title: '这是别人的隐私歌单', body: '创建者把它设成了隐私歌单，只有创建者自己能打开。' },
-  } satisfies Record<PlaylistUnavailable, { icon: LucideIcon, title: string, body: string }>
+    deleted: { icon: ListMusic, title: '这张歌单已被删除' },
+    missing: { icon: SearchX, title: '没有这张歌单', body: '可能是地址不对' },
+    private: { icon: Lock, title: '这是别人的隐私歌单' },
+  } satisfies Record<PlaylistUnavailable, { icon: LucideIcon, title: string, body?: string }>
 
   // 桌面左栏：打开时、歌单列表到了时、换了一张歌单时，把当前这张滚进左栏的视野里（只滚左栏，不动页面，免得打乱返回时恢复的滚动位置）。
   // 刚打开时直接定位过去；之后（前进、后退到别的歌单）平滑地滚过去，减少动态效果时直接跳
@@ -145,7 +146,7 @@
         {#if i > 0}<span aria-hidden='true'>·</span>{/if}
         <span class='tabular-nums' lang={i === 0 ? langOf(part) : undefined}>{part}</span>
       {/each}
-      {#if header.private}<span class='inline-flex items-center gap-1'><Lock size={13} aria-hidden='true' />隐私</span>{/if}
+      {#if header.private}<span class='inline-flex items-center' role='img' aria-label='隐私歌单' title='隐私歌单'><Lock size={13} aria-hidden='true' /></span>{/if}
     </p>
   {/if}
 {/snippet}
@@ -202,7 +203,7 @@
       kind='empty'
       icon={why.icon}
       title={why.title}
-      body={why.body}
+      body={'body' in why ? why.body : undefined}
       action={{ label: '回到曲库', run: () => goto(resolve('/')) }}
     />
   </div>
@@ -212,7 +213,7 @@
     <StateBlock
       kind='error'
       title='这张歌单没能打开'
-      body={shown.failure.kind === 'offline' ? '这张歌单不在你的曲库里，要联网才能打开。连上网络后再试。' : failureText(shown.failure)}
+      body={shown.failure.kind === 'offline' ? '不在曲库里的歌单要联网才能打开' : failureText(shown.failure)}
       action={{ label: '重试', run: () => void view.app.openPlaylist(id) }}
     />
   </div>
@@ -252,7 +253,7 @@
   {#if header}
     <header class='px-4 pt-2 text-center' in:reveal>
       <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
-      <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
+      <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)} {@attach pageHeading(name)}>{name}</h1>
       {@render metaLine(true)}
       {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap justify-center gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
       <div class='mt-4 flex justify-center'>{@render actions()}</div>

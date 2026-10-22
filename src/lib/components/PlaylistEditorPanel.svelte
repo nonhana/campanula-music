@@ -1,11 +1,11 @@
 <!--
   歌单编辑里面的内容（外壳是 PlaylistEditor → DialogShell：桌面居中弹窗、手机底部弹层；原型 PlaylistEditor）。每次打开都重新建，表单按打开时的歌单填好。
-  - 新建：名称（最多 40 个宽度，汉字算 2，写满会说明）、设为隐私歌单。按“创建”等网易云建好（按钮写“正在新建…”）才关上，
-    没建成就留在这里说明原因，填好的不丢；从加入歌单里新建的，建好接着把那首歌加进去（App 的 createPlaylist）。
+  - 新建：名称（有看得见的标签，不写占位；最多 40 个宽度，汉字算 2，写超了提示上限）、设为隐私歌单。按“创建”等网易云建好（“创建”转圈）才关上，
+    没建成就留在这里一句话说原因，填好的不丢；从加入歌单里新建的，建好接着把那首（多选时是那几首）歌加进去（App 的 createPlaylist）。
   - 编辑歌单信息：封面（右下角的相机键，点整张封面也能选图，打开换封面的裁剪页，#34）、名称、简介（最多 1,000 个字）、标签（TagPicker，打开时取网易云的标签库）。
     按“保存”交给 App（先改本地、立即生效，没成会自己改回并在提示条里说明）马上关上；名称不合规时不能保存。
-  - 改为公开：说清楚公开后谁看得到、改了就改不回隐私，确认键是主按钮。
-  - 删除：说清楚歌曲和红心不受影响、删了不能恢复，确认键是出错红（DESIGN.md Buttons · Destructive）。
+  - 改为公开：说清楚公开后谁看得到，琥珀底一句“公开后不能改回隐私”，确认键是主按钮。
+  - 删除：说清楚红心不受影响、删了不能恢复，确认键是出错红（DESIGN.md Buttons · Destructive）。
     在这张歌单的页面上删的，先回到曲库再删（不留在已经删掉的歌单页上）。
   改公开、删除都改不回来：排版是 ConfirmPanel，焦点先落在取消上，误按回车不会直接做。
   标题、关闭键在外壳里；手机上表单是接近全屏的弹层，标题行是文字按钮 取消 / 标题（外壳给的 heading）/ 创建（保存），下面是 DialogBody；
@@ -68,8 +68,8 @@
   const nameError = $derived(problem === 'nameTooLong' ? editProblemText(problem) : undefined)
   /** 改过的简介超过了上限（网易云收更长的，原来就超长、没改的照样能保存别的） */
   const descriptionTooLong = $derived(description.trim() !== (start?.description?.trim() ?? '') && description.trim().length > PLAYLIST_DESCRIPTION_LENGTH)
-  /** 不能按“创建 / 保存”：名称、简介不合规，或者正在等网易云建好 */
-  const blocked = $derived(problem !== null || descriptionTooLong || playlistEditor.busy)
+  /** 名称、简介不合规：不能按“创建 / 保存” */
+  const blocked = $derived(problem !== null || descriptionTooLong)
   const songCount = $derived(playlist ? library?.songsOf(playlist.id)?.total ?? playlist.trackCount : 0)
 
   // 编辑信息时取网易云的标签库（这次登录取到过就不再取）
@@ -84,9 +84,9 @@
       untrack(() => playlistEditor.close())
   })
 
-  /** 等网易云建好才关上；这时关不掉（playlistEditor.busy），没建成就在这里说明原因，填好的不丢 */
+  /** 等网易云建好才关上；这时关不掉、“创建”转圈（playlistEditor.busy），没建成就在这里说原因，填好的不丢 */
   async function create() {
-    if (request.mode !== 'new' || blocked)
+    if (request.mode !== 'new' || blocked || playlistEditor.busy)
       return
     playlistEditor.busy = true
     failure = null
@@ -155,7 +155,6 @@
     bind:value={name}
     aside='{nameWidth(name.trim())}/{PLAYLIST_NAME_WIDTH}'
     error={nameError}
-    placeholder='给歌单起个名字'
     autocomplete='off'
     enterkeyhint='done'
     lang={langOf(name)}
@@ -171,13 +170,13 @@
         <input type='checkbox' bind:checked={isPrivate} class='mt-0.5 size-5 flex-none accent-primary-800' />
         <span>
           <span class='flex items-center gap-1.5 text-label text-neutral-900 font-500'><Lock size={14} aria-hidden='true' />设为隐私歌单</span>
-          <span class='mt-0.5 block text-caption text-neutral-600'>只有你自己能看到。以后可以改为公开，但公开后不能再改回隐私。</span>
+          <span class='mt-0.5 block text-caption text-neutral-600'>只有你能看到；公开后不能改回隐私</span>
         </span>
       </label>
       {#if request.songs.length === 1}
-        <p class='text-caption text-neutral-600'>建好后会把<span lang={langOf(request.songs[0]!.name)}>《{request.songs[0]!.name}》</span>加进去。</p>
+        <p class='text-caption text-neutral-600'>建好后加入<span lang={langOf(request.songs[0]!.name)}>《{request.songs[0]!.name}》</span></p>
       {:else if request.songs.length > 1}
-        <p class='text-caption text-neutral-600'>建好后会把选中的 {formatCount(request.songs.length)} 首歌加进去。</p>
+        <p class='text-caption text-neutral-600'>建好后加入这 {formatCount(request.songs.length)} 首</p>
       {/if}
       {#if failure}
         <div transition:unfold>
@@ -224,9 +223,8 @@
               bind:value={description}
               rows={sheet ? 3 : 2}
               maxlength={PLAYLIST_DESCRIPTION_LENGTH}
-              placeholder='写几句介绍这张歌单（可以不写）'
               lang={langOf(description)}
-              class='mt-1.5 w-full resize-none border border-neutral-200 rounded-lg bg-white px-3.5 py-2.5 text-body text-neutral-900 outline-none transition-[border-color,box-shadow] duration-feedback focus:(border-primary-800 shadow-field-focus) placeholder:text-neutral-500'
+              class='mt-1.5 w-full resize-none border border-neutral-200 rounded-lg bg-white px-3.5 py-2.5 text-body text-neutral-900 outline-none transition-[border-color,box-shadow] duration-feedback focus:(border-primary-800 shadow-field-focus)'
             ></textarea>
             {#if descriptionTooLong}
               <div transition:unfold>
@@ -242,18 +240,18 @@
 {/snippet}
 
 {#snippet submitLabel()}
-  {request.mode === 'new' ? (playlistEditor.busy ? '正在新建…' : '创建') : '保存'}
+  {request.mode === 'new' ? '创建' : '保存'}
 {/snippet}
 
 {#if !form}
   <ConfirmPanel {sheet} cancelLabel={request.mode === 'delete' ? '先不了' : '取消'} oncancel={() => playlistEditor.close()}>
     {#snippet body()}
       {#if playlist && request.mode === 'public'}
-        <p class='text-body text-neutral-700'>公开后，你的网易云主页和搜索里都能看到<span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span>。</p>
-        <p class='mt-3 rounded-lg bg-warning-50 px-3.5 py-2.5 text-caption text-warning-900'>网易云不支持把公开歌单改回隐私，这一步不能撤销。</p>
+        <p class='text-body text-neutral-700'>公开后，你的网易云主页和搜索里都能看到<span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span></p>
+        <p class='mt-3 rounded-lg bg-warning-50 px-3.5 py-2.5 text-caption text-warning-900'>公开后不能改回隐私</p>
       {:else if playlist && request.mode === 'delete'}
         <p class='text-body text-neutral-700'>
-          <span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span>里的 {formatCount(songCount)} 首歌会随歌单一起移除；歌曲本身和你的红心都不受影响。
+          <span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span>里的 {formatCount(songCount)} 首歌随歌单移除，红心不受影响。
         </p>
         <p class='mt-3 text-caption text-neutral-600'>删除后不能恢复。</p>
       {/if}
@@ -271,7 +269,7 @@
     <div class='h-14 flex flex-none items-center gap-2 px-2'>
       <TextButton tone='neutral' size='body' disabled={playlistEditor.busy} onclick={() => playlistEditor.close()}>取消</TextButton>
       {@render heading('min-w-0 flex-1 truncate text-center text-title-sm text-neutral-900 font-600')}
-      <TextButton strong size='body' type='submit' form={FORM_ID} disabled={blocked}>{@render submitLabel()}</TextButton>
+      <TextButton strong size='body' type='submit' form={FORM_ID} busy={playlistEditor.busy} disabled={blocked}>{@render submitLabel()}</TextButton>
     </div>
   {/if}
   <DialogBody {sheet} body={formBody} actions={sheet ? undefined : formActions} />
@@ -279,5 +277,5 @@
 
 {#snippet formActions()}
   <Button variant='outline' disabled={playlistEditor.busy} onclick={() => playlistEditor.close()}>取消</Button>
-  <Button variant='primary' type='submit' form={FORM_ID} disabled={blocked}>{@render submitLabel()}</Button>
+  <Button variant='primary' type='submit' form={FORM_ID} busy={playlistEditor.busy} disabled={blocked}>{@render submitLabel()}</Button>
 {/snippet}

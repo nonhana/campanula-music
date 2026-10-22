@@ -1,8 +1,9 @@
 <!--
   每日推荐页（#29）：桌面头部呼应首页的每日推荐方块：白色卡片里 88px 的日期大数字、“10月 · 星期三”、四张叠放的封面；
-  右边标题、说明、日期和首数时长、播放全部；下面白色面板里带序号的歌曲行。
-  手机是二级页面：返回栏、72px 的日期大数字和三张叠放的封面、标题、说明、播放全部、Auxio 式歌曲行。
-  登录了就交给 App（openDaily：今天这份还没拉过就拉）；断网时说明要联网，别的没拉成说明原因，都能重试。
+  右边标题、首数和时长（日期只给读屏，卡片上已经有）、播放全部；下面白色面板里带序号的歌曲行。
+  手机是二级页面：返回栏、72px 的日期大数字和三张叠放的封面、标题、首数、播放全部、Auxio 式歌曲行。
+  首数那一行在歌到之前先用全角空格占住高度，头部不跳。
+  登录了就交给 App（openDaily：今天这份还没拉过就拉）；断网时标题说要联网，别的没拉成写原因，都能重试。
   点一首歌、播放全部都用整份每日推荐替换播放队列，播放来源是每日推荐。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
@@ -15,6 +16,7 @@
   import SongList from '#lib/components/library/SongList.svelte'
   import { formatCount } from '#lib/components/library/view.js'
   import { fade, reveal } from '#lib/components/motion.js'
+  import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
@@ -33,7 +35,7 @@
       void view.app.openDaily()
   })
 
-  const EMPTY = { title: '今天没有每日推荐', body: '网易云今天没有给出推荐的歌，明天 6:00 以后再来看看。' }
+  const EMPTY = { title: '今天没有每日推荐', body: '明天 6:00 以后再来看看' }
 </script>
 
 <svelte:head><title>每日推荐 · Campanula</title></svelte:head>
@@ -73,9 +75,8 @@
         </div>
         <div class='min-w-0 flex flex-1 flex-col pt-1'>
           <h1 class='text-headline text-neutral-900 font-600'>每日推荐</h1>
-          <p class='mt-2 text-label text-neutral-600'>根据你的听歌口味生成，每天 6:00 更新</p>
-          <p class='mt-1 text-label text-neutral-600 tabular-nums'>
-            {date.month}月{date.day}日 {date.weekday}{#if songs}<span in:fade>{` · ${formatCount(songs.length)} 首 · ${totalDuration(songs)}`}</span>{/if}
+          <p class='mt-2 text-label text-neutral-600 tabular-nums'>
+            <span class='sr-only'>{date.month}月{date.day}日 {date.weekday}，</span>{#if songs}<span in:fade>{`${formatCount(songs.length)} 首 · ${totalDuration(songs)}`}</span>{:else}<span aria-hidden='true'>&nbsp;</span>{/if}
           </p>
           <div class='mt-auto flex items-center gap-2 pt-4'>{@render playAll()}</div>
         </div>
@@ -91,9 +92,9 @@
         </span>
         <span class='mb-1 ml-auto'>{@render covers(3, true)}</span>
       </div>
-      <h1 class='mt-4 text-headline-sm text-neutral-900 font-600'>每日推荐<span class='sr-only'>，{date.month}月{date.day}日 {date.weekday}</span></h1>
-      <p class='mt-1 text-caption text-neutral-600'>
-        根据你的听歌口味生成，每天 6:00 更新{#if songs}<span class='tabular-nums' in:fade>{` · ${formatCount(songs.length)} 首`}</span>{/if}
+      <h1 class='mt-4 text-headline-sm text-neutral-900 font-600' {@attach pageHeading('每日推荐')}>每日推荐<span class='sr-only'>，{date.month}月{date.day}日 {date.weekday}</span></h1>
+      <p class='mt-1 text-caption text-neutral-600 tabular-nums'>
+        {#if songs}<span in:fade>{`${formatCount(songs.length)} 首`}</span>{:else}<span aria-hidden='true'>&nbsp;</span>{/if}
       </p>
       <div class='mt-4'>{@render playAll()}</div>
     </header>

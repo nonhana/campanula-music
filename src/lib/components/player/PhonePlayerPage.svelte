@@ -165,7 +165,7 @@
     aria-label='播放队列'
     inert={!queueOpen}
   >
-    <button type='button' class='grid mx-auto h-7 w-16 flex-none place-items-center rounded-full' aria-label='收起播放队列' title='往下拖或点按，收起播放队列' {@attach gripSheet}>
+    <button type='button' class='grid mx-auto h-7 w-16 flex-none place-items-center rounded-full' aria-label='收起播放队列' {@attach gripSheet}>
       <span class='h-1 w-9 rounded-full bg-neutral-300' aria-hidden='true'></span>
     </button>
     <QueueList class='min-h-0 flex-1' />

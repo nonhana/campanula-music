@@ -30,7 +30,7 @@
   <IconButton
     icon={ICONS[mode]}
     label='播放模式：{PLAY_MODE_LABEL[mode]}'
-    title='{PLAY_MODE_LABEL[mode]}（点按换成{PLAY_MODE_LABEL[NEXT_PLAY_MODE[mode]]}）'
+    title={PLAY_MODE_LABEL[mode]}
     class={mode === 'loop' ? undefined : 'text-primary-900!'}
     onclick={() => view.app.setPlayMode(NEXT_PLAY_MODE[mode])}
   />
@@ -44,7 +44,7 @@
     ]}
     aria-label={toggle.label}
     aria-pressed={toggle.on}
-    title='{toggle.label}（点按换成{PLAY_MODE_LABEL[toggle.to]}）'
+    title={toggle.label}
     onclick={() => view.app.setPlayMode(toggle.to)}
   >
     {#key toggle.icon}

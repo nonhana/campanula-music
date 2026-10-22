@@ -585,7 +585,7 @@
       {
         "name": "toast",
         "value": "notice bars float in 12px from their edge over 200ms ease-out-soft, fade out over 120ms ease-in-soft; when the bar changes place (phone player page opens / closes) the old one fades out and the new one only fades in (motion.ts toast, moved)",
-        "purpose": "播放提示、以后的“已加入歌单”；“登录已经失效”跟着登录页从上面飘进来。"
+        "purpose": "播放提示、以后的“已加入歌单”；“登录已失效”跟着登录页从上面飘进来。"
       },
       {
         "name": "unfold",
@@ -605,7 +605,7 @@
       {
         "name": "stagger-more",
         "value": "items appended to a shown group float up 12px over 240ms, 30ms apart for the first 6 (motion.ts stagger)",
-        "purpose": "歌手页“显示更多专辑”、首次同步时桌面歌单页左栏的歌单。"
+        "purpose": "歌手页专辑的“显示更多”、首次同步时桌面歌单页左栏的歌单。"
       },
       {
         "name": "description-expand",
@@ -691,7 +691,7 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "实心深绿胶囊：播放全部、登录、重试。",
+      "description": "实心深绿胶囊：播放全部、登录、重试。进行中文字不变，图标换成转圈、不能点、宽度不变（DESIGN.md Buttons · Busy）。",
       "html": "<button class='ds-btn ds-btn-primary'><svg width='16' height='16' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'><polygon points='6 3 20 12 6 21 6 3'/></svg>播放全部</button>",
       "css": ".ds-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px 0 16px; border: 0; border-radius: 9999px; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn:active { transform: scale(0.98); } .ds-btn:focus-visible { outline: 2px solid #2B976F; outline-offset: 2px; } .ds-btn-primary { background: #206F52; color: #FFFFFF; } .ds-btn-primary:hover { background: #1A5B43; }"
     },
@@ -724,15 +724,15 @@
       "kind": "input",
       "refersTo": "input-search",
       "description": "顶栏搜索框：胶囊形，展开或聚焦时薄荷边 + 薄荷雾光环。",
-      "html": "<label class='ds-search'><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' aria-hidden='true'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg><input placeholder='搜索歌曲、歌单、歌手、专辑'></label>",
+      "html": "<label class='ds-search'><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' aria-hidden='true'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg><input placeholder='搜索'></label>",
       "css": ".ds-search { display: flex; align-items: center; gap: 12px; width: 420px; height: 44px; padding: 0 8px 0 16px; box-sizing: border-box; border: 1px solid #E5E7EB; border-radius: 9999px; background: #FFFFFF; color: #6B7280; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; transition: border-color 120ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-search:focus-within { border-color: #2B976F; box-shadow: inset 0 0 0 1px #2B976F, 0 0 0 3px #E8F8F1; } .ds-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; color: #111827; } .ds-search input::placeholder { color: #6B7280; }"
     },
     {
       "name": "Filter Chip",
       "kind": "chip",
       "description": "筛选 chip：纸白底 + 发丝线，手机桌面都是 36px 高；选中时薄荷玻璃底 + 森林墨字，禁用时降到 50%。用在编辑歌单的标签库、搜索历史和播放页歌词的翻译 / 音译开关上。",
-      "html": "<div class='ds-chips'><div class='ds-chip-row' role='group' aria-label='标签库'><button type='button' class='ds-chip' aria-pressed='true'>日语</button><button type='button' class='ds-chip' aria-pressed='false'>电子</button><button type='button' class='ds-chip' aria-pressed='false'>ACG</button></div><div class='ds-chip-row' role='group' aria-label='歌词开关'><button type='button' class='ds-chip' aria-pressed='true'><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6 9 17l-5-5'/></svg>翻译</button><button type='button' class='ds-chip' aria-pressed='false' disabled title='这首歌没有音译'>无音译</button><span class='ds-chip-note'>逐字歌词</span></div></div>",
-      "css": ".ds-chips { display: flex; flex-direction: column; gap: 12px; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; } .ds-chip-row { display: flex; align-items: center; gap: 8px; } .ds-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 1px solid #E5E7EB; border-radius: 9999px; background: #FFFFFF; color: #374151; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 20px; cursor: pointer; transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1), background-color 120ms cubic-bezier(0.16, 1, 0.3, 1), border-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-chip:not(:disabled):not([aria-pressed='true']):hover { border-color: #B9EAD5; background: #F5FCF9; color: #111827; } .ds-chip[aria-pressed='true'] { border-width: 0; background: #D1F1E3; color: #1A5B43; } .ds-chip:disabled { opacity: 0.5; cursor: not-allowed; } .ds-chip:focus-visible { outline: 2px solid #2B976F; outline-offset: 2px; } .ds-chip-note { margin-left: 4px; color: #4B5563; font-size: 13px; line-height: 20px; }"
+      "html": "<div class='ds-chips'><div class='ds-chip-row' role='group' aria-label='标签库'><button type='button' class='ds-chip' aria-pressed='true'>日语</button><button type='button' class='ds-chip' aria-pressed='false'>电子</button><button type='button' class='ds-chip' aria-pressed='false'>ACG</button></div><div class='ds-chip-row' role='group' aria-label='歌词开关'><button type='button' class='ds-chip' aria-pressed='true'><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6 9 17l-5-5'/></svg>翻译</button><button type='button' class='ds-chip' aria-pressed='false' disabled>无音译</button></div></div>",
+      "css": ".ds-chips { display: flex; flex-direction: column; gap: 12px; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; } .ds-chip-row { display: flex; align-items: center; gap: 8px; } .ds-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 1px solid #E5E7EB; border-radius: 9999px; background: #FFFFFF; color: #374151; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 20px; cursor: pointer; transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1), background-color 120ms cubic-bezier(0.16, 1, 0.3, 1), border-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-chip:not(:disabled):not([aria-pressed='true']):hover { border-color: #B9EAD5; background: #F5FCF9; color: #111827; } .ds-chip[aria-pressed='true'] { border-width: 0; background: #D1F1E3; color: #1A5B43; } .ds-chip:disabled { opacity: 0.5; cursor: not-allowed; } .ds-chip:focus-visible { outline: 2px solid #2B976F; outline-offset: 2px; }"
     },
     {
       "name": "Segmented",
@@ -847,7 +847,7 @@
       "Do 主要动作用实心深绿胶囊，下载用浅蜜桃胶囊；桌面的次要动作用描边白胶囊，手机上照 Buttons 的四档：排在一行里的次级操作只留图标或写成文字，选项用 chip 或分段条。",
       "Do 统一用 Lucide 线条图标；文案里提到“更多”菜单时，画出同一个图标，或者直接写“更多”。",
       "Do 显示歌名、歌手、专辑、歌单名时带上 lang。",
-      "Do 加载中用形状一致的骨架行，放在列表本来的位置上；空、出错、离线都要写清楚发生了什么、能怎么办。",
+      "Do 加载中用形状一致的骨架行，放在列表本来的位置上；空、出错、离线和别的说明文字照 Copy（文案）写：一件事说一次，下一步交给按钮。",
       "Do 头部的首数、已下载数和下面实际显示的列表对得上。",
       "Do 每个动效都说得出它在解释什么：操作生效了、东西从哪来到哪去、现在是什么状态（The Float Rule）。",
       "Do 新的动效同时写好“减少动态效果”时的样子：去掉位移，留下 150ms 以内的淡入淡出。"

@@ -1,13 +1,14 @@
 import type { Playlist, PlaylistEditProblem } from '#lib/api/library.js'
 import type { Change } from '#lib/app/changes.js'
 import type { ChangeFailure, LibraryNotice } from '#lib/app/library.js'
-import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
+import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import { downloadFailureText } from '../downloads/view'
 import { failureText } from '../failure'
 import { formatCount, playlistName } from './view'
 
-// 改曲库的提示（LibraryNotice.svelte）说什么（#30、#33）：没改成时说哪件事没成、为什么；歌单不在了说清楚、正在重新同步；
-// 加入歌单成功说加进了哪里；下载没下成（#38）说哪首、为什么。歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
+// 改曲库的提示（LibraryNotice.svelte）说什么（#30、#33）：没改成时说哪件事没成、为什么（已经改回原样、放回原位看得见，不另写）；
+// 歌单不在了说它不在了、哪件事没成；加入歌单成功说加进了哪里；下载没下成（#38）说哪首、为什么。
+// 都是一句话，不带句末句号（DESIGN.md 文案）。歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
 
 /** 句子里的一张歌单：我喜欢的音乐直接写，别的加「」 */
 function playlistInText(playlist: Playlist): string {
@@ -52,19 +53,19 @@ function attempted(change: Change): string {
   }
 }
 
-/** 名称、简介、标签哪里不合规、能怎么改 */
+/** 名称、简介、标签哪里不合规：写上限，不带句号 */
 export function editProblemText(problem: PlaylistEditProblem): string {
   switch (problem) {
     case 'nameEmpty':
-      return '歌单名称不能是空的。'
+      return '名称不能为空'
     case 'nameTooLong':
-      return `歌单名称太长了：最多 ${PLAYLIST_NAME_WIDTH / 2} 个汉字或 ${PLAYLIST_NAME_WIDTH} 个英文字母。`
+      return `最多 ${PLAYLIST_NAME_WIDTH / 2} 个汉字或 ${PLAYLIST_NAME_WIDTH} 个字母`
     case 'descriptionTooLong':
-      return `简介最多 ${PLAYLIST_DESCRIPTION_LENGTH} 个字。`
+      return `最多 ${formatCount(PLAYLIST_DESCRIPTION_LENGTH)} 字`
     case 'tooManyTags':
-      return `标签最多选 ${PLAYLIST_TAGS_MAX} 个。`
+      return `标签最多选 ${PLAYLIST_TAGS_MAX} 个`
     case 'tooManySongs':
-      return '一次最多改 9,000 首歌，少选一些再试。'
+      return `一次最多 ${formatCount(TRACKS_PER_CHANGE)} 首`
     default: {
       const unhandled: never = problem
       throw new Error(`不认识的问题：${JSON.stringify(unhandled)}`)
@@ -72,11 +73,11 @@ export function editProblemText(problem: PlaylistEditProblem): string {
   }
 }
 
-/** 为什么没改成、能怎么办 */
+/** 为什么没改成：一个原因短语，不带下一步、不带句号（同 failureText） */
 export function changeFailureText(failure: ChangeFailure): string {
   switch (failure.kind) {
     case 'checkTokenUnavailable':
-      return '收藏歌单要先加载网易云的安全组件，没加载出来（可能被浏览器的拦截插件挡住了），稍后再试。'
+      return '网易云的安全组件没加载出来，可能被拦截插件挡住了'
     case 'invalid':
       return editProblemText(failure.problem)
     default:
@@ -108,7 +109,7 @@ export function libraryNoticeText(notice: LibraryNotice): string {
     case 'notChanged':
       return attempted(notice.change) + changeFailureText(notice.failure)
     case 'playlistMissing':
-      return `${playlistInText(notice.change.playlist)}已经不在了（可能在网易云音乐里删掉了），${missingAction(notice.change)}。正在重新同步曲库。`
+      return `${playlistInText(notice.change.playlist)}已经不在了，${missingAction(notice.change)}`
     case 'added': {
       const count = notice.change.kind === 'addMany' ? notice.change.songs.length : 1
       return count > 1 ? `已加入${playlistInText(notice.change.playlist)} ${formatCount(count)} 首` : `已加入${playlistInText(notice.change.playlist)}`
@@ -118,13 +119,16 @@ export function libraryNoticeText(notice: LibraryNotice): string {
     case 'removed':
       return `已从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首`
     case 'removeFailed':
-      return `没能从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首${notice.restored ? '，已经放回原位' : ''}：${changeFailureText(notice.failure)}`
-    case 'orderFailed':
-      return `没能保存${playlistInText(notice.playlist)}的顺序${notice.restored ? '，已经恢复原来的顺序' : ''}：${changeFailureText(notice.failure)}`
+      return `没能从${playlistInText(notice.playlist)}移除 ${formatCount(notice.count)} 首：${changeFailureText(notice.failure)}`
+    case 'orderFailed': {
+      // 没有原因（网易云回 -1、重读也不是新顺序）时只说没保存成，旁边有“重试”
+      const unsaved = `没能保存${playlistInText(notice.playlist)}的顺序`
+      return notice.failure ? `${unsaved}：${changeFailureText(notice.failure)}` : unsaved
+    }
     case 'playlistOrderFailed':
-      return `没能保存自建歌单的顺序${notice.restored ? '，已经恢复原来的顺序' : ''}：${changeFailureText(notice.failure)}`
+      return `没能保存自建歌单的顺序：${changeFailureText(notice.failure)}`
     case 'recovered':
-      return '上次关闭前的修改没保存成功，已恢复原样。'
+      return '上次关闭前的修改没保存成功，已恢复原样'
     case 'downloadFailed':
       return `没能下载《${notice.song.name}》：${downloadFailureText(notice.failure)}`
     default: {

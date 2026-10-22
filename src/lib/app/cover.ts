@@ -1,7 +1,7 @@
 import type { CoverCrop, CoverTokenResponse, SetCoverRequest, SetCoverResponse } from '#lib/api/cover.js'
 import type { Api, RequestFailure } from './api'
 import type { DecodedImage, ImageCapability } from './browser'
-import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE, COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
+import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.js'
 
 // 换歌单封面（#34，Spec #11 用户故事 90–92）：选图、检查、裁剪，然后三步上传：
 // 1. 服务端申请上传凭证（image_upload_token）；
@@ -11,16 +11,16 @@ import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE, COVER_WORK_MAX_SIDE } from '#l
 // 第三步失败后重试只再设一次，不重新上传；第一、二步失败重试从没成的那一步重来。
 // 设为封面不检查图片（验证关卡②）：没直传成功也回 200，封面会坏，所以第三步只在第二步成功之后发。
 
-/** 选到的文件为什么不能用 */
+/** 选到的文件为什么不能用（界面只说是哪一种，不写文件名、大小） */
 export type CoverProblem
   /** 不是图片（解码失败，文件类型也不是图片） */
-  = | { kind: 'notImage', name: string }
+  = | { kind: 'notImage' }
   /** 超过 20 MB，不读 */
-    | { kind: 'tooBig', name: string, bytes: number }
+    | { kind: 'tooBig' }
   /** HEIC：桌面和 Android 上的 Chrome 都解不开（验证关卡③） */
-    | { kind: 'heic', name: string }
+    | { kind: 'heic' }
   /** 看着是图片，但解不开（损坏的文件） */
-    | { kind: 'unreadable', name: string }
+    | { kind: 'unreadable' }
 
 /** 三步上传走到哪一步 */
 export type CoverStep = 'token' | 'upload' | 'set'
@@ -47,7 +47,6 @@ export interface CoverCropped {
   playlistId: number
   image: DecodedImage
   small: boolean
-  resized: boolean
 }
 
 /** 换封面走到哪了；关掉时是 null */
@@ -98,7 +97,6 @@ interface Attempt {
   playlistId: number
   image: DecodedImage
   small: boolean
-  resized: boolean
   crop: CoverCrop
   /** 导出的 JPEG；还没导出（或者导出失败）时是 null */
   jpeg: Blob | null
@@ -129,7 +127,7 @@ export function createCover(context: CoverContext): Cover {
   }
 
   function cropped(work: Attempt): CoverCropped {
-    return { playlistId: work.playlistId, image: work.image, small: work.small, resized: work.resized }
+    return { playlistId: work.playlistId, image: work.image, small: work.small }
   }
 
   function uploading(step: CoverStep | null, failure: CoverFailure | null = null): void {
@@ -180,7 +178,7 @@ export function createCover(context: CoverContext): Cover {
     write({ status: 'picking', playlistId })
     if (file.size > COVER_INPUT_MAX_BYTES) {
       if (mine === generation)
-        write({ status: 'unusable', playlistId, problem: { kind: 'tooBig', name: file.name, bytes: file.size } })
+        write({ status: 'unusable', playlistId, problem: { kind: 'tooBig' } })
       return
     }
     let image: DecodedImage
@@ -191,10 +189,10 @@ export function createCover(context: CoverContext): Cover {
       if (mine !== generation)
         return
       const problem: CoverProblem = looksHeic(file)
-        ? { kind: 'heic', name: file.name }
+        ? { kind: 'heic' }
         : !file.type || !file.type.startsWith('image/')
-            ? { kind: 'notImage', name: file.name }
-            : { kind: 'unreadable', name: file.name }
+            ? { kind: 'notImage' }
+            : { kind: 'unreadable' }
       write({ status: 'unusable', playlistId, problem })
       return
     }
@@ -206,7 +204,6 @@ export function createCover(context: CoverContext): Cover {
       playlistId,
       image,
       small: Math.min(image.origWidth, image.origHeight) < COVER_SMALL_SIDE,
-      resized: Math.max(image.origWidth, image.origHeight) > COVER_WORK_MAX_SIDE,
       crop: { x: 0, y: 0, size: 1 },
       jpeg: null,
       token: null,

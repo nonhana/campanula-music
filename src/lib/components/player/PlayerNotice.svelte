@@ -1,5 +1,5 @@
 <!--
-  播放的提示：浮在播放条上方，说清发生了什么、能怎么办（按播放键重试）。网络慢是状态，其余是出了问题；可以关掉。
+  播放的提示：浮在播放条上方，一句话说什么没成、为什么。网络慢是状态，其余是出了问题；可以关掉。
   手机上播放页开着时挪到顶上，不压住控制键。换页时和播放条一样原地不动（uno.config.ts 的 still）。
   出现时从它贴着的那条边飘进来，走时淡出；播放页打开、收起时在旧位置淡出、新位置淡入，不跳（DESIGN.md Overlays，motion.ts 的 toast）。
   量出自己多高（playerNoticeBox）：改曲库的提示（library/LibraryNotice.svelte）同时在时排在它外侧，不重叠
@@ -19,8 +19,7 @@
 
   const { phone = false, overPlayerPage = false }: { phone?: boolean, overPlayerPage?: boolean } = $props()
   const view = getAppView()
-  const player = $derived(view.state.player)
-  const notice = $derived(player.notice)
+  const notice = $derived(view.state.player.notice)
 
   /** 提示放在哪：桌面底部正中，手机迷你播放条上方，手机播放页开着时顶上 */
   type Place = 'desktop' | 'bottom' | 'top'
@@ -66,7 +65,7 @@
       {:else}
         <CircleAlert size={18} class='flex-none text-error-700' aria-hidden='true' />
       {/if}
-      <p class='min-w-0 flex-1 text-caption text-neutral-800'>{noticeText(notice, player)}</p>
+      <p class='min-w-0 flex-1 text-caption text-neutral-800'>{noticeText(notice)}</p>
       <IconButton icon={X} label='关闭提示' onclick={() => view.app.dismissPlayerNotice()} />
     </div>
   {/key}

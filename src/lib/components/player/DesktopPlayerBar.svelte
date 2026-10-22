@@ -57,7 +57,7 @@
 
   {#if song}
     <div class='min-w-0 flex items-center gap-1'>
-      <button type='button' class='min-w-0 flex flex-1 items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' title='点按或往上拖，打开播放页' {@attach gripSong}>
+      <button type='button' class='min-w-0 flex flex-1 items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' {@attach gripSong}>
         <span class='size-12 flex-none overflow-hidden rounded-md' {@attach landing.slot}>
           {#if landing.song}
             <CoverWheel song={landing.song} turn={landing.turn} duration={DURATIONS['focal-bar']} size={COVER_SIZE} eager class='rounded-md' />
