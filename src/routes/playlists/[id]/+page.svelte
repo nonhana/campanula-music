@@ -81,7 +81,7 @@
   const listedCount = $derived(shown?.kind === 'songs' ? shown.total : shown?.kind === 'empty' ? 0 : null)
   /** 自建歌单：有 •••，能编辑、删除 */
   const own = $derived(library?.songsOf(id)?.playlist.kind === 'own')
-  /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：入口写“多选 · 排序”（#36） */
+  /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：桌面的入口写“多选 · 排序”（#36） */
   const playlistKind = $derived(library?.songsOf(id)?.playlist.kind ?? null)
   const sortableList = $derived(playlistKind !== null && canSortPlaylist(playlistKind))
 

@@ -20,19 +20,17 @@
     sheet: boolean
     grip?: Attachment<HTMLElement>
     cancelLabel?: string
-    /** 忙着时关不掉：取消和关闭键都不能按 */
-    busy?: boolean
     oncancel: () => void
     body: Snippet
     /** 确认键：实心按钮，由调用方给（主按钮或删除用的出错红） */
     confirm: Snippet
   }
 
-  const { id, title, sheet, grip, cancelLabel = '取消', busy = false, oncancel, body, confirm }: Props = $props()
+  const { id, title, sheet, grip, cancelLabel = '取消', oncancel, body, confirm }: Props = $props()
 </script>
 
 {#snippet cancel()}
-  <Button variant='outline' disabled={busy} onclick={oncancel} data-autofocus>{cancelLabel}</Button>
+  <Button variant='outline' onclick={oncancel} data-autofocus>{cancelLabel}</Button>
 {/snippet}
 
 {#if sheet}
@@ -47,7 +45,7 @@
 {:else}
   <div class='flex flex-none items-center gap-3 pb-2 pl-6 pr-4 pt-5'>
     <h2 {id} class='min-w-0 flex-1 text-title-sm text-neutral-900 font-600'>{title}</h2>
-    <IconButton icon={X} label='关闭' disabled={busy} onclick={oncancel} />
+    <IconButton icon={X} label='关闭' onclick={oncancel} />
   </div>
   <div class='min-h-0 flex-1 overflow-y-auto overscroll-contain'>
     <Scrollbar />
