@@ -14,7 +14,7 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
-  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, ListX, SearchX, X } from '@lucide/svelte'
+  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SearchX, SquareMinus, X } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { canSortPlaylist } from '#lib/api/library.js'
   import { addSongsDialog } from '../add-songs.svelte'
@@ -24,7 +24,6 @@
   import { fade, reveal, unfold } from '../motion'
   import { anchorBelow } from '../overlay-layer.svelte'
   import { currentSong } from '../player/view'
-  import Button from '../ui/Button.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
@@ -285,11 +284,7 @@
             <div class={['flex items-center gap-3 px-3 text-caption text-neutral-700', phone ? 'min-h-11 py-1' : 'py-2']} role='alert'>
               <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
               <span class='min-w-0 flex-1'>这张歌单没加载完。{failureText(opening.failure)}</span>
-              {#if phone}
-                <TextButton class='-mr-3' onclick={retry}>重试</TextButton>
-              {:else}
-                <Button variant='outline' class='h-9!' onclick={retry}>重试</Button>
-              {/if}
+              <TextButton desktop={{ variant: 'outline' }} class='max-md:-mr-3 md:h-9!' onclick={retry}>重试</TextButton>
             </div>
           </div>
         {:else if opening?.status === 'loading'}
@@ -376,7 +371,7 @@
           class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-primary-900 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
           onclick={() => selection.selectAll()}
         >
-          {#if selection.allOn}<ListX size={14} aria-hidden='true' />{:else}<CheckCheck size={14} aria-hidden='true' />{/if}
+          {#if selection.allOn}<SquareMinus size={14} aria-hidden='true' />{:else}<CheckCheck size={14} aria-hidden='true' />{/if}
           {selection.allOn ? '全不选' : `全选 ${formatCount(songs.length)} 首`}
         </button>
         <span class='flex-1'></span>

@@ -91,9 +91,9 @@
         {/if}
         <p class='min-w-0 flex-1 text-caption text-neutral-800'>{libraryNoticeText(notice)}</p>
         {#if notice.kind === 'removed'}
-          <TextButton strong class='md:h-10' onclick={() => view.app.undoRemove()}>撤销</TextButton>
+          <TextButton strong class='md:h-10 px-3.5!' onclick={() => view.app.undoRemove()}>撤销</TextButton>
         {:else if retry}
-          <TextButton strong class='md:h-10' onclick={retry}>重试</TextButton>
+          <TextButton strong class='md:h-10 px-3.5!' onclick={retry}>重试</TextButton>
         {/if}
         <IconButton icon={X} label='关闭提示' onclick={() => view.app.dismissLibraryNotice()} />
       </div>

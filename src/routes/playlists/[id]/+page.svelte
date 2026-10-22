@@ -17,7 +17,7 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { Ellipsis, ListChecks, ListPlus, ListX, Lock, SearchX } from '@lucide/svelte'
+  import { Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
   import { canSortPlaylist } from '#lib/api/library.js'
   import { addSongsDialog } from '#lib/components/add-songs.svelte.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
@@ -40,6 +40,7 @@
   import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
   import Tag from '#lib/components/ui/Tag.svelte'
+  import ToolButton from '#lib/components/ui/ToolButton.svelte'
 
   const view = getAppView()
   const library = $derived(view.state.library)
@@ -114,7 +115,7 @@
 
   /** 打不开的歌单：说明为什么 */
   const UNAVAILABLE = {
-    deleted: { icon: ListX, title: '这张歌单已被删除', body: '创建者在网易云音乐里删掉了它，打不开了。' },
+    deleted: { icon: ListMusic, title: '这张歌单已被删除', body: '创建者在网易云音乐里删掉了它，打不开了。' },
     missing: { icon: SearchX, title: '没有这张歌单', body: '网易云音乐里找不到这张歌单，可能是地址不对。' },
     private: { icon: Lock, title: '这是别人的隐私歌单', body: '创建者把它设成了隐私歌单，只有创建者自己能打开。' },
   } satisfies Record<PlaylistUnavailable, { icon: LucideIcon, title: string, body: string }>
@@ -153,7 +154,7 @@
   <div class='flex flex-wrap items-center gap-2'>
     <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
     {#if own}
-      <Button variant='outline' icon={ListPlus} phoneLabel='添加歌曲' data-add-songs-entry onclick={openAddSongs}>添加歌曲</Button>
+      <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
     {/if}
     {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !playlistSelection.mode}
       <Button variant='outline' icon={ListChecks} data-multiselect-entry onclick={openMulti}>{sortableList ? '多选 · 排序' : '多选'}</Button>

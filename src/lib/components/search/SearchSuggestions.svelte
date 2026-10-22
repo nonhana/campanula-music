@@ -42,7 +42,7 @@
       <h2 id='search-history-title' class='text-label text-neutral-900 font-600'>搜索历史</h2>
       <span class='text-caption text-neutral-500'>只保存在这台设备上</span>
       {#if history.length > 0}
-        <TextButton tone='neutral' class={['ml-auto', phone ? '-mr-3' : 'md:h-8 -mr-2']} onclick={clearHistory}>清空</TextButton>
+        <TextButton tone='neutral' size='caption' class={['ml-auto', phone ? '-mr-3' : 'h-8! -mr-2']} onclick={clearHistory}>清空</TextButton>
       {/if}
     </div>
     {#if history.length > 0}

@@ -13,7 +13,7 @@
   import type { Playlist } from '#lib/api/library.js'
   import type { LibraryState } from '#lib/app/library.js'
   import { resolve } from '$app/paths'
-  import { ArrowUpDown, Check, ListMusic, Lock, Plus } from '@lucide/svelte'
+  import { ArrowUpDown, ListMusic, Lock, Plus } from '@lucide/svelte'
   import { tick } from 'svelte'
   import { flip } from 'svelte/animate'
   import { getAppView } from '../app-context.svelte'
@@ -21,9 +21,9 @@
   import { fade, fadeAway, fadeThrough, moveMs, reveal } from '../motion'
   import { DURATIONS } from '../motion-tokens'
   import { playlistEditor } from '../playlist-edit.svelte'
-  import Button from '../ui/Button.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import TextButton from '../ui/TextButton.svelte'
+  import ToolButton from '../ui/ToolButton.svelte'
   import Cover from './Cover.svelte'
   import DragGrip from './DragGrip.svelte'
   import { PlaylistGridSort } from './playlist-grid-sort.svelte'
@@ -179,17 +179,13 @@
         {#if !phone}
           <p class='min-w-0 flex-1 truncate text-caption text-neutral-600'>{hint}</p>
         {/if}
-        {#if phone}
-          <TextButton strong class='ml-auto -mr-3' onclick={finishSort}>完成</TextButton>
-        {:else}
-          <Button variant='primary' icon={Check} class='ml-auto' onclick={finishSort}>完成</Button>
-        {/if}
+        <TextButton strong desktop={{ variant: 'primary' }} class='ml-auto max-md:-mr-3' onclick={finishSort}>完成</TextButton>
       {:else}
-        <div class={['ml-auto flex items-center gap-2', phone && '-mr-3']}>
+        <div class='ml-auto flex items-center gap-2 max-md:-mr-3'>
           {#if canOrder}
-            <Button variant='outline' icon={ArrowUpDown} phoneLabel='排序自建歌单' onclick={startSort} data-sort-entry>排序</Button>
+            <ToolButton icon={ArrowUpDown} label='排序自建歌单' text='排序' onclick={startSort} data-sort-entry />
           {/if}
-          <Button variant='outline' icon={Plus} phoneLabel='新建歌单' onclick={event => playlistEditor.open({ mode: 'new', songs: [], from: event.currentTarget })}>新建歌单</Button>
+          <ToolButton icon={Plus} label='新建歌单' onclick={event => playlistEditor.open({ mode: 'new', songs: [], from: event.currentTarget })} />
         </div>
       {/if}
     </div>

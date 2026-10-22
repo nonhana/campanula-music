@@ -1,13 +1,12 @@
 <!--
   设置：账号和退出登录（桌面在头像菜单里也有）、在线播放音质、下载（#38：进已下载页；手机上只有这一个入口，作者 2026-10-21 定）。
   退出登录先确认（LogoutConfirm，#57）。手机上账号卡只有头像、名字和右边的退出图标；桌面卡片下半是“退出登录”胶囊和说明。
-  音质是一行 5 格的分段条（样子照登录方式切换条）：语义是单选组，方向键切换并选中，Tab 只停在选中的那一格
+  音质是一行 5 格的分段条（ui/Segmented，单选组）：选中的那格下面的滑块横着滑过去，方向键切换并选中，Tab 只停在选中的那一格
 -->
 <script lang='ts'>
   import type { Quality } from '#lib/api/playback.js'
   import { resolve } from '$app/paths'
   import { ChevronRight, CircleArrowDown, LogOut } from '@lucide/svelte'
-  import { tick } from 'svelte'
   import { QUALITIES } from '#lib/api/playback.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import Avatar from '#lib/components/Avatar.svelte'
@@ -16,9 +15,11 @@
   import { logoutConfirm } from '#lib/components/logout-confirm.js'
   import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
+  import Segmented from '#lib/components/ui/Segmented.svelte'
 
   /** 在线播放音质的叫法：照网易云 */
   const QUALITY_LABELS: Record<Quality, string> = { standard: '标准', higher: '较高', exhigh: '极高', lossless: '无损', hires: 'Hi-Res' }
+  const QUALITY_OPTIONS = QUALITIES.map(key => ({ key, label: QUALITY_LABELS[key] }))
 
   const view = getAppView()
   const account = $derived(view.state.session.status === 'signedIn' ? view.state.session.account : null)
@@ -28,19 +29,6 @@
 
   function confirmLogout(event: MouseEvent) {
     logoutConfirm.open({ from: event.currentTarget as HTMLElement })
-  }
-
-  let qualityGroup = $state<HTMLElement>()
-  /** 方向键换到前一格、后一格（到头了绕回去），选中它，焦点跟着走（WAI-ARIA Radio Group） */
-  async function onQualityKey(event: KeyboardEvent) {
-    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0
-    if (step === 0)
-      return
-    event.preventDefault()
-    const next = QUALITIES[(QUALITIES.indexOf(quality) + step + QUALITIES.length) % QUALITIES.length]!
-    view.app.setPlayQuality(next)
-    await tick()
-    qualityGroup?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus()
   }
 </script>
 
@@ -75,30 +63,16 @@
     <h2 id='settings-playback' class='px-1 text-title-sm text-neutral-900 font-600'>播放</h2>
     <div class='mt-3 rounded-xl bg-white p-5 shadow-ambient'>
       <p id='settings-quality' class='text-body text-neutral-900 font-500'>在线播放音质</p>
-      <div
-        bind:this={qualityGroup}
-        class='mt-3 h-10 flex rounded-full bg-primary-50 p-1 md:max-w-[400px]'
-        role='radiogroup'
-        aria-labelledby='settings-quality'
-        aria-describedby='settings-quality-hint'
-        tabindex='-1'
-        onkeydown={onQualityKey}
-      >
-        {#each QUALITIES as option (option)}
-          {@const checked = quality === option}
-          <button
-            type='button'
-            role='radio'
-            aria-checked={checked}
-            tabindex={checked ? 0 : -1}
-            class={[
-              'min-w-0 flex-1 whitespace-nowrap rounded-full text-label font-500 transition-colors duration-feedback',
-              checked ? 'bg-primary-200 text-primary-950' : 'text-neutral-600 mouse:hover:text-neutral-900',
-            ]}
-            onclick={() => view.app.setPlayQuality(option)}
-          >{QUALITY_LABELS[option]}</button>
-        {/each}
-      </div>
+      <Segmented
+        options={QUALITY_OPTIONS}
+        value={quality}
+        onchange={(next: Quality) => view.app.setPlayQuality(next)}
+        role='radio'
+        id='settings-quality-options'
+        labelledby='settings-quality'
+        describedby='settings-quality-hint'
+        class='mt-3 h-10 md:max-w-[400px]'
+      />
       <p id='settings-quality-hint' class='mt-3 text-caption text-neutral-600'>从下一首开始生效</p>
     </div>
   </section>
