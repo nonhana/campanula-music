@@ -7,7 +7,7 @@
 -->
 <script lang='ts'>
   import type { CoverCrop } from '#lib/api/cover.js'
-  import { Minus, Plus } from '@lucide/svelte'
+  import { ZoomIn, ZoomOut } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import IconButton from './ui/IconButton.svelte'
 
@@ -194,7 +194,7 @@
   </div>
   {#if !readonly}
     <div class='max-w-80 w-full flex items-center gap-2 text-neutral-600'>
-      <IconButton icon={Minus} label='缩小' onclick={() => zoomAt(zoom / 1.2)} />
+      <IconButton icon={ZoomOut} label='缩小' onclick={() => zoomAt(zoom / 1.2)} />
       <input
         type='range'
         class='min-w-0 flex-1'
@@ -206,7 +206,7 @@
         disabled={maxZoom <= 1}
         oninput={event => zoomAt(Number(event.currentTarget.value))}
       />
-      <IconButton icon={Plus} label='放大' onclick={() => zoomAt(zoom * 1.2)} />
+      <IconButton icon={ZoomIn} label='放大' onclick={() => zoomAt(zoom * 1.2)} />
     </div>
   {/if}
 </div>
