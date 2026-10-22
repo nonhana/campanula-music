@@ -1,20 +1,19 @@
 <!--
   收藏开关：收藏、取消收藏一张歌单、一张专辑、一位歌手（App 的 collect：先改本地、立即生效，没成会自己改回并在提示条里说明）。
-  三种样子，图标照 DESIGN.md 的图标词典：收藏是 CirclePlus，已收藏是 CircleCheck（深薄荷）；
-  - pill：页面头部播放全部旁边（DESIGN.md Buttons）。桌面是描边胶囊“收藏 / 已收藏”；手机只留图标（工具档，和 IconButton 一样 44px 的圆）；
+  三种样子，图标照 DESIGN.md 的图标词典：收藏是 CirclePlus，已收藏是 CircleCheck（深薄荷），三种样子都一样；
+  - pill：页面头部播放全部旁边（DESIGN.md Buttons）。桌面是描边胶囊“收藏 / 已收藏”；手机只留图标（工具档，ToolButton）；
   - icon：搜索结果歌单行最右边的图标按钮（和 IconButton 一样：手机 44px、桌面 40px 的圆）；
-  - corner：搜索结果里歌手、专辑格子封面右下角始终可见的 32px 白色小圆（调用方负责绝对定位，和格子的链接并排、不嵌在里面）。
-    它本来就是“圆里一个 ＋ / ✓”，图标仍是 Plus / Check。
+  - corner：搜索结果里歌手、专辑格子封面右下角始终可见的 32px 白色小圆（调用方负责绝对定位，和格子的链接并排、不嵌在里面），18px 图标。
   自建歌单、我喜欢的音乐、没登录时不显示；对应的列表首次同步还没拿到（不知道收没收藏）时不能按。
   是开关（aria-pressed）：胶囊的名字是“收藏 / 已收藏”（手机只留图标时也是），两种图标按钮的名字一直是“收藏专辑「…」”，按下了就是已收藏
 -->
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
   import type { CollectTarget } from '#lib/app/app.js'
-  import { Check, CircleCheck, CirclePlus, Plus } from '@lucide/svelte'
+  import { CircleCheck, CirclePlus } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { iconSwap } from '../motion'
-  import Button from '../ui/Button.svelte'
+  import ToolButton from '../ui/ToolButton.svelte'
   import { COLLECT_NOUNS, collectState } from './collect'
 
   interface Props {
@@ -30,7 +29,7 @@
   const library = $derived(view.state.library)
   const status = $derived(library ? collectState(library, target) : null)
   const collected = $derived(status === 'collected')
-  const Icon = $derived(look === 'corner' ? (collected ? Check : Plus) : collected ? CircleCheck : CirclePlus)
+  const Icon = $derived(collected ? CircleCheck : CirclePlus)
   const label = $derived(`收藏${COLLECT_NOUNS[target.kind]}「${name}」`)
 
   function toggle() {
@@ -40,15 +39,14 @@
 
 {#if status && status !== 'own'}
   {#if look === 'pill'}
-    <Button
-      variant='outline'
+    <ToolButton
       icon={Icon}
-      phoneLabel={collected ? '已收藏' : '收藏'}
-      class={[collected && '[&_svg]:text-primary-900', klass]}
-      aria-pressed={collected}
+      label={collected ? '已收藏' : '收藏'}
+      pressed={collected}
+      class={klass}
       disabled={status === 'unknown'}
       onclick={toggle}
-    >{collected ? '已收藏' : '收藏'}</Button>
+    />
   {:else}
     <button
       type='button'
@@ -66,7 +64,7 @@
       <!-- 收藏、取消收藏时新旧图标叠在同一格里交叉淡化 -->
       {#key Icon}
         <span class='grid col-start-1 row-start-1' transition:iconSwap>
-          <Icon size={look === 'icon' ? 20 : 16} aria-hidden='true' />
+          <Icon size={look === 'icon' ? 20 : 18} aria-hidden='true' />
         </span>
       {/key}
     </button>

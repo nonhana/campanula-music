@@ -3,7 +3,7 @@
   关闭用 history.back() 把进多选时压的那条浅路由用掉（Spec #11 验证关卡③）。
 -->
 <script lang='ts'>
-  import { CheckCheck, ListChecks, ListX, X } from '@lucide/svelte'
+  import { CheckCheck, ListChecks, SquareMinus, X } from '@lucide/svelte'
   import TextButton from '../ui/TextButton.svelte'
   import { leaveSelection, playlistSelection } from './playlist-selection.svelte'
   import { formatCount } from './view'
@@ -22,7 +22,7 @@
     <ListChecks size={16} class='flex-none' aria-hidden='true' />
     <span class='min-w-0 truncate'>{playlistSelection.size > 0 ? `已选 ${formatCount(playlistSelection.size)} 首` : '选择歌曲'}</span>
   </span>
-  <TextButton icon={playlistSelection.allOn ? ListX : CheckCheck} onclick={() => playlistSelection.selectAll()}>
+  <TextButton icon={playlistSelection.allOn ? SquareMinus : CheckCheck} class='px-3.5!' onclick={() => playlistSelection.selectAll()}>
     {playlistSelection.allOn ? '全不选' : '全选'}
   </TextButton>
 </div>

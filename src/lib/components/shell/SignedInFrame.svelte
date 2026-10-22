@@ -65,7 +65,7 @@
   // 浅路由说开着就升起来，说关了就缩回去（返回手势、后退、Esc、收起键都走这里）
   $effect(() => playerDrawer.settle(playerOpen))
   /** 歌单编辑（新建、编辑信息、改公开、删除）、退出登录的确认、添加歌曲或换封面的裁剪页开着：后面的都不能操作 */
-  const editorOpen = $derived(playlistEditor.request !== null || logoutConfirm.request !== null || coverEditor.request !== null || addSongsDialog.request !== null)
+  const dialogOpen = $derived(playlistEditor.request !== null || logoutConfirm.request !== null || coverEditor.request !== null || addSongsDialog.request !== null)
 
   const pathname = $derived(page.url.pathname)
   /** 歌单页、专辑页、歌手页（属于曲库）：标题是歌单名、专辑名、歌手名 */
@@ -215,7 +215,7 @@
   <PhoneSelectionBar />
 {/snippet}
 
-<div class='contents' inert={playerOpen || editorOpen}>
+<div class='contents' inert={playerOpen || dialogOpen}>
   {#if desktopLayout.current}
     <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
       {#snippet header()}
@@ -267,12 +267,12 @@
   {/if}
 </div>
 
-<div class='contents' inert={editorOpen}>
+<div class='contents' inert={dialogOpen}>
   {#if playerShown}
     <PlayerPage open={playerOpen} />
   {/if}
 </div>
-<div class='contents' inert={editorOpen}>
+<div class='contents' inert={dialogOpen}>
   <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
   <LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
 </div>

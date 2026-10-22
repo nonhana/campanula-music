@@ -77,7 +77,7 @@
     void goto(resolve('/settings'))
   }
 
-  function logout() {
+  function confirmLogout() {
     hide(false)
     logoutConfirm.open({ from: trigger ?? null })
   }
@@ -120,7 +120,7 @@
       <button type='button' role='menuitem' tabindex='-1' class='h-10 w-full flex items-center gap-3 rounded-lg px-2 text-left text-label text-neutral-800 focus-visible:bg-primary-100 mouse:hover:bg-primary-100' onclick={openSettings}>
         <Settings size={18} class='text-neutral-600' aria-hidden='true' />设置
       </button>
-      <button type='button' role='menuitem' tabindex='-1' class='h-10 w-full flex items-center gap-3 rounded-lg px-2 text-left text-label text-neutral-800 focus-visible:bg-primary-100 mouse:hover:bg-primary-100' onclick={logout}>
+      <button type='button' role='menuitem' tabindex='-1' class='h-10 w-full flex items-center gap-3 rounded-lg px-2 text-left text-label text-neutral-800 focus-visible:bg-primary-100 mouse:hover:bg-primary-100' onclick={confirmLogout}>
         <LogOut size={18} class='text-neutral-600' aria-hidden='true' />退出登录
       </button>
     </div>

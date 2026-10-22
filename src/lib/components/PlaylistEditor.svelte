@@ -4,29 +4,25 @@
   正在等网易云建好新歌单时关不掉（playlistEditor.busy）。换封面的裁剪页（CoverEditor）盖在它上面时它不能操作
 -->
 <script lang='ts'>
-  import type { Attachment } from 'svelte/attachments'
+  import type { Snippet } from 'svelte'
+  import type { DialogSize } from './DialogShell.svelte'
   import type { EditorRequest } from './playlist-edit.svelte'
   import { coverEditor } from './cover-edit.svelte'
   import DialogShell from './DialogShell.svelte'
   import { playlistEditor } from './playlist-edit.svelte'
   import PlaylistEditorPanel from './PlaylistEditorPanel.svelte'
 
-  const WIDTHS: Record<EditorRequest['mode'], string> = {
-    new: 'max-w-[480px]',
-    info: 'max-w-[680px]',
-    public: 'max-w-[440px]',
-    delete: 'max-w-[440px]',
-  }
+  const TITLES = { new: '新建歌单', info: '编辑歌单信息', public: '改为公开歌单', delete: '删除歌单' } as const
+  const SIZES: Record<EditorRequest['mode'], DialogSize> = { new: 'form', info: 'wide', public: 'confirm', delete: 'confirm' }
 </script>
 
 <DialogShell
   layer={playlistEditor}
-  labelledby='playlist-editor-title'
-  width={request => WIDTHS[request.mode]}
-  tall={request => request.mode === 'new' || request.mode === 'info'}
+  title={request => TITLES[request.mode]}
+  size={request => SIZES[request.mode]}
   covered={coverEditor.request !== null}
 >
-  {#snippet children(request: EditorRequest, sheet: boolean, grip: Attachment<HTMLElement> | undefined)}
-    <PlaylistEditorPanel {request} {sheet} {grip} />
+  {#snippet children(request: EditorRequest, sheet: boolean, heading: Snippet<[classes: string]>)}
+    <PlaylistEditorPanel {request} {sheet} {heading} />
   {/snippet}
 </DialogShell>

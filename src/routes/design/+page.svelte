@@ -4,7 +4,7 @@
   骨架里的虚线框只标出区域和尺寸，里面放什么由之后的票决定。
 -->
 <script lang='ts'>
-  import { ArrowUpDown, CircleArrowDown, CirclePlus, Ellipsis, ListMusic, ListPlus, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
+  import { ArrowUpDown, CircleArrowDown, CirclePlus, Ellipsis, ListMusic, ListPlus, ListX, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
   import Brand from '#lib/components/Brand.svelte'
   import { desktopLayout } from '#lib/components/layout.js'
   import DesktopShell from '#lib/components/shell/DesktopShell.svelte'
@@ -13,10 +13,12 @@
   import FilterChip from '#lib/components/ui/FilterChip.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import SearchField from '#lib/components/ui/SearchField.svelte'
+  import Segmented from '#lib/components/ui/Segmented.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
   import Tag from '#lib/components/ui/Tag.svelte'
   import TextButton from '#lib/components/ui/TextButton.svelte'
   import TextField from '#lib/components/ui/TextField.svelte'
+  import ToolButton from '#lib/components/ui/ToolButton.svelte'
 
   // 颜色名照 DESIGN.md，类名照 uno.config.ts 的色阶
   const colorGroups = [
@@ -85,8 +87,9 @@
     { name: 'full', use: '按钮、搜索框、chip', cls: 'rounded-full' },
   ]
 
-  const filters = ['全部', '自建', '收藏'] as const
-  let filter = $state<typeof filters[number]>('全部')
+  const filters = [{ key: 'standard', label: '标准' }, { key: 'higher', label: '较高' }, { key: 'exhigh', label: '极高' }] as const
+  type FilterKey = typeof filters[number]['key']
+  let filter = $state<FilterKey>('standard')
   let query = $state('ロウワー')
   let playlistName = $state('Campanula 测试 · 可删除')
   let phoneNumber = $state('1380013')
@@ -200,27 +203,28 @@
       <p class='mt-2 text-caption text-neutral-600'>第二行是禁用：实心按钮变成发丝线灰底、石墨淡字，其他按钮降到 50%。</p>
       <div class='mt-4 flex flex-wrap items-center gap-2'>
         <Button variant='primary' icon={Play}>播放全部</Button>
-        <Button variant='outline' icon={ListPlus} phoneLabel='添加歌曲'>添加歌曲</Button>
-        <Button variant='outline' icon={CirclePlus} phoneLabel='收藏'>收藏</Button>
-        <Button variant='outline' icon={ArrowUpDown} phoneLabel='排序'>排序</Button>
-        <TextButton>完成</TextButton>
-        <TextButton tone='neutral'>清空</TextButton>
+        <ToolButton icon={ListPlus} label='添加歌曲' />
+        <ToolButton icon={CirclePlus} label='收藏' />
+        <ToolButton icon={ArrowUpDown} label='排序' />
+        <TextButton strong desktop={{ variant: 'primary' }}>完成</TextButton>
+        <TextButton tone='neutral' desktop={{ variant: 'outline', icon: ListX }}>清空</TextButton>
       </div>
-      <p class='mt-2 text-caption text-neutral-600'>手机上主操作是实心胶囊；和标题、数量排在一行的次级操作只留图标（窄于 768px 时看）；图标说不清、点错有代价的是文字按钮；选项用下面的 chip。</p>
+      <p class='mt-2 text-caption text-neutral-600'>四档（窄于 768px 时看手机的样子）：主操作是实心胶囊；和标题、数量排在一行的次级操作只留图标（ToolButton）；图标说不清、点错有代价的是文字按钮（TextButton），桌面上它们都是胶囊；选项用下面的 chip 和分段条。</p>
     </section>
 
     <section>
-      {@render section('标签和筛选', '歌单标签只是显示；筛选 chip 选中时是薄荷玻璃底。')}
+      {@render section('标签、筛选和分段条', '歌单标签只是显示；筛选 chip 选中时是薄荷玻璃底；分段条换选中时滑块横着滑过去。')}
       <div class='mt-4 flex flex-wrap items-center gap-2'>
         <Tag>日语</Tag>
         <Tag>电子</Tag>
         <Tag>ACG</Tag>
       </div>
-      <div class='mt-3 flex flex-wrap items-center gap-2' role='group' aria-label='歌单筛选'>
-        {#each filters as option (option)}
-          <FilterChip selected={filter === option} onclick={() => (filter = option)}>{option}</FilterChip>
+      <div class='mt-3 flex flex-wrap items-center gap-2' role='group' aria-label='筛选示例'>
+        {#each filters as option (option.key)}
+          <FilterChip selected={filter === option.key} onclick={() => (filter = option.key)}>{option.label}</FilterChip>
         {/each}
       </div>
+      <Segmented options={filters} value={filter} onchange={(key: FilterKey) => (filter = key)} role='radio' id='design-segmented' label='分段条示例' class='mt-3 h-10 max-w-[400px]' />
     </section>
 
     <section class='max-w-[560px]'>

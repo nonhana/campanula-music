@@ -77,7 +77,7 @@
         {#if list.status === 'shown'}
           <span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(list.total)} {KIND_WORDS[kind].unit}</span>
         {/if}
-        <TextButton href={resolve(searchPath(keyword, kind))} class={['ml-auto -mr-3', !phone && 'md:h-9']} onclick={event => seeAll(event, kind)}>查看全部</TextButton>
+        <TextButton href={resolve(searchPath(keyword, kind))} class={['ml-auto', phone ? '-mr-3' : 'h-9! -mr-4 px-4!']} onclick={event => seeAll(event, kind)}>查看全部</TextButton>
       </div>
       <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放。
            淡出（out:fadeAway）写在每种骨架自己的最外层，这里不再包一层：两层都会让出高度，后面的内容被往上拉一截 -->

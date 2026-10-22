@@ -8,21 +8,23 @@
   - 删除：说清楚歌曲和红心不受影响、删了不能恢复，确认键是出错红（DESIGN.md Buttons · Destructive）。
     在这张歌单的页面上删的，先回到曲库再删（不留在已经删掉的歌单页上）。
   改公开、删除都改不回来：排版是 ConfirmPanel，焦点先落在取消上，误按回车不会直接做。
-  手机上表单是接近全屏的弹层，顶上一行是文字按钮 取消 / 标题 / 创建（保存）；确认是贴着底边的弹层，按钮竖着排。桌面是标题、关闭键、内容、右下角的按钮。
-  grip：手机上标题也能按住往下拖收起（外壳给的拖动来源）
+  标题、关闭键在外壳里；手机上表单是接近全屏的弹层，标题行是文字按钮 取消 / 标题（外壳给的 heading）/ 创建（保存），下面是 DialogBody；
+  桌面是 DialogBody，右下角 取消 / 创建（保存）。确认的排版是 ConfirmPanel
 -->
 <script lang='ts'>
-  import type { Attachment } from 'svelte/attachments'
+  import type { Snippet } from 'svelte'
   import type { ChangeFailure } from '#lib/app/library.js'
   import type { EditorRequest } from './playlist-edit.svelte'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { Camera, Lock, X } from '@lucide/svelte'
+  import { Camera, Lock } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH } from '#lib/api/library.js'
   import { getAppView } from './app-context.svelte'
   import ConfirmPanel from './ConfirmPanel.svelte'
   import { coverEditor } from './cover-edit.svelte'
+  import DialogBody from './DialogBody.svelte'
+  import { desktopLayout } from './layout'
   import Cover from './library/Cover.svelte'
   import { changeFailureText, editProblemText } from './library/notice'
   import TagPicker from './library/TagPicker.svelte'
@@ -30,8 +32,6 @@
   import { unfold } from './motion'
   import { playlistEditor } from './playlist-edit.svelte'
   import Button from './ui/Button.svelte'
-  import IconButton from './ui/IconButton.svelte'
-  import Scrollbar from './ui/Scrollbar.svelte'
   import TextButton from './ui/TextButton.svelte'
   import TextField from './ui/TextField.svelte'
 
@@ -39,17 +39,16 @@
     request: EditorRequest
     /** 在手机的底部弹层里 */
     sheet: boolean
-    /** 手机上标题按住往下拖收起 */
-    grip?: Attachment<HTMLElement>
+    /** 外壳给的标题：手机表单放进自己的标题行（按住往下拖收起） */
+    heading: Snippet<[classes: string]>
   }
 
-  const { request, sheet, grip }: Props = $props()
+  const { request, sheet, heading }: Props = $props()
   const view = getAppView()
   const library = $derived(view.state.library)
   /** 要编辑的这张自建歌单（新建时是 null） */
   const playlist = $derived(request.mode === 'new' ? null : library?.playlists?.find(item => item.id === request.playlistId) ?? null)
 
-  const TITLES = { new: '新建歌单', info: '编辑歌单信息', public: '改为公开歌单', delete: '删除歌单' } as const
   const FORM_ID = 'playlist-editor-form'
   const form = $derived(request.mode === 'new' || request.mode === 'info')
 
@@ -136,22 +135,18 @@
     playlistEditor.close()
   }
 
-  /** 在这张歌单的页面上删：先回到曲库（换掉这一页的浏览记录），再删，不留在已经删掉的歌单页上 */
+  /** 在这张歌单的页面上删：先回到曲库（换掉这一页的浏览记录；桌面是首页，手机是歌单标签），再删，不留在已经删掉的歌单页上 */
   async function remove() {
     if (!playlist)
       return
     const { id } = playlist
     if (page.url.pathname === resolve('/playlists/[id]', { id: String(id) }))
-      await playlistEditor.leaveToLibrary()
+      await playlistEditor.leaveTo(desktopLayout.current ? '/' : '/playlists')
     else
       playlistEditor.close()
     void view.app.deletePlaylist(id)
   }
 </script>
-
-{#snippet title(classes: string)}
-  <h2 id='playlist-editor-title' class={classes} {@attach grip}>{TITLES[request.mode]}</h2>
-{/snippet}
 
 {#snippet nameField()}
   <TextField
@@ -251,14 +246,7 @@
 {/snippet}
 
 {#if !form}
-  <ConfirmPanel
-    id='playlist-editor-title'
-    title={TITLES[request.mode]}
-    {sheet}
-    {grip}
-    cancelLabel={request.mode === 'delete' ? '先不了' : '取消'}
-    oncancel={() => playlistEditor.close()}
-  >
+  <ConfirmPanel {sheet} cancelLabel={request.mode === 'delete' ? '先不了' : '取消'} oncancel={() => playlistEditor.close()}>
     {#snippet body()}
       {#if playlist && request.mode === 'public'}
         <p class='text-body text-neutral-700'>公开后，你的网易云主页和搜索里都能看到<span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span>。</p>
@@ -278,29 +266,18 @@
       {/if}
     {/snippet}
   </ConfirmPanel>
-{:else if sheet}
-  <div class='min-h-0 flex flex-1 flex-col'>
-    <div class='h-14 flex flex-none items-center gap-2 px-2'>
-      <TextButton tone='neutral' disabled={playlistEditor.busy} onclick={() => playlistEditor.close()}>取消</TextButton>
-      {@render title('min-w-0 flex-1 touch-none truncate text-center text-title-sm text-neutral-900 font-600')}
-      <TextButton strong type='submit' form={FORM_ID} disabled={blocked}>{@render submitLabel()}</TextButton>
-    </div>
-    <div class='min-h-0 flex-1 overflow-y-auto overscroll-contain'>
-      <Scrollbar />
-      <div class='px-5 pb-6 pt-2'>{@render formBody()}</div>
-    </div>
-  </div>
 {:else}
-  <div class='flex flex-none items-center gap-3 pb-2 pl-6 pr-4 pt-5'>
-    {@render title('min-w-0 flex-1 text-title-sm text-neutral-900 font-600')}
-    <IconButton icon={X} label='关闭' disabled={playlistEditor.busy} onclick={() => playlistEditor.close()} />
-  </div>
-  <div class='min-h-0 flex-1 overflow-y-auto overscroll-contain'>
-    <Scrollbar />
-    <div class='px-6 pb-2 pt-2'>{@render formBody()}</div>
-  </div>
-  <div class='flex flex-none items-center justify-end gap-2 px-6 pb-5 pt-4'>
-    <Button variant='outline' disabled={playlistEditor.busy} onclick={() => playlistEditor.close()}>取消</Button>
-    <Button variant='primary' type='submit' form={FORM_ID} disabled={blocked}>{@render submitLabel()}</Button>
-  </div>
+  {#if sheet}
+    <div class='h-14 flex flex-none items-center gap-2 px-2'>
+      <TextButton tone='neutral' size='body' disabled={playlistEditor.busy} onclick={() => playlistEditor.close()}>取消</TextButton>
+      {@render heading('min-w-0 flex-1 truncate text-center text-title-sm text-neutral-900 font-600')}
+      <TextButton strong size='body' type='submit' form={FORM_ID} disabled={blocked}>{@render submitLabel()}</TextButton>
+    </div>
+  {/if}
+  <DialogBody {sheet} body={formBody} actions={sheet ? undefined : formActions} />
 {/if}
+
+{#snippet formActions()}
+  <Button variant='outline' disabled={playlistEditor.busy} onclick={() => playlistEditor.close()}>取消</Button>
+  <Button variant='primary' type='submit' form={FORM_ID} disabled={blocked}>{@render submitLabel()}</Button>
+{/snippet}
