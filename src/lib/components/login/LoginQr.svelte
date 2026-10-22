@@ -148,7 +148,7 @@
           <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- data: 地址的图片，下载用，不是页面 -->
           <a href={image}
              download={verifying ? 'campanula-安全验证二维码.png' : 'campanula-登录二维码.png'}
-             class='h-11 inline-flex items-center rounded-full bg-secondary-100 px-5 text-label text-secondary-900 font-500 transition-colors duration-feedback active:bg-secondary-200 mouse:hover:bg-secondary-200'
+             class='pill-hit h-10 inline-flex items-center rounded-full bg-secondary-100 px-5 text-label text-secondary-900 font-500 transition-colors duration-feedback active:bg-secondary-200 mouse:hover:bg-secondary-200'
           >保存二维码</a>
         {/if}
         {#if qr?.step === 'verifying'}

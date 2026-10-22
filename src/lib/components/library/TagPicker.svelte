@@ -61,7 +61,7 @@
       {#if library?.status === 'shown'}
         {#each library.content as group (group.name)}
           <div class='grid grid-cols-[40px_minmax(0,1fr)] items-start gap-2' role='group' aria-label={group.name}>
-            <span class='pt-2.5 text-caption text-neutral-600 md:pt-2' aria-hidden='true'>{group.name}</span>
+            <span class='pt-2 text-caption text-neutral-600' aria-hidden='true'>{group.name}</span>
             <div class='flex flex-wrap gap-1.5'>
               {#each group.tags as tag (tag)}
                 {@const on = tags.includes(tag)}
@@ -82,7 +82,7 @@
               <span class='bone h-3 w-8 rounded-full'></span>
               <span class='flex flex-wrap gap-1.5'>
                 {#each { length: count }, i (i)}
-                  <span class='bone h-10 w-14 rounded-full md:h-9'></span>
+                  <span class='bone h-9 w-14 rounded-full'></span>
                 {/each}
               </span>
             </div>

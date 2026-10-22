@@ -1,5 +1,5 @@
 <!--
-  桌面顶栏右边的头像（视觉原型 DesktopShell）：点开是账号菜单，显示头像和昵称，可以去设置、退出登录。
+  桌面顶栏右边的头像（视觉原型 DesktopShell）：点开是账号菜单，显示头像和昵称，可以去设置、退出登录（先确认：LogoutConfirm，关上后焦点回到头像）。
   菜单从头像下面飘出来，关上时淡出（DESIGN.md Overlays，motion.ts 的 pop）；连点头像时从此刻的样子掉头，不留残影。
   键盘：Enter / 空格 / ↓ 打开并聚焦第一项，↑↓ 在菜单项之间移动，Esc 关上并回到头像，Tab 离开时关上。
 -->
@@ -8,12 +8,11 @@
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { LogOut, Settings } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
   import Avatar from '../Avatar.svelte'
+  import { logoutConfirm } from '../logout-confirm'
   import { pop } from '../motion'
 
   const { account }: { account: Account } = $props()
-  const view = getAppView()
 
   let open = $state(false)
   let root = $state<HTMLElement>()
@@ -80,8 +79,7 @@
 
   function logout() {
     hide(false)
-    void goto(resolve('/'), { replace: true })
-    void view.app.logout()
+    logoutConfirm.open({ from: trigger ?? null })
   }
 </script>
 

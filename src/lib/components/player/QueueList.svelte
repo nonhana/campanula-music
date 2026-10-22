@@ -1,5 +1,6 @@
 <!--
-  播放页里的播放队列（自己滚动的虚拟列表，原型 QueueList）：头部写明有几首、都来自同一个播放来源时写来自哪里，右边“清空”；
+  播放页里的播放队列（自己滚动的虚拟列表，原型 QueueList）：头部写明有几首、都来自同一个播放来源时写来自哪里，右边“清空”
+  （点了直接清空、没有撤销，所以写字不用图标：手机是文字按钮，桌面是描边胶囊，#57）；
   56px 一行：序号（正在放的换成三根小竖条）、封面、歌名歌手、时长、移出键。轻点一行就放这一首，播放队列不变；
   正在放的那行是晨光行，它移不掉（移出键的位置空着）；现在放不了的（无版权；断网、没登录时没下载的，#38）整行降到 45%、不能点，但能移出。打开时当前这首停在第二行的位置。
   清空：播放队列空了、停下，播放页跟着收起（播放条沉下去）。移出一首后焦点落在下一首的移出键上（最后一首时是上一首的，那是正在放的那首时落在“清空”上）
@@ -12,6 +13,7 @@
   import { sameSource } from '#lib/api/playback.js'
   import { getAppView } from '../app-context.svelte'
   import { songLook } from '../downloads/view'
+  import { desktopLayout } from '../layout'
   import Cover from '../library/Cover.svelte'
   import PlayTarget from '../library/PlayTarget.svelte'
   import SongBadge from '../library/SongBadge.svelte'
@@ -21,6 +23,7 @@
   import Button from '../ui/Button.svelte'
   import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import MorningWash from './MorningWash.svelte'
   import NowIndex from './NowIndex.svelte'
   import { closePlayerPage } from './player-page.svelte'
@@ -76,7 +79,11 @@
         {#if source}<span transition:fade>来自「<span lang={langOf(source)}>{source}</span>」<span class='mr-1' aria-hidden='true'>·</span></span>{/if}<span class='tabular-nums'>{formatCount(queue.length)} 首</span>
       </p>
     </div>
-    <Button variant='outline' icon={ListX} class='h-9! pl-3.5! pr-4! md:h-9!' data-clear onclick={clear}>清空</Button>
+    {#if desktopLayout.current}
+      <Button variant='outline' icon={ListX} class='h-9! pl-3.5! pr-4!' data-clear onclick={clear}>清空</Button>
+    {:else}
+      <TextButton tone='neutral' class='-mr-3' data-clear onclick={clear}>清空</TextButton>
+    {/if}
   </header>
 
   <!-- 底下的 8px 留在滚动区外面：滚动条的下端不伸进面板的圆角 -->

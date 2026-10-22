@@ -1,5 +1,5 @@
 <!--
-  筛选 chip（DESIGN.md Chips · Filter / History）：歌单的 全部 / 自建 / 收藏、搜索历史、播放页歌词的翻译 / 音译开关。
+  筛选 chip（DESIGN.md Chips · Filter / History）：编辑歌单时的标签库、搜索历史、播放页歌词的翻译 / 音译开关。手机桌面都是 36px 高。
   纸白底 + 发丝线；选中时薄荷玻璃底 + 森林墨字；禁用时降到 50%（DESIGN.md Buttons · Disabled）。选中状态用 aria-pressed 告诉读屏。
 -->
 <script lang='ts'>
@@ -19,7 +19,7 @@
   {type}
   aria-pressed={selected}
   class={[
-    'h-10 inline-flex flex-none items-center rounded-full px-4 text-label font-500 transition-[background-color,border-color,color,opacity] duration-feedback md:h-9 disabled:(cursor-not-allowed opacity-50)',
+    'h-9 inline-flex flex-none items-center rounded-full px-4 text-label font-500 transition-[background-color,border-color,color,opacity] duration-feedback disabled:(cursor-not-allowed opacity-50)',
     selected
       ? 'bg-primary-200 text-primary-950'
       : 'border border-neutral-200 bg-white text-neutral-700 mouse:enabled:hover:(border-primary-300 bg-primary-50 text-neutral-900)',

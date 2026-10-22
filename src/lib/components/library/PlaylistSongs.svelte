@@ -25,8 +25,10 @@
   import { anchorBelow } from '../overlay-layer.svelte'
   import { currentSong } from '../player/view'
   import Button from '../ui/Button.svelte'
+  import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import DesktopSongRow, { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
   import DragGrip from './DragGrip.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
@@ -65,7 +67,7 @@
   const kind = $derived(library.songsOf(playlistId)?.playlist.kind ?? null)
   /** 这张歌单能不能移除：只有自建歌单有（我喜欢的音乐、收藏的歌单没有） */
   const own = $derived(kind === 'own')
-  /** 能排序的列表（自建歌单、我喜欢的音乐）：入口写“多选 · 排序”（#36） */
+  /** 能排序的列表（自建歌单、我喜欢的音乐）：手机数量行右边的多选图标读作“多选和排序”（#36、#57） */
   const sortableList = $derived(kind !== null && canSortPlaylist(kind))
   /**
    * 现在能不能拖：歌都同步全了、每一首都有歌曲信息（不然列表和整张歌单对不上），也没在搜索、没在重新拉
@@ -280,10 +282,14 @@
       {:else if shown.kind === 'songs'}
         {#if opening?.status === 'failed'}
           <div transition:unfold>
-            <div class='flex items-center gap-3 px-3 py-2 text-caption text-neutral-700' role='alert'>
+            <div class={['flex items-center gap-3 px-3 text-caption text-neutral-700', phone ? 'min-h-11 py-1' : 'py-2']} role='alert'>
               <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
               <span class='min-w-0 flex-1'>这张歌单没加载完。{failureText(opening.failure)}</span>
-              <Button variant='outline' class='h-9! md:h-9!' onclick={retry}>重试</Button>
+              {#if phone}
+                <TextButton class='-mr-3' onclick={retry}>重试</TextButton>
+              {:else}
+                <Button variant='outline' class='h-9!' onclick={retry}>重试</Button>
+              {/if}
             </div>
           </div>
         {:else if opening?.status === 'loading'}
@@ -352,14 +358,7 @@
           {/if}
         </p>
         {#if !selection.mode && shown.kind === 'songs' && songs.length > 0}
-          <button
-            type='button'
-            class='h-11 inline-flex flex-none items-center gap-1.5 border border-neutral-200 rounded-full bg-white pl-3.5 pr-4 text-label text-neutral-800 font-500 active:bg-neutral-50'
-            data-multiselect-entry
-            onclick={openMulti}
-          >
-            <ListChecks size={16} aria-hidden='true' />{sortableList ? '多选 · 排序' : '多选'}
-          </button>
+          <IconButton icon={ListChecks} label={sortableList ? '多选和排序' : '多选'} title={sortableList ? '多选和排序' : '多选'} class='-mr-3' data-multiselect-entry onclick={openMulti} />
         {/if}
       </div>
     {/if}

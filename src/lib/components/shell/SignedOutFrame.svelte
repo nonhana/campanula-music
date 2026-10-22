@@ -45,7 +45,7 @@
       <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到登录页'><Brand /></a>
       <a
         href={resolve('/')}
-        class='ml-auto h-11 inline-flex items-center rounded-full bg-primary-900 px-5 text-label text-white font-500 transition-colors duration-feedback md:h-10 active:bg-primary-950 mouse:hover:bg-primary-950'
+        class='pill-hit ml-auto h-10 inline-flex items-center rounded-full bg-primary-900 px-5 text-label text-white font-500 transition-colors duration-feedback active:bg-primary-950 mouse:hover:bg-primary-950'
       >登录</a>
     </header>
     <main class='md:pt-16'>

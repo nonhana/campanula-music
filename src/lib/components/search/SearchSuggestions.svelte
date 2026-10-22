@@ -11,6 +11,7 @@
   import { getAppView } from '../app-context.svelte'
   import { langOf } from '../library/view'
   import FilterChip from '../ui/FilterChip.svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import { searchBox, SUGGESTION_LIST_ID, suggestionId, suggestionRows } from './search-box.svelte'
   import { matchedParts, SUGGESTION_KINDS } from './view'
 
@@ -41,11 +42,7 @@
       <h2 id='search-history-title' class='text-label text-neutral-900 font-600'>搜索历史</h2>
       <span class='text-caption text-neutral-500'>只保存在这台设备上</span>
       {#if history.length > 0}
-        <button
-          type='button'
-          class={['ml-auto rounded-full px-3 text-caption text-neutral-600 font-500 transition-colors duration-feedback press mouse:hover:(bg-primary-100 text-primary-950)', phone ? 'h-11 -mr-3' : 'h-8 -mr-2']}
-          onclick={clearHistory}
-        >清空</button>
+        <TextButton tone='neutral' class={['ml-auto', phone ? '-mr-3' : 'md:h-8 -mr-2']} onclick={clearHistory}>清空</TextButton>
       {/if}
     </div>
     {#if history.length > 0}

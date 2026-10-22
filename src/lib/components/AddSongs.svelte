@@ -29,6 +29,7 @@
   import Scrollbar from './ui/Scrollbar.svelte'
   import SearchField from './ui/SearchField.svelte'
   import StateBlock from './ui/StateBlock.svelte'
+  import TextButton from './ui/TextButton.svelte'
 
   /** 停手这么久（毫秒）才问网易云：和搜索框的建议一样，接着打字时不每个字问一次 */
   const SEARCH_DELAY = 300
@@ -342,7 +343,7 @@
     </div>
     <div class='flex flex-none items-center gap-2 px-4 pb-2'>
       {@render title('min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-600')}
-      <button type='button' class='h-11 rounded-full px-3 text-body text-neutral-700 active:bg-neutral-100' onclick={close}>取消</button>
+      <TextButton tone='neutral' onclick={close}>取消</TextButton>
     </div>
     {@render body()}
   </div>

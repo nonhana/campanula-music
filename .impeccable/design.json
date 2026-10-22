@@ -707,7 +707,7 @@
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "描边白胶囊：收藏 / 已收藏、清空、取消。",
+      "description": "描边白胶囊：桌面的次级操作（收藏 / 已收藏、添加歌曲、排序、新建歌单、清空、取消）。手机上排在一行里的次级操作只留图标或写成文字（DESIGN.md Buttons · 手机上的四档）。",
       "html": "<button class='ds-btn ds-btn-outline'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='#206F52' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6 9 17l-5-5'/></svg>已收藏</button>",
       "css": ".ds-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px 0 16px; border-radius: 9999px; font-family: 'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; } .ds-btn-outline { background: #FFFFFF; color: #1F2937; border: 1px solid #E5E7EB; } .ds-btn-outline:hover { border-color: #B9EAD5; background: #F3FBF7; }"
     },
@@ -773,7 +773,7 @@
       "浅色唯一（ADR-0008），整页底色是晨光底，不是灰。",
       "白色面板带极淡的环境光阴影；只有真正浮起的层（菜单、弹层、播放条）才有更明显的阴影。",
       "颜色有固定分工：薄荷 = 选中与进度，珊瑚 = 红心，蜜桃 = 本机与下载；封面是画面里最饱和的东西。",
-      "胶囊形按钮：主要动作是实心深绿，下载是浅蜜桃，次要是描边白。",
+      "按钮分层：每屏只有主操作是实心深绿胶囊（下载是浅蜜桃）；手机上和标题、数量排在一行的次级操作只留图标，图标说不清、点错有代价的写成文字；桌面的次级操作是描边白胶囊。",
       "Noto 可变字体（自托管），只用 400 / 500 / 600 三个真实字重；日文、繁体按 lang 切换字体。",
       "签名动作“晨光行”：正在播放的那一行，被一层浅薄荷光从歌名开始往右慢慢铺开。",
       "动效是“飘入飘出”：东西从来的方向轻轻飘来、停稳，离开时先淡再走，不弹跳；封面是主角，动效跟着封面走。",
@@ -829,7 +829,7 @@
     "dos": [
       "Do 让封面承担画面里最饱和的颜色；薄荷只用在选中、进度、正在播放、焦点上（The Morning Light Rule）。",
       "Do 在粉彩浅底上放深色字：薄荷浅底配森林墨，蜜桃浅底配蜜桃木（The Dark Ink on Pastel Rule）。",
-      "Do 主要动作用实心深绿胶囊，下载用浅蜜桃胶囊，次要用描边白胶囊。",
+      "Do 主要动作用实心深绿胶囊，下载用浅蜜桃胶囊；桌面的次要动作用描边白胶囊，手机上照 Buttons 的四档：排在一行里的次级操作只留图标或写成文字，选项用 chip 或分段条。",
       "Do 统一用 Lucide 线条图标；文案里提到“更多”菜单时，画出同一个图标，或者直接写“更多”。",
       "Do 显示歌名、歌手、专辑、歌单名时带上 lang。",
       "Do 加载中用形状一致的骨架行，放在列表本来的位置上；空、出错、离线都要写清楚发生了什么、能怎么办。",

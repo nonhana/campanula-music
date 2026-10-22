@@ -26,6 +26,8 @@ declare global {
       editorSheet?: true
       /** 换封面的裁剪页以全屏开着（手机布局），压在歌单编辑上面：返回先收起它 */
       coverSheet?: true
+      /** 退出登录的确认以底部弹层开着（手机布局）：返回先收起它 */
+      logoutSheet?: true
     }
     // interface Platform {}
   }

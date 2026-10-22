@@ -1,0 +1,39 @@
+<!--
+  退出登录的确认（#57，logout-confirm.ts 的 logoutConfirm）：设置页账号卡上的退出键、桌面头像菜单里的“退出登录”都先打开它。
+  外观和删除歌单的确认一样（外壳 DialogShell、排版 ConfirmPanel）：桌面居中弹窗 440px，手机贴着底边的弹层、按钮竖着排；
+  点遮罩、Esc、返回都收起，打开时焦点在“取消”上，收起后回到打开它的地方。确认键是实心深薄荷，不用出错红（出错红只给删除歌单）。
+  确认后先收起（手机退掉弹层压的浅路由），再把这一页的浏览记录换成首页、退出登录。退出会清掉这个浏览器里的曲库和播放队列，
+  已下载的歌留着（ADR-0006）。放在 SignedInFrame 里
+-->
+<script lang='ts'>
+  import type { Attachment } from 'svelte/attachments'
+  import type { DialogRequest } from './dialog-layer.svelte'
+  import { goto } from '$app/navigation'
+  import { resolve } from '$app/paths'
+  import { getAppView } from './app-context.svelte'
+  import ConfirmPanel from './ConfirmPanel.svelte'
+  import DialogShell from './DialogShell.svelte'
+  import { logoutConfirm } from './logout-confirm'
+  import Button from './ui/Button.svelte'
+
+  const view = getAppView()
+
+  async function logout() {
+    await logoutConfirm.leave()
+    void goto(resolve('/'), { replace: true })
+    void view.app.logout()
+  }
+</script>
+
+<DialogShell layer={logoutConfirm} labelledby='logout-confirm-title' width={() => 'max-w-[440px]'} tall={() => false}>
+  {#snippet children(_request: DialogRequest, sheet: boolean, grip: Attachment<HTMLElement> | undefined)}
+    <ConfirmPanel id='logout-confirm-title' title='退出登录？' {sheet} {grip} oncancel={() => logoutConfirm.close()}>
+      {#snippet body()}
+        <p class='text-body text-neutral-700'>会清掉这个浏览器里的曲库和播放队列，已下载的歌会留着。</p>
+      {/snippet}
+      {#snippet confirm()}
+        <Button variant='primary' onclick={() => void logout()}>退出登录</Button>
+      {/snippet}
+    </ConfirmPanel>
+  {/snippet}
+</DialogShell>

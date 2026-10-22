@@ -4,6 +4,7 @@
 -->
 <script lang='ts'>
   import { CheckCheck, ListChecks, ListX, X } from '@lucide/svelte'
+  import TextButton from '../ui/TextButton.svelte'
   import { leaveSelection, playlistSelection } from './playlist-selection.svelte'
   import { formatCount } from './view'
 </script>
@@ -21,12 +22,7 @@
     <ListChecks size={16} class='flex-none' aria-hidden='true' />
     <span class='min-w-0 truncate'>{playlistSelection.size > 0 ? `已选 ${formatCount(playlistSelection.size)} 首` : '选择歌曲'}</span>
   </span>
-  <button
-    type='button'
-    class='h-11 inline-flex flex-none items-center gap-1.5 rounded-full px-3.5 text-label text-primary-900 font-500 active:bg-primary-100'
-    onclick={() => playlistSelection.selectAll()}
-  >
-    {#if playlistSelection.allOn}<ListX size={16} aria-hidden='true' />{:else}<CheckCheck size={16} aria-hidden='true' />{/if}
+  <TextButton icon={playlistSelection.allOn ? ListX : CheckCheck} onclick={() => playlistSelection.selectAll()}>
     {playlistSelection.allOn ? '全不选' : '全选'}
-  </button>
+  </TextButton>
 </div>

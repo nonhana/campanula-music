@@ -291,9 +291,11 @@ export default defineConfig<Theme>({
     presetRemToPx(),
   ],
   transformers: [transformerDirectives(), transformerVariantGroup()],
-  // 按下时轻轻缩一点（DESIGN.md Buttons）：可点的元素加 press（按钮常写 enabled:press）
   shortcuts: {
-    press: 'active:scale-[var(--press-scale)]',
+    // 按下时轻轻缩一点（DESIGN.md Buttons）：可点的元素加 press（按钮常写 enabled:press）
+    'press': 'active:scale-[var(--press-scale)]',
+    // 40px 高的胶囊按钮：上下各往外撑 2px，点击范围 44px，不改布局（DESIGN.md Buttons）
+    'pill-hit': 'relative before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-empty',
   },
   // 只用设计系统的档位：零散的时长、曲线，逐个组件的“减少动态效果”写法，阶梯以外的字号、圆角、阴影、颜色都不生成。
   // scripts/check-design-tokens.mts 在 pnpm lint 里查所有写法（eslint 的 unocss/blocklist 只看得到纯字符串的 class）
