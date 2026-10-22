@@ -1,6 +1,7 @@
 <!--
   登录后的骨架：桌面是顶栏（菜单键、logo、正中的搜索框、头像菜单）、图标侧栏（曲库、每日推荐、已下载，设置在最下面）和底部播放条；
-  手机是 logo 行（右边是搜索、每日推荐的日历按钮、设置），设置、每日推荐、已下载、歌单页、专辑页、歌手页这类二级页面换成返回栏，
+  手机是 logo 行（右边是搜索、每日推荐的日历按钮、设置），设置、每日推荐、已下载、歌单页、专辑页、歌手页这类二级页面换成返回栏：
+  设置页的返回栏写“设置”，其余平时只有 ←，页头的大标题滚到返回栏下面以后淡入页名（BackTitle）；
   搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签，搜索结果下面是结果的标签（综合 / 单曲 / 歌单 / 歌手 / 专辑）；
   底部是迷你播放条。
   播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
@@ -49,6 +50,7 @@
   import SongMenu from '../SongMenu.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
+  import BackTitle from './BackTitle.svelte'
   import DesktopShell from './DesktopShell.svelte'
   import { pageTransitions } from './page-transition'
   import PhoneShell from './PhoneShell.svelte'
@@ -68,18 +70,12 @@
   const dialogOpen = $derived(playlistEditor.request !== null || logoutConfirm.request !== null || coverEditor.request !== null || addSongsDialog.request !== null)
 
   const pathname = $derived(page.url.pathname)
-  /** 歌单页、专辑页、歌手页（属于曲库）：标题是歌单名、专辑名、歌手名 */
-  const libraryPage = $derived(
-    pathname.startsWith(`${resolve('/playlists')}/`)
-      ? '歌单'
-      : pathname.startsWith(`${resolve('/albums')}/`)
-      ? '专辑'
-      : pathname.startsWith(`${resolve('/artists')}/`) ? '歌手' : undefined,
-  )
-  /** 页面里有自己的标题（h1）的二级页面：返回栏只说这是哪一类页面 */
-  const detailPage = $derived(libraryPage ?? (pathname === resolve('/daily') ? '每日推荐' : pathname === resolve('/downloads') ? '已下载' : undefined))
-  /** 二级页面：手机上顶行换成返回栏 */
-  const secondary = $derived(pathname === resolve('/settings') ? '设置' : detailPage)
+  /** 歌单页、专辑页、歌手页（属于曲库） */
+  const libraryPage = $derived([resolve('/playlists'), resolve('/albums'), resolve('/artists')].some(route => pathname.startsWith(`${route}/`)))
+  /** 页面里有自己的标题（h1）的二级页面：返回栏平时只有 ←，h1 滚过去才淡入页名 */
+  const detailPage = $derived(libraryPage || pathname === resolve('/daily') || pathname === resolve('/downloads'))
+  /** 设置页没有 h1：返回栏一直写“设置” */
+  const settingsPage = $derived(pathname === resolve('/settings'))
   /** 手机搜索页：顶行是返回加搜索框 */
   const searching = $derived(pathname === resolve('/search'))
   /** 每日推荐的日期：手机日历按钮里的数字和它的名字 */
@@ -95,7 +91,7 @@
   // 换页用 View Transitions：进入下一层、返回、标签之间各有方向（ADR-0011）
   pageTransitions(LIBRARY_TABS.map(tab => tab.route))
   /** 桌面侧栏的“曲库”：曲库的各个标签和歌单页、专辑页、歌手页都算 */
-  const inLibrary = $derived(onLibrary || libraryPage !== undefined)
+  const inLibrary = $derived(onLibrary || libraryPage)
 
   let railExpanded = $state(false)
 
@@ -244,9 +240,13 @@
           <PhoneSelectBar />
         {:else if searching}
           <PhoneSearchBar onback={back} />
-        {:else if secondary}
+        {:else if detailPage || settingsPage}
           <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
-          <svelte:element this={detailPage ? 'p' : 'h1'} class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{secondary}</svelte:element>
+          {#if settingsPage}
+            <h1 class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>设置</h1>
+          {:else}
+            <BackTitle />
+          {/if}
         {:else}
           <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
           <span class='flex-1'></span>

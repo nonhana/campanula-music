@@ -83,8 +83,6 @@
         <!-- 首数、翻页键、“查看全部”跟着歌一起出现：淡入，不一下冒出来 -->
         {#if liked.kind === 'songs'}
           <span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(liked.total)} 首</span>
-        {:else if liked.kind === 'empty'}
-          <span class='text-caption text-neutral-500 tabular-nums' in:fade>0 首</span>
         {/if}
         <div class='ml-auto flex items-center gap-2'>
           {#if liked.kind === 'songs'}

@@ -1,8 +1,8 @@
 <!--
   结果页的“综合”：照桌面首页的分区总览，依次是单曲（白色面板里的前几首歌曲行）、歌单（一排封面）、歌手（一排横向架子，圆头像）、
-  专辑（一排横向架子）。每块的标题旁写网易云给的总数，右边“查看全部”切到那个标签。不做最佳匹配（作者定，DESIGN.md 桌面搜索）。
+  专辑（一排横向架子）。每块右边“查看全部”切到那个标签（总数写在标签上，块标题旁不再写）。不做最佳匹配（作者定，DESIGN.md 桌面搜索）。
   四块各拉各的：还在拉的那块是形状一致的骨架，没拉成的那块说明原因、能重试，别的照常显示；
-  一个都没有的那块不显示，四块都没有时说明没找到。手机上竖着排，歌单、歌手、专辑都是横向架子。
+  一个都没有的那块不显示，四块都没有时只有“没有找到”的标题。手机上竖着排，歌单、歌手、专辑都是横向架子。
   歌单、歌手、专辑的封面右下角压一个收藏小圆（CollectButton 的 corner，和格子的链接并排，不嵌在里面）；自建歌单、我喜欢的音乐在那里标“自建”
 -->
 <script lang='ts'>
@@ -22,7 +22,7 @@
   import SkeletonRows from '../library/SkeletonRows.svelte'
   import TileBone from '../library/TileBone.svelte'
   import { formatCount, yearOf } from '../library/view'
-  import { fade, fadeAway, reveal } from '../motion'
+  import { fadeAway, reveal } from '../motion'
   import StateBlock from '../ui/StateBlock.svelte'
   import Tag from '../ui/Tag.svelte'
   import TextButton from '../ui/TextButton.svelte'
@@ -74,9 +74,6 @@
     <section class={phone ? 'pt-5 first:pt-0' : 'pt-8 first:pt-0'} aria-labelledby={`overview-${kind}`}>
       <div class={['flex items-center gap-3', phone ? 'h-11 px-4' : 'mb-3']}>
         <h2 id={`overview-${kind}`} class={['text-neutral-900 font-600', phone ? 'text-title-sm' : 'text-title']}>{KIND_WORDS[kind].label}</h2>
-        {#if list.status === 'shown'}
-          <span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(list.total)} {KIND_WORDS[kind].unit}</span>
-        {/if}
         <TextButton href={resolve(searchPath(keyword, kind))} class={['ml-auto', phone ? '-mr-3' : 'h-9! -mr-4 px-4!']} onclick={event => seeAll(event, kind)}>查看全部</TextButton>
       </div>
       <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放。
@@ -172,7 +169,7 @@
     <Shelf label='歌手' class={shelves.artists.gap} {phone}>
       {#each artists.items.slice(0, OVERVIEW_COUNTS.artists) as artist (artist.id)}
         <li class={['min-w-0 flex-none', shelves.artists.cell]}>
-          <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首单曲`} collectable />
+          <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首`} collectable />
         </li>
       {/each}
     </Shelf>
@@ -201,7 +198,7 @@
 
 {#if nothing}
   <div in:reveal>
-    <StateBlock kind='empty' icon={SearchX} title={`没有找到“${keyword}”`} body='换个歌名、歌手或专辑名试试。' />
+    <StateBlock kind='empty' icon={SearchX} title={`没有找到“${keyword}”`} />
   </div>
 {:else}
   {@render section('songs', songs, songsBody, songsBones)}

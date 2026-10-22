@@ -1,7 +1,7 @@
 <!--
   选歌单标签（#33，原型 PlaylistEditor 的标签那一块）：只能从网易云的标签库里选（App 的 openPlaylistTags，按语种、风格、场景、情感、主题分组），
-  最多 3 个（验证关卡②）。选了的排在上面，点一下去掉；选满了其余的不能点，标题旁写“已到上限”，下面一行说清楚规矩。
-  标签库还在取是几行骨架，没取到说明原因、能重试；已经选了的照样能去掉。标签库里的每个标签是一个 Filter chip（按下了就是选了）。
+  最多 3 个（验证关卡②）。选了的排在上面，点一下去掉；标题旁写“n/3”，选满了其余的变灰、不能点；“最多 3 个”只写进这一组的读屏说明。
+  标签库还在取是几行骨架，没取到写一句“标签没加载出来：原因”、能重试；已经选了的照样能去掉。标签库里的每个标签是一个 Filter chip（按下了就是选了）。
   桌面上标签库那一块最高 188px、自己滚，手机上跟着弹层一起滚
 -->
 <script lang='ts'>
@@ -39,7 +39,7 @@
 <div role='group' aria-labelledby='tag-picker-label' aria-describedby='tag-picker-rule'>
   <p class='flex items-baseline justify-between gap-3'>
     <span id='tag-picker-label' class='text-caption text-neutral-700 font-500'>标签</span>
-    <span class='text-caption text-neutral-600 tabular-nums' role='status'>已选 {tags.length}/{PLAYLIST_TAGS_MAX}{full ? ' · 已到上限' : ''}</span>
+    <span class='text-caption text-neutral-600 tabular-nums' role='status'><span class='sr-only'>已选 </span>{tags.length}/{PLAYLIST_TAGS_MAX}</span>
   </p>
   {#if tags.length > 0}
     <ul class='mt-2 flex flex-wrap gap-2' aria-label='选了的标签'>
@@ -72,7 +72,7 @@
         {/each}
       {:else if library?.status === 'failed'}
         <div class='flex flex-col items-start gap-3' role='alert'>
-          <p class='text-caption text-neutral-700'>网易云的标签库没取到：{failureText(library.failure)}</p>
+          <p class='text-caption text-neutral-700'>标签没加载出来：{failureText(library.failure)}</p>
           <Button variant='outline' onclick={onretry}>重试</Button>
         </div>
       {:else}
@@ -91,5 +91,5 @@
       {/if}
     </div>
   </div>
-  <p id='tag-picker-rule' class='mt-2 text-caption text-neutral-600'>标签只能从网易云提供的列表里选，最多 {PLAYLIST_TAGS_MAX} 个。</p>
+  <p id='tag-picker-rule' class='sr-only'>最多 {PLAYLIST_TAGS_MAX} 个</p>
 </div>

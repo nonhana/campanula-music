@@ -55,9 +55,9 @@ export function matchedParts(name: string, typed: string): [string, string, stri
   return [name.slice(0, at), name.slice(at, at + typed.length), name.slice(at + typed.length)]
 }
 
-/** 搜索结果没拉到时怎么说：断网时说明搜索要联网，别的说明原因 */
-export function searchFailure(failure: SearchFailure): { title: string, body: string } {
+/** 搜索结果没拉到时怎么说：断网时标题说要联网，不写正文；别的正文是原因 */
+export function searchFailure(failure: SearchFailure): { title: string, body?: string } {
   if (failure.kind === 'offline')
-    return { title: '搜索要联网', body: '网络已断开。搜索要问网易云，连上网络后再试。' }
+    return { title: '搜索要联网' }
   return { title: '这次没搜成', body: failureText(failure) }
 }

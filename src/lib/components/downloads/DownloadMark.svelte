@@ -1,6 +1,6 @@
 <!--
   歌曲行上的下载标记（DESIGN.md Song Row · 状态，原型 DownloadMark）：已下载是蜜桃枝的下载图标；下载中是蜜桃的细进度条和百分数；
-  下载失败是出错红的感叹号。column：桌面歌曲行的状态列（失败带“下载失败”）；inline：手机行、首页歌曲格里歌手前面（只有图标和百分数，文字给读屏）
+  下载失败只有出错红的感叹号，“下载失败”是读屏名字和悬停提示。column：桌面歌曲行的状态列；inline：手机行、首页歌曲格里歌手前面（只有图标和百分数，文字给读屏）
 -->
 <script lang='ts'>
   import type { DownloadMark } from './view'
@@ -26,8 +26,8 @@
     <span class='sr-only'>下载中 {mark.percent}%</span>
   </span>
 {:else}
-  <span class='flex flex-none items-center gap-1 text-error-700' title='下载失败'>
+  <span class='flex flex-none text-error-700' title='下载失败'>
     <CircleAlert {size} aria-hidden='true' />
-    <span class={variant === 'column' ? 'text-caption font-500' : 'sr-only'}>下载失败</span>
+    <span class='sr-only'>下载失败</span>
   </span>
 {/if}

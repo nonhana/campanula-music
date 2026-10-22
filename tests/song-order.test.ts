@@ -299,7 +299,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(app.moveSongs(CREATED.id, [c!], a!)).toBe(false)
     expect(shownTrackIds(app, CREATED.id)).toEqual([a, b, c])
     expect(await storedTracks(device, CREATED.id)).toEqual([a, b, c])
-    expect(app.state.library?.notice).toMatchObject({ kind: 'orderFailed', playlist: { id: CREATED.id }, restored: false, failure: { kind: 'offline' } })
+    expect(app.state.library?.notice).toMatchObject({ kind: 'orderFailed', playlist: { id: CREATED.id }, failure: { kind: 'offline' } })
 
     device.setOnline(true)
     await world.netease.reply(ORDER_OK)
@@ -329,7 +329,8 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
 
     expect(shownTrackIds(app, CREATED.id)).toEqual(before)
     expect(await storedTracks(device, CREATED.id)).toEqual(before)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'orderFailed', playlist: { id: CREATED.id }, restored: true })
+    // 网易云回 -1、重读也不是新顺序：说不出原因，提示不编一个（#59）
+    expect(app.state.library?.notice).toMatchObject({ kind: 'orderFailed', playlist: { id: CREATED.id }, failure: null })
 
     await world.netease.reply(ORDER_OK)
     await app.retryOrder()

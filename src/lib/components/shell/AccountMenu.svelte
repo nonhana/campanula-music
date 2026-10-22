@@ -111,10 +111,7 @@
     >
       <div class='flex items-center gap-3 px-2 pb-3 pt-1.5'>
         <Avatar url={account.avatarUrl} size={40} />
-        <div class='min-w-0'>
-          <p class='truncate text-label text-neutral-900 font-500'>{account.nickname}</p>
-          <p class='text-caption text-neutral-600'>网易云账号</p>
-        </div>
+        <p class='min-w-0 truncate text-label text-neutral-900 font-500'>{account.nickname}</p>
       </div>
       <div class='mb-1 h-px bg-neutral-100' role='separator'></div>
       <button type='button' role='menuitem' tabindex='-1' class='h-10 w-full flex items-center gap-3 rounded-lg px-2 text-left text-label text-neutral-800 focus-visible:bg-primary-100 mouse:hover:bg-primary-100' onclick={openSettings}>

@@ -58,12 +58,15 @@ export type LibraryNotice
     | { kind: 'alreadyAdded', playlist: Playlist }
   /** 多选移除：先从本地拿掉，5 秒内可以撤销 */
     | { kind: 'removed', playlist: Playlist, count: number }
-  /** 移除没成功：restored 是已经从本地拿掉又放回原位；断网、超过上限时根本没拿掉。retryable 为 false 时提示里没有“重试” */
-    | { kind: 'removeFailed', playlist: Playlist, count: number, failure: ChangeFailure, restored: boolean, retryable?: boolean }
-  /** 排序没保存成功：restored 是已经改回原来的顺序；断网时根本没改本地。提示里可以重试 */
-    | { kind: 'orderFailed', playlist: Playlist, songIds: readonly number[], failure: ChangeFailure, restored: boolean }
-  /** 自建歌单之间的顺序没保存成功：restored 是已经改回原来的顺序；断网时根本没改本地。提示里可以重试 */
-    | { kind: 'playlistOrderFailed', playlistIds: readonly number[], failure: ChangeFailure, restored: boolean }
+  /** 移除没成功：已经从本地拿掉的放回原位（断网、超过上限时根本没拿掉）。retryable 为 false 时提示里没有“重试” */
+    | { kind: 'removeFailed', playlist: Playlist, count: number, failure: ChangeFailure, retryable?: boolean }
+  /**
+   * 排序没保存成功：本地已经改回原来的顺序（断网时根本没改本地）。提示里可以重试。
+   * failure 是 null：网易云回 -1、重读也不是新顺序，说不出原因
+   */
+    | { kind: 'orderFailed', playlist: Playlist, songIds: readonly number[], failure: ChangeFailure | null }
+  /** 自建歌单之间的顺序没保存成功：本地已经改回原来的顺序（断网时根本没改本地）。提示里可以重试 */
+    | { kind: 'playlistOrderFailed', playlistIds: readonly number[], failure: ChangeFailure }
   /** 上次关闭前的修改没保存成功：已经从网易云重拉这张歌单、恢复原样 */
     | { kind: 'recovered' }
     | DownloadNotice
@@ -120,7 +123,7 @@ export interface ArtistPage {
   moreAlbums: MoreAlbums | null
 }
 
-/** 不在曲库里的歌单（界面上的类别写“网易云歌单”）：已经取到的歌，和其余的歌取到哪了 */
+/** 不在曲库里的歌单（别人的、没收藏的）：已经取到的歌，和其余的歌取到哪了 */
 export interface NeteasePlaylistSongs extends PlaylistSongs<PlaylistInfo> {
   /** 其余的歌正在取、或者没取成（再打开一次就是重试）；都取过了是 null */
   more: PlaylistOpening | null
@@ -639,7 +642,7 @@ export function createLibrary(context: LibraryContext): Library {
         if (result.failure.kind === 'needsLogin')
           return context.loginExpired()
         failedRemoval = { playlist: item.playlist, songIds: item.songIds }
-        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: result.failure, restored: true }
+        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: result.failure }
         publish()
       }
       catch {
@@ -649,7 +652,7 @@ export function createLibrary(context: LibraryContext): Library {
         changes = changes.filter(each => each !== item.entry)
         finishRemoval(mine, item)
         failedRemoval = { playlist: item.playlist, songIds: item.songIds }
-        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: { kind: 'serverError' }, restored: true }
+        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: { kind: 'serverError' } }
         publish()
       }
     }).finally(() => {
@@ -729,14 +732,14 @@ export function createLibrary(context: LibraryContext): Library {
     const mine = generation
     failedRemoval = null
     if (ids.length > TRACKS_PER_CHANGE) {
-      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'invalid', problem: 'tooManySongs' }, restored: false, retryable: false }
+      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'invalid', problem: 'tooManySongs' }, retryable: false }
       publish()
       return
     }
     if (!context.online()) {
       // 断网时的写操作直接说没改成，不改本地（规则⑨）
       failedRemoval = { playlist, songIds: ids }
-      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'offline' }, restored: false }
+      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'offline' } }
       publish()
       return
     }
@@ -808,7 +811,7 @@ export function createLibrary(context: LibraryContext): Library {
     failedRemoval = null
     if (!context.online()) {
       failedRemoval = failed
-      notice = { kind: 'removeFailed', playlist: failed.playlist, count: failed.songIds.length, failure: { kind: 'offline' }, restored: false }
+      notice = { kind: 'removeFailed', playlist: failed.playlist, count: failed.songIds.length, failure: { kind: 'offline' } }
       publish()
       return
     }
@@ -932,7 +935,7 @@ export function createLibrary(context: LibraryContext): Library {
     changes = changes.filter(entry => entry.change.kind !== 'playlistOrder')
     dropPlaylistOrder(item)
     failedPlaylistOrder = { playlistIds: [...playlistIds] }
-    notice = { kind: 'playlistOrderFailed', playlistIds: [...playlistIds], failure, restored: true }
+    notice = { kind: 'playlistOrderFailed', playlistIds: [...playlistIds], failure }
     publish()
   }
 
@@ -980,15 +983,15 @@ export function createLibrary(context: LibraryContext): Library {
     return false
   }
 
-  /** 排序没成功：去掉这次排序的修改（本地退回原来的顺序），留下“重试”用的顺序 */
-  function orderFailed(mine: number, item: DeferredOrder, failure: ChangeFailure): void {
+  /** 排序没成功：去掉这次排序的修改（本地退回原来的顺序），留下“重试”用的顺序。failure 是 null：说不出原因（没确认） */
+  function orderFailed(mine: number, item: DeferredOrder, failure: ChangeFailure | null): void {
     if (mine !== generation)
       return
     const { playlist, songIds } = item
     changes = changes.filter(entry => !(entry.change.kind === 'order' && entry.change.playlist.id === playlist.id))
     dropOrder(item)
     failedOrder = { playlist, songIds: [...songIds] }
-    notice = { kind: 'orderFailed', playlist, songIds: [...songIds], failure, restored: true }
+    notice = { kind: 'orderFailed', playlist, songIds: [...songIds], failure }
     publish()
     void saveMarkers(mine)
   }
@@ -1119,7 +1122,7 @@ export function createLibrary(context: LibraryContext): Library {
         if (result.ok && result.value === 'unconfirmed') {
           if (await orderLanded(mine, item.playlist.id, change.songIds))
             return 'next'
-          orderFailed(mine, item, { kind: 'rejected', code: -1, message: '请求异常，请稍后重试' })
+          orderFailed(mine, item, null)
           return 'stop'
         }
         if (!result.ok && result.failure.kind === 'neteaseUnavailable') {
@@ -1203,7 +1206,7 @@ export function createLibrary(context: LibraryContext): Library {
     if (!context.online()) {
       // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
       failedOrder = { playlist, songIds: next }
-      notice = { kind: 'orderFailed', playlist, songIds: next, failure: { kind: 'offline' }, restored: false }
+      notice = { kind: 'orderFailed', playlist, songIds: next, failure: { kind: 'offline' } }
       publish()
       return false
     }
@@ -1279,7 +1282,7 @@ export function createLibrary(context: LibraryContext): Library {
     if (!context.online()) {
       // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
       failedPlaylistOrder = { playlistIds: next }
-      notice = { kind: 'playlistOrderFailed', playlistIds: next, failure: { kind: 'offline' }, restored: false }
+      notice = { kind: 'playlistOrderFailed', playlistIds: next, failure: { kind: 'offline' } }
       publish()
       return false
     }
@@ -1328,7 +1331,7 @@ export function createLibrary(context: LibraryContext): Library {
     failedOrder = null
     if (!context.online()) {
       failedOrder = failed
-      notice = { kind: 'orderFailed', playlist, songIds: failed.songIds, failure: { kind: 'offline' }, restored: false }
+      notice = { kind: 'orderFailed', playlist, songIds: failed.songIds, failure: { kind: 'offline' } }
       publish()
       return
     }
@@ -1349,7 +1352,7 @@ export function createLibrary(context: LibraryContext): Library {
     failedPlaylistOrder = null
     if (!context.online()) {
       failedPlaylistOrder = failed
-      notice = { kind: 'playlistOrderFailed', playlistIds: failed.playlistIds, failure: { kind: 'offline' }, restored: false }
+      notice = { kind: 'playlistOrderFailed', playlistIds: failed.playlistIds, failure: { kind: 'offline' } }
       publish()
       return
     }

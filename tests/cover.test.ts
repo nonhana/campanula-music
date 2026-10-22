@@ -39,7 +39,7 @@ async function signInHeld(device: Device): Promise<Tab> {
 }
 
 describe('选图', () => {
-  it('大图先缩到长边 3200 再裁，原图尺寸记着（提示已经缩小过）', async () => {
+  it('大图先缩到长边 3200 再裁，原图尺寸记着', async () => {
     const device = world.device()
     const { app } = await signInHeld(device)
 
@@ -49,7 +49,6 @@ describe('选图', () => {
       status: 'cropping',
       playlistId: JAZZ,
       small: false,
-      resized: true,
       image: { width: 3200, height: 2400, origWidth: 8000, origHeight: 6000 },
     })
     expect(device.requests.filter(request => request.path.includes('/cover'))).toEqual([])
@@ -61,10 +60,10 @@ describe('选图', () => {
 
     await app.prepareCover(JAZZ, device.images.file({ name: 'avatar.jpg', type: 'image/jpeg', width: 200, height: 200 }))
 
-    expect(app.state.cover).toMatchObject({ status: 'cropping', small: true, resized: false })
+    expect(app.state.cover).toMatchObject({ status: 'cropping', small: true })
   })
 
-  it('超过 20 MB 不读，说清楚多大、换一张', async () => {
+  it('超过 20 MB 不读，换一张', async () => {
     const device = world.device()
     const { app } = await signInHeld(device)
 
@@ -73,7 +72,7 @@ describe('选图', () => {
     expect(app.state.cover).toEqual({
       status: 'unusable',
       playlistId: JAZZ,
-      problem: { kind: 'tooBig', name: 'huge.jpg', bytes: 21 * 1024 * 1024 },
+      problem: { kind: 'tooBig' },
     })
     expect(device.requests.filter(request => request.path.includes('/cover'))).toEqual([])
   })
@@ -84,7 +83,7 @@ describe('选图', () => {
 
     await app.prepareCover(JAZZ, device.images.file({ name: '15917.heic', type: 'image/heic', decodable: false }))
 
-    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'heic', name: '15917.heic' } })
+    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'heic' } })
   })
 
   it('不是图片：解码失败、类型也不是图片', async () => {
@@ -93,7 +92,7 @@ describe('选图', () => {
 
     await app.prepareCover(JAZZ, device.images.file({ name: 'notes.txt', type: 'text/plain', decodable: false }))
 
-    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'notImage', name: 'notes.txt' } })
+    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'notImage' } })
   })
 
   it('看着是图片但解不开：说图片读不出来', async () => {
@@ -102,7 +101,7 @@ describe('选图', () => {
 
     await app.prepareCover(JAZZ, device.images.file({ name: 'broken.jpg', type: 'image/jpeg', decodable: false }))
 
-    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'unreadable', name: 'broken.jpg' } })
+    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'unreadable' } })
   })
 })
 

@@ -1,10 +1,10 @@
 <!--
   曲库里的歌单（自建的、收藏的，不含我喜欢的音乐）：上面一块自建，下面一块收藏，不再合成一张用按钮筛选。
   自建那块右边是“排序”和“新建歌单”（手机只留图标，#57）；“排序”只在自建那块（#37）。点“排序”进入排序模式，点“完成”退出
-  （桌面是实心胶囊，手机是文字按钮）。
+  （桌面是实心胶囊，手机是文字按钮）；排序时不写使用说明，把手自己说话。
   手机保持横版列表、按每行右边的把手拖；桌面保持原来的封面网格，每张自建歌单封面右上角一个小白圆钮，按住它拖，
   卡片浮起、原位置留薄荷封面空位、其余卡片让位。收藏的歌单在下面，没有把手、不参与排序。
-  歌单列表还没拿到时两块都是骨架，没拿到就出错时能重试，一块一张都没有时说明。
+  歌单列表还没拿到时两块都是骨架，没拿到就出错时能重试，一块一张都没有时只有一行标题。
   骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）；手机换筛选/排序时整个格子先淡出再淡入，不让一个个格子各自挪位
   （DESIGN.md Overlays · 筛选）。heading：歌单页 / 首页歌单区块的区块标题，两块各有自己的分节标题。
 -->
@@ -47,10 +47,6 @@
   /** 只有自建歌单参与排序；一张、还没有时没有可排的 */
   const canOrder = $derived((own?.length ?? 0) > 1)
   const sectionTag = $derived(`h${sectionLevel}`)
-  /** 手机是列表右边，桌面是卡片右上角；两块分开了，一句就够 */
-  const hint = $derived(phone
-    ? '按住右边的把手拖动，点“完成”退出；下面收藏的歌单不参与。'
-    : '按住右上角把手拖动，点“完成”退出；下面收藏的歌单不参与。')
   /** 骨架和真的网格一样排（DESIGN.md Do's：形状一致的骨架） */
   const gridClass = $derived(['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-4' : 'grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-x-5 gap-y-6'])
 
@@ -127,10 +123,8 @@
     })
   }
 
-  const EMPTY = {
-    own: { title: '还没有自建歌单', body: '点“新建歌单”建一张；在网易云音乐里新建的歌单也会同步到这里。' },
-    collected: { title: '还没有收藏的歌单', body: '在网易云音乐里收藏的歌单，会同步到这里。' },
-  }
+  /** 一块一张都没有：标题说清了，不写正文 */
+  const EMPTY = { own: '还没有自建歌单', collected: '还没有收藏的歌单' }
 </script>
 
 {#snippet sortGridCard(playlist: Playlist)}
@@ -176,9 +170,6 @@
         <span class='text-caption text-neutral-500 tabular-nums'>{formatCount(own.length)} 张</span>
       {/if}
       {#if sorting}
-        {#if !phone}
-          <p class='min-w-0 flex-1 truncate text-caption text-neutral-600'>{hint}</p>
-        {/if}
         <TextButton strong desktop={{ variant: 'primary' }} class='ml-auto max-md:-mr-3' onclick={finishSort}>完成</TextButton>
       {:else}
         <div class='ml-auto flex items-center gap-2 max-md:-mr-3'>
@@ -189,9 +180,6 @@
         </div>
       {/if}
     </div>
-    {#if sorting && phone}
-      <p class='px-4 pb-3 text-caption text-neutral-600'>{hint}</p>
-    {/if}
 
     {#if own === null}
       <div class={gridClass} role='status' aria-busy='true' aria-label='正在加载自建歌单' out:fadeAway>
@@ -225,7 +213,7 @@
                   {/each}
                 </ul>
               {:else if own.length === 0}
-                <StateBlock kind='empty' icon={ListMusic} title={EMPTY.own.title} body={EMPTY.own.body} />
+                <StateBlock kind='empty' icon={ListMusic} title={EMPTY.own} />
               {:else}
                 <ul class={gridClass} aria-label='自建歌单' data-reveal-group>
                   {#each own as playlist (playlist.id)}
@@ -247,7 +235,7 @@
           {/key}
         {:else}
           {#if own.length === 0}
-            <StateBlock kind='empty' icon={ListMusic} title={EMPTY.own.title} body={EMPTY.own.body} />
+            <StateBlock kind='empty' icon={ListMusic} title={EMPTY.own} />
           {:else}
             <ul
               class={gridClass}
@@ -305,7 +293,7 @@
         {/each}
       </div>
     {:else if collected.length === 0}
-      <div in:reveal><StateBlock kind='empty' icon={ListMusic} title={EMPTY.collected.title} body={EMPTY.collected.body} /></div>
+      <div in:reveal><StateBlock kind='empty' icon={ListMusic} title={EMPTY.collected} /></div>
     {:else}
       <div in:reveal>
         <ul class={gridClass} aria-label='收藏的歌单' data-reveal-group>

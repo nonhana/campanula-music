@@ -1,9 +1,9 @@
 <!--
   搜索（#31、#32，Spec #11“搜索”）。搜的词在地址的 q 里，选中的标签在 type 里（综合不写）：返回、刷新时照样打开这次搜索、停在这个标签
   （不再记进搜索历史）。
-  桌面：搜索框在顶栏（DesktopSearchBox），这一页是内容区里的结果页：“…”的搜索结果，下面是吸在顶栏下面的标签（SearchTabs），
+  桌面：搜索框在顶栏（DesktopSearchBox），这一页是内容区里的结果页：标题是“…”（读屏读“…”的搜索结果），下面是吸在顶栏下面的标签（SearchTabs），
   再下面是综合（SearchOverview）或一类的全部（SearchKindResults）。
-  手机：从 logo 行的搜索按钮进来的整页，顶行是搜索框（PhoneSearchBar）；框空着时是搜索历史，打字时是建议，
+  手机：从 logo 行的搜索按钮进来的整页，顶行是搜索框（PhoneSearchBar）；框空着时是搜索历史（没有就空着），打字时是建议，
   框里是这一页搜的词时是结果，标签在骨架的标签行里（SignedInFrame）。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
@@ -75,7 +75,7 @@
 {#if signedIn}
   {#if desktopLayout.current}
     {#if keyword}
-      <h1 class='pt-2 text-headline text-neutral-900 font-600'>“<span lang={langOf(keyword)}>{keyword}</span>”的搜索结果</h1>
+      <h1 class='pt-2 text-headline text-neutral-900 font-600'>“<span lang={langOf(keyword)}>{keyword}</span>”<span class='sr-only'>的搜索结果</span></h1>
       <!-- 底色比内容区两边各宽 12px：架子伸出去的格子、阴影滚到它底下时也盖得住 -->
       <div class='sticky top-16 z-10 mt-3 bg-primary-50 px-3 -mx-3' bind:clientHeight={tabsHeight}>
         <SearchTabs {keyword} {tab} />
@@ -83,7 +83,7 @@
       {@render results(false)}
     {:else}
       <h1 class='sr-only'>搜索</h1>
-      <StateBlock kind='empty' icon={Search} title='在顶栏的搜索框里输入' body='可以搜歌名、歌单、歌手或专辑名，回车就搜。' />
+      <StateBlock kind='empty' icon={Search} title='在顶栏的搜索框里输入' />
     {/if}
   {:else}
     <h1 class='sr-only'>{keyword ? `“${keyword}”的搜索结果` : '搜索'}</h1>

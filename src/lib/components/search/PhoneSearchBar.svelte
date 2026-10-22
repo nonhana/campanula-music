@@ -35,7 +35,7 @@
   <SearchField
     bind:input
     bind:value={() => searchBox.draft, value => typeInSearchBox(view.app, value)}
-    label='搜索歌曲、歌手、专辑'
+    label='搜索'
     enterkeyhint='search'
     role='combobox'
     aria-expanded={suggesting}

@@ -210,7 +210,7 @@ describe('提交失败和回滚', () => {
 
     expect(shownIds(app)).toEqual(before)
     expect(await storedIds(device)).toEqual(before)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'playlistOrderFailed', restored: true, failure: { kind: 'rateLimited' } })
+    expect(app.state.library?.notice).toMatchObject({ kind: 'playlistOrderFailed', failure: { kind: 'rateLimited' } })
 
     await world.netease.reply(ORDER_OK)
     await app.retryPlaylistOrder()
@@ -232,7 +232,7 @@ describe('提交失败和回滚', () => {
     expect(app.orderPlaylists(next)).toBe(false)
     expect(shownIds(app)).toEqual(before)
     expect(await storedIds(device)).toEqual(before)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'playlistOrderFailed', restored: false, failure: { kind: 'offline' } })
+    expect(app.state.library?.notice).toMatchObject({ kind: 'playlistOrderFailed', failure: { kind: 'offline' } })
 
     device.setOnline(true)
     await world.netease.reply(ORDER_OK)

@@ -1,5 +1,5 @@
 <!--
-  桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“正在播放 · 来自「…」”，正中一个拖动把手
+  桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“来自「…」”（“正在播放”是整页的读屏名字，在 PlayerPage 上），正中一个拖动把手
   （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
   左列封面、歌名（右边是红心键和“更多”菜单）、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换
   （ui/Segmented 标签页，←/→ 换标签）：两块并排放在一条轨道上、一直挂着，换标签时轨道和滑块一起横着滑，看不见的那块 Tab 不到、读屏读不到。
@@ -47,15 +47,14 @@
 
 <header class='relative h-16 flex flex-none items-center gap-3 px-6'>
   <IconButton icon={ChevronDown} label='收起播放页' title='收起（Esc）' onclick={closePlayerPage} />
-  <p class='min-w-0 truncate text-label text-neutral-700'>
-    <span class='text-neutral-900 font-500'>正在播放</span>{#if source}<span transition:fade><span class='mx-1.5' aria-hidden='true'>·</span>来自「<span lang={langOf(source)}>{source}</span>」</span>{/if}
-  </p>
+  {#if source}
+    <p class='min-w-0 truncate text-label text-neutral-700' transition:fade>来自「<span lang={langOf(source)}>{source}</span>」</p>
+  {/if}
   <!-- 给鼠标用的把手：键盘用旁边的收起键和 Esc，所以不进 Tab 顺序（和遮罩一样） -->
   <button
     type='button'
     class='group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab place-items-center rounded-full -translate-x-1/2'
     aria-label='拖动把手：往下拖或点按，收起播放页'
-    title='往下拖或点按，收起播放页'
     tabindex='-1'
     {@attach gripHandle}
   >

@@ -131,7 +131,6 @@
             selected={toggle.on}
             disabled={!toggle.has}
             class='gap-1.5'
-            title={toggle.has ? undefined : toggle.reason}
             onclick={() => toggle.set(!toggle.on)}
           >
             {#if toggle.on}<span class='grid' transition:fade={{ duration: DURATIONS.feedback }}><Check size={16} strokeWidth={2.4} aria-hidden='true' /></span>{/if}
@@ -139,7 +138,6 @@
             {#if !toggle.has}<span class='sr-only'>：{toggle.reason}</span>{/if}
           </FilterChip>
         {/each}
-        <span class='ml-1 text-caption text-neutral-600'>{lyrics?.kind === 'word' ? '逐字歌词' : '逐行歌词'}</span>
       </div>
 
       <!-- 滚动区往两边各伸出 8px，行的焦点环有地方画，字和上面的开关对齐 -->

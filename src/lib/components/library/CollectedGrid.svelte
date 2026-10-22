@@ -1,6 +1,6 @@
 <!--
   曲库里收藏的专辑或歌手：手机的专辑、歌手标签（两列 / 三列网格），桌面直接打开这两个地址时的网格，桌面首页的横向架子。
-  列表还没拿到时是形状一致的骨架，没拿到就出错时能重试，一个都没有时说明在网易云音乐里收藏的会出现在这里。
+  列表还没拿到时是形状一致的骨架，没拿到就出错时能重试，一个都没有时只有一行标题。
   骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）。
   架子见 Shelf
 -->
@@ -73,7 +73,7 @@
 {:else}
   <div in:reveal>
     {#if items.length === 0}
-      <StateBlock kind='empty' icon={look.icon} title={`还没有收藏的${look.noun}`} body={`在网易云音乐里收藏的${look.noun}，会同步到这里。`} />
+      <StateBlock kind='empty' icon={look.icon} title={`还没有收藏的${look.noun}`} />
     {:else if layout === 'shelf'}
       <Shelf label={`收藏的${look.noun}`} class={look.shelf}>{@render tiles()}</Shelf>
     {:else}

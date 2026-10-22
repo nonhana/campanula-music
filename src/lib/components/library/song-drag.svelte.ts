@@ -14,8 +14,8 @@ import { formatCount } from './view'
 // - 拖到上下边缘自动滚动：越深越快（平方），停在边缘越久越快（3 秒内最多加速到 8 倍），边缘区 72px；
 //   手机上边缘区从迷你播放条（多选时是底部操作条）的上沿算起
 // - 快速定位：拖到右侧 44px 窄条按比例跳；从窄条里开始拖（手机上的把手正好在窄条里）要先往左离开窄条，
-//   快速定位才接手，提示也等离开以后再出现
-// - 浮起的行跟着指针；“移到第 N 首”的标签在浮起的行上面，最上层
+//   快速定位才接手。窄条上只有刻度和滑块，不写字
+// - 浮起的行跟着指针；“第 N 首”的标签在浮起的行上面，最上层
 // - 桌面拖动中按 Esc 取消；焦点在某一行时 Alt + ↑ / ↓ 移一位（由列表接住按键，走同一个 move）
 // 被拖的那一行在虚拟列表里一直保留（VirtualList 的 keep），Android 上手指底下的元素被卸载后触摸事件会断
 
@@ -24,7 +24,7 @@ export const SONG_ROW_HEIGHT = 56
 const ROW = SONG_ROW_HEIGHT
 /** 快速定位窄条的宽度（px） */
 const RAIL = 44
-/** “移到第 N 首”的标签在浮起的行上面多高（px） */
+/** “第 N 首”的标签在浮起的行上面多高（px） */
 const LABEL_GAP = 14
 /** 拿起后，被拖的行往浮起的行收拢、淡出的时长（ms，和 duration-state 一样） */
 const LIFT_MS = DURATIONS.state
@@ -71,12 +71,11 @@ export class SongDrag {
   ghostWidth = $state(0)
   /** 正在快速定位 */
   scrubbing = $state(false)
-  /** 快速定位条能不能接手：从窄条外开始拖马上能；从窄条里开始拖要先离开再回来 */
-  railArmed = $state(false)
   /** 窄条的位置：顶部、离视口底边多少（CSS 的 top / bottom） */
   railTop = $state(0)
   railBottom = $state(0)
-  private viewportH = $state(844)
+  /** 快速定位条能不能接手：从窄条外开始拖马上能；从窄条里开始拖要先离开再回来 */
+  private railArmed = false
   /** 一起拖几首时，开始拖动为了让开上面的行往上滚了多少（取消时滚回去） */
   private scrollAdjust = 0
   private pointer: number | null = null
@@ -98,7 +97,6 @@ export class SongDrag {
   private readonly handles = new Map<number, Attachment<HTMLElement>>()
 
   readonly movedIds = $derived(new SvelteSet(this.moved.map(song => song.id)))
-  readonly hintTop = $derived(this.ghostY + ROW / 2 < this.viewportH / 2 ? '75%' : '25%')
   /** 窄条最下面那个位置：一起拖几首时是这一组最前那首能到的最后一个位置（原型同） */
   readonly railTotal = $derived(this.rest.length + 1)
 
@@ -109,8 +107,9 @@ export class SongDrag {
     return this.target + 1
   }
 
+  /** 浮起的行上面的标签：落在第几首（拖动和快速定位都这样写） */
   get label(): string {
-    return `${this.scrubbing ? '定位到' : '移到'}第 ${formatCount(this.position)} 首`
+    return `第 ${formatCount(this.position)} 首`
   }
 
   /**
@@ -292,7 +291,6 @@ export class SongDrag {
     this.ghostY = rect.top
     this.ghostLeft = hostRect.left
     this.ghostWidth = hostRect.width
-    this.viewportH = window.innerHeight
     this.startedInRail = sample.x >= window.innerWidth - RAIL
     this.railArmed = !this.startedInRail
     this.scrubbing = false
@@ -507,7 +505,7 @@ export class SongDrag {
       this.holdAtEdge = scroll.hold
       if (scroll.amount !== 0)
         window.scrollBy(0, scroll.amount)
-      // 浮起的行别顶到吸在顶上的顶栏：给上面的“移到第 N 首”留出位置
+      // 浮起的行别顶到吸在顶上的顶栏：给上面的“第 N 首”留出位置
       this.ghostY = clamp(this.pointerY - this.grabY, top + LABEL_GAP, bottom - ROW)
       const center = this.ghostY + ROW / 2 - this.listTop()
       this.target = clamp(Math.floor(center / ROW), 0, this.rest.length)

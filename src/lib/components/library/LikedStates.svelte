@@ -13,7 +13,7 @@
 </script>
 
 {#if liked.kind === 'empty'}
-  <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' body='在网易云音乐里红心的歌，会同步到这里。' />
+  <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' />
 {:else}
   <StateBlock kind='error' title='我喜欢的音乐没能同步' body={failureText(liked.failure)} action={{ label: '重试', run: () => view.app.retrySync() }} />
 {/if}

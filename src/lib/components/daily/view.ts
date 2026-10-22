@@ -34,11 +34,11 @@ export function totalDuration(songs: readonly Song[]): string {
 }
 
 /**
- * 没拉成时怎么说：断网时说明要联网，别的说明原因。
- * title、body 给每日推荐页的出错说明，brief 给首页方块上首数那一行
+ * 没拉成时怎么说：断网时标题说要联网，不写正文；别的正文是原因。
+ * title、body 给每日推荐页的出错状态，brief 给首页方块上首数那一行
  */
-export function dailyFailure(failure: DailyFailure): { title: string, body: string, brief: string } {
+export function dailyFailure(failure: DailyFailure): { title: string, body?: string, brief: string } {
   if (failure.kind === 'offline')
-    return { title: '每日推荐要联网才能看', body: '网络已断开。每日推荐由网易云每天生成，不存在这台设备上，连上网络后再试。', brief: '要联网才能看' }
+    return { title: '每日推荐要联网才能看', brief: '要联网才能看' }
   return { title: '今天的每日推荐没能加载', body: failureText(failure), brief: '没能加载' }
 }

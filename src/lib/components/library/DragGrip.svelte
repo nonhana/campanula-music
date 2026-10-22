@@ -2,7 +2,7 @@
   拖动排序的把手（#36 歌曲列表、#37 曲库歌单列表和桌面网格共用）：能排序的列表进入多选或排序模式时，
   每一行右边、或每张卡片封面的右上角出现它；其余时候歌曲行右边仍是 •••。按住把手立即拖；
   触屏上把手自己设 touch-action: none，不和滚动抢。键盘用焦点所在那一行 / 那一张的 Alt + ↑ / ↓ 移一位，
-  把手本身不用按。overlay 是网格卡片上用的小白圆钮，class 用来定位置。
+  把手本身不用按；悬停提示只写这组快捷键。overlay 是网格卡片上用的小白圆钮，class 用来定位置。
 -->
 <script lang='ts'>
   import type { Attachment } from 'svelte/attachments'
@@ -55,7 +55,8 @@
       klass,
     ]}
     aria-label='拖动排序：{label}'
-    title='按住拖动；键盘选中这一行后按 Alt + ↑ / ↓ 移一位'
+    title='Alt + ↑ / ↓'
+    aria-keyshortcuts='Alt+ArrowUp Alt+ArrowDown'
     {onkeydown}
     {@attach attach}
   >

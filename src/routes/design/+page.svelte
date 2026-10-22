@@ -236,14 +236,18 @@
     </section>
 
     <section>
-      {@render section('空和出错', '图标、一句话说清发生了什么、能怎么办，最多一个主要动作。')}
+      {@render section('空和出错', '图标、一句话说清发生了什么，最多一个主要动作。标题说清了就不写正文；出错时正文只写原因，下一步交给按钮。')}
       <div class='grid grid-cols-1 mt-4 gap-4 lg:grid-cols-2'>
         <div class='rounded-xl bg-white shadow-ambient'>
-          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='在歌曲的“更多”菜单里选“加入歌单”，就能把歌放进来。' />
+          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' />
         </div>
         <div class='rounded-xl bg-white shadow-ambient'>
-          <StateBlock kind='error' title='歌单没能加载' body='网络不太稳定，稍后再试。' action={{ label: '重试', run: () => {} }} />
+          <StateBlock kind='error' title='这张歌单没能加载' body='网络已断开' action={{ label: '重试', run: () => {} }} />
         </div>
+      </div>
+      <div class='mt-4 flex flex-wrap gap-3'>
+        <Button variant='primary' busy>加入歌单</Button>
+        <Button variant='outline' busy>显示更多</Button>
       </div>
     </section>
   </div>

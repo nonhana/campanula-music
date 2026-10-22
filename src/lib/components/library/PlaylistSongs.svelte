@@ -5,7 +5,7 @@
     “找到几首”在白色面板的表头里。
   - 搜索在本机副本里即时完成；歌单还没同步全时结果标“可能不全”。
   - 点一首歌（搜索结果里点也一样）就用整张歌单替换播放队列。
-  - 加载中、空、出错、搜不到都有各自的样子；已经有一部分歌时，没拉完、没拉成在列表上方说明。
+  - 加载中、空、出错、搜不到都有各自的样子；已经有一部分歌时，其余的没拉成在列表上方说明（还在拉看页头的“x / y 首”）。
   - 骨架换成歌（或空、出错）时骨架淡出、前几行依次飘入；带着歌打开这一页时不飘（DESIGN.md Motion）。
   - 开始搜、清空搜索、搜不到时，列表那一块交叉淡化；接着打字时结果原地换。“找到几首”、“没加载完”推开下面的列表时展开、收起
     （motion.ts 的 unfold），桌面表头的“标题”和“找到几首”交叉淡化。
@@ -60,7 +60,6 @@
   const mode = $derived(result === null ? 'all' : songs.length === 0 ? 'none' : 'found')
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
-  const incompleteText = $derived(outside ? '这张歌单还没加载完，结果可能不全' : '这张歌单还没同步完，结果可能不全')
   const selection = playlistSelection
   /** 曲库里的这张歌单是哪一类；不在曲库里的歌单是 null */
   const kind = $derived(library.songsOf(playlistId)?.playlist.kind ?? null)
@@ -75,10 +74,10 @@
   /** 能排序的列表现在拖不了：说清楚是搜索结果，还是还没同步完 */
   const sortBlockedText = $derived.by(() => {
     if (result !== null)
-      return '搜索结果里不能拖动排序，清空搜索后再拖。'
+      return '清空搜索后才能排序'
     if (shown.kind === 'songs' && shown.complete)
-      return '还有歌没取到，取到才能拖动排序。'
-    return '这张歌单还没同步完，同步完才能拖动排序。'
+      return '歌还没取全，暂时不能排序'
+    return '同步完才能排序'
   })
   /** 勾选的是整张歌单里的歌，不只是搜索出来的这些 */
   const picked = $derived(shown.kind === 'songs' ? shown.songs.filter(song => selection.has(song.id)) : [])
@@ -175,7 +174,7 @@
 
 {#snippet found()}
   <!-- 元素开头的普通空格 Svelte 会去掉，分隔符前用不换行空格 -->
-  找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'>&nbsp;· {incompleteText}</span>{/if}
+  找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'>&nbsp;· 可能不全</span>{/if}
 {/snippet}
 
 {#snippet rowGrip(song: Song)}
@@ -264,32 +263,25 @@
         <StateBlock kind='error' title={liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载'} body={failureText(shown.failure)} action={{ label: '重试', run: retry }} />
       {:else if shown.kind === 'empty'}
         {#if liked}
-          <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' body='在网易云音乐里红心的歌，会同步到这里。' />
-        {:else if outside}
-          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='创建者还没有往里面加歌。' />
+          <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' />
         {:else if kind === 'own'}
           <StateBlock
             kind='empty'
             icon={ListMusic}
             title='这张歌单还没有歌'
-            body='点“添加歌曲”，从搜索或我喜欢的音乐里挑几首加进来。'
             action={{ label: '添加歌曲', run: () => openAddSongs() }}
           />
         {:else}
-          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' body='创建者还没有往里面加歌。' />
+          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' />
         {/if}
       {:else if shown.kind === 'songs'}
         {#if opening?.status === 'failed'}
           <div transition:unfold>
             <div class={['flex items-center gap-3 px-3 text-caption text-neutral-700', phone ? 'min-h-11 py-1' : 'py-2']} role='alert'>
               <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
-              <span class='min-w-0 flex-1'>这张歌单没加载完。{failureText(opening.failure)}</span>
+              <span class='min-w-0 flex-1'>没加载完：{failureText(opening.failure)}</span>
               <TextButton desktop={{ variant: 'outline' }} class='max-md:-mr-3 md:h-9!' onclick={retry}>重试</TextButton>
             </div>
-          </div>
-        {:else if opening?.status === 'loading'}
-          <div transition:unfold>
-            <p class='px-3 py-2 text-caption text-neutral-600' role='status'>正在加载这张歌单的其余歌曲…</p>
           </div>
         {/if}
         {#if selection.mode && sortableList && !sortable}
@@ -303,10 +295,8 @@
                 <StateBlock
                   kind='empty'
                   icon={SearchX}
-                  title={`这张歌单里没有“${term}”`}
-                  body={result?.incomplete
-                    ? outside ? '这张歌单还没加载完，还没加载到的歌里可能有，加载完再搜一次。' : '这张歌单还没同步完，还没同步到的歌里可能有，同步完再搜一次。'
-                    : '只搜了这张歌单里的歌名、歌手和专辑。'}
+                  title={`没有“${term}”`}
+                  body={result?.incomplete ? outside ? '还没加载完，加载完再搜一次' : '还没同步完，同步完再搜一次' : undefined}
                 />
               {:else}
                 <!-- 拖动排序：#36。清空右侧按钮的淡出只在手机上；拖动中列表照常跟手滚动 -->
@@ -372,7 +362,7 @@
           onclick={() => selection.selectAll()}
         >
           {#if selection.allOn}<SquareMinus size={14} aria-hidden='true' />{:else}<CheckCheck size={14} aria-hidden='true' />{/if}
-          {selection.allOn ? '全不选' : `全选 ${formatCount(songs.length)} 首`}
+          {selection.allOn ? '全不选' : '全选'}
         </button>
         <span class='flex-1'></span>
         <button
@@ -387,7 +377,7 @@
             class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
             disabled={picked.length === 0}
             onclick={removePicked}
-          ><ListMinus size={15} aria-hidden='true' />从歌单移除</button>
+          ><ListMinus size={15} aria-hidden='true' />移除</button>
         {/if}
         <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>
         <button
@@ -408,7 +398,7 @@
           {/if}
         </span>
         <span class={SONG_COLUMNS.album}>专辑</span>
-        <span class={SONG_COLUMNS.status}>状态</span>
+        <span class={SONG_COLUMNS.status}></span>
         <span class={SONG_COLUMNS.duration}>时长</span>
         <span></span>
       </div>
@@ -417,7 +407,7 @@
   </div>
 {/if}
 
-<!-- 浮起的行跟着指针；松手后落进空位。“移到第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
+<!-- 浮起的行跟着指针；松手后落进空位。“第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
 {#if drag.dragging || drag.settling || drag.expanding}
   <div
     class='pointer-events-none fixed left-0 top-0 z-[60] h-14'
@@ -452,7 +442,7 @@
   </div>
 {/if}
 
-<!-- 快速定位：拖到右侧窄条按比例跳。从窄条里开始拖时，先往左离开窄条才接手（手机上把手正好在窄条里） -->
+<!-- 快速定位：拖到右侧窄条按比例跳，窄条上只有刻度和滑块。从窄条里开始拖时，先往左离开窄条才接手（手机上把手正好在窄条里） -->
 {#if drag.dragging && !drag.settling}
   <div
     class='pointer-events-none fixed right-0 z-[65] w-11 select-none'
@@ -472,9 +462,6 @@
       ></span>
     </span>
     <span class='absolute inset-x-0 bottom-0 h-6 text-center text-caption text-neutral-600 font-500 tabular-nums'>{formatCount(drag.railTotal)}</span>
-    {#if drag.railArmed && !drag.scrubbing}
-      <span class='absolute right-12 whitespace-nowrap rounded-xl bg-white px-2.5 py-1.5 text-center text-caption text-neutral-700 leading-4 shadow-ambient -translate-y-1/2' style:top={drag.hintTop}>拖到这里<br />快速定位</span>
-    {/if}
   </div>
 {/if}
 

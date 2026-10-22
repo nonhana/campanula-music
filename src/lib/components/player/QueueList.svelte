@@ -1,6 +1,7 @@
 <!--
-  播放页里的播放队列（自己滚动的虚拟列表，原型 QueueList）：头部写明有几首、都来自同一个播放来源时写来自哪里，右边“清空”
-  （点了直接清空、没有撤销，所以手机写字不用图标：TextButton，桌面是描边胶囊，#57）；
+  播放页里的播放队列（自己滚动的虚拟列表，原型 QueueList）：头部写有几首（来源在播放页顶上已经写着），右边“清空”
+  （点了直接清空、没有撤销，所以手机写字不用图标：TextButton，桌面是描边胶囊，#57）。
+  标题“播放队列”在桌面只给读屏（上面的标签已经写着），手机弹层上照旧显示；
   56px 一行：序号（正在放的换成三根小竖条）、封面、歌名歌手、时长、移出键。轻点一行就放这一首，播放队列不变；
   正在放的那行是晨光行，它移不掉（移出键的位置空着）；现在放不了的（无版权；断网、没登录时没下载的，#38）整行降到 45%、不能点，但能移出。打开时当前这首停在第二行的位置。
   清空：播放队列空了、停下，播放页跟着收起（播放条沉下去）。移出一首后焦点落在下一首的移出键上（最后一首时是上一首的，那是正在放的那首时落在“清空”上）
@@ -10,7 +11,6 @@
   import type { QueueEntry } from '#lib/app/player.js'
   import { ListX, X } from '@lucide/svelte'
   import { tick, untrack } from 'svelte'
-  import { sameSource } from '#lib/api/playback.js'
   import { getAppView } from '../app-context.svelte'
   import { songLook } from '../downloads/view'
   import Cover from '../library/Cover.svelte'
@@ -25,7 +25,6 @@
   import MorningWash from './MorningWash.svelte'
   import NowIndex from './NowIndex.svelte'
   import { closePlayerPage } from './player-page.svelte'
-  import { sourceName } from './view'
 
   const { class: klass }: { class?: ClassValue } = $props()
 
@@ -36,13 +35,6 @@
   const lookup = setScrollLookup({ markAt: null })
   const queue = $derived(view.state.player.queue)
   const current = $derived(view.state.player.current)
-  /** 播放队列里的歌都来自同一个播放来源时，它叫什么 */
-  const source = $derived.by(() => {
-    const first = queue[0]?.source
-    if (!first || !queue.every(entry => sameSource(entry.source, first)))
-      return null
-    return sourceName(view.state.library, first)
-  })
 
   let scroller = $state<HTMLElement>()
 
@@ -72,10 +64,8 @@
 <section bind:this={section} class={['flex min-h-0 flex-col', klass]} aria-labelledby='{uid}-title'>
   <header class='flex flex-none items-center gap-3 px-5 pb-2 pt-4'>
     <div class='min-w-0 flex-1'>
-      <h2 id='{uid}-title' class='text-title-sm text-neutral-900 font-600'>播放队列</h2>
-      <p class='truncate text-caption text-neutral-600'>
-        {#if source}<span transition:fade>来自「<span lang={langOf(source)}>{source}</span>」<span class='mr-1' aria-hidden='true'>·</span></span>{/if}<span class='tabular-nums'>{formatCount(queue.length)} 首</span>
-      </p>
+      <h2 id='{uid}-title' class='text-title-sm text-neutral-900 font-600 md:sr-only'>播放队列</h2>
+      <p class='truncate text-caption text-neutral-600 tabular-nums'>{formatCount(queue.length)} 首</p>
     </div>
     <TextButton tone='neutral' desktop={{ variant: 'outline', icon: ListX }} class='max-md:-mr-3 md:h-9! md:pl-3.5! md:pr-4!' data-clear onclick={clear}>清空</TextButton>
   </header>

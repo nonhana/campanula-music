@@ -71,17 +71,17 @@ export function downloadItem(view: AppView, song: Song): { label: string, disabl
   }
 }
 
-/** 为什么没下成、能怎么办 */
+/** 为什么没下成：原因短语，不带句号和下一步，拼在“没能下载《…》：”后面 */
 export function downloadFailureText(failure: DownloadFailure): string {
   switch (failure.kind) {
     case 'request':
       return failureText(failure.failure)
     case 'unavailable':
-      return '网易云没有给这首歌的下载地址：这个账号可能下载不了完整的音频。'
+      return '这个账号可能下载不了完整音频'
     case 'interrupted':
-      return '没下完，网络断了或者网易云的服务器断开了。点“重试”从头再下。'
+      return '连接断了'
     case 'storageFull':
-      return '这台设备的存储空间不够了，腾出一些空间再试。'
+      return '存储空间不够了'
     default: {
       const unhandled: never = failure
       throw new Error(`不认识的下载失败：${JSON.stringify(unhandled)}`)
