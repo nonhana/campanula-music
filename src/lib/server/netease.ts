@@ -3,10 +3,11 @@ import type { Account } from '#lib/api/account.js'
 import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistInfo, PlaylistOrderResponse, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksResponse, Song, SongOrderResponse } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { DownloadUrlResponse, LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
+import type { WriteResponse } from '#lib/api/write.js'
 import { NETEASE_REAL_IP } from '$app/env/private'
 import { invokeModule } from 'hana-music-api'
 import { ARTIST_ALBUMS_PER_REQUEST, playlistKindOf } from '#lib/api/library.js'
@@ -320,26 +321,31 @@ export async function createPlaylist(name: string, isPrivate: boolean, listener:
 
 // 改自建歌单（#33）。歌单已经被删掉时这几样网易云都照样回 200（验证关卡②、#33 录制），要等下一次同步才发现
 
-export async function deletePlaylist(playlistId: number, listener: Listener): Promise<void> {
+export async function deletePlaylist(playlistId: number, listener: Listener): Promise<WriteResponse> {
   await call('playlist_delete', { id: playlistId }, listener)
+  return { kind: 'done' }
 }
 
-export async function renamePlaylist(playlistId: number, name: string, listener: Listener): Promise<void> {
+export async function renamePlaylist(playlistId: number, name: string, listener: Listener): Promise<WriteResponse> {
   await call('playlist_name_update', { id: playlistId, name }, listener)
+  return { kind: 'done' }
 }
 
-export async function describePlaylist(playlistId: number, description: string, listener: Listener): Promise<void> {
+export async function describePlaylist(playlistId: number, description: string, listener: Listener): Promise<WriteResponse> {
   await call('playlist_desc_update', { id: playlistId, desc: description }, listener)
+  return { kind: 'done' }
 }
 
 /** 网易云要的是用分号连起来的一串标签 */
-export async function tagPlaylist(playlistId: number, tags: readonly string[], listener: Listener): Promise<void> {
+export async function tagPlaylist(playlistId: number, tags: readonly string[], listener: Listener): Promise<WriteResponse> {
   await call('playlist_tags_update', { id: playlistId, tags: tags.join(';') }, listener)
+  return { kind: 'done' }
 }
 
 /** 隐私歌单改公开：已经是公开的再改一次也回 200（验证关卡②） */
-export async function publishPlaylist(playlistId: number, listener: Listener): Promise<void> {
+export async function publishPlaylist(playlistId: number, listener: Listener): Promise<WriteResponse> {
   await call('playlist_privacy', { id: playlistId }, listener)
+  return { kind: 'done' }
 }
 
 /**
@@ -461,13 +467,18 @@ export async function fetchSongs(ids: readonly number[], listener: Listener): Pr
   })
 }
 
-/** 一首歌的播放地址。网易云给的是 http 地址，换成 https（音频服务器支持，页面是 https 的） */
+/** 网易云给的音频地址是 http，换成 https（音频服务器支持，页面是 https 的） */
+function https(url: string): string {
+  return url.replace(/^http:\/\//, 'https://')
+}
+
+/** 一首歌的播放地址 */
 export async function fetchPlayUrl(songId: number, quality: Quality, listener: Listener): Promise<PlayUrlResponse> {
   const { body } = await call('song_url_v1', { id: songId, level: quality }, listener)
   const item = body.data.find(data => data.id === songId)
   if (!item?.url)
     return { playable: false }
-  return { playable: true, url: item.url.replace(/^http:\/\//, 'https://'), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
+  return { playable: true, url: https(item.url), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
 }
 
 /**
@@ -480,7 +491,7 @@ export async function fetchDownloadUrl(songId: number, quality: Quality, listene
     throw shapeChanged('song_download_url_v1', `要的是歌曲 ${songId}，回的是 ${body.data.id}`)
   if (!body.data.url)
     return { downloadable: false }
-  return { downloadable: true, url: body.data.url.replace(/^http:\/\//, 'https://'), size: body.data.size }
+  return { downloadable: true, url: https(body.data.url), size: body.data.size }
 }
 
 /** 打卡时告诉网易云的播放来源（SDK scrobble 的 source、sourceid，照它文档的“播放来源”） */
@@ -509,8 +520,9 @@ function checkInSourceOf(source: PlaySource): { source: string, sourceid: number
  * 听歌打卡。网易云回 200 不等于计入了听歌排行，计入有 10–30 分钟延迟
  * （验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31；#28、#29、#31（从搜索来的）真账号上确认计入）
  */
-export async function checkIn(songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<void> {
+export async function checkIn(songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<WriteResponse> {
   await call('scrobble', { id: songId, ...checkInSourceOf(source), time: seconds }, listener)
+  return { kind: 'done' }
 }
 
 /** 一首歌的歌词：逐字、逐行、翻译、音译（lyric_new；旧的 lyric 模块 SDK 没有收窄，不用） */
@@ -615,8 +627,9 @@ export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
 // 网易云多半照样回 200（验证关卡②）；回的不是 200 但结果已经是听众要的样子的，也当成做好了
 
 /** 红心或取消红心一首歌（like 一次只收一首）。重复做都回 200（验证关卡②） */
-export async function heart(songId: number, hearted: boolean, listener: Listener): Promise<void> {
+export async function heart(songId: number, hearted: boolean, listener: Listener): Promise<WriteResponse> {
   await call('like', { id: songId, like: hearted }, listener)
+  return { kind: 'done' }
 }
 
 /** 网易云拒绝时的返回码：加歌时整批都已经在歌单里、歌单已经被删掉（验证关卡②） */
@@ -625,46 +638,52 @@ const PLAYLIST_MISSING = 404
 /** 已经取消收藏的专辑再取消：网易云回 404“用户未收藏此专辑”（验证关卡②） */
 const ALBUM_NOT_COLLECTED = 404
 
-/** 网易云拒绝时的返回码；别的失败是 null */
-function rejectedCode(error: unknown): number | null {
-  return error instanceof NeteaseError && error.failure.kind === 'rejected' ? error.failure.code : null
+/** 网易云拒绝的那部分失败；别的失败是 null */
+function rejection(error: unknown): Extract<NeteaseFailure, { kind: 'rejected' }> | null {
+  return error instanceof NeteaseError && error.failure.kind === 'rejected' ? error.failure : null
+}
+
+/** 这张歌单在网易云里已经不在了（歌单不存在，404）：统一成 missing；别的失败是 null。写接口的 missing 只在这里判断（读路径的 404 仍由 fetchPlaylistPage 映射成 PlaylistUnavailable） */
+function missing(error: unknown): { kind: 'missing' } | null {
+  return rejection(error)?.code === PLAYLIST_MISSING ? { kind: 'missing' } : null
 }
 
 /**
  * 加入自建歌单：新加的排在最前，已经在歌单里的网易云跳过；整批都已经在歌单里时网易云回 502“歌单内歌曲重复”，也算加好了。
  * 歌单已经被删掉时网易云回 404“歌单不存在”（验证关卡②）
  */
-export async function addTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<AddTracksResponse> {
+export async function addTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
   try {
     await call('playlist_tracks', { op: 'add', pid: playlistId, tracks: songIds.join(',') }, listener)
   }
   catch (error) {
-    if (error instanceof NeteaseError && error.failure.kind === 'rejected') {
-      if (error.failure.code === PLAYLIST_MISSING)
-        return { kind: 'missing' }
-      // 只有“整批都已经在歌单里”这一种 502 算加好了；别的 502 是网易云拒绝，不能当成成功
-      if (error.failure.code === TRACKS_DUPLICATE && error.failure.message.includes('歌单内歌曲重复'))
-        return { kind: 'added' }
-    }
+    const refused = rejection(error)
+    // 只有“整批都已经在歌单里”这一种 502 算加好了；别的 502 是网易云拒绝，不能当成成功
+    if (refused?.code === TRACKS_DUPLICATE && refused.message.includes('歌单内歌曲重复'))
+      return { kind: 'done' }
+    const gone = missing(error)
+    if (gone)
+      return gone
     throw error
   }
-  return { kind: 'added' }
+  return { kind: 'done' }
 }
 
 /**
  * 从自建歌单移除歌：不在歌单里的歌网易云也照样回 200（验证关卡②）。
  * 歌单已经被删掉时网易云回 404“歌单不存在”（验证关卡②）；别的失败原样交给调用方
  */
-export async function removeTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<RemoveTracksResponse> {
+export async function removeTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
   try {
     await call('playlist_tracks', { op: 'del', pid: playlistId, tracks: songIds.join(',') }, listener)
   }
   catch (error) {
-    if (rejectedCode(error) === PLAYLIST_MISSING)
-      return { kind: 'missing' }
+    const gone = missing(error)
+    if (gone)
+      return gone
     throw error
   }
-  return { kind: 'removed' }
+  return { kind: 'done' }
 }
 
 /** 网易云整张歌单排序时回 -1“请求异常，请稍后重试”：几千首位置都变时其实已经生效（验证关卡②），要重读确认 */
@@ -675,19 +694,19 @@ const ORDER_UNCONFIRMED = -1
  * 歌单已经被删掉时网易云回 404“歌单不存在”。改动几千首位置时网易云约 3.3 秒后回 HTTP 400 / -1，但新顺序其实已经生效，
  * 所以认成 unconfirmed，由客户端重新读一次这张歌单、和提交的顺序比一比
  */
-export async function updateSongOrder(playlistId: number, songIds: readonly number[], listener: Listener): Promise<SongOrderResponse> {
+export async function updateSongOrder(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
   try {
     await call('song_order_update', { pid: playlistId, ids: JSON.stringify(songIds) }, listener)
   }
   catch (error) {
-    const code = rejectedCode(error)
-    if (code === PLAYLIST_MISSING)
-      return { kind: 'missing' }
-    if (code === ORDER_UNCONFIRMED)
+    if (rejection(error)?.code === ORDER_UNCONFIRMED)
       return { kind: 'unconfirmed' }
+    const gone = missing(error)
+    if (gone)
+      return gone
     throw error
   }
-  return { kind: 'ordered' }
+  return { kind: 'done' }
 }
 
 /**
@@ -695,34 +714,37 @@ export async function updateSongOrder(playlistId: number, songIds: readonly numb
  * 已经删掉的歌单网易云会忽略、照样回 200（验证关卡②录到了这种返回），所以没有 missing；
  * 别的失败原样交给调用方，客户端退回原来的顺序
  */
-export async function updatePlaylistOrder(playlistIds: readonly number[], listener: Listener): Promise<PlaylistOrderResponse> {
+export async function updatePlaylistOrder(playlistIds: readonly number[], listener: Listener): Promise<WriteResponse> {
   await call('playlist_order_update', { ids: JSON.stringify(playlistIds) }, listener)
-  return { kind: 'ordered' }
+  return { kind: 'done' }
 }
 
-export async function collectAlbum(albumId: number, collected: boolean, listener: Listener): Promise<void> {
+export async function collectAlbum(albumId: number, collected: boolean, listener: Listener): Promise<WriteResponse> {
   await call('album_sub', { id: albumId, t: collected ? 1 : 0 }, listener).catch((error: unknown) => {
-    if (collected || rejectedCode(error) !== ALBUM_NOT_COLLECTED)
+    if (collected || rejection(error)?.code !== ALBUM_NOT_COLLECTED)
       throw error
   })
+  return { kind: 'done' }
 }
 
-export async function collectArtist(artistId: number, collected: boolean, listener: Listener): Promise<void> {
+export async function collectArtist(artistId: number, collected: boolean, listener: Listener): Promise<WriteResponse> {
   await call('artist_sub', { id: artistId, t: collected ? 1 : 0 }, listener)
+  return { kind: 'done' }
 }
 
 /**
  * 收藏歌单带上浏览器现取的反作弊令牌（官方网页版的写法，SDK 2.12.0），取消收藏不带（#30 留言）。
  * 歌单已经被删掉：照加歌、歌单详情的样子当成网易云回 404“歌单不存在”（收藏时的这种返回还没录到过）
  */
-export async function collectPlaylist(playlistId: number, change: PlaylistCollectRequest, listener: Listener): Promise<PlaylistCollectResponse> {
+export async function collectPlaylist(playlistId: number, change: PlaylistCollectRequest, listener: Listener): Promise<WriteResponse> {
   try {
     await call('playlist_subscribe', { id: playlistId, t: change.collected ? 1 : 0 }, listener, change.collected ? { checkToken: change.checkToken } : {})
   }
   catch (error) {
-    if (rejectedCode(error) !== PLAYLIST_MISSING)
-      throw error
-    return { kind: 'missing' }
+    const gone = missing(error)
+    if (gone)
+      return gone
+    throw error
   }
   return { kind: 'done' }
 }

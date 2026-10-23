@@ -1,8 +1,9 @@
 import type { Song } from '#lib/api/library.js'
-import type { PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
+import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { Api, RequestFailure } from './api'
 import type { AudioCapability, Clock } from './browser'
 import type { PlaylistSongs } from './library'
+import { endpoints } from '#lib/api/endpoints.js'
 import { playableNow } from './downloads'
 
 // 播放队列与播放（Spec #11“客户端：播放队列与播放”）。
@@ -471,7 +472,7 @@ export function createPlayer(context: PlayerContext): Player {
     if (!request) {
       const requestedAt = clock.now()
       const mine = epoch
-      request = api.get<PlayUrlResponse>(`/api/songs/${song.id}/play-url?quality=${state.quality}`).then((result): Fetched => {
+      request = api.get(endpoints.playUrl, { id: song.id, quality: state.quality }).then((result): Fetched => {
         if (!result.ok)
           return result
         if (!result.value.playable)

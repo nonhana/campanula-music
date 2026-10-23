@@ -8,7 +8,7 @@ export interface Account {
 }
 
 /**
- * GET /api/account 的返回：没有登录 Cookie 时是 null，不调网易云。
+ * 当前账号的返回：没有登录 Cookie 时是 null，不调网易云。
  * 有登录 Cookie 时问网易云，凭据已经失效就回“需要登录”（ErrorBody）
  */
 export interface AccountResponse {

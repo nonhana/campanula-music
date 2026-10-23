@@ -1,11 +1,13 @@
 import type { Account } from '#lib/api/account.js'
-import type { AddTracksRequest, AddTracksResponse, AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, CollectedAlbum, CollectedAlbumsResponse, CollectedArtist, CollectedArtistsResponse, CollectRequest, CollectResponse, CreatePlaylistRequest, CreatePlaylistResponse, DescribePlaylistRequest, HeartRequest, HeartResponse, HeartsResponse, Playlist, PlaylistChangeResponse, PlaylistCollectRequest, PlaylistCollectResponse, PlaylistEditProblem, PlaylistInfo, PlaylistOrderRequest, PlaylistOrderResponse, PlaylistPageResponse, PlaylistsResponse, PlaylistTagGroup, PlaylistTagsResponse, PlaylistUnavailable, RemoveTracksRequest, RemoveTracksResponse, RenamePlaylistRequest, Song, SongOrderRequest, SongOrderResponse, SongsRequest, SongsResponse, TagPlaylistRequest, TrackIdsResponse } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistOrderRequest, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksRequest, Song, SongOrderRequest } from '#lib/api/library.js'
+import type { WriteResponse } from '#lib/api/write.js'
 import type { Api, RequestFailure, Result } from './api'
 import type { Clock } from './browser'
 import type { Change, ConfirmedChange } from './changes'
 import type { DownloadNotice } from './downloads'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
 import type { BackgroundLane, Waiting } from './pacing'
+import { endpoints } from '#lib/api/endpoints.js'
 import { canSortPlaylist, nameProblem, reorderSortable, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import { changePatch, changeProblem, heartOf, targetOf } from './changes'
 import { emptyPatch, patched } from './local'
@@ -944,7 +946,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 重读没成功、或者顺序不一样都是没有生效
    */
   async function orderLanded(mine: number, playlistId: number, songIds: readonly number[]): Promise<boolean> {
-    const result = settle(mine, await api.get<TrackIdsResponse>(`/api/playlists/${playlistId}/track-ids`))
+    const result = settle(mine, await api.get(endpoints.trackIds, { id: playlistId }))
     if (!result?.ok)
       return false
     // 提交的顺序可能过期：多出来的歌（还在提交中的加入、红心）会被网易云忽略，漏掉的歌原地保留。
@@ -1526,7 +1528,7 @@ export function createLibrary(context: LibraryContext): Library {
     let tracks = current.tracks.get(id)
     let at = tick
     if (force || tracks?.version !== playlist.tracksUpdatedAt) {
-      const request = stamped(() => api.get<TrackIdsResponse>(`/api/playlists/${id}/track-ids`))
+      const request = stamped(() => api.get(endpoints.trackIds, { id }))
       const fetched = await playlistRequest(mine, id, request.send)
       if (!fetched?.ok)
         return fetched
@@ -1541,7 +1543,7 @@ export function createLibrary(context: LibraryContext): Library {
       return { ok: true, value: undefined }
     const missing = (current.tracks.get(id) ?? tracks).trackIds.filter(songId => !current.songs.has(songId))
     for (const ids of chunks(missing, SONGS_PER_REQUEST)) {
-      const page = await playlistRequest(mine, id, () => api.post<SongsResponse>('/api/songs', { ids } satisfies SongsRequest))
+      const page = await playlistRequest(mine, id, () => api.post(endpoints.songs, { ids }))
       if (!page?.ok)
         return page
       if (!await save(mine, () => ({ songs: page.value.songs })))
@@ -1585,8 +1587,8 @@ export function createLibrary(context: LibraryContext): Library {
    * 同步收藏的专辑或歌手的列表：一个请求拿全，叠回比它晚确认的修改，存进本机副本。返回 'synced'：存好了；
    * 返回同步失败：内容网易云不认、SDK 认不出，跳过它接着同步别的；null：这一轮作废了，或者停下了（已经说明了原因）
    */
-  async function syncCollected<T>(mine: number, path: string, patchOf: (value: T, current: Replica, at: number) => LibraryPatch): Promise<'synced' | SyncFailure | null> {
-    const request = stamped(() => api.get<T>(path))
+  async function syncCollected<T>(mine: number, send: () => Promise<Result<T>>, patchOf: (value: T, current: Replica, at: number) => LibraryPatch): Promise<'synced' | SyncFailure | null> {
+    const request = stamped(send)
     const fetched = await background(mine, request.send)
     if (!fetched || fetched === 'gaveUp')
       return null
@@ -1636,7 +1638,7 @@ export function createLibrary(context: LibraryContext): Library {
       return
     const startedAt = ++tick
     publish({ status: 'syncing' })
-    const heartsRequest = stamped(() => api.get<HeartsResponse>(`/api/hearts?uid=${current.owner}`))
+    const heartsRequest = stamped(() => api.get(endpoints.hearts, { uid: current.owner }))
     const hearts = await background(mine, heartsRequest.send)
     if (!hearts || hearts === 'gaveUp')
       return
@@ -1644,7 +1646,7 @@ export function createLibrary(context: LibraryContext): Library {
       return publish({ status: 'failed', failure: hearts.failure })
     if (!await save(mine, now => ({ hearts: reapplied({ ...now, hearts: hearts.value.songIds }, heartsRequest.at()).hearts! })))
       return
-    const listRequest = stamped(() => api.get<PlaylistsResponse>(`/api/playlists?uid=${current.owner}`))
+    const listRequest = stamped(() => api.get(endpoints.playlists, { uid: current.owner }))
     const list = await background(mine, listRequest.send)
     if (!list || list === 'gaveUp')
       return
@@ -1664,10 +1666,10 @@ export function createLibrary(context: LibraryContext): Library {
     if (mine !== generation)
       return
 
-    const albums = await syncCollected<CollectedAlbumsResponse>(mine, '/api/albums', (value, now, at) => ({ albums: reapplied({ ...now, albums: value.albums }, at).albums! }))
+    const albums = await syncCollected(mine, () => api.get(endpoints.albums), (value, now, at) => ({ albums: reapplied({ ...now, albums: value.albums }, at).albums! }))
     if (!albums)
       return
-    const artists = await syncCollected<CollectedArtistsResponse>(mine, '/api/artists', (value, now, at) => ({ artists: reapplied({ ...now, artists: value.artists }, at).artists! }))
+    const artists = await syncCollected(mine, () => api.get(endpoints.artists), (value, now, at) => ({ artists: reapplied({ ...now, artists: value.artists }, at).artists! }))
     if (!artists)
       return
 
@@ -1716,7 +1718,7 @@ export function createLibrary(context: LibraryContext): Library {
     else if (shown.more)
       show({ status: 'shown', content: { ...shown, more: { status: 'loading' } } })
 
-    const fetched = settle(mine, await api.get<PlaylistPageResponse>(`/api/playlists/${playlistId}`))
+    const fetched = settle(mine, await api.get(endpoints.playlist, { id: playlistId }))
     if (!fetched)
       return
     if (!fetched.ok) {
@@ -1744,7 +1746,7 @@ export function createLibrary(context: LibraryContext): Library {
     })
     for (const ids of chunks(trackIds.filter(id => !neteaseSongs.has(id)), SONGS_PER_REQUEST)) {
       show({ status: 'shown', content: contentOf({ status: 'loading' }) })
-      const songs = settle(mine, await api.post<SongsResponse>('/api/songs', { ids } satisfies SongsRequest))
+      const songs = settle(mine, await api.post(endpoints.songs, { ids }))
       if (!songs)
         return
       if (!songs.ok) {
@@ -1759,10 +1761,11 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 提交一个修改的结果：做好了；歌单不在了（missing）；排序回了 -1、要重读确认（unconfirmed） */
-  type Submitted = { ok: true, value: 'done' | 'missing' | 'unconfirmed' } | { ok: false, failure: ChangeFailure | Extract<RequestFailure, { kind: 'needsLogin' }> }
+  type Submitted = { ok: true, value: WriteResponse['kind'] } | { ok: false, failure: ChangeFailure | Extract<RequestFailure, { kind: 'needsLogin' }> }
 
-  function done(result: Result<unknown>): Submitted {
-    return result.ok ? { ok: true, value: 'done' } : result
+  /** 写接口统一回 done / missing / unconfirmed（#lib/api/write）：这里只做一次映射 */
+  function submitted(result: Result<WriteResponse>): Submitted {
+    return result.ok ? { ok: true, value: result.value.kind } : result
   }
 
   /**
@@ -1770,42 +1773,42 @@ export function createLibrary(context: LibraryContext): Library {
    * 发之前这一轮已经作废（退出、登录失效、换账号，可能就在排队或取令牌的时候）就不发，返回 null
    */
   async function submit(mine: number, change: Change, options?: { keepalive?: boolean }): Promise<Submitted | null> {
-    const post = async <T>(path: string, body: unknown): Promise<Result<T> | null> => (mine === generation ? api.post<T>(path, body, options) : null)
+    const send = <T>(call: () => Promise<Result<T>>): Promise<Result<T>> | null => (mine === generation ? call() : null)
     const heart = heartOf(change)
     if (heart) {
-      const result = await post<HeartResponse>('/api/hearts', { songId: heart.song.id, hearted: heart.hearted } satisfies HeartRequest)
-      return result && done(result)
+      const result = await send(() => api.post(endpoints.heart, { songId: heart.song.id, hearted: heart.hearted }, options))
+      return result && submitted(result)
     }
     switch (change.kind) {
       case 'heart':
         throw new Error('红心在上面已经提交了')
       case 'add': {
-        const result = await post<AddTracksResponse>(`/api/playlists/${change.playlist.id}/tracks`, { songIds: [change.song.id] } satisfies AddTracksRequest)
-        return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
+        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: [change.song.id] }, options))
+        return result && submitted(result)
       }
       case 'addMany': {
-        const result = await post<AddTracksResponse>(`/api/playlists/${change.playlist.id}/tracks`, { songIds: change.songs.map(song => song.id) } satisfies AddTracksRequest)
-        return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
+        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: change.songs.map(song => song.id) }, options))
+        return result && submitted(result)
       }
       case 'remove': {
-        const result = await post<RemoveTracksResponse>(`/api/playlists/${change.playlist.id}/tracks/remove`, { songIds: change.songIds } satisfies RemoveTracksRequest)
-        return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
+        const result = await send(() => api.post(endpoints.removeTracks, { id: change.playlist.id }, { songIds: change.songIds }, options))
+        return result && submitted(result)
       }
       case 'order': {
-        const result = await post<SongOrderResponse>(`/api/playlists/${change.playlist.id}/order`, { songIds: change.songIds } satisfies SongOrderRequest)
-        return result && (result.ok ? { ok: true, value: result.value.kind === 'ordered' ? 'done' : result.value.kind } : result)
+        const result = await send(() => api.post(endpoints.songOrder, { id: change.playlist.id }, { songIds: change.songIds }, options))
+        return result && submitted(result)
       }
       case 'playlistOrder': {
-        const result = await post<PlaylistOrderResponse>('/api/library/order', { playlistIds: change.playlistIds } satisfies PlaylistOrderRequest)
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.playlistOrder, { playlistIds: change.playlistIds }, options))
+        return result && submitted(result)
       }
       case 'collectAlbum': {
-        const result = await post<CollectResponse>(`/api/albums/${change.album.id}/collect`, { collected: change.collected } satisfies CollectRequest)
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.collectAlbum, { id: change.album.id }, { collected: change.collected }, options))
+        return result && submitted(result)
       }
       case 'collectArtist': {
-        const result = await post<CollectResponse>(`/api/artists/${change.artist.id}/collect`, { collected: change.collected } satisfies CollectRequest)
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.collectArtist, { id: change.artist.id }, { collected: change.collected }, options))
+        return result && submitted(result)
       }
       case 'collectPlaylist': {
         let body: PlaylistCollectRequest = { collected: false }
@@ -1815,28 +1818,28 @@ export function createLibrary(context: LibraryContext): Library {
             return { ok: false, failure: { kind: 'checkTokenUnavailable' } }
           body = { collected: true, checkToken }
         }
-        const result = await post<PlaylistCollectResponse>(`/api/playlists/${change.playlist.id}/collect`, body)
-        return result && (result.ok ? { ok: true, value: result.value.kind === 'missing' ? 'missing' : 'done' } : result)
+        const result = await send(() => api.post(endpoints.collectPlaylist, { id: change.playlist.id }, body, options))
+        return result && submitted(result)
       }
       case 'rename': {
-        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/name`, { name: change.name } satisfies RenamePlaylistRequest)
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.renamePlaylist, { id: change.playlist.id }, { name: change.name }, options))
+        return result && submitted(result)
       }
       case 'describe': {
-        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/description`, { description: change.description ?? '' } satisfies DescribePlaylistRequest)
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.describePlaylist, { id: change.playlist.id }, { description: change.description ?? '' }, options))
+        return result && submitted(result)
       }
       case 'tag': {
-        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/tags`, { tags: change.tags } satisfies TagPlaylistRequest)
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.tagPlaylist, { id: change.playlist.id }, { tags: change.tags }, options))
+        return result && submitted(result)
       }
       case 'publish': {
-        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/public`, {})
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.publishPlaylist, { id: change.playlist.id }, undefined, options))
+        return result && submitted(result)
       }
       case 'delete': {
-        const result = await post<PlaylistChangeResponse>(`/api/playlists/${change.playlist.id}/delete`, {})
-        return result && done(result)
+        const result = await send(() => api.post(endpoints.deletePlaylist, { id: change.playlist.id }, undefined, options))
+        return result && submitted(result)
       }
       default: {
         const unhandled: never = change
@@ -2052,7 +2055,7 @@ export function createLibrary(context: LibraryContext): Library {
         pages.albums.set(albumId, { status: 'loading' })
         publish()
       }
-      const result = settle(mine, await api.get<AlbumResponse>(`/api/albums/${albumId}`))
+      const result = settle(mine, await api.get(endpoints.album, { id: albumId }))
       if (!result)
         return
       fetchingAlbums.delete(albumId)
@@ -2077,7 +2080,7 @@ export function createLibrary(context: LibraryContext): Library {
       const mine = generation
       pages.artists.set(artistId, { status: 'loading' })
       publish()
-      const result = settle(mine, await api.get<ArtistResponse>(`/api/artists/${artistId}`))
+      const result = settle(mine, await api.get(endpoints.artist, { id: artistId }))
       if (!result)
         return
       if (result.ok) {
@@ -2100,7 +2103,7 @@ export function createLibrary(context: LibraryContext): Library {
         publish()
       }
       show({ ...page, moreAlbums: { status: 'loading' } })
-      const result = settle(mine, await api.get<ArtistAlbumsResponse>(`/api/artists/${artistId}/albums?offset=${page.albums.length}`))
+      const result = settle(mine, await api.get(endpoints.artistAlbums, { id: artistId, offset: page.albums.length }))
       if (!result)
         return
       if (result.ok)
@@ -2115,7 +2118,7 @@ export function createLibrary(context: LibraryContext): Library {
       const mine = generation
       pages.tags = { status: 'loading' }
       publish()
-      const result = settle(mine, await api.get<PlaylistTagsResponse>('/api/playlist-tags'))
+      const result = settle(mine, await api.get(endpoints.playlistTags))
       if (!result)
         return
       pages.tags = result.ok ? { status: 'shown', content: result.value.groups } : { status: 'failed', failure: result.failure }
@@ -2150,7 +2153,7 @@ export function createLibrary(context: LibraryContext): Library {
       if (!context.online())
         return { ok: false, failure: { kind: 'offline' } }
       const mine = generation
-      const result = settle(mine, await api.post<CreatePlaylistResponse>('/api/playlists', { name, private: draft.private } satisfies CreatePlaylistRequest))
+      const result = settle(mine, await api.post(endpoints.createPlaylist, { name, private: draft.private }))
       if (!result)
         return null
       if (!result.ok)

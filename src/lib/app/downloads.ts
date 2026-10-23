@@ -1,9 +1,10 @@
 import type { Song } from '#lib/api/library.js'
-import type { DownloadUrlResponse, LyricsResponse } from '#lib/api/playback.js'
-import type { Api, RequestFailure } from './api'
+import type { LyricsResponse } from '#lib/api/playback.js'
+import type { Api, RequestFailure, Result } from './api'
 import type { BrowserCapabilities, Clock } from './browser'
 import type { LocalDb, StoredDownload } from './local'
 import type { BackgroundLane, BackgroundResult } from './pacing'
+import { endpoints } from '#lib/api/endpoints.js'
 import { thumbnailUrl } from '#lib/api/library.js'
 import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
 
@@ -177,9 +178,9 @@ export function createDownloads(context: DownloadsContext): Downloads {
   }
 
   /** 后台请求（请求节奏）：断网、操作频繁由后台通道等过、重发过；退出、登录失效时按需要登录了结 */
-  async function background<T>(path: string): Promise<BackgroundResult<T>> {
+  async function background<T>(send: () => Promise<Result<T>>): Promise<BackgroundResult<T>> {
     // 没给 giveUp，后台通道不会回 null
-    return (await lane.send(() => api.get<T>(path), () => {}))!
+    return (await lane.send(send, () => {}))!
   }
 
   /**
@@ -204,8 +205,8 @@ export function createDownloads(context: DownloadsContext): Downloads {
 
   async function run(song: Song): Promise<void> {
     const [url, lyrics] = await Promise.all([
-      background<DownloadUrlResponse>(`/api/songs/${song.id}/download-url?quality=${DOWNLOAD_QUALITY}`),
-      background<LyricsResponse>(`/api/songs/${song.id}/lyrics`),
+      background(() => api.get(endpoints.downloadUrl, { id: song.id, quality: DOWNLOAD_QUALITY })),
+      background(() => api.get(endpoints.lyrics, { id: song.id })),
     ])
     if (!url.ok)
       return refused(song, url.failure)

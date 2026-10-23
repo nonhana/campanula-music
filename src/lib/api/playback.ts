@@ -19,7 +19,7 @@ export type PlaySource
   /** 一次搜索（#31）：搜的是哪个词 */
     | { kind: 'search', keyword: string }
 
-/** POST /api/songs/[id]/check-in 的请求：听歌打卡，这首歌听完了（播完或切走） */
+/** 听歌打卡的请求体：这首歌听完了（播完或切走） */
 export interface CheckInRequest {
   /** 这首歌自己的播放来源 */
   source: PlaySource
@@ -27,13 +27,8 @@ export interface CheckInRequest {
   seconds: number
 }
 
-/** POST /api/songs/[id]/check-in：网易云收下了这次打卡（计入听歌排行有 10–30 分钟延迟） */
-export interface CheckInResponse {
-  checkedIn: true
-}
-
 /**
- * GET /api/songs/[id]/play-url?quality=：一首歌的播放地址，浏览器拿它直连网易云的音频服务器。
+ * 一首歌的播放地址，浏览器拿它直连网易云的音频服务器。
  * 这个账号放不了完整的（会员歌对非会员）时是试听片段的地址
  */
 export type PlayUrlResponse
@@ -53,7 +48,7 @@ export type PlayUrlResponse
 export const DOWNLOAD_QUALITY: Quality = 'exhigh'
 
 /**
- * GET /api/songs/[id]/download-url?quality=：下载一首用的地址，浏览器拿它直连网易云的音频服务器，把整首存进这台设备（#38）。
+ * 下载一首用的地址，浏览器拿它直连网易云的音频服务器，把整首存进这台设备（#38）。
  * 只给完整音频的地址：网易云没给（无版权、这个账号下不了完整的）时是 downloadable: false
  */
 export type DownloadUrlResponse
@@ -88,7 +83,7 @@ export interface LyricLine {
   romanization: string | null
 }
 
-/** GET /api/songs/[id]/lyrics：一首歌的歌词 */
+/** 一首歌的歌词 */
 export type LyricsResponse
   /** 网易云标着是纯音乐 */
   = | { kind: 'pureMusic' }

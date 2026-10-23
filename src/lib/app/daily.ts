@@ -1,7 +1,7 @@
-import type { DailyResponse } from '#lib/api/discover.js'
 import type { Song } from '#lib/api/library.js'
 import type { Api, RequestFailure } from './api'
 import type { Clock } from './browser'
+import { endpoints } from '#lib/api/endpoints.js'
 
 // 每日推荐（#29，Spec #11“发现”）：听众打开时用前台请求拉，只在这次登录期间记着，不存本机：
 // 断网时说明要联网。网易云每天北京时间 6:00 换一份，记着的不是今天这份就重新拉。
@@ -55,7 +55,7 @@ export function createDaily(context: DailyContext): Daily {
         return
       const mine = ++attempt
       context.write({ day, status: 'loading' })
-      const result = await api.get<DailyResponse>('/api/daily')
+      const result = await api.get(endpoints.daily)
       if (mine !== attempt)
         return
       if (result.ok)

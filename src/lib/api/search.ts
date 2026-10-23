@@ -10,7 +10,7 @@ export type Suggestion
   = | { kind: 'song', name: string }
     | { kind: 'artist' | 'album' | 'playlist', id: number, name: string }
 
-/** GET /api/search/suggestions?keywords=：网易云给的建议，单曲、歌手、专辑、歌单依次排 */
+/** 网易云给的建议，单曲、歌手、专辑、歌单依次排 */
 export interface SuggestionsResponse {
   suggestions: Suggestion[]
 }
@@ -66,7 +66,7 @@ export interface SearchedItems {
 }
 
 /**
- * GET /api/search/<kind>?keywords=&offset=：这类结果从网易云的第 offset 个起的一页（SEARCH_RESULTS_PER_REQUEST 个），按网易云的顺序。
+ * 这类结果从网易云的第 offset 个起的一页（SEARCH_RESULTS_PER_REQUEST 个），按网易云的顺序。
  * total 是网易云这一次说的总数（单曲最多给几百首；翻页时会变，同一项也可能在后面的页里再出现一次）
  */
 export interface SearchPageResponse<K extends SearchKind = SearchKind> {

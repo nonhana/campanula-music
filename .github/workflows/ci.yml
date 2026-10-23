@@ -29,6 +29,10 @@ jobs:
       - name: 类型检查
         run: pnpm check
 
+      # #68：端点目录、路由路径和 GET/POST 必须一一对应
+      - name: 端点目录检查
+        run: pnpm check:endpoints
+
       - name: 测试
         run: pnpm test
 

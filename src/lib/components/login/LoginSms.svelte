@@ -4,6 +4,7 @@
   发送、登录时按钮不换字，转圈（busy）。这些报错推开下面的登录键：出现时展开，走时淡出再收起（motion.ts 的 unfold）
 -->
 <script lang='ts'>
+  import { captchaProblem, phoneProblem } from '#lib/api/login.js'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { unfold } from '../motion'
@@ -58,7 +59,8 @@
   }
 
   function phoneOk(): boolean {
-    phoneError = !phone ? '先填手机号' : /^1\d{10}$/.test(phone) ? '' : '手机号是 11 位数字，以 1 开头'
+    const problem = phoneProblem(phone)
+    phoneError = problem === 'phoneEmpty' ? '先填手机号' : problem ? '手机号是 11 位数字，以 1 开头' : ''
     if (phoneError)
       phoneInput?.focus()
     return !phoneError
@@ -79,7 +81,7 @@
     event.preventDefault()
     if (!phoneOk())
       return
-    if (captcha.length < 4) {
+    if (captchaProblem(captcha)) {
       captchaError = captchaStatus.status === 'sent' ? '填写收到的短信验证码' : '先获取验证码'
       captchaInput?.focus()
       return

@@ -1,5 +1,5 @@
-import type { DownloadUrlResponse } from '#lib/api/playback.js'
 import type { RequestHandler } from './$types'
+import { endpoints } from '#lib/api/endpoints.js'
 import { fetchDownloadUrl } from '#lib/server/netease.js'
 import { readQuality } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
@@ -8,5 +8,5 @@ import { respondSignedIn } from '#lib/server/session.js'
 export const GET: RequestHandler = ({ params, url, cookies }) => {
   const { id } = params
   const quality = readQuality(url.searchParams.get('quality'))
-  return respondSignedIn(cookies, listener => fetchDownloadUrl(id, quality, listener) satisfies Promise<DownloadUrlResponse>)
+  return respondSignedIn(endpoints.downloadUrl, cookies, listener => fetchDownloadUrl(id, quality, listener))
 }

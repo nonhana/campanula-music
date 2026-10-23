@@ -1,5 +1,5 @@
-import type { PlaylistChangeResponse } from '#lib/api/library.js'
 import type { RequestHandler } from './$types'
+import { endpoints } from '#lib/api/endpoints.js'
 import { renamePlaylist } from '#lib/server/netease.js'
 import { readPlaylistRename } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
@@ -8,8 +8,5 @@ import { respondSignedIn } from '#lib/server/session.js'
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params
   const { name } = await readPlaylistRename(request)
-  return respondSignedIn(cookies, async (listener) => {
-    await renamePlaylist(id, name, listener)
-    return { done: true } satisfies PlaylistChangeResponse
-  })
+  return respondSignedIn(endpoints.renamePlaylist, cookies, listener => renamePlaylist(id, name, listener))
 }

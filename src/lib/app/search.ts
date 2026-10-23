@@ -1,7 +1,8 @@
-import type { SearchedItems, SearchKind, SearchPageResponse, Suggestion, SuggestionsResponse } from '#lib/api/search.js'
-import type { Api, RequestFailure } from './api'
+import type { SearchedItems, SearchKind, SearchPageResponse, Suggestion } from '#lib/api/search.js'
+import type { Api, RequestFailure, Result } from './api'
 import type { Clock } from './browser'
 import type { LocalDb } from './local'
+import { endpoints, searchPage } from '#lib/api/endpoints.js'
 import { SEARCH_KINDS } from '#lib/api/search.js'
 
 // 搜索（#31、#32，Spec #11“搜索”）：边输入边给建议；按搜索后单曲、歌单、歌手、专辑四类各自拉第一页（结果页的综合由它们拼成），
@@ -122,7 +123,7 @@ export function createSearch(context: SearchContext): Search {
   }
 
   async function ask(keyword: string): Promise<void> {
-    const result = await api.get<SuggestionsResponse>(`/api/search/suggestions?keywords=${encodeURIComponent(keyword)}`)
+    const result = await api.get(endpoints.suggestions, { keywords: keyword })
     if (keyword !== typed)
       return
     if (result.ok)
@@ -138,8 +139,8 @@ export function createSearch(context: SearchContext): Search {
     cancelWait = null
   }
 
-  function pageOf<K extends SearchKind>(kind: K, keyword: string, offset: number) {
-    return api.get<SearchPageResponse<K>>(`/api/search/${kind}?keywords=${encodeURIComponent(keyword)}&offset=${offset}`)
+  function pageOf<K extends SearchKind>(kind: K, keyword: string, offset: number): Promise<Result<SearchPageResponse<K>>> {
+    return api.get(searchPage(kind), { keywords: keyword, offset })
   }
 
   /** 换掉一类结果；不是这一轮（mine）的就不要了 */

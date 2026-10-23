@@ -1,5 +1,5 @@
-import type { SetCoverResponse } from '#lib/api/cover.js'
 import type { RequestHandler } from './$types'
+import { endpoints } from '#lib/api/endpoints.js'
 import { setPlaylistCover } from '#lib/server/netease.js'
 import { readCoverImage } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
@@ -8,5 +8,5 @@ import { respondSignedIn } from '#lib/server/session.js'
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params
   const { imgId } = await readCoverImage(request)
-  return respondSignedIn(cookies, async listener => await setPlaylistCover(id, imgId, listener) satisfies SetCoverResponse)
+  return respondSignedIn(endpoints.setCover, cookies, listener => setPlaylistCover(id, imgId, listener))
 }

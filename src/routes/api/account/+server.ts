@@ -1,8 +1,8 @@
-import type { AccountResponse } from '#lib/api/account.js'
 import type { RequestHandler } from './$types'
+import { endpoints } from '#lib/api/endpoints.js'
 import { readLogin } from '#lib/server/credentials.js'
 import { fetchAccount } from '#lib/server/netease.js'
-import { withNetease } from '#lib/server/respond.js'
+import { json, withNetease } from '#lib/server/respond.js'
 import { asSignedIn } from '#lib/server/session.js'
 
 // 当前账号，App 打开时问一次。没有登录 Cookie（或解不开、还没登录）时直接回“没有”，不调网易云；
@@ -10,7 +10,7 @@ import { asSignedIn } from '#lib/server/session.js'
 export const GET: RequestHandler = ({ cookies }) => {
   const login = readLogin(cookies)
   if (!login?.session)
-    return Response.json({ account: null } satisfies AccountResponse)
+    return json(endpoints.account, { account: null })
   const signedIn = { ...login, session: login.session }
-  return withNetease(async () => Response.json({ account: await asSignedIn(cookies, signedIn, fetchAccount, { renewIfDue: true }) } satisfies AccountResponse))
+  return withNetease(endpoints.account, async () => ({ account: await asSignedIn(cookies, signedIn, fetchAccount, { renewIfDue: true }) }))
 }

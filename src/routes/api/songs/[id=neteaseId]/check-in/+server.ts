@@ -1,5 +1,5 @@
-import type { CheckInResponse } from '#lib/api/playback.js'
 import type { RequestHandler } from './$types'
+import { endpoints } from '#lib/api/endpoints.js'
 import { checkIn } from '#lib/server/netease.js'
 import { readCheckIn } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
@@ -8,8 +8,5 @@ import { respondSignedIn } from '#lib/server/session.js'
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params
   const { source, seconds } = await readCheckIn(request)
-  return respondSignedIn(cookies, async (listener) => {
-    await checkIn(id, source, seconds, listener)
-    return { checkedIn: true } satisfies CheckInResponse
-  })
+  return respondSignedIn(endpoints.checkIn, cookies, listener => checkIn(id, source, seconds, listener))
 }
