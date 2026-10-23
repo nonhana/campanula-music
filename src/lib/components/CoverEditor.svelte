@@ -16,7 +16,7 @@
   import { innerHeight, innerWidth } from 'svelte/reactivity/window'
   import { COVER_INPUT_MAX_BYTES } from '#lib/api/cover.js'
   import { getAppView } from './app-context.svelte'
-  import { centerCrop } from './cover-crop'
+  import { centerCrop } from './cover-crop-core'
   import CoverCropper from './CoverCropper.svelte'
   import { failureText } from './failure'
   import { dialog, fade, float } from './motion'

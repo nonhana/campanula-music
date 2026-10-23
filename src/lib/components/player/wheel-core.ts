@@ -125,6 +125,7 @@ export function createWheelCore({ notch, has, commit, tap, onPose }: WheelCoreOp
       swallowClick = false
       if (!swallow)
         tap()
+      return swallow
     },
   }
 }

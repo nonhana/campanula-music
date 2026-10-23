@@ -310,10 +310,10 @@
                     itemHeight={SONG_ROW_HEIGHT}
                     getKey={(song: Song) => song.id}
                     markOf={drag.dragging ? undefined : songMark}
-                    placeOf={drag.dragging ? drag.placeOf : undefined}
-                    keep={drag.dragging || drag.settling || drag.expanding ? drag.keep : undefined}
-                    animatePlace={drag.dragging || drag.settling || drag.expanding}
-                    hidden={drag.dragging || drag.settling || drag.expanding ? drag.hideMoved : undefined}
+                    placeOf={drag.placeOf}
+                    keep={drag.keep}
+                    animatePlace={drag.sorting}
+                    hidden={drag.hideMoved}
                     row={songRow}
                   ></VirtualList>
                 </div>
@@ -404,7 +404,7 @@
 {/if}
 
 <!-- 浮起的行跟着指针；松手后落进空位。“第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
-{#if drag.dragging || drag.settling || drag.expanding}
+{#if drag.sorting}
   <div
     class={[
       'pointer-events-none fixed left-0 top-0 z-[60] h-14',
@@ -414,7 +414,7 @@
     ]}
     style:left='{drag.ghostLeft}px'
     style:width='{drag.ghostWidth}px'
-    style:transform='translate3d(0, {drag.ghostY}px, 0)'
+    style:transform='translate3d(0, {(drag.settling || drag.expanding) ? drag.settleY : drag.ghostY}px, 0)'
   >
     <div
       class='ghost-in ghost-scale h-full origin-center'

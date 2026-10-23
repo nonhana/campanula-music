@@ -1,3 +1,5 @@
+import { clamp } from './clamp'
+
 // 拖动排序时拖到列表上下边缘的自动滚动（#36 歌曲列表、#37 曲库歌单列表共用）：
 // 越靠边越快（平方），停在边缘越久越快（3 秒内最多加速到 8 倍）；边缘区从顶栏、播放条的上沿算起。
 
@@ -8,10 +10,6 @@ const MAX_SPEED = 1600
 /** 停在边缘 3 秒内最多加速到几倍 */
 const ACCEL = 8
 const ACCEL_TIME = 3000
-
-function clamp(value: number, low: number, high: number): number {
-  return Math.min(high, Math.max(low, value))
-}
 
 /**
  * 这一帧要滚多少（px，正数往下）、接下来记着的停在边缘多久（秒）。

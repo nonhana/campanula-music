@@ -1,10 +1,13 @@
+import type { Attachment } from 'svelte/attachments'
 import { getAppView } from '../app-context.svelte'
-import { pressBroken, watchPress } from '../press'
+import { clamp } from '../clamp'
+import { attachGrip } from '../press'
+import { createSliderCore } from '../slider-core'
 import { formatSeconds, shownDuration } from './view'
 
 // 播放进度的滑块（播放页的波浪进度条、桌面底栏顶边的进度线共用）：按住拖动、点按都跳到那里，松手才跳（App.seek），
 // 拖动时游标和时间跟着走；←/→（↑/↓）快退快进 5 秒，Home / End 跳到头尾。这首的长度还不知道时不能用。
-// 按住断了（右键菜单、切走窗口、页面藏起来、指针捕获被收回、移动时按键已经松开）就作废，不跳
+// 指针怎么接（指针捕获、按住断了、作废、元素移除）交给 press.ts 的 attachGrip，值怎么变在这里（真实的 seek 在松手时提交）。
 
 /** ←/→ 一次跳几秒 */
 const STEP = 5
@@ -16,7 +19,9 @@ export interface SeekSlider {
   readonly duration: number
   /** 游标该在哪（0 到 1）：拖动中是拖到的地方，不然是 now（放到第几秒）占这首的比例 */
   ratio: (now: number) => number
-  /** 挂在 role=slider 的那个元素上：读屏属性（游标在 ratio 处）和指针、键盘事件 */
+  /** 挂在 role=slider 的那个元素上：指针接线（attachGrip） */
+  readonly attach: Attachment<HTMLElement>
+  /** 读屏属性（游标在 ratio 处）和键盘事件 */
   attributes: (ratio: number) => SliderAttributes
 }
 
@@ -29,11 +34,6 @@ interface SliderAttributes {
   'aria-valuenow': number
   'aria-valuetext': string
   'aria-disabled': boolean
-  'onpointerdown': (event: PointerEvent) => void
-  'onpointermove': (event: PointerEvent) => void
-  'onpointerup': () => void
-  'onpointercancel': () => void
-  'onlostpointercapture': () => void
   'onkeydown': (event: KeyboardEvent) => void
 }
 
@@ -42,46 +42,31 @@ export function createSeekSlider(): SeekSlider {
   const view = getAppView()
   const duration = $derived(shownDuration(view.state.player))
   let dragging = $state<number | null>(null)
-  /** 停止盯着这次按住（press.ts）；没按着时是 null */
-  let unwatch: (() => void) | null = null
+  let element: HTMLElement | null = null
 
   /** 指针在滑块上的哪里（0 到 1）；按下时捕获了指针，拖出滑块外面也按它的左右算 */
-  function ratioAt(event: PointerEvent): number {
-    const rect = (event.currentTarget as Element).getBoundingClientRect()
-    return rect.width > 0 ? Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)) : 0
+  function ratioAt(sample: { x: number }): number | null {
+    if (!element)
+      return null
+    const rect = element.getBoundingClientRect()
+    return rect.width > 0 ? clamp((sample.x - rect.left) / rect.width, 0, 1) : 0
   }
 
-  /** 按住结束或作废：不再盯着，游标回到播放进度 */
-  function finish() {
-    dragging = null
-    unwatch?.()
-    unwatch = null
-  }
-
-  function onpointerdown(event: PointerEvent) {
-    if (duration <= 0 || event.button !== 0)
-      return
-    finish()
-    const target = event.currentTarget as Element
-    target.setPointerCapture(event.pointerId)
-    dragging = ratioAt(event)
-    unwatch = watchPress(finish)
-  }
-
-  function onpointermove(event: PointerEvent) {
-    if (dragging === null)
-      return
-    if (pressBroken(event.buttons))
-      return finish()
-    dragging = ratioAt(event)
-  }
-
-  function onpointerup() {
-    if (dragging === null)
-      return
-    view.app.seek(dragging * duration)
-    finish()
-  }
+  const core = createSliderCore({
+    begin: (sample) => {
+      if (duration <= 0)
+        return null
+      return ratioAt(sample)
+    },
+    track: sample => ratioAt(sample) ?? 0,
+    commit: (value) => {
+      // 拖动中切到一首时长还不知道的歌（duration=0）时不 seek(0)：这是有意行为变化（基线会跳回开头）
+      if (duration > 0)
+        view.app.seek(value * duration)
+    },
+    cancel: () => {},
+    onValue: value => (dragging = value),
+  })
 
   function onkeydown(event: KeyboardEvent) {
     if (duration <= 0)
@@ -108,7 +93,16 @@ export function createSeekSlider(): SeekSlider {
     get duration() {
       return duration
     },
-    ratio: now => dragging ?? (duration > 0 ? Math.min(1, Math.max(0, now / duration)) : 0),
+    ratio: now => dragging ?? (duration > 0 ? clamp(now / duration, 0, 1) : 0),
+    attach: (node) => {
+      element = node
+      const detach = attachGrip(core)(node)
+      return () => {
+        if (element === node)
+          element = null
+        detach?.()
+      }
+    },
     attributes(ratio) {
       const shown = ratio * duration
       return {
@@ -120,11 +114,6 @@ export function createSeekSlider(): SeekSlider {
         'aria-valuenow': Math.round(shown),
         'aria-valuetext': `${formatSeconds(shown)} / ${formatSeconds(duration)}`,
         'aria-disabled': duration <= 0,
-        onpointerdown,
-        onpointermove,
-        onpointerup,
-        'onpointercancel': finish,
-        'onlostpointercapture': finish,
         onkeydown,
       }
     },

@@ -26,7 +26,6 @@
   import ToolButton from '../ui/ToolButton.svelte'
   import Cover from './Cover.svelte'
   import DragGrip from './DragGrip.svelte'
-  import { PlaylistGridSort } from './playlist-grid-sort.svelte'
   import { PlaylistSort } from './playlist-sort.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
   import TileBone from './TileBone.svelte'
@@ -59,22 +58,18 @@
     const liked = library.playlists?.find(playlist => playlist.kind === 'liked')
     return liked ? view.app.orderPlaylists([liked.id, ...ids]) : false
   }
-  const sortOptions = {
+  /** 一个排序器：手机按横版列表量，桌面按封面网格量（#65） */
+  const sort = new PlaylistSort({
     ids: () => own?.map(playlist => playlist.id) ?? [],
     playlistOf: (id: number) => own?.find(playlist => playlist.id === id),
     commit: commitOrder,
-  }
-  /** 手机：横版列表的拖动 */
-  const sort = new PlaylistSort(sortOptions)
-  /** 桌面：封面网格的拖动 */
-  const gridSort = new PlaylistGridSort(sortOptions)
-  /** 排序时的自建歌单预览：手机列表、桌面网格 */
+    layout: () => phone ? 'rows' : 'grid',
+  })
+  /** 排序时的自建歌单预览（手机列表、桌面网格共用） */
   const sorted = $derived(sort.order.map(id => own?.find(playlist => playlist.id === id)).filter(playlist => playlist !== undefined))
-  const gridSorted = $derived(gridSort.order.map(id => own?.find(playlist => playlist.id === id)).filter(playlist => playlist !== undefined))
 
   $effect(() => () => {
     sort.cancel()
-    gridSort.cancel()
   })
 
   async function startSort() {
@@ -89,7 +84,6 @@
   async function finishSort() {
     sorting = false
     sort.cancel()
-    gridSort.cancel()
     announcement = ''
     await tick()
     document.querySelector<HTMLElement>('[data-sort-entry]')?.focus()
@@ -99,7 +93,7 @@
   function onWindowKeydown(event: KeyboardEvent) {
     // 有浮层开着时 Esc 先归最上层：浮动菜单不会让背景 inert，只看 inert 不够。
     // 也不能改成让宿主在捕获阶段监听：那会抢在拖动的取消之前。
-    if (!sorting || stack.top || sort.dragging || gridSort.dragging || event.defaultPrevented || event.key !== 'Escape')
+    if (!sorting || stack.top || sort.dragging || event.defaultPrevented || event.key !== 'Escape')
       return
     event.preventDefault()
     void finishSort()
@@ -113,7 +107,7 @@
     if (!row)
       return
     const id = Number(row.dataset.playlistId)
-    const sorter = phone ? sort : gridSort
+    const sorter = sort
     if (!sorter.moveByKeyboard(id, event.key === 'ArrowUp' ? -1 : 1))
       return
     event.preventDefault()
@@ -200,7 +194,6 @@
                   class='w-full flex flex-col gap-2 px-4 pb-8'
                   aria-label='自建歌单，正在排序'
                   data-playlist-sort
-                  {@attach sort.container}
                 >
                   {#each sorted as playlist (playlist.id)}
                     <li data-playlist-id={playlist.id} class='relative' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
@@ -245,12 +238,11 @@
               aria-label={sorting ? '自建歌单，正在排序' : '自建歌单'}
               data-playlist-sort
               data-reveal-group
-              {@attach gridSort.container}
             >
-              {#each (sorting ? gridSorted : own) as playlist (playlist.id)}
+              {#each (sorting ? sorted : own) as playlist (playlist.id)}
                 {@const ownCard = sorting}
                 <li data-playlist-id={ownCard ? playlist.id : undefined} class='relative min-w-0' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
-                  <div class={['transition-opacity', ownCard && gridSort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
+                  <div class={['transition-opacity', ownCard && sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
                     <PlaylistTile
                       id={playlist.id}
                       name={playlistName(playlist)}
@@ -261,15 +253,15 @@
                       onkeydown={ownCard ? onListKeydown : undefined}
                     />
                   </div>
-                  {#if ownCard && gridSort.lifted(playlist.id)}
+                  {#if ownCard && sort.lifted(playlist.id)}
                     <div class='pointer-events-none absolute inset-x-0 top-0 aspect-square rounded-lg bg-primary-100'></div>
                   {/if}
                   {#if ownCard}
                     <span
-                      class={['absolute right-2 top-2 z-10', gridSort.lifted(playlist.id) && 'pointer-events-none opacity-0']}
+                      class={['absolute right-2 top-2 z-10', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}
                       in:fade={{ duration: DURATIONS.feedback }}
                     >
-                      <DragGrip label={playlistName(playlist)} size='desktop' overlay attach={gridSort.handle(playlist.id)} onkeydown={onListKeydown} />
+                      <DragGrip label={playlistName(playlist)} size='desktop' overlay attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
                     </span>
                   {/if}
                 </li>
@@ -322,9 +314,9 @@
 {#if phone && (sort.dragging || sort.settling) && sort.grabbed}
   <div
     class={['pointer-events-none fixed left-0 top-0 z-50', sort.settling && 'transition-transform duration-move-state ease-out-soft']}
-    style:left='{sort.ghostLeft}px'
-    style:width='{sort.ghostWidth}px'
-    style:transform='translate3d(0, {sort.settling ? sort.settleY : sort.ghostY}px, 0)'
+    style:left='{sort.ghost.x}px'
+    style:width='{sort.ghost.width}px'
+    style:transform='translate3d(0, {sort.settling ? sort.settleY : sort.ghost.y}px, 0)'
     aria-hidden='true'
   >
     <div class='h-14 flex items-center gap-3 rounded-xl bg-white pl-3 pr-2 shadow-float'>
@@ -332,17 +324,17 @@
       <DragGrip label={sort.grabbed.name} size='phone' ghost />
     </div>
   </div>
-{:else if !phone && (gridSort.dragging || gridSort.settling) && gridSort.grabbed}
+{:else if !phone && (sort.dragging || sort.settling) && sort.grabbed}
   <div
-    class={['pointer-events-none fixed left-0 top-0 z-50', gridSort.settling && 'transition-transform duration-move-state ease-out-soft']}
-    style:width='{gridSort.ghostWidth}px'
-    style:transform='translate3d({gridSort.settling ? gridSort.settleX : gridSort.ghostX}px, {gridSort.settling ? gridSort.settleY : gridSort.ghostY}px, 0)'
+    class={['pointer-events-none fixed left-0 top-0 z-50', sort.settling && 'transition-transform duration-move-state ease-out-soft']}
+    style:width='{sort.ghost.width}px'
+    style:transform='translate3d({sort.settling ? sort.settleX : sort.ghost.x}px, {sort.settling ? sort.settleY : sort.ghost.y}px, 0)'
     aria-hidden='true'
   >
     <div class='relative rounded-xl bg-white p-2 shadow-float'>
-      {@render sortGridCard(gridSort.grabbed)}
+      {@render sortGridCard(sort.grabbed)}
       <span class='absolute right-4 top-4 z-10'>
-        <DragGrip label={gridSort.grabbed.name} size='desktop' overlay ghost />
+        <DragGrip label={sort.grabbed.name} size='desktop' overlay ghost />
       </span>
     </div>
   </div>

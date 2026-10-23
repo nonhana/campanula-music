@@ -71,7 +71,7 @@
 </script>
 
 <div class={['wave', touch && 'touch']}>
-  <div bind:clientWidth={width} class='track' {...slider.attributes(ratio)}>
+  <div bind:clientWidth={width} class='track' {...slider.attributes(ratio)} {@attach slider.attach}>
     {#if width > 0}
       <svg {width} height='24' viewBox='0 0 {width} 24' aria-hidden='true'>
         <defs>
