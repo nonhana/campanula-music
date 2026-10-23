@@ -19,19 +19,6 @@ export type PlaySource
   /** 一次搜索（#31）：搜的是哪个词 */
     | { kind: 'search', keyword: string }
 
-/** 两个播放来源是不是同一个列表、同一次搜索（搜的词一样就算同一次） */
-export function sameSource(a: PlaySource, b: PlaySource): boolean {
-  switch (a.kind) {
-    case 'daily':
-    case 'downloads':
-      return b.kind === a.kind
-    case 'search':
-      return b.kind === 'search' && a.keyword === b.keyword
-    default:
-      return b.kind === a.kind && b.id === a.id
-  }
-}
-
 /** POST /api/songs/[id]/check-in 的请求：听歌打卡，这首歌听完了（播完或切走） */
 export interface CheckInRequest {
   /** 这首歌自己的播放来源 */

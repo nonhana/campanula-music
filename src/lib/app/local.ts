@@ -33,13 +33,13 @@ const DOWNLOADS = 'downloads'
  * 存着的播放队列那一份，加上它是哪个网易云账号的（换了别的账号登录就清空，规则⑩）。
  * 没登录时放已下载的歌（#38）是 null：不属于任何账号，之后登录了就交给那个账号
  */
-export type StoredQueue = SavedQueue & { owner: number | null }
+type StoredQueue = SavedQueue & { owner: number | null }
 
 /** 要发的听歌打卡，加上它是哪个网易云账号的：只补发给这个账号 */
 export type PendingCheckIn = CheckIn & { owner: number }
 
 /** 存着的播放队列和进度 */
-export interface StoredPlayer {
+interface StoredPlayer {
   /** 网易云账号的 uid；没登录时放的是 null */
   owner: number | null
   saved: SavedPlayer

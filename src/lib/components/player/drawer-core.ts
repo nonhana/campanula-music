@@ -8,7 +8,7 @@ import { pressBroken } from '../press'
 // 松手时拖过自身高度的 1/4、或者整段拖动的速度超过 0.4px/ms 就去另一头，不到就回去
 
 /** 0 整个拉开，1 收在下面看不见 */
-export type DrawerEnd = 0 | 1
+type DrawerEnd = 0 | 1
 
 /** 抽屉该怎么摆：拖着时跟手，不然停在浅路由说的那一头（或者刚拖过去的那一头） */
 export type DrawerPose

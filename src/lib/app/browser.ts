@@ -15,7 +15,6 @@ export interface BrowserCapabilities {
   indexedDB: IDBFactory
   network: NetworkStatus
   page: PageVisibility
-  storage: StorageCapability
   mediaSession: MediaSessionCapability
   MediaMetadata: typeof MediaMetadata
   /** 跨标签页的锁，同 navigator.locks：同一浏览器里同源的标签页共用 */
@@ -74,7 +73,7 @@ export interface ImageCapability {
 }
 
 /** 播放器发的事件里 App 用到的 */
-export type AudioEvent = 'playing' | 'waiting' | 'pause' | 'timeupdate' | 'durationchange' | 'canplaythrough' | 'ended' | 'error'
+type AudioEvent = 'playing' | 'waiting' | 'pause' | 'timeupdate' | 'durationchange' | 'canplaythrough' | 'ended' | 'error'
 
 /** 一个播放器（<audio>）里 App 用到的部分，照 HTML 标准的 HTMLMediaElement */
 export interface AudioCapability {
@@ -103,9 +102,6 @@ export type LocksCapability = Pick<LockManager, 'request'>
 
 /** 跨标签页的广播频道：收到消息时发 message 事件（MessageEvent，消息在 data 里） */
 export type ChannelCapability = Pick<BroadcastChannel, 'postMessage' | 'addEventListener' | 'close'>
-
-/** 存储空间，同 navigator.storage */
-export type StorageCapability = Pick<StorageManager, 'estimate' | 'persist' | 'persisted'>
 
 /** 锁屏和通知栏上的播放控件，同 navigator.mediaSession；歌曲信息用 BrowserCapabilities.MediaMetadata 构造 */
 export type MediaSessionCapability = Pick<MediaSession, 'metadata' | 'playbackState' | 'setActionHandler' | 'setPositionState'>
@@ -341,7 +337,6 @@ export function realBrowserCapabilities(): BrowserCapabilities {
       removeEventListener: (type, listener) => window.removeEventListener(type, listener),
     },
     page: document,
-    storage: navigator.storage,
     mediaSession: navigator.mediaSession,
     MediaMetadata: window.MediaMetadata,
     locks: navigator.locks,

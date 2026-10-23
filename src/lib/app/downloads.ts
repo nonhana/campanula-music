@@ -13,7 +13,7 @@ import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
 // 没下成的标成失败、写明原因，再下一次就是重试，从头下（断点续传是 #39）。
 
 /** 封面缩略图按多大存（px）：和锁屏上的封面一样大，断网时播放页、锁屏也看得清 */
-export const DOWNLOAD_COVER_SIZE = 512
+const DOWNLOAD_COVER_SIZE = 512
 
 /** 没下成的原因 */
 export type DownloadFailure
@@ -26,7 +26,7 @@ export type DownloadFailure
   /** 这台设备的存储空间不够，存不下 */
     | { kind: 'storageFull' }
 
-export type DownloadTask
+type DownloadTask
   /** 正在下：音频已经收到多少字节、一共多少字节（还没拿到下载地址时不知道，是 null） */
   = | { status: 'downloading', song: Song, received: number, total: number | null }
   /** 没下成：说明原因，再下一次就是重试 */

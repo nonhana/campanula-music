@@ -13,6 +13,13 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 - 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的。
 - 页面左下角显示 `Mock · 测试数据`。
 - 退出登录后，UI 的扫码 / 短信登录流程照常可用；mock 的二维码会直接成功。要回到已登录，再访问一次 `/mock/login`。
+- `/design` 在 `pnpm dev` 和 `pnpm dev:mock` 都能打开；设计页主体不进生产包，部署后的路由返回 404（#61）。
+
+## 生产构建检查
+
+`pnpm build` 后跑 `pnpm check:mock-isolation`：产物里不能出现 mock、录制数据、mock 路由或开发设计页；CI 和 pre-push 都会拦截这些回归。命令名保留，检查范围包含所有仅供开发的代码。
+
+死代码检查按需跑 `pnpm dlx knip`，配置与真实入口误报的原因在根目录 `knip.json`；不装进项目依赖、不进钩子。
 
 ## 数据
 

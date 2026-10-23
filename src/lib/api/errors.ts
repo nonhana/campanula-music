@@ -15,7 +15,7 @@ export type NeteaseFailure
     | { kind: 'rejected', code: number, message: string }
 
 /** 站长没有配置加密 Cookie 的密钥（或太短），服务端什么都做不了 */
-export interface CookieSecretMissing {
+interface CookieSecretMissing {
   kind: 'cookieSecretMissing'
 }
 

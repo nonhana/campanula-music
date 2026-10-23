@@ -37,7 +37,7 @@ export interface SearchedPlaylist {
 }
 
 /** 歌手结果里的一位歌手 */
-export interface SearchedArtist {
+interface SearchedArtist {
   id: number
   name: string
   /** 网易云的原图地址；有的歌手没有头像，是 null */
@@ -47,7 +47,7 @@ export interface SearchedArtist {
 }
 
 /** 专辑结果里的一张专辑 */
-export interface SearchedAlbum {
+interface SearchedAlbum {
   id: number
   name: string
   /** 网易云的原图地址；显示时按尺寸取缩略图 */

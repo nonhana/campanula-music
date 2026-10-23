@@ -3,7 +3,7 @@ import { untrack } from 'svelte'
 import { unseen } from './motion'
 
 /** loading：还没好，透明；cached：加载过、缓存里有，直接显示；loaded：刚加载完，淡入；broken：加载不出来，换成图标 */
-export type ImageStatus = 'loading' | 'cached' | 'loaded' | 'broken'
+type ImageStatus = 'loading' | 'cached' | 'loaded' | 'broken'
 
 /**
  * 这次打开 App 以来加载过的图片地址。再挂上时（虚拟列表滚回来、换回刚才那首）浏览器缓存里有，直接显示不再淡入。

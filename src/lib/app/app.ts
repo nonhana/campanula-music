@@ -54,7 +54,7 @@ export interface CollectTarget {
 }
 
 /** 登录会话。刚打开时要先问服务端，才知道有没有当前账号 */
-export type Session
+type Session
   = | { status: 'checking' }
   /** 没问到当前账号，不知道有没有登录（网易云说需要登录时是 loginExpired，不在这里） */
     | { status: 'checkFailed', failure: Exclude<RequestFailure, { kind: 'needsLogin' }> }
@@ -150,7 +150,7 @@ export interface App {
    * 点一首歌（点歌规则，Spec #11）：
    * - 在列表里点：用整个列表（歌单、专辑的曲目、歌手的热门歌曲、每日推荐）替换播放队列，从这首开始放。
    *   歌单还没同步全、不在曲库里的歌单还没取全时先用已经有的部分，有全了把后面的补上（规则⑫）；
-   * - 在搜索结果里点：插播这一首（见 interject），播放队列其余的不变，播放来源是这次搜索。
+   * - 在搜索结果里点：插播这一首（GLOSSARY），排在当前这首后面并立即播放，被打断的那首不续播（规则④）；其余先后不变，播放来源是这次搜索。
    * 现在放不了的歌不能点：无版权的；断网、没登录时没下载的（#38，下载了的总能放）。已下载里点歌也用整个已下载替换播放队列
    */
   play: (source: PlaySource, songId: number) => void
@@ -172,8 +172,6 @@ export interface App {
   playNext: (source: PlaySource, song: Song) => void
   /** 加入播放队列：排到最后，随机模式下也最后放（规则③）。播放队列是空的就直接开始放（规则①） */
   addToQueue: (source: PlaySource, song: Song) => void
-  /** 插播（GLOSSARY，入口在搜索里）：排在当前这首后面并立即播放；被打断的那首不续播（规则④） */
-  interject: (source: PlaySource, song: Song) => void
   /** 从播放队列移出第 index 首（播放队列面板）。正在放的那首移不掉 */
   removeFromQueue: (index: number) => void
   /** 清空播放队列（播放队列面板）：停下，播放条收起 */
@@ -276,7 +274,7 @@ export interface App {
   /** 编辑歌单信息时取网易云的标签库：这次登录还没取到过就用前台请求取，拉到哪了看 state.library.playlistTags；没取成时再调一次就是重试 */
   openPlaylistTags: () => Promise<void>
   /**
-   * 换封面（GLOSSARY：封面；Spec #11 用户故事 90–92）：读选好的图片，能用在 state.cover 里给裁剪页的预览和尺寸；
+   * 换封面（Spec #11 用户故事 90–92）：读选好的图片，能用在 state.cover 里给裁剪页的预览和尺寸；
    * 不是图片、超过 20 MB、HEIC 解不开、读不出来时说明原因。长边超过 3200 的先缩小再裁
    */
   prepareCover: (playlistId: number, file: File) => Promise<void>
@@ -793,7 +791,6 @@ export function createApp(browser: BrowserCapabilities): App {
     playFromQueue: player.jump,
     playNext: player.playNext,
     addToQueue: player.addToQueue,
-    interject: player.interject,
     removeFromQueue: player.removeFromQueue,
     clearQueue: player.clearQueue,
     setPlayMode: player.setMode,

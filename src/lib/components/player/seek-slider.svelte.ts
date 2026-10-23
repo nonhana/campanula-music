@@ -20,7 +20,7 @@ export interface SeekSlider {
   attributes: (ratio: number) => SliderAttributes
 }
 
-export interface SliderAttributes {
+interface SliderAttributes {
   'role': 'slider'
   'tabindex': 0
   'aria-label': string

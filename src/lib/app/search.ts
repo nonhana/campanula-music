@@ -21,7 +21,7 @@ export interface Suggestions {
 export type SearchFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
 
 /** 一类结果后面还有：还没取、正在取、没取成（再取一次就是重试） */
-export type MoreResults
+type MoreResults
   = | { status: 'notLoaded' }
     | { status: 'loading' }
     | { status: 'failed', failure: SearchFailure }
@@ -44,7 +44,7 @@ export type SearchList<K extends SearchKind = SearchKind>
     }
 
 /** 最后一次搜的词的四类结果，各自拉到哪了 */
-export type SearchResults = { keyword: string } & { [K in SearchKind]: SearchList<K> }
+type SearchResults = { keyword: string } & { [K in SearchKind]: SearchList<K> }
 
 export interface SearchState {
   /** 搜索历史：新的在前，同一个词只有一个 */
