@@ -196,8 +196,16 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
     // 基线语义：按空位有没有变判断，不拿 preview 比（多选非连续时 preview 一开始就不同）
     const moved = ended.target !== ended.startTarget
     press = null
-    if (moved)
-      options.commit(ended.preview, ended)
+    if (moved) {
+      try {
+        options.commit(ended.preview, ended)
+      }
+      finally {
+        // commit 抛错（调用方拒绝了这次顺序）也要把拖动态收干净：不然下一次按下会被 state 挡住
+        end({ moved, order: ended.preview, target: ended.target, cancelled: false, grabbed: ended.grabbed })
+      }
+      return
+    }
     end({ moved, order: ended.preview, target: ended.target, cancelled: false, grabbed: ended.grabbed })
   }
 

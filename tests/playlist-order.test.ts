@@ -1,12 +1,13 @@
 import type { App } from '#lib/app/app.js'
 import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
-import { held } from './harness/hold'
+import { held, never } from './harness/hold'
 import { listener, storedPlaylistIds } from './harness/listener'
+import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
-const { signInAtLikedTracks } = listener(world)
+const { signInAtLikedTracks, replyLibrary } = listener(world)
 
 // 曲库里自建歌单之间的排序（#37，Spec #11“客户端：晚一点才提交的修改”“多选、拖拽与换封面”）：
 // 我喜欢的音乐固定在最前，收藏的歌单不参与；拖完先改本地，停手 2 秒才一次提交；
@@ -32,35 +33,53 @@ function collectedOf(app: App): readonly number[] {
 
 const orderRequests = (device: Device) => device.requests.filter(request => request.method === 'POST' && request.path === '/api/library/order')
 const orderCalls = () => world.netease.calls.filter(call => call.module === 'playlist_order_update')
+const pendingChanges = async (device: Device) => (await device.stored()).library?.find(([key]) => key === 'pendingChanges')?.[1]
+/** 让一个前台请求回 301 needsLogin：触发 App 的登录失效 */
+const NEEDS_LOGIN_SEARCH = 'search/cloudsearch.301-invalid.constructed.json'
 
-describe('曲库里的自建歌单排序：我喜欢的音乐固定最前，收藏的歌单不参与', () => {
-  it('提交的顺序里我喜欢的音乐必须在最前，收藏的歌单不能出现', async () => {
+describe('曲库里的自建歌单排序：只收自建歌单，我喜欢的音乐由 App 放在最前', () => {
+  it('非法输入：重复、含收藏、漏一首、未知编号、多一首、传入我喜欢的音乐都抛错', async () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
     const before = shownIds(app)
     expect(before.slice(0, 1 + OWN.length)).toEqual([LIKED, ...OWN])
     expect(before.length).toBeGreaterThan(1 + OWN.length)
 
-    // 我喜欢的音乐被挪到自建歌单后面：不接受
-    expect(app.orderPlaylists([OWN[0]!, LIKED, ...OWN.slice(1)])).toBe(false)
-    // 把收藏的歌单也带进来：不接受
-    expect(app.orderPlaylists([LIKED, ...OWN.slice(1), OWN[0]!, A_COLLECTED])).toBe(false)
-    // 少了、多了自建歌单：不接受
-    expect(app.orderPlaylists([LIKED, ...OWN.slice(1)])).toBe(false)
-    expect(app.orderPlaylists([LIKED, ...OWN, OWN[0]!])).toBe(false)
+    // 重复：（17 张，命中“重复”分支）
+    expect(() => app.orderPlaylists([...OWN.slice(0, 16), OWN[0]!])).toThrow('自建歌单顺序里有重复的编号')
+    // 含收藏：（17 张，命中“不是自建歌单”分支）
+    expect(() => app.orderPlaylists([...OWN.slice(0, 16), A_COLLECTED])).toThrow('自建歌单顺序里混进了不是自建歌单的编号：3200013727')
+    // 漏一首：16 张
+    expect(() => app.orderPlaylists([...OWN.slice(1)])).toThrow('自建歌单顺序不对：要 17 张，给了 16 张')
+    // 未知编号：17 张
+    expect(() => app.orderPlaylists([...OWN.slice(0, 16), 999_999_999])).toThrow('自建歌单顺序里混进了不是自建歌单的编号：999999999')
+    // 多一首：18 张
+    expect(() => app.orderPlaylists([...OWN, OWN[0]!])).toThrow('自建歌单顺序不对：要 17 张，给了 18 张')
+    // 我喜欢的音乐不是自建歌单：17 张
+    expect(() => app.orderPlaylists([LIKED, ...OWN.slice(1)])).toThrow('自建歌单顺序里混进了不是自建歌单的编号：900000001')
+
     expect(shownIds(app)).toEqual(before)
     expect(orderRequests(device)).toHaveLength(0)
   })
 
-  it('合法的顺序立即显示，收藏的歌单保持原来的先后', async () => {
+  it('合法的顺序立即显示，提交时我喜欢的音乐在最前，收藏的歌单保持原来的先后', async () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
     const collected = collectedOf(app)
-    const next = [LIKED, OWN[16]!, OWN[15]!, ...OWN.slice(0, 15)]
+    const next = [OWN[16]!, OWN[15]!, ...OWN.slice(0, 15)]
 
     expect(app.orderPlaylists(next)).toBe(true)
-    expect(shownIds(app)).toEqual([...next, ...collected])
+    expect(shownIds(app)).toEqual([LIKED, ...next, ...collected])
     expect(await storedPlaylistIds(device)).toEqual([LIKED, ...OWN, ...collected])
+
+    await world.netease.reply(ORDER_OK)
+    await world.clock.advance(2000)
+    await world.settle()
+
+    expect(orderRequests(device)).toEqual([
+      { method: 'POST', path: '/api/library/order', body: { playlistIds: [LIKED, ...next] } },
+    ])
+    expect(await storedPlaylistIds(device)).toEqual([LIKED, ...next, ...collected])
   })
 })
 
@@ -71,18 +90,18 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     const before = [LIKED, ...OWN, ...collectedOf(app)]
 
     // 第一次：把最后一张自建歌单挪到自建歌单的最前面
-    const first = [LIKED, OWN[16]!, ...OWN.slice(0, 16)]
+    const first = [OWN[16]!, ...OWN.slice(0, 16)]
     expect(app.orderPlaylists(first)).toBe(true)
-    expect(shownIds(app)).toEqual([...first, ...collectedOf(app)])
+    expect(shownIds(app)).toEqual([LIKED, ...first, ...collectedOf(app)])
     expect(await storedPlaylistIds(device)).toEqual(before)
 
     await world.clock.advance(1000)
     expect(orderRequests(device)).toHaveLength(0)
 
     // 第二次：再把倒数第二张挪到最前，计时从头算
-    const latest = [LIKED, OWN[15]!, OWN[16]!, ...OWN.slice(0, 15)]
+    const latest = [OWN[15]!, OWN[16]!, ...OWN.slice(0, 15)]
     expect(app.orderPlaylists(latest)).toBe(true)
-    expect(shownIds(app)).toEqual([...latest, ...collectedOf(app)])
+    expect(shownIds(app)).toEqual([LIKED, ...latest, ...collectedOf(app)])
     await world.clock.advance(1999)
     expect(orderRequests(device)).toHaveLength(0)
 
@@ -91,12 +110,12 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     await world.settle()
 
     expect(orderRequests(device)).toEqual([
-      { method: 'POST', path: '/api/library/order', body: { playlistIds: latest } },
+      { method: 'POST', path: '/api/library/order', body: { playlistIds: [LIKED, ...latest] } },
     ])
     expect(orderCalls()).toHaveLength(1)
-    expect(orderCalls()[0]).toMatchObject({ query: { ids: JSON.stringify(latest) } })
-    expect(await storedPlaylistIds(device)).toEqual([...latest, ...collectedOf(app)])
-    expect(shownIds(app)).toEqual([...latest, ...collectedOf(app)])
+    expect(orderCalls()[0]).toMatchObject({ query: { ids: JSON.stringify([LIKED, ...latest]) } })
+    expect(await storedPlaylistIds(device)).toEqual([LIKED, ...latest, ...collectedOf(app)])
+    expect(shownIds(app)).toEqual([LIKED, ...latest, ...collectedOf(app)])
     expect(app.state.library?.notice).toBeNull()
   })
 
@@ -104,10 +123,10 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
     const before = [LIKED, ...OWN, ...collectedOf(app)]
-    const moved = [LIKED, OWN[16]!, ...OWN.slice(0, 16)]
+    const moved = [OWN[16]!, ...OWN.slice(0, 16)]
 
     expect(app.orderPlaylists(moved)).toBe(true)
-    expect(app.orderPlaylists(before.slice(0, 1 + OWN.length))).toBe(true)
+    expect(app.orderPlaylists(OWN)).toBe(true)
     expect(shownIds(app)).toEqual(before)
 
     await world.clock.advance(2000)
@@ -120,7 +139,7 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     const device = world.device()
     const tab = await signInAtLikedTracks(device)
     const { app } = tab
-    const next = [LIKED, OWN[10]!, ...OWN.slice(0, 10), ...OWN.slice(11)]
+    const next = [OWN[10]!, ...OWN.slice(0, 10), ...OWN.slice(11)]
 
     expect(app.orderPlaylists(next)).toBe(true)
     await world.settle()
@@ -131,16 +150,16 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     await world.settle()
 
     expect(orderRequests(device)).toEqual([
-      { method: 'POST', path: '/api/library/order', body: { playlistIds: next }, keepalive: true },
+      { method: 'POST', path: '/api/library/order', body: { playlistIds: [LIKED, ...next] }, keepalive: true },
     ])
-    expect(await storedPlaylistIds(device)).toEqual([...next, ...collectedOf(app)])
+    expect(await storedPlaylistIds(device)).toEqual([LIKED, ...next, ...collectedOf(app)])
   })
 
   it('提交中又拖了：等这一份回来，再等 2 秒没再拖才发最新的一次', async () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
-    const first = [LIKED, OWN[16]!, ...OWN.slice(0, 16)]
-    const second = [LIKED, OWN[15]!, OWN[16]!, ...OWN.slice(0, 15)]
+    const first = [OWN[16]!, ...OWN.slice(0, 16)]
+    const second = [OWN[15]!, OWN[16]!, ...OWN.slice(0, 15)]
 
     const pending = held()
     await world.netease.reply(ORDER_OK, { until: pending.until })
@@ -152,7 +171,7 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
 
     // 第一份还压着：再拖一次，只改本地，不发第二份
     expect(app.orderPlaylists(second)).toBe(true)
-    expect(shownIds(app)).toEqual([...second, ...collectedOf(app)])
+    expect(shownIds(app)).toEqual([LIKED, ...second, ...collectedOf(app)])
 
     pending.release()
     await world.settle()
@@ -163,8 +182,70 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     await world.clock.advance(1)
     await world.settle()
     expect(orderRequests(device)).toHaveLength(2)
-    expect(orderRequests(device).at(-1)?.body).toEqual({ playlistIds: second })
-    expect(await storedPlaylistIds(device)).toEqual([...second, ...collectedOf(app)])
+    expect(orderRequests(device).at(-1)?.body).toEqual({ playlistIds: [LIKED, ...second] })
+    expect(await storedPlaylistIds(device)).toEqual([LIKED, ...second, ...collectedOf(app)])
+  })
+
+  it('退出登录作废待提交的计时；重新登录后照常排序，只发新的一份', async () => {
+    const device = world.device()
+    // 第一次同步的最后一页压着：退出后放它回来，旧的一轮结束，新登录的同步不被它堵住
+    const firstSync = held()
+    const { app } = await signInAtLikedTracks(device, { until: firstSync.until })
+    const stale = [OWN[16]!, ...OWN.slice(0, 16)]
+    expect(app.orderPlaylists(stale)).toBe(true)
+
+    await world.netease.reply('login/logout.json')
+    await app.logout()
+    firstSync.release()
+    await world.clock.advance(2000)
+    await world.settle()
+    expect(orderRequests(device)).toHaveLength(0)
+
+    await replyLibrary({ until: never() })
+    await signIn(world, app)
+    await world.settle()
+    expect(app.state.library?.playlists?.length).toBeGreaterThan(0)
+
+    const next = [OWN[10]!, ...OWN.slice(0, 10), ...OWN.slice(11)]
+    await world.netease.reply(ORDER_OK)
+    expect(app.orderPlaylists(next)).toBe(true)
+    await world.clock.advance(2000)
+    await world.settle()
+
+    expect(orderRequests(device)).toEqual([
+      { method: 'POST', path: '/api/library/order', body: { playlistIds: [LIKED, ...next] } },
+    ])
+  })
+
+  it('登录失效：自建歌单排序作废、不发请求；重登没有 recovered（它没有待提交标记）', async () => {
+    const device = world.device()
+    const firstSync = held()
+    const { app } = await signInAtLikedTracks(device, { until: firstSync.until })
+    const next = [OWN[10]!, ...OWN.slice(0, 10), ...OWN.slice(11)]
+    expect(app.orderPlaylists(next)).toBe(true)
+    await world.settle()
+    // 曲库列表的顺序没有对应的歌单：不写 pendingChanges
+    expect(await pendingChanges(device)).toBeUndefined()
+
+    await world.netease.reply(NEEDS_LOGIN_SEARCH)
+    await world.netease.reply('login/login_refresh.301-invalid.json')
+    expect(await app.searchSongs('真夜中')).toMatchObject({ ok: false, failure: { kind: 'needsLogin' } })
+    await world.settle()
+    expect(app.state.session.status).toBe('loginExpired')
+
+    firstSync.release()
+    await world.clock.advance(2000)
+    await world.settle()
+    expect(orderRequests(device)).toHaveLength(0)
+    expect(await pendingChanges(device)).toBeUndefined()
+
+    await replyLibrary({ until: never() })
+    await signIn(world, app)
+    await world.settle()
+
+    expect(app.state.library?.notice).toBeNull()
+    expect(orderRequests(device)).toHaveLength(0)
+    expect(await pendingChanges(device)).toBeUndefined()
   })
 })
 
@@ -173,10 +254,10 @@ describe('提交失败和回滚', () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
     const before = [LIKED, ...OWN, ...collectedOf(app)]
-    const next = [LIKED, OWN[16]!, ...OWN.slice(0, 16)]
+    const next = [OWN[16]!, ...OWN.slice(0, 16)]
 
     expect(app.orderPlaylists(next)).toBe(true)
-    expect(shownIds(app)).toEqual([...next, ...collectedOf(app)])
+    expect(shownIds(app)).toEqual([LIKED, ...next, ...collectedOf(app)])
 
     await world.netease.reply(ORDER_RATE_LIMITED)
     await world.clock.advance(2000)
@@ -190,9 +271,9 @@ describe('提交失败和回滚', () => {
     await app.retryPlaylistOrder()
     await world.settle()
 
-    expect(orderRequests(device).at(-1)?.body).toEqual({ playlistIds: next })
-    expect(shownIds(app)).toEqual([...next, ...collectedOf(app)])
-    expect(await storedPlaylistIds(device)).toEqual([...next, ...collectedOf(app)])
+    expect(orderRequests(device).at(-1)?.body).toEqual({ playlistIds: [LIKED, ...next] })
+    expect(shownIds(app)).toEqual([LIKED, ...next, ...collectedOf(app)])
+    expect(await storedPlaylistIds(device)).toEqual([LIKED, ...next, ...collectedOf(app)])
     expect(app.state.library?.notice).toBeNull()
   })
 
@@ -200,7 +281,7 @@ describe('提交失败和回滚', () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
     const before = [LIKED, ...OWN, ...collectedOf(app)]
-    const next = [LIKED, OWN[16]!, ...OWN.slice(0, 16)]
+    const next = [OWN[16]!, ...OWN.slice(0, 16)]
 
     device.setOnline(false)
     expect(app.orderPlaylists(next)).toBe(false)
@@ -213,9 +294,9 @@ describe('提交失败和回滚', () => {
     await app.retryPlaylistOrder()
     await world.settle()
 
-    expect(orderRequests(device).at(-1)?.body).toEqual({ playlistIds: next })
-    expect(shownIds(app)).toEqual([...next, ...collectedOf(app)])
-    expect(await storedPlaylistIds(device)).toEqual([...next, ...collectedOf(app)])
+    expect(orderRequests(device).at(-1)?.body).toEqual({ playlistIds: [LIKED, ...next] })
+    expect(shownIds(app)).toEqual([LIKED, ...next, ...collectedOf(app)])
+    expect(await storedPlaylistIds(device)).toEqual([LIKED, ...next, ...collectedOf(app)])
     expect(app.state.library?.notice).toBeNull()
   })
 })

@@ -20,9 +20,11 @@ interface Setup {
   busy?: boolean
   keyboard?: boolean
   scrollable?: boolean
+  /** 松手提交时调用方抛错（例如顺序已经过期）：看拖动态会不会卡住 */
+  throws?: boolean
 }
 
-function setup({ ids = [10, 20, 30, 40, 50], groupOf = id => [id], edges = { top: 0, bottom: 800 }, pointerType = 'touch', missing = false, busy = false, keyboard = true, scrollable = true }: Setup = {}) {
+function setup({ ids = [10, 20, 30, 40, 50], groupOf = id => [id], edges = { top: 0, bottom: 800 }, pointerType = 'touch', missing = false, busy = false, keyboard = true, scrollable = true, throws = false }: Setup = {}) {
   const commits: (readonly number[])[] = []
   const results: DragSortResult[] = []
   /** 列表上沿（视口）：100，行距 64，行高 56，手指按在行顶下 0px */
@@ -38,6 +40,8 @@ function setup({ ids = [10, 20, 30, 40, 50], groupOf = id => [id], edges = { top
     keyboard,
     commit: (order) => {
       commits.push(order)
+      if (throws)
+        throw new Error('提交被拒绝')
       return true
     },
     onEnd: result => results.push(result),
@@ -270,6 +274,22 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     moved.pointer.up(200, 150 + 64 * 2)
     expect(moved.commits).toEqual([[1, 3, 5, 2, 4, 6]])
     expect(moved.results[0]).toMatchObject({ moved: true })
+  })
+
+  it('松手提交抛错：拖动态照样收干净、onEnd 照样触发，下一次按下不被挡住', () => {
+    const { session, pointer, commits, results } = setup({ pointerType: 'touch', throws: true })
+    pointer.down(200, 150)
+    pointer.move(200, 150 + 64)
+
+    expect(() => pointer.up(200, 150 + 64)).toThrow('提交被拒绝')
+
+    expect(commits).toEqual([[10, 30, 20, 40, 50]])
+    expect(results.at(-1)).toMatchObject({ moved: true, order: [10, 30, 20, 40, 50], cancelled: false })
+    expect(session.state).toBeNull()
+    // 收干净了：下一次按下还能开始拖
+    expect(pointer.down(200, 150)).toBe(true)
+    expect(session.state).not.toBeNull()
+    pointer.cancel()
   })
 })
 

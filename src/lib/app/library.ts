@@ -1,16 +1,18 @@
 import type { Account } from '#lib/api/account.js'
-import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistOrderRequest, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksRequest, Song, SongOrderRequest } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
 import type { Api, Result } from './api'
-import type { Clock } from './browser'
-import type { Change, ConfirmedChange } from './changes'
+import type { Clock, PageVisibility } from './browser'
+import type { Change, ConfirmedChange, ImmediateChange } from './changes'
+import type { Deferred, PendingChange } from './deferred'
 import type { DownloadNotice } from './downloads'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
 import type { Waiting } from './pacing'
 import type { BackgroundFailure, BackgroundSessionResult, SessionFailure, SessionResult, SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
-import { canSortPlaylist, nameProblem, reorderSortable, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
-import { changePatch, changeProblem, heartOf, targetOf } from './changes'
+import { nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
+import { changePatch, changeProblem, heartOf, playlistTarget, targetOf } from './changes'
+import { createDeferred } from './deferred'
 import { emptyPatch, patched } from './local'
 
 // 曲库副本和同步（Spec #11“客户端：曲库副本”，ADR-0007）：登录后先显示本机副本，再在后台和网易云同步。
@@ -181,6 +183,8 @@ export interface LibraryContext {
   session: SessionRound
   local: LocalDb
   clock: Clock
+  /** 页面可见性：晚一点才提交的修改在页面隐藏时自己立即提交（#70） */
+  page: PageVisibility
   /** 曲库变了（同步拿到了新的部分、同步的状态变了） */
   write: (library: LibraryState) => void
   /** 浏览器觉得联网着（navigator.onLine）：断网时改曲库直接说没改成（规则⑨） */
@@ -217,7 +221,7 @@ export interface Library {
    * 改曲库（红心、加入歌单、收藏）：先改显示着的、立即生效，再提交给网易云；成了写进本机副本，没成改回原样并说明原因（state.notice）。
    * 网易云说要加歌的歌单已经不在了：改回原样，马上同步一次
    */
-  change: (change: Change) => Promise<void>
+  change: (change: ImmediateChange) => Promise<void>
   /**
    * 一次把几首加入自建歌单（多选、添加歌曲选择器）：先改本地、立即生效，再一个请求提交；
    * 已经在歌单里的不再提交，全都已经在里面时什么都不发。网易云拒绝时改回原样并说明
@@ -225,16 +229,11 @@ export interface Library {
   addSongs: (playlist: Playlist, songs: readonly Song[]) => Promise<AddSongsOutcome>
   /**
    * 从自建歌单移除几首（#35）：先从本地拿掉，提示条留 5 秒撤销，没撤销才提交。
-   * 提交失败放回原位并说明、可以重试；页面隐藏、离开歌单时由 flush 立即提交（带 keepalive，请求体不超过 64 KiB）
+   * 提交失败放回原位并说明、可以重试；页面隐藏、离开歌单时立即提交
    */
   removeSongs: (playlist: Playlist, songIds: readonly number[]) => void
   /** 撤销刚才的移除：放回原位，什么都不提交 */
   undoRemove: () => void
-  /**
-   * 5 秒撤销窗口里把这些歌重新加入同一张歌单：把待提交的移除里这几首拿掉、放回原位，返回拿掉的那几首。
-   * 它们还在网易云上，再发一次加入没有意义；调用方把它们从“要加的”里过滤掉
-   */
-  restorePending: (playlistId: number, songIds: readonly number[]) => Set<number>
   /** 重试刚才没成功的移除：重新从本地拿掉，马上提交 */
   retryRemove: () => Promise<void>
   /**
@@ -246,9 +245,9 @@ export interface Library {
   /** 重试刚才没保存成功的排序：先恢复刚才的顺序，再马上提交 */
   retryOrder: () => Promise<void>
   /**
-   * 曲库里自建歌单之间的排序（#37）：playlistIds 是我喜欢的音乐和全部自建歌单的新先后，我喜欢的音乐必须在最前，
-   * 收藏的歌单不传。先改本地、立即生效，停手 2 秒才一次提交；页面隐藏时由 flush 立即提交。
-   * 断网时不改本地、直接说没改成（规则⑨）。返回顺序有没有改
+   * 曲库里自建歌单之间的排序（#37）：playlistIds 只是全部自建歌单的新先后，我喜欢的音乐由模块放在最前，收藏的歌单不传。
+   * 不是“正好是全部自建歌单、不重复”时抛错（编程错误）。先改本地、立即生效，停手 2 秒才一次提交；
+   * 页面隐藏时立即提交。断网时不改本地、直接说没改成（规则⑨）。返回顺序有没有改
    */
   orderPlaylists: (playlistIds: readonly number[]) => boolean
   /** 重试刚才没保存成功的自建歌单顺序：先恢复刚才的顺序，再马上提交 */
@@ -278,13 +277,6 @@ type Outcome<T, F> = { ok: true, value: T } | { ok: false, failure: F } | null
 
 /** 拉一张歌单的结果 */
 type Pulled = Outcome<void, OpenFailure>
-
-/** 写进副本的一个修改（听众做的，或者网易云建好的新歌单）：网易云确认的那一刻（还没确认是 null），写进副本了没有 */
-interface PendingChange {
-  change: ConfirmedChange
-  confirmedAt: number | null
-  saved: boolean
-}
 
 function chunks<T>(items: readonly T[], size: number): T[][] {
   return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, (index + 1) * size))
@@ -410,60 +402,6 @@ function waitingStatus(waiting: Waiting): SyncStatus {
   }
 }
 
-/** 多选移除的提示条留多久（毫秒）：这之内可以撤销，过了才提交 */
-const REMOVE_UNDO_MS = 5000
-/** 拖动排序停手多久（毫秒）以后才提交：这之内再拖，合并成一次 */
-const ORDER_MERGE_MS = 2000
-/** 带 keepalive 的请求体最多这么大（字节）：浏览器只给 64 KiB，更大的只能用普通请求 */
-const KEEPALIVE_MAX_BYTES = 64 * 1024
-
-/** 一份还没提交的移除：本地已经拿掉，提示条里可以撤销，计时到了或者页面隐藏时提交 */
-interface DeferredRemoval {
-  playlist: Playlist
-  songIds: readonly number[]
-  change: Extract<Change, { kind: 'remove' }>
-  entry: PendingChange
-  /** 撤销、提交成功后取消计时 */
-  cancelTimer: () => void
-  /** 已经开始提交：同一份不重复发 */
-  sending: Promise<void> | null
-  /** 撤销了、或者已经处理完：不再提交 */
-  settled: boolean
-}
-
-/** 一份还没提交的排序：本地已经改了，停手 2 秒后提交；提交中又拖了，等这一份回来再发最新的那一份 */
-interface DeferredOrder {
-  playlist: Playlist
-  /** 最新要提交的顺序 */
-  songIds: number[]
-  /** 显示着的这一份修改；提交中又拖了时会换一份新的 */
-  entry: PendingChange
-  /** 正在提交的那一份修改 */
-  sendingEntry: PendingChange | null
-  /** 取消计时 */
-  cancelTimer: () => void
-  /** 已经开始提交：同一份不重复发 */
-  sending: Promise<void> | null
-  /** 处理完了（提交成功、失败退回了、这一轮作废了）：不再提交 */
-  settled: boolean
-}
-
-/** 一份还没提交的自建歌单顺序（#37）：本地已经改了，停手 2 秒后提交；提交中又拖了，等这一份回来再发最新的那一份 */
-interface DeferredPlaylistOrder {
-  /** 最新要提交的顺序：我喜欢的音乐在最前，然后是自建歌单 */
-  playlistIds: number[]
-  /** 显示着的这一份修改；提交中又拖了时会换一份新的 */
-  entry: PendingChange
-  /** 正在提交的那一份修改 */
-  sendingEntry: PendingChange | null
-  /** 取消计时 */
-  cancelTimer: () => void
-  /** 已经开始提交：同一份不重复发 */
-  sending: Promise<void> | null
-  /** 处理完了（提交成功、失败退回了、这一轮作废了）：不再提交 */
-  settled: boolean
-}
-
 export function createLibrary(context: LibraryContext): Library {
   const { api, session, local, clock } = context
   /** 显示着的副本；没登录时是 null */
@@ -492,41 +430,10 @@ export function createLibrary(context: LibraryContext): Library {
   /** 改曲库后要告诉听众的事 */
   let notice: LibraryNotice | null = null
   /**
-   * 多选移除（#35）：本地已经拿掉、还没提交的。提示条留 5 秒撤销，过了才提交；
-   * 页面隐藏、离开歌单时立即提交（带 keepalive，请求体不超过 64 KiB）
-   */
-  let deferred: DeferredRemoval[] = []
-  /** 提示条里的“撤销”对应哪一份；换了别的提示条就撤销不到了，但计时到了照样提交 */
-  let noticeRemoval: DeferredRemoval | null = null
-  /** 刚才没成功的移除：提示条里的“重试”重新拿掉、马上提交 */
-  let failedRemoval: { playlist: Playlist, songIds: readonly number[] } | null = null
-  /**
-   * 拖动排序（#36）：本地已经改了、还没提交的。停手 2 秒才提交；页面隐藏、离开歌单时立即提交
-   * （带 keepalive，请求体不超过 64 KiB）
-   */
-  const orders = new Map<number, DeferredOrder>()
-  /** 刚才没成功的排序：提示条里的“重试”恢复刚才的顺序、马上提交 */
-  let failedOrder: { playlist: Playlist, songIds: readonly number[] } | null = null
-  /** 自建歌单之间的排序（#37）：本地已经改了、还没提交的。停手 2 秒才提交；页面隐藏时立即提交 */
-  let playlistOrder: DeferredPlaylistOrder | null = null
-  /** 刚才没成功的自建歌单顺序：提示条里的“重试”恢复刚才的顺序、马上提交 */
-  let failedPlaylistOrder: { playlistIds: readonly number[] } | null = null
-  /**
-   * 上次关闭前没确认的改动（本机存着的标记）：打开 App 时读出来，同步拿到歌单列表后先从网易云重拉这几张、
-   * 丢掉本地改动，再提示“已恢复原样”
-   */
-  let recovering = new Set<number>()
-  /** 这个标签页已经写进本机的标记：只增删自己写的那几张，别的标签页记下的不动 */
-  let writtenMarkers = new Set<number>()
-  /** 未确认标记一步一步写，免得几次写交错、后写的拿着旧的一组把前面的盖掉 */
-  let markerSaving: Promise<void> = Promise.resolve()
-  /**
    * 听众改的、还没写进副本的修改（叠在显示着的副本上），和网易云确认过的修改（confirmedAt：确认的那一刻；
    * 同步拿回来的数据比它旧时要叠回去）。退出、换账号时清掉
    */
   let changes: PendingChange[] = []
-  /** 同一样东西的修改按先后一个一个做（targetOf）：上一次修改连同写进副本做完的那一刻 */
-  const submitting = new Map<string, Promise<void>>()
   /** 记先后用的时刻，只增不减：同步请求发出、修改确认时各走一格 */
   let tick = 0
   /** 改副本的步子一步一步走（save），这是最后一步 */
@@ -542,816 +449,72 @@ export function createLibrary(context: LibraryContext): Library {
     return changes.filter(entry => entry.confirmedAt !== null && entry.confirmedAt > at).reduce((next, entry) => patched(next, changePatch(next, entry.change)), view)
   }
 
-  /**
-   * 本机记的“这几张歌单有改动还没确认”：正在提交的、上次关掉前没确认完的。
-   * 只加/删这个标签页写过的，别的标签页同时在改别的歌单时不会被盖掉
-   */
-  function saveMarkers(mine: number): Promise<void> {
-    const current = replica
-    if (!current)
-      return Promise.resolve()
-    markerSaving = markerSaving.then(async () => {
-      if (!session.isCurrent(mine) || !replica)
-        return
-      const active = new Set([...recovering, ...deferred.map(item => item.playlist.id), ...orders.keys()])
-      for (const id of active) {
-        if (writtenMarkers.has(id))
-          continue
-        await local.addPendingChange(current.owner, id)
-        writtenMarkers.add(id)
-      }
-      for (const id of [...writtenMarkers]) {
-        if (active.has(id))
-          continue
-        await local.removePendingChange(current.owner, id)
-        writtenMarkers.delete(id)
-      }
-    }).catch(() => {})
-    return markerSaving
-  }
-
-  /** 一份移除处理完了（确认了、放回原位了、撤销了）：不再提交，标记可能可以划掉 */
-  function finishRemoval(mine: number, item: DeferredRemoval): void {
-    item.settled = true
-    item.cancelTimer()
-    deferred = deferred.filter(each => each !== item)
-    if (noticeRemoval === item)
-      noticeRemoval = null
-    void saveMarkers(mine)
-  }
-
-  /** 这个请求体带不带得动 keepalive：超过 64 KiB 的只能用普通请求（#35、#36） */
-  function keepaliveAllowed(change: Change): boolean {
-    if (change.kind !== 'remove' && change.kind !== 'order' && change.kind !== 'playlistOrder')
-      return false
-    const body = change.kind === 'playlistOrder'
-      ? JSON.stringify({ playlistIds: change.playlistIds } satisfies PlaylistOrderRequest)
-      : JSON.stringify({ songIds: change.songIds } satisfies RemoveTracksRequest | SongOrderRequest)
-    return new TextEncoder().encode(body).byteLength <= KEEPALIVE_MAX_BYTES
-  }
-
-  /**
-   * 提交一份移除：成功后写进本机副本；网易云说歌单不在了就放回原位、马上同步；
-   * 其他失败放回原位并说明，提示条里可以重试。页面隐藏时带 keepalive
-   */
-  async function commitRemoval(mine: number, item: DeferredRemoval, { keepalive }: { keepalive: boolean }): Promise<void> {
-    if (item.settled)
-      return
-    if (item.sending)
-      return item.sending
-    item.cancelTimer()
-    if (noticeRemoval === item) {
-      noticeRemoval = null
-      if (notice?.kind === 'removed')
-        notice = null
+  /** 晚一点才提交的修改（#70）：计时、合并、排队、标记与恢复都在这个模块里 */
+  const deferred: Deferred = createDeferred({
+    clock,
+    page: context.page,
+    local,
+    session,
+    replica: () => replica,
+    shown: () => replica ? shown(replica) : null,
+    overlay: {
+      add: (entry) => {
+        changes.push(entry)
+      },
+      remove: (match) => {
+        changes = changes.filter(entry => !match(entry.change))
+      },
+      confirm: async (mine, entry, change) => {
+        entry.change = change
+        entry.confirmedAt = ++tick
+        return save(mine, now => changePatch(now, change), () => {
+          entry.saved = true
+        })
+      },
+    },
+    publish: () => publish(),
+    notify: (next) => {
+      notice = next
       publish()
-    }
-    const target = targetOf(item.change)
-    const job = (submitting.get(target) ?? Promise.resolve()).then(async () => {
-      try {
-        // 提交前先让“这张歌单有改动还没确认”落盘：这时关掉页面，下次打开才知道要恢复
-        await markerSaving
-        if (item.settled || !session.isCurrent(mine))
-          return
-        const { change } = item
-        const result = await submit(mine, change, keepalive && keepaliveAllowed(change) ? { keepalive: true } : undefined)
-        if (!result || !session.isCurrent(mine))
-          return
-        if (result.ok && result.value === 'done') {
-          item.entry.confirmedAt = ++tick
-          if (!await save(mine, now => changePatch(now, item.entry.change), () => {
-            item.entry.saved = true
-          }) || !session.isCurrent(mine)) {
-            return
-          }
-          failedRemoval = null
-          finishRemoval(mine, item)
-          publish()
-          return
-        }
-        // 失败、歌单不在了：本地已经改回原样
-        changes = changes.filter(each => each !== item.entry)
-        finishRemoval(mine, item)
-        if (result.ok) {
-          notice = { kind: 'playlistMissing', change }
-          publish()
-          return start()
-        }
-        failedRemoval = { playlist: item.playlist, songIds: item.songIds }
-        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: result.failure }
-        publish()
-      }
-      catch {
-        // 本机数据库、请求本身出了意料之外的错：也按没成功处理，放回原位、说明原因
-        if (item.settled || !session.isCurrent(mine))
-          return
-        changes = changes.filter(each => each !== item.entry)
-        finishRemoval(mine, item)
-        failedRemoval = { playlist: item.playlist, songIds: item.songIds }
-        notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: { kind: 'serverError' } }
-        publish()
-      }
-    }).finally(() => {
-      if (submitting.get(target) === job)
-        submitting.delete(target)
-    })
-    submitting.set(target, job)
-    item.sending = job.finally(() => {
-      item.sending = null
-    })
-    return item.sending
-  }
-
-  /** 先从本地拿掉，记下未确认；undo 时提示条留 5 秒撤销，否则马上提交 */
-  function applyRemoval(mine: number, playlist: Playlist, songIds: readonly number[], { undo }: { undo: boolean }): DeferredRemoval {
-    // 5 秒内又移除了一批：同一张歌单合成一条提示（撤销两批一起放回，计时从头算）；
-    // 不同歌单的先提交上一批，别让它悄悄在后面提交、撤销不到了
-    if (undo) {
-      const previous = noticeRemoval
-      if (previous && !previous.settled && !previous.sending) {
-        if (previous.playlist.id === playlist.id) {
-          const combined = [...new Set([...previous.songIds, ...songIds])]
-          previous.songIds = combined
-          previous.change.songIds = combined
-          previous.cancelTimer()
-          previous.cancelTimer = clock.after(REMOVE_UNDO_MS, () => {
-            void commitRemoval(mine, previous, { keepalive: false })
-          })
-          noticeRemoval = previous
-          notice = { kind: 'removed', playlist, count: combined.length }
-          publish()
-          return previous
-        }
-        void commitRemoval(mine, previous, { keepalive: false })
-      }
-    }
-    const change: Extract<Change, { kind: 'remove' }> = { kind: 'remove', playlist, songIds: [...songIds] }
-    const entry: PendingChange = { change, confirmedAt: null, saved: false }
-    const item: DeferredRemoval = {
-      playlist,
-      songIds: [...songIds],
-      change,
-      entry,
-      cancelTimer: () => {},
-      sending: null,
-      settled: false,
-    }
-    changes.push(entry)
-    deferred.push(item)
-    if (undo) {
-      noticeRemoval = item
-      notice = { kind: 'removed', playlist, count: songIds.length }
-      item.cancelTimer = clock.after(REMOVE_UNDO_MS, () => {
-        void commitRemoval(mine, item, { keepalive: false })
-      })
-    }
-    else {
-      noticeRemoval = null
-      notice = null
-    }
-    publish()
-    const marked = saveMarkers(mine)
-    if (!undo)
-      void marked.then(() => commitRemoval(mine, item, { keepalive: false }))
-    return item
-  }
-
+    },
+    notice: () => notice,
+    sync: start,
+    online: context.online,
+  })
+  /** 从自建歌单移除几首（#35）：先改本地，5 秒内可撤销，没撤销才提交 */
   function removeSongs(playlist: Playlist, songIds: readonly number[]): void {
-    const current = replica
-    if (!current)
-      return
-    const tracks = current.tracks.get(playlist.id)
-    const present = new Set(tracks?.trackIds ?? [])
-    const ids = [...new Set(songIds)].filter(id => present.has(id))
-    if (ids.length === 0)
-      return
-    const mine = session.current
-    failedRemoval = null
-    if (ids.length > TRACKS_PER_CHANGE) {
-      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'invalid', problem: 'tooManySongs' }, retryable: false }
-      publish()
-      return
-    }
-    if (!context.online()) {
-      // 断网时的写操作直接说没改成，不改本地（规则⑨）
-      failedRemoval = { playlist, songIds: ids }
-      notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'offline' } }
-      publish()
-      return
-    }
-    applyRemoval(mine, playlist, ids, { undo: true })
+    deferred.remove(playlist, songIds)
   }
 
   function undoRemove(): void {
-    const item = noticeRemoval ?? deferred.at(-1) ?? null
-    if (!item)
-      return
-    item.settled = true
-    item.cancelTimer()
-    changes = changes.filter(each => each !== item.entry)
-    deferred = deferred.filter(each => each !== item)
-    if (noticeRemoval === item)
-      noticeRemoval = null
-    if (notice?.kind === 'removed')
-      notice = null
-    failedRemoval = null
-    publish()
-    void saveMarkers(session.current)
+    deferred.undoRemove()
   }
 
-  /** 把一个待提交移除里的这几首拿掉（重新加入歌单时用）：别的歌继续按 5 秒计时，拿掉的放回原位 */
-  function restorePending(playlistId: number, songIds: readonly number[]): Set<number> {
-    const ids = new Set(songIds)
-    const restored = new Set<number>()
-    for (const item of [...deferred]) {
-      if (item.playlist.id !== playlistId || item.sending)
-        continue
-      const overlap = item.songIds.filter(id => ids.has(id))
-      if (overlap.length === 0)
-        continue
-      for (const id of overlap)
-        restored.add(id)
-      const remaining = item.songIds.filter(id => !ids.has(id))
-      if (remaining.length === 0) {
-        item.settled = true
-        item.cancelTimer()
-        changes = changes.filter(each => each !== item.entry)
-        deferred = deferred.filter(each => each !== item)
-        if (noticeRemoval === item)
-          noticeRemoval = null
-      }
-      else {
-        item.songIds = remaining
-        item.change.songIds = [...remaining]
-      }
-      if (notice?.kind === 'removed' && notice.playlist.id === playlistId) {
-        notice = remaining.length > 0 ? { kind: 'removed', playlist: item.playlist, count: remaining.length } : null
-      }
-    }
-    if (restored.size > 0) {
-      failedRemoval = null
-      const playlist = replica?.playlists?.find(item => item.id === playlistId)
-      if (playlist)
-        notice = { kind: 'alreadyAdded', playlist }
-      publish()
-      void saveMarkers(session.current)
-    }
-    return restored
+  function retryRemove(): Promise<void> {
+    return deferred.retryRemove()
   }
 
-  async function retryRemove(): Promise<void> {
-    const failed = failedRemoval
-    if (!failed)
-      return
-    const mine = session.current
-    failedRemoval = null
-    if (!context.online()) {
-      failedRemoval = failed
-      notice = { kind: 'removeFailed', playlist: failed.playlist, count: failed.songIds.length, failure: { kind: 'offline' } }
-      publish()
-      return
-    }
-    const item = applyRemoval(mine, failed.playlist, failed.songIds, { undo: false })
-    await commitRemoval(mine, item, { keepalive: false })
-  }
-
-  /** 一份排序的修改：显示着的顺序，先改本地、立即生效 */
-  function orderEntry(playlist: Playlist, songIds: readonly number[]): PendingChange {
-    return { change: { kind: 'order', playlist, songIds: [...songIds] }, confirmedAt: null, saved: false }
-  }
-
-  /** 开始一份新的排序：记下显示着的修改，等拖完合并提交 */
-  function startOrder(playlist: Playlist, songIds: readonly number[]): DeferredOrder {
-    const entry = orderEntry(playlist, songIds)
-    const item: DeferredOrder = { playlist, songIds: [...songIds], entry, sendingEntry: null, cancelTimer: () => {}, sending: null, settled: false }
-    orders.set(playlist.id, item)
-    changes.push(entry)
-    return item
-  }
-
-  /** 一份排序处理完了：不再提交，标记可能可以划掉 */
-  function dropOrder(item: DeferredOrder): void {
-    item.settled = true
-    item.cancelTimer()
-    item.sendingEntry = null
-    orders.delete(item.playlist.id)
-  }
-
-  /** 两份顺序一样（长度和每一位都相同） */
-  function sameOrder(a: readonly number[], b: readonly number[]): boolean {
-    return a.length === b.length && a.every((id, index) => id === b[index])
-  }
-
-  /**
-   * 曲库里能排序的歌单，按当前的先后：我喜欢的音乐在最前，然后是自建歌单。
-   * 收藏的歌单不参与，别的顺序也照这个排（网易云的歌单列表本来就该是这个样子）
-   */
-  function sortablePlaylists(current: Replica): Playlist[] | null {
-    if (!current.playlists)
-      return null
-    const sortable = current.playlists.filter(playlist => canSortPlaylist(playlist.kind))
-    return [...sortable.filter(playlist => playlist.kind === 'liked'), ...sortable.filter(playlist => playlist.kind !== 'liked')]
-  }
-
-  /** 这个顺序能不能提交：正好是能排序的那几张，我喜欢的音乐在最前，没有重复；收藏的歌单不能出现 */
-  function validPlaylistOrder(current: Replica, playlistIds: readonly number[]): boolean {
-    const sortable = sortablePlaylists(current)
-    if (!sortable || playlistIds.length !== sortable.length || new Set(playlistIds).size !== playlistIds.length)
-      return false
-    const allowed = new Set(sortable.map(playlist => playlist.id))
-    if (playlistIds.some(id => !allowed.has(id)))
-      return false
-    const liked = sortable.find(playlist => playlist.kind === 'liked')
-    return !liked || playlistIds[0] === liked.id
-  }
-
-  /** 过期、缺了几张的顺序补成能提交的：还在的照提交的先后，没出现的按原来的先后接在后面 */
-  function normalizedPlaylistOrder(current: Replica, playlistIds: readonly number[]): number[] {
-    const sortable = sortablePlaylists(current) ?? []
-    return reorderSortable(sortable, playlistIds, () => true).map(playlist => playlist.id)
-  }
-
-  /** 一份自建歌单顺序的修改：显示着的顺序，先改本地、立即生效 */
-  function playlistOrderEntry(playlistIds: readonly number[]): PendingChange {
-    return { change: { kind: 'playlistOrder', playlistIds: [...playlistIds] }, confirmedAt: null, saved: false }
-  }
-
-  /** 开始一份新的自建歌单顺序：记下显示着的修改，停手 2 秒才提交 */
-  function startPlaylistOrder(mine: number, playlistIds: readonly number[]): DeferredPlaylistOrder {
-    const entry = playlistOrderEntry(playlistIds)
-    const item: DeferredPlaylistOrder = { playlistIds: [...playlistIds], entry, sendingEntry: null, cancelTimer: () => {}, sending: null, settled: false }
-    playlistOrder = item
-    changes.push(entry)
-    item.cancelTimer = clock.after(ORDER_MERGE_MS, () => {
-      void commitPlaylistOrder(mine, item, { keepalive: false })
-    })
-    return item
-  }
-
-  /** 一份自建歌单顺序处理完了：不再提交 */
-  function dropPlaylistOrder(item: DeferredPlaylistOrder): void {
-    item.settled = true
-    item.cancelTimer()
-    item.sendingEntry = null
-    if (playlistOrder === item)
-      playlistOrder = null
-  }
-
-  /** 自建歌单顺序处理完了：不再提交，也没有要说的了 */
-  function finishPlaylistOrder(item: DeferredPlaylistOrder): void {
-    dropPlaylistOrder(item)
-    publish()
-  }
-
-  /**
-   * 这一份自建歌单顺序网易云确认了：写进本机副本。提交中又拖了的话，显示着的是下一份（还没提交）：
-   * 这一份照样确认，返回 false 让提交接着发最新的那一份
-   */
-  async function savePlaylistOrdered(mine: number, item: DeferredPlaylistOrder, entry: PendingChange, change: Extract<Change, { kind: 'playlistOrder' }>): Promise<boolean> {
-    entry.change = change
-    entry.confirmedAt = ++tick
-    if (!await save(mine, now => changePatch(now, change), () => {
-      entry.saved = true
-    }) || !session.isCurrent(mine)) {
-      return true
-    }
-    item.sendingEntry = null
-    if (item.entry === entry) {
-      finishPlaylistOrder(item)
-      return true
-    }
-    return false
-  }
-
-  /** 自建歌单顺序没成功：去掉这次的修改（本地退回原来的顺序），留下“重试”用的顺序 */
-  function playlistOrderFailed(mine: number, item: DeferredPlaylistOrder, failure: ChangeFailure): void {
-    if (!session.isCurrent(mine))
-      return
-    const { playlistIds } = item
-    changes = changes.filter(entry => entry.change.kind !== 'playlistOrder')
-    dropPlaylistOrder(item)
-    failedPlaylistOrder = { playlistIds: [...playlistIds] }
-    notice = { kind: 'playlistOrderFailed', playlistIds: [...playlistIds], failure }
-    publish()
-  }
-
-  /**
-   * 网易云回了 -1 或者超时：重新读一次这张歌单，和提交的顺序一样就算成功（几千首位置都变时其实已经生效）。
-   * 重读没成功、或者顺序不一样都是没有生效
-   */
-  async function orderLanded(playlistId: number, songIds: readonly number[]): Promise<boolean> {
-    const result = await session.api.get(endpoints.trackIds, { id: playlistId })
-    if (!result?.ok)
-      return false
-    // 提交的顺序可能过期：多出来的歌（还在提交中的加入、红心）会被网易云忽略，漏掉的歌原地保留。
-    // 只比两边都有的歌的先后；一首都没有对上时不能算成功
-    const upstream = new Set(result.value.trackIds)
-    const submitted = new Set(songIds)
-    const common = result.value.trackIds.filter(id => submitted.has(id))
-    const expected = songIds.filter(id => upstream.has(id))
-    return common.length > 0 && sameOrder(expected, common)
-  }
-
-  /** 一份排序处理完了：不再提交，标记可以划掉 */
-  function finishOrder(mine: number, item: DeferredOrder): void {
-    dropOrder(item)
-    publish()
-    void saveMarkers(mine)
-  }
-
-  /**
-   * 这一份顺序网易云确认了：写进本机副本。提交中又拖了的话，显示着的是下一份（还没提交）：
-   * 这一份照样确认，返回 false 让提交接着发最新的那一份
-   */
-  async function saveOrdered(mine: number, item: DeferredOrder, entry: PendingChange, change: Extract<Change, { kind: 'order' }>): Promise<boolean> {
-    entry.change = change
-    entry.confirmedAt = ++tick
-    if (!await save(mine, now => changePatch(now, change), () => {
-      entry.saved = true
-    }) || !session.isCurrent(mine)) {
-      return true
-    }
-    item.sendingEntry = null
-    if (item.entry === entry) {
-      finishOrder(mine, item)
-      return true
-    }
-    return false
-  }
-
-  /** 排序没成功：去掉这次排序的修改（本地退回原来的顺序），留下“重试”用的顺序。failure 是 null：说不出原因（没确认） */
-  function orderFailed(mine: number, item: DeferredOrder, failure: ChangeFailure | null): void {
-    if (!session.isCurrent(mine))
-      return
-    const { playlist, songIds } = item
-    changes = changes.filter(entry => !(entry.change.kind === 'order' && entry.change.playlist.id === playlist.id))
-    dropOrder(item)
-    failedOrder = { playlist, songIds: [...songIds] }
-    notice = { kind: 'orderFailed', playlist, songIds: [...songIds], failure }
-    publish()
-    void saveMarkers(mine)
-  }
-
-  /** 排序时网易云说这张歌单已经不在了：退回原来的顺序，马上同步一次曲库 */
-  function orderMissing(mine: number, item: DeferredOrder, change: Extract<Change, { kind: 'order' }>): void {
-    if (!session.isCurrent(mine))
-      return
-    changes = changes.filter(entry => !(entry.change.kind === 'order' && entry.change.playlist.id === item.playlist.id))
-    dropOrder(item)
-    failedOrder = null
-    notice = { kind: 'playlistMissing', change }
-    publish()
-    void saveMarkers(mine)
-    start()
-  }
-
-  /** 交给 handle 的返回：需要登录已经在 commitDeferred 里处理掉了 */
-  type HandledResult = { ok: true, value: 'done' | 'missing' | 'unconfirmed' } | { ok: false, failure: ChangeFailure }
-
-  /** 合并提交的公共部分：等 2 秒、同一目标串行、失败和登录失效；具体提交什么、怎么处理返回由调用方给 */
-  interface DeferredCommit<T, C extends Change> {
-    /** 同一样东西的排队键（submitting） */
-    target: string
-    /** 现在要提交的修改 */
-    change: (item: T) => C
-    /** 提交前要做的事（例如先让未确认标记落盘） */
-    prepare?: () => Promise<void>
-    /** 清掉上次失败的提示 */
-    clearNotice: () => void
-    /** 网易云确认了：写进副本，返回这一份是不是处理完了（false：提交中又改了，接着发最新的） */
-    confirmed: (item: T, entry: PendingChange, change: C) => Promise<boolean>
-    /** 网易云回了、不是需要登录：处理完是 'stop'，还要接着发最新的是 'next' */
-    handle: (result: HandledResult, item: T, entry: PendingChange, change: C) => Promise<'next' | 'stop'>
-    /** 提交失败（没成功、也没被 handle 处理掉） */
-    failed: (item: T, failure: ChangeFailure) => void
-  }
-
-  /**
-   * 把一份还没提交的修改合并提交：停手 2 秒才发；提交中又改了，等这一份回来再发最新的；
-   * 页面隐藏、重试时立即发（immediate）。同一目标（target）按先后串行
-   */
-  async function commitDeferred<T extends { entry: PendingChange, sendingEntry: PendingChange | null, sending: Promise<void> | null, settled: boolean, cancelTimer: () => void }, C extends Change>(
-    mine: number,
-    item: T,
-    { keepalive, immediate = false }: { keepalive: boolean, immediate?: boolean },
-    options: DeferredCommit<T, C>,
-  ): Promise<void> {
-    if (item.settled)
-      return
-    if (item.sending)
-      return item.sending
-    item.cancelTimer()
-    options.clearNotice()
-    const job = (submitting.get(options.target) ?? Promise.resolve()).then(async () => {
-      const waitForMerge = (): boolean => {
-        if (immediate)
-          return false
-        item.cancelTimer()
-        item.cancelTimer = clock.after(ORDER_MERGE_MS, () => {
-          void commitDeferred(mine, item, { keepalive: false }, options)
-        })
-        return true
-      }
-      try {
-        await options.prepare?.()
-        for (;;) {
-          if (item.settled || !session.isCurrent(mine))
-            return
-          const entry = item.entry
-          const change = options.change(item)
-          item.sendingEntry = entry
-          const result = await submit(mine, change, keepalive && keepaliveAllowed(change) ? { keepalive: true } : undefined)
-          if (!result || !session.isCurrent(mine))
-            return
-          if (await options.handle(result, item, entry, change) === 'stop')
-            return
-          if (await options.confirmed(item, entry, change))
-            return
-          if (waitForMerge())
-            return
-        }
-      }
-      catch {
-        // 本机数据库、请求本身出了意料之外的错：也按没成功处理，退回原来的顺序、说明原因
-        if (!item.settled && session.isCurrent(mine))
-          options.failed(item, { kind: 'serverError' })
-      }
-    }).finally(() => {
-      if (submitting.get(options.target) === job)
-        submitting.delete(options.target)
-    })
-    submitting.set(options.target, job)
-    item.sending = job.finally(() => {
-      item.sending = null
-    })
-    return item.sending
-  }
-
-  /**
-   * 把整张歌单的新顺序提交给网易云：页面隐藏、离开歌单时带 keepalive（请求体超过 64 KiB 的用普通请求）。
-   * 成功写进本机副本；网易云回 -1、超时先重读一次确认；失败、歌单不在了退回原来的顺序并说明
-   */
-  function commitOrder(mine: number, item: DeferredOrder, flags: { keepalive: boolean, immediate?: boolean }): Promise<void> {
-    return commitDeferred(mine, item, flags, {
-      target: targetOf({ kind: 'order', playlist: item.playlist, songIds: item.songIds }),
-      change: item => ({ kind: 'order', playlist: item.playlist, songIds: [...item.songIds] }),
-      prepare: () => markerSaving,
-      clearNotice: () => {
-        if (notice?.kind === 'orderFailed' && notice.playlist.id === item.playlist.id) {
-          notice = null
-          failedOrder = null
-          publish()
-        }
-      },
-      confirmed: (item, entry, change) => saveOrdered(mine, item, entry, change),
-      async handle(result, item, entry, change) {
-        if (result.ok && result.value === 'done')
-          return 'next'
-        if (result.ok && result.value === 'unconfirmed') {
-          if (await orderLanded(item.playlist.id, change.songIds))
-            return 'next'
-          orderFailed(mine, item, null)
-          return 'stop'
-        }
-        if (!result.ok && result.failure.kind === 'neteaseUnavailable') {
-          if (await orderLanded(item.playlist.id, change.songIds))
-            return 'next'
-          orderFailed(mine, item, result.failure)
-          return 'stop'
-        }
-        if (result.ok) {
-          orderMissing(mine, item, change)
-          return 'stop'
-        }
-        orderFailed(mine, item, result.failure)
-        return 'stop'
-      },
-      failed: (item, failure) => orderFailed(mine, item, failure),
-    })
-  }
-
-  /**
-   * 把曲库里能排序的歌单的新顺序提交给网易云：页面隐藏时带 keepalive。
-   * 成功写进本机副本；失败退回原来的顺序并说明，提示条里可以重试
-   */
-  function commitPlaylistOrder(mine: number, item: DeferredPlaylistOrder, flags: { keepalive: boolean, immediate?: boolean }): Promise<void> {
-    return commitDeferred(mine, item, flags, {
-      target: targetOf({ kind: 'playlistOrder', playlistIds: item.playlistIds }),
-      change: item => ({ kind: 'playlistOrder', playlistIds: [...item.playlistIds] }),
-      clearNotice: () => {
-        if (notice?.kind === 'playlistOrderFailed') {
-          notice = null
-          failedPlaylistOrder = null
-          publish()
-        }
-      },
-      confirmed: (item, entry, change) => savePlaylistOrdered(mine, item, entry, change),
-      async handle(result, item) {
-        if (result.ok)
-          return 'next'
-        playlistOrderFailed(mine, item, result.failure)
-        return 'stop'
-      },
-      failed: (item, failure) => playlistOrderFailed(mine, item, failure),
-    })
-  }
-
-  /**
-   * 把勾选的几首挪到 before 那一首前面（null 是最后）：按列表里的先后一起挪，保持原来的先后。
-   * 先改本地、立即生效，停手 2 秒才提交；提交中又拖了，等这一份回来再发最新的
-   */
+  /** 多选里的拖动排序（#36）：把整张歌单的新顺序先改本地，停手 2 秒合并提交 */
   function moveSongs(playlistId: number, songIds: readonly number[], before: number | null): boolean {
-    const current = replica
-    if (!current)
-      return false
-    const playlist = current.playlists?.find(item => item.id === playlistId)
-    if (!playlist || !canSortPlaylist(playlist.kind))
-      return false
-    const tracks = shown(current).tracks.get(playlistId)
-    if (!tracks)
-      return false
-    const moved = new Set(songIds)
-    const moving = tracks.trackIds.filter(id => moved.has(id))
-    if (moving.length === 0)
-      return false
-    const rest = tracks.trackIds.filter(id => !moved.has(id))
-    const at = before === null ? rest.length : rest.indexOf(before)
-    if (at < 0)
-      return false
-    const next = [...rest.slice(0, at), ...moving, ...rest.slice(at)]
-    if (sameOrder(next, tracks.trackIds))
-      return false
-    if (!context.online()) {
-      // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
-      failedOrder = { playlist, songIds: next }
-      notice = { kind: 'orderFailed', playlist, songIds: next, failure: { kind: 'offline' } }
-      publish()
-      return false
-    }
-    const mine = session.current
-    let item = orders.get(playlistId)
-    if (item && !item.settled) {
-      item.songIds = next
-      if (item.sending) {
-        // 正在提交时又拖了：等这一份回来再发最新的；已经有一份在等的话，换掉它的顺序
-        if (item.entry === item.sendingEntry) {
-          item.entry = orderEntry(playlist, next)
-          changes.push(item.entry)
-        }
-        else {
-          item.entry.change = { kind: 'order', playlist, songIds: [...next] }
-        }
-      }
-      else {
-        item.entry.change = { kind: 'order', playlist, songIds: [...next] }
-        item.cancelTimer()
-        item.cancelTimer = clock.after(ORDER_MERGE_MS, () => {
-          void commitOrder(mine, item!, { keepalive: false })
-        })
-      }
-    }
-    else {
-      item = startOrder(playlist, next)
-      item.cancelTimer = clock.after(ORDER_MERGE_MS, () => {
-        void commitOrder(mine, item!, { keepalive: false })
-      })
-    }
-    if (notice?.kind === 'orderFailed' && notice.playlist.id === playlistId)
-      notice = null
-    failedOrder = null
-    publish()
-    void saveMarkers(mine)
-    return true
+    return deferred.moveSongs(playlistId, songIds, before)
   }
 
-  /**
-   * 曲库里自建歌单之间的排序（#37）：playlistIds 是我喜欢的音乐和全部自建歌单的新先后。
-   * 我喜欢的音乐必须在最前，收藏的歌单不能出现；顺序不合这个规矩时不改、返回 false。
-   * 先改本地、立即生效，停手 2 秒才提交；提交中又拖了，等这一份回来再发最新的
-   */
+  function retryOrder(): Promise<void> {
+    return deferred.retryOrder()
+  }
+
+  /** 曲库里自建歌单之间的排序（#37）：只收自建歌单的先后，我喜欢的音乐由模块放在最前 */
   function orderPlaylists(playlistIds: readonly number[]): boolean {
-    const current = replica
-    if (!current)
-      return false
-    // 按显示着的副本校验：刚新建、刚删除的歌单还没写进副本时，也能接着排
-    const display = shown(current)
-    if (!validPlaylistOrder(display, playlistIds))
-      return false
-    const next = [...playlistIds]
-    const displayed = sortablePlaylists(display)
-    if (displayed && sameOrder(next, displayed.map(playlist => playlist.id)))
-      return false
-    const mine = session.current
-    const item = playlistOrder
-    // 拖回原来的顺序、还没开始提交：撤掉这份修改，什么都不发
-    const base = sortablePlaylists(current)
-    if (base && sameOrder(next, base.map(playlist => playlist.id))) {
-      if (!item || item.settled)
-        return false
-      if (!item.sending) {
-        changes = changes.filter(entry => entry !== item.entry)
-        dropPlaylistOrder(item)
-        failedPlaylistOrder = null
-        notice = null
-        publish()
-        return true
-      }
-    }
-    if (!context.online()) {
-      // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
-      failedPlaylistOrder = { playlistIds: next }
-      notice = { kind: 'playlistOrderFailed', playlistIds: next, failure: { kind: 'offline' } }
-      publish()
-      return false
-    }
-    if (item && !item.settled) {
-      item.playlistIds = next
-      if (item.sending) {
-        // 正在提交时又拖了：等这一份回来再发最新的；已经有一份在等的话，换掉它的顺序
-        if (item.entry === item.sendingEntry) {
-          item.entry = playlistOrderEntry(next)
-          changes.push(item.entry)
-        }
-        else {
-          item.entry.change = { kind: 'playlistOrder', playlistIds: [...next] }
-        }
-      }
-      else {
-        item.entry.change = { kind: 'playlistOrder', playlistIds: [...next] }
-        item.cancelTimer()
-        item.cancelTimer = clock.after(ORDER_MERGE_MS, () => {
-          void commitPlaylistOrder(mine, item!, { keepalive: false })
-        })
-      }
-    }
-    else {
-      startPlaylistOrder(mine, next)
-    }
-    if (notice?.kind === 'playlistOrderFailed')
-      notice = null
-    failedPlaylistOrder = null
-    publish()
-    return true
+    return deferred.orderPlaylists(playlistIds)
   }
 
-  /** 提示条里的“重试”：恢复刚才的顺序，马上提交（不是先改本地再等 2 秒） */
-  async function retryOrder(): Promise<void> {
-    const failed = failedOrder
-    if (!failed)
-      return
-    const current = replica
-    if (!current)
-      return
-    const playlist = current.playlists?.find(item => item.id === failed.playlist.id)
-    if (!playlist)
-      return
-    const mine = session.current
-    failedOrder = null
-    if (!context.online()) {
-      failedOrder = failed
-      notice = { kind: 'orderFailed', playlist, songIds: failed.songIds, failure: { kind: 'offline' } }
-      publish()
-      return
-    }
-    const item = startOrder(playlist, failed.songIds)
-    notice = null
-    publish()
-    void saveMarkers(mine)
-    await commitOrder(mine, item, { keepalive: false, immediate: true })
+  function retryPlaylistOrder(): Promise<void> {
+    return deferred.retryPlaylistOrder()
   }
 
-  /** 提示条里的“重试”：恢复刚才的自建歌单顺序，马上提交（不是先改本地再等 2 秒） */
-  async function retryPlaylistOrder(): Promise<void> {
-    const failed = failedPlaylistOrder
-    const current = replica
-    if (!failed || !current)
-      return
-    const mine = session.current
-    failedPlaylistOrder = null
-    if (!context.online()) {
-      failedPlaylistOrder = failed
-      notice = { kind: 'playlistOrderFailed', playlistIds: failed.playlistIds, failure: { kind: 'offline' } }
-      publish()
-      return
-    }
-    const item = startPlaylistOrder(mine, normalizedPlaylistOrder(current, failed.playlistIds))
-    notice = null
-    publish()
-    await commitPlaylistOrder(mine, item, { keepalive: false, immediate: true })
-  }
-
-  /** 页面被隐藏、离开歌单：还没提交的移除和排序立即提交（带 keepalive，请求体太大的用普通请求） */
-  async function flush(playlistId?: number): Promise<void> {
-    const mine = session.current
-    await Promise.all([
-      ...deferred
-        .filter(item => playlistId === undefined || item.playlist.id === playlistId)
-        .map(item => commitRemoval(mine, item, { keepalive: true })),
-      ...[...orders.values()]
-        .filter(item => playlistId === undefined || item.playlist.id === playlistId)
-        .map(item => commitOrder(mine, item, { keepalive: true, immediate: true })),
-      ...(playlistId === undefined && playlistOrder ? [commitPlaylistOrder(mine, playlistOrder, { keepalive: true, immediate: true })] : []),
-    ])
+  /** 页面被隐藏（切到后台、锁屏、关页面）或离开歌单：把还没提交的移除、排序立即提交 */
+  function flush(playlistId?: number): Promise<void> {
+    return deferred.flush(playlistId)
   }
 
   /** 批量“加入歌单”的目标：除了当前歌单以外的自建歌单；歌单列表还没拿到时是 null */
@@ -1374,7 +537,7 @@ export function createLibrary(context: LibraryContext): Library {
       seen.add(song.id)
       return true
     })
-    const restored = restorePending(playlist.id, unique.map(song => song.id))
+    const restored = deferred.restore(playlist.id, unique.map(song => song.id))
     const have = new Set(shown(current).tracks.get(playlist.id)?.trackIds ?? [])
     const fresh = unique.filter(song => !restored.has(song.id) && !have.has(song.id))
     if (fresh.length === 0) {
@@ -1560,38 +723,6 @@ export function createLibrary(context: LibraryContext): Library {
     return null
   }
 
-  /**
-   * 上次关掉前没确认的改动（#35）：歌单列表拿到以后，先把这几张从网易云重拉一遍、丢掉本地改动，再提示“已恢复原样”。
-   * 没拉成（网易云返回认不出、断网时后台通道会等着）就留着标记，下一轮同步再试
-   */
-  async function recoverPending(mine: number, current: Replica): Promise<void> {
-    if (recovering.size === 0)
-      return
-    let recovered = false
-    for (const id of [...recovering]) {
-      if (!session.isCurrent(mine))
-        return
-      const playlist = current.playlists?.find(item => item.id === id)
-      if (!playlist) {
-        recovering.delete(id)
-        recovered = true
-        continue
-      }
-      const result = await load(mine, current, playlist, true)
-      if (!result)
-        return
-      if (!result.ok)
-        continue
-      recovering.delete(id)
-      recovered = true
-    }
-    if (recovered && session.isCurrent(mine)) {
-      notice = { kind: 'recovered' }
-      publish()
-    }
-    await saveMarkers(mine)
-  }
-
   async function run(mine: number): Promise<void> {
     const current = replica
     if (!session.isCurrent(mine) || !current)
@@ -1622,7 +753,15 @@ export function createLibrary(context: LibraryContext): Library {
     }
     if (!await save(mine, now => ({ playlists: reapplied({ ...now, playlists: list.value.playlists }, listRequest.at()).playlists! }), removeDeleted))
       return
-    await recoverPending(mine, current)
+    await deferred.recover(mine, async (playlistId) => {
+      const playlist = current.playlists?.find(item => item.id === playlistId)
+      if (!playlist)
+        return 'missing'
+      const result = await load(mine, current, playlist, true)
+      if (!result)
+        return 'stopped'
+      return result.ok ? 'recovered' : 'failed'
+    })
     if (!session.isCurrent(mine))
       return
 
@@ -1719,7 +858,10 @@ export function createLibrary(context: LibraryContext): Library {
     show({ status: 'shown', content: contentOf(null) })
   }
 
-  /** 提交一个修改的结果：做好了；歌单不在了（missing）；排序回了 -1、要重读确认（unconfirmed） */
+  /**
+   * 立即修改的提交结果：做好了；歌单不在了（missing）。
+   * unconfirmed 只属于延迟模块的整张歌单排序，立即修改的端点不会回它。
+   */
   type Submitted = { ok: true, value: WriteResponse['kind'] } | { ok: false, failure: ChangeFailure }
 
   /** 写接口统一回 done / missing / unconfirmed（#lib/api/write）：这里只做一次映射 */
@@ -1733,42 +875,30 @@ export function createLibrary(context: LibraryContext): Library {
    * 把一个修改提交给网易云（前台请求，马上发）。收藏歌单先现取一枚反作弊令牌。
    * 发之前这一轮已经作废（退出、登录失效、换账号，可能就在排队或取令牌的时候）就不发，返回 null
    */
-  async function submit(mine: number, change: Change, options?: { keepalive?: boolean }): Promise<Submitted | null> {
+  async function submit(mine: number, change: ImmediateChange): Promise<Submitted | null> {
     const send = <T>(call: () => Promise<Result<T>>): Promise<SessionResult<T>> | null => (session.isCurrent(mine) ? session.api.request(call) : null)
     const heart = heartOf(change)
     if (heart) {
-      const result = await send(() => api.post(endpoints.heart, { songId: heart.song.id, hearted: heart.hearted }, options))
+      const result = await send(() => api.post(endpoints.heart, { songId: heart.song.id, hearted: heart.hearted }))
       return result && submitted(result)
     }
     switch (change.kind) {
       case 'heart':
         throw new Error('红心在上面已经提交了')
       case 'add': {
-        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: [change.song.id] }, options))
+        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: [change.song.id] }))
         return result && submitted(result)
       }
       case 'addMany': {
-        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: change.songs.map(song => song.id) }, options))
-        return result && submitted(result)
-      }
-      case 'remove': {
-        const result = await send(() => api.post(endpoints.removeTracks, { id: change.playlist.id }, { songIds: change.songIds }, options))
-        return result && submitted(result)
-      }
-      case 'order': {
-        const result = await send(() => api.post(endpoints.songOrder, { id: change.playlist.id }, { songIds: change.songIds }, options))
-        return result && submitted(result)
-      }
-      case 'playlistOrder': {
-        const result = await send(() => api.post(endpoints.playlistOrder, { playlistIds: change.playlistIds }, options))
+        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: change.songs.map(song => song.id) }))
         return result && submitted(result)
       }
       case 'collectAlbum': {
-        const result = await send(() => api.post(endpoints.collectAlbum, { id: change.album.id }, { collected: change.collected }, options))
+        const result = await send(() => api.post(endpoints.collectAlbum, { id: change.album.id }, { collected: change.collected }))
         return result && submitted(result)
       }
       case 'collectArtist': {
-        const result = await send(() => api.post(endpoints.collectArtist, { id: change.artist.id }, { collected: change.collected }, options))
+        const result = await send(() => api.post(endpoints.collectArtist, { id: change.artist.id }, { collected: change.collected }))
         return result && submitted(result)
       }
       case 'collectPlaylist': {
@@ -1779,27 +909,27 @@ export function createLibrary(context: LibraryContext): Library {
             return { ok: false, failure: { kind: 'checkTokenUnavailable' } }
           body = { collected: true, checkToken }
         }
-        const result = await send(() => api.post(endpoints.collectPlaylist, { id: change.playlist.id }, body, options))
+        const result = await send(() => api.post(endpoints.collectPlaylist, { id: change.playlist.id }, body))
         return result && submitted(result)
       }
       case 'rename': {
-        const result = await send(() => api.post(endpoints.renamePlaylist, { id: change.playlist.id }, { name: change.name }, options))
+        const result = await send(() => api.post(endpoints.renamePlaylist, { id: change.playlist.id }, { name: change.name }))
         return result && submitted(result)
       }
       case 'describe': {
-        const result = await send(() => api.post(endpoints.describePlaylist, { id: change.playlist.id }, { description: change.description ?? '' }, options))
+        const result = await send(() => api.post(endpoints.describePlaylist, { id: change.playlist.id }, { description: change.description ?? '' }))
         return result && submitted(result)
       }
       case 'tag': {
-        const result = await send(() => api.post(endpoints.tagPlaylist, { id: change.playlist.id }, { tags: change.tags }, options))
+        const result = await send(() => api.post(endpoints.tagPlaylist, { id: change.playlist.id }, { tags: change.tags }))
         return result && submitted(result)
       }
       case 'publish': {
-        const result = await send(() => api.post(endpoints.publishPlaylist, { id: change.playlist.id }, undefined, options))
+        const result = await send(() => api.post(endpoints.publishPlaylist, { id: change.playlist.id }, undefined))
         return result && submitted(result)
       }
       case 'delete': {
-        const result = await send(() => api.post(endpoints.deletePlaylist, { id: change.playlist.id }, undefined, options))
+        const result = await send(() => api.post(endpoints.deletePlaylist, { id: change.playlist.id }, undefined))
         return result && submitted(result)
       }
       default: {
@@ -1894,30 +1024,20 @@ export function createLibrary(context: LibraryContext): Library {
     fetchingAlbums.clear()
     fetchingPlaylists.clear()
     neteaseSongs.clear()
-    for (const item of deferred)
-      item.cancelTimer()
-    deferred = []
-    noticeRemoval = null
-    failedRemoval = null
-    for (const item of orders.values())
-      item.cancelTimer()
-    orders.clear()
-    failedOrder = null
-    playlistOrder?.cancelTimer()
-    playlistOrder = null
-    failedPlaylistOrder = null
-    recovering.clear()
-    writtenMarkers.clear()
+    deferred.forget()
     changes = []
-    submitting.clear()
     notice = null
   }
 
-  async function applyChange(change: Change): Promise<Submitted | null> {
+  async function applyChange(change: ImmediateChange): Promise<Submitted | null> {
     const current = replica
     if (!current)
       return null
     const mine = session.current
+    // 5 秒撤销窗口里把移除的一首加回来：撤掉待提交的移除就行，它还在网易云上，不用再发加入。
+    // 放在断网判断前面：和以前一样，断网时加回待提交的移除也照样放回原位
+    if (change.kind === 'add' && change.playlist.kind === 'own' && deferred.restore(change.playlist.id, [change.song.id]).has(change.song.id))
+      return null
     // 不合规的（界面先拦了，这里兜底）、断网时：不改，直接说没改成（规则⑨）
     const problem = changeProblem(change)
     const failure: ChangeFailure | null = problem ? { kind: 'invalid', problem } : context.online() ? null : { kind: 'offline' }
@@ -1933,17 +1053,13 @@ export function createLibrary(context: LibraryContext): Library {
     // 同一样东西的上一次修改连同写进副本做完了，才提交这一次；打开这张歌单（open）也等它做完
     const target = targetOf(change)
     let submitted: Submitted | null = null
-    const job = (submitting.get(target) ?? Promise.resolve()).then(async () => {
+    await deferred.serialize(target, async () => {
       const result = await submit(mine, change)
       if (result && session.isCurrent(mine)) {
         submitted = result
         await settleChange(mine, entry, change, result)
       }
     })
-    submitting.set(target, job)
-    await job
-    if (submitting.get(target) === job)
-      submitting.delete(target)
     return submitted
   }
 
@@ -1975,8 +1091,7 @@ export function createLibrary(context: LibraryContext): Library {
         return null
       replica = shown
       // 上次关掉前有没确认的改动：同步拿到歌单列表以后重拉这几张、恢复原样（#35）
-      recovering = new Set(stored?.owner === account.id ? pending : [])
-      writtenMarkers = new Set(recovering)
+      deferred.resume(stored?.owner === account.id ? pending : [])
       status = { status: 'syncing' }
       return stateOf(shown, status, opening, pages, notice)
     },
@@ -1989,7 +1104,7 @@ export function createLibrary(context: LibraryContext): Library {
     },
     async open(playlistId) {
       // 正在收藏、取消收藏这张歌单：等网易云回了，再看它在不在曲库里
-      await submitting.get(`playlist:${playlistId}`)
+      await deferred.settled(playlistTarget(playlistId))
       const current = replica
       if (!current?.playlists)
         return
@@ -2098,7 +1213,6 @@ export function createLibrary(context: LibraryContext): Library {
     addSongs,
     removeSongs,
     undoRemove,
-    restorePending,
     retryRemove,
     moveSongs,
     retryOrder,
@@ -2135,14 +1249,7 @@ export function createLibrary(context: LibraryContext): Library {
       return { ok: true, playlistId: playlist.id }
     },
     dismissNotice() {
-      if (notice?.kind === 'removed')
-        noticeRemoval = null
-      if (notice?.kind === 'removeFailed')
-        failedRemoval = null
-      if (notice?.kind === 'orderFailed')
-        failedOrder = null
-      if (notice?.kind === 'playlistOrderFailed')
-        failedPlaylistOrder = null
+      deferred.dismiss()
       notice = null
       publish()
     },

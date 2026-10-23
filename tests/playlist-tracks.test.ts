@@ -4,6 +4,7 @@ import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
 import { held, never } from './harness/hold'
 import { JAZZ_DETAIL, listener, SOME_SONGS, storedTrackIds } from './harness/listener'
+import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
@@ -31,6 +32,10 @@ const REMOVE_REJECTED = 'playlist-edit/playlist_tracks.add-duplicate.json'
 const ADD_REJECTED = 'playlist-edit/playlist_tracks.add-rejected.constructed.json'
 /** 「真夜中」的单曲第一页（#32 录制，30 首） */
 const SEARCH_SONGS = 'search/results/001-cloudsearch.json.gz'
+/** 恢复时重拉这张歌单失败：网易云回 404（#56 录的「不存在」歌单） */
+const RELOAD_FAILED = 'library/netease-playlist/006-playlist_detail.json.gz'
+/** 让一个前台请求回 301 needsLogin：触发 App 的登录失效 */
+const NEEDS_LOGIN_SEARCH = 'search/cloudsearch.301-invalid.constructed.json'
 
 /** 显示着的首数：jazz 的两首歌没有录制歌曲信息，列表里只有编号，所以看首数、看本机副本里的顺序 */
 function totalOf(app: App, playlistId: number): number | null {
@@ -39,6 +44,8 @@ function totalOf(app: App, playlistId: number): number | null {
 
 const removeRequests = (device: Device) => device.requests.filter(request => request.path.endsWith('/tracks/remove'))
 const addRequests = (device: Device) => device.requests.filter(request => request.method === 'POST' && request.path.endsWith('/tracks'))
+const orderRequests = (device: Device) => device.requests.filter(request => request.method === 'POST' && request.path.endsWith('/order'))
+const pendingChanges = async (device: Device) => (await device.stored()).library?.find(([key]) => key === 'pendingChanges')?.[1]
 
 /** 造几首歌：批量加入时由界面从搜索或我喜欢的音乐里给（App 只收 Song） */
 function songsFrom(count: number, firstId = 2_000_000_000): Song[] {
@@ -124,6 +131,26 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     expect(totalOf(app, JAZZ.id)).toBe(1)
   })
 
+  it('5 秒内用“加入歌单”把移除的一首加回来：撤掉这一首的待提交移除，不发加入请求', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+    await openJazz(app, { songsHeld: false })
+
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
+    expect(totalOf(app, JAZZ.id)).toBe(1)
+    const sent = device.requests.length
+
+    const [song] = songsFrom(1, JAZZ_TRACKS[0])
+    await app.addToPlaylist(JAZZ.id, song!)
+    expect(device.requests.length).toBe(sent)
+    expect(totalOf(app, JAZZ.id)).toBe(2)
+    expect(app.state.library?.notice).toMatchObject({ kind: 'alreadyAdded', playlist: { id: JAZZ.id } })
+
+    await world.clock.advance(5000)
+    expect(removeRequests(device)).toHaveLength(0)
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
+  })
+
   it('离开歌单也立即提交，不等 5 秒', async () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
@@ -160,6 +187,35 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     expect(removeRequests(device)).toEqual([
       { method: 'POST', path: `/api/playlists/${JAZZ.id}/tracks/remove`, body: { songIds: [JAZZ_TRACKS[0]!] }, keepalive: true },
     ])
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual([JAZZ_TRACKS[1]!])
+  })
+
+  it('页面隐藏后再次隐藏、离开歌单：同一份移除只有一个在途请求', async () => {
+    const device = world.device()
+    const tab = await signInAtLikedTracks(device)
+    const { app } = tab
+    await openJazz(app, { songsHeld: false })
+
+    const pending = held()
+    await world.netease.reply(REMOVE, { until: pending.until })
+
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
+    await world.settle()
+    tab.hide()
+    await world.settle()
+    expect(removeRequests(device)).toHaveLength(1)
+
+    tab.show()
+    tab.hide()
+    await world.settle()
+    const flushing = app.flushPlaylist(JAZZ.id)
+    await world.settle()
+    expect(removeRequests(device)).toHaveLength(1)
+
+    pending.release()
+    await flushing
+    await world.settle()
+    expect(removeRequests(device)).toHaveLength(1)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([JAZZ_TRACKS[1]!])
   })
 
@@ -272,6 +328,120 @@ describe('没确认的改动下次打开时恢复', () => {
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
     // 已经恢复过：本机不再留着这张歌单的未确认标记
     expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')).toBeUndefined()
+  })
+
+  it('重拉失败不丢标记：这次恢复不了，下次打开还能恢复', async () => {
+    const device = world.device()
+    const tab = await signInAtLikedTracks(device)
+    const { app } = tab
+    await openJazz(app, { songsHeld: false })
+
+    const pending = held()
+    await world.netease.reply(REMOVE, { until: pending.until })
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
+    await world.settle()
+    tab.hide()
+    await world.settle()
+    tab.close()
+    expect(removeRequests(device)).toHaveLength(1)
+
+    // 再打开：歌单列表拿到了，但重拉这张歌单回 404，恢复失败
+    const albums = held()
+    await world.netease.reply('login/user_account.vip.json')
+    await replyLibrary({ through: 'albums', until: albums.until })
+    await world.netease.reply(RELOAD_FAILED)
+    const second = await device.open()
+    await world.settle()
+
+    expect(second.app.state.library?.notice).toBeNull()
+    expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')?.[1]).toEqual([JAZZ.id])
+    second.close()
+
+    // 第三次打开：重拉成功，丢掉本地改动、提示已恢复，标记划掉
+    await world.netease.reply('login/user_account.vip.json')
+    await replyLibrary({ through: 'artists' })
+    await world.netease.reply(JAZZ_DETAIL)
+    await world.netease.reply(SOME_SONGS)
+    await replyLibrary({ from: 'likedTracks', through: 'likedTracks', until: never() })
+    const third = await device.open()
+    await world.settle()
+
+    expect(third.app.state.library?.notice).toEqual({ kind: 'recovered' })
+    expect(totalOf(third.app, JAZZ.id)).toBe(2)
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
+    expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')).toBeUndefined()
+  })
+})
+
+describe('登录失效与换账号', () => {
+  it('登录失效：待提交的移除/排序不再发；标记保留，同账号重登恢复并提示', async () => {
+    const device = world.device()
+    // 第一次同步压着：登录失效后放它回来，旧的一轮结束，重新登录的同步不被它堵住
+    const firstSync = held()
+    const { app } = await signInAtLikedTracks(device, { until: firstSync.until })
+    await openJazz(app, { songsHeld: false })
+
+    expect(app.moveSongs(JAZZ.id, [JAZZ_TRACKS[1]!], JAZZ_TRACKS[0]!)).toBe(true)
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
+    await world.settle()
+    expect(await pendingChanges(device)).toEqual([JAZZ.id])
+
+    // 一个前台请求回了 301：这一轮登录失效，计时和队列作废
+    await world.netease.reply(NEEDS_LOGIN_SEARCH)
+    await world.netease.reply('login/login_refresh.301-invalid.json')
+    expect(await app.searchSongs('真夜中')).toMatchObject({ ok: false, failure: { kind: 'needsLogin' } })
+    await world.settle()
+    expect(app.state.session.status).toBe('loginExpired')
+
+    firstSync.release()
+    await world.clock.advance(5000)
+    await world.settle()
+    expect(removeRequests(device)).toHaveLength(0)
+    expect(orderRequests(device)).toHaveLength(0)
+    // 本机的未确认标记不删：同一个账号重新登录后还要恢复
+    expect(await pendingChanges(device)).toEqual([JAZZ.id])
+
+    await replyLibrary({ through: 'artists' })
+    await world.netease.reply(JAZZ_DETAIL)
+    await world.netease.reply(SOME_SONGS)
+    await replyLibrary({ from: 'likedTracks', through: 'likedTracks', until: never() })
+    await signIn(world, app)
+    await world.settle()
+
+    expect(app.state.library?.notice).toEqual({ kind: 'recovered' })
+    expect(totalOf(app, JAZZ.id)).toBe(2)
+    expect(await pendingChanges(device)).toBeUndefined()
+  })
+
+  it('换账号：旧计时作废、新账号不继承；旧账号的副本和标记按 ADR-0007 清掉，重登不会 recovered', async () => {
+    const device = world.device()
+    const firstSync = held()
+    const { app } = await signInAtLikedTracks(device, { until: firstSync.until })
+    await openJazz(app, { songsHeld: false })
+
+    expect(app.moveSongs(JAZZ.id, [JAZZ_TRACKS[1]!], JAZZ_TRACKS[0]!)).toBe(true)
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
+    await world.settle()
+    expect(await pendingChanges(device)).toEqual([JAZZ.id])
+
+    await replyLibrary({ until: never() })
+    await signIn(world, app, { another: true })
+    firstSync.release()
+    await world.clock.advance(5000)
+    await world.settle()
+
+    expect(removeRequests(device)).toHaveLength(0)
+    expect(orderRequests(device)).toHaveLength(0)
+    // 换账号时旧账号的曲库副本和未确认标记一起清掉（ADR-0007：新账号不沿用）
+    expect(await pendingChanges(device)).toBeUndefined()
+
+    // 旧账号再登录：重新同步曲库，但已经没有标记，不会提示“已恢复原样”
+    await replyLibrary({ until: never() })
+    await signIn(world, app)
+    await world.settle()
+
+    expect(app.state.library?.notice).toBeNull()
+    expect(await pendingChanges(device)).toBeUndefined()
   })
 })
 
