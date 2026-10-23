@@ -1,12 +1,12 @@
 import type { App } from '#lib/app/app.js'
 import type { NeteasePlaylistSongs } from '#lib/app/library.js'
-import type { Device, Tab } from './harness/device'
 import { describe, expect, it } from 'vitest'
 import { held, never } from './harness/hold'
-import { signIn } from './harness/sign-in'
+import { listener, queueIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInAtLikedTracks } = listener(world)
 
 // 打开不在曲库里的歌单（#56，Spec #11“搜索”、ADR-0007）：每次打开都联网取，不存进本机副本。
 // 录制见 tests/fixtures/netease/README.md 的 #56 一条
@@ -26,26 +26,6 @@ const RADAR = { id: 3136952023, detail: 'library/sync/deleted/002-playlist_detai
 /** 一首歌的播放地址：点歌后放哪首都用它，压着不回（这里只看播放队列） */
 const PLAY_URL = 'playback/liked/001-song_url_v1.json.gz'
 
-const HEARTS = 'library/likelist.json'
-/** 歌单列表：#22 在官方 App 里删掉临时歌单 poems 之后的 */
-const PLAYLISTS = 'library/sync/deleted/001-user_playlist.json.gz'
-const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
-const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-
-/** 登录，后台同步停在我喜欢的音乐的曲目编号：本机副本里有歌单列表，还没有一首歌 */
-async function signInHeld(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-  await signIn(world, tab.app)
-  await world.settle()
-  return tab
-}
-
 /** 打开着的不在曲库里的歌单显示的样子 */
 function shownContent(app: App, playlistId: number): NeteasePlaylistSongs {
   const page = app.state.library?.neteasePlaylist(playlistId)
@@ -53,8 +33,6 @@ function shownContent(app: App, playlistId: number): NeteasePlaylistSongs {
     throw new Error(`歌单 ${playlistId} 没显示：${JSON.stringify(page)}`)
   return page.content
 }
-
-const queueIds = (app: App) => app.state.player.queue.map(entry => entry.song.id)
 
 /** 打开 1,201 首的歌单，第二页歌曲信息压着：显示着前 1,000 首。返回放出第二页的函数 */
 async function openBigHeldAtPage2(app: App): Promise<() => void> {
@@ -70,7 +48,7 @@ async function openBigHeldAtPage2(app: App): Promise<() => void> {
 describe('打开不在曲库里的歌单', () => {
   it('联网取头部和全部曲目编号，再按页取歌曲信息；头部有创建者、播放次数、简介和标签；不存进本机副本', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(SMALL.detail)
     await world.netease.reply(SMALL.songs)
@@ -114,7 +92,7 @@ describe('打开不在曲库里的歌单', () => {
 
   it('曲库里有的歌单照旧：拉进本机副本，不联网现取', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(RADAR.detail)
     await world.netease.reply(SMALL.songs, { until: never() })
@@ -131,7 +109,7 @@ describe('打开不在曲库里的歌单', () => {
 
   it('几千首的歌单按页取歌曲信息，取到一页就先显示，没取全时标出来；取全了不再标', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const releasePage2 = await openBigHeldAtPage2(app)
 
     const songsRequests = device.requests.filter(request => request.path === '/api/songs')
@@ -150,7 +128,7 @@ describe('打开不在曲库里的歌单', () => {
 
   it('歌单内搜索在已取到的歌里找：没取全时标“可能不全”，取全后找得到后面的歌、不再标', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const releasePage2 = await openBigHeldAtPage2(app)
 
     // 第一页、第二页各有一首 doa 的《英雄》；搜的时候不分大小写
@@ -167,7 +145,7 @@ describe('打开不在曲库里的歌单', () => {
 
   it('在里面点一首歌：用整张歌单替换播放队列、从这首开始放，播放来源是这张歌单；还没取全时先用已取到的，取全了把后面的补上（规则⑫）', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const releasePage2 = await openBigHeldAtPage2(app)
     const partial = shownContent(app, BIG.id)
     const clicked = partial.songs.slice(1).find(song => song.availability !== 'noCopyright')!
@@ -190,7 +168,7 @@ describe('打开不在曲库里的歌单', () => {
 
   it('每次打开都联网取：再打开时先显示上次取到的，同时联网取头部和曲目编号', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await world.netease.reply(SMALL.detail)
     await world.netease.reply(SMALL.songs)
     await app.openPlaylist(SMALL.id)
@@ -205,7 +183,7 @@ describe('打开不在曲库里的歌单', () => {
 
   it('再打开时断网：照常显示上次取到的；联网后再打开，只取头部和曲目编号', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await world.netease.reply(SMALL.detail)
     await world.netease.reply(SMALL.songs)
     await app.openPlaylist(SMALL.id)
@@ -227,7 +205,7 @@ describe('打开不在曲库里的歌单', () => {
 describe('打不开时说明原因', () => {
   it('第一次打开时断网：说要联网才能打开；联网后再打开就取到了', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     device.setOnline(false)
     await app.openPlaylist(SMALL.id)
@@ -242,7 +220,7 @@ describe('打不开时说明原因', () => {
 
   it('歌单不存在、已被删除、是别人的隐私歌单：说明是哪一种，不取歌曲信息', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     for (const [playlist, reason] of [[MISSING, 'missing'], [DELETED, 'deleted'], [PRIVATE, 'private']] as const) {
       await world.netease.reply(playlist.detail)
@@ -255,7 +233,7 @@ describe('打不开时说明原因', () => {
 
   it('歌曲信息有一页没取成：已经取到的照常显示，说明没取全的原因；再打开一次接着取', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await world.netease.reply(BIG.detail)
     await world.netease.reply(BIG.pages[0])
     await world.netease.reply('library/song_detail.liked-page4.502-null-artist.json.gz')

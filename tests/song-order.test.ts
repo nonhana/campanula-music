@@ -1,25 +1,20 @@
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
 import type { Device, Tab } from './harness/device'
-import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { canSortPlaylist } from '#lib/api/library.js'
+import { loadFixture } from './harness/fixtures'
 import { held } from './harness/hold'
-import { signIn } from './harness/sign-in'
+import { listener, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInAtLikedTracks } = listener(world)
 
 // 多选里的拖动排序（#36，Spec #11“客户端：晚一点才提交的修改”“多选、拖拽与换封面”）：
 // 拖完先改本地，停手 2 秒才把整张歌单的新顺序一次提交；连拖两次只提交一次；
 // 失败退回原来的顺序、提示里可以重试；页面隐藏时立即提交；一次拖多首保持原来的先后。
 // 录制见 tests/fixtures/netease/README.md 的验证关卡②
-const HEARTS = 'library/likelist.json'
-/** 歌单列表：#22 在官方 App 里删掉临时歌单 poems 之后的 */
-const PLAYLISTS = 'library/sync/deleted/001-user_playlist.json.gz'
-const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
-const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
 /** 新建隐私歌单「Campanula 测试 · 可删除」，和紧接着读的详情（#33 录的） */
 const CREATED = { id: 900000023, create: 'playlist-edit/create/001-playlist_create.json.gz', detail: 'playlist-edit/create/002-playlist_detail.json.gz' }
 const ADD = 'playlist-edit/playlist_tracks.add.json'
@@ -31,20 +26,6 @@ const ORDER_UNCONFIRMED = 'playlist-edit/song_order_update.missing-one.json'
 const ORDER_MISSING = 'playlist-edit/song_order_update.deleted-playlist.json'
 /** 重新读回来的是「小歌单」的 6 首（#22 录制），不是提交的顺序 */
 const RE_READ = 'library/playlist_detail.own-small.json'
-
-/** 登录，后台同步停在我喜欢的音乐的曲目编号：本机副本里有红心、歌单列表、收藏的专辑和歌手，还没有一首歌 */
-async function signInHeld(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  const liked = held()
-  await world.netease.reply(LIKED_TRACK_IDS, { until: liked.until })
-  await signIn(world, tab.app)
-  await world.settle()
-  return tab
-}
 
 /** 造几首歌：拖动排序的判定用编号，歌名只给人看 */
 function songsFrom(ids: readonly number[]): Song[] {
@@ -60,7 +41,7 @@ function songsFrom(ids: readonly number[]): Song[] {
 
 /** 建一张自建歌单，加入这几首歌（加入后按传入的先后排在最前） */
 async function createdWith(device: Device, songs: readonly Song[]): Promise<{ app: App, tab: Tab }> {
-  const tab = await signInHeld(device)
+  const tab = await signInAtLikedTracks(device)
   const { app } = tab
   await world.netease.reply(CREATED.create)
   await world.netease.reply(CREATED.detail, { when: { id: CREATED.id } })
@@ -71,10 +52,6 @@ async function createdWith(device: Device, songs: readonly Song[]): Promise<{ ap
   // 加歌的“已加入”提示不该影响后面排序的断言
   app.dismissLibraryNotice()
   return { app, tab }
-}
-
-function storedTracks(device: Device, playlistId: number): Promise<number[] | undefined> {
-  return device.stored().then(stored => (stored.tracks.find(([id]) => id === playlistId)?.[1] as { trackIds: number[] } | undefined)?.trackIds)
 }
 
 function shownTrackIds(app: App, playlistId: number): readonly number[] | undefined {
@@ -96,12 +73,12 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     const songs = songsFrom([2_100_000_001, 2_100_000_002, 2_100_000_003, 2_100_000_004])
     const { app } = await createdWith(device, songs)
     const ids = songs.map(song => song.id)
-    expect(await storedTracks(device, CREATED.id)).toEqual(ids)
+    expect(await storedTrackIds(device, CREATED.id)).toEqual(ids)
 
     // 第一次：把最后一首挪到最前
     expect(app.moveSongs(CREATED.id, [ids[3]!], ids[0]!)).toBe(true)
     expect(shownTrackIds(app, CREATED.id)).toEqual([ids[3], ids[0], ids[1], ids[2]])
-    expect(await storedTracks(device, CREATED.id)).toEqual(ids)
+    expect(await storedTrackIds(device, CREATED.id)).toEqual(ids)
 
     await world.clock.advance(1000)
     expect(orderRequests(device)).toHaveLength(0)
@@ -122,7 +99,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     ])
     expect(orderCalls()).toHaveLength(1)
     expect(orderCalls()[0]).toMatchObject({ query: { pid: CREATED.id, ids: JSON.stringify(latest) } })
-    expect(await storedTracks(device, CREATED.id)).toEqual(latest)
+    expect(await storedTrackIds(device, CREATED.id)).toEqual(latest)
     expect(shownTrackIds(app, CREATED.id)).toEqual(latest)
     expect(app.state.library?.notice).toBeNull()
   })
@@ -144,7 +121,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(orderRequests(device)).toEqual([
       { method: 'POST', path: `/api/playlists/${CREATED.id}/order`, body: { songIds: [ids[2], ids[0], ids[1]] }, keepalive: true },
     ])
-    expect(await storedTracks(device, CREATED.id)).toEqual([ids[2], ids[0], ids[1]])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([ids[2], ids[0], ids[1]])
   })
 
   it('请求体超过 64 KiB 时不用 keepalive，改用普通请求', async () => {
@@ -196,7 +173,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     await world.settle()
     expect(orderRequests(device)).toHaveLength(2)
     expect(orderRequests(device).at(-1)?.body).toEqual({ songIds: [d, a, c, b] })
-    expect(await storedTracks(device, CREATED.id)).toEqual([d, a, c, b])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([d, a, c, b])
   })
 
   it('一次拖几首：按列表里的先后一起挪，保持原来的先后', async () => {
@@ -204,7 +181,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     const songs = songsFrom([2_100_000_021, 2_100_000_022, 2_100_000_023, 2_100_000_024, 2_100_000_025])
     const { app } = await createdWith(device, songs)
     const [a, b, c, d, e] = songs.map(song => song.id)
-    expect(await storedTracks(device, CREATED.id)).toEqual([a, b, c, d, e])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([a, b, c, d, e])
 
     // 勾选的是 d、b（勾选的先后和列表里的先后不一样）：一起挪到 a 前面，仍按列表里的 b、d 排
     expect(app.moveSongs(CREATED.id, [d!, b!], a!)).toBe(true)
@@ -223,8 +200,8 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
   it('网易云回 -1、重新读回来就是提交的顺序：算成功，不退回', async () => {
     const device = world.device()
     // 用「小歌单」录制里的 6 首：反向加入，本机顺序正好和录制顺序差一次相邻交换
-    const recording = JSON.parse(await readFile(new URL(`./fixtures/netease/${RE_READ}`, import.meta.url), 'utf8')) as { response: { body: { playlist: { trackIds: { id: number }[] } } } }
-    const recorded = recording.response.body.playlist.trackIds.map(track => track.id)
+    const { outcome } = await loadFixture(RE_READ)
+    const recorded = (outcome.response.body as { playlist: { trackIds: { id: number }[] } }).playlist.trackIds.map(track => track.id)
     const [first, second] = recorded
     const local = [second!, first!, ...recorded.slice(2)]
     const { app } = await createdWith(device, songsFrom(local))
@@ -242,14 +219,14 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(orderRequests(device).at(-1)?.body).toEqual({ songIds: recorded })
     expect(device.requests.at(-1)?.path).toBe(`/api/playlists/${CREATED.id}/track-ids`)
     expect(shownTrackIds(app, CREATED.id)).toEqual(recorded)
-    expect(await storedTracks(device, CREATED.id)).toEqual(recorded)
+    expect(await storedTrackIds(device, CREATED.id)).toEqual(recorded)
     expect(app.state.library?.notice).toBeNull()
   })
 
   it('提交的顺序过期（多出来一首还没同步到网易云）时，-1 重读只比两边都有的歌，算成功', async () => {
     const device = world.device()
-    const recording = JSON.parse(await readFile(new URL(`./fixtures/netease/${RE_READ}`, import.meta.url), 'utf8')) as { response: { body: { playlist: { trackIds: { id: number }[] } } } }
-    const recorded = recording.response.body.playlist.trackIds.map(track => track.id)
+    const { outcome } = await loadFixture(RE_READ)
+    const recorded = (outcome.response.body as { playlist: { trackIds: { id: number }[] } }).playlist.trackIds.map(track => track.id)
     const extra = 2_200_000_001
     // 本地多一首（比如红心还在提交中）：网易云会忽略多出来的歌；重读只认两边都有的歌的先后
     const { app } = await createdWith(device, songsFrom([extra, ...recorded]))
@@ -264,7 +241,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
 
     expect(orderRequests(device).at(-1)?.body).toEqual({ songIds: [...recorded, extra] })
     expect(shownTrackIds(app, CREATED.id)).toEqual([...recorded, extra])
-    expect(await storedTracks(device, CREATED.id)).toEqual([...recorded, extra])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([...recorded, extra])
     expect(app.state.library?.notice).toBeNull()
   })
 
@@ -282,7 +259,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     await world.settle()
 
     expect(shownTrackIds(app, CREATED.id)).toEqual([a, b, c])
-    expect(await storedTracks(device, CREATED.id)).toEqual([a, b, c])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([a, b, c])
     expect(app.state.library?.notice).toMatchObject({
       kind: 'playlistMissing',
       change: { kind: 'order', playlist: { id: CREATED.id } },
@@ -298,7 +275,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     device.setOnline(false)
     expect(app.moveSongs(CREATED.id, [c!], a!)).toBe(false)
     expect(shownTrackIds(app, CREATED.id)).toEqual([a, b, c])
-    expect(await storedTracks(device, CREATED.id)).toEqual([a, b, c])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([a, b, c])
     expect(app.state.library?.notice).toMatchObject({ kind: 'orderFailed', playlist: { id: CREATED.id }, failure: { kind: 'offline' } })
 
     device.setOnline(true)
@@ -308,7 +285,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
 
     expect(orderRequests(device).at(-1)?.body).toEqual({ songIds: [c, a, b] })
     expect(shownTrackIds(app, CREATED.id)).toEqual([c, a, b])
-    expect(await storedTracks(device, CREATED.id)).toEqual([c, a, b])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([c, a, b])
     expect(app.state.library?.notice).toBeNull()
   })
 
@@ -328,7 +305,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     await world.settle()
 
     expect(shownTrackIds(app, CREATED.id)).toEqual(before)
-    expect(await storedTracks(device, CREATED.id)).toEqual(before)
+    expect(await storedTrackIds(device, CREATED.id)).toEqual(before)
     // 网易云回 -1、重读也不是新顺序：说不出原因，提示不编一个（#59）
     expect(app.state.library?.notice).toMatchObject({ kind: 'orderFailed', playlist: { id: CREATED.id }, failure: null })
 
@@ -338,7 +315,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
 
     expect(orderRequests(device).at(-1)?.body).toEqual({ songIds: [c, a, b] })
     expect(shownTrackIds(app, CREATED.id)).toEqual([c, a, b])
-    expect(await storedTracks(device, CREATED.id)).toEqual([c, a, b])
+    expect(await storedTrackIds(device, CREATED.id)).toEqual([c, a, b])
     expect(app.state.library?.notice).toBeNull()
   })
 })

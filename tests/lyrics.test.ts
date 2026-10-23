@@ -1,11 +1,11 @@
-import type { App } from '#lib/app/app.js'
 import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
-import { held, never } from './harness/hold'
-import { signIn } from './harness/sign-in'
+import { held } from './harness/hold'
+import { listener } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInAtHearts } = listener(world)
 
 // 播放页的歌词（#25）：听众看歌词时用前台请求取，服务端把网易云的 lyric_new 整理成一行一行的歌词。
 // 录制是匿名录的，网易云替身不看歌曲编号，所以哪首歌都能配哪份录制
@@ -14,18 +14,10 @@ const ALL_FORMS = 'playback/lyric_new.all-forms.json'
 const TRANSLATION = 'playback/lyric_new.translation.json'
 const SONG = 1466598056
 
-/** 登录，后台同步停在红心：取歌词的前台请求不用排队 */
-async function signInHeld(device: Device): Promise<App> {
-  const { app } = await device.open()
-  await world.netease.reply('library/likelist.json', { until: never() })
-  await signIn(world, app)
-  return app
-}
-
 describe('歌词', () => {
   it('有逐字歌词时用逐字：每个词各有起止，翻译、音译配到对应的行；作词作曲这类署名也是一行', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
 
     await world.netease.reply(ALL_FORMS)
     await app.openLyrics(SONG)
@@ -73,7 +65,7 @@ describe('歌词', () => {
 
   it('只有逐行歌词时整行一起：没有每个词的起止；翻译配到对应的行，空行（间奏）不算一行；这首没有音译', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
 
     await world.netease.reply(TRANSLATION)
     await app.openLyrics(SONG)
@@ -95,7 +87,7 @@ describe('歌词', () => {
 
   it('这首歌没有翻译或音译时说明没有（界面据此禁用开关）', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
     /** 打开一首歌的歌词（网易云回这份录制），看它是逐字还是逐行、有没有翻译和音译 */
     const forms = async (fixture: string, songId: number) => {
       await world.netease.reply(fixture)
@@ -120,7 +112,7 @@ describe('歌词', () => {
 
   it('纯音乐、网易云没有歌词的歌：分别说明，不当作出错', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
 
     await world.netease.reply('playback/lyric_new.pure-music.json')
     await app.openLyrics(SONG)
@@ -133,9 +125,7 @@ describe('歌词', () => {
 
   it('点歌词的一行：当前这首从这一行开始的地方接着放；停着时也从那里开始放', async () => {
     const device = world.device()
-    const tab = await device.open()
-    await world.netease.reply('library/likelist.json', { until: never() })
-    await signIn(world, tab.app)
+    const tab = await signInAtHearts(device)
     const { app } = tab
     // 匿名录的专辑只有一首，非会员放 30 秒的试听片段（从头开始）
     const album = { id: 84072830, song: 1409311773 }
@@ -176,7 +166,7 @@ describe('取歌词', () => {
 
   it('取的时候显示加载中，同一首不重复取；取到了再打开同一首也不再取', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
 
     const slow = held()
     await world.netease.reply(ALL_FORMS, { until: slow.until })
@@ -194,7 +184,7 @@ describe('取歌词', () => {
 
   it('没取到时说明原因，再打开就是重试', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
 
     device.setOnline(false)
     await app.openLyrics(SONG)
@@ -208,7 +198,7 @@ describe('取歌词', () => {
 
   it('换了一首歌：前一首的歌词晚回来也不显示', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
 
     const slow = held()
     await world.netease.reply(ALL_FORMS, { until: slow.until })
@@ -223,7 +213,7 @@ describe('取歌词', () => {
 
   it('取歌词时服务端说需要登录（登录 Cookie 没了）：整个 App 变成登录失效，不再显示歌词', async () => {
     const device = world.device()
-    const app = await signInHeld(device)
+    const app = (await signInAtHearts(device)).app
 
     await device.setCookie('campanula_login=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict')
     await app.openLyrics(SONG)

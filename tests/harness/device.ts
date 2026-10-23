@@ -54,6 +54,8 @@ export interface Device {
   setCookie: (setCookie: string) => Promise<void>
   /** 这台设备的本机数据库里 Campanula 存了什么：每个存储区里的 [键, 值]，按键排；还没建库时是空对象 */
   stored: () => Promise<Record<string, [IDBValidKey, unknown][]>>
+  /** 打开 App 前建立旧版本数据库：prepare 在版本变更事务里直接按旧 schema 建存储区、写数据，不调用 App 的迁移 */
+  preload: (version: number, prepare: (database: IDBDatabase) => void) => Promise<void>
   /** 断网或联网：navigator.onLine 跟着变、发 offline / online 事件；断网时请求直接失败 */
   setOnline: (online: boolean) => void
   /** 换封面用的图片解码、导出和直传替身（#34） */
@@ -257,6 +259,29 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
     cookies: () => jar.getCookies(origin),
     setCookie: async (setCookie) => {
       await jar.setCookie(setCookie, origin)
+    },
+    async preload(version, prepare) {
+      if ((await indexedDB.databases()).some(info => info.name === LOCAL_DB))
+        throw new Error('预存旧版数据库要在这台设备第一次打开 App 之前')
+      // IDBFactory.open：upgradeneeded 的事务提交后才发 success；关闭这个连接后 App 才能升版。
+      // https://developer.mozilla.org/en-US/docs/Web/API/IDBFactory/open
+      await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(LOCAL_DB, version)
+        request.onupgradeneeded = () => {
+          try {
+            prepare(request.result)
+          }
+          catch (error) {
+            request.transaction!.abort()
+            reject(error)
+          }
+        }
+        request.onsuccess = () => {
+          request.result.close()
+          resolve()
+        }
+        request.onerror = () => reject(request.error)
+      })
     },
     async stored() {
       if (!(await indexedDB.databases()).some(info => info.name === LOCAL_DB))

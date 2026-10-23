@@ -24,14 +24,20 @@ function isStandardSchema(value: unknown): value is StandardSchema {
   return (typeof value === 'object' || typeof value === 'function') && value !== null && '~standard' in value
 }
 
-async function load(path: string): Promise<{ module: string, outcome: Outcome }> {
+interface LoadedFixture {
+  module: string
+  query: Record<string, unknown>
+  outcome: Outcome
+}
+
+async function load(path: string): Promise<LoadedFixture> {
   const raw = await readFixture(path)
   const { module } = raw
   const { rejected, response } = fixtureOutcome(module, raw.response)
   const code = field(response.body, 'code')
   // 录制时去掉了 Cookie（Spec #11 交付方式第 5 条）
-  const outcome = (body: unknown): { module: string, outcome: Outcome } =>
-    ({ module, outcome: { rejected, response: { status: response.status, body, cookie: [] } } })
+  const outcome = (body: unknown): LoadedFixture =>
+    ({ module, query: raw.query as Record<string, unknown>, outcome: { rejected, response: { status: response.status, body, cookie: [] } } })
 
   if (response.retryAfter !== undefined)
     return outcome(response.body)
@@ -54,7 +60,7 @@ async function load(path: string): Promise<{ module: string, outcome: Outcome }>
 }
 
 /** 读过的录制数据：几 MB 的整页录制每条测试都要用好几次，只读、只校验一次（替身每次回之前会复制一份） */
-const loaded = new Map<string, Promise<{ module: string, outcome: Outcome }>>()
+const loaded = new Map<string, Promise<LoadedFixture>>()
 
 /**
  * 读一份录制数据（tests/fixtures/netease/ 下的相对路径），照 SDK 2.4.0 的规矩决定替身是返回还是抛出，
@@ -63,7 +69,7 @@ const loaded = new Map<string, Promise<{ module: string, outcome: Outcome }>>()
  * - 失败：SDK 不校验失败返回的结构；另外导出了结构定义的（REJECTION_SCHEMAS）照样校验。
  *   网易云限流的失败，像 SDK 一样在 body 里加上 retryAfter。
  */
-export function loadFixture(path: string): Promise<{ module: string, outcome: Outcome }> {
+export function loadFixture(path: string): Promise<LoadedFixture> {
   let fixture = loaded.get(path)
   if (!fixture) {
     fixture = load(path)

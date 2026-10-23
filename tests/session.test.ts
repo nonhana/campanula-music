@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { RECORDED_ACCOUNT as ACCOUNT, LIBRARY_SYNC_MODULES, MUSIC_U, renewCookies, RENEWED_MUSIC_U, signIn } from './harness/sign-in'
+import { listener } from './harness/listener'
+import { RECORDED_ACCOUNT as ACCOUNT, MUSIC_U, renewCookies, RENEWED_MUSIC_U, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { sessionCalls, sessionModules } = listener(world)
 
-/** 从第 since 次调用起调过的网易云，不算后台同步曲库的 */
-const sessionCalls = (since = 0) => world.netease.calls.slice(since).filter(call => !LIBRARY_SYNC_MODULES.has(call.module))
-const modules = () => sessionCalls().map(call => call.module)
 /** 从第 since 次调用起，每次调网易云的模块和带的 MUSIC_U */
 function credentialsUsed(since: number) {
   return sessionCalls(since).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])
@@ -23,7 +22,7 @@ describe('打开 App', () => {
     expect(app.state.session).toEqual({ status: 'signedOut' })
     expect(app.state.library).toBeNull()
     expect(device.requests).toEqual([{ method: 'GET', path: '/api/account' }])
-    expect(modules()).toEqual([])
+    expect(sessionModules()).toEqual([])
   })
 
   it('断网时打开：不知道有没有登录，界面能说明是断网；联网后重新打开就是未登录', async () => {
@@ -98,7 +97,7 @@ describe('退出登录', () => {
 
     const { app: reopened } = await device.open()
     expect(reopened.state.session).toEqual({ status: 'signedOut' })
-    expect(modules()).toEqual(['captcha_sent', 'login_cellphone', 'logout'])
+    expect(sessionModules()).toEqual(['captcha_sent', 'login_cellphone', 'logout'])
   })
 
   it('断网时退出：App 马上当作未登录；Cookie 删不掉，联网后服务端才清掉它', async () => {
@@ -116,7 +115,7 @@ describe('退出登录', () => {
     device.setOnline(true)
 
     await vi.waitFor(async () => expect(await device.cookies()).toEqual([]))
-    expect(modules()).toEqual(['captcha_sent', 'login_cellphone', 'logout'])
+    expect(sessionModules()).toEqual(['captcha_sent', 'login_cellphone', 'logout'])
   })
 
   it('断网时退出后重新打开（仍断网）：仍是未登录，不用登录 Cookie 发请求', async () => {
@@ -146,7 +145,7 @@ describe('退出登录', () => {
     await device.idle()
 
     expect(other.state.session).toEqual({ status: 'signedOut' })
-    expect(modules()).toEqual(['captcha_sent', 'login_cellphone', 'user_account', 'logout'])
+    expect(sessionModules()).toEqual(['captcha_sent', 'login_cellphone', 'user_account', 'logout'])
   })
 
   it('另一个标签页正在打开、续期时退出：续期回来的新登录 Cookie 不会把刚退出的登录又带回来', async () => {
@@ -161,7 +160,7 @@ describe('退出登录', () => {
     await world.netease.reply('login/logout.json')
     const opening = device.open()
     // 等另一个标签页问出去、服务端开始续期，再退出；退出发出去以后网易云才回续期
-    await vi.waitFor(() => expect(modules().at(-1)).toBe('login_refresh'))
+    await vi.waitFor(() => expect(sessionModules().at(-1)).toBe('login_refresh'))
     const loggingOut = app.logout()
     await vi.waitFor(() => expect(app.state.session).toEqual({ status: 'signedOut' }))
     renewalArrives()

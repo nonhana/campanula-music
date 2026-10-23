@@ -2,25 +2,20 @@ import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
 import type { FakeAudio } from './harness/browser'
 import type { Device, Tab } from './harness/device'
-import { readFile } from 'node:fs/promises'
-import { gunzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MEDIA_ERR_NETWORK, MEDIA_ERR_SRC_NOT_SUPPORTED } from './harness/browser'
+import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
+import { checkIns, current, likedPage, likedSong, listener, PLAYLISTS_WITH_POEMS, playUrlRequests, queueIds, storedCheckIns } from './harness/listener'
 import { RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInWithLiked, signInAtLikedTracks, reopen, replyLibrary } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
 // 点歌就播放（#24）：浏览器拿服务端取的播放地址直连网易云的音频服务器，两个播放器轮流放（ADR-0010）。
 // 音频服务器那边（数据什么时候够放、放到哪了、断流）由测试在播放器替身上决定
 
-const HEARTS = 'library/likelist.json'
-const PLAYLISTS = 'library/sync/before/001-user_playlist.json.gz'
-const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
-const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-const PAGE = (n: number) => `library/song_detail.liked-page${n}.json.gz`
 const LIKED = { kind: 'playlist', id: 900000001 } as const
 
 /** 我喜欢的音乐里的歌、它们的播放地址（极高音质，#24 录制）和音频的时长（秒，录制里的 time）：第 1～3 首、无版权那首前后各一首、最后一首 */
@@ -61,20 +56,15 @@ async function showSearch(app: App, keyword: string = SEARCHED.keyword, fixture 
 async function playSearchedSongUntilSounding(tab: Tab): Promise<FakeAudio> {
   await showSearch(tab.app)
   await world.netease.reply(SEARCH_SONG.url)
-  tab.app.addToQueue(LIKED, songOf(tab.app, SEARCH_SONG.id))
+  tab.app.addToQueue(LIKED, likedSong(tab.app, SEARCH_SONG.id))
   await world.settle()
   await world.netease.reply(SECOND.url)
-  tab.app.addToQueue(LIKED, songOf(tab.app, SECOND.id))
+  tab.app.addToQueue(LIKED, likedSong(tab.app, SECOND.id))
   await world.settle()
   const player = tab.audio.find(audio => !audio.paused)!
   player.ready(SEARCH_SONG.duration)
   await world.settle()
   return player
-}
-
-async function readRecording(path: string): Promise<{ response: { body: any } }> {
-  const bytes = await readFile(new URL(`./fixtures/netease/${path}`, import.meta.url))
-  return JSON.parse((path.endsWith('.gz') ? gunzipSync(bytes) : bytes).toString('utf8'))
 }
 
 /** 点一首歌，让它出声：网易云回这首和下一首（空闲的播放器预先缓冲）的播放地址。返回出声的播放器 */
@@ -96,37 +86,9 @@ const other = (tab: Tab, player: FakeAudio) => tab.audio.find(audio => audio !==
 
 /** 录下的播放地址：服务端换成 https 交给浏览器 */
 async function recordedUrl(path: string): Promise<string> {
-  const { response } = await readRecording(path)
-  return (response.body.data[0].url as string).replace(/^http:/, 'https:')
-}
-
-/** 登录，后台同步完我喜欢的音乐后停在下一张歌单 */
-async function signInWithLiked(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  await world.netease.reply(LIKED_TRACK_IDS)
-  for (const page of [1, 2, 3, 4, 5])
-    await world.netease.reply(PAGE(page))
-  await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-  await signIn(world, tab.app)
-  await world.settle()
-  if (!tab.app.state.library?.liked?.complete)
-    throw new Error('我喜欢的音乐没同步完')
-  return tab
-}
-
-/** 取过哪些歌的播放地址，按先后 */
-function playUrlRequests(device: Device): string[] {
-  return device.requests.flatMap(request => request.path.includes('/play-url') ? [request.path] : [])
-}
-
-/** 当前这首的编号 */
-function current(app: App): number | null {
-  const { queue, current } = app.state.player
-  return current === null ? null : queue[current].song.id
+  const { outcome } = await loadFixture(path)
+  const body = outcome.response.body as { data: { url: string }[] }
+  return body.data[0].url.replace(/^http:/, 'https:')
 }
 
 describe('点歌', () => {
@@ -180,38 +142,19 @@ describe('点歌', () => {
   })
 })
 
-/** 登录，后台同步停在我喜欢的音乐的曲目编号 */
-async function signInHeldAtLiked(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-  await signIn(world, tab.app)
-  await world.settle()
-  return tab
-}
-
-const queueIds = (app: App) => app.state.player.queue.map(entry => entry.song.id)
-
 describe('只同步了一部分的歌单', () => {
   it('我喜欢的音乐只同步了前两页时点歌：先用已经同步的部分替换播放队列，同步完把后面的补上（规则⑫）', async () => {
     const device = world.device()
     const tab = await device.open()
     const { app } = tab
-    await world.netease.reply(HEARTS)
-    await world.netease.reply(PLAYLISTS)
-    await world.netease.reply(COLLECTED_ALBUMS)
-    await world.netease.reply(COLLECTED_ARTISTS)
-    await world.netease.reply(LIKED_TRACK_IDS)
-    await world.netease.reply(PAGE(1))
-    await world.netease.reply(PAGE(2))
+    await replyLibrary()
+    await world.netease.reply(likedPage(1))
+    await world.netease.reply(likedPage(2))
     const page3 = held()
-    await world.netease.reply(PAGE(3), { until: page3.until })
-    await world.netease.reply(PAGE(4))
-    await world.netease.reply(PAGE(5))
-    await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
+    await world.netease.reply(likedPage(3), { until: page3.until })
+    await world.netease.reply(likedPage(4))
+    await world.netease.reply(likedPage(5))
+    await replyLibrary({ from: 'likedTracks', through: 'likedTracks', until: never() })
     await signIn(world, app)
     await world.settle()
     const partial = app.state.library!.liked!
@@ -299,7 +242,7 @@ describe('只同步了一部分的歌单', () => {
 describe('试听和无版权', () => {
   it('会员歌对非会员只能试听：专辑页里标着试听；点了放试听片段，播放条标“试听”', async () => {
     const device = world.device()
-    const tab = await signInHeldAtLiked(device)
+    const tab = await signInAtLikedTracks(device)
     const { app } = tab
     await world.netease.reply('library/album.json')
     await app.openAlbum(TRIAL_ALBUM.id)
@@ -632,7 +575,7 @@ describe('上一首、下一首、暂停', () => {
 
   it('播放队列只有一首、地址已经过期时按下一首：重新取地址，从头放；取地址时旧的那个还在报进度也不影响', async () => {
     const device = world.device()
-    const tab = await signInHeldAtLiked(device)
+    const tab = await signInAtLikedTracks(device)
     const { app } = tab
     await world.netease.reply('library/album.json')
     await app.openAlbum(TRIAL_ALBUM.id)
@@ -803,11 +746,6 @@ describe('播放队列', () => {
   })
 })
 
-/** 我喜欢的音乐里这首歌的歌曲信息 */
-function songOf(app: App, id: number): Song {
-  return app.state.library!.liked!.songs.find(song => song.id === id)!
-}
-
 /** 另一个播放来源（一张专辑）：歌从这里放进播放队列时，播放来源跟着它 */
 const ALBUM = { kind: 'album', id: TRIAL_ALBUM.id } as const
 
@@ -817,7 +755,7 @@ describe('下一首播放、加入播放队列、插播', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    const song = action === 'play' ? (await showSearch(app))[0] : songOf(app, SECOND.id)
+    const song = action === 'play' ? (await showSearch(app))[0] : likedSong(app, SECOND.id)
     const source = action === 'play' ? SEARCHED : ALBUM
     const url = action === 'play' ? SEARCH_SONG.url : SECOND.url
 
@@ -838,12 +776,12 @@ describe('下一首播放、加入播放队列、插播', () => {
     const tab = await signInWithLiked(device)
     const { app } = tab
     await world.netease.reply(FIRST.url, { until: never() })
-    app.addToQueue(LIKED, songOf(app, FIRST.id))
-    app.addToQueue(LIKED, songOf(app, SECOND.id))
-    app.addToQueue(ALBUM, songOf(app, THIRD.id))
+    app.addToQueue(LIKED, likedSong(app, FIRST.id))
+    app.addToQueue(LIKED, likedSong(app, SECOND.id))
+    app.addToQueue(ALBUM, likedSong(app, THIRD.id))
     expect(queueIds(app)).toEqual([FIRST.id, SECOND.id, THIRD.id])
 
-    app.playNext(ALBUM, songOf(app, LAST.id))
+    app.playNext(ALBUM, likedSong(app, LAST.id))
     expect(queueIds(app)).toEqual([FIRST.id, LAST.id, SECOND.id, THIRD.id])
     expect(app.state.player.queue.map(entry => entry.source)).toEqual([LIKED, ALBUM, LIKED, ALBUM])
     expect(current(app)).toBe(FIRST.id)
@@ -855,10 +793,10 @@ describe('下一首播放、加入播放队列、插播', () => {
     const tab = await signInWithLiked(device)
     const { app } = tab
     await world.netease.reply(FIRST.url, { until: never() })
-    app.addToQueue(LIKED, songOf(app, FIRST.id))
-    app.addToQueue(LIKED, songOf(app, SECOND.id))
-    app.playNext(LIKED, songOf(app, THIRD.id))
-    app.playNext(LIKED, songOf(app, LAST.id))
+    app.addToQueue(LIKED, likedSong(app, FIRST.id))
+    app.addToQueue(LIKED, likedSong(app, SECOND.id))
+    app.playNext(LIKED, likedSong(app, THIRD.id))
+    app.playNext(LIKED, likedSong(app, LAST.id))
     expect(queueIds(app)).toEqual([FIRST.id, LAST.id, THIRD.id, SECOND.id])
 
     const played = []
@@ -880,10 +818,10 @@ describe('下一首播放、加入播放队列、插播', () => {
     const length = app.state.player.queue.length
     const count = (id: number) => queueIds(app).filter(each => each === id).length
 
-    app.playNext(ALBUM, songOf(app, THIRD.id))
-    expect(app.state.player.queue[1]).toEqual({ song: songOf(app, THIRD.id), source: ALBUM })
-    app.addToQueue(ALBUM, songOf(app, SECOND.id))
-    expect(app.state.player.queue.at(-1)).toEqual({ song: songOf(app, SECOND.id), source: ALBUM })
+    app.playNext(ALBUM, likedSong(app, THIRD.id))
+    expect(app.state.player.queue[1]).toEqual({ song: likedSong(app, THIRD.id), source: ALBUM })
+    app.addToQueue(ALBUM, likedSong(app, SECOND.id))
+    expect(app.state.player.queue.at(-1)).toEqual({ song: likedSong(app, SECOND.id), source: ALBUM })
     expect(app.state.player.queue).toHaveLength(length)
     expect([count(THIRD.id), count(SECOND.id)]).toEqual([1, 1])
     expect(current(app)).toBe(FIRST.id)
@@ -908,8 +846,8 @@ describe('下一首播放、加入播放队列、插播', () => {
     const requests = playUrlRequests(device).length
 
     app.play(SEARCHED, SEARCH_SONG.id)
-    app.playNext(ALBUM, songOf(app, SEARCH_SONG.id))
-    app.addToQueue(ALBUM, songOf(app, SEARCH_SONG.id))
+    app.playNext(ALBUM, likedSong(app, SEARCH_SONG.id))
+    app.addToQueue(ALBUM, likedSong(app, SEARCH_SONG.id))
     await world.settle()
     expect(app.state.player).toBe(before)
     expect(tab.sounding()).toBe(player)
@@ -929,8 +867,8 @@ describe('下一首播放、加入播放队列、插播', () => {
     const paused = app.state.player
     const requests = playUrlRequests(device).length
 
-    app.playNext(ALBUM, songOf(app, SEARCH_SONG.id))
-    app.addToQueue(ALBUM, songOf(app, SEARCH_SONG.id))
+    app.playNext(ALBUM, likedSong(app, SEARCH_SONG.id))
+    app.addToQueue(ALBUM, likedSong(app, SEARCH_SONG.id))
     await world.settle()
     expect(app.state.player).toBe(paused)
 
@@ -981,7 +919,7 @@ describe('下一首播放、加入播放队列、插播', () => {
     expect(spare.src).toBe(await recordedUrl(SECOND.url))
 
     await world.netease.reply(THIRD.url)
-    app.playNext(ALBUM, songOf(app, THIRD.id))
+    app.playNext(ALBUM, likedSong(app, THIRD.id))
     await world.settle()
     expect(spare.src).toBe(await recordedUrl(THIRD.url))
     spare.ready(THIRD.duration)
@@ -1003,7 +941,7 @@ describe('下一首播放、加入播放队列、插播', () => {
     expect(spare.paused).toBe(false)
 
     await world.netease.reply(THIRD.url)
-    app.addToQueue(ALBUM, songOf(app, SECOND.id))
+    app.addToQueue(ALBUM, likedSong(app, SECOND.id))
     await world.settle()
     expect(spare.src).toBe(await recordedUrl(THIRD.url))
     expect(spare.paused).toBe(true)
@@ -1019,7 +957,7 @@ describe('下一首播放、加入播放队列、插播', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    const song = songOf(app, NO_COPYRIGHT)
+    const song = likedSong(app, NO_COPYRIGHT)
     await showSearch(app, 'Sea Of Tired Slowed', 'search/songs/004-cloudsearch.json.gz')
 
     app.addToQueue(LIKED, song)
@@ -1089,7 +1027,7 @@ describe('移出、清空播放队列', () => {
     expect(app.state.player.queue).toEqual([])
 
     await world.netease.reply(SECOND.url)
-    app.playNext(ALBUM, songOf(app, SECOND.id))
+    app.playNext(ALBUM, likedSong(app, SECOND.id))
     await world.settle()
     expect(queueIds(app)).toEqual([SECOND.id])
     expect(app.state.player.status).toBe('buffering')
@@ -1274,7 +1212,7 @@ describe('按上一首、下一首会换到哪首', () => {
     await queueOf(app, [FIRST])
     expect(neighborIds(app)).toEqual({ previous: null, next: null })
 
-    app.addToQueue(LIKED, songOf(app, SECOND.id))
+    app.addToQueue(LIKED, likedSong(app, SECOND.id))
     expect(neighborIds(app)).toEqual({ previous: SECOND.id, next: SECOND.id })
   })
 
@@ -1317,7 +1255,7 @@ function seeded(seed: number): () => number {
 async function queueOf(app: App, songs: readonly Recorded[]): Promise<void> {
   await world.netease.reply(songs[0].url, { until: never() })
   for (const song of songs)
-    app.addToQueue(LIKED, songOf(app, song.id))
+    app.addToQueue(LIKED, likedSong(app, song.id))
 }
 
 /** 连按 times 次下一首，依次换上来的歌 */
@@ -1403,7 +1341,7 @@ describe('播放模式', () => {
     await queueOf(app, [FIRST, ...rest])
     app.setPlayMode('shuffle')
 
-    app.addToQueue(ALBUM, songOf(app, added.id))
+    app.addToQueue(ALBUM, likedSong(app, added.id))
     expect(queueIds(app).at(-1)).toBe(added.id)
     const elsewhere = app.state.library!.liked!.songs.find(song => song.availability === 'full' && !RECORDED.some(each => each.id === song.id))!
     app.playNext(ALBUM, elsewhere)
@@ -1420,8 +1358,8 @@ describe('播放模式', () => {
     const tab = await signInWithLiked(device)
     const { app } = tab
     await queueOf(app, [FIRST, SECOND, THIRD, BEFORE_NO_COPYRIGHT])
-    app.playNext(ALBUM, songOf(app, AFTER_NO_COPYRIGHT.id))
-    app.playNext(ALBUM, songOf(app, LAST.id))
+    app.playNext(ALBUM, likedSong(app, AFTER_NO_COPYRIGHT.id))
+    app.playNext(ALBUM, likedSong(app, LAST.id))
 
     app.setPlayMode('shuffle')
     expect(nextTimes(app, 2)).toEqual([LAST.id, AFTER_NO_COPYRIGHT.id])
@@ -1436,7 +1374,7 @@ describe('播放模式', () => {
     const player = await playUntilSounding(tab, FIRST, SECOND)
     const spare = other(tab, player)
     await world.netease.reply(THIRD.url)
-    app.playNext(ALBUM, songOf(app, THIRD.id))
+    app.playNext(ALBUM, likedSong(app, THIRD.id))
     await world.settle()
     spare.ready(THIRD.duration)
     player.progress(191.7)
@@ -1569,7 +1507,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
       const { app } = tab
       const [searched] = await showSearch(app)
       // 播放地址都不回：这里只看播放队列，换上来的歌停在没取到地址
-      const songs = [...app.state.library!.liked!.songs.slice(0, 12), songOf(app, NO_COPYRIGHT), searched]
+      const songs = [...app.state.library!.liked!.songs.slice(0, 12), likedSong(app, NO_COPYRIGHT), searched]
       /** 听众选了“下一首播放”、还没放到的歌，后加的在前：照规则①②⑤和“退回上一首、点别的歌、点歌、清空后不再算”记的 */
       let upNext: number[] = []
       const steps: string[] = []
@@ -1657,27 +1595,6 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
 
 // 后台播放与恢复（#27）：播放队列、当前这首、播放进度、这首已经听了多少秒都存在本机，重新打开时恢复（Spec #11“客户端：播放队列与播放”）
 
-/** 在这台设备上再开一个标签页：问当前账号（离上次续期不到 24 小时，不续期），后台同步停在红心，显示的都是本机副本 */
-async function openAnother(device: Device): Promise<Tab> {
-  await world.netease.reply('login/user_account.vip.json')
-  await world.netease.reply(HEARTS, { until: never() })
-  const tab = await device.open()
-  await world.settle()
-  return tab
-}
-
-/** 关掉这个标签页，再打开 App（见 openAnother） */
-async function reopen(device: Device, tab: Tab): Promise<Tab> {
-  await world.settle()
-  tab.close()
-  return openAnother(device)
-}
-
-/** 我喜欢的音乐里的一首 */
-function likedSong(app: App, id: number): Song {
-  return app.state.library!.liked!.songs.find(song => song.id === id)!
-}
-
 /** 本机存着的进度；没有时是 undefined */
 async function storedProgress(device: Device): Promise<unknown> {
   const { player = [] } = await device.stored()
@@ -1698,6 +1615,7 @@ describe('关掉再打开', () => {
     const before = app.state.player
 
     const { app: reopened, ...again } = await reopen(device, tab)
+    await world.settle()
     const sent = playUrlRequests(device).length
     expect(reopened.state.player).toMatchObject({ queue: before.queue, current: before.current, position: 100, status: 'paused', mode: 'one', change: null, notice: null })
     expect(reopened.state.player.queue[1]).toMatchObject({ song: { id: LAST.id }, source: album })
@@ -1729,6 +1647,7 @@ describe('关掉再打开', () => {
     player.progress(60)
 
     const { app: reopened, ...again } = await reopen(device, tab)
+    await world.settle()
     expect(await storedProgress(device)).toMatchObject({ songId: FIRST.id, position: 60, listened: 60 })
 
     await world.netease.reply(FIRST.url)
@@ -1750,7 +1669,8 @@ describe('退出登录、换账号', () => {
   it('主动退出：本机存着的播放队列删掉，别的标签页存的也删（这个标签页没在放）', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
-    const playing = await openAnother(device)
+    const playing = await reopen(device)
+    await world.settle()
     await playUntilSounding(playing, FIRST, SECOND)
     await world.settle()
     playing.close()
@@ -1778,7 +1698,7 @@ describe('退出登录、换账号', () => {
     await expireLogin(device, app)
     expect(tab.sounding()).toBe(player)
 
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, app, { another: true })
     await world.settle()
     expect(app.state.player).toMatchObject({ queue: [], current: null, status: 'paused' })
@@ -1802,7 +1722,7 @@ describe('退出登录、换账号', () => {
     const queue = app.state.player.queue
     await expireLogin(device, app)
 
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, app)
     await world.settle()
     expect(app.state.player.queue).toBe(queue)
@@ -1823,7 +1743,7 @@ describe('退出登录、换账号', () => {
     expect(app.state.session.status).toBe('loginExpired')
     expect(app.state.player.queue).toEqual([])
 
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, app, { another: true })
     await world.settle()
     expect(app.state.player.queue).toEqual([])
@@ -1908,6 +1828,7 @@ describe('在线播放音质', () => {
     expect(world.netease.calls.at(-1)).toMatchObject({ module: 'song_url_v1', query: { id: RECORDED_IN_QUALITIES.id, level: 'lossless' } })
 
     const { app: reopened, ...again } = await reopen(device, tab)
+    await world.settle()
     expect(reopened.state.player.quality).toBe('lossless')
     const sent = playUrlRequests(device).length
     await world.netease.reply(RECORDED_IN_QUALITIES.lossless)
@@ -1944,23 +1865,9 @@ describe('在线播放音质', () => {
 /** 网易云回打卡成功（#28 用 SDK 2.9.0 的新接口录的，真账号上确认计入了听歌排行） */
 const CHECK_IN = 'playback/check-in/001-scrobble.json.gz'
 
-/** 这台设备发出的打卡：哪首、请求体，按先后 */
-function checkIns(device: Device): { songId: number, body: unknown }[] {
-  return device.requests.flatMap((request) => {
-    const match = /^\/api\/songs\/(\d+)\/check-in$/.exec(request.path)
-    return match ? [{ songId: Number(match[1]), body: request.body }] : []
-  })
-}
-
 /** 服务端调网易云打卡时的参数，按先后 */
 function neteaseCheckIns(): unknown[] {
   return world.netease.calls.flatMap(call => call.module === 'scrobble' ? [call.query] : [])
-}
-
-/** 本机记着、还没发出去的打卡 */
-async function storedCheckIns(device: Device): Promise<unknown[]> {
-  const { checkIns = [] } = await device.stored()
-  return checkIns.map(([, value]) => value)
 }
 
 describe('听歌打卡', () => {
@@ -2088,7 +1995,7 @@ describe('听歌打卡', () => {
       { songId: SECOND.id, source: LIKED, seconds: 20, owner: RECORDED_ACCOUNT.id },
     ])
 
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await world.netease.reply(CHECK_IN)
     await world.netease.reply(CHECK_IN)
     await signIn(world, app)
@@ -2107,7 +2014,7 @@ describe('听歌打卡', () => {
     await expireWhileCheckingIn(device, tab)
     expect(await storedCheckIns(device)).toHaveLength(1)
 
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, tab.app, { another: true })
     await world.settle()
     expect(checkIns(device)).toHaveLength(1)
@@ -2134,7 +2041,7 @@ describe('听歌打卡', () => {
     await world.netease.reply('login/logout.json')
     device.setOnline(true)
     await world.settle()
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, app)
     await world.settle()
     expect(checkIns(device)).toEqual([])
@@ -2149,6 +2056,7 @@ describe('听歌打卡', () => {
     player.progress(60)
 
     const { app: reopened, ...again } = await reopen(device, tab)
+    await world.settle()
     expect(checkIns(device)).toEqual([])
     expect(await storedCheckIns(device)).toEqual([])
 

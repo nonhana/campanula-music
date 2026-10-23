@@ -1,12 +1,12 @@
-import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
-import type { Device, Tab } from './harness/device'
+import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
 import { held, never } from './harness/hold'
-import { signIn } from './harness/sign-in'
+import { JAZZ_DETAIL, listener, SOME_SONGS, storedLibrary, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInAtLikedTracks, dailySongs, openJazz, replyLibrary } = listener(world)
 
 // 红心、加入歌单、收藏（#30，Spec #11“客户端：曲库副本”，ADR-0007）：先改本地、立即生效，再提交给网易云；
 // 网易云拒绝时改回来并说明原因。录制见 tests/fixtures/netease/README.md 的验证关卡②和 #30 一条
@@ -29,10 +29,8 @@ const PLAYLIST_REJECTED = 'like-collect/playlist_subscribe.own-private.json'
 const RATE_LIMITED = 'like-collect/playlist_subscribe.405.json'
 
 /** 作者的自建歌单 jazz：2 首（#22 录制） */
-const JAZZ = { id: 900000002, detail: 'library/sync/before/004-playlist_detail.json.gz' }
+const JAZZ = { id: 900000002, detail: JAZZ_DETAIL }
 const LIKED_ID = 900000001
-/** 别的歌单的一页歌曲信息：压着不回，只看曲目编号 */
-const SOME_SONGS = 'library/sync/before/003-song_detail.json.gz'
 /** 不在曲库里的歌单：搜“真夜中”的歌单结果里的一张，81 首（#56 录制） */
 const NETEASE_PLAYLIST = { id: 95050200, detail: 'library/netease-playlist/001-playlist_detail.json.gz', songs: 'library/netease-playlist/002-song_detail.json.gz' }
 /** 没收藏的专辑 THE BOOK for,；收藏了的专辑 Keep The Village Alive（#23 录制） */
@@ -48,48 +46,12 @@ const SEARCH = {
   albums: { fixture: 'search/results/006-cloudsearch.json.gz', type: 10 },
 }
 
-const HEARTS = 'library/likelist.json'
-/** 歌单列表：#22 在官方 App 里删掉临时歌单 poems 之后的 */
-const PLAYLISTS = 'library/sync/deleted/001-user_playlist.json.gz'
-const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
-const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-const DAILY = 'discover/daily/001-recommend_songs.json.gz'
-
-/** 登录，后台同步停在我喜欢的音乐的曲目编号：本机副本里有红心、歌单列表、收藏的专辑和歌手，还没有一首歌 */
-async function signInHeld(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-  await signIn(world, tab.app)
-  await world.settle()
-  return tab
-}
-
-/** 每日推荐里的歌（录下的 31 首都没红心）：拿来红心、加入歌单 */
-async function dailySongs(app: App): Promise<readonly Song[]> {
-  await world.netease.reply(DAILY)
-  await app.openDaily()
-  const daily = app.state.daily
-  if (daily?.status !== 'shown')
-    throw new Error(`每日推荐没显示：${JSON.stringify(daily)}`)
-  return daily.songs
-}
-
-/** 本机数据库里曲库副本的一项（hearts、playlists、collectedAlbums……） */
-async function storedLibrary(device: Device, key: string): Promise<unknown> {
-  return (await device.stored()).library.find(([name]) => name === key)?.[1]
-}
-
 const hearted = (app: App, songId: number) => app.state.library?.hearts?.has(songId) ?? false
 
 describe('红心', () => {
   it('红心一首歌：马上显示成已红心，提交给网易云，网易云说好了才存进本机副本', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
     expect(hearted(app, song.id)).toBe(false)
 
@@ -111,7 +73,7 @@ describe('红心', () => {
 
   it('取消红心：马上显示成没红心，网易云说好了从本机副本里拿掉', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
     await world.netease.reply(LIKE)
     await app.heart(song, true)
@@ -132,7 +94,7 @@ describe('红心', () => {
 
   it('断网时红心：不改，直接说没改成（规则⑨），不发请求', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
     const sent = device.requests.length
 
@@ -150,7 +112,7 @@ describe('红心', () => {
 
   it('连点两下（红心、马上又取消）：等网易云回了第一下才提交第二下，到网易云的先后不会颠倒', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
 
     const first = held()
@@ -171,7 +133,7 @@ describe('红心', () => {
 
   it('排着队的修改还没提交就退出了登录：不再提交（不会带着别的登录发出去）', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
 
     const first = held()
@@ -190,7 +152,7 @@ describe('红心', () => {
 
   it('红心时服务端说需要登录（登录 Cookie 没了）：整个 App 变成登录失效，红心不存进本机副本', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
 
     await device.setCookie('campanula_login=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict')
@@ -202,26 +164,12 @@ describe('红心', () => {
   })
 })
 
-/** 打开 jazz：曲目编号拉回来了，歌曲信息压着不回 */
-async function openJazz(app: App): Promise<void> {
-  await world.netease.reply(JAZZ.detail)
-  await world.netease.reply(SOME_SONGS, { until: never() })
-  void app.openPlaylist(JAZZ.id)
-  await world.settle()
-}
-
-/** 本机副本里一张歌单的曲目编号 */
-async function storedTrackIds(device: Device, playlistId: number): Promise<number[] | undefined> {
-  const tracks = (await device.stored()).tracks.find(([id]) => id === playlistId)?.[1] as { trackIds: number[] } | undefined
-  return tracks?.trackIds
-}
-
 describe('加入歌单', () => {
   it('加入自建歌单：马上排在最前，提交给网易云，成了存进本机副本并提示一句', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
-    await openJazz(app)
+    await openJazz(app, { songsHeld: true })
     const before = await storedTrackIds(device, JAZZ.id)
     expect(before).toHaveLength(2)
 
@@ -243,9 +191,9 @@ describe('加入歌单', () => {
 
   it('这首已经在歌单里（网易云说“歌单内歌曲重复”）：也算加好了，不改回去', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
-    await openJazz(app)
+    await openJazz(app, { songsHeld: true })
 
     await world.netease.reply(ADD_DUPLICATE)
     await app.addToPlaylist(JAZZ.id, song)
@@ -256,7 +204,7 @@ describe('加入歌单', () => {
 
   it('加入我喜欢的音乐等于红心：提交的是红心，成了也提示一句', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
 
     await world.netease.reply(LIKE)
@@ -271,7 +219,7 @@ describe('加入歌单', () => {
 
   it('加歌时这张歌单的曲目编号正在拉、在加歌确认之前发出：拉回来的里面没有刚加的歌，叠回去，不让它从界面上消失', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
 
     const trackIds = held()
@@ -294,7 +242,7 @@ describe('加入歌单', () => {
 describe('收藏', () => {
   it('在专辑页收藏专辑：马上进收藏的专辑（最前），成了连同专辑页存进本机副本', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await world.netease.reply(THE_BOOK.fixture)
     await app.openAlbum(THE_BOOK.id)
 
@@ -311,7 +259,7 @@ describe('收藏', () => {
 
   it('取消收藏专辑时它其实已经不在收藏里了（网易云回 404“用户未收藏此专辑”）：也算取消好了', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(ALBUM_UNCOLLECT_AGAIN)
     await app.collect({ kind: 'album', id: KEEP_THE_VILLAGE_ALIVE }, false)
@@ -323,7 +271,7 @@ describe('收藏', () => {
 
   it('在歌手页取消收藏、再收藏歌手', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await world.netease.reply(YOASOBI.songs)
     await world.netease.reply(YOASOBI.albums)
     await app.openArtist(YOASOBI.id)
@@ -342,7 +290,7 @@ describe('收藏', () => {
 
   it('收藏打开着的不在曲库里的歌单：带上现取的反作弊令牌，它连同已经取到的曲目进曲库，不再拉一遍；取消收藏后照常显示刚才的样子', async () => {
     const device = world.device()
-    const tab = await signInHeld(device)
+    const tab = await signInAtLikedTracks(device)
     const { app } = tab
     await world.netease.reply(NETEASE_PLAYLIST.detail)
     await world.netease.reply(NETEASE_PLAYLIST.songs)
@@ -373,7 +321,7 @@ describe('收藏', () => {
 
   it('网易云拒绝收藏歌单：改回原样，说明网易云给的原因', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await world.netease.reply(NETEASE_PLAYLIST.detail)
     await world.netease.reply(NETEASE_PLAYLIST.songs)
     await app.openPlaylist(NETEASE_PLAYLIST.id)
@@ -392,7 +340,7 @@ describe('收藏', () => {
 
   it('网易云说操作频繁：改回原样，提示稍后再试，不自动重试', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await world.netease.reply(NETEASE_PLAYLIST.detail)
     await world.netease.reply(NETEASE_PLAYLIST.songs)
     await app.openPlaylist(NETEASE_PLAYLIST.id)
@@ -408,7 +356,7 @@ describe('收藏', () => {
 
   it('收藏歌单前没取到反作弊令牌（Watchman 没加载出来）：不提交，说明原因', async () => {
     const device = world.device()
-    const tab = await signInHeld(device)
+    const tab = await signInAtLikedTracks(device)
     const { app } = tab
     await world.netease.reply(NETEASE_PLAYLIST.detail)
     await world.netease.reply(NETEASE_PLAYLIST.songs)
@@ -425,7 +373,7 @@ describe('收藏', () => {
 
   it('在搜索结果里收藏歌单、歌手、专辑：进曲库的是结果里有的那些（搜索结果里没有的先空着，下一次同步拿到真的）', async () => {
     const device = world.device()
-    const tab = await signInHeld(device)
+    const tab = await signInAtLikedTracks(device)
     const { app } = tab
     for (const { fixture, type } of Object.values(SEARCH))
       await world.netease.reply(fixture, { when: { type } })
@@ -464,8 +412,7 @@ describe('同步拿回来的旧数据', () => {
   async function reopenWithHeartsHeld(device: Device): Promise<{ app: App, releaseHearts: () => void }> {
     await world.netease.reply('login/user_account.vip.json')
     const hearts = held()
-    await world.netease.reply(HEARTS, { until: hearts.until })
-    await world.netease.reply(PLAYLISTS, { until: never() })
+    await replyLibrary({ through: 'playlists', holds: { hearts: { until: hearts.until }, playlists: { until: never() } } })
     const { app } = await device.open()
     await world.settle()
     return { app, releaseHearts: hearts.release }
@@ -473,7 +420,7 @@ describe('同步拿回来的旧数据', () => {
 
   it('红心的请求在同步拿红心之后才确认：同步拿回来的红心里没有这首，叠回去，本机副本里也留着', async () => {
     const device = world.device()
-    const first = await signInHeld(device)
+    const first = await signInAtLikedTracks(device)
     const [song] = await dailySongs(first.app)
     const { app, releaseHearts } = await reopenWithHeartsHeld(device)
 
@@ -489,7 +436,7 @@ describe('同步拿回来的旧数据', () => {
 
   it('同步拿回红心时，红心还没确认：照样显示成已红心但不存；确认了再存', async () => {
     const device = world.device()
-    const first = await signInHeld(device)
+    const first = await signInAtLikedTracks(device)
     const [song] = await dailySongs(first.app)
     const { app, releaseHearts } = await reopenWithHeartsHeld(device)
 
