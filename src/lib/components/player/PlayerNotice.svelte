@@ -2,18 +2,20 @@
   播放的提示：浮在播放条上方，一句话说什么没成、为什么。网络慢是状态，其余是出了问题；可以关掉。
   手机上播放页开着时挪到顶上，不压住控制键。换页时和播放条一样原地不动（uno.config.ts 的 still）。
   出现时从它贴着的那条边飘进来，走时淡出；播放页打开、收起时在旧位置淡出、新位置淡入，不跳（DESIGN.md Overlays，motion.ts 的 toast）。
-  量出自己多高（playerNoticeBox）：改曲库的提示（library/LibraryNotice.svelte）同时在时排在它外侧，不重叠
+  量出自己多高（playerNoticeBox）：改曲库和下载的提示（notice/OperationNotice.svelte）同时在时排在它外侧，不重叠
 -->
 <script lang='ts' module>
-  /** 播放提示有多高（px）；提示走了留着上一次的，改曲库的提示看播放提示在不在再用它 */
+  /** 播放提示有多高（px）；提示走了留着上一次的，改曲库和下载的提示看播放提示在不在再用它 */
   export const playerNoticeBox = $state({ height: 0 })
 </script>
 
 <script lang='ts'>
   import type { Attachment } from 'svelte/attachments'
+  import type { NoticePlace } from '../notice/arrival.svelte'
   import { CircleAlert, LoaderCircle, X } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { toast } from '../motion'
+  import { noticeArrival } from '../notice/arrival.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import { noticeText } from './view'
 
@@ -22,18 +24,8 @@
   const notice = $derived(view.state.player.notice)
 
   /** 提示放在哪：桌面底部正中，手机迷你播放条上方，手机播放页开着时顶上 */
-  type Place = 'desktop' | 'bottom' | 'top'
-  const place = $derived<Place>(!phone ? 'desktop' : overPlayerPage ? 'top' : 'bottom')
-
-  /** 提示上一次在哪，没有提示时是 null */
-  let lastPlace: Place | null = null
-  /** 这次出现是不是换了位置：换了位置只淡入（和旧位置上的交叉淡化），刚冒出来才从边上飘进来 */
-  const arrival = { moved: false }
-  $effect.pre(() => {
-    const now = notice ? place : null
-    arrival.moved = lastPlace !== null && now !== null && now !== lastPlace
-    lastPlace = now
-  })
+  const place = $derived<NoticePlace>(!phone ? 'desktop' : overPlayerPage ? 'top' : 'bottom')
+  const arrival = noticeArrival(() => notice ? place : null)
 
   /** 量出提示多高；换位置时正在淡出的那块（Svelte 标成 inert）不算 */
   const measure: Attachment<HTMLElement> = (node) => {

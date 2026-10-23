@@ -2,8 +2,9 @@ import type { Playlist } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
 import type { Clock, PageVisibility } from './browser'
 import type { Change, ConfirmedChange, DeferredChange } from './changes'
-import type { ChangeFailure, LibraryNotice } from './library'
+import type { ChangeFailure } from './library'
 import type { LocalDb, Replica } from './local'
+import type { OperationNotice } from './notice'
 import type { SessionResult, SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
 import { canSortPlaylist, reorderSortable, TRACKS_PER_CHANGE } from '#lib/api/library.js'
@@ -57,6 +58,11 @@ interface Pending<C extends DeferredChange> {
   failed: (mine: number, failure: ChangeFailure) => void
 }
 
+/** 一批还没提交的移除：removalId 认这一批，提示条的撤销和合并都只认这个编号，不当载荷的副本 */
+interface PendingRemoval extends Pending<RemoveChange> {
+  removalId: number
+}
+
 /** 一种修改自己的东西：停手多久、提交什么、网易云回来了处理完没有（true：提交中又改了，接着发最新的一份） */
 interface Policy<C extends DeferredChange> {
   window: number
@@ -84,10 +90,10 @@ export interface DeferredContext {
   }
   /** 重新发布曲库状态 */
   publish: () => void
-  /** 换掉提示条（并重新发布） */
-  notify: (notice: LibraryNotice | null) => void
-  /** 当前提示条：提交前要看上一次失败的是不是自己的 */
-  notice: () => LibraryNotice | null
+  /** 换掉提示条（App 的提示条负责重新发布） */
+  notify: (notice: OperationNotice | null) => void
+  /** 当前提示条：提交前要看清掉的是不是自己的那一条 */
+  notice: () => OperationNotice | null
   /** 马上同步一次曲库（歌单在网易云里不在了） */
   sync: () => void
   /** 浏览器觉得联网着（navigator.onLine） */
@@ -104,23 +110,25 @@ export interface Deferred {
    * 已经不在本机曲目里的编号会被过滤；超过 TRACKS_PER_CHANGE 或断网时不改本地，只说明原因
    */
   remove: (playlist: Playlist, songIds: readonly number[]) => void
-  /** 撤销刚才的移除：放回原位，什么都不提交。提示条已经换掉时退到最近一份待提交的移除 */
-  undoRemove: () => void
+  /** 撤销提示条上的这一批移除（载荷里的 removalId）：整批放回原位，什么都不提交 */
+  undoRemove: (removalId: number) => void
+  /** 听众主动关掉提示条：如果关的是“撤销”那一条，忘掉它指向哪一批（计时和提交不受影响） */
+  dismiss: () => void
   /** 5 秒撤销窗口里把这些歌加回来：从待提交的移除里拿掉，返回拿掉的编号 */
   restore: (playlistId: number, songIds: readonly number[]) => Set<number>
-  /** 重试刚才没成功的移除：重新从本地拿掉，马上提交 */
-  retryRemove: () => Promise<void>
+  /** 重试提示条上没成功的移除（载荷里的歌单、编号）：重新从本地拿掉，马上提交 */
+  retryRemove: (playlist: Playlist, songIds: readonly number[]) => Promise<void>
   /**
    * 把整张歌单的新顺序先改本地，停手 2 秒合并提交；返回顺序有没有改。
    * 断网、歌单不能排序、要挪的歌不在列表里时返回 false，不改本地
    */
   moveSongs: (playlistId: number, songIds: readonly number[], before: number | null) => boolean
-  /** 重试刚才没保存成功的排序：恢复刚才的顺序，马上提交 */
-  retryOrder: () => Promise<void>
+  /** 重试提示条上没保存成功的排序（载荷里的歌单、顺序）：恢复刚才的顺序，马上提交 */
+  retryOrder: (playlist: Playlist, songIds: readonly number[]) => Promise<void>
   /** 曲库里自建歌单之间的排序：只收全部自建歌单的先后，我喜欢的音乐由模块放在最前；不是这些时抛错 */
   orderPlaylists: (playlistIds: readonly number[]) => boolean
-  /** 重试刚才没保存成功的自建歌单顺序：恢复刚才的顺序，马上提交 */
-  retryPlaylistOrder: () => Promise<void>
+  /** 重试提示条上没保存成功的自建歌单顺序（载荷里的先后）：恢复刚才的顺序，马上提交 */
+  retryPlaylistOrder: (playlistIds: readonly number[]) => Promise<void>
   /** 页面隐藏（全部）或离开歌单（这一张）：把还没提交的修改立即提交 */
   flush: (playlistId?: number) => Promise<void>
   /**
@@ -133,10 +141,8 @@ export interface Deferred {
   recover: (mine: number, reload: (playlistId: number) => Promise<Recovered>) => Promise<void>
   /** 刚打开：接上本机记着的未确认歌单 */
   resume: (playlistIds: readonly number[]) => void
-  /** 收起提示条时清掉对应的记忆：removed 清撤销引用，其余清重试用的那一份 */
-  dismiss: () => void
   /**
-   * 退出、登录失效、换账号：作废本标签页的计时、队列和重试记忆。
+   * 退出、登录失效、换账号：作废本标签页的计时和队列。
    * 本机记着的未确认标记不在 `pending` 里，留给恢复流程（同账号下次打开时重拉）；不在这里删
    */
   forget: () => void
@@ -178,19 +184,16 @@ function orderProblem(own: readonly Playlist[], playlistIds: readonly number[]):
 /** 晚一点才提交的修改在本标签页的全部状态：退出、换账号时整体换掉（本机标记不在里面） */
 interface PendingState {
   /** 多选移除：本地已经拿掉、还没提交的 */
-  removals: Pending<RemoveChange>[]
-  /** 提示条里的“撤销”对应哪一份；换了别的提示条就撤销不到了，但计时到了照样提交 */
-  noticeRemoval: Pending<RemoveChange> | null
-  /** 刚才没成功的移除：提示条里的“重试”重新拿掉、马上提交 */
-  failedRemoval: { playlist: Playlist, songIds: readonly number[] } | null
+  removals: PendingRemoval[]
+  /**
+   * 当前（或最近一条被别的提示替换掉的）“撤销”提示指向哪一批；只用来找“上一批是谁”，
+   * 不是提示内容的第二份存储（提示载荷里的 removalId 才是界面看到的那一批）
+   */
+  noticeRemovalId: number | null
   /** 拖动排序：本地已经改了、还没提交的，一张歌单一份 */
   orders: Map<number, Pending<OrderChange>>
-  /** 刚才没成功的排序：提示条里的“重试”恢复刚才的顺序、马上提交 */
-  failedOrder: { playlist: Playlist, songIds: readonly number[] } | null
   /** 自建歌单之间的顺序：本地已经改了、还没提交的 */
   playlistOrder: Pending<PlaylistOrderChange> | null
-  /** 刚才没成功的自建歌单顺序：提示条里的“重试”恢复刚才的顺序、马上提交 */
-  failedPlaylistOrder: { playlistIds: readonly number[] } | null
   /** 上次关闭前没确认的歌单：同步拿到歌单列表后先从网易云重拉这几张 */
   recovering: Set<number>
   /** 这个标签页已经写进本机的标记：只增删自己写的那几张，别的标签页记下的不动 */
@@ -200,12 +203,9 @@ interface PendingState {
 function freshPending(): PendingState {
   return {
     removals: [],
-    noticeRemoval: null,
-    failedRemoval: null,
+    noticeRemovalId: null,
     orders: new Map(),
-    failedOrder: null,
     playlistOrder: null,
-    failedPlaylistOrder: null,
     recovering: new Set(),
     writtenMarkers: new Set(),
   }
@@ -214,12 +214,14 @@ function freshPending(): PendingState {
 export function createDeferred(context: DeferredContext): Deferred {
   const { clock, local, session } = context
   let pending = freshPending()
+  /** 这个标签页里每一批移除的编号：只增不减，换轮也不重用 */
+  let nextRemovalId = 1
   /** 未确认标记一步一步写，免得几次写交错、后写的拿着旧的一组把前面的盖掉 */
   let markerSaving: Promise<void> = Promise.resolve()
   /** 同一样东西的修改按先后一个一个做：上一次连同收尾做完的那一刻 */
   const queues = new Map<string, Promise<void>>()
 
-  /** 丢掉本标签页的全部待提交状态：计时、队列里的那一份、重试记忆；本机标记留给恢复流程 */
+  /** 丢掉本标签页的全部待提交状态：计时、队列里的那一份；本机标记留给恢复流程 */
   function resetPending(): void {
     for (const item of pending.removals) {
       item.settled = true
@@ -236,7 +238,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     pending = freshPending()
   }
 
-  function show(notice: LibraryNotice | null): void {
+  function show(notice: OperationNotice | null): void {
     context.notify(notice)
   }
 
@@ -388,14 +390,13 @@ export function createDeferred(context: DeferredContext): Deferred {
     return common.length > 0 && sameOrder(expected, common)
   }
 
-  /** 排序没成功：去掉这张歌单的排序修改（本地退回原来的顺序），留下“重试”用的顺序 */
+  /** 排序没成功：去掉这张歌单的排序修改（本地退回原来的顺序），提示条带上“重试”用的顺序 */
   function orderFailed(mine: number, item: Pending<OrderChange>, failure: ChangeFailure | null): void {
     if (!session.isCurrent(mine))
       return
     const { playlist, songIds } = item.change
     context.overlay.remove(change => change.kind === 'order' && change.playlist.id === playlist.id)
     item.finish(mine)
-    pending.failedOrder = { playlist, songIds: [...songIds] }
     show({ kind: 'orderFailed', playlist, songIds: [...songIds], failure })
   }
 
@@ -405,19 +406,17 @@ export function createDeferred(context: DeferredContext): Deferred {
       return
     context.overlay.remove(change => change.kind === 'order' && change.playlist.id === sent.playlist.id)
     item.finish(mine)
-    pending.failedOrder = null
     show({ kind: 'playlistMissing', change: sent })
     context.sync()
   }
 
-  /** 自建歌单顺序没成功：去掉这次的修改（本地退回原来的顺序），留下“重试”用的顺序 */
+  /** 自建歌单顺序没成功：去掉这次的修改（本地退回原来的顺序），提示条带上“重试”用的顺序 */
   function playlistOrderFailed(mine: number, item: Pending<PlaylistOrderChange>, failure: ChangeFailure): void {
     if (!session.isCurrent(mine))
       return
     const playlistIds = [...item.change.playlistIds]
     context.overlay.remove(change => change.kind === 'playlistOrder')
     item.finish(mine)
-    pending.failedPlaylistOrder = { playlistIds }
     show({ kind: 'playlistOrderFailed', playlistIds, failure })
   }
 
@@ -425,10 +424,8 @@ export function createDeferred(context: DeferredContext): Deferred {
     window: REMOVE_UNDO_MS,
     change: item => item.change,
     async settle(mine, item, entry, sent, result) {
-      if (result.ok && result.value.kind === 'done') {
-        pending.failedRemoval = null
+      if (result.ok && result.value.kind === 'done')
         return accepted(mine, item, entry, sent)
-      }
       // 失败、歌单不在了：本地已经改回原样
       context.overlay.remove(change => change === entry.change)
       item.finish(mine)
@@ -439,8 +436,7 @@ export function createDeferred(context: DeferredContext): Deferred {
       }
       // 只有整张歌单排序会回 unconfirmed（write.ts）：移除遇到它按没成功处理
       const failure: ChangeFailure = result.ok ? { kind: 'neteaseUnavailable' } : result.failure
-      pending.failedRemoval = { playlist: sent.playlist, songIds: [...sent.songIds] }
-      show({ kind: 'removeFailed', playlist: sent.playlist, count: sent.songIds.length, failure })
+      show({ kind: 'removeFailed', playlist: sent.playlist, count: sent.songIds.length, songIds: [...sent.songIds], failure })
       return false
     },
   }
@@ -483,29 +479,32 @@ export function createDeferred(context: DeferredContext): Deferred {
     },
   }
 
-  function startRemoval(mine: number, playlist: Playlist, songIds: readonly number[]): Pending<RemoveChange> {
+  function startRemoval(mine: number, playlist: Playlist, songIds: readonly number[]): PendingRemoval {
     const change: RemoveChange = { kind: 'remove', playlist, songIds: [...songIds] }
     const entry = entryOf(change)
-    const item: Pending<RemoveChange> = {
+    const removalId = nextRemovalId++
+    const item: PendingRemoval = {
       change,
       entry,
+      removalId,
       sendingEntry: null,
       cancelTimer: () => {},
       sending: null,
       settled: false,
       begin: () => {
-        if (pending.noticeRemoval === item) {
-          pending.noticeRemoval = null
-          if (context.notice()?.kind === 'removed')
-            show(null)
-        }
+        // 开始提交了：撤销不了了，忘掉这一批，收起这一条的“撤销”提示（换了别的提示条就不动）
+        if (pending.noticeRemovalId === item.removalId)
+          pending.noticeRemovalId = null
+        const current = context.notice()
+        if (current?.kind === 'removed' && current.removalId === item.removalId)
+          show(null)
       },
       finish: (mine) => {
         item.settled = true
         item.cancelTimer()
         pending.removals = pending.removals.filter(each => each !== item)
-        if (pending.noticeRemoval === item)
-          pending.noticeRemoval = null
+        if (pending.noticeRemovalId === item.removalId)
+          pending.noticeRemovalId = null
         void saveMarkers(mine)
       },
       failed: (mine, failure) => {
@@ -514,29 +513,33 @@ export function createDeferred(context: DeferredContext): Deferred {
         context.overlay.remove(change => change === item.entry.change)
         item.finish(mine)
         const { playlist, songIds } = item.change
-        pending.failedRemoval = { playlist, songIds: [...songIds] }
-        show({ kind: 'removeFailed', playlist, count: songIds.length, failure })
+        show({ kind: 'removeFailed', playlist, count: songIds.length, songIds: [...songIds], failure })
       },
     }
     context.overlay.add(entry)
     pending.removals.push(item)
+    // retry 也先记上；commit 一开始 begin 就会清掉，不会留下指不到提示的假撤销引用
+    pending.noticeRemovalId = removalId
     void saveMarkers(mine)
     return item
   }
 
   /** 先从本地拿掉，记下未确认；undo 时提示条留 5 秒撤销，否则马上提交（retry 用） */
-  function applyRemoval(mine: number, playlist: Playlist, songIds: readonly number[], { undo }: { undo: boolean }): Pending<RemoveChange> {
+  function applyRemoval(mine: number, playlist: Playlist, songIds: readonly number[], { undo }: { undo: boolean }): PendingRemoval {
     // 5 秒内又移除了一批：同一张歌单合成一条提示（撤销两批一起放回，计时从头算）；
-    // 不同歌单的先提交上一批，别让它悄悄在后面提交、撤销不到了
+    // 不同歌单的先提交上一批，别让它悄悄在后面提交、撤销不到了。
+    // “上一批”看私有的 noticeRemovalId：提示条被 added 等换掉以后它仍然记着，和基线一样会先提交
     if (undo) {
-      const previous = pending.noticeRemoval
-      if (previous && !previous.settled && !previous.sending) {
+      const previousId = pending.noticeRemovalId
+      const previous = previousId === null
+        ? undefined
+        : pending.removals.find(each => each.removalId === previousId && !each.settled && !each.sending)
+      if (previous) {
         if (previous.change.playlist.id === playlist.id) {
           const combined = [...new Set([...previous.change.songIds, ...songIds])]
           previous.change.songIds = combined
           schedule(mine, previous, removalPolicy)
-          pending.noticeRemoval = previous
-          show({ kind: 'removed', playlist, count: combined.length })
+          show({ kind: 'removed', playlist, count: combined.length, removalId: previous.removalId })
           return previous
         }
         void commit(mine, previous, removalPolicy, { keepalive: false })
@@ -544,12 +547,10 @@ export function createDeferred(context: DeferredContext): Deferred {
     }
     const item = startRemoval(mine, playlist, songIds)
     if (undo) {
-      pending.noticeRemoval = item
-      show({ kind: 'removed', playlist, count: songIds.length })
+      show({ kind: 'removed', playlist, count: songIds.length, removalId: item.removalId })
       schedule(mine, item, removalPolicy)
     }
     else {
-      pending.noticeRemoval = null
       show(null)
     }
     return item
@@ -565,38 +566,48 @@ export function createDeferred(context: DeferredContext): Deferred {
     if (ids.length === 0)
       return
     const mine = session.current
-    pending.failedRemoval = null
     if (ids.length > TRACKS_PER_CHANGE) {
-      show({ kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'invalid', problem: 'tooManySongs' }, retryable: false })
+      show({ kind: 'removeFailed', playlist, count: ids.length, songIds: ids, failure: { kind: 'invalid', problem: 'tooManySongs' } })
       return
     }
     if (!context.online()) {
       // 断网时的写操作直接说没改成，不改本地（规则⑨）
-      pending.failedRemoval = { playlist, songIds: ids }
-      show({ kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'offline' } })
+      show({ kind: 'removeFailed', playlist, count: ids.length, songIds: ids, failure: { kind: 'offline' } })
       return
     }
     applyRemoval(mine, playlist, ids, { undo: true })
   }
 
-  function undoRemove(): void {
-    const item = pending.noticeRemoval ?? pending.removals.at(-1) ?? null
+  /** 撤销提示条上的这一批移除（载荷里的 removalId）：整批放回原位；这一批就撤完了时连计时一起停掉 */
+  function undoRemove(removalId: number): void {
+    const item = pending.removals.find(each => each.removalId === removalId && !each.settled && !each.sending)
     if (!item)
       return
     item.settled = true
     item.cancelTimer()
     context.overlay.remove(change => change === item.entry.change)
     pending.removals = pending.removals.filter(each => each !== item)
-    if (pending.noticeRemoval === item)
-      pending.noticeRemoval = null
-    if (context.notice()?.kind === 'removed')
+    if (pending.noticeRemovalId === removalId)
+      pending.noticeRemovalId = null
+    const current = context.notice()
+    if (current?.kind === 'removed' && current.removalId === removalId)
       show(null)
-    pending.failedRemoval = null
     context.publish()
     void saveMarkers(session.current)
   }
 
-  /** 把一个待提交移除里的这几首拿掉（重新加入歌单时用）：别的歌继续按 5 秒计时，拿掉的放回原位 */
+  /** 听众主动关掉提示条：关的是“撤销”那一条时忘掉它指向哪一批；计时和提交不受影响 */
+  function dismiss(): void {
+    const current = context.notice()
+    if (current?.kind === 'removed' && pending.noticeRemovalId === current.removalId)
+      pending.noticeRemovalId = null
+  }
+
+  /**
+   * 把这张歌单的待提交移除里的这几首拿掉（重新加入歌单时用）：别的歌继续按 5 秒计时，拿掉的放回原位。
+   * 和基线一样遍历这张歌单的全部待提交移除（提示被关掉、换掉以后也能把前一批加回来）；
+   * removalId / noticeRemovalId 只决定当前那条“撤销”提示要不要更新、指针什么时候清，不拿来筛候选。
+   */
   function restore(playlistId: number, songIds: readonly number[]): Set<number> {
     const ids = new Set(songIds)
     const restored = new Set<number>()
@@ -614,19 +625,21 @@ export function createDeferred(context: DeferredContext): Deferred {
         item.cancelTimer()
         context.overlay.remove(change => change === item.entry.change)
         pending.removals = pending.removals.filter(each => each !== item)
-        if (pending.noticeRemoval === item)
-          pending.noticeRemoval = null
+        if (pending.noticeRemovalId === item.removalId)
+          pending.noticeRemovalId = null
       }
       else {
         item.change.songIds = remaining
       }
-      if (context.notice()?.kind === 'removed' && item.change.playlist.id === playlistId) {
-        show(remaining.length > 0 ? { kind: 'removed', playlist: item.change.playlist, count: remaining.length } : null)
+      const current = context.notice()
+      if (current?.kind === 'removed' && current.removalId === item.removalId) {
+        show(remaining.length > 0
+          ? { kind: 'removed', playlist: item.change.playlist, count: remaining.length, removalId: item.removalId }
+          : null)
       }
     }
     if (restored.size > 0) {
-      pending.failedRemoval = null
-      const playlist = context.replica()?.playlists?.find(item => item.id === playlistId)
+      const playlist = context.replica()?.playlists?.find(each => each.id === playlistId)
       if (playlist)
         show({ kind: 'alreadyAdded', playlist })
       void saveMarkers(session.current)
@@ -634,18 +647,18 @@ export function createDeferred(context: DeferredContext): Deferred {
     return restored
   }
 
-  async function retryRemove(): Promise<void> {
-    const failed = pending.failedRemoval
-    if (!failed)
+  async function retryRemove(playlist: Playlist, songIds: readonly number[]): Promise<void> {
+    // 用当前副本里的这一张：提示条可能开了一阵，名字、作者已经变了。
+    // 歌单已经不在当前副本里（在别处删了）就不提交，和 retryOrder 一样，等同步/恢复流程处理
+    const fresh = context.replica()?.playlists?.find(item => item.id === playlist.id)
+    if (!fresh)
       return
-    const mine = session.current
-    pending.failedRemoval = null
     if (!context.online()) {
-      pending.failedRemoval = failed
-      show({ kind: 'removeFailed', playlist: failed.playlist, count: failed.songIds.length, failure: { kind: 'offline' } })
+      show({ kind: 'removeFailed', playlist: fresh, count: songIds.length, songIds: [...songIds], failure: { kind: 'offline' } })
       return
     }
-    const item = applyRemoval(mine, failed.playlist, failed.songIds, { undo: false })
+    const mine = session.current
+    const item = applyRemoval(mine, fresh, songIds, { undo: false })
     await commit(mine, item, removalPolicy, { keepalive: false })
   }
 
@@ -661,10 +674,8 @@ export function createDeferred(context: DeferredContext): Deferred {
       settled: false,
       begin: () => {
         const current = context.notice()
-        if (current?.kind === 'orderFailed' && current.playlist.id === item.change.playlist.id) {
+        if (current?.kind === 'orderFailed' && current.playlist.id === item.change.playlist.id)
           show(null)
-          pending.failedOrder = null
-        }
       },
       finish: (mine) => {
         item.settled = true
@@ -727,7 +738,6 @@ export function createDeferred(context: DeferredContext): Deferred {
       return false
     if (!context.online()) {
       // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
-      pending.failedOrder = { playlist, songIds: next }
       show({ kind: 'orderFailed', playlist, songIds: next, failure: { kind: 'offline' } })
       return false
     }
@@ -740,7 +750,6 @@ export function createDeferred(context: DeferredContext): Deferred {
     const currentNotice = context.notice()
     if (currentNotice?.kind === 'orderFailed' && currentNotice.playlist.id === playlistId)
       show(null)
-    pending.failedOrder = null
     context.publish()
     void saveMarkers(mine)
     return true
@@ -771,7 +780,6 @@ export function createDeferred(context: DeferredContext): Deferred {
       if (!item.sending) {
         context.overlay.remove(change => change === item.entry.change)
         item.finish(mine)
-        pending.failedPlaylistOrder = null
         show(null)
         context.publish()
         return true
@@ -779,7 +787,6 @@ export function createDeferred(context: DeferredContext): Deferred {
     }
     if (!context.online()) {
       // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
-      pending.failedPlaylistOrder = { playlistIds: next }
       show({ kind: 'playlistOrderFailed', playlistIds: next, failure: { kind: 'offline' } })
       return false
     }
@@ -789,7 +796,6 @@ export function createDeferred(context: DeferredContext): Deferred {
       startPlaylistOrder(mine, next)
     if (context.notice()?.kind === 'playlistOrderFailed')
       show(null)
-    pending.failedPlaylistOrder = null
     context.publish()
     return true
   }
@@ -805,10 +811,8 @@ export function createDeferred(context: DeferredContext): Deferred {
       sending: null,
       settled: false,
       begin: () => {
-        if (context.notice()?.kind === 'playlistOrderFailed') {
+        if (context.notice()?.kind === 'playlistOrderFailed')
           show(null)
-          pending.failedPlaylistOrder = null
-        }
       },
       finish: (mine) => {
         item.settled = true
@@ -828,41 +832,36 @@ export function createDeferred(context: DeferredContext): Deferred {
     return item
   }
 
-  async function retryOrder(): Promise<void> {
-    const failed = pending.failedOrder
+  async function retryOrder(playlist: Playlist, songIds: readonly number[]): Promise<void> {
     const current = context.replica()
-    if (!failed || !current)
+    if (!current)
       return
-    const playlist = current.playlists?.find(item => item.id === failed.playlist.id)
-    if (!playlist)
+    // 用当前的歌单列表里的这一张：提示条可能开了一阵，名字、更新时间已经变了
+    const found = current.playlists?.find(item => item.id === playlist.id)
+    if (!found)
       return
-    const mine = session.current
-    pending.failedOrder = null
     if (!context.online()) {
-      pending.failedOrder = failed
-      show({ kind: 'orderFailed', playlist, songIds: failed.songIds, failure: { kind: 'offline' } })
+      show({ kind: 'orderFailed', playlist: found, songIds, failure: { kind: 'offline' } })
       return
     }
-    const item = startOrder(mine, playlist, failed.songIds)
+    const mine = session.current
+    const item = startOrder(mine, found, songIds)
     show(null)
     context.publish()
     void saveMarkers(mine)
     await commit(mine, item, orderPolicy, { keepalive: false, immediate: true })
   }
 
-  async function retryPlaylistOrder(): Promise<void> {
-    const failed = pending.failedPlaylistOrder
+  async function retryPlaylistOrder(playlistIds: readonly number[]): Promise<void> {
     const current = context.replica()
-    if (!failed || !current)
+    if (!current)
       return
-    const mine = session.current
-    pending.failedPlaylistOrder = null
     if (!context.online()) {
-      pending.failedPlaylistOrder = failed
-      show({ kind: 'playlistOrderFailed', playlistIds: failed.playlistIds, failure: { kind: 'offline' } })
+      show({ kind: 'playlistOrderFailed', playlistIds, failure: { kind: 'offline' } })
       return
     }
-    const item = startPlaylistOrder(mine, normalizedPlaylistOrder(current, failed.playlistIds))
+    const mine = session.current
+    const item = startPlaylistOrder(mine, normalizedPlaylistOrder(current, playlistIds))
     show(null)
     context.publish()
     await commit(mine, item, playlistOrderPolicy, { keepalive: false, immediate: true })
@@ -906,25 +905,6 @@ export function createDeferred(context: DeferredContext): Deferred {
     pending.writtenMarkers = new Set(pending.recovering)
   }
 
-  function dismiss(): void {
-    switch (context.notice()?.kind) {
-      case 'removed':
-        pending.noticeRemoval = null
-        break
-      case 'removeFailed':
-        pending.failedRemoval = null
-        break
-      case 'orderFailed':
-        pending.failedOrder = null
-        break
-      case 'playlistOrderFailed':
-        pending.failedPlaylistOrder = null
-        break
-      default:
-        break
-    }
-  }
-
   function forget(): void {
     resetPending()
     queues.clear()
@@ -941,6 +921,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     settled,
     remove,
     undoRemove,
+    dismiss,
     restore,
     retryRemove,
     moveSongs,
@@ -950,7 +931,6 @@ export function createDeferred(context: DeferredContext): Deferred {
     flush,
     recover,
     resume,
-    dismiss,
     forget,
   }
 }

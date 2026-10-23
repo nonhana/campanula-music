@@ -1,10 +1,12 @@
 <!--
-  改曲库的提示（红心、加入歌单、收藏，#30；文案见 notice.ts）：没改成（已经改回原样）说清哪件事没成、为什么，一直留着，直到关掉或被新的换掉；
-  加入歌单成功说一句“已加入「…」”，4 秒后自己走（换了一条就重新计时）。都可以关掉。
+  提示条（改曲库、下载共用，#30、#33、#38；文案见 text.ts）：没改成（已经改回原样）说清哪件事没成、为什么，一直留着，直到关掉或被新的换掉；
+  加入歌单成功说一句“已加入「…」”，4 秒后自己走（App 的时钟管，换了一条就重新计时）。都可以关掉。
+  动作也由 App 决定（state.library.noticeActions）：这一块只照着画“撤销 / 重试 / 关闭”，不按种类猜该调哪个方法。
   样子、位置、进出和播放的提示（PlayerNotice）一样：桌面底部正中，手机迷你播放条上方，手机播放页开着时顶上；换页时原地不动。
   两条同时在时它排在播放提示外侧（底部的在上面，顶上的在下面），让出播放提示的高度；播放提示来了、走了，它横着不动、竖着平移过去（只动 transform）
 -->
 <script lang='ts'>
+  import type { NoticePlace } from './arrival.svelte'
   import { Check, CircleAlert, X } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { toast } from '../motion'
@@ -12,10 +14,9 @@
   import { playerNoticeBox } from '../player/PlayerNotice.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import TextButton from '../ui/TextButton.svelte'
-  import { libraryNoticeText } from './notice'
+  import { noticeArrival } from './arrival.svelte'
+  import { operationNoticeText } from './text'
 
-  /** 加入歌单成功的提示停留多久（ms） */
-  const ADDED_SHOWN_MS = 4000
   /** 和播放提示之间空多少（px） */
   const GAP = 8
 
@@ -25,54 +26,20 @@
   /** 播放页开着时挪到顶上（和播放提示一样）；这一份推导在播放页层里只有一处 */
   const overPlayerPage = $derived(overlays.playerLayer.open)
   const notice = $derived(view.state.library?.notice ?? null)
+  /** App 说这条提示支持哪些动作：界面照着画按钮 */
+  const actions = $derived(view.state.library?.noticeActions ?? [])
   /** 播放提示也在：让出它的高度 */
   const offset = $derived(view.state.player.notice ? playerNoticeBox.height + GAP : 0)
 
   /** 提示放在哪：和播放提示一样 */
-  type Place = 'desktop' | 'bottom' | 'top'
-  const place = $derived<Place>(!phone ? 'desktop' : overPlayerPage ? 'top' : 'bottom')
+  const place = $derived<NoticePlace>(!phone ? 'desktop' : overPlayerPage ? 'top' : 'bottom')
   /** 让出播放提示：贴着底边的往上挪，贴着顶边的往下挪 */
   const shift = $derived(`translateY(${place === 'top' ? offset : -offset}px)`)
-
-  /** 提示上一次在哪，没有提示时是 null */
-  let lastPlace: Place | null = null
-  /** 这次出现是不是换了位置：换了位置只淡入（和旧位置上的交叉淡化），刚冒出来才从边上飘进来 */
-  const arrival = { moved: false }
-  $effect.pre(() => {
-    const now = notice ? place : null
-    arrival.moved = lastPlace !== null && now !== null && now !== lastPlace
-    lastPlace = now
-  })
-
-  // 加入歌单成功（包括都已经在歌单里）：过一会儿自己走。换成了别的提示（新的一条也算）就重新来
-  $effect(() => {
-    if (notice?.kind !== 'added' && notice?.kind !== 'alreadyAdded')
-      return
-    const timer = setTimeout(() => view.app.dismissLibraryNotice(), ADDED_SHOWN_MS)
-    return () => clearTimeout(timer)
-  })
+  const arrival = noticeArrival(() => notice ? place : null)
 
   /** 配 ✓ 的：加入了、都已经在歌单里、移除了；别的（没改成、上次的修改没保存成功）配感叹号 */
   const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed')
   const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed' || notice?.kind === 'playlistOrderFailed' || notice?.kind === 'downloadFailed')
-  /** 提示条里的“重试”：移除失败、排序失败、下载失败共用同一个按钮 */
-  const retry = $derived.by(() => {
-    if (notice?.kind === 'removeFailed' && notice.retryable !== false)
-      return () => void view.app.retryRemove()
-    if (notice?.kind === 'orderFailed')
-      return () => void view.app.retryOrder()
-    if (notice?.kind === 'playlistOrderFailed')
-      return () => void view.app.retryPlaylistOrder()
-    if (notice?.kind === 'downloadFailed') {
-      const { song } = notice
-      // 开始重下了才关掉：断网、没登录时下不了，提示条留着（原因已经写在上面）
-      return () => {
-        if (view.app.download(song) === null)
-          view.app.dismissLibraryNotice()
-      }
-    }
-    return null
-  })
 </script>
 
 {#if notice}
@@ -94,13 +61,13 @@
         {:else}
           <CircleAlert size={18} class='flex-none text-error-700' aria-hidden='true' />
         {/if}
-        <p class='min-w-0 flex-1 text-caption text-neutral-800'>{libraryNoticeText(notice)}</p>
-        {#if notice.kind === 'removed'}
-          <TextButton strong class='md:h-10 px-3.5!' onclick={() => view.app.undoRemove()}>撤销</TextButton>
-        {:else if retry}
-          <TextButton strong class='md:h-10 px-3.5!' onclick={retry}>重试</TextButton>
+        <p class='min-w-0 flex-1 text-caption text-neutral-800'>{operationNoticeText(notice)}</p>
+        {#if actions.includes('undo')}
+          <TextButton strong class='md:h-10 px-3.5!' onclick={() => void view.app.noticeAction('undo')}>撤销</TextButton>
+        {:else if actions.includes('retry')}
+          <TextButton strong class='md:h-10 px-3.5!' onclick={() => void view.app.noticeAction('retry')}>重试</TextButton>
         {/if}
-        <IconButton icon={X} label='关闭提示' onclick={() => view.app.dismissLibraryNotice()} />
+        <IconButton icon={X} label='关闭提示' onclick={() => void view.app.noticeAction('dismiss')} />
       </div>
     </div>
   {/key}
@@ -109,7 +76,7 @@
 <style>
   /* 换页时原地不动。正在淡出的那块（Svelte 标成 inert）不要名字：两块同名时浏览器会跳过这次换页的过渡 */
   .notice:not([inert]) {
-    view-transition-name: library-notice;
+    view-transition-name: operation-notice;
     view-transition-class: still;
   }
 </style>

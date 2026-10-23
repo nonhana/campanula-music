@@ -36,7 +36,7 @@ type DownloadTask
   /** 没下成：说明原因，再下一次就是重试 */
     | { status: 'failed', song: Song, failure: DownloadFailure }
 
-/** 要告诉听众的事（和改曲库的提示共用一条提示条） */
+/** 要告诉听众的事（App 的提示条，和改曲库共用一条） */
 export interface DownloadNotice {
   kind: 'downloadFailed'
   song: Song

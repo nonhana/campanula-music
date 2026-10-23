@@ -9,10 +9,11 @@ import type { PlaylistEdit, PlaylistSeed } from './changes'
 import type { CheckIns } from './check-ins'
 import type { CoverOutcome, CoverState } from './cover'
 import type { DailyState } from './daily'
-import type { DownloadBlock, DownloadNotice, DownloadsState } from './downloads'
-import type { AddSongsOutcome, CreateOutcome, LibraryState, PlaylistSearch } from './library'
+import type { DownloadBlock, DownloadsState } from './downloads'
+import type { AddSongsOutcome, CreateOutcome, Library, LibraryState, PlaylistSearch } from './library'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
+import type { NoticeAction } from './notice'
 import type { Player, PlayerState, PlayMode } from './player'
 import type { SearchState } from './search'
 import type { Session } from './session-round'
@@ -28,6 +29,7 @@ import { createLocalDatabase, createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 import { createLyrics } from './lyrics'
 import { connectMediaSession } from './media-session'
+import { createNotices, noticeActions } from './notice'
 import { createBackgroundLane } from './pacing'
 import { createPlayer, INITIAL_PLAYER } from './player'
 import { createSavedQueue } from './saved-queue'
@@ -211,26 +213,18 @@ export interface App {
    * 我喜欢的音乐、收藏的歌单没有移除：不是自建歌单时抛错。断网时不改本地、直接说没改成
    */
   removeFromPlaylist: (playlistId: number, songIds: readonly number[]) => void
-  /** 撤销刚才的移除：放回原位，什么都不提交 */
-  undoRemove: () => void
-  /** 重试刚才没成功的移除：重新拿掉并马上提交 */
-  retryRemove: () => Promise<void>
   /**
    * 多选里的拖动排序（#36）：把勾选的几首挪到 before 那一首前面（null 是最后），按列表里的先后一起挪。
    * 先改本地、立即生效，停手 2 秒才把整张歌单的新顺序一次提交；页面隐藏、离开歌单时立即提交。
    * 能排序的只有自建歌单和我喜欢的音乐；断网时不改本地、直接说没改成。返回顺序有没有改
    */
   moveSongs: (playlistId: number, songIds: readonly number[], before: number | null) => boolean
-  /** 重试刚才没保存成功的排序：恢复刚才的顺序并马上提交 */
-  retryOrder: () => Promise<void>
   /**
    * 曲库里自建歌单之间的排序（#37）：playlistIds 只是全部自建歌单的新先后，我喜欢的音乐由 App 放在最前，
    * 收藏的歌单不传；不是这些时抛错。先改本地、立即生效，停手 2 秒才一次提交；
    * 页面隐藏时立即提交。断网时不改本地、直接说没改成。返回顺序有没有改
    */
   orderPlaylists: (playlistIds: readonly number[]) => boolean
-  /** 重试刚才没保存成功的自建歌单顺序：恢复刚才的顺序并马上提交 */
-  retryPlaylistOrder: () => Promise<void>
   /** 离开这张歌单：还没提交的移除和排序立即提交（页面隐藏时 App 自己会做） */
   flushPlaylist: (playlistId: number) => Promise<void>
   /**
@@ -282,8 +276,11 @@ export interface App {
   retryCover: () => Promise<CoverOutcome | null>
   /** 关掉裁剪页：释放图片；正在设为封面时关不掉 */
   closeCover: () => void
-  /** 关掉改曲库的提示 */
-  dismissLibraryNotice: () => void
+  /**
+   * 对当前提示条做这个动作（撤销 / 重试 / 关闭）：按 noticeActions(notices.current()) 判断这个动作支持不支持，
+   * 重试和撤销用的数据来自提示条自己的载荷。没有提示条、这个动作不支持时什么都不做
+   */
+  noticeAction: (action: NoticeAction) => Promise<void>
   /**
    * 下载一首（“更多”菜单、播放页的 •••）：完整音频、封面缩略图、歌词、歌曲信息一起存进这台设备（ADR-0006）。
    * 下载地址按下载音质向服务端要（后台请求）；没下成的看 state.downloads.tasks，提示条里说明原因，再下一次就是重试。
@@ -316,6 +313,19 @@ export function createApp(browser: BrowserCapabilities): App {
 
   const lane = createBackgroundLane(browser)
   const round = createSessionRound({ api, lane, expired: loginExpired })
+  /** 曲库：提示条换内容时要让它重发一次；下面建好再赋值 */
+  let library: Library
+  /**
+   * 提示条（改曲库和下载共用）：App 拥有它，自动消失走 App 的时钟。
+   * 换了就放进曲库快照：这一条提示和它支持的动作；没登录时没有曲库，不显示
+   */
+  const notices = createNotices({
+    clock: browser.clock,
+    // 提示条换了让曲库重发一次：这一条提示和它支持的动作都从当前这一份副本算出来
+    changed: () => library.publish(),
+  })
+  // 会话换了（登录、退出、登录失效、换账号）：上一条提示条不算了
+  round.onChange(() => notices.show(null))
   // 三个东西互相要用：播放器保存队列、队列发打卡、打卡读队列。先声明，建好以后才用到
   let player: Player
   let checkIns: CheckIns
@@ -370,7 +380,7 @@ export function createApp(browser: BrowserCapabilities): App {
     online: () => browser.network.onLine,
     signedIn: () => state.session.status === 'signedIn',
     write: next => update({ downloads: next }),
-    notify: notifyDownload,
+    notify: notices.show,
     changed: downloadsChanged,
   })
 
@@ -407,7 +417,7 @@ export function createApp(browser: BrowserCapabilities): App {
     })
   }
 
-  const library = createLibrary({
+  library = createLibrary({
     api,
     session: round,
     local,
@@ -419,12 +429,8 @@ export function createApp(browser: BrowserCapabilities): App {
     },
     online: () => browser.network.onLine,
     checkToken: browser.checkToken,
+    notices,
   })
-
-  /** 下载要告诉听众的事（#38）放进改曲库的那条提示条。写成函数声明：下载先于曲库建好 */
-  function notifyDownload(notice: DownloadNotice): void {
-    library.notify(notice)
-  }
 
   const cover = createCover({
     api: round.api,
@@ -751,12 +757,8 @@ export function createApp(browser: BrowserCapabilities): App {
     removeFromPlaylist(playlistId, songIds) {
       library.removeSongs(ownPlaylist(playlistId), songIds)
     },
-    undoRemove: library.undoRemove,
-    retryRemove: library.retryRemove,
     moveSongs: library.moveSongs,
-    retryOrder: library.retryOrder,
     orderPlaylists: library.orderPlaylists,
-    retryPlaylistOrder: library.retryPlaylistOrder,
     flushPlaylist: playlistId => library.flush(playlistId),
     async searchSongs(keyword) {
       const result = await search.searchSongs(keyword)
@@ -793,7 +795,41 @@ export function createApp(browser: BrowserCapabilities): App {
       }
       throw new Error(`界面上没有这样东西，收藏不了：${JSON.stringify(target)}`)
     },
-    dismissLibraryNotice: library.dismissNotice,
+    async noticeAction(action) {
+      const notice = notices.current()
+      if (!notice || !noticeActions(notice).includes(action))
+        return
+      switch (action) {
+        case 'undo':
+          if (notice.kind === 'removed')
+            library.undoRemove(notice.removalId)
+          return
+        case 'dismiss':
+          library.dismissNotice()
+          notices.show(null)
+          return
+        case 'retry':
+          switch (notice.kind) {
+            case 'removeFailed':
+              return library.retryRemove(notice.playlist, notice.songIds)
+            case 'orderFailed':
+              return library.retryOrder(notice.playlist, notice.songIds)
+            case 'playlistOrderFailed':
+              return library.retryPlaylistOrder(notice.playlistIds)
+            case 'downloadFailed':
+              // 开始重下了才关掉：断网、没登录时下不了，提示条留着（原因已经写在上面）
+              if (downloads.download(notice.song) === null)
+                notices.show(null)
+              return
+            default:
+              return
+          }
+        default: {
+          const unhandled: never = action
+          throw new Error(`不认识的提示条动作：${JSON.stringify(unhandled)}`)
+        }
+      }
+    },
     download: downloads.download,
     deleteDownload: downloads.remove,
     searchDownloads: query => filterSongs(state.downloads.songs ?? [], query),

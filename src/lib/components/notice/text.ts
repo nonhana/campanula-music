@@ -1,14 +1,16 @@
 import type { Playlist, PlaylistEditProblem } from '#lib/api/library.js'
 import type { Change } from '#lib/app/changes.js'
-import type { ChangeFailure, LibraryNotice } from '#lib/app/library.js'
+import type { ChangeFailure } from '#lib/app/library.js'
+import type { OperationNotice } from '#lib/app/notice.js'
 import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import { downloadFailureText } from '../downloads/view'
 import { failureText } from '../failure'
-import { formatCount, playlistName } from './view'
+import { formatCount, playlistName } from '../library/view'
 
-// 改曲库的提示（LibraryNotice.svelte）说什么（#30、#33）：没改成时说哪件事没成、为什么（已经改回原样、放回原位看得见，不另写）；
-// 歌单不在了说它不在了、哪件事没成；加入歌单成功说加进了哪里；下载没下成（#38）说哪首、为什么。
-// 都是一句话，不带句末句号（DESIGN.md 文案）。歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
+// 提示条（OperationNotice.svelte，改曲库和下载共用）说什么（#30、#33、#38）：没改成时说哪件事没成、为什么
+// （已经改回原样、放回原位看得见，不另写）；歌单不在了说它不在了、哪件事没成；加入歌单成功说加进了哪里；
+// 下载没下成说哪首、为什么。都是一句话，不带句末句号（DESIGN.md 文案）。
+// 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
 
 /** 句子里的一张歌单：我喜欢的音乐直接写，别的加「」 */
 function playlistInText(playlist: Playlist): string {
@@ -104,7 +106,7 @@ function missingAction(change: Extract<Change, { kind: 'add' | 'addMany' | 'remo
   }
 }
 
-export function libraryNoticeText(notice: LibraryNotice): string {
+export function operationNoticeText(notice: OperationNotice): string {
   switch (notice.kind) {
     case 'notChanged':
       return attempted(notice.change) + changeFailureText(notice.failure)
