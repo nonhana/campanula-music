@@ -1,7 +1,8 @@
 import type { Account } from '#lib/api/account.js'
-import type { CaptchaRequest, CaptchaResponse, QrCheckRequest, QrCheckResponse, QrResponse, SmsLoginRequest, SmsLoginResponse } from '#lib/api/login.js'
+import type { QrCheckResponse } from '#lib/api/login.js'
 import type { Api, RequestFailure, Result } from './api'
 import type { Clock, PageVisibility } from './browser'
+import { endpoints } from '#lib/api/endpoints.js'
 
 // 登录页的两种方式（Spec #11“客户端：登录会话”）：扫码、短信验证码。不做账号密码登录。
 
@@ -108,7 +109,7 @@ export function createLogin(context: LoginContext): Login {
     // 页面在后台（手机上切去网易云 App 扫码、桌面切了标签页）时不查，回到前台接着查
     if (page.visibilityState === 'hidden')
       return schedulePoll(qr)
-    const result = await api.post<QrCheckResponse>('/api/login/qr/check', { key: qr.key } satisfies QrCheckRequest)
+    const result = await api.post(endpoints.checkLoginQr, { key: qr.key })
     if (generation === mine)
       await handleCheck(qr, result, false)
   }
@@ -153,7 +154,7 @@ export function createLogin(context: LoginContext): Login {
       forget()
       const mine = generation
       setQr({ step: 'loading' })
-      const result = await afterPendingLogout(() => api.post<QrResponse>('/api/login/qr'))
+      const result = await afterPendingLogout(() => api.post(endpoints.loginQr))
       if (generation !== mine)
         return
       if (!result.ok)
@@ -170,18 +171,18 @@ export function createLogin(context: LoginContext): Login {
         throw new Error('只有在等行为验证时才能继续扫码登录')
       const mine = generation
       setQr({ ...step, checking: true })
-      const result = await api.post<QrCheckResponse>('/api/login/qr/check', { key: qr.key } satisfies QrCheckRequest)
+      const result = await api.post(endpoints.checkLoginQr, { key: qr.key })
       if (generation === mine)
         await handleCheck(qr, result, true)
     },
     async sendCaptcha(phone) {
       setSms({ captcha: { status: 'sending' } })
-      const result = await afterPendingLogout(() => api.post<CaptchaResponse>('/api/login/captcha', { phone } satisfies CaptchaRequest))
+      const result = await afterPendingLogout(() => api.post(endpoints.sendCaptcha, { phone }))
       setSms({ captcha: result.ok ? { status: 'sent', resendAt: clock.now() + CAPTCHA_RESEND_MS } : { status: 'failed', failure: result.failure } })
     },
     async loginWithCaptcha(phone, captcha) {
       setSms({ submit: { status: 'submitting' } })
-      const result = await afterPendingLogout(() => api.post<SmsLoginResponse>('/api/login/sms', { phone, captcha } satisfies SmsLoginRequest))
+      const result = await afterPendingLogout(() => api.post(endpoints.loginSms, { phone, captcha }))
       if (result.ok)
         await finish(result.value.account)
       else

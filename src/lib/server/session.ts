@@ -1,4 +1,5 @@
 import type { Cookies } from '@sveltejs/kit'
+import type { Endpoint } from '#lib/api/endpoint.js'
 import type { LoginCookie } from './credentials'
 import type { Listener, SignedInListener } from './netease'
 import { readLogin, renewalDue, saveLogin } from './credentials'
@@ -42,11 +43,14 @@ export async function asSignedIn<T>(cookies: Cookies, login: SignedIn, call: (li
   }
 }
 
-/** 要登录的接口：没有登录 Cookie 就回“需要登录”，不调网易云；有就以登录的听众身份调网易云，结果回 JSON */
-export async function respondSignedIn(cookies: Cookies, call: (listener: Listener) => Promise<unknown>): Promise<Response> {
+/**
+ * 要登录的接口：没有登录 Cookie 就回“需要登录”，不调网易云；有就以登录的听众身份调网易云，结果按端点的响应类型回 JSON。
+ * 回调返回的东西和端点目录里那一条的响应类型对不上时编译不过
+ */
+export async function respondSignedIn<Value>(endpoint: Endpoint<Value>, cookies: Cookies, call: (listener: Listener) => NoInfer<Value> | Promise<NoInfer<Value>>): Promise<Response> {
   const login = readLogin(cookies)
   if (!login?.session)
     return errorResponse({ kind: 'needsLogin' })
   const signedIn = { ...login, session: login.session }
-  return withNetease(async () => Response.json(await asSignedIn(cookies, signedIn, call)))
+  return withNetease(endpoint, () => asSignedIn(cookies, signedIn, async listener => call(listener)))
 }

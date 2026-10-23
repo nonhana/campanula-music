@@ -1,9 +1,8 @@
-import type { Account, AccountResponse } from '#lib/api/account.js'
+import type { Account } from '#lib/api/account.js'
 import type { CoverCrop } from '#lib/api/cover.js'
 import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
-import type { LogoutResponse } from '#lib/api/login.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
-import type { SearchedItems, SearchKind, SearchPageResponse } from '#lib/api/search.js'
+import type { SearchedItems, SearchKind } from '#lib/api/search.js'
 import type { RequestFailure, Result } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { PlaylistEdit, PlaylistSeed } from './changes'
@@ -16,6 +15,7 @@ import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
 import type { CheckIn, PlayerState, PlayMode } from './player'
 import type { SearchState } from './search'
+import { endpoints, searchPage } from '#lib/api/endpoints.js'
 import { createApi } from './api'
 import { changeProblem, playlistEdits } from './changes'
 import { createCheckIns } from './check-ins'
@@ -326,7 +326,7 @@ export function createApp(browser: BrowserCapabilities): App {
         return null
       // 退出了：还没发出去的打卡都丢弃，之后同一个账号再登录也不补发
       await local.clearCheckIns()
-      const result = await api.post<LogoutResponse>('/api/logout')
+      const result = await api.post(endpoints.logout)
       if (!result.ok)
         return result.failure
       await local.setPendingLogout(false)
@@ -668,7 +668,7 @@ export function createApp(browser: BrowserCapabilities): App {
 
   /** 问服务端当前账号是谁；没问到时说明原因 */
   async function checkAccount(): Promise<Session> {
-    const result = await api.get<AccountResponse>('/api/account')
+    const result = await api.get(endpoints.account)
     if (result.ok)
       return result.value.account ? { status: 'signedIn', account: result.value.account } : { status: 'signedOut' }
     if (result.failure.kind === 'needsLogin')
@@ -829,7 +829,7 @@ export function createApp(browser: BrowserCapabilities): App {
       const searched = keyword.trim()
       if (!searched)
         return { ok: true, value: [] }
-      const result = await api.get<SearchPageResponse<'songs'>>(`/api/search/songs?keywords=${encodeURIComponent(searched)}&offset=0`)
+      const result = await api.get(searchPage('songs'), { keywords: searched, offset: 0 })
       if (result.ok)
         return { ok: true, value: result.value.items }
       if (result.failure.kind === 'needsLogin')

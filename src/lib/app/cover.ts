@@ -1,7 +1,8 @@
-import type { CoverCrop, CoverTokenResponse, SetCoverRequest, SetCoverResponse } from '#lib/api/cover.js'
+import type { CoverCrop, CoverTokenResponse } from '#lib/api/cover.js'
 import type { Api, RequestFailure } from './api'
 import type { DecodedImage, ImageCapability } from './browser'
 import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.js'
+import { endpoints } from '#lib/api/endpoints.js'
 
 // 换歌单封面（#34，Spec #11 用户故事 90–92）：选图、检查、裁剪，然后三步上传：
 // 1. 服务端申请上传凭证（image_upload_token）；
@@ -253,7 +254,7 @@ export function createCover(context: CoverContext): Cover {
       }
       if (step === 'token') {
         uploading('token')
-        const result = await context.api.post<CoverTokenResponse>(`/api/playlists/${work.playlistId}/cover/token`, {})
+        const result = await context.api.post(endpoints.coverToken, { id: work.playlistId })
         if (stale(work, mine))
           return null
         if (!result.ok)
@@ -278,7 +279,7 @@ export function createCover(context: CoverContext): Cover {
         step = 'set'
       }
       uploading('set')
-      const result = await context.api.post<SetCoverResponse>(`/api/playlists/${work.playlistId}/cover`, { imgId: work.imgId! } satisfies SetCoverRequest)
+      const result = await context.api.post(endpoints.setCover, { id: work.playlistId }, { imgId: work.imgId! })
       if (stale(work, mine))
         return null
       if (!result.ok)

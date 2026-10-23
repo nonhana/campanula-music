@@ -1,8 +1,9 @@
-import type { CheckInRequest, CheckInResponse } from '#lib/api/playback.js'
+import type { WriteResponse } from '#lib/api/write.js'
 import type { Api, Result } from './api'
 import type { LocksCapability } from './browser'
 import type { LocalDb, PendingCheckIn } from './local'
 import type { BackgroundLane } from './pacing'
+import { endpoints } from '#lib/api/endpoints.js'
 
 // 听歌打卡（Spec #11“客户端：听歌打卡”）：一首歌听完了，播放器交出的打卡和进度存在同一个事务里，记着是哪个网易云账号的；
 // 再经后台通道发给同一个账号（请求节奏：断网时等联网，网易云说操作频繁时等到它给的时间），发成了再删。
@@ -29,8 +30,8 @@ export interface CheckIns {
   sendBeforeLogout: (owner: number) => Promise<void>
 }
 
-function postCheckIn(api: Api, { songId, source, seconds }: PendingCheckIn): Promise<Result<CheckInResponse>> {
-  return api.post<CheckInResponse>(`/api/songs/${songId}/check-in`, { source, seconds } satisfies CheckInRequest)
+function postCheckIn(api: Api, { songId, source, seconds }: PendingCheckIn): Promise<Result<WriteResponse>> {
+  return api.post(endpoints.checkIn, { id: songId }, { source, seconds })
 }
 
 export function createCheckIns(context: CheckInsContext): CheckIns {

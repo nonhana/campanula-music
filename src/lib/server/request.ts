@@ -1,4 +1,5 @@
 import type { SetCoverRequest } from '#lib/api/cover.js'
+import type { PostEndpoint } from '#lib/api/endpoint.js'
 import type { CollectRequest, CreatePlaylistRequest, DescribePlaylistRequest, HeartRequest, PlaylistCollectRequest, RenamePlaylistRequest, TagPlaylistRequest } from '#lib/api/library.js'
 import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchKind } from '#lib/api/search.js'
@@ -7,10 +8,6 @@ import { nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST
 import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
 import { SEARCH_KINDS } from '#lib/api/search.js'
 
-/** 中国大陆手机号（+86）：1 开头的 11 位数字 */
-export const PHONE = /^1\d{10}$/
-/** 短信验证码：4 到 6 位数字 */
-export const CAPTCHA = /^\d{4,6}$/
 /** 二维码的 key（网易云给的 UUID） */
 export const QR_KEY = /^[\w-]{1,64}$/
 /** 网易云的反作弊令牌（Watchman 给的，实测 170 个字符）：可见的 ASCII 字符，不含空白 */
@@ -46,8 +43,14 @@ export function readId(name: string, value: string | null | undefined): number {
   return id
 }
 
-/** 读请求体（JSON）里的编号列表：1 到 max 个 */
-export async function readIds(request: Request, name: string, max: number): Promise<number[]> {
+/** 请求体里装编号列表的键：由请求类型定，写错键编译不过 */
+type IdListKey<Body> = { [K in keyof Body]-?: Body[K] extends number[] ? K : never }[keyof Body] & string
+
+/**
+ * 读请求体（JSON）里的编号列表：1 到 max 个。键和端点的请求体类型绑在一起：
+ * readIds(endpoints.songs, request, 'ids', …)；端点声明的是别的请求类型时编译不过。
+ */
+export async function readIds<Body>(_endpoint: Pick<PostEndpoint<unknown, Body, unknown>, 'request'>, request: Request, name: IdListKey<NonNullable<Body>>, max: number): Promise<number[]> {
   const body: unknown = await request.json().catch(() => null)
   const ids = typeof body === 'object' && body !== null && name in body ? (body as Record<string, unknown>)[name] : undefined
   if (!Array.isArray(ids) || ids.length === 0 || ids.length > max || !ids.every(isNeteaseId))

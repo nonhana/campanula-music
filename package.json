@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo",
+    "check:endpoints": "tsx scripts/check-endpoints.mts",
     "check:mock-isolation": "tsx scripts/check-mock-isolation.mts",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo --watch",
     "fixtures:index": "tsx scripts/fixture-index.mts",
@@ -59,7 +60,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",
-    "pre-push": "pnpm check && pnpm test && pnpm build && pnpm check:mock-isolation"
+    "pre-push": "pnpm check && pnpm test && pnpm build && pnpm check:mock-isolation && pnpm check:endpoints"
   },
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored",

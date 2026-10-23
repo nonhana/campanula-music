@@ -1,3 +1,4 @@
+import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js'
 import type { ApiError, ErrorBody } from '#lib/api/errors.js'
 import type { BrowserCapabilities } from './browser'
 
@@ -13,13 +14,28 @@ export type RequestFailure
 
 export type Result<T> = { ok: true, value: T } | { ok: false, failure: RequestFailure }
 
+/** 端点没有参数（Params = void）时，调用不传 params */
+type ParamsArg<Params> = [Params] extends [void] ? [] : [params: Params]
+/** 端点没有请求体（Request = void）时可以不传 body；要带 options 时写 undefined 占位。有请求体时必传 */
+type BodyArg<Request> = [Request] extends [void] ? [body?: undefined] : [body: Request]
+
+/**
+ * keepalive：页面被隐藏（切后台、锁屏、关页面）时也要发出去的请求（晚一点提交的修改）。
+ * 请求体超过 64 KiB 的浏览器会拒掉，调用方自己判断（#35）
+ */
+export interface PostOptions {
+  keepalive?: boolean
+}
+
+/** Campanula 服务端的接口，按端点目录（#lib/api/endpoints）调用：网址、请求体和响应类型都来自端点那一条 */
 export interface Api {
-  get: <T>(path: string) => Promise<Result<T>>
-  /**
-   * keepalive：页面被隐藏（切后台、锁屏、关页面）时也要发出去的请求（晚一点提交的修改）。
-   * 请求体超过 64 KiB 的浏览器会拒掉，调用方自己判断（#35）
-   */
-  post: <T>(path: string, body?: unknown, options?: { keepalive?: boolean }) => Promise<Result<T>>
+  get: <Params, Response>(endpoint: GetEndpoint<Params, Response>, ...args: ParamsArg<Params>) => Promise<Result<Response>>
+  post: <Params, Request, Response>(endpoint: PostEndpoint<Params, Request, Response>, ...args: [...ParamsArg<Params>, ...BodyArg<Request>, options?: PostOptions]) => Promise<Result<Response>>
+}
+
+/** 从端点调用的实参里取 params：没有参数的端点本身是 void，调用时没有这个实参 */
+function paramsOf<Params>(args: readonly unknown[], takesParams = true): Params {
+  return (takesParams ? args[0] : undefined) as Params
 }
 
 function isErrorBody(body: unknown): body is ErrorBody {
@@ -36,7 +52,7 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
     return { ok: false, failure: { kind: browser.network.onLine ? 'unreachable' : 'offline' } }
   }
 
-  async function request<T>(path: string, init?: RequestInit): Promise<Result<T>> {
+  async function request<Value>(path: string, init?: RequestInit): Promise<Result<Value>> {
     let response: Response
     try {
       response = await browser.fetch(path, init)
@@ -55,17 +71,28 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
       return { ok: false, failure: { kind: response.ok ? 'unreachable' : 'serverError' } }
     }
     if (response.ok)
-      return { ok: true, value: body as T }
+      return { ok: true, value: body as Value }
     return { ok: false, failure: isErrorBody(body) ? body.error : { kind: 'serverError' } }
   }
 
-  return {
-    get: path => request(path),
-    post: (path, body, options) => request(path, {
-      method: 'POST',
+  function get<Params, Response>(endpoint: GetEndpoint<Params, Response>, ...args: ParamsArg<Params>): Promise<Result<Response>> {
+    return request<Response>(endpoint.path(paramsOf<Params>(args)), { method: endpoint.method })
+  }
+
+  function post<Params, Request, Response>(endpoint: PostEndpoint<Params, Request, Response>, ...args: [...ParamsArg<Params>, ...BodyArg<Request>, options?: PostOptions]): Promise<Result<Response>> {
+    // 实参依次是 params（端点有参数时）、body、options；没有请求体的端点也留着 body 的位置，options 不会错位
+    const given: readonly unknown[] = args
+    const offset = endpoint.takesParams ? 1 : 0
+    const params = paramsOf<Params>(given, endpoint.takesParams)
+    const body = given[offset] as Request | undefined
+    const options = given[offset + 1] as PostOptions | undefined
+    return request<Response>(endpoint.path(params), {
+      method: endpoint.method,
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body ?? {}),
       keepalive: options?.keepalive ?? false,
-    }),
+    })
   }
+
+  return { get, post }
 }

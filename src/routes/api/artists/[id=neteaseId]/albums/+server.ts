@@ -1,5 +1,5 @@
-import type { ArtistAlbumsResponse } from '#lib/api/library.js'
 import type { RequestHandler } from './$types'
+import { endpoints } from '#lib/api/endpoints.js'
 import { fetchArtistAlbums } from '#lib/server/netease.js'
 import { readOffset } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
@@ -8,5 +8,5 @@ import { respondSignedIn } from '#lib/server/session.js'
 export const GET: RequestHandler = ({ params, url, cookies }) => {
   const { id } = params
   const offset = readOffset(url.searchParams.get('offset'))
-  return respondSignedIn(cookies, listener => fetchArtistAlbums(id, offset, listener) satisfies Promise<ArtistAlbumsResponse>)
+  return respondSignedIn(endpoints.artistAlbums, cookies, listener => fetchArtistAlbums(id, offset, listener))
 }

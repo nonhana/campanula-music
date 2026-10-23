@@ -22,7 +22,7 @@ export interface CoverCrop {
 }
 
 /**
- * POST /api/playlists/[id]/cover/token：申请上传凭证。imgId 是这张图在网易云的编号，token 直传时放进 x-nos-token，
+ * 申请上传凭证的返回。imgId 是这张图在网易云的编号，token 直传时放进 x-nos-token，
  * uploadUrl 是图片存储的地址（跨域）。token 是凭据，服务端只透传、不记日志（ADR-0003）
  */
 export interface CoverTokenResponse {
@@ -31,7 +31,7 @@ export interface CoverTokenResponse {
   uploadUrl: string
 }
 
-/** POST /api/playlists/[id]/cover：把已经直传成功的图片设为封面。没有直传成功就设，网易云也回 200，封面会坏（验证关卡②） */
+/** 把已经直传成功的图片设为封面的请求体。没有直传成功就设，网易云也回 200，封面会坏（验证关卡②） */
 export interface SetCoverRequest {
   imgId: string
 }

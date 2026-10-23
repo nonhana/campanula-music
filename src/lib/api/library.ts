@@ -1,18 +1,14 @@
 // 曲库的接口（Spec #11“服务端：Campanula API”曲库一项）。都要登录；只回界面用得到的字段。
 // 同步一张歌单要两步：先拿全部曲目编号，再按页取歌曲信息（验证关卡①）
 
-/** GET /api/hearts?uid=：红心了哪些歌。决定红心状态以它为准（我喜欢的音乐的歌曲数会对不上几首，#21 留言） */
+/** 红心了哪些歌。决定红心状态以它为准（我喜欢的音乐的歌曲数会对不上几首，#21 留言） */
 export interface HeartsResponse {
   songIds: number[]
 }
 
-/** POST /api/hearts：红心或取消红心一首歌（一次只能一首，hana-music-api 的 like 只收一个编号） */
+/** 红心或取消红心一首歌的请求体（一次只能一首，hana-music-api 的 like 只收一个编号） */
 export interface HeartRequest {
   songId: number
-  hearted: boolean
-}
-
-export interface HeartResponse {
   hearted: boolean
 }
 
@@ -22,21 +18,15 @@ export interface HeartResponse {
  */
 export const TRACKS_PER_CHANGE = 9000
 
-/** POST /api/playlists/[id]/tracks：加入歌单（自建歌单；我喜欢的音乐用红心）。1 到 TRACKS_PER_CHANGE 首 */
+/** 加入歌单的请求体（1 到 TRACKS_PER_CHANGE 首） */
 export interface AddTracksRequest {
   songIds: number[]
 }
 
-/** 加好了（已经在歌单里的歌也算加好了）；这张歌单在网易云里已经不在了（被删掉了）是 missing */
-export type AddTracksResponse = { kind: 'added' } | { kind: 'missing' }
-
-/** POST /api/playlists/[id]/tracks/remove：从自建歌单移除歌。1 到 TRACKS_PER_CHANGE 首 */
+/** 从自建歌单移除歌的请求体（1 到 TRACKS_PER_CHANGE 首） */
 export interface RemoveTracksRequest {
   songIds: number[]
 }
-
-/** 移除了（不在歌单里的歌网易云也照样接受）；这张歌单在网易云里已经不在了（被删掉了）是 missing */
-export type RemoveTracksResponse = { kind: 'removed' } | { kind: 'missing' }
 
 /**
  * 一次提交整张歌单的新顺序最多几首（Spec #11：整张歌单的新顺序一次提交）。
@@ -44,16 +34,10 @@ export type RemoveTracksResponse = { kind: 'removed' } | { kind: 'missing' }
  */
 export const SONGS_PER_ORDER = 20000
 
-/** POST /api/playlists/[id]/order：整张歌单的新顺序（自建歌单、我喜欢的音乐），按歌单里的先后排列 */
+/** 整张歌单的新顺序（自建歌单、我喜欢的音乐），按歌单里的先后排列 */
 export interface SongOrderRequest {
   songIds: number[]
 }
-
-/**
- * 新顺序提交了；这张歌单在网易云里已经不在了是 missing；
- * 网易云回 -1“请求异常，请稍后重试”时是 unconfirmed：几千首位置都变的排序其实已经生效，要重新读一次这张歌单确认
- */
-export type SongOrderResponse = { kind: 'ordered' } | { kind: 'missing' } | { kind: 'unconfirmed' }
 
 /**
  * 一次提交曲库里能排序的歌单最多几张：只有我喜欢的音乐和自建歌单，数量很小；
@@ -62,35 +46,23 @@ export type SongOrderResponse = { kind: 'ordered' } | { kind: 'missing' } | { ki
 export const PLAYLISTS_PER_ORDER = 1000
 
 /**
- * POST /api/library/order：曲库里能排序的歌单的新顺序（#37）。
+ * 曲库里能排序的歌单的新顺序（#37）。
  * playlistIds 是我喜欢的音乐和全部自建歌单的编号，按新的先后排列；我喜欢的音乐必须在最前，收藏的歌单不传
  */
 export interface PlaylistOrderRequest {
   playlistIds: number[]
 }
 
-/** 新顺序提交了（网易云会忽略已经删掉的歌单） */
-export interface PlaylistOrderResponse {
-  kind: 'ordered'
-}
-
-/** POST /api/albums/[id]/collect、/api/artists/[id]/collect：收藏或取消收藏 */
+/** 收藏或取消收藏专辑、歌手的请求体 */
 export interface CollectRequest {
   collected: boolean
 }
 
 /**
- * POST /api/playlists/[id]/collect：收藏歌单要带网易云的反作弊令牌（浏览器里的官方 Watchman 现取，服务端只透传给 SDK、不记不存），
+ * 收藏歌单要带网易云的反作弊令牌（浏览器里的官方 Watchman 现取，服务端只透传给 SDK、不记不存），
  * 取消收藏不带（官方网页版就是这样，#30 留言）
  */
 export type PlaylistCollectRequest = { collected: true, checkToken: string } | { collected: false }
-
-export interface CollectResponse {
-  collected: boolean
-}
-
-/** 收藏、取消收藏歌单：做好了；这张歌单在网易云里已经不在了（被创建者删掉了）是 missing */
-export type PlaylistCollectResponse = { kind: 'done' } | { kind: 'missing' }
 
 /**
  * 一张歌单头部的信息：曲库里的、不在曲库里的都一样（网易云的歌单列表和歌单详情给的是同一份歌单，SDK 的 PlaylistSummary）
@@ -156,7 +128,7 @@ export function reorderSortable<T extends { id: number }>(items: readonly T[], i
   return items.map(item => isSortable(item) ? ordered[next++]! : item)
 }
 
-/** GET /api/playlists?uid=:歌单列表，我喜欢的音乐在最前，然后是自建的、收藏的，和网易云的顺序一样；在网易云里删掉的歌单不在里面 */
+/** 歌单列表，我喜欢的音乐在最前，然后是自建的、收藏的，和网易云的顺序一样；在网易云里删掉的歌单不在里面 */
 export interface PlaylistsResponse {
   playlists: Playlist[]
 }
@@ -191,7 +163,7 @@ export function nameProblem(name: string): PlaylistEditProblem | null {
   return nameWidth(name) > PLAYLIST_NAME_WIDTH ? 'nameTooLong' : null
 }
 
-/** POST /api/playlists：新建自建歌单。name 去掉了首尾空白，1 到 PLAYLIST_NAME_WIDTH 个宽度 */
+/** 新建自建歌单的请求体。name 去掉了首尾空白，1 到 PLAYLIST_NAME_WIDTH 个宽度 */
 export interface CreatePlaylistRequest {
   name: string
   private: boolean
@@ -202,27 +174,19 @@ export interface CreatePlaylistResponse {
   playlist: Playlist
 }
 
-/** POST /api/playlists/[id]/name：改自建歌单的名称，和新建一样去掉了首尾空白、1 到 PLAYLIST_NAME_WIDTH 个宽度 */
+/** 改自建歌单名称的请求体，和新建一样去掉了首尾空白、1 到 PLAYLIST_NAME_WIDTH 个宽度 */
 export interface RenamePlaylistRequest {
   name: string
 }
 
-/** POST /api/playlists/[id]/description：改简介，最多 PLAYLIST_DESCRIPTION_LENGTH 个字；空字符串是清空 */
+/** 改简介的请求体，最多 PLAYLIST_DESCRIPTION_LENGTH 个字；空字符串是清空 */
 export interface DescribePlaylistRequest {
   description: string
 }
 
-/** POST /api/playlists/[id]/tags：换一组标签，0 到 PLAYLIST_TAGS_MAX 个，从标签库里选的（不在标签库里的网易云会悄悄丢掉，验证关卡②） */
+/** 换一组标签的请求体，0 到 PLAYLIST_TAGS_MAX 个，从标签库里选的（不在标签库里的网易云会悄悄丢掉，验证关卡②） */
 export interface TagPlaylistRequest {
   tags: string[]
-}
-
-/**
- * POST /api/playlists/[id]/name、description、tags、public（隐私歌单改公开）、delete（删除自建歌单）都回它：做好了。
- * 歌单已经被删掉时网易云照样回 200（验证关卡②、#33 录制），要等下一次同步发现它不在歌单列表里了
- */
-export interface PlaylistChangeResponse {
-  done: true
 }
 
 /** 标签库里的一类（语种、风格、场景、情感、主题），标签照网易云的顺序 */
@@ -231,12 +195,12 @@ export interface PlaylistTagGroup {
   tags: string[]
 }
 
-/** GET /api/playlist-tags：网易云的歌单标签库，每次都从网易云取，不写死（Spec #11；验证关卡②录到 70 个、5 类） */
+/** 网易云的歌单标签库，每次都从网易云取，不写死（Spec #11；验证关卡②录到 70 个、5 类） */
 export interface PlaylistTagsResponse {
   groups: PlaylistTagGroup[]
 }
 
-/** GET /api/playlists/[id]/track-ids：这张歌单的全部曲目编号，按歌单里的顺序 */
+/** 这张歌单的全部曲目编号，按歌单里的顺序 */
 export interface TrackIdsResponse {
   trackIds: number[]
 }
@@ -245,8 +209,8 @@ export interface TrackIdsResponse {
 export type PlaylistUnavailable = 'deleted' | 'missing' | 'private'
 
 /**
- * GET /api/playlists/[id]：不在曲库里的一张歌单，每次打开都联网取（ADR-0007）。头部和全部曲目编号（按歌单里的顺序），
- * 歌曲信息另外按页取（/api/songs）；打不开时说明原因。tracksUpdatedAt 和歌单列表里的一样：收藏后它进了曲库，本机副本照它判断曲目变没变
+ * 不在曲库里的一张歌单，每次打开都联网取（ADR-0007）。头部和全部曲目编号（按歌单里的顺序），
+ * 歌曲信息另外按页取（songs 端点）；打不开时说明原因。tracksUpdatedAt 和歌单列表里的一样：收藏后它进了曲库，本机副本照它判断曲目变没变
  */
 export type PlaylistPageResponse
   = | { kind: 'shown', playlist: PlaylistInfo, trackIds: number[], tracksUpdatedAt: number }
@@ -292,12 +256,12 @@ export interface Song {
 export type Availability = 'full' | 'trial' | 'noCopyright'
 
 /**
- * POST /api/songs 一次最多取这么多首。网易云一次 1,000 首的原始返回约 2.1 MB，
+ * 一次取歌曲信息最多这么多首。网易云一次 1,000 首的原始返回约 2.1 MB，
  * 离 Vercel 单次响应 4.5 MB 的上限不远（验证关卡①），所以服务端只回 Song 里的字段
  */
 export const SONGS_PER_REQUEST = 1000
 
-/** POST /api/songs 的请求体：1 到 SONGS_PER_REQUEST 个歌曲编号 */
+/** 取歌曲信息的请求体：1 到 SONGS_PER_REQUEST 个歌曲编号 */
 export interface SongsRequest {
   ids: number[]
 }
@@ -318,7 +282,7 @@ export interface CollectedAlbum {
   songCount: number
 }
 
-/** GET /api/albums：收藏的专辑，最近收藏的在前，和网易云的顺序一样 */
+/** 收藏的专辑，最近收藏的在前，和网易云的顺序一样 */
 export interface CollectedAlbumsResponse {
   albums: CollectedAlbum[]
 }
@@ -331,12 +295,12 @@ export interface CollectedArtist {
   avatarUrl: string | null
 }
 
-/** GET /api/artists：收藏的歌手，最近收藏的在前，和网易云的顺序一样 */
+/** 收藏的歌手，最近收藏的在前，和网易云的顺序一样 */
 export interface CollectedArtistsResponse {
   artists: CollectedArtist[]
 }
 
-/** GET /api/albums/[id]：专辑页 */
+/** 专辑页 */
 export interface AlbumResponse {
   album: {
     id: number
@@ -367,7 +331,7 @@ export interface ArtistAlbum {
 /** 歌手页的专辑一次取这么多张。专辑最多的歌手有五千多张（#23 留言），一次全取太大 */
 export const ARTIST_ALBUMS_PER_REQUEST = 100
 
-/** GET /api/artists/[id]：歌手页的头部、热门歌曲（网易云给 50 首）和第一页专辑（新的在前） */
+/** 歌手页的头部、热门歌曲（网易云给 50 首）和第一页专辑（新的在前） */
 export interface ArtistResponse {
   artist: {
     id: number
@@ -379,11 +343,11 @@ export interface ArtistResponse {
   }
   hotSongs: Song[]
   albums: ArtistAlbum[]
-  /** 后面还有专辑：用 /api/artists/[id]/albums 接着取 */
+  /** 后面还有专辑：用 artistAlbums 端点接着取 */
   moreAlbums: boolean
 }
 
-/** GET /api/artists/[id]/albums?offset=：歌手页从第 offset 张往后的一页专辑 */
+/** 歌手页从第 offset 张往后的一页专辑 */
 export interface ArtistAlbumsResponse {
   albums: ArtistAlbum[]
   /** 后面还有 */
