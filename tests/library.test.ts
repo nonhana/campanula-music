@@ -1,18 +1,16 @@
 import type { Device, SentRequest } from './harness/device'
-import { readdir, readFile } from 'node:fs/promises'
-import { gunzipSync } from 'node:zlib'
+import type { RecordedPlaylist } from './harness/listener'
 import { describe, expect, it, vi } from 'vitest'
 import { held, never } from './harness/hold'
+import { COLLECTED_ALBUMS, COLLECTED_ARTISTS, HEARTS, isSync, LIKED_TRACK_IDS, likedPage, listener, PLAYLISTS_WITH_POEMS, recordedBatch, recordedTrackIds, songPages, syncRequests, trackIdRequests } from './harness/listener'
 import { ANOTHER_ACCOUNT, LIBRARY_SYNC_MODULES, RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { replyLibrary, replyPlaylists, signInSynced } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
 // 作者的“我喜欢的音乐”（#21 录制，4,984 首）：每页 1,000 首。第 4 页里有 3 首传到云盘、没匹配上曲库的歌，
 // 歌手名、专辑名是 null（hana-music-api 2.4.0 起原样返回，nonhana/hana-music-api#48）
-const HEARTS = 'library/likelist.json'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-const PAGE = (n: 1 | 2 | 3 | 4 | 5) => `library/song_detail.liked-page${n}.json.gz`
 /**
  * SDK 认不出返回的结构时整页拒掉（502）：2.3.0 对第 4 页的真实返回。2.4.0 起这一页能认出了，
  * 但别人看云盘上传的歌（歌名也是 null）时照样这样拒，所以留着当“这一页没取到”用
@@ -30,61 +28,10 @@ const RHYTHM_ID = 900000009
 const COLLECTED_ID = 2483057410
 /** 作者的一张自建歌单：写了简介，没打标签 */
 const BANG_DREAM_OWN_ID = 900000004
-/** 作者收藏的专辑（55 张，最近收藏的在前）、收藏的歌手（236 位）：#23 录制，各一次取完 */
-const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
-const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
-
-function readRecording(path: string): Promise<{ module: string, query: Record<string, unknown>, response: { body: any } }> {
-  return readFile(new URL(`./fixtures/netease/${path}`, import.meta.url)).then(bytes => JSON.parse((path.endsWith('.gz') ? gunzipSync(bytes) : bytes).toString('utf8')))
-}
-
-/** 录下的我喜欢的音乐的全部曲目编号，按歌单里的顺序 */
-async function recordedTrackIds(): Promise<number[]> {
-  const fixture = await readRecording(LIKED_TRACK_IDS)
-  return fixture.response.body.playlist.trackIds.map((track: { id: number }) => track.id)
-}
-
-/** 一张歌单在录制里的样子：曲目编号的录制、全部曲目编号，以及之后取的每页歌曲信息（录制和请求的编号） */
-interface RecordedPlaylist {
-  id: number
-  detail: string
-  trackIds: number[]
-  pages: { fixture: string, ids: number[] }[]
-}
-
-/**
- * #22 的整个曲库录制（tests/fixtures/netease/README.md）：歌单列表，然后按列表的顺序，每张要同步的歌单的曲目编号和还没有的歌曲信息。
- * - before：作者建了临时歌单 poems 之后，我喜欢的音乐以外的 53 张都同步一遍（我喜欢的音乐用 #21 的录制，录制时当作已经有了）
- * - after：在官方 App 里往 poems 加一首、移除一首之后，更新时间变了的歌单
- * - deleted：在官方 App 里删掉 poems 之后，更新时间变了的歌单
- */
-async function recordedBatch(name: 'before' | 'after' | 'deleted'): Promise<{ list: string, playlists: RecordedPlaylist[] }> {
-  const dir = `library/sync/${name}`
-  const files = (await readdir(new URL(`./fixtures/netease/${dir}`, import.meta.url))).sort().map(file => `${dir}/${file}`)
-  const playlists: RecordedPlaylist[] = []
-  for (const fixture of files.slice(1)) {
-    const { module, query, response } = await readRecording(fixture)
-    if (module === 'playlist_detail')
-      playlists.push({ id: query.id as number, detail: fixture, trackIds: response.body.playlist.trackIds.map((track: { id: number }) => track.id), pages: [] })
-    else
-      playlists.at(-1)!.pages.push({ fixture, ids: (query.ids as string).split(',').map(Number) })
-  }
-  return { list: files[0], playlists }
-}
 const BEFORE = await recordedBatch('before')
 const AFTER = await recordedBatch('after')
 const DELETED = await recordedBatch('deleted')
-const PLAYLISTS = BEFORE.list
 const recorded = (id: number) => BEFORE.playlists.find(playlist => playlist.id === id)!
-
-/** 网易云对这几张歌单依次回：曲目编号、还没有的歌曲信息。rejected：这一页回 SDK 认不出的返回 */
-async function replyPlaylists(playlists: readonly RecordedPlaylist[], { rejected }: { rejected?: string } = {}): Promise<void> {
-  for (const playlist of playlists) {
-    await world.netease.reply(playlist.detail)
-    for (const page of playlist.pages)
-      await world.netease.reply(page.fixture === rejected ? PAGE_4_REJECTED : page.fixture)
-  }
-}
 
 /**
  * 作者收藏的别人的合集（1,204 首）：第 2 页的 138 首后面的歌单里都没有，这一页没取到也不影响后面的歌单要取哪些歌。
@@ -96,38 +43,14 @@ const BANG_DREAM_PAGE_2 = recorded(BANG_DREAM_ID).pages[1]
 /** 登录并同步整个曲库：只有 Bang Dream 合集的第 2 页 SDK 认不出，同步最后停在“没能同步” */
 async function syncWithRejectedPage(device: Device) {
   const { app } = await device.open()
-  await replyListAndTrackIds()
+  await replyLibrary()
   for (const page of [1, 2, 3, 4, 5] as const)
-    await world.netease.reply(PAGE(page))
-  await replyPlaylists(BEFORE.playlists, { rejected: BANG_DREAM_PAGE_2.fixture })
+    await world.netease.reply(likedPage(page))
+  await replyPlaylists(BEFORE.playlists, { rejected: BANG_DREAM_PAGE_2.fixture, rejection: PAGE_4_REJECTED })
   await signIn(world, app)
   await device.idle()
   return app
 }
-
-/** 网易云依次回：红心、歌单列表、收藏的专辑和歌手、我喜欢的音乐的曲目编号 */
-async function replyListAndTrackIds(): Promise<void> {
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await replyCollected()
-  await world.netease.reply(LIKED_TRACK_IDS)
-}
-
-/** 网易云回收藏的专辑和歌手 */
-async function replyCollected(): Promise<void> {
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-}
-
-const SYNC_PATHS = ['/api/hearts', '/api/playlists', '/api/songs']
-/** 收藏的专辑、歌手的列表（不是专辑页、歌手页） */
-const COLLECTED_PATHS = ['/api/albums', '/api/artists']
-/** 同步请求（问账号、登录、退出不算） */
-const isSync = (request: SentRequest) => COLLECTED_PATHS.includes(request.path) || SYNC_PATHS.some(path => request.path.startsWith(path))
-const syncRequests = (device: Device) => device.requests.filter(isSync)
-const songPages = (device: Device) => syncRequests(device).filter(request => request.path === '/api/songs').map(request => (request.body as { ids: number[] }).ids)
-/** 拉过哪几张歌单的曲目编号，按先后 */
-const trackIdRequests = (device: Device) => syncRequests(device).flatMap(request => request.path.match(/^\/api\/playlists\/(\d+)\/track-ids$/)?.[1] ?? []).map(Number)
 
 describe('首次同步', () => {
   it('登录后先拿红心、歌单列表、收藏的专辑和歌手，再一张一张地同步每张歌单：先我喜欢的音乐，再按歌单列表的顺序；每张先拿全部曲目编号，再一页一页地取还没有的歌曲信息（每页最多 1,000 首），直到同步完', async () => {
@@ -135,10 +58,10 @@ describe('首次同步', () => {
     const device = world.device()
     const { app } = await device.open()
     const page2 = held()
-    await replyListAndTrackIds()
-    await world.netease.reply(PAGE(1))
-    await world.netease.reply(PAGE(2), { until: page2.until })
-    await world.netease.reply(PAGE(3))
+    await replyLibrary()
+    await world.netease.reply(likedPage(1))
+    await world.netease.reply(likedPage(2), { until: page2.until })
+    await world.netease.reply(likedPage(3))
 
     await signIn(world, app)
 
@@ -153,8 +76,8 @@ describe('首次同步', () => {
     // 还没轮到的歌单：一首歌都还没有，一共几首先按网易云写的
     expect(library.songsOf(RHYTHM_ID)).toMatchObject({ songs: [], total: 35, complete: false })
 
-    await world.netease.reply(PAGE(4))
-    await world.netease.reply(PAGE(5))
+    await world.netease.reply(likedPage(4))
+    await world.netease.reply(likedPage(5))
     await replyPlaylists(BEFORE.playlists)
     page2.release()
     await device.idle()
@@ -204,10 +127,7 @@ describe('首次同步', () => {
   it('歌单列表里每张歌单都带着简介、标签和播放次数：自建的、收藏的，和不在曲库里的歌单一样（user_playlist 和 playlist_detail 是同一份歌单，SDK 2.12.0）', async () => {
     const device = world.device()
     const { app } = await device.open()
-    await world.netease.reply(HEARTS)
-    await world.netease.reply(PLAYLISTS)
-    await replyCollected()
-    await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
+    await replyLibrary({ until: never() })
     await signIn(world, app)
     await world.settle()
 
@@ -225,11 +145,8 @@ describe('首次同步', () => {
   it('收藏的专辑和歌手各一次拿全，最近收藏的在前，存进本机副本；再次打开 App 先显示副本，不等同步，断网也照样在', async () => {
     const device = world.device()
     const { app } = await device.open()
-    await world.netease.reply(HEARTS)
-    await world.netease.reply(PLAYLISTS)
-    await replyCollected()
     const liked = held()
-    await world.netease.reply(LIKED_TRACK_IDS, { until: liked.until })
+    await replyLibrary({ until: liked.until })
     await signIn(world, app)
     await vi.waitFor(() => expect(world.netease.held).toBe(1))
 
@@ -251,7 +168,7 @@ describe('首次同步', () => {
 
     const hearts = held()
     await world.netease.reply('login/user_account.vip.json')
-    await world.netease.reply(HEARTS, { until: hearts.until })
+    await replyLibrary({ through: 'hearts', until: hearts.until })
     const { app: reopened } = await device.open()
     device.setOnline(false)
 
@@ -272,9 +189,7 @@ describe('首次同步', () => {
     const sentPages = songPages(device).length
     const sentTrackIds = trackIdRequests(device).length
 
-    await world.netease.reply(HEARTS)
-    await world.netease.reply(PLAYLISTS)
-    await replyCollected()
+    await replyLibrary({ through: 'artists' })
     await world.netease.reply(PAGE_4_REJECTED)
     app.retrySync()
     await device.idle()
@@ -294,9 +209,7 @@ describe('本机副本', () => {
 
     const hearts = held()
     await world.netease.reply('login/user_account.vip.json')
-    await world.netease.reply(HEARTS, { until: hearts.until })
-    await world.netease.reply(PLAYLISTS)
-    await replyCollected()
+    await replyLibrary({ through: 'artists', holds: { hearts: { until: hearts.until } } })
     await world.netease.reply(PAGE_4_REJECTED)
     const { app } = await device.open()
 
@@ -327,7 +240,7 @@ describe('本机副本', () => {
     expect(await device.stored()).toMatchObject({ library: [], tracks: [], songs: [], albumPages: [] })
 
     const hearts = held()
-    await world.netease.reply(HEARTS, { until: hearts.until })
+    await replyLibrary({ through: 'hearts', until: hearts.until })
     await signIn(world, app)
 
     expect(app.state.library).toMatchObject({ playlists: null, liked: null, hearts: null })
@@ -337,9 +250,9 @@ describe('本机副本', () => {
     const device = world.device()
     const { app } = await device.open()
     const page2 = held()
-    await replyListAndTrackIds()
-    await world.netease.reply(PAGE(1))
-    await world.netease.reply(PAGE(2), { until: page2.until })
+    await replyLibrary()
+    await world.netease.reply(likedPage(1))
+    await world.netease.reply(likedPage(2), { until: page2.until })
     await signIn(world, app)
     await vi.waitFor(() => expect(app.state.library?.liked?.songs).toHaveLength(1000))
 
@@ -350,7 +263,7 @@ describe('本机副本', () => {
     expect(await device.stored()).toMatchObject({ library: [], tracks: [], songs: [] })
 
     const hearts = held()
-    await world.netease.reply(HEARTS, { until: hearts.until })
+    await replyLibrary({ through: 'hearts', until: hearts.until })
     await signIn(world, app)
     expect(app.state.library).toMatchObject({ playlists: null, liked: null, hearts: null })
   })
@@ -366,7 +279,7 @@ describe('本机副本', () => {
     const sent = syncRequests(device).length
 
     const hearts = held()
-    await world.netease.reply(HEARTS, { until: hearts.until })
+    await replyLibrary({ through: 'hearts', until: hearts.until })
     await signIn(world, app, { another: true })
 
     expect(app.state.session).toEqual({ status: 'signedIn', account: ANOTHER_ACCOUNT })
@@ -381,13 +294,13 @@ describe('请求节奏', () => {
     const trackIds = await recordedTrackIds()
     const device = world.device()
     const { app } = await device.open()
-    await replyListAndTrackIds()
-    await world.netease.reply(PAGE(1))
+    await replyLibrary()
+    await world.netease.reply(likedPage(1))
     await world.netease.reply(RATE_LIMITED)
-    await world.netease.reply(PAGE(2))
-    await world.netease.reply(PAGE(3))
-    await world.netease.reply(PAGE(4))
-    await world.netease.reply(PAGE(5))
+    await world.netease.reply(likedPage(2))
+    await world.netease.reply(likedPage(3))
+    await world.netease.reply(likedPage(4))
+    await world.netease.reply(likedPage(5))
     await replyPlaylists(BEFORE.playlists)
     await signIn(world, app)
     await device.idle()
@@ -408,7 +321,7 @@ describe('请求节奏', () => {
   it('同步被操作频繁停着时，前台请求（退出）不排在后面：马上发出', async () => {
     const device = world.device()
     const { app } = await device.open()
-    await replyListAndTrackIds()
+    await replyLibrary()
     await world.netease.reply(RATE_LIMITED)
     await signIn(world, app)
     await device.idle()
@@ -426,8 +339,8 @@ describe('请求节奏', () => {
     const device = world.device()
     const { app } = await device.open()
     const page1 = held()
-    await replyListAndTrackIds()
-    await world.netease.reply(PAGE(1), { until: page1.until })
+    await replyLibrary()
+    await world.netease.reply(likedPage(1), { until: page1.until })
     await signIn(world, app)
     await vi.waitFor(() => expect(world.netease.held).toBe(1))
 
@@ -438,10 +351,10 @@ describe('请求节奏', () => {
     expect(app.state.library?.liked?.songs).toHaveLength(1000)
     expect(app.state.library?.sync).toEqual({ status: 'offline' })
 
-    await world.netease.reply(PAGE(2))
-    await world.netease.reply(PAGE(3))
-    await world.netease.reply(PAGE(4))
-    await world.netease.reply(PAGE(5))
+    await world.netease.reply(likedPage(2))
+    await world.netease.reply(likedPage(3))
+    await world.netease.reply(likedPage(4))
+    await world.netease.reply(likedPage(5))
     await replyPlaylists(BEFORE.playlists)
     device.setOnline(true)
     await device.idle()
@@ -469,9 +382,7 @@ describe('请求节奏', () => {
     expect(syncRequests(device)).toHaveLength(sent)
 
     const hearts = held()
-    await world.netease.reply(HEARTS, { until: hearts.until })
-    await world.netease.reply(PLAYLISTS)
-    await replyCollected()
+    await replyLibrary({ through: 'artists', holds: { hearts: { until: hearts.until } } })
     await world.netease.reply(PAGE_4_REJECTED)
     await signIn(world, reopened)
     expect(reopened.state.library?.songsOf(BANG_DREAM_ID)?.songs).toHaveLength(1204 - BANG_DREAM_PAGE_2.ids.length)
@@ -491,7 +402,7 @@ describe('请求节奏', () => {
   it('凭据在拿到红心之后失效，网易云给歌单列表的是匿名视角：当作需要登录，续期也被拒就停下同步、显示需要重新登录；匿名视角的歌单列表不写进副本', async () => {
     const device = world.device()
     const { app } = await device.open()
-    await world.netease.reply(HEARTS)
+    await replyLibrary({ through: 'hearts' })
     await world.netease.reply('library/user_playlist.anonymous-view.json.gz')
     await world.netease.reply('login/login_refresh.301-invalid.json')
     await signIn(world, app)
@@ -515,7 +426,7 @@ describe('请求节奏', () => {
     await world.netease.reply('login/logout.json')
     await app.logout()
     const fresh = held()
-    await world.netease.reply(HEARTS, { until: fresh.until })
+    await replyLibrary({ through: 'hearts', until: fresh.until })
     await signIn(world, app)
 
     stale.release()
@@ -529,24 +440,10 @@ describe('请求节奏', () => {
 })
 
 describe('歌单', () => {
-  /** 登录并把整个曲库同步完（作者建了临时歌单 poems 之后的样子） */
-  async function syncWholeLibrary(device: Device) {
-    const { app } = await device.open()
-    await replyListAndTrackIds()
-    for (const page of [1, 2, 3, 4, 5] as const)
-      await world.netease.reply(PAGE(page))
-    await replyPlaylists(BEFORE.playlists)
-    await signIn(world, app)
-    await device.idle()
-    expect(app.state.library?.sync).toEqual({ status: 'synced' })
-  }
-
   /** 再打开一次 App：网易云回这一批录制里的歌单列表，和更新时间变了的歌单 */
   async function reopenWith(device: Device, batch: { list: string, playlists: readonly RecordedPlaylist[] }) {
     await world.netease.reply('login/user_account.vip.json')
-    await world.netease.reply(HEARTS)
-    await world.netease.reply(batch.list)
-    await replyCollected()
+    await replyLibrary({ playlists: batch.list, through: 'artists' })
     await replyPlaylists(batch.playlists)
     const { app } = await device.open()
     await device.idle()
@@ -555,7 +452,7 @@ describe('歌单', () => {
 
   it('再次打开 App：只重拉更新时间变了的歌单，曲目跟着网易云变；歌曲信息只取新加的', async () => {
     const device = world.device()
-    await syncWholeLibrary(device)
+    expect((await signInSynced(device)).app.state.library?.sync).toEqual({ status: 'synced' })
     const sentPages = songPages(device).length
     const sentTrackIds = trackIdRequests(device).length
 
@@ -570,7 +467,7 @@ describe('歌单', () => {
 
   it('在官方 App 里删掉的歌单，本地也删掉：歌单列表里没有了，本机副本里它的曲目也删了', async () => {
     const device = world.device()
-    await syncWholeLibrary(device)
+    expect((await signInSynced(device)).app.state.library?.sync).toEqual({ status: 'synced' })
     await reopenWith(device, AFTER)
     expect((await device.stored()).tracks.map(([id]) => id)).toContain(POEMS_ID)
     const sentTrackIds = trackIdRequests(device).length
@@ -585,16 +482,14 @@ describe('歌单', () => {
 
   it('往歌单加歌时网易云说它已经不在了（在别处删掉了）：改回原样、说明原因，马上同步一次，曲库里就没有它了', async () => {
     const device = world.device()
-    await syncWholeLibrary(device)
+    expect((await signInSynced(device)).app.state.library?.sync).toEqual({ status: 'synced' })
     // 作者在官方 App 里改过 poems（这一批里它还在）
     const app = await reopenWith(device, AFTER)
     const song = app.state.library!.liked!.songs[0]
     const sent = syncRequests(device).length
 
     // 作者已经在官方 App 里删掉了 poems
-    await world.netease.reply(HEARTS)
-    await world.netease.reply(DELETED.list)
-    await replyCollected()
+    await replyLibrary({ through: 'artists', playlists: DELETED.list })
     await replyPlaylists(DELETED.playlists)
     const reply = held()
     await world.netease.reply('playlist-edit/playlist_tracks.add-deleted-playlist.json', { until: reply.until })
@@ -622,9 +517,9 @@ describe('歌单', () => {
   /** 登录并同步：我喜欢的音乐同步完了，后台正在等 poems 的曲目编号（压着不回） */
   async function syncUntilPoems(device: Device) {
     const { app } = await device.open()
-    await replyListAndTrackIds()
+    await replyLibrary()
     for (const page of [1, 2, 3, 4, 5] as const)
-      await world.netease.reply(PAGE(page))
+      await world.netease.reply(likedPage(page))
     const poems = held()
     await world.netease.reply(BEFORE.playlists[0].detail, { until: poems.until })
     await signIn(world, app)
@@ -694,9 +589,9 @@ describe('歌单', () => {
   it('后台同步正在等着拉的那张歌单（网易云说操作频繁），听众打开它：不再等，马上用前台请求拉；后台轮到它时不再重拉', async () => {
     const device = world.device()
     const { app } = await device.open()
-    await replyListAndTrackIds()
+    await replyLibrary()
     for (const page of [1, 2, 3, 4, 5] as const)
-      await world.netease.reply(PAGE(page))
+      await world.netease.reply(likedPage(page))
     const [poems, ...rest] = BEFORE.playlists
     await world.netease.reply(poems.detail)
     await world.netease.reply(RATE_LIMITED)
@@ -725,10 +620,10 @@ describe('歌单', () => {
     const [poems] = BEFORE.playlists
     // 第一次同步：poems 的歌曲信息没取到，本机只有它的曲目编号（旧版本）
     const { app: first } = await device.open()
-    await replyListAndTrackIds()
+    await replyLibrary()
     for (const page of [1, 2, 3, 4, 5] as const)
-      await world.netease.reply(PAGE(page))
-    await replyPlaylists(BEFORE.playlists, { rejected: poems.pages[0].fixture })
+      await world.netease.reply(likedPage(page))
+    await replyPlaylists(BEFORE.playlists, { rejected: poems.pages[0].fixture, rejection: PAGE_4_REJECTED })
     await signIn(world, first)
     await device.idle()
     expect(first.state.library?.songsOf(POEMS_ID)).toMatchObject({ complete: false })
@@ -737,7 +632,7 @@ describe('歌单', () => {
     const hearts = held()
     const oldPage = held()
     await world.netease.reply('login/user_account.vip.json')
-    await world.netease.reply(HEARTS, { until: hearts.until })
+    await replyLibrary({ through: 'hearts', until: hearts.until })
     await world.netease.reply(poems.pages[0].fixture, { until: oldPage.until })
     const { app } = await device.open()
     const opening = app.openPlaylist(POEMS_ID)
@@ -745,7 +640,7 @@ describe('歌单', () => {
 
     // 这时作者已经在官方 App 里改过 poems：后台拿到的新列表里，它的更新时间变了
     await world.netease.reply(AFTER.list)
-    await replyCollected()
+    await replyLibrary({ from: 'albums', through: 'artists' })
     await replyPlaylists(AFTER.playlists)
     hearts.release()
     await world.settle()
@@ -761,9 +656,9 @@ describe('歌单', () => {
     const device = world.device()
     const { app } = await device.open()
     const page2 = held()
-    await replyListAndTrackIds()
-    await world.netease.reply(PAGE(1))
-    await world.netease.reply(PAGE(2), { until: page2.until })
+    await replyLibrary()
+    await world.netease.reply(likedPage(1))
+    await world.netease.reply(likedPage(2), { until: page2.until })
     await signIn(world, app)
     await vi.waitFor(() => expect(app.state.library?.liked?.songs).toHaveLength(1000))
 
@@ -777,7 +672,7 @@ describe('歌单', () => {
     expect(app.searchPlaylist(LIKED_ID, 'kaleidoscope')?.songs.map(song => song.name)).toContain('Brown Eyes feat. Brittany Campbell')
 
     for (const page of [3, 4, 5] as const)
-      await world.netease.reply(PAGE(page))
+      await world.netease.reply(likedPage(page))
     await replyPlaylists(BEFORE.playlists)
     page2.release()
     await device.idle()
@@ -844,7 +739,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
         }
       }
       while (left('user_playlist') < 2)
-        await reply('user_playlist', PLAYLISTS)
+        await reply('user_playlist', PLAYLISTS_WITH_POEMS)
       while (left('album_sublist') < 2)
         await reply('album_sublist', COLLECTED_ALBUMS)
       while (left('artist_sublist') < 2)

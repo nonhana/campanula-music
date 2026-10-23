@@ -1,25 +1,20 @@
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
-import type { Device, Tab } from './harness/device'
-import { readFile } from 'node:fs/promises'
-import { gunzipSync } from 'node:zlib'
+import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
+import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
+import { checkIns, current, likedSong, listener, PLAYLISTS_WITH_POEMS, playUrlRequests, storedCheckIns } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInWithLiked, replyLibrary } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
 // 下载单曲与离线播放（#38，Spec #11“客户端：下载”、ADR-0006）：浏览器向服务端要下载地址，直连网易云的音频服务器、图片服务器
 // 把完整音频和封面缩略图下下来，连同歌词、歌曲信息存进这台设备。下载属于设备，和登录、登录的是哪个账号都无关。
 // 网易云的音频服务器、图片服务器那边（有哪些文件、传得快慢、传到一半断开）由测试在设备的文件替身上决定
 
-const HEARTS = 'library/likelist.json'
-const PLAYLISTS = 'library/sync/before/001-user_playlist.json.gz'
-const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
-const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-const PAGE = (n: number) => `library/song_detail.liked-page${n}.json.gz`
 const LYRICS = 'playback/lyric_new.all-forms.json'
 
 /**
@@ -49,37 +44,6 @@ type Recorded = typeof FIRST
 const LIKED = { kind: 'playlist', id: 900000001 } as const
 const DOWNLOADS = { kind: 'downloads' } as const
 
-async function readRecording(path: string): Promise<{ response: { body: any } }> {
-  const bytes = await readFile(new URL(`./fixtures/netease/${path}`, import.meta.url))
-  return JSON.parse((path.endsWith('.gz') ? gunzipSync(bytes) : bytes).toString('utf8'))
-}
-
-/** 登录，后台同步完我喜欢的音乐后停在下一张歌单 */
-async function signInWithLiked(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  await world.netease.reply(LIKED_TRACK_IDS)
-  for (const page of [1, 2, 3, 4, 5])
-    await world.netease.reply(PAGE(page))
-  await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-  await signIn(world, tab.app)
-  await world.settle()
-  if (!tab.app.state.library?.liked?.complete)
-    throw new Error('我喜欢的音乐没同步完')
-  return tab
-}
-
-/** 我喜欢的音乐里的这一首（同步下来的歌曲信息） */
-function likedSong(app: App, id: number): Song {
-  const song = app.state.library?.liked?.songs.find(each => each.id === id)
-  if (!song)
-    throw new Error(`我喜欢的音乐里没有 ${id}`)
-  return song
-}
-
 /** 网易云的音频服务器、图片服务器上放好《LOSER》的音频和封面缩略图 */
 function serveLoser(device: Device): void {
   device.files.put(LOSER.audio, { bytes: LOSER.bytes, type: 'audio/mpeg' })
@@ -96,17 +60,6 @@ function downloadUrlRequests(device: Device): string[] {
   return device.requests.flatMap(request => request.path.includes('/download-url') ? [request.path] : [])
 }
 
-/** 发过的播放地址请求 */
-function playUrlRequests(device: Device): string[] {
-  return device.requests.flatMap(request => request.path.includes('/play-url') ? [request.path] : [])
-}
-
-/** 当前这首的编号 */
-function current(app: App): number | null {
-  const { queue, current } = app.state.player
-  return current === null ? null : queue[current].song.id
-}
-
 /**
  * 下载这一首、等它下完（隔 1 秒才下完，已下载里按下完的先后排）：网易云回录下的下载地址和一份歌词，
  * 音频服务器上放着录制里那么大的文件，图片服务器上放着封面缩略图
@@ -114,7 +67,7 @@ function current(app: App): number | null {
 async function download(device: Device, app: App, recorded: Recorded): Promise<Song> {
   await world.clock.advance(1000)
   const song = likedSong(app, recorded.id)
-  const { data } = (await readRecording(recorded.downloadUrl)).response.body
+  const { data } = (await loadFixture(recorded.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }
   device.files.put((data.url as string).replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
   device.files.put(`${song.album.coverUrl.replace(/^http:/, 'https:')}?param=512y512`, { bytes: COVER_BYTES, type: 'image/jpeg' })
   await world.netease.reply(recorded.downloadUrl)
@@ -283,7 +236,7 @@ describe('下载属于这台设备', () => {
     expect(app.state.downloads.songs).toEqual([second, first])
     expect(await storedDownloads(device)).toHaveLength(2)
 
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, app, { another: true })
     await world.settle()
     expect(app.state.downloads.songs).toEqual([second, first])
@@ -310,7 +263,7 @@ describe('下载属于这台设备', () => {
     expect(app.state.player.queue).toEqual([{ song: second, source: DOWNLOADS }, { song: first, source: DOWNLOADS }])
     expect(current(app)).toBe(first.id)
     const player = tab.audio.find(audio => !audio.paused)!
-    expect(device.objectUrls.blobOf(player.src)).toMatchObject({ size: (await readRecording(FIRST.downloadUrl)).response.body.data.size, type: 'audio/mpeg' })
+    expect(device.objectUrls.blobOf(player.src)).toMatchObject({ size: ((await loadFixture(FIRST.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }).data.size, type: 'audio/mpeg' })
     player.ready(192.648)
     await world.settle()
     expect(tab.sounding()).toBe(player)
@@ -368,7 +321,7 @@ describe('放已下载的歌', () => {
     app.play(LIKED, first.id)
     await world.settle()
     const player = tab.audio.find(audio => !audio.paused)!
-    expect(device.objectUrls.blobOf(player.src)?.size).toBe((await readRecording(FIRST.downloadUrl)).response.body.data.size)
+    expect(device.objectUrls.blobOf(player.src)?.size).toBe(((await loadFixture(FIRST.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }).data.size)
     player.ready(192.648)
     await world.settle()
     expect(tab.sounding()).toBe(player)
@@ -382,7 +335,7 @@ describe('放已下载的歌', () => {
     await world.settle()
     expect(current(app)).toBe(SECOND.id)
     // 再下一首（第 3 首）下载了：空闲的播放器装的是本机文件，不取播放地址
-    expect(device.objectUrls.blobOf(player.src)?.size).toBe((await readRecording(THIRD.downloadUrl)).response.body.data.size)
+    expect(device.objectUrls.blobOf(player.src)?.size).toBe(((await loadFixture(THIRD.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }).data.size)
     expect(playUrlRequests(device)).toEqual([`/api/songs/${SECOND.id}/play-url?quality=exhigh`])
   })
 
@@ -534,20 +487,6 @@ describe('已下载页', () => {
 /** 网易云回打卡成功：#38 在真账号上打的一次，播放来源是 download、sourceid 0，18.8 分钟后计入了听歌排行 */
 const CHECK_IN = 'playback/downloads/001-scrobble.json.gz'
 
-/** 这台设备发出的打卡：哪首、请求体，按先后 */
-function checkIns(device: Device): { songId: number, body: unknown }[] {
-  return device.requests.flatMap((request) => {
-    const match = /^\/api\/songs\/(\d+)\/check-in$/.exec(request.path)
-    return match ? [{ songId: Number(match[1]), body: request.body }] : []
-  })
-}
-
-/** 本机记着、还没发出去的打卡 */
-async function storedCheckIns(device: Device): Promise<unknown[]> {
-  const { checkIns = [] } = await device.stored()
-  return checkIns.map(([, value]) => value)
-}
-
 describe('听歌打卡', () => {
   it('登录着从已下载放的歌听完了照常打卡：播放来源是已下载，网易云收到的来源是 download、编号 0', async () => {
     const device = world.device()
@@ -594,7 +533,7 @@ describe('听歌打卡', () => {
     expect(await storedCheckIns(device)).toEqual([])
 
     await world.clock.advance(25_000)
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, app)
     await world.settle()
     expect(current(app)).toBe(first.id)

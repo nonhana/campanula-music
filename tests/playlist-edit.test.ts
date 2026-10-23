@@ -1,12 +1,12 @@
-import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
-import type { Device, Tab } from './harness/device'
+import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
 import { held, never } from './harness/hold'
-import { signIn } from './harness/sign-in'
+import { listener, storedLibrary, storedPlaylistIds, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInAtLikedTracks, dailySongs, openJazz, replyLibrary } = listener(world)
 
 // 歌单的增删改（#33，Spec #11“歌单编辑”“客户端：曲库副本”）：新建等网易云建好才进曲库，
 // 删除、名称、简介、标签、改公开先改本地、立即生效，网易云拒绝时改回原样并说明原因。
@@ -18,7 +18,6 @@ const CREATED = { id: 900000023, name: 'Campanula 测试 · 可删除', create: 
 /** 新建时网易云说操作过于频繁（405）：连着新建两张时录到的 */
 const CREATE_RATE_LIMITED = 'playlist-edit/create/003-playlist_create.json.gz'
 const ADD = 'playlist-edit/playlist_tracks.add.json'
-const DAILY = 'discover/daily/001-recommend_songs.json.gz'
 /** 改名称、简介、标签（验证关卡②录的）；网易云拒绝改名（400“标题字数异常，请修改”）、拒绝设标签（400“标签数据非法”） */
 const RENAME = 'playlist-edit/playlist_name_update.json'
 const RENAME_REJECTED = 'playlist-edit/playlist_name_update.too-long.json'
@@ -34,55 +33,7 @@ const PUBLISH = 'playlist-edit/playlist_privacy.json'
 const PUBLISH_RATE_LIMITED = 'playlist-edit/playlist_privacy.405-rate-limited.constructed.json'
 const DELETE = 'playlist-edit/playlist_delete.json'
 const DELETE_RATE_LIMITED = 'playlist-edit/playlist_delete.405-rate-limited.constructed.json'
-/** jazz 的曲目编号（2 首，#22 录制）；别的歌单的一页歌曲信息：压着不回，只看曲目编号 */
-const JAZZ_DETAIL = 'library/sync/before/004-playlist_detail.json.gz'
-const SOME_SONGS = 'library/sync/before/003-song_detail.json.gz'
-
-const HEARTS = 'library/likelist.json'
-/** 歌单列表：#22 在官方 App 里删掉临时歌单 poems 之后的。自建歌单都是公开的 */
-const PLAYLISTS = 'library/sync/deleted/001-user_playlist.json.gz'
 const LIKED_ID = 900000001
-const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
-const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-
-/** 登录，后台同步停在我喜欢的音乐的曲目编号：本机副本里有红心、歌单列表、收藏的专辑和歌手，还没有一首歌 */
-async function signInHeld(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(COLLECTED_ALBUMS)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-  await signIn(world, tab.app)
-  await world.settle()
-  return tab
-}
-
-/** 每日推荐里的歌：拿来加进新建的歌单 */
-async function dailySongs(app: App): Promise<readonly Song[]> {
-  await world.netease.reply(DAILY)
-  await app.openDaily()
-  const daily = app.state.daily
-  if (daily?.status !== 'shown')
-    throw new Error(`每日推荐没显示：${JSON.stringify(daily)}`)
-  return daily.songs
-}
-
-/** 本机数据库里曲库副本的一项（hearts、playlists……） */
-async function storedLibrary(device: Device, key: string): Promise<unknown> {
-  return (await device.stored()).library.find(([name]) => name === key)?.[1]
-}
-
-async function storedPlaylistIds(device: Device): Promise<number[]> {
-  return (await storedLibrary(device, 'playlists') as { id: number }[]).map(playlist => playlist.id)
-}
-
-/** 本机副本里一张歌单的曲目编号 */
-async function storedTrackIds(device: Device, playlistId: number): Promise<number[] | undefined> {
-  const tracks = (await device.stored()).tracks.find(([id]) => id === playlistId)?.[1] as { trackIds: number[] } | undefined
-  return tracks?.trackIds
-}
 
 /** 网易云建好新歌单、读回它的详情 */
 async function replyCreated(): Promise<void> {
@@ -101,7 +52,7 @@ async function storedPlaylist(device: Device, playlistId: number): Promise<unkno
 describe('标签库', () => {
   it('编辑歌单信息时实时取网易云的标签库，按语种、风格、场景、情感、主题分组；这次登录取到过就不再取', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(TAGS)
     const opening = app.openPlaylistTags()
@@ -127,7 +78,7 @@ describe('标签库', () => {
 
   it('没取到（断网）时说明原因，再打开一次就是重试', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     device.setOnline(false)
     await app.openPlaylistTags()
@@ -143,7 +94,7 @@ describe('标签库', () => {
 describe('新建歌单', () => {
   it('新建隐私歌单：等网易云建好才进曲库，排在我喜欢的音乐后面，是空的；存进本机副本', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const before = playlistIds(app)!
 
     const creating = held()
@@ -172,7 +123,7 @@ describe('新建歌单', () => {
 
   it('从加入歌单里新建：建好接着把这首加进去，提示已加入', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const [song] = await dailySongs(app)
 
     await replyCreated()
@@ -188,7 +139,7 @@ describe('新建歌单', () => {
 
   it('网易云说操作频繁：没建成，不进曲库，说明原因', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const before = playlistIds(app)
 
     await world.netease.reply(CREATE_RATE_LIMITED)
@@ -201,7 +152,7 @@ describe('新建歌单', () => {
 
   it('名称是空的、超过 40 个宽度（汉字算 2）：不提交，说明原因；20 个汉字、40 个字母正好可以', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
     expect(await app.createPlaylist({ name: '  ', private: false })).toEqual({ ok: false, failure: { kind: 'invalid', problem: 'nameEmpty' } })
@@ -220,7 +171,7 @@ describe('新建歌单', () => {
 
   it('断网时新建：不发请求，直接说没建成（规则⑨）', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
     device.setOnline(false)
@@ -230,15 +181,11 @@ describe('新建歌单', () => {
 
   it('建好之前发出的同步拿回来的歌单列表里还没有它：叠回去，不从曲库里消失', async () => {
     const device = world.device()
-    await signInHeld(device)
+    await signInAtLikedTracks(device)
     // 同一台设备再开一个标签页：后台同步的歌单列表压着
     await world.netease.reply('login/user_account.vip.json')
-    await world.netease.reply(HEARTS)
     const list = held()
-    await world.netease.reply(PLAYLISTS, { until: list.until })
-    await world.netease.reply(COLLECTED_ALBUMS)
-    await world.netease.reply(COLLECTED_ARTISTS)
-    await world.netease.reply(LIKED_TRACK_IDS, { until: never(), when: { id: LIKED_ID } })
+    await replyLibrary({ holds: { playlists: { until: list.until }, likedTracks: { until: never(), when: { id: LIKED_ID } } } })
     const { app } = await device.open()
     await world.settle()
 
@@ -257,7 +204,7 @@ describe('新建歌单', () => {
 describe('改名称、简介、标签', () => {
   it('马上显示新的，各提交各的，网易云说好了才存进本机副本', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     const reply = held()
     await world.netease.reply(RENAME, { until: reply.until })
@@ -287,7 +234,7 @@ describe('改名称、简介、标签', () => {
 
   it('只提交改了的：名称、简介、标签都和原来一样时什么都不发；清空简介、去掉全部标签也算改', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
     await app.editPlaylist(JAZZ.id, { name: JAZZ.name, description: '  ', tags: [] })
@@ -312,7 +259,7 @@ describe('改名称、简介、标签', () => {
 
   it('网易云拒绝改名：改回原来的名字，说明网易云给的原因；同时改的标签照样改好', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(RENAME_REJECTED)
     await world.netease.reply(RETAG)
@@ -329,7 +276,7 @@ describe('改名称、简介、标签', () => {
 
   it('网易云说改简介操作频繁：改回原来的简介，提示稍后再试', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(DESCRIBE_RATE_LIMITED)
     await app.editPlaylist(JAZZ.id, { description: '周末下午听。' })
@@ -341,7 +288,7 @@ describe('改名称、简介、标签', () => {
 
   it('网易云拒绝设标签（标签数据非法）：改回原来的标签，说明原因', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(RETAG_REJECTED)
     await app.editPlaylist(JAZZ.id, { tags: ['华语', '流行', '夜晚'] })
@@ -352,7 +299,7 @@ describe('改名称、简介、标签', () => {
 
   it('标签超过 3 个、名称太长、简介超过 1000 个字：整次都不提交，说明原因', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
     await app.editPlaylist(JAZZ.id, { name: '爵士', tags: ['华语', '流行', '夜晚', '怀旧'] })
@@ -370,7 +317,7 @@ describe('改名称、简介、标签', () => {
 
   it('断网时改：整次都不改，直接说没改成（规则⑨），不发请求；同时改的几样只说一次', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
     device.setOnline(false)
@@ -383,7 +330,7 @@ describe('改名称、简介、标签', () => {
 
   it('我喜欢的音乐不能改名、收藏的歌单不能编辑：不提交，名字照旧', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
     await expect(app.editPlaylist(LIKED_ID, { name: '我的最爱' })).rejects.toThrow()
@@ -403,7 +350,7 @@ async function createPrivate(app: App): Promise<void> {
 describe('隐私歌单改公开', () => {
   it('马上显示成公开，提交给网易云，网易云说好了才存进本机副本', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await createPrivate(app)
 
     const reply = held()
@@ -428,7 +375,7 @@ describe('隐私歌单改公开', () => {
 
   it('网易云说操作频繁：改回隐私，说明原因', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     await createPrivate(app)
 
     await world.netease.reply(PUBLISH_RATE_LIMITED)
@@ -440,19 +387,11 @@ describe('隐私歌单改公开', () => {
   })
 })
 
-/** 打开 jazz：曲目编号拉回来了，歌曲信息压着不回 */
-async function openJazz(app: App): Promise<void> {
-  await world.netease.reply(JAZZ_DETAIL)
-  await world.netease.reply(SOME_SONGS, { until: never() })
-  void app.openPlaylist(JAZZ.id)
-  await world.settle()
-}
-
 describe('删除歌单', () => {
   it('删除自建歌单：马上从曲库里拿掉，提交给网易云，网易云说好了连同曲目从本机副本里删掉', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
-    await openJazz(app)
+    const { app } = await signInAtLikedTracks(device)
+    await openJazz(app, { songsHeld: true })
     expect(await storedTrackIds(device, JAZZ.id)).toHaveLength(2)
 
     const reply = held()
@@ -475,8 +414,8 @@ describe('删除歌单', () => {
 
   it('网易云说操作频繁：放回原处，曲目照旧，说明原因', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
-    await openJazz(app)
+    const { app } = await signInAtLikedTracks(device)
+    await openJazz(app, { songsHeld: true })
     const before = playlistIds(app)
 
     await world.netease.reply(DELETE_RATE_LIMITED)
@@ -490,7 +429,7 @@ describe('删除歌单', () => {
 
   it('我喜欢的音乐不能删、不能改公开；收藏的歌单不是删除（取消收藏另有 collect）：不提交，曲库照旧', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtLikedTracks(device)
     const before = playlistIds(app)
     const sent = device.requests.length
 

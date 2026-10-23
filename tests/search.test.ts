@@ -2,11 +2,11 @@ import type { Song } from '#lib/api/library.js'
 import type { SearchKind } from '#lib/api/search.js'
 import type { App } from '#lib/app/app.js'
 import type { SearchList } from '#lib/app/search.js'
-import type { Device, Tab } from './harness/device'
 import { describe, expect, it } from 'vitest'
 import { SEARCH_KINDS } from '#lib/api/search.js'
 import { SUGGEST_DELAY } from '#lib/app/search.js'
 import { held, never } from './harness/hold'
+import { DAILY, listener } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -48,28 +48,12 @@ const ARTISTS_NONE = 'search/results/010-cloudsearch.json.gz'
 const CHECK_IN = 'search/check-in/001-scrobble.json.gz'
 /** 搜索结果的第一首（YOASOBI 的《夜に駆ける》）的试听片段地址（匿名录的，30 秒） */
 const FIRST_RESULT_URL = 'playback/song_url_v1.anon-trial.json'
-/** 每日推荐（31 首）：先用它放着一个播放队列 */
-const DAILY = 'discover/daily/001-recommend_songs.json.gz'
 /** 别的歌的播放地址：压着不回，只看播放队列和取了哪首的地址 */
 const SOME_PLAY_URL = 'playback/liked/001-song_url_v1.json.gz'
 /** 在“夜に駆ける”的搜索结果里点歌：播放来源是这次搜索 */
 const SEARCHED = { kind: 'search', keyword: '夜に駆ける' } as const
 
-/** 登录，后台同步停在红心 */
-async function signInHeld(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply('library/likelist.json', { until: never() })
-  await signIn(world, tab.app)
-  return tab
-}
-
-/** 再打开一次 App：后台同步停在红心 */
-async function reopen(device: Device): Promise<App> {
-  await world.netease.reply('login/user_account.vip.json')
-  await world.netease.reply('library/likelist.json', { until: never() })
-  const { app } = await device.open()
-  return app
-}
+const { signInAtHearts, reopen } = listener(world)
 
 /** 每类结果是网易云 cloudsearch 的哪个 type */
 const TYPES: Record<SearchKind, number> = { songs: 1, playlists: 1000, artists: 100, albums: 10 }
@@ -131,7 +115,7 @@ async function suggested(app: App, keyword: string, fixture: string): Promise<un
 
 describe('边输入边出建议', () => {
   it('停手一会儿才问网易云，只问最后打的词；不跨类别去重，和歌同名的歌手、专辑照样列出来', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     app.suggest('夜')
     await world.clock.advance(SUGGEST_DELAY - 1)
@@ -157,7 +141,7 @@ describe('边输入边出建议', () => {
   })
 
   it('照网易云给的列：单曲、歌手、专辑、歌单依次排；歌手、专辑、歌单带上编号（点了进它的页面）', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     expect(await suggested(app, '周杰伦', SUGGEST_JAY)).toEqual({
       keyword: '周杰伦',
@@ -176,7 +160,7 @@ describe('边输入边出建议', () => {
   })
 
   it('单曲之间名字看起来一样的只留第一条；网易云没给的那类（这次没有歌手）就没有', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     expect(await suggested(app, '真夜中', SUGGEST_MAYONAKA)).toEqual({
       keyword: '真夜中',
@@ -193,7 +177,7 @@ describe('边输入边出建议', () => {
   })
 
   it('接着打字：只显示最后打的词的建议，比它晚回来的旧词的不要', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     const slow = held()
     await world.netease.reply(SUGGEST_YORU_NI, { until: slow.until })
     await world.netease.reply(SUGGEST_YORU_NI_KAKERU)
@@ -220,7 +204,7 @@ describe('边输入边出建议', () => {
   })
 
   it('清空搜索框：建议收起，还在等停手的不再问，在路上的回来了也不显示', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     const slow = held()
     await world.netease.reply(SUGGEST_YORU_NI, { until: slow.until })
 
@@ -239,7 +223,7 @@ describe('边输入边出建议', () => {
 
 describe('搜索历史', () => {
   it('按搜索就记进搜索历史：新的在前，搜过的挪到最前，最多 20 个', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     for (const keyword of ['夜に駆ける', 'YOASOBI', ' 夜に駆ける '])
       await searchHeld(app, keyword)
@@ -252,10 +236,10 @@ describe('搜索历史', () => {
 
   it('只存在这台设备上：重新打开 App、退出登录再登录都还在，别的设备上没有', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtHearts(device)
     await searchHeld(app, '夜に駆ける')
 
-    const reopened = await reopen(device)
+    const reopened = (await reopen(device)).app
     expect(reopened.state.search.history).toEqual(['夜に駆ける'])
 
     await world.netease.reply('login/logout.json')
@@ -264,27 +248,27 @@ describe('搜索历史', () => {
     await signIn(world, reopened)
     expect(reopened.state.search.history).toEqual(['夜に駆ける'])
 
-    const { app: elsewhere } = await signInHeld(world.device())
+    const { app: elsewhere } = await signInAtHearts(world.device())
     expect(elsewhere.state.search.history).toEqual([])
   })
 
   it('清空：本机存的也删掉，重新打开 App 也没有了', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtHearts(device)
     await searchHeld(app, '夜に駆ける')
     await searchHeld(app, 'YOASOBI')
 
     await app.clearSearchHistory()
     expect(app.state.search.history).toEqual([])
 
-    const reopened = await reopen(device)
+    const reopened = (await reopen(device)).app
     expect(reopened.state.search.history).toEqual([])
   })
 })
 
 describe('单曲结果', () => {
   it('按搜索：用前台请求问网易云这个词的第一页（30 首），歌曲只留界面用得到的字段，总数是网易云给的', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
 
@@ -304,7 +288,7 @@ describe('单曲结果', () => {
   })
 
   it('无版权的歌标出来（网易云的权限信息 st 小于 0）；一页就取完了，没有“显示更多”', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     const songs = await searchShown(app, 'Sea Of Tired Slowed', SONGS_SEA_OF_TIRED)
 
@@ -314,7 +298,7 @@ describe('单曲结果', () => {
   })
 
   it('显示更多：从已经取到的地方接着问网易云下一页，接在后面；后面还有就还能再取', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
 
     await world.netease.reply(SONGS_MAYONAKA_2)
@@ -334,7 +318,7 @@ describe('单曲结果', () => {
 
 describe('结果页：四类一起拉', () => {
   it('按搜索：四类的第一页一起问网易云，各拉各的，慢的那类还在加载时别的照常显示', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     const slow = held()
     await world.netease.reply(SONGS_MAYONAKA, { when: { type: TYPES.songs } })
     await world.netease.reply(PLAYLISTS_MAYONAKA, { when: { type: TYPES.playlists }, until: slow.until })
@@ -356,7 +340,7 @@ describe('结果页：四类一起拉', () => {
   })
 
   it('打开结果页（返回到这一页、刷新）：这个词的结果记着就不再问，也不记进搜索历史；换了词四类都重新问', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA, playlists: PLAYLISTS_MAYONAKA, artists: ARTISTS_MAYONAKA, albums: ALBUMS_MAYONAKA })
 
     await app.openSearch('真夜中')
@@ -371,7 +355,7 @@ describe('结果页：四类一起拉', () => {
   })
 
   it('接着又搜了别的词：先搜的晚回来也不显示', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     const slow = held()
     await world.netease.reply(SONGS_YORU_NI_KAKERU, { when: { type: TYPES.songs }, until: slow.until })
     for (const kind of ['playlists', 'artists', 'albums'] as const)
@@ -390,7 +374,7 @@ describe('结果页：四类一起拉', () => {
 
   it('断网时四类都没搜成，说明是断网（不连网易云），词照样记进搜索历史；联网后再打开，四类重新问', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtHearts(device)
 
     device.setOnline(false)
     await app.search('真夜中')
@@ -406,7 +390,7 @@ describe('结果页：四类一起拉', () => {
   })
 
   it('退出登录：建议和结果都不再显示，搜索历史留着', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
     await world.netease.reply(SUGGEST_YORU_NI)
     app.suggest('夜に')
@@ -420,7 +404,7 @@ describe('结果页：四类一起拉', () => {
 
 describe('歌单、歌手、专辑结果', () => {
   it('歌单：封面、名字、创建者、首数、播放次数；显示更多接着取下一页', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     await searchFor(app, '真夜中', { playlists: PLAYLISTS_MAYONAKA })
     expect(shownList(app, 'playlists').items[0]).toEqual({
       id: 8668352551,
@@ -445,7 +429,7 @@ describe('歌单、歌手、专辑结果', () => {
   })
 
   it('歌手：头像、名字、单曲数，没有头像的是 null；一页就取完了，没有“显示更多”', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     await searchFor(app, '真夜中', { artists: ARTISTS_MAYONAKA })
 
@@ -459,7 +443,7 @@ describe('歌单、歌手、专辑结果', () => {
   })
 
   it('显示更多：取到网易云说的总数就没有更多了', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     await searchFor(app, '初音ミク', { artists: ARTISTS_MIKU })
     expect(shownList(app, 'artists')).toMatchObject({ total: 40, more: { status: 'notLoaded' } })
 
@@ -473,7 +457,7 @@ describe('歌单、歌手、专辑结果', () => {
   })
 
   it('隔了一阵才显示更多：网易云的先后变了，下一页里前面已经列过的不再列一遍，再下一页照样从第 60 个起', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA_DAY_BEFORE })
 
     await world.netease.reply(ALBUMS_MAYONAKA_2)
@@ -492,7 +476,7 @@ describe('歌单、歌手、专辑结果', () => {
   })
 
   it('一位都没搜到：这一类是空的，总数 0，没有“显示更多”', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
     await searchFor(app, 'Sea Of Tired Slowed', { artists: ARTISTS_NONE })
 
@@ -500,7 +484,7 @@ describe('歌单、歌手、专辑结果', () => {
   })
 
   it('专辑：封面、名字、歌手、发行时间；显示更多接着取下一页', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
     await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA })
     expect(shownList(app, 'albums').items[0]).toEqual({
       id: 82815921,
@@ -521,7 +505,7 @@ describe('歌单、歌手、专辑结果', () => {
 
   it('显示更多没取成（断网）：已经有的照常显示，说明原因；联网后再取一次就是重试', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtHearts(device)
     await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA })
 
     device.setOnline(false)
@@ -540,7 +524,7 @@ describe('歌单、歌手、专辑结果', () => {
 describe('在结果里点歌是插播', () => {
   it('排在当前这首后面马上放，播放队列里其余的歌和先后都不变；这首的播放来源是这次搜索', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtHearts(device)
     await world.netease.reply(DAILY)
     await app.openDaily()
     const daily = app.state.daily?.status === 'shown' ? app.state.daily.songs.map(song => song.id) : []
@@ -563,7 +547,7 @@ describe('在结果里点歌是插播', () => {
 
   it('插播的歌听完打卡：播放来源是这次搜索，服务端照 SDK 文档报 search、来源编号 0', async () => {
     const device = world.device()
-    const tab = await signInHeld(device)
+    const tab = await signInAtHearts(device)
     const { app } = tab
     const songs = await searchShown(app, '夜に駆ける', SONGS_YORU_NI_KAKERU)
     await world.netease.reply(FIRST_RESULT_URL)
@@ -583,7 +567,7 @@ describe('在结果里点歌是插播', () => {
 
   it('“显示更多”加进来的歌，点了也是插播', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtHearts(device)
     await searchFor(app, '真夜中', { songs: SONGS_MAYONAKA })
     await world.netease.reply(SONGS_MAYONAKA_2)
     await app.moreSearchResults('真夜中', 'songs')

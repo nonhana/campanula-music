@@ -1,16 +1,13 @@
-import type { Song } from '#lib/api/library.js'
-import type { App } from '#lib/app/app.js'
-import type { Device, Tab } from './harness/device'
 import { describe, expect, it } from 'vitest'
 import { never } from './harness/hold'
-import { signIn } from './harness/sign-in'
+import { listener } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInAtHearts, dailySongs } = listener(world)
 
 // 每日推荐（#29）：听众打开时用前台请求拉，只在这次登录期间记着；点一首歌就用整份每日推荐替换播放队列。
 // 录制见 tests/fixtures/netease/README.md 的 #29 一条
-const DAILY = 'discover/daily/001-recommend_songs.json.gz'
 /** 录下的每日推荐有 31 首，第一首和第三首 */
 const RAIN = 443070379
 const THIRD = 3408879610
@@ -20,24 +17,6 @@ const CHECK_IN = 'discover/daily/002-scrobble.json.gz'
 /** 别的歌的播放地址：压着不回，只看播放队列和取了哪首的地址 */
 const SOME_PLAY_URL = 'playback/liked/001-song_url_v1.json.gz'
 
-/** 登录，后台同步停在红心 */
-async function signInHeld(device: Device): Promise<Tab> {
-  const tab = await device.open()
-  await world.netease.reply('library/likelist.json', { until: never() })
-  await signIn(world, tab.app)
-  return tab
-}
-
-/** 打开每日推荐，网易云回录下的那份；返回显示出来的歌 */
-async function openDaily(app: App): Promise<readonly Song[]> {
-  await world.netease.reply(DAILY)
-  await app.openDaily()
-  const daily = app.state.daily
-  if (daily?.status !== 'shown')
-    throw new Error(`每日推荐没显示：${JSON.stringify(daily)}`)
-  return daily.songs
-}
-
 /** 每日推荐拉过几次 */
 function dailyCalls(): number {
   return world.netease.calls.filter(call => call.module === 'recommend_songs').length
@@ -45,9 +24,9 @@ function dailyCalls(): number {
 
 describe('每日推荐', () => {
   it('打开每日推荐：用前台请求拉今天这份，歌曲只留界面用得到的字段', async () => {
-    const { app } = await signInHeld(world.device())
+    const { app } = await signInAtHearts(world.device())
 
-    const songs = await openDaily(app)
+    const songs = await dailySongs(app)
 
     expect(dailyCalls()).toBe(1)
     // 测试的时钟从北京时间 2026-10-12 08:00 开始
@@ -65,8 +44,8 @@ describe('每日推荐', () => {
 
   it('点一首歌：用整份每日推荐替换播放队列、从这首开始放，每首的播放来源都是每日推荐', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
-    const songs = await openDaily(app)
+    const { app } = await signInAtHearts(device)
+    const songs = await dailySongs(app)
 
     await world.netease.reply(SOME_PLAY_URL, { until: never() })
     app.play(DAILY_SOURCE, THIRD)
@@ -81,8 +60,8 @@ describe('每日推荐', () => {
 
   it('播放全部：用整份每日推荐替换播放队列，从第一首开始放', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
-    const songs = await openDaily(app)
+    const { app } = await signInAtHearts(device)
+    const songs = await dailySongs(app)
 
     await world.netease.reply(SOME_PLAY_URL, { until: never() })
     app.playAll(DAILY_SOURCE)
@@ -97,7 +76,7 @@ describe('每日推荐', () => {
 
   it('断网时没拉成，说明是断网（不连网易云）；联网后再打开就拉到了', async () => {
     const device = world.device()
-    const { app } = await signInHeld(device)
+    const { app } = await signInAtHearts(device)
 
     device.setOnline(false)
     await app.openDaily()
@@ -105,13 +84,13 @@ describe('每日推荐', () => {
     expect(dailyCalls()).toBe(0)
 
     device.setOnline(true)
-    await openDaily(app)
+    await dailySongs(app)
     expect(app.state.daily?.day).toBe('2026-10-12')
   })
 
   it('这次登录里再打开不再拉；过了第二天北京时间 6:00，网易云换了一份，再打开就重新拉', async () => {
-    const { app } = await signInHeld(world.device())
-    await openDaily(app)
+    const { app } = await signInAtHearts(world.device())
+    await dailySongs(app)
 
     // 从北京时间 10-12 08:00 到 10-13 05:59：还是 10-12 那份
     await world.clock.advance((21 * 60 + 59) * 60_000)
@@ -120,14 +99,14 @@ describe('每日推荐', () => {
     expect(app.state.daily).toMatchObject({ day: '2026-10-12', status: 'shown' })
 
     await world.clock.advance(60_000)
-    await openDaily(app)
+    await dailySongs(app)
     expect(dailyCalls()).toBe(2)
     expect(app.state.daily?.day).toBe('2026-10-13')
   })
 
   it('退出登录：每日推荐不再显示', async () => {
-    const { app } = await signInHeld(world.device())
-    await openDaily(app)
+    const { app } = await signInAtHearts(world.device())
+    await dailySongs(app)
 
     await world.netease.reply('login/logout.json')
     await app.logout()
@@ -136,7 +115,7 @@ describe('每日推荐', () => {
 
   it('从每日推荐放进播放队列的歌听完打卡：播放来源是每日推荐，服务端照 SDK 文档报 recommend、来源编号 0', async () => {
     const device = world.device()
-    const tab = await signInHeld(device)
+    const tab = await signInAtHearts(device)
     const { app } = tab
     // 匿名录的专辑只有一首，有它的播放地址（非会员放 30 秒的试听片段）：像从每日推荐的“更多”菜单加进播放队列
     const album = { id: 84072830, song: 1409311773 }

@@ -1,17 +1,15 @@
-import type { App } from '#lib/app/app.js'
-import type { Device } from './harness/device'
 import { describe, expect, it, vi } from 'vitest'
 import { never } from './harness/hold'
+import { COLLECTED_ALBUMS, listener, PLAYLISTS_WITH_POEMS } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
+const { signInAtLikedTracks, reopen, replyLibrary } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
 // 专辑页、歌手页（#23）：听众打开时用前台请求拉。收藏的专辑打开过就存进本机副本，别的只在这次登录期间记着。
 // 录制见 tests/fixtures/netease/README.md 的 #23 一条
 const DIR = 'library/album-artist'
-const COLLECTED_ALBUMS = `${DIR}/001-album_sublist.json.gz`
-const COLLECTED_ARTISTS = `${DIR}/002-artist_sublist.json.gz`
 /** 收藏的专辑里多了 THE BOOK for,（录制时成对地收藏、马上取消收藏） */
 const COLLECTED_ALBUMS_WITH_THE_BOOK = `${DIR}/011-album_sublist.json.gz`
 /** 收藏的专辑 */
@@ -25,35 +23,11 @@ const YOASOBI = { id: 33927412, songs: `${DIR}/003-artist_top_song.json.gz`, alb
 /** 专辑超过一页的歌手（101 张） */
 const MARASY = { id: 14786, songs: `${DIR}/005-artist_top_song.json.gz`, albums: [`${DIR}/006-artist_album.json.gz`, `${DIR}/007-artist_album.json.gz`] }
 
-const HEARTS = 'library/likelist.json'
-const PLAYLISTS = 'library/sync/before/001-user_playlist.json.gz'
-const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'
-
-/** 登录，后台同步拿到收藏的专辑和歌手后停在我喜欢的音乐 */
-async function signInUntilCollected(device: Device, albums = COLLECTED_ALBUMS): Promise<App> {
-  const { app } = await device.open()
-  await world.netease.reply(HEARTS)
-  await world.netease.reply(PLAYLISTS)
-  await world.netease.reply(albums)
-  await world.netease.reply(COLLECTED_ARTISTS)
-  await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-  await signIn(world, app)
-  await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
-  return app
-}
-
-/** 再打开一次 App：后台同步停在红心，显示的都是本机副本 */
-async function reopen(device: Device): Promise<App> {
-  await world.netease.reply('login/user_account.vip.json')
-  await world.netease.reply(HEARTS, { until: never() })
-  const { app } = await device.open()
-  return app
-}
-
 describe('专辑页', () => {
   it('打开收藏的专辑：用前台请求拉曲目、简介和发行时间，存进本机副本；再次打开 App 后歌曲数没变就不再拉，断网也能看', async () => {
     const device = world.device()
-    const app = await signInUntilCollected(device)
+    const app = (await signInAtLikedTracks(device)).app
+    await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
 
     await world.netease.reply(KEEP_THE_VILLAGE_ALIVE.fixture)
     await app.openAlbum(KEEP_THE_VILLAGE_ALIVE.id)
@@ -86,7 +60,7 @@ describe('专辑页', () => {
       availability: 'full',
     })
 
-    const reopened = await reopen(device)
+    const reopened = (await reopen(device)).app
     const calls = world.netease.calls.length
     await reopened.openAlbum(KEEP_THE_VILLAGE_ALIVE.id)
     expect(world.netease.calls).toHaveLength(calls)
@@ -99,7 +73,8 @@ describe('专辑页', () => {
 
   it('没有简介的专辑照常打开，简介是空的', async () => {
     const device = world.device()
-    const app = await signInUntilCollected(device)
+    const app = (await signInAtLikedTracks(device)).app
+    await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
 
     await world.netease.reply(SOUNDTRACK.fixture)
     await app.openAlbum(SOUNDTRACK.id)
@@ -111,7 +86,8 @@ describe('专辑页', () => {
 
   it('打开没收藏的专辑：这次登录再打开不再拉，但不存进本机；再次打开 App 后断网就说没拉成', async () => {
     const device = world.device()
-    const app = await signInUntilCollected(device)
+    const app = (await signInAtLikedTracks(device)).app
+    await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
 
     await world.netease.reply(THE_BOOK.fixture)
     await app.openAlbum(THE_BOOK.id)
@@ -121,7 +97,7 @@ describe('专辑页', () => {
     expect(world.netease.calls).toHaveLength(calls)
     expect((await device.stored()).albumPages).toEqual([])
 
-    const reopened = await reopen(device)
+    const reopened = (await reopen(device)).app
     expect(reopened.state.library?.albumPage(THE_BOOK.id)).toBeNull()
     device.setOnline(false)
     await reopened.openAlbum(THE_BOOK.id)
@@ -131,18 +107,13 @@ describe('专辑页', () => {
 
   it('在官方 App 里取消收藏的专辑：同步拿到收藏的专辑后，本机存着的专辑页也删掉', async () => {
     const device = world.device()
-    const app = await signInUntilCollected(device, COLLECTED_ALBUMS_WITH_THE_BOOK)
+    const app = (await signInAtLikedTracks(device, { albums: COLLECTED_ALBUMS_WITH_THE_BOOK })).app
+    await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
     await world.netease.reply(THE_BOOK.fixture)
     await app.openAlbum(THE_BOOK.id)
     expect((await device.stored()).albumPages.map(([id]) => id)).toEqual([THE_BOOK.id])
 
-    await world.netease.reply('login/user_account.vip.json')
-    await world.netease.reply(HEARTS)
-    await world.netease.reply(PLAYLISTS)
-    await world.netease.reply(COLLECTED_ALBUMS)
-    await world.netease.reply(COLLECTED_ARTISTS)
-    await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
-    const { app: reopened } = await device.open()
+    const reopened = (await reopen(device, undefined, { albums: COLLECTED_ALBUMS, through: 'likedTracks', until: never() })).app
     expect(reopened.state.library?.albumPage(THE_BOOK.id)).toMatchObject({ status: 'shown' })
     await vi.waitFor(() => expect(reopened.state.library?.albums).toHaveLength(55))
 
@@ -152,7 +123,8 @@ describe('专辑页', () => {
 
   it('退出登录：存着的专辑页一起删掉；换账号登录后看不到上一个账号打开过的专辑页和歌手页', async () => {
     const device = world.device()
-    const app = await signInUntilCollected(device)
+    const app = (await signInAtLikedTracks(device)).app
+    await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
     await world.netease.reply(KEEP_THE_VILLAGE_ALIVE.fixture)
     await app.openAlbum(KEEP_THE_VILLAGE_ALIVE.id)
     await world.netease.reply(YOASOBI.songs)
@@ -164,7 +136,7 @@ describe('专辑页', () => {
     await app.logout()
     expect((await device.stored()).albumPages).toEqual([])
 
-    await world.netease.reply(HEARTS, { until: never() })
+    await replyLibrary({ through: 'hearts', until: never() })
     await signIn(world, app, { another: true })
 
     expect(app.state.library?.albumPage(KEEP_THE_VILLAGE_ALIVE.id)).toBeNull()
@@ -175,7 +147,8 @@ describe('专辑页', () => {
 describe('歌手页', () => {
   it('打开歌手：用前台请求拉头部、热门歌曲和第一页专辑（新的在前）；不存进本机，再次打开 App 后断网就说没拉成', async () => {
     const device = world.device()
-    const app = await signInUntilCollected(device)
+    const app = (await signInAtLikedTracks(device)).app
+    await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
 
     await world.netease.reply(YOASOBI.songs)
     await world.netease.reply(YOASOBI.albums)
@@ -214,7 +187,7 @@ describe('歌手页', () => {
       publishedAt: 1789315200000,
     })
 
-    const reopened = await reopen(device)
+    const reopened = (await reopen(device)).app
     expect(reopened.state.library?.artistPage(YOASOBI.id)).toBeNull()
     device.setOnline(false)
     await reopened.openArtist(YOASOBI.id)
@@ -224,7 +197,8 @@ describe('歌手页', () => {
 
   it('专辑超过一页的歌手：先显示前 100 张；再取一页从第 101 张接着取，取完就没有更多了', async () => {
     const device = world.device()
-    const app = await signInUntilCollected(device)
+    const app = (await signInAtLikedTracks(device)).app
+    await vi.waitFor(() => expect(app.state.library?.artists).not.toBeNull())
     await world.netease.reply(MARASY.songs)
     await world.netease.reply(MARASY.albums[0])
     await app.openArtist(MARASY.id)
