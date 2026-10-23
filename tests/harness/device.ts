@@ -15,6 +15,13 @@ export interface SentRequest {
   keepalive?: true
 }
 
+/** 这台设备收到的服务端响应：方法、路径和状态码（请求正文、Cookie 之外只看这几样） */
+export interface ReceivedResponse {
+  method: string
+  path: string
+  status: number
+}
+
 /** 一个标签页：一个 App，加上只属于这个标签页的页面可见性、Media Session 和播放器 */
 export interface Tab {
   app: App
@@ -48,6 +55,8 @@ export interface Device {
   readonly pending: readonly SentRequest[]
   /** 这台设备收到的服务端响应正文，按先后：页面脚本能读到的就是这些 */
   readonly responseBodies: readonly string[]
+  /** 这台设备收到的服务端响应（方法、路径、状态码），按先后 */
+  readonly responses: readonly ReceivedResponse[]
   /** 这台设备存着的 Cookie（包括 httpOnly 的） */
   cookies: () => Promise<Cookie[]>
   /** 像有人在浏览器里手动改了 Cookie：按 Set-Cookie 的写法存进这台设备 */
@@ -108,6 +117,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
   const requests: SentRequest[] = []
   const pending: SentRequest[] = []
   const responseBodies: string[] = []
+  const responses: ReceivedResponse[] = []
   const indexedDB = new IDBFactory()
   const network = new FakeNetwork()
   const locks = new FakeLocks()
@@ -151,6 +161,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
       if (cookie)
         request.headers.set('cookie', cookie)
       const response = await fetch(request)
+      responses.push({ method: request.method, path: sent.path, status: response.status })
       for (const setCookie of response.headers.getSetCookie())
         await jar.setCookie(setCookie, response.url)
       responseBodies.push(await response.clone().text())
@@ -173,6 +184,7 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
     requests,
     pending,
     responseBodies,
+    responses,
     async open() {
       const page = new FakePage()
       const mediaSession = new FakeMediaSession()

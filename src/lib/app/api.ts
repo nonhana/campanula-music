@@ -15,9 +15,9 @@ export type RequestFailure
 export type Result<T> = { ok: true, value: T } | { ok: false, failure: RequestFailure }
 
 /** 端点没有参数（Params = void）时，调用不传 params */
-type ParamsArg<Params> = [Params] extends [void] ? [] : [params: Params]
+export type ParamsArg<Params> = [Params] extends [void] ? [] : [params: Params]
 /** 端点没有请求体（Request = void）时可以不传 body；要带 options 时写 undefined 占位。有请求体时必传 */
-type BodyArg<Request> = [Request] extends [void] ? [body?: undefined] : [body: Request]
+export type BodyArg<Request> = [Request] extends [void] ? [body?: undefined] : [body: Request]
 
 /**
  * keepalive：页面被隐藏（切后台、锁屏、关页面）时也要发出去的请求（晚一点提交的修改）。

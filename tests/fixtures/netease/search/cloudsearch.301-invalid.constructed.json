@@ -1,0 +1,25 @@
+{
+  "module": "cloudsearch",
+  "query": {
+    "keywords": "真夜中",
+    "type": 1,
+    "limit": 30,
+    "offset": 0
+  },
+  "context": {
+    "recordedAt": "2026-10-24T00:00:00.000Z",
+    "sdk": "hana-music-api@2.12.0",
+    "region": "local",
+    "ip": "default",
+    "viewer": "invalid",
+    "constructed": true,
+    "note": "构造的失败返回：返回体照 library/likelist.301-invalid.json 的真实 301 录制（凭据无效时网易云只回 { msg: null, code: 301 }），把模块和查询换成选择器搜索的 cloudsearch。搜索上的 301 没单独录到，测试 #69 的旧会话保护用"
+  },
+  "response": {
+    "status": 301,
+    "body": {
+      "msg": null,
+      "code": 301
+    }
+  }
+}

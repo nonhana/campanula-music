@@ -6,30 +6,33 @@ import type { SearchedItems, SearchKind } from '#lib/api/search.js'
 import type { RequestFailure, Result } from './api'
 import type { BrowserCapabilities } from './browser'
 import type { PlaylistEdit, PlaylistSeed } from './changes'
+import type { CheckIns } from './check-ins'
 import type { CoverOutcome, CoverState } from './cover'
 import type { DailyState } from './daily'
 import type { DownloadBlock, DownloadNotice, DownloadsState } from './downloads'
 import type { AddSongsOutcome, CreateOutcome, LibraryState, PlaylistSearch } from './library'
-import type { PendingCheckIn } from './local'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
-import type { CheckIn, PlayerState, PlayMode } from './player'
+import type { Player, PlayerState, PlayMode } from './player'
 import type { SearchState } from './search'
-import { endpoints, searchPage } from '#lib/api/endpoints.js'
+import type { Session } from './session-round'
+import { endpoints } from '#lib/api/endpoints.js'
 import { createApi } from './api'
 import { changeProblem, playlistEdits } from './changes'
 import { createCheckIns } from './check-ins'
 import { createCover } from './cover'
 import { createDaily } from './daily'
 import { createDownloads, INITIAL_DOWNLOADS, playableNow } from './downloads'
-import { createLibrary, playlistSongsOf, searchPlaylist, searchSongs } from './library'
-import { createLocalDb } from './local'
+import { createLibrary, filterSongs, playlistSongsOf, searchPlaylist } from './library'
+import { createLocalDatabase, createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 import { createLyrics } from './lyrics'
 import { connectMediaSession } from './media-session'
 import { createBackgroundLane } from './pacing'
 import { createPlayer, INITIAL_PLAYER } from './player'
+import { createSavedQueue } from './saved-queue'
 import { createSearch, INITIAL_SEARCH } from './search'
+import { createSessionRound } from './session-round'
 
 /**
  * 会改登录 Cookie 的请求排队用的跨标签页的锁：问当前账号（服务端可能在这一步续期、写回新的登录 Cookie）和退出。
@@ -52,16 +55,6 @@ export interface CollectTarget {
   kind: 'playlist' | 'album' | 'artist'
   id: number
 }
-
-/** 登录会话。刚打开时要先问服务端，才知道有没有当前账号 */
-type Session
-  = | { status: 'checking' }
-  /** 没问到当前账号，不知道有没有登录（网易云说需要登录时是 loginExpired，不在这里） */
-    | { status: 'checkFailed', failure: Exclude<RequestFailure, { kind: 'needsLogin' }> }
-    | { status: 'signedOut' }
-  /** 浏览器里还有登录 Cookie，但网易云说登录已经失效 */
-    | { status: 'loginExpired' }
-    | { status: 'signedIn', account: Account }
 
 export interface AppState {
   session: Session
@@ -305,7 +298,8 @@ export interface App {
 
 export function createApp(browser: BrowserCapabilities): App {
   const api = createApi(browser)
-  const local = createLocalDb(browser.indexedDB)
+  const db = createLocalDatabase(browser.indexedDB)
+  const local = createLocalDb(db)
   let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null, search: INITIAL_SEARCH, cover: null, downloads: INITIAL_DOWNLOADS, online: browser.network.onLine }
   const listeners = new Set<() => void>()
 
@@ -314,6 +308,35 @@ export function createApp(browser: BrowserCapabilities): App {
     for (const listener of listeners)
       listener()
   }
+
+  /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放（#38） */
+  function streamable(): boolean {
+    return browser.network.onLine && state.session.status === 'signedIn'
+  }
+
+  const lane = createBackgroundLane(browser)
+  const round = createSessionRound({ api, lane, expired: loginExpired })
+  // 三个东西互相要用：播放器保存队列、队列发打卡、打卡读队列。先声明，建好以后才用到
+  let player: Player
+  let checkIns: CheckIns
+
+  /** 保存的播放队列：归属、持久化、打卡归属、规则⑩都在这个模块里；App 只发出“会话换了” */
+  const savedQueue = createSavedQueue({
+    db,
+    session: round,
+    player: () => player,
+    read: () => state.player,
+    send: () => checkIns.send(),
+    sendBeforeLogout: owner => checkIns.sendBeforeLogout(owner),
+  })
+
+  checkIns = createCheckIns({
+    api,
+    session: round,
+    store: savedQueue.pending,
+    locks: browser.locks,
+    account: () => (state.session.status === 'signedIn' ? state.session.account.id : null),
+  })
 
   /**
    * 还没发出去的退出：发出去，服务端回了过期的登录 Cookie 才算完。没发成时返回原因：
@@ -325,7 +348,7 @@ export function createApp(browser: BrowserCapabilities): App {
       if (!await local.pendingLogout())
         return null
       // 退出了：还没发出去的打卡都丢弃，之后同一个账号再登录也不补发
-      await local.clearCheckIns()
+      await savedQueue.pending.clear()
       const result = await api.post(endpoints.logout)
       if (!result.ok)
         return result.failure
@@ -338,40 +361,9 @@ export function createApp(browser: BrowserCapabilities): App {
   }
   browser.network.addEventListener('online', () => void finishLogout())
 
-  /**
-   * 播放队列是哪个网易云账号的：登录时定下，登录失效时不变，退出时清掉。登录失效后换了别的账号登录就清空播放队列（规则⑩）。
-   * 没登录时只能放已下载的歌（#38），那时是 null：不打卡，之后登录了就交给那个账号、接着放
-   */
-  let queueOwner: number | null = null
-
-  const lane = createBackgroundLane(browser)
-  const checkIns = createCheckIns({
-    api,
-    lane,
-    local,
-    locks: browser.locks,
-    account: () => (state.session.status === 'signedIn' ? state.session.account.id : null),
-    loginExpired,
-  })
-  /** 听完的歌记成播放队列的账号的打卡；没登录（退出了）时不打卡 */
-  function withOwner(finished: readonly CheckIn[]): PendingCheckIn[] {
-    const owner = queueOwner
-    return owner === null ? [] : finished.map(checkIn => ({ ...checkIn, owner }))
-  }
-  /** 有新的打卡记进本机了：发出去 */
-  function sendRecorded(pending: readonly PendingCheckIn[]): void {
-    if (pending.length > 0)
-      checkIns.send()
-  }
-
-  /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放（#38） */
-  function streamable(): boolean {
-    return browser.network.onLine && state.session.status === 'signedIn'
-  }
-
   const downloads = createDownloads({
     api,
-    lane,
+    session: round,
     local,
     clock: browser.clock,
     browser,
@@ -379,27 +371,19 @@ export function createApp(browser: BrowserCapabilities): App {
     signedIn: () => state.session.status === 'signedIn',
     write: next => update({ downloads: next }),
     notify: notifyDownload,
-    loginExpired,
     changed: downloadsChanged,
   })
 
-  const player = createPlayer({
-    api,
+  player = createPlayer({
+    api: round.api,
     clock: browser.clock,
     audio: browser.audio,
     write: (next) => {
       update({ player: next })
       showOnLockScreen(next)
     },
-    save(progress, queue, finished) {
-      const pending = withOwner(finished)
-      void local.savePlayer(progress, queue && { ...queue, owner: queueOwner }, pending).then(() => sendRecorded(pending))
-    },
-    forget(finished) {
-      const pending = withOwner(finished)
-      void local.deletePlayer(pending).then(() => sendRecorded(pending))
-    },
-    loginExpired,
+    save: savedQueue.save,
+    forget: savedQueue.forget,
     downloaded: songId => state.downloads.has(songId),
     localFile: songId => downloads.audioUrl(songId),
     streamable,
@@ -425,14 +409,13 @@ export function createApp(browser: BrowserCapabilities): App {
 
   const library = createLibrary({
     api,
-    lane,
+    session: round,
     local,
     clock: browser.clock,
     write: (next) => {
       update({ library: next })
       player.libraryChanged(playlistId => playlistSongsOf(next, playlistId))
     },
-    loginExpired,
     online: () => browser.network.onLine,
     checkToken: browser.checkToken,
   })
@@ -449,41 +432,42 @@ export function createApp(browser: BrowserCapabilities): App {
   })
 
   const cover = createCover({
-    api,
+    api: round.api,
+    session: round,
     images: browser.images,
     upload: browser.uploadCoverImage,
     write: next => update({ cover: next }),
-    loginExpired,
     changed: (playlistId, coverUrl) => library.setCover(playlistId, coverUrl),
   })
 
   const lyrics = createLyrics({
-    api,
+    api: round.api,
+    session: round,
     read: () => state.lyrics,
     write: next => update({ lyrics: next }),
-    loginExpired,
     stored: songId => downloads.lyricsOf(songId),
   })
 
   const daily = createDaily({
-    api,
+    api: round.api,
+    session: round,
     clock: browser.clock,
     read: () => state.daily,
     write: next => update({ daily: next }),
-    loginExpired,
   })
 
   const search = createSearch({
-    api,
+    api: round.api,
+    session: round,
     clock: browser.clock,
     local,
     read: () => state.search,
     write: next => update({ search: next }),
-    loginExpired,
   })
 
   const login = createLogin({
     api,
+    session: round,
     clock: browser.clock,
     page: browser.page,
     beforeLogin: finishLogout,
@@ -492,21 +476,12 @@ export function createApp(browser: BrowserCapabilities): App {
     signedIn,
   })
 
-  /** 每换一次登录状态（登录、退出、登录失效）就加一：之前发出去的问账号、拿曲库副本回来时，结果就不要了 */
-  let sessions = 0
-  function signedOut(): void {
-    sessions += 1
-    login.stopQr()
-    cover.leave()
-    library.leave()
-    // 先放下账号再停：没登录时听完的歌不打卡（主动退出的那个标签页在这之前已经把最后一首记下了）
-    queueOwner = null
-    player.stop()
-    lyrics.clear()
-    daily.clear()
-    search.clear()
+  /** 会话换成未登录：各模块在会话一轮里登记了自己的清理，播放队列由 saved-queue 停下并删掉 */
+  function signedOut(by: 'this-tab' | 'other-tab'): Promise<void> {
+    const changed = round.change({ kind: 'signedOut', by })
     update({ session: { status: 'signedOut' }, login: INITIAL_LOGIN, library: null })
     player.availabilityChanged()
+    return changed
   }
 
   /** 点歌时的整个列表；还没打开、没显示出来时是 null。已下载属于这台设备，没登录时也有 */
@@ -605,46 +580,26 @@ export function createApp(browser: BrowserCapabilities): App {
     return playlist
   }
 
-  /** 网易云说需要登录、续期也没成功：停下同步，曲库副本留在本机，同一个账号重新登录后接着用 */
+  /** 会话一轮发现网易云说需要登录、续期也没成功：各模块自己收起，曲库副本留在本机，同一个账号重新登录后接着用 */
   function loginExpired(): void {
-    sessions += 1
-    cover.leave()
-    library.leave()
-    lyrics.clear()
-    daily.clear()
-    search.clear()
+    void round.change({ kind: 'loginExpired' })
     update({ session: { status: 'loginExpired' }, library: null })
     player.availabilityChanged()
   }
 
   /**
    * 登录了：先拿出这个账号的曲库副本，和登录状态一起显示，再在后台同步。
-   * 播放队列：同一个账号接着用；没登录时放着已下载的歌（#38）就接着放、交给这个账号；
-   * 这次打开后第一次登录时恢复本机存着的；别的账号的清空（规则⑩）
+   * 播放队列的归属、恢复和规则⑩在 saved-queue 里：会话一轮发“登录了”，它照着换。
    */
   async function signedIn(account: Account): Promise<void> {
-    sessions += 1
-    const mine = sessions
-    const [shown, stored, quality, history] = await Promise.all([library.enter(account), local.readPlayer(), local.playQuality(), local.searchHistory()])
-    if (mine !== sessions)
+    const entered = round.change({ kind: 'signedIn', account })
+    const mine = round.current
+    const [shown, quality, history] = await Promise.all([library.enter(account), local.playQuality(), local.searchHistory()])
+    await entered
+    if (!round.isCurrent(mine) || !shown)
       return
     if (quality)
       player.setQuality(quality)
-    if (queueOwner === null && state.player.current !== null) {
-      // 这首登录前听的秒数不补记：那时没有账号可记，也不能记到之后登录的账号头上（ADR-0006）
-      queueOwner = account.id
-      player.adopt()
-    }
-    else if (queueOwner !== account.id) {
-      // 播放地址按账号给（会员和非会员不一样）：上一个账号取的不能接着用，所以不只是清空播放队列
-      if (queueOwner !== null)
-        player.stop()
-      queueOwner = account.id
-      if (stored?.owner === account.id)
-        player.restore(stored.saved)
-      else if (stored)
-        void local.deletePlayer()
-    }
     update({ session: { status: 'signedIn', account }, login: INITIAL_LOGIN, library: shown, search: { ...state.search, history } })
     player.availabilityChanged()
     library.sync()
@@ -658,30 +613,14 @@ export function createApp(browser: BrowserCapabilities): App {
     const message = event.data as SessionMessage
     switch (message.type) {
       case 'signedOut':
-        return signedOut()
+        void signedOut('other-tab')
+        return
       default: {
         const unhandled: never = message.type
         throw new Error(`不认识的广播消息：${JSON.stringify(unhandled)}`)
       }
     }
   })
-
-  /** 问服务端当前账号是谁；没问到时说明原因 */
-  async function checkAccount(): Promise<Session> {
-    const result = await api.get(endpoints.account)
-    if (result.ok)
-      return result.value.account ? { status: 'signedIn', account: result.value.account } : { status: 'signedOut' }
-    if (result.failure.kind === 'needsLogin')
-      return { status: 'loginExpired' }
-    return { status: 'checkFailed', failure: result.failure }
-  }
-
-  /** 没登录时打开 App：恢复没登录时放着的播放队列（只有已下载的歌，#38）；存着的是哪个账号的就留着，等它登录 */
-  async function restoreSignedOut(): Promise<void> {
-    const stored = await local.readPlayer()
-    if (stored?.owner === null && state.player.current === null)
-      player.restore(stored.saved)
-  }
 
   return {
     get state() {
@@ -695,22 +634,26 @@ export function createApp(browser: BrowserCapabilities): App {
       update({ session: { status: 'checking' } })
       // 下载属于这台设备：和问当前账号同时从本机读出来，没登录时也要用
       const loaded = downloads.load()
+      // 服务端在这一步里续期（满 24 小时、或网易云说需要登录时）。同一浏览器的标签页排队问：
+      // 前一个续期拿到的新登录 Cookie，后一个直接带上，不会再续一次
+      const asked = round.current
       if (await local.pendingLogout()) {
         await Promise.all([finishLogout(), loaded])
-        await restoreSignedOut()
+        if (!round.isCurrent(asked))
+          return
+        await round.change({ kind: 'anonymous' })
         update({ session: { status: 'signedOut' } })
         return
       }
-      // 服务端在这一步里续期（满 24 小时、或网易云说需要登录时）。同一浏览器的标签页排队问：
-      // 前一个续期拿到的新登录 Cookie，后一个直接带上，不会再续一次
-      const asked = sessions
-      const [session] = await Promise.all([browser.locks.request(LOGIN_COOKIE_LOCK, checkAccount), loaded])
-      if (sessions !== asked)
+      const [session] = await Promise.all([browser.locks.request(LOGIN_COOKIE_LOCK, round.checkAccount), loaded])
+      if (!round.isCurrent(asked) || !session)
         return
       if (session.status === 'signedIn')
         return signedIn(session.account)
       if (session.status === 'signedOut')
-        await restoreSignedOut()
+        await round.change({ kind: 'anonymous' })
+      else if (session.status === 'loginExpired')
+        void round.change({ kind: 'loginExpired' })
       update({ session })
     },
     startQrLogin: login.startQr,
@@ -720,14 +663,12 @@ export function createApp(browser: BrowserCapabilities): App {
     loginWithCaptcha: login.loginWithCaptcha,
     async logout() {
       await local.setPendingLogout(true)
-      // 正在放的那首算结束：播放队列还是这个账号的时候停下，它的打卡记下来，删曲库副本和播放队列之前先发出去
-      const owner = queueOwner
-      player.stop()
-      signedOut()
+      // 先让其他标签页收到退出、停掉自己的后台通道，再等本标签页的最后打卡和清理；
+      // 反过来会等跨标签页的打卡锁，而对方正等这条广播（断网/限流时卡住）
+      const changed = signedOut('this-tab')
       sessionChannel.postMessage({ type: 'signedOut' } satisfies SessionMessage)
-      if (owner !== null)
-        await checkIns.sendBeforeLogout(owner)
-      await Promise.all([local.deleteLibrary(), local.deletePlayer()])
+      await changed
+      await local.deleteLibrary()
       await finishLogout()
     },
     retrySync: library.retry,
@@ -826,15 +767,9 @@ export function createApp(browser: BrowserCapabilities): App {
     retryPlaylistOrder: library.retryPlaylistOrder,
     flushPlaylist: playlistId => library.flush(playlistId),
     async searchSongs(keyword) {
-      const searched = keyword.trim()
-      if (!searched)
-        return { ok: true, value: [] }
-      const result = await api.get(searchPage('songs'), { keywords: searched, offset: 0 })
-      if (result.ok)
-        return { ok: true, value: result.value.items }
-      if (result.failure.kind === 'needsLogin')
-        loginExpired()
-      return result
+      const result = await search.searchSongs(keyword)
+      // 这一轮会话结束了（退出、登录失效）：选择器只需要知道没搜成的原因
+      return result ?? { ok: false, failure: { kind: 'needsLogin' } }
     },
     async collect(target, collected) {
       const shown = state.library
@@ -869,6 +804,6 @@ export function createApp(browser: BrowserCapabilities): App {
     dismissLibraryNotice: library.dismissNotice,
     download: downloads.download,
     deleteDownload: downloads.remove,
-    searchDownloads: query => searchSongs(state.downloads.songs ?? [], query),
+    searchDownloads: query => filterSongs(state.downloads.songs ?? [], query),
   }
 }

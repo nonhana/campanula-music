@@ -1,0 +1,29 @@
+{
+  "module": "scrobble",
+  "query": {
+    "id": 3433267939,
+    "sourceid": 900000001,
+    "source": "list",
+    "time": 30
+  },
+  "context": {
+    "recordedAt": "2026-10-24T00:00:00.000Z",
+    "sdk": "hana-music-api@2.12.0",
+    "region": "local",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "constructed": true,
+    "note": "构造的限流返回：听歌打卡没录到过 405。照 playlist-edit/playlist_delete.405-rate-limited.constructed.json 的返回体（405“操作过于频繁，请稍后再试”，SDK 认作限流并加上 retryAfter），只把模块换成 scrobble。测试 #69 的跨标签页退出锁用"
+  },
+  "response": {
+    "status": 405,
+    "body": {
+      "code": 405,
+      "data": null,
+      "debugInfo": null,
+      "failData": null,
+      "message": "操作过于频繁，请稍后再试",
+      "msg": "操作过于频繁，请稍后再试"
+    }
+  }
+}

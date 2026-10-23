@@ -1,9 +1,9 @@
 import type { Song } from '#lib/api/library.js'
 import type { LyricsResponse } from '#lib/api/playback.js'
-import type { Api, RequestFailure, Result } from './api'
+import type { Api, Result } from './api'
 import type { BrowserCapabilities, Clock } from './browser'
 import type { LocalDb, StoredDownload } from './local'
-import type { BackgroundLane, BackgroundResult } from './pacing'
+import type { BackgroundFailure, BackgroundSessionResult, SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
 import { thumbnailUrl } from '#lib/api/library.js'
 import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
@@ -18,8 +18,11 @@ const DOWNLOAD_COVER_SIZE = 512
 
 /** 没下成的原因 */
 export type DownloadFailure
-  /** 没拿到下载地址、歌词：连不上、网易云出错、登录失效（断网、操作频繁由请求节奏等过，不会到这里） */
-  = | { kind: 'request', failure: Exclude<RequestFailure, { kind: 'offline' | 'rateLimited' }> }
+  /**
+   * 没拿到下载地址、歌词：连不上、网易云出错；这一轮会话结束（退出、登录失效）时也用 needsLogin 说明这首没下成。
+   * 它只给界面看，不再据此让 App 变成登录失效（那由会话一轮管）；断网、操作频繁由请求节奏等过，不会到这里
+   */
+  = | { kind: 'request', failure: BackgroundFailure | { kind: 'needsLogin' } }
   /** 网易云没给这首的下载地址：无版权，或者这个账号下不了完整的 */
     | { kind: 'unavailable' }
   /** 音频、封面没传完：断网、网易云的服务器断开或出错，或者收到的比该有的少 */
@@ -84,7 +87,7 @@ export const INITIAL_DOWNLOADS: DownloadsState = { songs: null, tasks: new Map()
 
 export interface DownloadsContext {
   api: Api
-  lane: BackgroundLane
+  session: SessionRound
   local: LocalDb
   clock: Clock
   browser: Pick<BrowserCapabilities, 'download' | 'objectUrl' | 'revokeObjectUrl'>
@@ -93,8 +96,6 @@ export interface DownloadsContext {
   signedIn: () => boolean
   write: (downloads: DownloadsState) => void
   notify: (notice: DownloadNotice) => void
-  /** 取下载地址、歌词时网易云说需要登录，续期也没成功 */
-  loginExpired: () => void
   /** 下载完了一首、删了一首：哪些歌能离线放变了 */
   changed: () => void
 }
@@ -118,7 +119,7 @@ function storageFull(error: unknown): boolean {
 }
 
 export function createDownloads(context: DownloadsContext): Downloads {
-  const { api, lane, local, clock, browser } = context
+  const { api, session, local, clock, browser } = context
   /** 下载完的，按歌曲编号；还没从本机读出来时是 null */
   let records: Map<number, StoredDownload> | null = null
   /** 下载完的歌，最近下载完的在前（records 变了才重排）；还没从本机读出来时是 null */
@@ -177,19 +178,13 @@ export function createDownloads(context: DownloadsContext): Downloads {
     context.notify({ kind: 'downloadFailed', song, failure })
   }
 
-  /** 后台请求（请求节奏）：断网、操作频繁由后台通道等过、重发过；退出、登录失效时按需要登录了结 */
-  async function background<T>(send: () => Promise<Result<T>>): Promise<BackgroundResult<T>> {
-    // 没给 giveUp，后台通道不会回 null
-    return (await lane.send(send, () => {}))!
+  /** 后台请求（请求节奏）：断网、操作频繁由后台通道等过、重发过；退出、登录失效时这一轮结束，回 null */
+  function background<T>(send: () => Promise<Result<T>>): Promise<BackgroundSessionResult<T> | 'gaveUp'> {
+    return session.background(send, () => {})
   }
 
-  /**
-   * 没拿到下载地址、歌词：网易云说需要登录（续期也没成功）时整个 App 变成登录失效。
-   * 后台通道停了（退出、已经登录失效）时等着的请求也回需要登录：还登录着才是网易云说的（和听歌打卡一样）
-   */
+  /** 没拿到下载地址、歌词：这一轮结束（退出、登录失效）或者网易云拒绝了，这首标成没下成 */
   function refused(song: Song, failure: Extract<DownloadFailure, { kind: 'request' }>['failure']): void {
-    if (failure.kind === 'needsLogin' && context.signedIn())
-      context.loginExpired()
     fail(song, { kind: 'request', failure })
   }
 
@@ -208,6 +203,8 @@ export function createDownloads(context: DownloadsContext): Downloads {
       background(() => api.get(endpoints.downloadUrl, { id: song.id, quality: DOWNLOAD_QUALITY })),
       background(() => api.get(endpoints.lyrics, { id: song.id })),
     ])
+    if (!url || !lyrics || url === 'gaveUp' || lyrics === 'gaveUp')
+      return refused(song, { kind: 'needsLogin' })
     if (!url.ok)
       return refused(song, url.failure)
     if (!lyrics.ok)

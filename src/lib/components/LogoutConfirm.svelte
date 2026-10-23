@@ -18,7 +18,7 @@
 
   async function logout() {
     if (await logoutConfirm.leaveTo('/') === 'committed')
-      void view.app.logout()
+      void view.app.logout().catch(error => console.error('退出失败', error))
   }
 </script>
 

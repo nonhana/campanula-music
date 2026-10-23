@@ -5,7 +5,8 @@ import type { Clock, NetworkStatus } from './browser'
 // - 前台请求（听众正在等的：登录、退出、之后的取播放地址、提交修改）直接用 Api 发，不经过这里，不排在后台请求后面；
 // - 后台请求（同步，之后的取下载地址、补发听歌打卡）经过这里。不设同时请求数上限（验证关卡①后作者定）；
 //   网易云说“操作频繁”，所有后台请求停到它给的时间，再把被拒的重发；断网就等联网再发；
-// - 登录失效（网易云说需要登录、续期也没成功）或退出：等着的后台请求都按需要登录处理，之后的也一样，直到重新登录。
+// - 登录失效（网易云说需要登录、续期也没成功）或退出：等着的后台请求都停下来，之后的也一样，直到重新登录。
+//   哪一轮会话有效由会话一轮（session-round）判断：这里只负责“操作频繁/断网”的等待，以及被停止时马上了结。
 
 /** 后台请求在等什么 */
 export type Waiting
@@ -25,9 +26,9 @@ export interface BackgroundLane {
    * 收到它，就不再发，返回 null；请求已经在路上时照常等它回来
    */
   send: <T>(request: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void, giveUp?: AbortSignal) => Promise<BackgroundResult<T> | null>
-  /** 登录失效或退出：等着的后台请求马上按需要登录了结，之后发的也一样 */
+  /** 会话结束（退出、登录失效）：等着的后台请求马上了结，之后发的也一样，直到重新登录 */
   stop: () => void
-  /** 重新登录了：后台请求照常发 */
+  /** 新一轮会话开始了：后台请求照常发 */
   resume: () => void
 }
 
@@ -37,7 +38,7 @@ export function createBackgroundLane({ clock, network }: { clock: Clock, network
   /** 网易云说操作频繁：到这个时间（毫秒）之前后台请求都不发 */
   let pausedUntil = 0
   let stopped = false
-  /** 每 stop() 一次加一：stop 之前开始的请求就算之后 resume() 了，也不再等、不再发 */
+  /** 每 stop() 一次加一：被停掉的那次 send 就算后来 resume 了也不再继续等；新 send 拿新的编号 */
   let epoch = 0
   /** 正在等的后台请求：stop() 时叫醒它们 */
   const sleepers = new Set<() => void>()
@@ -72,7 +73,9 @@ export function createBackgroundLane({ clock, network }: { clock: Clock, network
   return {
     async send<T>(request: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void, giveUp?: AbortSignal): Promise<BackgroundResult<T> | null> {
       const mine = epoch
-      while (!stopped && epoch === mine) {
+      for (;;) {
+        if (stopped || epoch !== mine)
+          return NEEDS_LOGIN
         if (giveUp?.aborted)
           return null
         if (pausedUntil > clock.now()) {
@@ -97,10 +100,8 @@ export function createBackgroundLane({ clock, network }: { clock: Clock, network
           case 'offline':
             continue
           case 'needsLogin':
-            // 只在当前 epoch 的 needsLogin 才停后台通道：退出前发出的请求在重新登录后才回 401 时，不要停新会话的通道
-            if (epoch === mine)
-              stop()
-            return NEEDS_LOGIN
+            // 交给会话一轮：这一轮还算数时它让 App 变成登录失效，并停掉后台通道；旧一轮回来的回 401 已经由它丢掉
+            return { ok: false, failure }
           default:
             return { ok: false, failure }
         }

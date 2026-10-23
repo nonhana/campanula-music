@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@2.12.0",
-  "recordings": 324,
+  "recordings": 328,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -10,9 +10,10 @@
       }
     },
     "scrobble": {
-      "count": 5,
+      "count": 6,
       "outcomes": {
-        "ok": 5
+        "ok": 5,
+        "rateLimited": 1
       }
     },
     "album_sublist": {
@@ -207,9 +208,10 @@
       }
     },
     "song_download_url_v1": {
-      "count": 7,
+      "count": 8,
       "outcomes": {
-        "ok": 7
+        "ok": 7,
+        "rejected": 1
       }
     },
     "song_url_v1": {
@@ -219,8 +221,9 @@
       }
     },
     "lyric_new": {
-      "count": 7,
+      "count": 8,
       "outcomes": {
+        "rejected": 1,
         "ok": 7
       }
     },
@@ -312,8 +315,9 @@
       }
     },
     "cloudsearch": {
-      "count": 19,
+      "count": 20,
       "outcomes": {
+        "rejected": 1,
         "ok": 19
       }
     },
@@ -4146,6 +4150,25 @@
       "note": null
     },
     {
+      "path": "playback/check-in/scrobble.405-rate-limited.constructed.json",
+      "module": "scrobble",
+      "queryKey": "{\"id\":3433267939,\"source\":\"list\",\"sourceid\":900000001,\"time\":30}",
+      "query": {
+        "id": 3433267939,
+        "source": "list",
+        "sourceid": 900000001,
+        "time": 30
+      },
+      "status": 405,
+      "outcome": "rateLimited",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.12.0",
+      "note": "构造的限流返回：听歌打卡没录到过 405。照 playlist-edit/playlist_delete.405-rate-limited.constructed.json 的返回体（405“操作过于频繁，请稍后再试”，SDK 认作限流并加上 retryAfter），只把模块换成 scrobble。测试 #69 的跨标签页退出锁用"
+    },
+    {
       "path": "playback/downloads/001-scrobble.json.gz",
       "module": "scrobble",
       "queryKey": "{\"id\":3416515543,\"source\":\"download\",\"sourceid\":0,\"time\":207}",
@@ -4214,6 +4237,23 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@2.12.0",
       "note": null
+    },
+    {
+      "path": "playback/downloads/song_download_url_v1.301-invalid.constructed.json",
+      "module": "song_download_url_v1",
+      "queryKey": "{\"id\":3433267939,\"level\":\"exhigh\"}",
+      "query": {
+        "id": 3433267939,
+        "level": "exhigh"
+      },
+      "status": 301,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "invalid",
+      "sdk": "hana-music-api@2.12.0",
+      "note": "构造的失败返回：返回体照 library/likelist.301-invalid.json 的真实 301 录制（凭据无效时网易云只回 { msg: null, code: 301 }），把模块和查询换成下载地址 song_download_url_v1。下载地址上的 301 没单独录到，测试 #69 的旧会话保护用"
     },
     {
       "path": "playback/liked/001-song_url_v1.json.gz",
@@ -4316,6 +4356,22 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@2.8.0",
       "note": null
+    },
+    {
+      "path": "playback/lyric_new.301-invalid.constructed.json",
+      "module": "lyric_new",
+      "queryKey": "{\"id\":1466598056}",
+      "query": {
+        "id": 1466598056
+      },
+      "status": 301,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "invalid",
+      "sdk": "hana-music-api@2.12.0",
+      "note": "构造的失败返回：返回体照 library/likelist.301-invalid.json 的真实 301 录制（凭据无效时网易云只回 { msg: null, code: 301 }），把模块和查询换成歌词 lyric_new。歌词上的 301 没单独录到，测试 #69 的旧会话保护用"
     },
     {
       "path": "playback/lyric_new.all-forms.json",
@@ -5814,6 +5870,25 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@2.9.0",
       "note": null
+    },
+    {
+      "path": "search/cloudsearch.301-invalid.constructed.json",
+      "module": "cloudsearch",
+      "queryKey": "{\"keywords\":\"真夜中\",\"limit\":30,\"offset\":0,\"type\":1}",
+      "query": {
+        "keywords": "真夜中",
+        "limit": 30,
+        "offset": 0,
+        "type": 1
+      },
+      "status": 301,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "invalid",
+      "sdk": "hana-music-api@2.12.0",
+      "note": "构造的失败返回：返回体照 library/likelist.301-invalid.json 的真实 301 录制（凭据无效时网易云只回 { msg: null, code: 301 }），把模块和查询换成选择器搜索的 cloudsearch。搜索上的 301 没单独录到，测试 #69 的旧会话保护用"
     },
     {
       "path": "search/cloudsearch.album.json",
