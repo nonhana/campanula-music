@@ -1,8 +1,8 @@
 import type { Song } from '#lib/api/library.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
-import type { Api, RequestFailure } from './api'
 import type { AudioCapability, Clock } from './browser'
 import type { PlaylistSongs } from './library'
+import type { SessionApi, SessionFailure } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
 import { playableNow } from './downloads'
 
@@ -46,7 +46,7 @@ type PlaybackStatus = 'loading' | 'buffering' | 'playing' | 'paused'
 /** 要告诉听众的事 */
 export type PlayerNotice
   /** 没取到播放地址，停下了：按播放重试 */
-  = | { kind: 'urlFailed', failure: Exclude<RequestFailure, { kind: 'needsLogin' }> }
+  = | { kind: 'urlFailed', failure: SessionFailure }
   /** 音频没加载下来（放到一半断流、一开始就没加载出来），停下了：按播放从原来的位置接着放 */
     | { kind: 'streamFailed' }
   /** 缓冲很久了还没出声：还在等，接上了就接着放 */
@@ -137,7 +137,7 @@ export interface CheckIn {
 }
 
 export interface PlayerContext {
-  api: Api
+  api: SessionApi
   clock: Clock
   audio: () => AudioCapability
   write: (player: PlayerState) => void
@@ -148,8 +148,6 @@ export interface PlayerContext {
   save: (progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]) => void
   /** 播放队列空了（清空、退出登录）：本机存着的删掉；空之前听完的那首的打卡在 checkIns 里，和删在同一个事务里存下 */
   forget: (checkIns: readonly CheckIn[]) => void
-  /** 取播放地址时网易云说需要登录，续期也没成功 */
-  loginExpired: () => void
   /** 这首歌在这台设备上下载了（#38）：已下载的歌即使在线也放本机文件，断网、没登录时照样能放 */
   downloaded: (songId: number) => boolean
   /** 已下载的这首的本机文件地址（blob:） */
@@ -220,8 +218,8 @@ interface PlayUrl {
   local: boolean
 }
 
-/** 取播放地址的结果；url 是 null：网易云没给地址 */
-type Fetched = { ok: true, url: PlayUrl | null } | { ok: false, failure: RequestFailure }
+/** 取播放地址的结果；url 是 null：网易云没给地址；整体是 null：这一轮会话结束了 */
+type Fetched = { ok: true, url: PlayUrl | null } | { ok: false, failure: SessionFailure } | null
 
 /** 一个播放器和它装着的歌 */
 interface Deck {
@@ -473,6 +471,8 @@ export function createPlayer(context: PlayerContext): Player {
       const requestedAt = clock.now()
       const mine = epoch
       request = api.get(endpoints.playUrl, { id: song.id, quality: state.quality }).then((result): Fetched => {
+        if (!result)
+          return null
         if (!result.ok)
           return result
         if (!result.value.playable)
@@ -606,6 +606,12 @@ export function createPlayer(context: PlayerContext): Player {
         const fetched = await playUrl(song)
         if (mine !== attempt)
           return
+        if (fetched === null) {
+          // 这一轮会话结束了：App 会切到登录失效/未登录；先停下，不显示“取播放地址失败”
+          pauseAll()
+          publish({ status: 'paused' })
+          return
+        }
         if (!fetched.ok)
           return urlFailed(fetched.failure)
         if (!fetched.url)
@@ -621,13 +627,8 @@ export function createPlayer(context: PlayerContext): Player {
     play(spare)
   }
 
-  function urlFailed(failure: RequestFailure): void {
+  function urlFailed(failure: SessionFailure): void {
     pauseAll()
-    if (failure.kind === 'needsLogin') {
-      publish({ status: 'paused' })
-      context.loginExpired()
-      return
-    }
     publish({ status: 'paused', notice: { kind: 'urlFailed', failure } })
   }
 
@@ -659,10 +660,10 @@ export function createPlayer(context: PlayerContext): Player {
     const fetched = await playUrl(song)
     if (mine !== preparing)
       return
+    if (!fetched)
+      return
     if (!fetched.ok) {
       // 快放完时（handOver）再准备一次
-      if (fetched.failure.kind === 'needsLogin')
-        context.loginExpired()
       return
     }
     if (!fetched.url) {

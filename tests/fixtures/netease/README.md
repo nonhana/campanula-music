@@ -156,6 +156,10 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 | `playlist-edit/playlist_delete.405-rate-limited.constructed.json`、`playlist-edit/playlist_privacy.405-rate-limited.constructed.json`、`playlist-edit/playlist_desc_update.405-rate-limited.constructed.json` | 删除、改公开、改简介被网易云拒绝。复制 `playlist-edit/create/003-playlist_create.json.gz` 的返回体（#33 连着新建两张歌单时网易云回的 405“操作过于频繁，请稍后再试”，SDK 2.12.0 认作“操作频繁”，抛出时加上 `retryAfter`），只把模块换成对应的那个 |
 | `playlist-edit/playlist_order_update.405-rate-limited.constructed.json` | 曲库里的自建歌单排序被网易云拒绝（#37 要求覆盖失败回滚，作者要求 2026-10-21；这个模块只录到过成功返回）。复制上面那三份的 405 返回体，只把模块换成 `playlist_order_update` |
 | `playlist-edit/playlist_tracks.add-rejected.constructed.json` | 批量加入被网易云拒绝（#66 返工要求覆盖 502 的 notChanged/回滚，作者要求 2026-10-24；录制里只有“歌单内歌曲重复”的 502，服务端会当成加好）。复制 `playlist_tracks.add-duplicate.json` 的结构，把 message 换成一次普通拒绝；真遇到时替换成录制 |
+| `search/cloudsearch.301-invalid.constructed.json` | 搜索请求的凭据失效 301（#69 要测旧会话的回复不把新会话判成登录失效；搜索上的 301 没单独录到，作者要求 2026-10-24）。照 `library/likelist.301-invalid.json` 的真实 301 返回体 `{ "msg": null, "code": 301 }`，只把模块换成 `cloudsearch`、查询换成选择器搜索的 `{ keywords: "真夜中", type: 1, limit: 30, offset: 0 }`；真录到搜索 301 时替换成录制 |
+| `playback/lyric_new.301-invalid.constructed.json` | 歌词请求的凭据失效 301（#69；歌词上的 301 没单独录到，作者要求 2026-10-24）。同样照 `library/likelist.301-invalid.json` 的真实 301 返回体，只把模块换成 `lyric_new`、查询换成 `{ id: 1466598056 }`；真录到时替换 |
+| `playback/downloads/song_download_url_v1.301-invalid.constructed.json` | 下载地址请求的凭据失效 301（#69；下载地址上的 301 没单独录到，作者要求 2026-10-24）。同样照 `library/likelist.301-invalid.json` 的真实 301 返回体，只把模块换成 `song_download_url_v1`、查询换成 `{ id: 3433267939, level: "exhigh" }`；真录到时替换 |
+| `playback/check-in/scrobble.405-rate-limited.constructed.json` | 听歌打卡的 405“操作过于频繁”（#69 测跨标签页退出时打卡锁不被卡死；打卡没录到过 405，作者要求 2026-10-24）。照 `playlist-edit/playlist_delete.405-rate-limited.constructed.json` 的返回体，只把模块换成 `scrobble`；真录到限流时替换 |
 
 它们不进下面的清单。
 

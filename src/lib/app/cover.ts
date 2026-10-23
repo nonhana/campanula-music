@@ -1,6 +1,6 @@
 import type { CoverCrop, CoverTokenResponse } from '#lib/api/cover.js'
-import type { Api, RequestFailure } from './api'
 import type { DecodedImage, ImageCapability } from './browser'
+import type { SessionApi, SessionFailure, SessionRound } from './session-round'
 import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.js'
 import { endpoints } from '#lib/api/endpoints.js'
 
@@ -28,7 +28,7 @@ export type CoverStep = 'token' | 'upload' | 'set'
 
 /** 上传没成功的原因；请求本身的问题和改曲库一样翻译 */
 export type CoverFailure
-  = | Exclude<RequestFailure, { kind: 'needsLogin' }>
+  = | SessionFailure
     /** 浏览器直传网易云的图片存储没成（跨域、断网、图片存储出错） */
     | { kind: 'uploadFailed' }
     /** 导不出 JPEG（canvas 出错）：还没开始上传 */
@@ -68,12 +68,11 @@ export type CoverOutcome
     | { ok: false, step: CoverStep | null, failure: CoverFailure }
 
 export interface CoverContext {
-  api: Api
+  api: SessionApi
+  session: SessionRound
   images: ImageCapability
   upload: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
   write: (state: CoverState | null) => void
-  /** 网易云说需要登录（续期也没成功）：整个 App 变成登录失效 */
-  loginExpired: () => void
   /** 换好了：把新封面地址写进曲库副本，立即显示 */
   changed: (playlistId: number, coverUrl: string) => Promise<void>
 }
@@ -89,8 +88,6 @@ export interface Cover {
   retry: () => Promise<CoverOutcome | null>
   /** 关掉裁剪页（正在设为封面时关不掉）；释放图片 */
   close: () => void
-  /** 退出、登录失效：不管在做什么都收起来，释放图片 */
-  leave: () => void
 }
 
 /** 会话里的上传：一份，同时只做一次 */
@@ -119,8 +116,8 @@ export function createCover(context: CoverContext): Cover {
   const { images } = context
   let state: CoverState | null = null
   let attempt: Attempt | null = null
-  /** 每换一次图、关一次、换一轮会话就加一：之前发出去的结果不要 */
-  let generation = 0
+  /** 正在解码的那张图：换了图、关掉、退出后，之前解码的结果不要 */
+  let decoding: object | null = null
 
   function write(next: CoverState | null): void {
     state = next
@@ -142,9 +139,9 @@ export function createCover(context: CoverContext): Cover {
       write({ status: 'uploading', ...cropped(work), upload: { ...next, failure: null } })
   }
 
-  /** 这一轮已经作废（取消、换图、关掉、退出）：之前发出去的结果不要 */
-  function stale(work: Attempt, mine: number): boolean {
-    return work.canceled || attempt !== work || mine !== generation
+  /** 这张图已经不用了（取消、换图、关掉、退出）：之前发出去的结果不要 */
+  function stale(work: Attempt): boolean {
+    return work.canceled || attempt !== work
   }
 
   function release(): void {
@@ -155,30 +152,25 @@ export function createCover(context: CoverContext): Cover {
 
   /** 这张图不再用了（换一张、关上、退出）：还在路上的结果都不要，图片放掉 */
   function abandon(): void {
-    generation += 1
+    decoding = null
     attempt?.controller.abort()
     release()
   }
 
-  /** 记下哪一步失败；需要登录时整个 App 变成登录失效，返回 null */
-  function failed(step: CoverStep | null, failure: CoverFailure | RequestFailure): CoverOutcome | null {
+  /** 记下哪一步失败；这一轮结束时已经收起（leave），返回 null */
+  function failed(step: CoverStep | null, failure: CoverFailure): CoverOutcome | null {
     if (!attempt)
       return null
-    if (failure.kind === 'needsLogin') {
-      abandon()
-      write(null)
-      context.loginExpired()
-      return null
-    }
     uploading(step, failure)
     return { ok: false, step, failure }
   }
 
   async function decode(playlistId: number, file: File): Promise<void> {
-    const mine = ++generation
+    const mine = {}
+    decoding = mine
     write({ status: 'picking', playlistId })
     if (file.size > COVER_INPUT_MAX_BYTES) {
-      if (mine === generation)
+      if (decoding === mine)
         write({ status: 'unusable', playlistId, problem: { kind: 'tooBig' } })
       return
     }
@@ -187,7 +179,7 @@ export function createCover(context: CoverContext): Cover {
       image = await images.decode(file)
     }
     catch {
-      if (mine !== generation)
+      if (decoding !== mine)
         return
       const problem: CoverProblem = looksHeic(file)
         ? { kind: 'heic' }
@@ -197,10 +189,11 @@ export function createCover(context: CoverContext): Cover {
       write({ status: 'unusable', playlistId, problem })
       return
     }
-    if (mine !== generation) {
+    if (decoding !== mine) {
       images.release(image)
       return
     }
+    decoding = null
     attempt = {
       playlistId,
       image,
@@ -234,7 +227,6 @@ export function createCover(context: CoverContext): Cover {
 
   /** 从 from 这一步开始跑：token → upload → set。只重试没成的部分（第三步失败就只再设一次） */
   async function run(from: CoverStep): Promise<CoverOutcome | null> {
-    const mine = generation
     const work = attempt
     if (!work || work.running)
       return null
@@ -245,17 +237,17 @@ export function createCover(context: CoverContext): Cover {
     try {
       if (step !== 'set') {
         if (!work.jpeg && !await exportJpeg(work)) {
-          if (stale(work, mine))
+          if (stale(work))
             return null
           return failed(null, { kind: 'exportFailed' })
         }
-        if (stale(work, mine))
+        if (stale(work))
           return null
       }
       if (step === 'token') {
         uploading('token')
         const result = await context.api.post(endpoints.coverToken, { id: work.playlistId })
-        if (stale(work, mine))
+        if (!result || stale(work))
           return null
         if (!result.ok)
           return failed('token', result.failure)
@@ -269,23 +261,23 @@ export function createCover(context: CoverContext): Cover {
           await context.upload(work.token!.uploadUrl, work.jpeg!, work.token!.token, work.controller.signal)
         }
         catch {
-          if (stale(work, mine))
+          if (stale(work))
             return null
           return failed('upload', { kind: 'uploadFailed' })
         }
-        if (stale(work, mine))
+        if (stale(work))
           return null
         work.uploaded = true
         step = 'set'
       }
       uploading('set')
       const result = await context.api.post(endpoints.setCover, { id: work.playlistId }, { imgId: work.imgId! })
-      if (stale(work, mine))
+      if (!result || stale(work))
         return null
       if (!result.ok)
         return failed('set', result.failure)
       await context.changed(work.playlistId, result.value.url)
-      if (stale(work, mine))
+      if (stale(work))
         return null
       images.release(work.image)
       attempt = null
@@ -296,6 +288,17 @@ export function createCover(context: CoverContext): Cover {
       work.running = false
     }
   }
+
+  /** 退出、登录失效：不管在做什么都收起来，释放图片 */
+  function leave(): void {
+    abandon()
+    write(null)
+  }
+
+  context.session.onChange((change) => {
+    if (change.kind !== 'signedIn')
+      leave()
+  })
 
   return {
     async prepare(playlistId, file) {
@@ -341,10 +344,6 @@ export function createCover(context: CoverContext): Cover {
     close() {
       if (state?.status === 'uploading' && state.upload.step === 'set')
         return
-      abandon()
-      write(null)
-    },
-    leave() {
       abandon()
       write(null)
     },

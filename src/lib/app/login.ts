@@ -2,6 +2,7 @@ import type { Account } from '#lib/api/account.js'
 import type { QrCheckResponse } from '#lib/api/login.js'
 import type { Api, RequestFailure, Result } from './api'
 import type { Clock, PageVisibility } from './browser'
+import type { SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
 
 // 登录页的两种方式（Spec #11“客户端：登录会话”）：扫码、短信验证码。不做账号密码登录。
@@ -48,6 +49,7 @@ const CAPTCHA_RESEND_MS = 60_000
 
 export interface LoginContext {
   api: Api
+  session: SessionRound
   clock: Clock
   page: PageVisibility
   /**
@@ -142,6 +144,11 @@ export function createLogin(context: LoginContext): Login {
     forget()
     setQr(null)
   }
+
+  context.session.onChange((change) => {
+    if (change.kind !== 'signedIn')
+      stopQr()
+  })
 
   /** 先发完还没发出去的退出，再发登录请求；退出没发成，这次就当作同样原因的失败 */
   async function afterPendingLogout<T>(send: () => Promise<Result<T>>): Promise<Result<T>> {

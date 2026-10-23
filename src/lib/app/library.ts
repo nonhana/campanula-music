@@ -1,12 +1,13 @@
 import type { Account } from '#lib/api/account.js'
 import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistOrderRequest, PlaylistTagGroup, PlaylistUnavailable, RemoveTracksRequest, Song, SongOrderRequest } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
-import type { Api, RequestFailure, Result } from './api'
+import type { Api, Result } from './api'
 import type { Clock } from './browser'
 import type { Change, ConfirmedChange } from './changes'
 import type { DownloadNotice } from './downloads'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
-import type { BackgroundLane, Waiting } from './pacing'
+import type { Waiting } from './pacing'
+import type { BackgroundFailure, BackgroundSessionResult, SessionFailure, SessionResult, SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
 import { canSortPlaylist, nameProblem, reorderSortable, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import { changePatch, changeProblem, heartOf, targetOf } from './changes'
@@ -27,11 +28,11 @@ import { emptyPatch, patched } from './local'
 // 新建歌单等网易云建好、给了编号才进副本（#33）。同步拿回来的数据是请求发出那一刻的网易云，
 // 比那一刻晚确认的修改要叠回去，不然刚加进歌单的歌会从界面上消失（逻辑原型证明必须这样做）
 
-/** 同步没成功的原因（需要登录另外处理：整个 App 变成登录失效） */
-export type SyncFailure = Exclude<RequestFailure, { kind: 'needsLogin' | 'rateLimited' | 'offline' }>
+/** 同步没成功的原因；会话结束和请求节奏的等待都已经在会话一轮、后台通道里处理掉了 */
+export type SyncFailure = BackgroundFailure
 
 /** 打开歌单时没拉成的原因：前台请求不等，断网、操作频繁都直接说 */
-type OpenFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
+type OpenFailure = SessionFailure
 
 /**
  * 改曲库没改成的原因：请求没成功；收藏歌单前没取到网易云的反作弊令牌（Watchman 没加载出来，可能被浏览器插件拦了）；
@@ -175,14 +176,13 @@ export interface PlaylistSearch {
 }
 
 export interface LibraryContext {
+  /** 原始请求：后台同步把 send 交给请求节奏，由会话一轮判断这一轮还算不算数 */
   api: Api
-  lane: BackgroundLane
+  session: SessionRound
   local: LocalDb
   clock: Clock
   /** 曲库变了（同步拿到了新的部分、同步的状态变了） */
   write: (library: LibraryState) => void
-  /** 同步时网易云说需要登录，续期也没成功 */
-  loginExpired: () => void
   /** 浏览器觉得联网着（navigator.onLine）：断网时改曲库直接说没改成（规则⑨） */
   online: () => boolean
   /** 收藏歌单前现取一枚网易云的反作弊令牌（BrowserCapabilities.checkToken） */
@@ -190,8 +190,8 @@ export interface LibraryContext {
 }
 
 export interface Library {
-  /** 登录了：拿出这个账号的本机副本（别的账号的清掉）。返回要显示的曲库，然后调 sync() */
-  enter: (account: Account) => Promise<LibraryState>
+  /** 登录了：拿出这个账号的本机副本（别的账号的清掉）。返回要显示的曲库，然后调 sync()；这一轮已经结束是 null */
+  enter: (account: Account) => Promise<LibraryState | null>
   /** 在后台和网易云同步 */
   sync: () => void
   /** 同步没成功时重试：从停下的地方接着来 */
@@ -271,8 +271,6 @@ export interface Library {
   dismissNotice: () => void
   /** 下载（#38）要告诉听众的事：放进同一条提示条，换掉之前的提示。没登录时没有提示条，不显示 */
   notify: (notice: DownloadNotice) => void
-  /** 退出、登录失效：停下同步。本机副本留着，退出时由 App 另外删 */
-  leave: () => void
 }
 
 /** 一个同步请求的结果；null：这一轮已经作废（退出、登录失效、换账号），什么都不用做 */
@@ -382,7 +380,7 @@ function folded(text: string): string {
 }
 
 /** 在一串歌里搜索：歌名、歌手、专辑里有搜索词的，按原来的先后；不分大小写和全角半角。搜索词是空的就是全部 */
-export function searchSongs(songs: readonly Song[], query: string): Song[] {
+export function filterSongs(songs: readonly Song[], query: string): Song[] {
   const term = folded(query.trim())
   const matches = (text: string | null) => text !== null && folded(text).includes(term)
   return songs.filter(song => matches(song.name) || matches(song.album.name) || song.artists.some(artist => matches(artist.name)))
@@ -390,7 +388,7 @@ export function searchSongs(songs: readonly Song[], query: string): Song[] {
 
 /** 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成 */
 export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch {
-  return { songs: searchSongs(playlist.songs, query), incomplete: !playlist.complete }
+  return { songs: filterSongs(playlist.songs, query), incomplete: !playlist.complete }
 }
 
 /** 点歌、歌单内搜索、补上还没同步的歌（规则⑫）时的这张歌单：曲库里的看本机副本，不在曲库里的看打开时取到的；都还没有是 null */
@@ -467,12 +465,10 @@ interface DeferredPlaylistOrder {
 }
 
 export function createLibrary(context: LibraryContext): Library {
-  const { api, lane, local, clock } = context
+  const { api, session, local, clock } = context
   /** 显示着的副本；没登录时是 null */
   let replica: Replica | null = null
   let status: SyncStatus = { status: 'synced' }
-  /** 每进出一次就加一：上一轮同步回来的结果，代数对不上就不要 */
-  let generation = 0
   /** 正在跑的同步。新的一轮等上一轮了结再开始，所以同一时间只有一轮在发请求 */
   let running: Promise<void> = Promise.resolve()
   /**
@@ -555,7 +551,7 @@ export function createLibrary(context: LibraryContext): Library {
     if (!current)
       return Promise.resolve()
     markerSaving = markerSaving.then(async () => {
-      if (mine !== generation || !replica)
+      if (!session.isCurrent(mine) || !replica)
         return
       const active = new Set([...recovering, ...deferred.map(item => item.playlist.id), ...orders.keys()])
       for (const id of active) {
@@ -615,17 +611,17 @@ export function createLibrary(context: LibraryContext): Library {
       try {
         // 提交前先让“这张歌单有改动还没确认”落盘：这时关掉页面，下次打开才知道要恢复
         await markerSaving
-        if (item.settled || mine !== generation)
+        if (item.settled || !session.isCurrent(mine))
           return
         const { change } = item
         const result = await submit(mine, change, keepalive && keepaliveAllowed(change) ? { keepalive: true } : undefined)
-        if (!result || mine !== generation)
+        if (!result || !session.isCurrent(mine))
           return
         if (result.ok && result.value === 'done') {
           item.entry.confirmedAt = ++tick
           if (!await save(mine, now => changePatch(now, item.entry.change), () => {
             item.entry.saved = true
-          }) || mine !== generation) {
+          }) || !session.isCurrent(mine)) {
             return
           }
           failedRemoval = null
@@ -641,15 +637,13 @@ export function createLibrary(context: LibraryContext): Library {
           publish()
           return start()
         }
-        if (result.failure.kind === 'needsLogin')
-          return context.loginExpired()
         failedRemoval = { playlist: item.playlist, songIds: item.songIds }
         notice = { kind: 'removeFailed', playlist: item.playlist, count: item.songIds.length, failure: result.failure }
         publish()
       }
       catch {
         // 本机数据库、请求本身出了意料之外的错：也按没成功处理，放回原位、说明原因
-        if (item.settled || mine !== generation)
+        if (item.settled || !session.isCurrent(mine))
           return
         changes = changes.filter(each => each !== item.entry)
         finishRemoval(mine, item)
@@ -731,7 +725,7 @@ export function createLibrary(context: LibraryContext): Library {
     const ids = [...new Set(songIds)].filter(id => present.has(id))
     if (ids.length === 0)
       return
-    const mine = generation
+    const mine = session.current
     failedRemoval = null
     if (ids.length > TRACKS_PER_CHANGE) {
       notice = { kind: 'removeFailed', playlist, count: ids.length, failure: { kind: 'invalid', problem: 'tooManySongs' }, retryable: false }
@@ -762,7 +756,7 @@ export function createLibrary(context: LibraryContext): Library {
       notice = null
     failedRemoval = null
     publish()
-    void saveMarkers(generation)
+    void saveMarkers(session.current)
   }
 
   /** 把一个待提交移除里的这几首拿掉（重新加入歌单时用）：别的歌继续按 5 秒计时，拿掉的放回原位 */
@@ -800,7 +794,7 @@ export function createLibrary(context: LibraryContext): Library {
       if (playlist)
         notice = { kind: 'alreadyAdded', playlist }
       publish()
-      void saveMarkers(generation)
+      void saveMarkers(session.current)
     }
     return restored
   }
@@ -809,7 +803,7 @@ export function createLibrary(context: LibraryContext): Library {
     const failed = failedRemoval
     if (!failed)
       return
-    const mine = generation
+    const mine = session.current
     failedRemoval = null
     if (!context.online()) {
       failedRemoval = failed
@@ -918,7 +912,7 @@ export function createLibrary(context: LibraryContext): Library {
     entry.confirmedAt = ++tick
     if (!await save(mine, now => changePatch(now, change), () => {
       entry.saved = true
-    }) || mine !== generation) {
+    }) || !session.isCurrent(mine)) {
       return true
     }
     item.sendingEntry = null
@@ -931,7 +925,7 @@ export function createLibrary(context: LibraryContext): Library {
 
   /** 自建歌单顺序没成功：去掉这次的修改（本地退回原来的顺序），留下“重试”用的顺序 */
   function playlistOrderFailed(mine: number, item: DeferredPlaylistOrder, failure: ChangeFailure): void {
-    if (mine !== generation)
+    if (!session.isCurrent(mine))
       return
     const { playlistIds } = item
     changes = changes.filter(entry => entry.change.kind !== 'playlistOrder')
@@ -945,8 +939,8 @@ export function createLibrary(context: LibraryContext): Library {
    * 网易云回了 -1 或者超时：重新读一次这张歌单，和提交的顺序一样就算成功（几千首位置都变时其实已经生效）。
    * 重读没成功、或者顺序不一样都是没有生效
    */
-  async function orderLanded(mine: number, playlistId: number, songIds: readonly number[]): Promise<boolean> {
-    const result = settle(mine, await api.get(endpoints.trackIds, { id: playlistId }))
+  async function orderLanded(playlistId: number, songIds: readonly number[]): Promise<boolean> {
+    const result = await session.api.get(endpoints.trackIds, { id: playlistId })
     if (!result?.ok)
       return false
     // 提交的顺序可能过期：多出来的歌（还在提交中的加入、红心）会被网易云忽略，漏掉的歌原地保留。
@@ -974,7 +968,7 @@ export function createLibrary(context: LibraryContext): Library {
     entry.confirmedAt = ++tick
     if (!await save(mine, now => changePatch(now, change), () => {
       entry.saved = true
-    }) || mine !== generation) {
+    }) || !session.isCurrent(mine)) {
       return true
     }
     item.sendingEntry = null
@@ -987,7 +981,7 @@ export function createLibrary(context: LibraryContext): Library {
 
   /** 排序没成功：去掉这次排序的修改（本地退回原来的顺序），留下“重试”用的顺序。failure 是 null：说不出原因（没确认） */
   function orderFailed(mine: number, item: DeferredOrder, failure: ChangeFailure | null): void {
-    if (mine !== generation)
+    if (!session.isCurrent(mine))
       return
     const { playlist, songIds } = item
     changes = changes.filter(entry => !(entry.change.kind === 'order' && entry.change.playlist.id === playlist.id))
@@ -1000,7 +994,7 @@ export function createLibrary(context: LibraryContext): Library {
 
   /** 排序时网易云说这张歌单已经不在了：退回原来的顺序，马上同步一次曲库 */
   function orderMissing(mine: number, item: DeferredOrder, change: Extract<Change, { kind: 'order' }>): void {
-    if (mine !== generation)
+    if (!session.isCurrent(mine))
       return
     changes = changes.filter(entry => !(entry.change.kind === 'order' && entry.change.playlist.id === item.playlist.id))
     dropOrder(item)
@@ -1030,8 +1024,6 @@ export function createLibrary(context: LibraryContext): Library {
     handle: (result: HandledResult, item: T, entry: PendingChange, change: C) => Promise<'next' | 'stop'>
     /** 提交失败（没成功、也没被 handle 处理掉） */
     failed: (item: T, failure: ChangeFailure) => void
-    /** 需要登录：清掉这一份、让 App 变成登录失效 */
-    loginExpired: (item: T) => void
   }
 
   /**
@@ -1063,21 +1055,15 @@ export function createLibrary(context: LibraryContext): Library {
       try {
         await options.prepare?.()
         for (;;) {
-          if (item.settled || mine !== generation)
+          if (item.settled || !session.isCurrent(mine))
             return
           const entry = item.entry
           const change = options.change(item)
           item.sendingEntry = entry
           const result = await submit(mine, change, keepalive && keepaliveAllowed(change) ? { keepalive: true } : undefined)
-          if (!result || mine !== generation)
+          if (!result || !session.isCurrent(mine))
             return
-          if (!result.ok && result.failure.kind === 'needsLogin') {
-            if (mine === generation)
-              options.loginExpired(item)
-            return
-          }
-          // 需要登录在上面已经处理掉了，剩下的失败都是 ChangeFailure
-          if (await options.handle(result as HandledResult, item, entry, change) === 'stop')
+          if (await options.handle(result, item, entry, change) === 'stop')
             return
           if (await options.confirmed(item, entry, change))
             return
@@ -1087,7 +1073,7 @@ export function createLibrary(context: LibraryContext): Library {
       }
       catch {
         // 本机数据库、请求本身出了意料之外的错：也按没成功处理，退回原来的顺序、说明原因
-        if (!item.settled && mine === generation)
+        if (!item.settled && session.isCurrent(mine))
           options.failed(item, { kind: 'serverError' })
       }
     }).finally(() => {
@@ -1122,13 +1108,13 @@ export function createLibrary(context: LibraryContext): Library {
         if (result.ok && result.value === 'done')
           return 'next'
         if (result.ok && result.value === 'unconfirmed') {
-          if (await orderLanded(mine, item.playlist.id, change.songIds))
+          if (await orderLanded(item.playlist.id, change.songIds))
             return 'next'
           orderFailed(mine, item, null)
           return 'stop'
         }
         if (!result.ok && result.failure.kind === 'neteaseUnavailable') {
-          if (await orderLanded(mine, item.playlist.id, change.songIds))
+          if (await orderLanded(item.playlist.id, change.songIds))
             return 'next'
           orderFailed(mine, item, result.failure)
           return 'stop'
@@ -1141,11 +1127,6 @@ export function createLibrary(context: LibraryContext): Library {
         return 'stop'
       },
       failed: (item, failure) => orderFailed(mine, item, failure),
-      loginExpired: (item) => {
-        changes = changes.filter(each => !(each.change.kind === 'order' && each.change.playlist.id === item.playlist.id))
-        finishOrder(mine, item)
-        context.loginExpired()
-      },
     })
   }
 
@@ -1172,11 +1153,6 @@ export function createLibrary(context: LibraryContext): Library {
         return 'stop'
       },
       failed: (item, failure) => playlistOrderFailed(mine, item, failure),
-      loginExpired: (item) => {
-        changes = changes.filter(each => each.change.kind !== 'playlistOrder')
-        finishPlaylistOrder(item)
-        context.loginExpired()
-      },
     })
   }
 
@@ -1212,7 +1188,7 @@ export function createLibrary(context: LibraryContext): Library {
       publish()
       return false
     }
-    const mine = generation
+    const mine = session.current
     let item = orders.get(playlistId)
     if (item && !item.settled) {
       item.songIds = next
@@ -1265,7 +1241,7 @@ export function createLibrary(context: LibraryContext): Library {
     const displayed = sortablePlaylists(display)
     if (displayed && sameOrder(next, displayed.map(playlist => playlist.id)))
       return false
-    const mine = generation
+    const mine = session.current
     const item = playlistOrder
     // 拖回原来的顺序、还没开始提交：撤掉这份修改，什么都不发
     const base = sortablePlaylists(current)
@@ -1329,7 +1305,7 @@ export function createLibrary(context: LibraryContext): Library {
     const playlist = current.playlists?.find(item => item.id === failed.playlist.id)
     if (!playlist)
       return
-    const mine = generation
+    const mine = session.current
     failedOrder = null
     if (!context.online()) {
       failedOrder = failed
@@ -1350,7 +1326,7 @@ export function createLibrary(context: LibraryContext): Library {
     const current = replica
     if (!failed || !current)
       return
-    const mine = generation
+    const mine = session.current
     failedPlaylistOrder = null
     if (!context.online()) {
       failedPlaylistOrder = failed
@@ -1366,7 +1342,7 @@ export function createLibrary(context: LibraryContext): Library {
 
   /** 页面被隐藏、离开歌单：还没提交的移除和排序立即提交（带 keepalive，请求体太大的用普通请求） */
   async function flush(playlistId?: number): Promise<void> {
-    const mine = generation
+    const mine = session.current
     await Promise.all([
       ...deferred
         .filter(item => playlistId === undefined || item.playlist.id === playlistId)
@@ -1419,8 +1395,6 @@ export function createLibrary(context: LibraryContext): Library {
       return { ok: true, added: fresh.length }
     if (result.ok)
       return { ok: false, failure: { kind: 'missing' } }
-    if (result.failure.kind === 'needsLogin')
-      return null
     return { ok: false, failure: result.failure }
   }
 
@@ -1430,26 +1404,12 @@ export function createLibrary(context: LibraryContext): Library {
       context.write(stateOf(shown(replica), status, opening, pages, notice))
   }
 
-  /** 请求回来了：这一轮已经作废时不要结果；网易云说需要登录（续期也没成功）时整个 App 变成登录失效 */
-  function settle<T, F extends RequestFailure>(mine: number, result: { ok: true, value: T } | { ok: false, failure: F }): Outcome<T, Exclude<F, { kind: 'needsLogin' }>> {
-    if (mine !== generation)
-      return null
-    if (result.ok)
-      return result
-    if (result.failure.kind === 'needsLogin') {
-      context.loginExpired()
-      return null
-    }
-    return { ok: false, failure: result.failure as Exclude<F, { kind: 'needsLogin' }> }
-  }
-
-  /** 发一个后台请求：经过后台通道（操作频繁、断网时等着再发）。giveUp 了就不发，返回 'gaveUp' */
-  async function background<T>(mine: number, send: () => Promise<Result<T>>, giveUp?: AbortSignal): Promise<Outcome<T, SyncFailure> | 'gaveUp'> {
-    const result = await lane.send(send, (waitingFor) => {
-      if (mine === generation)
+  /** 发一个后台请求：经过后台通道（操作频繁、断网时等着再发）。这一轮结束、giveUp 了都不发 */
+  function background<T>(mine: number, send: () => Promise<Result<T>>, giveUp?: AbortSignal): Promise<BackgroundSessionResult<T> | 'gaveUp'> {
+    return session.background(send, (waitingFor) => {
+      if (session.isCurrent(mine))
         publish(waitingFor ? waitingStatus(waitingFor) : { status: 'syncing' })
     }, giveUp)
-    return result ? settle(mine, result) : 'gaveUp'
   }
 
   /**
@@ -1463,10 +1423,10 @@ export function createLibrary(context: LibraryContext): Library {
       const result = await background(mine, send, giveUp.signal).finally(() => waiting.delete(playlistId))
       if (result !== 'gaveUp')
         return result
-      if (mine !== generation)
+      if (!session.isCurrent(mine))
         return null
     }
-    return settle(mine, await send())
+    return session.api.request(send)
   }
 
   /** 记下请求发出的那一刻（被拒后重发时重记）：拿回来的就是那一刻的网易云 */
@@ -1491,10 +1451,10 @@ export function createLibrary(context: LibraryContext): Library {
   function save(mine: number, patchOf: (current: Replica) => LibraryPatch, after?: () => void): Promise<boolean> {
     const step = saving.then(async () => {
       const current = replica
-      if (mine !== generation || !current)
+      if (!session.isCurrent(mine) || !current)
         return false
       const patch = patchOf(current)
-      if (!emptyPatch(patch) && (!await local.saveLibrary(current.owner, patch) || mine !== generation))
+      if (!emptyPatch(patch) && (!await local.saveLibrary(current.owner, patch) || !session.isCurrent(mine)))
         return false
       Object.assign(current, patched(current, patch))
       after?.()
@@ -1609,7 +1569,7 @@ export function createLibrary(context: LibraryContext): Library {
       return
     let recovered = false
     for (const id of [...recovering]) {
-      if (mine !== generation)
+      if (!session.isCurrent(mine))
         return
       const playlist = current.playlists?.find(item => item.id === id)
       if (!playlist) {
@@ -1625,7 +1585,7 @@ export function createLibrary(context: LibraryContext): Library {
       recovering.delete(id)
       recovered = true
     }
-    if (recovered && mine === generation) {
+    if (recovered && session.isCurrent(mine)) {
       notice = { kind: 'recovered' }
       publish()
     }
@@ -1634,7 +1594,7 @@ export function createLibrary(context: LibraryContext): Library {
 
   async function run(mine: number): Promise<void> {
     const current = replica
-    if (mine !== generation || !current)
+    if (!session.isCurrent(mine) || !current)
       return
     const startedAt = ++tick
     publish({ status: 'syncing' })
@@ -1663,7 +1623,7 @@ export function createLibrary(context: LibraryContext): Library {
     if (!await save(mine, now => ({ playlists: reapplied({ ...now, playlists: list.value.playlists }, listRequest.at()).playlists! }), removeDeleted))
       return
     await recoverPending(mine, current)
-    if (mine !== generation)
+    if (!session.isCurrent(mine))
       return
 
     const albums = await syncCollected(mine, () => api.get(endpoints.albums), (value, now, at) => ({ albums: reapplied({ ...now, albums: value.albums }, at).albums! }))
@@ -1691,7 +1651,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   function start(): void {
-    const mine = generation
+    const mine = session.current
     running = running.then(() => run(mine))
   }
 
@@ -1705,7 +1665,6 @@ export function createLibrary(context: LibraryContext): Library {
   async function openNetease(playlistId: number): Promise<void> {
     if (fetchingPlaylists.has(playlistId))
       return
-    const mine = generation
     fetchingPlaylists.add(playlistId)
     const show = (page: NeteasePlaylistPage) => {
       pages.playlists.set(playlistId, page)
@@ -1718,7 +1677,7 @@ export function createLibrary(context: LibraryContext): Library {
     else if (shown.more)
       show({ status: 'shown', content: { ...shown, more: { status: 'loading' } } })
 
-    const fetched = settle(mine, await api.get(endpoints.playlist, { id: playlistId }))
+    const fetched = await session.api.get(endpoints.playlist, { id: playlistId })
     if (!fetched)
       return
     if (!fetched.ok) {
@@ -1746,7 +1705,7 @@ export function createLibrary(context: LibraryContext): Library {
     })
     for (const ids of chunks(trackIds.filter(id => !neteaseSongs.has(id)), SONGS_PER_REQUEST)) {
       show({ status: 'shown', content: contentOf({ status: 'loading' }) })
-      const songs = settle(mine, await api.post(endpoints.songs, { ids }))
+      const songs = await session.api.post(endpoints.songs, { ids })
       if (!songs)
         return
       if (!songs.ok) {
@@ -1761,10 +1720,12 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 提交一个修改的结果：做好了；歌单不在了（missing）；排序回了 -1、要重读确认（unconfirmed） */
-  type Submitted = { ok: true, value: WriteResponse['kind'] } | { ok: false, failure: ChangeFailure | Extract<RequestFailure, { kind: 'needsLogin' }> }
+  type Submitted = { ok: true, value: WriteResponse['kind'] } | { ok: false, failure: ChangeFailure }
 
   /** 写接口统一回 done / missing / unconfirmed（#lib/api/write）：这里只做一次映射 */
-  function submitted(result: Result<WriteResponse>): Submitted {
+  function submitted(result: SessionResult<WriteResponse>): Submitted | null {
+    if (!result)
+      return null
     return result.ok ? { ok: true, value: result.value.kind } : result
   }
 
@@ -1773,7 +1734,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 发之前这一轮已经作废（退出、登录失效、换账号，可能就在排队或取令牌的时候）就不发，返回 null
    */
   async function submit(mine: number, change: Change, options?: { keepalive?: boolean }): Promise<Submitted | null> {
-    const send = <T>(call: () => Promise<Result<T>>): Promise<Result<T>> | null => (mine === generation ? call() : null)
+    const send = <T>(call: () => Promise<Result<T>>): Promise<SessionResult<T>> | null => (session.isCurrent(mine) ? session.api.request(call) : null)
     const heart = heartOf(change)
     if (heart) {
       const result = await send(() => api.post(endpoints.heart, { songId: heart.song.id, hearted: heart.hearted }, options))
@@ -1916,8 +1877,6 @@ export function createLibrary(context: LibraryContext): Library {
       publish()
       return start()
     }
-    if (result.failure.kind === 'needsLogin')
-      return context.loginExpired()
     notice = { kind: 'notChanged', change, failure: result.failure }
     publish()
   }
@@ -1958,7 +1917,7 @@ export function createLibrary(context: LibraryContext): Library {
     const current = replica
     if (!current)
       return null
-    const mine = generation
+    const mine = session.current
     // 不合规的（界面先拦了，这里兜底）、断网时：不改，直接说没改成（规则⑨）
     const problem = changeProblem(change)
     const failure: ChangeFailure | null = problem ? { kind: 'invalid', problem } : context.online() ? null : { kind: 'offline' }
@@ -1976,7 +1935,7 @@ export function createLibrary(context: LibraryContext): Library {
     let submitted: Submitted | null = null
     const job = (submitting.get(target) ?? Promise.resolve()).then(async () => {
       const result = await submit(mine, change)
-      if (result && mine === generation) {
+      if (result && session.isCurrent(mine)) {
         submitted = result
         await settleChange(mine, entry, change, result)
       }
@@ -1988,25 +1947,37 @@ export function createLibrary(context: LibraryContext): Library {
     return submitted
   }
 
+  /** 退出、登录失效、换账号：上一轮打开、正在拉的、还没提交完的修改都不算了 */
+  function leave(): void {
+    forget()
+    replica = null
+  }
+
+  context.session.onChange((change) => {
+    if (change.kind !== 'signedIn')
+      leave()
+  })
+
   return {
     async enter(account) {
-      generation += 1
+      const mine = session.current
+      // 旧的登录回来得晚：这一轮已经换掉了，不能再碰新一轮的曲库
+      if (!session.isCurrent(mine))
+        return null
       forget()
-      const mine = generation
       const [stored, pending] = await Promise.all([local.readLibrary(), local.pendingChanges(account.id)])
       const shown: Replica = stored?.owner === account.id
         ? stored
         : { owner: account.id, hearts: null, playlists: null, tracks: new Map(), songs: new Map(), albums: null, artists: null, albumPages: new Map() }
-      if (shown !== stored && mine === generation)
+      if (shown !== stored && session.isCurrent(mine))
         await local.resetLibrary(account.id)
-      if (mine === generation) {
-        replica = shown
-        // 上次关掉前有没确认的改动：同步拿到歌单列表以后重拉这几张、恢复原样（#35）
-        recovering = new Set(stored?.owner === account.id ? pending : [])
-        writtenMarkers = new Set(recovering)
-        status = { status: 'syncing' }
-        lane.resume()
-      }
+      if (!session.isCurrent(mine))
+        return null
+      replica = shown
+      // 上次关掉前有没确认的改动：同步拿到歌单列表以后重拉这几张、恢复原样（#35）
+      recovering = new Set(stored?.owner === account.id ? pending : [])
+      writtenMarkers = new Set(recovering)
+      status = { status: 'syncing' }
       return stateOf(shown, status, opening, pages, notice)
     },
     sync: start,
@@ -2027,13 +1998,13 @@ export function createLibrary(context: LibraryContext): Library {
         return openNetease(playlistId)
       if (upToDate(current, playlist))
         return
-      const mine = generation
+      const mine = session.current
       urgent.add(playlistId)
       waiting.get(playlistId)?.abort()
       opening.set(playlistId, { status: 'loading' })
       publish()
       const result = await load(mine, current, playlist)
-      if (!result || mine !== generation)
+      if (!result || !session.isCurrent(mine))
         return
       if (result.ok)
         opening.delete(playlistId)
@@ -2045,7 +2016,7 @@ export function createLibrary(context: LibraryContext): Library {
       const current = replica
       if (!current || fetchingAlbums.has(albumId) || pages.albums.get(albumId)?.status === 'shown')
         return
-      const mine = generation
+      const mine = session.current
       const stored = current.albumPages.get(albumId)
       // 存着的就是现在的样子（收藏的专辑列表每次同步都拿新的）：不拉
       if (stored && stored.album.songCount === current.albums?.find(album => album.id === albumId)?.songCount)
@@ -2055,7 +2026,7 @@ export function createLibrary(context: LibraryContext): Library {
         pages.albums.set(albumId, { status: 'loading' })
         publish()
       }
-      const result = settle(mine, await api.get(endpoints.album, { id: albumId }))
+      const result = await session.api.get(endpoints.album, { id: albumId })
       if (!result)
         return
       fetchingAlbums.delete(albumId)
@@ -2077,10 +2048,9 @@ export function createLibrary(context: LibraryContext): Library {
       const shown = pages.artists.get(artistId)
       if (!replica || shown?.status === 'loading' || shown?.status === 'shown')
         return
-      const mine = generation
       pages.artists.set(artistId, { status: 'loading' })
       publish()
-      const result = settle(mine, await api.get(endpoints.artist, { id: artistId }))
+      const result = await session.api.get(endpoints.artist, { id: artistId })
       if (!result)
         return
       if (result.ok) {
@@ -2096,14 +2066,13 @@ export function createLibrary(context: LibraryContext): Library {
       const shown = pages.artists.get(artistId)
       if (shown?.status !== 'shown' || !shown.content.moreAlbums || shown.content.moreAlbums.status === 'loading')
         return
-      const mine = generation
       const page = shown.content
       const show = (content: ArtistPage) => {
         pages.artists.set(artistId, { status: 'shown', content })
         publish()
       }
       show({ ...page, moreAlbums: { status: 'loading' } })
-      const result = settle(mine, await api.get(endpoints.artistAlbums, { id: artistId, offset: page.albums.length }))
+      const result = await session.api.get(endpoints.artistAlbums, { id: artistId, offset: page.albums.length })
       if (!result)
         return
       if (result.ok)
@@ -2115,10 +2084,9 @@ export function createLibrary(context: LibraryContext): Library {
       const shown = pages.tags
       if (!replica || shown?.status === 'loading' || shown?.status === 'shown')
         return
-      const mine = generation
       pages.tags = { status: 'loading' }
       publish()
-      const result = settle(mine, await api.get(endpoints.playlistTags))
+      const result = await session.api.get(endpoints.playlistTags)
       if (!result)
         return
       pages.tags = result.ok ? { status: 'shown', content: result.value.groups } : { status: 'failed', failure: result.failure }
@@ -2141,7 +2109,7 @@ export function createLibrary(context: LibraryContext): Library {
     async setCover(playlistId, coverUrl) {
       if (!replica)
         return
-      await confirm(generation, { kind: 'cover', playlistId, coverUrl })
+      await confirm(session.current, { kind: 'cover', playlistId, coverUrl })
     },
     async create(draft, songs = []) {
       const name = draft.name.trim()
@@ -2152,8 +2120,8 @@ export function createLibrary(context: LibraryContext): Library {
         return null
       if (!context.online())
         return { ok: false, failure: { kind: 'offline' } }
-      const mine = generation
-      const result = settle(mine, await api.post(endpoints.createPlaylist, { name, private: draft.private }))
+      const mine = session.current
+      const result = await session.api.post(endpoints.createPlaylist, { name, private: draft.private })
       if (!result)
         return null
       if (!result.ok)
@@ -2183,12 +2151,6 @@ export function createLibrary(context: LibraryContext): Library {
         return
       notice = next
       publish()
-    },
-    leave() {
-      generation += 1
-      forget()
-      replica = null
-      lane.stop()
     },
   }
 }
