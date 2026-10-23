@@ -46,6 +46,75 @@ describe('返回可收起的层', () => {
     expect(focused).toEqual(['player-bar'])
   })
 
+  it('入口被层换掉时用 focusReturn 找回来；返回 null 时退回 request.from，其他层不变', async () => {
+    const history = new MemoryOverlayHistory('/playlists/1')
+    const focused: (string | null)[] = []
+    const fallbacks: (string | undefined)[] = []
+    let painted = false
+    const stack = new OverlayStack<string>(history, {
+      changed() { painted = false },
+      async rendered() { painted = true },
+      focus(target, fallback) {
+        expect(painted).toBe(true)
+        focused.push(target)
+        fallbacks.push(fallback)
+      },
+    }, 'session')
+    history.listen(phase => stack.reconcile(phase))
+
+    // 多选：打开它的按钮在层开着时被工具条换掉，关掉后重新找到新入口
+    let entry = 'old-entry'
+    const selection = stack.register<{ from: string | null }>('selection', {
+      history: () => false,
+      modal: false,
+      focusReturn: () => entry,
+    })
+    await selection.open({ from: 'old-entry' })
+    entry = 'new-entry'
+    await selection.close()
+    expect(focused).toEqual(['new-entry'])
+
+    // focusReturn 返回 null：退回 request.from
+    focused.length = 0
+    let missing: string | null = null
+    const withNull = stack.register<{ from: string | null }>('with-null', {
+      history: () => false,
+      modal: false,
+      focusReturn: () => missing,
+    })
+    await withNull.open({ from: 'origin' })
+    missing = null
+    await withNull.close()
+    expect(focused).toEqual(['origin'])
+
+    // 没给 focusReturn：行为和其他层一样，用 request.from，fallback 原样交给适配器
+    focused.length = 0
+    fallbacks.length = 0
+    const plain = stack.register<{ from: string | null }>('plain', {
+      history: () => false,
+      modal: false,
+      fallback: '[data-entry]',
+    })
+    await plain.open({ from: 'plain-origin' })
+    await plain.close()
+    expect(focused).toEqual(['plain-origin'])
+    expect(fallbacks).toEqual(['[data-entry]'])
+
+    // focusReturn 和 request.from 都没有：把 null 交给适配器，由它兜底到 fallback 里的元素
+    focused.length = 0
+    fallbacks.length = 0
+    const nothing = stack.register<{ from: string | null }>('nothing', {
+      history: () => false,
+      modal: false,
+      focusReturn: () => null,
+      fallback: '[data-entry]',
+    })
+    await nothing.open({ from: null })
+    await nothing.close()
+    expect(focused).toEqual([null])
+    expect(fallbacks).toEqual(['[data-entry]'])
+  })
+
   it('忙时 Esc 和返回都不关层，返回恢复原历史条目而不增压', async () => {
     const history = new MemoryOverlayHistory('/playlists')
     const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')

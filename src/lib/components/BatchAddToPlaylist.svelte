@@ -48,13 +48,9 @@
     })
   }
 
-  /** 选了目标：收起弹层（底部弹层退掉浅路由）、退出多选，再一次把歌加进去 */
+  /** 选了目标：收起弹层（底部弹层退掉浅路由）、退出多选，再一次把菜单打开时看到的歌加进去；规则在多选模块里（#66） */
   function choose(playlist: Playlist, request: BatchPickerRequest): void {
-    const songs = request.songs
-    void playlistSelection.leave().then((result) => {
-      if (result === 'committed')
-        return view.app.addSongsToPlaylist(playlist.id, songs)
-    })
+    void playlistSelection.addTo(playlist.id, request.songs)
   }
 
   function create(request: BatchPickerRequest): void {

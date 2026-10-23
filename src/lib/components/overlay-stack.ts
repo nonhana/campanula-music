@@ -35,10 +35,17 @@ export interface OverlayPresentation<F> {
 
 interface Request<F> { readonly from: F | null }
 
-export interface LayerOptions<R> {
+export interface LayerOptions<R, F = never> {
   history: (request: Readonly<R>) => boolean
   modal: boolean | ((request: Readonly<R>) => boolean)
   fallback?: string
+  /**
+   * 关掉后焦点交给谁：打开这一层的按钮在层开着时会被换掉时用（多选）。
+   * 只在焦点归还（close / invalidate，以及它们经由 reconcile 的返回路径）里、rendered 之后调用；
+   * 返回 null 时回退 request.from（适配器只接受仍 connected 的），再回退 fallback（层内元素 / main）。
+   * 不传时和以前完全一样。
+   */
+  focusReturn?: () => F | null
   /** 只表示 DOM 包含关系，不表示业务归属。 */
   parent?: string
   /** 这条请求不能比来源层活得更久（批量加入歌单、换封面、播放队列）。 */
@@ -67,7 +74,7 @@ export interface OverlayLayer<R extends Request<F>, F> {
 
 interface Registration<F> {
   name: string
-  options: LayerOptions<Request<F>>
+  options: LayerOptions<Request<F>, F>
   active: Entry<F> | null
   pendingId: number | null
   sheet: boolean
@@ -114,7 +121,7 @@ export class OverlayStack<F> {
     return this.layers.some(entry => entry.modal)
   }
 
-  register<R extends Request<F>>(name: string, options: LayerOptions<R>): OverlayLayer<R, F> {
+  register<R extends Request<F>>(name: string, options: LayerOptions<R, F>): OverlayLayer<R, F> {
     const registration: Registration<F> = {
       name,
       options: {
@@ -247,10 +254,15 @@ export class OverlayStack<F> {
     this.presentation.changed()
   }
 
+  /** 焦点归还的唯一路径（close / invalidate，以及 reconcile 关掉层之后）：等 DOM 更新完再问 */
   private async focus(entry: Entry<F>, current: () => boolean): Promise<void> {
     await this.presentation.rendered()
-    if (current())
-      this.presentation.focus(entry.request.from, entry.registration.options.fallback)
+    if (!current())
+      return
+    // 入口被层换掉时（多选）由登记方重新找；没有或返回 null 时回到 request.from。
+    // 适配器只接受仍 connected、不在 inert 里的元素，再兜底到 fallback（层内元素 / main）。
+    const target = entry.registration.options.focusReturn?.() ?? entry.request.from
+    this.presentation.focus(target, entry.registration.options.fallback)
   }
 
   private open(registration: Registration<F>, request: Request<F>, source?: Registration<F>): Promise<OverlayResult> {

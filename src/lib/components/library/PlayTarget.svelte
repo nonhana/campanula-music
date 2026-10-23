@@ -59,7 +59,7 @@
   role={selecting ? 'checkbox' : undefined}
   aria-checked={selecting ? selected : undefined}
   aria-keyshortcuts={selecting ? keyshortcuts : undefined}
-  data-select-row={selecting ? '' : undefined}
+  data-play-target=''
   aria-current={now ? 'true' : undefined}
   onclick={activate}
 >

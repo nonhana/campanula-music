@@ -24,8 +24,8 @@
   import { dailyCalendarDay } from '../daily/view'
   import { desktopLayout } from '../layout'
   import LibraryNotice from '../library/LibraryNotice.svelte'
-  import PhoneSelectBar from '../library/PhoneSelectBar.svelte'
-  import PhoneSelectionBar from '../library/PhoneSelectionBar.svelte'
+  import PhoneSelectionActionBar from '../library/PhoneSelectionActionBar.svelte'
+  import PhoneSelectionTopBar from '../library/PhoneSelectionTopBar.svelte'
   import { setOverlays } from '../overlay-context'
   import OverlayHost from '../OverlayHost.svelte'
   import { createOverlays } from '../overlays.svelte'
@@ -77,12 +77,6 @@
   const inLibrary = $derived(onLibrary || libraryPage)
 
   let railExpanded = $state(false)
-
-  // 多选时把页面右边 44px 的触屏滚动条把手让开：那里正好是每行的拖动把手（#36）
-  $effect(() => {
-    document.documentElement.toggleAttribute('data-selecting', playlistSelection.mode)
-    return () => document.documentElement.removeAttribute('data-selecting')
-  })
 
   // 从 App 里别的页面进来的，返回就退回去；直接打开二级页面的，返回到曲库
   let cameFromApp = $state(false)
@@ -161,7 +155,7 @@
 {/snippet}
 
 {#snippet selectionBar()}
-  <PhoneSelectionBar />
+  <PhoneSelectionActionBar />
 {/snippet}
 
 <div class='contents' inert={overlays.stack.baseInert}>
@@ -190,7 +184,7 @@
     >
       {#snippet header()}
         {#if playlistSelection.mode}
-          <PhoneSelectBar />
+          <PhoneSelectionTopBar />
         {:else if searching}
           <PhoneSearchBar onback={back} />
         {:else if detailPage || settingsPage}
