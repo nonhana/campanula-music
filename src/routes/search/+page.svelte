@@ -38,11 +38,8 @@
     },
   )
 
-  // 登录了（本机副本到了）就交给 App：这个词的结果记着就只重拉没拉成的那几类
-  $effect(() => {
-    if (signedIn && keyword)
-      void view.app.openSearch(keyword)
-  })
+  // 听众在看这个词的结果：什么时候拉（登录后才拉）由 App 决定；换词、从别处回来都会重新报告
+  $effect(() => view.app.viewing({ kind: 'search', keyword }))
 
   /** 桌面吸在顶栏下面的标签行有多高 */
   let tabsHeight = $state(0)

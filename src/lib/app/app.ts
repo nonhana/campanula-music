@@ -24,7 +24,7 @@ import { createCheckIns } from './check-ins'
 import { createCover } from './cover'
 import { createDaily } from './daily'
 import { createDownloads, INITIAL_DOWNLOADS, playableNow } from './downloads'
-import { createLibrary, filterSongs, playlistSongsOf, searchPlaylist } from './library'
+import { createLibrary, filterSongs, searchPlaylist } from './library'
 import { createLocalDatabase, createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
 import { createLyrics } from './lyrics'
@@ -57,6 +57,17 @@ export interface CollectTarget {
   kind: 'playlist' | 'album' | 'artist'
   id: number
 }
+
+/**
+ * 听众正在看的那一页：App 自己决定什么时候去拉、副本到了要不要重拉、歌单进出曲库时怎么切换。
+ * 页面只报告在看什么，不再各自判断“该不该打开”
+ */
+export type ViewedPage
+  = | { kind: 'playlist', id: number }
+    | { kind: 'album', id: number }
+    | { kind: 'artist', id: number }
+    | { kind: 'daily' }
+    | { kind: 'search', keyword: string }
 
 export interface AppState {
   session: Session
@@ -103,6 +114,12 @@ export interface App {
   logout: () => Promise<void>
   /** 曲库同步没成功（连不上、网易云出错）时重试：从停下的地方接着同步 */
   retrySync: () => void
+  /**
+   * 听众开始看这一页；返回的函数在离开时调用（页面里写 `$effect(() => view.app.viewing(...))`）。
+   * 什么时候去拉、副本到了要不要重拉、歌单进了曲库（收藏）或出了曲库（取消收藏）时怎么切换，都由 App 决定；
+   * 离开歌单时提交还没提交的移除和排序（页面隐藏时 deferred 自己也会提交）。
+   */
+  viewing: (page: ViewedPage) => () => void
   /**
    * 打开一张歌单：本机还没有它最新、完整的曲目（没同步到、只同步了一部分），就马上用前台请求拉，不等后台同步。
    * 拉到哪了看 state.library.opening；没拉成时再调一次就是重试。
@@ -299,11 +316,44 @@ export function createApp(browser: BrowserCapabilities): App {
   const local = createLocalDb(db)
   let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null, search: INITIAL_SEARCH, cover: null, downloads: INITIAL_DOWNLOADS, online: browser.network.onLine }
   const listeners = new Set<() => void>()
+  /** 听众正在看的那一页：页面只说在看什么，什么时候去拉由 App 决定 */
+  let viewing: { page: ViewedPage, token: number, applied: string } | null = null
+  let viewingToken = 0
+  /** 已经排了这一次发布之后的派发：同一轮里连着变只派发一次 */
+  let viewingQueued = false
 
   function update(next: Partial<AppState>) {
     state = { ...state, ...next }
     for (const listener of listeners)
       listener()
+    // 这一页要不要打开只看曲库和会话；播放进度之类的发布不重新算
+    if (next.library !== undefined || next.session !== undefined)
+      applyViewing()
+  }
+
+  /** 这一页要“打开”的条件：只有它变了才去拉，失败不会因为别的状态发布而自动重试 */
+  function viewingKey(page: ViewedPage): string {
+    const signedIn = state.session.status === 'signedIn'
+    const shown = state.library
+    switch (page.kind) {
+      case 'playlist': {
+        const ready = shown?.playlists != null
+        const outside = shown != null && shown.playlists != null && shown.songsOf(page.id) === null
+        return `playlist:${page.id}:${ready}:${outside}`
+      }
+      case 'album':
+        return `album:${page.id}:${shown !== null}:${(shown?.albumPage(page.id) ?? null) === null}`
+      case 'artist':
+        return `artist:${page.id}:${shown !== null && shown.artistPage(page.id) === null}`
+      case 'daily':
+        return `daily:${signedIn}`
+      case 'search':
+        return `search:${page.keyword}:${signedIn}`
+      default: {
+        const unhandled: never = page
+        throw new Error(`不认识的页面：${JSON.stringify(unhandled)}`)
+      }
+    }
   }
 
   /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放（#38） */
@@ -425,7 +475,7 @@ export function createApp(browser: BrowserCapabilities): App {
     page: browser.page,
     write: (next) => {
       update({ library: next })
-      player.libraryChanged(playlistId => playlistSongsOf(next, playlistId))
+      player.libraryChanged(playlistId => next.playlistPage(playlistId).content)
     },
     online: () => browser.network.onLine,
     checkToken: browser.checkToken,
@@ -466,6 +516,79 @@ export function createApp(browser: BrowserCapabilities): App {
     write: next => update({ search: next }),
   })
 
+  /**
+   * “正在看”变了、曲库或会话变了：只在条件真的变了时交给对应的模块。
+   * 和页面原来的 $effect 一样，等这一次状态发布会话走完再动手（收藏、取消收藏的排队也登记好了，open 会等它）
+   */
+  function applyViewing(): void {
+    const current = viewing
+    if (!current)
+      return
+    const key = viewingKey(current.page)
+    if (key === current.applied)
+      return
+    current.applied = key
+    if (viewingQueued)
+      return
+    viewingQueued = true
+    queueMicrotask(() => {
+      viewingQueued = false
+      openViewingPage()
+    })
+  }
+
+  /** 把“正在看”交给对应的模块；状态在排队期间又变了也照现在的来（open* 自己幂等） */
+  function openViewingPage(): void {
+    const current = viewing
+    if (!current)
+      return
+    const { page } = current
+    const shown = state.library
+    switch (page.kind) {
+      case 'playlist':
+        if (shown?.playlists)
+          void library.open(page.id)
+        return
+      case 'album':
+        if (shown)
+          void library.openAlbum(page.id)
+        return
+      case 'artist':
+        if (shown && shown.artistPage(page.id) === null)
+          void library.openArtist(page.id)
+        return
+      case 'daily':
+        if (state.session.status === 'signedIn')
+          void daily.open()
+        return
+      case 'search':
+        if (state.session.status === 'signedIn' && page.keyword.trim())
+          void search.open(page.keyword)
+        return
+      default: {
+        const unhandled: never = page
+        throw new Error(`不认识的页面：${JSON.stringify(unhandled)}`)
+      }
+    }
+  }
+
+  /** 听众开始看这一页：返回的函数在离开时调用（歌单离开时提交还没提交的移除和排序） */
+  function view(page: ViewedPage): () => void {
+    const token = ++viewingToken
+    viewing = { page, token, applied: '' }
+    applyViewing()
+    let left = false
+    return () => {
+      if (left)
+        return
+      left = true
+      if (page.kind === 'playlist')
+        void library.flush(page.id)
+      if (viewing?.token === token)
+        viewing = null
+    }
+  }
+
   const login = createLogin({
     api,
     session: round,
@@ -493,8 +616,10 @@ export function createApp(browser: BrowserCapabilities): App {
     if (!shown)
       return null
     switch (source.kind) {
-      case 'playlist':
-        return playlistSongsOf(shown, source.id)
+      case 'playlist': {
+        const page = shown.playlistPage(source.id)
+        return page.content && { songs: page.content.songs, complete: page.content.complete }
+      }
       case 'album': {
         const page = shown.albumPage(source.id)
         return page?.status === 'shown' ? { songs: page.content.songs, complete: true } : null
@@ -673,9 +798,10 @@ export function createApp(browser: BrowserCapabilities): App {
       await finishLogout()
     },
     retrySync: library.retry,
+    viewing: view,
     openPlaylist: library.open,
     searchPlaylist(playlistId, query) {
-      const playlist = state.library && playlistSongsOf(state.library, playlistId)
+      const playlist = state.library?.playlistPage(playlistId).content
       return playlist ? searchPlaylist(playlist, query) : null
     },
     openAlbum: library.openAlbum,

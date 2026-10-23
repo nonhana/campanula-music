@@ -19,7 +19,7 @@
 
 <DialogShell layer={addSongsDialog} title={() => '添加歌曲'} size={() => 'picker'}>
   {#snippet subtitle(request: PlaylistRequest)}
-    {@const playlist = view.state.library?.songsOf(request.playlistId)?.playlist ?? null}
+    {@const playlist = view.state.library?.playlists?.find(item => item.id === request.playlistId) ?? null}
     {#if playlist}<p class='truncate text-caption text-neutral-600' lang={langOf(playlistName(playlist))}>加入「{playlistName(playlist)}」</p>{/if}
   {/snippet}
   {#snippet children(request: PlaylistRequest, sheet: boolean, heading: Snippet<[classes: string]>)}

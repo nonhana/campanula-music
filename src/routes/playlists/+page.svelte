@@ -4,6 +4,7 @@
   返回这一页时，滚动位置回到原来的样子
 -->
 <script lang='ts'>
+  import { syncNoticeFor } from '#lib/app/library.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import PlaylistGrid from '#lib/components/library/PlaylistGrid.svelte'
@@ -12,6 +13,8 @@
 
   const view = getAppView()
   const library = $derived(view.state.library)
+  /** 列表本身没拿到时，网格的整块错误已经说了同一次失败；同步条不再重复 */
+  const notice = $derived(library && syncNoticeFor(library, library.playlists === null))
 
   /** 这一页没有要恢复的状态，只把滚动位置记下来 */
   scrollSnapshot('/playlists', () => null, () => {})
@@ -21,7 +24,7 @@
 
 {#if library}
   {#if desktopLayout.current}
-    <SyncNotice library={library} failureShown={library.playlists === null} />
+    <SyncNotice {notice} />
     <div class='mt-6'>
       <PlaylistGrid {library} sectionLevel={2}>
         {#snippet heading()}
@@ -31,7 +34,7 @@
     </div>
   {:else}
     <h1 class='sr-only'>歌单</h1>
-    <SyncNotice {library} failureShown={library.playlists === null} phone />
+    <SyncNotice {notice} phone />
     <PlaylistGrid {library} phone sectionLevel={2} />
   {/if}
 {/if}

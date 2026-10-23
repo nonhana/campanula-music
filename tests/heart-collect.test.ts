@@ -294,14 +294,17 @@ describe('收藏', () => {
     const { app } = tab
     await world.netease.reply(NETEASE_PLAYLIST.detail)
     await world.netease.reply(NETEASE_PLAYLIST.songs)
-    await app.openPlaylist(NETEASE_PLAYLIST.id)
+    // 歌单页在看着它：App 自己决定什么时候取，页面不再手调 openPlaylist
+    const leave = app.viewing({ kind: 'playlist', id: NETEASE_PLAYLIST.id })
+    await world.settle()
 
     await world.netease.reply(PLAYLIST_COLLECT)
     const sent = device.requests.length
     const collecting = app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toMatchObject({ playlist: { kind: 'collected' }, total: 81, complete: true })
-    // 歌单页看它进了曲库，马上又打开一次（页面的 openPlaylist）：等收藏做完；曲目已经都在本机了，不再拉、也不当成不在曲库里的联网取
-    await Promise.all([collecting, app.openPlaylist(NETEASE_PLAYLIST.id)])
+    // 歌单页看它进了曲库：App 自己切到曲库里的副本，不再联网取、也不重复拉
+    await collecting
+    await world.settle()
     const [token] = tab.watchman.issued
     expect(device.requests.slice(sent)).toEqual([{ method: 'POST', path: `/api/playlists/${NETEASE_PLAYLIST.id}/collect`, body: { collected: true, checkToken: token } }])
     expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_subscribe', query: { id: NETEASE_PLAYLIST.id, t: 1 }, config: { checkToken: token } })
@@ -309,6 +312,8 @@ describe('收藏', () => {
     expect((await storedLibrary(device, 'playlists') as { id: number }[]).map(playlist => playlist.id)).toContain(NETEASE_PLAYLIST.id)
     expect(await storedTrackIds(device, NETEASE_PLAYLIST.id)).toHaveLength(81)
 
+    // 离开这一页（再取消收藏时不用为了本测试再取一次）
+    leave()
     await world.netease.reply(PLAYLIST_UNCOLLECT)
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, false)
     const call = world.netease.calls.at(-1)

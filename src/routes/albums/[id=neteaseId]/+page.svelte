@@ -1,7 +1,7 @@
 <!--
   专辑页：桌面是 200px 封面的头部（专辑名、“歌手 · 年份 · 几首”）、下面一段简介、白色面板里带曲序的歌曲行；
   手机是二级页面：返回栏、居中的封面头部、卡片里的简介、带曲序的歌曲行。
-  本机副本到了、换了一张专辑时打开它（App 的 openAlbum：这次登录还没拉过就拉，没拉成时再打开就是重试）。
+  告诉 App 听众在看这一张专辑（viewing）：这次登录还没拉过就拉，没拉成时再打开（重试按钮）就是重试。
   骨架换成内容时骨架淡出，头部、简介、歌曲各自依次飘入（DESIGN.md Motion）。返回这一页时滚动位置回到原来的样子。
   头部播放全部旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标，#57），点“已收藏”直接取消收藏、不确认
 -->
@@ -36,15 +36,8 @@
 
   scrollSnapshot('/albums/[id=neteaseId]', () => null, () => {})
 
-  const ready = $derived(library !== null)
-  /** App 不知道这张专辑：还没打开过，或者存着的专辑页因为不再收藏被同步删掉、这次登录又没拉过 */
-  const unknown = $derived(opened === null)
-  // 副本到了、换了一张专辑、变成不知道的时候都交给 App：要不要拉由它判断（存着的歌曲数没变就不拉）
-  $effect(() => {
-    void unknown
-    if (ready)
-      void view.app.openAlbum(id)
-  })
+  // 听众在看这一张专辑：什么时候拉、本机副本删掉后要不要重拉由 App 决定
+  $effect(() => view.app.viewing({ kind: 'album', id }))
 
   const EMPTY = { title: '这张专辑暂时没有歌' }
 </script>
