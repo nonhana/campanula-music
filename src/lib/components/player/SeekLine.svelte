@@ -14,7 +14,7 @@
   const percent = $derived(`${ratio * 100}%`)
 </script>
 
-<div class={['seek absolute inset-x-0 -top-1.5 h-4 cursor-pointer touch-none', slider.dragging !== null && 'dragging']} {...slider.attributes(ratio)}>
+<div class={['seek absolute inset-x-0 -top-1.5 h-4 cursor-pointer touch-none', slider.dragging !== null && 'dragging']} {...slider.attributes(ratio)} {@attach slider.attach}>
   <div class='rail absolute inset-x-0 top-1.5 bg-primary-100' aria-hidden='true'>
     <div class='fill h-full bg-primary-700' style:width={percent}></div>
   </div>

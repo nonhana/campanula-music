@@ -167,6 +167,7 @@ export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): 
           swallowClick = false
           if (!swallow)
             tap?.()
+          return swallow
         },
       }
     },

@@ -2,7 +2,11 @@ import type { Attachment } from 'svelte/attachments'
 
 // 按住拖动（播放页抽屉、手机播放页的封面转盘、进度滑块、自绘滚动条的滑块）时，松开的那一下可能根本传不到页面上：拖着时点了右键（弹出的菜单吞掉了松开）、
 // 切走了窗口、页面被藏起来、浏览器收回了指针捕获。这时候拖动要马上作废，不然光标一直是抓着的手、抽屉卡在半路、页面点不动。
-// 抽屉和转盘的拖动怎么判断各在一个纯逻辑的手势核心里（drawer-core.ts、wheel-core.ts），它们给出一样的拖动来源（Grip），由 attachGrip 接上浏览器
+// 抽屉、转盘、拖动排序、进度条、自绘滚动条、封面取景框的拖动怎么判断各在一个纯逻辑的手势核心里，
+// 它们给出一样的拖动来源（Grip），由 attachGrip / attachWindowGrip 接上浏览器。
+// click 只在一个地方决定吞不吞：grip.click(detail) 返回 true 时附件才 preventDefault + stopPropagation；
+// attachWindowGrip 会把“松手位置附近、guard 认领的那一下 click”交给排序核心，排序核心返回 true（吞）；
+// 被 guard 认领的 click 也走同一个决定，其余核心按自己的点按语义返回。
 
 /** 按住结束后还挡多久右键菜单：拖着时按下右键，浏览器先报按住断了，菜单随后才来（Windows 上要等右键松开） */
 const MENU_GRACE_MS = 300
@@ -52,6 +56,8 @@ export interface PointerSample {
   buttons: number
   x: number
   y: number
+  /** 事件落在哪个元素上（滚动条用它区分快速定位窄条） */
+  target?: EventTarget | null
   /** 毫秒（event.timeStamp） */
   time: number
 }
@@ -71,8 +77,8 @@ export interface Grip {
    * 给了 pointerId（pointercancel、指针捕获被收回）时只管这根指针；不给（右键菜单、切走窗口、页面藏起来）就是这次按住
    */
   abandon: (pointerId?: number) => void
-  /** 松开之后跟着来的 click；detail 照抄 MouseEvent.detail（键盘按出来的是 0） */
-  click: (detail: number) => void
+  /** 松开之后跟着来的 click；detail 照抄 MouseEvent.detail（键盘按出来的是 0）。返回 true = 吞掉这一下 */
+  click: (detail: number) => boolean
 }
 
 /**
@@ -96,7 +102,7 @@ export function createPageHold(): (hold: boolean) => void {
  * pointercancel、指针捕获被收回时作废这根指针；元素没了（拖着时被拿掉）也作废。
  * 元素自己设上 touch-action: none（手机上拖动不被当成滚动）；点按（click）也交给 grip，不用再写 onclick
  */
-export function attachGrip(grip: Grip): Attachment<HTMLElement> {
+export function attachGrip(grip: Grip, { touchAction = true }: { touchAction?: boolean } = {}): Attachment<HTMLElement> {
   return (element) => {
     /** 停止盯着这次按住；没按着时是 null */
     let unwatch: (() => void) | null = null
@@ -121,6 +127,7 @@ export function attachGrip(grip: Grip): Attachment<HTMLElement> {
       x: event.clientX,
       y: event.clientY,
       time: event.timeStamp,
+      target: event.target,
     })
     const listeners = {
       pointerdown(event: PointerEvent) {
@@ -147,9 +154,15 @@ export function attachGrip(grip: Grip): Attachment<HTMLElement> {
         grip.abandon(event.pointerId)
         settleWatch()
       },
-      click: (event: MouseEvent) => grip.click(event.detail),
+      click: (event: MouseEvent) => {
+        if (!grip.click(event.detail))
+          return
+        event.preventDefault()
+        event.stopPropagation()
+      },
     }
-    element.style.touchAction = 'none'
+    if (touchAction)
+      element.style.touchAction = 'none'
     for (const [type, listener] of Object.entries(listeners))
       element.addEventListener(type, listener as EventListener)
     return () => {
@@ -184,6 +197,7 @@ export function attachWindowGrip(grip: Grip): Attachment<HTMLElement> {
       x: event.clientX,
       y: event.clientY,
       time: event.timeStamp,
+      target: event.target,
     })
     const onClick = (event: MouseEvent) => {
       if (!swallowClick || event.detail === 0)
@@ -191,10 +205,12 @@ export function attachWindowGrip(grip: Grip): Attachment<HTMLElement> {
       if (Math.abs(event.clientX - clickAt.x) > 6 || Math.abs(event.clientY - clickAt.y) > 6)
         return
       swallowClick = false
-      event.preventDefault()
-      event.stopPropagation()
       clearTimeout(clickTimer)
       window.removeEventListener('click', onClick, true)
+      if (!grip.click(event.detail))
+        return
+      event.preventDefault()
+      event.stopPropagation()
     }
     const pointerdown = (event: PointerEvent) => {
       const accepted = sample(event)

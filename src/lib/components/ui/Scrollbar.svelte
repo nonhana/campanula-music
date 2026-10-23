@@ -15,9 +15,11 @@
 <script lang='ts'>
   import type { ScrollLookup, ScrollMark } from './scroll-marks'
   import { untrack } from 'svelte'
+  import { clamp } from '../clamp'
   import { scrollBehavior } from '../motion'
   import { DELAYS } from '../motion-tokens'
-  import { pressBroken, watchPress } from '../press'
+  import { attachGrip } from '../press'
+  import { createSliderCore } from '../slider-core'
 
   interface Props {
     /** 跟着页面（窗口）滚：上下边（CSS 长度）是顶栏下沿、底栏上沿。不传就跟着所在的滚动区域滚 */
@@ -53,15 +55,19 @@
   let awake = $state(false)
   /** 鼠标在贴边的那一条上 */
   let near = $state(false)
-  /** 正在拖滑块：按下时指针在哪、区域滚到哪、是不是按在触屏那一块上（快速定位，有气泡） */
-  let drag = $state<{ from: number, start: number, quick: boolean } | null>(null)
+  /** 正在拖滑块 */
+  let dragging = $state(false)
+  /** 是不是按在触屏那一块上（快速定位，有气泡） */
+  let quick = $state(false)
   /** 气泡里写的；松手后留着最后一次的，淡出时字不变 */
   let mark = $state<ScrollMark | null>(null)
   let bubbleHeight = $state(0)
   /** 停下 1 秒后淡出的计时器 */
   let fadeTimer: ReturnType<typeof setTimeout> | undefined
-  /** 停止盯着这次按住（press.ts）；没在拖时是 null */
-  let unwatch: (() => void) | null = null
+  /** 这次拖动从哪开始：指针沿滚动方向的位置、区域当时滚到哪 */
+  let dragStart = { from: 0, start: 0 }
+  /** 刚按下：第一次 onValue 不回写位置（基线 grab 也不写） */
+  let starting = false
 
   /** 只看是不是页面那条：上下边变了（顶行变高、底栏出现）不用重装监听 */
   const onPage = $derived(page !== undefined)
@@ -71,11 +77,11 @@
   const track = $derived(Math.max(0, length - 2 * INSET))
   const thumb = $derived(scrollable ? Math.min(track, Math.max(MIN_THUMB, track * metrics.viewport / metrics.content)) : 0)
   /** 滑块离轨道开头多远；回弹时滚动位置会超出两头，滑块停在头尾 */
-  const offset = $derived(range > 0 ? (track - thumb) * Math.min(1, Math.max(0, metrics.position / range)) : 0)
-  const shown = $derived(scrollable && (awake || near || drag !== null))
-  const thick = $derived(near || drag !== null)
+  const offset = $derived(range > 0 ? (track - thumb) * clamp(metrics.position / range, 0, 1) : 0)
+  const shown = $derived(scrollable && (awake || near || dragging))
+  const thick = $derived(near || dragging)
   /** 触屏这时能按住滑块：竖的、列表够长、细条亮着（拖着时一直算） */
-  const grabbable = $derived(axis === 'y' && scrollable && metrics.content > LONG_PAGES * metrics.viewport && (awake || drag !== null))
+  const grabbable = $derived(axis === 'y' && scrollable && metrics.content > LONG_PAGES * metrics.viewport && (awake || dragging))
   /** 能按的那一块：比滑块上下各长 12px，不伸出这一条 */
   const gripTop = $derived(Math.max(0, INSET + offset - GRIP_SLOP))
   const gripBottom = $derived(Math.min(length, INSET + offset + thumb + GRIP_SLOP))
@@ -98,7 +104,7 @@
 
   /** 按住那一块拖着时，问列表这一条上沿（看得见的最上面）是哪一项 */
   function readMark() {
-    if (drag?.quick && strip)
+    if (quick && dragging && strip)
       mark = lookup?.markAt?.(strip.getBoundingClientRect().top) ?? null
   }
 
@@ -133,7 +139,7 @@
       children.observe(el, { childList: true })
     source.addEventListener('scroll', onscroll, { passive: true })
     window.addEventListener('resize', measure)
-    // 不让这次量把拖动状态（readMark 读的 drag）也算成这里的依赖：按下时会重装监听、把拖动清掉
+    // 不让这次量把拖动状态也算成这里的依赖：按下时会重装监听、把拖动清掉
     untrack(measure)
     return () => {
       sizes.disconnect()
@@ -142,16 +148,13 @@
       window.removeEventListener('resize', measure)
       clearTimeout(fadeTimer)
       awake = false
-      // 拖着时被卸载（换了页面）：不再盯着这次按住，不然右键菜单一直被挡
-      unwatch?.()
-      unwatch = null
-      drag = null
+    // 卸载时 attachGrip 自己作废这次按住
     }
   })
 
   /** 指针沿滚动方向的位置 */
-  function along(event: PointerEvent): number {
-    return axis === 'y' ? event.clientY : event.clientX
+  function along(sample: { x: number, y: number }): number {
+    return axis === 'y' ? sample.y : sample.x
   }
 
   /** 只在听众拖滑块、点空白处时调用：这是它唯一写滚动位置的地方 */
@@ -159,58 +162,65 @@
     scroller()?.scrollTo(axis === 'y' ? { top: position, behavior } : { left: position, behavior })
   }
 
-  function endDrag() {
-    if (drag === null)
-      return
-    drag = null
-    unwatch?.()
-    unwatch = null
-    linger()
-  }
-
-  function grab(event: PointerEvent, target: HTMLElement) {
-    target.setPointerCapture(event.pointerId)
-    const quick = target === grip
-    drag = { from: along(event), start: metrics.position, quick }
-    unwatch = watchPress(endDrag)
-    if (quick) {
-      // 抓住了：Android 上手指按住时轻震一下（iOS 的浏览器没有这个接口）
-      if (event.pointerType === 'touch')
+  // 拖滑块：指针怎么接（捕获、按住断了、作废、元素移除）由 attachGrip + 线性核心统一做；
+  // 这里只把指针的移动换成滚动位置。点在滑块前后的空白处仍然翻一屏，不算拖动。
+  const core = createSliderCore({
+    begin(sample) {
+      if (!scrollable || !strip)
+        return null
+      // 落在触屏那一块上：任何指针（手指、笔、鼠标）都按快速定位（和基线 target === grip 一致）
+      const onGrip = sample.target === grip
+      if (!onGrip) {
+        // 触屏的手指只认那一块；落在细条上就交给浏览器滚动、点歌
+        if (sample.pointerType === 'touch')
+          return null
+        const rect = strip.getBoundingClientRect()
+        const at = along(sample) - (axis === 'y' ? rect.top : rect.left) - INSET
+        if (at < offset || at > offset + thumb) {
+          // 点在滑块前后的空白处：往那边翻一屏。这一条有多长就是一屏（页面那条正好是顶栏和底栏之间看得见的那一段）
+          moveTo(metrics.position + (at < offset ? -length : length), scrollBehavior())
+          return null
+        }
+      }
+      dragStart = { from: along(sample), start: metrics.position }
+      starting = true
+      quick = onGrip
+      if (quick && sample.pointerType === 'touch') {
+        // 抓住了：Android 上手指按住时轻震一下（iOS 的浏览器没有这个接口）
         navigator.vibrate?.(10)
-      readMark()
-    }
-  }
-
-  function onpointerdown(event: PointerEvent) {
-    if (event.button !== 0 || !scrollable || !strip)
-      return
-    // 触屏那一块只在以触屏为主的设备上、能按的时候接得到指针（手指，也可能是平板上的笔、鼠标）：按在它上面就是快速定位
-    if (grip && event.target === grip) {
-      // 已经拖着时再按下的手指（两指）不接：不然第一次的 watchPress 停不掉，右键和长按菜单一直被挡
-      if (drag === null && event.isPrimary)
-        grab(event, grip)
-      return
-    }
-    // 手指只认那一块；细条没亮、列表不够长时它接不到手指，按下去照常滚动、点歌
-    if (event.pointerType === 'touch')
-      return
-    const rect = strip.getBoundingClientRect()
-    const at = along(event) - (axis === 'y' ? rect.top : rect.left) - INSET
-    if (at >= offset && at <= offset + thumb)
-      return grab(event, strip)
-    // 点在滑块前后的空白处：往那边翻一屏。这一条有多长就是一屏（页面那条正好是顶栏和底栏之间看得见的那一段）
-    moveTo(metrics.position + (at < offset ? -length : length), scrollBehavior())
-  }
-
-  function onpointermove(event: PointerEvent) {
-    if (drag === null)
-      return
-    if (pressBroken(event.buttons))
-      return endDrag()
-    const free = track - thumb
-    if (free > 0)
-      moveTo(drag.start + (along(event) - drag.from) * range / free, 'auto')
-  }
+      }
+      return range > 0 ? metrics.position / range : 0
+    },
+    track(sample) {
+      const free = track - thumb
+      // 滑块已经占满轨道：没有可拖的余地，停在现在的位置，别滚到顶
+      if (free <= 0 || range <= 0)
+        return metrics.position / Math.max(1, range)
+      return (dragStart.start + (along(sample) - dragStart.from) * range / free) / range
+    },
+    commit: () => {},
+    cancel: () => {},
+    onValue(value) {
+      dragging = value !== null
+      if (value !== null) {
+        // 按下的那一刻不写回位置（基线 grab 也不写）；动了以后才滚
+        if (!starting) {
+          const next = value * range
+          if (Math.abs(next - metrics.position) > 0.5)
+            moveTo(next, 'auto')
+        }
+        starting = false
+        readMark()
+      }
+      else {
+        starting = false
+        quick = false
+        linger()
+      }
+    },
+  })
+  // 这一条本身不写 touch-action：混合输入设备上，手指落在右侧 16px 仍要能滚页面；能按的 .grip 自己有 CSS
+  const gripAttach = attachGrip(core, { touchAction: false })
 </script>
 
 {#snippet bar()}
@@ -231,11 +241,7 @@
     style:height={!page && axis === 'y' ? `${metrics.viewport}px` : undefined}
     style:width={axis === 'x' ? `${metrics.viewport}px` : undefined}
     aria-hidden={page ? 'true' : undefined}
-    {onpointerdown}
-    {onpointermove}
-    onpointerup={endDrag}
-    onpointercancel={endDrag}
-    onlostpointercapture={endDrag}
+    {@attach gripAttach}
     onpointerenter={event => (near = event.pointerType !== 'touch')}
     onpointerleave={() => {
       near = false
@@ -254,7 +260,7 @@
     {/if}
     {#if lookup && axis === 'y'}
       <!-- 一直挂着（透明），第一次按住时也是从 0 淡入，而不是一下子冒出来 -->
-      <div class={['bubble rounded-xl bg-white px-3.5 py-2 shadow-float', drag?.quick && mark && 'open']} style:top='{bubbleCenter}px' bind:offsetHeight={bubbleHeight}>
+      <div class={['bubble rounded-xl bg-white px-3.5 py-2 shadow-float', dragging && quick && mark && 'open']} style:top='{bubbleCenter}px' bind:offsetHeight={bubbleHeight}>
         {#if mark}
           <span class='block text-caption text-neutral-600 tabular-nums'>{mark.caption}</span>
           <span class='block truncate text-label text-neutral-900 font-500' lang={mark.lang}>{mark.title}</span>

@@ -3,12 +3,19 @@
   一根手指拖动，两根手指捏合，鼠标滚轮缩放，下面的滑块也能缩放；方向键移动，+ / - 缩放。
   框外盖一层晨光底色的薄纱，框是白色细边（浅色图片上也看得见）。拖动时页面和弹层都不滚（touch-action: none）。
   crop 是工作位图上的正方形（单位是那张位图的像素），双向绑定；导出时直接用。
+  几何（平移、缩放、夹紧、crop ↔ 视图）在 cover-crop-core.ts 的纯核心里；指针接线用 press.ts 的 attachGrip，
+  按住断了（右键菜单、切走窗口、指针被收回、元素没了）就停止，不会留下悬停也在平移。
   readonly：上传中、失败后只看取景结果，不再接收手势，也不显示滑块。
 -->
 <script lang='ts'>
   import type { CoverCrop } from '#lib/api/cover.js'
+  import type { CropFrame, CropPoint, CropView } from './cover-crop-core.js'
+  import type { Grip, PointerSample } from './press'
   import { ZoomIn, ZoomOut } from '@lucide/svelte'
   import { untrack } from 'svelte'
+  import { SvelteMap } from 'svelte/reactivity'
+  import { createCropView, cropOf, maxZoomOf, nudgeCrop, panCrop, pinchCrop, wheelCrop, zoomBy, zoomTo } from './cover-crop-core'
+  import { attachGrip, pressBroken } from './press'
   import IconButton from './ui/IconButton.svelte'
 
   interface Props {
@@ -23,15 +30,11 @@
   }
 
   let { src, width, height, size, readonly = false, crop = $bindable() }: Props = $props()
-  const base = $derived(size / Math.min(width, height))
-  /** 最多放大到 6 倍；原图本来就小（短边不到 160px 的 6 倍）时不再放大 */
-  const maxZoom = $derived(Math.max(1, Math.min(6, Math.min(width, height) / 160)))
+  const frame = $derived<CropFrame>({ width, height, size })
 
-  let zoom = $state(1)
-  let tx = $state(0)
-  let ty = $state(0)
-  let dragging = $state(false)
+  let view = $state.raw<CropView>({ zoom: 1, x: 0, y: 0 })
   let host = $state<HTMLElement>()
+  let dragging = $state(false)
   /** 已经摆好的取景框：和 crop 一样就说明是手势自己改的，不用再摆（不然会和拖动抢） */
   let placed: CoverCrop | null = null
   let placedFor = { src: '', size: 0 }
@@ -39,125 +42,177 @@
   // 图片、框的尺寸变了，或者外面换了 crop（换了一张图、打开时居中）：按它重新摆放。
   // 手势自己改 crop 时已经摆好，跳过
   $effect.pre(() => {
+    const current = frame
     const next = crop
     const sameFrame = src === placedFor.src && size === placedFor.size
     placedFor = { src, size }
     if (sameFrame && placed && placed.x === next.x && placed.y === next.y && placed.size === next.size)
       return
     untrack(() => {
-      const scale = size / next.size
-      zoom = Math.min(maxZoom, Math.max(1, scale / base))
-      const sc = base * zoom
-      tx = -next.x * sc
-      ty = -next.y * sc
-      clamp()
+      view = createCropView(current, next)
+      placed = { ...next }
     })
-    placed = { ...next }
   })
 
-  const scale = $derived(base * zoom)
+  const scale = $derived((size / Math.min(width, height)) * view.zoom)
   const W = $derived(width * scale)
   const H = $derived(height * scale)
 
-  function clamp() {
-    const sc = base * zoom
-    tx = Math.min(0, Math.max(size - width * sc, tx))
-    ty = Math.min(0, Math.max(size - height * sc, ty))
-  }
-
-  function sync() {
-    clamp()
-    const sc = base * zoom
-    crop = { x: -tx / sc, y: -ty / sc, size: size / sc }
+  /** 手势改出来的新视图：记下来，顺手算出 crop */
+  function apply(next: CropView) {
+    view = next
+    crop = cropOf(frame, view)
     placed = { ...crop }
   }
 
-  /** 以框内的点 (px, py) 为中心缩放 */
-  function zoomAt(next: number, px = size / 2, py = size / 2) {
-    const z = Math.min(maxZoom, Math.max(1, next))
-    const s1 = base * zoom
-    const s2 = base * z
-    tx = px - ((px - tx) * s2) / s1
-    ty = py - ((py - ty) * s2) / s1
-    zoom = z
-    sync()
-  }
-
-  const pointers: Record<number, { x: number, y: number }> = {}
-  let pinch: null | { d: number, zoom: number } = null
-
-  function local(e: PointerEvent) {
+  /** 框里的坐标 */
+  function at(sample: { x: number, y: number }): CropPoint {
     const rect = host!.getBoundingClientRect()
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    return { x: sample.x - rect.left, y: sample.y - rect.top }
   }
 
-  function onpointerdown(e: PointerEvent) {
+  // 两指捏合：第二根手指不在 attachGrip 的主指针范围里，单独记着它们的位置。
+  // 每次移动从**当前**视图缩放到「起始缩放 × 当前距离/起始距离」，锚当前中点（和基线增量 zoomAt 等价）：
+  // 两指同距平移时不平移图片。
+  const pointers = new SvelteMap<number, CropPoint>()
+  let pinch: null | { zoom: number, distance: number } = null
+
+  // 一指拖动：attachGrip 管指针捕获、按住断了、作废；这里只把移动交给几何核心
+  let last: CropPoint | null = null
+
+  /** 按住断了（右键、切走窗口、指针被收回、按钮已经松开）或 readonly 中途翻转：收手，不提交 */
+  function abandonPan(pointerId?: number) {
+    // 第二根手指被取消、收回捕获：只收它，正在拖的那一根接着走
+    if (pointerId !== undefined) {
+      pointers.delete(pointerId)
+      if (pointers.size > 0) {
+        if (pointers.size < 2)
+          pinch = null
+        last = [...pointers.values()][0] ?? null
+        dragging = true
+        return
+      }
+    }
+    pointers.clear()
+    pinch = null
+    last = null
+    dragging = false
+  }
+
+  const pan: Grip = {
+    get holding() {
+      return dragging
+    },
+    press(sample: PointerSample) {
+      if (readonly || !sample.isPrimary || sample.button !== 0)
+        return false
+      // 基线：按下就记下起点，第一次 pointermove 的位移也要算进去
+      last = at(sample)
+      dragging = true
+      return true
+    },
+    move(sample) {
+      // readonly 中途翻转：收手。别的指针悬停（buttons=0）不能中止正在进行的触屏拖动
+      if (readonly)
+        return abandonPan()
+      if (!pointers.has(sample.pointerId))
+        return
+      if (pressBroken(sample.buttons))
+        return abandonPan(sample.pointerId)
+      const point = at(sample)
+      const previous = last
+      last = point
+      if (!previous || pointers.size >= 2)
+        return
+      apply(panCrop(frame, view, point.x - previous.x, point.y - previous.y))
+    },
+    release(sample) {
+      pointers.delete(sample.pointerId)
+      if (pointers.size < 2)
+        pinch = null
+      last = [...pointers.values()][0] ?? null
+      dragging = pointers.size > 0
+    },
+    abandon: abandonPan,
+    click() {
+      return false
+    },
+  }
+  const panAttach = attachGrip(pan)
+
+  function touchPoint(event: PointerEvent): CropPoint {
+    return at(event)
+  }
+
+  function onpointerdown(event: PointerEvent) {
     if (readonly)
       return
-    host?.setPointerCapture(e.pointerId)
-    pointers[e.pointerId] = local(e)
+    host?.setPointerCapture(event.pointerId)
+    pointers.set(event.pointerId, touchPoint(event))
     dragging = true
-    if (Object.keys(pointers).length === 2) {
-      const [a, b] = Object.values(pointers)
-      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), zoom }
-    }
+    if (pointers.size === 2)
+      startPinch()
   }
 
-  function onpointermove(e: PointerEvent) {
-    if (readonly)
-      return
-    const previous = pointers[e.pointerId]
-    if (!previous)
-      return
-    const point = local(e)
-    pointers[e.pointerId] = point
-    if (Object.keys(pointers).length >= 2 && pinch) {
-      const [a, b] = Object.values(pointers)
-      const d = Math.hypot(a.x - b.x, a.y - b.y)
-      zoomAt(pinch.zoom * (d / pinch.d), (a.x + b.x) / 2, (a.y + b.y) / 2)
+  function onpointermove(event: PointerEvent) {
+    if (readonly) {
+      abandonPan()
       return
     }
-    tx += point.x - previous.x
-    ty += point.y - previous.y
-    sync()
+    if (!pointers.has(event.pointerId))
+      return
+    if (pressBroken(event.buttons)) {
+      abandonPan(event.pointerId)
+      return
+    }
+    const point = touchPoint(event)
+    pointers.set(event.pointerId, point)
+    if (pointers.size < 2)
+      return
+    if (!pinch)
+      startPinch()
+    if (!pinch)
+      return
+    const [a, b] = [...pointers.values()]
+    if (!a || !b)
+      return
+    const distance = Math.hypot(a.x - b.x, a.y - b.y)
+    const middle = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+    apply(pinchCrop(frame, view, pinch.zoom, pinch.distance, distance, middle))
   }
 
-  function onpointerup(e: PointerEvent) {
-    delete pointers[e.pointerId]
-    if (Object.keys(pointers).length < 2)
+  function onpointerup(event: PointerEvent) {
+    pointers.delete(event.pointerId)
+    if (pointers.size < 2)
       pinch = null
-    if (Object.keys(pointers).length === 0)
-      dragging = false
+    // 从捏合回到一指：从这一刻的位置接着拖，不要跳
+    const [first] = [...pointers.values()]
+    last = first ?? null
+    dragging = pointers.size > 0
   }
 
-  function onwheel(e: WheelEvent) {
-    if (readonly)
+  function startPinch() {
+    const [a, b] = [...pointers.values()]
+    if (!a || !b)
       return
-    e.preventDefault()
-    const rect = host!.getBoundingClientRect()
-    zoomAt(zoom * Math.exp(-e.deltaY / 400), e.clientX - rect.left, e.clientY - rect.top)
+    pinch = { zoom: view.zoom, distance: Math.hypot(a.x - b.x, a.y - b.y) }
   }
 
-  function onkeydown(e: KeyboardEvent) {
+  function onwheel(event: WheelEvent) {
     if (readonly)
       return
-    const step = e.shiftKey ? 40 : 10
-    if (e.key === 'ArrowLeft')
-      tx += step
-    else if (e.key === 'ArrowRight')
-      tx -= step
-    else if (e.key === 'ArrowUp')
-      ty += step
-    else if (e.key === 'ArrowDown')
-      ty -= step
-    else if (e.key === '+' || e.key === '=')
-      return zoomAt(zoom * 1.15)
-    else if (e.key === '-')
-      return zoomAt(zoom / 1.15)
-    else
+    event.preventDefault()
+    apply(wheelCrop(frame, view, event.deltaY, at(event)))
+  }
+
+  function onkeydown(event: KeyboardEvent) {
+    if (readonly)
       return
-    e.preventDefault()
-    sync()
+    const next = nudgeCrop(frame, view, event.key, event.shiftKey)
+    if (!next)
+      return
+    event.preventDefault()
+    apply(next)
   }
 </script>
 
@@ -176,8 +231,10 @@
     onpointermove={onpointermove}
     onpointerup={onpointerup}
     onpointercancel={onpointerup}
+    onlostpointercapture={onpointerup}
     onwheel={onwheel}
     onkeydown={onkeydown}
+    {@attach panAttach}
   >
     <img
       src={src}
@@ -186,7 +243,7 @@
       class='pointer-events-none absolute left-0 top-0 max-w-none select-none'
       style:width='{W}px'
       style:height='{H}px'
-      style:transform='translate3d({tx}px, {ty}px, 0)'
+      style:transform='translate3d({view.x}px, {view.y}px, 0)'
     />
     <div class={['frame pointer-events-none absolute inset-0 rounded-lg', dragging && 'is-dragging']} aria-hidden='true'>
       <span class='third v1'></span><span class='third v2'></span><span class='third h1'></span><span class='third h2'></span>
@@ -194,19 +251,19 @@
   </div>
   {#if !readonly}
     <div class='max-w-80 w-full flex items-center gap-2 text-neutral-600'>
-      <IconButton icon={ZoomOut} label='缩小' onclick={() => zoomAt(zoom / 1.2)} />
+      <IconButton icon={ZoomOut} label='缩小' onclick={() => apply(zoomBy(frame, view, 1 / 1.2))} />
       <input
         type='range'
         class='min-w-0 flex-1'
         min='1'
-        max={maxZoom}
+        max={maxZoomOf(frame)}
         step='0.01'
-        value={zoom}
+        value={view.zoom}
         aria-label='缩放'
-        disabled={maxZoom <= 1}
-        oninput={event => zoomAt(Number(event.currentTarget.value))}
+        disabled={maxZoomOf(frame) <= 1}
+        oninput={event => apply(zoomTo(frame, view, Number(event.currentTarget.value)))}
       />
-      <IconButton icon={ZoomIn} label='放大' onclick={() => zoomAt(zoom * 1.2)} />
+      <IconButton icon={ZoomIn} label='放大' onclick={() => apply(zoomBy(frame, view, 1.2))} />
     </div>
   {/if}
 </div>
