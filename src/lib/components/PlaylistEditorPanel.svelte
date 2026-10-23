@@ -71,7 +71,7 @@
   const descriptionTooLong = $derived(description.trim() !== (start?.description?.trim() ?? '') && description.trim().length > PLAYLIST_DESCRIPTION_LENGTH)
   /** 名称、简介不合规：不能按“创建 / 保存” */
   const blocked = $derived(problem !== null || descriptionTooLong)
-  const songCount = $derived(playlist ? library?.songsOf(playlist.id)?.total ?? playlist.trackCount : 0)
+  const songCount = $derived(playlist ? library?.playlistPage(playlist.id).content?.total ?? playlist.trackCount : 0)
 
   // 编辑信息时取网易云的标签库（这次登录取到过就不再取）
   $effect(() => {

@@ -32,7 +32,7 @@
   import PhoneSongRow from './PhoneSongRow.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
   import { SONG_ROW_HEIGHT, SongDrag } from './song-drag.svelte'
-  import { formatCount, openingOf, playlistView, songMark } from './view'
+  import { formatCount, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
 
   const { addSongsDialog, playlistSelection } = getOverlays()
@@ -49,11 +49,11 @@
 
   let { library, playlistId, query = $bindable(), phone = false, entryFocus }: Props = $props()
   const view = getAppView()
-  const shown = $derived(playlistView(library, playlistId))
-  const liked = $derived(library.songsOf(playlistId)?.playlist.kind === 'liked')
-  const opening = $derived(openingOf(library, playlistId))
+  const page = $derived(library.playlistPage(playlistId))
+  const shown = $derived(page.songs)
+  const liked = $derived(page.kind === 'liked')
   /** 不在曲库里的歌单：歌是打开时联网取的，说“加载”，不说“同步” */
-  const outside = $derived(!library.songsOf(playlistId))
+  const outside = $derived(page.inLibrary === false)
   const term = $derived(query.trim())
   const result = $derived(term && shown.kind === 'songs' ? view.app.searchPlaylist(playlistId, term) : null)
   /** 列表里显示的歌：搜索时是搜到的 */
@@ -64,13 +64,13 @@
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
   const selection = playlistSelection
   /** 曲库里的这张歌单是哪一类；不在曲库里的歌单是 null */
-  const kind = $derived(library.songsOf(playlistId)?.playlist.kind ?? null)
+  const kind = $derived(page.kind)
   /** 能排序的列表（自建歌单、我喜欢的音乐）：手机数量行右边的多选图标读作“多选和排序”（#36、#57） */
-  const sortableList = $derived(selection.capabilities.sort)
+  const sortableList = $derived(page.can.sort)
   /**
    * 现在能不能拖：歌都同步全了、每一首都有歌曲信息（不然列表和整张歌单对不上），也没在搜索、没在重新拉
    */
-  const sortable = $derived(sortableList && shown.kind === 'songs' && shown.complete && shown.songs.length === shown.total && result === null && opening === null)
+  const sortable = $derived(sortableList && shown.kind === 'songs' && shown.complete && shown.songs.length === shown.total && result === null && page.more === null)
   /** 能排序的列表现在拖不了：说清楚是搜索结果，还是还没同步完 */
   const sortBlockedText = $derived.by(() => {
     if (result !== null)
@@ -162,10 +162,10 @@
   }
 
   function retry() {
-    if (library.playlists)
-      void view.app.openPlaylist(playlistId)
-    else
+    if (page.failure?.retry === 'sync')
       view.app.retrySync()
+    else
+      void view.app.openPlaylist(playlistId)
   }
 </script>
 
@@ -248,12 +248,12 @@
 {/snippet}
 
 {#snippet list()}
-  {#if shown.kind === 'loading'}
+  {#if shown.kind === 'loading' && page.failure?.where !== 'list'}
     <SkeletonRows count={phone ? 8 : 10} {phone} label='正在加载歌单' />
   {:else}
     <div in:reveal>
-      {#if shown.kind === 'failed'}
-        <StateBlock kind='error' title={liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载'} body={failureText(shown.failure)} action={{ label: '重试', run: retry }} />
+      {#if page.failure && page.failure.where === 'list'}
+        <StateBlock kind='error' title={liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载'} body={failureText(page.failure.failure)} action={{ label: '重试', run: retry }} />
       {:else if shown.kind === 'empty'}
         {#if liked}
           <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' />
@@ -268,11 +268,11 @@
           <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' />
         {/if}
       {:else if shown.kind === 'songs'}
-        {#if opening?.status === 'failed'}
+        {#if page.failure && page.failure.where === 'more'}
           <div transition:unfold>
             <div class={['flex items-center gap-3 px-3 text-caption text-neutral-700', phone ? 'min-h-11 py-1' : 'py-2']} role='alert'>
               <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
-              <span class='min-w-0 flex-1'>没加载完：{failureText(opening.failure)}</span>
+              <span class='min-w-0 flex-1'>没加载完：{failureText(page.failure.failure)}</span>
               <TextButton desktop={{ variant: 'outline' }} class='max-md:-mr-3 md:h-9!' onclick={retry}>重试</TextButton>
             </div>
           </div>

@@ -3,9 +3,9 @@
 -->
 <script lang='ts'>
   import type { LibraryState } from '#lib/app/library.js'
+  import { syncNoticeFor } from '#lib/app/library.js'
   import PlaylistSongs from './PlaylistSongs.svelte'
   import SyncNotice from './SyncNotice.svelte'
-  import { playlistView } from './view'
 
   interface Props {
     library: LibraryState
@@ -16,8 +16,10 @@
   let { library, query = $bindable() }: Props = $props()
   /** 歌单列表还没拿到时还不知道是哪张：按还没有列表显示（加载中，或没同步成） */
   const likedId = $derived(library.liked?.playlist.id ?? 0)
-  const failed = $derived(playlistView(library, likedId).kind === 'failed')
+  const page = $derived(library.playlistPage(likedId))
+  /** 整块列表已经说了失败才抑制同步条；部分歌的失败仍由同步条说 */
+  const notice = $derived(syncNoticeFor(library, page.failure?.where === 'list'))
 </script>
 
-<SyncNotice {library} failureShown={failed} phone />
+<SyncNotice {notice} phone />
 <PlaylistSongs {library} playlistId={likedId} bind:query phone />

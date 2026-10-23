@@ -1,7 +1,7 @@
 import type { Account } from '#lib/api/account.js'
 import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
-import type { Api, Result } from './api'
+import type { Api, RequestFailure, Result } from './api'
 import type { Clock, PageVisibility } from './browser'
 import type { Change, ConfirmedChange, ImmediateChange } from './changes'
 import type { Deferred, PendingChange } from './deferred'
@@ -10,7 +10,7 @@ import type { NoticeAction, Notices, OperationNotice } from './notice'
 import type { Waiting } from './pacing'
 import type { BackgroundFailure, BackgroundSessionResult, SessionFailure, SessionResult, SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
-import { nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
+import { canSortPlaylist, nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import { changePatch, changeProblem, heartOf, playlistTarget, targetOf } from './changes'
 import { createDeferred } from './deferred'
 import { emptyPatch, patched } from './local'
@@ -116,6 +116,77 @@ export interface NeteasePlaylistSongs extends PlaylistSongs<PlaylistInfo> {
 /** 不在曲库里的歌单拉到哪了；打不开（已删除、不存在、别人的隐私歌单）时说明原因 */
 type NeteasePlaylistPage = PageState<NeteasePlaylistSongs> | { status: 'unavailable', reason: PlaylistUnavailable }
 
+/** 这一页歌单的列表那一块显示什么（不含“没拉成”：那是 failure 的事） */
+export type PlaylistPageSongs
+  /** 还没拿到歌：骨架行 */
+  = | { kind: 'loading' }
+  /** 不在曲库里的歌单打不开（已被删除、不存在、别人的隐私歌单） */
+    | { kind: 'unavailable', reason: PlaylistUnavailable }
+  /** 同步完了、取完了，一首都没有 */
+    | { kind: 'empty' }
+  /** 已经有一部分的歌。total：一共几首；还在同步时比 songs 多，同步完了就是 songs 的首数（网易云没给的歌不算） */
+    | { kind: 'songs', songs: readonly Song[], total: number, complete: boolean }
+
+/** 这一页没拉成：原因、显示在哪、重试走哪条路 */
+export interface PlaylistPageFailure {
+  /** list：列表整块（一首都没有就没拉成）；more：列表上方一条（已经有一部分，其余的没拉成） */
+  where: 'list' | 'more'
+  failure: RequestFailure
+  /**
+   * 失败从哪来：sync 是后台同步曲库停下；open 是前台打开这张歌单没拉成。
+   * 只用来决定标题和“我喜欢的音乐”整块错误的重试动作；列表自身的重试动作看 retry
+   */
+  source: 'sync' | 'open'
+  /**
+   * 这一页列表的“重试”该调哪条命令：sync 是重新同步曲库（歌单列表都还没拿到）；
+   * open 是再打开这张歌单（前台打开失败，或者库内后台同步失败后由打开来重拉）
+   */
+  retry: 'sync' | 'open'
+}
+
+/**
+ * 这一页歌单的答案（我喜欢的音乐也是其中一张）。和 albumPage / artistPage 一样按 id 取，界面照着画：
+ * 在不在曲库、加载 / 失败 / 不可用 / 还有更多、首数、哪种失败显示在哪、听众能做什么。
+ * 不在曲库里的歌单不存本机（ADR-0007），打开时取到的只记在这次登录期间。
+ */
+export interface PlaylistPage {
+  /** 在不在曲库；null：歌单列表还没拿到，还谈不上。false 只有一种定义：歌单列表里没有它 */
+  inLibrary: boolean | null
+  /** 曲库里的哪一种歌单；不在曲库里是 null。自建能编辑、删除，自建和我喜欢的音乐能排序 */
+  kind: Playlist['kind'] | null
+  /** 歌单本身的资料：曲库里的看歌单列表，不在曲库里的看打开时取到的；都还没有是 null */
+  info: PlaylistInfo | null
+  /** 隐私歌单（只有曲库里的会标） */
+  private: boolean
+  /** 能读到的歌：播放、歌单内搜索、拖动排序用；还没同步到、没打开过时是 null */
+  content: PlaylistSongs<PlaylistInfo> | null
+  /** 列表那一块显示什么 */
+  songs: PlaylistPageSongs
+  /**
+   * 前台打开这张歌单时，其余的歌在拉（loading）、没拉成（failed）；不在曲库里的歌单打开时也用它。
+   * 都取到了、或者后台同步还没拉完（那是 songs.complete 和同步条的事）时是 null
+   */
+  more: PlaylistOpening | null
+  /**
+   * 这一页列表自己要展示的失败（前台打开失败优先，其次是后台同步失败）；已经有一部分歌时后台同步失败不在这里说，
+   * 由同步条说明。没有这一页要展示的失败时是 null
+   */
+  failure: PlaylistPageFailure | null
+  /** 首数：loaded 已经有的、total 已知一共的；列表还没出来是 null */
+  count: { loaded: number, total: number } | null
+  /** 听众能做什么：自建（加歌、编辑、删除）、拖动排序、收藏 */
+  can: { edit: boolean, sort: boolean, collect: boolean }
+}
+
+/** 同步条显示什么：首次同步的进度、暂停、同步停下；不需要时是 null */
+export type SyncNoticeState
+  /** 还不知道曲库有多大（歌单列表还没拿到）时 progress 是 null */
+  = | { kind: 'syncing', progress: { done: number, total: number } | null }
+    | { kind: 'rateLimited' }
+    | { kind: 'offline' }
+  /** 同步停下了：没拿到数据的列表会说明自己那一块，同步条只在那一块不在当前页时说 */
+    | { kind: 'failed', failure: SyncFailure }
+
 /** 界面看到的曲库 */
 export interface LibraryState {
   /** 歌单列表：首次同步还没拿到时是 null */
@@ -138,9 +209,16 @@ export interface LibraryState {
   artistPage: (artistId: number) => PageState<ArtistPage> | null
   /** 不在曲库里的歌单：打开过的只在这次登录期间记着，不存在本机；没打开过是 null */
   neteasePlaylist: (playlistId: number) => NeteasePlaylistPage | null
+  /**
+   * 这一页歌单的答案：在不在曲库、加载 / 失败 / 不可用 / 还有更多、首数、哪种失败显示在哪、能做什么。
+   * 界面不用再自己合并“在曲库里”和“不在曲库里”两种形状
+   */
+  playlistPage: (playlistId: number) => PlaylistPage
   /** 网易云的歌单标签库（编辑歌单信息时取）：只在这次登录期间记着；没取过是 null */
   playlistTags: PageState<PlaylistTagGroup[]> | null
   sync: SyncStatus
+  /** 同步条显示什么（首次同步的进度、暂停、同步停下）；界面用 syncNoticeFor 按当前页的整块列表失败去重 */
+  syncNotice: SyncNoticeState | null
   /** 改曲库（红心、加入歌单、收藏）、下载后要告诉听众的事；关掉或有了新的就换掉 */
   notice: OperationNotice | null
   /** 现在这条提示条支持的动作（撤销 / 重试 / 关闭）；没有提示条时是空的。界面照着画按钮 */
@@ -311,6 +389,158 @@ function songsOf(replica: Replica, playlist: Playlist): PlaylistSongs {
   }
 }
 
+/** 这一页列表自己要展示的失败（source/retry 由调用方按来源给） */
+type SongsFailure = Pick<PlaylistPageFailure, 'failure' | 'source' | 'retry'>
+
+/**
+ * 一张歌单的列表那一块、其余的、失败和首数：这些规则只在这里一份。
+ * 已经有一部分歌时，后台同步的失败不在这一页说（交给同步条）；前台打开没拉成在列表上方说。
+ */
+function songsViewOf(playlist: PlaylistSongs<unknown>, opening: PlaylistOpening | null, failure: SongsFailure | null): Pick<PlaylistPage, 'songs' | 'more' | 'failure' | 'count'> {
+  if (playlist.songs.length > 0) {
+    const total = playlist.complete ? playlist.songs.length : playlist.total
+    const failed = opening?.status === 'failed'
+      ? { where: 'more' as const, failure: opening.failure, source: 'open' as const, retry: 'open' as const }
+      : null
+    return {
+      songs: { kind: 'songs', songs: playlist.songs, total, complete: playlist.complete },
+      more: opening,
+      failure: failed,
+      count: { loaded: playlist.songs.length, total },
+    }
+  }
+  if (playlist.complete)
+    return { songs: { kind: 'empty' }, more: opening, failure: null, count: { loaded: 0, total: 0 } }
+  return {
+    songs: { kind: 'loading' },
+    more: opening,
+    failure: failure ? { where: 'list', ...failure } : null,
+    count: null,
+  }
+}
+
+/** 这一页歌单的答案：在曲库里的看本机副本，不在曲库里的看打开时取到的；打开失败优先于同步失败 */
+function playlistPageOf(replica: Replica, playlistId: number, songsOfPlaylist: (id: number) => PlaylistSongs | null, neteasePages: ReadonlyMap<number, NeteasePlaylistPage>, opening: ReadonlyMap<number, PlaylistOpening>, syncFailure: SyncFailure | null): PlaylistPage {
+  const nothing = { edit: false, sort: false, collect: false } as const
+  // 歌单列表还没到：不知道在不在曲库，列表整块是加载中；同步停了就说原因
+  if (replica.playlists === null) {
+    return {
+      inLibrary: null,
+      kind: null,
+      info: null,
+      private: false,
+      content: null,
+      songs: { kind: 'loading' },
+      more: null,
+      failure: syncFailure ? { where: 'list', failure: syncFailure, source: 'sync', retry: 'sync' } : null,
+      count: null,
+      can: nothing,
+    }
+  }
+  const listed = songsOfPlaylist(playlistId)
+  if (listed) {
+    // 打开时拉过：以它为准；没拉过（还没到能拉的时候）才看后台同步
+    const current = opening.get(playlistId) ?? null
+    const failure = current
+      ? (current.status === 'failed' ? { failure: current.failure, source: 'open' as const, retry: 'open' as const } : null)
+      : syncFailure ? { failure: syncFailure, source: 'sync' as const, retry: 'open' as const } : null
+    return {
+      inLibrary: true,
+      kind: listed.playlist.kind,
+      info: listed.playlist,
+      private: listed.playlist.private,
+      content: listed,
+      ...songsViewOf(listed, current, failure),
+      can: {
+        edit: listed.playlist.kind === 'own',
+        sort: canSortPlaylist(listed.playlist.kind),
+        collect: listed.playlist.kind === 'collected',
+      },
+    }
+  }
+  // 不在曲库里的歌单：还没打开也算加载中（页面马上就打开），打不开时说明是哪一种
+  const page = neteasePages.get(playlistId)
+  switch (page?.status) {
+    case undefined:
+    case 'loading':
+      return { inLibrary: false, kind: null, info: null, private: false, content: null, songs: { kind: 'loading' }, more: null, failure: null, count: null, can: nothing }
+    case 'failed':
+      return { inLibrary: false, kind: null, info: null, private: false, content: null, songs: { kind: 'loading' }, more: null, failure: { where: 'list', failure: page.failure, source: 'open', retry: 'open' }, count: null, can: nothing }
+    case 'unavailable':
+      return { inLibrary: false, kind: null, info: null, private: false, content: null, songs: { kind: 'unavailable', reason: page.reason }, more: null, failure: null, count: null, can: nothing }
+    case 'shown': {
+      const content = page.content
+      const more = content.more
+      const failure = more?.status === 'failed' ? { failure: more.failure, source: 'open' as const, retry: 'open' as const } : null
+      return {
+        inLibrary: false,
+        kind: null,
+        info: content.playlist,
+        private: false,
+        content,
+        ...songsViewOf(content, more, failure),
+        can: { edit: false, sort: false, collect: true },
+      }
+    }
+    default: {
+      const unhandled: never = page
+      throw new Error(`不认识的歌单状态：${JSON.stringify(unhandled)}`)
+    }
+  }
+}
+
+/**
+ * 同步条：首次同步（还有歌单一首都没同步到，或者我喜欢的音乐还没同步全）、同步暂停或同步停下时显示；
+ * 曲库已经在本机、只是在后台比对时不打扰。
+ */
+function syncNoticeOf(replica: Replica, sync: SyncStatus): SyncNoticeState | null {
+  if (sync.status === 'failed')
+    return { kind: 'failed', failure: sync.failure }
+  if (sync.status === 'synced')
+    return null
+  const playlists = replica.playlists
+  let firstSync = playlists === null
+  let progress: { done: number, total: number } | null = null
+  if (playlists) {
+    let done = 0
+    let total = 0
+    firstSync = false
+    for (const playlist of playlists) {
+      const tracks = replica.tracks.get(playlist.id)
+      const complete = tracks?.complete ?? false
+      const songs = tracks ? tracks.trackIds.reduce((count, id) => replica.songs.has(id) ? count + 1 : count, 0) : 0
+      if (!complete && (songs === 0 || playlist.kind === 'liked'))
+        firstSync = true
+      done += complete ? (tracks?.trackIds.length ?? 0) : songs
+      total += tracks?.trackIds.length ?? playlist.trackCount
+    }
+    progress = { done, total }
+  }
+  if (!firstSync)
+    return null
+  switch (sync.status) {
+    case 'syncing':
+      return { kind: 'syncing', progress }
+    case 'rateLimited':
+      return { kind: 'rateLimited' }
+    case 'offline':
+      return { kind: 'offline' }
+    default: {
+      const unhandled: never = sync
+      throw new Error(`不认识的同步状态：${JSON.stringify(unhandled)}`)
+    }
+  }
+}
+
+/**
+ * 同步条实际显示什么：当前页已经用整块列表说了同一次失败（failureShown）时，不再重复一条 failed；
+ * 同步中、暂停、断网照常显示。failureShown 由宿主页面按自己的答案给，不读当前看的是哪一页
+ */
+export function syncNoticeFor(library: Pick<LibraryState, 'syncNotice'>, failureShown: boolean): SyncNoticeState | null {
+  const notice = library.syncNotice
+  return failureShown && notice?.kind === 'failed' ? null : notice
+}
+
 function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number, PlaylistOpening>, pages: Pages, notice: OperationNotice | null): LibraryState {
   const playlists = new Map(replica.playlists?.map(playlist => [playlist.id, playlist]))
   // 几十张歌单、上万首：界面看哪张才算哪张
@@ -327,6 +557,16 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
   const albumPages = new Map(pages.albums)
   const artistPages = new Map(pages.artists)
   const neteasePages = new Map(pages.playlists)
+  const syncFailure = sync.status === 'failed' ? sync.failure : null
+  const pageCache = new Map<number, PlaylistPage>()
+  const playlistPage = (playlistId: number): PlaylistPage => {
+    let page = pageCache.get(playlistId)
+    if (!page) {
+      page = playlistPageOf(replica, playlistId, songsOfPlaylist, neteasePages, opening, syncFailure)
+      pageCache.set(playlistId, page)
+    }
+    return page
+  }
   return {
     playlists: replica.playlists,
     hearts: replica.hearts && new Set(replica.hearts),
@@ -341,8 +581,10 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
     },
     artistPage: artistId => artistPages.get(artistId) ?? null,
     neteasePlaylist: playlistId => neteasePages.get(playlistId) ?? null,
+    playlistPage,
     playlistTags: pages.tags,
     sync,
+    syncNotice: syncNoticeOf(replica, sync),
     notice,
     noticeActions: notice ? noticeActions(notice) : [],
   }
@@ -363,12 +605,6 @@ export function filterSongs(songs: readonly Song[], query: string): Song[] {
 /** 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成 */
 export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch {
   return { songs: filterSongs(playlist.songs, query), incomplete: !playlist.complete }
-}
-
-/** 点歌、歌单内搜索、补上还没同步的歌（规则⑫）时的这张歌单：曲库里的看本机副本，不在曲库里的看打开时取到的；都还没有是 null */
-export function playlistSongsOf(library: LibraryState, playlistId: number): PlaylistSongs<PlaylistInfo> | null {
-  const page = library.neteasePlaylist(playlistId)
-  return library.songsOf(playlistId) ?? (page?.status === 'shown' ? page.content : null)
 }
 
 function waitingStatus(waiting: Waiting): SyncStatus {

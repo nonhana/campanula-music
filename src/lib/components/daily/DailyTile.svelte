@@ -2,7 +2,7 @@
   桌面首页的每日推荐方块（#29，DESIGN.md Layout · 桌面首页）：左上 56px 的日期大数字和“10月 · 星期三”，右上三张叠放的封面，
   左下“每日推荐”和首数。点方块打开每日推荐页；右下角的圆形播放键是播放全部（不是方块的一部分，键盘也能单独到）。
   1280px 及以上在我喜欢的音乐右边，280px 宽；窄于 1280px 排在它下面，排成一行。
-  挂上时交给 App 拉今天这份（openDaily）：拉的时候封面和首数是骨架，没拉成用一句短话说为什么（到每日推荐页里重试）
+  挂上时告诉 App 听众在看每日推荐（viewing）：拉的时候封面和首数是骨架，没拉成用一句短话说为什么（到每日推荐页里重试）
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -24,9 +24,8 @@
     songs ? `${formatCount(songs.length)} 首` : daily?.status === 'failed' ? dailyFailure(daily.failure).brief : null,
   )
 
-  $effect(() => {
-    void view.app.openDaily()
-  })
+  // 首页挂着这个方块时听众就在看每日推荐（App 自己决定要不要先拉）：换到每日推荐页、离开首页都不用再调一次
+  $effect(() => view.app.viewing({ kind: 'daily' }))
 </script>
 
 <div class='relative'>

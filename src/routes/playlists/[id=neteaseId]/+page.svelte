@@ -3,8 +3,9 @@
   （窄于 1024px 时左栏收起，DESIGN.md Layout）；不在曲库里的歌单和专辑页一样是一栏，不显示左栏，和自己的歌单区分开。
   手机是二级页面：返回栏、居中的封面头部、简介卡片、歌单内搜索、歌曲行。
   每张歌单都在信息行下面显示标签，在头部下面显示简介（和专辑页共用的 Description，截断后可以展开），手机也一样。
-  打开时这张歌单还没同步全，就马上用前台请求拉它（App 的 openPlaylist），不等后台同步。
-  不在曲库里的歌单不存进本机，每次打开都用 App 的 openPlaylist 联网取；页头信息行不写类别（方封面和旁边的按钮已经说明是歌单）。
+  打开时这张歌单还没同步全，App 就马上用前台请求拉它（viewing 之后由 App 决定），不等后台同步；
+  不在曲库里的歌单不存进本机，每次打开都由 App 联网取。页面只读 App 给的答案（state.library.playlistPage）。
+  页头信息行不写类别（方封面和旁边的按钮已经说明是歌单）。
   已删除、不存在、别人的隐私歌单打不开时，标题说清是哪一种。
   头部播放全部旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标；点了已收藏直接取消收藏、不确认）：不在曲库里的和收藏的歌单有，我喜欢的音乐、自建歌单没有。
   自建歌单在那里是“添加歌曲”（手机只留图标）和 •••（PlaylistMenu）：编辑歌单信息、改为公开（隐私歌单才有）、删除歌单（#33）；我喜欢的音乐不能改名、不能删，没有它们。
@@ -26,8 +27,7 @@
   import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
-  import { capabilitiesOf } from '#lib/components/library/selection-core.js'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName, playlistView } from '#lib/components/library/view.js'
+  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName } from '#lib/components/library/view.js'
   import { anchorBelow } from '#lib/components/menu-anchor.js'
   import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
   import { getOverlays } from '#lib/components/overlay-context.js'
@@ -46,10 +46,11 @@
   const { addSongsDialog, playlistSelection, playlistMenu } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(params.id)
-  const shown = $derived(library && playlistView(library, id))
+  const page = $derived(library?.playlistPage(id) ?? null)
+  const shown = $derived(page?.songs ?? null)
   /** 不在曲库里的歌单（歌单列表已经拿到、里面没有它） */
-  const outside = $derived(library?.playlists != null && !library.songsOf(id))
-  const header = $derived(library && shown ? playlistHeader(library, id, shown) : null)
+  const outside = $derived(page?.inLibrary === false)
+  const header = $derived(page && playlistHeader(page))
   /** 页头大封面代表这一页：从格子点进来时，格子的封面飞到这里（Cover 的 flight） */
   const here = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 
@@ -70,26 +71,20 @@
       atOnce(() => (query = ''))
   })
 
-  // 歌单列表到了（首次同步时要等它）、换了一张歌单：还没同步全就马上拉。
-  // 打开着的时候同步发现它不在曲库里了（取消了收藏、删掉了），改成联网取，已删除的就说明原因
-  const listReady = $derived(library?.playlists != null)
-  $effect(() => {
-    void outside
-    if (listReady)
-      void view.app.openPlaylist(id)
-  })
+  // 听众在看这一张歌单（换一张、离开这一页都由这一次调用管）：什么时候拉、进出曲库怎么切换由 App 决定；
+  // 离开时 App 提交还没提交的移除和排序
+  $effect(() => view.app.viewing({ kind: 'playlist', id }))
 
   const name = $derived(header?.name ?? '')
   /**
    * 下面列表里的首数（同步完了是实际有的歌，还在同步时是一共几首）；列表还没出来时不写，
    * 头部和左栏当前这一项都用它，和列表对得上（DESIGN.md Do's）
    */
-  const listedCount = $derived(shown?.kind === 'songs' ? shown.total : shown?.kind === 'empty' ? 0 : null)
+  const listedCount = $derived(page?.count?.total ?? null)
   /** 自建歌单：有 •••，能编辑、删除 */
-  const own = $derived(library?.songsOf(id)?.playlist.kind === 'own')
+  const own = $derived(page?.can.edit ?? false)
   /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：桌面的入口写“多选 · 排序”（#36） */
-  const playlistKind = $derived(library?.songsOf(id)?.playlist.kind ?? null)
-  const sortableList = $derived(capabilitiesOf(playlistKind).sort)
+  const sortableList = $derived(page?.can.sort ?? false)
 
   /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上 */
   function openMenu(event: MouseEvent) {
@@ -104,14 +99,8 @@
     addSongsDialog.open({ playlistId: id, from: event.currentTarget as HTMLElement })
   }
 
-  // 离开这张歌单：还没提交的移除立即提交（页面隐藏时 App 自己会做）；多选由列表源卸载时自己退出
-  $effect(() => {
-    // 捕获旧值：从歌单 A 换到 B 时，cleanup 里读到的可能已经是 B
-    const leaving = id
-    return () => {
-      void view.app.flushPlaylist(leaving)
-    }
-  })
+  // 离开这张歌单、还没提交的移除立即提交：由上面 viewing 的清理做（页面隐藏时 App 自己也会做）；
+  // 多选由列表源卸载时自己退出
 
   /** 打不开的歌单：标题说清是哪一种，只有“不存在”补一句 */
   const UNAVAILABLE = {
@@ -126,7 +115,7 @@
   let sidePlaced = false
   $effect(() => {
     void id
-    void listReady
+    void (library?.playlists != null)
     const current = sideNav?.querySelector<HTMLElement>('[aria-current="page"]')
     if (!sideNav || !current)
       return
@@ -169,7 +158,9 @@
         >{sortableList ? '多选 · 排序' : '多选'}</Button>
       </span>
     {/if}
-    <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
+    {#if page?.can.collect}
+      <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
+    {/if}
     {#if own}
       <IconButton icon={Ellipsis} label='歌单操作：{name}' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />
     {/if}
@@ -205,8 +196,8 @@
   <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query entryFocus={desktopEntryFocus} /></div>
 {/snippet}
 
-{#if library && shown?.kind === 'unavailable'}
-  {@const why = UNAVAILABLE[shown.reason]}
+{#if library && page && page.songs.kind === 'unavailable'}
+  {@const why = UNAVAILABLE[page.songs.reason]}
   <div in:reveal>
     <StateBlock
       kind='empty'
@@ -216,13 +207,13 @@
       action={{ label: '回到曲库', run: () => goto(resolve('/')) }}
     />
   </div>
-{:else if library && outside && shown?.kind === 'failed'}
+{:else if library && outside && page?.failure?.where === 'list'}
   <!-- 第一次打开就什么都没取到 -->
   <div in:reveal>
     <StateBlock
       kind='error'
       title='这张歌单没能打开'
-      body={shown.failure.kind === 'offline' ? '不在曲库里的歌单要联网才能打开' : failureText(shown.failure)}
+      body={page.failure.failure.kind === 'offline' ? '不在曲库里的歌单要联网才能打开' : failureText(page.failure.failure)}
       action={{ label: '重试', run: () => void view.app.openPlaylist(id) }}
     />
   </div>

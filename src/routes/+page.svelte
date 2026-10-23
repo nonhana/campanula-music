@@ -6,6 +6,7 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { ChevronLeft, ChevronRight } from '@lucide/svelte'
+  import { syncNoticeFor } from '#lib/app/library.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import DailyTile from '#lib/components/daily/DailyTile.svelte'
   import DownloadMark from '#lib/components/downloads/DownloadMark.svelte'
@@ -22,7 +23,7 @@
   import SongBadge from '#lib/components/library/SongBadge.svelte'
   import SongMoreButton from '#lib/components/library/SongMoreButton.svelte'
   import SyncNotice from '#lib/components/library/SyncNotice.svelte'
-  import { artistLine, formatCount, langOf, likedView } from '#lib/components/library/view.js'
+  import { artistLine, formatCount, langOf } from '#lib/components/library/view.js'
   import { fade, reveal, scrollBehavior } from '#lib/components/motion.js'
   import NowChip from '#lib/components/player/NowChip.svelte'
   import { currentSong } from '#lib/components/player/view.js'
@@ -33,9 +34,11 @@
   const view = getAppView()
   const { openSongMenuAt } = songMenuActions()
   const library = $derived(view.state.library)
-  const liked = $derived(library && likedView(library))
-  const failureShown = $derived(liked?.kind === 'failed')
-  const strip = $derived(liked?.kind === 'songs' ? liked.songs.slice(0, 36) : [])
+  const likedId = $derived(library?.liked?.playlist.id ?? 0)
+  const liked = $derived(library?.playlistPage(likedId) ?? null)
+  /** 首页 liked 只有整块列表失败时才算“失败已说明”；部分歌的失败仍由同步条说 */
+  const notice = $derived(library && liked ? syncNoticeFor(library, liked.failure?.where === 'list') : null)
+  const strip = $derived(liked?.songs.kind === 'songs' ? liked.songs.songs.slice(0, 36) : [])
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
 
   /** 手机“我喜欢”标签里的歌单内搜索 */
@@ -76,17 +79,17 @@
   {#if desktopLayout.current}
     <h1 class='sr-only'>曲库</h1>
     <!-- 提示和下面的区块隔开 40px：间距算在提示里，提示展开、收起时跟着变 -->
-    <SyncNotice {library} {failureShown} class='pb-10' />
+    <SyncNotice {notice} class='pb-10' />
     <section aria-labelledby='liked-heading'>
       <!-- 至少和翻页键一样高（40px）：键跟着歌一起出现时，下面的东西不被往下推 -->
       <div class='mb-4 min-h-10 flex items-center gap-3'>
         <h2 id='liked-heading' class='text-title text-neutral-900 font-600'>我喜欢的音乐</h2>
         <!-- 首数、翻页键、“查看全部”跟着歌一起出现：淡入，不一下冒出来 -->
-        {#if liked.kind === 'songs'}
-          <span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(liked.total)} 首</span>
+        {#if liked.songs.kind === 'songs'}
+          <span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(liked.songs.total)} 首</span>
         {/if}
         <div class='ml-auto flex items-center gap-2'>
-          {#if liked.kind === 'songs'}
+          {#if liked.songs.kind === 'songs'}
             <span class='flex items-center gap-2' in:fade>
               <IconButton icon={ChevronLeft} label='上一页' disabled={atStart} onclick={() => turn(-1)} />
               <IconButton icon={ChevronRight} label='下一页' disabled={atEnd} onclick={() => turn(1)} />
@@ -103,12 +106,12 @@
       <!-- 窄于 1280px 时方块排到歌曲格下面：并排时歌曲格一屏 3.25 列，每格窄到放不下歌名 -->
       <div class='grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]'>
         <div class='min-w-0 rounded-xl bg-white p-2 shadow-ambient'>
-          {#if liked.kind === 'loading'}
+          {#if liked.songs.kind === 'loading' && liked.failure?.where !== 'list'}
             <!-- 和歌曲格一样排成 3 行、每行 60px（.strip），歌出来时面板不变高 -->
             <SkeletonRows count={3} label='正在加载我喜欢的音乐' class='grid grid-rows-[repeat(3,60px)] items-center' />
           {:else}
             <div in:reveal>
-              {#if liked.kind === 'songs'}
+              {#if liked.songs.kind === 'songs'}
                 <!-- 能横向滚动的容器 Chrome 会放进 Tab 顺序：给它名字，键盘焦点在上面时 ←/→ 也能翻 -->
                 <div
                   bind:this={stripEl}
@@ -147,7 +150,7 @@
                   {/each}
                 </div>
               {:else}
-                <LikedStates {liked} />
+                <LikedStates page={liked} />
               {/if}
             </div>
           {/if}
