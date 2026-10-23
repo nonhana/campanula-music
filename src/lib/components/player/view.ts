@@ -12,6 +12,11 @@ export function currentSong(player: PlayerState): Song | null {
   return player.current === null ? null : player.queue[player.current].song
 }
 
+/** 播放队列是空的：没有播放条、没有播放页 */
+export function queueEmpty(player: PlayerState): boolean {
+  return player.queue.length === 0
+}
+
 /** 显示的时长（秒）：音频还没加载出来、还不知道时长时，用歌曲信息里的 */
 export function shownDuration(player: PlayerState): number {
   return player.duration ?? (currentSong(player)?.duration ?? 0) / 1000

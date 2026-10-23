@@ -3,41 +3,28 @@
   靠这一栏右边的红心键（不在打开播放页的按钮里），
   右边播放模式（按一下换一种）、音量、播放队列（打开播放页的播放队列）；
   顶边一条 2px 的薄荷进度线，也是滑块：点按、拖动跳到那里，拖动时左边的时间跟着走（SeekLine）。
-  换歌时封面小窗里是一个小转盘（CoverWheel，480ms），歌名、歌手横着飘（SongSwap）；在列表里点歌时那一行的封面飞进小窗，
-  落下时才换上新的歌名（cover-flight.svelte.ts）。换了歌就先在后台取好播放页那张大封面，拉开播放页时直接是大图。
-  放在 DesktopShell 的 bar 里
+  封面小窗、歌名 / 试听标 / 歌手、换碟、列表点歌的落点和播放页大图预取都在 NowPlaying（两个播放条共用）。
+  放在 PlayerDock 的桌面底栏里（三个外框共用这一层停靠）
 -->
 <script lang='ts'>
   import { ListMusic, SkipBack, SkipForward } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import HeartButton from '../library/HeartButton.svelte'
-  import SongBadge from '../library/SongBadge.svelte'
-  import { artistLine, langOf } from '../library/view'
-  import { fade } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
-  import { landingOf } from './cover-flight.svelte'
-  import CoverWheel from './CoverWheel.svelte'
+  import NowPlaying from './NowPlaying.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { playerPageActions, playerPageChoices, prefetchPageCover } from './player-page.svelte'
+  import { playerPageActions, playerPageChoices } from './player-page.svelte'
   import PlayModeButton from './PlayModeButton.svelte'
   import { createSeekSlider } from './seek-slider.svelte'
   import SeekLine from './SeekLine.svelte'
-  import SongSwap from './SongSwap.svelte'
   import { currentSong, formatSeconds, PAGE_COVER } from './view'
   import VolumeControl from './VolumeControl.svelte'
 
   const view = getAppView()
-  const { gripToOpenPlayerPage, openPlayerPage } = playerPageActions()
+  const { openPlayerPage } = playerPageActions()
   const player = $derived(view.state.player)
-  /** 当前这首：按钮的名字跟着它，不等封面飞完 */
+  /** 当前这首：红心键跟着它 */
   const song = $derived(currentSong(player))
-  /** 封面小窗多大（px）：封面按这么大取，飞来的封面也按这么大落下 */
-  const COVER_SIZE = 48
-  /** 封面小窗和歌名显示的那首、怎么换上来的 */
-  const landing = landingOf(view, COVER_SIZE)
-  prefetchPageCover(() => song, PAGE_COVER.desktop)
-  const gripSong = gripToOpenPlayerPage()
   const slider = createSeekSlider()
   /** 左边的时间：拖动进度线时显示拖到哪 */
   const shownTime = $derived(slider.dragging === null ? player.position : slider.dragging * slider.duration)
@@ -58,22 +45,11 @@
 
   {#if song}
     <div class='min-w-0 flex items-center gap-1'>
-      <button type='button' class='min-w-0 flex flex-1 items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors duration-feedback mouse:hover:bg-primary-50' aria-label='打开播放页：{song.name}' {@attach gripSong}>
-        <span class='size-12 flex-none overflow-hidden rounded-md' {@attach landing.slot}>
-          {#if landing.song}
-            <CoverWheel song={landing.song} turn={landing.turn} duration={DURATIONS['focal-bar']} size={COVER_SIZE} eager class='rounded-md' />
-          {/if}
-        </span>
-        <SongSwap song={landing.song} turn={landing.turn} place='bar'>
-          {#snippet children(shown)}
-            <span class='min-w-0 flex items-center gap-2'>
-              <span class='truncate text-label text-neutral-900 font-500' lang={langOf(shown.name)}>{shown.name}</span>
-              {#if player.trial}<span class='flex flex-none' transition:fade><SongBadge kind='trial' /></span>{/if}
-            </span>
-            <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(shown))}>{artistLine(shown)}</span>
-          {/snippet}
-        </SongSwap>
-      </button>
+      <NowPlaying
+        size={48}
+        pageCover={PAGE_COVER.desktop}
+        buttonClass='py-1 pr-2 transition-colors duration-feedback mouse:hover:bg-primary-50'
+      />
       <HeartButton {song} size='desktop' />
     </div>
   {/if}

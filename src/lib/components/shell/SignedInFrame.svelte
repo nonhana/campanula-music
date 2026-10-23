@@ -29,9 +29,7 @@
   import { setOverlays } from '../overlay-context'
   import OverlayHost from '../OverlayHost.svelte'
   import { createOverlays } from '../overlays.svelte'
-  import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
-  import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
-  import PlayerNotice from '../player/PlayerNotice.svelte'
+  import PlayerLayer from '../player/PlayerLayer.svelte'
   import DesktopSearchBox from '../search/DesktopSearchBox.svelte'
   import PhoneSearchBar from '../search/PhoneSearchBar.svelte'
   import { resetSearchBox, showingResults, shownKeyword } from '../search/search-box.svelte'
@@ -48,9 +46,6 @@
   const view = getAppView()
   const overlays = setOverlays(createOverlays())
   const { playlistSelection } = overlays
-  /** 播放队列里有歌：才有播放条 */
-  const hasQueue = $derived(view.state.player.queue.length > 0)
-  const playerOpen = $derived(hasQueue && overlays.player.request !== null)
 
   const route = $derived(page.route.id)
   /** 歌单页、专辑页、歌手页（属于曲库） */
@@ -146,21 +141,13 @@
   <SearchTabs keyword={shownKeyword()} tab={searchTabOf(page.url.searchParams.get('type'))} phone />
 {/snippet}
 
-{#snippet desktopBar()}
-  <DesktopPlayerBar />
-{/snippet}
-
-{#snippet miniPlayer()}
-  <PhoneMiniPlayer />
-{/snippet}
-
 {#snippet selectionBar()}
   <PhoneSelectionActionBar />
 {/snippet}
 
 <div class='contents' inert={overlays.stack.baseInert}>
   {#if desktopLayout.current}
-    <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
+    <DesktopShell {railExpanded}>
       {#snippet header()}
         <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
         <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
@@ -180,7 +167,7 @@
   {:else}
     <PhoneShell
       tabs={onLibrary ? libraryTabs : searching && showingResults() ? searchTabs : undefined}
-      bar={playlistSelection.mode ? selectionBar : hasQueue ? miniPlayer : undefined}
+      replace={playlistSelection.mode ? selectionBar : undefined}
     >
       {#snippet header()}
         {#if playlistSelection.mode}
@@ -214,8 +201,7 @@
   {/if}
 </div>
 
-<div class='contents' inert={overlays.player.containerInert}>
-  <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
-  <LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
-</div>
+<PlayerLayer>
+  <LibraryNotice phone={!desktopLayout.current} />
+</PlayerLayer>
 <OverlayHost />

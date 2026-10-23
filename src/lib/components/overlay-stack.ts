@@ -172,7 +172,7 @@ export class OverlayStack<F> {
 
   private covered(registration: Registration<F>, container: boolean): boolean {
     // 这一层自己不在栈里（例如播放页没开）时 findIndex 给 -1，slice(0) 把栈里所有 modal 层都算进去：
-    // 对 container 来说这正是想要的——外框里的提示条（SignedInFrame 的 player.containerInert）在弹窗盖上来时该 inert，
+    // 对 container 来说这正是想要的——外框里的提示条（PlayerLayer 的 layer.containerInert）在弹窗盖上来时该 inert，
     // 和基线 inert={dialogOpen} 一致。对层元素自己（container=false）多算的 true 也无害：
     // 没打开时组件本来就用 !request 把整块标成 inert。
     const index = this.layers.findIndex(entry => entry.registration === registration)

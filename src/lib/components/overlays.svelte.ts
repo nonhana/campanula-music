@@ -14,7 +14,8 @@ import LogoutConfirm from './LogoutConfirm.svelte'
 import { createOverlayHistory } from './overlay-history.svelte'
 import { OverlayStack } from './overlay-stack'
 import { createDrawer } from './player/drawer.svelte'
-import PlayerOverlay from './player/PlayerOverlay.svelte'
+import { createPlayerLayer } from './player/player-layer.svelte'
+import { queueEmpty } from './player/view'
 import PlaylistEditor from './PlaylistEditor.svelte'
 import PlaylistMenu from './PlaylistMenu.svelte'
 import SongMenu from './SongMenu.svelte'
@@ -90,8 +91,11 @@ export function createOverlays() {
     dismissed: () => view.app.closeCover(),
   }, CoverEditor)
   const logoutConfirm = register<DialogRequest>('logout', dialog, LogoutConfirm)
-  const canRestorePlayer = () => view.state.player.queue.length > 0
-  const player = register<DialogRequest>('player', { history: () => true, modal: true, restore: canRestorePlayer, fallback: '[data-player-bar] button' }, PlayerOverlay)
+  const canRestorePlayer = () => !queueEmpty(view.state.player)
+  // 播放页这一层**不挂组件**：播放页、播放提示由两个外框里的 PlayerLayer 挂载（它提供 data-overlay="player"）。
+  // mounted 只收有组件的层，OverlayHost 不会给它渲染空容器；历史、Esc/返回、忙时钉住、焦点兜底、
+  // containerInert（看 layers 里谁盖住它）都只认登记表，和有没有组件无关。回焦目标仍是播放条按钮（fallback）。
+  const player = register<DialogRequest>('player', { history: () => true, modal: true, restore: canRestorePlayer, fallback: '[data-player-bar] button' })
   const queue = register<DialogRequest>('queue', { history: () => true, modal: true, restore: canRestorePlayer, dependsOn: 'player', parent: 'player', fallback: '[data-queue-entry]' })
   const selection = register<DialogRequest>('selection', {
     history: () => !desktopLayout.current,
@@ -106,11 +110,13 @@ export function createOverlays() {
   // 滚动条从这里知道“正在多选”，让开右边的触屏把手（#66）
   setSelectionMode(() => playlistSelection.mode)
   const playerDrawer = createDrawer(() => window.innerHeight)
+  /** 播放页层：队列非空 × 播放页开着 × 抽屉可见（两个外框共用这一份推导） */
+  const playerLayer = createPlayerLayer(player, playerDrawer)
 
   onMount(() => {
     void stack.reconcile()
   })
   onDestroy(() => stack.clear())
 
-  return { stack, mounted, songMenu, playlistPicker, playlistMenu, batchPicker, playlistEditor, addSongsDialog, coverEditor, logoutConfirm, player, queue, selection, playlistSelection, playerDrawer }
+  return { stack, mounted, songMenu, playlistPicker, playlistMenu, batchPicker, playlistEditor, addSongsDialog, coverEditor, logoutConfirm, player, queue, selection, playlistSelection, playerDrawer, playerLayer }
 }

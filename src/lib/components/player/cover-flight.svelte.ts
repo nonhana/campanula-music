@@ -165,10 +165,11 @@ export interface Landing {
 }
 
 /**
- * 播放条（DesktopPlayerBar、PhoneMiniPlayer）接住飞来的封面，要在组件初始化时调用。size：封面小窗的封面按多大取（Cover 的 size）。
+ * 播放条上的正在播放区（NowPlaying）接住飞来的封面，要在组件初始化时调用。size：封面小窗的封面按多大取（Cover 的 size），
+ * 是个 getter：两个播放条共用这个组件，尺寸由调用方给。
  * 封面还在飞、或者落下后还盖在小窗上时，当前这首又变了（按了下一首、放完了、播放队列清空了）：飞的这张直接拿掉，换碟接手
  */
-export function landingOf(view: AppView, size: number): Landing {
+export function landingOf(view: AppView, size: () => number): Landing {
   const current = $derived(currentSong(view.state.player))
 
   $effect(() => {
@@ -193,7 +194,7 @@ export function landingOf(view: AppView, size: number): Landing {
       return landed !== null && landed === current?.id ? 'land' : turnOf(view.state.player.change)
     },
     slot(element) {
-      landingSlot = { element, size }
+      landingSlot = { element, size: size() }
       return () => {
         if (landingSlot?.element === element)
           landingSlot = null
