@@ -1,17 +1,12 @@
-import { page } from '$app/state'
+import type { DialogRequest } from '../overlay-requests'
+import type { OverlayLayer, OverlayResult } from '../overlay-stack'
 import { tick } from 'svelte'
 import { SvelteSet } from 'svelte/reactivity'
-import { desktopLayout } from '../layout'
-import { pushShallowState } from '../shallow-state'
 
-// 多选（#35，Spec #11“多选、拖拽与换封面”方案 C）：一张歌单里的勾选状态，歌单页、歌曲列表、两种工具条共用。
-// - 手机上长按一行 400ms、点“多选”进入，顶栏换成选择栏，底部换成操作条；压一条浅路由历史，返回手势先退出多选
-// - 桌面上点“多选”、⌘/Ctrl 点选都能进入；进入后 Shift 连选。两个入口设的是同一个 mode
-// - 工具条只有一套；退出：手机点关闭、返回手势，桌面点“取消选择”、按 Esc
-// - 关闭、“取消选择”、Esc 用 history.back() 把浅路由用掉
-// 换到别的歌单、离开歌单时清掉
+// 多选的勾选与排序业务保持原样；返回、Esc、焦点和历史由会话内的浮层栈拥有（#64）。
 
 export class PlaylistSelection {
+  constructor(private readonly layer: OverlayLayer<DialogRequest, HTMLElement>) {}
   /** 这张歌单（跟着歌曲列表变） */
   playlistId = $state<number | null>(null)
   /** 多选状态：手机长按、点“多选”、桌面 ⌘/Ctrl 点选都会设成 true */
@@ -87,54 +82,35 @@ export class PlaylistSelection {
     this.from = null
   }
 
-  /**
-   * 不是听众主动退出（列表没了、换了歌单）：清掉勾选，并把当前历史记录上的 playlistSelect 标记换掉，
-   * 不另退一条历史。听众主动退出走 leaveSelection()，由它退掉那条浅路由
-   */
+  /** 列表消失或换页：让多选失效。多选在最上层时浮层栈会回到底页，也就是消费掉进多选时压的那条历史。 */
   exit(): void {
     this.clear()
-    if (!page.state.playlistSelect)
-      return
-    const state = { ...page.state }
-    delete state.playlistSelect
-    pushShallowState(state, { replace: true })
+    void this.layer.invalidate()
   }
-}
 
-export const playlistSelection = new PlaylistSelection()
-
-/**
- * 进入多选：手机长按一行、点“多选”、桌面 ⌘/Ctrl 点选。设置了 id 就同时选中这一首。
- * 手机布局上压一条浅路由历史，返回手势先退出多选（验证关卡③）
- */
-export function enterSelection(playlistId: number, id?: number, from: HTMLElement | null = null): void {
-  playlistSelection.follow(playlistId)
-  playlistSelection.mode = true
-  playlistSelection.from = from
-  if (id !== undefined) {
-    playlistSelection.ids.add(id)
-    playlistSelection.anchor = id
-  }
-  if (!desktopLayout.current && !page.state.playlistSelect)
-    pushShallowState({ ...page.state, playlistSelect: true })
-  // 点按钮进的（不是长按）：焦点移到第一行的勾选框，Tab 不会掉到 body
-  if (from) {
-    void tick().then(() => {
-      document.querySelector<HTMLElement>('[data-select-row]')?.focus({ preventScroll: true })
+  enter(playlistId: number, id?: number, from: HTMLElement | null = null): void {
+    this.follow(playlistId)
+    this.mode = true
+    this.from = from
+    if (id !== undefined) {
+      this.ids.add(id)
+      this.anchor = id
+    }
+    void this.layer.open({ from }).then((result) => {
+      // 历史正好在动、会话刚换代时 open 会被取消或作废：别留下一个没有层的多选。
+      if (result !== 'committed')
+        this.clear()
+    }, (error: unknown) => {
+      // open 抛错（历史结果 failed 时核心会 reject）：多选没开成，先复位，再报出来
+      this.clear()
+      console.error('进入多选失败', error)
     })
+    if (from) {
+      void tick().then(() => {
+        document.querySelector<HTMLElement>('[data-select-row]')?.focus({ preventScroll: true })
+      })
+    }
   }
-}
 
-/** 听众主动退出（关闭、取消选择、Esc、操作完）：清掉勾选，焦点还给打开它的按钮；手机上进多选时压的那条历史也退掉 */
-export function leaveSelection(): void {
-  const from = playlistSelection.from
-  const shallow = page.state.playlistSelect === true
-  playlistSelection.clear()
-  if (shallow)
-    history.back()
-  // 入口按钮在多选时被卸载了：等界面换回来，焦点回到入口（或它重新出现的那一个）
-  void tick().then(() => {
-    const target = from?.isConnected ? from : document.querySelector<HTMLElement>('[data-multiselect-entry]')
-    target?.focus({ preventScroll: true })
-  })
+  leave = (): Promise<OverlayResult> => this.layer.closeThrough()
 }

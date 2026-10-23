@@ -14,7 +14,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { ChangeFailure } from '#lib/app/library.js'
-  import type { EditorRequest } from './playlist-edit.svelte'
+  import type { EditorRequest } from './overlay-requests'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { Camera, Lock } from '@lucide/svelte'
@@ -22,7 +22,6 @@
   import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH } from '#lib/api/library.js'
   import { getAppView } from './app-context.svelte'
   import ConfirmPanel from './ConfirmPanel.svelte'
-  import { coverEditor } from './cover-edit.svelte'
   import DialogBody from './DialogBody.svelte'
   import { desktopLayout } from './layout'
   import Cover from './library/Cover.svelte'
@@ -30,10 +29,12 @@
   import TagPicker from './library/TagPicker.svelte'
   import { formatCount, langOf } from './library/view'
   import { unfold } from './motion'
-  import { playlistEditor } from './playlist-edit.svelte'
+  import { getOverlays } from './overlay-context'
   import Button from './ui/Button.svelte'
   import TextButton from './ui/TextButton.svelte'
   import TextField from './ui/TextField.svelte'
+
+  const { coverEditor, playlistEditor } = getOverlays()
 
   interface Props {
     request: EditorRequest
@@ -81,17 +82,17 @@
   // 编辑着的歌单不在曲库里了（在别处删掉、同步发现它没了）：关上
   $effect(() => {
     if (request.mode !== 'new' && library?.playlists && !playlist)
-      untrack(() => playlistEditor.close())
+      untrack(() => playlistEditor.invalidate())
   })
 
   /** 等网易云建好才关上；这时关不掉、“创建”转圈（playlistEditor.busy），没建成就在这里说原因，填好的不丢 */
   async function create() {
     if (request.mode !== 'new' || blocked || playlistEditor.busy)
       return
-    playlistEditor.busy = true
+    playlistEditor.setBusy(true)
     failure = null
     const outcome = await view.app.createPlaylist({ name, private: isPrivate }, request.songs)
-    playlistEditor.busy = false
+    playlistEditor.setBusy(false)
     if (outcome && !outcome.ok)
       failure = outcome.failure
     else if (playlistEditor.request === request)
@@ -140,11 +141,11 @@
     if (!playlist)
       return
     const { id } = playlist
-    if (page.url.pathname === resolve('/playlists/[id=neteaseId]', { id }))
-      await playlistEditor.leaveTo(desktopLayout.current ? '/' : '/playlists')
-    else
-      playlistEditor.close()
-    void view.app.deletePlaylist(id)
+    const result = page.url.pathname === resolve('/playlists/[id=neteaseId]', { id })
+      ? await playlistEditor.leaveTo(desktopLayout.current ? '/' : '/playlists')
+      : await playlistEditor.close()
+    if (result === 'committed')
+      void view.app.deletePlaylist(id)
   }
 </script>
 

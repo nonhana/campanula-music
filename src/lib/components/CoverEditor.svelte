@@ -5,41 +5,33 @@
   - 点“使用”后在同一页显示两步进度：上传图片（App 的申请上传凭证、直传网易云图片存储）→ 设为封面，进行中转圈、完成打 ✓，不另写字（读屏照样读得出）。
     上传图片可以取消、回到裁剪；设为封面已经发出，按钮变成“正在设为封面”，关不掉。哪一步失败都写一句什么没成、为什么；设为封面失败后重试只再设一次，不重新上传。
   成功才收起：封面马上换成设封面返回的地址（App 的 prepareCover / uploadCover / retryCover / cancelCover / closeCover）。
-  手机上压一条浅路由（coverSheet），返回先收起这一层；设为封面发出去时返回也收不起来。放在 SignedInFrame 里，盖在歌单编辑上面
+  浮层栈把它叠在歌单编辑上面，统一处理返回、Esc、上传中钉住与关闭后的焦点。
 -->
 <script lang='ts'>
   import type { CoverCrop } from '#lib/api/cover.js'
   import type { RequestFailure } from '#lib/app/api.js'
   import type { CoverFailure, CoverProblem, CoverStep, CoverUpload } from '#lib/app/cover.js'
-  import type { CoverRequest } from './cover-edit.svelte'
-  import { page } from '$app/state'
   import { Check, CircleAlert, ImageOff, LoaderCircle, X } from '@lucide/svelte'
-  import { onDestroy, untrack } from 'svelte'
+  import { untrack } from 'svelte'
   import { innerHeight, innerWidth } from 'svelte/reactivity/window'
   import { COVER_INPUT_MAX_BYTES } from '#lib/api/cover.js'
   import { getAppView } from './app-context.svelte'
   import { centerCrop } from './cover-crop'
-  import { coverEditor } from './cover-edit.svelte'
   import CoverCropper from './CoverCropper.svelte'
   import { failureText } from './failure'
-  import { desktopLayout } from './layout'
   import { dialog, fade, float } from './motion'
   import { PAGE_DISTANCE } from './motion-tokens'
-  import { pushShallowState } from './shallow-state'
+  import { getOverlays } from './overlay-context'
   import Button from './ui/Button.svelte'
   import IconButton from './ui/IconButton.svelte'
   import Scrollbar from './ui/Scrollbar.svelte'
 
   const view = getAppView()
+  const { coverEditor } = getOverlays()
   const request = $derived(coverEditor.request)
 
-  // 退出、登录失效时 SignedInFrame 整个拿掉，这个组件不会看到 library 变 null；请求是单例，得在这里清掉，
-  // 不然下次登录后 behindCover 一直为真、整个 App 都是 inert
-  onDestroy(() => {
-    coverEditor.request = null
-  })
   const cover = $derived(view.state.cover)
-  const sheet = $derived(!desktopLayout.current)
+  const sheet = $derived(coverEditor.asSheet)
   /** 设为封面已经发给服务器，停不下来 */
   const closable = $derived(!(cover?.status === 'uploading' && cover.upload.step === 'set'))
 
@@ -77,39 +69,8 @@
     if (!current)
       return
     if (!view.state.library?.playlists?.some(playlist => playlist.id === current.playlistId && playlist.kind === 'own'))
-      untrack(() => close())
+      untrack(() => coverEditor.invalidate())
   })
-
-  // 手机布局上：返回手势退掉了 coverSheet，先收起这一层（设为封面发出去时收不起来，压回去）。
-  // 上传图片（申请凭证、直传）时，返回等于“取消上传”，停在裁剪页上
-  let acknowledged: CoverRequest | null = null
-  $effect(() => {
-    const current = coverEditor.request
-    if (!current || desktopLayout.current)
-      return
-    if (page.state.coverSheet) {
-      acknowledged = current
-      return
-    }
-    if (acknowledged !== current)
-      return
-    if (!closable) {
-      pushBack()
-      return
-    }
-    if (cover?.status === 'uploading') {
-      view.app.cancelCover()
-      pushBack()
-      return
-    }
-    close(true)
-  })
-
-  function pushBack(): void {
-    // 已经退掉了那一条：再压一条，返回还先收起这一层
-    if (!page.state.coverSheet)
-      pushShallowState({ ...page.state, coverSheet: true })
-  }
 
   /** 焦点跟着状态和上传步骤走：裁剪页落在取景框上，上传/失败落在主要按钮上 */
   const focusKey = $derived(
@@ -143,31 +104,8 @@
       void view.app.prepareCover(request.playlistId, file)
   }
 
-  /** 头上那个键：上传中先停下、回到裁剪；别的时候关上 */
-  function leave(): void {
-    if (cover?.status === 'uploading')
-      return view.app.cancelCover()
-    close()
-  }
-
-  function close(fromBack = false): void {
-    const current = coverEditor.request
-    if (!current || !closable)
-      return
-    view.app.closeCover()
-    coverEditor.dismiss(current)
-    if (!fromBack && page.state.coverSheet)
-      history.back()
-  }
-
-  function onkeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !coverEditor.request)
-      return
-    event.preventDefault()
-    if (cover?.status === 'uploading')
-      view.app.cancelCover()
-    else
-      close()
+  function close(): void {
+    void coverEditor.close()
   }
 
   const STEP_LOOK = {
@@ -218,8 +156,6 @@
   }
 </script>
 
-<svelte:window onkeydown={onkeydown} />
-
 {#if request && cover}
   {#if sheet}
     <div
@@ -236,7 +172,7 @@
           icon={X}
           label={cover?.status === 'uploading' && cover.upload.step !== 'set' ? '取消上传' : '关闭'}
           disabled={!closable}
-          onclick={leave}
+          onclick={close}
         />
         <h2 id='cover-title' class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-600'>换封面</h2>
         <span class='w-11 flex-none'></span>
@@ -262,7 +198,7 @@
       >
         <header class='flex flex-none items-center gap-3 pb-2 pl-6 pr-4 pt-5'>
           <h2 id='cover-title' class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-600'>换封面</h2>
-          <IconButton icon={X} label='关闭' disabled={!closable} onclick={leave} />
+          <IconButton icon={X} label='关闭' disabled={!closable} onclick={close} />
         </header>
         <div class='min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-2'>
           <Scrollbar />

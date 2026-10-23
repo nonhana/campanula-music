@@ -9,10 +9,11 @@
   import { resolve } from '$app/paths'
   import { LogOut, Settings } from '@lucide/svelte'
   import Avatar from '../Avatar.svelte'
-  import { logoutConfirm } from '../logout-confirm'
   import { pop } from '../motion'
+  import { getOverlays } from '../overlay-context'
 
   const { account }: { account: Account } = $props()
+  const { logoutConfirm } = getOverlays()
 
   let open = $state(false)
   let root = $state<HTMLElement>()

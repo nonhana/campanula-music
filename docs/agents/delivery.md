@@ -11,7 +11,7 @@
    - 每个画面和规则要读的网易云字段，各自在 `node_modules/hana-music-api/dist/client.generated-*.d.ts` 里有没有声明（ADR-0005）。有没声明的：开 SDK 票，标好阻塞，停下来告诉作者；
    - 已有的录制和还缺的录制；
    - 要改的文件。
-2. **测试**：用 `/tdd`，测试写在测试接入点“去掉界面的整个 App”上（`tests/harness/world.ts`，用法看 `World`、`Device`、`Tab` 的注释）。拖动手势是唯一的例外，写在第二个接入点“拖动手势核心”上：抽屉的 `src/lib/components/player/drawer-core.ts`（`tests/drawer-core.test.ts`）、手机播放页封面转盘的 `src/lib/components/player/wheel-core.ts`（`tests/wheel-core.test.ts`），见 Spec #11 Testing Decisions。
+2. **测试**：用 `/tdd`，业务测试写在测试接入点“去掉界面的整个 App”上（`tests/harness/world.ts`，用法看 `World`、`Device`、`Tab` 的注释）。纯逻辑另有两个接入点：第二个是“拖动手势核心”，包括抽屉的 `src/lib/components/player/drawer-core.ts`（`tests/drawer-core.test.ts`）和手机播放页封面转盘的 `src/lib/components/player/wheel-core.ts`（`tests/wheel-core.test.ts`）；第三个是“浮层栈核心” `src/lib/components/overlay-stack.ts`（`tests/overlay-stack.test.ts`），用 `tests/harness/overlay-history.ts` 的内存 history 适配器覆盖转交、返回与播放层前进恢复、忙时钉住、焦点、来源失效、会话清理和导航取消/替代/失败。浏览器的实际焦点和 Kit 历史行为仍用 mock 自查，不把内存适配器当成浏览器证据。见 Spec #11 Testing Decisions。
    - 写新测试前先看 `tests/harness/listener.ts`：从按领域命名的登录、同步停点、本机副本读取和请求过滤场景开始；只有新的听众行为才在测试文件里加准备步骤。
    - 网易云的返回只用验证关卡录下、脱敏过的数据（`tests/fixtures/netease/`），用 `world.netease.reply()` 放进去，不连真实账号。
    - 缺录制数据时用 `scripts/netease-record.mts`（`pnpm tsx` 跑）录，做法和脱敏规则见 `tests/fixtures/netease/README.md`「录制」。录制用的登录 Cookie 用 `pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi`）取；录制开始前会确认登录有效，失效时停下来请作者在专用窗口里扫码。

@@ -19,7 +19,7 @@
   import { landingOf } from './cover-flight.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { gripToOpenPlayerPage, openPlayerPage, playerPageChoices, prefetchPageCover } from './player-page.svelte'
+  import { playerPageActions, playerPageChoices, prefetchPageCover } from './player-page.svelte'
   import PlayModeButton from './PlayModeButton.svelte'
   import { createSeekSlider } from './seek-slider.svelte'
   import SeekLine from './SeekLine.svelte'
@@ -28,6 +28,7 @@
   import VolumeControl from './VolumeControl.svelte'
 
   const view = getAppView()
+  const { gripToOpenPlayerPage, openPlayerPage } = playerPageActions()
   const player = $derived(view.state.player)
   /** 当前这首：按钮的名字跟着它，不等封面飞完 */
   const song = $derived(currentSong(player))

@@ -17,12 +17,11 @@
   import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SearchX, SquareMinus, X } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { canSortPlaylist } from '#lib/api/library.js'
-  import { addSongsDialog } from '../add-songs.svelte'
   import { getAppView } from '../app-context.svelte'
-  import { batchPicker } from '../batch-picker.svelte'
   import { failureText } from '../failure'
+  import { anchorBelow } from '../menu-anchor'
   import { fade, reveal, unfold } from '../motion'
-  import { anchorBelow } from '../overlay-layer.svelte'
+  import { getOverlays } from '../overlay-context'
   import { currentSong } from '../player/view'
   import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
@@ -31,11 +30,12 @@
   import DesktopSongRow, { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
   import DragGrip from './DragGrip.svelte'
   import PhoneSongRow from './PhoneSongRow.svelte'
-  import { enterSelection, leaveSelection, playlistSelection } from './playlist-selection.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
   import { SONG_ROW_HEIGHT, SongDrag } from './song-drag.svelte'
   import { formatCount, openingOf, playlistView, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
+
+  const { addSongsDialog, batchPicker, playlistSelection } = getOverlays()
 
   interface Props {
     library: LibraryState
@@ -131,7 +131,7 @@
   /** 桌面的 ⌘/Ctrl 点选、Shift 连选：第一次也进入同一个多选状态 */
   function selectWithModifiers(song: Song, event: MouseEvent): void {
     if (!selection.mode)
-      enterSelection(playlistId)
+      selection.enter(playlistId)
     if (event.shiftKey)
       selection.range(song.id)
     else
@@ -139,7 +139,7 @@
   }
 
   function openMulti(event: MouseEvent): void {
-    enterSelection(playlistId, undefined, event.currentTarget as HTMLElement)
+    selection.enter(playlistId, undefined, event.currentTarget as HTMLElement)
   }
 
   function openBatch(event: MouseEvent): void {
@@ -157,7 +157,7 @@
     if (picked.length === 0)
       return
     view.app.removeFromPlaylist(playlistId, picked.map(song => song.id))
-    leaveSelection()
+    void selection.leave()
   }
 
   function openAddSongs(event?: MouseEvent): void {
@@ -231,7 +231,7 @@
         selecting={selection.mode}
         selected={selection.has(song.id)}
         grip={sortable && selection.mode ? rowGrip : undefined}
-        onlongpress={() => enterSelection(playlistId, song.id)}
+        onlongpress={() => selection.enter(playlistId, song.id)}
         onplay={() => activate(song)}
       />
     {:else}
@@ -380,7 +380,7 @@
           type='button'
           class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
           title='Esc'
-          onclick={() => leaveSelection()}
+          onclick={() => selection.leave()}
         ><X size={14} aria-hidden='true' />取消选择</button>
       </div>
     {:else}

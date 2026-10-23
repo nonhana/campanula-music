@@ -8,38 +8,33 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import { resolve } from '$app/paths'
-  import { page } from '$app/state'
   import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
   import { desktopLayout } from '../layout'
   import { dock, fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
+  import { setOverlays } from '../overlay-context'
+  import OverlayHost from '../OverlayHost.svelte'
+  import { createOverlays } from '../overlays.svelte'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
-  import { playerDrawer } from '../player/player-page.svelte'
   import PlayerNotice from '../player/PlayerNotice.svelte'
-  import PlayerPage from '../player/PlayerPage.svelte'
-  import SongMenu from '../SongMenu.svelte'
   import { setScrollLookup } from '../ui/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
 
   const { children }: { children: Snippet } = $props()
   const view = getAppView()
+  const overlays = setOverlays(createOverlays())
   const lookup = setScrollLookup({ markAt: null })
   /** 播放队列里有歌：才有播放条 */
   const hasQueue = $derived(view.state.player.queue.length > 0)
-  /** 播放页开着（浅路由，见 player-page.svelte.ts） */
-  const playerOpen = $derived(hasQueue && page.state.player !== undefined)
-  /** 播放页要画出来：开着，或者正在升起、缩回、被拖着 */
-  const playerShown = $derived(hasQueue && (playerOpen || playerDrawer.visible))
+  const playerOpen = $derived(hasQueue && overlays.player.request !== null)
   /** 播放队列真的空了（清空）：播放条收起时才沉下去；登录了、换成别的布局时跟着外框直接拿掉 */
   const emptied = () => view.app.state.player.queue.length === 0
 
-  // 浅路由说开着就升起来，说关了就缩回去（返回手势、后退、Esc、收起键都走这里）
-  $effect(() => playerDrawer.settle(playerOpen))
 </script>
 
-<div class='contents' inert={playerOpen}>
+<div class='contents' inert={overlays.stack.baseInert}>
   <div class={['bg-primary-50 min-h-dvh', hasQueue ? 'pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-28' : 'pb-[calc(32px+env(safe-area-inset-bottom))] md:pb-12']}>
     <header class='sticky top-0 z-40 h-14 flex items-center gap-3 bg-primary-50 pl-4 pr-3 md:fixed md:inset-x-0 md:h-16 md:pl-6 md:pr-6' data-page-top>
       <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到登录页'><Brand /></a>
@@ -75,8 +70,7 @@
   <Scrollbar page={{ top: desktopLayout.current ? '64px' : '56px', bottom: hasQueue ? (desktopLayout.current ? '80px' : 'calc(72px + env(safe-area-inset-bottom))') : '0px' }} {lookup} />
 </div>
 
-{#if playerShown}
-  <PlayerPage open={playerOpen} />
-{/if}
-<PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
-<SongMenu />
+<div class='contents' inert={overlays.player.containerInert}>
+  <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
+</div>
+<OverlayHost />

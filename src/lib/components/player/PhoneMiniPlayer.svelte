@@ -16,12 +16,13 @@
   import { landingOf } from './cover-flight.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { gripToOpenPlayerPage, prefetchPageCover } from './player-page.svelte'
+  import { playerPageActions, prefetchPageCover } from './player-page.svelte'
   import ProgressLine from './ProgressLine.svelte'
   import SongSwap from './SongSwap.svelte'
   import { currentSong, PAGE_COVER } from './view'
 
   const view = getAppView()
+  const { gripToOpenPlayerPage } = playerPageActions()
   const player = $derived(view.state.player)
   /** 当前这首：按钮的名字跟着它，不等封面飞完 */
   const song = $derived(currentSong(player))

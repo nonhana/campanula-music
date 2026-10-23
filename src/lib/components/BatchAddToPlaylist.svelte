@@ -5,17 +5,16 @@
 -->
 <script lang='ts'>
   import type { Playlist } from '#lib/api/library.js'
-  import type { BatchPickerRequest } from './batch-picker.svelte'
-  import { page } from '$app/state'
+  import type { BatchPickerRequest } from './overlay-requests'
   import { Plus } from '@lucide/svelte'
   import { getAppView } from './app-context.svelte'
-  import { batchPicker } from './batch-picker.svelte'
   import Cover from './library/Cover.svelte'
-  import { leaveSelection } from './library/playlist-selection.svelte'
   import { formatCount, langOf, playlistName } from './library/view'
   import MenuOverlay from './MenuOverlay.svelte'
-  import { playlistEditor } from './playlist-edit.svelte'
+  import { getOverlays } from './overlay-context'
   import Scrollbar from './ui/Scrollbar.svelte'
+
+  const { batchPicker, playlistEditor, playlistSelection } = getOverlays()
 
   const FLOATING_TITLE = 32
   const FLOATING_ITEM = 48
@@ -52,24 +51,14 @@
   /** 选了目标：收起弹层（底部弹层退掉浅路由）、退出多选，再一次把歌加进去 */
   function choose(playlist: Playlist, request: BatchPickerRequest): void {
     const songs = request.songs
-    void (async () => {
-      if (page.state.batchSheet) {
-        await new Promise<void>((resolve) => {
-          addEventListener('popstate', () => setTimeout(resolve), { once: true })
-          history.back()
-        })
-      }
-      else {
-        batchPicker.request = null
-      }
-      leaveSelection()
-      void view.app.addSongsToPlaylist(playlist.id, songs)
-    })()
+    void playlistSelection.leave().then((result) => {
+      if (result === 'committed')
+        return view.app.addSongsToPlaylist(playlist.id, songs)
+    })
   }
 
   function create(request: BatchPickerRequest): void {
-    batchPicker.request = null
-    playlistEditor.open({ mode: 'new', songs: request.songs, from: request.from })
+    void batchPicker.transfer(playlistEditor, { mode: 'new', songs: request.songs, from: request.from })
   }
 
   function estimate(request: BatchPickerRequest, sheet: boolean): number {

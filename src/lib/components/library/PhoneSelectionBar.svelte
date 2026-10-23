@@ -5,11 +5,11 @@
 <script lang='ts'>
   import { ListMinus, ListPlus } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
-  import { batchPicker } from '../batch-picker.svelte'
-  import { leaveSelection, playlistSelection } from './playlist-selection.svelte'
+  import { getOverlays } from '../overlay-context'
   import { playlistView } from './view'
 
   const view = getAppView()
+  const { batchPicker, playlistSelection } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(playlistSelection.playlistId)
   const shown = $derived(library && id !== null ? playlistView(library, id) : null)
@@ -27,7 +27,7 @@
     if (id === null || none)
       return
     view.app.removeFromPlaylist(id, picked.map(song => song.id))
-    leaveSelection()
+    void playlistSelection.leave()
   }
 </script>
 

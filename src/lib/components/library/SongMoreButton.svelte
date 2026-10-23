@@ -7,9 +7,12 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import { Ellipsis } from '@lucide/svelte'
-  import { openSongMenuFrom, songMenu } from '../song-menu.svelte'
+  import { getOverlays } from '../overlay-context'
+  import { songMenuActions } from '../song-menu.svelte'
 
   const { song, source, size }: { song: Song, source: PlaySource, size: 'phone' | 'desktop' | 'cell' | 'desktop-page' | 'phone-page' } = $props()
+  const { openSongMenuFrom } = songMenuActions()
+  const { songMenu } = getOverlays()
 
   /** 按钮的大小和形状、图标大小 */
   const LOOKS = {
