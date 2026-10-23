@@ -24,7 +24,7 @@ export interface SongLook {
 }
 
 /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放 */
-export function streamable(view: AppView): boolean {
+function streamable(view: AppView): boolean {
   return view.state.online && view.state.session.status === 'signedIn'
 }
 

@@ -43,7 +43,7 @@ export interface CoverUpload {
 }
 
 /** 裁好的正方形：工作位图上的位置，单位和那张位图的像素一样 */
-export interface CoverCropped {
+interface CoverCropped {
   playlistId: number
   image: DecodedImage
   small: boolean

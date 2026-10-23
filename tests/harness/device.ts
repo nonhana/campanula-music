@@ -4,7 +4,7 @@ import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } fro
 import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
 import { CookieJar } from 'tough-cookie'
 import { createApp } from '#lib/app/app.js'
-import { FakeAudio, FakeBroadcast, FakeFiles, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
+import { FakeAudio, FakeBroadcast, FakeFiles, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeWatchman, MediaTasks } from './browser'
 
 export interface SentRequest {
   method: string
@@ -38,7 +38,7 @@ export interface Tab {
   sounding: () => FakeAudio | undefined
 }
 
-/** 一台设备上的浏览器：Cookie、本机数据库、跨标签页的锁和广播、联网状态和存储空间，开出来的标签页共用 */
+/** 一台设备上的浏览器：Cookie、本机数据库、跨标签页的锁和广播、联网状态，开出来的标签页共用 */
 export interface Device {
   /** 打开一个标签页，等 App 打开完 */
   open: () => Promise<Tab>
@@ -56,8 +56,6 @@ export interface Device {
   stored: () => Promise<Record<string, [IDBValidKey, unknown][]>>
   /** 断网或联网：navigator.onLine 跟着变、发 offline / online 事件；断网时请求直接失败 */
   setOnline: (online: boolean) => void
-  /** 存储空间：已用、配额、persist() 会不会被同意，测试可以改 */
-  storage: FakeStorage
   /** 换封面用的图片解码、导出和直传替身（#34） */
   images: FakeImages
   /** 网易云的音频服务器、图片服务器：测试放上文件，App 下载时直连这里（#38） */
@@ -110,7 +108,6 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
   const responseBodies: string[] = []
   const indexedDB = new IDBFactory()
   const network = new FakeNetwork()
-  const storage = new FakeStorage()
   const locks = new FakeLocks()
   const broadcast = new FakeBroadcast()
   const mediaTasks = new MediaTasks()
@@ -210,7 +207,6 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
         indexedDB: deviceIndexedDB,
         network: tabNetwork,
         page,
-        storage,
         mediaSession,
         MediaMetadata: FakeMediaMetadata,
         locks,
@@ -288,7 +284,6 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
     setOnline: online => network.set(online),
     files,
     objectUrls,
-    storage,
     images,
     async idle() {
       // 先让一轮：刚调的 App 操作可能还没来得及发请求、开事务

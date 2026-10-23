@@ -29,7 +29,7 @@ import { emptyPatch, patched } from './local'
 export type SyncFailure = Exclude<RequestFailure, { kind: 'needsLogin' | 'rateLimited' | 'offline' }>
 
 /** 打开歌单时没拉成的原因：前台请求不等，断网、操作频繁都直接说 */
-export type OpenFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
+type OpenFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
 
 /**
  * 改曲库没改成的原因：请求没成功；收藏歌单前没取到网易云的反作弊令牌（Watchman 没加载出来，可能被浏览器插件拦了）；
@@ -71,7 +71,7 @@ export type LibraryNotice
     | { kind: 'recovered' }
     | DownloadNotice
 
-export type SyncStatus
+type SyncStatus
   /** 有一个同步请求在路上 */
   = | { status: 'syncing' }
   /** 网易云说操作频繁：到 until（毫秒）再接着同步 */
@@ -109,12 +109,12 @@ export type PageState<T>
     | { status: 'shown', content: T }
 
 /** 歌手页后面还有专辑：还没取、正在取、没取成（再取一次就是重试） */
-export type MoreAlbums
+type MoreAlbums
   = | { status: 'notLoaded' }
     | { status: 'loading' }
     | { status: 'failed', failure: OpenFailure }
 
-export interface ArtistPage {
+interface ArtistPage {
   artist: ArtistResponse['artist']
   hotSongs: readonly Song[]
   /** 已经取到的专辑，新的在前 */
@@ -133,7 +133,7 @@ export interface NeteasePlaylistSongs extends PlaylistSongs<PlaylistInfo> {
 }
 
 /** 不在曲库里的歌单拉到哪了；打不开（已删除、不存在、别人的隐私歌单）时说明原因 */
-export type NeteasePlaylistPage = PageState<NeteasePlaylistSongs> | { status: 'unavailable', reason: PlaylistUnavailable }
+type NeteasePlaylistPage = PageState<NeteasePlaylistSongs> | { status: 'unavailable', reason: PlaylistUnavailable }
 
 /** 界面看到的曲库 */
 export interface LibraryState {

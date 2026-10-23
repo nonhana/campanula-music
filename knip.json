@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // SvelteKit/Vite 插件已包含 src/hooks.server.ts、vite.config.ts；#lib/* 可从 package.json imports 正常解析。
+  "entry": [
+    "src/routes/**/+*.{ts,svelte}",
+    // src/env.ts 声明的 __CAMPANULA_MOCK__ 由 vite.config.ts 的 define 提供。
+    "src/env.ts",
+    "scripts/*.mts",
+    // 测试的真实服务端经 Vite 加载；mock 经 dev:mock 的 Vite 插件加载。
+    "tests/**/*.test.ts",
+    "src/lib/server/mock/**"
+  ],
+  "project": ["src/**/*.{ts,svelte}", "scripts/*.mts", "tests/**/*.ts", "*.{js,ts}"],
+  "ignoreDependencies": [
+    // pnpm check 的 svelte-check --tsgo 动态解析此 npm 别名（TypeScript 7 原生编译器）。
+    "@typescript/native",
+    // UnoCSS 的 Vite 插件提供的虚拟 CSS 模块，不是 npm 包。
+    "uno.css"
+  ],
+  "ignoreBinaries": [
+    // scripts/browser 调用作者机器上独立安装的浏览器 CLI，不是应用依赖。
+    "chrome-devtools-axi"
+  ]
+}

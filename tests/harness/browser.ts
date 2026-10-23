@@ -1,6 +1,6 @@
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
 import type { CoverCrop } from '#lib/api/cover.js'
-import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageCapability } from '#lib/app/browser.js'
+import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility } from '#lib/app/browser.js'
 import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
 
 // 浏览器能力替身：行为照浏览器标准写。
@@ -46,32 +46,6 @@ export class FakePage extends EventTarget implements PageVisibility {
       return
     this.#state = state
     this.dispatchEvent(new Event('visibilitychange'))
-  }
-}
-
-/** 存储空间：已用和配额由测试设定，不会跟着写入变化 */
-export class FakeStorage implements StorageCapability {
-  usage = 0
-  quota = 10 * 1024 ** 3
-  /**
-   * persist() 会不会被同意。默认同意：标准环境是装成 WebAPK 的 Android Chrome，
-   * Chrome 对装好的应用自动同意持久存储（Spec #11 App 外壳）
-   */
-  persistGranted = true
-  #persisted = false
-
-  async estimate(): Promise<StorageEstimate> {
-    return { usage: this.usage, quota: this.quota }
-  }
-
-  async persist(): Promise<boolean> {
-    if (this.persistGranted)
-      this.#persisted = true
-    return this.#persisted
-  }
-
-  async persisted(): Promise<boolean> {
-    return this.#persisted
   }
 }
 

@@ -40,6 +40,6 @@ jobs:
       - name: 构建（Node 适配器）
         run: pnpm build
 
-      # #58：确认 mock、录制数据和 mock 路由没有进生产产物
-      - name: Mock 隔离检查
+      # #58、#61：确认 mock、录制数据、mock 路由和开发设计页没有进生产产物
+      - name: 生产构建检查
         run: pnpm check:mock-isolation

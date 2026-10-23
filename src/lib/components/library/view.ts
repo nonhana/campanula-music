@@ -118,7 +118,7 @@ export function playlistName(playlist: Playlist): string {
 }
 
 /** 首次同步的进度：整个曲库同步了几首歌（同步条只写“x / y 首”，进度条按它走） */
-export interface SyncProgress {
+interface SyncProgress {
   songs: { done: number, total: number }
 }
 
@@ -168,7 +168,7 @@ export function syncNotice(library: LibraryState, failureShown = false): SyncNot
 }
 
 /** 同步没成功的原因：已经同步的部分照常显示，所以只说哪里出了问题 */
-export function syncFailureText(failure: SyncFailure): string {
+function syncFailureText(failure: SyncFailure): string {
   return `曲库没能同步完：${failureText(failure)}`
 }
 

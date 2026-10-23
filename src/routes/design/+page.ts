@@ -1,7 +1,7 @@
 import { dev } from '$app/env'
 import { error } from '@sveltejs/kit'
 
-// 设计系统页只在开发时打开，用来看颜色、字号、组件各状态和两种骨架；部署出去的实例里没有这一页
+// 开发时加载设计系统页；生产只保留返回 404 的路由薄壳，不构建设计页主体（#61）。
 export function load() {
   if (!dev)
     error(404, 'Not found')

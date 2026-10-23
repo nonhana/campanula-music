@@ -5,7 +5,7 @@ import type { Api, RequestFailure } from './api'
 // 下载了的歌（#38）用存在这台设备上的歌词，断网、没登录时也有
 
 /** 歌词没取到的原因（需要登录另外处理：整个 App 变成登录失效） */
-export type LyricsFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
+type LyricsFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>
 
 /** 打开的那首歌的歌词取到哪了 */
 export type LyricsState

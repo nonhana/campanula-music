@@ -120,7 +120,7 @@ export interface Playlist extends PlaylistInfo {
 }
 
 /** 我喜欢的音乐在网易云 user_playlist 里的 specialType（和曲库同步、mock 共用） */
-export const LIKED_SPECIAL_TYPE = 5
+const LIKED_SPECIAL_TYPE = 5
 
 /** 从 user_playlist 的 specialType 和创建者认出这张歌单是哪一类（和曲库同步、mock 共用） */
 export function playlistKindOf(specialType: number, creatorUserId: number, uid: number): Playlist['kind'] {
@@ -290,11 +290,6 @@ export interface Song {
 }
 
 export type Availability = 'full' | 'trial' | 'noCopyright'
-
-/** 能点来放：无版权的不能（只能放试听片段的也能放） */
-export function playable(song: Song): boolean {
-  return song.availability !== 'noCopyright'
-}
 
 /**
  * POST /api/songs 一次最多取这么多首。网易云一次 1,000 首的原始返回约 2.1 MB，

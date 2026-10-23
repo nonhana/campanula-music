@@ -73,7 +73,7 @@ export function typeInSearchBox(app: App, value: string): void {
  * 按搜索：记进搜索历史，打开这个词的结果页（搜的词放在地址的 q 里）。
  * 已经在搜索结果页上就换掉这一页：返回直接离开搜索，不在搜过的词之间来回
  */
-export function submitSearch(app: App, keyword: string): void {
+function submitSearch(app: App, keyword: string): void {
   const searched = keyword.trim()
   if (!searched)
     return

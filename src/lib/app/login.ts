@@ -6,7 +6,7 @@ import type { Clock, PageVisibility } from './browser'
 // 登录页的两种方式（Spec #11“客户端：登录会话”）：扫码、短信验证码。不做账号密码登录。
 
 /** 扫码登录走到哪一步 */
-export type QrLogin
+type QrLogin
   = | { step: 'loading' }
   /** 没拿到二维码或查不到扫码状态：说明原因，重试就重新取一张 */
     | { step: 'failed', failure: RequestFailure }
@@ -20,14 +20,14 @@ export type QrLogin
    */
     | { step: 'verifying', image: string, checking: boolean, unverified: boolean }
 
-export type CaptchaStatus
+type CaptchaStatus
   = | { status: 'idle' }
     | { status: 'sending' }
   /** 已发出；resendAt（毫秒）之前不能重发 */
     | { status: 'sent', resendAt: number }
     | { status: 'failed', failure: RequestFailure }
 
-export type SubmitStatus
+type SubmitStatus
   = | { status: 'idle' }
     | { status: 'submitting' }
     | { status: 'failed', failure: RequestFailure }

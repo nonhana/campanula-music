@@ -40,7 +40,7 @@ export interface QueueEntry {
  * - playing：在出声
  * - paused：停着（听众暂停了、出了问题停下了、播放队列是空的）
  */
-export type PlaybackStatus = 'loading' | 'buffering' | 'playing' | 'paused'
+type PlaybackStatus = 'loading' | 'buffering' | 'playing' | 'paused'
 
 /** 要告诉听众的事 */
 export type PlayerNotice

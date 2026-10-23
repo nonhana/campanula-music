@@ -17,7 +17,7 @@ import { loadFixture } from './fixtures'
 
 // 测试接入点“去掉界面的整个 App”（Spec #11 Testing Decisions）：
 // 世界里有一个在测试进程里真实运行的服务端、一个网易云替身和一个共用的时钟；
-// 每台设备有自己的 Cookie、本机数据库、联网状态和存储空间；每个标签页是一个 App。
+// 每台设备有自己的 Cookie、本机数据库和联网状态；每个标签页是一个 App。
 
 const FAKE_SDK = fileURLToPath(new URL('./netease-sdk.ts', import.meta.url))
 const START = new Date('2026-10-12T00:00:00Z') // 北京时间 08:00
@@ -32,7 +32,7 @@ const SITE_ENV = {
 }
 const LOG_METHODS = ['debug', 'log', 'info', 'warn', 'error'] as const
 
-export interface ServerLog {
+interface ServerLog {
   level: typeof LOG_METHODS[number]
   text: string
 }
