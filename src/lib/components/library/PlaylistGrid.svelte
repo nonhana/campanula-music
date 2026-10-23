@@ -203,7 +203,7 @@
                     <li data-playlist-id={playlist.id} class='relative' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
                       <div class={['h-14 flex items-center gap-3 rounded-xl pl-3 pr-2', sort.lifted(playlist.id) ? 'bg-primary-100' : 'bg-white shadow-ambient']}>
                         <div class={['flex min-w-0 flex-1 items-center gap-3', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
-                          <a href={resolve('/playlists/[id]', { id: String(playlist.id) })} class='min-w-0 flex flex-1 items-center gap-3 rounded-lg' onkeydown={onListKeydown}>
+                          <a href={resolve('/playlists/[id=neteaseId]', { id: playlist.id })} class='min-w-0 flex flex-1 items-center gap-3 rounded-lg' onkeydown={onListKeydown}>
                             {@render sortRow(playlist)}
                           </a>
                           <DragGrip label={playlistName(playlist)} size='phone' attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
@@ -318,13 +318,10 @@
 
 {#if phone && (sort.dragging || sort.settling) && sort.grabbed}
   <div
-    class='pointer-events-none fixed left-0 top-0 z-50'
+    class={['pointer-events-none fixed left-0 top-0 z-50', sort.settling && 'transition-transform duration-move-state ease-out-soft']}
     style:left='{sort.ghostLeft}px'
     style:width='{sort.ghostWidth}px'
     style:transform='translate3d(0, {sort.settling ? sort.settleY : sort.ghostY}px, 0)'
-    class:transition-transform={sort.settling}
-    class:duration-move-state={sort.settling}
-    class:ease-out-soft={sort.settling}
     aria-hidden='true'
   >
     <div class='h-14 flex items-center gap-3 rounded-xl bg-white pl-3 pr-2 shadow-float'>
@@ -334,12 +331,9 @@
   </div>
 {:else if !phone && (gridSort.dragging || gridSort.settling) && gridSort.grabbed}
   <div
-    class='pointer-events-none fixed left-0 top-0 z-50'
+    class={['pointer-events-none fixed left-0 top-0 z-50', gridSort.settling && 'transition-transform duration-move-state ease-out-soft']}
     style:width='{gridSort.ghostWidth}px'
     style:transform='translate3d({gridSort.settling ? gridSort.settleX : gridSort.ghostX}px, {gridSort.settling ? gridSort.settleY : gridSort.ghostY}px, 0)'
-    class:transition-transform={gridSort.settling}
-    class:duration-move-state={gridSort.settling}
-    class:ease-out-soft={gridSort.settling}
     aria-hidden='true'
   >
     <div class='relative rounded-xl bg-white p-2 shadow-float'>

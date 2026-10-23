@@ -24,11 +24,11 @@
 
   const { id, name, avatarUrl, detail = '', collectable = false }: Props = $props()
   /** 头像代表点开的那一页（Cover 的 flight）；链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
-  const page = $derived(resolve('/artists/[id]', { id: String(id) }))
+  const page = $derived(resolve('/artists/[id=neteaseId]', { id }))
 </script>
 
 <div class='relative min-w-0'>
-  <a href={resolve('/artists/[id]', { id: String(id) })} class='group block min-w-0 rounded-lg text-center'>
+  <a href={resolve('/artists/[id=neteaseId]', { id })} class='group block min-w-0 rounded-lg text-center'>
     <Cover url={avatarUrl} size={FLIGHT_COVER_SIZE} fluid flight={page} fallback={UserRound} class='rounded-full shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
     <span class='mt-2.5 block truncate text-label text-neutral-900 font-500' lang={langOf(name)}>{name}</span>
     {#if detail}

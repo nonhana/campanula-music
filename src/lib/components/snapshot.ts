@@ -1,4 +1,5 @@
-import type { Snapshot } from '@sveltejs/kit'
+import type { RouteId } from '$app/types'
+import { snapshot } from '$app/navigation'
 import { atOnce } from './motion'
 
 /**
@@ -8,12 +9,13 @@ import { atOnce } from './motion'
  * 当场画好、当场滚：换页的过渡（shell/page-transition.ts）等换页完成就拍新的一帧，那时位置已经恢复，看不到先跳到顶再跳回来。
  * 恢复的状态直接到位（motion.ts 的 atOnce）：筛选、搜索结果不在返回的这一页里再淡一次，滚动位置也按恢复好的高度算
  */
-export function scrollSnapshot<T>(read: () => T, write: (value: T) => void): Snapshot<{ value: T, scrollY: number }> {
-  return {
+export function scrollSnapshot<T>(id: RouteId, read: () => T, write: (value: T) => void): void {
+  snapshot({
+    id,
     capture: () => ({ value: read(), scrollY: window.scrollY }),
     restore: ({ value, scrollY }) => {
       atOnce(() => write(value))
       window.scrollTo(0, scrollY)
     },
-  }
+  })
 }

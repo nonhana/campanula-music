@@ -27,7 +27,7 @@
   const failed = $derived(daily?.status === 'failed' ? dailyFailure(daily.failure) : null)
   const date = $derived(dailyCalendarDay(daily))
 
-  export const snapshot = scrollSnapshot(() => null, () => {})
+  scrollSnapshot('/daily', () => null, () => {})
 
   // 登录了（本机副本到了）就交给 App：今天这份已经拉到、正在拉就不再拉
   $effect(() => {

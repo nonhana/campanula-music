@@ -219,11 +219,7 @@
 {#snippet songRow(song: Song, i: number)}
   {@const motion = drag.motionOf(song)}
   <div
-    class='h-full origin-center'
-    class:relative={motion !== null}
-    class:z-10={motion !== null}
-    class:drag-row-pick={motion === 'pick'}
-    class:drag-row-land={motion === 'land'}
+    class={['h-full origin-center', motion !== null && 'relative z-10', motion === 'pick' && 'drag-row-pick', motion === 'land' && 'drag-row-land']}
     style:--drag-shift="{motion === 'pick' ? drag.liftShift(i) : motion === 'land' ? drag.landShift(song) : 0}px"
     style:--drag-delay="{motion === 'land' ? drag.landDelay(song) : 0}ms"
   >
@@ -410,16 +406,15 @@
 <!-- 浮起的行跟着指针；松手后落进空位。“第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
 {#if drag.dragging || drag.settling || drag.expanding}
   <div
-    class='pointer-events-none fixed left-0 top-0 z-[60] h-14'
+    class={[
+      'pointer-events-none fixed left-0 top-0 z-[60] h-14',
+      drag.settling && 'transition-transform duration-move-state',
+      drag.expanding && 'transition-opacity duration-state opacity-0',
+      (drag.settling || drag.expanding) && 'ease-out-soft',
+    ]}
     style:left='{drag.ghostLeft}px'
     style:width='{drag.ghostWidth}px'
     style:transform='translate3d(0, {drag.ghostY}px, 0)'
-    class:transition-transform={drag.settling}
-    class:duration-move-state={drag.settling}
-    class:transition-opacity={drag.expanding}
-    class:duration-state={drag.expanding}
-    class:ease-out-soft={drag.settling || drag.expanding}
-    class:opacity-0={drag.expanding}
   >
     <div
       class='ghost-in ghost-scale h-full origin-center'

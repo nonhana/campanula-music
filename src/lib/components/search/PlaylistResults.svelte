@@ -40,7 +40,7 @@
     {@const toggle = status !== null && status !== 'own'}
     <li class={['h-16 flex items-center transition-colors duration-feedback mouse:hover:bg-primary-100', !phone && 'rounded-lg', toggle && 'pr-1']} in:stagger={{ order: i - appendedAt }}>
       <a
-        href={resolve('/playlists/[id]', { id: String(playlist.id) })}
+        href={resolve('/playlists/[id=neteaseId]', { id: playlist.id })}
         class={['h-full min-w-0 flex flex-1 items-center gap-3', phone ? 'pl-4' : 'rounded-lg pl-2', toggle ? 'pr-2' : phone ? 'pr-4' : 'pr-2']}
       >
         <Cover url={playlist.coverUrl} size={48} class='rounded-lg' />

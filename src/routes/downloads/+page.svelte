@@ -5,7 +5,7 @@
 
   /** 已下载里的搜索词 */
   let query = $state('')
-  export const snapshot = scrollSnapshot(() => query, (value) => {
+  scrollSnapshot('/downloads', () => query, (value) => {
     query = value
   })
 </script>

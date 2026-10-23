@@ -61,16 +61,10 @@
   }
 
   // 点菜单外面就关上
-  $effect(() => {
-    if (!open)
-      return
-    const onPointerDown = (event: PointerEvent) => {
-      if (!root?.contains(event.target as Node))
-        hide(false)
-    }
-    window.addEventListener('pointerdown', onPointerDown)
-    return () => window.removeEventListener('pointerdown', onPointerDown)
-  })
+  function onPointerDown(event: PointerEvent) {
+    if (open && !root?.contains(event.target as Node))
+      hide(false)
+  }
 
   function openSettings() {
     hide(false)
@@ -82,6 +76,8 @@
     logoutConfirm.open({ from: trigger ?? null })
   }
 </script>
+
+<svelte:window onpointerdown={onPointerDown} />
 
 <div bind:this={root} class='relative flex-none'>
   <button

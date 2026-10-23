@@ -14,7 +14,7 @@
   const library = $derived(view.state.library)
 
   /** 这一页没有要恢复的状态，只把滚动位置记下来 */
-  export const snapshot = scrollSnapshot(() => null, () => {})
+  scrollSnapshot('/playlists', () => null, () => {})
 </script>
 
 <svelte:head><title>歌单 · Campanula</title></svelte:head>

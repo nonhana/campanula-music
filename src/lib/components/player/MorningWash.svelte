@@ -22,7 +22,7 @@
   const progress = $derived(progressOf(view.state.player))
 </script>
 
-<span class='wash' class:ground={onGround} style:--start='{start}px' aria-hidden='true' in:fade out:fade={{ duration: DURATIONS['wash-out'] }}>
+<span class={['wash', onGround && 'ground']} style:--start='{start}px' aria-hidden='true' in:fade out:fade={{ duration: DURATIONS['wash-out'] }}>
   <span class='light' style:--wash-progress={progress}></span>
 </span>
 

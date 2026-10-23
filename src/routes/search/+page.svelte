@@ -29,7 +29,8 @@
   const tab = $derived(searchTabOf(page.url.searchParams.get('type')))
 
   // 返回这一页时窗口和综合里横向架子的滚动位置都回到原来的样子（架子按 Shelf 的 data-shelf 对上）
-  export const snapshot = scrollSnapshot(
+  scrollSnapshot(
+    '/search',
     () => Object.fromEntries([...document.querySelectorAll<HTMLElement>('[data-shelf]')].map(shelf => [shelf.dataset.shelf, shelf.scrollLeft])),
     (shelves) => {
       for (const shelf of document.querySelectorAll<HTMLElement>('[data-shelf]'))

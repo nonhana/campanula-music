@@ -38,7 +38,7 @@ function isNeteaseId(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) > 0
 }
 
-/** 读网址里的一个编号（查询参数或路径参数） */
+/** 读查询参数里的一个编号；路径参数由 src/params.ts 的 neteaseId 匹配器处理 */
 export function readId(name: string, value: string | null | undefined): number {
   const id = /^\d{1,16}$/.test(value ?? '') ? Number(value) : Number.NaN
   if (!isNeteaseId(id))

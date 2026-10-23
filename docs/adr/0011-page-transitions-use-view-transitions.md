@@ -15,7 +15,7 @@
 - 两头的封面要用同一个缩略图地址（同样的尺寸），终点的图已在缓存里，飞到位时不会落在空的薄荷底上。#50 起格子和页头都按 `FLIGHT_COVER_SIZE`（200px，取 400px 的图）取，手机页头（168px）、歌手格子、桌面歌单页的左栏也取这一张。缓存里的图新挂上时偶尔要过几毫秒才标成加载好，降落时最多等 100ms，等不到就不飞，起飞的那张跟着旧页飘走。
 - 浏览器自带的交叉淡化靠 `mix-blend-mode: plus-lighter` 把新旧两张叠成一张，它是默认 `animation` 里的一项（`-ua-mix-blend-mode-plus-lighter`）。CSS 里改写了某个名字的 `animation`，就要自己写上 `mix-blend-mode: plus-lighter`，不然淡到一半两张都半透明、透出底色，两页一样的地方也会闪（#50 发现：桌面歌单页左栏换歌单时，整个内容区像刷新了一下）。
 - 拍新的一帧之前（`update` 回调里），浏览器的点按测试（`elementFromPoint`）只返回 `<html>`：判断封面露没露在屏幕里要按位置算（窗口、`scroll-padding-top` 标出的顶栏、裁切它的滚动容器）。
-- 浏览器拍新页面之前，要等 SvelteKit 渲染完、滚动位置恢复完。`snapshot.ts` 恢复状态后当场画好、当场滚，过渡等 `navigation.complete` 就够了（#49 验证过：返回时第一帧就在原来的位置）。
+- 浏览器拍新页面之前，要等 SvelteKit 渲染完、滚动位置恢复完。`snapshot.ts` 用 `$app/navigation` 的 `snapshot()`，每页显式传路由 id，页面状态和滚动位置同次注册：恢复状态后当场画好、当场滚，过渡等 `navigation.complete` 就够了。页面晚于会话检查挂载时也由助手在 `onMount` 恢复；歌单切换清搜索词留在 `afterNavigate`，不放到浅路由也会触发的 `reset` 里（#63）。
 - Android 上 Chrome 的系统返回手势可能自己放一段“预览上一页”的动画（`hasUAVisualTransition` 为真），这时跳过我们的，免得叠两层；要在真机上确认。
 - 过渡中又换了页，用 `skipTransition()` 直接结束上一个，不排队。过渡中 Chrome 把所有点按都交给 `<html>`，链接、按钮点不到：按下时结束过渡，松开后的点按交给手指下面真正的元素，快速连点照常生效。
 - 播放页的开关是浅路由，不触发 `onNavigate`，继续由抽屉负责。
