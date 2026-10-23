@@ -8,6 +8,7 @@
   import { Check, CircleAlert, X } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { toast } from '../motion'
+  import { getOverlays } from '../overlay-context'
   import { playerNoticeBox } from '../player/PlayerNotice.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import TextButton from '../ui/TextButton.svelte'
@@ -18,8 +19,11 @@
   /** 和播放提示之间空多少（px） */
   const GAP = 8
 
-  const { phone = false, overPlayerPage = false }: { phone?: boolean, overPlayerPage?: boolean } = $props()
+  const { phone = false }: { phone?: boolean } = $props()
   const view = getAppView()
+  const overlays = getOverlays()
+  /** 播放页开着时挪到顶上（和播放提示一样）；这一份推导在播放页层里只有一处 */
+  const overPlayerPage = $derived(overlays.playerLayer.open)
   const notice = $derived(view.state.library?.notice ?? null)
   /** 播放提示也在：让出它的高度 */
   const offset = $derived(view.state.player.notice ? playerNoticeBox.height + GAP : 0)

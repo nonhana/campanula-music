@@ -4,7 +4,7 @@
   抽屉的位置和底下垫的那一截由 playerDrawer.panel 管。
   open：播放页这一层的请求说开着（由浮层栈登记，浅路由记着它）。开着时页面本身不滚动，焦点进来（收起键），关掉后回到打开它的那个按钮；
   还在升起前（从播放条往上拖）、正在缩回时不能操作。Esc 先收起手机上的播放队列，再关掉播放页。
-  由 PlayerOverlay 经浮层宿主挂载（两个外框都有），播放队列里有歌、抽屉没完全收起时才有
+  由 PlayerLayer 在两个外框里挂载（播放队列里有歌、抽屉没完全收起时才画），这一层的开合、历史、焦点由浮层栈管
 -->
 <script lang='ts'>
   import { innerHeight } from 'svelte/reactivity/window'
@@ -25,7 +25,7 @@
   const DIM = 0.2
 
   const view = getAppView()
-  const { player: playerLayer, playerDrawer } = getOverlays()
+  const { player: layer, playerDrawer } = getOverlays()
   const player = $derived(view.state.player)
   /** 播放队列里有歌时才有；退出登录清空播放队列的那一刻还在，什么都不画 */
   const song = $derived(currentSong(player))
@@ -59,7 +59,7 @@
   role='dialog'
   aria-modal='true'
   aria-label='正在播放'
-  inert={!open || playerLayer.containerInert}
+  inert={!open || layer.containerInert}
 >
   {#if song}
     <CoverTint coverUrl={song.album.coverUrl} />

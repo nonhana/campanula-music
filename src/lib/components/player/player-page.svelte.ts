@@ -24,17 +24,17 @@ export function playerPageActions() {
 }
 
 /**
- * 播放条（DesktopPlayerBar、PhoneMiniPlayer）初始化时调用：当前这首一变，就在后台取好播放页大封面（size）的缩略图，
+ * 正在播放区（NowPlaying，桌面底栏和手机迷你条共用）初始化时调用：当前这首一变，就在后台取好播放页大封面（size）的缩略图，
  * 拉开播放页时封面直接是大图，不从小图上淡入。播放页露着时不取：那时换碟自己取（连着切歌时不取一路转过去的）
  */
-export function prefetchPageCover(song: () => Song | null, size: number): void {
+export function prefetchPageCover(song: () => Song | null, size: () => number): void {
   const { playerDrawer } = getOverlays()
   const url = $derived(song()?.album.coverUrl)
   // 抽屉动着时 position 每一帧都变，这里只看露没露出来
   const pageShown = $derived(playerDrawer.visible)
   $effect(() => {
     if (url && !pageShown)
-      void preloadCover(url, size)
+      void preloadCover(url, size())
   })
 }
 

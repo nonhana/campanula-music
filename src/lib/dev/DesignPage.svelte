@@ -263,7 +263,7 @@
     {#snippet rail()}
       {@render region(railExpanded ? '侧栏 220px' : '侧栏 72px', 'flex-1 [writing-mode:vertical-rl]')}
     {/snippet}
-    {#snippet bar()}
+    {#snippet preview()}
       {@render region('底部通栏 80px', 'h-full')}
     {/snippet}
     {@render content()}
@@ -277,7 +277,7 @@
     {#snippet tabs()}
       {@render region('文字标签：我喜欢 / 歌单 / 专辑 / 歌手', 'mx-4 mb-2 h-11')}
     {/snippet}
-    {#snippet bar()}
+    {#snippet preview()}
       {@render region('迷你播放条 64px', 'h-full')}
     {/snippet}
     {@render content()}
