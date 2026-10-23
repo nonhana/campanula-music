@@ -175,6 +175,30 @@ describe('下载一首', () => {
     expect(await storedDownloads(device)).toHaveLength(1)
   })
 
+  it('下载失败的提示带重试动作：点重试重新下载，成功后提示消失', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    serveLoser(device)
+    device.files.next(LOSER.audio, { cut: true })
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+
+    app.download(song)
+    await world.settle()
+    expect(app.state.library?.notice).toEqual({ kind: 'downloadFailed', song, failure: { kind: 'interrupted' } })
+    expect(app.state.library?.noticeActions).toContain('retry')
+
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await app.noticeAction('retry')
+    await world.settle()
+
+    expect(device.files.requests.filter(url => url === LOSER.audio)).toHaveLength(2)
+    expect(app.state.downloads.songs).toEqual([song])
+    expect(app.state.library?.notice).toBeNull()
+  })
+
   it('网易云回得慢、下载地址还没回来时退出登录：回来的“需要登录”不算登录失效，App 是退出了；这首标成没下成', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)

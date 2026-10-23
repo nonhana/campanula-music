@@ -23,9 +23,9 @@
   import DailyNumber from '../daily/DailyNumber.svelte'
   import { dailyCalendarDay } from '../daily/view'
   import { desktopLayout } from '../layout'
-  import LibraryNotice from '../library/LibraryNotice.svelte'
   import PhoneSelectionActionBar from '../library/PhoneSelectionActionBar.svelte'
   import PhoneSelectionTopBar from '../library/PhoneSelectionTopBar.svelte'
+  import OperationNotice from '../notice/OperationNotice.svelte'
   import { setOverlays } from '../overlay-context'
   import OverlayHost from '../OverlayHost.svelte'
   import { createOverlays } from '../overlays.svelte'
@@ -202,6 +202,6 @@
 </div>
 
 <PlayerLayer>
-  <LibraryNotice phone={!desktopLayout.current} />
+  <OperationNotice phone={!desktopLayout.current} />
 </PlayerLayer>
 <OverlayHost />

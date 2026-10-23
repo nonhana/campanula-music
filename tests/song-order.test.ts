@@ -50,7 +50,7 @@ async function createdWith(device: Device, songs: readonly Song[]): Promise<{ ap
   expect(await app.addSongsToPlaylist(CREATED.id, songs)).toEqual({ ok: true, added: songs.length })
   await world.settle()
   // 加歌的“已加入”提示不该影响后面排序的断言
-  app.dismissLibraryNotice()
+  await app.noticeAction('dismiss')
   return { app, tab }
 }
 
@@ -280,7 +280,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
 
     device.setOnline(true)
     await world.netease.reply(ORDER_OK)
-    await app.retryOrder()
+    await app.noticeAction('retry')
     await world.settle()
 
     expect(orderRequests(device).at(-1)?.body).toEqual({ songIds: [c, a, b] })
@@ -310,7 +310,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(app.state.library?.notice).toMatchObject({ kind: 'orderFailed', playlist: { id: CREATED.id }, failure: null })
 
     await world.netease.reply(ORDER_OK)
-    await app.retryOrder()
+    await app.noticeAction('retry')
     await world.settle()
 
     expect(orderRequests(device).at(-1)?.body).toEqual({ songIds: [c, a, b] })

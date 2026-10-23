@@ -106,7 +106,7 @@ describe('红心', () => {
     expect(device.requests.length).toBe(sent)
     expect(await storedLibrary(device, 'hearts')).not.toContain(song.id)
 
-    app.dismissLibraryNotice()
+    await app.noticeAction('dismiss')
     expect(app.state.library?.notice).toBeNull()
   })
 
