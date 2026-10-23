@@ -27,6 +27,8 @@ const REMOVE_MISSING = 'playlist-edit/playlist_tracks.del-deleted-playlist.json'
 const ADD_MISSING = 'playlist-edit/playlist_tracks.add-deleted-playlist.json'
 /** 网易云拒绝移除：拿加歌时“歌单内歌曲重复”的 502 当一次失败返回 */
 const REMOVE_REJECTED = 'playlist-edit/playlist_tracks.add-duplicate.json'
+/** 批量加入时网易云拒绝（构造：普通 502，不是“歌曲重复”那种会被服务端当成加好的 502） */
+const ADD_REJECTED = 'playlist-edit/playlist_tracks.add-rejected.constructed.json'
 /** 「真夜中」的单曲第一页（#32 录制，30 首） */
 const SEARCH_SONGS = 'search/results/001-cloudsearch.json.gz'
 
@@ -375,5 +377,96 @@ describe('批量加入歌单', () => {
       expect(found.value).toHaveLength(30)
     expect(device.requests.at(-1)).toEqual({ method: 'GET', path: '/api/search/songs?keywords=%E7%9C%9F%E5%A4%9C%E4%B8%AD&offset=0' })
     expect(app.state.search.results).toBeNull()
+  })
+})
+
+describe('批量加入与移除的边界（#66 返工）', () => {
+  it('批量加入被网易云拒绝：本地不改、说明没改成、没有部分写入', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+    await openJazz(app, { songsHeld: false })
+    const songs = songsFrom(2)
+    const sent = addRequests(device).length
+
+    await world.netease.reply(ADD_REJECTED)
+    expect(await app.addSongsToPlaylist(JAZZ.id, songs)).toMatchObject({ ok: false, failure: { kind: 'rejected', code: 502 } })
+
+    expect(addRequests(device)).toHaveLength(sent + 1)
+    expect(addRequests(device).at(-1)?.body).toEqual({ songIds: songs.map(song => song.id) })
+    expect(totalOf(app, JAZZ.id)).toBe(2)
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'addMany', playlist: { id: JAZZ.id } },
+      failure: { kind: 'rejected', code: 502 },
+    })
+  })
+
+  it('移除时忽略歌单里已经不在的编号：只提交还在的，本地和请求都不含别的', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+    await openJazz(app, { songsHeld: false })
+    await world.netease.reply(REMOVE)
+
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!, 999_999_999])
+    expect(totalOf(app, JAZZ.id)).toBe(1)
+    expect(app.state.library?.notice).toMatchObject({ kind: 'removed', count: 1 })
+
+    await world.clock.advance(5000)
+    expect(removeRequests(device).at(-1)?.body).toEqual({ songIds: [JAZZ_TRACKS[0]!] })
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual([JAZZ_TRACKS[1]!])
+    expect(totalOf(app, JAZZ.id)).toBe(1)
+  })
+
+  it('5 秒内移除两张歌单：先提交上一张，再计时提交这一张', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+    await openJazz(app, { songsHeld: false })
+    await world.netease.reply(CREATED.create)
+    await world.netease.reply(CREATED.detail, { when: { id: CREATED.id } })
+    expect(await app.createPlaylist({ name: '连续移除', private: true })).toEqual({ ok: true, playlistId: CREATED.id })
+    await world.netease.reply(ADD)
+    expect(await app.addSongsToPlaylist(CREATED.id, songsFrom(2))).toMatchObject({ ok: true })
+    const createdTracks = await storedTrackIds(device, CREATED.id)
+    if (!createdTracks)
+      throw new Error('新建歌单没有写进本机副本')
+    expect(createdTracks.length).toBeGreaterThan(0)
+
+    await world.netease.reply(REMOVE)
+    await world.netease.reply(REMOVE)
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
+    app.removeFromPlaylist(CREATED.id, [createdTracks[0]!])
+    await world.settle()
+
+    expect(removeRequests(device)).toEqual([
+      { method: 'POST', path: `/api/playlists/${JAZZ.id}/tracks/remove`, body: { songIds: [JAZZ_TRACKS[0]!] } },
+    ])
+    expect(totalOf(app, JAZZ.id)).toBe(1)
+
+    await world.clock.advance(5000)
+    expect(removeRequests(device).at(-1)).toEqual({
+      method: 'POST',
+      path: `/api/playlists/${CREATED.id}/tracks/remove`,
+      body: { songIds: [createdTracks[0]!] },
+    })
+    expect(await storedTrackIds(device, CREATED.id)).not.toContain(createdTracks[0])
+    expect(totalOf(app, JAZZ.id)).toBe(1)
+  })
+
+  it('移除最后几首：本地清空、请求带上全部、成功后本机副本也为空', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+    await openJazz(app, { songsHeld: false })
+    await world.netease.reply(REMOVE)
+
+    app.removeFromPlaylist(JAZZ.id, JAZZ_TRACKS)
+    expect(totalOf(app, JAZZ.id)).toBe(0)
+    expect(app.state.library?.notice).toMatchObject({ kind: 'removed', count: 2 })
+
+    await world.clock.advance(5000)
+    expect(removeRequests(device).at(-1)?.body).toEqual({ songIds: JAZZ_TRACKS })
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual([])
+    expect(totalOf(app, JAZZ.id)).toBe(0)
+    expect(app.state.library?.notice).toBeNull()
   })
 })

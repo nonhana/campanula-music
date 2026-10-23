@@ -20,6 +20,7 @@
   import { DELAYS } from '../motion-tokens'
   import { attachGrip } from '../press'
   import { createSliderCore } from '../slider-core'
+  import { getSelectionMode, hasSelectionMode } from './selection-mode'
 
   interface Props {
     /** 跟着页面（窗口）滚：上下边（CSS 长度）是顶栏下沿、底栏上沿。不传就跟着所在的滚动区域滚 */
@@ -31,6 +32,9 @@
   }
 
   const { page, axis = 'y', lookup }: Props = $props()
+  /** 多选时右边的触屏把手让给歌曲行的拖动把手（#36）：状态由多选模块经 context 提供（#66） */
+  const selectionMode = hasSelectionMode() ? getSelectionMode() : undefined
+  const yielding = $derived(selectionMode?.() ?? false)
 
   /** 贴边能悬停、能点按的那一条有多宽（px），和下面的 w-4 / h-4 一致 */
   const ZONE = 16
@@ -81,7 +85,7 @@
   const shown = $derived(scrollable && (awake || near || dragging))
   const thick = $derived(near || dragging)
   /** 触屏这时能按住滑块：竖的、列表够长、细条亮着（拖着时一直算） */
-  const grabbable = $derived(axis === 'y' && scrollable && metrics.content > LONG_PAGES * metrics.viewport && (awake || dragging))
+  const grabbable = $derived(axis === 'y' && scrollable && metrics.content > LONG_PAGES * metrics.viewport && (awake || dragging) && !yielding)
   /** 能按的那一块：比滑块上下各长 12px，不伸出这一条 */
   const gripTop = $derived(Math.max(0, INSET + offset - GRIP_SLOP))
   const gripBottom = $derived(Math.min(length, INSET + offset + thumb + GRIP_SLOP))
@@ -346,11 +350,6 @@
   @media (pointer: coarse) {
     .grip.grabbable {
       pointer-events: auto;
-    }
-
-    /* 多选时右边这一条是拖动排序的把手（#36）：滚动条的触屏把手让开 */
-    :global(html[data-selecting]) .grip.grabbable {
-      pointer-events: none;
     }
   }
 

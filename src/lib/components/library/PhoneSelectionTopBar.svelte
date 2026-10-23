@@ -1,6 +1,6 @@
 <!--
-  手机多选的顶栏（#35，原型 PhoneSelectBar）：替换歌单页的返回栏。左边关闭，中间“已选 N 首”，右边全选 / 全不选。
-  关闭经浮层栈用掉进多选时压的那条历史（Spec #11 验证关卡③）。
+  手机多选的顶栏（原型 PhoneSelectBar）：替换歌单页的返回栏。左边关闭，中间“已选 N 首”，右边全选 / 全不选。
+  关闭经浮层栈用掉进多选时压的那条历史（Spec #11 验证关卡③）；勾选规则在多选模块里（#66），这里只是视图。
 -->
 <script lang='ts'>
   import { CheckCheck, ListChecks, SquareMinus, X } from '@lucide/svelte'

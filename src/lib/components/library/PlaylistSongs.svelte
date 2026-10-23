@@ -14,9 +14,9 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
+  import type { SelectionSource } from './playlist-selection.svelte'
   import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SearchX, SquareMinus, X } from '@lucide/svelte'
   import { untrack } from 'svelte'
-  import { canSortPlaylist } from '#lib/api/library.js'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { anchorBelow } from '../menu-anchor'
@@ -35,7 +35,7 @@
   import { formatCount, openingOf, playlistView, songMark } from './view'
   import VirtualList from './VirtualList.svelte'
 
-  const { addSongsDialog, batchPicker, playlistSelection } = getOverlays()
+  const { addSongsDialog, playlistSelection } = getOverlays()
 
   interface Props {
     library: LibraryState
@@ -43,9 +43,11 @@
     /** 搜索词：调用方存着，返回这一页时恢复 */
     query: string
     phone?: boolean
+    /** 桌面多选入口：行被虚拟列表回收后，焦点回到这个稳定按钮（由歌单页给） */
+    entryFocus?: () => HTMLElement | null
   }
 
-  let { library, playlistId, query = $bindable(), phone = false }: Props = $props()
+  let { library, playlistId, query = $bindable(), phone = false, entryFocus }: Props = $props()
   const view = getAppView()
   const shown = $derived(playlistView(library, playlistId))
   const liked = $derived(library.songsOf(playlistId)?.playlist.kind === 'liked')
@@ -63,10 +65,8 @@
   const selection = playlistSelection
   /** 曲库里的这张歌单是哪一类；不在曲库里的歌单是 null */
   const kind = $derived(library.songsOf(playlistId)?.playlist.kind ?? null)
-  /** 这张歌单能不能移除：只有自建歌单有（我喜欢的音乐、收藏的歌单没有） */
-  const own = $derived(kind === 'own')
   /** 能排序的列表（自建歌单、我喜欢的音乐）：手机数量行右边的多选图标读作“多选和排序”（#36、#57） */
-  const sortableList = $derived(kind !== null && canSortPlaylist(kind))
+  const sortableList = $derived(selection.capabilities.sort)
   /**
    * 现在能不能拖：歌都同步全了、每一首都有歌曲信息（不然列表和整张歌单对不上），也没在搜索、没在重新拉
    */
@@ -79,11 +79,13 @@
       return '歌还没取全，暂时不能排序'
     return '同步完才能排序'
   })
-  /** 勾选的是整张歌单里的歌，不只是搜索出来的这些 */
-  const picked = $derived(shown.kind === 'songs' ? shown.songs.filter(song => selection.has(song.id)) : [])
+  /** 整张歌单里的歌：勾选和“加入歌单 / 移除”都用它，搜索时也一样 */
+  const allSongs = $derived(shown.kind === 'songs' ? shown.songs : [])
 
   /** 拖动排序（#36）：只在多选里、按每行的把手拖；勾选的几首一起拖，保持原来的先后 */
   let listHost = $state<HTMLElement>()
+  /** 手机数量行的多选入口：进入多选后被顶栏换掉，退出时靠它重新找到并接回焦点（#66） */
+  let phoneEntry = $state<HTMLElement>()
   const drag = new SongDrag({
     songs: () => songs,
     selection,
@@ -92,6 +94,29 @@
   })
   // 拖动期间虚拟列表的 items 保持原顺序，只改每一行的 placeOf；
   // 不能把被拖的行挪到数组末尾：DOM 节点被移走会丢指针捕获（#36 真实输入验证）
+
+  /** 列表源：多选从这里直接读整张歌单、显示着的歌和歌单种类；换歌单、列表消失、离开页面都由模块自己退出 */
+  const selectionSource: SelectionSource = {
+    get playlistId() { return playlistId },
+    songs: () => allSongs,
+    visible: () => songs.map(song => song.id),
+    kind: () => kind,
+    present: () => shown.kind === 'songs',
+    focusFirst: () => listHost?.querySelector<HTMLElement>('[data-play-target]')?.focus({ preventScroll: true }),
+  }
+  selection.attach(selectionSource)
+  $effect(() => () => selection.detach(selectionSource))
+
+  /** 行入口的退出归还：行还在就回行；被虚拟列表回收了就回稳定的多选入口（手机图标 / 桌面按钮） */
+  function rowEntryFocus(from: HTMLElement): () => HTMLElement | null {
+    return () => {
+      if (from.isConnected)
+        return from
+      return phone
+        ? phoneEntry?.querySelector<HTMLElement>('button') ?? null
+        : entryFocus?.() ?? null
+    }
+  }
 
   // 退出多选、换了列表（搜索、歌单加载完重排）：拖动作废，不提交
   $effect(() => {
@@ -113,14 +138,6 @@
     }
   }
 
-  $effect(() => selection.follow(playlistId))
-  $effect(() => selection.setVisible(songs.map(song => song.id)))
-  // 列表没了（出错、换歌单）：勾选也清掉
-  $effect(() => {
-    if (shown.kind !== 'songs' && selection.mode)
-      selection.exit()
-  })
-
   function activate(song: Song): void {
     if (selection.mode)
       selection.toggle(song.id)
@@ -130,34 +147,14 @@
 
   /** 桌面的 ⌘/Ctrl 点选、Shift 连选：第一次也进入同一个多选状态 */
   function selectWithModifiers(song: Song, event: MouseEvent): void {
-    if (!selection.mode)
-      selection.enter(playlistId)
+    if (!selection.mode) {
+      const from = event.currentTarget as HTMLElement
+      selection.enter({ from, focusEntry: rowEntryFocus(from) })
+    }
     if (event.shiftKey)
       selection.range(song.id)
     else
       selection.toggle(song.id)
-  }
-
-  function openMulti(event: MouseEvent): void {
-    selection.enter(playlistId, undefined, event.currentTarget as HTMLElement)
-  }
-
-  function openBatch(event: MouseEvent): void {
-    if (picked.length === 0)
-      return
-    batchPicker.open({
-      songs: picked,
-      currentPlaylistId: playlistId,
-      from: event.currentTarget as HTMLElement,
-      anchor: anchorBelow(event),
-    })
-  }
-
-  function removePicked(): void {
-    if (picked.length === 0)
-      return
-    view.app.removeFromPlaylist(playlistId, picked.map(song => song.id))
-    void selection.leave()
   }
 
   function openAddSongs(event?: MouseEvent): void {
@@ -231,7 +228,7 @@
         selecting={selection.mode}
         selected={selection.has(song.id)}
         grip={sortable && selection.mode ? rowGrip : undefined}
-        onlongpress={() => selection.enter(playlistId, song.id)}
+        onlongpress={from => selection.enter({ id: song.id, from, focusEntry: rowEntryFocus(from) })}
         onplay={() => activate(song)}
       />
     {:else}
@@ -339,7 +336,19 @@
           {/if}
         </p>
         {#if !selection.mode && shown.kind === 'songs' && songs.length > 0}
-          <IconButton icon={ListChecks} label={sortableList ? '多选和排序' : '多选'} title={sortableList ? '多选和排序' : '多选'} class='-mr-3' data-multiselect-entry onclick={openMulti} />
+          <span class='contents' bind:this={phoneEntry}>
+            <IconButton
+              icon={ListChecks}
+              label={sortableList ? '多选和排序' : '多选'}
+              title={sortableList ? '多选和排序' : '多选'}
+              class='-mr-3'
+              onclick={event => selection.enter({
+                from: event.currentTarget as HTMLElement,
+                focusFirst: true,
+                focusEntry: () => phoneEntry?.querySelector<HTMLElement>('button') ?? null,
+              })}
+            />
+          </span>
         {/if}
       </div>
     {/if}
@@ -364,15 +373,15 @@
         <button
           type='button'
           class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
-          disabled={picked.length === 0}
-          onclick={openBatch}
+          disabled={selection.picked.length === 0}
+          onclick={event => selection.addPicked(event, anchorBelow(event))}
         ><ListPlus size={15} aria-hidden='true' />加入歌单</button>
-        {#if own}
+        {#if selection.capabilities.remove}
           <button
             type='button'
             class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
-            disabled={picked.length === 0}
-            onclick={removePicked}
+            disabled={selection.picked.length === 0}
+            onclick={() => selection.removePicked()}
           ><ListMinus size={15} aria-hidden='true' />移除</button>
         {/if}
         <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>

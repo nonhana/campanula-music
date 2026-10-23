@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@2.12.0",
-  "recordings": 323,
+  "recordings": 324,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -298,10 +298,10 @@
       }
     },
     "playlist_tracks": {
-      "count": 11,
+      "count": 12,
       "outcomes": {
         "ok": 8,
-        "rejected": 3
+        "rejected": 4
       }
     },
     "song_order_update": {
@@ -5517,6 +5517,24 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@1.4.0",
       "note": "一首已在歌单里、一首不在"
+    },
+    {
+      "path": "playlist-edit/playlist_tracks.add-rejected.constructed.json",
+      "module": "playlist_tracks",
+      "queryKey": "{\"op\":\"add\",\"pid\":900000002,\"tracks\":\"2000000000,2000000001\"}",
+      "query": {
+        "op": "add",
+        "pid": 900000002,
+        "tracks": "2000000000,2000000001"
+      },
+      "status": 502,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@1.4.0",
+      "note": "构造：#66 返工要求覆盖批量加入 502 的 notChanged/回滚；录制里只有“歌单内歌曲重复”的 502，服务端会当成加好。照 playlist_tracks.add-duplicate.json 的结构复制返回体，把 message 换成一次普通拒绝。真遇到时替换成录制（作者 2026-10-24 要求补这条测试）"
     },
     {
       "path": "playlist-edit/playlist_tracks.add.json",

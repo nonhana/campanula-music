@@ -18,7 +18,6 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
-  import { canSortPlaylist } from '#lib/api/library.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
@@ -27,6 +26,7 @@
   import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
+  import { capabilitiesOf } from '#lib/components/library/selection-core.js'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName, playlistView } from '#lib/components/library/view.js'
   import { anchorBelow } from '#lib/components/menu-anchor.js'
   import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
@@ -54,6 +54,10 @@
   const here = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 
   let query = $state('')
+  /** 桌面“多选 · 排序”：进入多选后被工具条换掉，退出时靠它重新找到并接回焦点（#66） */
+  let desktopEntry = $state<HTMLElement>()
+  /** 桌面“多选 · 排序”入口：按钮自己的 focusEntry 和列表行回收后的兜底都用它 */
+  const desktopEntryFocus = () => desktopEntry?.querySelector<HTMLElement>('button') ?? null
   scrollSnapshot('/playlists/[id=neteaseId]', () => query, (value) => {
     query = value
   })
@@ -85,7 +89,7 @@
   const own = $derived(library?.songsOf(id)?.playlist.kind === 'own')
   /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：桌面的入口写“多选 · 排序”（#36） */
   const playlistKind = $derived(library?.songsOf(id)?.playlist.kind ?? null)
-  const sortableList = $derived(playlistKind !== null && canSortPlaylist(playlistKind))
+  const sortableList = $derived(capabilitiesOf(playlistKind).sort)
 
   /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上 */
   function openMenu(event: MouseEvent) {
@@ -100,16 +104,11 @@
     addSongsDialog.open({ playlistId: id, from: event.currentTarget as HTMLElement })
   }
 
-  function openMulti(event: MouseEvent) {
-    playlistSelection.enter(id, undefined, event.currentTarget as HTMLElement)
-  }
-
-  // 离开这张歌单：还没提交的移除立即提交（页面隐藏时 App 自己会做）；多选的勾选也清掉
+  // 离开这张歌单：还没提交的移除立即提交（页面隐藏时 App 自己会做）；多选由列表源卸载时自己退出
   $effect(() => {
     // 捕获旧值：从歌单 A 换到 B 时，cleanup 里读到的可能已经是 B
     const leaving = id
     return () => {
-      playlistSelection.exit()
       void view.app.flushPlaylist(leaving)
     }
   })
@@ -158,7 +157,17 @@
       <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
     {/if}
     {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !playlistSelection.mode}
-      <Button variant='outline' icon={ListChecks} data-multiselect-entry onclick={openMulti}>{sortableList ? '多选 · 排序' : '多选'}</Button>
+      <span class='contents' bind:this={desktopEntry}>
+        <Button
+          variant='outline'
+          icon={ListChecks}
+          onclick={(event: MouseEvent) => playlistSelection.enter({
+            from: event.currentTarget as HTMLElement,
+            focusFirst: true,
+            focusEntry: desktopEntryFocus,
+          })}
+        >{sortableList ? '多选 · 排序' : '多选'}</Button>
+      </span>
     {/if}
     <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
     {#if own}
@@ -193,7 +202,7 @@
   {/if}
   <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
   {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} />{/key}</div>{/if}
-  <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query /></div>
+  <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query entryFocus={desktopEntryFocus} /></div>
 {/snippet}
 
 {#if library && shown?.kind === 'unavailable'}

@@ -34,8 +34,8 @@
     /** 多选模式：前面是勾选框，••• 收起来 */
     selecting?: boolean
     selected?: boolean
-    /** 长按到 400ms（还没挪动）：进入多选并选中这一首 */
-    onlongpress?: () => void
+    /** 长按到 400ms（还没挪动）：进入多选并选中这一首；from 是这一行能接焦点的按钮，退出多选后焦点还给它 */
+    onlongpress?: (from: HTMLElement) => void
     /** 拖动把手（#36）：多选里能排序的歌单才有；给了就替换右边的 ••• */
     grip?: Snippet<[Song]>
     /** 浮起的复制行：影子、不接指针，一起拖几首时显示数量 */
@@ -77,12 +77,16 @@
   function down(event: PointerEvent): void {
     if (ghost || selecting || event.pointerType === 'mouse' || (event.target as Element).closest('[data-more], [data-grip]'))
       return
+    // 长按进入多选后，退出时焦点回到这一行能接焦点的按钮（不在模块里查全局 DOM）
+    const from = (event.target as Element).closest<HTMLElement>('[data-play-target]')
+      ?? (event.currentTarget as HTMLElement).querySelector<HTMLElement>('[data-play-target]')
+      ?? (event.currentTarget as HTMLElement)
     origin = { x: event.clientX, y: event.clientY }
     longPressed = false
     timer = setTimeout(() => {
       timer = undefined
       longPressed = true
-      onlongpress?.()
+      onlongpress?.(from)
     }, LONG_PRESS)
   }
 

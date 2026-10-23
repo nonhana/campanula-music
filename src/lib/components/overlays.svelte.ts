@@ -18,6 +18,7 @@ import PlayerOverlay from './player/PlayerOverlay.svelte'
 import PlaylistEditor from './PlaylistEditor.svelte'
 import PlaylistMenu from './PlaylistMenu.svelte'
 import SongMenu from './SongMenu.svelte'
+import { setSelectionMode } from './ui/selection-mode'
 
 export function createOverlays() {
   const view = getAppView()
@@ -41,6 +42,8 @@ export function createOverlays() {
     changed: () => notify(),
     rendered: tick,
     focus(target, fallback) {
+      // 归还顺序：focusReturn 找到的入口 / request.from（仍 connected、不在 inert 里才算）
+      // -> fallback（层内元素）-> main。多选入口被工具条换掉时由 focusReturn 重新找到（#66）。
       const available = (node: HTMLElement | null) => node?.isConnected && !node.closest('[inert]') ? node : null
       const active = stack.top && document.querySelector<HTMLElement>(`[data-overlay="${stack.top.name}"]`)
       const next = available(target)
@@ -55,7 +58,7 @@ export function createOverlays() {
     },
   }, crypto.randomUUID())
   const mounted: { name: string, component: Component, inert: () => boolean }[] = []
-  function register<R extends DialogRequest>(name: string, options: LayerOptions<R>, component?: Component) {
+  function register<R extends DialogRequest>(name: string, options: LayerOptions<R, HTMLElement>, component?: Component) {
     const layer = stack.register<R>(name, options)
     if (component)
       mounted.push({ name, component, inert: () => layer.containerInert })
@@ -92,12 +95,16 @@ export function createOverlays() {
   const queue = register<DialogRequest>('queue', { history: () => true, modal: true, restore: canRestorePlayer, dependsOn: 'player', parent: 'player', fallback: '[data-queue-entry]' })
   const selection = register<DialogRequest>('selection', {
     history: () => !desktopLayout.current,
-    // 多选只是列表上的一层状态（顶栏 / 底部操作条），不是 modal：和基线一样不压暗、不 inert 背景
+    // 多选只是列表上的一层状态（顶栏 / 底部操作条），不是 modal：和基线一样不压暗、不 inert 背景。
+    // 焦点归还给打开它的元素（按钮或行）；按钮在层开着时被工具条换掉，所以由多选给重新挂上的入口。
+    // 没有全局兜底查询（#66）。
     modal: false,
-    fallback: '[data-multiselect-entry]',
+    focusReturn: () => playlistSelection.returnTarget(),
     dismissed: () => playlistSelection.clear(),
   })
-  playlistSelection = new PlaylistSelection(selection)
+  playlistSelection = new PlaylistSelection(selection, batchPicker, view.app)
+  // 滚动条从这里知道“正在多选”，让开右边的触屏把手（#66）
+  setSelectionMode(() => playlistSelection.mode)
   const playerDrawer = createDrawer(() => window.innerHeight)
 
   onMount(() => {
