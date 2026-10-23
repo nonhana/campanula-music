@@ -39,7 +39,7 @@
 
   /** 手机“我喜欢”标签里的歌单内搜索 */
   let query = $state('')
-  export const snapshot = scrollSnapshot(() => query, (value) => {
+  scrollSnapshot('/', () => query, (value) => {
     query = value
   })
 
@@ -60,14 +60,14 @@
   $effect(() => {
     void strip.length
     measureStrip()
-    window.addEventListener('resize', measureStrip)
-    return () => window.removeEventListener('resize', measureStrip)
   })
 
   function turn(dir: 1 | -1) {
     stripEl?.scrollBy({ left: dir * stripEl.clientWidth, behavior: scrollBehavior() })
   }
 </script>
+
+<svelte:window onresize={measureStrip} />
 
 <svelte:head><title>曲库 · Campanula</title></svelte:head>
 
@@ -93,7 +93,7 @@
           {/if}
           {#if library.liked}
             {@const likedId = library.liked.playlist.id}
-            <a href={resolve('/playlists/[id]', { id: String(likedId) })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)' in:fade>查看全部</a>
+            <a href={resolve('/playlists/[id=neteaseId]', { id: likedId })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)' in:fade>查看全部</a>
             <PlayAllButton songs={library.liked.songs} source={{ kind: 'playlist', id: likedId }} />
           {/if}
         </div>

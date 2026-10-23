@@ -8,7 +8,7 @@
   const playing = $derived(view.state.player.status === 'playing')
 </script>
 
-<span class='bars' class:paused={!playing} aria-hidden='true'>
+<span class={['bars', !playing && 'paused']} aria-hidden='true'>
   <span></span><span></span><span></span>
 </span>
 

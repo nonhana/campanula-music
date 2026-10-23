@@ -10,6 +10,7 @@
   换封面的裁剪页（CoverEditor）再盖在编辑上面；开着时后面的都不能操作。
 -->
 <script lang='ts'>
+  import type { RouteId } from '$app/types'
   import type { LucideIcon } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import type { Account } from '#lib/api/account.js'
@@ -69,15 +70,15 @@
   /** 歌单编辑（新建、编辑信息、改公开、删除）、退出登录的确认、添加歌曲或换封面的裁剪页开着：后面的都不能操作 */
   const dialogOpen = $derived(playlistEditor.request !== null || logoutConfirm.request !== null || coverEditor.request !== null || addSongsDialog.request !== null)
 
-  const pathname = $derived(page.url.pathname)
+  const route = $derived(page.route.id)
   /** 歌单页、专辑页、歌手页（属于曲库） */
-  const libraryPage = $derived([resolve('/playlists'), resolve('/albums'), resolve('/artists')].some(route => pathname.startsWith(`${route}/`)))
+  const libraryPage = $derived(route === '/playlists/[id=neteaseId]' || route === '/albums/[id=neteaseId]' || route === '/artists/[id=neteaseId]')
   /** 页面里有自己的标题（h1）的二级页面：返回栏平时只有 ←，h1 滚过去才淡入页名 */
-  const detailPage = $derived(libraryPage || pathname === resolve('/daily') || pathname === resolve('/downloads'))
+  const detailPage = $derived(libraryPage || route === '/daily' || route === '/downloads')
   /** 设置页没有 h1：返回栏一直写“设置” */
-  const settingsPage = $derived(pathname === resolve('/settings'))
+  const settingsPage = $derived(route === '/settings')
   /** 手机搜索页：顶行是返回加搜索框 */
-  const searching = $derived(pathname === resolve('/search'))
+  const searching = $derived(route === '/search')
   /** 每日推荐的日期：手机日历按钮里的数字和它的名字 */
   const calendar = $derived(dailyCalendarDay(view.state.daily))
   /** 曲库的文字标签。换标签不留浏览记录：返回键离开曲库，不在标签之间来回 */
@@ -86,8 +87,8 @@
     { route: '/playlists', label: '歌单' },
     { route: '/albums', label: '专辑' },
     { route: '/artists', label: '歌手' },
-  ] as const
-  const onLibrary = $derived(LIBRARY_TABS.some(tab => resolve(tab.route) === pathname))
+  ] as const satisfies readonly { route: RouteId, label: string }[]
+  const onLibrary = $derived(LIBRARY_TABS.some(tab => tab.route === route))
   // 换页用 View Transitions：进入下一层、返回、标签之间各有方向（ADR-0011）
   pageTransitions(LIBRARY_TABS.map(tab => tab.route))
   /** 桌面侧栏的“曲库”：曲库的各个标签和歌单页、专辑页、歌手页都算 */
@@ -151,7 +152,7 @@
   }
 
   /** 侧栏的一项：当前项是薄荷玻璃底；收起时只有图标，名字给读屏和悬停提示 */
-  function railItem(href: string, label: string, current = pathname === href) {
+  function railItem(id: RouteId, label: string, current = route === id) {
     return {
       'class': [
         'h-12 w-full flex items-center gap-3 rounded-lg px-3 text-left transition-colors duration-feedback',
@@ -178,7 +179,7 @@
 {#snippet libraryTabs()}
   <nav class='flex px-2' aria-label='曲库'>
     {#each LIBRARY_TABS as tab (tab.route)}
-      {@const current = resolve(tab.route) === pathname}
+      {@const current = tab.route === route}
       <a
         href={resolve(tab.route)}
         data-sveltekit-replacestate
@@ -221,12 +222,12 @@
         <AccountMenu {account} />
       {/snippet}
       {#snippet rail()}
-        <a href={resolve('/')} {...railItem(resolve('/'), '曲库', inLibrary)}>{@render railContent('曲库', House)}</a>
-        <a href={resolve('/daily')} {...railItem(resolve('/daily'), '每日推荐')}>{@render railContent('每日推荐', CalendarDays)}</a>
-        <a href={resolve('/downloads')} {...railItem(resolve('/downloads'), '已下载')}>{@render railContent('已下载', CircleArrowDown)}</a>
+        <a href={resolve('/')} {...railItem('/', '曲库', inLibrary)}>{@render railContent('曲库', House)}</a>
+        <a href={resolve('/daily')} {...railItem('/daily', '每日推荐')}>{@render railContent('每日推荐', CalendarDays)}</a>
+        <a href={resolve('/downloads')} {...railItem('/downloads', '已下载')}>{@render railContent('已下载', CircleArrowDown)}</a>
       {/snippet}
       {#snippet railEnd()}
-        <a href={resolve('/settings')} {...railItem(resolve('/settings'), '设置')}>{@render railContent('设置', Settings)}</a>
+        <a href={resolve('/settings')} {...railItem('/settings', '设置')}>{@render railContent('设置', Settings)}</a>
       {/snippet}
       {@render children()}
     </DesktopShell>

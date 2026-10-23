@@ -1,5 +1,4 @@
 <script lang='ts'>
-  import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { createApp } from '#lib/app/app.js'
   import { realBrowserCapabilities } from '#lib/app/browser.js'
@@ -47,7 +46,7 @@
   open()
 
   /** 没登录、登录失效时打开的是已下载页（#38，ADR-0006：下载属于设备）：不换成登录页 */
-  const downloadsPage = $derived(page.url.pathname === resolve('/downloads'))
+  const downloadsPage = $derived(page.route.id === '/downloads')
 
   /** 整个 App 现在是哪一屏：换屏时交叉淡化（打开中 → 曲库 / 登录页、登录 → 曲库、退出登录、登录失效、登录页 ↔ 没登录时的已下载页） */
   const screen = $derived(

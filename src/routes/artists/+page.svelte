@@ -13,7 +13,7 @@
 
   const view = getAppView()
   const library = $derived(view.state.library)
-  export const snapshot = scrollSnapshot(() => null, () => {})
+  scrollSnapshot('/artists', () => null, () => {})
 </script>
 
 <svelte:head><title>歌手 · Campanula</title></svelte:head>

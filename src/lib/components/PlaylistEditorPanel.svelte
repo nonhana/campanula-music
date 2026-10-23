@@ -140,7 +140,7 @@
     if (!playlist)
       return
     const { id } = playlist
-    if (page.url.pathname === resolve('/playlists/[id]', { id: String(id) }))
+    if (page.url.pathname === resolve('/playlists/[id=neteaseId]', { id }))
       await playlistEditor.leaveTo(desktopLayout.current ? '/' : '/playlists')
     else
       playlistEditor.close()

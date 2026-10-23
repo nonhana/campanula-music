@@ -15,6 +15,7 @@
   import { page } from '$app/state'
   import { Check, CircleAlert, ImageOff, LoaderCircle, X } from '@lucide/svelte'
   import { onDestroy, untrack } from 'svelte'
+  import { innerHeight, innerWidth } from 'svelte/reactivity/window'
   import { COVER_INPUT_MAX_BYTES } from '#lib/api/cover.js'
   import { getAppView } from './app-context.svelte'
   import { centerCrop } from './cover-crop'
@@ -52,29 +53,15 @@
   const orderOf = (step: ShownStep): number => STEPS.findIndex(item => item.key === step)
 
   /** 取景框边长：手机按屏宽，桌面固定；窗口太矮时留出按钮和说明的位置 */
-  let viewport = $state({ w: 390, h: 844 })
-  $effect(() => {
-    const measure = () => (viewport = { w: window.innerWidth, h: window.innerHeight })
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  })
-  const box = $derived(sheet ? Math.max(220, Math.min(viewport.w - 48, viewport.h - 330)) : Math.max(260, Math.min(420, viewport.h - 300)))
+  const box = $derived(sheet ? Math.max(220, Math.min((innerWidth.current ?? 390) - 48, (innerHeight.current ?? 844) - 330)) : Math.max(260, Math.min(420, (innerHeight.current ?? 844) - 300)))
 
   let root = $state<HTMLElement>()
   let input = $state<HTMLInputElement>()
-  let crop = $state<CoverCrop>({ x: 0, y: 0, size: 1 })
   /** 现在裁剪的是哪张预览：换了一张图才重置取景框 */
-  let croppedUrl = $state('')
-
-  // 换了图片：取景框从居中、最大的正方形开始
-  $effect(() => {
-    if (!cover || !('image' in cover))
-      return
-    if (cover.image.url === croppedUrl)
-      return
-    croppedUrl = cover.image.url
-    crop = centerCrop(cover.image.width, cover.image.height)
+  const croppedUrl = $derived(cover && 'image' in cover ? cover.image.url : null)
+  let crop = $derived.by<CoverCrop>(() => {
+    void croppedUrl
+    return untrack(() => cover && 'image' in cover ? centerCrop(cover.image.width, cover.image.height) : { x: 0, y: 0, size: 1 })
   })
 
   // 成功才关上（状态一变就收）；关的时候顺手收起浅路由

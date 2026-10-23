@@ -97,12 +97,9 @@
   const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
 
   // 只是看听众有没有自己滚动，不是操作，所以直接挂在滚动区上
-  $effect(() => {
-    if (!scroller)
-      return
+  function watchListenerScroll(target: HTMLElement) {
     const onkey = (event: KeyboardEvent) => SCROLL_KEYS.has(event.key) && scrolledByListener()
     const onfocus = (event: FocusEvent) => event.target instanceof HTMLElement && event.target.matches(':focus-visible') && scrolledByListener()
-    const target = scroller
     target.addEventListener('wheel', scrolledByListener, { passive: true })
     target.addEventListener('touchmove', scrolledByListener, { passive: true })
     target.addEventListener('keydown', onkey)
@@ -113,7 +110,7 @@
       target.removeEventListener('keydown', onkey)
       target.removeEventListener('focusin', onfocus)
     }
-  })
+  }
 
   /** 点一行：从这一行开始放（停着的也接着放），歌词马上跟回当前行 */
   function playFrom(line: LyricLine) {
@@ -142,6 +139,7 @@
 
       <!-- 滚动区往两边各伸出 8px，行的焦点环有地方画，字和上面的开关对齐 -->
       <div
+        {@attach watchListenerScroll}
         bind:this={scroller}
         bind:clientHeight={height}
         class='scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain -mx-2'

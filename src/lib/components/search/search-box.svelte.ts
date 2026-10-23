@@ -96,13 +96,13 @@ export function pickSuggestion(app: App, row: SuggestionRow): void {
       submitSearch(app, row.name)
       break
     case 'artist':
-      void goto(resolve('/artists/[id]', { id: String(row.id) }))
+      void goto(resolve('/artists/[id=neteaseId]', { id: row.id }))
       break
     case 'album':
-      void goto(resolve('/albums/[id]', { id: String(row.id) }))
+      void goto(resolve('/albums/[id=neteaseId]', { id: row.id }))
       break
     case 'playlist':
-      void goto(resolve('/playlists/[id]', { id: String(row.id) }))
+      void goto(resolve('/playlists/[id=neteaseId]', { id: row.id }))
       break
   }
 }

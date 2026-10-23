@@ -55,12 +55,9 @@
   const x = $derived(shown * width)
 
   /** 起伏的高度：暂停时马上抹平，播放时渐渐起来；一打开就是当前的样子，不从平的长出来 */
-  const amplitude = new Tween(untrack(() => (waving ? AMPLITUDE : 0)), {
+  const amplitude = Tween.of(() => waving ? AMPLITUDE : 0, {
     duration: (_, to) => moveMs(to === 0 ? DURATIONS['wave-flatten'] : DURATIONS['wave-rise']),
     easing: cubicOut,
-  })
-  $effect(() => {
-    amplitude.target = waving ? AMPLITUDE : 0
   })
 
   /** 比整条线两头各多一个波长，流动时两端不露空 */
