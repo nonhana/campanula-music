@@ -24,9 +24,10 @@
   import TextButton from '../ui/TextButton.svelte'
   import MorningWash from './MorningWash.svelte'
   import NowIndex from './NowIndex.svelte'
-  import { closePlayerPage } from './player-page.svelte'
+  import { playerPageActions } from './player-page.svelte'
 
   const { class: klass }: { class?: ClassValue } = $props()
+  const { closePlayerPage } = playerPageActions()
 
   const ROW = 56
   const uid = $props.id()

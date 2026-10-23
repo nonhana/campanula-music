@@ -2,15 +2,15 @@ import type { Grip } from '../press'
 import { pressBroken } from '../press'
 
 // 抽屉的拖动手势核心（Spec #11 的第二个测试接入点“拖动手势核心”的一半，另一半是封面转盘的 wheel-core.ts）：不碰页面、不碰 Svelte 的纯逻辑。
-// 抽屉从底下升起、缩回底下，位置 0 是整个拉开，1 是收在下面看不见；开没开着由浅路由说了算（settle）。
-// 拖动来源（grip）把按下、移动、松开、点击交给它，它说抽屉跟手到哪、停在哪一头、要不要改浅路由、这次算不算点按。
+// 抽屉从底下升起、缩回底下，位置 0 是整个拉开，1 是收在下面看不见；开没开着由层请求说了算（settle 收的就是它）。
+// 拖动来源（grip）把按下、移动、松开、点击交给它，它说抽屉跟手到哪、停在哪一头、要不要开 / 关那一层、这次算不算点按。
 // 规则照主流的 Vaul（github.com/emilkowalski/vaul）：挪过起拖距离才开始拖，
 // 松手时拖过自身高度的 1/4、或者整段拖动的速度超过 0.4px/ms 就去另一头，不到就回去
 
 /** 0 整个拉开，1 收在下面看不见 */
 type DrawerEnd = 0 | 1
 
-/** 抽屉该怎么摆：拖着时跟手，不然停在浅路由说的那一头（或者刚拖过去的那一头） */
+/** 抽屉该怎么摆：拖着时跟手，不然停在层请求说的那一头（或者刚拖过去的那一头） */
 export type DrawerPose
   = | { dragging: true, position: number }
     | { dragging: false, end: DrawerEnd }
@@ -18,7 +18,7 @@ export type DrawerPose
 export interface GripSource {
   /** 从哪一头拖：把手是拉开着往下拖（open → 收起），播放条是收着往上拖（closed → 拉开） */
   from: 'open' | 'closed'
-  /** 松手时往另一头过了阈值：改浅路由去另一头 */
+  /** 松手时往另一头过了阈值：去开 / 关那一层（浅路由由浮层栈写） */
   commit: () => void
   /** 没拖动、只是点按（键盘的 Enter、空格也算） */
   tap?: () => void
@@ -26,7 +26,7 @@ export interface GripSource {
 
 export interface DrawerCore {
   readonly pose: DrawerPose
-  /** 浅路由说开着 / 关了：停到那一头。正在拖时先记下，松手时没拉到另一头就去那里 */
+  /** 层的请求说开着 / 关了：停到那一头。正在拖时先记下，松手时没拉到另一头就去那里 */
   settle: (open: boolean) => void
   /** 一个拖动来源，每个来源一份 */
   grip: (source: GripSource) => Grip
@@ -73,7 +73,7 @@ function dragged(at: number, dy: number, size: number): number {
 
 export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): DrawerCore {
   let pose: DrawerPose = { dragging: false, end: 1 }
-  /** 浅路由要的那一头 */
+  /** 层请求要的那一头 */
   let wanted: DrawerEnd = 1
 
   function setPose(next: DrawerPose) {

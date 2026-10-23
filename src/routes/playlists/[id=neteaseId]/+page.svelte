@@ -19,7 +19,6 @@
   import { resolve } from '$app/paths'
   import { Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
   import { canSortPlaylist } from '#lib/api/library.js'
-  import { addSongsDialog } from '#lib/components/add-songs.svelte.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
@@ -27,12 +26,11 @@
   import Cover from '#lib/components/library/Cover.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
-  import { enterSelection, playlistSelection } from '#lib/components/library/playlist-selection.svelte.js'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistHeader, playlistName, playlistView } from '#lib/components/library/view.js'
+  import { anchorBelow } from '#lib/components/menu-anchor.js'
   import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
-  import { anchorBelow } from '#lib/components/overlay-layer.svelte.js'
-  import { playlistMenu } from '#lib/components/playlist-edit.svelte.js'
+  import { getOverlays } from '#lib/components/overlay-context.js'
   import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
   import Button from '#lib/components/ui/Button.svelte'
@@ -45,6 +43,7 @@
 
   const { params }: PageProps = $props()
   const view = getAppView()
+  const { addSongsDialog, playlistSelection, playlistMenu } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const shown = $derived(library && playlistView(library, id))
@@ -96,13 +95,13 @@
     playlistMenu.open({ playlistId: id, from: button, anchor: anchorBelow(event) })
   }
 
-  /** 自建歌单的“添加歌曲”：桌面居中弹窗、手机底部弹层（add-songs.svelte.ts） */
+  /** 自建歌单的“添加歌曲”：桌面居中弹窗、手机底部弹层。 */
   function openAddSongs(event: MouseEvent) {
     addSongsDialog.open({ playlistId: id, from: event.currentTarget as HTMLElement })
   }
 
   function openMulti(event: MouseEvent) {
-    enterSelection(id, undefined, event.currentTarget as HTMLElement)
+    playlistSelection.enter(id, undefined, event.currentTarget as HTMLElement)
   }
 
   // 离开这张歌单：还没提交的移除立即提交（页面隐藏时 App 自己会做）；多选的勾选也清掉

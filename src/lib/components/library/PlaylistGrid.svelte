@@ -20,7 +20,7 @@
   import { failureText } from '../failure'
   import { fade, fadeAway, fadeThrough, moveMs, reveal } from '../motion'
   import { DURATIONS } from '../motion-tokens'
-  import { playlistEditor } from '../playlist-edit.svelte'
+  import { getOverlays } from '../overlay-context'
   import StateBlock from '../ui/StateBlock.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import ToolButton from '../ui/ToolButton.svelte'
@@ -42,6 +42,7 @@
 
   const { library, phone = false, heading, sectionLevel = 2 }: Props = $props()
   const view = getAppView()
+  const { playlistEditor, stack } = getOverlays()
   const own = $derived(library.playlists?.filter(playlist => playlist.kind === 'own') ?? null)
   const collected = $derived(library.playlists?.filter(playlist => playlist.kind === 'collected') ?? null)
   /** 只有自建歌单参与排序；一张、还没有时没有可排的 */
@@ -96,7 +97,9 @@
 
   /** 排序期间按 Esc 退出（焦点在哪都行；拖动中的 Esc 由 PlaylistSort 先接住） */
   function onWindowKeydown(event: KeyboardEvent) {
-    if (!sorting || sort.dragging || gridSort.dragging || event.defaultPrevented || event.key !== 'Escape')
+    // 有浮层开着时 Esc 先归最上层：浮动菜单不会让背景 inert，只看 inert 不够。
+    // 也不能改成让宿主在捕获阶段监听：那会抢在拖动的取消之前。
+    if (!sorting || stack.top || sort.dragging || gridSort.dragging || event.defaultPrevented || event.key !== 'Escape')
       return
     event.preventDefault()
     void finishSort()

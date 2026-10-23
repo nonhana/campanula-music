@@ -10,15 +10,15 @@
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
-  import type { SongMenuRequest } from './song-menu.svelte'
+  import type { SongMenuRequest } from './overlay-requests'
   import { CircleArrowDown, Heart, ListEnd, ListPlus, ListStart, Play, Trash2 } from '@lucide/svelte'
   import { getAppView } from './app-context.svelte'
   import { downloadItem, songLook } from './downloads/view'
   import Cover from './library/Cover.svelte'
   import { artistLine, langOf } from './library/view'
   import MenuOverlay from './MenuOverlay.svelte'
+  import { getOverlays } from './overlay-context'
   import { currentSong } from './player/view'
-  import { openPlaylistPicker, songMenu } from './song-menu.svelte'
 
   /** 浮动菜单一项的高度、分隔线占的高度和上下内边距（px）：还没画出来时按它估计高度，决定往下还是往上飘 */
   const FLOATING_ITEM = 36
@@ -42,6 +42,7 @@
   }
 
   const view = getAppView()
+  const { songMenu, playlistPicker } = getOverlays()
 
   function itemsOf(request: SongMenuRequest): Item[] {
     const { song, source } = request
@@ -61,7 +62,7 @@
     return [
       { key: 'next', label: '下一首播放', icon: ListStart, disabled: unchanged, run: () => view.app.playNext(source, song) },
       queue,
-      { key: 'add', label: '加入歌单', icon: ListPlus, disabled: false, run: () => openPlaylistPicker(request) },
+      { key: 'add', label: '加入歌单', icon: ListPlus, disabled: false, run: () => { void songMenu.transfer(playlistPicker, request) } },
       { key: 'heart', label: hearted ? '取消红心' : '红心', icon: Heart, tone: hearted ? 'hearted' : undefined, disabled: library.hearts === null, run: () => void view.app.heart(song, !hearted) },
       fromDownloads
         ? remove
@@ -69,10 +70,11 @@
     ]
   }
 
-  /** 先做这一项再关菜单：“加入歌单”已经把菜单换成了加入歌单，这时菜单已经关了 */
+  /** 转交自己消费菜单；普通动作才关闭菜单。 */
   function choose(item: Item) {
     item.run()
-    songMenu.close()
+    if (item.key !== 'add')
+      void songMenu.close()
   }
 
   function estimate(request: SongMenuRequest, sheet: boolean): number {

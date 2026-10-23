@@ -30,7 +30,7 @@
   import { songLook } from '../downloads/view'
   import MorningWash from '../player/MorningWash.svelte'
   import NowIndex from '../player/NowIndex.svelte'
-  import { openSongMenuAt } from '../song-menu.svelte'
+  import { songMenuActions } from '../song-menu.svelte'
   import Cover from './Cover.svelte'
   import DragCountBadge from './DragCountBadge.svelte'
   import HeartButton from './HeartButton.svelte'
@@ -38,6 +38,8 @@
   import SongBadge from './SongBadge.svelte'
   import SongMoreButton from './SongMoreButton.svelte'
   import { artistLine, formatDuration, langOf } from './view'
+
+  const { openSongMenuAt } = songMenuActions()
 
   interface Props {
     song: Song

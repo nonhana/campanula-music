@@ -1,18 +1,18 @@
 <!--
-  歌单页头部的 •••（playlist-edit.svelte.ts 的 playlistMenu，原型 PlaylistActions）：只有自建歌单有。
+  歌单页头部的 •••（原型 PlaylistActions）：只有自建歌单有，由浮层宿主挂载。
   编辑歌单信息、改为公开（只有隐私歌单有）、删除歌单（出错红，和上面隔一条线）；选了就关上菜单，打开对应的编辑（PlaylistEditor）。
   我喜欢的音乐不能改名、不能删，没有这个菜单；收藏的歌单用头部的“已收藏”取消收藏（DESIGN.md Layout，#30）。
-  浮动菜单、底部弹层、键盘怎么用见 MenuOverlay。放在 SignedInFrame 里
+  浮动菜单、底部弹层、键盘怎么用见 MenuOverlay。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
-  import type { PlaylistMenuRequest } from './playlist-edit.svelte'
+  import type { PlaylistMenuRequest } from './overlay-requests'
   import { Globe, Pencil, Trash2 } from '@lucide/svelte'
   import { getAppView } from './app-context.svelte'
   import Cover from './library/Cover.svelte'
   import { langOf } from './library/view'
   import MenuOverlay from './MenuOverlay.svelte'
-  import { playlistEditor, playlistMenu } from './playlist-edit.svelte'
+  import { getOverlays } from './overlay-context'
 
   /** 浮动菜单一项的高度、分隔线和上下内边距（px）：还没画出来时按它估计高度，决定往下还是往上飘 */
   const FLOATING_ITEM = 36
@@ -28,6 +28,7 @@
   }
 
   const view = getAppView()
+  const { playlistEditor, playlistMenu } = getOverlays()
 
   function playlistOf(request: PlaylistMenuRequest) {
     return view.state.library?.playlists?.find(playlist => playlist.id === request.playlistId) ?? null
@@ -46,8 +47,7 @@
 
   /** 菜单关上（不把焦点还回去，交给编辑），打开对应的编辑；关掉编辑后焦点回到 ••• */
   function choose(item: Item, request: PlaylistMenuRequest) {
-    playlistMenu.request = null
-    playlistEditor.open({ mode: item.key, playlistId: request.playlistId, from: request.from })
+    void playlistMenu.transfer(playlistEditor, { mode: item.key, playlistId: request.playlistId, from: request.from })
   }
 
   function estimate(request: PlaylistMenuRequest, sheet: boolean): number {

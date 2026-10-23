@@ -13,7 +13,7 @@
   import Avatar from '#lib/components/Avatar.svelte'
   import { desktopLayout } from '#lib/components/layout.js'
   import { formatCount } from '#lib/components/library/view.js'
-  import { logoutConfirm } from '#lib/components/logout-confirm.js'
+  import { getOverlays } from '#lib/components/overlay-context.js'
   import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import Segmented from '#lib/components/ui/Segmented.svelte'
@@ -23,6 +23,7 @@
   const QUALITY_OPTIONS = QUALITIES.map(key => ({ key, label: QUALITY_LABELS[key] }))
 
   const view = getAppView()
+  const { logoutConfirm } = getOverlays()
   const account = $derived(view.state.session.status === 'signedIn' ? view.state.session.account : null)
   const quality = $derived(view.state.player.quality)
   /** 这台设备上下载了几首；还没从本机读出来时是 null */

@@ -17,13 +17,14 @@
   import { langOf } from '../library/view'
   import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
+  import { getOverlays } from '../overlay-context'
   import IconButton from '../ui/IconButton.svelte'
   import Segmented from '../ui/Segmented.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { playerPageChoices as choices, closePlayerPage, playerDrawer } from './player-page.svelte'
+  import { playerPageChoices as choices, playerPageActions } from './player-page.svelte'
   import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
@@ -33,6 +34,8 @@
 
   const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
   const view = getAppView()
+  const { closePlayerPage } = playerPageActions()
+  const { playerDrawer } = getOverlays()
   /** 当前这首在播放队列里的那一项：“更多”菜单里放进播放队列时用它自己的播放来源 */
   const entry = $derived(view.state.player.current === null ? null : view.state.player.queue[view.state.player.current])
 

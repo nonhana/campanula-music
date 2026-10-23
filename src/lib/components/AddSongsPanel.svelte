@@ -8,10 +8,9 @@
   import type { Song } from '#lib/api/library.js'
   import type { RequestFailure } from '#lib/app/api.js'
   import type { ChangeFailure } from '#lib/app/library.js'
-  import type { AddSongsRequest } from './add-songs.svelte'
+  import type { PlaylistRequest } from './overlay-requests'
   import { Check, SearchX } from '@lucide/svelte'
   import { SvelteMap } from 'svelte/reactivity'
-  import { addSongsDialog } from './add-songs.svelte'
   import { getAppView } from './app-context.svelte'
   import { failureText } from './failure'
   import Cover from './library/Cover.svelte'
@@ -19,6 +18,7 @@
   import SkeletonRows from './library/SkeletonRows.svelte'
   import { artistLine, formatCount, langOf } from './library/view'
   import VirtualList from './library/VirtualList.svelte'
+  import { getOverlays } from './overlay-context'
   import Button from './ui/Button.svelte'
   import Scrollbar from './ui/Scrollbar.svelte'
   import SearchField from './ui/SearchField.svelte'
@@ -35,9 +35,10 @@
       | { status: 'shown', songs: readonly Song[] }
       | { status: 'failed', failure: RequestFailure }
 
-  const { request }: { request: AddSongsRequest } = $props()
+  const { request }: { request: PlaylistRequest } = $props()
 
   const view = getAppView()
+  const { addSongsDialog } = getOverlays()
   const library = $derived(view.state.library)
   const liked = $derived(library?.liked ?? null)
   /** 这张歌单的全部曲目编号：已经在里面、不能勾（歌曲信息还没取全时也认得出） */
@@ -110,10 +111,10 @@
   async function submit(): Promise<void> {
     if (addSongsDialog.busy || chosen.length === 0)
       return
-    addSongsDialog.busy = true
+    addSongsDialog.setBusy(true)
     failure = null
     const outcome = await view.app.addSongsToPlaylist(request.playlistId, chosen)
-    addSongsDialog.busy = false
+    addSongsDialog.setBusy(false)
     if (outcome?.ok) {
       selected.clear()
       addSongsDialog.close()

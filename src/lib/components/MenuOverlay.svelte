@@ -1,21 +1,21 @@
 <!--
-  菜单类浮层的外壳（overlay-layer.svelte.ts 的 OverlayLayer）：歌曲的“更多”菜单（SongMenu）、加入歌单（AddToPlaylist）、歌单页的 •••（PlaylistMenu）共用。
+  菜单类浮层的外壳：只管浮动菜单与抽屉的呈现，开关、历史、Esc、inert 和归还焦点由浮层栈统一拥有。
   鼠标打开的是贴着锚点的浮动菜单：从锚点那一侧飘出来，关掉时淡出（DESIGN.md Overlays），
   点外面、滚动（菜单里面自己滚不算）、窗口变了、换页都关上；触屏是底部弹层：和播放页同一套抽屉，
   按住拉手或上面那一块往下拖、点按拉手或遮罩都收起，返回也先收起它。
   键盘：打开时焦点落在第一项能选的，↑/↓、Home/End 移动，Esc 关上并回到打开它的地方，Tab 离开时关上。
   里面画什么由用的地方给：content 是菜单项（role menuitem），sheetHeader 是底部弹层拉手下面、能按住往下拖的那一块
 -->
-<script lang='ts' generics='R extends OverlayRequest'>
+<script lang='ts' generics='R extends MenuRequest'>
   import type { Snippet } from 'svelte'
   import type { Attachment } from 'svelte/attachments'
-  import type { OverlayLayer, OverlayRequest } from './overlay-layer.svelte'
-  import { page } from '$app/state'
+  import type { MenuRequest } from './overlay-requests'
+  import type { OverlayLayer } from './overlay-stack'
   import { pop } from './motion'
   import { createDrawer } from './player/drawer.svelte'
 
   interface Props {
-    layer: OverlayLayer<R>
+    layer: OverlayLayer<R, HTMLElement>
     /** 读屏读出的名字 */
     label: (request: R) => string
     /** 浮动菜单的宽度（class） */
@@ -34,8 +34,7 @@
   const request = $derived(layer.request)
   const floating = $derived(request?.anchor ? request : null)
   const sheetRequest = $derived(request && !request.anchor ? request : null)
-  /** 底部弹层开着：浅路由也说开着 */
-  const sheetOpen = $derived(sheetRequest !== null && page.state[layer.sheet] === true)
+  const sheetOpen = $derived(sheetRequest !== null)
   /** 收起的动画里还画着刚才那一层 */
   let sheetShown = $state<R | null>(null)
   /** 菜单本身（浮动菜单，或者底部弹层里的那一列）：在里面找菜单项 */
@@ -50,19 +49,6 @@
 
   $effect(() => drawer.settle(sheetOpen))
 
-  /** 浅路由已经说过开着的那一次：压浏览记录要等一会儿，刚打开的那一下它还没说开着，不算收起 */
-  let acknowledged: R | null = null
-
-  // 返回手势、后退收起了底部弹层：关上，焦点回到打开它的那个按钮
-  $effect(() => {
-    if (!sheetRequest)
-      return
-    if (page.state[layer.sheet])
-      acknowledged = sheetRequest
-    else if (acknowledged === sheetRequest)
-      layer.dismiss(sheetRequest)
-  })
-
   // 浮动菜单：点外面（打开它的那个按钮除外：再点一下是关上）、滚动、窗口变了、换页都关上，焦点留在点到的地方
   $effect(() => {
     if (!floating)
@@ -70,7 +56,7 @@
     const shown = floating
     const dismiss = () => {
       if (layer.request === shown)
-        layer.request = null
+        void layer.close(false)
     }
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node
@@ -91,20 +77,12 @@
     }
   })
 
-  $effect(() => {
-    void page.url.pathname
-    return () => {
-      if (layer.request?.anchor)
-        layer.request = null
-    }
-  })
-
   const enabled = () => [...(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? [])]
 
   function onkeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' || event.key === 'Tab') {
+    if (event.key === 'Tab') {
       event.preventDefault()
-      layer.close()
+      void layer.close()
       return
     }
     const list = enabled()
@@ -148,6 +126,7 @@
     role='menu'
     tabindex='-1'
     aria-label={label(floating)}
+    inert={layer.inert || !request}
     {onkeydown}
     {@attach place}
     {@attach focusFirst}
@@ -167,7 +146,7 @@
     tabindex='-1'
     aria-modal='true'
     aria-label={label(shown)}
-    inert={!sheetOpen}
+    inert={!sheetOpen || layer.inert}
     {onkeydown}
   >
     <div class='touch-none' {@attach gripSheet}>

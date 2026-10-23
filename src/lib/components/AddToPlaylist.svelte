@@ -1,5 +1,5 @@
 <!--
-  加入歌单（song-menu.svelte.ts 的 playlistPicker，交互原型 AddToPlaylist）：从“更多”菜单打开，菜单是浮动的它就贴着同一个锚点浮出来，
+  加入歌单（overlays.svelte.ts 登记的 playlistPicker，交互原型 AddToPlaylist）：从“更多”菜单打开，菜单是浮动的它就贴着同一个锚点浮出来，
   菜单是底部弹层它也是底部弹层（外壳 MenuOverlay）。最上面是“新建歌单”（#33）：打开新建（PlaylistEditor），建好接着把这首加进去。
   下面是能加进去的：我喜欢的音乐（加进去就是红心，在最前，封面角上一颗珊瑚色实心心形说明这一点）和自建歌单，按歌单列表的顺序；收藏的歌单不能编辑，不出现（GLOSSARY）。
   名字下面一行都只写首数；不能选的写原因：从这张歌单里打开的是“当前歌单”，已经红心的歌对我喜欢的音乐是“已红心”，本机已同步的曲目里已经有这首是“已在歌单里”。
@@ -7,15 +7,16 @@
 -->
 <script lang='ts'>
   import type { Playlist } from '#lib/api/library.js'
-  import type { SongMenuRequest } from './song-menu.svelte'
+  import type { SongMenuRequest } from './overlay-requests'
   import { Heart, Plus } from '@lucide/svelte'
   import { getAppView } from './app-context.svelte'
   import Cover from './library/Cover.svelte'
   import { artistLine, formatCount, langOf, playlistName } from './library/view'
   import MenuOverlay from './MenuOverlay.svelte'
-  import { playlistEditor } from './playlist-edit.svelte'
-  import { playlistPicker } from './song-menu.svelte'
+  import { getOverlays } from './overlay-context'
   import Scrollbar from './ui/Scrollbar.svelte'
+
+  const { playlistEditor, playlistPicker } = getOverlays()
 
   /** 浮动菜单的标题、一项的高度和上下内边距（px）：还没画出来时按它们估计高度，决定往下还是往上飘 */
   const FLOATING_TITLE = 32
@@ -68,8 +69,7 @@
 
   /** 新建歌单：加入歌单关上（不把焦点还回去，交给新建），打开新建；关掉新建后焦点回到打开菜单的那个按钮 */
   function create(request: SongMenuRequest) {
-    playlistPicker.request = null
-    playlistEditor.open({ mode: 'new', songs: [request.song], from: request.from })
+    void playlistPicker.transfer(playlistEditor, { mode: 'new', songs: [request.song], from: request.from })
   }
 
   function estimate(request: SongMenuRequest, sheet: boolean): number {

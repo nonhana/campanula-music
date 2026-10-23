@@ -2,19 +2,18 @@
   播放页：盖住整个 App 的一层抽屉（对话框），打开时从底下升起，收起时缩回底下（drawer.svelte.ts）；
   底色由当前封面染出（CoverTint），里面按布局放桌面版或手机版。离开顶部时露出 24px 的圆角，后面的曲库跟着压暗一点；
   抽屉的位置和底下垫的那一截由 playerDrawer.panel 管。
-  open：浅路由说开着。开着时页面本身不滚动，焦点进来（收起键），关掉后回到打开它的那个按钮；
+  open：播放页这一层的请求说开着（由浮层栈登记，浅路由记着它）。开着时页面本身不滚动，焦点进来（收起键），关掉后回到打开它的那个按钮；
   还在升起前（从播放条往上拖）、正在缩回时不能操作。Esc 先收起手机上的播放队列，再关掉播放页。
-  在 SignedInFrame 里，播放队列里有歌、抽屉没完全收起时才有
+  由 PlayerOverlay 经浮层宿主挂载（两个外框都有），播放队列里有歌、抽屉没完全收起时才有
 -->
 <script lang='ts'>
-  import { page } from '$app/state'
   import { innerHeight } from 'svelte/reactivity/window'
   import { getAppView } from '../app-context.svelte'
   import { desktopLayout } from '../layout'
+  import { getOverlays } from '../overlay-context'
   import CoverTint from './CoverTint.svelte'
   import DesktopPlayerPage from './DesktopPlayerPage.svelte'
   import PhonePlayerPage from './PhonePlayerPage.svelte'
-  import { closePlayerPage, closeQueueSheet, playerDrawer } from './player-page.svelte'
   import { createPlayhead } from './playhead.svelte'
   import { currentSong, sourceName, turnOf } from './view'
 
@@ -26,8 +25,9 @@
   const DIM = 0.2
 
   const view = getAppView()
+  const { player: playerLayer, playerDrawer } = getOverlays()
   const player = $derived(view.state.player)
-  /** 播放队列里有歌时才有（SignedInFrame）；退出登录清空播放队列的那一刻还在，什么都不画 */
+  /** 播放队列里有歌时才有；退出登录清空播放队列的那一刻还在，什么都不画 */
   const song = $derived(currentSong(player))
   const source = $derived(player.current === null ? null : sourceName(view.state.library, player.queue[player.current].source))
   /** 换歌时封面往哪转、歌名往哪飘 */
@@ -40,29 +40,15 @@
   $effect(() => {
     if (!open)
       return
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     root?.querySelector<HTMLElement>('button')?.focus()
     const { documentElement } = document
     documentElement.style.overflow = 'hidden'
     return () => {
       documentElement.style.overflow = ''
-      if (opener?.isConnected)
-        opener.focus()
     }
   })
 
-  function onkeydown(event: KeyboardEvent) {
-    if (!open || event.key !== 'Escape' || event.defaultPrevented)
-      return
-    event.preventDefault()
-    if (page.state.player === 'queue')
-      closeQueueSheet()
-    else
-      closePlayerPage()
-  }
 </script>
-
-<svelte:window {onkeydown} />
 
 <div class='pointer-events-none fixed inset-0 z-49 bg-neutral-900' style:opacity={Math.min(1, 1 - playerDrawer.position) * DIM} aria-hidden='true'></div>
 <div
@@ -73,7 +59,7 @@
   role='dialog'
   aria-modal='true'
   aria-label='正在播放'
-  inert={!open}
+  inert={!open || playerLayer.containerInert}
 >
   {#if song}
     <CoverTint coverUrl={song.album.coverUrl} />

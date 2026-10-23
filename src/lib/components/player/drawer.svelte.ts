@@ -24,7 +24,7 @@ export interface Drawer {
   readonly position: number
   /** 没完全收起（拉开着、正在动、正在拖）：要画出来 */
   readonly visible: boolean
-  /** 浅路由说开着 / 关了：动到那一头。正在拖时先记下，松手时没拉到另一头就去那里 */
+  /** 层的请求说开着 / 关了：动到那一头。正在拖时先记下，松手时没拉到另一头就去那里 */
   settle: (open: boolean) => void
   /**
    * 挂在抽屉本身上：`{@attach drawer.panel}`。抽屉是 position: fixed 的一层，定好上边和左右，下边交给它：
@@ -59,7 +59,7 @@ export function createDrawer(estimate: () => number): Drawer {
       holdPage(pose.dragging)
       if (pose.dragging)
         void position.set(Math.max(pose.position, -BLEED / size()), { duration: 0 })
-      // 不跟着 target 变：调用 settle 的 effect 只该跟着浅路由走
+      // 不跟着 target 变：调用 settle 的 effect 只该跟着层的请求走
       else if (untrack(() => position.target) !== pose.end)
         void position.set(pose.end)
     },

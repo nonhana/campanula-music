@@ -18,37 +18,25 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { ArrowLeft, Calendar, CalendarDays, CircleArrowDown, House, Menu, Search, Settings } from '@lucide/svelte'
-  import { addSongsDialog } from '../add-songs.svelte'
-  import AddSongs from '../AddSongs.svelte'
-  import AddToPlaylist from '../AddToPlaylist.svelte'
   import { getAppView } from '../app-context.svelte'
-  import BatchAddToPlaylist from '../BatchAddToPlaylist.svelte'
   import Brand from '../Brand.svelte'
-  import { coverEditor } from '../cover-edit.svelte'
-  import CoverEditor from '../CoverEditor.svelte'
   import DailyNumber from '../daily/DailyNumber.svelte'
   import { dailyCalendarDay } from '../daily/view'
   import { desktopLayout } from '../layout'
   import LibraryNotice from '../library/LibraryNotice.svelte'
   import PhoneSelectBar from '../library/PhoneSelectBar.svelte'
   import PhoneSelectionBar from '../library/PhoneSelectionBar.svelte'
-  import { leaveSelection, playlistSelection } from '../library/playlist-selection.svelte'
-  import { logoutConfirm } from '../logout-confirm'
-  import LogoutConfirm from '../LogoutConfirm.svelte'
+  import { setOverlays } from '../overlay-context'
+  import OverlayHost from '../OverlayHost.svelte'
+  import { createOverlays } from '../overlays.svelte'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
-  import { playerDrawer } from '../player/player-page.svelte'
   import PlayerNotice from '../player/PlayerNotice.svelte'
-  import PlayerPage from '../player/PlayerPage.svelte'
-  import { playlistEditor } from '../playlist-edit.svelte'
-  import PlaylistEditor from '../PlaylistEditor.svelte'
-  import PlaylistMenu from '../PlaylistMenu.svelte'
   import DesktopSearchBox from '../search/DesktopSearchBox.svelte'
   import PhoneSearchBar from '../search/PhoneSearchBar.svelte'
   import { resetSearchBox, showingResults, shownKeyword } from '../search/search-box.svelte'
   import SearchTabs from '../search/SearchTabs.svelte'
   import { searchTabOf } from '../search/view'
-  import SongMenu from '../SongMenu.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import AccountMenu from './AccountMenu.svelte'
   import BackTitle from './BackTitle.svelte'
@@ -58,17 +46,11 @@
 
   const { account, children }: { account: Account, children: Snippet } = $props()
   const view = getAppView()
+  const overlays = setOverlays(createOverlays())
+  const { playlistSelection } = overlays
   /** 播放队列里有歌：才有播放条 */
   const hasQueue = $derived(view.state.player.queue.length > 0)
-  /** 播放页开着（浅路由，见 player-page.svelte.ts） */
-  const playerOpen = $derived(hasQueue && page.state.player !== undefined)
-  /** 播放页要画出来：开着，或者正在升起、缩回、被拖着 */
-  const playerShown = $derived(hasQueue && (playerOpen || playerDrawer.visible))
-
-  // 浅路由说开着就升起来，说关了就缩回去（返回手势、后退、Esc、收起键都走这里）
-  $effect(() => playerDrawer.settle(playerOpen))
-  /** 歌单编辑（新建、编辑信息、改公开、删除）、退出登录的确认、添加歌曲或换封面的裁剪页开着：后面的都不能操作 */
-  const dialogOpen = $derived(playlistEditor.request !== null || logoutConfirm.request !== null || coverEditor.request !== null || addSongsDialog.request !== null)
+  const playerOpen = $derived(hasQueue && overlays.player.request !== null)
 
   const route = $derived(page.route.id)
   /** 歌单页、专辑页、歌手页（属于曲库） */
@@ -96,40 +78,10 @@
 
   let railExpanded = $state(false)
 
-  // 手机上进了多选、按返回：浅路由退掉以后清掉勾选（不额外退一条历史）
-  let selectionAcknowledged = false
-  $effect(() => {
-    if (!playlistSelection.mode) {
-      selectionAcknowledged = false
-      return
-    }
-    if (page.state.playlistSelect) {
-      selectionAcknowledged = true
-    }
-    else if (selectionAcknowledged) {
-      selectionAcknowledged = false
-      playlistSelection.exit()
-    }
-  })
-
   // 多选时把页面右边 44px 的触屏滚动条把手让开：那里正好是每行的拖动把手（#36）
   $effect(() => {
     document.documentElement.toggleAttribute('data-selecting', playlistSelection.mode)
     return () => document.documentElement.removeAttribute('data-selecting')
-  })
-
-  // 多选时按 Esc 退出（桌面“取消选择”的键盘做法）；弹层里的 Esc 已经 preventDefault 的不再抢
-  $effect(() => {
-    if (!playlistSelection.mode)
-      return
-    const onkeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented)
-        return
-      event.preventDefault()
-      leaveSelection()
-    }
-    window.addEventListener('keydown', onkeydown)
-    return () => window.removeEventListener('keydown', onkeydown)
   })
 
   // 从 App 里别的页面进来的，返回就退回去；直接打开二级页面的，返回到曲库
@@ -212,7 +164,7 @@
   <PhoneSelectionBar />
 {/snippet}
 
-<div class='contents' inert={playerOpen || dialogOpen}>
+<div class='contents' inert={overlays.stack.baseInert}>
   {#if desktopLayout.current}
     <DesktopShell {railExpanded} bar={hasQueue ? desktopBar : undefined}>
       {#snippet header()}
@@ -268,20 +220,8 @@
   {/if}
 </div>
 
-<div class='contents' inert={dialogOpen}>
-  {#if playerShown}
-    <PlayerPage open={playerOpen} />
-  {/if}
-</div>
-<div class='contents' inert={dialogOpen}>
+<div class='contents' inert={overlays.player.containerInert}>
   <PlayerNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
   <LibraryNotice phone={!desktopLayout.current} overPlayerPage={playerOpen} />
 </div>
-<SongMenu />
-<AddToPlaylist />
-<BatchAddToPlaylist />
-<PlaylistMenu />
-<PlaylistEditor />
-<AddSongs />
-<CoverEditor />
-<LogoutConfirm />
+<OverlayHost />

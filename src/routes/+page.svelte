@@ -27,10 +27,11 @@
   import NowChip from '#lib/components/player/NowChip.svelte'
   import { currentSong } from '#lib/components/player/view.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
-  import { openSongMenuAt } from '#lib/components/song-menu.svelte.js'
+  import { songMenuActions } from '#lib/components/song-menu.svelte.js'
   import IconButton from '#lib/components/ui/IconButton.svelte'
 
   const view = getAppView()
+  const { openSongMenuAt } = songMenuActions()
   const library = $derived(view.state.library)
   const liked = $derived(library && likedView(library))
   const failureShown = $derived(liked?.kind === 'failed')

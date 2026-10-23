@@ -14,13 +14,15 @@
   import { songLook } from '../downloads/view'
   import MorningWash from '../player/MorningWash.svelte'
   import NowChip from '../player/NowChip.svelte'
-  import { openSongMenuAt } from '../song-menu.svelte'
+  import { songMenuActions } from '../song-menu.svelte'
   import Cover from './Cover.svelte'
   import DragCountBadge from './DragCountBadge.svelte'
   import PlayTarget from './PlayTarget.svelte'
   import SongBadge from './SongBadge.svelte'
   import SongMoreButton from './SongMoreButton.svelte'
   import { artistLine, langOf } from './view'
+
+  const { openSongMenuAt } = songMenuActions()
 
   interface Props {
     song: Song

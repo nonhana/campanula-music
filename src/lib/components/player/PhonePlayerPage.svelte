@@ -10,7 +10,6 @@
   import type { Song } from '#lib/api/library.js'
   import type { Playhead } from './playhead.svelte'
   import type { Turn } from './view'
-  import { page } from '$app/state'
   import { ChevronDown, MicVocal } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import HeartButton from '../library/HeartButton.svelte'
@@ -18,13 +17,14 @@
   import { langOf } from '../library/view'
   import { fade, float, recede } from '../motion'
   import { DURATIONS, FLOAT_IN_DELAY, PAGE_DISTANCE } from '../motion-tokens'
+  import { getOverlays } from '../overlay-context'
   import { createCoverSwipe } from './cover-swipe.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import { createDrawer } from './drawer.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
-  import { playerPageChoices as choices, closePlayerPage, closeQueueSheet, openQueueSheet, playerDrawer } from './player-page.svelte'
+  import { playerPageChoices as choices, playerPageActions } from './player-page.svelte'
   import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
@@ -34,7 +34,9 @@
   const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
 
   const view = getAppView()
-  const queueOpen = $derived(page.state.player === 'queue')
+  const { player, queue, playerDrawer } = getOverlays()
+  const { closePlayerPage, closeQueueSheet, openQueueSheet } = playerPageActions()
+  const queueOpen = $derived(queue.request !== null)
   /** 拖封面时从左边、右边转进来的上一首、下一首 */
   const previous = $derived(neighborSong(view.state.player, 'previous'))
   const next = $derived(neighborSong(view.state.player, 'next'))
@@ -52,7 +54,6 @@
   /** 播放队列弹层占屏幕高度的这么多 */
   const SHEET_HEIGHT = 0.86
 
-  let handle = $state<HTMLButtonElement>()
   let sheet = $state<HTMLElement>()
 
   /** 播放队列弹层：从底下的“播放队列”往上拖的头几帧它还没画出来，按屏幕高度的 86% 算 */
@@ -61,19 +62,18 @@
   const gripQueueBar = sheetDrawer.grip({ from: 'closed', commit: openQueueSheet, tap: openQueueSheet })
   const gripSheet = sheetDrawer.grip({ from: 'open', commit: closeQueueSheet, tap: closeQueueSheet })
 
-  // 浅路由说拉开着就升起来，说收起就缩回去（返回、Esc、拉手、遮罩都走这里）
+  // 队列这一层的请求说拉开着就升起来，说收起就缩回去（返回、Esc、拉手、遮罩都走浮层栈）
   $effect(() => sheetDrawer.settle(queueOpen))
 
-  // 拉开播放队列时焦点进弹层，收起时回到“播放队列”那一条
+  // 拉开播放队列时焦点进弹层；收起时的焦点由浮层栈按队列入口那条按钮归还
   $effect(() => {
     if (!queueOpen)
       return
     sheet?.querySelector<HTMLElement>('button')?.focus()
-    return () => handle?.focus()
   })
 </script>
 
-<div class='relative min-h-0 flex flex-1 flex-col' inert={queueOpen}>
+<div class='relative min-h-0 flex flex-1 flex-col' inert={player.inert}>
   <div class='relative grid grid-cols-[48px_minmax(0,1fr)_48px] h-16 flex-none items-center px-1'>
     <button type='button' class='grid size-12 place-items-center rounded-full text-neutral-800 active:bg-white/60' aria-label='收起播放页' onclick={closePlayerPage}>
       <ChevronDown size={26} aria-hidden='true' />
@@ -141,7 +141,7 @@
   </div>
 
   <button
-    bind:this={handle}
+    data-queue-entry
     type='button'
     class='relative h-14 flex flex-none flex-col items-center rounded-t-sheet bg-white/90 pt-2 shadow-float'
     aria-haspopup='dialog'
@@ -163,7 +163,7 @@
     role='dialog'
     aria-modal='true'
     aria-label='播放队列'
-    inert={!queueOpen}
+    inert={!queueOpen || queue.inert}
   >
     <button type='button' class='grid mx-auto h-7 w-16 flex-none place-items-center rounded-full' aria-label='收起播放队列' {@attach gripSheet}>
       <span class='h-1 w-9 rounded-full bg-neutral-300' aria-hidden='true'></span>
