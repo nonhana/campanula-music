@@ -224,9 +224,9 @@ export interface App {
   /** 重试刚才没保存成功的排序：恢复刚才的顺序并马上提交 */
   retryOrder: () => Promise<void>
   /**
-   * 曲库里自建歌单之间的排序（#37）：playlistIds 是我喜欢的音乐和全部自建歌单的新先后，
-   * 我喜欢的音乐必须在最前，收藏的歌单不传。先改本地、立即生效，停手 2 秒才一次提交；
-   * 页面隐藏时 App 自己会立即提交。断网时不改本地、直接说没改成。返回顺序有没有改
+   * 曲库里自建歌单之间的排序（#37）：playlistIds 只是全部自建歌单的新先后，我喜欢的音乐由 App 放在最前，
+   * 收藏的歌单不传；不是这些时抛错。先改本地、立即生效，停手 2 秒才一次提交；
+   * 页面隐藏时立即提交。断网时不改本地、直接说没改成。返回顺序有没有改
    */
   orderPlaylists: (playlistIds: readonly number[]) => boolean
   /** 重试刚才没保存成功的自建歌单顺序：恢复刚才的顺序并马上提交 */
@@ -412,6 +412,7 @@ export function createApp(browser: BrowserCapabilities): App {
     session: round,
     local,
     clock: browser.clock,
+    page: browser.page,
     write: (next) => {
       update({ library: next })
       player.libraryChanged(playlistId => playlistSongsOf(next, playlistId))
@@ -424,12 +425,6 @@ export function createApp(browser: BrowserCapabilities): App {
   function notifyDownload(notice: DownloadNotice): void {
     library.notify(notice)
   }
-
-  // 页面被隐藏（切到后台、锁屏、关页面）：晚一点才提交的修改立即提交，不等计时器（#35）
-  browser.page.addEventListener('visibilitychange', () => {
-    if (browser.page.visibilityState === 'hidden')
-      void library.flush()
-  })
 
   const cover = createCover({
     api: round.api,
@@ -749,9 +744,6 @@ export function createApp(browser: BrowserCapabilities): App {
       const playlist = state.library?.playlists?.find(item => item.id === playlistId)
       if (!playlist || playlist.kind === 'collected')
         throw new Error(`只能加入自建歌单和我喜欢的音乐：${playlistId}`)
-      // 5 秒撤销窗口里把这首加回来：撤掉待提交的移除就行，它还在网易云上，不用再发加入
-      if (playlist.kind === 'own' && library.restorePending(playlistId, [song.id]).has(song.id))
-        return
       return library.change({ kind: 'add', playlist, song })
     },
     addSongsToPlaylist: async (playlistId, songs) => library.addSongs(ownPlaylist(playlistId), songs),

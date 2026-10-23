@@ -41,6 +41,14 @@ export type Change
     | { kind: 'delete', playlist: Playlist }
 
 /**
+ * 晚一点才提交的三种修改（#70）：移除、歌单内排序、自建歌单之间的排序。它们由 deferred 模块提交，
+ * 立即修改的提交路径（library.submit）不接它们。
+ */
+export type DeferredChange = Extract<Change, { kind: 'remove' | 'order' | 'playlistOrder' }>
+/** 立即提交的修改：剩下那些先改本地、马上发一次请求的 */
+export type ImmediateChange = Exclude<Change, DeferredChange>
+
+/**
  * 网易云确认了、要写进副本的：听众做的修改，网易云建好的自建歌单（没有先改本地这一步），
  * 和换好的封面（图先传上去、网易云确认才拿到新地址，也没有先改本地这一步）
  */
@@ -57,8 +65,8 @@ export interface PlaylistEdit {
 }
 
 /** 一次编辑要做的修改：名称、简介去掉首尾空白，和现在一样的不提交（标签照先后比） */
-export function playlistEdits(playlist: Playlist, edit: PlaylistEdit): Change[] {
-  const changes: Change[] = []
+export function playlistEdits(playlist: Playlist, edit: PlaylistEdit): ImmediateChange[] {
+  const changes: ImmediateChange[] = []
   const name = edit.name?.trim()
   if (name !== undefined && name !== playlist.name)
     changes.push({ kind: 'rename', playlist, name })
@@ -109,6 +117,14 @@ export function heartOf(change: ConfirmedChange): { song: Song, hearted: boolean
 }
 
 /**
+ * 一张歌单这样东西的排队键：收藏、取消收藏、删除都按它排；
+ * 打开歌单前等它排完（deferred.settled）也用同一个键
+ */
+export function playlistTarget(playlistId: number): string {
+  return `playlist:${playlistId}`
+}
+
+/**
  * 改的是哪样东西：同一样东西的几次修改按先后一次一次提交，上一次网易云回了才发下一次，
  * 免得连点两下（红心、取消红心）到网易云的先后颠倒
  */
@@ -133,7 +149,7 @@ export function targetOf(change: Change): string {
       return `artist:${change.artist.id}`
     case 'collectPlaylist':
     case 'delete':
-      return `playlist:${change.playlist.id}`
+      return playlistTarget(change.playlist.id)
     case 'rename':
       return `name:${change.playlist.id}`
     case 'describe':

@@ -54,10 +54,7 @@
   /** 键盘移动后给读屏的一句话 */
   let announcement = $state('')
 
-  const commitOrder = (ids: readonly number[]) => {
-    const liked = library.playlists?.find(playlist => playlist.kind === 'liked')
-    return liked ? view.app.orderPlaylists([liked.id, ...ids]) : false
-  }
+  const commitOrder = (ids: readonly number[]) => view.app.orderPlaylists(ids)
   /** 一个排序器：手机按横版列表量，桌面按封面网格量（#65） */
   const sort = new PlaylistSort({
     ids: () => own?.map(playlist => playlist.id) ?? [],

@@ -21,10 +21,17 @@ export type BodyArg<Request> = [Request] extends [void] ? [body?: undefined] : [
 
 /**
  * keepalive：页面被隐藏（切后台、锁屏、关页面）时也要发出去的请求（晚一点提交的修改）。
- * 请求体超过 64 KiB 的浏览器会拒掉，调用方自己判断（#35）
+ * 请求体超过 64 KiB 的浏览器会拒掉，Api 自己改成普通请求（#70）；调用方只说要 keepalive
  */
 export interface PostOptions {
   keepalive?: boolean
+}
+
+/** 浏览器只给带 keepalive 的请求 64 KiB 的请求体（Fetch 标准）；按 UTF-8 字节数算 */
+const KEEPALIVE_MAX_BYTES = 64 * 1024
+
+function fitsKeepalive(body: string): boolean {
+  return new TextEncoder().encode(body).byteLength <= KEEPALIVE_MAX_BYTES
 }
 
 /** Campanula 服务端的接口，按端点目录（#lib/api/endpoints）调用：网址、请求体和响应类型都来自端点那一条 */
@@ -86,11 +93,13 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
     const params = paramsOf<Params>(given, endpoint.takesParams)
     const body = given[offset] as Request | undefined
     const options = given[offset + 1] as PostOptions | undefined
+    // 只序列化一次：同一个字符串既算要不要 keepalive，也作为请求体发出去
+    const serialized = JSON.stringify(body ?? {})
     return request<Response>(endpoint.path(params), {
       method: endpoint.method,
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body ?? {}),
-      keepalive: options?.keepalive ?? false,
+      body: serialized,
+      keepalive: options?.keepalive === true && fitsKeepalive(serialized),
     })
   }
 

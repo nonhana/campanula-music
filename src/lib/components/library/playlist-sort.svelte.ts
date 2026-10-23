@@ -9,7 +9,7 @@ import { DURATIONS } from '../motion-tokens'
 
 // 曲库里自建歌单之间的排序（#37，原型 docs/prototype/dnd.md 方案 C 的曲库部分）：手机是横版列表、桌面是封面网格，
 // 同一个排序器按当前布局量几何。点“排序”进入，按住把手立即拖；松手提交，点“完成”退出。
-// - 只有自建歌单参与；我喜欢的音乐固定在最前，收藏的歌单不参与（由 App 的 orderPlaylists 保证）
+// - 只有自建歌单参与；我喜欢的音乐固定在最前，收藏的歌单不参与（由 App 的 orderPlaylists / 延迟提交模块保证）
 // - 拖到上下边缘自动滚动；拖动中按 Esc 取消；焦点在某一行时 Alt + ↑ / ↓ 移一位，走同一个 commit
 // - 手势规则、边缘滚动、Esc、页边测量在 drag-sort.ts / drag-sort.svelte.ts 里只写一份；这里只量两种布局、画影子
 
