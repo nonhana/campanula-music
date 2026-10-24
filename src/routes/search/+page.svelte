@@ -12,7 +12,6 @@
   import { Search } from '@lucide/svelte'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { desktopLayout } from '#lib/components/layout.js'
-  import { langOf } from '#lib/components/library/view.js'
   import { pickSuggestion, showingResults } from '#lib/components/search/search-box.svelte.js'
   import SearchKindResults from '#lib/components/search/SearchKindResults.svelte'
   import SearchOverview from '#lib/components/search/SearchOverview.svelte'
@@ -20,6 +19,7 @@
   import SearchTabs from '#lib/components/search/SearchTabs.svelte'
   import { SEARCH_PANEL_ID, searchTabId, searchTabOf } from '#lib/components/search/view.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import { langOf } from '#lib/components/text.js'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const view = getAppView()

@@ -9,7 +9,8 @@
 <script lang='ts'>
   import { ListMusic, SkipBack, SkipForward } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
-  import HeartButton from '../library/HeartButton.svelte'
+  import { currentSong } from '../now'
+  import HeartButton from '../songs/HeartButton.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import NowPlaying from './NowPlaying.svelte'
   import PlayButton from './PlayButton.svelte'
@@ -17,7 +18,7 @@
   import PlayModeButton from './PlayModeButton.svelte'
   import { createSeekSlider } from './seek-slider.svelte'
   import SeekLine from './SeekLine.svelte'
-  import { currentSong, formatSeconds, PAGE_COVER } from './view'
+  import { formatSeconds, PAGE_COVER } from './view'
   import VolumeControl from './VolumeControl.svelte'
 
   const view = getAppView()

@@ -6,12 +6,13 @@
 <script lang='ts'>
   import { SkipForward } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
-  import HeartButton from '../library/HeartButton.svelte'
+  import { currentSong } from '../now'
+  import HeartButton from '../songs/HeartButton.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import NowPlaying from './NowPlaying.svelte'
   import PlayButton from './PlayButton.svelte'
   import ProgressLine from './ProgressLine.svelte'
-  import { currentSong, PAGE_COVER } from './view'
+  import { PAGE_COVER } from './view'
 
   const view = getAppView()
   const player = $derived(view.state.player)

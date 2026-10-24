@@ -4,7 +4,6 @@ import type { AudioCapability, Clock } from './browser'
 import type { PlaylistSongs } from './library'
 import type { SessionApi, SessionFailure } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
-import { playableNow } from './downloads'
 
 // 播放队列与播放（Spec #11“客户端：播放队列与播放”）。
 // 两个播放器轮流放（ADR-0010）：换歌时在空闲的那个上放，它出声了再停旧的，换歌的过程中一直有一个在放。
@@ -152,8 +151,8 @@ export interface PlayerContext {
   downloaded: (songId: number) => boolean
   /** 已下载的这首的本机文件地址（blob:） */
   localFile: (songId: number) => string
-  /** 现在能不能在线放（联网、登录着）：不能时只放已下载的，没下载的跳过 */
-  streamable: () => boolean
+  /** 这首现在能不能放（App 的同一条规则）：不能时跳过、不取播放地址 */
+  playable: (song: Song) => boolean
 }
 
 export interface Player {
@@ -490,9 +489,9 @@ export function createPlayer(context: PlayerContext): Player {
     return request
   }
 
-  /** 这首现在能不能放（playableNow）：下载了的总能放；没下载的要能在线放，无版权的不能放 */
+  /** 这首现在能不能放：规则在 App（state.playable），播放器不自己再推一遍 */
   function canPlay(song: Song): boolean {
-    return playableNow(song, context.downloaded(song.id), context.streamable())
+    return context.playable(song)
   }
 
   /** 播放队列里这一首能不能放：现在能放，网易云也没说这首给不了地址（下载了的不用取地址） */

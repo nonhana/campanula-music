@@ -9,7 +9,7 @@
   import type { SuggestionRow } from './search-box.svelte'
   import { Disc3, History, ListMusic, Music, Search, UserRound } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
-  import { langOf } from '../library/view'
+  import { langOf } from '../text'
   import FilterChip from '../ui/FilterChip.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import { searchBox, SUGGESTION_LIST_ID, suggestionId, suggestionRows } from './search-box.svelte'

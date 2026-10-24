@@ -10,9 +10,9 @@
   import { getAppView } from '../app-context.svelte'
   import { collectState } from '../library/collect'
   import CollectButton from '../library/CollectButton.svelte'
-  import Cover from '../library/Cover.svelte'
-  import { formatCount, formatPlays, langOf } from '../library/view'
   import { stagger } from '../motion'
+  import { formatCount, formatPlays, langOf } from '../text'
+  import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
 
   interface Props {

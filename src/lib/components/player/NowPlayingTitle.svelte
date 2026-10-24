@@ -6,9 +6,9 @@
   import type { Song } from '#lib/api/library.js'
   import type { Turn } from './view'
   import { getAppView } from '../app-context.svelte'
-  import SongBadge from '../library/SongBadge.svelte'
-  import { artistLine, langOf } from '../library/view'
   import { fade } from '../motion'
+  import SongBadge from '../songs/SongBadge.svelte'
+  import { artistLine, langOf } from '../text'
   import SongSwap from './SongSwap.svelte'
 
   const { song, turn, phone = false }: { song: Song, turn: Turn | null, phone?: boolean } = $props()

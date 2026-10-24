@@ -6,7 +6,7 @@
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
   import { fadeAway } from '../motion'
-  import { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
+  import { SONG_COLUMNS, SONG_GRID } from './SongRow.svelte'
 
   interface Props {
     count: number

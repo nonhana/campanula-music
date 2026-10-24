@@ -330,7 +330,7 @@ export function recede(_node: Element, { delay = 0 }: { delay?: number } = {}, o
 /**
  * 播放条出现、收起（DESIGN.md Player Bars · 出现和换歌）：播放队列里第一次有歌时从屏幕底下浮上来（面板 360ms），
  * 清空（包括退出登录）时沉下去（退场 200ms）。漂多远按它离屏幕底边多远算，整个藏到屏幕下面；
- * 漂动写在 translate 上（float），点歌时飞来的封面按它算播放条停稳的位置（player/cover-flight.svelte.ts 的 restingRect）。
+ * 漂动写在 translate 上（float），点歌时飞来的封面按它算播放条停稳的位置（cover-flight.svelte.ts 的 restingRect）。
  * 用 in:dock 和 out:dock|global：骨架整个拿掉时（退出登录）也沉下去。gone 是播放队列真的空了；不是的话
  * （换了手机 / 桌面布局、登录失效）跟着骨架直接拿掉。减少动态效果时只淡入淡出
  */

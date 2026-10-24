@@ -8,7 +8,7 @@
   import { getAppView } from '../app-context.svelte'
   import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
-  import { progressOf } from './view'
+  import { progressOf } from '../now'
 
   interface Props {
     /** 光的起点（px）：歌名左边缘再往左一点 */

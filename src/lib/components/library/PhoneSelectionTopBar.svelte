@@ -5,8 +5,8 @@
 <script lang='ts'>
   import { CheckCheck, ListChecks, SquareMinus, X } from '@lucide/svelte'
   import { getOverlays } from '../overlay-context'
+  import { formatCount } from '../text'
   import TextButton from '../ui/TextButton.svelte'
-  import { formatCount } from './view'
 
   const { playlistSelection } = getOverlays()
 </script>

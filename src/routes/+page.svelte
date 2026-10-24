@@ -2,34 +2,36 @@
   曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页，
   点一首、播放全部都用整个我喜欢的音乐替换播放队列）和右侧的每日推荐方块、歌单的封面网格和收藏的专辑、歌手两排横向架子。
   返回这一页时，滚动位置回到原来的样子。骨架换成内容时骨架淡出、前几格依次飘入（DESIGN.md Motion）
+  歌曲格的歌名、徽标、下载标记和歌手一行和歌曲行共用 songs/SongTitle；能不能放读 App 的答案（songLook）。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
-  import { ChevronLeft, ChevronRight } from '@lucide/svelte'
+  import { ChevronLeft, ChevronRight, Heart } from '@lucide/svelte'
   import { syncNoticeFor } from '#lib/app/library.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import DailyTile from '#lib/components/daily/DailyTile.svelte'
-  import DownloadMark from '#lib/components/downloads/DownloadMark.svelte'
-  import { songLook } from '#lib/components/downloads/view.js'
+  import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import CollectedGrid from '#lib/components/library/CollectedGrid.svelte'
-  import Cover from '#lib/components/library/Cover.svelte'
-  import LikedStates from '#lib/components/library/LikedStates.svelte'
-  import PhoneLiked from '#lib/components/library/PhoneLiked.svelte'
-  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
+  import { likedFailure } from '#lib/components/library/liked-failure.js'
   import PlaylistGrid from '#lib/components/library/PlaylistGrid.svelte'
-  import PlayTarget from '#lib/components/library/PlayTarget.svelte'
-  import SkeletonRows from '#lib/components/library/SkeletonRows.svelte'
-  import SongBadge from '#lib/components/library/SongBadge.svelte'
-  import SongMoreButton from '#lib/components/library/SongMoreButton.svelte'
+  import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import SyncNotice from '#lib/components/library/SyncNotice.svelte'
-  import { artistLine, formatCount, langOf } from '#lib/components/library/view.js'
   import { fade, reveal, scrollBehavior } from '#lib/components/motion.js'
-  import NowChip from '#lib/components/player/NowChip.svelte'
-  import { currentSong } from '#lib/components/player/view.js'
+  import { currentSong } from '#lib/components/now.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
   import { songMenuActions } from '#lib/components/song-menu.svelte.js'
+  import NowChip from '#lib/components/songs/NowChip.svelte'
+  import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
+  import PlayTarget from '#lib/components/songs/PlayTarget.svelte'
+  import SkeletonRows from '#lib/components/songs/SkeletonRows.svelte'
+  import { songLook } from '#lib/components/songs/song-look.js'
+  import SongMoreButton from '#lib/components/songs/SongMoreButton.svelte'
+  import SongTitle from '#lib/components/songs/SongTitle.svelte'
+  import { formatCount } from '#lib/components/text.js'
+  import Cover from '#lib/components/ui/Cover.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
+  import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const view = getAppView()
   const { openSongMenuAt } = songMenuActions()
@@ -69,11 +71,31 @@
   function turn(dir: 1 | -1) {
     stripEl?.scrollBy({ left: dir * stripEl.clientWidth, behavior: scrollBehavior() })
   }
+
+  /** 我喜欢的音乐整块失败：同步失败重新同步，打开失败再打开这张歌单（拿不到资料时退回重新同步） */
+  function retryLiked() {
+    if (!liked?.failure)
+      return
+    const action = likedFailure(liked.failure)
+    if (action.retry === 'open' && liked.info)
+      void view.app.openPlaylist(liked.info.id)
+    else
+      view.app.retrySync()
+  }
 </script>
 
 <svelte:window onresize={measureStrip} />
 
 <svelte:head><title>曲库 · Campanula</title></svelte:head>
+
+{#snippet likedStates()}
+  {#if liked?.failure}
+    {@const action = likedFailure(liked.failure)}
+    <StateBlock kind='error' title={action.title} body={failureText(liked.failure.failure)} action={{ label: '重试', run: retryLiked }} />
+  {:else}
+    <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' />
+  {/if}
+{/snippet}
 
 {#if library && liked}
   {#if desktopLayout.current}
@@ -135,14 +157,7 @@
                           {#if now}<NowChip />{/if}
                         </span>
                         <PlayTarget class='min-w-0' rounded disabled={off} {now} cover={covers[i]} onplay={() => view.app.play(source, song.id)}>
-                          <span class='min-w-0 flex items-center gap-1.5'>
-                            <span class={['truncate text-label font-500 transition-colors duration-state', now ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(song.name)}>{song.name}</span>
-                            <SongBadge kind={look.badge} />
-                          </span>
-                          <span class='flex items-center gap-1.5 text-caption text-neutral-600'>
-                            {#if look.mark}<DownloadMark mark={look.mark} variant='inline' />{/if}
-                            <span class='min-w-0 truncate' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
-                          </span>
+                          <SongTitle {song} {now} {look} mark tight />
                         </PlayTarget>
                         <SongMoreButton {song} {source} size='cell' />
                       </div>
@@ -150,7 +165,7 @@
                   {/each}
                 </div>
               {:else}
-                <LikedStates page={liked} />
+                {@render likedStates()}
               {/if}
             </div>
           {/if}
@@ -184,7 +199,8 @@
     </section>
   {:else}
     <h1 class='sr-only'>我喜欢的音乐</h1>
-    <PhoneLiked {library} bind:query />
+    <SyncNotice {notice} phone />
+    <PlaylistSongs {library} playlistId={likedId} bind:query phone />
   {/if}
 {/if}
 

@@ -5,8 +5,9 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { Lock } from '@lucide/svelte'
-  import Cover from './Cover.svelte'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf } from './view'
+  import { formatCount, langOf } from '../text'
+  import Cover from '../ui/Cover.svelte'
+  import { FLIGHT_COVER_SIZE } from './view'
 
   interface Props {
     id: number

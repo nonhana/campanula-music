@@ -8,8 +8,8 @@
   import type { SearchTab } from './view'
   import { resolve } from '$app/paths'
   import { getAppView } from '../app-context.svelte'
-  import { formatCount } from '../library/view'
   import { fade } from '../motion'
+  import { formatCount } from '../text'
   import { selectSearchTab } from './search-box.svelte'
   import { SEARCH_PANEL_ID, SEARCH_TABS, searchPath, searchTabId } from './view'
 

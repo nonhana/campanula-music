@@ -8,7 +8,7 @@
   import type { Attachment } from 'svelte/attachments'
   import type { MenuItem, MenuTone } from './menu'
   import { Heart } from '@lucide/svelte'
-  import Cover from './library/Cover.svelte'
+  import Cover from './ui/Cover.svelte'
 
   type Layout = 'menu' | 'sheet' | 'popover'
 

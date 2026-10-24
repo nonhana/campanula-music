@@ -7,7 +7,8 @@ import { clamp } from '../clamp'
 import { movedBefore, rowTrack } from '../drag-sort'
 import { DragSort, pageEdges } from '../drag-sort.svelte'
 import { DURATIONS, STAGGER } from '../motion-tokens'
-import { formatCount } from './view'
+import { SONG_ROW_HEIGHT } from '../songs/view'
+import { formatCount } from '../text'
 
 // 多选里的拖动排序（#36，Spec #11“多选、拖拽与换封面”，原型 docs/prototype/dnd.md）：
 // 只在多选模式里按每行的把手拖；平时行上没有把手，单击照常播放。
@@ -22,8 +23,6 @@ import { formatCount } from './view'
 // 这里只做歌曲专有的多首一起挪、快速定位和拿起 / 落位 / 展开三个动画阶段。
 // 被拖的那一行在虚拟列表里一直保留（VirtualList 的 keep），Android 上手指底下的元素被卸载后触摸事件会断
 
-/** 一行的高度（px，DESIGN.md Song Row）：虚拟列表和拖动计算共用 */
-export const SONG_ROW_HEIGHT = 56
 const ROW = SONG_ROW_HEIGHT
 /** 快速定位窄条的宽度（px） */
 const RAIL = 44

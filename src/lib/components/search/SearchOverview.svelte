@@ -19,15 +19,15 @@
   import CollectButton from '../library/CollectButton.svelte'
   import PlaylistTile from '../library/PlaylistTile.svelte'
   import Shelf from '../library/Shelf.svelte'
-  import SkeletonRows from '../library/SkeletonRows.svelte'
   import TileBone from '../library/TileBone.svelte'
-  import { formatCount, yearOf } from '../library/view'
   import { fadeAway, reveal } from '../motion'
+  import SkeletonRows from '../songs/SkeletonRows.svelte'
+  import SongList from '../songs/SongList.svelte'
+  import { formatCount, yearOf } from '../text'
   import StateBlock from '../ui/StateBlock.svelte'
   import Tag from '../ui/Tag.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import { selectSearchTab } from './search-box.svelte'
-  import SongResults from './SongResults.svelte'
   import { KIND_WORDS, OVERVIEW_COUNTS, searchFailure, searchPath } from './view'
 
   interface Props {
@@ -103,14 +103,27 @@
 {#snippet songsBody()}
   {#if songs.status === 'shown'}
     <div class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}>
-      <SongResults {keyword} songs={songs.items.slice(0, OVERVIEW_COUNTS.songs)} {phone} />
+      <SongList
+        list={{ kind: 'songs', songs: songs.items.slice(0, OVERVIEW_COUNTS.songs) }}
+        source={{ kind: 'search', keyword }}
+        {phone}
+        loadingLabel='正在搜索单曲'
+        bare
+        virtual={false}
+        label='单曲'
+      />
     </div>
   {/if}
 {/snippet}
 
 {#snippet songsBones()}
-  <!-- 白色面板就是 SkeletonRows 自己的最外层：整块一起淡出、让出高度 -->
-  <SkeletonRows count={OVERVIEW_COUNTS.songs} {phone} label='正在搜索单曲' class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'} />
+  <!-- 白色面板就是骨架自己的最外层：整块一起淡出、让出高度（桌面 5 行是综合先列几首） -->
+  <SkeletonRows
+    count={OVERVIEW_COUNTS.songs}
+    {phone}
+    label='正在搜索单曲'
+    class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}
+  />
 {/snippet}
 
 {#snippet playlistsBody()}

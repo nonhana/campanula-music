@@ -9,9 +9,9 @@
 <script lang='ts'>
   import type { Attachment } from 'svelte/attachments'
   import { untrack } from 'svelte'
-  import { coverSource } from '../library/Cover.svelte'
   import { fadeMs } from '../motion'
   import { cssEasing, DURATIONS } from '../motion-tokens'
+  import { coverSource } from '../ui/Cover.svelte'
   import { SMALL_COVER } from './view'
 
   const { coverUrl }: { coverUrl: string } = $props()

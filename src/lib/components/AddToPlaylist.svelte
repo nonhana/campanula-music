@@ -12,9 +12,10 @@
   import type { AddToPlaylistRequest } from './overlay-requests'
   import { Plus } from '@lucide/svelte'
   import { getAppView } from './app-context.svelte'
-  import { artistLine, formatCount, langOf, playlistName } from './library/view'
   import MenuOverlay from './MenuOverlay.svelte'
   import { getOverlays } from './overlay-context'
+  import { playlistName } from './playlist-text'
+  import { artistLine, formatCount, langOf } from './text'
 
   const { playlistEditor, playlistPicker, playlistSelection } = getOverlays()
 

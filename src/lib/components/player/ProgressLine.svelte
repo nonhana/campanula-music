@@ -4,7 +4,7 @@
 -->
 <script lang='ts'>
   import { getAppView } from '../app-context.svelte'
-  import { progressOf } from './view'
+  import { progressOf } from '../now'
 
   const view = getAppView()
   const progress = $derived(progressOf(view.state.player))

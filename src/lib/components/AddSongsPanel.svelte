@@ -13,21 +13,22 @@
   import { SvelteMap } from 'svelte/reactivity'
   import { getAppView } from './app-context.svelte'
   import { failureText } from './failure'
-  import Cover from './library/Cover.svelte'
-  import SkeletonRows from './library/SkeletonRows.svelte'
-  import { artistLine, formatCount, langOf } from './library/view'
-  import VirtualList from './library/VirtualList.svelte'
   import { changeFailureText } from './notice/text'
   import { getOverlays } from './overlay-context'
+  import SkeletonRows from './songs/SkeletonRows.svelte'
+  import { SONG_ROW_HEIGHT } from './songs/view'
+  import { artistLine, formatCount, langOf } from './text'
   import Button from './ui/Button.svelte'
+  import Cover from './ui/Cover.svelte'
   import Scrollbar from './ui/Scrollbar.svelte'
   import SearchField from './ui/SearchField.svelte'
   import StateBlock from './ui/StateBlock.svelte'
+  import VirtualList from './ui/VirtualList.svelte'
 
   /** 停手这么久（毫秒）才问网易云：和搜索框的建议一样，接着打字时不每个字问一次 */
   const SEARCH_DELAY = 300
-  /** 选择器一行多高（px） */
-  const ROW = 56
+  /** 选择器一行多高（px）：和歌曲行一样 */
+  const ROW = SONG_ROW_HEIGHT
   /** 搜索结果的几种样子 */
   type SearchView
     = | { status: 'idle' }

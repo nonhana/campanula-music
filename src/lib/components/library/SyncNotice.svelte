@@ -12,9 +12,9 @@
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { fade, unfold } from '../motion'
+  import { formatCount } from '../text'
   import Button from '../ui/Button.svelte'
   import TextButton from '../ui/TextButton.svelte'
-  import { formatCount } from './view'
 
   interface Props {
     /** 已经按当前页的整块列表失败去重过的同步条（App 的 syncNoticeFor）；不需要时是 null */

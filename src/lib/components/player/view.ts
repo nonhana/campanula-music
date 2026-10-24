@@ -3,23 +3,14 @@ import type { LyricLine, LyricWord, PlaySource } from '#lib/api/playback.js'
 import type { LibraryState } from '#lib/app/library.js'
 import type { PlayerNotice, PlayerState, PlayMode, SongChange } from '#lib/app/player.js'
 import { failureText } from '../failure'
-import { formatDuration, playlistName } from '../library/view'
+import { playlistName } from '../playlist-text'
+import { formatDuration } from '../text'
 
 // 播放条、晨光行、播放页上怎么显示：界面组件只照着画
-
-/** 当前这首；播放队列是空的时是 null */
-export function currentSong(player: PlayerState): Song | null {
-  return player.current === null ? null : player.queue[player.current].song
-}
 
 /** 播放队列是空的：没有播放条、没有播放页 */
 export function queueEmpty(player: PlayerState): boolean {
   return player.queue.length === 0
-}
-
-/** 显示的时长（秒）：音频还没加载出来、还不知道时长时，用歌曲信息里的 */
-export function shownDuration(player: PlayerState): number {
-  return player.duration ?? (currentSong(player)?.duration ?? 0) / 1000
 }
 
 /** 按上一首、下一首会换到的那首（手机播放页拖封面时从两边转进来）；没有别的歌可换时是 null */
@@ -70,12 +61,6 @@ export function turnOf(change: SongChange | null): Turn | null {
       throw new Error(`不认识的换歌原因：${JSON.stringify(unhandled)}`)
     }
   }
-}
-
-/** 播放进度，0 到 1 */
-export function progressOf(player: PlayerState): number {
-  const duration = shownDuration(player)
-  return duration > 0 ? Math.min(1, player.position / duration) : 0
 }
 
 /** 秒 → 分:秒 */

@@ -21,15 +21,17 @@
   import { fade, fadeAway, fadeThrough, moveMs, reveal } from '../motion'
   import { DURATIONS } from '../motion-tokens'
   import { getOverlays } from '../overlay-context'
+  import { playlistName } from '../playlist-text'
+  import { formatCount, langOf } from '../text'
+  import Cover from '../ui/Cover.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import ToolButton from '../ui/ToolButton.svelte'
-  import Cover from './Cover.svelte'
   import DragGrip from './DragGrip.svelte'
   import { PlaylistSort } from './playlist-sort.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
   import TileBone from './TileBone.svelte'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf, playlistName } from './view'
+  import { FLIGHT_COVER_SIZE } from './view'
 
   interface Props {
     library: LibraryState

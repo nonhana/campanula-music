@@ -9,8 +9,9 @@
   import AddSongsPanel from './AddSongsPanel.svelte'
   import { getAppView } from './app-context.svelte'
   import DialogShell from './DialogShell.svelte'
-  import { langOf, playlistName } from './library/view'
   import { getOverlays } from './overlay-context'
+  import { playlistName } from './playlist-text'
+  import { langOf } from './text'
   import TextButton from './ui/TextButton.svelte'
 
   const view = getAppView()
