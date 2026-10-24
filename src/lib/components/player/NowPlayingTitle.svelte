@@ -2,6 +2,7 @@
   换歌时跟着换碟横着飘（SongSwap）。 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
+  import { songTitle } from '#lib/api/library.js'
 
   import { getAppView } from '../shared/app-context.svelte'
   import { fade } from '../shared/motion'
@@ -20,7 +21,7 @@
       <h2 class={[
         'truncate text-neutral-900 font-600',
         phone ? 'text-title' : 'text-headline-sm',
-      ]} lang={langOf(shown.name)}>{shown.name}</h2>
+      ]} lang={langOf(shown.name)}>{songTitle(shown)}</h2>
       {#if view.state.player.trial}<span class='flex flex-none' transition:fade><SongBadge kind='trial' /></span>{/if}
     </div>
     <p class='mt-0.5 truncate text-body text-neutral-700' lang={langOf(artistLine(shown))}>{artistLine(shown)}</p>

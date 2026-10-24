@@ -215,7 +215,8 @@
         <HeartButton {song} size='row' />
         {#if look.mark}<DownloadMark mark={look.mark} variant='column' />{/if}
       </span>
-      <span class={['text-caption text-neutral-500 tabular-nums', SONG_COLUMNS.duration]}>{formatDuration(song.duration)}</span>
+      <!-- 网易云没给时长（#78）：留着这一格，各列照样对齐 -->
+      <span class={['text-caption text-neutral-500 tabular-nums', SONG_COLUMNS.duration]}>{#if song.duration !== null}{formatDuration(song.duration)}{/if}</span>
       {#if grip}
         {@render grip(song)}
       {:else}

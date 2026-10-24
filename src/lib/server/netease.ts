@@ -166,7 +166,7 @@ export const createLoginQr = async (listener: Listener): Promise<QrResponse> => 
 /** 确认登录时带着凭据 */
 export type QrCheck
   = | { status: 'waiting' }
-    | { status: 'scanned', nickname: string, avatarUrl: string }
+    | { status: 'scanned', nickname: string | null, avatarUrl: string | null }
     | { status: 'expired' }
     | { status: 'needsVerification', image: string }
     | { status: 'confirmed', credentials: Record<string, string> }
@@ -227,7 +227,7 @@ export const checkLoginQr = async (key: string, listener: Listener): Promise<QrC
     case 801:
       return { status: 'waiting' }
     case 802:
-      return { status: 'scanned', nickname: body.nickname, avatarUrl: body.avatarUrl }
+      return { status: 'scanned', nickname: body.nickname ?? null, avatarUrl: body.avatarUrl ?? null }
     case 803:
       return {
         status: 'confirmed',
@@ -245,11 +245,18 @@ export const sendCaptcha = async (phone: string, listener: Listener): Promise<vo
   await call('captcha_sent', { phone, ctcode: '86' }, listener)
 }
 
+/** 账号的昵称、头像是宽松字段，网易云没给时是 null（#78） */
+const accountOf = (profile: { userId: number, nickname?: string | null, avatarUrl?: string | null }): Account => ({
+  id: profile.userId,
+  nickname: profile.nickname ?? null,
+  avatarUrl: profile.avatarUrl ?? null,
+})
+
 export const loginWithCaptcha = async (phone: string, captcha: string, listener: Listener): Promise<{ credentials: Record<string, string>, account: Account }> => {
   const { body, cookie } = await call('login_cellphone', { phone, captcha, countrycode: '86' }, listener)
   return {
     credentials: credentialsFrom('login_cellphone', cookie),
-    account: { id: body.profile.userId, nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl },
+    account: accountOf(body.profile),
   }
 }
 
@@ -258,7 +265,7 @@ export const fetchAccount = async (listener: Listener): Promise<Account> => {
   const { body } = await call('user_account', {}, listener)
   if (!body.account || body.account.anonimousUser || !body.profile)
     throw new NeteaseError({ kind: 'needsLogin' }, body)
-  return { id: body.profile.userId, nickname: body.profile.nickname, avatarUrl: body.profile.avatarUrl }
+  return accountOf(body.profile)
 }
 
 export type SignedInListener = Listener & { credentials: Record<string, string> }
@@ -290,26 +297,38 @@ const PRIVATE_PLAYLIST = 10
 /** 歌单头部的信息：歌单列表（user_playlist）和歌单详情（playlist_detail）给的是同一份歌单（SDK 2.12.0），曲库里的、不在曲库里的都用这一份 */
 const playlistInfo = (playlist: PlaylistSummary): PlaylistInfo => ({
   id: playlist.id,
-  name: playlist.name,
-  coverUrl: playlist.coverImgUrl,
-  creator: playlist.creator.nickname,
-  playCount: playlist.playCount,
-  description: playlist.description,
-  tags: [...playlist.tags],
+  name: playlist.name ?? null,
+  coverUrl: playlist.coverImgUrl ?? null,
+  creator: playlist.creator?.nickname ?? null,
+  playCount: playlist.playCount ?? null,
+  description: playlist.description ?? null,
+  tags: [
+    ...playlist.tags ?? [],
+  ],
 })
 
+/** 隐私标记没给时当作公开（#78） */
 const libraryPlaylist = (playlist: PlaylistSummary, kind: Playlist['kind']): Playlist => ({
   ...playlistInfo(playlist),
   kind,
   private: playlist.privacy === PRIVATE_PLAYLIST,
-  trackCount: playlist.trackCount,
-  tracksUpdatedAt: playlist.trackUpdateTime,
+  trackCount: playlist.trackCount ?? null,
+  tracksUpdatedAt: playlist.trackUpdateTime ?? null,
 })
+
+/** 认不出是我喜欢的音乐、自建的还是收藏的（specialType 或创建者编号没给）：不猜，当作上游结构变了（#78 作者定） */
+const kindOf = (playlist: PlaylistSummary, uid: number): Playlist['kind'] => {
+  const specialType = playlist.specialType
+  const creator = playlist.creator?.userId
+  if (specialType == null || creator == null)
+    throw shapeChanged('user_playlist', `认不出歌单 ${playlist.id} 是哪一类`)
+  return playlistKindOf(specialType, creator, uid)
+}
 
 /**
  * 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样。凭据失效时网易云回 200 的匿名视角：
  * 每张歌单的 subscribed 都是 null（已登录时是 true / false，#21 实测），也看不到隐私歌单，当作需要登录；
- * 要全部都是 null 才算，免得把某张 null 的歌单当成掉了登录。
+ * 要全部都是 null 才算，免得把某张 null 的歌单当成掉了登录。subscribed 整个没给（宽松字段缺了）的不算（#78）。
  */
 export const fetchPlaylists = async (uid: number, listener: Listener): Promise<Playlist[]> => {
   const playlists: Playlist[] = []
@@ -318,7 +337,7 @@ export const fetchPlaylists = async (uid: number, listener: Listener): Promise<P
     if (body.playlist.length > 0 && body.playlist.every(playlist => playlist.subscribed === null))
       throw new NeteaseError({ kind: 'needsLogin' }, body)
     for (const playlist of body.playlist)
-      playlists.push(libraryPlaylist(playlist, playlistKindOf(playlist.specialType, playlist.creator.userId, uid)))
+      playlists.push(libraryPlaylist(playlist, kindOf(playlist, uid)))
     if (!body.more)
       return playlists
   }
@@ -376,12 +395,12 @@ export const coverUploadToken = async (listener: Listener): Promise<CoverTokenRe
   }
 }
 
-/** 网易云不检查图片：只申请了凭证、没直传也回 200，所以调用方只在直传成功后调它；刚设完读歌单详情有时还是旧的（验证关卡②） */
+/** 网易云不检查图片：只申请了凭证、没直传也回 200，所以调用方只在直传成功后调它；刚设完读歌单详情有时还是旧的（验证关卡②）。没给新封面的地址时是 null（#78） */
 export const setPlaylistCover = async (playlistId: number, imgId: string, listener: Listener): Promise<SetCoverResponse> => {
   const { body } = await call('playlist_cover_update', { id: playlistId, imgId }, listener)
   if (body.code !== 200)
-    throw new NeteaseError({ kind: 'rejected', code: body.code, message: body.msg }, body)
-  return { url: body.data.url }
+    throw new NeteaseError({ kind: 'rejected', code: body.code, message: body.msg ?? '' }, body)
+  return { url: body.data.url ?? null }
 }
 
 /** playlist_detail 一次要 10 万首；我喜欢的音乐约 5,000 首时原始返回约 3.1 MB，这里只留编号 */
@@ -406,13 +425,14 @@ export const fetchPlaylistPage = async (playlistId: number, listener: Listener):
   })
   if (typeof playlist === 'string')
     return { kind: 'unavailable', reason: playlist }
+  // 没给 status 当作没删（#78）
   if (playlist.status === DELETED_PLAYLIST)
     return { kind: 'unavailable', reason: 'deleted' }
   return {
     kind: 'shown',
     playlist: playlistInfo(playlist),
     trackIds: playlist.trackIds.map(track => track.id),
-    tracksUpdatedAt: playlist.trackUpdateTime,
+    tracksUpdatedAt: playlist.trackUpdateTime ?? null,
   }
 }
 
@@ -427,42 +447,50 @@ export const fetchPlaylistTags = async (listener: Listener): Promise<PlaylistTag
     }))
 }
 
+// 歌曲的字段除了编号都是宽松的（hana-music-api 3.x）：缺了是 undefined 或 null
+
+interface NeteaseArtist {
+  readonly id?: number | null
+  readonly name?: string | null
+}
+
 interface NeteaseSong {
-  id: number
-  name: string
-  ar: readonly Credit[]
-  // 单曲搜索（cloudsearch）里专辑名是可选的（SDK 2.13.0 起），其余接口都是必有的
-  al: { id: number, name?: string | null, picUrl: string }
-  dt: number
+  readonly id: number
+  readonly name?: string | null
+  readonly ar?: readonly NeteaseArtist[] | null
+  readonly al?: { readonly id?: number | null, readonly name?: string | null, readonly picUrl?: string | null } | null
+  readonly dt?: number | null
 }
 
 /** st 小于 0 是无版权（登录后录到的都是 -200），pl 是能在线放的最高码率、0 是放不了完整的；没登录时搜索里的 st 是 -100（#31 留言），Campanula 只在登录后搜 */
 interface Privilege {
-  st: number
-  pl: number
+  readonly st?: number | null
+  readonly pl?: number | null
 }
 
-const availabilityOf = (privilege: Privilege): Availability => {
-  if (privilege.st < 0)
+/** 权限信息或其中的标记没给时按能完整播放，最后以播放地址的返回为准（#78） */
+const availabilityOf = (privilege: Privilege | null | undefined): Availability => {
+  const { st, pl } = privilege ?? {}
+  if (st != null && st < 0)
     return 'noCopyright'
-  return privilege.pl > 0
+  return pl == null || pl > 0
     ? 'full'
     : 'trial'
 }
 
-const songOf = (song: NeteaseSong, privilege: Privilege): Song => ({
+const creditOf = (artist: NeteaseArtist | null | undefined): Credit => ({ id: artist?.id ?? null, name: artist?.name ?? null })
+
+const songOf = (song: NeteaseSong, privilege: Privilege | null | undefined): Song => ({
   id: song.id,
-  name: song.name,
-  artists: song.ar.map(creditOf),
-  album: { id: song.al.id, name: song.al.name ?? null, coverUrl: song.al.picUrl },
-  duration: song.dt,
+  name: song.name ?? null,
+  artists: (song.ar ?? []).map(creditOf),
+  album: { id: song.al?.id ?? null, name: song.al?.name ?? null, coverUrl: song.al?.picUrl ?? null },
+  duration: song.dt ?? null,
   availability: availabilityOf(privilege),
 })
 
 /** 专辑页、热门歌曲、每日推荐、单曲搜索里每首歌带着自己的权限信息 */
-const songWithPrivilegeOf = (song: NeteaseSong & { privilege: Privilege }): Song => songOf(song, song.privilege)
-
-const creditOf = (artist: Credit): Credit => ({ id: artist.id, name: artist.name })
+const songWithPrivilegeOf = (song: NeteaseSong & { readonly privilege?: Privilege | null }): Song => songOf(song, song.privilege)
 
 /** 歌曲信息，按 ids 的顺序；网易云没给的不在里面 */
 export const fetchSongs = async (ids: readonly number[], listener: Listener): Promise<Song[]> => {
@@ -470,23 +498,23 @@ export const fetchSongs = async (ids: readonly number[], listener: Listener): Pr
     ids: ids.join(','),
   }, listener)
   const byId = new Map(body.songs.map(song => [song.id, song]))
-  // 权限信息在另一个数组里，按编号对上（录到的 51 份都是一首一条）
+  // 权限信息在另一个数组里，按编号对上（录到的 51 份都是一首一条）；对不上的按能播（#78）
   const privileges = new Map(body.privileges.map(privilege => [privilege.id, privilege]))
   return ids.flatMap((id) => {
     const song = byId.get(id)
-    if (!song)
-      return []
-    const privilege = privileges.get(id)
-    if (!privilege)
-      throw shapeChanged('song_detail', `歌曲 ${id} 没有权限信息`)
-    return [
-      songOf(song, privilege),
-    ]
+    return song
+      ? [
+          songOf(song, privileges.get(id)),
+        ]
+      : []
   })
 }
 
 /** 网易云给的音频地址是 http，换成 https（音频服务器支持，页面是 https 的） */
 const https = (url: string): string => url.replace(/^http:\/\//, 'https://')
+
+/** 网易云没给播放地址的有效期时按实测的 1,200 秒（验证关卡①；#78 作者定） */
+const PLAY_URL_LIFETIME_SECONDS = 1200
 
 export const fetchPlayUrl = async (songId: number, quality: Quality, listener: Listener): Promise<PlayUrlResponse> => {
   const { body } = await call('song_url_v1', { id: songId, level: quality }, listener)
@@ -496,12 +524,13 @@ export const fetchPlayUrl = async (songId: number, quality: Quality, listener: L
   return {
     playable: true,
     url: https(item.url),
-    trial: item.freeTrialInfo !== null,
-    expiresIn: item.expi,
+    // 试听标记没给当作完整的（#78）
+    trial: item.freeTrialInfo != null,
+    expiresIn: item.expi ?? PLAY_URL_LIFETIME_SECONDS,
   }
 }
 
-/** song_download_url_v1（SDK 声明了 url、size）；没给地址（无版权、这个账号下不了完整的）时 url 是 null，http 地址换成 https（验证关卡③） */
+/** song_download_url_v1（SDK 声明了 url、size）；没给地址（无版权、这个账号下不了完整的）时 url 是 null，http 地址换成 https（验证关卡③）。没给大小时是 null（#78） */
 export const fetchDownloadUrl = async (songId: number, quality: Quality, listener: Listener): Promise<DownloadUrlResponse> => {
   const { body } = await call('song_download_url_v1', { id: songId, level: quality }, listener)
   if (body.data.id !== songId)
@@ -511,7 +540,7 @@ export const fetchDownloadUrl = async (songId: number, quality: Quality, listene
   return {
     downloadable: true,
     url: https(body.data.url),
-    size: body.data.size,
+    size: body.data.size ?? null,
   }
 }
 
@@ -553,11 +582,11 @@ export const fetchLyrics = async (songId: number, listener: Listener): Promise<L
   return lyricsOf(body)
 }
 
-/** 收藏的专辑、歌手一次要这么多（#23 实测网易云接受 1,000，作者的 55 张、236 位一次取完）；网易云说还有（hasMore）就接着要 */
+/** 收藏的专辑、歌手一次要这么多（#23 实测网易云接受 1,000，作者的 55 张、236 位一次取完）；网易云说还有（hasMore）就接着要，没说当作没有了（#78） */
 const COLLECTED_PER_CALL = 1000
 
 /** 一页一页要到底：page 取从第 offset 个起的一页 */
-const everyPage = async <T>(page: (offset: number) => Promise<{ items: T[], hasMore: boolean }>): Promise<T[]> => {
+const everyPage = async <T>(page: (offset: number) => Promise<{ items: T[], hasMore: boolean | null | undefined }>): Promise<T[]> => {
   const items: T[] = []
   for (let offset = 0; ; offset += COLLECTED_PER_CALL) {
     const next = await page(offset)
@@ -572,10 +601,10 @@ export const fetchCollectedAlbums = (listener: Listener): Promise<CollectedAlbum
   return {
     items: body.data.map(album => ({
       id: album.id,
-      name: album.name,
-      coverUrl: album.picUrl,
-      artists: album.artists.map(creditOf),
-      songCount: album.size,
+      name: album.name ?? null,
+      coverUrl: album.picUrl ?? null,
+      artists: (album.artists ?? []).map(creditOf),
+      songCount: album.size ?? null,
     })),
     hasMore: body.hasMore,
   }
@@ -584,7 +613,7 @@ export const fetchCollectedAlbums = (listener: Listener): Promise<CollectedAlbum
 export const fetchCollectedArtists = (listener: Listener): Promise<CollectedArtist[]> => everyPage(async (offset) => {
   const { body } = await call('artist_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
   return {
-    items: body.data.map(artist => ({ id: artist.id, name: artist.name, avatarUrl: artist.picUrl })),
+    items: body.data.map(artist => ({ id: artist.id, name: artist.name ?? null, avatarUrl: artist.picUrl ?? null })),
     hasMore: body.hasMore,
   }
 })
@@ -594,12 +623,12 @@ export const fetchAlbum = async (albumId: number, listener: Listener): Promise<A
   return {
     album: {
       id: album.id,
-      name: album.name,
-      coverUrl: album.picUrl,
+      name: album.name ?? null,
+      coverUrl: album.picUrl ?? null,
       artist: creditOf(album.artist),
-      publishedAt: album.publishTime,
-      description: album.description,
-      songCount: album.size,
+      publishedAt: album.publishTime ?? null,
+      description: album.description ?? null,
+      songCount: album.size ?? null,
     },
     songs: songs.map(songWithPrivilegeOf),
   }
@@ -608,14 +637,14 @@ export const fetchAlbum = async (albumId: number, listener: Listener): Promise<A
 /** 歌手的一页专辑（新的在前）：从第 offset 张起，每页 ARTIST_ALBUMS_PER_REQUEST 张 */
 const artistAlbums = (artistId: number, offset: number, listener: Listener) => call('artist_album', { id: artistId, limit: ARTIST_ALBUMS_PER_REQUEST, offset }, listener)
 
-const artistAlbumOf = (album: { id: number, name: string, picUrl: string, publishTime: number }): ArtistAlbum => ({
+const artistAlbumOf = (album: { id: number, name?: string | null, picUrl?: string | null, publishTime?: number | null }): ArtistAlbum => ({
   id: album.id,
-  name: album.name,
-  coverUrl: album.picUrl,
-  publishedAt: album.publishTime,
+  name: album.name ?? null,
+  coverUrl: album.picUrl ?? null,
+  publishedAt: album.publishTime ?? null,
 })
 
-/** 歌手页：头部（在专辑那一页的返回里）、热门歌曲和第一页专辑，两个调用一起发 */
+/** 歌手页：头部（在专辑那一页的返回里，整个没给时只剩编号）、热门歌曲和第一页专辑，两个调用一起发 */
 export const fetchArtist = async (artistId: number, listener: Listener): Promise<ArtistResponse> => {
   const [top, albums] = await Promise.all([
     call('artist_top_song', { id: artistId }, listener),
@@ -624,15 +653,15 @@ export const fetchArtist = async (artistId: number, listener: Listener): Promise
   const { artist } = albums.body
   return {
     artist: {
-      id: artist.id,
-      name: artist.name,
-      avatarUrl: artist.img1v1Url,
-      songCount: artist.musicSize,
-      albumCount: artist.albumSize,
+      id: artistId,
+      name: artist?.name ?? null,
+      avatarUrl: artist?.img1v1Url ?? null,
+      songCount: artist?.musicSize ?? null,
+      albumCount: artist?.albumSize ?? null,
     },
     hotSongs: top.body.songs.map(songWithPrivilegeOf),
     albums: albums.body.hotAlbums.map(artistAlbumOf),
-    moreAlbums: albums.body.more,
+    moreAlbums: albums.body.more ?? false,
   }
 }
 
@@ -640,7 +669,7 @@ export const fetchArtistAlbums = async (artistId: number, offset: number, listen
   const { body } = await artistAlbums(artistId, offset, listener)
   return {
     albums: body.hotAlbums.map(artistAlbumOf),
-    more: body.more,
+    more: body.more ?? false,
   }
 }
 
@@ -788,17 +817,24 @@ export const collectPlaylist = async (playlistId: number, change: PlaylistCollec
 /** 比较歌名是否看起来一样时用的写法：全角半角归一（NFKC），波浪线的几种写法（～〜∼~）当成一个 */
 const lookalike = (name: string): string => name.normalize('NFKC').replace(/[\u301C\u223C]/g, '~')
 
-/** 网易云给了哪类就列哪类，不补也不跨类别去重；先后固定成单曲、歌手、专辑、歌单（order 字段 SDK 没声明，#31 录到的都是这个顺序）。点单曲搜名字，看起来一样的只留第一首 */
+/** 网易云给了哪类就列哪类，不补也不跨类别去重；先后固定成单曲、歌手、专辑、歌单（#31 录到的都是这个顺序）。点单曲搜名字，看起来一样的只留第一首；没有名字的建议不列（#78） */
 export const fetchSuggestions = async (keywords: string, listener: Listener): Promise<SuggestionsResponse> => {
   const { body } = await call('search_suggest', { keywords }, listener)
-  const { songs = [], artists = [], albums = [], playlists = [] } = body.result
-  const looks = songs.map(song => lookalike(song.name))
+  const { songs, artists, albums, playlists } = body.result
+  const named = <T extends { id: number, name?: string | null }>(items: readonly T[] | null | undefined) =>
+    (items ?? []).flatMap(({ id, name }) => name == null
+      ? []
+      : [
+          { id, name },
+        ])
+  const songNames = named(songs).map(song => song.name)
+  const looks = songNames.map(lookalike)
   return {
     suggestions: [
-      ...songs.filter((_, index) => looks.indexOf(looks[index]) === index).map(song => ({ kind: 'song' as const, name: song.name })),
-      ...artists.map(artist => ({ kind: 'artist' as const, id: artist.id, name: artist.name })),
-      ...albums.map(album => ({ kind: 'album' as const, id: album.id, name: album.name })),
-      ...playlists.map(playlist => ({ kind: 'playlist' as const, id: playlist.id, name: playlist.name })),
+      ...songNames.filter((_, index) => looks.indexOf(looks[index]) === index).map(name => ({ kind: 'song' as const, name })),
+      ...named(artists).map(artist => ({ kind: 'artist' as const, ...artist })),
+      ...named(albums).map(album => ({ kind: 'album' as const, ...album })),
+      ...named(playlists).map(playlist => ({ kind: 'playlist' as const, ...playlist })),
     ],
   }
 }
@@ -811,7 +847,7 @@ const CLOUDSEARCH_TYPES: Record<SearchKind, number> = {
   albums: 10,
 }
 
-/** 这类结果从网易云的第 offset 个起的一页。一个都没搜到时网易云不给列表，只给总数 0（#32 录制） */
+/** 这类结果从网易云的第 offset 个起的一页。一个都没搜到时网易云不给列表，只给总数 0（#32 录制）；总数没给时是 null（#78） */
 const cloudsearch = async (kind: SearchKind, keywords: string, offset: number, listener: Listener) => {
   const { body } = await call('cloudsearch', {
     keywords,
@@ -824,49 +860,49 @@ const cloudsearch = async (kind: SearchKind, keywords: string, offset: number, l
 
 export const searches: { [K in SearchKind]: (keywords: string, offset: number, listener: Listener) => Promise<SearchPageResponse<K>> } = {
   async songs(keywords, offset, listener) {
-    const { songs = [], songCount = 0 } = await cloudsearch('songs', keywords, offset, listener)
+    const { songs, songCount } = await cloudsearch('songs', keywords, offset, listener)
     return {
-      items: songs.map(songWithPrivilegeOf),
-      total: songCount,
+      items: (songs ?? []).map(songWithPrivilegeOf),
+      total: songCount ?? null,
     }
   },
   async playlists(keywords, offset, listener) {
-    const { playlists = [], playlistCount = 0 } = await cloudsearch('playlists', keywords, offset, listener)
+    const { playlists, playlistCount } = await cloudsearch('playlists', keywords, offset, listener)
     return {
-      items: playlists.map(playlist => ({
+      items: (playlists ?? []).map(playlist => ({
         id: playlist.id,
-        name: playlist.name,
-        coverUrl: playlist.coverImgUrl,
-        creator: playlist.creator.nickname,
-        trackCount: playlist.trackCount,
-        playCount: playlist.playCount,
+        name: playlist.name ?? null,
+        coverUrl: playlist.coverImgUrl ?? null,
+        creator: playlist.creator?.nickname ?? null,
+        trackCount: playlist.trackCount ?? null,
+        playCount: playlist.playCount ?? null,
       })),
-      total: playlistCount,
+      total: playlistCount ?? null,
     }
   },
   async artists(keywords, offset, listener) {
-    const { artists = [], artistCount = 0 } = await cloudsearch('artists', keywords, offset, listener)
+    const { artists, artistCount } = await cloudsearch('artists', keywords, offset, listener)
     return {
-      items: artists.map(artist => ({
+      items: (artists ?? []).map(artist => ({
         id: artist.id,
-        name: artist.name,
-        avatarUrl: artist.picUrl,
-        songCount: artist.musicSize,
+        name: artist.name ?? null,
+        avatarUrl: artist.picUrl ?? null,
+        songCount: artist.musicSize ?? null,
       })),
-      total: artistCount,
+      total: artistCount ?? null,
     }
   },
   async albums(keywords, offset, listener) {
-    const { albums = [], albumCount = 0 } = await cloudsearch('albums', keywords, offset, listener)
+    const { albums, albumCount } = await cloudsearch('albums', keywords, offset, listener)
     return {
-      items: albums.map(album => ({
+      items: (albums ?? []).map(album => ({
         id: album.id,
-        name: album.name,
-        coverUrl: album.picUrl,
-        artists: album.artists.map(creditOf),
-        publishedAt: album.publishTime,
+        name: album.name ?? null,
+        coverUrl: album.picUrl ?? null,
+        artists: (album.artists ?? []).map(creditOf),
+        publishedAt: album.publishTime ?? null,
       })),
-      total: albumCount,
+      total: albumCount ?? null,
     }
   },
 }

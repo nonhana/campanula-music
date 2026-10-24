@@ -56,7 +56,7 @@ const download = async (device: Device, app: App, recorded: Recorded): Promise<S
   const song = likedSong(app, recorded.id)
   const { data } = (await loadFixture(recorded.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }
   device.files.put((data.url as string).replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
-  device.files.put(`${song.album.coverUrl.replace(/^http:/, 'https:')}?param=512y512`, { bytes: COVER_BYTES, type: 'image/jpeg' })
+  device.files.put(`${song.album.coverUrl!.replace(/^http:/, 'https:')}?param=512y512`, { bytes: COVER_BYTES, type: 'image/jpeg' })
   await world.netease.reply(recorded.downloadUrl)
   await world.netease.reply(LYRICS)
   app.download(song)
@@ -415,9 +415,9 @@ describe('放已下载的歌', () => {
       throw new Error(`没显示下载的歌词：${JSON.stringify(shown)}`)
     expect(shown.lyrics.lines[3]).toMatchObject({ text: '夢ならばどれほどよかったでしょう' })
 
-    const cover = app.state.downloads.coverOf(first.album.coverUrl)
+    const cover = app.state.downloads.coverOf(first.album.coverUrl!)
     expect(cover && device.objectUrls.blobOf(cover)).toMatchObject({ size: COVER_BYTES, type: 'image/jpeg' })
-    expect(app.state.downloads.coverOf(likedSong(app, SECOND.id).album.coverUrl)).toBeNull()
+    expect(app.state.downloads.coverOf(likedSong(app, SECOND.id).album.coverUrl!)).toBeNull()
 
     app.play(LIKED, first.id)
     await world.settle()

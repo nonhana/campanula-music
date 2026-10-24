@@ -1,7 +1,7 @@
 import { endpoints, searchPage } from '#lib/api/endpoints.js'
 import type { Song } from '#lib/api/library.js'
 import type { SearchedItems, SearchKind, SearchPageResponse, Suggestion } from '#lib/api/search.js'
-import { SEARCH_KINDS } from '#lib/api/search.js'
+import { SEARCH_KINDS, SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.js'
 
 import type { Clock } from './browser'
 import type { LocalDb } from './local'
@@ -34,7 +34,8 @@ export type SearchList<K extends SearchKind = SearchKind>
       status: 'shown'
       /** 按网易云的顺序；翻页时在后面的页里又给了一次的不再列 */
       items: readonly SearchedItems[K][]
-      total: number
+      /** 网易云这一次说的总数；没给时是 null（#78） */
+      total: number | null
       offset: number
       more: MoreResults | null
     }
@@ -68,8 +69,10 @@ const appended = <K extends SearchKind>(items: readonly SearchedItems[K][], page
     seen.add(item.id)
   }
   const next = offset + page.items.length
-  // 空的一页就当作取完了，不再一直问
-  const more = page.items.length > 0 && next < page.total
+  // 空的一页就当作取完了，不再一直问；网易云没给总数时，这一页拿满了才再翻一页（#78）
+  const more = page.items.length > 0 && (page.total === null
+    ? page.items.length >= SEARCH_RESULTS_PER_REQUEST
+    : next < page.total)
     ? { status: 'notLoaded' } as const
     : null
   return {

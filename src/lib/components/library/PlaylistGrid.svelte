@@ -115,7 +115,10 @@
     void tick().then(() => {
       document.querySelector<HTMLElement>(`[data-playlist-id="${id}"] a`)?.focus()
       const order = sorter.order
-      const name = sorter.playlistOf(id)?.name ?? '歌单'
+      const playlist = sorter.playlistOf(id)
+      const name = playlist
+        ? playlistName(playlist)
+        : '歌单'
       announcement = `${name}移到第 ${order.indexOf(id) + 1} 张，共 ${order.length} 张`
     })
   }
@@ -298,7 +301,7 @@
         locked={sort.grabbed.private}
         look='row'
       />
-      <DragGrip label={sort.grabbed.name} size='phone' ghost />
+      <DragGrip label={playlistName(sort.grabbed)} size='phone' ghost />
     </div>
   </div>
 {:else if !phone && (sort.dragging || sort.settling) && sort.grabbed}
@@ -320,7 +323,7 @@
         flight={false}
       />
       <span class='absolute right-4 top-4 z-10'>
-        <DragGrip label={sort.grabbed.name} size='desktop' overlay ghost />
+        <DragGrip label={playlistName(sort.grabbed)} size='desktop' overlay ghost />
       </span>
     </div>
   </div>

@@ -55,8 +55,8 @@ export type DownloadUrlResponse
     downloadable: true
     /** https 地址；约 20 分钟过期，拿到就下 */
     url: string
-    /** 整首有多少字节：下完核对，对不上就是没下全 */
-    size: number
+    /** 整首有多少字节：下完核对，对不上就是没下全；网易云没给时是 null，不核对（#78） */
+    size: number | null
   }
   | { downloadable: false }
 

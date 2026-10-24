@@ -4,19 +4,20 @@ import type { LyricLine, LyricsResponse, LyricWord } from '#lib/api/playback.js'
 // [分:秒.小数] 时间标签，yrc 是 [行开始毫秒,行时长](词开始毫秒,词时长,0)词…，两种里都夹着 JSON 署名行。
 // 翻译、音译按时刻配到原文行上：yrc 配 ytlrc、yromalrc，lrc 配 tlyric、romalrc
 
+/** 除了逐行歌词 lrc，别的形式和里面的 lyric 都可能没有（hana-music-api 3.x 的宽松字段），没有就当作没有这种歌词 */
 interface LyricText {
-  readonly lyric: string
+  readonly lyric?: string | null
 }
 
 /** lyric_new 的返回里用到的部分（SDK 2.8.0 都声明了；旧的 lyric 模块没有收窄，不用） */
 export interface NeteaseLyrics {
-  readonly lrc: LyricText
-  readonly tlyric?: LyricText
-  readonly romalrc?: LyricText
-  readonly yrc?: LyricText
-  readonly ytlrc?: LyricText
-  readonly yromalrc?: LyricText
-  readonly pureMusic?: boolean
+  readonly lrc: { readonly lyric: string }
+  readonly tlyric?: LyricText | null
+  readonly romalrc?: LyricText | null
+  readonly yrc?: LyricText | null
+  readonly ytlrc?: LyricText | null
+  readonly yromalrc?: LyricText | null
+  readonly pureMusic?: boolean | null
 }
 
 /** 原文、翻译或音译里的一行：start 是毫秒（配翻译时比较用），words 已经换成秒，直接交给界面 */
@@ -115,7 +116,7 @@ const yrcLineOf = (raw: string): Timed | null => {
 }
 
 /** 一整段歌词拆成行，按开始的时刻排（同一时刻的保持原来的先后）；空行不要 */
-const linesOf = (lyric: string | undefined, format: 'lrc' | 'yrc'): Timed[] => {
+const linesOf = (lyric: string | null | undefined, format: 'lrc' | 'yrc'): Timed[] => {
   const lines = (lyric ?? '').split(/\r?\n/).flatMap((raw): Timed[] => {
     const line = raw.trim()
     if (line.startsWith('{') || format === 'yrc') {
@@ -162,7 +163,7 @@ export const lyricsOf = (body: NeteaseLyrics): LyricsResponse => {
   if (!hasLyrics(lines))
     return { kind: 'none' }
   // 逐字的优先配逐字的翻译、音译（ytlrc、yromalrc），没有再用逐行的
-  const pick = (byWordSource: { lyric: string } | undefined, byLineSource: { lyric: string } | undefined) => {
+  const pick = (byWordSource: LyricText | null | undefined, byLineSource: LyricText | null | undefined) => {
     const own = word
       ? linesOf(byWordSource?.lyric, 'lrc')
       : []

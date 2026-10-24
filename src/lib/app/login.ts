@@ -13,8 +13,8 @@ type QrLogin
     /** 重试就重新取一张 */
     | { step: 'failed', failure: RequestFailure }
     | { step: 'waiting', image: string }
-    /** 已扫码，等听众在手机上确认 */
-    | { step: 'scanned', image: string, nickname: string, avatarUrl: string }
+    /** 已扫码，等听众在手机上确认；昵称、头像网易云没给时是 null */
+    | { step: 'scanned', image: string, nickname: string | null, avatarUrl: string | null }
     | { step: 'expired', image: string }
     /** 网易云要求先完成行为验证（8821）：image 是验证用的二维码；checking 是正在查，unverified 是查过了还没通过 */
     | { step: 'verifying', image: string, checking: boolean, unverified: boolean }

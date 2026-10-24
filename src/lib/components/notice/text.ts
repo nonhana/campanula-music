@@ -1,5 +1,5 @@
 import type { Playlist, PlaylistEditProblem } from '#lib/api/library.js'
-import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, TRACKS_PER_CHANGE } from '#lib/api/library.js'
+import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, songTitle, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import type { Change } from '#lib/app/changes.js'
 import type { ChangeFailure } from '#lib/app/library.js'
 import type { OperationNotice } from '#lib/app/notice.js'
@@ -10,17 +10,22 @@ import { failureText } from '../shared/failure'
 import { formatCount } from '../shared/text'
 
 // 提示条（OperationNotice.svelte，改曲库和下载共用）说什么（#30、#33、#38）：都是一句话、不带句末句号（DESIGN.md 文案）。
-// 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写。
+// 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写。网易云没给专辑名、歌手名时不写这一项（#78）
 
 const playlistInText = (playlist: Playlist): string => playlist.kind === 'liked'
   ? playlistName(playlist)
-  : `「${playlist.name}」`
+  : `「${playlistName(playlist)}」`
+
+/** 「名字」；网易云没给名字时是空的 */
+const quoted = (name: string | null): string => name === null
+  ? ''
+  : `「${name}」`
 
 /** 没改成的是哪件事（“没能红心《歌名》：”） */
 const attempted = (change: Change): string => {
   switch (change.kind) {
     case 'heart':
-      return `没能${change.hearted ? '' : '取消'}红心《${change.song.name}》：`
+      return `没能${change.hearted ? '' : '取消'}红心《${songTitle(change.song)}》：`
     case 'add':
       return `没能加入${playlistInText(change.playlist)}：`
     case 'addMany':
@@ -32,21 +37,21 @@ const attempted = (change: Change): string => {
     case 'playlistOrder':
       return '没能保存自建歌单的顺序：'
     case 'collectAlbum':
-      return `没能${change.collected ? '' : '取消'}收藏专辑「${change.album.name}」：`
+      return `没能${change.collected ? '' : '取消'}收藏专辑${quoted(change.album.name)}：`
     case 'collectArtist':
-      return `没能${change.collected ? '' : '取消'}收藏歌手「${change.artist.name}」：`
+      return `没能${change.collected ? '' : '取消'}收藏歌手${quoted(change.artist.name)}：`
     case 'collectPlaylist':
-      return `没能${change.collected ? '' : '取消'}收藏歌单「${change.playlist.name}」：`
+      return `没能${change.collected ? '' : '取消'}收藏歌单${playlistInText(change.playlist)}：`
     case 'rename':
-      return `没能把「${change.playlist.name}」改名为「${change.name}」：`
+      return `没能把${playlistInText(change.playlist)}改名为「${change.name}」：`
     case 'describe':
-      return `没能修改「${change.playlist.name}」的简介：`
+      return `没能修改${playlistInText(change.playlist)}的简介：`
     case 'tag':
-      return `没能修改「${change.playlist.name}」的标签：`
+      return `没能修改${playlistInText(change.playlist)}的标签：`
     case 'publish':
-      return `没能把「${change.playlist.name}」改为公开：`
+      return `没能把${playlistInText(change.playlist)}改为公开：`
     case 'delete':
-      return `没能删除歌单「${change.playlist.name}」：`
+      return `没能删除歌单${playlistInText(change.playlist)}：`
     default: {
       const unhandled: never = change
       throw new Error(`不认识的修改：${JSON.stringify(unhandled)}`)
@@ -136,7 +141,7 @@ export const operationNoticeText = (notice: OperationNotice): string => {
     case 'recovered':
       return '上次关闭前的修改没保存成功，已恢复原样'
     case 'downloadFailed':
-      return `没能下载《${notice.song.name}》：${downloadFailureText(notice.failure)}`
+      return `没能下载《${songTitle(notice.song)}》：${downloadFailureText(notice.failure)}`
     default: {
       const unhandled: never = notice
       throw new Error(`不认识的提示：${JSON.stringify(unhandled)}`)

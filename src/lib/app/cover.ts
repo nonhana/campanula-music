@@ -47,12 +47,12 @@ export type CoverState
     | ({ status: 'cropping' } & CoverCropped)
     | ({ status: 'uploading' } & CoverCropped & { upload: CoverUpload & { failure: null } })
     | ({ status: 'failed' } & CoverCropped & { upload: CoverUpload & { failure: CoverFailure } })
-    /** 用设为封面后返回的 data.url，刚设完读详情有时还是旧的 */
-    | { status: 'done', playlistId: number, coverUrl: string }
+    /** 用设为封面后返回的 data.url，刚设完读详情有时还是旧的；网易云没给时是 null，先照旧显示原来的封面，下次同步再拿到（#78） */
+    | { status: 'done', playlistId: number, coverUrl: string | null }
 
 /** 取消时是 null */
 export type CoverOutcome
-  = | { ok: true, coverUrl: string }
+  = | { ok: true, coverUrl: string | null }
     | { ok: false, step: CoverStep | null, failure: CoverFailure }
 
 export interface CoverContext {
@@ -276,13 +276,15 @@ export const createCover = (context: CoverContext): PlaylistCoverEditor => {
         return null
       if (!result.ok)
         return failed('set', result.failure)
-      await context.changed(work.playlistId, result.value.url)
+      const coverUrl = result.value.url
+      if (coverUrl !== null)
+        await context.changed(work.playlistId, coverUrl)
       if (stale(work))
         return null
       images.release(work.image)
       attempt = null
-      write({ status: 'done', playlistId: work.playlistId, coverUrl: result.value.url })
-      return { ok: true, coverUrl: result.value.url }
+      write({ status: 'done', playlistId: work.playlistId, coverUrl })
+      return { ok: true, coverUrl }
     }
     finally {
       work.running = false

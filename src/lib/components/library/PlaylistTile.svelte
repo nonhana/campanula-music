@@ -8,7 +8,7 @@
   import { Lock } from '@lucide/svelte'
 
   import { getAppView } from '../shared/app-context.svelte'
-  import { formatCount, langOf } from '../shared/text'
+  import { formatSongCount, langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
   import { collectState } from './collect'
@@ -17,9 +17,11 @@
 
   interface Props {
     id: number
+    /** 显示用的名字（playlistName） */
     name: string
-    coverUrl: string
-    trackCount: number
+    coverUrl: string | null
+    /** 网易云没给首数时是 null，“N 首”不显示（#78） */
+    trackCount: number | null
     /** 别人的歌单写是谁的；自己的不写，是 null */
     creator: string | null
     locked?: boolean
@@ -40,6 +42,7 @@
     ? collectState(library, { kind: 'playlist', id })
     : null)
   const page = $derived(resolve('/playlists/[id=neteaseId]', { id }))
+  const songCount = $derived(formatSongCount(trackCount))
 </script>
 
 {#if look === 'nav'}
@@ -57,10 +60,12 @@
       'mt-2.5 block truncate text-label font-500',
       current ? 'text-primary-950' : 'text-neutral-900',
     ]} lang={langOf(name)}>{name}</span>
-    <span class={[
-      'mt-0.5 block text-caption tabular-nums',
-      current ? 'text-primary-900' : 'text-neutral-600',
-    ]}>{formatCount(trackCount)} 首</span>
+    {#if songCount !== null}
+      <span class={[
+        'mt-0.5 block text-caption tabular-nums',
+        current ? 'text-primary-900' : 'text-neutral-600',
+      ]}>{songCount}</span>
+    {/if}
   </a>
 {:else if look === 'row'}
   <div class='relative min-w-0 flex flex-1 items-center gap-3'>
@@ -68,12 +73,14 @@
       <Cover url={coverUrl} size={40} class='rounded-md' />
       <span class='min-w-0 flex-1'>
         <span class='block truncate text-label text-neutral-900 font-500' lang={langOf(name)}>{name}</span>
-        <span class='mt-0.5 flex items-center gap-1 text-caption text-neutral-600'>
-          <span class='flex-none tabular-nums'>{formatCount(trackCount)} 首</span>
-          {#if locked}
-            <Lock size={12} class='flex-none' aria-hidden='true' /><span class='sr-only'>隐私歌单</span>
-          {/if}
-        </span>
+        {#if songCount !== null || locked}
+          <span class='mt-0.5 flex items-center gap-1 text-caption text-neutral-600'>
+            {#if songCount !== null}<span class='flex-none tabular-nums'>{songCount}</span>{/if}
+            {#if locked}
+              <Lock size={12} class='flex-none' aria-hidden='true' /><span class='sr-only'>隐私歌单</span>
+            {/if}
+          </span>
+        {/if}
       </span>
     </a>
   </div>
@@ -85,15 +92,19 @@
         'mt-2.5 block truncate text-neutral-900 font-500',
         phone ? 'text-body' : 'text-label',
       ]} lang={langOf(name)}>{name}</span>
-      <span class='mt-0.5 min-w-0 flex items-center gap-1 text-caption text-neutral-600'>
-        <span class='flex-none tabular-nums'>{formatCount(trackCount)} 首</span>
-        {#if locked}
-          <Lock size={12} class='flex-none' aria-hidden='true' /><span class='sr-only'>隐私歌单</span>
-        {/if}
-        {#if creator}
-          <span class='truncate' lang={langOf(creator)}>· {creator}</span>
-        {/if}
-      </span>
+      {#if songCount !== null || locked || creator}
+        <span class='mt-0.5 min-w-0 flex items-center gap-1 text-caption text-neutral-600'>
+          {#if songCount !== null}<span class='flex-none tabular-nums'>{songCount}</span>{/if}
+          {#if locked}
+            <Lock size={12} class='flex-none' aria-hidden='true' /><span class='sr-only'>隐私歌单</span>
+          {/if}
+          {#if creator}
+            <span class='truncate' lang={langOf(creator)}>{songCount !== null || locked
+              ? `· ${creator}`
+              : creator}</span>
+          {/if}
+        </span>
+      {/if}
     </a>
     {#if collectable && status}
       <!-- 和封面图一样大的一格（自己不挡点击），收藏小圆或“自建”压在它的右下角 -->

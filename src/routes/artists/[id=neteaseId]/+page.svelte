@@ -39,6 +39,17 @@
   const more = $derived(content?.moreAlbums ?? null)
   const here = $derived(resolve('/artists/[id=neteaseId]', { id }))
   const phone = $derived(!desktopLayout.current)
+  /** “几首歌 · 几张专辑”：网易云没给的那一项连同分隔不写（#78） */
+  const counts = $derived(artist
+    ? [
+      artist.songCount === null
+        ? null
+        : `${formatCount(artist.songCount)} 首歌`,
+      artist.albumCount === null
+        ? null
+        : `${formatCount(artist.albumCount)} 张专辑`,
+    ].filter(part => part !== null).join(' · ')
+    : '')
 
   scrollSnapshot('/artists/[id=neteaseId]', () => null, () => {})
 
@@ -85,7 +96,7 @@
     >
       {#snippet meta()}
         {#if artist}
-          {formatCount(artist.songCount)} 首歌 · {formatCount(artist.albumCount)} 张专辑
+          {counts}
         {/if}
       {/snippet}
       {#snippet actions()}

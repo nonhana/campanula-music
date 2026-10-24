@@ -27,7 +27,7 @@ export type DownloadFailure
     | { kind: 'storageFull' }
 
 type DownloadTask
-  /** 正在下：音频已经收到多少字节、一共多少字节（还没拿到下载地址时不知道，是 null） */
+  /** 正在下：音频已经收到多少字节、一共多少字节（还没拿到下载地址、网易云没给大小时不知道，是 null） */
   = | { status: 'downloading', song: Song, received: number, total: number | null }
     /** 没下成：说明原因，再下一次就是重试 */
     | { status: 'failed', song: Song, failure: DownloadFailure }
@@ -104,7 +104,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   let records: Map<number, StoredDownload> | null = null
   /** records 变了才重排 */
   let songs: readonly Song[] | null = null
-  let covers = new Map<string, StoredDownload>()
+  /** 下载里存着的封面缩略图，按封面地址；没有封面的下载不在里面 */
+  let covers = new Map<string, Blob>()
   let tasks = new Map<number, DownloadTask>()
   let loading: Promise<void> | undefined
   const audioUrls = new Map<number, string>()
@@ -124,16 +125,20 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     ].sort((a, b) => b.downloadedAt - a.downloadedAt).map(record => record.song)
     covers = new Map([
       ...next.values(),
-    ].map(record => [record.song.album.coverUrl, record]))
+    ].flatMap(({ song, cover }) => song.album.coverUrl !== null && cover !== null
+      ? [
+          [song.album.coverUrl, cover] as const,
+        ]
+      : []))
   }
 
   const coverOf = (coverUrl: string): string | null => {
-    const record = covers.get(coverUrl)
-    if (!record)
+    const cover = covers.get(coverUrl)
+    if (!cover)
       return null
     let url = coverUrls.get(coverUrl)
     if (!url) {
-      url = browser.objectUrl(record.cover)
+      url = browser.objectUrl(cover)
       coverUrls.set(coverUrl, url)
     }
     return url
@@ -202,8 +207,12 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       total: size,
     })
     let shown = 0
+    const coverUrl = song.album.coverUrl
     const [audio, cover] = await Promise.all([
       transfer(url.value.url, (received) => {
+        // 网易云没给大小：算不出百分比，不跟着更新（#78）
+        if (size === null)
+          return
         // 每多收到 1% 才更新一次：几十 MB 的音频一块一块地到，每块都发布一次界面跟不上
         if (Math.floor(received * 100 / size) !== Math.floor(shown * 100 / size) || received === size) {
           shown = received
@@ -215,9 +224,13 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           })
         }
       }),
-      transfer(thumbnailUrl(song.album.coverUrl, DOWNLOAD_COVER_SIZE), () => {}),
+      // 网易云没给封面就不存封面，显示默认的（#78）
+      coverUrl === null
+        ? null
+        : transfer(thumbnailUrl(coverUrl, DOWNLOAD_COVER_SIZE), () => {}),
     ])
-    if (!audio || !cover || audio.size !== size)
+    // 没给大小时不核对，传输没出错就算下全了（#78 作者定）
+    if (!audio || (coverUrl !== null && !cover) || (size !== null && audio.size !== size))
       return fail(song, { kind: 'interrupted' })
     const record: StoredDownload = {
       song,
@@ -279,10 +292,13 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       if (audio)
         browser.revokeObjectUrl(audio)
       audioUrls.delete(songId)
-      const cover = coverUrls.get(song.album.coverUrl)
-      if (cover && !covers.has(song.album.coverUrl)) {
+      const { coverUrl } = song.album
+      const cover = coverUrl === null
+        ? undefined
+        : coverUrls.get(coverUrl)
+      if (coverUrl !== null && cover && !covers.has(coverUrl)) {
         browser.revokeObjectUrl(cover)
-        coverUrls.delete(song.album.coverUrl)
+        coverUrls.delete(coverUrl)
       }
       publish()
       context.changed()

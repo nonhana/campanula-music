@@ -38,8 +38,9 @@ export const dailyCalendarDay = (daily: DailyState | null): CalendarDay => {
   }
 }
 
+/** 网易云没给时长的歌不算进去（#78） */
 export const totalDuration = (songs: readonly Song[]): string => {
-  const minutes = Math.round(songs.reduce((sum, song) => sum + song.duration, 0) / 60_000)
+  const minutes = Math.round(songs.reduce((sum, song) => sum + (song.duration ?? 0), 0) / 60_000)
   return minutes >= 60
     ? `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分钟`
     : `${minutes} 分钟`

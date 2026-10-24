@@ -43,8 +43,8 @@ export type AddTargetBlock = 'currentPlaylist' | 'alreadyHearted' | 'alreadyInPl
 
 /** 界面照着画，措辞留给自己 */
 export interface AddTarget extends Playlist {
-  /** 拿到曲目编号后以编号为准（和列表上的首数对得上） */
-  readonly total: number
+  /** 拿到曲目编号后以编号为准（和列表上的首数对得上）；之前用网易云写的歌曲数，没给时是 null */
+  readonly total: number | null
   /** 不能选的理由；能选时是 null */
   readonly blocked: AddTargetBlock | null
 }
@@ -71,8 +71,8 @@ export interface PlaylistSongs<P = Playlist> {
   songs: readonly Song[]
   /** 按歌单里的顺序；歌曲信息还没取到时，用它判断某首歌在不在歌单里、多选勾了哪些 */
   trackIds: readonly number[]
-  /** 拿到编号后是编号数，之前是网易云写的歌曲数（我喜欢的音乐会少几首，#21 留言） */
-  total: number
+  /** 拿到编号后是编号数，之前是网易云写的歌曲数（我喜欢的音乐会少几首，#21 留言；没给时是 null，#78） */
+  total: number | null
   /** 每首歌的信息都取过一遍了；网易云没给的不在 songs 里，所以 songs 可能比 total 少几首 */
   complete: boolean
 }
@@ -106,7 +106,7 @@ export interface NeteasePlaylistSongs extends PlaylistSongs<PlaylistInfo> {
   more: PlaylistOpening | null
   /** 收藏后它进了曲库，曲目照这一份进本机副本，不用再拉一遍 */
   trackIds: readonly number[]
-  tracksUpdatedAt: number
+  tracksUpdatedAt: number | null
 }
 
 type NeteasePlaylistPage = PageState<NeteasePlaylistSongs> | { status: 'unavailable', reason: PlaylistUnavailable }
@@ -267,9 +267,13 @@ const chunks = <T>(items: readonly T[], size: number): T[][] => Array.from({
   length: Math.ceil(items.length / size),
 }, (_, index) => items.slice(index * size, (index + 1) * size))
 
+/** 本机这份曲目编号跟得上歌单列表：更新时间对得上；网易云没给更新时间时沿用本机有的（#78 作者定） */
+const tracksCurrent = (tracks: PlaylistTracks | undefined, playlist: Playlist): tracks is PlaylistTracks =>
+  tracks !== undefined && (playlist.tracksUpdatedAt === null || tracks.version === playlist.tracksUpdatedAt)
+
 const upToDate = (replica: Replica, playlist: Playlist): boolean => {
   const tracks = replica.tracks.get(playlist.id)
-  return tracks?.version === playlist.tracksUpdatedAt && tracks.complete
+  return tracksCurrent(tracks, playlist) && tracks.complete
 }
 
 /** 只有前台请求会因为断网、操作频繁失败；后台请求在后台通道等过、重发过 */
@@ -320,7 +324,10 @@ type SongsFailure = Pick<PlaylistPageFailure, 'failure' | 'source' | 'retry'>
 /** 这些规则只在这里一份；已经有一部分歌时后台同步的失败交给同步条，前台打开没拉成在列表上方说 */
 const songsViewOf = (playlist: PlaylistSongs<unknown>, opening: PlaylistOpening | null, failure: SongsFailure | null): Pick<PlaylistPage, 'songs' | 'more' | 'failure' | 'count'> => {
   if (playlist.songs.length > 0) {
-    const total = playlist.complete ? playlist.songs.length : playlist.total
+    // 有歌时一定已经拿到了曲目编号，total 就是编号数
+    const total = playlist.complete
+      ? playlist.songs.length
+      : (playlist.total ?? playlist.trackIds.length)
     const failed = opening?.status === 'failed'
       ? {
           where: 'more' as const,
@@ -506,7 +513,8 @@ const syncNoticeOf = (replica: Replica, sync: SyncStatus): SyncNoticeState | nul
       done += complete
         ? (tracks?.trackIds.length ?? 0)
         : songs
-      total += tracks?.trackIds.length ?? playlist.trackCount
+      // 没给首数的歌单拿到编号前不计（#78）
+      total += tracks?.trackIds.length ?? playlist.trackCount ?? 0
     }
     progress = { done, total }
   }
@@ -628,7 +636,7 @@ export const createLibrary = (context: LibraryContext): Library => {
   /** 新的一轮等上一轮了结再开始，所以同一时间只有一轮在发请求 */
   let running: Promise<void> = Promise.resolve()
   /** 正在拉的歌单（版本、结果）；同一张同时只有一处在拉，后台同步和打开共用，版本不同的等它拉完再拉 */
-  const pulling = new Map<number, { version: number, force: boolean, job: Promise<Pulled> }>()
+  const pulling = new Map<number, { version: number | null, force: boolean, job: Promise<Pulled> }>()
   /** 拉它的请求不经过后台的节奏 */
   const urgent = new Set<number>()
   /** 听众打开这张歌单时叫它别等了，改成前台请求马上发 */
@@ -891,7 +899,7 @@ export const createLibrary = (context: LibraryContext): Library => {
 
     let tracks = current.tracks.get(id)
     let at = tick
-    if (force || tracks?.version !== playlist.tracksUpdatedAt) {
+    if (force || !tracksCurrent(tracks, playlist)) {
       const request = stamped(() => api.get(endpoints.trackIds, { id }))
       const fetched = await playlistRequest(mine, id, request.send)
       if (!fetched?.ok)

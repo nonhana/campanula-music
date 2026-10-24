@@ -10,6 +10,7 @@
   import { tick, untrack } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
 
+  import { songTitle } from '#lib/api/library.js'
   import type { QueueEntry } from '#lib/app/player.js'
 
   import { getAppView } from '../shared/app-context.svelte'
@@ -90,14 +91,15 @@
               <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.playFromQueue(i)}>
                 <SongTitle song={entry.song} {now} {look} />
               </PlayTarget>
-              <span class='text-caption text-neutral-500 tabular-nums'>{formatDuration(entry.song.duration)}</span>
+              <!-- 网易云没给时长（#78）：留着这一格，行里各列对齐 -->
+              <span class='text-caption text-neutral-500 tabular-nums'>{#if entry.song.duration !== null}{formatDuration(entry.song.duration)}{/if}</span>
               <!-- 正在放的那首没有移出键：换歌时新旧两行一个淡出、一个淡入 -->
               <span class='grid size-9'>
                 {#if !now}
                   <button
                     type='button'
                     class='relative z-1 grid size-9 place-items-center rounded-lg text-neutral-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)'
-                    aria-label='从播放队列移出：{entry.song.name}'
+                    aria-label='从播放队列移出：{songTitle(entry.song)}'
                     data-remove={i}
                     onclick={() => remove(i)}
                     transition:fade

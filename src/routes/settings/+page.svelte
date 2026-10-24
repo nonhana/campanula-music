@@ -50,9 +50,11 @@
       <div class='mt-3 rounded-xl bg-white p-5 shadow-ambient'>
         <div class='flex items-center gap-4'>
           <Avatar url={account.avatarUrl} size={56} />
-          <p class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{account.nickname}</p>
+          {#if account.nickname !== null}
+            <p class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>{account.nickname}</p>
+          {/if}
           {#if !desktopLayout.current}
-            <IconButton icon={LogOut} label='退出登录' title='退出登录' class='-mr-2' onclick={confirmLogout} />
+            <IconButton icon={LogOut} label='退出登录' title='退出登录' class='ml-auto -mr-2' onclick={confirmLogout} />
           {/if}
         </div>
         {#if desktopLayout.current}

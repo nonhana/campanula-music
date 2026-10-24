@@ -14,7 +14,8 @@
 
   interface Props {
     id: number
-    name: string
+    /** 网易云没给歌手名时是 null，这一行不显示（#78） */
+    name: string | null
     avatarUrl: string | null
     detail?: string
     collectable?: boolean
@@ -28,9 +29,16 @@
 <div class='relative min-w-0'>
   <a href={resolve('/artists/[id=neteaseId]', { id })} class='group block min-w-0 rounded-lg text-center'>
     <Cover url={avatarUrl} size={FLIGHT_COVER_SIZE} fluid flight={page} fallback={UserRound} class='rounded-full shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
-    <span class='mt-2.5 block truncate text-label text-neutral-900 font-500' lang={langOf(name)}>{name}</span>
+    {#if name !== null}
+      <span class='mt-2.5 block truncate text-label text-neutral-900 font-500' lang={langOf(name)}>{name}</span>
+    {/if}
     {#if detail}
-      <span class='mt-0.5 block truncate text-caption text-neutral-600 tabular-nums'>{detail}</span>
+      <span class={[
+        'block truncate text-caption text-neutral-600 tabular-nums',
+        name === null
+          ? 'mt-2.5'
+          : 'mt-0.5',
+      ]}>{detail}</span>
     {/if}
   </a>
   {#if collectable}

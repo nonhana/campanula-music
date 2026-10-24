@@ -228,6 +228,22 @@ describe('首次同步', () => {
       failure: { kind: 'upstreamChanged' },
     })
   })
+
+  it('歌单列表里认不出一张歌单是哪一类（网易云没给 specialType）：不猜，停在“没能同步”，说明是网易云的返回变了；歌单列表不写进副本', async () => {
+    const device = world.device()
+    const { app } = await device.open()
+    // 构造的：我喜欢的音乐没有 specialType（tests/fixtures/netease/README.md“构造的数据”）
+    await replyLibrary({ playlists: 'library/user_playlist.unknown-kind.constructed.json', through: 'artists' })
+    await signIn(world, app)
+    await device.idle()
+
+    expect(app.state.library?.sync).toEqual({
+      status: 'failed',
+      failure: { kind: 'upstreamChanged' },
+    })
+    expect(app.state.library?.playlists).toBeNull()
+    expect(trackIdRequests(device)).toEqual([])
+  })
 })
 
 describe('本机副本', () => {
@@ -523,6 +539,19 @@ describe('歌单', () => {
       [910000111],
     ])
     expect(app.state.library?.songsOf(POEMS_ID)?.songs.map(song => song.id)).toEqual([910000111, 910000102])
+    expect(app.state.library?.sync).toEqual({ status: 'synced' })
+  })
+
+  it('再次打开 App 时歌单列表没给曲目变动时间：本机已有曲目的歌单都不重拉，沿用本机副本', async () => {
+    const device = world.device()
+    expect((await signInSynced(device)).app.state.library?.sync).toEqual({ status: 'synced' })
+    const sentTrackIds = trackIdRequests(device).length
+
+    // 构造的：上一条的歌单列表去掉了每张的 trackUpdateTime（tests/fixtures/netease/README.md“构造的数据”）；poems 在网易云那边其实变了
+    const app = await reopenWith(device, { list: 'library/user_playlist.after-no-track-update-time.constructed.json.gz', playlists: [] })
+
+    expect(trackIdRequests(device).slice(sentTrackIds)).toEqual([])
+    expect(app.state.library?.songsOf(POEMS_ID)?.songs.map(song => song.id)).toEqual(recorded(POEMS_ID).trackIds)
     expect(app.state.library?.sync).toEqual({ status: 'synced' })
   })
 

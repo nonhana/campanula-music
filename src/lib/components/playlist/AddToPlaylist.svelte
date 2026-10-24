@@ -6,6 +6,7 @@
 <script lang='ts'>
   import { Plus } from '@lucide/svelte'
 
+  import { songTitle } from '#lib/api/library.js'
   import type { AddTarget, AddTargetBlock } from '#lib/app/library.js'
 
   import type { MenuHeader, MenuItem } from '../menu/menu'
@@ -13,7 +14,7 @@
   import { getOverlays } from '../overlay/overlay-context'
   import type { AddToPlaylistRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
-  import { artistLine, formatCount, langOf } from '../shared/text'
+  import { artistLine, formatCount, formatSongCount, langOf } from '../shared/text'
   import { playlistName } from './playlist-text'
 
   const { playlistEditor, playlistPicker, playlistSelection } = getOverlays()
@@ -57,7 +58,7 @@
           lang: langOf(name),
           detail: target.blocked
             ? BLOCKED[target.blocked]
-            : `${formatCount(target.total)} 首`,
+            : formatSongCount(target.total) ?? undefined,
           disabled: target.blocked !== null,
           leading: { kind: 'cover', url: target.coverUrl, heart: target.kind === 'liked' },
           // 多选的加入由多选模块收起两层（它自己那条浅路由），壳不再关一次
@@ -78,14 +79,14 @@
     return {
       kind: 'text',
       title: '加入歌单',
-      subtitle: `${song.name} · ${artist}`,
+      subtitle: `${songTitle(song)} · ${artist}`,
       subtitleLang: langOf(song.name, artist),
     }
   }
 
   const labelOf = (request: AddToPlaylistRequest): string => request.mode === 'multi'
     ? `加入歌单：${request.songs.length} 首`
-    : `加入歌单：${request.song.name}`
+    : `加入歌单：${songTitle(request.song)}`
 
   /** 选了目标：单曲交给 App 加；多选交给多选模块（收起两层、退出多选，再一次加进去） */
   const choose = (target: AddTarget, request: AddToPlaylistRequest): void => {

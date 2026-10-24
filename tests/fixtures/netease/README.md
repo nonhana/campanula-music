@@ -144,7 +144,7 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 
 ## 构造的数据
 
-文件名带 `.constructed` 的不是录制，`context.constructed` 是 `true`：8821 那三份是 #19 为了测 8821 分支构造的（作者同意，2026-10-11），真遇到 8821 时录下来替换掉；另一个账号是 #21 构造的（作者同意，2026-10-12，作者只有一个账号）；限流那份是 #21 为了测“操作频繁”的退避构造的，真遇到限流时录下来替换掉；删除、改公开、改简介的 405 是 #33 为了测这三种修改的失败回滚构造的（作者同意，2026-10-19：这三个模块录不到失败的返回，对已删除的歌单也回 200），真遇到失败时录下来替换掉。
+文件名带 `.constructed` 的不是录制，`context.constructed` 是 `true`：8821 那三份是 #19 为了测 8821 分支构造的（作者同意，2026-10-11），真遇到 8821 时录下来替换掉；另一个账号是 #21 构造的（作者同意，2026-10-12，作者只有一个账号）；限流那份是 #21 为了测“操作频繁”的退避构造的，真遇到限流时录下来替换掉；删除、改公开、改简介的 405 是 #33 为了测这三种修改的失败回滚构造的（作者同意，2026-10-19：这三个模块录不到失败的返回，对已删除的歌单也回 200），真遇到失败时录下来替换掉；字段缺了的五份（`missing-*`、`unknown-kind`、`no-track-update-time`）是 #78 票里要求构造的（2026-10-25：hana-music-api 3.x 的宽松字段在 284 份录制里一次都没缺过），真遇到缺字段时录下来替换掉。
 
 | 文件 | 构造了什么、依据 |
 |---|---|
@@ -160,6 +160,11 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 | `playback/lyric_new.301-invalid.constructed.json` | 歌词请求的凭据失效 301（#69；歌词上的 301 没单独录到，作者要求 2026-10-24）。同样照 `library/likelist.301-invalid.json` 的真实 301 返回体，只把模块换成 `lyric_new`、查询换成 `{ id: 1466598056 }`；真录到时替换 |
 | `playback/downloads/song_download_url_v1.301-invalid.constructed.json` | 下载地址请求的凭据失效 301（#69；下载地址上的 301 没单独录到，作者要求 2026-10-24）。同样照 `library/likelist.301-invalid.json` 的真实 301 返回体，只把模块换成 `song_download_url_v1`、查询换成 `{ id: 3433267939, level: "exhigh" }`；真录到时替换 |
 | `playback/check-in/scrobble.405-rate-limited.constructed.json` | 听歌打卡的 405“操作过于频繁”（#69 测跨标签页退出时打卡锁不被卡死；打卡没录到过 405，作者要求 2026-10-24）。照 `playlist-edit/playlist_delete.405-rate-limited.constructed.json` 的返回体，只把模块换成 `scrobble`；真录到限流时替换 |
+| `library/album.missing-fields.constructed.json` | 宽松字段缺了（#78：hana-music-api 3.x 起除了返回码、路径、记录自己的编号，别的字段都可能缺，录制里还没缺过）。复制 `library/album.json`，去掉专辑的 `name`、`picUrl`、`artist`、`publishTime`，那首歌的 `name`、`ar`、`al.picUrl`、`dt` 和 `privilege` 里的 `st`、`pl` |
+| `library/playlist_detail.missing-fields.constructed.json` | 同上（#78）。复制 `library/netease-playlist/001-playlist_detail.json.gz`，去掉歌单的 `name`、`coverImgUrl`、`creator`；曲目只留前两首（`trackIds`、`tracks`、`privileges` 一起截，`trackCount` 写成 2） |
+| `library/song_detail.missing-privilege.constructed.json` | 一首歌在 `privileges` 里对不上（#78）。复制 `library/netease-playlist/002-song_detail.json.gz`，只留上一份的那两首，去掉第二首的那条权限信息，查询换成这两首的编号 |
+| `library/user_playlist.unknown-kind.constructed.json` | 认不出歌单是哪一类（#78，作者定：不猜，当作返回结构变了）。复制 `library/user_playlist.json`，只留前三张，去掉我喜欢的音乐（900000001）的 `specialType` |
+| `library/user_playlist.after-no-track-update-time.constructed.json.gz` | 曲目变动时间缺了（#78，作者定：本机有曲目就不重拉）。复制 `library/sync/after/001-user_playlist.json.gz`，去掉每张歌单的 `trackUpdateTime` |
 
 它们不进下面的清单。
 

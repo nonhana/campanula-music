@@ -3,6 +3,7 @@
   同时保持明亮、字可读（The Light-Only Fog Rule）。换歌时先加载解码新封面，再让新层在上面淡入（700ms，减少动态效果 150ms），
   淡完拿掉底下那层——底下一直有颜色，不会先变白。淡着时又换歌，等这层淡完再换，中间的歌跳过，最多两层；后台直接换，加载不出来留着上一首的颜色。
   用小缩略图（SMALL_COVER，和歌曲行、换碟先铺的同一张）就够；铺满 relative（或 fixed）的容器。
+  网易云没给封面（#78）时不染色：淡回底色（primary-50）。
 -->
 <script lang='ts'>
   import { untrack } from 'svelte'
@@ -13,13 +14,15 @@
   import { coverSource } from '../ui/Cover.svelte'
   import { SMALL_COVER } from './view'
 
-  const { coverUrl }: { coverUrl: string } = $props()
-  const wanted = $derived(coverSource(coverUrl, SMALL_COVER))
+  const { coverUrl }: { coverUrl: string | null } = $props()
+  const wanted = $derived(coverUrl === null
+    ? null
+    : coverSource(coverUrl, SMALL_COVER))
 
-  /** 平时一层；换色时多一层在最上面淡入 */
+  /** 平时一层；换色时多一层在最上面淡入。src 是 null 的是没有封面的底色层 */
   interface Layer {
     key: number
-    src: string
+    src: string | null
   }
 
   let layers = $state.raw<Layer[]>([
@@ -37,14 +40,16 @@
     const src = wanted
     if (layers.at(-1)!.src === src)
       return
-    const probe = new Image()
-    probe.src = src
-    try {
-      await probe.decode()
-    }
-    catch {
-      // 加载不出来：留着上一首的颜色
-      return
+    if (src !== null) {
+      const probe = new Image()
+      probe.src = src
+      try {
+        await probe.decode()
+      }
+      catch {
+        // 加载不出来：留着上一首的颜色
+        return
+      }
     }
     if (src !== wanted || covering || layers.at(-1)!.src === src)
       return
@@ -58,10 +63,10 @@
   }
 
   /** 淡完拿掉底下的，再看要不要接着换 */
-  const enter = (key: number): Attachment<HTMLImageElement> => (img) => {
+  const enter = (key: number): Attachment<HTMLElement> => (element) => {
     if (key === 0)
       return
-    const animation = img.animate([
+    const animation = element.animate([
       { opacity: 0 },
       { opacity: 1 },
     ], {
@@ -84,7 +89,11 @@
 
 <div class='tint' aria-hidden='true'>
   {#each layers as layer (layer.key)}
-    <img src={layer.src} alt='' draggable='false' {@attach enter(layer.key)} />
+    {#if layer.src === null}
+      <div class='blank' {@attach enter(layer.key)}></div>
+    {:else}
+      <img src={layer.src} alt='' draggable='false' {@attach enter(layer.key)} />
+    {/if}
   {/each}
   <div class='veil'></div>
 </div>
@@ -107,6 +116,12 @@
     object-fit: cover;
     filter: blur(64px) saturate(1.15);
     transform: translateZ(0);
+  }
+
+  .blank {
+    position: absolute;
+    inset: 0;
+    background: theme('colors.primary.50');
   }
 
   .veil {

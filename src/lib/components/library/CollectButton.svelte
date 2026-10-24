@@ -17,8 +17,8 @@
 
   interface Props {
     target: CollectTarget
-    /** 读屏读出的名字里要用 */
-    name: string
+    /** 读屏读出的名字里要用；网易云没给名字时是 null，只读“收藏专辑”这类（#78） */
+    name: string | null
     look: 'pill' | 'icon' | 'corner'
     class?: ClassValue
   }
@@ -31,7 +31,9 @@
     : null)
   const collected = $derived(status === 'collected')
   const Icon = $derived(collected ? CircleCheck : CirclePlus)
-  const label = $derived(`收藏${COLLECT_NOUNS[target.kind]}「${name}」`)
+  const label = $derived(name === null
+    ? `收藏${COLLECT_NOUNS[target.kind]}`
+    : `收藏${COLLECT_NOUNS[target.kind]}「${name}」`)
 
   const toggle = () => {
     void view.app.collect(target, !collected)

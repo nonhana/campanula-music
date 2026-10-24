@@ -1,4 +1,4 @@
-import { creditLine, thumbnailUrl } from '#lib/api/library.js'
+import { creditLine, songTitle, thumbnailUrl } from '#lib/api/library.js'
 
 import type { Clock, MediaSessionCapability } from './browser'
 import type { Player, PlayerState } from './player'
@@ -58,19 +58,33 @@ export const connectMediaSession = ({ session, MediaMetadata, clock, player, rea
     const { song } = state.queue[state.current]
     if (song.id !== shown) {
       shown = song.id
+      const cover = song.album.coverUrl
       session.metadata = new MediaMetadata({
-        title: song.name,
+        title: songTitle(song),
         artist: creditLine(song.artists),
         album: song.album.name ?? '',
-        artwork: [
-          { src: localCover(song.album.coverUrl) ?? thumbnailUrl(song.album.coverUrl, ARTWORK_SIZE), sizes: `${ARTWORK_SIZE}x${ARTWORK_SIZE}` },
-        ],
+        // 网易云没给封面：不给图，锁屏用系统默认的（#78）
+        artwork: cover === null
+          ? []
+          : [
+              { src: localCover(cover) ?? thumbnailUrl(cover, ARTWORK_SIZE), sizes: `${ARTWORK_SIZE}x${ARTWORK_SIZE}` },
+            ],
       })
     }
     // 取地址、缓冲时也算在放：锁屏上一直是暂停键，切歌时不闪成播放键
     const playing = state.status !== 'paused'
     session.playbackState = playing ? 'playing' : 'paused'
-    const duration = state.duration ?? song.duration / 1000
+    const duration = state.duration ?? (song.duration === null
+      ? null
+      : song.duration / 1000)
+    // 网易云没给时长、音频也还没加载出来：先不告诉锁屏进度，等音频给出时长（#78）
+    if (duration === null) {
+      if (told) {
+        told = null
+        session.setPositionState()
+      }
+      return
+    }
     const position = Math.min(state.position, duration)
     const now = clock.now()
     if (told && told.songId === song.id && told.duration === duration && told.playing === playing) {

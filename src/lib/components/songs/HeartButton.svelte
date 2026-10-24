@@ -9,6 +9,7 @@
   import { Heart } from '@lucide/svelte'
 
   import type { Song } from '#lib/api/library.js'
+  import { songTitle } from '#lib/api/library.js'
 
   import { getAppView } from '../shared/app-context.svelte'
   import { iconSwap } from '../shared/motion'
@@ -34,7 +35,7 @@
       'grid flex-none place-items-center transition-[background-color,color,opacity,transform] duration-feedback enabled:press disabled:(cursor-not-allowed opacity-50) mouse:enabled:hover:(bg-primary-100 text-primary-950)',
       look.button,
     ]}
-    aria-label='红心《{song.name}》'
+    aria-label='红心《{songTitle(song)}》'
     aria-pressed={hearted}
     disabled={hearts === null}
     onclick={() => view.app.heart(song, !hearted)}

@@ -45,14 +45,14 @@ export interface CollectRequest {
 /** 收藏要带网易云的反作弊令牌（浏览器里的 Watchman 现取，服务端只透传、不记不存），取消收藏不带（官方网页版就是这样，#30 留言） */
 export type PlaylistCollectRequest = { collected: true, checkToken: string } | { collected: false }
 
-/** 歌单头部：曲库里的、不在曲库里的都一样（歌单列表和详情给的是同一份，SDK 的 PlaylistSummary） */
+/** 歌单头部：曲库里的、不在曲库里的都一样（歌单列表和详情给的是同一份，SDK 的 PlaylistSummary）。null 是网易云没给（#78） */
 export interface PlaylistInfo {
   id: number
-  name: string
-  coverUrl: string
+  name: string | null
+  coverUrl: string | null
   /** 收藏的、不在曲库里的歌单下面写是谁的 */
-  creator: string
-  playCount: number
+  creator: string | null
+  playCount: number | null
   /** 没写时是 null */
   description: string | null
   tags: string[]
@@ -60,12 +60,12 @@ export interface PlaylistInfo {
 
 export interface Playlist extends PlaylistInfo {
   kind: 'liked' | 'own' | 'collected'
-  /** 隐私歌单：只有自己看得到 */
+  /** 隐私歌单：只有自己看得到。网易云没给隐私标记时当作公开（#78） */
   private: boolean
   /** 网易云写的歌曲数。我喜欢的音乐的这个数会比曲目编号少几首（验证关卡①：4,965 对 4,968），拿到编号后以编号为准 */
-  trackCount: number
-  /** 曲目最后一次变动的时间（毫秒）：和本机副本里的比，变了才重拉曲目 */
-  tracksUpdatedAt: number
+  trackCount: number | null
+  /** 曲目最后一次变动的时间（毫秒）：和本机副本里的比，变了才重拉曲目。网易云没给时是 null，本机有曲目就不重拉（#78） */
+  tracksUpdatedAt: number | null
 }
 
 /** 我喜欢的音乐在网易云 user_playlist 里的 specialType（和曲库同步、mock 共用） */
@@ -189,12 +189,12 @@ export type PlaylistUnavailable = 'deleted' | 'missing' | 'private'
 
 /** 不在曲库里的一张歌单，每次打开都联网取（ADR-0007）；歌曲信息另按页取（songs 端点）。tracksUpdatedAt 和歌单列表里的一样：收藏后它进了曲库，本机副本照它判断曲目变没变 */
 export type PlaylistPageResponse
-  = | { kind: 'shown', playlist: PlaylistInfo, trackIds: number[], tracksUpdatedAt: number }
+  = | { kind: 'shown', playlist: PlaylistInfo, trackIds: number[], tracksUpdatedAt: number | null }
     | { kind: 'unavailable', reason: PlaylistUnavailable }
 
-/** 署名的歌手。传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48） */
+/** 署名的歌手。传到云盘、没匹配上曲库的歌：歌手的编号是 0、名字是 null（SDK 2.4.0，nonhana/hana-music-api#48）；网易云没给的也是 null（#78） */
 export interface Credit {
-  id: number
+  id: number | null
   name: string | null
 }
 
@@ -206,22 +206,28 @@ export const creditLine = (credits: readonly Credit[]): string => {
     : '未知歌手'
 }
 
+/** 歌名：网易云没给时写“未知歌曲”（#78）。只在显示时换，数据里仍是 null：导出不能把它当成歌名写进文件 */
+export const songTitle = (song: Pick<Song, 'name'>): string => song.name ?? '未知歌曲'
+
 /** 网易云图片（coverUrl、头像）的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */
 export const thumbnailUrl = (url: string, pixels: number): string => `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
 
+// 下面这些接口里的 null：网易云没给（hana-music-api 3.x 的宽松字段缺了或类型不对，ADR-0005）。界面上歌名写“未知歌曲”、
+// 歌单名写“未命名歌单”，别的文字和数字不显示这一项，封面用默认的（#78）
+
 export interface Song {
   id: number
-  name: string
+  name: string | null
   artists: Credit[]
   album: {
-    id: number
-    /** 传到云盘、没匹配上曲库的歌是 null */
+    id: number | null
+    /** 传到云盘、没匹配上曲库的歌也是 null */
     name: string | null
-    coverUrl: string
+    coverUrl: string | null
   }
   /** 时长，毫秒 */
-  duration: number
-  /** 网易云的权限信息 privilege；列表里事先标出来，播放时以取到的播放地址为准 */
+  duration: number | null
+  /** 网易云的权限信息 privilege；列表里事先标出来，播放时以取到的播放地址为准。权限标记缺了按能完整播放（#78） */
   availability: Availability
 }
 
@@ -245,11 +251,11 @@ export interface SongsResponse {
 
 export interface CollectedAlbum {
   id: number
-  name: string
-  coverUrl: string
+  name: string | null
+  coverUrl: string | null
   artists: Credit[]
-  /** 网易云写的歌曲数：和本机存着的专辑页的对不上才重拉专辑页 */
-  songCount: number
+  /** 网易云写的歌曲数：和本机存着的专辑页的对不上才重拉专辑页（两边都没给时当作没变） */
+  songCount: number | null
 }
 
 /** 收藏的专辑，最近收藏的在前，和网易云的顺序一样 */
@@ -259,8 +265,8 @@ export interface CollectedAlbumsResponse {
 
 export interface CollectedArtist {
   id: number
-  name: string
-  /** 原图不一定是正方形；在搜索结果里收藏的、没有头像的歌手是 null */
+  name: string | null
+  /** 原图不一定是正方形；在搜索结果里收藏的、没有头像的歌手也是 null */
   avatarUrl: string | null
 }
 
@@ -272,26 +278,26 @@ export interface CollectedArtistsResponse {
 export interface AlbumResponse {
   album: {
     id: number
-    name: string
-    coverUrl: string
-    /** 专辑署名的歌手（网易云只给一位主要的） */
+    name: string | null
+    coverUrl: string | null
+    /** 专辑署名的歌手（网易云只给一位主要的）；没给时编号和名字都是 null */
     artist: Credit
     /** 发行时间（毫秒） */
-    publishedAt: number
+    publishedAt: number | null
     /** 简介；没有时是 null（nonhana/hana-music-api#59） */
     description: string | null
     /** 网易云写的歌曲数：本机存着的专辑页按它判断收藏的专辑变没变（和收藏的专辑列表里的 songCount 比） */
-    songCount: number
+    songCount: number | null
   }
   songs: Song[]
 }
 
 export interface ArtistAlbum {
   id: number
-  name: string
-  coverUrl: string
+  name: string | null
+  coverUrl: string | null
   /** 发行时间（毫秒） */
-  publishedAt: number
+  publishedAt: number | null
 }
 
 /** 歌手页的专辑一次取这么多张。专辑最多的歌手有五千多张（#23 留言），一次全取太大 */
@@ -301,11 +307,11 @@ export const ARTIST_ALBUMS_PER_REQUEST = 100
 export interface ArtistResponse {
   artist: {
     id: number
-    name: string
+    name: string | null
     /** 正方形的头像 */
-    avatarUrl: string
-    songCount: number
-    albumCount: number
+    avatarUrl: string | null
+    songCount: number | null
+    albumCount: number | null
   }
   hotSongs: Song[]
   albums: ArtistAlbum[]

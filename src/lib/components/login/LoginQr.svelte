@@ -69,7 +69,9 @@
       <span class='absolute inset-0 grid place-items-center text-center' transition:fade>
         <span class='flex flex-col items-center'>
           <Avatar url={qr.avatarUrl} size={48} class='ring-2 ring-white' />
-          <span class='mt-2.5 max-w-40 truncate text-label text-neutral-900 font-500'>{qr.nickname}</span>
+          {#if qr.nickname !== null}
+            <span class='mt-2.5 max-w-40 truncate text-label text-neutral-900 font-500'>{qr.nickname}</span>
+          {/if}
         </span>
       </span>
     {:else if qr?.step === 'expired' || qr?.step === 'failed'}

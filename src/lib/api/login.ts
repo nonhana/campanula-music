@@ -14,8 +14,8 @@ export interface QrCheckRequest {
 
 export type QrCheckResponse
   = | { status: 'waiting' }
-  /** 已扫码，等听众在手机上确认；带着扫码的网易云账号的昵称和头像 */
-    | { status: 'scanned', nickname: string, avatarUrl: string }
+  /** 已扫码，等听众在手机上确认；带着扫码的网易云账号的昵称和头像（网易云没给时是 null） */
+    | { status: 'scanned', nickname: string | null, avatarUrl: string | null }
     | { status: 'expired' }
   /** 网易云要求先完成行为验证（8821）：用网易云 App 扫这张图，在手机上验证完再查一次 */
     | { status: 'needsVerification', image: string }
