@@ -56,7 +56,9 @@
           key: String(target.id),
           label: name,
           lang: langOf(name),
-          detail: target.blocked ? BLOCKED[target.blocked] : `${formatCount(target.total)} 首`,
+          detail: target.blocked
+            ? BLOCKED[target.blocked]
+            : `${formatCount(target.total)} 首`,
           disabled: target.blocked !== null,
           leading: { kind: 'cover', url: target.coverUrl, heart: target.kind === 'liked' },
           // 多选的加入由多选模块收起两层（它自己那条浅路由），壳不再关一次
@@ -83,7 +85,9 @@
   }
 
   function labelOf(request: AddToPlaylistRequest): string {
-    return request.mode === 'multi' ? `加入歌单：${request.songs.length} 首` : `加入歌单：${request.song.name}`
+    return request.mode === 'multi'
+      ? `加入歌单：${request.songs.length} 首`
+      : `加入歌单：${request.song.name}`
   }
 
   /** 选了目标：单曲交给 App 加；多选交给多选模块（收起两层、退出多选，再一次加进去） */

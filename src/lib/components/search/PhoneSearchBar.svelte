@@ -41,7 +41,9 @@
     aria-expanded={suggesting}
     aria-controls={suggesting ? SUGGESTION_LIST_ID : undefined}
     aria-autocomplete='list'
-    aria-activedescendant={suggesting ? activeSuggestionId(view.app) : undefined}
+    aria-activedescendant={suggesting
+      ? activeSuggestionId(view.app)
+      : undefined}
     lang={langOf(searchBox.draft)}
     {onkeydown}
   />

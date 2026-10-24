@@ -154,11 +154,19 @@ export class FakeImages {
     if (this.exportError)
       throw this.exportError
     this.exports.push({ image, crop })
-    return new Blob([new Uint8Array(this.exportBytes)], { type: 'image/jpeg' })
+    return new Blob([
+      new Uint8Array(this.exportBytes),
+    ], { type: 'image/jpeg' })
   }
 
   uploadCoverImage(url: string, jpeg: Blob, token: string, signal: AbortSignal): Promise<void> {
-    const upload: FakeCoverUpload = { url, jpeg, token, signal, aborted: false }
+    const upload: FakeCoverUpload = {
+      url,
+      jpeg,
+      token,
+      signal,
+      aborted: false,
+    }
     this.uploads.push(upload)
     if (this.uploadError)
       return Promise.reject(this.uploadError)
@@ -241,7 +249,9 @@ export class FakeFiles {
         throw new TypeError('network error')
     }
     onProgress(file.bytes)
-    return new Blob([new Uint8Array(file.bytes)], { type: file.type })
+    return new Blob([
+      new Uint8Array(file.bytes),
+    ], { type: file.type })
   }
 }
 
@@ -318,7 +328,9 @@ export class FakeLocks implements LocksCapability {
   request<T>(name: string, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
   request<T>(name: string, options: LockOptions, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
   request<T>(name: string, ...args: [LockGrantedCallback<T>] | [LockOptions, LockGrantedCallback<T>]): Promise<Awaited<T>> {
-    const [options, callback] = args.length === 1 ? [{}, args[0]] : args
+    const [options, callback] = args.length === 1
+      ? [{}, args[0]]
+      : args
     const { mode = 'exclusive', ifAvailable = false, steal = false, signal } = options
     // §3.2.1 request() 第 5～9 步
     const notSupported = (message: string) => Promise.reject(new DOMException(message, 'NotSupportedError'))
@@ -336,7 +348,14 @@ export class FakeLocks implements LocksCapability {
       throw new Error('Web Locks 替身没有做 steal')
 
     return new Promise((resolve, reject) => {
-      const request: LockRequest = { name, mode, callback: callback as LockGrantedCallback<unknown>, signal, invoked: false, settle: { resolve: resolve as (value: unknown) => void, reject } }
+      const request: LockRequest = {
+        name,
+        mode,
+        callback: callback as LockGrantedCallback<unknown>,
+        signal,
+        invoked: false,
+        settle: { resolve: resolve as (value: unknown) => void, reject },
+      }
       const queue = this.#queue(name)
       // §4.1 第 3.5 步
       if (ifAvailable && !this.#grantable(request)) {
@@ -372,7 +391,9 @@ export class FakeLocks implements LocksCapability {
     if (queue.length > 0 && queue[0] !== request)
       return false
     const sameName = this.#held.filter(lock => lock.name === request.name)
-    return request.mode === 'exclusive' ? sameName.length === 0 : sameName.every(lock => lock.mode !== 'exclusive')
+    return request.mode === 'exclusive'
+      ? sameName.length === 0
+      : sameName.every(lock => lock.mode !== 'exclusive')
   }
 
   /** §4.4 process the lock request queue */
@@ -426,8 +447,11 @@ export class FakeBroadcast {
       this.pending += 1
       setImmediate(() => {
         this.pending -= 1
-        if (!destination.closed)
-          destination.dispatchEvent(new MessageEvent('message', { data: structuredClone(data) }))
+        if (!destination.closed) {
+          destination.dispatchEvent(new MessageEvent('message', {
+            data: structuredClone(data),
+          }))
+        }
       })
     }
   }
@@ -481,7 +505,9 @@ export class FakeMediaSession implements MediaSessionCapability {
 
   /** 锁屏和通知栏上有哪些按钮 */
   get actions(): MediaSessionAction[] {
-    return [...this.#handlers.keys()]
+    return [
+      ...this.#handlers.keys(),
+    ]
   }
 
   setActionHandler(action: MediaSessionAction, handler: MediaSessionActionHandler | null): void {
@@ -711,8 +737,11 @@ export class FakeAudio extends EventTarget implements AudioCapability {
   }
 
   #reject(pending: PendingPlay[], name: 'AbortError' | 'NotSupportedError'): void {
-    for (const play of pending)
-      play.reject(new DOMException(name === 'AbortError' ? '播放被打断' : '地址放不了', name))
+    for (const play of pending) {
+      play.reject(new DOMException(name === 'AbortError'
+        ? '播放被打断'
+        : '地址放不了', name))
+    }
   }
 
   #fire(type: string): void {

@@ -6,11 +6,24 @@ import { MemoryOverlayHistory } from './harness/overlay-history'
 describe('返回可收起的层', () => {
   it('菜单转交加入歌单再新建，返回直接收起，不回到旧菜单', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const menu = stack.register<{ from: string }>('menu', { history: () => true, modal: true })
-    const picker = stack.register<{ from: string }>('picker', { history: () => true, modal: true })
-    const editor = stack.register<{ from: string }>('editor', { history: () => true, modal: true })
+    const menu = stack.register<{ from: string }>('menu', {
+      history: () => true,
+      modal: true,
+    })
+    const picker = stack.register<{ from: string }>('picker', {
+      history: () => true,
+      modal: true,
+    })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
     await menu.open({ from: 'more' })
     await menu.transfer(picker, { from: 'more' })
     await picker.transfer(editor, { from: 'more' })
@@ -34,8 +47,14 @@ describe('返回可收起的层', () => {
       },
     }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const player = stack.register<{ from: string }>('player', { history: () => true, modal: true })
-    const queue = stack.register<{ from: string }>('queue', { history: () => true, modal: true })
+    const player = stack.register<{ from: string }>('player', {
+      history: () => true,
+      modal: true,
+    })
+    const queue = stack.register<{ from: string }>('queue', {
+      history: () => true,
+      modal: true,
+    })
     await player.open({ from: 'player-bar' })
     await queue.open({ from: 'queue-button' })
     expect(player.inert).toBe(true)
@@ -117,9 +136,16 @@ describe('返回可收起的层', () => {
 
   it('忙时 Esc 和返回都不关层，返回恢复原历史条目而不增压', async () => {
     const history = new MemoryOverlayHistory('/playlists')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const editor = stack.register<{ from: string }>('editor', { history: () => true, modal: true })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
     await editor.open({ from: 'new' })
     editor.setBusy(true)
     await stack.escape()
@@ -135,11 +161,21 @@ describe('返回可收起的层', () => {
 
   it('编辑叠换封面后刷新、返回旧浅条，新会话清标记后重新开关不多退', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const effects = { changed() {}, async rendered() {}, focus() {} }
+    const effects = {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }
     const old = new OverlayStack<string>(history, effects, 'old')
     history.listen(phase => old.reconcile(phase))
-    const editor = old.register<{ from: string }>('editor', { history: () => true, modal: true })
-    const cover = old.register<{ from: string }>('cover', { history: () => true, modal: true })
+    const editor = old.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
+    const cover = old.register<{ from: string }>('cover', {
+      history: () => true,
+      modal: true,
+    })
     await editor.open({ from: 'more' })
     await cover.open({ from: 'cover-button' })
     history.reload()
@@ -147,7 +183,10 @@ describe('返回可收起的层', () => {
     history.listen(phase => stack.reconcile(phase))
     await history.back()
     expect(history.read().marker).toBeUndefined()
-    const reopened = stack.register<{ from: string }>('editor', { history: () => true, modal: true })
+    const reopened = stack.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
     await reopened.open({ from: 'more' })
     expect(history.index).toBe(2)
     await reopened.close()
@@ -157,10 +196,20 @@ describe('返回可收起的层', () => {
 
   it('esc 只关最上层；下层按钮不能越过它，桌面层不压历史', async () => {
     const history = new MemoryOverlayHistory('/playlists')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const editor = stack.register<{ from: string }>('editor', { history: () => false, modal: true })
-    const cover = stack.register<{ from: string }>('cover', { history: () => false, modal: true })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => false,
+      modal: true,
+    })
+    const cover = stack.register<{ from: string }>('cover', {
+      history: () => false,
+      modal: true,
+    })
     await editor.open({ from: 'new' })
     await cover.open({ from: 'cover' })
     await editor.close()
@@ -173,10 +222,20 @@ describe('返回可收起的层', () => {
 
   it('删除或退出先消费所有层再替换底页，返回不会回到删除页', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const selection = stack.register<{ from: string }>('selection', { history: () => true, modal: false })
-    const confirm = stack.register<{ from: string }>('confirm', { history: () => true, modal: true })
+    const selection = stack.register<{ from: string }>('selection', {
+      history: () => true,
+      modal: false,
+    })
+    const confirm = stack.register<{ from: string }>('confirm', {
+      history: () => true,
+      modal: true,
+    })
     await selection.open({ from: 'select' })
     await confirm.open({ from: 'delete' })
     await confirm.leaveTo('/playlists')
@@ -189,10 +248,20 @@ describe('返回可收起的层', () => {
 
   it('触屏菜单转交桌面弹窗，消费原浅条而不压桌面历史', async () => {
     const history = new MemoryOverlayHistory('/playlists')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const menu = stack.register<{ from: string }>('menu', { history: () => true, modal: true })
-    const editor = stack.register<{ from: string }>('editor', { history: () => false, modal: true })
+    const menu = stack.register<{ from: string }>('menu', {
+      history: () => true,
+      modal: true,
+    })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => false,
+      modal: true,
+    })
     await menu.open({ from: 'more' })
     await menu.transfer(editor, { from: 'more' })
     expect(history.index).toBe(0)
@@ -204,7 +273,11 @@ describe('返回可收起的层', () => {
 
   it('上传中返回先取消上传但保留裁剪层和原历史，下一次才关闭', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
     let uploading = true
     let cancelled = 0
@@ -231,9 +304,16 @@ describe('返回可收起的层', () => {
 
   it('浅路由失败不留下空层、inert 或错误地消费历史，重试仍能打开', async () => {
     const history = new MemoryOverlayHistory('/playlists')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const editor = stack.register<{ from: string }>('editor', { history: () => true, modal: true })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
     history.failNext('write', 'beforeCommit')
     await expect(editor.open({ from: 'new' })).rejects.toThrow()
     expect(stack.top).toBeNull()
@@ -246,9 +326,16 @@ describe('返回可收起的层', () => {
 
   it('离开被拒绝时恢复原层的历史，仍可关闭或重试', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const editor = stack.register<{ from: string }>('editor', { history: () => true, modal: true })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
     await editor.open({ from: 'delete' })
     history.failNext('leave', 'beforeCommit')
     await expect(editor.leaveTo('/playlists')).rejects.toThrow()
@@ -260,9 +347,16 @@ describe('返回可收起的层', () => {
 
   it('会话清空时尚未完成的打开不会把旧层和 inert 放回来', async () => {
     const history = new MemoryOverlayHistory('/playlists')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const editor = stack.register<{ from: string }>('editor', { history: () => true, modal: true })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
     const held = history.holdNext('write', 'afterCommit')
     const opening = editor.open({ from: 'new' })
     await held.reached
@@ -276,10 +370,23 @@ describe('返回可收起的层', () => {
 
   it('同会话的播放页和队列按原条目前进恢复，不再压历史', async () => {
     const history = new MemoryOverlayHistory('/downloads')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const player = stack.register<{ from: string }>('player', { history: () => true, modal: true, restore: () => true })
-    const queue = stack.register<{ from: string }>('queue', { history: () => true, modal: true, restore: () => true, dependsOn: 'player' })
+    const player = stack.register<{ from: string }>('player', {
+      history: () => true,
+      modal: true,
+      restore: () => true,
+    })
+    const queue = stack.register<{ from: string }>('queue', {
+      history: () => true,
+      modal: true,
+      restore: () => true,
+      dependsOn: 'player',
+    })
     await player.open({ from: 'bar' })
     await queue.open({ from: 'queue-button' })
     await player.closeThrough()
@@ -293,10 +400,20 @@ describe('返回可收起的层', () => {
 
   it('来源歌曲变空不销毁独立忙碌新建，关闭时一并消费多选空槽', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const selection = stack.register<{ from: string }>('selection', { history: () => true, modal: false })
-    const editor = stack.register<{ from: string }>('editor', { history: () => true, modal: true })
+    const selection = stack.register<{ from: string }>('selection', {
+      history: () => true,
+      modal: false,
+    })
+    const editor = stack.register<{ from: string }>('editor', {
+      history: () => true,
+      modal: true,
+    })
     await selection.open({ from: 'select' })
     await editor.open({ from: 'batch' })
     editor.setBusy(true)
@@ -310,9 +427,16 @@ describe('返回可收起的层', () => {
 
   it('已排队但会话失效的离开明确返回 invalidated，不能放行后续业务', async () => {
     const history = new MemoryOverlayHistory('/settings')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const confirm = stack.register<{ from: string }>('confirm', { history: () => true, modal: true })
+    const confirm = stack.register<{ from: string }>('confirm', {
+      history: () => true,
+      modal: true,
+    })
     await confirm.open({ from: 'logout' })
     const leaving = confirm.leaveTo('/')
     stack.clear()
@@ -324,9 +448,17 @@ describe('返回可收起的层', () => {
 describe('审查反例的历史与来源失效', () => {
   function scene() {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase), () => stack.navigate())
-    const register = (name: string, options: Partial<LayerOptions<{ from: string }>> = {}) => stack.register<{ from: string }>(name, { history: () => true, modal: true, ...options })
+    const register = (name: string, options: Partial<LayerOptions<{ from: string }>> = {}) => stack.register<{ from: string }>(name, {
+      history: () => true,
+      modal: true,
+      ...options,
+    })
     return { history, stack, register }
   }
 
@@ -448,13 +580,22 @@ describe('审查反例的历史与来源失效', () => {
 
   it('同一层按请求依赖来源：单曲那条不要求多选开着，多选那条随多选失效', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'session')
     history.listen(phase => stack.reconcile(phase))
-    const selection = stack.register<{ from: string }>('selection', { history: () => false, modal: false })
+    const selection = stack.register<{ from: string }>('selection', {
+      history: () => false,
+      modal: false,
+    })
     const picker = stack.register<{ from: string, mode: 'song' | 'multi' }>('picker', {
       history: () => false,
       modal: false,
-      dependsOn: request => request.mode === 'multi' ? 'selection' : null,
+      dependsOn: request => request.mode === 'multi'
+        ? 'selection'
+        : null,
     })
 
     // 歌曲菜单转交来的单曲选择器：多选没开也能打开
@@ -475,7 +616,9 @@ describe('审查反例的历史与来源失效', () => {
   it('来源变空保留独立播放页，其后关闭消费多选留下的物理槽', async () => {
     const { history, register } = scene()
     const selection = register('selection', { modal: false })
-    const player = register('player', { restore: () => true })
+    const player = register('player', {
+      restore: () => true,
+    })
     await selection.open({ from: 'select' })
     await player.open({ from: 'bar' })
     await selection.invalidate()
@@ -487,7 +630,9 @@ describe('审查反例的历史与来源失效', () => {
   it('播放队列清空后前进不能恢复无内容的 inert 层', async () => {
     const { history, stack, register } = scene()
     let playable = true
-    const player = register('player', { restore: () => playable })
+    const player = register('player', {
+      restore: () => playable,
+    })
     await player.open({ from: 'bar' })
     await history.back()
     playable = false
@@ -498,7 +643,9 @@ describe('审查反例的历史与来源失效', () => {
 
   it('前进只恢复播放层，不复活已经结束的菜单', async () => {
     const { history, stack, register } = scene()
-    const player = register('player', { restore: () => true })
+    const player = register('player', {
+      restore: () => true,
+    })
     const menu = register('menu')
     await player.open({ from: 'bar' })
     await menu.open({ from: 'more' })
@@ -543,7 +690,9 @@ describe('审查反例的历史与来源失效', () => {
 
   it('原生返回已移动而 page.state 未更新时，不可在旧位置继续打开层', async () => {
     const { history, stack, register } = scene()
-    await register('player', { restore: () => true }).open({ from: 'bar' })
+    await register('player', {
+      restore: () => true,
+    }).open({ from: 'bar' })
     const editor = register('editor')
     const held = history.holdNext('traverse', 'afterCommit')
     const back = history.back()
@@ -583,8 +732,13 @@ describe('审查反例的历史与来源失效', () => {
 
   it('换到别的页面再回来，连续前进按原条目恢复播放页与队列，关队列仍退回播放页', async () => {
     const { history, stack, register } = scene()
-    const player = register('player', { restore: () => true })
-    const queue = register('queue', { restore: () => true, dependsOn: 'player' })
+    const player = register('player', {
+      restore: () => true,
+    })
+    const queue = register('queue', {
+      restore: () => true,
+      dependsOn: 'player',
+    })
     await history.navigate('/playlists/2')
     await player.open({ from: 'bar' })
     await queue.open({ from: 'queue-button' })
@@ -609,7 +763,9 @@ describe('审查反例的历史与来源失效', () => {
   it('换页后前进不恢复空队列的播放层', async () => {
     const { history, stack, register } = scene()
     let playable = true
-    const player = register('player', { restore: () => playable })
+    const player = register('player', {
+      restore: () => playable,
+    })
     await history.navigate('/playlists/2')
     await player.open({ from: 'bar' })
     await history.back()
@@ -640,12 +796,18 @@ describe('审查反例的历史与来源失效', () => {
 
   it('刷新后的新会话不认旧条目上的恢复标记', async () => {
     const { history, register } = scene()
-    const player = register('player', { restore: () => true })
+    const player = register('player', {
+      restore: () => true,
+    })
     await history.navigate('/playlists/2')
     await player.open({ from: 'bar' })
     await history.back()
     history.reload()
-    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'new-session')
+    const stack = new OverlayStack<string>(history, {
+      changed() {},
+      async rendered() {},
+      focus() {},
+    }, 'new-session')
     history.listen(phase => stack.reconcile(phase), () => stack.navigate())
     await history.forward()
     expect(stack.top).toBeNull()

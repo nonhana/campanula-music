@@ -54,7 +54,9 @@ export function pick(view: AppView, play: () => void, cover: HTMLElement | undef
 async function takeOff(song: Song, from: Song | null, cover: HTMLElement): Promise<void> {
   const mine = ++launches
   ground()
-  const img = [...cover.querySelectorAll('img')].findLast(each => each.complete && each.naturalWidth > 0)
+  const img = [
+...cover.querySelectorAll('img'),
+].findLast(each => each.complete && each.naturalWidth > 0)
   if (!img || reducedMotion() || unseen()) {
     flight = null
     return
@@ -90,7 +92,11 @@ async function takeOff(song: Song, from: Song | null, cover: HTMLElement): Promi
     pointerEvents: 'none',
   })
   document.body.append(element)
-  const animation = element.animate(arc(start, end), { duration: DURATIONS['focal-bar'], easing: cssEasing('out-soft'), fill: 'forwards' })
+  const animation = element.animate(arc(start, end), {
+duration: DURATIONS['focal-bar'],
+easing: cssEasing('out-soft'),
+fill: 'forwards',
+})
   plane = { element, animation }
   // 被拿掉时（又点了一首、换了歌）finished 会失败
   if (!await animation.finished.then(() => true, () => false) || mine !== launches)
@@ -144,7 +150,9 @@ function arc(from: DOMRect, to: DOMRect): Keyframe[] {
   const dy = to.y - from.y
   const length = Math.hypot(dx, dy) || 1
   // 控制点在连线正中往外推，推向和连线垂直、朝上的那一边（竖直往下飞时往右）
-  const bend = FLIGHT_ARC * length * (dx < 0 ? -1 : 1)
+  const bend = FLIGHT_ARC * length * (dx < 0
+? -1
+: 1)
   const cx = from.x + dx / 2 + (dy / length) * bend
   const cy = from.y + dy / 2 - (dx / length) * bend
   return Array.from({ length: STEPS + 1 }, (_, i) => {
@@ -192,10 +200,15 @@ export function landingOf(view: AppView, size: () => number): Landing {
       return flight ? flight.from : current
     },
     get turn() {
-      return landed !== null && landed === current?.id ? 'land' : turnOf(view.state.player.change)
+      return landed !== null && landed === current?.id
+? 'land'
+: turnOf(view.state.player.change)
     },
     slot(element) {
-      landingSlot = { element, size: size() }
+      landingSlot = {
+element,
+size: size(),
+}
       return () => {
         if (landingSlot?.element === element)
           landingSlot = null

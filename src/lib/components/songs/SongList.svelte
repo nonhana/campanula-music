@@ -103,8 +103,14 @@
   const virtualRows = $derived(wantedVirtual ?? !bare)
   const view = getAppView()
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
-  const songs = $derived(list.kind === 'songs' ? list.songs : [])
-  const mode = $derived(search ? (songs.length === 0 ? 'none' : 'found') : 'all')
+  const songs = $derived(list.kind === 'songs'
+    ? list.songs
+    : [])
+  const mode = $derived(search
+    ? (songs.length === 0
+      ? 'none'
+      : 'found')
+    : 'all')
   /** 手机数量行：搜索时写找到几首；给 count / countAction 的不搜时也出现 */
   const countRow = $derived(list.kind === 'songs' && (search !== null || count !== undefined || countAction !== undefined))
 
@@ -134,8 +140,12 @@
     now={song.id === nowId}
     selecting={selection?.active ?? false}
     selected={selection?.has(song.id) ?? false}
-    onselect={selection ? (event: MouseEvent) => selection.modifiers(song, event) : undefined}
-    onlongpress={selection?.longpress ? (from: HTMLElement) => selection.longpress!(song, from) : undefined}
+    onselect={selection
+      ? (event: MouseEvent) => selection.modifiers(song, event)
+      : undefined}
+    onlongpress={selection?.longpress
+      ? (from: HTMLElement) => selection.longpress!(song, from)
+      : undefined}
     grip={selection?.active ? grip : undefined}
     onplay={() => activate(song)}
   />
@@ -189,7 +199,9 @@
           items={songs}
           itemHeight={SONG_ROW_HEIGHT}
           getKey={(song: Song) => song.id}
-          markOf={drag && !drag.marks ? undefined : songMark}
+          markOf={drag && !drag.marks
+            ? undefined
+            : songMark}
           placeOf={drag?.placeOf}
           keep={drag?.keep}
           animatePlace={drag?.animatePlace}
@@ -201,7 +213,9 @@
       <ul aria-label={label} data-reveal-group>
         {#each songs as song, i (song.id)}
           {#if staggerRows}
-            <li class='h-14' in:stagger={{ order: Math.max(0, i - appendedAt) }}>{@render listRow(song, i)}</li>
+            <li class='h-14' in:stagger={{
+              order: Math.max(0, i - appendedAt),
+            }}>{@render listRow(song, i)}</li>
           {:else}
             <li class='h-14'>{@render listRow(song, i)}</li>
           {/if}

@@ -234,7 +234,9 @@ function drawWhite(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 }
 
 function toJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
-  return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('浏览器没能导出 JPEG')), 'image/jpeg', quality))
+  return new Promise((resolve, reject) => canvas.toBlob(blob => blob
+    ? resolve(blob)
+    : reject(new Error('浏览器没能导出 JPEG')), 'image/jpeg', quality))
 }
 
 async function decodeImage(file: File): Promise<DecodedImage> {
@@ -245,7 +247,11 @@ async function decodeImage(file: File): Promise<DecodedImage> {
   const longest = Math.max(origWidth, origHeight)
   if (longest > COVER_WORK_MAX_SIDE) {
     const scale = COVER_WORK_MAX_SIDE / longest
-    const smaller = await createImageBitmap(bitmap, { resizeWidth: Math.round(origWidth * scale), resizeHeight: Math.round(origHeight * scale), resizeQuality: 'high' })
+    const smaller = await createImageBitmap(bitmap, {
+      resizeWidth: Math.round(origWidth * scale),
+      resizeHeight: Math.round(origHeight * scale),
+      resizeQuality: 'high',
+    })
     bitmap.close()
     bitmap = smaller
   }

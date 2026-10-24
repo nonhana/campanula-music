@@ -27,7 +27,9 @@
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const opened = $derived(library?.albumPage(id) ?? null)
-  const content = $derived(opened?.status === 'shown' ? opened.content : null)
+  const content = $derived(opened?.status === 'shown'
+    ? opened.content
+    : null)
   const album = $derived(content?.album ?? null)
   const year = $derived(album && yearOf(album.publishedAt))
   const description = $derived(album?.description?.trim() || null)
@@ -53,7 +55,10 @@
 
 {#if library}
   {#if opened?.status === 'failed'}
-    <div in:reveal><StateBlock kind='error' title='这张专辑没能加载' body={failureText(opened.failure)} action={{ label: '重试', run: () => void view.app.openAlbum(id) }} /></div>
+    <div in:reveal><StateBlock kind='error' title='这张专辑没能加载' body={failureText(opened.failure)} action={{
+      label: '重试',
+      run: () => void view.app.openAlbum(id),
+    }} /></div>
   {:else}
     <DetailHeader
       ready={!!album}

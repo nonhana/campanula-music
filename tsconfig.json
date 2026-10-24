@@ -4,7 +4,6 @@
     "strict": true,
     "sourceMap": true
   },
-  // scripts/ 下的 .mts（用 tsx 跑）也做类型检查
   "include": [
     "src",
     "tests",

@@ -85,7 +85,9 @@ interface Registration<F> {
 
 /** 这一条请求依赖哪个来源层；不依赖是 null */
 function dependencyOf<F>(options: LayerOptions<Request<F>, F>, request: Request<F>): string | null {
-  return typeof options.dependsOn === 'function' ? options.dependsOn(request) : options.dependsOn ?? null
+  return typeof options.dependsOn === 'function'
+    ? options.dependsOn(request)
+    : options.dependsOn ?? null
 }
 
 interface Entry<F> {
@@ -121,7 +123,9 @@ export class OverlayStack<F> {
   get top(): { readonly name: string } | null {
     this.presentation.read?.()
     const entry = this.layers.at(-1)
-    return entry ? { name: entry.registration.name } : null
+    return entry
+      ? { name: entry.registration.name }
+      : null
   }
 
   get baseInert(): boolean {
@@ -135,7 +139,9 @@ export class OverlayStack<F> {
       options: {
         ...options,
         history: request => options.history(request as Readonly<R>),
-        modal: typeof options.modal === 'function' ? request => (options.modal as (request: Readonly<R>) => boolean)(request as Readonly<R>) : options.modal,
+        modal: typeof options.modal === 'function'
+          ? request => (options.modal as (request: Readonly<R>) => boolean)(request as Readonly<R>)
+          : options.modal,
         dependsOn: typeof options.dependsOn === 'function'
           ? request => (options.dependsOn as (request: Readonly<R>) => string | null)(request as Readonly<R>)
           : options.dependsOn,
@@ -223,20 +229,26 @@ export class OverlayStack<F> {
 
   escape(): Promise<OverlayResult> {
     const entry = this.layers.at(-1)
-    return entry ? this.close(entry.registration, false, true) : Promise.resolve('cancelled')
+    return entry
+      ? this.close(entry.registration, false, true)
+      : Promise.resolve('cancelled')
   }
 
   private run(action: (current: () => boolean) => Promise<OverlayResult>): Promise<OverlayResult> {
     const generation = this.generation
     const current = () => generation === this.generation
-    const task = this.pending.then(() => current() ? action(current) : 'invalidated' as const)
+    const task = this.pending.then(() => current()
+      ? action(current)
+      : 'invalidated' as const)
     this.pending = task.catch(() => {})
     return task
   }
 
   private marker(entries = this.layers): OverlayMarker | undefined {
     const ids = entries.filter(entry => entry.cursor !== null).map(entry => entry.id)
-    return ids.length ? { session: this.session, ids } : undefined
+    return ids.length
+      ? { session: this.session, ids }
+      : undefined
   }
 
   private accept(result: HistoryResult, current: () => boolean): OverlayResult {
@@ -250,7 +262,9 @@ export class OverlayStack<F> {
 
   private target(entries: readonly Entry<F>[]): OverlayPosition {
     const cursor = entries.findLast(entry => entry.cursor !== null)?.cursor
-    return cursor === undefined || cursor === null ? this.base : this.slots.get(cursor)!
+    return cursor === undefined || cursor === null
+      ? this.base
+      : this.slots.get(cursor)!
   }
 
   private remove(removed: readonly Entry<F>[]): void {
@@ -299,8 +313,12 @@ export class OverlayStack<F> {
         request,
         busy: false,
         valid: true,
-        modal: typeof registration.options.modal === 'function' ? registration.options.modal(request) : registration.options.modal,
-        cursor: historical ? (previous?.cursor ?? from.cursor + 1) : null,
+        modal: typeof registration.options.modal === 'function'
+          ? registration.options.modal(request)
+          : registration.options.modal,
+        cursor: historical
+          ? (previous?.cursor ?? from.cursor + 1)
+          : null,
       }
       const next = this.layers.filter(item => item !== previous).concat(entry)
       let result: HistoryResult = { status: 'committed', position: from }
@@ -352,7 +370,9 @@ export class OverlayStack<F> {
       this.remove(removed)
       if (restoreFocus)
         await this.focus(removed[0]!, current)
-      return current() ? 'committed' : 'invalidated'
+      return current()
+        ? 'committed'
+        : 'invalidated'
     })
   }
 
@@ -397,7 +417,9 @@ export class OverlayStack<F> {
       this.remove(removed)
       if (removed.includes(top))
         await this.focus(top, current)
-      return current() ? 'committed' : 'invalidated'
+      return current()
+        ? 'committed'
+        : 'invalidated'
     })
   }
 
@@ -451,7 +473,9 @@ export class OverlayStack<F> {
         this.clear()
         return 'invalidated'
       }
-      const ids = position.marker?.session === this.session ? position.marker.ids : []
+      const ids = position.marker?.session === this.session
+        ? position.marker.ids
+        : []
       const next: Entry<F>[] = []
       for (const id of ids) {
         const entry = this.remembered.get(id)
@@ -503,7 +527,9 @@ export class OverlayStack<F> {
       this.presentation.changed()
       if (removed.length)
         await this.focus(removed[0]!, current)
-      return current() ? 'committed' : 'invalidated'
+      return current()
+        ? 'committed'
+        : 'invalidated'
     })
   }
 }

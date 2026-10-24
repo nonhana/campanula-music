@@ -161,7 +161,10 @@ function sortablePlaylists(current: Replica): Playlist[] | null {
   if (!current.playlists)
     return null
   const sortable = current.playlists.filter(playlist => canSortPlaylist(playlist.kind))
-  return [...sortable.filter(playlist => playlist.kind === 'liked'), ...sortable.filter(playlist => playlist.kind !== 'liked')]
+  return [
+    ...sortable.filter(playlist => playlist.kind === 'liked'),
+    ...sortable.filter(playlist => playlist.kind !== 'liked'),
+  ]
 }
 
 /** 过期、缺了几张的顺序补成能提交的：还在的照提交的先后，没出现的按原来的先后接在后面 */
@@ -178,7 +181,9 @@ function orderProblem(own: readonly Playlist[], playlistIds: readonly number[]):
     return '自建歌单顺序里有重复的编号'
   const allowed = new Set(own.map(playlist => playlist.id))
   const unknown = playlistIds.find(id => !allowed.has(id))
-  return unknown === undefined ? null : `自建歌单顺序里混进了不是自建歌单的编号：${unknown}`
+  return unknown === undefined
+    ? null
+    : `自建歌单顺序里混进了不是自建歌单的编号：${unknown}`
 }
 
 /** 晚一点才提交的修改在本标签页的全部状态：退出、换账号时整体换掉（本机标记不在里面） */
@@ -274,7 +279,11 @@ export function createDeferred(context: DeferredContext): Deferred {
       if (!session.isCurrent(mine) || !context.replica())
         return
       // 自建歌单之间的顺序没有对应的歌单：不记 pendingChanges
-      const active = new Set([...pending.recovering, ...pending.removals.map(item => item.change.playlist.id), ...pending.orders.keys()])
+      const active = new Set([
+        ...pending.recovering,
+        ...pending.removals.map(item => item.change.playlist.id),
+        ...pending.orders.keys(),
+      ])
       for (const id of active) {
         if (pending.writtenMarkers.has(id))
           continue
@@ -349,7 +358,9 @@ export function createDeferred(context: DeferredContext): Deferred {
   function submit(mine: number, change: RemoveChange | OrderChange | PlaylistOrderChange, keepalive: boolean): Promise<Outcome> {
     if (!session.isCurrent(mine))
       return Promise.resolve(null)
-    const options = keepalive ? { keepalive: true } : undefined
+    const options = keepalive
+      ? { keepalive: true }
+      : undefined
     switch (change.kind) {
       case 'remove':
         return session.api.post(endpoints.removeTracks, { id: change.playlist.id }, { songIds: change.songIds }, options)
@@ -397,7 +408,12 @@ export function createDeferred(context: DeferredContext): Deferred {
     const { playlist, songIds } = item.change
     context.overlay.remove(change => change.kind === 'order' && change.playlist.id === playlist.id)
     item.finish(mine)
-    show({ kind: 'orderFailed', playlist, songIds: [...songIds], failure })
+    show({
+      kind: 'orderFailed',
+      playlist,
+      songIds: [...songIds],
+      failure,
+    })
   }
 
   /** 排序时网易云说这张歌单已经不在了：退回原来的顺序，马上同步一次曲库 */
@@ -435,8 +451,16 @@ export function createDeferred(context: DeferredContext): Deferred {
         return false
       }
       // 只有整张歌单排序会回 unconfirmed（write.ts）：移除遇到它按没成功处理
-      const failure: ChangeFailure = result.ok ? { kind: 'neteaseUnavailable' } : result.failure
-      show({ kind: 'removeFailed', playlist: sent.playlist, count: sent.songIds.length, songIds: [...sent.songIds], failure })
+      const failure: ChangeFailure = result.ok
+        ? { kind: 'neteaseUnavailable' }
+        : result.failure
+      show({
+        kind: 'removeFailed',
+        playlist: sent.playlist,
+        count: sent.songIds.length,
+        songIds: [...sent.songIds],
+        failure,
+      })
       return false
     },
   }
@@ -480,7 +504,11 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   function startRemoval(mine: number, playlist: Playlist, songIds: readonly number[]): PendingRemoval {
-    const change: RemoveChange = { kind: 'remove', playlist, songIds: [...songIds] }
+    const change: RemoveChange = {
+      kind: 'remove',
+      playlist,
+      songIds: [...songIds],
+    }
     const entry = entryOf(change)
     const removalId = nextRemovalId++
     const item: PendingRemoval = {
@@ -513,7 +541,13 @@ export function createDeferred(context: DeferredContext): Deferred {
         context.overlay.remove(change => change === item.entry.change)
         item.finish(mine)
         const { playlist, songIds } = item.change
-        show({ kind: 'removeFailed', playlist, count: songIds.length, songIds: [...songIds], failure })
+        show({
+          kind: 'removeFailed',
+          playlist,
+          count: songIds.length,
+          songIds: [...songIds],
+          failure,
+        })
       },
     }
     context.overlay.add(entry)
@@ -536,10 +570,20 @@ export function createDeferred(context: DeferredContext): Deferred {
         : pending.removals.find(each => each.removalId === previousId && !each.settled && !each.sending)
       if (previous) {
         if (previous.change.playlist.id === playlist.id) {
-          const combined = [...new Set([...previous.change.songIds, ...songIds])]
+          const combined = [
+            ...new Set([
+              ...previous.change.songIds,
+              ...songIds,
+            ]),
+          ]
           previous.change.songIds = combined
           schedule(mine, previous, removalPolicy)
-          show({ kind: 'removed', playlist, count: combined.length, removalId: previous.removalId })
+          show({
+            kind: 'removed',
+            playlist,
+            count: combined.length,
+            removalId: previous.removalId,
+          })
           return previous
         }
         void commit(mine, previous, removalPolicy, { keepalive: false })
@@ -547,7 +591,12 @@ export function createDeferred(context: DeferredContext): Deferred {
     }
     const item = startRemoval(mine, playlist, songIds)
     if (undo) {
-      show({ kind: 'removed', playlist, count: songIds.length, removalId: item.removalId })
+      show({
+        kind: 'removed',
+        playlist,
+        count: songIds.length,
+        removalId: item.removalId,
+      })
       schedule(mine, item, removalPolicy)
     }
     else {
@@ -562,17 +611,31 @@ export function createDeferred(context: DeferredContext): Deferred {
       return
     const tracks = current.tracks.get(playlist.id)
     const present = new Set(tracks?.trackIds ?? [])
-    const ids = [...new Set(songIds)].filter(id => present.has(id))
+    const ids = [
+      ...new Set(songIds),
+    ].filter(id => present.has(id))
     if (ids.length === 0)
       return
     const mine = session.current
     if (ids.length > TRACKS_PER_CHANGE) {
-      show({ kind: 'removeFailed', playlist, count: ids.length, songIds: ids, failure: { kind: 'invalid', problem: 'tooManySongs' } })
+      show({
+        kind: 'removeFailed',
+        playlist,
+        count: ids.length,
+        songIds: ids,
+        failure: { kind: 'invalid', problem: 'tooManySongs' },
+      })
       return
     }
     if (!context.online()) {
       // 断网时的写操作直接说没改成，不改本地（规则⑨）
-      show({ kind: 'removeFailed', playlist, count: ids.length, songIds: ids, failure: { kind: 'offline' } })
+      show({
+        kind: 'removeFailed',
+        playlist,
+        count: ids.length,
+        songIds: ids,
+        failure: { kind: 'offline' },
+      })
       return
     }
     applyRemoval(mine, playlist, ids, { undo: true })
@@ -634,7 +697,12 @@ export function createDeferred(context: DeferredContext): Deferred {
       const current = context.notice()
       if (current?.kind === 'removed' && current.removalId === item.removalId) {
         show(remaining.length > 0
-          ? { kind: 'removed', playlist: item.change.playlist, count: remaining.length, removalId: item.removalId }
+          ? {
+              kind: 'removed',
+              playlist: item.change.playlist,
+              count: remaining.length,
+              removalId: item.removalId,
+            }
           : null)
       }
     }
@@ -654,7 +722,13 @@ export function createDeferred(context: DeferredContext): Deferred {
     if (!fresh)
       return
     if (!context.online()) {
-      show({ kind: 'removeFailed', playlist: fresh, count: songIds.length, songIds: [...songIds], failure: { kind: 'offline' } })
+      show({
+        kind: 'removeFailed',
+        playlist: fresh,
+        count: songIds.length,
+        songIds: [...songIds],
+        failure: { kind: 'offline' },
+      })
       return
     }
     const mine = session.current
@@ -663,7 +737,11 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   function startOrder(mine: number, playlist: Playlist, songIds: readonly number[]): Pending<OrderChange> {
-    const change: OrderChange = { kind: 'order', playlist, songIds: [...songIds] }
+    const change: OrderChange = {
+      kind: 'order',
+      playlist,
+      songIds: [...songIds],
+    }
     const entry = entryOf(change)
     const item: Pending<OrderChange> = {
       change,
@@ -730,15 +808,26 @@ export function createDeferred(context: DeferredContext): Deferred {
     if (moving.length === 0)
       return false
     const rest = tracks.trackIds.filter(id => !moved.has(id))
-    const at = before === null ? rest.length : rest.indexOf(before)
+    const at = before === null
+      ? rest.length
+      : rest.indexOf(before)
     if (at < 0)
       return false
-    const next = [...rest.slice(0, at), ...moving, ...rest.slice(at)]
+    const next = [
+      ...rest.slice(0, at),
+      ...moving,
+      ...rest.slice(at),
+    ]
     if (sameOrder(next, tracks.trackIds))
       return false
     if (!context.online()) {
       // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
-      show({ kind: 'orderFailed', playlist, songIds: next, failure: { kind: 'offline' } })
+      show({
+        kind: 'orderFailed',
+        playlist,
+        songIds: next,
+        failure: { kind: 'offline' },
+      })
       return false
     }
     const mine = session.current
@@ -766,7 +855,9 @@ export function createDeferred(context: DeferredContext): Deferred {
       throw new Error(problem)
     const liked = display.playlists.find(playlist => playlist.kind === 'liked')
     // 我喜欢的音乐固定在最前：界面只传自建歌单，拼接在这里
-    const next = liked ? [liked.id, ...playlistIds] : [...playlistIds]
+    const next = liked
+      ? [liked.id, ...playlistIds]
+      : [...playlistIds]
     const displayed = sortablePlaylists(display)
     if (displayed && sameOrder(next, displayed.map(playlist => playlist.id)))
       return false
@@ -787,7 +878,11 @@ export function createDeferred(context: DeferredContext): Deferred {
     }
     if (!context.online()) {
       // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
-      show({ kind: 'playlistOrderFailed', playlistIds: next, failure: { kind: 'offline' } })
+      show({
+        kind: 'playlistOrderFailed',
+        playlistIds: next,
+        failure: { kind: 'offline' },
+      })
       return false
     }
     if (item && !item.settled)
@@ -801,7 +896,10 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   function startPlaylistOrder(mine: number, playlistIds: readonly number[]): Pending<PlaylistOrderChange> {
-    const change: PlaylistOrderChange = { kind: 'playlistOrder', playlistIds: [...playlistIds] }
+    const change: PlaylistOrderChange = {
+      kind: 'playlistOrder',
+      playlistIds: [...playlistIds],
+    }
     const entry = entryOf(change)
     const item: Pending<PlaylistOrderChange> = {
       change,
@@ -841,7 +939,12 @@ export function createDeferred(context: DeferredContext): Deferred {
     if (!found)
       return
     if (!context.online()) {
-      show({ kind: 'orderFailed', playlist: found, songIds, failure: { kind: 'offline' } })
+      show({
+        kind: 'orderFailed',
+        playlist: found,
+        songIds,
+        failure: { kind: 'offline' },
+      })
       return
     }
     const mine = session.current
@@ -857,7 +960,11 @@ export function createDeferred(context: DeferredContext): Deferred {
     if (!current)
       return
     if (!context.online()) {
-      show({ kind: 'playlistOrderFailed', playlistIds, failure: { kind: 'offline' } })
+      show({
+        kind: 'playlistOrderFailed',
+        playlistIds,
+        failure: { kind: 'offline' },
+      })
       return
     }
     const mine = session.current
@@ -873,10 +980,16 @@ export function createDeferred(context: DeferredContext): Deferred {
       ...pending.removals
         .filter(item => playlistId === undefined || item.change.playlist.id === playlistId)
         .map(item => commit(mine, item, removalPolicy, { keepalive: true })),
-      ...[...pending.orders.values()]
+      ...[
+        ...pending.orders.values(),
+      ]
         .filter(item => playlistId === undefined || item.change.playlist.id === playlistId)
         .map(item => commit(mine, item, orderPolicy, { keepalive: true, immediate: true })),
-      ...(playlistId === undefined && pending.playlistOrder ? [commit(mine, pending.playlistOrder, playlistOrderPolicy, { keepalive: true, immediate: true })] : []),
+      ...(playlistId === undefined && pending.playlistOrder
+        ? [
+            commit(mine, pending.playlistOrder, playlistOrderPolicy, { keepalive: true, immediate: true }),
+          ]
+        : []),
     ])
   }
 

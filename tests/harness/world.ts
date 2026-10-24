@@ -30,7 +30,13 @@ const SITE_ENV = {
   COOKIE_SECRET: 'campanula-test-secret-0123456789abcdefghijklmnopqrstuv',
   NETEASE_REAL_IP: REAL_IP,
 }
-const LOG_METHODS = ['debug', 'log', 'info', 'warn', 'error'] as const
+const LOG_METHODS = [
+  'debug',
+  'log',
+  'info',
+  'warn',
+  'error',
+] as const
 
 interface ServerLog {
   level: typeof LOG_METHODS[number]
@@ -81,7 +87,11 @@ function replaceSdk(): Plugin {
     name: 'campanula:netease-fake',
     enforce: 'pre',
     // Vite 跑服务端代码时，node_modules 里的包默认绕过插件直接加载，替身就失效了
-    config: () => ({ ssr: { noExternal: ['hana-music-api'] } }),
+    config: () => ({
+      ssr: {
+        noExternal: ['hana-music-api'],
+      },
+    }),
     resolveId(id) {
       if (id === 'hana-music-api')
         return FAKE_SDK
@@ -104,8 +114,12 @@ function captureServerLogs(serving: AsyncLocalStorage<RequestSpan>) {
   const originals = LOG_METHODS.map(level => [level, console[level]] as const)
   for (const [level, original] of originals) {
     console[level] = (...args: unknown[]) => {
-      if (serving.getStore())
-        logs.push({ level, text: format(...args) })
+      if (serving.getStore()) {
+        logs.push({
+          level,
+          text: format(...args),
+        })
+      }
       original.apply(console, args)
     }
   }
@@ -124,8 +138,16 @@ async function startWorld() {
   const vite = await createServer({
     configFile: false,
     logLevel: 'silent',
-    server: { middlewareMode: true, hmr: false, ws: false, watch: null },
-    plugins: [replaceSdk(), sveltekit()],
+    server: {
+      middlewareMode: true,
+      hmr: false,
+      ws: false,
+      watch: null,
+    },
+    plugins: [
+      replaceSdk(),
+      sveltekit(),
+    ],
   })
   // 和服务端路由走同一个模块加载器（SvelteKit 3 起用 SSR 环境的 runner，不再是 ssrLoadModule；两边缓存不通，拿到的就是两份替身）
   const { runner } = vite.environments.ssr as RunnableDevEnvironment
@@ -140,7 +162,11 @@ async function startWorld() {
   const serving = new AsyncLocalStorage<RequestSpan>()
   const http = createHttpServer((req, res) => {
     const sent = Number(req.headers[SENT_HEADER])
-    serving.run({ start: Number.isInteger(sent) ? sent : fake.nextOrder() }, () => vite.middlewares(req, res))
+    serving.run({
+      start: Number.isInteger(sent)
+        ? sent
+        : fake.nextOrder(),
+    }, () => vite.middlewares(req, res))
   })
   await new Promise<void>(resolve => http.listen(0, 'localhost', resolve))
   const { port } = http.address() as AddressInfo
@@ -154,7 +180,10 @@ async function startWorld() {
   const serverLogs = captureServerLogs(serving)
   // 只换掉全局的 Date（服务端和 Cookie 过期用它）；App 的定时用这个时钟自己的 setTimeout。
   // 全局的 setTimeout 不换：Vite 和 HTTP 连接也在用它
-  const timers = withGlobal(globalThis).install({ now: START, toFake: ['Date'] })
+  const timers = withGlobal(globalThis).install({
+    now: START,
+    toFake: ['Date'],
+  })
 
   return {
     origin: `http://localhost:${port}`,
@@ -205,7 +234,9 @@ export function useWorld(): World {
     for (let quiet = 0; quiet < 2;) {
       await new Promise(resolve => setImmediate(resolve))
       const pending = devices.reduce((sum, device) => sum + device.pending.length, 0)
-      quiet = pending > current().fake.heldCalls() || devices.some(device => device.busy()) ? 0 : quiet + 1
+      quiet = pending > current().fake.heldCalls() || devices.some(device => device.busy())
+        ? 0
+        : quiet + 1
     }
   }
   // 每条测试结束时等这条测试的设备停下，免得后台同步之类的请求落进下一条测试；
@@ -229,7 +260,13 @@ export function useWorld(): World {
       },
       async reply(path, { cookie = [], until, when } = {}) {
         const { module, outcome } = await loadFixture(path)
-        current().fake.queueReply(module, { ...outcome, response: { ...outcome.response, cookie }, until, when, fixture: path })
+        current().fake.queueReply(module, {
+          ...outcome,
+          response: { ...outcome.response, cookie },
+          until,
+          when,
+          fixture: path,
+        })
       },
       get held() {
         return current().fake.heldCalls()

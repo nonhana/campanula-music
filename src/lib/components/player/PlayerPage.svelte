@@ -30,7 +30,9 @@
   const player = $derived(view.state.player)
   /** 播放队列里有歌时才有；退出登录清空播放队列的那一刻还在，什么都不画 */
   const song = $derived(currentSong(player))
-  const source = $derived(player.current === null ? null : sourceName(view.state.library, player.queue[player.current].source))
+  const source = $derived(player.current === null
+    ? null
+    : sourceName(view.state.library, player.queue[player.current].source))
   /** 换歌时封面往哪转、歌名往哪飘 */
   const turn = $derived(turnOf(player.change))
   const playhead = createPlayhead(() => view.state.player)

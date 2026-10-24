@@ -28,7 +28,9 @@
   const song = $derived(currentSong(player))
   const slider = createSeekSlider()
   /** 左边的时间：拖动进度线时显示拖到哪 */
-  const shownTime = $derived(slider.dragging === null ? player.position : slider.dragging * slider.duration)
+  const shownTime = $derived(slider.dragging === null
+    ? player.position
+    : slider.dragging * slider.duration)
 </script>
 
 <SeekLine {slider} />

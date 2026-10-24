@@ -170,12 +170,32 @@ describe('哪些按下才算开始拖', () => {
 
   it('第二根手指、鼠标右键按下都不开始拖', () => {
     const { core, said } = setup()
-    const at = (x: number, extra: Partial<PointerSample>): PointerSample => ({ pointerId: 2, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1, x, y: 300, time: 0, ...extra })
+    const at = (x: number, extra: Partial<PointerSample>): PointerSample => ({
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      x,
+      y: 300,
+      time: 0,
+      ...extra,
+    })
     core.press(at(300, { isPrimary: false }))
     core.move(at(100, { isPrimary: false }))
     expect(core.pose).toEqual({ dragging: false })
-    core.press(at(300, { pointerId: 3, pointerType: 'mouse', button: 2, buttons: 2 }))
-    core.move(at(100, { pointerId: 3, pointerType: 'mouse', button: -1, buttons: 2 }))
+    core.press(at(300, {
+      pointerId: 3,
+      pointerType: 'mouse',
+      button: 2,
+      buttons: 2,
+    }))
+    core.move(at(100, {
+      pointerId: 3,
+      pointerType: 'mouse',
+      button: -1,
+      buttons: 2,
+    }))
     expect(core.pose).toEqual({ dragging: false })
     expect(said).toEqual([])
   })

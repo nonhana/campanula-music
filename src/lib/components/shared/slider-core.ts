@@ -49,7 +49,10 @@ export function createSliderCore({ begin, track, commit, cancel, onValue }: Slid
       const value = begin(sample)
       if (value === null)
         return false
-      press = { pointerId: sample.pointerId, value: clamp(value, 0, 1) }
+      press = {
+        pointerId: sample.pointerId,
+        value: clamp(value, 0, 1),
+      }
       onValue(press.value)
       return true
     },

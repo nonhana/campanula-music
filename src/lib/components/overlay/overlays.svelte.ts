@@ -44,12 +44,16 @@ export function createOverlays() {
     focus(target, fallback) {
       // 归还顺序：focusReturn 找到的入口 / request.from（仍 connected、不在 inert 里才算）
       // -> fallback（层内元素）-> main。多选入口被工具条换掉时由 focusReturn 重新找到（#66）。
-      const available = (node: HTMLElement | null) => node?.isConnected && !node.closest('[inert]') ? node : null
+      const available = (node: HTMLElement | null) => node?.isConnected && !node.closest('[inert]')
+? node
+: null
       const active = stack.top && document.querySelector<HTMLElement>(`[data-overlay="${stack.top.name}"]`)
       const next = available(target)
-        ?? (fallback ? available(document.querySelector<HTMLElement>(fallback)) : null)
-        ?? active?.querySelector<HTMLElement>('[data-autofocus], button:not(:disabled), input, [tabindex]')
-        ?? document.querySelector<HTMLElement>('main')
+        ?? (fallback
+? available(document.querySelector<HTMLElement>(fallback))
+: null)
+?? active?.querySelector<HTMLElement>('[data-autofocus], button:not(:disabled), input, [tabindex]')
+?? document.querySelector<HTMLElement>('main')
       if (next) {
         if (!next.hasAttribute('tabindex') && next.tagName === 'MAIN')
           next.tabIndex = -1
@@ -60,21 +64,34 @@ export function createOverlays() {
   const mounted: { name: string, component: Component, inert: () => boolean }[] = []
   function register<R extends DialogRequest>(name: string, options: LayerOptions<R, HTMLElement>, component?: Component) {
     const layer = stack.register<R>(name, options)
-    if (component)
-      mounted.push({ name, component, inert: () => layer.containerInert })
+    if (component) {
+      mounted.push({
+name,
+component,
+inert: () => layer.containerInert,
+})
+}
     return layer
   }
   // 菜单类层（浮动菜单、底部弹层）都不是 modal：和基线一样，开着时背景与提示条照常可交互（#64 行为不变）。
   // Esc、返回、焦点归还都由栈按栈顶处理，不依赖 modal；弹窗、换封面、编辑、播放页仍是 modal。
-  const menu = { history: (request: MenuRequest) => request.anchor === null, modal: false }
-  const dialog = { history: () => !desktopLayout.current, modal: true }
+  const menu = {
+history: (request: MenuRequest) => request.anchor === null,
+modal: false,
+}
+  const dialog = {
+history: () => !desktopLayout.current,
+modal: true,
+}
 
   // 每一层只登记一次：历史策略、组件、焦点和业务的关闭钩子。
   const songMenu = register<SongMenuRequest>('song-menu', menu, SongMenu)
   // 单曲和多选共用一个选择器（#73）：多选那条请求不能比多选层活得更久，单曲的不依赖它
   const playlistPicker = register<AddToPlaylistRequest>('playlist-picker', {
     ...menu,
-    dependsOn: request => request.mode === 'multi' ? 'selection' : null,
+    dependsOn: request => request.mode === 'multi'
+? 'selection'
+: null,
   }, AddToPlaylist)
   const playlistMenu = register<PlaylistMenuRequest>('playlist-menu', menu, PlaylistMenu)
   const playlistEditor = register<EditorRequest>('playlist-editor', dialog, PlaylistEditor)
@@ -97,8 +114,20 @@ export function createOverlays() {
   // 播放页这一层**不挂组件**：播放页、播放提示由两个外框里的 PlayerLayer 挂载（它提供 data-overlay="player"）。
   // mounted 只收有组件的层，OverlayHost 不会给它渲染空容器；历史、Esc/返回、忙时钉住、焦点兜底、
   // containerInert（看 layers 里谁盖住它）都只认登记表，和有没有组件无关。回焦目标仍是播放条按钮（fallback）。
-  const player = register<DialogRequest>('player', { history: () => true, modal: true, restore: canRestorePlayer, fallback: '[data-player-bar] button' })
-  const queue = register<DialogRequest>('queue', { history: () => true, modal: true, restore: canRestorePlayer, dependsOn: 'player', parent: 'player', fallback: '[data-queue-entry]' })
+  const player = register<DialogRequest>('player', {
+history: () => true,
+modal: true,
+restore: canRestorePlayer,
+fallback: '[data-player-bar] button',
+})
+  const queue = register<DialogRequest>('queue', {
+history: () => true,
+modal: true,
+restore: canRestorePlayer,
+dependsOn: 'player',
+parent: 'player',
+fallback: '[data-queue-entry]',
+})
   const selection = register<DialogRequest>('selection', {
     history: () => !desktopLayout.current,
     // 多选只是列表上的一层状态（顶栏 / 底部操作条），不是 modal：和基线一样不压暗、不 inert 背景。
@@ -120,5 +149,21 @@ export function createOverlays() {
   })
   onDestroy(() => stack.clear())
 
-  return { stack, mounted, songMenu, playlistPicker, playlistMenu, playlistEditor, addSongsDialog, coverEditor, logoutConfirm, player, queue, selection, playlistSelection, playerDrawer, playerLayer }
+  return {
+stack,
+mounted,
+songMenu,
+playlistPicker,
+playlistMenu,
+playlistEditor,
+addSongsDialog,
+coverEditor,
+logoutConfirm,
+player,
+queue,
+selection,
+playlistSelection,
+playerDrawer,
+playerLayer,
+}
 }

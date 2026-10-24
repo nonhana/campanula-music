@@ -48,7 +48,9 @@
   $effect(() => {
     if (songId !== lastSong) {
       void drain.set(lastShown, { duration: 0 })
-      void drain.set(0, { duration: moveMs(DURATIONS.state) })
+      void drain.set(0, {
+        duration: moveMs(DURATIONS.state),
+      })
     }
     lastSong = songId
     lastShown = shown
@@ -57,7 +59,9 @@
 
   /** 起伏的高度：暂停时马上抹平，播放时渐渐起来；一打开就是当前的样子，不从平的长出来 */
   const amplitude = Tween.of(() => waving ? AMPLITUDE : 0, {
-    duration: (_, to) => moveMs(to === 0 ? DURATIONS['wave-flatten'] : DURATIONS['wave-rise']),
+    duration: (_, to) => moveMs(to === 0
+      ? DURATIONS['wave-flatten']
+      : DURATIONS['wave-rise']),
     easing: cubicOut,
   })
 

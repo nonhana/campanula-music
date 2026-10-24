@@ -23,7 +23,12 @@
     src: string
   }
 
-  let layers = $state.raw<Layer[]>([{ key: 0, src: untrack(() => wanted) }])
+  let layers = $state.raw<Layer[]>([
+    {
+      key: 0,
+      src: untrack(() => wanted),
+    },
+  ])
   let keys = 1
   /** 最上面那层正在淡入：淡完以前不再加新的一层 */
   let covering = false
@@ -58,7 +63,13 @@
     return (img) => {
       if (key === 0)
         return
-      const animation = img.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fadeMs(DURATIONS.tint), easing: cssEasing('out-soft') })
+      const animation = img.animate([
+        { opacity: 0 },
+        { opacity: 1 },
+      ], {
+        duration: fadeMs(DURATIONS.tint),
+        easing: cssEasing('out-soft'),
+      })
       animation.onfinish = () => {
         layers = layers.filter(layer => layer.key >= key)
         covering = false

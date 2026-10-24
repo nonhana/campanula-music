@@ -29,12 +29,18 @@
   /** App 说这条提示支持哪些动作：界面照着画按钮 */
   const actions = $derived(view.state.library?.noticeActions ?? [])
   /** 播放提示也在：让出它的高度 */
-  const offset = $derived(view.state.player.notice ? playerNoticeBox.height + GAP : 0)
+  const offset = $derived(view.state.player.notice
+    ? playerNoticeBox.height + GAP
+    : 0)
 
   /** 提示放在哪：和播放提示一样 */
-  const place = $derived<NoticePlace>(!phone ? 'desktop' : overPlayerPage ? 'top' : 'bottom')
+  const place = $derived<NoticePlace>(!phone
+    ? 'desktop'
+    : overPlayerPage ? 'top' : 'bottom')
   /** 让出播放提示：贴着底边的往上挪，贴着顶边的往下挪 */
-  const shift = $derived(`translateY(${place === 'top' ? offset : -offset}px)`)
+  const shift = $derived(`translateY(${place === 'top'
+    ? offset
+    : -offset}px)`)
   const arrival = noticeArrival(() => notice ? place : null)
 
   /** 配 ✓ 的：加入了、都已经在歌单里、移除了；别的（没改成、上次的修改没保存成功）配感叹号 */
@@ -50,10 +56,20 @@
         'notice fixed z-50',
         place === 'desktop'
           ? 'bottom-24 left-1/2 max-w-[min(560px,calc(100vw-48px))] w-max -translate-x-1/2'
-          : ['inset-x-2', place === 'top' ? 'top-16' : 'bottom-[calc(80px+env(safe-area-inset-bottom))]'],
+          : [
+            'inset-x-2',
+            place === 'top'
+              ? 'top-16'
+              : 'bottom-[calc(80px+env(safe-area-inset-bottom))]',
+          ],
       ]}
       role={alerting ? 'alert' : 'status'}
-      transition:toast|global={{ edge: place === 'top' ? 'top' : 'bottom', moved: arrival.moved }}
+      transition:toast|global={{
+        edge: place === 'top'
+          ? 'top'
+          : 'bottom',
+        moved: arrival.moved,
+      }}
     >
       <div class='flex items-center gap-2.5 rounded-xl bg-white py-1.5 pl-3.5 pr-1.5 shadow-float transition-transform duration-move-state ease-out-soft' style:transform={shift}>
         {#if informative}

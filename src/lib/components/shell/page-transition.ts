@@ -18,13 +18,21 @@ type PageTurn = Toward | 'fade'
 function pageTurn(from: RouteId, to: RouteId, delta: number | undefined, tabs: readonly RouteId[]): PageTurn {
   const fromTab = tabs.indexOf(from)
   const toTab = tabs.indexOf(to)
-  if (fromTab >= 0 && toTab >= 0)
-    return toTab > fromTab ? 'left' : 'right'
+  if (fromTab >= 0 && toTab >= 0) {
+    return toTab > fromTab
+      ? 'left'
+      : 'right'
+  }
   if (from === to)
     return 'fade'
-  if (delta !== undefined)
-    return delta < 0 ? 'down' : 'up'
-  return toTab >= 0 ? 'down' : 'up'
+  if (delta !== undefined) {
+    return delta < 0
+      ? 'down'
+      : 'up'
+  }
+  return toTab >= 0
+    ? 'down'
+    : 'up'
 }
 
 /** 换页时飞的那张封面图的名字（uno.config.ts）。同一时刻文档里只有一个元素叫这个名字，只有一张封面图在飞（The Cover Leads Rule） */
@@ -77,7 +85,9 @@ function exposed(cover: HTMLElement): boolean {
  * 桌面歌单页里这一页有两张（页头、左栏当前这一项），页头在 DOM 里排在前面：起飞、降落都先找到页头，页头滚走了才轮到左栏那张
  */
 function coversOf(page: string): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>(`[data-flight="${CSS.escape(page)}"]`)]
+  return [
+    ...document.querySelectorAll<HTMLElement>(`[data-flight="${CSS.escape(page)}"]`),
+  ]
 }
 
 /**
@@ -118,8 +128,14 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
     const tile = link?.querySelector<HTMLElement>(`[data-flight="${CSS.escape(to.pathname)}"]`) ?? null
     if (tile)
       grids.set(to.href, (grids.get(to.href) ?? new Set()).add(from.href))
-    const page = tile ? to.pathname : grids.get(from.href)?.has(to.href) ? from.pathname : null
-    const cover = tile ?? (page === null ? null : coversOf(page).find(exposed))
+    const page = tile
+      ? to.pathname
+      : grids.get(from.href)?.has(to.href)
+        ? from.pathname
+        : null
+    const cover = tile ?? (page === null
+      ? null
+      : coversOf(page).find(exposed))
     if (page === null || reducedMotion() || !cover || !exposed(cover) || !loaded(cover.querySelector('img')))
       return null
     name(cover)
@@ -145,7 +161,9 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
     running?.skipTransition()
     running = null
     name(null)
-    const link = navigation.type === 'link' ? pressed : null
+    const link = navigation.type === 'link'
+      ? pressed
+      : null
     pressed = null
     const { from, to } = navigation
     if (!document.startViewTransition || !from?.route.id || !to?.route.id || from.url.href === to.url.href)
@@ -153,7 +171,9 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
     if (navigation.type === 'popstate' && navigation.event.hasUAVisualTransition)
       return
 
-    const delta = navigation.type === 'popstate' ? navigation.delta : undefined
+    const delta = navigation.type === 'popstate'
+      ? navigation.delta
+      : undefined
     const turn = pageTurn(from.route.id, to.route.id, delta, tabs)
     const flight = takeOff(link, from.url, to.url)
 

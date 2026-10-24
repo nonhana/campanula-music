@@ -28,10 +28,25 @@ export function songLook(view: AppView, song: Song): SongLook {
   const mark: DownloadMark | null = downloaded
     ? { kind: 'done' }
     : task?.status === 'downloading'
-      ? { kind: 'downloading', percent: task.total ? Math.floor(task.received * 100 / task.total) : 0 }
-      : task?.status === 'failed' ? { kind: 'failed' } : null
+      ? {
+          kind: 'downloading',
+          percent: task.total
+            ? Math.floor(task.received * 100 / task.total)
+            : 0,
+        }
+      : task?.status === 'failed'
+        ? { kind: 'failed' }
+        : null
   const off = !view.state.playable(song)
   // 徽标：无版权优先；下载了的放本机的完整音频，不标试听
-  const badge: SongBadgeKind | null = downloaded ? null : song.availability === 'noCopyright' ? 'noCopyright' : off ? 'notDownloaded' : song.availability === 'trial' ? 'trial' : null
+  const badge: SongBadgeKind | null = downloaded
+    ? null
+    : song.availability === 'noCopyright'
+      ? 'noCopyright'
+      : off
+        ? 'notDownloaded'
+        : song.availability === 'trial'
+          ? 'trial'
+          : null
   return { off, badge, mark }
 }

@@ -98,7 +98,9 @@ const LIKED_SPECIAL_TYPE = 5
 export function playlistKindOf(specialType: number, creatorUserId: number, uid: number): Playlist['kind'] {
   if (specialType === LIKED_SPECIAL_TYPE)
     return 'liked'
-  return creatorUserId === uid ? 'own' : 'collected'
+  return creatorUserId === uid
+    ? 'own'
+    : 'collected'
 }
 
 /** 这张歌单能不能手动排序：自建歌单和我喜欢的音乐（#36）；收藏的歌单不能 */
@@ -125,7 +127,9 @@ export function reorderSortable<T extends { id: number }>(items: readonly T[], i
       ordered.push(item)
   }
   let next = 0
-  return items.map(item => isSortable(item) ? ordered[next++]! : item)
+  return items.map(item => isSortable(item)
+    ? ordered[next++]!
+    : item)
 }
 
 /** 歌单列表，我喜欢的音乐在最前，然后是自建的、收藏的，和网易云的顺序一样；在网易云里删掉的歌单不在里面 */
@@ -148,8 +152,11 @@ export const PLAYLIST_TAGS_MAX = 3
  */
 export function nameWidth(name: string): number {
   let width = 0
-  for (let index = 0; index < name.length; index += 1)
-    width += name.charCodeAt(index) < 0x80 ? 1 : 2
+  for (let index = 0; index < name.length; index += 1) {
+    width += name.charCodeAt(index) < 0x80
+      ? 1
+      : 2
+  }
   return width
 }
 
@@ -160,7 +167,9 @@ export type PlaylistEditProblem = 'nameEmpty' | 'nameTooLong' | 'descriptionTooL
 export function nameProblem(name: string): PlaylistEditProblem | null {
   if (!name)
     return 'nameEmpty'
-  return nameWidth(name) > PLAYLIST_NAME_WIDTH ? 'nameTooLong' : null
+  return nameWidth(name) > PLAYLIST_NAME_WIDTH
+    ? 'nameTooLong'
+    : null
 }
 
 /** 新建自建歌单的请求体。name 去掉了首尾空白，1 到 PLAYLIST_NAME_WIDTH 个宽度 */
@@ -225,7 +234,9 @@ export interface Credit {
 /** 歌手一行：没有名字的歌手（传到云盘、没匹配上曲库的歌）不列；一个都没有时写“未知歌手” */
 export function creditLine(credits: readonly Credit[]): string {
   const names = credits.flatMap(artist => artist.name ?? [])
-  return names.length > 0 ? names.join(' / ') : '未知歌手'
+  return names.length > 0
+    ? names.join(' / ')
+    : '未知歌手'
 }
 
 /** 网易云图片（coverUrl、头像）的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */

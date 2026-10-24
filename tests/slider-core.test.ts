@@ -44,7 +44,13 @@ function setup({ beginValue = (sample: PointerSample) => sample.x / 100 }: { beg
       core.abandon(pointerId)
     },
   }
-  return { core, pointer, commits, values, cancels: () => cancels }
+  return {
+    core,
+    pointer,
+    commits,
+    values,
+    cancels: () => cancels,
+  }
 }
 
 describe('只认主指针的主键', () => {
@@ -85,7 +91,9 @@ describe('只认主指针的主键', () => {
   })
 
   it('按下时 begin 说不接（例如点在滑块前后的空白处）：不开始拖', () => {
-    const { pointer, values, cancels } = setup({ beginValue: () => null })
+    const { pointer, values, cancels } = setup({
+      beginValue: () => null,
+    })
     expect(pointer.down(40)).toBe(false)
     pointer.move(50)
     pointer.up(60)

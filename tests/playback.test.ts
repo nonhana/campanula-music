@@ -25,7 +25,14 @@ const THIRD = { id: 4208408, url: 'playback/liked/003-song_url_v1.json.gz', dura
 const BEFORE_NO_COPYRIGHT = { id: 2092188841, url: 'playback/liked/004-song_url_v1.json.gz', duration: 176.097 }
 const AFTER_NO_COPYRIGHT = { id: 2044505920, url: 'playback/liked/005-song_url_v1.json.gz', duration: 225.245 }
 const LAST = { id: 22712173, url: 'playback/liked/006-song_url_v1.json.gz', duration: 532.866 }
-const RECORDED = [FIRST, SECOND, THIRD, BEFORE_NO_COPYRIGHT, AFTER_NO_COPYRIGHT, LAST]
+const RECORDED = [
+  FIRST,
+  SECOND,
+  THIRD,
+  BEFORE_NO_COPYRIGHT,
+  AFTER_NO_COPYRIGHT,
+  LAST,
+]
 type Recorded = typeof FIRST
 /** 我喜欢的音乐里无版权的一首（Sea Of Tired（Slowed）），夹在上面两首中间 */
 const NO_COPYRIGHT = 2108191414
@@ -41,9 +48,15 @@ const SEARCH_RESULTS = 'search/songs/003-cloudsearch.json.gz'
 
 /** 听众按搜索，单曲结果显示出来；不看的其他三类结果一直等着（和 search.test.ts 一样） */
 async function showSearch(app: App, keyword: string = SEARCHED.keyword, fixture = SEARCH_RESULTS): Promise<readonly Song[]> {
-  await world.netease.reply(fixture, { when: { type: 1 } })
-  for (const type of [1000, 100, 10])
-    await world.netease.reply(fixture, { when: { type }, until: never() })
+  await world.netease.reply(fixture, {
+    when: { type: 1 },
+  })
+  for (const type of [1000, 100, 10]) {
+    await world.netease.reply(fixture, {
+      when: { type },
+      until: never(),
+    })
+  }
   void app.search(keyword)
   await world.settle()
   const songs = app.state.search.results?.songs
@@ -109,7 +122,9 @@ describe('点歌', () => {
     expect(queue.every(entry => entry.source.kind === 'playlist' && entry.source.id === LIKED.id)).toBe(true)
     expect(current(app)).toBe(FIRST.id)
     expect(playUrlRequests(device)[0]).toBe(`/api/songs/${FIRST.id}/play-url?quality=exhigh`)
-    expect(world.netease.calls.find(call => call.module === 'song_url_v1')).toMatchObject({ query: { id: FIRST.id, level: 'exhigh' } })
+    expect(world.netease.calls.find(call => call.module === 'song_url_v1')).toMatchObject({
+      query: { id: FIRST.id, level: 'exhigh' },
+    })
     const player = tab.audio.find(audio => audio.src !== '')!
     expect(player.src).toBe(await recordedUrl(FIRST.url))
     expect(player.paused).toBe(false)
@@ -118,7 +133,13 @@ describe('点歌', () => {
     player.ready(192.648)
     await world.settle()
     expect(tab.sounding()).toBe(player)
-    expect(app.state.player).toMatchObject({ status: 'playing', duration: 192.648, position: 0, trial: false, notice: null })
+    expect(app.state.player).toMatchObject({
+      status: 'playing',
+      duration: 192.648,
+      position: 0,
+      trial: false,
+      notice: null,
+    })
   })
 
   it('换一首、还在取它的地址时：旧的那首接着出声，但它的进度、放完都不算到新的这首上', async () => {
@@ -127,7 +148,9 @@ describe('点歌', () => {
     const { app } = tab
     const player = await playUntilSounding(tab, FIRST, SECOND)
     player.progress(100)
-    await world.netease.reply(THIRD.url, { until: never() })
+    await world.netease.reply(THIRD.url, {
+      until: never(),
+    })
     app.play(LIKED, THIRD.id)
     await world.settle()
     expect(app.state.player).toMatchObject({ status: 'loading', position: 0 })
@@ -154,7 +177,11 @@ describe('只同步了一部分的歌单', () => {
     await world.netease.reply(likedPage(3), { until: page3.until })
     await world.netease.reply(likedPage(4))
     await world.netease.reply(likedPage(5))
-    await replyLibrary({ from: 'likedTracks', through: 'likedTracks', until: never() })
+    await replyLibrary({
+      from: 'likedTracks',
+      through: 'likedTracks',
+      until: never(),
+    })
     await signIn(world, app)
     await world.settle()
     const partial = app.state.library!.liked!
@@ -194,7 +221,9 @@ describe('只同步了一部分的歌单', () => {
     expect(partial.songs).toHaveLength(34)
 
     const first = partial.songs[0].id
-    await world.netease.reply(FIRST.url, { until: never() })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+    })
     app.play(RHYTHM, first)
     await world.settle()
     expect(queueIds(app)).toEqual(partial.songs.map(song => song.id))
@@ -219,7 +248,9 @@ describe('只同步了一部分的歌单', () => {
     void app.openPlaylist(RHYTHM.id)
     await world.settle()
     const partial = app.state.library!.songsOf(RHYTHM.id)!.songs.map(song => song.id)
-    await world.netease.reply(FIRST.url, { until: never() })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+    })
     app.play(RHYTHM, partial[0])
     await world.settle()
 
@@ -234,7 +265,12 @@ describe('只同步了一部分的歌单', () => {
     const rhythm = app.state.library!.songsOf(RHYTHM.id)!.songs.map(song => song.id)
     expect(rhythm).toHaveLength(35)
     expect(rhythm[34]).toBe(last.id)
-    expect(queueIds(app)).toEqual([rhythm[0], last.id, ...rhythm.slice(1, 34).filter(id => id !== partial[5]), elsewhere.id])
+    expect(queueIds(app)).toEqual([
+      rhythm[0],
+      last.id,
+      ...rhythm.slice(1, 34).filter(id => id !== partial[5]),
+      elsewhere.id,
+    ])
     expect(app.state.player.current).toBe(0)
   })
 })
@@ -249,7 +285,9 @@ describe('试听和无版权', () => {
     const page = app.state.library!.albumPage(TRIAL_ALBUM.id)
     if (page?.status !== 'shown')
       throw new Error('专辑页没显示')
-    expect(page.content.songs.map(song => [song.id, song.availability])).toEqual([[TRIAL_ALBUM.song, 'trial']])
+    expect(page.content.songs.map(song => [song.id, song.availability])).toEqual([
+      [TRIAL_ALBUM.song, 'trial'],
+    ])
 
     await world.netease.reply(TRIAL_URL)
     app.play({ kind: 'album', id: TRIAL_ALBUM.id }, TRIAL_ALBUM.song)
@@ -259,7 +297,11 @@ describe('试听和无版权', () => {
     player.ready(30.04)
     await world.settle()
     expect(app.state.player).toMatchObject({ status: 'playing', trial: true, duration: 30.04 })
-    expect(app.state.player.queue).toEqual([expect.objectContaining({ source: { kind: 'album', id: TRIAL_ALBUM.id } })])
+    expect(app.state.player.queue).toEqual([
+      expect.objectContaining({
+        source: { kind: 'album', id: TRIAL_ALBUM.id },
+      }),
+    ])
   })
 
   it('无版权的歌：列表里标出来，点了不放；前一首放完时跳过它，不取它的地址', async () => {
@@ -281,7 +323,9 @@ describe('试听和无版权', () => {
     const spare = other(tab, player)
     expect(spare.src).toBe(await recordedUrl(AFTER_NO_COPYRIGHT.url))
     spare.ready(AFTER_NO_COPYRIGHT.duration)
-    await world.netease.reply(THIRD.url, { until: never() })
+    await world.netease.reply(THIRD.url, {
+      until: never(),
+    })
     player.progress(175.2)
     await world.settle()
     expect(current(app)).toBe(AFTER_NO_COPYRIGHT.id)
@@ -350,7 +394,11 @@ describe('断流和出错', () => {
     player.progress(61.2)
     player.fail(MEDIA_ERR_NETWORK)
     await world.settle()
-    expect(app.state.player).toMatchObject({ status: 'paused', position: 61.2, notice: { kind: 'streamFailed' } })
+    expect(app.state.player).toMatchObject({
+      status: 'paused',
+      position: 61.2,
+      notice: { kind: 'streamFailed' },
+    })
     expect(tab.sounding()).toBeUndefined()
 
     app.togglePlay()
@@ -376,7 +424,10 @@ describe('断流和出错', () => {
     await world.clock.advance(7_000)
     expect(app.state.player.notice).toBeNull()
     await world.clock.advance(1_000)
-    expect(app.state.player).toMatchObject({ status: 'buffering', notice: { kind: 'slow' } })
+    expect(app.state.player).toMatchObject({
+      status: 'buffering',
+      notice: { kind: 'slow' },
+    })
 
     player.ready(FIRST.duration)
     await world.settle()
@@ -392,7 +443,10 @@ describe('断流和出错', () => {
     await world.settle()
     tab.audio.find(audio => !audio.paused)!.fail(MEDIA_ERR_SRC_NOT_SUPPORTED)
     await world.settle()
-    expect(app.state.player).toMatchObject({ status: 'paused', notice: { kind: 'streamFailed' } })
+    expect(app.state.player).toMatchObject({
+      status: 'paused',
+      notice: { kind: 'streamFailed' },
+    })
     expect(tab.audio.every(audio => audio.paused)).toBe(true)
   })
 
@@ -407,7 +461,11 @@ describe('断流和出错', () => {
     await world.settle()
     app.togglePlay()
     await world.settle()
-    expect(app.state.player).toMatchObject({ status: 'paused', current: 0, notice: { kind: 'nothingPlayable' } })
+    expect(app.state.player).toMatchObject({
+      status: 'paused',
+      current: 0,
+      notice: { kind: 'nothingPlayable' },
+    })
     expect(playUrlRequests(device)).toEqual([FIRST.id, SECOND.id].map(id => `/api/songs/${id}/play-url?quality=exhigh`))
 
     device.setOnline(true)
@@ -485,7 +543,12 @@ describe('两个播放器交替（ADR-0010）', () => {
 
     player.end()
     await world.settle()
-    expect(app.state.player).toMatchObject({ status: 'paused', position: 0, notice: { kind: 'streamFailed' }, change: 'continue' })
+    expect(app.state.player).toMatchObject({
+      status: 'paused',
+      position: 0,
+      notice: { kind: 'streamFailed' },
+      change: 'continue',
+    })
     expect(current(app)).toBe(SECOND.id)
 
     app.togglePlay()
@@ -751,20 +814,32 @@ const ALBUM = { kind: 'album', id: TRIAL_ALBUM.id } as const
 
 // 下一首播放、加入播放队列、插播（#26，逻辑原型规则①–⑤）。插播照听众的做法，在显示出来的搜索结果里点歌
 describe('下一首播放、加入播放队列、插播', () => {
-  it.each([['下一首播放', 'playNext'], ['加入播放队列', 'addToQueue'], ['在搜索结果里点歌', 'play']] as const)('播放队列是空的时选“%s”：队列里只有这一首，直接开始放（规则①）', async (_, action) => {
+  it.each([
+    ['下一首播放', 'playNext'],
+    ['加入播放队列', 'addToQueue'],
+    ['在搜索结果里点歌', 'play'],
+  ] as const)('播放队列是空的时选“%s”：队列里只有这一首，直接开始放（规则①）', async (_, action) => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    const song = action === 'play' ? (await showSearch(app))[0] : likedSong(app, SECOND.id)
-    const source = action === 'play' ? SEARCHED : ALBUM
-    const url = action === 'play' ? SEARCH_SONG.url : SECOND.url
+    const song = action === 'play'
+      ? (await showSearch(app))[0]
+      : likedSong(app, SECOND.id)
+    const source = action === 'play'
+      ? SEARCHED
+      : ALBUM
+    const url = action === 'play'
+      ? SEARCH_SONG.url
+      : SECOND.url
 
     await world.netease.reply(url)
     if (action === 'play')
       app.play(source, song.id)
     else
       app[action](source, song)
-    expect(app.state.player.queue).toEqual([{ song, source }])
+    expect(app.state.player.queue).toEqual([
+      { song, source },
+    ])
     expect(app.state.player).toMatchObject({ current: 0, status: 'loading', change: 'pick' })
     await world.settle()
     expect(tab.audio.find(audio => !audio.paused)?.src).toBe(await recordedUrl(url))
@@ -775,7 +850,9 @@ describe('下一首播放、加入播放队列、插播', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    await world.netease.reply(FIRST.url, { until: never() })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+    })
     app.addToQueue(LIKED, likedSong(app, FIRST.id))
     app.addToQueue(LIKED, likedSong(app, SECOND.id))
     app.addToQueue(ALBUM, likedSong(app, THIRD.id))
@@ -792,7 +869,9 @@ describe('下一首播放、加入播放队列、插播', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    await world.netease.reply(FIRST.url, { until: never() })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+    })
     app.addToQueue(LIKED, likedSong(app, FIRST.id))
     app.addToQueue(LIKED, likedSong(app, SECOND.id))
     app.playNext(LIKED, likedSong(app, THIRD.id))
@@ -813,20 +892,35 @@ describe('下一首播放、加入播放队列、插播', () => {
     const { app } = tab
     const [searched] = await showSearch(app)
     // 没等 FIRST 的请求到服务端就点搜索结果：两个请求谁先到不固定，按歌曲编号对上
-    await world.netease.reply(FIRST.url, { until: never(), when: { id: FIRST.id } })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+      when: { id: FIRST.id },
+    })
     app.play(LIKED, FIRST.id)
     const length = app.state.player.queue.length
     const count = (id: number) => queueIds(app).filter(each => each === id).length
 
     app.playNext(ALBUM, likedSong(app, THIRD.id))
-    expect(app.state.player.queue[1]).toEqual({ song: likedSong(app, THIRD.id), source: ALBUM })
+    expect(app.state.player.queue[1]).toEqual({
+      song: likedSong(app, THIRD.id),
+      source: ALBUM,
+    })
     app.addToQueue(ALBUM, likedSong(app, SECOND.id))
-    expect(app.state.player.queue.at(-1)).toEqual({ song: likedSong(app, SECOND.id), source: ALBUM })
+    expect(app.state.player.queue.at(-1)).toEqual({
+      song: likedSong(app, SECOND.id),
+      source: ALBUM,
+    })
     expect(app.state.player.queue).toHaveLength(length)
-    expect([count(THIRD.id), count(SECOND.id)]).toEqual([1, 1])
+    expect([
+      count(THIRD.id),
+      count(SECOND.id),
+    ]).toEqual([1, 1])
     expect(current(app)).toBe(FIRST.id)
 
-    await world.netease.reply(SEARCH_SONG.url, { until: never(), when: { id: SEARCH_SONG.id } })
+    await world.netease.reply(SEARCH_SONG.url, {
+      until: never(),
+      when: { id: SEARCH_SONG.id },
+    })
     app.play(SEARCHED, searched.id)
     expect(app.state.player.queue[1]).toEqual({ song: searched, source: SEARCHED })
     expect(app.state.player.queue).toHaveLength(length)
@@ -876,7 +970,12 @@ describe('下一首播放、加入播放队列、插播', () => {
     await world.settle()
     expect(tab.sounding()).toBe(player)
     expect(player.currentTime).toBe(10)
-    expect(app.state.player).toMatchObject({ status: 'playing', position: 10, queue: paused.queue, current: paused.current })
+    expect(app.state.player).toMatchObject({
+      status: 'playing',
+      position: 10,
+      queue: paused.queue,
+      current: paused.current,
+    })
     expect(playUrlRequests(device)).toHaveLength(requests)
   })
 
@@ -976,15 +1075,24 @@ describe('移出、清空播放队列', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    await world.netease.reply(SECOND.url, { until: never() })
+    await world.netease.reply(SECOND.url, {
+      until: never(),
+    })
     app.play(LIKED, SECOND.id)
     const ids = queueIds(app)
 
     app.removeFromQueue(2)
-    expect(queueIds(app)).toEqual([ids[0], ids[1], ...ids.slice(3)])
+    expect(queueIds(app)).toEqual([
+      ids[0],
+      ids[1],
+      ...ids.slice(3),
+    ])
     expect(app.state.player.current).toBe(1)
     app.removeFromQueue(0)
-    expect(queueIds(app)).toEqual([ids[1], ...ids.slice(3)])
+    expect(queueIds(app)).toEqual([
+      ids[1],
+      ...ids.slice(3),
+    ])
     expect(app.state.player.current).toBe(0)
     expect(current(app)).toBe(SECOND.id)
 
@@ -1019,7 +1127,12 @@ describe('移出、清空播放队列', () => {
     expect(app.state.player.status).toBe('loading')
 
     app.clearQueue()
-    expect(app.state.player).toMatchObject({ queue: [], current: null, status: 'paused', notice: null })
+    expect(app.state.player).toMatchObject({
+      queue: [],
+      current: null,
+      status: 'paused',
+      notice: null,
+    })
     third.release()
     await world.settle()
     expect(tab.sounding()).toBeUndefined()
@@ -1042,7 +1155,9 @@ describe('换歌原因', () => {
     const { app } = tab
     expect(app.state.player.change).toBeNull()
 
-    await world.netease.reply(FIRST.url, { until: never() })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+    })
     app.play(LIKED, FIRST.id)
     expect(app.state.player).toMatchObject({ change: 'pick', status: 'loading' })
     expect(current(app)).toBe(FIRST.id)
@@ -1080,8 +1195,14 @@ describe('换歌原因', () => {
     const second = held()
     const third = held()
     // 两首的地址几乎同时去取，到服务端的先后不固定：按歌曲编号对上（CI 上碰到过第 3 首拿到第 2 首的地址）
-    await world.netease.reply(SECOND.url, { until: second.until, when: { id: SECOND.id } })
-    await world.netease.reply(THIRD.url, { until: third.until, when: { id: THIRD.id } })
+    await world.netease.reply(SECOND.url, {
+      until: second.until,
+      when: { id: SECOND.id },
+    })
+    await world.netease.reply(THIRD.url, {
+      until: third.until,
+      when: { id: THIRD.id },
+    })
 
     app.next()
     app.next()
@@ -1114,7 +1235,9 @@ describe('换歌原因', () => {
     const tab = await signInWithLiked(device)
     const { app } = tab
     await world.netease.reply(FIRST.url)
-    await world.netease.reply(SECOND.url, { until: never() })
+    await world.netease.reply(SECOND.url, {
+      until: never(),
+    })
     app.play(LIKED, FIRST.id)
     await world.settle()
     const player = tab.audio.find(audio => !audio.paused)!
@@ -1162,21 +1285,35 @@ describe('换歌原因', () => {
     const tab = await signInWithLiked(device)
     const { app } = tab
     await world.netease.reply('playback/song_url_v1.no-copyright.json')
-    await world.netease.reply(SECOND.url, { until: never() })
+    await world.netease.reply(SECOND.url, {
+      until: never(),
+    })
     app.play(LIKED, FIRST.id)
     expect(app.state.player.change).toBe('pick')
 
     await world.settle()
     expect(current(app)).toBe(SECOND.id)
-    expect(app.state.player).toMatchObject({ change: 'skip', status: 'loading', notice: { kind: 'skipped', song: { id: FIRST.id } } })
+    expect(app.state.player).toMatchObject({
+      change: 'skip',
+      status: 'loading',
+      notice: {
+        kind: 'skipped',
+        song: { id: FIRST.id },
+      },
+    })
   })
 })
 
 /** 播放页上露出来的上一首、下一首（编号）：按上一首、下一首会换到的那首 */
 function neighborIds(app: App): { previous: number | null, next: number | null } {
   const { queue, neighbors } = app.state.player
-  const id = (index: number | null) => (index === null ? null : queue[index].song.id)
-  return { previous: id(neighbors.previous), next: id(neighbors.next) }
+  const id = (index: number | null) => (index === null
+    ? null
+    : queue[index].song.id)
+  return {
+    previous: id(neighbors.previous),
+    next: id(neighbors.next),
+  }
 }
 
 // 手机播放页左右拖封面（#52，DESIGN.md Cover Wheel）：转盘上露出来的那张，得是松手切过去的那首
@@ -1198,7 +1335,9 @@ describe('按上一首、下一首会换到哪首', () => {
     await world.settle()
 
     await world.netease.reply('playback/song_url_v1.no-copyright.json')
-    await world.netease.reply(SECOND.url, { until: never() })
+    await world.netease.reply(SECOND.url, {
+      until: never(),
+    })
     app.play(LIKED, FIRST.id)
     await world.settle()
     expect(current(app)).toBe(SECOND.id)
@@ -1222,7 +1361,9 @@ describe('按上一首、下一首会换到哪首', () => {
     const tab = await signInWithLiked(device)
     const { app } = tab
     app.setPlayMode('shuffle')
-    await world.netease.reply(FIRST.url, { until: never() })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+    })
     app.play(LIKED, FIRST.id)
 
     const shown: (number | null)[] = []
@@ -1253,7 +1394,9 @@ function seeded(seed: number): () => number {
 
 /** 用“加入播放队列”从空的播放队列放起：队列里就是这几首，从第一首开始（它的地址一直在取） */
 async function queueOf(app: App, songs: readonly Recorded[]): Promise<void> {
-  await world.netease.reply(songs[0].url, { until: never() })
+  await world.netease.reply(songs[0].url, {
+    until: never(),
+  })
   for (const song of songs)
     app.addToQueue(LIKED, likedSong(app, song.id))
 }
@@ -1310,7 +1453,9 @@ describe('播放模式', () => {
     const tab = await signInWithLiked(device)
     const { app } = tab
     app.setPlayMode('shuffle')
-    await world.netease.reply(FIRST.url, { until: never() })
+    await world.netease.reply(FIRST.url, {
+      until: never(),
+    })
     app.play(LIKED, FIRST.id)
     expect(current(app)).toBe(FIRST.id)
 
@@ -1357,7 +1502,12 @@ describe('播放模式', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    await queueOf(app, [FIRST, SECOND, THIRD, BEFORE_NO_COPYRIGHT])
+    await queueOf(app, [
+      FIRST,
+      SECOND,
+      THIRD,
+      BEFORE_NO_COPYRIGHT,
+    ])
     app.playNext(ALBUM, likedSong(app, AFTER_NO_COPYRIGHT.id))
     app.playNext(ALBUM, likedSong(app, LAST.id))
 
@@ -1435,8 +1585,12 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
           'release',
           'release',
           'network',
-          ...(audio.src && !audio.error ? ['ready', 'ready', 'fail'] : []),
-          ...(audio.sounding ? ['progress', 'progress', 'end', 'stall'] : []),
+          ...(audio.src && !audio.error
+            ? ['ready', 'ready', 'fail']
+            : []),
+          ...(audio.sounding
+            ? ['progress', 'progress', 'end', 'stall']
+            : []),
         ]
         const action = pick(actions)
         steps.push(action)
@@ -1507,7 +1661,11 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
       const { app } = tab
       const [searched] = await showSearch(app)
       // 播放地址都不回：这里只看播放队列，换上来的歌停在没取到地址
-      const songs = [...app.state.library!.liked!.songs.slice(0, 12), likedSong(app, NO_COPYRIGHT), searched]
+      const songs = [
+        ...app.state.library!.liked!.songs.slice(0, 12),
+        likedSong(app, NO_COPYRIGHT),
+        searched,
+      ]
       /** 听众选了“下一首播放”、还没放到的歌，后加的在前：照规则①②⑤和“退回上一首、点别的歌、点歌、清空后不再算”记的 */
       let upNext: number[] = []
       const steps: string[] = []
@@ -1517,8 +1675,29 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
         const now = current(app)
         /** 播放页上露出来的上一首、下一首：没有时按了不换歌 */
         const shown = neighborIds(app)
-        const action = pick(['play', 'playNext', 'playNext', 'playNext', 'addToQueue', 'addToQueue', 'interject', 'remove', 'clear', 'mode', 'mode', 'mode', 'next', 'next', 'next', 'next', 'previous', 'jump'] as const)
-        const song = action === 'interject' ? searched : pick(songs)
+        const action = pick([
+          'play',
+          'playNext',
+          'playNext',
+          'playNext',
+          'addToQueue',
+          'addToQueue',
+          'interject',
+          'remove',
+          'clear',
+          'mode',
+          'mode',
+          'mode',
+          'next',
+          'next',
+          'next',
+          'next',
+          'previous',
+          'jump',
+        ] as const)
+        const song = action === 'interject'
+          ? searched
+          : pick(songs)
         const off = song.availability === 'noCopyright'
         let expected: number | undefined
         /** 按了下一首，播放队列里还有别的能放的歌：要换歌 */
@@ -1531,8 +1710,12 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
             break
           case 'playNext':
             app.playNext(pick([LIKED, ALBUM]), song)
-            if (!off && now !== null && song.id !== now)
-              upNext = [song.id, ...upNext.filter(id => id !== song.id)]
+            if (!off && now !== null && song.id !== now) {
+              upNext = [
+                song.id,
+                ...upNext.filter(id => id !== song.id),
+              ]
+            }
             break
           case 'addToQueue':
             app.addToQueue(pick([LIKED, ALBUM]), song)
@@ -1573,20 +1756,32 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
             break
           }
         }
-        steps.push(`${action}${['play', 'playNext', 'addToQueue', 'interject'].includes(action) ? ` ${song.id}` : ''}`)
+        steps.push(`${action}${[
+          'play',
+          'playNext',
+          'addToQueue',
+          'interject',
+        ].includes(action)
+          ? ` ${song.id}`
+          : ''}`)
         await world.settle()
 
         const where = `种子 ${seed}，第 ${round} 轮，操作 ${steps.join(' → ')}`
         const ids = queueIds(app)
         expect(new Set(ids).size, `同一首歌不会在播放队列里出现两次（${where}）`).toBe(ids.length)
         const { current: index } = app.state.player
-        expect(index === null ? ids.length === 0 : index >= 0 && index < ids.length, `当前这首在播放队列里（${where}）`).toBe(true)
+        expect(index === null
+          ? ids.length === 0
+          : index >= 0 && index < ids.length, `当前这首在播放队列里（${where}）`).toBe(true)
         if (moves)
           expect(current(app), `按下一首会换歌（${where}）`).not.toBe(now)
         if (expected !== undefined)
           expect(current(app), `按下一首放的是还没放到的“下一首播放”里最后加的那首（${where}）`).toBe(expected)
-        if (action === 'next' || action === 'previous')
-          expect(current(app), `按${action === 'next' ? '下' : '上'}一首换到的是露出来的那首（${where}）`).toBe(shown[action] ?? now)
+        if (action === 'next' || action === 'previous') {
+          expect(current(app), `按${action === 'next'
+            ? '下'
+            : '上'}一首换到的是露出来的那首（${where}）`).toBe(shown[action] ?? now)
+        }
         upNext = upNext.filter(id => id !== current(app))
       }
     }
@@ -1617,8 +1812,19 @@ describe('关掉再打开', () => {
     const { app: reopened, ...again } = await reopen(device, tab)
     await world.settle()
     const sent = playUrlRequests(device).length
-    expect(reopened.state.player).toMatchObject({ queue: before.queue, current: before.current, position: 100, status: 'paused', mode: 'one', change: null, notice: null })
-    expect(reopened.state.player.queue[1]).toMatchObject({ song: { id: LAST.id }, source: album })
+    expect(reopened.state.player).toMatchObject({
+      queue: before.queue,
+      current: before.current,
+      position: 100,
+      status: 'paused',
+      mode: 'one',
+      change: null,
+      notice: null,
+    })
+    expect(reopened.state.player.queue[1]).toMatchObject({
+      song: { id: LAST.id },
+      source: album,
+    })
     expect(again.sounding()).toBeUndefined()
     // 还没放到的下一首播放照旧：切到随机播放时它留在最前
     reopened.setPlayMode('shuffle')
@@ -1698,7 +1904,10 @@ describe('退出登录、换账号', () => {
     await expireLogin(device, app)
     expect(tab.sounding()).toBe(player)
 
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, app, { another: true })
     await world.settle()
     expect(app.state.player).toMatchObject({ queue: [], current: null, status: 'paused' })
@@ -1708,7 +1917,9 @@ describe('退出登录、换账号', () => {
     await showSearch(app)
     // 播放地址按账号给（会员和非会员不一样）：同一首歌换了账号要重新取
     const sent = playUrlRequests(device).length
-    await world.netease.reply(SEARCH_SONG.url, { until: never() })
+    await world.netease.reply(SEARCH_SONG.url, {
+      until: never(),
+    })
     app.play(SEARCHED, SEARCH_SONG.id)
     await world.settle()
     expect(playUrlRequests(device).slice(sent)).toEqual([`/api/songs/${SEARCH_SONG.id}/play-url?quality=exhigh`])
@@ -1722,7 +1933,10 @@ describe('退出登录、换账号', () => {
     const queue = app.state.player.queue
     await expireLogin(device, app)
 
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, app)
     await world.settle()
     expect(app.state.player.queue).toBe(queue)
@@ -1743,7 +1957,10 @@ describe('退出登录、换账号', () => {
     expect(app.state.session.status).toBe('loginExpired')
     expect(app.state.player.queue).toEqual([])
 
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, app, { another: true })
     await world.settle()
     expect(app.state.player.queue).toEqual([])
@@ -1762,7 +1979,9 @@ describe('锁屏和通知栏', () => {
       title: '夏に溶ける (feat. 鏡音リン)',
       artist: 'ごめんなさいが言えなくて / 鏡音リン',
       album: '夏に溶ける',
-      artwork: [{ src: 'https://p4.music.126.net/Lw6wl5jXi7R7Bi5KI0-Tdg==/109951173904017056.jpg?param=512y512', sizes: '512x512' }],
+      artwork: [
+        { src: 'https://p4.music.126.net/Lw6wl5jXi7R7Bi5KI0-Tdg==/109951173904017056.jpg?param=512y512', sizes: '512x512' },
+      ],
     })
     expect(mediaSession.playbackState).toBe('playing')
     expect(mediaSession.position).toEqual({ duration: FIRST.duration, position: 0, playbackRate: 1 })
@@ -1821,11 +2040,16 @@ describe('在线播放音质', () => {
 
     app.setPlayQuality('lossless')
     expect(app.state.player.quality).toBe('lossless')
-    await world.netease.reply(RECORDED_IN_QUALITIES.lossless, { until: never() })
+    await world.netease.reply(RECORDED_IN_QUALITIES.lossless, {
+      until: never(),
+    })
     app.play(LIKED, RECORDED_IN_QUALITIES.id)
     await world.settle()
     expect(playUrlRequests(device)).toEqual([`/api/songs/${RECORDED_IN_QUALITIES.id}/play-url?quality=lossless`])
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'song_url_v1', query: { id: RECORDED_IN_QUALITIES.id, level: 'lossless' } })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'song_url_v1',
+      query: { id: RECORDED_IN_QUALITIES.id, level: 'lossless' },
+    })
 
     const { app: reopened, ...again } = await reopen(device, tab)
     await world.settle()
@@ -1867,7 +2091,9 @@ const CHECK_IN = 'playback/check-in/001-scrobble.json.gz'
 
 /** 服务端调网易云打卡时的参数，按先后 */
 function neteaseCheckIns(): unknown[] {
-  return world.netease.calls.flatMap(call => call.module === 'scrobble' ? [call.query] : [])
+  return world.netease.calls.flatMap(call => call.module === 'scrobble'
+    ? [call.query]
+    : [])
 }
 
 describe('听歌打卡', () => {
@@ -1888,8 +2114,20 @@ describe('听歌打卡', () => {
     await world.netease.reply(CHECK_IN)
     app.next()
     await world.settle()
-    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 40 } }])
-    expect(neteaseCheckIns()).toEqual([{ id: FIRST.id, sourceid: LIKED.id, source: 'list', time: 40 }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        body: { source: LIKED, seconds: 40 },
+      },
+    ])
+    expect(neteaseCheckIns()).toEqual([
+      {
+        id: FIRST.id,
+        sourceid: LIKED.id,
+        source: 'list',
+        time: 40,
+      },
+    ])
     expect(await storedCheckIns(device)).toEqual([])
   })
 
@@ -1907,13 +2145,21 @@ describe('听歌打卡', () => {
     player.progress(191.7)
     await world.settle()
     expect(tab.sounding()).toBe(spare)
-    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 192 } }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        body: { source: LIKED, seconds: 192 },
+      },
+    ])
 
     await world.clock.advance(3_000)
     await world.netease.reply(CHECK_IN)
     app.next()
     await world.settle()
-    expect(checkIns(device).at(-1)).toEqual({ songId: SECOND.id, body: { source: LIKED, seconds: 3 } })
+    expect(checkIns(device).at(-1)).toEqual({
+      songId: SECOND.id,
+      body: { source: LIKED, seconds: 3 },
+    })
   })
 
   it('被插播打断的那首：当场按实际出声的秒数打卡（规则④）；插播进来的那首打卡时带着它自己的播放来源', async () => {
@@ -1928,7 +2174,12 @@ describe('听歌打卡', () => {
     await world.netease.reply(SEARCH_SONG.url)
     app.play(SEARCHED, SEARCH_SONG.id)
     await world.settle()
-    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 25 } }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        body: { source: LIKED, seconds: 25 },
+      },
+    ])
 
     other(tab, player).ready(SEARCH_SONG.duration)
     await world.settle()
@@ -1938,8 +2189,18 @@ describe('听歌打卡', () => {
     app.next()
     await world.settle()
     expect(neteaseCheckIns()).toEqual([
-      { id: FIRST.id, sourceid: LIKED.id, source: 'list', time: 25 },
-      { id: SEARCH_SONG.id, sourceid: 0, source: 'search', time: 10 },
+      {
+        id: FIRST.id,
+        sourceid: LIKED.id,
+        source: 'list',
+        time: 25,
+      },
+      {
+        id: SEARCH_SONG.id,
+        sourceid: 0,
+        source: 'search',
+        time: 10,
+      },
     ])
   })
 
@@ -1952,12 +2213,24 @@ describe('听歌打卡', () => {
     player.end()
     await world.settle()
     expect(checkIns(device)).toEqual([])
-    expect(await storedCheckIns(device)).toEqual([{ songId: FIRST.id, source: LIKED, seconds: 30, owner: RECORDED_ACCOUNT.id }])
+    expect(await storedCheckIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        source: LIKED,
+        seconds: 30,
+        owner: RECORDED_ACCOUNT.id,
+      },
+    ])
 
     await world.netease.reply(CHECK_IN)
     device.setOnline(true)
     await world.settle()
-    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 30 } }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        body: { source: LIKED, seconds: 30 },
+      },
+    ])
     expect(await storedCheckIns(device)).toEqual([])
   })
 
@@ -1980,7 +2253,14 @@ describe('听歌打卡', () => {
     const player = await expireWhileCheckingIn(device, tab)
     expect(checkIns(device)).toHaveLength(1)
     expect(neteaseCheckIns()).toEqual([])
-    expect(await storedCheckIns(device)).toEqual([{ songId: FIRST.id, source: LIKED, seconds: 40, owner: RECORDED_ACCOUNT.id }])
+    expect(await storedCheckIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        source: LIKED,
+        seconds: 40,
+        owner: RECORDED_ACCOUNT.id,
+      },
+    ])
 
     // 缓冲好的下一首接着放
     other(tab, player).ready(SECOND.duration)
@@ -1991,18 +2271,37 @@ describe('听歌打卡', () => {
     await world.settle()
     expect(checkIns(device)).toHaveLength(1)
     expect(await storedCheckIns(device)).toEqual([
-      { songId: FIRST.id, source: LIKED, seconds: 40, owner: RECORDED_ACCOUNT.id },
-      { songId: SECOND.id, source: LIKED, seconds: 20, owner: RECORDED_ACCOUNT.id },
+      {
+        songId: FIRST.id,
+        source: LIKED,
+        seconds: 40,
+        owner: RECORDED_ACCOUNT.id,
+      },
+      {
+        songId: SECOND.id,
+        source: LIKED,
+        seconds: 20,
+        owner: RECORDED_ACCOUNT.id,
+      },
     ])
 
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await world.netease.reply(CHECK_IN)
     await world.netease.reply(CHECK_IN)
     await signIn(world, app)
     await world.settle()
     expect(checkIns(device).slice(1)).toEqual([
-      { songId: FIRST.id, body: { source: LIKED, seconds: 40 } },
-      { songId: SECOND.id, body: { source: LIKED, seconds: 20 } },
+      {
+        songId: FIRST.id,
+        body: { source: LIKED, seconds: 40 },
+      },
+      {
+        songId: SECOND.id,
+        body: { source: LIKED, seconds: 20 },
+      },
     ])
     expect(neteaseCheckIns()).toHaveLength(2)
     expect(await storedCheckIns(device)).toEqual([])
@@ -2014,7 +2313,10 @@ describe('听歌打卡', () => {
     await expireWhileCheckingIn(device, tab)
     expect(await storedCheckIns(device)).toHaveLength(1)
 
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, tab.app, { another: true })
     await world.settle()
     expect(checkIns(device)).toHaveLength(1)
@@ -2041,7 +2343,10 @@ describe('听歌打卡', () => {
     await world.netease.reply('login/logout.json')
     device.setOnline(true)
     await world.settle()
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, app)
     await world.settle()
     expect(checkIns(device)).toEqual([])
@@ -2070,7 +2375,12 @@ describe('听歌打卡', () => {
     await world.netease.reply(CHECK_IN)
     reopened.next()
     await world.settle()
-    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 90 } }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        body: { source: LIKED, seconds: 90 },
+      },
+    ])
   })
 
   it('联网时主动退出：正在放的那首算结束，先把它的打卡发出去，再删曲库副本和播放队列、退出；界面马上变成未登录', async () => {
@@ -2087,7 +2397,12 @@ describe('听歌打卡', () => {
     await world.settle()
     expect(app.state.session.status).toBe('signedOut')
     expect(tab.sounding()).toBeUndefined()
-    expect(checkIns(device)).toEqual([{ songId: FIRST.id, body: { source: LIKED, seconds: 50 } }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: FIRST.id,
+        body: { source: LIKED, seconds: 50 },
+      },
+    ])
     expect(device.requests.some(request => request.path === '/api/logout')).toBe(false)
     expect((await device.stored()).library).not.toEqual([])
 
@@ -2095,7 +2410,14 @@ describe('听歌打卡', () => {
     await loggingOut
     await world.settle()
     expect(device.requests.at(-1)?.path).toBe('/api/logout')
-    expect(neteaseCheckIns()).toEqual([{ id: FIRST.id, sourceid: LIKED.id, source: 'list', time: 50 }])
+    expect(neteaseCheckIns()).toEqual([
+      {
+        id: FIRST.id,
+        sourceid: LIKED.id,
+        source: 'list',
+        time: 50,
+      },
+    ])
     const stored = await device.stored()
     expect([stored.library, stored.player, stored.checkIns]).toEqual([[], [], []])
   })

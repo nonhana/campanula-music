@@ -7,7 +7,9 @@
   import { CircleAlert, CircleArrowDown } from '@lucide/svelte'
 
   const { mark, variant }: { mark: DownloadMark, variant: 'column' | 'inline' } = $props()
-  const size = $derived(variant === 'inline' ? 14 : 16)
+  const size = $derived(variant === 'inline'
+    ? 14
+    : 16)
 </script>
 
 {#if mark.kind === 'done'}

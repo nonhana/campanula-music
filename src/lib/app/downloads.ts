@@ -75,7 +75,12 @@ export function downloadBlock(song: Song, downloads: DownloadsState, { signedIn,
   return online ? null : 'offline'
 }
 
-export const INITIAL_DOWNLOADS: DownloadsState = { songs: null, tasks: new Map(), has: () => false, coverOf: () => null }
+export const INITIAL_DOWNLOADS: DownloadsState = {
+  songs: null,
+  tasks: new Map(),
+  has: () => false,
+  coverOf: () => null,
+}
 
 export interface DownloadsContext {
   api: Api
@@ -135,8 +140,12 @@ export function createDownloads(context: DownloadsContext): Downloads {
 
   function setRecords(next: Map<number, StoredDownload>): void {
     records = next
-    songs = [...next.values()].sort((a, b) => b.downloadedAt - a.downloadedAt).map(record => record.song)
-    covers = new Map([...next.values()].map(record => [record.song.album.coverUrl, record]))
+    songs = [
+      ...next.values(),
+    ].sort((a, b) => b.downloadedAt - a.downloadedAt).map(record => record.song)
+    covers = new Map([
+      ...next.values(),
+    ].map(record => [record.song.album.coverUrl, record]))
   }
 
   function coverOf(coverUrl: string): string | null {
@@ -153,7 +162,12 @@ export function createDownloads(context: DownloadsContext): Downloads {
 
   function current(): DownloadsState {
     const shown = records
-    return { songs, tasks, has: songId => shown?.has(songId) ?? false, coverOf }
+    return {
+      songs,
+      tasks,
+      has: songId => shown?.has(songId) ?? false,
+      coverOf,
+    }
   }
 
   function publish(): void {
@@ -204,7 +218,12 @@ export function createDownloads(context: DownloadsContext): Downloads {
     if (!url.value.downloadable)
       return fail(song, { kind: 'unavailable' })
     const { size } = url.value
-    setTask({ status: 'downloading', song, received: 0, total: size })
+    setTask({
+      status: 'downloading',
+      song,
+      received: 0,
+      total: size,
+    })
     /** 上次发布时收到了多少字节 */
     let shown = 0
     const [audio, cover] = await Promise.all([
@@ -212,14 +231,25 @@ export function createDownloads(context: DownloadsContext): Downloads {
         // 每多收到 1% 才更新一次：几十 MB 的音频一块一块地到，每块都发布一次界面跟不上
         if (Math.floor(received * 100 / size) !== Math.floor(shown * 100 / size) || received === size) {
           shown = received
-          setTask({ status: 'downloading', song, received, total: size })
+          setTask({
+            status: 'downloading',
+            song,
+            received,
+            total: size,
+          })
         }
       }),
       transfer(thumbnailUrl(song.album.coverUrl, DOWNLOAD_COVER_SIZE), () => {}),
     ])
     if (!audio || !cover || audio.size !== size)
       return fail(song, { kind: 'interrupted' })
-    const record: StoredDownload = { song, audio, cover, lyrics: lyrics.value, downloadedAt: clock.now() }
+    const record: StoredDownload = {
+      song,
+      audio,
+      cover,
+      lyrics: lyrics.value,
+      downloadedAt: clock.now(),
+    }
     try {
       await local.saveDownload(record)
     }
@@ -247,10 +277,18 @@ export function createDownloads(context: DownloadsContext): Downloads {
       return loading
     },
     download(song) {
-      const blocked = downloadBlock(song, current(), { signedIn: context.signedIn(), online: context.online() })
+      const blocked = downloadBlock(song, current(), {
+        signedIn: context.signedIn(),
+        online: context.online(),
+      })
       if (blocked)
         return blocked
-      setTask({ status: 'downloading', song, received: 0, total: null })
+      setTask({
+        status: 'downloading',
+        song,
+        received: 0,
+        total: null,
+      })
       void run(song)
       return null
     },

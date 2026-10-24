@@ -35,8 +35,18 @@
   const emptied = () => queueEmpty(view.app.state.player)
   /** 设计页的示意图只借容器：不起真实播放条的名字、不标 data-player-bar */
   const chrome = $derived(preview === undefined
-    ? { bar: 'player-bar', fade: 'bar-fade', still: 'still', anchor: true }
-    : { bar: undefined, fade: undefined, still: undefined, anchor: undefined })
+    ? {
+      bar: 'player-bar',
+      fade: 'bar-fade',
+      still: 'still',
+      anchor: true,
+    }
+    : {
+      bar: undefined,
+      fade: undefined,
+      still: undefined,
+      anchor: undefined,
+    })
 </script>
 
 {#if present}
@@ -47,7 +57,9 @@
       style:view-transition-class={chrome.still}
       data-player-bar={chrome.anchor}
       in:dock
-      out:dock|global={{ gone: emptied() }}
+      out:dock|global={{
+        gone: emptied(),
+      }}
     >
       {#if preview}
         {@render preview()}
@@ -62,7 +74,11 @@
       style:view-transition-class={chrome.still}
       aria-hidden='true'
       in:fade={{ duration: DURATIONS.panel }}
-      out:fade|global={{ duration: emptied() ? DURATIONS['panel-out'] : 0 }}
+      out:fade|global={{
+        duration: emptied()
+          ? DURATIONS['panel-out']
+          : 0,
+      }}
     ></div>
     <div
       class='fixed inset-x-2 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 h-16 overflow-hidden rounded-xl bg-white shadow-float'
@@ -70,7 +86,9 @@
       style:view-transition-class={chrome.still}
       data-player-bar={chrome.anchor}
       in:dock
-      out:dock|global={{ gone: emptied() }}
+      out:dock|global={{
+        gone: emptied(),
+      }}
     >
       {#if preview}
         {@render preview()}

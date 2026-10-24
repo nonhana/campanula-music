@@ -95,7 +95,11 @@
     const button = event.currentTarget as HTMLElement
     if (playlistMenu.request?.from === button)
       return playlistMenu.close()
-    playlistMenu.open({ playlistId: id, from: button, anchor: anchorBelow(event) })
+    playlistMenu.open({
+      playlistId: id,
+      from: button,
+      anchor: anchorBelow(event),
+    })
   }
 
   /** 自建歌单的“添加歌曲”：桌面居中弹窗、手机底部弹层。 */
@@ -123,8 +127,14 @@
     const current = sideNav?.querySelector<HTMLElement>('[aria-current="page"]')
     if (!sideNav || !current)
       return
-    if (current.offsetTop < sideNav.scrollTop || current.offsetTop + current.offsetHeight > sideNav.scrollTop + sideNav.clientHeight)
-      sideNav.scrollTo({ top: current.offsetTop - 8, behavior: sidePlaced ? scrollBehavior() : 'auto' })
+    if (current.offsetTop < sideNav.scrollTop || current.offsetTop + current.offsetHeight > sideNav.scrollTop + sideNav.clientHeight) {
+      sideNav.scrollTo({
+        top: current.offsetTop - 8,
+        behavior: sidePlaced
+          ? scrollBehavior()
+          : 'auto',
+      })
+    }
     sidePlaced = true
   })
 </script>
@@ -135,14 +145,18 @@
   {#if header}
     {#each header.meta as part, i (i)}
       {#if i > 0}<span aria-hidden='true'>·</span>{/if}
-      <span class='tabular-nums' lang={i === 0 ? langOf(part) : undefined}>{part}</span>
+      <span class='tabular-nums' lang={i === 0
+        ? langOf(part)
+        : undefined}>{part}</span>
     {/each}
     {#if header.private}<span class='inline-flex items-center' role='img' aria-label='隐私歌单' title='隐私歌单'><Lock size={13} aria-hidden='true' /></span>{/if}
   {/if}
 {/snippet}
 
 {#snippet headerActions()}
-  <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
+  <PlayAllButton songs={shown?.kind === 'songs'
+    ? shown.songs
+    : null} source={{ kind: 'playlist', id }} />
   {#if own}
     <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
   {/if}
@@ -195,8 +209,13 @@
       kind='empty'
       icon={why.icon}
       title={why.title}
-      body={'body' in why ? why.body : undefined}
-      action={{ label: '回到曲库', run: () => goto(resolve('/')) }}
+      body={'body' in why
+        ? why.body
+        : undefined}
+      action={{
+        label: '回到曲库',
+        run: () => goto(resolve('/')),
+      }}
     />
   </div>
 {:else if library && outside && page?.failure?.where === 'list'}
@@ -205,8 +224,13 @@
     <StateBlock
       kind='error'
       title='这张歌单没能打开'
-      body={page.failure.failure.kind === 'offline' ? '不在曲库里的歌单要联网才能打开' : failureText(page.failure.failure)}
-      action={{ label: '重试', run: () => void view.app.openPlaylist(id) }}
+      body={page.failure.failure.kind === 'offline'
+        ? '不在曲库里的歌单要联网才能打开'
+        : failureText(page.failure.failure)}
+      action={{
+        label: '重试',
+        run: () => void view.app.openPlaylist(id),
+      }}
     />
   </div>
 {:else if library && desktopLayout.current && outside}
@@ -228,7 +252,9 @@
               id={item.id}
               name={playlistName(item)}
               coverUrl={item.coverUrl}
-              trackCount={current ? listedCount ?? item.trackCount : item.trackCount}
+              trackCount={current
+                ? listedCount ?? item.trackCount
+                : item.trackCount}
               creator={null}
               locked={item.private}
               look='nav'

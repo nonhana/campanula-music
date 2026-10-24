@@ -9,7 +9,13 @@
   const { day, size, class: klass }: { day: number, size: 'icon' | 'tile' | 'phone' | 'page', class?: ClassValue } = $props()
 </script>
 
-<span class={['block tabular-nums font-600', size === 'icon' ? 'text-micro leading-3 text-neutral-900' : ['text-primary-900', size], klass]} aria-hidden='true'>{day}</span>
+<span class={[
+  'block tabular-nums font-600',
+  size === 'icon'
+    ? 'text-micro leading-3 text-neutral-900'
+    : ['text-primary-900', size],
+  klass,
+]} aria-hidden='true'>{day}</span>
 
 <style>
   .tile {

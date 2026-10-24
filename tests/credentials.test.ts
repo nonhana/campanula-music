@@ -13,7 +13,9 @@ describe('网易云凭据只在加密 Cookie 里', () => {
     await world.netease.reply('login/login_qr_key.json')
     await world.netease.reply('login/login_qr_create.json')
     await app.startQrLogin()
-    await world.netease.reply('login/login_qr_check.803-success.json', { cookie: signInCookies() })
+    await world.netease.reply('login/login_qr_check.803-success.json', {
+      cookie: signInCookies(),
+    })
     await world.netease.reply('login/user_account.vip.json')
     await world.clock.advance(2000)
     await world.netease.reply('login/user_account.vip.json')
@@ -21,7 +23,14 @@ describe('网易云凭据只在加密 Cookie 里', () => {
     await world.netease.reply('login/logout.json')
     await app.logout()
 
-    expect(sessionModules()).toEqual(['login_qr_key', 'login_qr_create', 'login_qr_check', 'user_account', 'user_account', 'logout'])
+    expect(sessionModules()).toEqual([
+      'login_qr_key',
+      'login_qr_create',
+      'login_qr_check',
+      'user_account',
+      'user_account',
+      'logout',
+    ])
     const deviceId = world.netease.calls[0].config.deviceId
     expect(deviceId).toMatch(/^[0-9A-F]{52}$/)
     for (const { config } of world.netease.calls) {
@@ -44,10 +53,19 @@ describe('网易云凭据只在加密 Cookie 里', () => {
     const cookies = await device.cookies()
     expect(cookies.map(cookie => cookie.key)).toEqual(['campanula_login'])
     const [login] = cookies
-    expect(login).toMatchObject({ httpOnly: true, secure: true, sameSite: 'strict', path: '/' })
+    expect(login).toMatchObject({
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+    })
     // 只存名字和值，加密后约 2 KB（验证关卡①），离浏览器 4 KB 的上限还远
     expect(login.value.length).toBeLessThan(3000)
-    for (const text of [login.value, ...device.responseBodies, JSON.stringify(app.state)])
+    for (const text of [
+      login.value,
+      ...device.responseBodies,
+      JSON.stringify(app.state),
+    ])
       expect(text).not.toContain(MUSIC_U.slice(0, 24))
   })
 
@@ -57,7 +75,9 @@ describe('网易云凭据只在加密 Cookie 里', () => {
     await signIn(world, app)
     const [login] = await device.cookies()
     const middle = Math.floor(login.value.length / 2)
-    const flipped = login.value[middle] === 'A' ? 'B' : 'A'
+    const flipped = login.value[middle] === 'A'
+      ? 'B'
+      : 'A'
     await device.setCookie(`campanula_login=${login.value.slice(0, middle)}${flipped}${login.value.slice(middle + 1)}; Path=/; Secure; HttpOnly; SameSite=Strict`)
 
     const { app: reopened } = await device.open()
@@ -72,12 +92,20 @@ describe('网易云凭据只在加密 Cookie 里', () => {
     await world.netease.reply('login/captcha_sent.json')
     await app.sendCaptcha('13800138000')
     const oversized = Array.from({ length: 40 }, (_, index) => `EXTRA_${index}=${'v'.repeat(80)}; Max-Age=86400; Path=/`)
-    await world.netease.reply('login/login_cellphone.200.json', { cookie: [...signInCookies(), ...oversized] })
+    await world.netease.reply('login/login_cellphone.200.json', {
+      cookie: [
+        ...signInCookies(),
+        ...oversized,
+      ],
+    })
 
     await app.loginWithCaptcha('13800138000', '2468')
 
     expect(app.state.session).toEqual({ status: 'signedOut' })
-    expect(app.state.login.sms.submit).toEqual({ status: 'failed', failure: { kind: 'serverError' } })
+    expect(app.state.login.sms.submit).toEqual({
+      status: 'failed',
+      failure: { kind: 'serverError' },
+    })
     const { app: reopened } = await device.open()
     expect(reopened.state.session).toEqual({ status: 'signedOut' })
     expect(sessionModules()).toEqual(['captcha_sent', 'login_cellphone'])
@@ -98,9 +126,16 @@ describe('服务器日志', () => {
     await world.netease.reply('login/login_cellphone.10004-risk.json')
     await app.loginWithCaptcha(phone, captcha)
     const oversized = Array.from({ length: 40 }, (_, index) => `EXTRA_${index}=${'v'.repeat(80)}; Path=/`)
-    await world.netease.reply('login/login_cellphone.200.json', { cookie: [...signInCookies(), ...oversized] })
+    await world.netease.reply('login/login_cellphone.200.json', {
+      cookie: [
+        ...signInCookies(),
+        ...oversized,
+      ],
+    })
     await app.loginWithCaptcha(phone, captcha)
-    await world.netease.reply('login/login_cellphone.200.json', { cookie: signInCookies() })
+    await world.netease.reply('login/login_cellphone.200.json', {
+      cookie: signInCookies(),
+    })
     await app.loginWithCaptcha(phone, captcha)
     const [login] = await device.cookies()
     await world.netease.reply('login/user_account.anonymous.json')
@@ -111,7 +146,12 @@ describe('服务器日志', () => {
     const logs = world.serverLogs.map(log => log.text).join('\n')
     // 出错时确实打了日志（匿名注册失败、风控拒绝、凭据太大）
     expect(world.serverLogs.length).toBeGreaterThanOrEqual(3)
-    for (const secret of [phone, captcha, MUSIC_U.slice(0, 24), login.value.slice(0, 24)])
+    for (const secret of [
+      phone,
+      captcha,
+      MUSIC_U.slice(0, 24),
+      login.value.slice(0, 24),
+    ])
       expect(logs).not.toContain(secret)
   })
 })

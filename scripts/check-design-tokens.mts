@@ -43,7 +43,9 @@ function blankComments(code: string): string {
 /** <style> 里是 CSS 不是类名（例如循环用的 ease-in-out 关键字）：换成空格，只留 @apply / --at-apply 后面的类名 */
 function blankStyleExceptApply(code: string): string {
   return code.replace(STYLE_BLOCK, (_, open: string, css: string, close: string) =>
-    open + css.replace(/(?:@apply|--at-apply:|--uno:)[^;}]*|[^\n]/g, kept => (APPLY.test(kept) ? kept : ' ')) + close)
+    open + css.replace(/(?:@apply|--at-apply:|--uno:)[^;}]*|[^\n]/g, kept => (APPLY.test(kept)
+      ? kept
+      : ' ')) + close)
 }
 
 function lineOf(code: string, index: number): number {
@@ -66,7 +68,9 @@ const uno = await createGenerator(config)
 async function blockedReason(raw: string): Promise<string | null> {
   const reason = (hit: NonNullable<ReturnType<typeof uno.getBlocked>>) => {
     const message = hit[1]?.message
-    return typeof message === 'function' ? message(raw) : message ?? 'uno.config.ts 的 blocklist'
+    return typeof message === 'function'
+      ? message(raw)
+      : message ?? 'uno.config.ts 的 blocklist'
   }
   const direct = uno.getBlocked(raw)
   if (direct)
@@ -90,19 +94,37 @@ async function check(file: string): Promise<Finding[]> {
     if (!why)
       continue
     const at = new RegExp(`(?<![\\w:-])${escapeRegExp(token)}(?![\\w-])`, 'g')
-    for (const match of markup.matchAll(at))
-      findings.push({ file: name, line: lineOf(markup, match.index), text: token, why })
+    for (const match of markup.matchAll(at)) {
+      findings.push({
+        file: name,
+        line: lineOf(markup, match.index),
+        text: token,
+        why,
+      })
+    }
   }
 
   if (file !== TOKENS_FILE) {
-    for (const match of code.matchAll(RAW_MOTION))
-      findings.push({ file: name, line: lineOf(code, match.index), text: match[0], why: '时长、曲线只写在 src/lib/components/shared/motion-tokens.ts，这里用 var(--duration-…) / var(--move-…) / var(--ease-…) 或 DURATIONS' })
+    for (const match of code.matchAll(RAW_MOTION)) {
+      findings.push({
+        file: name,
+        line: lineOf(code, match.index),
+        text: match[0],
+        why: '时长、曲线只写在 src/lib/components/shared/motion-tokens.ts，这里用 var(--duration-…) / var(--move-…) / var(--ease-…) 或 DURATIONS',
+      })
+    }
   }
 
   for (const style of code.matchAll(STYLE_BLOCK)) {
     const start = style.index + style[1].length
-    for (const match of style[2].matchAll(CSS_KEYWORD_EASING))
-      findings.push({ file: name, line: lineOf(code, start + match.index), text: match[0], why: '曲线写 var(--ease-out-soft) / var(--ease-in-soft)；来回循环可以用 ease-in-out、linear' })
+    for (const match of style[2].matchAll(CSS_KEYWORD_EASING)) {
+      findings.push({
+        file: name,
+        line: lineOf(code, start + match.index),
+        text: match[0],
+        why: '曲线写 var(--ease-out-soft) / var(--ease-in-soft)；来回循环可以用 ease-in-out、linear',
+      })
+    }
   }
   return findings
 }

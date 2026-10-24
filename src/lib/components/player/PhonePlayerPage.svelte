@@ -41,7 +41,9 @@
   const previous = $derived(neighborSong(view.state.player, 'previous'))
   const next = $derived(neighborSong(view.state.player, 'next'))
   /** 当前这首在播放队列里的那一项：“更多”菜单里放进播放队列时用它自己的播放来源 */
-  const entry = $derived(view.state.player.current === null ? null : view.state.player.queue[view.state.player.current])
+  const entry = $derived(view.state.player.current === null
+    ? null
+    : view.state.player.queue[view.state.player.current])
 
   /** 左右拖封面切歌；轻点封面换成歌词 */
   const swipe = createCoverSwipe({
@@ -86,7 +88,10 @@
     </div>
     <button
       type='button'
-      class={['size-12 grid place-items-center rounded-full transition-colors duration-feedback', choices.phoneLyrics ? 'bg-primary-100 text-primary-950' : 'text-neutral-800 active:bg-white/60']}
+      class={[
+        'size-12 grid place-items-center rounded-full transition-colors duration-feedback',
+        choices.phoneLyrics ? 'bg-primary-100 text-primary-950' : 'text-neutral-800 active:bg-white/60',
+      ]}
       aria-label='歌词'
       aria-pressed={choices.phoneLyrics}
       onclick={() => (choices.phoneLyrics = !choices.phoneLyrics)}
@@ -101,7 +106,12 @@
       {#if choices.phoneLyrics}
         <div
           class='absolute inset-0 flex flex-col pt-1'
-          in:float={{ toward: 'up', distance: PAGE_DISTANCE.in, duration: DURATIONS.panel, delay: FLOAT_IN_DELAY }}
+          in:float={{
+            toward: 'up',
+            distance: PAGE_DISTANCE.in,
+            duration: DURATIONS.panel,
+            delay: FLOAT_IN_DELAY,
+          }}
           out:float={{ toward: 'down', distance: PAGE_DISTANCE.out, duration: DURATIONS['panel-out'] }}
         >
           <Lyrics {song} {playhead} compact class='min-h-0 flex-1' />

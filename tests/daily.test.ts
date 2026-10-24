@@ -35,7 +35,10 @@ describe('每日推荐', () => {
     expect(songs[0]).toEqual({
       id: RAIN,
       name: 'Rain (From "The Last Emperor")',
-      artists: [{ id: 15289, name: '坂本龍一' }, { id: 430807, name: 'Brussels Philharmonic' }],
+      artists: [
+        { id: 15289, name: '坂本龍一' },
+        { id: 430807, name: 'Brussels Philharmonic' },
+      ],
       album: { id: 35012060, name: 'Ryuichi Sakamoto - Music For Film', coverUrl: 'http://p3.music.126.net/XDu14l6k0aObvUs4nFFFGw==/18339853951789381.jpg' },
       duration: 256069,
       availability: 'full',
@@ -47,7 +50,9 @@ describe('每日推荐', () => {
     const { app } = await signInAtHearts(device)
     const songs = await dailySongs(app)
 
-    await world.netease.reply(SOME_PLAY_URL, { until: never() })
+    await world.netease.reply(SOME_PLAY_URL, {
+      until: never(),
+    })
     app.play(DAILY_SOURCE, THIRD)
     await world.settle()
 
@@ -63,7 +68,9 @@ describe('每日推荐', () => {
     const { app } = await signInAtHearts(device)
     const songs = await dailySongs(app)
 
-    await world.netease.reply(SOME_PLAY_URL, { until: never() })
+    await world.netease.reply(SOME_PLAY_URL, {
+      until: never(),
+    })
     app.playAll(DAILY_SOURCE)
     await world.settle()
 
@@ -80,7 +87,11 @@ describe('每日推荐', () => {
 
     device.setOnline(false)
     await app.openDaily()
-    expect(app.state.daily).toEqual({ day: '2026-10-12', status: 'failed', failure: { kind: 'offline' } })
+    expect(app.state.daily).toEqual({
+      day: '2026-10-12',
+      status: 'failed',
+      failure: { kind: 'offline' },
+    })
     expect(dailyCalls()).toBe(0)
 
     device.setOnline(true)
@@ -135,7 +146,20 @@ describe('每日推荐', () => {
     app.clearQueue()
     await world.settle()
     const sent = device.requests.filter(request => request.path.endsWith('/check-in'))
-    expect(sent).toEqual([{ method: 'POST', path: `/api/songs/${album.song}/check-in`, body: { source: DAILY_SOURCE, seconds: 10 } }])
-    expect(world.netease.calls.filter(call => call.module === 'scrobble').map(call => call.query)).toEqual([{ id: album.song, sourceid: 0, source: 'recommend', time: 10 }])
+    expect(sent).toEqual([
+      {
+        method: 'POST',
+        path: `/api/songs/${album.song}/check-in`,
+        body: { source: DAILY_SOURCE, seconds: 10 },
+      },
+    ])
+    expect(world.netease.calls.filter(call => call.module === 'scrobble').map(call => call.query)).toEqual([
+      {
+        id: album.song,
+        sourceid: 0,
+        source: 'recommend',
+        time: 10,
+      },
+    ])
   })
 })

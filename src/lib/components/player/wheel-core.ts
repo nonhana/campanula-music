@@ -80,7 +80,13 @@ export function createWheelCore({ notch, has, commit, tap, onPose }: WheelCoreOp
         return false
       abandon()
       swallowClick = false
-      press = { pointerId: sample.pointerId, x: sample.x, y: sample.y, time: sample.time, dragging: false }
+      press = {
+        pointerId: sample.pointerId,
+        x: sample.x,
+        y: sample.y,
+        time: sample.time,
+        dragging: false,
+      }
       return true
     },
     move(sample) {
@@ -114,7 +120,9 @@ export function createWheelCore({ notch, has, commit, tap, onPose }: WheelCoreOp
       swallowClick = true
       const distance = sample.x - ended.x
       const velocity = Math.abs(distance) / Math.max(1, sample.time - ended.time)
-      const direction: WheelDirection = distance > 0 ? 'previous' : 'next'
+      const direction: WheelDirection = distance > 0
+        ? 'previous'
+        : 'next'
       setPose({ dragging: false })
       if ((velocity > FLICK || Math.abs(distance) >= notch() * THRESHOLD) && has(direction))
         commit(direction)

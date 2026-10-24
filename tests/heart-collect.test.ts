@@ -60,8 +60,15 @@ describe('红心', () => {
     const hearting = app.heart(song, true)
     expect(hearted(app, song.id)).toBe(true)
     await world.settle()
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: '/api/hearts', body: { songId: song.id, hearted: true } })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'like', query: { id: song.id, like: true } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: '/api/hearts',
+      body: { songId: song.id, hearted: true },
+    })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'like',
+      query: { id: song.id, like: true },
+    })
     expect(await storedLibrary(device, 'hearts')).not.toContain(song.id)
 
     reply.release()
@@ -83,7 +90,10 @@ describe('红心', () => {
     const unhearting = app.heart(song, false)
     expect(hearted(app, song.id)).toBe(false)
     await world.settle()
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'like', query: { id: song.id, like: false } })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'like',
+      query: { id: song.id, like: false },
+    })
     expect(await storedLibrary(device, 'hearts')).toContain(song.id)
 
     reply.release()
@@ -102,7 +112,11 @@ describe('红心', () => {
     await app.heart(song, true)
 
     expect(hearted(app, song.id)).toBe(false)
-    expect(app.state.library?.notice).toEqual({ kind: 'notChanged', change: { kind: 'heart', song, hearted: true }, failure: { kind: 'offline' } })
+    expect(app.state.library?.notice).toEqual({
+      kind: 'notChanged',
+      change: { kind: 'heart', song, hearted: true },
+      failure: { kind: 'offline' },
+    })
     expect(device.requests.length).toBe(sent)
     expect(await storedLibrary(device, 'hearts')).not.toContain(song.id)
 
@@ -122,11 +136,16 @@ describe('红心', () => {
     const unhearting = app.heart(song, false)
     await world.settle()
     expect(hearted(app, song.id)).toBe(false)
-    expect(world.netease.calls.filter(call => call.module === 'like').map(call => call.query)).toEqual([{ id: song.id, like: true }])
+    expect(world.netease.calls.filter(call => call.module === 'like').map(call => call.query)).toEqual([
+      { id: song.id, like: true },
+    ])
 
     first.release()
     await Promise.all([hearting, unhearting])
-    expect(world.netease.calls.filter(call => call.module === 'like').map(call => call.query)).toEqual([{ id: song.id, like: true }, { id: song.id, like: false }])
+    expect(world.netease.calls.filter(call => call.module === 'like').map(call => call.query)).toEqual([
+      { id: song.id, like: true },
+      { id: song.id, like: false },
+    ])
     expect(hearted(app, song.id)).toBe(false)
     expect(await storedLibrary(device, 'hearts')).not.toContain(song.id)
   })
@@ -146,7 +165,9 @@ describe('红心', () => {
     first.release()
     await Promise.all([hearting, unhearting])
 
-    expect(world.netease.calls.filter(call => call.module === 'like').map(call => call.query)).toEqual([{ id: song.id, like: true }])
+    expect(world.netease.calls.filter(call => call.module === 'like').map(call => call.query)).toEqual([
+      { id: song.id, like: true },
+    ])
     expect(device.requests.filter(request => request.method === 'POST' && request.path === '/api/hearts')).toHaveLength(1)
   })
 
@@ -176,17 +197,43 @@ describe('加入歌单', () => {
     const reply = held()
     await world.netease.reply(ADD, { until: reply.until })
     const adding = app.addToPlaylist(JAZZ.id, song)
-    expect(app.state.library?.songsOf(JAZZ.id)).toMatchObject({ songs: [song], total: 3 })
+    expect(app.state.library?.songsOf(JAZZ.id)).toMatchObject({
+      songs: [song],
+      total: 3,
+    })
     await world.settle()
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${JAZZ.id}/tracks`, body: { songIds: [song.id] } })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_tracks', query: { op: 'add', pid: JAZZ.id, tracks: String(song.id) } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: `/api/playlists/${JAZZ.id}/tracks`,
+      body: {
+        songIds: [song.id],
+      },
+    })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_tracks',
+      query: {
+        op: 'add',
+        pid: JAZZ.id,
+        tracks: String(song.id),
+      },
+    })
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(before)
 
     reply.release()
     await adding
-    expect(app.state.library?.songsOf(JAZZ.id)).toMatchObject({ songs: [song], total: 3 })
+    expect(app.state.library?.songsOf(JAZZ.id)).toMatchObject({
+      songs: [song],
+      total: 3,
+    })
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([song.id, ...before!])
-    expect(app.state.library?.notice).toMatchObject({ kind: 'added', change: { kind: 'add', playlist: { id: JAZZ.id }, song } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'added',
+      change: {
+        kind: 'add',
+        playlist: { id: JAZZ.id },
+        song,
+      },
+    })
   })
 
   it('这首已经在歌单里（网易云说“歌单内歌曲重复”）：也算加好了，不改回去', async () => {
@@ -212,9 +259,18 @@ describe('加入歌单', () => {
     expect(hearted(app, song.id)).toBe(true)
     await adding
 
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: '/api/hearts', body: { songId: song.id, hearted: true } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: '/api/hearts',
+      body: { songId: song.id, hearted: true },
+    })
     expect(await storedLibrary(device, 'hearts')).toContain(song.id)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'added', change: { playlist: { id: LIKED_ID } } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'added',
+      change: {
+        playlist: { id: LIKED_ID },
+      },
+    })
   })
 
   it('加歌时这张歌单的曲目编号正在拉、在加歌确认之前发出：拉回来的里面没有刚加的歌，叠回去，不让它从界面上消失', async () => {
@@ -224,7 +280,9 @@ describe('加入歌单', () => {
 
     const trackIds = held()
     await world.netease.reply(JAZZ.detail, { until: trackIds.until })
-    await world.netease.reply(SOME_SONGS, { until: never() })
+    await world.netease.reply(SOME_SONGS, {
+      until: never(),
+    })
     void app.openPlaylist(JAZZ.id)
     await world.settle()
     await world.netease.reply(ADD)
@@ -251,8 +309,15 @@ describe('收藏', () => {
     expect(app.state.library?.albums?.[0]).toMatchObject({ id: THE_BOOK.id, name: 'THE BOOK for,' })
     await collecting
 
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/albums/${THE_BOOK.id}/collect`, body: { collected: true } })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'album_sub', query: { id: THE_BOOK.id, t: 1 } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: `/api/albums/${THE_BOOK.id}/collect`,
+      body: { collected: true },
+    })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'album_sub',
+      query: { id: THE_BOOK.id, t: 1 },
+    })
     expect((await storedLibrary(device, 'collectedAlbums') as { id: number }[])[0].id).toBe(THE_BOOK.id)
     expect((await device.stored()).albumPages.map(([id]) => id)).toContain(THE_BOOK.id)
   })
@@ -279,7 +344,10 @@ describe('收藏', () => {
 
     await world.netease.reply(ARTIST_UNCOLLECT)
     await app.collect({ kind: 'artist', id: YOASOBI.id }, false)
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'artist_sub', query: { id: YOASOBI.id, t: 0 } })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'artist_sub',
+      query: { id: YOASOBI.id, t: 0 },
+    })
     expect(app.state.library?.artists?.map(artist => artist.id)).not.toContain(YOASOBI.id)
 
     await world.netease.reply(ARTIST_COLLECT)
@@ -301,13 +369,27 @@ describe('收藏', () => {
     await world.netease.reply(PLAYLIST_COLLECT)
     const sent = device.requests.length
     const collecting = app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
-    expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toMatchObject({ playlist: { kind: 'collected' }, total: 81, complete: true })
+    expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toMatchObject({
+      playlist: { kind: 'collected' },
+      total: 81,
+      complete: true,
+    })
     // 歌单页看它进了曲库：App 自己切到曲库里的副本，不再联网取、也不重复拉
     await collecting
     await world.settle()
     const [token] = tab.watchman.issued
-    expect(device.requests.slice(sent)).toEqual([{ method: 'POST', path: `/api/playlists/${NETEASE_PLAYLIST.id}/collect`, body: { collected: true, checkToken: token } }])
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_subscribe', query: { id: NETEASE_PLAYLIST.id, t: 1 }, config: { checkToken: token } })
+    expect(device.requests.slice(sent)).toEqual([
+      {
+        method: 'POST',
+        path: `/api/playlists/${NETEASE_PLAYLIST.id}/collect`,
+        body: { collected: true, checkToken: token },
+      },
+    ])
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_subscribe',
+      query: { id: NETEASE_PLAYLIST.id, t: 1 },
+      config: { checkToken: token },
+    })
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)?.songs).toHaveLength(81)
     expect((await storedLibrary(device, 'playlists') as { id: number }[]).map(playlist => playlist.id)).toContain(NETEASE_PLAYLIST.id)
     expect(await storedTrackIds(device, NETEASE_PLAYLIST.id)).toHaveLength(81)
@@ -317,10 +399,16 @@ describe('收藏', () => {
     await world.netease.reply(PLAYLIST_UNCOLLECT)
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, false)
     const call = world.netease.calls.at(-1)
-    expect(call).toMatchObject({ module: 'playlist_subscribe', query: { id: NETEASE_PLAYLIST.id, t: 0 } })
+    expect(call).toMatchObject({
+      module: 'playlist_subscribe',
+      query: { id: NETEASE_PLAYLIST.id, t: 0 },
+    })
     expect(call?.config).not.toHaveProperty('checkToken')
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
-    expect(app.state.library?.neteasePlaylist(NETEASE_PLAYLIST.id)).toMatchObject({ status: 'shown', content: { total: 81, complete: true } })
+    expect(app.state.library?.neteasePlaylist(NETEASE_PLAYLIST.id)).toMatchObject({
+      status: 'shown',
+      content: { total: 81, complete: true },
+    })
     expect(await storedTrackIds(device, NETEASE_PLAYLIST.id)).toBeUndefined()
   })
 
@@ -337,7 +425,11 @@ describe('收藏', () => {
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
     expect(app.state.library?.notice).toMatchObject({
       kind: 'notChanged',
-      change: { kind: 'collectPlaylist', playlist: { id: NETEASE_PLAYLIST.id }, collected: true },
+      change: {
+        kind: 'collectPlaylist',
+        playlist: { id: NETEASE_PLAYLIST.id },
+        collected: true,
+      },
       failure: { kind: 'rejected', code: 401, message: '歌单创建者已设置隐私' },
     })
     expect((await storedLibrary(device, 'playlists') as { id: number }[]).map(playlist => playlist.id)).not.toContain(NETEASE_PLAYLIST.id)
@@ -355,7 +447,10 @@ describe('收藏', () => {
     await world.clock.advance(60_000)
 
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', failure: { kind: 'rateLimited' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      failure: { kind: 'rateLimited' },
+    })
     expect(world.netease.calls.filter(call => call.module === 'playlist_subscribe')).toHaveLength(1)
   })
 
@@ -373,15 +468,21 @@ describe('收藏', () => {
 
     expect(device.requests.length).toBe(sent)
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', failure: { kind: 'checkTokenUnavailable' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      failure: { kind: 'checkTokenUnavailable' },
+    })
   })
 
   it('在搜索结果里收藏歌单、歌手、专辑：进曲库的是结果里有的那些（搜索结果里没有的先空着，下一次同步拿到真的）', async () => {
     const device = world.device()
     const tab = await signInAtLikedTracks(device)
     const { app } = tab
-    for (const { fixture, type } of Object.values(SEARCH))
-      await world.netease.reply(fixture, { when: { type } })
+    for (const { fixture, type } of Object.values(SEARCH)) {
+      await world.netease.reply(fixture, {
+        when: { type },
+      })
+    }
     await app.openSearch('真夜中')
 
     await world.netease.reply(PLAYLIST_COLLECT)
@@ -399,7 +500,10 @@ describe('收藏', () => {
       private: false,
       tracksUpdatedAt: 0,
     })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_subscribe', config: { checkToken: tab.watchman.issued[0] } })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_subscribe',
+      config: { checkToken: tab.watchman.issued[0] },
+    })
 
     // 第 2 位歌手没有头像
     await world.netease.reply(ARTIST_COLLECT)
@@ -417,7 +521,15 @@ describe('同步拿回来的旧数据', () => {
   async function reopenWithHeartsHeld(device: Device): Promise<{ app: App, releaseHearts: () => void }> {
     await world.netease.reply('login/user_account.vip.json')
     const hearts = held()
-    await replyLibrary({ through: 'playlists', holds: { hearts: { until: hearts.until }, playlists: { until: never() } } })
+    await replyLibrary({
+      through: 'playlists',
+      holds: {
+        hearts: { until: hearts.until },
+        playlists: {
+          until: never(),
+        },
+      },
+    })
     const { app } = await device.open()
     await world.settle()
     return { app, releaseHearts: hearts.release }

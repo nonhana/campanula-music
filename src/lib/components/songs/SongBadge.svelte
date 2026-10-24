@@ -10,5 +10,10 @@
 </script>
 
 {#if kind}
-  <span class={['flex-none rounded-sm px-1.5 text-micro font-500', kind === 'trial' ? 'bg-warning-50 text-warning-900' : 'bg-neutral-100 text-neutral-700']}>{LABELS[kind]}</span>
+  <span class={[
+    'flex-none rounded-sm px-1.5 text-micro font-500',
+    kind === 'trial'
+      ? 'bg-warning-50 text-warning-900'
+      : 'bg-neutral-100 text-neutral-700',
+  ]}>{LABELS[kind]}</span>
 {/if}

@@ -17,7 +17,20 @@ import { MockStore } from './store.ts'
 export const MOCK_RUNTIME_MARKER = '__CAMPANULA_MOCK_RUNTIME__'
 
 const INDEX_FILE = new URL('../../../../tests/fixtures/netease/index.json', import.meta.url)
-const SESSION_MODULES = new Set(['user_account', 'user_detail', 'vip_info', 'vip_info_v2', 'login_refresh', 'login_cellphone', 'login_qr_key', 'login_qr_create', 'login_qr_check', 'captcha_sent', 'logout', 'login_status'])
+const SESSION_MODULES = new Set([
+  'user_account',
+  'user_detail',
+  'vip_info',
+  'vip_info_v2',
+  'login_refresh',
+  'login_cellphone',
+  'login_qr_key',
+  'login_qr_create',
+  'login_qr_check',
+  'captcha_sent',
+  'logout',
+  'login_status',
+])
 const DEVICE_ID = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const CREDENTIALS = { MUSIC_U: 'mock-music-u', __csrf: 'mock-csrf' }
 function cookieFor(musicU = 'mock-music-u'): string[] {
@@ -117,10 +130,15 @@ async function entryFor(module: string, query: unknown): Promise<IndexEntry | nu
   }
   // 边输入边给建议：录制了“夜に”就够回答“夜”，录了“夜に駆ける”就够回答“夜に駆”
   if (module === 'search_suggest') {
-    const keywords = typeof query === 'object' && query !== null ? String((query as Record<string, unknown>).keywords ?? '') : ''
+    const keywords = typeof query === 'object' && query !== null
+      ? String((query as Record<string, unknown>).keywords ?? '')
+      : ''
     const suggestions = current.entries
       .filter(entry => entry.module === module && entry.validated)
-      .map(entry => ({ entry, words: String((entry.query as { keywords?: unknown }).keywords ?? '') }))
+      .map(entry => ({
+        entry,
+        words: String((entry.query as { keywords?: unknown }).keywords ?? ''),
+      }))
       .filter(({ words }) => words.startsWith(keywords))
       .sort((a, b) => a.words.length - b.words.length)
     if (suggestions[0])
@@ -130,7 +148,9 @@ async function entryFor(module: string, query: unknown): Promise<IndexEntry | nu
 }
 
 async function fallback(module: string, query: unknown, { generic = false } = {}): Promise<unknown> {
-  const entry = await entryFor(module, query) ?? (generic ? choose((await index()).entries.filter(item => item.module === module)) : null)
+  const entry = await entryFor(module, query) ?? (generic
+    ? choose((await index()).entries.filter(item => item.module === module))
+    : null)
   if (!entry)
     return miss(module, query)
   const loaded = await fixture(entry)
@@ -147,15 +167,23 @@ function clone<T>(value: T): T {
 function write(result: MockResult): { status: number, body: unknown, cookie: string[] } {
   if (!result.ok)
     throw new SdkFailure(result.status, result.body)
-  return { status: 200, body: localize(result.body), cookie: [] }
+  return {
+    status: 200,
+    body: localize(result.body),
+    cookie: [],
+  }
 }
 
 function num(value: unknown): number {
-  return typeof value === 'number' ? value : Number(value)
+  return typeof value === 'number'
+    ? value
+    : Number(value)
 }
 
 function str(value: unknown): string {
-  return typeof value === 'string' ? value : String(value ?? '')
+  return typeof value === 'string'
+    ? value
+    : String(value ?? '')
 }
 
 function idsOf(value: unknown): number[] {
@@ -169,11 +197,18 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function configure(input: ScenarioName | (Partial<MockConfig> & { name?: ScenarioName }) = 'default'): Promise<void> {
-  const name = typeof input === 'string' ? input : input.name ?? 'default'
+  const name = typeof input === 'string'
+    ? input
+    : input.name ?? 'default'
   if (!isScenarioName(name))
     throw new Error(`不认识的 mock 场景：${String(name)}`)
   const base = configOf(name)
-  state.config = { ...base, ...(typeof input === 'string' ? {} : input) }
+  state.config = {
+    ...base,
+    ...(typeof input === 'string'
+      ? {}
+      : input),
+  }
   state.calls = []
   state.misses = []
   state.songDetailCalls = 0
@@ -190,29 +225,44 @@ export async function reset(): Promise<void> {
 }
 
 export function loginCredentials(): { deviceId: string, credentials: Record<string, string> } {
-  return { deviceId: DEVICE_ID, credentials: { ...CREDENTIALS } }
+  return {
+    deviceId: DEVICE_ID,
+    credentials: { ...CREDENTIALS },
+  }
 }
 
 export function status(): { enabled: true, scenario: ScenarioName, seed: SeedName, offline: boolean } {
-  return { enabled: true, scenario: state.config.name, seed: state.config.seed, offline: state.config.offline }
+  return {
+    enabled: true,
+    scenario: state.config.name,
+    seed: state.config.seed,
+    offline: state.config.offline,
+  }
 }
 
 export async function coverage(): Promise<Record<string, unknown>> {
   const current = await index()
-  const used = [...new Set(state.calls.map(call => call.module))].sort()
+  const used = [
+    ...new Set(state.calls.map(call => call.module)),
+  ].sort()
   return {
     scenario: state.config.name,
     seed: state.config.seed,
     calls: state.calls.length,
     usedModules: used,
     misses: state.misses,
-    index: { recordings: current.recordings, modules: Object.keys(current.modules).sort() },
+    index: {
+      recordings: current.recordings,
+      modules: Object.keys(current.modules).sort(),
+    },
   }
 }
 
 function hasCredentials(callConfig: ModuleCallConfig): boolean {
   const cookie = callConfig.cookie
-  return typeof cookie === 'object' && cookie !== null ? Boolean(cookie.MUSIC_U) : Boolean(cookie)
+  return typeof cookie === 'object' && cookie !== null
+    ? Boolean(cookie.MUSIC_U)
+    : Boolean(cookie)
 }
 
 export async function invokeModule(module: string, query: Record<string, unknown> = {}, callConfig: ModuleCallConfig = {}): Promise<{ status: number, body: unknown, cookie: string[] }> {
@@ -229,42 +279,86 @@ export async function invokeModule(module: string, query: Record<string, unknown
 
   switch (module) {
     case 'user_account':
-      return { status: 200, body: localize(state.config.loginExpired ? templates.accountInvalid : hasCredentials(callConfig) ? templates.account : templates.accountAnonymous), cookie: [] }
+      return {
+        status: 200,
+        body: localize(state.config.loginExpired
+          ? templates.accountInvalid
+          : hasCredentials(callConfig)
+            ? templates.account
+            : templates.accountAnonymous),
+        cookie: [],
+      }
     case 'login_cellphone':
       if (state.config.loginExpired)
         throw new SdkFailure(301, { code: 301, msg: '需要登录' })
-      return { status: 200, body: localize(templates.loginCellphone), cookie: cookieFor() }
+      return {
+        status: 200,
+        body: localize(templates.loginCellphone),
+        cookie: cookieFor(),
+      }
     case 'login_qr_check':
       if (state.config.loginExpired)
         throw new SdkFailure(301, { code: 301, msg: '需要登录' })
-      return { status: 200, body: localize(templates.qrSuccess), cookie: cookieFor() }
+      return {
+        status: 200,
+        body: localize(templates.qrSuccess),
+        cookie: cookieFor(),
+      }
     case 'login_qr_key':
     case 'login_qr_create':
     case 'captcha_sent':
     case 'login_status':
     case 'verify_getQr':
-      return { status: 200, body: localize(await fallback(module, query, { generic: true })), cookie: [] }
+      return {
+        status: 200,
+        body: localize(await fallback(module, query, { generic: true })),
+        cookie: [],
+      }
     case 'login_refresh':
       if (state.config.loginExpired || !hasCredentials(callConfig))
         throw new SdkFailure(301, { code: 301, msg: '需要登录' })
-      return { status: 200, body: localize(templates.loginRefresh), cookie: cookieFor(`mock-music-u-${Date.now()}`) }
+      return {
+        status: 200,
+        body: localize(templates.loginRefresh),
+        cookie: cookieFor(`mock-music-u-${Date.now()}`),
+      }
     case 'logout':
-      return { status: 200, body: localize(await fallback(module, query, { generic: true })), cookie: [] }
+      return {
+        status: 200,
+        body: localize(await fallback(module, query, { generic: true })),
+        cookie: [],
+      }
     case 'likelist':
       if (state.config.loginExpired)
         throw new SdkFailure(301, { code: 301, msg: '需要登录' })
-      return { status: 200, body: localize(await state.store.likelist()), cookie: [] }
+      return {
+        status: 200,
+        body: localize(await state.store.likelist()),
+        cookie: [],
+      }
     case 'user_playlist': {
       const body = await state.store.userPlaylist(num(query.offset ?? 0), num(query.limit ?? 1000))
       if (state.config.loginExpired) {
         const list = (body.playlist as Record<string, unknown>[]).map(item => ({ ...item, subscribed: null }))
-        return { status: 200, body: localize({ ...body, playlist: list }), cookie: [] }
+        return {
+          status: 200,
+          body: localize({ ...body, playlist: list }),
+          cookie: [],
+        }
       }
-      return { status: 200, body: localize(body), cookie: [] }
+      return {
+        status: 200,
+        body: localize(body),
+        cookie: [],
+      }
     }
     case 'playlist_detail': {
       const detail = await state.store.playlistDetail(num(query.id))
-      return { status: 200, body: localize(detail ?? await fallback(module, query)), cookie: [] }
+      return {
+        status: 200,
+        body: localize(detail ?? await fallback(module, query)),
+        cookie: [],
+      }
     }
     case 'song_detail': {
       state.songDetailCalls += 1
@@ -273,19 +367,41 @@ export async function invokeModule(module: string, query: Record<string, unknown
         throw new SdkFailure(failed.status, failed.body)
       }
       const body = await state.store.songDetail(idsOf(query.ids))
-      return { status: 200, body: localize(body ?? await fallback(module, query)), cookie: [] }
+      return {
+        status: 200,
+        body: localize(body ?? await fallback(module, query)),
+        cookie: [],
+      }
     }
     case 'album_sublist':
-      return { status: 200, body: localize(await state.store.albumSublist(num(query.offset ?? 0), num(query.limit ?? 1000))), cookie: [] }
+      return {
+        status: 200,
+        body: localize(await state.store.albumSublist(num(query.offset ?? 0), num(query.limit ?? 1000))),
+        cookie: [],
+      }
     case 'artist_sublist':
-      return { status: 200, body: localize(await state.store.artistSublist(num(query.offset ?? 0), num(query.limit ?? 1000))), cookie: [] }
+      return {
+        status: 200,
+        body: localize(await state.store.artistSublist(num(query.offset ?? 0), num(query.limit ?? 1000))),
+        cookie: [],
+      }
     case 'song_url_v1': {
       const id = num(query.id)
       const part = await state.store.songPart(id)
-      if (!part)
-        return { status: 200, body: localize(await fallback(module, query)), cookie: [] }
-      if (part.privilege.st < 0)
-        return { status: 200, body: localize(clone(templates.songUrlNoCopyright)), cookie: [] }
+      if (!part) {
+        return {
+          status: 200,
+          body: localize(await fallback(module, query)),
+          cookie: [],
+        }
+      }
+      if (part.privilege.st < 0) {
+        return {
+          status: 200,
+          body: localize(clone(templates.songUrlNoCopyright)),
+          cookie: [],
+        }
+      }
       const body = clone(templates.songUrl) as { data: Record<string, unknown>[] }
       Object.assign(body.data[0]!, {
         id,
@@ -303,27 +419,62 @@ export async function invokeModule(module: string, query: Record<string, unknown
         expi: 1200,
         urlSource: 0,
       })
-      return { status: 200, body: localize(body), cookie: [] }
+      return {
+        status: 200,
+        body: localize(body),
+        cookie: [],
+      }
     }
     case 'song_download_url_v1': {
       // 下载的是和在线播放同一段本地 WAV：size 要和它的字节数一样，浏览器下完会核对
       const id = num(query.id)
       const part = await state.store.songPart(id)
-      if (!part)
-        return { status: 200, body: localize(await fallback(module, query)), cookie: [] }
-      const body = clone(part.privilege.st < 0 ? templates.songDownloadUrlNoCopyright : templates.songDownloadUrl) as { data: Record<string, unknown> }
-      if (part.privilege.st < 0)
+      if (!part) {
+        return {
+          status: 200,
+          body: localize(await fallback(module, query)),
+          cookie: [],
+        }
+      }
+      const body = clone(part.privilege.st < 0
+        ? templates.songDownloadUrlNoCopyright
+        : templates.songDownloadUrl) as { data: Record<string, unknown> }
+      if (part.privilege.st < 0) {
         Object.assign(body.data, { id })
-      else
-        Object.assign(body.data, { id, url: `${AUDIO_PREFIX}/${id}.wav`, size: audioWav(id).length, md5: `mock-${id}`, type: 'wav', level: 'exhigh', encodeType: 'wav', expi: 1200 })
-      return { status: 200, body: localize(body), cookie: [] }
+      }
+      else {
+        Object.assign(body.data, {
+          id,
+          url: `${AUDIO_PREFIX}/${id}.wav`,
+          size: audioWav(id).length,
+          md5: `mock-${id}`,
+          type: 'wav',
+          level: 'exhigh',
+          encodeType: 'wav',
+          expi: 1200,
+        })
+      }
+      return {
+        status: 200,
+        body: localize(body),
+        cookie: [],
+      }
     }
     case 'image_upload_token': {
       const imgId = String(Date.now() + state.calls.length)
       state.lastCoverImgId = imgId
       const body = clone(templates.imageUploadToken) as { data: Record<string, unknown> }
-      Object.assign(body.data, { imgId, token: 'mock-upload-token', uploadUrl: `${UPLOAD_PATH}/${imgId}`, url_pre: `${UPLOAD_PREFIX}/${imgId}` })
-      return { status: 200, body: localize(body), cookie: [] }
+      Object.assign(body.data, {
+        imgId,
+        token: 'mock-upload-token',
+        uploadUrl: `${UPLOAD_PATH}/${imgId}`,
+        url_pre: `${UPLOAD_PREFIX}/${imgId}`,
+      })
+      return {
+        status: 200,
+        body: localize(body),
+        cookie: [],
+      }
     }
     case 'playlist_cover_update': {
       const imgId = str(query.imgId ?? state.lastCoverImgId)
@@ -376,11 +527,23 @@ export async function invokeModule(module: string, query: Record<string, unknown
       return write(await state.store.subscribePlaylist(id, collected))
     }
     case 'scrobble':
-      return { status: 200, body: localize(templates.scrobble), cookie: [] }
+      return {
+        status: 200,
+        body: localize(templates.scrobble),
+        cookie: [],
+      }
     case 'recommend_songs':
-      return { status: 200, body: localize(templates.recommendSongs), cookie: [] }
+      return {
+        status: 200,
+        body: localize(templates.recommendSongs),
+        cookie: [],
+      }
     case 'playlist_catlist':
-      return { status: 200, body: localize(templates.playlistCatlist), cookie: [] }
+      return {
+        status: 200,
+        body: localize(templates.playlistCatlist),
+        cookie: [],
+      }
     case 'user_detail':
     case 'vip_info':
     case 'vip_info_v2':
@@ -395,7 +558,13 @@ export async function invokeModule(module: string, query: Record<string, unknown
     case 'lyric_new': {
       // 录到过这首的歌词就回录制；没录到的（例如 4 首可播放歌单里的歌）回同一份录下的歌词，下载（#38）和播放页都要用
       const entry = await entryFor(module, query)
-      return { status: 200, body: entry ? await fallback(module, query) : templates.lyric, cookie: [] }
+      return {
+        status: 200,
+        body: entry
+          ? await fallback(module, query)
+          : templates.lyric,
+        cookie: [],
+      }
     }
     case 'search_suggest':
       return { status: 200, body: await fallback(module, query), cookie: [] }

@@ -26,23 +26,57 @@
   function itemsOf(request: SongMenuRequest): MenuItem[] {
     const { song, source } = request
     const fromDownloads = source.kind === 'downloads' && view.state.downloads.has(song.id)
-    const remove: MenuItem = { key: 'delete', label: '删除下载', leading: { kind: 'icon', icon: Trash2 }, tone: 'destructive', separated: true, run: () => void view.app.deleteDownload(song.id) }
+    const remove: MenuItem = {
+      key: 'delete',
+      label: '删除下载',
+      leading: { kind: 'icon', icon: Trash2 },
+      tone: 'destructive',
+      separated: true,
+      run: () => void view.app.deleteDownload(song.id),
+    }
     const unchanged = songLook(view, song).off || currentSong(view.state.player)?.id === song.id
-    const queue: MenuItem = { key: 'queue', label: '加入播放队列', leading: { kind: 'icon', icon: ListEnd }, disabled: unchanged, run: () => view.app.addToQueue(source, song) }
+    const queue: MenuItem = {
+      key: 'queue',
+      label: '加入播放队列',
+      leading: { kind: 'icon', icon: ListEnd },
+      disabled: unchanged,
+      run: () => view.app.addToQueue(source, song),
+    }
     const library = view.state.library
     if (!library) {
       // 没登录时的已下载页：播放、加入播放队列、删除下载
       return fromDownloads
-        ? [{ key: 'play', label: '播放', leading: { kind: 'icon', icon: Play }, run: () => view.app.play(source, song.id) }, queue, remove]
+        ? [
+          {
+            key: 'play',
+            label: '播放',
+            leading: { kind: 'icon', icon: Play },
+            run: () => view.app.play(source, song.id),
+          },
+          queue,
+          remove,
+        ]
         : [
-          { key: 'next', label: '下一首播放', leading: { kind: 'icon', icon: ListStart }, disabled: unchanged, run: () => view.app.playNext(source, song) },
+          {
+            key: 'next',
+            label: '下一首播放',
+            leading: { kind: 'icon', icon: ListStart },
+            disabled: unchanged,
+            run: () => view.app.playNext(source, song),
+          },
           queue,
         ]
     }
     const hearted = library.hearts?.has(song.id) ?? false
     const download = downloadItem(view, song)
     return [
-      { key: 'next', label: '下一首播放', leading: { kind: 'icon', icon: ListStart }, disabled: unchanged, run: () => view.app.playNext(source, song) },
+      {
+        key: 'next',
+        label: '下一首播放',
+        leading: { kind: 'icon', icon: ListStart },
+        disabled: unchanged,
+        run: () => view.app.playNext(source, song),
+      },
       queue,
       {
         key: 'add',
@@ -54,16 +88,33 @@
             mode: 'song',
             song,
             songs: [song],
-            currentPlaylistId: source.kind === 'playlist' ? source.id : null,
+            currentPlaylistId: source.kind === 'playlist'
+              ? source.id
+              : null,
             from: request.from,
             anchor: request.anchor,
           })
         },
       },
-      { key: 'heart', label: hearted ? '取消红心' : '红心', leading: { kind: 'icon', icon: Heart }, tone: hearted ? 'hearted' : undefined, disabled: library.hearts === null, run: () => void view.app.heart(song, !hearted) },
+      {
+        key: 'heart',
+        label: hearted ? '取消红心' : '红心',
+        leading: { kind: 'icon', icon: Heart },
+        tone: hearted ? 'hearted' : undefined,
+        disabled: library.hearts === null,
+        run: () => void view.app.heart(song, !hearted),
+      },
       fromDownloads
         ? remove
-        : { key: 'download', label: download.label, leading: { kind: 'icon', icon: CircleArrowDown }, tone: 'download', disabled: download.disabled, separated: true, run: () => void view.app.download(song) },
+        : {
+          key: 'download',
+          label: download.label,
+          leading: { kind: 'icon', icon: CircleArrowDown },
+          tone: 'download',
+          disabled: download.disabled,
+          separated: true,
+          run: () => void view.app.download(song),
+        },
     ]
   }
 

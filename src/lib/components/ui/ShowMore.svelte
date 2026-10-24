@@ -40,7 +40,9 @@
       </p>
     {/if}
     <Button variant='outline' busy={more.status === 'loading'} {onclick}>
-      {more.status === 'failed' || (more.status === 'loading' && retrying) ? '重试' : '显示更多'}
+      {more.status === 'failed' || (more.status === 'loading' && retrying)
+        ? '重试'
+        : '显示更多'}
     </Button>
   </div>
 {/if}

@@ -24,8 +24,18 @@
   let trigger = $state<HTMLButtonElement>()
 
   const items: MenuItem[] = [
-    { key: 'settings', label: '设置', leading: { kind: 'icon', icon: Settings }, run: openSettings },
-    { key: 'logout', label: '退出登录', leading: { kind: 'icon', icon: LogOut }, run: confirmLogout },
+    {
+      key: 'settings',
+      label: '设置',
+      leading: { kind: 'icon', icon: Settings },
+      run: openSettings,
+    },
+    {
+      key: 'logout',
+      label: '退出登录',
+      leading: { kind: 'icon', icon: LogOut },
+      run: confirmLogout,
+    },
   ]
 
   function show(focus: 'first' | 'last') {
@@ -42,7 +52,9 @@
   function onTriggerKey(event: KeyboardEvent) {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
-      show(event.key === 'ArrowDown' ? 'first' : 'last')
+      show(event.key === 'ArrowDown'
+        ? 'first'
+        : 'last')
     }
   }
 
@@ -74,7 +86,9 @@
     aria-haspopup='menu'
     aria-expanded={open}
     aria-controls={open ? 'account-menu' : undefined}
-    onclick={() => (open ? hide(false) : show('first'))}
+    onclick={() => (open
+      ? hide(false)
+      : show('first'))}
     onkeydown={onTriggerKey}
   >
     <Avatar url={account.avatarUrl} size={36} class='ring-2 ring-white' />

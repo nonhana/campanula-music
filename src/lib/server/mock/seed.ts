@@ -56,7 +56,12 @@ export interface SongPart {
 }
 
 /** 录到的、能在线放的四首歌（playback/liked 里有 song_url_v1 的完整地址） */
-const FOUR_PLAYABLE_IDS = [3433267939, 2662577181, 4208408, 2092188841] as const
+const FOUR_PLAYABLE_IDS = [
+  3433267939,
+  2662577181,
+  4208408,
+  2092188841,
+] as const
 export const FOUR_PLAYABLE_PLAYLIST = 900000024
 export const POEMS_PLAYLIST = 900000019
 export const LIKED_PLAYLIST = 900000001
@@ -163,8 +168,12 @@ function collectInlineSongs(node: unknown, songs: Map<number, SongPart>): void {
 }
 
 function addSongs(songs: Map<number, SongPart>, body: Record<string, unknown>): void {
-  const list = Array.isArray(body.songs) ? body.songs as RawSong[] : []
-  const privileges = Array.isArray(body.privileges) ? body.privileges as RawPrivilege[] : []
+  const list = Array.isArray(body.songs)
+    ? body.songs as RawSong[]
+    : []
+  const privileges = Array.isArray(body.privileges)
+    ? body.privileges as RawPrivilege[]
+    : []
   const byId = new Map(privileges.map(privilege => [privilege.id, privilege]))
   for (const song of list) {
     const privilege = byId.get(song.id)
@@ -197,7 +206,10 @@ function syncSummaries(playlists: RawPlaylist[], details: Map<number, PlaylistDe
 
 /** 这张歌单的头部：新建、改过的歌单没有自己的录制，用模板拼出来 */
 function patchPlaylist(playlist: RawPlaylist, next: Partial<RawPlaylist>): RawPlaylist {
-  return { ...structuredClone(playlist), ...next }
+  return {
+    ...structuredClone(playlist),
+    ...next,
+  }
 }
 
 export async function buildSeed(seed: SeedName): Promise<SeedData> {
@@ -254,7 +266,12 @@ export async function buildSeed(seed: SeedName): Promise<SeedData> {
   if (seed === 'after') {
     const poems = details.get(POEMS_PLAYLIST)
     if (poems && beforePoems) {
-      const ids = [...new Set([...beforePoems.playlist.trackIds, ...poems.playlist.trackIds].map(track => track.id))]
+      const ids = [
+        ...new Set([
+          ...beforePoems.playlist.trackIds,
+          ...poems.playlist.trackIds,
+        ].map(track => track.id)),
+      ]
       poems.playlist.trackIds = ids.map(id => ({ id }))
       poems.playlist.tracks = ids.flatMap(id => songs.get(id)?.song ?? [])
       poems.privileges = ids.flatMap(id => songs.get(id)?.privilege ?? [])
@@ -351,14 +368,29 @@ export async function buildSeed(seed: SeedName): Promise<SeedData> {
   const albums = (bodyOf(await readFixture('library/album-artist/001-album_sublist.json.gz')) as { data: Record<string, unknown>[] }).data
   const artists = (bodyOf(await readFixture('library/album-artist/002-artist_sublist.json.gz')) as { data: Record<string, unknown>[] }).data
   const albumDetails = new Map<number, Record<string, unknown>>()
-  const albumSummaries = new Map<number, Record<string, unknown>>(albums.flatMap(album => typeof album.id === 'number' ? [[album.id, album] as const] : []))
-  const artistSummaries = new Map<number, Record<string, unknown>>(artists.flatMap(artist => typeof artist.id === 'number' ? [[artist.id, artist] as const] : []))
+  const albumSummaries = new Map<number, Record<string, unknown>>(albums.flatMap(album => typeof album.id === 'number'
+    ? [
+        [album.id, album] as const,
+      ]
+    : []))
+  const artistSummaries = new Map<number, Record<string, unknown>>(artists.flatMap(artist => typeof artist.id === 'number'
+    ? [
+        [artist.id, artist] as const,
+      ]
+    : []))
   for (const name of ['008-album.json.gz', '009-album.json.gz', '010-album.json.gz']) {
     const body = bodyOf(await readFixture(`library/album-artist/${name}`)) as { album?: Record<string, unknown> }
     if (body.album && typeof body.album.id === 'number') {
       albumDetails.set(body.album.id, body.album)
-      if (!albumSummaries.has(body.album.id))
-        albumSummaries.set(body.album.id, { id: body.album.id, name: body.album.name, picUrl: body.album.picUrl, size: body.album.size, artists: body.album.artists })
+      if (!albumSummaries.has(body.album.id)) {
+        albumSummaries.set(body.album.id, {
+          id: body.album.id,
+          name: body.album.name,
+          picUrl: body.album.picUrl,
+          size: body.album.size,
+          artists: body.album.artists,
+        })
+      }
     }
   }
 

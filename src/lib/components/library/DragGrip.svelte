@@ -25,7 +25,9 @@
   }
 
   const { label, size, attach, ghost = false, overlay = false, class: klass, onkeydown }: Props = $props()
-  const shape = $derived(overlay || size === 'phone' ? 'rounded-full' : 'rounded-lg')
+  const shape = $derived(overlay || size === 'phone'
+    ? 'rounded-full'
+    : 'rounded-lg')
   const tone = $derived(overlay ? 'bg-white/95 shadow-ambient ring-1 ring-neutral-900/5 text-neutral-600 backdrop-blur' : 'text-neutral-500')
 </script>
 
@@ -35,12 +37,16 @@
       'relative z-1 grid flex-none place-items-center',
       tone,
       shape,
-      size === 'phone' ? 'size-11' : 'size-9',
+      size === 'phone'
+        ? 'size-11'
+        : 'size-9',
       klass,
     ]}
     aria-hidden='true'
   >
-    <GripVertical size={size === 'phone' ? 20 : 18} aria-hidden='true' />
+    <GripVertical size={size === 'phone'
+      ? 20
+      : 18} aria-hidden='true' />
   </span>
 {:else}
   <button
@@ -51,7 +57,9 @@
       'relative z-1 grid flex-none place-items-center transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950) focus-visible:(outline-2 outline-offset-2 outline-primary-800)',
       tone,
       shape,
-      size === 'phone' ? 'size-11 active:bg-primary-100' : 'size-9',
+      size === 'phone'
+        ? 'size-11 active:bg-primary-100'
+        : 'size-9',
       klass,
     ]}
     aria-label='拖动排序：{label}'
@@ -60,6 +68,8 @@
     {onkeydown}
     {@attach attach}
   >
-    <GripVertical size={size === 'phone' ? 20 : 18} aria-hidden='true' />
+    <GripVertical size={size === 'phone'
+      ? 20
+      : 18} aria-hidden='true' />
   </button>
 {/if}

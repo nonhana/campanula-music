@@ -37,7 +37,10 @@ const THIRD = { id: 4208408, url: 'playback/liked/003-song_url_v1.json.gz', dura
 async function switchAccount(device: Device, app: App): Promise<void> {
   await world.netease.reply('login/logout.json')
   await app.logout()
-  await replyLibrary({ through: 'hearts', until: never() })
+  await replyLibrary({
+    through: 'hearts',
+    until: never(),
+  })
   await signIn(world, app, { another: true })
 }
 
@@ -45,7 +48,10 @@ async function switchAccount(device: Device, app: App): Promise<void> {
 async function twoSignedInTabs(device: Device): Promise<{ tabA: Tab, tabB: Tab }> {
   const tabA = await signInWithLiked(device)
   await world.netease.reply('login/user_account.vip.json')
-  await replyLibrary({ through: 'hearts', until: never() })
+  await replyLibrary({
+    through: 'hearts',
+    until: never(),
+  })
   const tabB = await device.open()
   await world.settle()
   if (tabB.app.state.session.status !== 'signedIn' || !tabB.app.state.library?.liked)
@@ -55,8 +61,12 @@ async function twoSignedInTabs(device: Device): Promise<{ tabA: Tab, tabB: Tab }
 
 /** 在一个标签页里放一首歌，让它出声；下一首的播放地址也备好 */
 async function playTrack(tab: Tab, song: typeof FIRST, next: typeof FIRST): Promise<FakeAudio> {
-  await world.netease.reply(song.url, { when: { id: song.id } })
-  await world.netease.reply(next.url, { when: { id: next.id } })
+  await world.netease.reply(song.url, {
+    when: { id: song.id },
+  })
+  await world.netease.reply(next.url, {
+    when: { id: next.id },
+  })
   tab.app.play(LIKED, song.id)
   await world.settle()
   const player = tab.audio.find(audio => !audio.paused)
@@ -82,7 +92,11 @@ function controlledApi(): { api: Api, pending: Array<(result: Result<unknown>) =
       throw new Error('这个测试只发 GET')
     },
   } as unknown as Api
-  return { api, pending, calls: () => calls }
+  return {
+    api,
+    pending,
+    calls: () => calls,
+  }
 }
 
 describe('旧会话的回复', () => {
@@ -102,7 +116,10 @@ describe('旧会话的回复', () => {
     slow.release()
     await world.settle()
 
-    expect(await stale).toMatchObject({ ok: false, failure: { kind: 'needsLogin' } })
+    expect(await stale).toMatchObject({
+      ok: false,
+      failure: { kind: 'needsLogin' },
+    })
     expect(device.responses).toContainEqual({ method: 'GET', path: '/api/search/songs?keywords=%E7%9C%9F%E5%A4%9C%E4%B8%AD&offset=0', status: 401 })
     expect(app.state.session).toEqual({ status: 'signedIn', account: ANOTHER_ACCOUNT })
   })
@@ -129,7 +146,10 @@ describe('旧会话的回复', () => {
     expect(app.state.downloads.songs).toEqual([])
     expect(app.state.downloads.tasks.get(3433267939)).toMatchObject({
       status: 'failed',
-      failure: { kind: 'request', failure: { kind: 'needsLogin' } },
+      failure: {
+        kind: 'request',
+        failure: { kind: 'needsLogin' },
+      },
     })
     expect((await device.stored()).downloads ?? []).toEqual([])
   })
@@ -180,8 +200,12 @@ describe('两个标签页退出', () => {
     await playTrack(tabB, SECOND, THIRD)
     await world.clock.advance(30_000)
 
-    await world.netease.reply(CHECK_IN_405, { when: { id: FIRST.id } })
-    await world.netease.reply(CHECK_IN, { when: { id: SECOND.id } })
+    await world.netease.reply(CHECK_IN_405, {
+      when: { id: FIRST.id },
+    })
+    await world.netease.reply(CHECK_IN, {
+      when: { id: SECOND.id },
+    })
     aPlayer.end()
     await world.settle()
     expect(checkIns(device).some(request => request.songId === FIRST.id)).toBe(true)
@@ -259,11 +283,17 @@ describe('会话一轮核心', () => {
     const second = round.api.get(endpoints.account)
     expect(calls()).toBe(2)
 
-    pending[0]({ ok: false, failure: { kind: 'needsLogin' } })
+    pending[0]({
+      ok: false,
+      failure: { kind: 'needsLogin' },
+    })
     await vi.waitFor(() => expect(expired).toBe(1))
     // 第一个 401 已经让这一轮失效；先重新登录（新轮次），再放回旧请求，专门核对轮次令牌
     await round.change({ kind: 'signedIn', account: ANOTHER_ACCOUNT })
-    pending[1]({ ok: false, failure: { kind: 'needsLogin' } })
+    pending[1]({
+      ok: false,
+      failure: { kind: 'needsLogin' },
+    })
 
     await expect(first).resolves.toBeNull()
     await expect(second).resolves.toBeNull()
@@ -274,8 +304,16 @@ describe('会话一轮核心', () => {
 
   it('某个清理监听者抛错：其余清理照常跑、change 不 reject、记日志', async () => {
     const { api } = controlledApi()
-    const lane: BackgroundLane = { send: async () => null, stop: () => {}, resume: () => {} }
-    const round = createSessionRound({ api, lane, expired: () => {} })
+    const lane: BackgroundLane = {
+      send: async () => null,
+      stop: () => {},
+      resume: () => {},
+    }
+    const round = createSessionRound({
+      api,
+      lane,
+      expired: () => {},
+    })
     let cleared = 0
     const logged: unknown[][] = []
     const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
@@ -290,7 +328,13 @@ describe('会话一轮核心', () => {
       })
       await expect(round.change({ kind: 'signedOut', by: 'other-tab' })).resolves.toBeUndefined()
       expect(cleared).toBe(1)
-      expect(logged).toEqual([['会话切换清理失败', 'signedOut', expect.any(Error)]])
+      expect(logged).toEqual([
+        [
+          '会话切换清理失败',
+          'signedOut',
+          expect.any(Error),
+        ],
+      ])
     }
     finally {
       spy.mockRestore()
@@ -308,12 +352,22 @@ describe('保存的播放队列核心', () => {
     const player = {
       stop: () => {
         stopped += 1
-        queue.forget([{ songId: 1, source: { kind: 'downloads' }, seconds: 10 }])
+        queue.forget([
+          {
+            songId: 1,
+            source: { kind: 'downloads' },
+            seconds: 10,
+          },
+        ])
       },
       adopt: () => {},
       restore: () => {},
     } as unknown as Player
-    const lane: BackgroundLane = { send: async () => null, stop: () => {}, resume: () => {} }
+    const lane: BackgroundLane = {
+      send: async () => null,
+      stop: () => {},
+      resume: () => {},
+    }
     const round = createSessionRound({
       api,
       lane,

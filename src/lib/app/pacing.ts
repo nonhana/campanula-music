@@ -32,7 +32,10 @@ export interface BackgroundLane {
   resume: () => void
 }
 
-const NEEDS_LOGIN = { ok: false, failure: { kind: 'needsLogin' } } as const
+const NEEDS_LOGIN = {
+  ok: false,
+  failure: { kind: 'needsLogin' },
+} as const
 
 export function createBackgroundLane({ clock, network }: { clock: Clock, network: NetworkStatus }): BackgroundLane {
   /** 网易云说操作频繁：到这个时间（毫秒）之前后台请求都不发 */

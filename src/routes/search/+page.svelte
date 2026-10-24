@@ -31,7 +31,9 @@
   // 返回这一页时窗口和综合里横向架子的滚动位置都回到原来的样子（架子按 Shelf 的 data-shelf 对上）
   scrollSnapshot(
     '/search',
-    () => Object.fromEntries([...document.querySelectorAll<HTMLElement>('[data-shelf]')].map(shelf => [shelf.dataset.shelf, shelf.scrollLeft])),
+    () => Object.fromEntries([
+      ...document.querySelectorAll<HTMLElement>('[data-shelf]'),
+    ].map(shelf => [shelf.dataset.shelf, shelf.scrollLeft])),
     (shelves) => {
       for (const shelf of document.querySelectorAll<HTMLElement>('[data-shelf]'))
         shelf.scrollLeft = shelves[shelf.dataset.shelf ?? ''] ?? 0
@@ -58,7 +60,9 @@
   }
 </script>
 
-<svelte:head><title>{keyword ? `“${keyword}”的搜索结果` : '搜索'} · Campanula</title></svelte:head>
+<svelte:head><title>{keyword
+  ? `“${keyword}”的搜索结果`
+  : '搜索'} · Campanula</title></svelte:head>
 
 {#snippet results(phone: boolean)}
   <div id={SEARCH_PANEL_ID} role='tabpanel' aria-labelledby={searchTabId(tab)} class={phone ? 'pt-1' : 'pt-5'}>
@@ -84,7 +88,9 @@
       <StateBlock kind='empty' icon={Search} title='在顶栏的搜索框里输入' />
     {/if}
   {:else}
-    <h1 class='sr-only'>{keyword ? `“${keyword}”的搜索结果` : '搜索'}</h1>
+    <h1 class='sr-only'>{keyword
+      ? `“${keyword}”的搜索结果`
+      : '搜索'}</h1>
     {#if showingResults()}
       {@render results(true)}
     {:else}

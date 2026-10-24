@@ -11,7 +11,9 @@ function songsFrom(ids: readonly number[]): Song[] {
   return ids.map((id, index) => ({
     id,
     name: `测试歌曲 ${index + 1}`,
-    artists: [{ id: 0, name: '测试歌手' }],
+    artists: [
+      { id: 0, name: '测试歌手' },
+    ],
     album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
     duration: 180_000,
     availability: 'full',

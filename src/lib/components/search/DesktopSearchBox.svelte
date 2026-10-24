@@ -23,7 +23,9 @@
   const suggesting = $derived(open && searchBox.draft.trim() !== '')
   /** 下拉挂着：打字时是建议；空着时有搜索历史才挂 */
   const dropped = $derived(suggesting || (open && view.state.search.history.length > 0))
-  const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'
+  const shortcut = /Mac|iPhone|iPad/.test(navigator.platform)
+    ? '⌘ K'
+    : 'Ctrl K'
 
   /** 打开下拉：框里有字（在结果页上是这次搜的词）就给它的建议 */
   function show() {
@@ -104,7 +106,9 @@
     aria-expanded={dropped}
     aria-controls={suggesting ? SUGGESTION_LIST_ID : undefined}
     aria-autocomplete='list'
-    aria-activedescendant={suggesting ? activeSuggestionId(view.app) : undefined}
+    aria-activedescendant={suggesting
+      ? activeSuggestionId(view.app)
+      : undefined}
     lang={langOf(searchBox.draft)}
     onfocus={show}
     onclick={show}

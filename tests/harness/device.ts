@@ -105,7 +105,11 @@ IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parame
 
 /** 读请求体：App 只发 JSON */
 function bodyOf(init: RequestInit | undefined): Pick<SentRequest, 'body'> {
-  return typeof init?.body === 'string' ? { body: JSON.parse(init.body) as unknown } : {}
+  return typeof init?.body === 'string'
+    ? {
+        body: JSON.parse(init.body) as unknown,
+      }
+    : {}
 }
 
 /** 请求头：App 发出这个请求时的序号（stamp），服务端按它记请求是什么时候发出的（world.ts，网易云替身查对不上号用） */
@@ -153,7 +157,14 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
     const request = new Request(new URL(path, origin), init)
     request.headers.set(SENT_HEADER, String(sentAt))
     const url = new URL(request.url)
-    const sent: SentRequest = { method: request.method, path: url.pathname + url.search, ...bodyOf(init), ...(request.keepalive ? { keepalive: true as const } : {}) }
+    const sent: SentRequest = {
+      method: request.method,
+      path: url.pathname + url.search,
+      ...bodyOf(init),
+      ...(request.keepalive
+        ? { keepalive: true as const }
+        : {}),
+    }
     requests.push(sent)
     pending.push(sent)
     try {
@@ -198,7 +209,10 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
       }
       const channels: ChannelCapability[] = []
       /** 按事件类型，App 加的监听 → 实际挂在设备上的那个 */
-      const networkListeners = { online: new Map<() => void, () => void>(), offline: new Map<() => void, () => void>() }
+      const networkListeners = {
+        online: new Map<() => void, () => void>(),
+        offline: new Map<() => void, () => void>(),
+      }
       const tabNetwork: NetworkStatus = {
         get onLine() {
           return network.onLine
@@ -217,7 +231,10 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
       }
       const app = createApp({
         fetch: deviceFetch,
-        clock: { now: clock.now, after: (ms, callback) => clock.after(ms, alive(callback)) },
+        clock: {
+          now: clock.now,
+          after: (ms, callback) => clock.after(ms, alive(callback)),
+        },
         indexedDB: deviceIndexedDB,
         network: tabNetwork,
         page,
@@ -312,8 +329,14 @@ export function createDevice(origin: string, clock: Clock, stamp: () => number):
       })
       const contents = await Promise.all(names.map(async (name) => {
         const store = transaction.objectStore(name)
-        const [keys, values] = await Promise.all([read(store.getAllKeys()), read(store.getAll())])
-        return [name, keys.map((key, index) => [key, values[index]] as [IDBValidKey, unknown])] as const
+        const [keys, values] = await Promise.all([
+          read(store.getAllKeys()),
+          read(store.getAll()),
+        ])
+        return [
+          name,
+          keys.map((key, index) => [key, values[index]] as [IDBValidKey, unknown]),
+        ] as const
       }))
       database.close()
       return Object.fromEntries(contents)

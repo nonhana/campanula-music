@@ -48,15 +48,23 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
   function cursor(): number {
     const index: unknown = history.state?.['sveltekit:metadata']?.historyIndex
     if (typeof index !== 'number' || !Number.isSafeInteger(index))
-      throw new Error('Kit history entry has no historyIndex')
+      throw new TypeError('Kit history entry has no historyIndex')
     return index
   }
 
-  const capture = (): OverlayPosition => ({ cursor: cursor(), url: (page.shallow?.url ?? page.url).href, marker: page.state.overlays?.ids.length ? page.state.overlays : undefined, stamp: page.state.overlays?.stamp })
+  const capture = (): OverlayPosition => ({
+cursor: cursor(),
+url: (page.shallow?.url ?? page.url).href,
+marker: page.state.overlays?.ids.length ? page.state.overlays : undefined,
+stamp: page.state.overlays?.stamp,
+})
   const signature = () => history.state?.['sveltekit:metadata']?.state
   let settled = capture()
   const read = (): OverlayPosition => settled
-  const result = (status: OverlayResult): HistoryResult => ({ status, position: read() })
+  const result = (status: OverlayResult): HistoryResult => ({
+status,
+position: read(),
+})
   function remember(position: OverlayPosition): void {
     known[position.cursor] = position
     signatures[position.cursor] = signature()
@@ -105,7 +113,11 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
         // 拒绝关闭的层不能被这样带走，所以在原地顶替这次仍在加载的导航：把当前物理条目登记成
         // 已知签名（否则 operate 的起点核对必然不通过），再按原来的条目浅写回去。
         moving = false
-        const physical = { ...read(), cursor: cursor(), url: location.href }
+        const physical = {
+...read(),
+cursor: cursor(),
+url: location.href,
+}
         settled = physical
         remember(physical)
         void restorePosition(origin, physical, true).then(() => callbacks.changed('settled'))
@@ -136,7 +148,9 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
       type: navigating.type,
       to: navigating.to,
       complete: navigating.complete,
-      delta: navigating.type === 'popstate' ? navigating.delta : undefined,
+      delta: navigating.type === 'popstate'
+? navigating.delta
+: undefined,
     }
     untrack(() => {
       if (!seenNavigations.has(intent.complete) && !ownNavigation(intent)) {
@@ -242,7 +256,9 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
     const work = (async (): Promise<HistoryResult> => {
       try {
         await perform()
-        const completed = mine.navigation ? await mine.navigation.then(() => true, () => false) : false
+        const completed = mine.navigation
+? await mine.navigation.then(() => true, () => false)
+: false
         await tick()
         if (mine.invalidated || destroyed)
           return result('invalidated')
@@ -274,7 +290,11 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
               return result('invalidated')
           }
         }
-        return { status: 'failed', error, position: read() }
+        return {
+status: 'failed',
+error,
+position: read(),
+}
       }
       finally {
         if (active === mine)
@@ -285,10 +305,25 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
   }
 
   function restorePosition(target: OverlayPosition, from: OverlayPosition, shallow: boolean): Promise<HistoryResult> {
-    const marker = target.marker ?? (target.stamp ? { session: target.stamp, ids: [], stamp: target.stamp } : undefined)
-    return operate({ kind: shallow ? 'write' : 'leave', from, target, cursor: from.cursor, url: target.url, stamp: target.stamp }, () => {
+    const marker = target.marker ?? (target.stamp
+? { session: target.stamp, ids: [], stamp: target.stamp }
+: undefined)
+    return operate({
+kind: shallow ? 'write' : 'leave',
+from,
+target,
+cursor: from.cursor,
+url: target.url,
+stamp: target.stamp,
+}, () => {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- 这个 URL 是从已提交的 Kit 页面里取的
-      return goto(target.url, { shallow, replace: true, state: marker ? { overlays: marker } : {} })
+      return goto(target.url, {
+shallow,
+replace: true,
+state: marker
+? { overlays: marker }
+: {},
+})
     })
   }
 
@@ -300,16 +335,38 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
     const remembered = known[target.cursor]
     if (!remembered || !samePosition(remembered, target))
       return Promise.resolve(result('cancelled'))
-    return operate({ kind: 'go', from, target, cursor: target.cursor, url: target.url })
+    return operate({
+kind: 'go',
+from,
+target,
+cursor: target.cursor,
+url: target.url,
+})
   }
 
   function write(marker: OverlayMarker | undefined, replace: boolean, from: OverlayPosition): Promise<HistoryResult> {
     const stamp = crypto.randomUUID()
     const value = { session: marker?.session ?? stamp, ids: marker?.ids ?? [], stamp }
-    const target = { cursor: from.cursor + (replace ? 0 : 1), url: from.url, stamp, marker: marker ? value : undefined }
-    return operate({ kind: 'write', from, target, url: from.url, cursor: target.cursor, stamp }, () => {
+    const target = {
+cursor: from.cursor + (replace ? 0 : 1),
+url: from.url,
+stamp,
+marker: marker ? value : undefined,
+}
+    return operate({
+kind: 'write',
+from,
+target,
+url: from.url,
+cursor: target.cursor,
+stamp,
+}, () => {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- 空 URL 表示保留当前这一条历史不动
-      return goto('', { shallow: true, replace, state: { overlays: value } })
+      return goto('', {
+shallow: true,
+replace,
+state: { overlays: value },
+})
     })
   }
 
@@ -321,9 +378,18 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
       const stamp = crypto.randomUUID()
       const url = `${location.origin}${resolve(path)}`
       const target = { cursor: from.cursor, url, stamp }
-      return operate({ kind: 'leave', from, target, url, cursor: from.cursor, stamp }, () => goto(resolve(path), {
+      return operate({
+kind: 'leave',
+from,
+target,
+url,
+cursor: from.cursor,
+stamp,
+}, () => goto(resolve(path), {
         replace: true,
-        state: { overlays: { session: stamp, ids: [], stamp } },
+        state: {
+overlays: { session: stamp, ids: [], stamp },
+},
       }))
     },
   }

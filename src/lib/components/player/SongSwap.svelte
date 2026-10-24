@@ -32,7 +32,13 @@
     waiting.add(node)
     if (turn === 'land')
       return float(node, { toward: 'up', delay: FLOAT_IN_DELAY }, options)
-    return float(node, { toward: turn, distance: place === 'page' ? WHEEL.textIn : undefined, delay: WHEEL.textDelay + FLOAT_IN_DELAY }, options)
+    return float(node, {
+      toward: turn,
+      distance: place === 'page'
+        ? WHEEL.textIn
+        : undefined,
+      delay: WHEEL.textDelay + FLOAT_IN_DELAY,
+    }, options)
   }
 
   // 飘出的那一块 Svelte 会标成 inert：读屏只读到新的歌名
@@ -41,7 +47,13 @@
       return {}
     if (turn === 'land')
       return float(node, { toward: 'up' }, options)
-    return float(node, { toward: turn, distance: place === 'page' ? WHEEL.textOut : undefined, delay: WHEEL.textDelay }, options)
+    return float(node, {
+      toward: turn,
+      distance: place === 'page'
+        ? WHEEL.textOut
+        : undefined,
+      delay: WHEEL.textDelay,
+    }, options)
   }
 </script>
 

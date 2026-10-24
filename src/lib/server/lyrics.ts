@@ -54,8 +54,17 @@ function creditOf(raw: string): Timed | null {
   const { t, c } = parsed
   if (typeof t !== 'number' || !Array.isArray(c))
     return null
-  const text = c.map((part: unknown) => typeof part === 'object' && part !== null && 'tx' in part && typeof part.tx === 'string' ? part.tx : '').join('').trim()
-  return text ? { start: t, text, words: null, credit: true } : null
+  const text = c.map((part: unknown) => typeof part === 'object' && part !== null && 'tx' in part && typeof part.tx === 'string'
+    ? part.tx
+    : '').join('').trim()
+  return text
+    ? {
+        start: t,
+        text,
+        words: null,
+        credit: true,
+      }
+    : null
 }
 
 /** LRC 的一行：几个时间标签就是几行（同一句在几个时刻唱）；没有时间标签的（[ti:…] 这类）不要 */
@@ -64,7 +73,9 @@ function lrcLinesOf(raw: string): Timed[] {
   if (!match)
     return []
   const text = match[2].trim()
-  return [...match[1].matchAll(LRC_TAG)].map(([, minutes, secs, fraction = '0']) => ({
+  return [
+    ...match[1].matchAll(LRC_TAG),
+  ].map(([, minutes, secs, fraction = '0']) => ({
     // 小数一位是十分之一秒，两位是百分之一秒，三位是毫秒
     start: Number(minutes) * 60_000 + Number(secs) * 1000 + Number(fraction.padEnd(3, '0').slice(0, 3)),
     text,
@@ -79,14 +90,31 @@ function yrcLineOf(raw: string): Timed | null {
   if (!match)
     return null
   const body = match[2]
-  const marks = [...body.matchAll(YRC_WORD)]
+  const marks = [
+    ...body.matchAll(YRC_WORD),
+  ]
   const words = marks.flatMap((mark, i): LyricWord[] => {
     const text = body.slice(mark.index + mark[0].length, marks[i + 1]?.index ?? body.length)
     const start = Number(mark[1])
-    return text ? [{ start: seconds(start), end: seconds(start + Number(mark[2])), text }] : []
+    return text
+      ? [
+          {
+            start: seconds(start),
+            end: seconds(start + Number(mark[2])),
+            text,
+          },
+        ]
+      : []
   })
   const text = words.map(word => word.text).join('').trim()
-  return text ? { start: Number(match[1]), text, words, credit: false } : null
+  return text
+    ? {
+        start: Number(match[1]),
+        text,
+        words,
+        credit: false,
+      }
+    : null
 }
 
 /** 一整段歌词拆成行，按开始的时刻排（同一时刻的保持原来的先后）；空行不要 */
@@ -94,8 +122,12 @@ function linesOf(lyric: string | undefined, format: 'lrc' | 'yrc'): Timed[] {
   const lines = (lyric ?? '').split(/\r?\n/).flatMap((raw): Timed[] => {
     const line = raw.trim()
     if (line.startsWith('{') || format === 'yrc') {
-      const single = line.startsWith('{') ? creditOf(line) : yrcLineOf(line)
-      return single ? [single] : []
+      const single = line.startsWith('{')
+        ? creditOf(line)
+        : yrcLineOf(line)
+      return single
+        ? [single]
+        : []
     }
     return lrcLinesOf(line).filter(timed => timed.text !== '')
   })
@@ -129,13 +161,19 @@ export function lyricsOf(body: NeteaseLyrics): LyricsResponse {
     return { kind: 'pureMusic' }
   const byWord = linesOf(body.yrc?.lyric, 'yrc')
   const word = hasLyrics(byWord)
-  const lines = word ? byWord : linesOf(body.lrc.lyric, 'lrc')
+  const lines = word
+    ? byWord
+    : linesOf(body.lrc.lyric, 'lrc')
   if (!hasLyrics(lines))
     return { kind: 'none' }
   // 逐字的优先配逐字的翻译、音译（ytlrc、yromalrc），没有再用逐行的
   const pick = (byWordSource: { lyric: string } | undefined, byLineSource: { lyric: string } | undefined) => {
-    const own = word ? linesOf(byWordSource?.lyric, 'lrc') : []
-    return own.length > 0 ? own : linesOf(byLineSource?.lyric, 'lrc')
+    const own = word
+      ? linesOf(byWordSource?.lyric, 'lrc')
+      : []
+    return own.length > 0
+      ? own
+      : linesOf(byLineSource?.lyric, 'lrc')
   }
   const translations = matched(lines, pick(body.ytlrc, body.tlyric))
   const romanizations = matched(lines, pick(body.yromalrc, body.romalrc))

@@ -39,10 +39,18 @@ export async function recordedBatch(name: 'before' | 'after' | 'deleted'): Promi
     const { module, query, outcome } = await loadFixture(fixture)
     if (module === 'playlist_detail') {
       const body = outcome.response.body as { playlist: { trackIds: { id: number }[] } }
-      playlists.push({ id: query.id as number, detail: fixture, trackIds: body.playlist.trackIds.map(track => track.id), pages: [] })
+      playlists.push({
+        id: query.id as number,
+        detail: fixture,
+        trackIds: body.playlist.trackIds.map(track => track.id),
+        pages: [],
+      })
     }
     else {
-      playlists.at(-1)!.pages.push({ fixture, ids: (query.ids as string).split(',').map(Number) })
+      playlists.at(-1)!.pages.push({
+        fixture,
+        ids: (query.ids as string).split(',').map(Number),
+      })
     }
   }
   return { list: files[0], playlists }
@@ -81,8 +89,13 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
     ]
     const first = steps.findIndex(([step]) => step === from)
     const last = steps.findIndex(([step]) => step === through)
-    for (const [step, fixture] of steps.slice(first, last + 1))
-      await world.netease.reply(fixture, holds[step] ?? { until: step === through ? until : undefined })
+    for (const [step, fixture] of steps.slice(first, last + 1)) {
+      await world.netease.reply(fixture, holds[step] ?? {
+        until: step === through
+          ? until
+          : undefined,
+      })
+    }
   }
 
   async function replyLikedSongs(): Promise<void> {
@@ -93,15 +106,21 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   async function replyPlaylists(recordings: readonly RecordedPlaylist[], { rejected, rejection }: { rejected?: string, rejection?: string } = {}): Promise<void> {
     for (const playlist of recordings) {
       await world.netease.reply(playlist.detail)
-      for (const page of playlist.pages)
-        await world.netease.reply(page.fixture === rejected ? rejection! : page.fixture)
+      for (const page of playlist.pages) {
+        await world.netease.reply(page.fixture === rejected
+          ? rejection!
+          : page.fixture)
+      }
     }
   }
 
   /** 登录，第一步红心还在路上（不需要曲库的歌词、每日推荐、搜索）。 */
   async function signInAtHearts(device: Device): Promise<Tab> {
     const tab = await device.open()
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, tab.app)
     return tab
   }
@@ -120,7 +139,9 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
     const tab = await device.open()
     await replyLibrary()
     await replyLikedSongs()
-    await world.netease.reply(LIKED_TRACK_IDS, { until: never() })
+    await world.netease.reply(LIKED_TRACK_IDS, {
+      until: never(),
+    })
     await signIn(world, tab.app)
     await world.settle()
     if (!tab.app.state.library?.liked?.complete)
@@ -151,7 +172,11 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
       tab.close()
     }
     await world.netease.reply('login/user_account.vip.json')
-    await replyLibrary({ through: 'hearts', until: never(), ...options })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+      ...options,
+    })
     const opened = await device.open()
     return opened
   }
@@ -169,14 +194,31 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   /** 原测试的 jazz 准备：只看编号/首数；是否放出那份别的歌曲信息必须由调用者明确选择。 */
   async function openJazz(app: App, { songsHeld }: { songsHeld: boolean }): Promise<void> {
     await world.netease.reply(JAZZ_DETAIL)
-    await world.netease.reply(SOME_SONGS, { until: songsHeld ? never() : undefined })
+    await world.netease.reply(SOME_SONGS, {
+      until: songsHeld
+        ? never()
+        : undefined,
+    })
     const opening = app.openPlaylist(900000002)
     if (!songsHeld)
       await opening
     await world.settle()
   }
 
-  return { replyLibrary, replyLikedSongs, replyPlaylists, signInAtHearts, signInAtLikedTracks, signInWithLiked, signInSynced, reopen, dailySongs, openJazz, sessionCalls, sessionModules }
+  return {
+    replyLibrary,
+    replyLikedSongs,
+    replyPlaylists,
+    signInAtHearts,
+    signInAtLikedTracks,
+    signInWithLiked,
+    signInSynced,
+    reopen,
+    dailySongs,
+    openJazz,
+    sessionCalls,
+    sessionModules,
+  }
 }
 
 /** 本机副本的一项；不是 App 内部读法，是 Device.stored 的可观察结果。 */
@@ -202,17 +244,28 @@ export async function storedCheckIns(device: Device): Promise<unknown[]> {
 export function checkIns(device: Device): { songId: number, body: unknown }[] {
   return device.requests.flatMap((request) => {
     const match = /^\/api\/songs\/(\d+)\/check-in$/.exec(request.path)
-    return match ? [{ songId: Number(match[1]), body: request.body }] : []
+    return match
+      ? [
+          {
+            songId: Number(match[1]),
+            body: request.body,
+          },
+        ]
+      : []
   })
 }
 
 export function playUrlRequests(device: Device): string[] {
-  return device.requests.flatMap(request => request.path.includes('/play-url') ? [request.path] : [])
+  return device.requests.flatMap(request => request.path.includes('/play-url')
+    ? [request.path]
+    : [])
 }
 
 export function current(app: App): number | null {
   const { queue, current } = app.state.player
-  return current === null ? null : queue[current].song.id
+  return current === null
+    ? null
+    : queue[current].song.id
 }
 
 export function likedSong(app: App, id: number): Song {

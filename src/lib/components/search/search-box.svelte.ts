@@ -18,7 +18,9 @@ export function suggestionId(index: number): string {
 
 /** 正在看的搜索结果是哪个词：搜索结果页上是地址里的 q，别的页面是空的 */
 export function shownKeyword(): string {
-  return page.url.pathname === resolve('/search') ? (page.url.searchParams.get('q') ?? '').trim() : ''
+  return page.url.pathname === resolve('/search')
+? (page.url.searchParams.get('q') ?? '').trim()
+: ''
 }
 
 /** 建议列表的一行：第一行是“搜索 <搜索框里的字>”，后面是网易云给的建议（单曲、歌手、专辑、歌单） */
@@ -27,7 +29,12 @@ export type SuggestionRow = { kind: 'search', name: string } | Suggestion
 /** 搜索框里有字时建议列表的每一行（还没回来的建议先留着上一个词的） */
 export function suggestionRows(draft: string, suggestions: Suggestions | null): SuggestionRow[] {
   const typed = draft.trim()
-  return typed ? [{ kind: 'search', name: typed }, ...(suggestions?.items ?? [])] : []
+  return typed
+? [
+{ kind: 'search', name: typed },
+...(suggestions?.items ?? []),
+]
+: []
 }
 
 export const searchBox: {
@@ -40,7 +47,9 @@ export const searchBox: {
 /** 选中的那一行的 id（aria-activedescendant）；没选、超出了建议的行数时是 undefined */
 export function activeSuggestionId(app: App): string | undefined {
   const rows = suggestionRows(searchBox.draft, app.state.search.suggestions)
-  return searchBox.active >= 0 && searchBox.active < rows.length ? suggestionId(searchBox.active) : undefined
+  return searchBox.active >= 0 && searchBox.active < rows.length
+? suggestionId(searchBox.active)
+: undefined
 }
 
 /** 搜索结果页上显示着结果（手机上不是建议、搜索历史）：框里正是这一页搜的词 */
@@ -117,11 +126,19 @@ export function searchBoxKey(event: KeyboardEvent, app: App): boolean {
   if (composing(event))
     return false
   const rows = suggestionRows(searchBox.draft, app.state.search.suggestions)
-  const at = searchBox.active < rows.length ? searchBox.active : -1
+  const at = searchBox.active < rows.length
+? searchBox.active
+: -1
   if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && rows.length > 0) {
     event.preventDefault()
-    const step = event.key === 'ArrowDown' ? 1 : -1
-    searchBox.active = at < 0 ? (step > 0 ? 0 : rows.length - 1) : (at + step + rows.length) % rows.length
+    const step = event.key === 'ArrowDown'
+? 1
+: -1
+    searchBox.active = at < 0
+? (step > 0
+? 0
+: rows.length - 1)
+: (at + step + rows.length) % rows.length
     document.getElementById(suggestionId(searchBox.active))?.scrollIntoView({ block: 'nearest' })
     return true
   }

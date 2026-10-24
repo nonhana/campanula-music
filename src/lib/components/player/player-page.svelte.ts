@@ -6,21 +6,36 @@ import { preloadCover } from '../ui/Cover.svelte'
 /** 播放条和播放页初始化时绑定到所在骨架的浮层会话；抽屉手势不变。 */
 export function playerPageActions() {
   const { player, queue, playerDrawer } = getOverlays()
-  const openPlayerPage = (from: HTMLElement | null = document.activeElement instanceof HTMLElement ? document.activeElement : null) => {
+  const openPlayerPage = (from: HTMLElement | null = document.activeElement instanceof HTMLElement
+? document.activeElement
+: null) => {
     void player.open({ from })
   }
   const closePlayerPage = () => {
     void player.closeThrough()
   }
   const openQueueSheet = () => {
-    if (player.request)
-      void queue.open({ from: document.querySelector<HTMLElement>('[data-queue-entry]') })
+    if (player.request) {
+      void queue.open({
+from: document.querySelector<HTMLElement>('[data-queue-entry]'),
+})
+}
   }
   const closeQueueSheet = () => {
     void queue.close()
   }
-  const gripToOpenPlayerPage = (): Attachment<HTMLElement> => node => playerDrawer.grip({ from: 'closed', commit: () => openPlayerPage(node), tap: () => openPlayerPage(node) })(node)
-  return { openPlayerPage, closePlayerPage, openQueueSheet, closeQueueSheet, gripToOpenPlayerPage }
+  const gripToOpenPlayerPage = (): Attachment<HTMLElement> => node => playerDrawer.grip({
+from: 'closed',
+commit: () => openPlayerPage(node),
+tap: () => openPlayerPage(node),
+})(node)
+  return {
+openPlayerPage,
+closePlayerPage,
+openQueueSheet,
+closeQueueSheet,
+gripToOpenPlayerPage,
+}
 }
 
 /**
@@ -47,4 +62,9 @@ export const playerPageChoices: {
   /** 有翻译、音译时显示出来 */
   translation: boolean
   romanization: boolean
-} = $state({ panel: 'lyrics', phoneLyrics: false, translation: true, romanization: false })
+} = $state({
+panel: 'lyrics',
+phoneLyrics: false,
+translation: true,
+romanization: false,
+})

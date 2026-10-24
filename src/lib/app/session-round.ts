@@ -67,7 +67,9 @@ export interface SessionRound {
 
 /** 把失败去掉 needsLogin；是 needsLogin 时返回 null（调用方负责让这一轮结束） */
 function withoutNeedsLogin(failure: RequestFailure): SessionFailure | null {
-  return failure.kind === 'needsLogin' ? null : failure
+  return failure.kind === 'needsLogin'
+    ? null
+    : failure
 }
 
 export function createSessionRound({ api, lane, expired }: { api: Api, lane: BackgroundLane, expired: () => void }): SessionRound {
@@ -139,12 +141,17 @@ export function createSessionRound({ api, lane, expired }: { api: Api, lane: Bac
     const result = await api.get(endpoints.account)
     if (mine !== current)
       return null
-    if (result.ok)
-      return result.value.account ? { status: 'signedIn', account: result.value.account } : { status: 'signedOut' }
+    if (result.ok) {
+      return result.value.account
+        ? { status: 'signedIn', account: result.value.account }
+        : { status: 'signedOut' }
+    }
     if (result.failure.kind === 'needsLogin')
       return { status: 'loginExpired' }
     const failure = withoutNeedsLogin(result.failure)
-    return failure ? { status: 'checkFailed', failure } : null
+    return failure
+      ? { status: 'checkFailed', failure }
+      : null
   }
 
   async function change(next: SessionChange): Promise<void> {

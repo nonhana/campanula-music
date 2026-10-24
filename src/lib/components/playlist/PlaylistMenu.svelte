@@ -27,9 +27,33 @@
     if (playlist?.kind !== 'own')
       return []
     return [
-      { key: 'info', label: '编辑歌单信息', leading: { kind: 'icon', icon: Pencil }, closeOnChoose: false, run: () => edit('info', request) },
-      ...(playlist.private ? [{ key: 'public', label: '改为公开', leading: { kind: 'icon', icon: Globe } as const, closeOnChoose: false, run: () => edit('public', request) }] : []),
-      { key: 'delete', label: '删除歌单', leading: { kind: 'icon', icon: Trash2 }, tone: 'destructive', separated: true, closeOnChoose: false, run: () => edit('delete', request) },
+      {
+        key: 'info',
+        label: '编辑歌单信息',
+        leading: { kind: 'icon', icon: Pencil },
+        closeOnChoose: false,
+        run: () => edit('info', request),
+      },
+      ...(playlist.private
+        ? [
+          {
+            key: 'public',
+            label: '改为公开',
+            leading: { kind: 'icon', icon: Globe } as const,
+            closeOnChoose: false,
+            run: () => edit('public', request),
+          },
+        ]
+        : []),
+      {
+        key: 'delete',
+        label: '删除歌单',
+        leading: { kind: 'icon', icon: Trash2 },
+        tone: 'destructive',
+        separated: true,
+        closeOnChoose: false,
+        run: () => edit('delete', request),
+      },
     ]
   }
 
@@ -43,7 +67,12 @@
     const playlist = playlistOf(request)
     if (!sheet || !playlist)
       return null
-    return { kind: 'media', coverUrl: playlist.coverUrl, title: playlist.name, titleLang: langOf(playlist.name) }
+    return {
+      kind: 'media',
+      coverUrl: playlist.coverUrl,
+      title: playlist.name,
+      titleLang: langOf(playlist.name),
+    }
   }
 </script>
 

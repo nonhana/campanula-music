@@ -34,7 +34,9 @@
   }
 
   const { items, itemHeight, overscan = 8, scrollParent, getKey, row, markOf, placeOf, keep, animatePlace = false, hidden }: Props = $props()
-  const lookup = hasScrollLookup() ? getScrollLookup() : null
+  const lookup = hasScrollLookup()
+    ? getScrollLookup()
+    : null
 
   let host = $state<HTMLElement>()
   let range = $state({ start: 0, end: 0 })
@@ -44,7 +46,9 @@
   function measure() {
     if (!host)
       return
-    const viewport = scrollParent ? { top: scrollParent.getBoundingClientRect().top, height: scrollParent.clientHeight } : { top: 0, height: window.innerHeight }
+    const viewport = scrollParent
+      ? { top: scrollParent.getBoundingClientRect().top, height: scrollParent.clientHeight }
+      : { top: 0, height: window.innerHeight }
     const viewTop = viewport.top - host.getBoundingClientRect().top
     const start = Math.max(0, Math.floor(viewTop / itemHeight) - overscan)
     const end = Math.min(slots, Math.ceil((viewTop + viewport.height) / itemHeight) + overscan)
@@ -104,7 +108,9 @@
       class={['absolute inset-x-0', animatePlace && 'drag-move']}
       style:transform='translateY({placeOf?.(item, index) ?? index * itemHeight}px)'
       style:height='{itemHeight}px'
-      style:opacity={hidden?.(item, index) ? '0' : undefined}
+      style:opacity={hidden?.(item, index)
+        ? '0'
+        : undefined}
     >
       {@render row(item, index)}
     </div>

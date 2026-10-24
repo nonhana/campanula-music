@@ -29,7 +29,9 @@
   /** 首数、播放次数（是 0 时不写，和歌单页头部一样） */
   function counts(playlist: SearchedPlaylist): string {
     const tracks = `${formatCount(playlist.trackCount)} 首`
-    return playlist.playCount > 0 ? `${tracks} · 播放 ${formatPlays(playlist.playCount)}` : tracks
+    return playlist.playCount > 0
+      ? `${tracks} · 播放 ${formatPlays(playlist.playCount)}`
+      : tracks
   }
 </script>
 
@@ -41,11 +43,20 @@
     <li class={['h-16 flex items-center transition-colors duration-feedback mouse:hover:bg-primary-100', !phone && 'rounded-lg', toggle && 'pr-1']} in:stagger={{ order: i - appendedAt }}>
       <a
         href={resolve('/playlists/[id=neteaseId]', { id: playlist.id })}
-        class={['h-full min-w-0 flex flex-1 items-center gap-3', phone ? 'pl-4' : 'rounded-lg pl-2', toggle ? 'pr-2' : phone ? 'pr-4' : 'pr-2']}
+        class={[
+          'h-full min-w-0 flex flex-1 items-center gap-3',
+          phone ? 'pl-4' : 'rounded-lg pl-2',
+          toggle
+            ? 'pr-2'
+            : phone ? 'pr-4' : 'pr-2',
+        ]}
       >
         <Cover url={playlist.coverUrl} size={48} class='rounded-lg' />
         <span class='min-w-0 flex-1'>
-          <span class={['block truncate text-neutral-900 font-500', phone ? 'text-body' : 'text-label']} lang={langOf(playlist.name)}>{playlist.name}</span>
+          <span class={[
+            'block truncate text-neutral-900 font-500',
+            phone ? 'text-body' : 'text-label',
+          ]} lang={langOf(playlist.name)}>{playlist.name}</span>
           <span class='block truncate text-caption text-neutral-600 tabular-nums'>
             <span lang={langOf(playlist.creator)}>{playlist.creator}</span> · {counts(playlist)}
           </span>

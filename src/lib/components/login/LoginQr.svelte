@@ -24,12 +24,16 @@
   const { phone, onswitch }: Props = $props()
   const view = getAppView()
   const qr = $derived(view.state.login.qr)
-  const image = $derived(qr && 'image' in qr ? qr.image : undefined)
+  const image = $derived(qr && 'image' in qr
+    ? qr.image
+    : undefined)
   const verifying = $derived(qr?.step === 'verifying')
   const dimmed = $derived(qr?.step === 'scanned' || qr?.step === 'expired')
   const size = $derived(phone ? 'size-[200px]' : 'size-[192px]')
   /** 码下面那段说明说的是哪一种：换的时候交叉淡化 */
-  const hint = $derived(qr?.step === 'failed' ? 'failed' : verifying ? 'verifying' : 'scan')
+  const hint = $derived(qr?.step === 'failed'
+    ? 'failed'
+    : verifying ? 'verifying' : 'scan')
 
   let box = $state<HTMLElement>()
   /**
@@ -62,7 +66,12 @@
         </span>
       {/key}
     {:else}
-      <span class={['absolute inset-1 rounded-lg', qr?.step === 'loading' ? 'bone' : 'bg-neutral-100']} aria-hidden='true' transition:fade></span>
+      <span class={[
+        'absolute inset-1 rounded-lg',
+        qr?.step === 'loading'
+          ? 'bone'
+          : 'bg-neutral-100',
+      ]} aria-hidden='true' transition:fade></span>
     {/if}
 
     {#if qr?.step === 'scanned'}
@@ -76,7 +85,9 @@
       <button
         type='button'
         class='group absolute inset-0 grid place-items-center rounded-xl'
-        aria-label={qr.step === 'expired' ? '刷新二维码' : '重试'}
+        aria-label={qr.step === 'expired'
+          ? '刷新二维码'
+          : '重试'}
         onclick={refresh}
         transition:fade
       >

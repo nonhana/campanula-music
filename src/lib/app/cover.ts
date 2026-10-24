@@ -132,11 +132,25 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
     const work = attempt
     if (!work)
       return
-    const next: CoverUpload = { step, imgId: work.uploaded ? work.imgId : null, failure }
-    if (failure)
-      write({ status: 'failed', ...cropped(work), upload: { ...next, failure } })
-    else
-      write({ status: 'uploading', ...cropped(work), upload: { ...next, failure: null } })
+    const next: CoverUpload = {
+      step,
+      imgId: work.uploaded ? work.imgId : null,
+      failure,
+    }
+    if (failure) {
+      write({
+        status: 'failed',
+        ...cropped(work),
+        upload: { ...next, failure },
+      })
+    }
+    else {
+      write({
+        status: 'uploading',
+        ...cropped(work),
+        upload: { ...next, failure: null },
+      })
+    }
   }
 
   /** 这张图已经不用了（取消、换图、关掉、退出）：之前发出去的结果不要 */
@@ -170,8 +184,13 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
     decoding = mine
     write({ status: 'picking', playlistId })
     if (file.size > COVER_INPUT_MAX_BYTES) {
-      if (decoding === mine)
-        write({ status: 'unusable', playlistId, problem: { kind: 'tooBig' } })
+      if (decoding === mine) {
+        write({
+          status: 'unusable',
+          playlistId,
+          problem: { kind: 'tooBig' },
+        })
+      }
       return
     }
     let image: DecodedImage
@@ -207,7 +226,10 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
       canceled: false,
       running: false,
     }
-    write({ status: 'cropping', ...cropped(attempt) })
+    write({
+      status: 'cropping',
+      ...cropped(attempt),
+    })
   }
 
   /** 导出裁剪好的 JPEG；导出失败返回 false */
@@ -334,7 +356,10 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
         canceled: false,
         running: false,
       }
-      write({ status: 'cropping', ...cropped(attempt) })
+      write({
+        status: 'cropping',
+        ...cropped(attempt),
+      })
     },
     async retry() {
       if (!attempt || state?.status !== 'failed')

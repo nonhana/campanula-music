@@ -22,7 +22,22 @@ describe('录制索引', () => {
 
   it('覆盖了 mock 需要的库、播放、搜索和登录模块', async () => {
     const index = JSON.parse(await readFile(INDEX, 'utf8')) as Awaited<ReturnType<typeof buildIndex>>
-    for (const module of ['user_account', 'user_playlist', 'playlist_detail', 'song_detail', 'likelist', 'album_sublist', 'artist_sublist', 'song_url_v1', 'cloudsearch', 'search_suggest', 'login_cellphone', 'login_qr_check', 'playlist_tracks', 'like'])
+    for (const module of [
+      'user_account',
+      'user_playlist',
+      'playlist_detail',
+      'song_detail',
+      'likelist',
+      'album_sublist',
+      'artist_sublist',
+      'song_url_v1',
+      'cloudsearch',
+      'search_suggest',
+      'login_cellphone',
+      'login_qr_check',
+      'playlist_tracks',
+      'like',
+    ])
       expect(index.modules[module]?.count, module).toBeGreaterThan(0)
   })
 

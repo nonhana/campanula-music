@@ -51,7 +51,11 @@ export class MemoryOverlayHistory implements OverlayHistory {
   }
 
   failNext(kind: Kind, phase: Phase): void {
-    this.failure = { kind, phase, error: new Error(`${kind} failed ${phase}`) }
+    this.failure = {
+      kind,
+      phase,
+      error: new Error(`${kind} failed ${phase}`),
+    }
   }
 
   cancelNext(kind: Kind): void { this.cancelled = kind }
@@ -70,7 +74,12 @@ export class MemoryOverlayHistory implements OverlayHistory {
     }
   }
 
-  private result(status: OverlayResult): HistoryResult { return { status, position: this.read() } }
+  private result(status: OverlayResult): HistoryResult {
+    return {
+      status,
+      position: this.read(),
+    }
+  }
 
   private async change(kind: Kind, from: OverlayPosition, commit: () => void, undo: () => void): Promise<HistoryResult> {
     if (!samePosition(from, this.read()) || !samePosition(this.entries[this.index]!, from))
@@ -99,7 +108,11 @@ export class MemoryOverlayHistory implements OverlayHistory {
       if (written)
         undo()
       this.rendered = this.entries[this.index]!
-      return { status: 'failed', error, position: this.read() }
+      return {
+        status: 'failed',
+        error,
+        position: this.read(),
+      }
     }
   }
 
@@ -107,7 +120,17 @@ export class MemoryOverlayHistory implements OverlayHistory {
     const previous = this.entries[this.index]!
     return this.change('write', from, () => {
       const stamp = `memory-${++this.stamp}`
-      const entry = { cursor: from.cursor + (replace ? 0 : 1), url: from.url, stamp, marker: marker ? { ...structuredClone(marker), stamp } : undefined }
+      const entry = {
+        cursor: from.cursor + (replace ? 0 : 1),
+        url: from.url,
+        stamp,
+        marker: marker
+          ? {
+              ...structuredClone(marker),
+              stamp,
+            }
+          : undefined,
+      }
       if (replace) {
         this.entries[this.index] = entry
       }

@@ -23,11 +23,17 @@
   const { library, kind, layout }: Props = $props()
   const view = getAppView()
   const phone = $derived(layout === 'phone')
-  const albums = $derived(kind === 'albums' ? library.albums : null)
-  const artists = $derived(kind === 'artists' ? library.artists : null)
+  const albums = $derived(kind === 'albums'
+    ? library.albums
+    : null)
+  const artists = $derived(kind === 'artists'
+    ? library.artists
+    : null)
   const failure = $derived(library.sync.status === 'failed'
     ? {
-      title: `收藏的${kind === 'albums' ? '专辑' : '歌手'}没能同步`,
+      title: `收藏的${kind === 'albums'
+        ? '专辑'
+        : '歌手'}没能同步`,
       body: failureText(library.sync.failure),
       retry: () => view.app.retrySync(),
     }
@@ -35,13 +41,17 @@
 </script>
 
 {#if kind === 'albums'}
-  <TileGrid kind='album' layout={layout === 'shelf' ? 'shelf' : 'grid'} {phone} items={albums} label='收藏的专辑' loadingLabel='正在加载收藏的专辑' failure={failure} empty={{ icon: Disc3, title: '还没有收藏的专辑' }}>
+  <TileGrid kind='album' layout={layout === 'shelf'
+    ? 'shelf'
+    : 'grid'} {phone} items={albums} label='收藏的专辑' loadingLabel='正在加载收藏的专辑' failure={failure} empty={{ icon: Disc3, title: '还没有收藏的专辑' }}>
     {#snippet tile(album: CollectedAlbum)}
       <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} {phone} />
     {/snippet}
   </TileGrid>
 {:else}
-  <TileGrid kind='artist' layout={layout === 'shelf' ? 'shelf' : 'grid'} {phone} items={artists} label='收藏的歌手' loadingLabel='正在加载收藏的歌手' failure={failure} empty={{ icon: UserRound, title: '还没有收藏的歌手' }} detail={false}>
+  <TileGrid kind='artist' layout={layout === 'shelf'
+    ? 'shelf'
+    : 'grid'} {phone} items={artists} label='收藏的歌手' loadingLabel='正在加载收藏的歌手' failure={failure} empty={{ icon: UserRound, title: '还没有收藏的歌手' }} detail={false}>
     {#snippet tile(artist: CollectedArtist)}
       <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} />
     {/snippet}

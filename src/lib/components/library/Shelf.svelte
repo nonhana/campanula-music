@@ -29,7 +29,11 @@
 <!-- 滚动的是外面这层，内边距在里面的列表上：滚动条贴着架子的底边。data-shelf：返回这一页时页面按它恢复横向滚动位置 -->
 <div class={['overflow-x-auto', !phone && '-mx-2']} data-shelf={label}>
   <Scrollbar axis='x' />
-  <ul class={['w-max flex pb-3 pt-1', phone ? 'px-4' : 'px-2', klass]} aria-label={label} onfocusin={keepInView} data-reveal-group>
+  <ul class={[
+    'w-max flex pb-3 pt-1',
+    phone ? 'px-4' : 'px-2',
+    klass,
+  ]} aria-label={label} onfocusin={keepInView} data-reveal-group>
     {@render children()}
   </ul>
 </div>

@@ -28,7 +28,9 @@ export function artistLine(song: Song): string {
 
 /** 专辑的发行年份（本地时区）；网易云没给时间时是 null */
 export function yearOf(publishedAt: number): number | null {
-  return publishedAt > 0 ? new Date(publishedAt).getFullYear() : null
+  return publishedAt > 0
+    ? new Date(publishedAt).getFullYear()
+    : null
 }
 
 /** 首数等：千位加逗号（4,984） */
@@ -43,9 +45,13 @@ export function formatCount(count: number): string {
 export function formatPlays(count: number): string {
   if (count < 10_000)
     return formatCount(count)
-  const [unit, label] = count < 100_000_000 ? [10_000, '万'] : [100_000_000, '亿']
+  const [unit, label] = count < 100_000_000
+    ? [10_000, '万']
+    : [100_000_000, '亿']
   const value = count / unit
-  return `${value.toFixed(value >= 100 ? 0 : 1)} ${label}`
+  return `${value.toFixed(value >= 100
+    ? 0
+    : 1)} ${label}`
 }
 
 /** 时长：分:秒 */

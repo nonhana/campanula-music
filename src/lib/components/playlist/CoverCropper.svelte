@@ -88,7 +88,9 @@
       if (pointers.size > 0) {
         if (pointers.size < 2)
           pinch = null
-        last = [...pointers.values()][0] ?? null
+        last = [
+          ...pointers.values(),
+        ][0] ?? null
         dragging = true
         return
       }
@@ -130,7 +132,9 @@
       pointers.delete(sample.pointerId)
       if (pointers.size < 2)
         pinch = null
-      last = [...pointers.values()][0] ?? null
+      last = [
+        ...pointers.values(),
+      ][0] ?? null
       dragging = pointers.size > 0
     },
     abandon: abandonPan,
@@ -173,7 +177,9 @@
       startPinch()
     if (!pinch)
       return
-    const [a, b] = [...pointers.values()]
+    const [a, b] = [
+      ...pointers.values(),
+    ]
     if (!a || !b)
       return
     const distance = Math.hypot(a.x - b.x, a.y - b.y)
@@ -186,16 +192,23 @@
     if (pointers.size < 2)
       pinch = null
     // 从捏合回到一指：从这一刻的位置接着拖，不要跳
-    const [first] = [...pointers.values()]
+    const [first] = [
+      ...pointers.values(),
+    ]
     last = first ?? null
     dragging = pointers.size > 0
   }
 
   function startPinch() {
-    const [a, b] = [...pointers.values()]
+    const [a, b] = [
+      ...pointers.values(),
+    ]
     if (!a || !b)
       return
-    pinch = { zoom: view.zoom, distance: Math.hypot(a.x - b.x, a.y - b.y) }
+    pinch = {
+      zoom: view.zoom,
+      distance: Math.hypot(a.x - b.x, a.y - b.y),
+    }
   }
 
   function onwheel(event: WheelEvent) {
@@ -221,7 +234,10 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div
     bind:this={host}
-    class={['crop relative overflow-hidden rounded-xl bg-primary-100', readonly ? 'is-readonly' : '']}
+    class={[
+      'crop relative overflow-hidden rounded-xl bg-primary-100',
+      readonly ? 'is-readonly' : '',
+    ]}
     style:width='{size}px'
     style:height='{size}px'
     role={readonly ? 'img' : 'application'}

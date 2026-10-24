@@ -77,9 +77,14 @@ function createPlayerStore(db: LocalDatabase): PlayerStore {
       if (!queue || !progress || !queue.entries.some(entry => entry.song.id === progress.songId))
         return null
       const { owner, ...saved } = queue
-      return { owner, saved: { queue: saved, progress } }
+      return {
+        owner,
+        saved: { queue: saved, progress },
+      }
     },
-    save: (progress, queue, checkIns) => db.write(checkIns.length > 0 ? [PLAYER, CHECK_INS] : [PLAYER], (transaction) => {
+    save: (progress, queue, checkIns) => db.write(checkIns.length > 0
+      ? [PLAYER, CHECK_INS]
+      : [PLAYER], (transaction) => {
       const store = transaction.objectStore(PLAYER)
       if (queue)
         store.put(queue, 'queue')
@@ -87,7 +92,9 @@ function createPlayerStore(db: LocalDatabase): PlayerStore {
       for (const checkIn of checkIns)
         transaction.objectStore(CHECK_INS).add(checkIn)
     }),
-    delete: (checkIns = []) => db.write(checkIns.length > 0 ? [PLAYER, CHECK_INS] : [PLAYER], (transaction) => {
+    delete: (checkIns = []) => db.write(checkIns.length > 0
+      ? [PLAYER, CHECK_INS]
+      : [PLAYER], (transaction) => {
       transaction.objectStore(PLAYER).clear()
       for (const checkIn of checkIns)
         transaction.objectStore(CHECK_INS).add(checkIn)
@@ -124,7 +131,9 @@ export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
   /** 记下这一轮的所有者：打卡只记给这个账号 */
   function tagged(checkIns: readonly CheckIn[]): PendingCheckIn[] {
     const current = owner
-    return current === null ? [] : checkIns.map(checkIn => ({ ...checkIn, owner: current }))
+    return current === null
+      ? []
+      : checkIns.map(checkIn => ({ ...checkIn, owner: current }))
   }
 
   /** 保存的队列带着这一刻的归属；没登录时是 null（之后登录了就交给那个账号） */

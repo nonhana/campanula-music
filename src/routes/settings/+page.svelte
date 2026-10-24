@@ -19,12 +19,20 @@
   import Segmented from '#lib/components/ui/Segmented.svelte'
 
   /** 在线播放音质的叫法：照网易云 */
-  const QUALITY_LABELS: Record<Quality, string> = { standard: '标准', higher: '较高', exhigh: '极高', lossless: '无损', hires: 'Hi-Res' }
+  const QUALITY_LABELS: Record<Quality, string> = {
+    standard: '标准',
+    higher: '较高',
+    exhigh: '极高',
+    lossless: '无损',
+    hires: 'Hi-Res',
+  }
   const QUALITY_OPTIONS = QUALITIES.map(key => ({ key, label: QUALITY_LABELS[key] }))
 
   const view = getAppView()
   const { logoutConfirm } = getOverlays()
-  const account = $derived(view.state.session.status === 'signedIn' ? view.state.session.account : null)
+  const account = $derived(view.state.session.status === 'signedIn'
+    ? view.state.session.account
+    : null)
   const quality = $derived(view.state.player.quality)
   /** 这台设备上下载了几首；还没从本机读出来时是 null */
   const downloaded = $derived(view.state.downloads.songs?.length ?? null)

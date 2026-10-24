@@ -23,7 +23,11 @@ const session = real ? 'campanula' : 'campanula-mock'
 function lock(): () => void {
   mkdirSync(dirname(LOCK), { recursive: true })
   try {
-    writeFileSync(LOCK, JSON.stringify({ pid: process.pid, command, at: Date.now() }), { flag: 'wx' })
+    writeFileSync(LOCK, JSON.stringify({
+      pid: process.pid,
+      command,
+      at: Date.now(),
+    }), { flag: 'wx' })
   }
   catch {
     const holder = (() => {
@@ -52,9 +56,19 @@ function lock(): () => void {
 
 function envOf(): NodeJS.ProcessEnv {
   if (real) {
-    return { ...process.env, CHROME_DEVTOOLS_AXI_SESSION: 'campanula', CHROME_DEVTOOLS_AXI_USER_DATA_DIR: join(homedir(), '.cache/campanula-axi/chrome-profile'), CHROME_DEVTOOLS_AXI_HEADED: '1' }
+    return {
+      ...process.env,
+      CHROME_DEVTOOLS_AXI_SESSION: 'campanula',
+      CHROME_DEVTOOLS_AXI_USER_DATA_DIR: join(homedir(), '.cache/campanula-axi/chrome-profile'),
+      CHROME_DEVTOOLS_AXI_HEADED: '1',
+    }
   }
-  return { ...process.env, CHROME_DEVTOOLS_AXI_SESSION: session, CHROME_DEVTOOLS_AXI_USER_DATA_DIR: MOCK_PROFILE, CHROME_DEVTOOLS_AXI_HEADED: '1' }
+  return {
+    ...process.env,
+    CHROME_DEVTOOLS_AXI_SESSION: session,
+    CHROME_DEVTOOLS_AXI_USER_DATA_DIR: MOCK_PROFILE,
+    CHROME_DEVTOOLS_AXI_HEADED: '1',
+  }
 }
 
 function port(): number {
@@ -117,11 +131,18 @@ async function ensurePage(path = '/'): Promise<number> {
 
 async function selectPage(pageId: number): Promise<void> {
   // 用 CLI 的 selectpage：它会把选中的页写进 CLI 自己的状态，随后的 eval/screenshot 才认
-  cli(['selectpage', String(pageId), '--no-snapshot'])
+  cli([
+    'selectpage',
+    String(pageId),
+    '--no-snapshot',
+  ])
 }
 
 function cli(args: string[]): string {
-  return execFileSync('chrome-devtools-axi', args, { env: envOf(), encoding: 'utf8' })
+  return execFileSync('chrome-devtools-axi', args, {
+    env: envOf(),
+    encoding: 'utf8',
+  })
 }
 
 function parseNested(output: string): unknown {
@@ -141,7 +162,9 @@ async function evaluate(pageId: number, expression: string): Promise<string> {
   await selectPage(pageId)
   const output = cli(['eval', expression]).replace(/\nhelp\[[\s\S]*$/, '').replace(/^result:\s*/, '').trim()
   const parsed = parseNested(output)
-  return typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
+  return typeof parsed === 'string'
+    ? parsed
+    : JSON.stringify(parsed)
 }
 
 async function navigate(pageId: number, url: string): Promise<void> {
@@ -158,7 +181,11 @@ async function mockStatus(): Promise<{ enabled: boolean, scenario: string, seed:
 async function postMock(path: string, body?: unknown): Promise<void> {
   const response = await fetch(`${MOCK_ORIGIN}${path}`, body === undefined
     ? { method: 'POST' }
-    : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    : {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      })
   if (!response.ok)
     throw new Error(`mock ${path} 失败：${response.status} ${await response.text()}`)
 }
@@ -166,7 +193,10 @@ async function postMock(path: string, body?: unknown): Promise<void> {
 async function accountSignedIn(pageId: number): Promise<{ signedIn: boolean, text: string }> {
   const output = await evaluate(pageId, `(async () => { const r = await fetch('/api/account', { cache: 'no-store' }); const b = await r.json(); return JSON.stringify({ status: r.status, account: b.account ? { id: b.account.id, nickname: b.account.nickname } : null }) })()`)
   const state = JSON.parse(output) as { status: number, account: { id: number, nickname: string } | null }
-  return { signedIn: state.account !== null, text: JSON.stringify(state) }
+  return {
+    signedIn: state.account !== null,
+    text: JSON.stringify(state),
+  }
 }
 
 async function main(): Promise<void> {
@@ -186,7 +216,10 @@ async function main(): Promise<void> {
           }
         }
         if (!real) {
-          console.log(JSON.stringify({ mode: 'mock', ...(await mockStatus()) }))
+          console.log(JSON.stringify({
+            mode: 'mock',
+            ...(await mockStatus()),
+          }))
           return
         }
         {
@@ -198,7 +231,10 @@ async function main(): Promise<void> {
             process.exitCode = 1
             return
           }
-          console.log(JSON.stringify({ mode: 'real', ...JSON.parse(account.text) }))
+          console.log(JSON.stringify({
+            mode: 'real',
+            ...JSON.parse(account.text),
+          }))
         }
         return
       case 'open': {
@@ -279,7 +315,9 @@ async function main(): Promise<void> {
       case 'offline': {
         const pageId = await ensurePage()
         const on = rest[0] !== 'off'
-        await call('emulate', on ? { pageId, networkConditions: 'Offline' } : { pageId })
+        await call('emulate', on
+          ? { pageId, networkConditions: 'Offline' }
+          : { pageId })
         console.log(`offline ${on ? 'on' : 'off'}`)
         return
       }

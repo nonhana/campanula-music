@@ -65,7 +65,10 @@ export const INITIAL_SEARCH: SearchState = { history: [], suggestions: null, res
 
 /** 把 keyword 记进搜索历史：排到最前，原来有的挪过来，超出的去掉最旧的 */
 function remembered(history: readonly string[], keyword: string): string[] {
-  return [keyword, ...history.filter(each => each !== keyword)].slice(0, SEARCH_HISTORY_MAX)
+  return [
+    keyword,
+    ...history.filter(each => each !== keyword),
+  ].slice(0, SEARCH_HISTORY_MAX)
 }
 
 /** 网易云的一页（从第 offset 个起）接在已经取到的后面：网易云翻页时在后面的页里又给了一次的（#32 录到过）只留第一次的 */
@@ -79,8 +82,19 @@ function appended<K extends SearchKind>(items: readonly SearchedItems[K][], page
   }
   const next = offset + page.items.length
   // 网易云给了空的一页就当作取完了，不再一直问
-  const more = page.items.length > 0 && next < page.total ? { status: 'notLoaded' } as const : null
-  return { status: 'shown', items: [...items, ...fresh], total: page.total, offset: next, more }
+  const more = page.items.length > 0 && next < page.total
+    ? { status: 'notLoaded' } as const
+    : null
+  return {
+    status: 'shown',
+    items: [
+      ...items,
+      ...fresh,
+    ],
+    total: page.total,
+    offset: next,
+    more,
+  }
 }
 
 export interface SearchContext {
@@ -121,17 +135,25 @@ export function createSearch(context: SearchContext): Search {
   let cancelWait: (() => void) | null = null
 
   function update(next: Partial<SearchState>): void {
-    context.write({ ...context.read(), ...next })
+    context.write({
+      ...context.read(),
+      ...next,
+    })
   }
 
   async function ask(keyword: string): Promise<void> {
     const result = await api.get(endpoints.suggestions, { keywords: keyword })
     if (keyword !== typed)
       return
-    if (result?.ok)
-      return update({ suggestions: { keyword, items: result.value.suggestions } })
+    if (result?.ok) {
+      return update({
+        suggestions: { keyword, items: result.value.suggestions },
+      })
+    }
     // 建议只是顺手的：没问到、这一轮结束了就不给，按搜索时再说明原因
-    update({ suggestions: { keyword, items: [] } })
+    update({
+      suggestions: { keyword, items: [] },
+    })
   }
 
   function stopWaiting(): void {
@@ -146,8 +168,11 @@ export function createSearch(context: SearchContext): Search {
   /** 换掉一类结果：还是这个词的结果页才换 */
   function show<K extends SearchKind>(keyword: string, kind: K, list: SearchList<K>): void {
     const results = context.read().results
-    if (results?.keyword === keyword)
-      update({ results: { ...results, [kind]: list } })
+    if (results?.keyword === keyword) {
+      update({
+        results: { ...results, [kind]: list },
+      })
+    }
   }
 
   async function first(keyword: string, kind: SearchKind): Promise<void> {
@@ -176,31 +201,57 @@ export function createSearch(context: SearchContext): Search {
     if (!searched)
       return
     const shown = context.read().results
-    const kept = shown?.keyword === searched ? shown : null
-    const kinds = kept ? SEARCH_KINDS.filter(kind => kept[kind].status === 'failed') : SEARCH_KINDS
+    const kept = shown?.keyword === searched
+      ? shown
+      : null
+    const kinds = kept
+      ? SEARCH_KINDS.filter(kind => kept[kind].status === 'failed')
+      : SEARCH_KINDS
     if (kinds.length === 0)
       return
     const loading = { status: 'loading' } as const
-    const base: SearchResults = kept ?? { keyword: searched, songs: loading, playlists: loading, artists: loading, albums: loading }
-    update({ results: { ...base, ...Object.fromEntries(kinds.map(kind => [kind, loading])) } })
+    const base: SearchResults = kept ?? {
+      keyword: searched,
+      songs: loading,
+      playlists: loading,
+      artists: loading,
+      albums: loading,
+    }
+    update({
+      results: {
+        ...base,
+        ...Object.fromEntries(kinds.map(kind => [kind, loading])),
+      },
+    })
     await Promise.all(kinds.map(kind => first(searched, kind)))
   }
 
   async function more(keyword: string, kind: SearchKind): Promise<void> {
     const results = context.read().results
-    const list = results?.keyword === keyword ? results[kind] : null
+    const list = results?.keyword === keyword
+      ? results[kind]
+      : null
     if (list?.status !== 'shown' || !list.more || list.more.status === 'loading')
       return
-    show(keyword, kind, { ...list, more: { status: 'loading' } })
+    show(keyword, kind, {
+      ...list,
+      more: { status: 'loading' },
+    })
     const result = await pageOf(kind, keyword, list.offset)
     const current = context.read().results
-    const listed = current?.keyword === keyword ? current[kind] : null
+    const listed = current?.keyword === keyword
+      ? current[kind]
+      : null
     if (listed?.status !== 'shown' || listed.offset !== list.offset)
       return
     if (result?.ok)
       return show(keyword, kind, appended(list.items, result.value, list.offset))
-    if (result)
-      show(keyword, kind, { ...list, more: { status: 'failed', failure: result.failure } })
+    if (result) {
+      show(keyword, kind, {
+        ...list,
+        more: { status: 'failed', failure: result.failure },
+      })
+    }
   }
 
   return {
@@ -232,7 +283,9 @@ export function createSearch(context: SearchContext): Search {
       if (!searched)
         return { ok: true, value: [] }
       const result = await pageOf('songs', searched, 0)
-      return result && (result.ok ? { ok: true, value: result.value.items } : result)
+      return result && (result.ok
+        ? { ok: true, value: result.value.items }
+        : result)
     },
     async clearHistory() {
       update({ history: await local.changeSearchHistory(() => []) })

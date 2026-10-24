@@ -37,10 +37,15 @@
     Home: () => 0,
     End: (_, last) => last,
   }
-  const RADIO_STEPS: Record<string, (at: number) => number> = { ArrowDown: at => at + 1, ArrowUp: at => at - 1 }
+  const RADIO_STEPS: Record<string, (at: number) => number> = {
+    ArrowDown: at => at + 1,
+    ArrowUp: at => at - 1,
+  }
 
   async function onkeydown(event: KeyboardEvent) {
-    const step = STEPS[event.key] ?? (role === 'radio' ? RADIO_STEPS[event.key] : undefined)
+    const step = STEPS[event.key] ?? (role === 'radio'
+      ? RADIO_STEPS[event.key]
+      : undefined)
     if (!step)
       return
     event.preventDefault()
@@ -55,7 +60,9 @@
 <div
   bind:this={group}
   class={['relative flex rounded-full bg-primary-50 p-1', klass]}
-  role={role === 'radio' ? 'radiogroup' : 'tablist'}
+  role={role === 'radio'
+    ? 'radiogroup'
+    : 'tablist'}
   aria-label={label}
   aria-labelledby={labelledby}
   aria-describedby={describedby}
@@ -74,10 +81,18 @@
       type='button'
       id='{id}-{option.key}-tab'
       {role}
-      aria-checked={role === 'radio' ? on : undefined}
-      aria-selected={role === 'tab' ? on : undefined}
-      aria-controls={role === 'tab' ? `${id}-${option.key}` : undefined}
-      tabindex={on ? 0 : -1}
+      aria-checked={role === 'radio'
+        ? on
+        : undefined}
+      aria-selected={role === 'tab'
+        ? on
+        : undefined}
+      aria-controls={role === 'tab'
+        ? `${id}-${option.key}`
+        : undefined}
+      tabindex={on
+        ? 0
+        : -1}
       class={[
         'relative min-w-0 flex-1 basis-0 whitespace-nowrap rounded-full text-label font-500 transition-colors duration-state',
         on ? 'text-primary-950' : 'text-neutral-600 mouse:hover:text-neutral-900',

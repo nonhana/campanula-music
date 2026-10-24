@@ -114,7 +114,10 @@ export function patched(replica: Replica, patch: LibraryPatch): Replica {
   }
   if (patch.albums || patch.albumPages) {
     const collected = new Set((patch.albums ?? replica.albums ?? []).map(album => album.id))
-    albumPages = new Map([...albumPages, ...patch.albumPages ?? []].filter(([id]) => collected.has(id)))
+    albumPages = new Map([
+      ...albumPages,
+      ...patch.albumPages ?? [],
+    ].filter(([id]) => collected.has(id)))
   }
   return {
     ...replica,
@@ -190,9 +193,15 @@ function committed(transaction: IDBTransaction): Promise<void> {
 /** 写这一步要用到的存储区（LIBRARY 总要用：核对副本的主人） */
 function storesFor(patch: LibraryPatch): string[] {
   return [
-    ...(patch.tracks || patch.playlists ? [TRACKS] : []),
-    ...(patch.songs ? [SONGS] : []),
-    ...(patch.albums || patch.albumPages ? [ALBUM_PAGES] : []),
+    ...(patch.tracks || patch.playlists
+      ? [TRACKS]
+      : []),
+    ...(patch.songs
+      ? [SONGS]
+      : []),
+    ...(patch.albums || patch.albumPages
+      ? [ALBUM_PAGES]
+      : []),
   ]
 }
 
@@ -226,8 +235,16 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
     const stored = library.get('playlists')
     stored.onsuccess = () => {
       const playlists = stored.result as (Omit<Playlist, StoredLater> & Partial<Pick<Playlist, StoredLater>>)[] | undefined
-      if (playlists)
-        library.put(playlists.map(playlist => ({ creator: '', private: false, playCount: 0, description: null, tags: [], ...playlist }) satisfies Playlist), 'playlists')
+      if (playlists) {
+        library.put(playlists.map(playlist => ({
+          creator: '',
+          private: false,
+          playCount: 0,
+          description: null,
+          tags: [],
+          ...playlist,
+        }) satisfies Playlist), 'playlists')
+      }
     }
   }
   // 4（#23）：收藏的专辑和歌手的列表存在 LIBRARY 里，打开过的专辑页另存一处
@@ -371,7 +388,9 @@ export function createLocalDb(db: LocalDatabase): LocalDb {
         settled(store.get('owner')) as Promise<number | undefined>,
         settled(store.get('pendingChanges')) as Promise<number[] | undefined>,
       ])
-      return storedOwner === owner ? pending ?? [] : []
+      return storedOwner === owner
+        ? pending ?? []
+        : []
     },
     addPendingChange: (owner, playlistId) => writeLibrary(owner, [], (transaction) => {
       const store = transaction.objectStore(LIBRARY)

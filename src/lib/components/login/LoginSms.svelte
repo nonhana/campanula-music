@@ -44,7 +44,9 @@
     }, 1000)
     return () => clearInterval(id)
   })
-  const waitSeconds = $derived(captchaStatus.status === 'sent' ? Math.max(0, Math.ceil((captchaStatus.resendAt - now) / 1000)) : 0)
+  const waitSeconds = $derived(captchaStatus.status === 'sent'
+    ? Math.max(0, Math.ceil((captchaStatus.resendAt - now) / 1000))
+    : 0)
 
   const masked = (value: string) => `+86 ${value.slice(0, 3)} **** ${value.slice(7)}`
 
@@ -60,7 +62,9 @@
 
   function phoneOk(): boolean {
     const problem = phoneProblem(phone)
-    phoneError = problem === 'phoneEmpty' ? '先填手机号' : problem ? '手机号是 11 位数字，以 1 开头' : ''
+    phoneError = problem === 'phoneEmpty'
+      ? '先填手机号'
+      : problem ? '手机号是 11 位数字，以 1 开头' : ''
     if (phoneError)
       phoneInput?.focus()
     return !phoneError
@@ -82,7 +86,9 @@
     if (!phoneOk())
       return
     if (captchaProblem(captcha)) {
-      captchaError = captchaStatus.status === 'sent' ? '填写收到的短信验证码' : '先获取验证码'
+      captchaError = captchaStatus.status === 'sent'
+        ? '填写收到的短信验证码'
+        : '先获取验证码'
       captchaInput?.focus()
       return
     }
@@ -90,9 +96,13 @@
   }
 
   const captchaHint = $derived(
-    captchaStatus.status === 'sent' && sentTo ? `验证码已发到 ${masked(sentTo)}` : undefined,
+    captchaStatus.status === 'sent' && sentTo
+      ? `验证码已发到 ${masked(sentTo)}`
+      : undefined,
   )
-  const sendLabel = $derived(waitSeconds > 0 ? `${waitSeconds} 秒后重发` : sentTo ? '重新获取' : '获取验证码')
+  const sendLabel = $derived(waitSeconds > 0
+    ? `${waitSeconds} 秒后重发`
+    : sentTo ? '重新获取' : '获取验证码')
 </script>
 
 <form class='flex flex-col' novalidate onsubmit={login}>

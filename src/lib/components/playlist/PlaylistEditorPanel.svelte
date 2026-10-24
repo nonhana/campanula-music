@@ -48,7 +48,9 @@
   const view = getAppView()
   const library = $derived(view.state.library)
   /** 要编辑的这张自建歌单（新建时是 null） */
-  const playlist = $derived(request.mode === 'new' ? null : library?.playlists?.find(item => item.id === request.playlistId) ?? null)
+  const playlist = $derived(request.mode === 'new'
+    ? null
+    : library?.playlists?.find(item => item.id === request.playlistId) ?? null)
 
   const FORM_ID = 'playlist-editor-form'
   const form = $derived(request.mode === 'new' || request.mode === 'info')
@@ -57,7 +59,9 @@
   const start = untrack(() => playlist)
   let name = $state(start?.name ?? '')
   let description = $state(start?.description ?? '')
-  let tags = $state([...start?.tags ?? []])
+  let tags = $state([
+    ...start?.tags ?? [],
+  ])
   let isPrivate = $state(false)
   /** 上一次没建成的原因 */
   let failure = $state<ChangeFailure | null>(null)
@@ -66,12 +70,16 @@
   let coverInput = $state<HTMLInputElement>()
 
   const problem = $derived(nameProblem(name.trim()))
-  const nameError = $derived(problem === 'nameTooLong' ? editProblemText(problem) : undefined)
+  const nameError = $derived(problem === 'nameTooLong'
+    ? editProblemText(problem)
+    : undefined)
   /** 改过的简介超过了上限（网易云收更长的，原来就超长、没改的照样能保存别的） */
   const descriptionTooLong = $derived(description.trim() !== (start?.description?.trim() ?? '') && description.trim().length > PLAYLIST_DESCRIPTION_LENGTH)
   /** 名称、简介不合规：不能按“创建 / 保存” */
   const blocked = $derived(problem !== null || descriptionTooLong)
-  const songCount = $derived(playlist ? library?.playlistPage(playlist.id).content?.total ?? playlist.trackCount : 0)
+  const songCount = $derived(playlist
+    ? library?.playlistPage(playlist.id).content?.total ?? playlist.trackCount
+    : 0)
 
   // 编辑信息时取网易云的标签库（这次登录取到过就不再取）
   $effect(() => {
@@ -198,7 +206,10 @@
             <Cover
               url={playlist.coverUrl}
               size={sheet ? 96 : 152}
-              class={['rounded-xl shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95', sheet ? 'size-24' : 'size-38']}
+              class={[
+                'rounded-xl shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95',
+                sheet ? 'size-24' : 'size-38',
+              ]}
             />
             <span
               class={[
@@ -217,7 +228,10 @@
           <div class='flex flex-col'>
             <div class='flex items-baseline justify-between gap-3'>
               <label for='playlist-editor-description' class='text-caption text-neutral-700 font-500'>简介</label>
-              <span class={['text-caption tabular-nums', descriptionTooLong ? 'text-error-700' : 'text-neutral-600']}>{formatCount(description.length)}/{formatCount(PLAYLIST_DESCRIPTION_LENGTH)}</span>
+              <span class={[
+                'text-caption tabular-nums',
+                descriptionTooLong ? 'text-error-700' : 'text-neutral-600',
+              ]}>{formatCount(description.length)}/{formatCount(PLAYLIST_DESCRIPTION_LENGTH)}</span>
             </div>
             <textarea
               id='playlist-editor-description'
@@ -241,11 +255,15 @@
 {/snippet}
 
 {#snippet submitLabel()}
-  {request.mode === 'new' ? '创建' : '保存'}
+  {request.mode === 'new'
+    ? '创建'
+    : '保存'}
 {/snippet}
 
 {#if !form}
-  <ConfirmPanel {sheet} cancelLabel={request.mode === 'delete' ? '先不了' : '取消'} oncancel={() => playlistEditor.close()}>
+  <ConfirmPanel {sheet} cancelLabel={request.mode === 'delete'
+    ? '先不了'
+    : '取消'} oncancel={() => playlistEditor.close()}>
     {#snippet body()}
       {#if playlist && request.mode === 'public'}
         <p class='text-body text-neutral-700'>公开后，你的网易云主页和搜索里都能看到<span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span></p>

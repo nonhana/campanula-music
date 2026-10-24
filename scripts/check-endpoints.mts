@@ -29,7 +29,9 @@ for (const file of await routeFiles(API_DIR)) {
   const route = `/${relative(API_DIR, file).split(sep).slice(0, -1).join('/')}`
   const id = `/api${route}`
   const source = await readFile(file, 'utf8')
-  const methods = [...source.matchAll(/^export const (GET|POST)\b/gm)].map(match => match[1]!)
+  const methods = [
+    ...source.matchAll(/^export const (GET|POST)\b/gm),
+  ].map(match => match[1]!)
   handlerCount += methods.length
   routes.set(id, methods)
   routeSources.set(id, source)
@@ -37,11 +39,20 @@ for (const file of await routeFiles(API_DIR)) {
 
 const catalog: { name: string, id: string, method: string }[] = []
 const catalogSource = await readFile(ENDPOINTS, 'utf8')
-for (const match of catalogSource.matchAll(/^ {2}(\w+): (get|post)<[\s\S]*?resolve\('([^']+)'/gm))
-  catalog.push({ name: match[1]!, id: match[3]!, method: match[2]!.toUpperCase() })
+for (const match of catalogSource.matchAll(/^ {2}(\w+): (get|post)<[\s\S]*?resolve\('([^']+)'/gm)) {
+  catalog.push({
+    name: match[1]!,
+    id: match[3]!,
+    method: match[2]!.toUpperCase(),
+  })
+}
 
-const searchKinds = [...(await readFile(SEARCH, 'utf8')).matchAll(/SEARCH_KINDS[^=]*= \[([^\]]+)\]/g)]
-  .flatMap(match => [...match[1]!.matchAll(/'([^']+)'/g)].map(item => item[1]!))
+const searchKinds = [
+  ...(await readFile(SEARCH, 'utf8')).matchAll(/SEARCH_KINDS[^=]*= \[([^\]]+)\]/g),
+]
+  .flatMap(match => [
+    ...match[1]!.matchAll(/'([^']+)'/g),
+  ].map(item => item[1]!))
 const searchRoute = '/api/search/[kind]'
 const searchDefined = catalogSource.includes(`resolve('${searchRoute}'`)
 
@@ -66,11 +77,17 @@ for (const { name, id, method } of catalog) {
     problems.push(`目录条目 ${name} 声明 ${method}，路由 ${id} 只导出 ${methods.join('/')}`)
   catalogMethods.set(id, (catalogMethods.get(id) ?? new Set()).add(method))
 }
-if (searchDefined)
-  catalogMethods.set(searchRoute, new Set([...(catalogMethods.get(searchRoute) ?? []), 'GET']))
+if (searchDefined) {
+  catalogMethods.set(searchRoute, new Set([
+    ...(catalogMethods.get(searchRoute) ?? []),
+    'GET',
+  ]))
+}
 
 for (const [id, methods] of routes) {
-  const declared = [...(catalogMethods.get(id) ?? [])].sort().join('/')
+  const declared = [
+    ...(catalogMethods.get(id) ?? []),
+  ].sort().join('/')
   const exported = [...methods].sort().join('/')
   if (declared !== exported)
     problems.push(`路由 ${id} 导出 ${exported || '无'}，目录声明 ${declared || '无'}`)

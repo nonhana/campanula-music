@@ -33,7 +33,9 @@
 
   const { page, axis = 'y', lookup }: Props = $props()
   /** 多选时右边的触屏把手让给歌曲行的拖动把手（#36）：状态由多选模块经 context 提供（#66） */
-  const selectionMode = hasSelectionMode() ? getSelectionMode() : undefined
+  const selectionMode = hasSelectionMode()
+    ? getSelectionMode()
+    : undefined
   const yielding = $derived(selectionMode?.() ?? false)
 
   /** 贴边能悬停、能点按的那一条有多宽（px），和下面的 w-4 / h-4 一致 */
@@ -54,7 +56,12 @@
   let stripWidth = $state(0)
   let stripHeight = $state(0)
   /** 沿滚动方向：滚到哪、看得见多长、内容多长；cross 是另一个方向看得见多长（横的那条要贴底边） */
-  let metrics = $state({ position: 0, viewport: 0, content: 0, cross: 0 })
+  let metrics = $state({
+    position: 0,
+    viewport: 0,
+    content: 0,
+    cross: 0,
+  })
   /** 刚滚过（还没停够 1 秒） */
   let awake = $state(false)
   /** 鼠标在贴边的那一条上 */
@@ -75,13 +82,19 @@
 
   /** 只看是不是页面那条：上下边变了（顶行变高、底栏出现）不用重装监听 */
   const onPage = $derived(page !== undefined)
-  const length = $derived(axis === 'y' ? stripHeight : stripWidth)
+  const length = $derived(axis === 'y'
+    ? stripHeight
+    : stripWidth)
   const range = $derived(Math.max(0, metrics.content - metrics.viewport))
   const scrollable = $derived(range >= 1)
   const track = $derived(Math.max(0, length - 2 * INSET))
-  const thumb = $derived(scrollable ? Math.min(track, Math.max(MIN_THUMB, track * metrics.viewport / metrics.content)) : 0)
+  const thumb = $derived(scrollable
+    ? Math.min(track, Math.max(MIN_THUMB, track * metrics.viewport / metrics.content))
+    : 0)
   /** 滑块离轨道开头多远；回弹时滚动位置会超出两头，滑块停在头尾 */
-  const offset = $derived(range > 0 ? (track - thumb) * clamp(metrics.position / range, 0, 1) : 0)
+  const offset = $derived(range > 0
+    ? (track - thumb) * clamp(metrics.position / range, 0, 1)
+    : 0)
   const shown = $derived(scrollable && (awake || near || dragging))
   const thick = $derived(near || dragging)
   /** 触屏这时能按住滑块：竖的、列表够长、细条亮着（拖着时一直算） */
@@ -93,7 +106,9 @@
   const bubbleCenter = $derived(Math.min(Math.max(INSET + offset + thumb / 2, bubbleHeight / 2), length - bubbleHeight / 2))
 
   function scroller(): HTMLElement | null {
-    return onPage ? document.documentElement : host?.parentElement ?? null
+    return onPage
+      ? document.documentElement
+      : host?.parentElement ?? null
   }
 
   function measure() {
@@ -101,8 +116,18 @@
     if (!el)
       return
     metrics = axis === 'y'
-      ? { position: el.scrollTop, viewport: onPage ? window.innerHeight : el.clientHeight, content: el.scrollHeight, cross: el.clientWidth }
-      : { position: el.scrollLeft, viewport: el.clientWidth, content: el.scrollWidth, cross: el.clientHeight }
+      ? {
+        position: el.scrollTop,
+        viewport: onPage ? window.innerHeight : el.clientHeight,
+        content: el.scrollHeight,
+        cross: el.clientWidth,
+      }
+      : {
+        position: el.scrollLeft,
+        viewport: el.clientWidth,
+        content: el.scrollWidth,
+        cross: el.clientHeight,
+      }
     readMark()
   }
 
@@ -131,7 +156,9 @@
     // 内容变长变短（同步进来新的歌、展开简介）、区域变大变小：只重新量
     const sizes = new ResizeObserver(measure)
     sizes.observe(el)
-    for (const child of onPage ? [] : el.children)
+    for (const child of onPage
+      ? []
+      : el.children)
       sizes.observe(child)
     const children = new MutationObserver((records) => {
       for (const record of records) {
@@ -158,12 +185,16 @@
 
   /** 指针沿滚动方向的位置 */
   function along(sample: { x: number, y: number }): number {
-    return axis === 'y' ? sample.y : sample.x
+    return axis === 'y'
+      ? sample.y
+      : sample.x
   }
 
   /** 只在听众拖滑块、点空白处时调用：这是它唯一写滚动位置的地方 */
   function moveTo(position: number, behavior: ScrollBehavior) {
-    scroller()?.scrollTo(axis === 'y' ? { top: position, behavior } : { left: position, behavior })
+    scroller()?.scrollTo(axis === 'y'
+      ? { top: position, behavior }
+      : { left: position, behavior })
   }
 
   // 拖滑块：指针怎么接（捕获、按住断了、作废、元素移除）由 attachGrip + 线性核心统一做；
@@ -179,21 +210,30 @@
         if (sample.pointerType === 'touch')
           return null
         const rect = strip.getBoundingClientRect()
-        const at = along(sample) - (axis === 'y' ? rect.top : rect.left) - INSET
+        const at = along(sample) - (axis === 'y'
+          ? rect.top
+          : rect.left) - INSET
         if (at < offset || at > offset + thumb) {
           // 点在滑块前后的空白处：往那边翻一屏。这一条有多长就是一屏（页面那条正好是顶栏和底栏之间看得见的那一段）
-          moveTo(metrics.position + (at < offset ? -length : length), scrollBehavior())
+          moveTo(metrics.position + (at < offset
+            ? -length
+            : length), scrollBehavior())
           return null
         }
       }
-      dragStart = { from: along(sample), start: metrics.position }
+      dragStart = {
+        from: along(sample),
+        start: metrics.position,
+      }
       starting = true
       quick = onGrip
       if (quick && sample.pointerType === 'touch') {
         // 抓住了：Android 上手指按住时轻震一下（iOS 的浏览器没有这个接口）
         navigator.vibrate?.(10)
       }
-      return range > 0 ? metrics.position / range : 0
+      return range > 0
+        ? metrics.position / range
+        : 0
     },
     track(sample) {
       const free = track - thumb
@@ -235,15 +275,25 @@
     class={[
       'scrollbar',
       axis,
-      page ? 'fixed right-0 z-35 w-4' : axis === 'y' ? 'absolute right-0 top-0 w-4' : 'absolute left-0 h-4',
+      page
+        ? 'fixed right-0 z-35 w-4'
+        : axis === 'y'
+        ? 'absolute right-0 top-0 w-4'
+        : 'absolute left-0 h-4',
       scrollable && 'live',
       shown && 'shown',
       thick && 'thick',
     ]}
-    style:top={page?.top ?? (axis === 'x' ? `${metrics.cross - ZONE}px` : undefined)}
+    style:top={page?.top ?? (axis === 'x'
+      ? `${metrics.cross - ZONE}px`
+      : undefined)}
     style:bottom={page?.bottom}
-    style:height={!page && axis === 'y' ? `${metrics.viewport}px` : undefined}
-    style:width={axis === 'x' ? `${metrics.viewport}px` : undefined}
+    style:height={!page && axis === 'y'
+      ? `${metrics.viewport}px`
+      : undefined}
+    style:width={axis === 'x'
+      ? `${metrics.viewport}px`
+      : undefined}
     aria-hidden={page ? 'true' : undefined}
     {@attach gripAttach}
     onpointerenter={event => (near = event.pointerType !== 'touch')}
@@ -254,10 +304,19 @@
     onmousedown={event => event.preventDefault()}
   >
     <div
-      class={['thumb', thick ? 'bg-primary-800' : 'bg-neutral-500/45']}
-      style:height={axis === 'y' ? `${thumb}px` : undefined}
-      style:width={axis === 'x' ? `${thumb}px` : undefined}
-      style:transform={axis === 'y' ? `translateY(${offset}px)` : `translateX(${offset}px)`}
+      class={[
+        'thumb',
+        thick ? 'bg-primary-800' : 'bg-neutral-500/45',
+      ]}
+      style:height={axis === 'y'
+        ? `${thumb}px`
+        : undefined}
+      style:width={axis === 'x'
+        ? `${thumb}px`
+        : undefined}
+      style:transform={axis === 'y'
+        ? `translateY(${offset}px)`
+        : `translateX(${offset}px)`}
     ></div>
     {#if axis === 'y'}
       <div bind:this={grip} class={['grip', grabbable && 'grabbable']} style:top='{gripTop}px' style:height='{gripBottom - gripTop}px'></div>

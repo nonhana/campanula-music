@@ -55,7 +55,9 @@
   type='button'
   class={['play-target text-left', rounded && 'rounded', klass]}
   {disabled}
-  aria-disabled={unplayable && !selecting ? 'true' : undefined}
+  aria-disabled={unplayable && !selecting
+    ? 'true'
+    : undefined}
   role={selecting ? 'checkbox' : undefined}
   aria-checked={selecting ? selected : undefined}
   aria-keyshortcuts={selecting ? keyshortcuts : undefined}

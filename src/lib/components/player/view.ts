@@ -16,7 +16,9 @@ export function queueEmpty(player: PlayerState): boolean {
 /** 按上一首、下一首会换到的那首（手机播放页拖封面时从两边转进来）；没有别的歌可换时是 null */
 export function neighborSong(player: PlayerState, direction: keyof PlayerState['neighbors']): Song | null {
   const index = player.neighbors[direction]
-  return index === null ? null : player.queue[index].song
+  return index === null
+    ? null
+    : player.queue[index].song
 }
 
 /**
@@ -77,15 +79,21 @@ export function sourceName(library: LibraryState | null, source: PlaySource): st
   switch (source.kind) {
     case 'playlist': {
       const playlist = library.playlists?.find(each => each.id === source.id)
-      return playlist ? playlistName(playlist) : null
+      return playlist
+        ? playlistName(playlist)
+        : null
     }
     case 'album': {
       const page = library.albumPage(source.id)
-      return page?.status === 'shown' ? page.content.album.name : library.albums?.find(album => album.id === source.id)?.name ?? null
+      return page?.status === 'shown'
+        ? page.content.album.name
+        : library.albums?.find(album => album.id === source.id)?.name ?? null
     }
     case 'artist': {
       const page = library.artistPage(source.id)
-      return page?.status === 'shown' ? page.content.artist.name : library.artists?.find(artist => artist.id === source.id)?.name ?? null
+      return page?.status === 'shown'
+        ? page.content.artist.name
+        : library.artists?.find(artist => artist.id === source.id)?.name ?? null
     }
     case 'daily':
       return '每日推荐'

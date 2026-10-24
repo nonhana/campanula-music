@@ -30,7 +30,9 @@ const MOUSE_MEDIA = '@media (hover: hover) and (pointer: fine)'
 function motionVariables(reduced: boolean): string {
   const lines = [
     ...Object.entries(DURATIONS).flatMap(([name, ms]) => [
-      `--duration-${name}: ${reduced ? Math.min(ms, REDUCED_FADE_MS) : ms}ms;`,
+      `--duration-${name}: ${reduced
+        ? Math.min(ms, REDUCED_FADE_MS)
+        : ms}ms;`,
       `--move-${name}: ${reduced ? 0 : ms}ms;`,
     ]),
     `--loop-state: ${reduced ? 'paused' : 'running'};`,
@@ -54,7 +56,9 @@ function motionVariables(reduced: boolean): string {
 function revealCss(): string {
   const delays = Array.from({ length: STAGGER.count - 1 }, (_, i) => {
     const nth = i + 2
-    return `.revealing > :nth-child(${nth === STAGGER.count ? `n+${nth}` : nth}) { animation-delay: ${(i + 1) * STAGGER.step}ms; }`
+    return `.revealing > :nth-child(${nth === STAGGER.count
+      ? `n+${nth}`
+      : nth}) { animation-delay: ${(i + 1) * STAGGER.step}ms; }`
   })
   return `
     .revealing > * {
@@ -84,7 +88,12 @@ function revealCss(): string {
  * 减少动态效果时位移的时长（--move-*）是 0、淡入淡出最多 150ms，只剩交叉淡化。ground 是整页的底色（晨光底）
  */
 function pageTransitionCss(ground: string): string {
-  const reach = { up: PAGE_DISTANCE.in, down: PAGE_DISTANCE.in, left: PAGE_DISTANCE.lateral, right: PAGE_DISTANCE.lateral }
+  const reach = {
+    up: PAGE_DISTANCE.in,
+    down: PAGE_DISTANCE.in,
+    left: PAGE_DISTANCE.lateral,
+    right: PAGE_DISTANCE.lateral,
+  }
   return `
     /* 新旧两页都半透明的那一会儿，底下透出来的是晨光底，不是白 */
     ::view-transition {
@@ -193,7 +202,10 @@ export default defineConfig<Theme>({
     presetWind3(),
     presetRemToPx(),
   ],
-  transformers: [transformerDirectives(), transformerVariantGroup()],
+  transformers: [
+    transformerDirectives(),
+    transformerVariantGroup(),
+  ],
   // 格子网格的格宽 / 列数 / 骨架排法在 tile-grid.ts 里拼出来，开发时的模块扫描看不到 .ts 字符串，这里显式带上
   safelist: [...TILE_GRID_SAFELIST],
   shortcuts: {
@@ -205,13 +217,34 @@ export default defineConfig<Theme>({
   // 只用设计系统的档位：零散的时长、曲线，逐个组件的“减少动态效果”写法，阶梯以外的字号、圆角、阴影、颜色都不生成。
   // scripts/check-design-tokens.mts 在 pnpm lint 里查所有写法（eslint 的 unocss/blocklist 只看得到纯字符串的 class）
   blocklist: [
-    [/^(?:transition-)?(?:duration|delay)-\d+$/, { message: '时长用动效令牌：duration-feedback / state / panel / focal 或具名的（src/lib/components/shared/motion-tokens.ts）' }],
-    [/^(?:transition-)?ease-(?:in|out|in-out)$/, { message: '曲线用 ease-out-soft（默认）或 ease-in-soft' }],
-    [/^motion-(?:reduce|safe):/, { message: '减少动态效果由动效令牌统一处理（uno.config.ts 的 motionVariables、src/lib/components/shared/motion.ts），组件里不写' }],
-    [/^text-\[/, { message: '字号用八档 text-<档名>（DESIGN.md Typography），颜色用色板' }],
-    [/^rounded(?:-[trblse]{1,2})?-\[/, { message: '圆角用 rounded-sm / md / lg / xl / sheet / full（DESIGN.md Shapes）' }],
-    [/^shadow-\[/, { message: '阴影用 shadow-ambient / float / chip / field-focus（DESIGN.md Elevation & Depth）' }],
-    [/^(?:bg|border|ring|outline|fill|stroke)-\[(?:#|rgb|hsl)/, { message: '颜色用 uno.palette.ts 的色板（DESIGN.md Colors）' }],
+    [
+      /^(?:transition-)?(?:duration|delay)-\d+$/,
+      { message: '时长用动效令牌：duration-feedback / state / panel / focal 或具名的（src/lib/components/shared/motion-tokens.ts）' },
+    ],
+    [
+      /^(?:transition-)?ease-(?:in|out|in-out)$/,
+      { message: '曲线用 ease-out-soft（默认）或 ease-in-soft' },
+    ],
+    [
+      /^motion-(?:reduce|safe):/,
+      { message: '减少动态效果由动效令牌统一处理（uno.config.ts 的 motionVariables、src/lib/components/shared/motion.ts），组件里不写' },
+    ],
+    [
+      /^text-\[/,
+      { message: '字号用八档 text-<档名>（DESIGN.md Typography），颜色用色板' },
+    ],
+    [
+      /^rounded(?:-[trblse]{1,2})?-\[/,
+      { message: '圆角用 rounded-sm / md / lg / xl / sheet / full（DESIGN.md Shapes）' },
+    ],
+    [
+      /^shadow-\[/,
+      { message: '阴影用 shadow-ambient / float / chip / field-focus（DESIGN.md Elevation & Depth）' },
+    ],
+    [
+      /^(?:bg|border|ring|outline|fill|stroke)-\[(?:#|rgb|hsl)/,
+      { message: '颜色用 uno.palette.ts 的色板（DESIGN.md Colors）' },
+    ],
   ],
   variants: [
     // mouse:hover:bg-primary-100：操作细节按输入方式切换，不按宽度（DESIGN.md Layout）
@@ -224,7 +257,9 @@ export default defineConfig<Theme>({
           matcher: matcher.slice('mouse:'.length),
           handle: (input, next) => next({
             ...input,
-            parent: `${input.parent ? `${input.parent} $$ ` : ''}${MOUSE_MEDIA}`,
+            parent: `${input.parent
+              ? `${input.parent} $$ `
+              : ''}${MOUSE_MEDIA}`,
           }),
         }
       },
@@ -248,8 +283,14 @@ export default defineConfig<Theme>({
       'body': ['15px', '22px'],
       'title-sm': ['17px', '24px'],
       'title': ['20px', '28px'],
-      'headline-sm': ['24px', { 'line-height': '32px', 'letter-spacing': '-0.01em' }],
-      'headline': ['28px', { 'line-height': '36px', 'letter-spacing': '-0.01em' }],
+      'headline-sm': [
+        '24px',
+        { 'line-height': '32px', 'letter-spacing': '-0.01em' },
+      ],
+      'headline': [
+        '28px',
+        { 'line-height': '36px', 'letter-spacing': '-0.01em' },
+      ],
     }
     theme.fontFamily = { ...theme.fontFamily, sans: FONT_SANS }
     // 时长、曲线、转圈只留动效令牌：duration-state、duration-move-panel、ease-in-soft、animate-spin（见 motionVariables）
@@ -270,7 +311,9 @@ export default defineConfig<Theme>({
       durations: { spin: 'var(--loop-spin)' },
       timingFns: { spin: 'linear' },
       counts: { spin: 'infinite' },
-      properties: { spin: { 'animation-play-state': 'var(--loop-state)' } },
+      properties: {
+        spin: { 'animation-play-state': 'var(--loop-state)' },
+      },
     }
   },
   theme: {

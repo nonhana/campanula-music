@@ -98,7 +98,20 @@ export interface PlayerState {
 
 const NO_NEIGHBORS: PlayerState['neighbors'] = { previous: null, next: null }
 
-export const INITIAL_PLAYER: PlayerState = { queue: [], current: null, status: 'paused', position: 0, duration: null, trial: false, volume: 1, notice: null, change: null, mode: 'loop', neighbors: NO_NEIGHBORS, quality: 'exhigh' }
+export const INITIAL_PLAYER: PlayerState = {
+  queue: [],
+  current: null,
+  status: 'paused',
+  position: 0,
+  duration: null,
+  trial: false,
+  volume: 1,
+  notice: null,
+  change: null,
+  mode: 'loop',
+  neighbors: NO_NEIGHBORS,
+  quality: 'exhigh',
+}
 
 /** 存在本机的播放队列那一份：播放队列、播放模式、随机播放的顺序、下一首播放、要补的歌单变了时重存 */
 export interface SavedQueue {
@@ -245,7 +258,9 @@ interface Filling {
 type QueueParts = Omit<SavedQueue, 'filling'> & { filling: Filling | null }
 
 function durationOf(deck: Deck): number | null {
-  return Number.isFinite(deck.audio.duration) ? deck.audio.duration : null
+  return Number.isFinite(deck.audio.duration)
+    ? deck.audio.duration
+    : null
 }
 
 /** 打乱的一份（Fisher–Yates） */
@@ -260,7 +275,13 @@ function shuffled(ids: readonly number[]): number[] {
 
 /** 进度要不要重存看这几样：当前这首、放到第几个整秒、时长、试听、在放还是停着 */
 function progressKey(songId: number, state: Pick<PlayerState, 'position' | 'duration' | 'trial' | 'status'>): string {
-  return [songId, Math.floor(state.position), state.duration, state.trial, state.status].join()
+  return [
+    songId,
+    Math.floor(state.position),
+    state.duration,
+    state.trial,
+    state.status,
+  ].join()
 }
 
 /**
@@ -337,7 +358,10 @@ export function createPlayer(context: PlayerContext): Player {
    */
   let order: readonly number[] | null = null
   /** indexOfSong 用的：播放队列里每首歌的位置，播放队列换了才重算 */
-  let positions: { queue: readonly QueueEntry[], index: Map<number, number> } = { queue: [], index: new Map() }
+  let positions: { queue: readonly QueueEntry[], index: Map<number, number> } = {
+    queue: [],
+    index: new Map(),
+  }
   /** 这个播放队列里网易云没给地址的歌：不再放 */
   const unavailable = new Set<number>()
   const urls = new Map<number, PlayUrl>()
@@ -365,7 +389,10 @@ export function createPlayer(context: PlayerContext): Player {
    * 所以 state.current 要一直指着 queue 里的当前这首：换播放队列时 queue 和 current 一起发布（publishQueue、play）
    */
   function publish(next: Partial<PlayerState>): void {
-    state = { ...state, ...next }
+    state = {
+      ...state,
+      ...next,
+    }
     const id = currentId()
     if (next.current !== undefined && id !== null && upNext.includes(id))
       upNext = upNext.filter(each => each !== id)
@@ -383,7 +410,9 @@ export function createPlayer(context: PlayerContext): Player {
 
   /** 当前这首已经听了多少秒：按实际出声的时间算，跳过去的不算 */
   function listened(): number {
-    return heard + (soundingSince === null ? 0 : (clock.now() - soundingSince) / 1000)
+    return heard + (soundingSince === null
+      ? 0
+      : (clock.now() - soundingSince) / 1000)
   }
 
   /**
@@ -421,10 +450,27 @@ export function createPlayer(context: PlayerContext): Player {
     if (!queueChanged && key === savedProgressKey && checkIns.length === 0)
       return
     savedProgressKey = key
-    savedQueue = { entries: state.queue, mode: state.mode, order, upNext, filling }
+    savedQueue = {
+      entries: state.queue,
+      mode: state.mode,
+      order,
+      upNext,
+      filling,
+    }
     context.save(
-      { songId: song.id, position: state.position, duration: state.duration, trial: state.trial, listened: listened() },
-      queueChanged ? { ...savedQueue, filling: filling && { playlistId: filling.playlistId, have: [...filling.have] } } : undefined,
+      {
+        songId: song.id,
+        position: state.position,
+        duration: state.duration,
+        trial: state.trial,
+        listened: listened(),
+      },
+      queueChanged
+        ? { ...savedQueue, filling: filling && {
+            playlistId: filling.playlistId,
+            have: [...filling.have],
+          } }
+        : undefined,
       checkIns,
     )
   }
@@ -445,7 +491,14 @@ export function createPlayer(context: PlayerContext): Player {
 
   /** 已下载的歌：本机文件的地址，不取播放地址、不过期；没下载是 null */
   function localUrl(song: Song): PlayUrl | null {
-    return context.downloaded(song.id) ? { url: context.localFile(song.id), trial: false, expiresAt: Number.POSITIVE_INFINITY, local: true } : null
+    return context.downloaded(song.id)
+      ? {
+          url: context.localFile(song.id),
+          trial: false,
+          expiresAt: Number.POSITIVE_INFINITY,
+          local: true,
+        }
+      : null
   }
 
   /**
@@ -456,7 +509,9 @@ export function createPlayer(context: PlayerContext): Player {
   function isCurrent(deck: Deck): boolean {
     if (state.status === 'loading')
       return false
-    const shown = incoming && !incoming.handover ? incoming.deck : active
+    const shown = incoming && !incoming.handover
+      ? incoming.deck
+      : active
     return deck === shown && state.current !== null && deck.song?.id === state.queue[state.current].song.id
   }
 
@@ -476,7 +531,12 @@ export function createPlayer(context: PlayerContext): Player {
           return result
         if (!result.value.playable)
           return { ok: true, url: null }
-        const url = { url: result.value.url, trial: result.value.trial, expiresAt: requestedAt + result.value.expiresIn * 1000, local: false }
+        const url = {
+          url: result.value.url,
+          trial: result.value.trial,
+          expiresAt: requestedAt + result.value.expiresIn * 1000,
+          local: false,
+        }
         if (mine === epoch)
           urls.set(song.id, url)
         return { ok: true, url }
@@ -505,10 +565,14 @@ export function createPlayer(context: PlayerContext): Player {
    */
   function playableFrom(from: number, step: 1 | -1): number | null {
     const { queue } = state
-    const at = order ? order.indexOf(queue[from].song.id) : from
+    const at = order
+      ? order.indexOf(queue[from].song.id)
+      : from
     for (let offset = 1; offset <= queue.length; offset += 1) {
       const k = ((at + step * offset) % queue.length + queue.length) % queue.length
-      const index = order ? indexOfSong(order[k]) : k
+      const index = order
+        ? indexOfSong(order[k])
+        : k
       if (playable(queue[index]))
         return index
     }
@@ -529,14 +593,23 @@ export function createPlayer(context: PlayerContext): Player {
     const { current } = state
     if (current === null)
       return NO_NEIGHBORS
-    const other = (index: number | null) => (index === current ? null : index)
-    return { previous: other(playableFrom(current, -1)), next: other(playableFrom(current, 1)) }
+    const other = (index: number | null) => (index === current
+      ? null
+      : index)
+    return {
+      previous: other(playableFrom(current, -1)),
+      next: other(playableFrom(current, 1)),
+    }
   }
 
   /** 这首歌在播放队列里的位置（播放队列里同一首歌只有一份）；不在里面是 -1 */
   function indexOfSong(id: number): number {
-    if (positions.queue !== state.queue)
-      positions = { queue: state.queue, index: new Map(state.queue.map((entry, index) => [entry.song.id, index])) }
+    if (positions.queue !== state.queue) {
+      positions = {
+        queue: state.queue,
+        index: new Map(state.queue.map((entry, index) => [entry.song.id, index])),
+      }
+    }
     return positions.index.get(id) ?? -1
   }
 
@@ -564,8 +637,11 @@ export function createPlayer(context: PlayerContext): Player {
     stopSlow()
     cancelSlow = clock.after(SLOW_BUFFERING_MS, () => {
       cancelSlow = null
-      if (state.status === 'buffering')
-        publish({ notice: { kind: 'slow' } })
+      if (state.status === 'buffering') {
+        publish({
+          notice: { kind: 'slow' },
+        })
+      }
     })
   }
 
@@ -576,7 +652,9 @@ export function createPlayer(context: PlayerContext): Player {
 
   /** 出声了：网络慢的提示不用再显示 */
   function noticeAfterSounding(): PlayerNotice | null {
-    return state.notice?.kind === 'slow' ? null : state.notice
+    return state.notice?.kind === 'slow'
+      ? null
+      : state.notice
   }
 
   /**
@@ -597,7 +675,14 @@ export function createPlayer(context: PlayerContext): Player {
     startAt = position
     if (change !== null)
       endListen()
-    publish({ current: index, position, duration: null, trial: false, notice, change: change ?? state.change })
+    publish({
+      current: index,
+      position,
+      duration: null,
+      trial: false,
+      notice,
+      change: change ?? state.change,
+    })
     if (!primed(spare, song)) {
       let url = localUrl(song) ?? urls.get(song.id) ?? null
       if (!fresh(url)) {
@@ -622,13 +707,20 @@ export function createPlayer(context: PlayerContext): Player {
     // 不读 state.position：单曲的播放队列换到自己时，旧的播放器放的是同一首，取地址期间它还在报进度
     spare.audio.currentTime = startAt
     incoming = { deck: spare, handover: false }
-    publish({ status: 'buffering', duration: durationOf(spare), trial: spare.url!.trial })
+    publish({
+      status: 'buffering',
+      duration: durationOf(spare),
+      trial: spare.url!.trial,
+    })
     play(spare)
   }
 
   function urlFailed(failure: SessionFailure): void {
     pauseAll()
-    publish({ status: 'paused', notice: { kind: 'urlFailed', failure } })
+    publish({
+      status: 'paused',
+      notice: { kind: 'urlFailed', failure },
+    })
   }
 
   /** 网易云没给这首的播放地址：跳过它放下一首能放的 */
@@ -637,7 +729,10 @@ export function createPlayer(context: PlayerContext): Player {
     const next = playableFrom(state.current!, 1)
     if (next === null) {
       pauseAll()
-      publish({ status: 'paused', notice: { kind: 'nothingPlayable' } })
+      publish({
+        status: 'paused',
+        notice: { kind: 'nothingPlayable' },
+      })
       return
     }
     void start(next, 0, 'skip', { kind: 'skipped', song })
@@ -667,7 +762,9 @@ export function createPlayer(context: PlayerContext): Player {
     }
     if (!fetched.url) {
       unavailable.add(song.id)
-      publish({ notice: { kind: 'skipped', song } })
+      publish({
+        notice: { kind: 'skipped', song },
+      })
       prepared = false
       return prepareNext()
     }
@@ -710,7 +807,15 @@ export function createPlayer(context: PlayerContext): Player {
     unavailable.clear()
     if (handover)
       endListen()
-    publish({ current: indexOfSong(deck.song!.id), status: 'playing', position: deck.audio.currentTime, duration: durationOf(deck), trial: deck.url!.trial, notice: noticeAfterSounding(), change: handover ? 'continue' : state.change })
+    publish({
+      current: indexOfSong(deck.song!.id),
+      status: 'playing',
+      position: deck.audio.currentTime,
+      duration: durationOf(deck),
+      trial: deck.url!.trial,
+      notice: noticeAfterSounding(),
+      change: handover ? 'continue' : state.change,
+    })
     void prepareNext()
   }
 
@@ -722,7 +827,14 @@ export function createPlayer(context: PlayerContext): Player {
       // 交接中、下一首还没出声：它就是当前这首了，等它出声
       incoming = { ...incoming, handover: false }
       endListen()
-      publish({ current: indexOfSong(incoming.deck.song!.id), status: 'buffering', position: 0, duration: durationOf(incoming.deck), trial: incoming.deck.url!.trial, change: 'continue' })
+      publish({
+        current: indexOfSong(incoming.deck.song!.id),
+        status: 'buffering',
+        position: 0,
+        duration: durationOf(incoming.deck),
+        trial: incoming.deck.url!.trial,
+        change: 'continue',
+      })
       startSlow()
       return
     }
@@ -732,7 +844,16 @@ export function createPlayer(context: PlayerContext): Player {
     endListen()
     if (handoverFailed) {
       handoverFailed = false
-      publish({ current: next ?? state.current, status: 'paused', position: 0, duration: null, notice: { kind: 'streamFailed' }, change: next === null ? state.change : 'continue' })
+      publish({
+        current: next ?? state.current,
+        status: 'paused',
+        position: 0,
+        duration: null,
+        notice: { kind: 'streamFailed' },
+        change: next === null
+          ? state.change
+          : 'continue',
+      })
       return
     }
     if (next === null) {
@@ -750,7 +871,10 @@ export function createPlayer(context: PlayerContext): Player {
       return
     }
     pauseAll()
-    publish({ status: 'paused', notice: { kind: 'streamFailed' } })
+    publish({
+      status: 'paused',
+      notice: { kind: 'streamFailed' },
+    })
   }
 
   function listen(deck: Deck): void {
@@ -761,7 +885,10 @@ export function createPlayer(context: PlayerContext): Player {
       if (incoming || !isCurrent(deck))
         return
       stopSlow()
-      publish({ status: 'playing', notice: noticeAfterSounding() })
+      publish({
+        status: 'playing',
+        notice: noticeAfterSounding(),
+      })
       void prepareNext()
     })
     audio.addEventListener('waiting', () => {
@@ -785,8 +912,11 @@ export function createPlayer(context: PlayerContext): Player {
       handOver()
     })
     audio.addEventListener('durationchange', () => {
-      if (isCurrent(deck))
-        publish({ duration: durationOf(deck) })
+      if (isCurrent(deck)) {
+        publish({
+          duration: durationOf(deck),
+        })
+      }
     })
     audio.addEventListener('canplaythrough', () => {
       deck.buffered = true
@@ -814,7 +944,12 @@ export function createPlayer(context: PlayerContext): Player {
   }
 
   function deck(): Deck {
-    const created: Deck = { audio: context.audio(), song: null, url: null, buffered: false }
+    const created: Deck = {
+      audio: context.audio(),
+      song: null,
+      url: null,
+      buffered: false,
+    }
     created.audio.volume = state.volume
     listen(created)
     return created
@@ -829,8 +964,11 @@ export function createPlayer(context: PlayerContext): Player {
     const { song } = state.queue[index]
     if (!canPlay(song)) {
       const next = playableFrom(index, 1)
-      if (next === null || next === index)
-        return publish({ notice: { kind: 'nothingPlayable' } })
+      if (next === null || next === index) {
+        return publish({
+          notice: { kind: 'nothingPlayable' },
+        })
+      }
       return void start(next, 0, 'skip')
     }
     if (holds(active, song) && !active.audio.ended) {
@@ -856,7 +994,9 @@ export function createPlayer(context: PlayerContext): Player {
       incoming = null
     }
     // 正在换过去的播放器（还没出声）、装着这首的当前播放器直接跳；都不是的（在取地址、地址过期了）放的时候从这里开始
-    const deck = incoming?.deck ?? (holds(active, song) ? active : null)
+    const deck = incoming?.deck ?? (holds(active, song)
+      ? active
+      : null)
     if (deck)
       deck.audio.currentTime = at
     startAt = at
@@ -865,7 +1005,9 @@ export function createPlayer(context: PlayerContext): Player {
 
   /** 当前这首的编号；播放队列是空的时是 null */
   function currentId(): number | null {
-    return state.current === null ? null : state.queue[state.current].song.id
+    return state.current === null
+      ? null
+      : state.queue[state.current].song.id
   }
 
   /**
@@ -892,7 +1034,11 @@ export function createPlayer(context: PlayerContext): Player {
     if (id === null) {
       if (order)
         order = [song.id]
-      publish({ queue: [{ song, source }] })
+      publish({
+        queue: [
+          { song, source },
+        ],
+      })
       void start(0, 0, 'pick')
       return
     }
@@ -902,14 +1048,31 @@ export function createPlayer(context: PlayerContext): Player {
       return
     }
     const rest = state.queue.filter(entry => entry.song.id !== song.id)
-    const at = how === 'end' ? rest.length : rest.findIndex(entry => entry.song.id === id) + 1
-    upNext = how === 'next' ? [song.id, ...upNext.filter(each => each !== song.id)] : upNext.filter(each => each !== song.id)
+    const at = how === 'end'
+      ? rest.length
+      : rest.findIndex(entry => entry.song.id === id) + 1
+    upNext = how === 'next'
+      ? [
+          song.id,
+          ...upNext.filter(each => each !== song.id),
+        ]
+      : upNext.filter(each => each !== song.id)
     if (order) {
       const others = order.filter(each => each !== song.id)
-      const after = how === 'end' ? others.length : others.indexOf(id) + 1
-      order = [...others.slice(0, after), song.id, ...others.slice(after)]
+      const after = how === 'end'
+        ? others.length
+        : others.indexOf(id) + 1
+      order = [
+        ...others.slice(0, after),
+        song.id,
+        ...others.slice(after),
+      ]
     }
-    publishQueue([...rest.slice(0, at), { song, source }, ...rest.slice(at)])
+    publishQueue([
+      ...rest.slice(0, at),
+      { song, source },
+      ...rest.slice(at),
+    ])
     if (how === 'now')
       void start(at, 0, 'pick')
     else
@@ -948,7 +1111,12 @@ export function createPlayer(context: PlayerContext): Player {
     pauseAll()
     unavailable.clear()
     endListen()
-    publish({ ...INITIAL_PLAYER, volume: state.volume, mode: state.mode, quality: state.quality })
+    publish({
+      ...INITIAL_PLAYER,
+      volume: state.volume,
+      mode: state.mode,
+      quality: state.quality,
+    })
   }
 
   return {
@@ -958,16 +1126,29 @@ export function createPlayer(context: PlayerContext): Player {
         return
       unavailable.clear()
       upNext = []
-      order = state.mode === 'shuffle' ? [songId, ...shuffled(songs.flatMap(song => song.id === songId ? [] : [song.id]))] : null
+      order = state.mode === 'shuffle'
+        ? [
+            songId,
+            ...shuffled(songs.flatMap(song => song.id === songId
+              ? []
+              : [song.id])),
+          ]
+        : null
       filling = null
       if (!complete) {
         if (source.kind !== 'playlist')
           throw new Error(`只有歌单会没同步全，${source.kind} 的列表要一次拿全`)
-        filling = { playlistId: source.id, have: new Set(songs.map(song => song.id)) }
+        filling = {
+          playlistId: source.id,
+          have: new Set(songs.map(song => song.id)),
+        }
       }
       // 换播放队列之前：正在听的那首是旧播放队列里的
       endListen()
-      publish({ queue: songs.map(song => ({ song, source })), current: index })
+      publish({
+        queue: songs.map(song => ({ song, source })),
+        current: index,
+      })
       void start(index, 0, 'pick')
     },
     libraryChanged(songsOf) {
@@ -985,7 +1166,12 @@ export function createPlayer(context: PlayerContext): Player {
         return
       if (order) {
         const known = new Set(order)
-        order = [...order, ...shuffled(queue.flatMap(entry => known.has(entry.song.id) ? [] : [entry.song.id]))]
+        order = [
+          ...order,
+          ...shuffled(queue.flatMap(entry => known.has(entry.song.id)
+            ? []
+            : [entry.song.id])),
+        ]
       }
       publishQueue(queue)
       queueChanged()
@@ -1000,12 +1186,16 @@ export function createPlayer(context: PlayerContext): Player {
       publish({ status: 'paused' })
     },
     next() {
-      const index = state.current === null ? null : playableFrom(state.current, 1)
+      const index = state.current === null
+        ? null
+        : playableFrom(state.current, 1)
       if (index !== null)
         void start(index, 0, 'next')
     },
     previous() {
-      const index = state.current === null ? null : playableFrom(state.current, -1)
+      const index = state.current === null
+        ? null
+        : playableFrom(state.current, -1)
       if (index === null)
         return
       if (upNext.length > 0)
@@ -1052,8 +1242,15 @@ export function createPlayer(context: PlayerContext): Player {
         return
       const id = currentId()
       if (mode === 'shuffle') {
-        const first = id === null ? [] : [id, ...upNext]
-        order = [...first, ...shuffled(state.queue.flatMap(entry => first.includes(entry.song.id) ? [] : [entry.song.id]))]
+        const first = id === null
+          ? []
+          : [id, ...upNext]
+        order = [
+          ...first,
+          ...shuffled(state.queue.flatMap(entry => first.includes(entry.song.id)
+            ? []
+            : [entry.song.id])),
+        ]
       }
       else {
         order = null
@@ -1081,7 +1278,9 @@ export function createPlayer(context: PlayerContext): Player {
     },
     adopt() {
       heard = 0
-      soundingSince = state.status === 'playing' ? clock.now() : null
+      soundingSince = state.status === 'playing'
+        ? clock.now()
+        : null
       savedQueue = null
       persist()
     },
@@ -1107,14 +1306,35 @@ export function createPlayer(context: PlayerContext): Player {
         throw new Error(`存着的当前这首（${progress.songId}）不在存着的播放队列里`)
       order = queue.order
       upNext = queue.upNext
-      filling = queue.filling && { playlistId: queue.filling.playlistId, have: new Set(queue.filling.have) }
+      filling = queue.filling && {
+        playlistId: queue.filling.playlistId,
+        have: new Set(queue.filling.have),
+      }
       heard = progress.listened
       soundingSince = null
-      const restored = { position: progress.position, duration: progress.duration, trial: progress.trial, status: 'paused' } as const
+      const restored = {
+        position: progress.position,
+        duration: progress.duration,
+        trial: progress.trial,
+        status: 'paused',
+      } as const
       // 刚从本机读出来的，不用再存一遍
-      savedQueue = { entries: queue.entries, mode: queue.mode, order, upNext, filling }
+      savedQueue = {
+        entries: queue.entries,
+        mode: queue.mode,
+        order,
+        upNext,
+        filling,
+      }
       savedProgressKey = progressKey(progress.songId, restored)
-      publish({ queue: queue.entries, current, mode: queue.mode, ...restored, change: null, notice: null })
+      publish({
+        queue: queue.entries,
+        current,
+        mode: queue.mode,
+        ...restored,
+        change: null,
+        notice: null,
+      })
     },
   }
 }

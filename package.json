@@ -22,7 +22,8 @@
     "lint": "eslint . && tsx scripts/check-design-tokens.mts",
     "lint:fix": "eslint . --fix",
     "smoke:mock": "tsx scripts/mock-smoke.mts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "knip": "knip"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
@@ -47,6 +48,7 @@
     "fake-indexeddb": "catalog:",
     "globals": "catalog:",
     "hana-music-api": "catalog:",
+    "knip": "catalog:",
     "lint-staged": "catalog:",
     "simple-git-hooks": "catalog:",
     "svelte": "catalog:",

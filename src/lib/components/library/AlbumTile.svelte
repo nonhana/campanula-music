@@ -31,11 +31,16 @@
 <div class='relative min-w-0'>
   <a href={resolve('/albums/[id=neteaseId]', { id })} class='group block min-w-0 rounded-lg'>
     <Cover url={coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={page} class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
-    <span class={['mt-2.5 block truncate text-neutral-900 font-500', phone ? 'text-body' : 'text-label']} lang={langOf(name)}>{name}</span>
+    <span class={[
+      'mt-2.5 block truncate text-neutral-900 font-500',
+      phone ? 'text-body' : 'text-label',
+    ]} lang={langOf(name)}>{name}</span>
     {#if detail || year !== null}
       <span class='mt-0.5 min-w-0 flex gap-1 text-caption text-neutral-600 tabular-nums'>
         {#if detail}<span class='truncate' lang={langOf(detail)}>{detail}</span>{/if}
-        {#if year !== null}<span class='flex-none'>{detail ? `· ${year}` : year}</span>{/if}
+        {#if year !== null}<span class='flex-none'>{detail
+          ? `· ${year}`
+          : year}</span>{/if}
       </span>
     {/if}
   </a>

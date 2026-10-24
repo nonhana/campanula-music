@@ -48,9 +48,18 @@ const ROUND: Record<TileKind, boolean> = { playlist: false, album: false, artist
 
 /** 骨架数量：桌面网格 6；手机歌单 / 专辑 4、歌手 6；架子桌面 7 / 9，手机 3 / 4（DESIGN.md） */
 const BONES: Record<TileKind, { grid: { phone: number, desktop: number }, shelf: { phone: number, desktop: number } }> = {
-  playlist: { grid: { phone: 4, desktop: 6 }, shelf: { phone: 3, desktop: 7 } },
-  album: { grid: { phone: 4, desktop: 6 }, shelf: { phone: 3, desktop: 7 } },
-  artist: { grid: { phone: 6, desktop: 6 }, shelf: { phone: 4, desktop: 9 } },
+  playlist: {
+    grid: { phone: 4, desktop: 6 },
+    shelf: { phone: 3, desktop: 7 },
+  },
+  album: {
+    grid: { phone: 4, desktop: 6 },
+    shelf: { phone: 3, desktop: 7 },
+  },
+  artist: {
+    grid: { phone: 6, desktop: 6 },
+    shelf: { phone: 4, desktop: 9 },
+  },
 }
 
 export function tileGridLook(kind: TileKind, layout: TileGridLayout, phone: boolean): TileGridLook {
@@ -72,7 +81,9 @@ export function tileGridLook(kind: TileKind, layout: TileGridLayout, phone: bool
       }
     case 'grid':
       return {
-        list: phone ? `${PHONE_COLUMNS[kind]} gap-x-3 gap-y-5` : `${GRID_COLUMNS[kind]} gap-x-5 gap-y-6`,
+        list: phone
+          ? `${PHONE_COLUMNS[kind]} gap-x-3 gap-y-5`
+          : `${GRID_COLUMNS[kind]} gap-x-5 gap-y-6`,
         width: '',
         bones: BONES[kind].grid[mode],
         round: ROUND[kind],
@@ -86,9 +97,20 @@ export function tileGridLook(kind: TileKind, layout: TileGridLayout, phone: bool
 
 /** 骨架和内容用同一套排法：形状一致的骨架（DESIGN.md Do's） */
 export function tileListClass(look: TileGridLook, layout: TileGridLayout, phone: boolean, inset: boolean): string[] {
-  if (layout === 'shelf')
-    return ['flex overflow-hidden pb-3 pt-1', look.list, phone ? 'px-4' : 'px-2 -mx-2']
-  return ['grid', look.list, phone ? 'px-4 pt-4' : inset ? 'p-3' : '']
+  if (layout === 'shelf') {
+    return [
+      'flex overflow-hidden pb-3 pt-1',
+      look.list,
+      phone ? 'px-4' : 'px-2 -mx-2',
+    ]
+  }
+  return [
+    'grid',
+    look.list,
+    phone
+      ? 'px-4 pt-4'
+      : inset ? 'p-3' : '',
+  ]
 }
 
 /** 每一格：网格里跟着列宽，架子上固定宽，搜索综合里放不下的藏起来（不进 Tab 顺序） */
@@ -119,7 +141,9 @@ function everyLookClass(): string[] {
       ...tileListClass(look, layout, phone, false),
     ]
   })))
-  return [...new Set(classes.filter((value): value is string => typeof value === 'string').flatMap(value => value.split(/\s+/)).filter(Boolean))]
+  return [
+    ...new Set(classes.filter((value): value is string => typeof value === 'string').flatMap(value => value.split(/\s+/)).filter(Boolean)),
+  ]
 }
 
 export const TILE_GRID_SAFELIST: readonly string[] = everyLookClass()

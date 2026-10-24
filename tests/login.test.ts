@@ -19,13 +19,21 @@ describe('短信验证码登录', () => {
 
     expect(app.state.login.sms.captcha).toEqual({ status: 'sent', resendAt: Date.now() + 60_000 })
 
-    await world.netease.reply('login/login_cellphone.200.json', { cookie: signInCookies() })
+    await world.netease.reply('login/login_cellphone.200.json', {
+      cookie: signInCookies(),
+    })
     await app.loginWithCaptcha(PHONE, CAPTCHA)
 
     expect(app.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
     expect(sessionCalls().map(({ module, query }) => ({ module, query }))).toEqual([
-      { module: 'captcha_sent', query: { phone: PHONE, ctcode: '86' } },
-      { module: 'login_cellphone', query: { phone: PHONE, captcha: CAPTCHA, countrycode: '86' } },
+      {
+        module: 'captcha_sent',
+        query: { phone: PHONE, ctcode: '86' },
+      },
+      {
+        module: 'login_cellphone',
+        query: { phone: PHONE, captcha: CAPTCHA, countrycode: '86' },
+      },
     ])
   })
 
@@ -54,7 +62,10 @@ describe('短信验证码登录', () => {
     await world.netease.reply('login/captcha_sent.502-anonymous-registration.json')
     await app.sendCaptcha(PHONE)
 
-    expect(app.state.login.sms.captcha).toEqual({ status: 'failed', failure: { kind: 'neteaseUnavailable' } })
+    expect(app.state.login.sms.captcha).toEqual({
+      status: 'failed',
+      failure: { kind: 'neteaseUnavailable' },
+    })
 
     await world.netease.reply('login/captcha_sent.json')
     await app.sendCaptcha(PHONE)
@@ -90,17 +101,35 @@ describe('扫码登录', () => {
 
     await world.netease.reply('login/login_qr_check.802-scanned.json')
     await world.clock.advance(2000)
-    expect(app.state.login.qr).toEqual({ step: 'scanned', image, nickname: ACCOUNT.nickname, avatarUrl: ACCOUNT.avatarUrl })
+    expect(app.state.login.qr).toEqual({
+      step: 'scanned',
+      image,
+      nickname: ACCOUNT.nickname,
+      avatarUrl: ACCOUNT.avatarUrl,
+    })
 
-    await world.netease.reply('login/login_qr_check.803-success.json', { cookie: signInCookies() })
+    await world.netease.reply('login/login_qr_check.803-success.json', {
+      cookie: signInCookies(),
+    })
     await world.netease.reply('login/user_account.vip.json')
     await world.clock.advance(2000)
     expect(app.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
     expect(app.state.login.qr).toBeNull()
 
     await world.clock.advance(10_000)
-    expect(sessionModules()).toEqual(['login_qr_key', 'login_qr_create', 'login_qr_check', 'login_qr_check', 'login_qr_check', 'user_account'])
-    expect(world.netease.calls.filter(call => call.module === 'login_qr_check').map(call => call.query)).toEqual([{ key: KEY }, { key: KEY }, { key: KEY }])
+    expect(sessionModules()).toEqual([
+      'login_qr_key',
+      'login_qr_create',
+      'login_qr_check',
+      'login_qr_check',
+      'login_qr_check',
+      'user_account',
+    ])
+    expect(world.netease.calls.filter(call => call.module === 'login_qr_check').map(call => call.query)).toEqual([
+      { key: KEY },
+      { key: KEY },
+      { key: KEY },
+    ])
   })
 
   it('二维码过期：停在“已过期”不再查，刷新后换一张新的接着查', async () => {
@@ -120,7 +149,14 @@ describe('扫码登录', () => {
 
     await world.netease.reply('login/login_qr_check.801-waiting.json')
     await world.clock.advance(2000)
-    expect(sessionModules()).toEqual(['login_qr_key', 'login_qr_create', 'login_qr_check', 'login_qr_key', 'login_qr_create', 'login_qr_check'])
+    expect(sessionModules()).toEqual([
+      'login_qr_key',
+      'login_qr_create',
+      'login_qr_check',
+      'login_qr_key',
+      'login_qr_create',
+      'login_qr_check',
+    ])
   })
 
   it('换成短信验证码后不再查扫码状态', async () => {
@@ -156,7 +192,10 @@ describe('扫码登录', () => {
 
     device.setOnline(false)
     await app.startQrLogin()
-    expect(app.state.login.qr).toEqual({ step: 'failed', failure: { kind: 'offline' } })
+    expect(app.state.login.qr).toEqual({
+      step: 'failed',
+      failure: { kind: 'offline' },
+    })
 
     device.setOnline(true)
     await world.netease.reply('login/login_qr_key.json')
@@ -175,24 +214,46 @@ describe('扫码登录', () => {
       await world.clock.advance(2000)
 
       const verifying = app.state.login.qr
-      expect(verifying).toEqual({ step: 'verifying', image: expect.stringMatching(/^data:image\/png;base64,/), checking: false, unverified: false })
+      expect(verifying).toEqual({
+        step: 'verifying',
+        image: expect.stringMatching(/^data:image\/png;base64,/),
+        checking: false,
+        unverified: false,
+      })
       expect(sessionCalls().at(-1)).toMatchObject({
         module: 'verify_getQr',
-        query: { vid: '61', type: '2', token: '00.verify-token.placeholder', evid: 'risk-event-placeholder', sign: 'risk-sign-placeholder' },
+        query: {
+          vid: '61',
+          type: '2',
+          token: '00.verify-token.placeholder',
+          evid: 'risk-event-placeholder',
+          sign: 'risk-sign-placeholder',
+        },
       })
       await world.clock.advance(10_000)
-      expect(sessionModules()).toEqual(['login_qr_key', 'login_qr_create', 'login_qr_check', 'verify_getQr'])
+      expect(sessionModules()).toEqual([
+        'login_qr_key',
+        'login_qr_create',
+        'login_qr_check',
+        'verify_getQr',
+      ])
 
       await world.netease.reply('login/login_qr_check.8821-verify.constructed.json')
       await world.netease.reply('login/verify_getQr.constructed.json')
       await app.continueQrLogin()
       expect(app.state.login.qr).toEqual({ ...verifying, unverified: true })
 
-      await world.netease.reply('login/login_qr_check.803-success.json', { cookie: signInCookies() })
+      await world.netease.reply('login/login_qr_check.803-success.json', {
+        cookie: signInCookies(),
+      })
       await world.netease.reply('login/user_account.vip.json')
       await app.continueQrLogin()
       expect(app.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
-      expect(world.netease.calls.filter(call => call.module === 'login_qr_check').map(call => call.query)).toEqual([{ key: KEY }, { key: KEY }, { key: KEY }])
+      expect(world.netease.calls.filter(call => call.module === 'login_qr_check').map(call => call.query)).toEqual([
+        { key: KEY },
+        { key: KEY },
+        { key: KEY },
+      ])
     })
 
     it('网易云没给验证的办法：原样说明网易云的拒绝，不再查', async () => {
@@ -201,7 +262,10 @@ describe('扫码登录', () => {
       await world.netease.reply('login/login_qr_check.8821-no-params.constructed.json')
       await world.clock.advance(2000)
 
-      expect(app.state.login.qr).toEqual({ step: 'failed', failure: { kind: 'rejected', code: 8821, message: '需要行为验证码验证' } })
+      expect(app.state.login.qr).toEqual({
+        step: 'failed',
+        failure: { kind: 'rejected', code: 8821, message: '需要行为验证码验证' },
+      })
       await world.clock.advance(10_000)
       expect(sessionModules()).toEqual(['login_qr_key', 'login_qr_create', 'login_qr_check'])
     })

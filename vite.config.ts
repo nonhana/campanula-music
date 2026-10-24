@@ -22,7 +22,10 @@ function withoutHtmlHook(plugins: Plugin[]): Plugin[] {
 // 按部署平台换适配器（ADR-0009）：Vercel 构建时会设置 VERCEL=1，服务端路由变成香港 hkg1 的云函数；
 // 其他环境（自己的服务器、Docker）构建成一个 Node 进程。
 const adapter = process.env.VERCEL
-  ? adapterVercel({ runtime: 'nodejs24.x', regions: ['hkg1'] })
+  ? adapterVercel({
+      runtime: 'nodejs24.x',
+      regions: ['hkg1'],
+    })
   : adapterNode()
 
 export default defineConfig(({ command }) => ({
@@ -32,7 +35,11 @@ export default defineConfig(({ command }) => ({
   plugins: [
     ...withoutHtmlHook(UnoCSS()),
     // 只有 pnpm dev:mock（CAMPANULA_MOCK=1）的 dev 服务器才换掉网易云 SDK；生产构建不加载 mock（#58）
-    ...(command === 'serve' && process.env.CAMPANULA_MOCK === '1' ? [mockPlugin()] : []),
+    ...(command === 'serve' && process.env.CAMPANULA_MOCK === '1'
+      ? [
+          mockPlugin(),
+        ]
+      : []),
     sveltekit({
       preprocess: vitePreprocess(),
       adapter,

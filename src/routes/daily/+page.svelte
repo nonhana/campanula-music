@@ -25,8 +25,12 @@
   const view = getAppView()
   const signedIn = $derived(view.state.library !== null)
   const daily = $derived(view.state.daily)
-  const songs = $derived(daily?.status === 'shown' ? daily.songs : null)
-  const failed = $derived(daily?.status === 'failed' ? dailyFailure(daily.failure) : null)
+  const songs = $derived(daily?.status === 'shown'
+    ? daily.songs
+    : null)
+  const failed = $derived(daily?.status === 'failed'
+    ? dailyFailure(daily.failure)
+    : null)
   const date = $derived(dailyCalendarDay(daily))
   const phone = $derived(!desktopLayout.current)
 
@@ -50,7 +54,11 @@
   {#if songs}
     <span class='flex' aria-hidden='true' in:fade>
       {#each songs.slice(0, count) as song, i (song.id)}
-        <Cover url={song.album.coverUrl} size={onPhone ? 48 : 44} eager class={['rounded-lg ring-2', onPhone ? 'ring-primary-50' : 'ring-white', i > 0 && (onPhone ? '-ml-4' : '-ml-3')]} />
+        <Cover url={song.album.coverUrl} size={onPhone ? 48 : 44} eager class={[
+          'rounded-lg ring-2',
+          onPhone ? 'ring-primary-50' : 'ring-white',
+          i > 0 && (onPhone ? '-ml-4' : '-ml-3'),
+        ]} />
       {/each}
     </span>
   {/if}
@@ -63,7 +71,10 @@
 {#snippet list(onPhone: boolean)}
   {#if failed}
     <div class={onPhone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'} in:reveal>
-      <StateBlock kind='error' title={failed.title} body={failed.body} action={{ label: '重试', run: () => void view.app.openDaily() }} />
+      <StateBlock kind='error' title={failed.title} body={failed.body} action={{
+        label: '重试',
+        run: () => void view.app.openDaily(),
+      }} />
     </div>
   {:else}
     <SongList list={listView} source={DAILY_SOURCE} loadingLabel='正在加载每日推荐' phone={onPhone} virtual={false} staggerRows={false} />
@@ -102,5 +113,7 @@
     {/snippet}
     {#snippet actions()}{@render playAll()}{/snippet}
   </DetailHeader>
-  <div class={phone ? (failed ? 'pt-3' : 'pt-1') : 'mt-6'}>{@render list(phone)}</div>
+  <div class={phone
+    ? (failed ? 'pt-3' : 'pt-1')
+    : 'mt-6'}>{@render list(phone)}</div>
 {/if}

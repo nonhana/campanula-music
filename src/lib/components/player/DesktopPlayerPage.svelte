@@ -37,7 +37,9 @@
   const { closePlayerPage } = playerPageActions()
   const { playerDrawer } = getOverlays()
   /** 当前这首在播放队列里的那一项：“更多”菜单里放进播放队列时用它自己的播放来源 */
-  const entry = $derived(view.state.player.current === null ? null : view.state.player.queue[view.state.player.current])
+  const entry = $derived(view.state.player.current === null
+    ? null
+    : view.state.player.queue[view.state.player.current])
 
   const PANELS = [
     { key: 'lyrics', label: '歌词' },

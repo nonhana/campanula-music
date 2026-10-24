@@ -62,12 +62,16 @@ export type CaptchaProblem = 'captchaEmpty' | 'captchaFormat'
 export function phoneProblem(phone: string): PhoneProblem | null {
   if (!phone)
     return 'phoneEmpty'
-  return PHONE.test(phone) ? null : 'phoneFormat'
+  return PHONE.test(phone)
+    ? null
+    : 'phoneFormat'
 }
 
 /** 验证码不能提交的原因；能提交是 null。界面和服务端共用这一条 */
 export function captchaProblem(captcha: string): CaptchaProblem | null {
   if (!captcha)
     return 'captchaEmpty'
-  return CAPTCHA.test(captcha) ? null : 'captchaFormat'
+  return CAPTCHA.test(captcha)
+    ? null
+    : 'captchaFormat'
 }
