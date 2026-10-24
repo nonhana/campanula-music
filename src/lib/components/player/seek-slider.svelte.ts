@@ -1,9 +1,10 @@
 import type { Attachment } from 'svelte/attachments'
 import { getAppView } from '../app-context.svelte'
 import { clamp } from '../clamp'
+import { shownDuration } from '../now'
 import { attachGrip } from '../press'
 import { createSliderCore } from '../slider-core'
-import { formatSeconds, shownDuration } from './view'
+import { formatSeconds } from './view'
 
 // 播放进度的滑块（播放页的波浪进度条、桌面底栏顶边的进度线共用）：按住拖动、点按都跳到那里，松手才跳（App.seek），
 // 拖动时游标和时间跟着走；←/→（↑/↓）快退快进 5 秒，Home / End 跳到头尾。这首的长度还不知道时不能用。

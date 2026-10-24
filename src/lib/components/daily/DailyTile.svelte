@@ -8,10 +8,10 @@
   import { resolve } from '$app/paths'
   import { Play } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
-  import { songLook } from '../downloads/view'
-  import Cover from '../library/Cover.svelte'
-  import { formatCount } from '../library/view'
   import { fade } from '../motion'
+  import { songLook } from '../songs/song-look'
+  import { formatCount } from '../text'
+  import Cover from '../ui/Cover.svelte'
   import DailyNumber from './DailyNumber.svelte'
   import { DAILY_SOURCE, dailyCalendarDay, dailyFailure } from './view'
 

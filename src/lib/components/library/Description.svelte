@@ -8,7 +8,7 @@
   import { flushSync } from 'svelte'
   import { animateHeight } from '../motion'
   import { DURATIONS } from '../motion-tokens'
-  import { langOf } from './view'
+  import { langOf } from '../text'
 
   interface Props {
     text: string

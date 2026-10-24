@@ -75,14 +75,6 @@ export function downloadBlock(song: Song, downloads: DownloadsState, { signedIn,
   return online ? null : 'offline'
 }
 
-/**
- * 这首歌现在能不能点来放（Spec #11“客户端：播放队列与播放”，ADR-0006）：下载了的总能放，永久可播；
- * 没下载的要能在线放（streamable：联网、登录着），无版权的不能放
- */
-export function playableNow(song: Song, downloaded: boolean, streamable: boolean): boolean {
-  return downloaded || (song.availability !== 'noCopyright' && streamable)
-}
-
 export const INITIAL_DOWNLOADS: DownloadsState = { songs: null, tasks: new Map(), has: () => false, coverOf: () => null }
 
 export interface DownloadsContext {

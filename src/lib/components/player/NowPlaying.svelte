@@ -7,15 +7,15 @@
 -->
 <script lang='ts'>
   import { getAppView } from '../app-context.svelte'
-  import SongBadge from '../library/SongBadge.svelte'
-  import { artistLine, langOf } from '../library/view'
+  import { landingOf } from '../cover-flight.svelte'
   import { fade } from '../motion'
   import { DURATIONS } from '../motion-tokens'
-  import { landingOf } from './cover-flight.svelte'
+  import { currentSong } from '../now'
+  import SongBadge from '../songs/SongBadge.svelte'
+  import { artistLine, langOf } from '../text'
   import CoverWheel from './CoverWheel.svelte'
   import { playerPageActions, prefetchPageCover } from './player-page.svelte'
   import SongSwap from './SongSwap.svelte'
-  import { currentSong } from './view'
 
   interface Props {
     /** 封面小窗多大（px）：封面按这么大取，飞来的封面也按这么大落下 */

@@ -8,8 +8,8 @@
 -->
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
-  import type { ScrollMark } from '../ui/scroll-marks'
-  import { getScrollLookup, hasScrollLookup } from '../ui/scroll-marks'
+  import type { ScrollMark } from './scroll-marks'
+  import { getScrollLookup, hasScrollLookup } from './scroll-marks'
 
   interface Props {
     items: readonly T[]

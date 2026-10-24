@@ -1,12 +1,13 @@
 import type { Attachment } from 'svelte/attachments'
 import type { Song } from '#lib/api/library.js'
-import type { AppView } from '../app-context.svelte'
-import type { Turn } from './view'
+import type { AppView } from './app-context.svelte'
+import type { Turn } from './player/view'
 import { tick, untrack } from 'svelte'
-import { coverLoaded, preloadCover } from '../library/Cover.svelte'
-import { fadeMs, reducedMotion, unseen } from '../motion'
-import { cssEasing, DURATIONS, FLIGHT_ARC } from '../motion-tokens'
-import { currentSong, turnOf } from './view'
+import { fadeMs, reducedMotion, unseen } from './motion'
+import { cssEasing, DURATIONS, FLIGHT_ARC } from './motion-tokens'
+import { currentSong } from './now'
+import { turnOf } from './player/view'
+import { coverLoaded, preloadCover } from './ui/Cover.svelte'
 
 // 点歌时那一行的封面飞进播放条（DESIGN.md Song Row · 点歌，The Cover Leads Rule）。
 // 行里的点歌按钮（PlayTarget 的 pick）起飞，播放条（landingOf）接住：封面在飞时播放条仍显示起飞前那首，落下时才换上新的。

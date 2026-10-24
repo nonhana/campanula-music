@@ -17,9 +17,9 @@
   import type { Song } from '#lib/api/library.js'
   import type { Turn } from './view'
   import { untrack } from 'svelte'
-  import Cover, { coverLoaded, preloadCover } from '../library/Cover.svelte'
   import { fadeMs, moveMs, reducedMotion, unseen } from '../motion'
   import { cssEasing, DURATIONS, WHEEL } from '../motion-tokens'
+  import Cover, { coverLoaded, preloadCover } from '../ui/Cover.svelte'
   import { SMALL_COVER } from './view'
 
   interface Props {

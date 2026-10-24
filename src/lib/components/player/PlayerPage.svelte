@@ -10,12 +10,13 @@
   import { innerHeight } from 'svelte/reactivity/window'
   import { getAppView } from '../app-context.svelte'
   import { desktopLayout } from '../layout'
+  import { currentSong } from '../now'
   import { getOverlays } from '../overlay-context'
   import CoverTint from './CoverTint.svelte'
   import DesktopPlayerPage from './DesktopPlayerPage.svelte'
   import PhonePlayerPage from './PhonePlayerPage.svelte'
   import { createPlayhead } from './playhead.svelte'
-  import { currentSong, sourceName, turnOf } from './view'
+  import { sourceName, turnOf } from './view'
 
   const { open }: { open: boolean } = $props()
 

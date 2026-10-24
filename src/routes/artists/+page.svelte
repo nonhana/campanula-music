@@ -8,9 +8,9 @@
   import { desktopLayout } from '#lib/components/layout.js'
   import CollectedGrid from '#lib/components/library/CollectedGrid.svelte'
   import SyncNotice from '#lib/components/library/SyncNotice.svelte'
-  import { formatCount } from '#lib/components/library/view.js'
   import { fade } from '#lib/components/motion.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import { formatCount } from '#lib/components/text.js'
 
   const view = getAppView()
   const library = $derived(view.state.library)

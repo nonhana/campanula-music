@@ -9,9 +9,9 @@
   import type { PlaylistMenuRequest } from './overlay-requests'
   import { Globe, Pencil, Trash2 } from '@lucide/svelte'
   import { getAppView } from './app-context.svelte'
-  import { langOf } from './library/view'
   import MenuOverlay from './MenuOverlay.svelte'
   import { getOverlays } from './overlay-context'
+  import { langOf } from './text'
 
   type Edit = 'info' | 'public' | 'delete'
 

@@ -11,10 +11,10 @@
   import type { MenuHeader, MenuItem } from './menu'
   import type { MenuRequest } from './overlay-requests'
   import type { OverlayLayer } from './overlay-stack'
-  import Cover from './library/Cover.svelte'
   import MenuList from './MenuList.svelte'
   import { pop } from './motion'
   import { createDrawer } from './player/drawer.svelte'
+  import Cover from './ui/Cover.svelte'
   import Scrollbar from './ui/Scrollbar.svelte'
 
   interface Props {

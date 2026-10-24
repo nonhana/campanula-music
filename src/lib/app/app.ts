@@ -23,7 +23,7 @@ import { changeProblem, playlistEdits } from './changes'
 import { createCheckIns } from './check-ins'
 import { createCover } from './cover'
 import { createDaily } from './daily'
-import { createDownloads, INITIAL_DOWNLOADS, playableNow } from './downloads'
+import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
 import { createLibrary, filterSongs, searchPlaylist } from './library'
 import { createLocalDatabase, createLocalDb } from './local'
 import { createLogin, INITIAL_LOGIN } from './login'
@@ -89,6 +89,10 @@ export interface AppState {
   cover: CoverState | null
   /** 联网着（navigator.onLine）：断网时没下载的歌放不了（#38） */
   online: boolean
+  /** 这首歌现在能不能放：下载了的永远能放（ADR-0006）；没下载的要能在线放（联网、登录着），无版权不能放 */
+  readonly playable: (song: Song) => boolean
+  /** 这首歌现在能不能下载、为什么不能：和 App.download 用同一份规则，界面照着写“下载”那一项 */
+  readonly downloadBlock: (song: Song) => DownloadBlock | null
 }
 
 /** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
@@ -315,7 +319,7 @@ export function createApp(browser: BrowserCapabilities): App {
   const api = createApi(browser)
   const db = createLocalDatabase(browser.indexedDB)
   const local = createLocalDb(db)
-  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null, search: INITIAL_SEARCH, cover: null, downloads: INITIAL_DOWNLOADS, online: browser.network.onLine }
+  let state: AppState = { session: { status: 'checking' }, login: INITIAL_LOGIN, library: null, player: INITIAL_PLAYER, lyrics: null, daily: null, search: INITIAL_SEARCH, cover: null, downloads: INITIAL_DOWNLOADS, online: browser.network.onLine, playable, downloadBlock: downloadBlockForApp }
   const listeners = new Set<() => void>()
   /** 听众正在看的那一页：页面只说在看什么，什么时候去拉由 App 决定 */
   let viewing: { page: ViewedPage, token: number, applied: string } | null = null
@@ -359,7 +363,17 @@ export function createApp(browser: BrowserCapabilities): App {
 
   /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放（#38） */
   function streamable(): boolean {
-    return browser.network.onLine && state.session.status === 'signedIn'
+    return state.online && state.session.status === 'signedIn'
+  }
+
+  /** 每首歌现在能不能放：下载了的永远能放；没下载的要能在线放，无版权的不能放（界面只读这一条规则） */
+  function playable(song: Song): boolean {
+    return state.downloads.has(song.id) || (song.availability !== 'noCopyright' && streamable())
+  }
+
+  /** 下载那一项现在能不能选、为什么不能：和 App.download 的判断是同一份输入 */
+  function downloadBlockForApp(song: Song): DownloadBlock | null {
+    return downloadBlockFor(song, state.downloads, { signedIn: state.session.status === 'signedIn', online: state.online })
   }
 
   const lane = createBackgroundLane(browser)
@@ -447,7 +461,7 @@ export function createApp(browser: BrowserCapabilities): App {
     forget: savedQueue.forget,
     downloaded: songId => state.downloads.has(songId),
     localFile: songId => downloads.audioUrl(songId),
-    streamable,
+    playable,
   })
   const lockScreen = connectMediaSession({ session: browser.mediaSession, MediaMetadata: browser.MediaMetadata, clock: browser.clock, player, read: () => state.player, localCover: coverUrl => state.downloads.coverOf(coverUrl) })
   /** 锁屏和通知栏上显示的跟着播放状态变。写成函数声明：锁屏的按钮要用播放器，播放器发布时又要用锁屏，两边互相引用 */
@@ -850,7 +864,7 @@ export function createApp(browser: BrowserCapabilities): App {
       if (source.kind === 'search')
         throw new Error('搜索结果没有播放全部：在搜索里点歌是插播')
       const list = listOf(source)
-      const first = list?.songs.find(song => playableNow(song, state.downloads.has(song.id), streamable()))
+      const first = list?.songs.find(song => state.playable(song))
       if (list && first)
         player.play(source, list.songs, first.id, list.complete)
     },

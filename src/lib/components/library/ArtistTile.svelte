@@ -7,9 +7,10 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { UserRound } from '@lucide/svelte'
+  import { langOf } from '../text'
+  import Cover from '../ui/Cover.svelte'
   import CollectButton from './CollectButton.svelte'
-  import Cover from './Cover.svelte'
-  import { FLIGHT_COVER_SIZE, langOf } from './view'
+  import { FLIGHT_COVER_SIZE } from './view'
 
   interface Props {
     id: number

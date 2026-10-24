@@ -13,11 +13,12 @@
   import type { SongMenuRequest } from './overlay-requests'
   import { CircleArrowDown, Heart, ListEnd, ListPlus, ListStart, Play, Trash2 } from '@lucide/svelte'
   import { getAppView } from './app-context.svelte'
-  import { downloadItem, songLook } from './downloads/view'
-  import { artistLine, langOf } from './library/view'
+  import { downloadItem } from './downloads/view'
   import MenuOverlay from './MenuOverlay.svelte'
+  import { currentSong } from './now'
   import { getOverlays } from './overlay-context'
-  import { currentSong } from './player/view'
+  import { songLook } from './songs/song-look'
+  import { artistLine, langOf } from './text'
 
   const view = getAppView()
   const { songMenu, playlistPicker } = getOverlays()

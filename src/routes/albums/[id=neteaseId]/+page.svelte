@@ -6,20 +6,22 @@
   头部播放全部旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标，#57），点“已收藏”直接取消收藏、不确认
 -->
 <script lang='ts'>
+  import type { SongListView } from '#lib/components/songs/view.js'
   import type { PageProps } from './$types'
   import { resolve } from '$app/paths'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import { failureText } from '#lib/components/failure.js'
   import { desktopLayout } from '#lib/components/layout.js'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
-  import Cover from '#lib/components/library/Cover.svelte'
   import Description from '#lib/components/library/Description.svelte'
-  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
-  import SongList from '#lib/components/library/SongList.svelte'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
+  import { FLIGHT_COVER_SIZE } from '#lib/components/library/view.js'
   import { fadeAway, reveal } from '#lib/components/motion.js'
   import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
+  import SongList from '#lib/components/songs/SongList.svelte'
+  import { formatCount, langOf, yearOf } from '#lib/components/text.js'
+  import Cover from '#lib/components/ui/Cover.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const { params }: PageProps = $props()
@@ -39,7 +41,13 @@
   // 听众在看这一张专辑：什么时候拉、本机副本删掉后要不要重拉由 App 决定
   $effect(() => view.app.viewing({ kind: 'album', id }))
 
-  const EMPTY = { title: '这张专辑暂时没有歌' }
+  const listView = $derived.by((): SongListView => {
+    if (!content)
+      return { kind: 'loading' }
+    if (content.songs.length === 0)
+      return { kind: 'empty', title: '这张专辑暂时没有歌' }
+    return { kind: 'songs', songs: content.songs }
+  })
 </script>
 
 <svelte:head><title>{album?.name ?? '专辑'} · Campanula</title></svelte:head>
@@ -98,7 +106,7 @@
         </div>
       {/if}
       {#if description}<div in:reveal><Description text={description} /></div>{/if}
-      <div class='mt-6'><SongList songs={content?.songs ?? null} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' empty={EMPTY} numbered /></div>
+      <div class='mt-6'><SongList list={listView} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' virtual={false} staggerRows={false} numbered /></div>
     </div>
   {:else}
     {#if album}
@@ -116,6 +124,6 @@
       </div>
     {/if}
     {#if description}<div in:reveal><Description text={description} phone /></div>{/if}
-    <div class='pt-3'><SongList songs={content?.songs ?? null} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' empty={EMPTY} phone numbered /></div>
+    <div class='pt-1'><SongList list={listView} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' phone virtual={false} staggerRows={false} numbered /></div>
   {/if}
 {/if}

@@ -13,8 +13,9 @@
   import { getAppView } from '../app-context.svelte'
   import { easeOutSoft, moveMs } from '../motion'
   import { DURATIONS } from '../motion-tokens'
+  import { currentSong } from '../now'
   import { createSeekSlider } from './seek-slider.svelte'
-  import { currentSong, formatSeconds } from './view'
+  import { formatSeconds } from './view'
 
   const { playhead, touch = false }: { playhead: Playhead, touch?: boolean } = $props()
 

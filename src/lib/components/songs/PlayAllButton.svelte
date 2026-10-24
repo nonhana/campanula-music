@@ -7,8 +7,8 @@
   import type { PlaySource } from '#lib/api/playback.js'
   import { Play } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
-  import { songLook } from '../downloads/view'
   import Button from '../ui/Button.svelte'
+  import { songLook } from './song-look'
 
   const { songs, source, label = '播放全部' }: { songs: readonly Song[] | null, source: PlaySource, label?: string } = $props()
   const view = getAppView()

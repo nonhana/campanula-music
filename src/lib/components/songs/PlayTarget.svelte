@@ -1,13 +1,13 @@
 <!--
   歌曲行里点歌的按钮（DESIGN.md Song Row）：盖住整行，单击（轻点）整行就播放。放在 position: relative 的行里。
-  给了 cover（这一行的封面）的，点了换歌时封面飞进播放条（player/cover-flight.svelte.ts）；播放队列里的不给，在播放页里换碟。
+  给了 cover（这一行的封面）的，点了换歌时封面飞进播放条（cover-flight.svelte.ts）；播放队列里的不给，在播放页里换碟。
   键盘焦点环画在行内，不压到相邻的行（DESIGN.md Buttons · Focus）。无版权的歌不能点
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
   import { getAppView } from '../app-context.svelte'
-  import { pick } from '../player/cover-flight.svelte'
+  import { pick } from '../cover-flight.svelte'
 
   interface Props {
     disabled: boolean

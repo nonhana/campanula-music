@@ -1,39 +1,34 @@
 <!--
-  一张歌单（包括我喜欢的音乐）的歌曲列表和歌单内搜索：歌单页和手机曲库的“我喜欢”标签共用。
-  也用于不在曲库里的歌单：歌是打开时联网一页一页取的，提示里说“加载”，不说“同步”。
-  - 手机：搜索框和“找到几首”在列表上面；桌面：搜索框在歌单页的头部（调用方放，绑定同一个 query），
-    “找到几首”在白色面板的表头里。
+  一张歌单（包括我喜欢的音乐）特有的部分：搜索框、数量行右边的多选入口、多选工具条、拖动排序和它的浮起行 / 快速定位窄条。
+  列表本身（面板、表头、骨架、空 / 没搜到、正在播放、点歌、虚拟化、行高）在 songs/SongList。
+  歌单页和手机曲库的“我喜欢”标签共用；不在曲库里的歌单：歌是打开时联网一页一页取的，提示里说“加载”，不说“同步”。
+  - 手机：搜索框在列表上面；桌面：搜索框在歌单页的头部（调用方放，绑定同一个 query），“找到几首”在白色面板的表头里。
   - 搜索在本机副本里即时完成；歌单还没同步全时结果标“可能不全”。
   - 点一首歌（搜索结果里点也一样）就用整张歌单替换播放队列。
-  - 加载中、空、出错、搜不到都有各自的样子；已经有一部分歌时，其余的没拉成在列表上方说明（还在拉看页头的“x / y 首”）。
-  - 骨架换成歌（或空、出错）时骨架淡出、前几行依次飘入；带着歌打开这一页时不飘（DESIGN.md Motion）。
-  - 开始搜、清空搜索、搜不到时，列表那一块交叉淡化；接着打字时结果原地换。“找到几首”、“没加载完”推开下面的列表时展开、收起
-    （motion.ts 的 unfold），桌面表头的“标题”和“找到几首”交叉淡化。
+  - 已经有一部分歌时，其余的没拉成在列表上方说明；多选里不能排序时也说清楚。
 -->
 <script lang='ts'>
+  import type { Snippet } from 'svelte'
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
+  import type { SongListView, SongSelection } from '../songs/view'
   import type { SelectionSource } from './playlist-selection.svelte'
-  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SearchX, SquareMinus, X } from '@lucide/svelte'
+  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SquareMinus, X } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
   import { anchorBelow } from '../menu-anchor'
-  import { fade, reveal, unfold } from '../motion'
+  import { unfold } from '../motion'
   import { getOverlays } from '../overlay-context'
-  import { currentSong } from '../player/view'
+  import SongList from '../songs/SongList.svelte'
+  import SongRow from '../songs/SongRow.svelte'
+  import { formatCount } from '../text'
   import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
-  import StateBlock from '../ui/StateBlock.svelte'
   import TextButton from '../ui/TextButton.svelte'
-  import DesktopSongRow, { SONG_COLUMNS, SONG_GRID } from './DesktopSongRow.svelte'
   import DragGrip from './DragGrip.svelte'
-  import PhoneSongRow from './PhoneSongRow.svelte'
-  import SkeletonRows from './SkeletonRows.svelte'
-  import { SONG_ROW_HEIGHT, SongDrag } from './song-drag.svelte'
-  import { formatCount, songMark } from './view'
-  import VirtualList from './VirtualList.svelte'
+  import { SongDrag } from './song-drag.svelte'
 
   const { addSongsDialog, playlistSelection } = getOverlays()
 
@@ -58,9 +53,6 @@
   const result = $derived(term && shown.kind === 'songs' ? view.app.searchPlaylist(playlistId, term) : null)
   /** 列表里显示的歌：搜索时是搜到的 */
   const songs = $derived(result ? result.songs : shown.kind === 'songs' ? shown.songs : [])
-  /** 列表那一块显示什么：整张歌单、搜到的歌、一首都没搜到。换的时候交叉淡化 */
-  const mode = $derived(result === null ? 'all' : songs.length === 0 ? 'none' : 'found')
-  const nowId = $derived(currentSong(view.state.player)?.id ?? null)
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
   const selection = playlistSelection
   /** 曲库里的这张歌单是哪一类；不在曲库里的歌单是 null */
@@ -138,28 +130,51 @@
     }
   }
 
-  function activate(song: Song): void {
-    if (selection.mode)
-      selection.toggle(song.id)
-    else
-      void view.app.play(source, song.id)
-  }
-
-  /** 桌面的 ⌘/Ctrl 点选、Shift 连选：第一次也进入同一个多选状态 */
-  function selectWithModifiers(song: Song, event: MouseEvent): void {
-    if (!selection.mode) {
-      const from = event.currentTarget as HTMLElement
-      selection.enter({ from, focusEntry: rowEntryFocus(from) })
+  /** 列表状态交给 songs/SongList：歌单自己的失败在哪说、空状态说什么、能不能搜 */
+  const listView = $derived.by((): SongListView => {
+    if (page.failure && page.failure.where === 'list')
+      return { kind: 'failed', title: liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载', body: failureText(page.failure.failure), retry }
+    if (shown.kind === 'empty') {
+      if (liked)
+        return { kind: 'empty', icon: Heart, title: '还没有红心的歌' }
+      if (kind === 'own')
+        return { kind: 'empty', icon: ListMusic, title: '这张歌单还没有歌', action: { label: '添加歌曲', run: () => openAddSongs() } }
+      return { kind: 'empty', icon: ListMusic, title: '这张歌单还没有歌' }
     }
-    if (event.shiftKey)
-      selection.range(song.id)
-    else
-      selection.toggle(song.id)
-  }
+    if (shown.kind === 'songs')
+      return { kind: 'songs', songs }
+    return { kind: 'loading' }
+  })
 
-  function openAddSongs(event?: MouseEvent): void {
-    addSongsDialog.open({ playlistId, from: event?.currentTarget as HTMLElement ?? null })
-  }
+  /** 歌单内搜索的“找到几首、可能不全”；没搜到时下面那句按在不在曲库里说 */
+  const search = $derived(result ? { term, incomplete: result.incomplete, incompleteBody: outside ? '还没加载完，加载完再搜一次' : '还没同步完，同步完再搜一次' } : null)
+
+  /** 列表源：多选的勾选、⌘/Ctrl 点选、手机长按 */
+  const selectionProps = $derived<SongSelection>({
+    active: selection.mode,
+    has: songId => selection.has(songId),
+    toggle: song => selection.toggle(song.id),
+    modifiers: (song, event) => {
+      if (!selection.mode) {
+        const from = event.currentTarget as HTMLElement
+        selection.enter({ from, focusEntry: rowEntryFocus(from) })
+      }
+      if (event.shiftKey)
+        selection.range(song.id)
+      else
+        selection.toggle(song.id)
+    },
+    longpress: (song, from) => selection.enter({ id: song.id, from, focusEntry: rowEntryFocus(from) }),
+  })
+
+  /** 拖动排序的几何：列表按 placeOf 摆行，被拖的行一直挂载 */
+  const dragHooks = $derived({
+    placeOf: drag.placeOf,
+    keep: drag.keep,
+    animatePlace: drag.sorting,
+    hidden: drag.hideMoved,
+    marks: !drag.dragging,
+  })
 
   function retry() {
     if (page.failure?.retry === 'sync')
@@ -167,12 +182,11 @@
     else
       void view.app.openPlaylist(playlistId)
   }
-</script>
 
-{#snippet found()}
-  <!-- 元素开头的普通空格 Svelte 会去掉，分隔符前用不换行空格 -->
-  找到 {formatCount(songs.length)} 首{#if result?.incomplete}<span class='text-neutral-700 font-500'>&nbsp;· 可能不全</span>{/if}
-{/snippet}
+  function openAddSongs(event?: MouseEvent): void {
+    addSongsDialog.open({ playlistId, from: event?.currentTarget as HTMLElement ?? null })
+  }
+</script>
 
 {#snippet rowGrip(song: Song)}
   <DragGrip label={song.name} size={phone ? 'phone' : 'desktop'} attach={drag.handle(song)} />
@@ -184,233 +198,133 @@
 
 {#snippet ghostRow()}
   {#if drag.ghostSong}
-    {#if phone}
-      <PhoneSongRow
-        song={drag.ghostSong}
-        {source}
-        now={false}
-        selecting
-        selected={selection.has(drag.ghostSong.id)}
-        grip={ghostGrip}
-        ghost
-        count={drag.moved.length}
-        onplay={() => {}}
-      />
-    {:else}
-      <DesktopSongRow
-        song={drag.ghostSong}
-        {source}
-        n={drag.position}
-        now={false}
-        selecting
-        selected={selection.has(drag.ghostSong.id)}
-        grip={ghostGrip}
-        ghost
-        count={drag.moved.length}
-        onplay={() => {}}
-      />
-    {/if}
+    <SongRow
+      song={drag.ghostSong}
+      {source}
+      {phone}
+      n={drag.position}
+      now={false}
+      selecting
+      selected={selection.has(drag.ghostSong.id)}
+      grip={ghostGrip}
+      ghost
+      count={drag.moved.length}
+      onplay={() => {}}
+    />
   {/if}
 {/snippet}
 
-{#snippet songRow(song: Song, i: number)}
+{#snippet rowWrap(song: Song, i: number, row: Snippet<[Song, number]>)}
   {@const motion = drag.motionOf(song)}
   <div
     class={['h-full origin-center', motion !== null && 'relative z-10', motion === 'pick' && 'drag-row-pick', motion === 'land' && 'drag-row-land']}
     style:--drag-shift="{motion === 'pick' ? drag.liftShift(i) : motion === 'land' ? drag.landShift(song) : 0}px"
     style:--drag-delay="{motion === 'land' ? drag.landDelay(song) : 0}ms"
   >
-    {#if phone}
-      <PhoneSongRow
-        {song}
-        {source}
-        now={song.id === nowId}
-        selecting={selection.mode}
-        selected={selection.has(song.id)}
-        grip={sortable && selection.mode ? rowGrip : undefined}
-        onlongpress={from => selection.enter({ id: song.id, from, focusEntry: rowEntryFocus(from) })}
-        onplay={() => activate(song)}
-      />
-    {:else}
-      <DesktopSongRow
-        {song}
-        {source}
-        n={i + 1}
-        now={song.id === nowId}
-        selecting={selection.mode}
-        selected={selection.has(song.id)}
-        grip={sortable && selection.mode ? rowGrip : undefined}
-        onselect={event => selectWithModifiers(song, event)}
-        onplay={() => activate(song)}
-      />
-    {/if}
+    {@render row(song, i)}
   </div>
 {/snippet}
 
-{#snippet list()}
-  {#if shown.kind === 'loading' && page.failure?.where !== 'list'}
-    <SkeletonRows count={phone ? 8 : 10} {phone} label='正在加载歌单' />
-  {:else}
-    <div in:reveal>
-      {#if page.failure && page.failure.where === 'list'}
-        <StateBlock kind='error' title={liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载'} body={failureText(page.failure.failure)} action={{ label: '重试', run: retry }} />
-      {:else if shown.kind === 'empty'}
-        {#if liked}
-          <StateBlock kind='empty' icon={Heart} title='还没有红心的歌' />
-        {:else if kind === 'own'}
-          <StateBlock
-            kind='empty'
-            icon={ListMusic}
-            title='这张歌单还没有歌'
-            action={{ label: '添加歌曲', run: () => openAddSongs() }}
-          />
-        {:else}
-          <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' />
-        {/if}
-      {:else if shown.kind === 'songs'}
-        {#if page.failure && page.failure.where === 'more'}
-          <div transition:unfold>
-            <div class={['flex items-center gap-3 px-3 text-caption text-neutral-700', phone ? 'min-h-11 py-1' : 'py-2']} role='alert'>
-              <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
-              <span class='min-w-0 flex-1'>没加载完：{failureText(page.failure.failure)}</span>
-              <TextButton desktop={{ variant: 'outline' }} class='max-md:-mr-3 md:h-9!' onclick={retry}>重试</TextButton>
-            </div>
-          </div>
-        {/if}
-        {#if selection.mode && sortableList && !sortable}
-          <p class='px-3 py-2 text-caption text-neutral-600' role='status'>{sortBlockedText}</p>
-        {/if}
-        <!-- 新旧两块叠在同一格里交叉淡化：换的这一会儿高度按高的那块算 -->
-        <div class='grid grid-cols-[minmax(0,1fr)]'>
-          {#key mode}
-            <div class='col-start-1 row-start-1 min-w-0' transition:fade>
-              {#if songs.length === 0}
-                <StateBlock
-                  kind='empty'
-                  icon={SearchX}
-                  title={`没有“${term}”`}
-                  body={result?.incomplete ? outside ? '还没加载完，加载完再搜一次' : '还没同步完，同步完再搜一次' : undefined}
-                />
-              {:else}
-                <!-- 拖动排序：#36。清空右侧按钮的淡出只在手机上；拖动中列表照常跟手滚动 -->
-                <!-- 按键从行里的按钮冒泡上来（事件委托），列表本身不需要能获得焦点 -->
-                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-                <div
-                  bind:this={listHost}
-                  class={['relative', phone && drag.dragging && 'clear-rail']}
-                  role='group'
-                  aria-label='歌单里的歌曲'
-                  onkeydown={onListKeydown}
-                >
-                  <VirtualList
-                    items={songs}
-                    itemHeight={SONG_ROW_HEIGHT}
-                    getKey={(song: Song) => song.id}
-                    markOf={drag.dragging ? undefined : songMark}
-                    placeOf={drag.placeOf}
-                    keep={drag.keep}
-                    animatePlace={drag.sorting}
-                    hidden={drag.hideMoved}
-                    row={songRow}
-                  ></VirtualList>
-                </div>
-              {/if}
-            </div>
-          {/key}
-        </div>
-      {/if}
+{#snippet notice()}
+  {#if page.failure && page.failure.where === 'more'}
+    <div transition:unfold>
+      <div class={['flex items-center gap-3 px-3 text-caption text-neutral-700', phone ? 'min-h-11 py-1' : 'py-2']} role='alert'>
+        <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
+        <span class='min-w-0 flex-1'>没加载完：{failureText(page.failure.failure)}</span>
+        <TextButton desktop={{ variant: 'outline' }} class='max-md:-mr-3 md:h-9!' onclick={retry}>重试</TextButton>
+      </div>
     </div>
   {/if}
+  {#if selection.mode && sortableList && !sortable}
+    <p class='px-3 py-2 text-caption text-neutral-600' role='status'>{sortBlockedText}</p>
+  {/if}
+{/snippet}
+
+{#snippet countAction()}
+  {#if !selection.mode && shown.kind === 'songs' && songs.length > 0}
+    <span class='contents' bind:this={phoneEntry}>
+      <IconButton
+        icon={ListChecks}
+        label={sortableList ? '多选和排序' : '多选'}
+        title={sortableList ? '多选和排序' : '多选'}
+        class='-mr-3'
+        onclick={event => selection.enter({
+          from: event.currentTarget as HTMLElement,
+          focusFirst: true,
+          focusEntry: () => phoneEntry?.querySelector<HTMLElement>('button') ?? null,
+        })}
+      />
+    </span>
+  {/if}
+{/snippet}
+
+{#snippet toolbar()}
+  <div class='h-9 flex items-center gap-1.5 rounded-lg bg-primary-50 pl-3 pr-1' role='toolbar' aria-label='对选中的歌'>
+    <span class='inline-flex flex-none items-center gap-1.5 text-caption text-neutral-900 font-500 tabular-nums' role='status'>
+      <ListChecks size={14} aria-hidden='true' />已选 {formatCount(selection.size)} 首
+    </span>
+    <button
+      type='button'
+      class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-primary-900 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
+      onclick={() => selection.selectAll()}
+    >
+      {#if selection.allOn}<SquareMinus size={14} aria-hidden='true' />{:else}<CheckCheck size={14} aria-hidden='true' />{/if}
+      {selection.allOn ? '全不选' : '全选'}
+    </button>
+    <span class='flex-1'></span>
+    <button
+      type='button'
+      class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
+      disabled={selection.picked.length === 0}
+      onclick={event => selection.addPicked(event, anchorBelow(event))}
+    ><ListPlus size={15} aria-hidden='true' />加入歌单</button>
+    {#if selection.capabilities.remove}
+      <button
+        type='button'
+        class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
+        disabled={selection.picked.length === 0}
+        onclick={() => selection.removePicked()}
+      ><ListMinus size={15} aria-hidden='true' />移除</button>
+    {/if}
+    <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>
+    <button
+      type='button'
+      class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
+      title='Esc'
+      onclick={() => selection.leave()}
+    ><X size={14} aria-hidden='true' />取消选择</button>
+  </div>
 {/snippet}
 
 {#if phone}
   <div class='px-4 pt-3'>
     <SearchField label='在歌单里搜索' bind:value={query} disabled={shown.kind !== 'songs'} />
-    {#if result || (shown.kind === 'songs' && songs.length > 0)}
-      <div class='min-h-11 flex items-center gap-2 pt-1'>
-        <p class='min-w-0 flex-1 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
-          {#if result}
-            {@render found()}
-          {:else if shown.kind === 'songs'}
-            {formatCount(shown.total)} 首
-          {/if}
-        </p>
-        {#if !selection.mode && shown.kind === 'songs' && songs.length > 0}
-          <span class='contents' bind:this={phoneEntry}>
-            <IconButton
-              icon={ListChecks}
-              label={sortableList ? '多选和排序' : '多选'}
-              title={sortableList ? '多选和排序' : '多选'}
-              class='-mr-3'
-              onclick={event => selection.enter({
-                from: event.currentTarget as HTMLElement,
-                focusFirst: true,
-                focusEntry: () => phoneEntry?.querySelector<HTMLElement>('button') ?? null,
-              })}
-            />
-          </span>
-        {/if}
-      </div>
-    {/if}
-  </div>
-  <div class='pt-2'>{@render list()}</div>
-{:else}
-  <div class='rounded-xl bg-white p-2 shadow-ambient'>
-    {#if selection.mode}
-      <div class='h-9 flex items-center gap-1.5 rounded-lg bg-primary-50 pl-3 pr-1' role='toolbar' aria-label='对选中的歌'>
-        <span class='inline-flex flex-none items-center gap-1.5 text-caption text-neutral-900 font-500 tabular-nums' role='status'>
-          <ListChecks size={14} aria-hidden='true' />已选 {formatCount(selection.size)} 首
-        </span>
-        <button
-          type='button'
-          class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-primary-900 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
-          onclick={() => selection.selectAll()}
-        >
-          {#if selection.allOn}<SquareMinus size={14} aria-hidden='true' />{:else}<CheckCheck size={14} aria-hidden='true' />{/if}
-          {selection.allOn ? '全不选' : '全选'}
-        </button>
-        <span class='flex-1'></span>
-        <button
-          type='button'
-          class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
-          disabled={selection.picked.length === 0}
-          onclick={event => selection.addPicked(event, anchorBelow(event))}
-        ><ListPlus size={15} aria-hidden='true' />加入歌单</button>
-        {#if selection.capabilities.remove}
-          <button
-            type='button'
-            class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
-            disabled={selection.picked.length === 0}
-            onclick={() => selection.removePicked()}
-          ><ListMinus size={15} aria-hidden='true' />移除</button>
-        {/if}
-        <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>
-        <button
-          type='button'
-          class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
-          title='Esc'
-          onclick={() => selection.leave()}
-        ><X size={14} aria-hidden='true' />取消选择</button>
-      </div>
-    {:else}
-      <div class={[SONG_GRID, 'h-9 text-caption text-neutral-500']}>
-        <span class={SONG_COLUMNS.index}>#</span>
-        <span class={['grid grid-cols-[minmax(0,1fr)] pl-[52px]', SONG_COLUMNS.title]} role='status'>
-          {#if result}
-            <span class='col-start-1 row-start-1 truncate' transition:fade>{@render found()}</span>
-          {:else}
-            <span class='col-start-1 row-start-1 truncate' transition:fade>标题</span>
-          {/if}
-        </span>
-        <span class={SONG_COLUMNS.album}>专辑</span>
-        <span class={SONG_COLUMNS.status}></span>
-        <span class={SONG_COLUMNS.duration}>时长</span>
-        <span></span>
-      </div>
-    {/if}
-    {@render list()}
   </div>
 {/if}
+
+<!-- 按键从行里的按钮冒泡上来（事件委托），列表本身不需要能获得焦点；外层不重复读屏组名 -->
+<div class='grid grid-cols-[minmax(0,1fr)]' role='presentation' onkeydown={onListKeydown}>
+  <SongList
+    list={listView}
+    {source}
+    {phone}
+    loadingLabel='正在加载歌单'
+    {search}
+    skeleton={phone ? 8 : 10}
+    headerHidden={false}
+    count={shown.kind === 'songs' ? shown.total : undefined}
+    countAction={phone ? countAction : undefined}
+    {notice}
+    toolbar={!phone && selection.mode ? toolbar : undefined}
+    selection={selectionProps}
+    grip={sortable ? rowGrip : undefined}
+    drag={sortable && selection.mode ? dragHooks : undefined}
+    {rowWrap}
+    bind:host={listHost}
+    contentClass={phone && drag.dragging ? 'clear-rail' : undefined}
+    label='歌单里的歌曲'
+  />
+</div>
 
 <!-- 浮起的行跟着指针；松手后落进空位。“第 N 首”的标签在它上面，最上层（DESIGN.md Overlays） -->
 {#if drag.sorting}
@@ -518,8 +432,8 @@
   }
 
   /* 手机上拖动时，其余行右边的按钮（更多、把手）淡出，不和快速定位窄条叠在一起 */
-  .clear-rail :global([data-more]),
-  .clear-rail :global([data-grip]) {
+  :global(.clear-rail) :global([data-more]),
+  :global(.clear-rail) :global([data-grip]) {
     opacity: 0;
     transition: opacity var(--duration-feedback) var(--ease-out-soft);
   }

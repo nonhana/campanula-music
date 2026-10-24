@@ -7,17 +7,18 @@
   点一首歌、播放全部都用整份每日推荐替换播放队列，播放来源是每日推荐。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
+  import type { SongListView } from '#lib/components/songs/view.js'
   import { getAppView } from '#lib/components/app-context.svelte.js'
   import DailyNumber from '#lib/components/daily/DailyNumber.svelte'
   import { DAILY_SOURCE, dailyCalendarDay, dailyFailure, totalDuration } from '#lib/components/daily/view.js'
   import { desktopLayout } from '#lib/components/layout.js'
-  import Cover from '#lib/components/library/Cover.svelte'
-  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
-  import SongList from '#lib/components/library/SongList.svelte'
-  import { formatCount } from '#lib/components/library/view.js'
   import { fade, reveal } from '#lib/components/motion.js'
   import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
+  import SongList from '#lib/components/songs/SongList.svelte'
+  import { formatCount } from '#lib/components/text.js'
+  import Cover from '#lib/components/ui/Cover.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const view = getAppView()
@@ -32,7 +33,13 @@
   // 听众在看每日推荐：今天这份要不要拉、登录后才拉，都由 App 决定
   $effect(() => view.app.viewing({ kind: 'daily' }))
 
-  const EMPTY = { title: '今天没有每日推荐', body: '明天 6:00 以后再来看看' }
+  const listView = $derived.by((): SongListView => {
+    if (!songs)
+      return { kind: 'loading' }
+    if (songs.length === 0)
+      return { kind: 'empty', title: '今天没有每日推荐', body: '明天 6:00 以后再来看看' }
+    return { kind: 'songs', songs }
+  })
 </script>
 
 <svelte:head><title>每日推荐 · Campanula</title></svelte:head>
@@ -57,7 +64,7 @@
       <StateBlock kind='error' title={failed.title} body={failed.body} action={{ label: '重试', run: () => void view.app.openDaily() }} />
     </div>
   {:else}
-    <SongList {songs} source={DAILY_SOURCE} loadingLabel='正在加载每日推荐' empty={EMPTY} {phone} />
+    <SongList list={listView} source={DAILY_SOURCE} loadingLabel='正在加载每日推荐' {phone} virtual={false} staggerRows={false} />
   {/if}
 {/snippet}
 
@@ -95,6 +102,6 @@
       </p>
       <div class='mt-4'>{@render playAll()}</div>
     </header>
-    <div class='pt-3'>{@render list(true)}</div>
+    <div class={failed ? 'pt-3' : 'pt-1'}>{@render list(true)}</div>
   {/if}
 {/if}

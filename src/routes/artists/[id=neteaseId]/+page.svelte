@@ -7,6 +7,7 @@
   取完了按钮淡出。返回这一页时滚动位置回到原来的样子。头部播放热门歌曲旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标），点“已收藏”直接取消收藏、不确认
 -->
 <script lang='ts'>
+  import type { SongListView } from '#lib/components/songs/view.js'
   import type { PageProps } from './$types'
   import { resolve } from '$app/paths'
   import { UserRound } from '@lucide/svelte'
@@ -16,13 +17,14 @@
   import { desktopLayout } from '#lib/components/layout.js'
   import AlbumTile from '#lib/components/library/AlbumTile.svelte'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
-  import Cover from '#lib/components/library/Cover.svelte'
-  import PlayAllButton from '#lib/components/library/PlayAllButton.svelte'
-  import SongList from '#lib/components/library/SongList.svelte'
-  import { FLIGHT_COVER_SIZE, formatCount, langOf, yearOf } from '#lib/components/library/view.js'
+  import { FLIGHT_COVER_SIZE } from '#lib/components/library/view.js'
   import { fadeAway, reveal, stagger } from '#lib/components/motion.js'
   import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
+  import SongList from '#lib/components/songs/SongList.svelte'
+  import { formatCount, langOf, yearOf } from '#lib/components/text.js'
+  import Cover from '#lib/components/ui/Cover.svelte'
   import ShowMore from '#lib/components/ui/ShowMore.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
@@ -42,7 +44,13 @@
   // 听众在看这一位歌手：什么时候拉由 App 决定，换一位、本机状态变了不用页面再调一次
   $effect(() => view.app.viewing({ kind: 'artist', id }))
 
-  const EMPTY = { title: '暂时没有热门歌曲' }
+  const hotSongs = $derived.by((): SongListView => {
+    if (!content)
+      return { kind: 'loading' }
+    if (content.hotSongs.length === 0)
+      return { kind: 'empty', title: '暂时没有热门歌曲' }
+    return { kind: 'songs', songs: content.hotSongs }
+  })
 
   let albumList = $state<HTMLUListElement>()
   /** 上一次“显示更多”之前已经有几张：后加进来的从第几张开始依次飘入 */
@@ -113,7 +121,7 @@
       {@render header(false)}
       <section class='mt-10' aria-labelledby='artist-hot'>
         <h2 id='artist-hot' class='text-title text-neutral-900 font-600'>热门歌曲</h2>
-        <div class='mt-3'><SongList songs={content?.hotSongs ?? null} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' empty={EMPTY} /></div>
+        <div class='mt-3'><SongList list={hotSongs} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' virtual={false} staggerRows={false} /></div>
       </section>
       {@render albums(false)}
     </div>
@@ -121,7 +129,7 @@
     {@render header(true)}
     <section class='pt-6' aria-labelledby='artist-hot'>
       <h2 id='artist-hot' class='px-4 text-title-sm text-neutral-900 font-600'>热门歌曲</h2>
-      <div class='pt-1'><SongList songs={content?.hotSongs ?? null} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' empty={EMPTY} phone /></div>
+      <div class='-mt-1'><SongList list={hotSongs} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' phone virtual={false} staggerRows={false} /></div>
     </section>
     {@render albums(true)}
   {/if}

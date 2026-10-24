@@ -6,6 +6,7 @@
 -->
 <script lang='ts'>
   import type { SearchKind } from '#lib/api/search.js'
+  import type { SongListView } from '../songs/view'
   import type { KindItems } from './view'
   import { SearchX } from '@lucide/svelte'
   import { tick } from 'svelte'
@@ -13,14 +14,13 @@
   import { getAppView } from '../app-context.svelte'
   import AlbumTile from '../library/AlbumTile.svelte'
   import ArtistTile from '../library/ArtistTile.svelte'
-  import SkeletonRows from '../library/SkeletonRows.svelte'
   import TileBone from '../library/TileBone.svelte'
-  import { formatCount, yearOf } from '../library/view'
   import { fadeAway, reveal, stagger } from '../motion'
+  import SongList from '../songs/SongList.svelte'
+  import { formatCount, yearOf } from '../text'
   import ShowMore from '../ui/ShowMore.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistResults from './PlaylistResults.svelte'
-  import SongResults from './SongResults.svelte'
   import { KIND_WORDS, searchFailure } from './view'
 
   interface Props {
@@ -36,6 +36,20 @@
   /** 取到的这一类，带上是哪一类：模板里按 kind 分开画，各自拿到自己那一类的项 */
   const shown = $derived(list.status === 'shown' ? { kind, items: list.items } as KindItems : null)
   const words = $derived(KIND_WORDS[kind])
+  /** 单曲这一类的列表状态交给 songs/SongList：骨架、失败、空、歌曲都在它里面 */
+  const songView = $derived.by((): SongListView => {
+    if (list.status === 'failed') {
+      const failed = searchFailure(list.failure)
+      return { kind: 'failed', title: failed.title, body: failed.body, retry: () => void view.app.openSearch(keyword) }
+    }
+    if (!shown)
+      return { kind: 'loading' }
+    if (shown.kind !== 'songs')
+      return { kind: 'loading' }
+    if (shown.items.length === 0)
+      return { kind: 'empty', icon: SearchX, title: `没有相关的${words.label}` }
+    return { kind: 'songs', songs: shown.items }
+  })
 
   /** 歌手、专辑的网格（骨架和真的一样排）：手机三列 / 两列，桌面按格宽排满 */
   const grids = $derived({
@@ -62,7 +76,22 @@
 
 <div bind:this={body} class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}>
   <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放 -->
-  {#if list.status === 'failed'}
+  {#if kind === 'songs'}
+    <SongList
+      list={songView}
+      source={{ kind: 'search', keyword }}
+      {phone}
+      loadingLabel={`正在搜索${words.label}`}
+      bare
+      reveal
+      virtual={false}
+      label='单曲'
+      {appendedAt}
+    />
+    {#if list.status === 'shown' && shown && shown.items.length > 0}
+      <ShowMore more={list.more} onmore={showMore} class='justify-center px-4 pb-2 pt-4' />
+    {/if}
+  {:else if list.status === 'failed'}
     {@const failed = searchFailure(list.failure)}
     <div in:reveal>
       <StateBlock kind='error' title={failed.title} body={failed.body} action={{ label: '重试', run: () => void view.app.openSearch(keyword) }} />
@@ -87,17 +116,13 @@
           </div>
         {/each}
       </div>
-    {:else}
-      <SkeletonRows count={phone ? 8 : 9} {phone} label={`正在搜索${words.label}`} />
     {/if}
   {:else}
     <div in:reveal>
       {#if shown.items.length === 0}
         <StateBlock kind='empty' icon={SearchX} title={`没有相关的${words.label}`} />
       {:else}
-        {#if shown.kind === 'songs'}
-          <SongResults {keyword} songs={shown.items} {phone} {appendedAt} />
-        {:else if shown.kind === 'playlists'}
+        {#if shown.kind === 'playlists'}
           <PlaylistResults playlists={shown.items} {phone} {appendedAt} />
         {:else if shown.kind === 'artists'}
           <ul class={['grid', grids.artists]} aria-label={words.label} data-reveal-group>
@@ -107,7 +132,7 @@
               </li>
             {/each}
           </ul>
-        {:else}
+        {:else if shown.kind === 'albums'}
           <ul class={['grid', grids.albums]} aria-label={words.label} data-reveal-group>
             {#each shown.items as album, i (album.id)}
               <li class='min-w-0' in:stagger={{ order: i - appendedAt }}>

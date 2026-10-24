@@ -10,9 +10,9 @@
   import { getAppView } from '../app-context.svelte'
   import Brand from '../Brand.svelte'
   import { desktopLayout } from '../layout'
-  import { formatCount } from '../library/view'
   import { float } from '../motion'
   import { FLOAT_IN_DELAY } from '../motion-tokens'
+  import { formatCount } from '../text'
   import Scrollbar from '../ui/Scrollbar.svelte'
   import LoginForm from './LoginForm.svelte'
 
