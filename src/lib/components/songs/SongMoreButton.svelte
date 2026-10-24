@@ -16,7 +16,6 @@
   const { openSongMenuFrom } = songMenuActions()
   const { songMenu } = getOverlays()
 
-  /** 按钮的大小和形状、图标大小 */
   const LOOKS = {
     'phone': { button: 'size-11 rounded-full active:bg-primary-100', icon: 20 },
     'desktop': { button: 'size-9 rounded-lg', icon: 18 },

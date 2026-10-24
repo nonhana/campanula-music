@@ -20,7 +20,7 @@
   const mode = $derived(view.state.player.mode)
 
   const ICONS = { loop: Repeat, one: Repeat1, shuffle: Shuffle }
-  /** 开关：开着没有、按一下换成什么 */
+  /** 按一下换成什么 */
   const toggle = $derived(
     kind === 'repeat'
       ? {

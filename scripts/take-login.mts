@@ -1,7 +1,5 @@
-// 从专用浏览器（scripts/axi）取登录 Cookie，存进 _notes/campanula-login，给录制脚本（netease-record.mts 的 openSession）用。
-// 作者先在专用窗口里扫码登录过（开发服务器开着）。Cookie 是 httpOnly 的，页面脚本读不到：
-// 这里让页面发一次 /api/account，再从 DevTools 记下的请求头里取 campanula_login。值只写进文件，不打印。
-// 用法：pnpm tsx scripts/take-login.mts
+// 从专用浏览器（scripts/axi）取登录 Cookie，存进 _notes/campanula-login，给录制脚本（netease-record.mts 的 openSession）用。作者先在专用窗口里扫码登录过（开发服务器开着）。
+// Cookie 是 httpOnly 的，页面脚本读不到：这里让页面发一次 /api/account，再从 DevTools 记下的请求头里取 campanula_login。值只写进文件，不打印。用法：pnpm tsx scripts/take-login.mts
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'

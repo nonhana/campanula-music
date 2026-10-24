@@ -1,10 +1,7 @@
 <!--
-  歌手页：圆形头像的头部（歌手名、“几首歌 · 几张专辑”）、热门歌曲、专辑网格（新的在前，后面还有时“显示更多”）。
-  桌面头像在左；手机是二级页面：返回栏、居中的头像头部、Auxio 式歌曲行、两列专辑。
-  告诉 App 听众在看这一位歌手（viewing）：这次登录还没拉过就拉，没拉成时再打开（重试按钮）就是重试。
-  头部交给 DetailHeader（#75：圆头像、居中变体、骨架、淡入、pageHeading、封面飞行终点都在模块里）；
-  专辑网格交给 TileGrid，骨架换成内容时骨架淡出、“显示更多”加进来的那些依次飘入（DESIGN.md Motion）。
-  返回这一页时滚动位置回到原来的样子。头部播放热门歌曲旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标），点“已收藏”直接取消收藏、不确认
+  歌手页：圆形头像的头部（名字、“几首歌 · 几张专辑”）、热门歌曲、专辑网格（新的在前，后面还有时“显示更多”）。
+  桌面头像在左；手机是返回栏 + 居中头像头部 + Auxio 式歌曲行 + 两列专辑。头部交给 DetailHeader（#75），网格交给 TileGrid。
+  告诉 App 听众在看这一位歌手（viewing）：什么时候拉、没拉成后重试都由 App 决定。滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -40,7 +37,6 @@
     : null)
   const artist = $derived(content?.artist ?? null)
   const more = $derived(content?.moreAlbums ?? null)
-  /** 页头头像代表这一页：从格子点进来时，格子的头像飞到这里（Cover 的 flight） */
   const here = $derived(resolve('/artists/[id=neteaseId]', { id }))
   const phone = $derived(!desktopLayout.current)
 

@@ -10,8 +10,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks } = listener(world)
 
-// 打开不在曲库里的歌单（#56，Spec #11“搜索”、ADR-0007）：每次打开都联网取，不存进本机副本。
-// 录制见 tests/fixtures/netease/README.md 的 #56 一条
+// 打开不在曲库里的歌单（#56，Spec #11“搜索”、ADR-0007）：每次打开都联网取，不存进本机副本。录制见 tests/fixtures/netease/README.md 的 #56 一条
 const DIR = 'library/netease-playlist'
 /** 搜“真夜中”的歌单结果里的一张，81 首 */
 const SMALL = { id: 95050200, detail: `${DIR}/001-playlist_detail.json.gz`, songs: `${DIR}/002-song_detail.json.gz` }
@@ -32,7 +31,6 @@ const RADAR = { id: 3136952023, detail: 'library/sync/deleted/002-playlist_detai
 /** 一首歌的播放地址：点歌后放哪首都用它，压着不回（这里只看播放队列） */
 const PLAY_URL = 'playback/liked/001-song_url_v1.json.gz'
 
-/** 打开着的不在曲库里的歌单显示的样子 */
 const shownContent = (app: App, playlistId: number): NeteasePlaylistSongs => {
   const page = app.state.library?.neteasePlaylist(playlistId)
   if (page?.status !== 'shown')

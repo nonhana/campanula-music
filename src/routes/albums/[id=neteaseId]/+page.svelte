@@ -1,9 +1,6 @@
 <!--
-  专辑页：桌面是 200px 封面的头部（专辑名、“歌手 · 年份 · 几首”）、下面一段简介、白色面板里带曲序的歌曲行；
-  手机是二级页面：返回栏、居中的封面头部、卡片里的简介、带曲序的歌曲行。
-  头部交给 DetailHeader（#75：封面、标题、信息行、动作、骨架、淡入、pageHeading、封面飞行终点都在模块里）。
-  告诉 App 听众在看这一张专辑（viewing）：这次登录还没拉过就拉，没拉成时再打开（重试按钮）就是重试。
-  返回这一页时滚动位置回到原来的样子。头部播放全部旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标，#57），点“已收藏”直接取消收藏、不确认
+  专辑页：桌面是 200px 封面头部（名字、“歌手 · 年份 · 几首”）、简介、白色面板里带曲序的歌曲行；手机是返回栏 + 居中封面头部 + 简介 + 歌曲行。
+  头部交给 DetailHeader（#75）。告诉 App 听众在看这一张专辑（viewing），什么时候拉由 App 决定。滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -36,7 +33,6 @@
   const year = $derived(album && yearOf(album.publishedAt))
   const description = $derived(album?.description?.trim() || null)
   const phone = $derived(!desktopLayout.current)
-  /** 页头大封面代表这一页：从格子点进来时，格子的封面飞到这里（Cover 的 flight） */
   const here = $derived(resolve('/albums/[id=neteaseId]', { id }))
 
   scrollSnapshot('/albums/[id=neteaseId]', () => null, () => {})

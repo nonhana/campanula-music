@@ -1,8 +1,7 @@
 <!--
-  曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐的三行歌曲格（“查看全部”进歌单页，
-  点一首、播放全部都用整个我喜欢的音乐替换播放队列）和右侧的每日推荐方块、歌单的封面网格和收藏的专辑、歌手两排横向架子。
-  返回这一页时，滚动位置回到原来的样子。骨架换成内容时骨架淡出、前几格依次飘入（DESIGN.md Motion）
-  歌曲格的歌名、徽标、下载标记和歌手一行和歌曲行共用 songs/SongTitle；能不能放读 App 的答案（songLook）。
+  曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐三行歌曲格（“查看全部”进歌单页）
+  和右侧的每日推荐方块、歌单封面网格、收藏的专辑和歌手横向架子。滚动位置随浏览历史恢复。
+  歌曲格和歌曲行共用 songs/SongTitle；能不能放读 App 的答案（songLook）。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -67,7 +66,6 @@
     atEnd = stripEl.scrollLeft + stripEl.clientWidth > stripEl.scrollWidth - 4
   }
 
-  // 歌格出现、歌变多、窗口变宽时，翻页键能不能按要跟着变
   $effect(() => {
     void strip.length
     measureStrip()

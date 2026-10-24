@@ -11,8 +11,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtHearts, reopen, replyLibrary, replyLikedSongs } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// v8 的存储区、键和内容格式取自 30765b4^:src/lib/app/local.ts / player.ts，
-// 独立建立旧库，不调用当前 createLocalDb 或 upgrade。v8 还没有 downloads。
+// v8 的存储区、键和内容格式取自 30765b4^:src/lib/app/local.ts / player.ts，独立建立旧库，不调用当前 createLocalDb 或 upgrade。v8 还没有 downloads。
 const savedSong: Song = {
   id: 3433267939,
   name: '旧版存着的歌',

@@ -1,6 +1,6 @@
 <!--
-  网易云账号的头像：正圆，按显示尺寸取网易云的缩略图（地址加 ?param=宽y宽，按 2 倍屏取）。
-  加载完从薄荷底上淡入，缓存里有的直接显示（image-reveal.svelte.ts）；加载不出来时淡入一个人形图标，不留破图。
+  网易云账号的头像：正圆，取 2 倍屏的缩略图（?param=宽y宽）。加载完从薄荷底上淡入，缓存里有的直接显示（image-reveal.svelte.ts）；
+  加载不出来时淡入人形图标，不留破图。
 -->
 <script lang='ts'>
   import { User } from '@lucide/svelte'

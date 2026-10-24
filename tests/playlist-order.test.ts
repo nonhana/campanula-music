@@ -11,9 +11,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks, replyLibrary } = listener(world)
 
-// 曲库里自建歌单之间的排序（#37，Spec #11“客户端：晚一点才提交的修改”“多选、拖拽与换封面”）：
-// 我喜欢的音乐固定在最前，收藏的歌单不参与；拖完先改本地，停手 2 秒才一次提交；
-// 连拖两次只提交一次；失败退回原来的顺序、提示里可以重试；页面隐藏时立即提交。
+// 曲库里自建歌单之间的排序（#37，Spec #11“客户端：晚一点才提交的修改”“多选、拖拽与换封面”）：我喜欢的音乐固定在最前，收藏的歌单不参与；拖完先改本地，停手 2 秒才一次提交；连拖两次只提交一次；失败退回原来的顺序、提示里可以重试；页面隐藏时立即提交。
 // 网易云返回只用验证关卡②录下的数据（tests/fixtures/netease/playlist-edit/）
 /** 网易云接受了新的顺序（验证关卡②录的） */
 const ORDER_OK = 'playlist-edit/playlist_order_update.json'
@@ -61,28 +59,22 @@ describe('曲库里的自建歌单排序：只收自建歌单，我喜欢的音�
     expect(before.slice(0, 1 + OWN.length)).toEqual([LIKED, ...OWN])
     expect(before.length).toBeGreaterThan(1 + OWN.length)
 
-    // 重复：（17 张，命中“重复”分支）
     expect(() => app.orderPlaylists([
       ...OWN.slice(0, 16),
       OWN[0]!,
     ])).toThrow('自建歌单顺序里有重复的编号')
-    // 含收藏：（17 张，命中“不是自建歌单”分支）
     expect(() => app.orderPlaylists([
       ...OWN.slice(0, 16),
       A_COLLECTED,
     ])).toThrow('自建歌单顺序里混进了不是自建歌单的编号：3200013727')
-    // 漏一首：16 张
     expect(() => app.orderPlaylists([
       ...OWN.slice(1),
     ])).toThrow('自建歌单顺序不对：要 17 张，给了 16 张')
-    // 未知编号：17 张
     expect(() => app.orderPlaylists([
       ...OWN.slice(0, 16),
       999_999_999,
     ])).toThrow('自建歌单顺序里混进了不是自建歌单的编号：999999999')
-    // 多一首：18 张
     expect(() => app.orderPlaylists([...OWN, OWN[0]!])).toThrow('自建歌单顺序不对：要 17 张，给了 18 张')
-    // 我喜欢的音乐不是自建歌单：17 张
     expect(() => app.orderPlaylists([
       LIKED,
       ...OWN.slice(1),
@@ -145,7 +137,6 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
       ...collectedOf(app),
     ]
 
-    // 第一次：把最后一张自建歌单挪到自建歌单的最前面
     const first = [
       OWN[16]!,
       ...OWN.slice(0, 16),
@@ -161,7 +152,6 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     await world.clock.advance(1000)
     expect(orderRequests(device)).toHaveLength(0)
 
-    // 第二次：再把倒数第二张挪到最前，计时从头算
     const latest = [
       OWN[15]!,
       OWN[16]!,
@@ -287,7 +277,6 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     await world.clock.advance(2000)
     expect(orderRequests(device)).toHaveLength(1)
 
-    // 第一份还压着：再拖一次，只改本地，不发第二份
     expect(app.orderPlaylists(second)).toBe(true)
     expect(shownIds(app)).toEqual([
       LIKED,

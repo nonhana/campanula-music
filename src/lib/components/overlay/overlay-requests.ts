@@ -2,14 +2,11 @@ import type { Song } from '#lib/api/library.js'
 import type { PlaySource } from '#lib/api/playback.js'
 
 export interface DialogRequest {
-  /** 打开这个浮层的元素：关掉后焦点回到它 */
+  /** 关掉后焦点回到它 */
   readonly from: HTMLElement | null
 }
 
-/**
- * 浮动菜单贴着哪：x、y 是锚点（视口坐标），end 为 true 时菜单右边对齐 x（••• 按钮），否则左边对齐 x（右键的指针）；
- * 菜单在 y 下面，放不下时翻到 top 上面
- */
+/** x、y 是锚点（视口坐标）；end 为 true 右对齐（••• 按钮），否则左对齐（右键的指针）；菜单在 y 下面，放不下翻到上面 */
 export interface MenuAnchor {
   readonly x: number
   readonly y: number
@@ -30,11 +27,7 @@ export interface PlaylistMenuRequest extends MenuRequest {
   readonly playlistId: number
 }
 
-/**
- * 加入歌单的选择器（#73）：单曲和多选共用同一个。
- * mode song 是歌曲菜单转交来的，songs 只有这一首；mode multi 是多选的工具条打开的，songs 是勾选的几首。
- * currentPlaylistId 是打开时所在的那张歌单：单曲菜单在歌单页打开时是它（“当前歌单”），多选一定是。
- */
+/** 加入歌单的选择器（#73）：song 是歌曲菜单转交的（songs 只有一首），multi 是多选工具条打开的（勾选的几首）；currentPlaylistId 是打开时所在的歌单 */
 export type AddToPlaylistRequest
   = | (MenuRequest & {
     readonly mode: 'song'

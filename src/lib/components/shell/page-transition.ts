@@ -10,11 +10,9 @@ import { LANDING_WAIT } from '../shared/motion-tokens'
 type PageTurn = Toward | 'fade'
 
 /**
- * 换页的方向（DESIGN.md Navigation · 页面切换），交给 uno.config.ts 的页面过渡：
- * - 同一层：曲库标签之间（tabs，从左到右）按左右顺序横着走，新页从所选标签那一侧进来；
- *   同一种页面之间（桌面歌单页左栏换歌单）只淡入淡出；
- * - 后退、前进（delta）：返回往下沉，前进往上浮；
- * - 点进去的：回到曲库是返回，其余（曲库 → 歌单、专辑、歌手、设置，专辑 → 歌手）是进入下一层
+ * 换页的方向（DESIGN.md Navigation · 页面切换），交给 uno.config.ts 的页面过渡：同一层的曲库标签之间按左右顺序横着走，新页从所选标签那一侧进来，
+ * 同一种页面之间（桌面歌单页左栏换歌单）只淡入淡出；后退、前进（delta）返回往下沉、前进往上浮；
+ * 点进去的回到曲库是返回，其余（曲库 → 歌单、专辑、歌手、设置，专辑 → 歌手）是进入下一层
  */
 const pageTurn = (from: RouteId, to: RouteId, delta: number | undefined, tabs: readonly RouteId[]): PageTurn => {
   const fromTab = tabs.indexOf(from)
@@ -59,8 +57,7 @@ const landingReady = async (img: HTMLImageElement): Promise<boolean> => {
 }
 
 /**
- * 封面图正中那一点露在内容区里：在窗口里、在顶栏下面（两种骨架都把顶栏的高度写在 scroll-padding-top 上），
- * 没被架子这类滚动容器裁掉。按位置算：拍新的一帧之前，浏览器的点按测试只认 <html>
+ * 封面图正中那一点露在内容区里：在窗口里、在顶栏下面（两种骨架都把顶栏高度写在 scroll-padding-top 上），没被架子这类滚动容器裁掉；按位置算，拍新帧前浏览器的点按测试只认 <html>
  */
 const exposed = (cover: HTMLElement): boolean => {
   const { left, top, width, height } = cover.getBoundingClientRect()
@@ -80,8 +77,7 @@ const exposed = (cover: HTMLElement): boolean => {
 }
 
 /**
- * 页面里代表 page 这一页的封面图（Cover 的 flight）：格子里是点开它的那一格，它自己的页头是大封面图。
- * 桌面歌单页里这一页有两张（页头、左栏当前这一项），页头在 DOM 里排在前面：起飞、降落都先找到页头，页头滚走了才轮到左栏那张
+ * 页面里代表 page 这一页的封面图（Cover 的 flight）：格子里是点开它的那一格，它自己的页头是大封面图。桌面歌单页里这一页有两张（页头、左栏当前这一项），页头在 DOM 里排在前面，起飞、降落都先找页头，页头滚走了才轮到左栏那张
  */
 const coversOf = (page: string): HTMLElement[] => [
   ...document.querySelectorAll<HTMLElement>(`[data-flight="${CSS.escape(page)}"]`),
@@ -90,20 +86,17 @@ const coversOf = (page: string): HTMLElement[] => [
 /**
  * 换页用浏览器的 View Transitions（ADR-0011），要在组件初始化时调用。tabs 是曲库标签的地址，从左到右。
  * - 浏览器先拍下旧页面，等 SvelteKit 渲染好新页面、返回时恢复好滚动位置（snapshot.ts 同步恢复），再拍新的一帧；
- * - 从格子点开歌单、专辑、歌手（桌面歌单页的左栏也是格子）：被点的那张封面图飞到页头（两头同名），回到格子所在的那一页时飞回去。
- *   直接打开、从别处进来的详情页，返回时只整页飘入；
- * - 过渡中又换了页：上一个立刻结束，不排队；
- * - Android 的返回手势自己放了“预览上一页”的动画（hasUAVisualTransition）：不再叠一层，直接换；
- * - 不支持的浏览器直接换页。播放页的开关是浅路由，不经过这里
+ * - 从格子点开的详情页（桌面歌单页的左栏也是格子）：被点的封面图飞到页头（两头同名），回到格子所在页时飞回去；直接打开、从别处进来的返回时只整页飘入；
+ * - 过渡中又换了页：上一个立刻结束、不排队；Android 返回手势自带“预览上一页”（hasUAVisualTransition）时不再叠一层，不支持的浏览器直接换页；
+ * - 播放页的开关是浅路由，不经过这里
  */
 export const pageTransitions = (tabs: readonly RouteId[]): void => {
   let running: ViewTransition | null = null
   /** 最近一次点按到的链接：点的是格子，它的封面图飞到新页的页头 */
   let pressed: HTMLAnchorElement | null = null
   /**
-   * 从格子点进去的页面（地址 → 点进它的格子所在那些页的地址）：从这一页回到其中一页时飞回格子（DESIGN.md Navigation · 页面切换）。
-   * 一层层点进去（歌手格子 → 歌手页里的专辑）也一层层飞回来；同一页在历史里出现几次（左栏换过去又换回来），每次的来处都记着，
-   * 后退到哪一次都飞。直接打开、从别处进来的不在这里，返回时只整页飘入
+   * 从格子点进去的页面（地址 → 点进它的格子所在那些页的地址）：从这一页回到其中一页时飞回格子（DESIGN.md Navigation · 页面切换）。一层层点进去（歌手格子 → 歌手页里的专辑）也一层层飞回来；
+   * 同一页在历史里出现几次（左栏换过去又换回来），每次的来处都记着，后退到哪一次都飞。直接打开、从别处进来的不在这里，返回时只整页飘入
    */
   const grids = new Map<string, Set<string>>()
   /** 现在叫 COVER 的封面图；换页、过渡结束时去掉名字，免得下一次换页时两个元素同名 */
@@ -118,8 +111,7 @@ export const pageTransitions = (tabs: readonly RouteId[]): void => {
   }
 
   /**
-   * 起飞：点的是格子（link 是点到的链接），飞的是被点的那一格；回到格子所在的那一页，飞的是页头的大封面图。
-   * 减少动态效果时不飞（只剩交叉淡化）。返回两头共用的页面地址
+   * 起飞：点的是格子（link 是点到的链接），飞的是被点的那一格；回到格子所在的那一页，飞的是页头的大封面图。减少动态效果时不飞（只剩交叉淡化）；返回两头共用的页面地址
    */
   const takeOff = (link: HTMLAnchorElement | null, from: URL, to: URL): string | null => {
     const tile = link?.querySelector<HTMLElement>(`[data-flight="${CSS.escape(to.pathname)}"]`) ?? null
@@ -140,8 +132,7 @@ export const pageTransitions = (tabs: readonly RouteId[]): void => {
   }
 
   /**
-   * 降落：新页面画好、滚动位置恢复好以后，找到代表同一页、露在屏幕里的那一张，等它的图加载好、解码好，名字从起飞的那张交给它。
-   * 找不到（页头还是骨架、格子滚出了屏幕、图没到）就只有起飞那一头，它跟着旧页一起飘出（uno.config.ts）。
+   * 降落：新页面画好、滚动位置恢复好以后，找到代表同一页、露在屏幕里的那一张，等它的图加载好、解码好，名字从起飞的那张交给它；找不到（页头还是骨架、格子滚出了屏幕、图没到）就只有起飞那一头，它跟着旧页一起飘出（uno.config.ts）。
    * current：这次过渡还没被下一次换页顶掉；顶掉了名字归下一次管
    */
   const land = async (page: string, current: () => boolean) => {

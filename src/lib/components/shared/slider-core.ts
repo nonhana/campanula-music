@@ -2,20 +2,15 @@ import { clamp } from './clamp'
 import type { Grip, PointerSample } from './press'
 import { pressBroken } from './press'
 
-// 线性拖动核心（进度条、自绘滚动条的滑块共用；Spec #11 第二个测试接入点“拖动手势核心”）：
-// 不碰页面、不碰 Svelte 的纯逻辑。按下时把指针在元素上的位置换成一个值（0 到 1），拖动时跟着走，松手才提交；
-// 只认主指针的主键，第二根手指按下、松开都不插手；按住断了（右键、切走窗口、指针被收回）作废，不提交。
+// 线性拖动核心（进度条、滚动条滑块共用；Spec #11 第二个测试接入点）：不碰页面、不碰 Svelte。按下把指针位置换成 0–1，拖动跟着走、
+// 松手才提交；只认主指针主键，第二根手指不插手；按住断了（右键、切走窗口、指针被收回）作废，不提交。
 
 export interface SliderCoreOptions {
-  /** 按下：返回这一刻的值，null 是这次按下不接（例如点在滚动条滑块前后的空白处） */
+  /** 返回这一刻的值；null 是这次按下不接（例如点在滑块前后的空白处） */
   begin: (sample: PointerSample) => number | null
-  /** 拖动中：指针现在对应哪个值 */
   track: (sample: PointerSample) => number
-  /** 松手：提交最后的值 */
   commit: (value: number) => void
-  /** 作废：回到开始前，不提交 */
   cancel: () => void
-  /** 值变了（拖动中是 0 到 1，没拖时是 null） */
   onValue: (value: number | null) => void
 }
 

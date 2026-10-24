@@ -15,9 +15,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtHearts, signInAtLikedTracks, signInSynced, replyLibrary, replyPlaylists } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// “这一页歌单”的答案（#72）：在不在曲库、加载 / 失败 / 不可用 / 还有更多、首数、哪种失败显示在哪、能做什么，
-// 都由 library.playlistPage 给出；页面只报告“听众在看哪一页”（App 的 viewing），什么时候拉由 App 决定。
-// 录制沿用已有的 #22、#23、#29、#32、#56、#30 数据，不新录也不连真账号。
+// “这一页歌单”的答案（#72）：在不在曲库、加载 / 失败 / 不可用 / 还有更多、首数、哪种失败显示在哪、能做什么，都由 library.playlistPage 给出；页面只报告“听众在看哪一页”（App 的 viewing），什么时候拉由 App 决定。录制沿用已有的 #22、#23、#29、#32、#56、#30 数据，不新录也不连真账号。
 
 /** 搜“真夜中”的歌单结果里的一张，81 首（#56 录制） */
 const SMALL = { id: 95050200, detail: 'library/netease-playlist/001-playlist_detail.json.gz', songs: 'library/netease-playlist/002-song_detail.json.gz' }
@@ -189,7 +187,6 @@ describe('这一页歌单的答案', () => {
     })
     const before = app.state.library!.playlistPage(BANG_DREAM_ID)
     expect(before.songs).toMatchObject({ kind: 'songs', complete: false })
-    // 已经有一部分歌时后台同步失败不在这一页说（由同步条说）
     expect(before.failure).toBeNull()
     expect(before.more).toBeNull()
 
@@ -198,7 +195,6 @@ describe('这一页歌单的答案', () => {
     expect(app.state.library!.playlistPage(BANG_DREAM_ID)).toMatchObject({
       inLibrary: true,
       songs: { kind: 'songs', complete: false },
-      // 后台同步留下的 upstreamChanged 仍在，但这一页说的是打开时断网
       failure: {
         where: 'more',
         failure: { kind: 'offline' },
@@ -230,7 +226,6 @@ describe('这一页歌单的答案', () => {
     })
     expect(syncNoticeFor(library, page.failure?.where === 'list')).toMatchObject({ kind: 'failed' })
 
-    // 重试从停下的地方重新开始；断网后停在等联网
     device.setOnline(false)
     app.retrySync()
     await world.settle()

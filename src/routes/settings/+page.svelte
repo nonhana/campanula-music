@@ -1,8 +1,6 @@
 <!--
-  设置：账号和退出登录（桌面在头像菜单里也有）、在线播放音质、已下载（#38：进已下载页；手机上只有这一个入口，作者 2026-10-21 定）。
-  已下载那一行自己就写着“已下载”，上面不另加区块标题（读屏靠 aria-label 认出这一块）。
-  退出登录先确认（LogoutConfirm，#57）。手机上账号卡只有头像、名字和右边的退出图标；桌面卡片下半是“退出登录”胶囊和说明。
-  音质是一行 5 格的分段条（ui/Segmented，单选组）：选中的那格下面的滑块横着滑过去，方向键切换并选中，Tab 只停在选中的那一格
+  设置：账号和退出登录（#57，先确认）、在线播放音质、已下载（#38；手机上只有这一个入口，作者 2026-10-21 定）。
+  已下载那一行自己写着“已下载”，上面不另加区块标题（读屏靠 aria-label）。音质是 ui/Segmented 的单选组。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -19,7 +17,6 @@
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import Segmented from '#lib/components/ui/Segmented.svelte'
 
-  /** 在线播放音质的叫法：照网易云 */
   const QUALITY_LABELS: Record<Quality, string> = {
     standard: '标准',
     higher: '较高',

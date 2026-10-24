@@ -1,9 +1,6 @@
 <!--
-  结果页的一个标签（单曲、歌单、歌手、专辑，视觉原型 SearchPanel、DesktopSearchResults）：取到的全部，后面还有时“显示更多”。
-  桌面放在白色面板里：单曲是带序号的桌面歌曲行，歌单是 64px 的行，歌手是圆头像网格，专辑是封面网格；
-  手机放在晨光底上：Auxio 式歌曲行、歌单的行、三列歌手、两列专辑。
-  歌手和专辑的骨架、失败、空和格宽交给 TileGrid（#75）；第一页还在拉时是形状一致的骨架，骨架换成内容时依次飘入；
-  没拉成时说明原因、能重试；一个都没有时只有“没有相关的…”的标题
+  结果页的一个标签（单曲、歌单、歌手、专辑，视觉原型 SearchPanel、DesktopSearchResults）：取到的全部，后面还有时“显示更多”。桌面放在白色面板里（带序号的桌面歌曲行、64px 的歌单行、圆头像网格、封面网格），手机放在晨光底上（Auxio 式歌曲行、歌单的行、三列歌手、两列专辑）。
+  歌手和专辑的骨架、失败、空和格宽交给 TileGrid（#75）；第一页还在拉时是形状一致的骨架，骨架换成内容时依次飘入；没拉成时说明原因、能重试；一个都没有时只有“没有相关的…”的标题。
 -->
 <script lang='ts'>
   import { SearchX } from '@lucide/svelte'
@@ -96,8 +93,7 @@
     appendedAt = before
     await view.app.moreSearchResults(keyword, kind)
     await tick()
-    // 取完了，按钮跟着淡出不见：焦点移到新出来的第一项，免得掉回页面最上面（和歌手页“显示更多专辑”一样）；
-    // 最后一页没加进新的（网易云给的都是前面列过的、或者是空的）就落在最后一项上
+    // 取完了，按钮跟着淡出不见：焦点移到新出来的第一项，免得掉回页面最上面（和歌手页“显示更多专辑”一样）；最后一页没加进新的（网易云给的都是前面列过的、或者是空的）就落在最后一项上
     if (more === null && list.status === 'shown') {
       const items = body?.querySelectorAll('li') ?? []
       ;(items[before] ?? items[items.length - 1])?.querySelector<HTMLElement>('a, button')?.focus()

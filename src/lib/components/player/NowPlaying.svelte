@@ -18,13 +18,10 @@
   import SongSwap from './SongSwap.svelte'
 
   interface Props {
-    /** 封面小窗多大（px）：封面按这么大取，飞来的封面也按这么大落下 */
+    /** 封面按这么大取，飞来的也按这么大落下 */
     size: number
-    /** 播放页的大封面按多大取（PAGE_COVER） */
     pageCover: number
-    /** 按钮本身的排版：两个播放条只差悬停 / 按下的样子 */
     buttonClass?: string
-    /** 歌名和试听标之间空多少：两个播放条只差这一处 */
     nameClass?: string
   }
 
@@ -32,9 +29,8 @@
   const view = getAppView()
   const { gripToOpenPlayerPage } = playerPageActions()
   const player = $derived(view.state.player)
-  /** 当前这首：按钮的名字跟着它，不等封面飞完 */
+  /** 按钮的名字跟着它，不等封面飞完 */
   const song = $derived(currentSong(player))
-  /** 封面小窗和歌名显示的那首、怎么换上来的 */
   const landing = landingOf(view, () => size)
   prefetchPageCover(() => song, () => pageCover)
   const gripSong = gripToOpenPlayerPage()

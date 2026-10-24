@@ -1,7 +1,4 @@
-/**
- * Campanula 自己的错误约定（Spec #11“服务端：网易云适配层”）：服务端把网易云的结果翻译成这几类，客户端只认这几类。
- * 出错的接口回 ErrorBody，HTTP 状态码见 src/lib/server/respond.ts
- */
+/** Campanula 的错误约定（Spec #11“服务端：网易云适配层”）：服务端把网易云的结果翻译成这几类，客户端只认这几类；出错的接口回 ErrorBody（状态码见 respond.ts） */
 export type NeteaseFailure
   /** 需要登录：网易云回 301，或凭据已经失效、只剩匿名身份 */
   = | { kind: 'needsLogin' }

@@ -1,8 +1,7 @@
 <!--
-  拖动排序的把手（#36 歌曲列表、#37 曲库歌单列表和桌面网格共用）：能排序的列表进入多选或排序模式时，
-  每一行右边、或每张卡片封面的右上角出现它；其余时候歌曲行右边仍是 •••。按住把手立即拖；
-  触屏上把手自己设 touch-action: none，不和滚动抢。键盘用焦点所在那一行 / 那一张的 Alt + ↑ / ↓ 移一位，
-  把手本身不用按；悬停提示只写这组快捷键。overlay 是网格卡片上用的小白圆钮，class 用来定位置。
+  拖动排序的把手（#36 歌曲列表、#37 歌单列表和桌面网格共用）：能排序的列表进入多选或排序模式时，每行右边或每张卡片右上角出现；
+  其余时候歌曲行右边仍是 •••。按住立即拖；触屏上把手设 touch-action: none，不和滚动抢。键盘用焦点所在行/格的 Alt+↑/↓，
+  把手不用按，悬停提示只写快捷键。overlay 是网格卡片上的小白圆钮，class 定位置。
 -->
 <script lang='ts'>
   import { GripVertical } from '@lucide/svelte'
@@ -10,17 +9,17 @@
   import type { ClassValue } from 'svelte/elements'
 
   interface Props {
-    /** 这一行 / 这一张是什么（歌名、歌单名），读屏读成“拖动排序：…” */
+    /** 歌名、歌单名；读屏读成“拖动排序：…” */
     label: string
     size: 'phone' | 'desktop'
-    /** 按下开始拖动的接线（press.ts 的 attachWindowGrip）；浮起的复制行不给 */
+    /** press.ts 的 attachWindowGrip；浮起的复制行不给 */
     attach?: Attachment<HTMLElement>
-    /** 浮起的复制行：只画样子，不接指针、不能聚焦 */
+    /** 只画样子，不接指针、不能聚焦 */
     ghost?: boolean
-    /** 网格卡片封面上的小白圆钮；平时是歌曲行 / 列表行里的透明按钮 */
+    /** 网格卡片上的小白圆钮；平时是行里的透明按钮 */
     overlay?: boolean
     class?: ClassValue
-    /** 鼠标拖完以后焦点可能留在这个把手上：Alt + ↑ / ↓ 也要能接着用 */
+    /** 鼠标拖完焦点可能留在这里：Alt+↑/↓ 也要能接着用 */
     onkeydown?: (event: KeyboardEvent) => void
   }
 

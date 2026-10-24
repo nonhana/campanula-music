@@ -10,8 +10,8 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks, dailySongs, openJazz, replyLibrary } = listener(world)
 
-// 红心、加入歌单、收藏（#30，Spec #11“客户端：曲库副本”，ADR-0007）：先改本地、立即生效，再提交给网易云；
-// 网易云拒绝时改回来并说明原因。录制见 tests/fixtures/netease/README.md 的验证关卡②和 #30 一条
+// 红心、加入歌单、收藏（#30，Spec #11“客户端：曲库副本”，ADR-0007）：先改本地、立即生效，再提交给网易云；网易云拒绝时改回来并说明原因。
+// 录制见 tests/fixtures/netease/README.md 的验证关卡②和 #30 一条
 const LIKE = 'like-collect/like.like.json'
 const UNLIKE = 'like-collect/like.unlike.json'
 /** 往自建歌单加歌：加好了；整批都已经在歌单里（网易云回 502“歌单内歌曲重复”，SDK 1.4.0 录的，测试替身照 2.x 取里层） */
@@ -27,7 +27,6 @@ const PLAYLIST_COLLECT = 'like-collect/playlist_subscribe.subscribe-token.json'
 const PLAYLIST_UNCOLLECT = 'like-collect/playlist_subscribe.unsubscribe.json'
 /** 网易云拒绝收藏歌单：401“歌单创建者已设置隐私” */
 const PLAYLIST_REJECTED = 'like-collect/playlist_subscribe.own-private.json'
-/** 网易云说操作过于频繁（405） */
 const RATE_LIMITED = 'like-collect/playlist_subscribe.405.json'
 
 /** 作者的自建歌单 jazz：2 首（#22 录制） */
@@ -364,7 +363,6 @@ describe('收藏', () => {
     const { app } = tab
     await world.netease.reply(NETEASE_PLAYLIST.detail)
     await world.netease.reply(NETEASE_PLAYLIST.songs)
-    // 歌单页在看着它：App 自己决定什么时候取，页面不再手调 openPlaylist
     const leave = app.viewing({ kind: 'playlist', id: NETEASE_PLAYLIST.id })
     await world.settle()
 
@@ -376,7 +374,6 @@ describe('收藏', () => {
       total: 81,
       complete: true,
     })
-    // 歌单页看它进了曲库：App 自己切到曲库里的副本，不再联网取、也不重复拉
     await collecting
     await world.settle()
     const [token] = tab.watchman.issued
@@ -396,7 +393,6 @@ describe('收藏', () => {
     expect((await storedLibrary(device, 'playlists') as { id: number }[]).map(playlist => playlist.id)).toContain(NETEASE_PLAYLIST.id)
     expect(await storedTrackIds(device, NETEASE_PLAYLIST.id)).toHaveLength(81)
 
-    // 离开这一页（再取消收藏时不用为了本测试再取一次）
     leave()
     await world.netease.reply(PLAYLIST_UNCOLLECT)
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, false)

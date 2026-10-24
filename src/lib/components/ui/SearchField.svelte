@@ -1,7 +1,6 @@
 <!--
-  搜索框（DESIGN.md Inputs · input-search）：顶栏搜索、歌单内搜索。纸白底、1px 发丝线、胶囊形，44px 高；
-  左边搜索图标，有内容时右边的清除按钮淡入（清空时淡出），没有内容时右边可以放一个提示（顶栏的快捷键）。
-  获得焦点时边框换成茎绿，外面一圈 3px 薄荷雾光环；禁用时降到 50%
+  搜索框（DESIGN.md Inputs · input-search）：纸白底、1px 发丝线、胶囊形、44px 高；有内容时右边清除按钮淡入，
+  没有内容时可以放一个提示（顶栏的快捷键）。获得焦点时边框换茎绿、外面一圈 3px 薄荷雾光环；禁用降到 50%。
 -->
 <script lang='ts'>
   import { Search, X } from '@lucide/svelte'
@@ -13,11 +12,8 @@
 
   interface Props extends Omit<HTMLInputAttributes, 'value' | 'type' | 'aria-label'> {
     value: string
-    /** 读屏读出的名字，也是没有内容时的提示 */
     label: string
-    /** 输入框本身：调用的地方要让它获得焦点、失去焦点时绑定 */
     input?: HTMLInputElement
-    /** 没有内容时放在右边的提示（不是按钮） */
     hint?: Snippet
   }
 

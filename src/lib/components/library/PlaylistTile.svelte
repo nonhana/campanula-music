@@ -1,9 +1,7 @@
 <!--
-  歌单格子（#75）：封面图、歌单名、首数（隐私歌单加一把锁，别人的歌单写是谁的）。点开是歌单页。
-  grid：曲库、搜索综合的封面网格；row：歌单排序时的一行 / 拖起的那一行；nav：歌单页左栏当前这一张。
-  搜索结果的综合里（collectable）封面图右下角压一个始终可见的小圆：自建歌单和我喜欢的音乐标“自建”，
-  别的歌单是收藏开关（CollectButton 的 corner）——和 AlbumTile、ArtistTile 一样，和链接并排放在同一格里，不嵌在链接里。
-  曲库的网格、歌手页的专辑没有这个按钮。
+  歌单格子（#75）：封面、歌单名、首数（隐私加锁，别人的写是谁的）。grid 是封面网格，row 是排序时的一行，nav 是歌单页左栏当前这张。
+  搜索结果综合里（collectable）封面右下角压一个始终可见的小圆：自建和我喜欢的标“自建”，别的是收藏开关（CollectButton 的 corner），
+  和链接并排放在同一格、不嵌在链接里；曲库网格和歌手页的专辑没有这个按钮。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -24,18 +22,14 @@
     trackCount: number
     /** 别人的歌单写是谁的；自己的不写，是 null */
     creator: string | null
-    /** 隐私歌单 */
     locked?: boolean
     phone?: boolean
-    /** 排序模式里焦点在这一格时的键盘操作（Alt + ↑ / ↓） */
     onkeydown?: (event: KeyboardEvent) => void
-    /** 搜索结果里封面图右下角的收藏 / 自建角标 */
     collectable?: boolean
-    /** grid：封面网格；row：排序时的一行；nav：歌单页左栏 */
+    /** grid 封面网格；row 排序时的一行；nav 歌单页左栏 */
     look?: 'grid' | 'row' | 'nav'
-    /** nav：当前打开的这一张 */
     current?: boolean
-    /** 这张封面图是不是页面飞行的起点；拖起来的副本同时出现时关掉（同一时刻一个名字只有一个元素） */
+    /** 是不是封面飞行的起点；拖起来的副本同时出现时关掉（同一时刻一个名字只有一个元素） */
     flight?: boolean
   }
 
@@ -45,7 +39,6 @@
   const status = $derived(collectable && library
     ? collectState(library, { kind: 'playlist', id })
     : null)
-  /** 封面图代表点开的那一页（Cover 的 flight）；链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
   const page = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 </script>
 

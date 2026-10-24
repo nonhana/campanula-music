@@ -6,9 +6,9 @@
 
 实现 Spec #11 下的票时，按顺序走完每一步。
 
-1. **开工**：切到 `rewrite/v1` 并 `git pull`。读票；父 Spec #11、`DESIGN.md`、`tests/fixtures/netease/README.md` 这几份大文档只读票里提到的章节和规则，先 `grep` 找到再读那几段。完成标准：在对话里交出开工清单，再写代码：
+1. **开工**：切到 `rewrite/v1` 并 `git pull`。先读票。父 Spec #11、`DESIGN.md`、`tests/fixtures/netease/README.md` 这几份大文档，只看票里提到的章节和规则：先用 `grep` 定位，再读那几段。完成标准：在对话里交出开工清单，再写代码：
    - 用到的 Spec 章节、ADR 和规则；
-   - 每个画面和规则要读的网易云字段，各自在 `node_modules/hana-music-api/dist/client.generated-*.d.ts` 里有没有声明（ADR-0005）。有没声明的：开 SDK 票，标好阻塞，停下来告诉作者；
+   - 每个画面和规则要读的网易云字段，各自在 `node_modules/hana-music-api/dist/client.generated-*.d.ts` 里有没有声明（ADR-0005）。确实没有声明的：开 SDK 票，标好阻塞，停下来告诉作者；
    - 已有的录制和还缺的录制；
    - 要改的文件。
 2. **测试**：用 `/tdd`，业务测试写在测试接入点“去掉界面的整个 App”上（`tests/harness/world.ts`，用法看 `World`、`Device`、`Tab` 的注释）。纯逻辑另有四个接入点（第二到第五个，和主要接入点合起来共五个）：

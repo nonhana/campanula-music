@@ -8,8 +8,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks } = listener(world)
 
-// 换歌单封面（#34，Spec #11 用户故事 90–92）：选图后先检查能不能用、把长边超过 3200 的缩小，
-// 再在裁剪页里裁成 800×800 JPEG，三步上传（申请凭证 → 浏览器直传 → 设为封面）。
+// 换歌单封面（#34，Spec #11 用户故事 90–92）：选图后先检查能不能用、把长边超过 3200 的缩小，再在裁剪页里裁成 800×800 JPEG，三步上传（申请凭证 → 浏览器直传 → 设为封面）。
 // 录制见 tests/fixtures/netease/README.md 的验证关卡②里封面一条
 
 /** 自建歌单 jazz（公开、2 首，#22 录制）：换封面的目标 */

@@ -5,7 +5,6 @@ import { respondSignedIn } from '#lib/server/session.js'
 
 import type { RequestHandler } from './$types'
 
-// 歌单列表：我喜欢的音乐、自建的、收藏的
 export const GET: RequestHandler = ({ url, cookies }) => {
   const uid = readId('uid', url.searchParams.get('uid'))
   return respondSignedIn(endpoints.playlists, cookies, async listener => ({ playlists: await fetchPlaylists(uid, listener) }))

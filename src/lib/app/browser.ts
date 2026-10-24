@@ -8,125 +8,107 @@ import {
 } from '#lib/api/cover.js'
 import { mock } from '#lib/mock-flag.js'
 
-/**
- * App 用到的浏览器能力。App 只从这里拿，不直接用 window、navigator、document 这些全局对象，
- * 测试接入点里整个换成替身（Spec #11 Testing Decisions）。
- * Background Fetch（#41）由最早用到它的票加上。
- */
+/** App 只从这里拿浏览器能力，不直接用 window、navigator、document；测试接入点里整个换成替身（Spec #11 Testing Decisions）。Background Fetch（#41）由最早用到它的票加上 */
 export interface BrowserCapabilities {
-  /** 向 Campanula 自己的服务端发请求：同源，浏览器自动带上 Cookie；断网时失败 */
+  /** 同源，浏览器自动带上 Cookie；断网时失败 */
   fetch: (path: string, init?: RequestInit) => Promise<Response>
   clock: Clock
-  /** 本机数据库：同一个浏览器里的标签页共用 */
+  /** 同一个浏览器里的标签页共用 */
   indexedDB: IDBFactory
   network: NetworkStatus
   page: PageVisibility
   mediaSession: MediaSessionCapability
   MediaMetadata: typeof MediaMetadata
-  /** 跨标签页的锁，同 navigator.locks：同一浏览器里同源的标签页共用 */
+  /** 同 navigator.locks；同一浏览器里同源的标签页共用 */
   locks: LocksCapability
-  /** 打开一个跨标签页的广播频道，同 new BroadcastChannel(name)：同一浏览器里同源、同名的频道互相收得到，自己发的自己收不到 */
+  /** 同 new BroadcastChannel(name)：同源、同名的频道互相收得到，自己发的自己收不到 */
   broadcastChannel: (name: string) => ChannelCapability
-  /** 新建一个播放器，同 new Audio()：浏览器直连网易云的音频服务器放歌 */
+  /** 同 new Audio()：浏览器直连网易云的音频服务器放歌 */
   audio: () => AudioCapability
   /**
-   * 收藏歌单前现取一枚网易云的反作弊令牌（#30 留言）：网易云官方的 Watchman（网易易盾）给的，页面里只初始化一次，
-   * 每次都重新取，不缓存、不复用。令牌随请求交给服务端，服务端只透传给 SDK。Watchman 没加载出来（断网、被浏览器插件拦了）、
-   * 迟迟不给时失败
+   * 收藏歌单前现取一枚反作弊令牌（#30 留言）：官方的 Watchman（网易易盾）给的，页面里只初始化一次，每次都重新取、不缓存；
+   * 服务端只透传给 SDK。Watchman 没加载出来（断网、被浏览器插件拦了）、迟迟不给时失败。
    */
   checkToken: () => Promise<string>
-  /** 换封面用的图片处理（#34）：读图、预览、裁成正方形导出 JPEG。App 不直接用 canvas、createImageBitmap */
+  /** 换封面用的图片处理（#34）；App 不直接用 canvas、createImageBitmap */
   images: ImageCapability
-  /**
-   * 浏览器直连网易云的图片存储（#34）：把导出的 JPEG 传到 uploadUrl（跨域 POST），带上传凭证，可以中途取消。
-   * 只用于换封面的第二步
-   */
+  /** 把导出的 JPEG 传到 uploadUrl（跨域 POST，带上传凭证，可以中途取消）；只用于换封面的第二步（#34） */
   uploadCoverImage: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
   /**
-   * 浏览器直连网易云的音频服务器、图片服务器下载一个文件（#38 的下载）：跨域 GET，两边都允许跨域（验证关卡③；#38 查过图片服务器回
-   * access-control-allow-origin: *），不带 Cookie。每收到一块数据就调 onProgress（到这一刻一共收到多少字节）。
-   * 服务器回的不是 2xx 时失败；断网、传到一半断开时以 TypeError 失败（Fetch 标准的 network error）
+   * 跨域 GET 下载一个文件（#38）：音频、图片服务器都允许跨域（验证关卡③），不带 Cookie；每收到一块数据调 onProgress。
+   * 不是 2xx 时失败；断网、传到一半断开时以 TypeError 失败（Fetch 标准的 network error）。
    */
   download: (url: string, onProgress: (received: number) => void) => Promise<Blob>
-  /** 这台设备上一个文件的地址（blob:），同 URL.createObjectURL：播放器、图片拿它放本机存着的下载 */
+  /** 同 URL.createObjectURL：播放器、图片拿它放本机存着的下载 */
   objectUrl: (blob: Blob) => string
-  /** 同 URL.revokeObjectURL：这个地址不再用了 */
   revokeObjectUrl: (url: string) => void
 }
 
-/** 一张已经解码、按 EXIF 摆正的图片（换封面用） */
+/** 按 EXIF 摆正过的图片（换封面用） */
 export interface DecodedImage {
   /** 预览图的地址（blob: URL），关掉裁剪页时释放 */
   readonly url: string
-  /** 工作位图的宽高：长边已经缩到 COVER_WORK_MAX_SIDE 以内，裁剪坐标按它算 */
+  /** 长边已经缩到 COVER_WORK_MAX_SIDE 以内，裁剪坐标按它算 */
   readonly width: number
   readonly height: number
-  /** 原图的宽高（缩小之前） */
   readonly origWidth: number
   readonly origHeight: number
 }
 
 export interface ImageCapability {
-  /**
-   * 读选好的文件：按 EXIF 摆正，长边超过 COVER_WORK_MAX_SIDE 的先缩小，另做一张长边最多 1600px 的预览图。
-   * 解不开时抛错（是不是 HEIC、是不是图片由 App 按文件类型和扩展名判断，能不能用以这里成功为准）
-   */
+  /** 按 EXIF 摆正，长边超过 COVER_WORK_MAX_SIDE 的先缩小，另做一张长边最多 1600px 的预览图；解不开时抛错（HEIC 由 App 按类型和扩展名判断） */
   decode: (file: File) => Promise<DecodedImage>
-  /** 释放预览地址和位图 */
   release: (image: DecodedImage) => void
-  /** 从工作位图里裁出正方形，导出 COVER_OUTPUT_SIZE 的正方形 JPEG；超过 1 MB 就降质量重压（最低 0.6） */
+  /** 导出 COVER_OUTPUT_SIZE 的 JPEG；超过 1 MB 就降质量重压（最低 0.6） */
   exportJpeg: (image: DecodedImage, crop: CoverCrop) => Promise<Blob>
 }
 
-/** 播放器发的事件里 App 用到的 */
 type AudioEvent = 'playing' | 'waiting' | 'pause' | 'timeupdate' | 'durationchange' | 'canplaythrough' | 'ended' | 'error'
 
-/** 一个播放器（<audio>）里 App 用到的部分，照 HTML 标准的 HTMLMediaElement */
+/** 照 HTML 标准的 HTMLMediaElement */
 export interface AudioCapability {
   /** 换地址就重新加载：停下、进度回到 0、还没了结的 play() 以 AbortError 失败 */
   src: string
-  /** 秒。还没加载出来时设的值，加载出来后从这里开始放 */
+  /** 秒；还没加载出来时设的值，加载出来后从这里开始放 */
   currentTime: number
   /** 秒；还不知道时是 NaN */
   readonly duration: number
   readonly paused: boolean
-  /** 放到头了 */
   readonly ended: boolean
-  /** 0 到 1 */
   volume: number
   preload: '' | 'none' | 'metadata' | 'auto'
-  /** 加载或解码出错；MediaError 的 code：2 是网络出错，4 是地址放不了 */
+  /** MediaError 的 code：2 是网络出错，4 是地址放不了 */
   readonly error: { readonly code: number } | null
-  /** 开始放：出声了才成功；在那之前暂停、换地址就以 AbortError 失败，地址放不了以 NotSupportedError 失败 */
+  /** 出声了才成功；在那之前暂停、换地址以 AbortError 失败，地址放不了以 NotSupportedError 失败 */
   play: () => Promise<void>
   pause: () => void
   addEventListener: (type: AudioEvent, listener: () => void) => void
 }
 
-/** 跨标签页的锁（Web Locks） */
+/** Web Locks */
 export type LocksCapability = Pick<LockManager, 'request'>
 
-/** 跨标签页的广播频道：收到消息时发 message 事件（MessageEvent，消息在 data 里） */
+/** 收到消息时发 message 事件（MessageEvent，消息在 data 里） */
 export type ChannelCapability = Pick<BroadcastChannel, 'postMessage' | 'addEventListener' | 'close'>
 
-/** 锁屏和通知栏上的播放控件，同 navigator.mediaSession；歌曲信息用 BrowserCapabilities.MediaMetadata 构造 */
+/** 同 navigator.mediaSession；歌曲信息用 BrowserCapabilities.MediaMetadata 构造 */
 export type MediaSessionCapability = Pick<MediaSession, 'metadata' | 'playbackState' | 'setActionHandler' | 'setPositionState'>
 
 export interface Clock {
-  /** 现在的时间，毫秒，同 Date.now() */
+  /** 毫秒，同 Date.now() */
   now: () => number
-  /** 过 ms 毫秒后做 callback，返回取消函数 */
+  /** 返回取消函数 */
   after: (ms: number, callback: () => void) => () => void
 }
 
-/** 联网状态：onLine 同 navigator.onLine，变化时发 online / offline 事件 */
+/** onLine 同 navigator.onLine，变化时发 online / offline 事件 */
 export interface NetworkStatus {
   readonly onLine: boolean
   addEventListener: (type: 'online' | 'offline', listener: () => void) => void
   removeEventListener: (type: 'online' | 'offline', listener: () => void) => void
 }
 
-/** 页面可见性：同 document.visibilityState，变化时发 visibilitychange */
+/** 同 document.visibilityState，变化时发 visibilitychange */
 export interface PageVisibility {
   readonly visibilityState: DocumentVisibilityState
   addEventListener: (type: 'visibilitychange', listener: () => void) => void
@@ -158,7 +140,6 @@ const withTimeout = <T>(work: Promise<T>, what: string): Promise<T> => new Promi
   work.then(resolve, reject).finally(() => window.clearTimeout(timer))
 })
 
-/** 页面里 Watchman 的脚本：只加载一次；没加载出来时下次再试 */
 let watchmanScript: Promise<void> | undefined
 const loadWatchmanScript = (): Promise<void> => {
   watchmanScript ??= new Promise<void>((resolve, reject) => {
@@ -178,10 +159,7 @@ const loadWatchmanScript = (): Promise<void> => {
   return watchmanScript
 }
 
-/**
- * 页面里的 Watchman：整个页面只初始化一次，之后一直用这一个（每次新建等于换一台设备，网易云会回 405，#30 留言）。
- * 初始化没成（网络、被拦）时下次再试；已经有 window.WM 就直接用它
- */
+/** 整个页面只初始化一次（每次新建等于换一台设备，网易云会回 405，#30 留言）；初始化没成时下次再试，已有 window.WM 就直接用 */
 let watchman: Promise<Watchman> | undefined
 const loadWatchman = (): Promise<Watchman> => {
   watchman ??= withTimeout(loadWatchmanScript().then(() => window.WM ?? new Promise<Watchman>((resolve, reject) => window.initWatchman!({
@@ -214,9 +192,9 @@ const watchmanToken = async (): Promise<string> => {
   return token
 }
 
-/** 预览图的边长上限（px）：超大照片直接塞进 <img> 会让手机卡一下 */
+/** 超大照片直接塞进 <img> 会让手机卡一下 */
 const COVER_PREVIEW_MAX = 1600
-/** 预览图、导出用的 canvas 都是 JPEG，透明的地方铺白（JPEG 没有透明） */
+/** JPEG 没有透明，透明的地方铺白 */
 const WHITE = '#fff'
 
 interface Decoded {
@@ -224,7 +202,7 @@ interface Decoded {
   url: string
 }
 
-/** 解码出来的位图和预览地址：DecodedImage 只有界面要用的尺寸和地址，位图留在这里给裁切用 */
+/** DecodedImage 只有界面要用的尺寸和地址，位图留在这里给裁切用 */
 const decoded = new WeakMap<DecodedImage, Decoded>()
 
 const drawWhite = (canvas: HTMLCanvasElement): CanvasRenderingContext2D => {
@@ -242,7 +220,7 @@ const toJpeg = (canvas: HTMLCanvasElement, quality: number): Promise<Blob> => ne
   : reject(new Error('浏览器没能导出 JPEG')), 'image/jpeg', quality))
 
 const decodeImage = async (file: File): Promise<DecodedImage> => {
-  // imageOrientation: 'from-image' 让手机竖拍的照片按 EXIF 摆正
+  // 让手机竖拍的照片按 EXIF 摆正
   let bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
   const origWidth = bitmap.width
   const origHeight = bitmap.height

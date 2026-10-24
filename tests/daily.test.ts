@@ -7,8 +7,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtHearts, dailySongs } = listener(world)
 
-// 每日推荐（#29）：听众打开时用前台请求拉，只在这次登录期间记着；点一首歌就用整份每日推荐替换播放队列。
-// 录制见 tests/fixtures/netease/README.md 的 #29 一条
+// 每日推荐（#29）：听众打开时用前台请求拉，只在这次登录期间记着；点一首歌就用整份每日推荐替换播放队列。录制见 tests/fixtures/netease/README.md 的 #29 一条
 /** 录下的每日推荐有 31 首，第一首和第三首 */
 const RAIN = 443070379
 const THIRD = 3408879610
@@ -18,7 +17,6 @@ const CHECK_IN = 'discover/daily/002-scrobble.json.gz'
 /** 别的歌的播放地址：压着不回，只看播放队列和取了哪首的地址 */
 const SOME_PLAY_URL = 'playback/liked/001-song_url_v1.json.gz'
 
-/** 每日推荐拉过几次 */
 const dailyCalls = (): number => world.netease.calls.filter(call => call.module === 'recommend_songs').length
 
 describe('每日推荐', () => {

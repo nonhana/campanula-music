@@ -1,8 +1,7 @@
 <!--
-  一位歌手的格子：圆形头像、名字居中，下面可以有一行灰字（搜索结果写单曲数）。点开是歌手页。
-  曲库的歌手标签、桌面首页的歌手架子、搜索结果都用它；没有头像的歌手显示人像图标。
-  搜索结果里（collectable）头像右下角压一个始终可见的收藏小圆（CollectButton 的 corner），中心落在圆边 45° 的地方：
-  和链接并排放在同一格里，不嵌在链接里
+  一位歌手的格子：圆形头像、名字居中，下面可以有一行灰字（搜索结果写单曲数）。曲库的歌手标签、桌面首页的架子、搜索结果都用它，
+  没有头像时显示人像图标。搜索结果里（collectable）头像右下角压一个收藏小圆（CollectButton 的 corner），中心落在圆边 45° 处，
+  和链接并排放在同一格、不嵌在链接里。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -16,16 +15,13 @@
   interface Props {
     id: number
     name: string
-    /** 没有头像时是 null */
     avatarUrl: string | null
-    /** 名字下面的一行；不给就不写 */
     detail?: string
-    /** 头像右下角放收藏开关（只在搜索结果里） */
     collectable?: boolean
   }
 
   const { id, name, avatarUrl, detail = '', collectable = false }: Props = $props()
-  /** 头像代表点开的那一页（Cover 的 flight）；链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
+  /** 链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
   const page = $derived(resolve('/artists/[id=neteaseId]', { id }))
 </script>
 

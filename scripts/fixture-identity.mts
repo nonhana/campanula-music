@@ -1,8 +1,5 @@
-// 检查网易云录制数据里有没有残留作者的真实身份（tests/fixtures/netease/README.md「脱敏」）。
-// 身份和真假编号的对照在作者本机的 _notes/fixture-identity.json（不进 git）；没有这个文件（CI、别人的机器）就跳过。
-// 用法：
-//   pnpm tsx scripts/fixture-identity.mts              查 tests/fixtures/ 下全部录制
-//   pnpm tsx scripts/fixture-identity.mts <文件>...    只查这些（提交前钩子传暂存的文件）
+// 检查网易云录制数据里有没有残留作者的真实身份（tests/fixtures/netease/README.md「脱敏」）。身份和真假编号的对照在作者本机的 _notes/fixture-identity.json（不进 git）；没有这个文件（CI、别人的机器）就跳过。
+// 用法：pnpm tsx scripts/fixture-identity.mts 查 tests/fixtures/ 下全部录制；带 <文件>... 只查这些（提交前钩子传暂存的文件）。
 // 查的是：本人的 uid、昵称，本人作为歌手的编号和名字，本人歌单、作品、别的听众的真实编号（按整个数字匹配）。
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'

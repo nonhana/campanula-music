@@ -1,10 +1,7 @@
 <!--
-  等高行的虚拟列表：只渲染视口附近的几十行（几千首也一样）。默认跟随页面滚动；
-  放在自己的滚动容器里（播放页的播放队列）时传 scrollParent，跟随它滚动。
-  滚动、窗口大小变化、列表变化时重算要渲染哪几行。
-  传了 markOf 时，告诉所在滚动区域的滚动条某个高度上是哪一行（shared/scroll-marks.ts），按住滚动条拖时气泡里写它。
-  行是依次飘入的一组（motion.ts 的 reveal）：骨架换成列表时前几行依次飘入，之后滚出来的行不飘
-  拖动排序（#36）：placeOf 给出每一行放在哪个高度（拖动时让开空位），keep 让被拖的行一直挂载（Android 上手指底下的元素不能卸载）
+  等高行的虚拟列表：只渲染视口附近的几十行，默认跟随页面滚动，放进自己的滚动容器时传 scrollParent。
+  传了 markOf 时告诉滚动区域的气泡某个高度上是哪一行（shared/scroll-marks.ts）。行是依次飘入的一组（motion.ts 的 reveal）。
+  拖动排序（#36）：placeOf 给出每一行的高度（拖动时让开空位），keep 让被拖的行一直挂载（Android 上手指底下的元素不能卸载）。
 -->
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
@@ -14,23 +11,19 @@
 
   interface Props {
     items: readonly T[]
-    /** 每行高度（px），所有行等高 */
+    /** px，所有行等高 */
     itemHeight: number
-    /** 视口上下多渲染的行数 */
     overscan?: number
-    /** 列表所在的滚动容器；不传就是页面 */
     scrollParent?: HTMLElement
     getKey: (item: T, index: number) => string | number
     row: Snippet<[T, number]>
-    /** 这一行在滚动条的气泡里怎么写 */
+    /** 气泡里怎么写这一行 */
     markOf?: (item: T, index: number) => ScrollMark
     /** 拖动排序时这一行放在哪个高度（px）；不传就按 index * itemHeight */
     placeOf?: (item: T, index: number) => number
-    /** 拖动排序时一直渲染的行（被拖的那几行不能被卸载） */
     keep?: (item: T, index: number) => boolean
     /** 拖动排序时每一行移动的过渡；不拖时不加，滚出来、换列表时直接到位 */
     animatePlace?: boolean
-    /** 这一行藏起来（被拖的行留在原位、仍挂载，但看不见） */
     hidden?: (item: T, index: number) => boolean
   }
 

@@ -1,17 +1,10 @@
 <!--
-  歌单页（我喜欢的音乐也是这一页）。桌面上曲库里的歌单沿用原来的两栏：左边是曲库里的歌单，右边是 200px 大封面的头部和虚拟列表
-  （窄于 1024px 时左栏收起，DESIGN.md Layout）；不在曲库里的歌单和专辑页一样是一栏，不显示左栏，和自己的歌单区分开。
-  手机是二级页面：返回栏、居中的封面头部、简介卡片、歌单内搜索、歌曲行。
-  每张歌单都在信息行下面显示标签，在头部下面显示简介（和专辑页共用的 Description，截断后可以展开），手机也一样。
-  头部交给 DetailHeader（#75：封面、标题、信息行、标签、动作、尾部搜索、骨架、淡入、pageHeading、封面飞行终点都在模块里）；
-  左栏的每一项用 PlaylistTile 的 nav 画法，不再另画一张歌单卡。
-  打开时这张歌单还没同步全，App 就马上用前台请求拉它（viewing 之后由 App 决定），不等后台同步；
-  不在曲库里的歌单不存进本机，每次打开都由 App 联网取。页面只读 App 给的答案（state.library.playlistPage）。
-  页头信息行不写类别（方封面和旁边的按钮已经说明是歌单）。
-  已删除、不存在、别人的隐私歌单打不开时，标题说清是哪一种。
-  头部播放全部旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标；点了已收藏直接取消收藏、不确认）：不在曲库里的和收藏的歌单有，我喜欢的音乐、自建歌单没有。
-  自建歌单在那里是“添加歌曲”（手机只留图标）和 •••（PlaylistMenu）：编辑歌单信息、改为公开（隐私歌单才有）、删除歌单（#33）；我喜欢的音乐不能改名、不能删，没有它们。
-  返回这一页时，搜索词和滚动位置都回到原来的样子（存在 SvelteKit 的 snapshot 里，跟着浏览历史走）
+  歌单页（我喜欢的音乐也是这一页）。桌面曲库里的歌单是两栏（左栏曲库、右栏 200px 大封面头部和虚拟列表，窄于 1024px 收起，
+  DESIGN.md Layout），不在曲库里的和专辑页一样是一栏；手机是返回栏 + 居中封面头部 + 简介 + 歌单内搜索 + 歌曲行。
+  头部交给 DetailHeader（#75），左栏用 PlaylistTile 的 nav 画法。页面只读 App 给的答案（state.library.playlistPage）：
+  打开时还没同步全就由 App 用前台请求拉，不等后台同步；不在曲库里的不存进本机，每次打开都联网取。
+  动作：收藏开关（不在曲库里的和收藏的歌单有）、自建歌单的“添加歌曲”和 •••（#33）；我喜欢的音乐都没有。
+  返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot，跟着浏览历史走）。
 -->
 <script lang='ts'>
   import { afterNavigate, goto } from '$app/navigation'
@@ -53,17 +46,15 @@
   const id = $derived(params.id)
   const page = $derived(library?.playlistPage(id) ?? null)
   const shown = $derived(page?.songs ?? null)
-  /** 不在曲库里的歌单（歌单列表已经拿到、里面没有它） */
+  /** 歌单列表已经拿到、里面没有它 */
   const outside = $derived(page?.inLibrary === false)
   const header = $derived(page && playlistHeader(page))
   const phone = $derived(!desktopLayout.current)
-  /** 页头大封面代表这一页：从格子点进来时，格子的封面飞到这里（Cover 的 flight） */
   const here = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 
   let query = $state('')
   /** 桌面“多选 · 排序”：进入多选后被工具条换掉，退出时靠它重新找到并接回焦点（#66） */
   let desktopEntry = $state<HTMLElement>()
-  /** 桌面“多选 · 排序”入口：按钮自己的 focusEntry 和列表行回收后的兜底都用它 */
   const desktopEntryFocus = () => desktopEntry?.querySelector<HTMLElement>('button') ?? null
   scrollSnapshot('/playlists/[id=neteaseId]', () => query, (value) => {
     query = value
@@ -77,17 +68,12 @@
       atOnce(() => (query = ''))
   })
 
-  // 听众在看这一张歌单（换一张、离开这一页都由这一次调用管）：什么时候拉、进出曲库怎么切换由 App 决定；
-  // 离开时 App 提交还没提交的移除和排序
+  // 听众在看这一张歌单：什么时候拉、进出曲库怎么切换由 App 决定；离开时 App 提交还没提交的移除和排序
   $effect(() => view.app.viewing({ kind: 'playlist', id }))
 
   const name = $derived(header?.name ?? '')
-  /**
-   * 下面列表里的首数（同步完了是实际有的歌，还在同步时是一共几首）；列表还没出来时不写，
-   * 头部和左栏当前这一项都用它，和列表对得上（DESIGN.md Do's）
-   */
+  /** 同步完了是实际有的歌、还在同步时是一共几首；列表还没出来时不写。和列表对得上（DESIGN.md Do's） */
   const listedCount = $derived(page?.count?.total ?? null)
-  /** 自建歌单：有 •••，能编辑、删除 */
   const own = $derived(page?.can.edit ?? false)
   /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：桌面的入口写“多选 · 排序”（#36） */
   const sortableList = $derived(page?.can.sort ?? false)
@@ -104,13 +90,11 @@
     })
   }
 
-  /** 自建歌单的“添加歌曲”：桌面居中弹窗、手机底部弹层。 */
   const openAddSongs = (event: MouseEvent) => {
     addSongsDialog.open({ playlistId: id, from: event.currentTarget as HTMLElement })
   }
 
-  // 离开这张歌单、还没提交的移除立即提交：由上面 viewing 的清理做（页面隐藏时 App 自己也会做）；
-  // 多选由列表源卸载时自己退出
+  // 离开还没提交的移除由上面 viewing 的清理立即提交（页面隐藏时 App 自己也会做）；多选由列表源卸载时自己退出
 
   /** 打不开的歌单：标题说清是哪一种，只有“不存在”补一句 */
   const UNAVAILABLE = {
@@ -119,8 +103,7 @@
     private: { icon: Lock, title: '这是别人的隐私歌单' },
   } satisfies Record<PlaylistUnavailable, { icon: LucideIcon, title: string, body?: string }>
 
-  // 桌面左栏：打开时、歌单列表到了时、换了一张歌单时，把当前这张滚进左栏的视野里（只滚左栏，不动页面，免得打乱返回时恢复的滚动位置）。
-  // 刚打开时直接定位过去；之后（前进、后退到别的歌单）平滑地滚过去，减少动态效果时直接跳
+  // 桌面左栏：把当前这张滚进视野（只滚左栏，不动页面，免得打乱返回时恢复的滚动位置）；刚打开直接定位，之后平滑地滚过去
   let sideNav = $state<HTMLElement>()
   let sidePlaced = false
   $effect(() => {

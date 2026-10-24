@@ -1,5 +1,4 @@
-// 给 tests/fixtures/netease 下的录制数据建机器可读索引（mock 按模块 + 查询匹配用）。
-// 每份录制都过 tests/harness/fixtures.ts 的 SDK 结构定义校验，校验不过就不写索引。
+// 给 tests/fixtures/netease 下的录制数据建机器可读索引（mock 按模块 + 查询匹配用）。每份录制都过 tests/harness/fixtures.ts 的 SDK 结构定义校验，校验不过就不写索引。
 // 用法：pnpm fixtures:index；pnpm fixtures:index --check（索引和文件对不上就失败，CI 用）。
 import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'

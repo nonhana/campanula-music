@@ -1,8 +1,7 @@
 <!--
-  选歌单标签（#33，原型 PlaylistEditor 的标签那一块）：只能从网易云的标签库里选（App 的 openPlaylistTags，按语种、风格、场景、情感、主题分组），
-  最多 3 个（验证关卡②）。选了的排在上面，点一下去掉；标题旁写“n/3”，选满了其余的变灰、不能点；“最多 3 个”只写进这一组的读屏说明。
-  标签库还在取是几行骨架，没取到写一句“标签没加载出来：原因”、能重试；已经选了的照样能去掉。标签库里的每个标签是一个 Filter chip（按下了就是选了）。
-  桌面上标签库那一块最高 188px、自己滚，手机上跟着弹层一起滚
+  选歌单标签（#33）：只能从网易云的标签库选（按语种、风格、场景、情感、主题分组），最多 3 个（验证关卡②）。选中的排在上面，点一下去掉；
+  标题旁“n/3”，选满后其余变灰；“最多 3 个”只写进读屏说明。标签库在取是骨架，没取到写原因、能重试，已选的照样能去掉。
+  桌面上标签库最高 188px、自己滚，手机上跟着弹层滚。
 -->
 <script lang='ts'>
   import { X } from '@lucide/svelte'
@@ -17,9 +16,7 @@
   import Scrollbar from '../ui/Scrollbar.svelte'
 
   interface Props {
-    /** 选了的标签，照选的先后 */
     tags: string[]
-    /** 网易云的标签库：没取过是 null */
     library: PageState<PlaylistTagGroup[]> | null
     phone: boolean
     onretry: () => void
@@ -27,7 +24,7 @@
 
   let { tags = $bindable(), library, phone, onretry }: Props = $props()
   const full = $derived(tags.length >= PLAYLIST_TAGS_MAX)
-  /** 骨架几行、每行几个：和标签库差不多的样子 */
+  /** 和标签库差不多的样子 */
   const BONES = [5, 6, 7]
 
   const toggle = (tag: string) => {

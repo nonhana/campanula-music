@@ -1,10 +1,8 @@
 <!--
-  没登录、登录失效时的已下载页外框（#38，原型 DesktopLoggedOut / PhoneLoggedOut 的已下载那一屏）：ADR-0006 说下载属于设备，
-  这是“未登录只能看到登录页”的唯一例外。顶上一行是 logo（回到登录页）和右边的“登录”，没有侧栏、顶栏搜索；
-  播放队列里有歌时底下是播放条（桌面 80px 通栏、手机浮起的迷你播放条），能打开播放页、能开“更多”菜单。
-  播放页、播放提示、“更多”菜单和登录后的骨架（SignedInFrame）一样放；播放页开着时后面的不能操作。
-  该外框只有 /downloads 一页，没有框架内换页，所以不登记 pageTransitions；播放条的 still / 名字是静态标记，换屏按整屏淡出（AC-3 收窄）。
-  改曲库和下载的提示条在登录后的外框里（没登录时不能改曲库、不能下载），这里没有
+  没登录、登录失效时的已下载页外框（#38，原型 DesktopLoggedOut / PhoneLoggedOut 的已下载那一屏）：ADR-0006 说下载属于设备，这是“未登录只能看到登录页”的唯一例外。
+  顶上一行是 logo（回到登录页）和右边的“登录”，没有侧栏、顶栏搜索；播放队列里有歌时底下是播放条（桌面 80px 通栏、手机浮起的迷你播放条），能打开播放页、能开“更多”菜单。
+  播放页、播放提示、“更多”菜单和登录后的骨架（SignedInFrame）一样放；播放页开着时后面的不能操作。该外框只有 /downloads 一页，不登记 pageTransitions，换屏按整屏淡出（AC-3 收窄）。
+  改曲库和下载的提示条在登录后的外框里（没登录时不能改曲库、不能下载），这里没有。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -26,7 +24,6 @@
   const { children }: { children: Snippet } = $props()
   const overlays = setOverlays(createOverlays())
   const lookup = setScrollLookup({ markAt: null })
-  /** 播放条在不在：内容区底部让位 */
   const docked = $derived(overlays.playerLayer.hasQueue)
   const scrollPadding = pageScrollPadding()
 

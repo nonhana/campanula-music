@@ -17,7 +17,6 @@
 
   const view = getAppView()
   const player = $derived(view.state.player)
-  /** 当前这首：红心键跟着它 */
   const song = $derived(currentSong(player))
 </script>
 

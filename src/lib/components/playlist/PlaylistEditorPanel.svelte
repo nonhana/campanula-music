@@ -1,15 +1,9 @@
 <!--
   歌单编辑里面的内容（外壳是 PlaylistEditor → DialogShell：桌面居中弹窗、手机底部弹层；原型 PlaylistEditor）。每次打开都重新建，表单按打开时的歌单填好。
-  - 新建：名称（有看得见的标签，不写占位；最多 40 个宽度，汉字算 2，写超了提示上限）、设为隐私歌单。按“创建”等网易云建好（“创建”转圈）才关上，
-    没建成就留在这里一句话说原因，填好的不丢；从加入歌单里新建的，建好接着把那首（多选时是那几首）歌加进去（App 的 createPlaylist）。
-  - 编辑歌单信息：歌单封面（右下角的相机键，点整张歌单封面也能选图，打开换封面的裁剪页，#34）、名称、简介（最多 1,000 个字）、标签（TagPicker，打开时取网易云的标签库）。
-    按“保存”交给 App（先改本地、立即生效，没成会自己改回并在提示条里说明）马上关上；名称不合规时不能保存。
-  - 改为公开：说清楚公开后谁看得到，琥珀底一句“公开后不能改回隐私”，确认键是主按钮。
-  - 删除：说清楚红心不受影响、删了不能恢复，确认键是出错红（DESIGN.md Buttons · Destructive）。
-    在这张歌单的页面上删的，先回到曲库再删（不留在已经删掉的歌单页上）。
-  改公开、删除都改不回来：排版是 ConfirmPanel，焦点先落在取消上，误按回车不会直接做。
-  标题、关闭键在外壳里；手机上表单是接近全屏的弹层，标题行是文字按钮 取消 / 标题（外壳给的 heading）/ 创建（保存），下面是 DialogBody；
-  桌面是 DialogBody，右下角 取消 / 创建（保存）。确认的排版是 ConfirmPanel
+  - 新建：名称（有看得见的标签，不写占位；最多 40 个宽度，汉字算 2，写超了提示上限）、设为隐私歌单。按“创建”等网易云建好才关上，没建成就留在这里一句话说原因，填好的不丢；从加入歌单里新建的，建好接着把那首（多选时是那几首）歌加进去（App 的 createPlaylist）。
+  - 编辑歌单信息：歌单封面（右下角的相机键，点整张封面也能选图，打开换封面的裁剪页，#34）、名称、简介（最多 1,000 个字）、标签（TagPicker，打开时取网易云的标签库）；按“保存”交给 App（先改本地、立即生效，没成会自己改回并在提示条里说明）马上关上，名称不合规时不能保存。
+  - 改为公开：说清楚公开后谁看得到，琥珀底一句“公开后不能改回隐私”，确认键是主按钮。删除：说清楚红心不受影响、删了不能恢复，确认键是出错红（DESIGN.md Buttons · Destructive），在这张歌单的页面上删的，先回到曲库再删。
+  改公开、删除都改不回来：排版是 ConfirmPanel，焦点先落在取消上，误按回车不会直接做。标题、关闭键在外壳里；手机标题行是 取消 / 标题 / 创建（保存），桌面在右下角，确认排版也是 ConfirmPanel。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -40,7 +34,6 @@
 
   interface Props {
     request: EditorRequest
-    /** 在手机的底部弹层里 */
     sheet: boolean
     /** 外壳给的标题：手机表单放进自己的标题行（按住往下拖收起） */
     heading: Snippet<[classes: string]>
@@ -65,7 +58,6 @@
     ...start?.tags ?? [],
   ])
   let isPrivate = $state(false)
-  /** 上一次没建成的原因 */
   let failure = $state<ChangeFailure | null>(null)
   /** 换封面的入口：歌单封面本身和下面的文字都是这一个按钮；隐藏的文件选择框由它打开 */
   let coverButton = $state<HTMLButtonElement>()
@@ -77,7 +69,6 @@
     : undefined)
   /** 改过的简介超过了上限（网易云收更长的，原来就超长、没改的照样能保存别的） */
   const descriptionTooLong = $derived(description.trim() !== (start?.description?.trim() ?? '') && description.trim().length > PLAYLIST_DESCRIPTION_LENGTH)
-  /** 名称、简介不合规：不能按“创建 / 保存” */
   const blocked = $derived(problem !== null || descriptionTooLong)
   const songCount = $derived(playlist
     ? library?.playlistPage(playlist.id).content?.total ?? playlist.trackCount

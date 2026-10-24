@@ -6,32 +6,29 @@ import { attachGrip, createPageHold } from '../shared/press'
 import type { WheelDirection } from './wheel-core'
 import { createWheelCore } from './wheel-core'
 
-// 手机播放页左右拖封面切歌（DESIGN.md Cover Wheel）。怎么判断全在 wheel-core.ts（Spec #11 第二个测试接入点“拖动手势核心”），
-// 这里只接上浏览器：封面按钮的指针事件、指针捕获和按住断了的几种情况（press.ts 的 attachGrip，和抽屉一样）、
-// 量封面多宽、拖着时整页的光标和选字；转盘怎么摆交给 CoverWheel 的 drag
+// 手机播放页左右拖封面切歌（DESIGN.md Cover Wheel）：判断全在 wheel-core.ts（Spec #11 第二个测试接入点），
+// 这里只接浏览器（attachGrip 的指针捕获和按住断了的几种情况）、量封面多宽、拖着时整页的光标和选字；转盘怎么摆交给 CoverWheel 的 drag。
 
 export interface CoverSwipeOptions {
-  /** 当前这首的编号：拖着时它变了（放完自动接续），这次拖动作废 */
+  /** 拖着时它变了（放完自动接续），这次拖动作废 */
   current: () => number
-  /** 往这边有没有别的歌可换 */
   has: (direction: WheelDirection) => boolean
-  /** 松手时过了阈值：切到上一首 / 下一首（和按键一样） */
+  /** 和按键一样 */
   commit: (direction: WheelDirection) => void
-  /** 轻点封面（键盘的 Enter、空格也算） */
+  /** 轻点封面（键盘 Enter、空格也算） */
   tap: () => void
 }
 
 export interface CoverSwipe {
-  /** 转盘被手转了几格（往右为正）；没在拖是 null。交给 CoverWheel 的 drag */
+  /** 往右为正；没在拖是 null */
   readonly turned: number | null
-  /** 挂在封面按钮上：`{@attach swipe.grip}`，点按也由它接，不用再写 onclick */
+  /** `{@attach swipe.grip}`，点按也由它接 */
   grip: Attachment<HTMLElement>
 }
 
-/** 在组件初始化时调用 */
 export const createCoverSwipe = ({ current, has, commit, tap }: CoverSwipeOptions): CoverSwipe => {
   let turned = $state<number | null>(null)
-  /** 封面按钮多宽（px）：尺寸变了由 ResizeObserver 记下，拖动时不读排版（读一次就可能把整页排版重算一遍） */
+  /** ResizeObserver 记下，拖动时不读排版（读一次可能把整页重算一遍） */
   let width = 0
   const holdPage = createPageHold()
 

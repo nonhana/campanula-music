@@ -1,10 +1,7 @@
 <!--
-  菜单类浮层的外壳：只管浮动菜单与抽屉的呈现，开关、历史、Esc、inert 和归还焦点由浮层栈统一拥有。
-  鼠标打开的是贴着锚点的浮动菜单：从锚点那一侧飘出来，关掉时淡出（DESIGN.md Overlays），
-  点外面、滚动（菜单里面自己滚不算）、窗口变了、换页都关上；触屏是底部弹层：和播放页同一套抽屉，
-  按住拉手或上面那一块往下拖、点按拉手或遮罩都收起，返回也先收起它。
-  菜单行、行高和菜单键盘在 MenuList（menu.ts 的条目数据）：调用方只说有哪些行、头部是什么（#73）。
-  选了之后壳自己关上这一层；转交给另一层的项（加入歌单、新建歌单、编辑歌单）设 closeOnChoose: false，自己关。
+  菜单类浮层的外壳：只管浮动菜单与抽屉的呈现，开关、历史、Esc、inert 和归还焦点由浮层栈统一拥有。鼠标打开的是贴着锚点的浮动菜单：从锚点那一侧飘出来，关掉时淡出（DESIGN.md Overlays），
+  点外面、滚动（菜单里面自己滚不算）、窗口变了、换页都关上；触屏是底部弹层：和播放页同一套抽屉，按住拉手或上面那一块往下拖、点按拉手或遮罩都收起，返回也先收起它。
+  菜单行、行高和菜单键盘在 MenuList（menu.ts 的条目数据）：调用方只说有哪些行、头部是什么（#73）。选了之后壳自己关上这一层；转交给另一层的项（加入歌单、新建歌单、编辑歌单）设 closeOnChoose: false，自己关。
 -->
 <script lang='ts' generics='R extends MenuRequest'>
   import type { Attachment } from 'svelte/attachments'
@@ -20,9 +17,7 @@
 
   interface Props {
     layer: OverlayLayer<R, HTMLElement>
-    /** 读屏读出的名字 */
     label: (request: R) => string
-    /** 浮动菜单的宽度（class） */
     width: string
     /** 菜单条目；null：还没拿到（歌单列表还在同步），壳画几行骨架 */
     items: (request: R) => readonly MenuItem[] | null
@@ -50,7 +45,6 @@
   const FLOATING_MEDIA_ROW = 48
   const SHEET_ICON_ROW = 52
   const SHEET_MEDIA_ROW = 60
-  /** 还没拿到歌单列表时画几行骨架 */
   const LOADING_ROWS = 3
 
   const request = $derived(layer.request)

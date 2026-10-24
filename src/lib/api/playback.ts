@@ -16,31 +16,27 @@ export const NUMBERED_SOURCE_KINDS = ['playlist', 'album', 'artist'] as const
 
 /** 播放来源（GLOSSARY）：这首歌是从哪个列表或哪次搜索放进播放队列的 */
 export type PlaySource
-  /** 歌单、专辑、歌手：带着它的编号 */
+/** 带编号 */
   = | { kind: typeof NUMBERED_SOURCE_KINDS[number], id: number }
-  /** 每日推荐：每天换一份，没有编号 */
+    /** 每天换一份，没有编号 */
     | { kind: 'daily' }
-  /** 已下载（#38）：这台设备上下载的全部歌，没有编号 */
+    /** 这台设备上下载的全部歌，没有编号 */
     | { kind: 'downloads' }
-  /** 一次搜索（#31）：搜的是哪个词 */
+    /** 搜的是哪个词 */
     | { kind: 'search', keyword: string }
 
-/** 听歌打卡的请求体：这首歌听完了（播完或切走） */
+/** 这首歌听完了（播完或切走） */
 export interface CheckInRequest {
-  /** 这首歌自己的播放来源 */
   source: PlaySource
   /** 实际听了多少秒，正整数 */
   seconds: number
 }
 
-/**
- * 一首歌的播放地址，浏览器拿它直连网易云的音频服务器。
- * 这个账号放不了完整的（会员歌对非会员）时是试听片段的地址
- */
+/** 浏览器拿它直连网易云的音频服务器；这个账号放不了完整的（会员歌对非会员）时是试听片段的地址 */
 export type PlayUrlResponse
   = | {
     playable: true
-    /** https 地址；音频服务器支持分段请求 */
+    /** https；音频服务器支持分段请求 */
     url: string
     /** 只是试听片段 */
     trial: boolean
@@ -53,10 +49,7 @@ export type PlayUrlResponse
 /** 下载音质：设置页的下载音质（#40）加上之前固定是极高，和在线播放音质分开（Spec #11“客户端：下载”） */
 export const DOWNLOAD_QUALITY: Quality = 'exhigh'
 
-/**
- * 下载一首用的地址，浏览器拿它直连网易云的音频服务器，把整首存进这台设备（#38）。
- * 只给完整音频的地址：网易云没给（无版权、这个账号下不了完整的）时是 downloadable: false
- */
+/** 浏览器拿它直连音频服务器把整首存进这台设备（#38）；只给完整音频的地址，没给（无版权、这个账号下不了完整的）时是 downloadable: false */
 export type DownloadUrlResponse
   = | {
     downloadable: true
@@ -76,7 +69,6 @@ export interface LyricWord {
   text: string
 }
 
-/** 一行歌词 */
 export interface LyricLine {
   /** 这一行开始的时刻（秒）：点这一行就从这里放 */
   start: number
@@ -89,14 +81,10 @@ export interface LyricLine {
   romanization: string | null
 }
 
-/** 一首歌的歌词 */
 export type LyricsResponse
   /** 网易云标着是纯音乐 */
   = | { kind: 'pureMusic' }
   /** 网易云没有这首的歌词 */
     | { kind: 'none' }
-  /**
-   * word：有逐字歌词；line：只有逐行的。lines 按开始的时刻排。
-   * translated、romanized：有没有一行配上了翻译、音译（没有时界面禁用开关）
-   */
+    /** word：有逐字歌词；line：只有逐行的，lines 按开始的时刻排。translated、romanized：有没有一行配上了翻译、音译（没有时界面禁用开关） */
     | { kind: 'word' | 'line', lines: LyricLine[], translated: boolean, romanized: boolean }

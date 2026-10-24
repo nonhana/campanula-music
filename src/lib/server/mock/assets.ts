@@ -1,5 +1,4 @@
-// mock 的外部资源本地化：封面、头像、播放地址、图片直传都指向开发服务器自己，
-// 这样 mock 环境不会向网易云或其他外网发请求（#58 验收）。
+// mock 的外部资源本地化：封面、头像、播放地址、图片直传都指向开发服务器自己，不向网易云或其他外网发请求（#58 验收）。
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 
@@ -27,10 +26,7 @@ const coverPath = (url: string): string => {
   return `${COVER_PREFIX}/${key}.svg`
 }
 
-/**
- * 把返回体里所有指向网易云的外网地址换成开发服务器自己的地址。
- * 只认已知的网易云域名；别的地址原样保留（录制里几乎没有，真出现就是 mock 没本地化，测试会查）。
- */
+/** 把返回体里指向网易云的外网地址换成开发服务器的地址；只认已知域名，别的原样保留（真出现就是 mock 没本地化，测试会查） */
 export const localize = <T>(value: T): T => walk(value) as T
 
 const walk = (value: unknown): unknown => {

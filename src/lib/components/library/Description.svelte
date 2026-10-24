@@ -1,8 +1,6 @@
 <!--
-  专辑、歌单的简介（专辑页和歌单页共用）：桌面是头部下面的一段灰字（截断 3 行），手机放在白色圆角卡片里（截断 4 行）。
-  截断了才有“展开 / 收起”按钮（量出来的：文字不够行数时不显示）。
-  展开、收起时段落的高度从现在的样子变过去（展开 360ms、收起 200ms），下面的歌曲跟着平稳地挪，不一下跳开；
-  连点时从此刻的高度掉头。收起时等高度收完才截断成省略号。减少动态效果时直接到位（DESIGN.md Motion · 不动布局的例外）
+  专辑、歌单的简介（专辑页和歌单页共用）：桌面是头部下面一段灰字（3 行），手机在白色圆角卡片里（4 行）；截断了才有“展开 / 收起”。
+  展开、收起时高度从现在的样子变过去（展开 360ms、收起 200ms），下面的歌平稳地挪；连点时从此刻的高度掉头，收起时等高度收完才截断。
 -->
 <script lang='ts'>
   import { flushSync } from 'svelte'
@@ -19,15 +17,14 @@
   const { text, phone = false }: Props = $props()
   const textId = $props.id()
   let expanded = $state(false)
-  /** 正在收起：高度收完才截断，收的这一会儿字不先变成省略号 */
+  /** 高度收完才截断，收的这一会儿字不先变省略号 */
   let folding = $state(false)
   let clipped = $state(false)
   let paragraph = $state<HTMLElement>()
-  /** 正在变的高度 */
   let resizing: Animation | undefined
   const clamped = $derived(!expanded && !folding)
 
-  // 截断着时看文字有没有被截断；换了简介、窗口变宽变窄都要重新量
+  // 换了简介、窗口变宽变窄都要重新量
   $effect(() => {
     void text
     if (!paragraph || !clamped)

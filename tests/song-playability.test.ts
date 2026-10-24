@@ -11,9 +11,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInWithLiked } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// App 接缝上“每首歌现在能不能放”和“下载那一项现在能不能选”（#74）：界面不再自己拼联网、登录和下载状态，
-// 只读 App 给的答案。下载了的总能放（ADR-0006）；没下载的要联网、登录着；无版权的不能放。
-// 准备借 #38 的下载录制：我喜欢的音乐的第 1 首能下完整音频。
+// App 接缝上“每首歌现在能不能放”和“下载那一项现在能不能选”（#74）：界面不再自己拼联网、登录和下载状态，只读 App 给的答案。下载了的总能放（ADR-0006）；没下载的要联网、登录着；无版权的不能放。准备借 #38 的下载录制：我喜欢的音乐的第 1 首能下完整音频。
 
 const FIRST = { id: 3433267939, downloadUrl: 'playback/downloads/002-song_download_url_v1.json.gz' }
 const SECOND = 2662577181

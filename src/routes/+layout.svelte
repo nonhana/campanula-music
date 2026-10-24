@@ -25,9 +25,8 @@
 
   const { children } = $props()
 
-  // 页面关闭了服务端渲染，这里只在浏览器里运行。
-  // 安全上下文 = HTTPS 或本机 localhost：Service Worker、Background Fetch、Storage API、
-  // 带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
+  // 页面关闭了服务端渲染，这里只在浏览器里运行。安全上下文 = HTTPS 或本机 localhost：Service Worker、
+  // Background Fetch、Storage API、带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
   const app = window.isSecureContext
     ? createApp(realBrowserCapabilities())
     : undefined
@@ -51,7 +50,6 @@
   /** 没登录、登录失效时打开的是已下载页（#38，ADR-0006：下载属于设备）：不换成登录页 */
   const downloadsPage = $derived(page.route.id === '/downloads')
 
-  /** 整个 App 现在是哪一屏：换屏时交叉淡化（打开中 → 曲库 / 登录页、登录 → 曲库、退出登录、登录失效、登录页 ↔ 没登录时的已下载页） */
   const screen = $derived(
     !session
       ? 'https'

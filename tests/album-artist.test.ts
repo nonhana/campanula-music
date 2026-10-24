@@ -8,12 +8,10 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks, reopen, replyLibrary } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// 专辑页、歌手页（#23）：听众打开时用前台请求拉。收藏的专辑打开过就存进本机副本，别的只在这次登录期间记着。
-// 录制见 tests/fixtures/netease/README.md 的 #23 一条
+// 专辑页、歌手页（#23）：听众打开时用前台请求拉。收藏的专辑打开过就存进本机副本，别的只在这次登录期间记着。录制见 tests/fixtures/netease/README.md 的 #23 一条
 const DIR = 'library/album-artist'
 /** 收藏的专辑里多了 THE BOOK for,（录制时成对地收藏、马上取消收藏） */
 const COLLECTED_ALBUMS_WITH_THE_BOOK = `${DIR}/011-album_sublist.json.gz`
-/** 收藏的专辑 */
 const KEEP_THE_VILLAGE_ALIVE = { id: 3149073, fixture: `${DIR}/008-album.json.gz` }
 /** 收藏的专辑，没有简介（nonhana/hana-music-api#59） */
 const SOUNDTRACK = { id: 3154337, fixture: `${DIR}/009-album.json.gz` }

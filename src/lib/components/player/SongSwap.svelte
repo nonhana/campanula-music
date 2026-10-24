@@ -25,7 +25,7 @@
 
   const { song, turn, place, children }: Props = $props()
 
-  /** 等着飘进来（还在 delay 里）的那一块：introstart 时才露面 */
+  /** 还在 delay 里：introstart 时才露面 */
   const waiting = new WeakSet<Element>()
 
   const enter = (node: Element, _params: undefined, options: TransitionOptions): MotionConfig => {
@@ -43,7 +43,7 @@
     }, options)
   }
 
-  // 飘出的那一块 Svelte 会标成 inert：读屏只读到新的歌名
+  // 飘出的那块 Svelte 标成 inert：读屏只读到新的歌名
   const leave = (node: Element, _params: undefined, options: TransitionOptions): MotionConfig => {
     if (turn === null || waiting.has(node))
       return {}
@@ -59,7 +59,6 @@
   }
 </script>
 
-<!-- span：播放条上放在按钮里 -->
 <span class='swap'>
   {#key song?.id}
     <span class='slot' in:enter out:leave onintrostart={event => waiting.delete(event.currentTarget)}>

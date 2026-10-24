@@ -4,22 +4,20 @@ import type { DragSortEdges, DragSortResult, DragSortSession, DragSortState, Poi
 import { createDragSortSession } from './drag-sort'
 import { attachWindowGrip, createPageHold } from './press'
 
-// 拖动排序的接线（手机歌单行、桌面歌单网格、多选拖歌共用）：rAF 循环、页面保持（光标和选字）、Esc、
-// 页边测量（顶栏下沿、播放条上沿）只写这一份。手势怎么判断在 drag-sort.ts 的纯核心里；
-// 几何适配器只量 DOM（measure / track / slot），浮起的影子由视图画。
-// 排序的把手都用 attachWindowGrip：虚拟列表会重建行，按住后的 move / up 听在 window 上才不会断。
+// 拖动排序的接线（手机歌单行、桌面歌单网格、多选拖歌共用）：rAF 循环、页面保持（光标和选字）、Esc、页边测量只写这一份；
+// 手势判断在 drag-sort.ts 的纯核心里，几何适配器只量 DOM（measure / track / slot），浮起的影子由视图画。
+// 把手都用 attachWindowGrip：虚拟列表会重建行，move / up 听在 window 上才不会断。
 
-/** 浮起的东西跟到哪、空位在哪：适配器每帧算一次 */
+/** 适配器每帧算一次 */
 export interface DragSortTrack {
   ghost: Rect
   target: number
 }
 
-/** 一种布局（行、网格、虚拟歌曲列表）量 DOM 的三件事 */
 export interface DragSortAdapter<S> {
-  /** 开始拖：量一次；拿不到（元素不在了）返回 null */
+  /** 量一次；元素不在了返回 null */
   measure: (id: number, handle: HTMLElement, at: Point) => S | null
-  /** 指针 → 浮起的东西和空位。edges 是页面上沿、下沿，slots 是没被拿走的个数 */
+  /** edges 是页面上沿、下沿，slots 是没被拿走的个数 */
   track: (scene: S, at: Point, edges: DragSortEdges, slots: number) => DragSortTrack
   /** 落位时空位在视口的哪里 */
   slot: (scene: S, target: number) => Rect
@@ -27,18 +25,13 @@ export interface DragSortAdapter<S> {
 
 export interface DragSortOptions<S> {
   ids: () => readonly number[]
-  /** 按下的这一项是哪几项一起挪；默认只有它 */
   groupOf?: (id: number) => readonly number[]
   adapter: DragSortAdapter<S>
-  /** 松手、键盘移动：提交新的顺序 */
   commit: (order: readonly number[], state: DragSortState | null) => boolean
-  /** 落位、展开期间新的按下先不接 */
   busy?: () => boolean
-  /** 键盘的 Alt + ↑ / ↓ 能不能走核心（按“挪到谁前面”提交的适配器设 false） */
   keyboard?: boolean
-  /** 快速定位时不要让边缘滚动接手 */
   scrollable?: () => boolean
-  /** 指针动了（每次 pointermove）：快速定位这类布局自己的东西在这里更新 */
+  /** 每次 pointermove；快速定位这类布局自己的东西在这里更新 */
   onPointer?: (at: Point) => void
   onStart?: (state: DragSortState) => void
   onEnd?: (result: DragSortResult) => void
@@ -46,19 +39,15 @@ export interface DragSortOptions<S> {
 
 export class DragSort<S> {
   dragging = $state(false)
-  /** 拿起的那一项；落位动画期间由视图自己记着 */
   grabbed = $state<number | null>(null)
-  /** 拖动中列表显示的顺序；不在拖动时是 null */
   preview = $state.raw<readonly number[] | null>(null)
-  /** 一起挪的几项、没被拿走的几项，按列表先后 */
   moving = $state.raw<readonly number[]>([])
   rest = $state.raw<readonly number[]>([])
-  /** 空位在 rest 里的第几个 */
   target = $state(0)
-  /** 浮起的东西（视口坐标）；落位动画从这里出发 */
+  /** 落位动画从这里出发 */
   ghost = $state.raw<Rect>({ x: 0, y: 0, width: 0, height: 0 })
   private scene: S | null = null
-  /** 这一帧已经算过的几何：target 和 ghost 共用一次 adapter.track / pageEdges */
+  /** target 和 ghost 共用一次 adapter.track / pageEdges */
   private tracked: { at: Point, slots: number, result: DragSortTrack } | null = null
   private raf = 0
   private lastFrame = 0
@@ -115,7 +104,7 @@ export class DragSort<S> {
     })
   }
 
-  /** 这一行 / 这一张的把手：按住立即拖（鼠标挪过 5px 才算，触屏立即） */
+  /** 鼠标挪过 5px 才算，触屏立即 */
   handle(id: number): Attachment<HTMLElement> {
     let attachment = this.handles.get(id)
     if (!attachment) {
@@ -133,24 +122,21 @@ export class DragSort<S> {
     return attachment
   }
 
-  /** 落位时空位在视口的哪里。scene 保留到下一次按下，落位动画期间还能用 */
+  /** scene 保留到下一次按下，落位动画期间还能用 */
   settleAt(target: number): Rect | null {
     return this.scene
 ? this.options.adapter.slot(this.scene, target)
 : null
   }
 
-  /** Esc、换了列表：作废，不提交 */
   cancel(): void {
     this.session.cancel()
   }
 
-  /** Alt + ↑ / ↓：把这一项移一位并提交 */
   moveByKeyboard(id: number, delta: -1 | 1): boolean {
     return this.session.moveByKeyboard(id, delta)
   }
 
-  /** 一次拖动里同一帧的几何只量一次（target 和 ghost 共用） */
   private track(scene: S, at: Point, slots: number): DragSortTrack {
     const hit = this.tracked
     if (hit && hit.at.x === at.x && hit.at.y === at.y && hit.slots === slots)

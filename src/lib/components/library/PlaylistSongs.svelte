@@ -1,11 +1,8 @@
 <!--
-  一张歌单（包括我喜欢的音乐）特有的部分：搜索框、数量行右边的多选入口、多选工具条、拖动排序和它的浮起行 / 快速定位窄条。
-  列表本身（面板、表头、骨架、空 / 没搜到、正在播放、点歌、虚拟化、行高）在 songs/SongList。
-  歌单页和手机曲库的“我喜欢”标签共用；不在曲库里的歌单：歌是打开时联网一页一页取的，提示里说“加载”，不说“同步”。
-  - 手机：搜索框在列表上面；桌面：搜索框在歌单页的头部（调用方放，绑定同一个 query），“找到几首”在白色面板的表头里。
-  - 搜索在本机副本里即时完成；歌单还没同步全时结果标“可能不全”。
-  - 点一首歌（搜索结果里点也一样）就用整张歌单替换播放队列。
-  - 已经有一部分歌时，其余的没拉成在列表上方说明；多选里不能排序时也说清楚。
+  一张歌单（包括我喜欢的音乐）特有的部分：搜索框、多选入口和工具条、拖动排序和它的浮起行 / 快速定位窄条；列表本身在 songs/SongList。
+  歌单页和手机曲库的“我喜欢”共用；不在曲库里的歌单歌是联网一页页取的，提示说“加载”不说“同步”。手机搜索框在列表上面，
+  桌面在歌单页头部（同一个 query），“找到几首”在面板表头里；搜索在本机副本即时完成，没同步全时标“可能不全”；
+  点歌（包括搜索结果）用整张歌单替换队列；其余的没拉成、多选里不能排序都在列表上方说明。
 -->
 <script lang='ts'>
   import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SquareMinus, X } from '@lucide/svelte'
@@ -37,10 +34,9 @@
   interface Props {
     library: LibraryState
     playlistId: number
-    /** 搜索词：调用方存着，返回这一页时恢复 */
     query: string
     phone?: boolean
-    /** 桌面多选入口：行被虚拟列表回收后，焦点回到这个稳定按钮（由歌单页给） */
+    /** 行被虚拟列表回收后，焦点回到这个稳定按钮（由歌单页给） */
     entryFocus?: () => HTMLElement | null
   }
 
@@ -49,13 +45,11 @@
   const page = $derived(library.playlistPage(playlistId))
   const shown = $derived(page.songs)
   const liked = $derived(page.kind === 'liked')
-  /** 不在曲库里的歌单：歌是打开时联网取的，说“加载”，不说“同步” */
   const outside = $derived(page.inLibrary === false)
   const term = $derived(query.trim())
   const result = $derived(term && shown.kind === 'songs'
     ? view.app.searchPlaylist(playlistId, term)
     : null)
-  /** 列表里显示的歌：搜索时是搜到的 */
   const songs = $derived(result
     ? result.songs
     : shown.kind === 'songs'
@@ -63,15 +57,10 @@
     : [])
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
   const selection = playlistSelection
-  /** 曲库里的这张歌单是哪一类；不在曲库里的歌单是 null */
   const kind = $derived(page.kind)
-  /** 能排序的列表（自建歌单、我喜欢的音乐）：手机数量行右边的多选图标读作“多选和排序”（#36、#57） */
   const sortableList = $derived(page.can.sort)
-  /**
-   * 现在能不能拖：歌都同步全了、每一首都有歌曲信息（不然列表和整张歌单对不上），也没在搜索、没在重新拉
-   */
+  /** 歌都同步全了、每首都有歌曲信息（不然列表和整张歌单对不上），也没在搜索、没在重新拉 */
   const sortable = $derived(sortableList && shown.kind === 'songs' && shown.complete && shown.songs.length === shown.total && result === null && page.more === null)
-  /** 能排序的列表现在拖不了：说清楚是搜索结果，还是还没同步完 */
   const sortBlockedText = $derived.by(() => {
     if (result !== null)
       return '清空搜索后才能排序'
@@ -79,14 +68,13 @@
       return '歌还没取全，暂时不能排序'
     return '同步完才能排序'
   })
-  /** 整张歌单里的歌：勾选和“加入歌单 / 移除”都用它，搜索时也一样 */
+  /** 勾选和“加入歌单 / 移除”都用它，搜索时也一样 */
   const allSongs = $derived(shown.kind === 'songs'
     ? shown.songs
     : [])
 
-  /** 拖动排序（#36）：只在多选里、按每行的把手拖；勾选的几首一起拖，保持原来的先后 */
+  /** 只在多选里按每行把手拖；勾选的几首一起拖、保持先后（#36） */
   let listHost = $state<HTMLElement>()
-  /** 手机数量行的多选入口：进入多选后被顶栏换掉，退出时靠它重新找到并接回焦点（#66） */
   let phoneEntry = $state<HTMLElement>()
   const drag = new SongDrag({
     songs: () => songs,
@@ -97,7 +85,7 @@
   // 拖动期间虚拟列表的 items 保持原顺序，只改每一行的 placeOf；
   // 不能把被拖的行挪到数组末尾：DOM 节点被移走会丢指针捕获（#36 真实输入验证）
 
-  /** 列表源：多选从这里直接读整张歌单、显示着的歌和歌单种类；换歌单、列表消失、离开页面都由模块自己退出 */
+  /** 多选从这里读整张歌单、显示着的歌和种类；换歌单、列表消失、离开页面由模块自己退出 */
   const selectionSource: SelectionSource = {
     get playlistId() { return playlistId },
     songs: () => allSongs,
@@ -109,7 +97,7 @@
   selection.attach(selectionSource)
   $effect(() => () => selection.detach(selectionSource))
 
-  /** 行入口的退出归还：行还在就回行；被虚拟列表回收了就回稳定的多选入口（手机图标 / 桌面按钮） */
+  /** 行还在就回行；被虚拟列表回收就回稳定的多选入口 */
   const rowEntryFocus = (from: HTMLElement): () => HTMLElement | null => () => {
     if (from.isConnected)
       return from
@@ -125,7 +113,7 @@
     return () => drag.cancel()
   })
 
-  /** 桌面：焦点在某一行时 Alt + ↑ / ↓ 移一位（#36）；走的和拖动是同一个 App 操作 */
+  /** 焦点在某一行时 Alt+↑/↓ 移一位（#36），和拖动是同一个 App 操作 */
   const onListKeydown = (event: KeyboardEvent): void => {
     if (!sortable || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown'))
       return
@@ -140,7 +128,6 @@
     }
   }
 
-  /** 列表状态交给 songs/SongList：歌单自己的失败在哪说、空状态说什么、能不能搜 */
   const listView = $derived.by((): SongListView => {
     if (page.failure && page.failure.where === 'list') {
       return {
@@ -171,7 +158,7 @@
     return { kind: 'loading' }
   })
 
-  /** 歌单内搜索的“找到几首、可能不全”；没搜到时下面那句按在不在曲库里说 */
+  /** “找到几首、可能不全”；没搜到时下面那句按在不在曲库里说 */
   const search = $derived(result
     ? {
       term,
@@ -180,7 +167,6 @@
     }
     : null)
 
-  /** 列表源：多选的勾选、⌘/Ctrl 点选、手机长按 */
   const selectionProps = $derived<SongSelection>({
     active: selection.mode,
     has: songId => selection.has(songId),
@@ -205,7 +191,6 @@
     }),
   })
 
-  /** 拖动排序的几何：列表按 placeOf 摆行，被拖的行一直挂载 */
   const dragHooks = $derived({
     placeOf: drag.placeOf,
     keep: drag.keep,

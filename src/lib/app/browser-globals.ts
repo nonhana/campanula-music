@@ -1,12 +1,6 @@
 import type { BrowserCapabilities } from './browser'
 
-/**
- * 每项浏览器能力背后碰到的全局对象。App 里只能通过 BrowserCapabilities 拿这些能力，
- * 全局对象本身只准在 browser.ts 的实现里出现（browser.ts 不受这条限制）。
- *
- * 键和 BrowserCapabilities 一一对应：加一项能力就必须在这里登记它用到的全局对象，
- * 漏了会编译不过（satisfies 卡住），名单不会悄悄落后于契约。
- */
+/** App 只能通过 BrowserCapabilities 拿这些能力，全局对象只准在 browser.ts 里出现（它不受这条限制）；键和 BrowserCapabilities 一一对应，漏登记会编译不过（satisfies 卡住） */
 export const BROWSER_GLOBALS_BY_CAPABILITY = {
   fetch: ['fetch'],
   clock: ['setTimeout', 'setInterval', 'requestAnimationFrame'],

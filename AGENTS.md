@@ -1,24 +1,28 @@
-# Campanula Music — Agent Instructions
+# Campanula Music — Agent 指令
 
-## Agent skills
+## Agent 技能
 
-### Issue tracker
+### Issue 跟踪
 
-Issues and specs live as GitHub issues in `nonhana/campanula-music`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+本仓库的 issue 和 Spec 都存成 GitHub issue，仓库是 `nonhana/campanula-music`，统一用 `gh` CLI 操作。见 `docs/agents/issue-tracker.md`。
 
-### Triage labels
+### 分诊标签
 
-Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+默认使用五种角色标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。见 `docs/agents/triage-labels.md`。
 
-### Domain docs
+### 领域文档
 
-Single-context: one root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/domain.md`.
+单上下文（single-context）：根目录一份 `GLOSSARY.md`，加上 `docs/adr/`。见 `docs/agents/domain.md`。
 
-**Decisions**: before stating or relying on a design decision (in a reply, a plan, or code), check `docs/adr/`; each filename names its decision. ADRs outrank recalled memories.
+**决策**：在回复、计划或代码里陈述或依赖某个设计决策之前，先查 `docs/adr/`；每个文件名就写明了它对应的决策。ADR 的效力高于回忆出来的记忆。
 
-### Delivery
+### 交付
 
-Before implementing a ticket, read `docs/agents/delivery.md`: branch, test seam, real-account rules, and hand-off with a trial checklist for the author (the author verifies by trying it; screenshots only on request).
+实现一张票之前，先读 `docs/agents/delivery.md`：分支、测试接入点、真账号规矩，以及把试用清单交给作者的收尾方式（由作者亲手试用验收；截图只在点名时做）。
+
+### 代码规范
+
+写代码和审查时对照 `CODING_STANDARDS.md`；能用工具查的规则以 `eslint.config.mts` 为准。
 
 ### Mock 与浏览器验证
 
@@ -28,7 +32,7 @@ Before implementing a ticket, read `docs/agents/delivery.md`: branch, test seam,
 
 ## 代码地图
 
-领域目录名优先用 `GLOSSARY.md` 的概念（例如 `library/` 曲库、`playlist/` 歌单、`player/` 播放、`downloads/` 下载）；`ui/`、`svg/`、`shell/`、`shared/` 是实现结构，不要求有术语。不确定一个概念住哪时先查 GLOSSARY。
+领域目录名优先用 `GLOSSARY.md` 的概念（例如 `library/` 曲库、`playlist/` 歌单、`player/` 播放、`downloads/` 下载）；`ui/`、`svg/`、`shell/`、`shared/` 是实现结构，不要求有术语。不确定某个概念该放在哪时先查 GLOSSARY。
 
 - `src/routes/`：页面；`src/routes/api/**/+server.ts` 是服务端接口（ADR-0013）。
 - `src/lib/app/`：去掉界面的整个 App（测试接入点）；`api-client.ts` 是浏览器发请求的那一层，契约在 `src/lib/api/`。
@@ -46,4 +50,4 @@ Before implementing a ticket, read `docs/agents/delivery.md`: branch, test seam,
 
 ## Svelte
 
-When unsure about a Svelte 5 / SvelteKit API, look it up with the Svelte MCP (`.omp/mcp.json`): `list-sections`, then `get-documentation` for the relevant sections. The `svelte-file-editor` subagent lives in `.omp/agents/`.
+拿不准 Svelte 5 / SvelteKit 的 API 时，用 Svelte MCP（`.omp/mcp.json`）查：先 `list-sections`，再用 `get-documentation` 取对应章节。`svelte-file-editor` subagent 的定义在 `.omp/agents/`。

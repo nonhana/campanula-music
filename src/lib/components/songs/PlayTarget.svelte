@@ -1,7 +1,7 @@
 <!--
-  歌曲行里点歌的按钮（DESIGN.md Song Row）：盖住整行，单击（轻点）整行就播放。放在 position: relative 的行里。
+  歌曲行里点歌的按钮（DESIGN.md Song Row）：盖住整行，单击（轻点）整行就播放；放在 position: relative 的行里。
   给了 cover（这一行的封面图）的，点了换歌时封面图飞进播放条（cover-flight.svelte.ts）；播放队列里的不给，在播放页里换碟。
-  键盘焦点环画在行内，不压到相邻的行（DESIGN.md Buttons · Focus）。无版权的歌不能点
+  键盘焦点环画在行内、不压到相邻的行（DESIGN.md Buttons · Focus）；无版权的歌不能点。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
@@ -12,7 +12,6 @@
 
   interface Props {
     disabled: boolean
-    /** 正在播放这首 */
     now: boolean
     onplay: () => void
     /** 多选：整行是一个勾选框，点了只勾选、不播放，也不飞封面图 */
@@ -24,7 +23,6 @@
     unplayable?: boolean
     /** 这一行的封面图：点了换歌时它飞进播放条 */
     cover?: HTMLElement
-    /** 行是圆角的（白色面板里） */
     rounded?: boolean
     /** 能排序的列表里，这一行的键盘排序快捷键（Alt + ↑ / ↓） */
     keyshortcuts?: string

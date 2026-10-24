@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { PointerSample } from '#lib/components/shared/press.js'
 import { createSliderCore } from '#lib/components/shared/slider-core.js'
 
-// 第二个测试接入点“拖动手势核心”的线性那一半（进度条、自绘滚动条）：只认主指针的主键，
-// 第二根手指不重新开始、松开不提交，按住断了作废；值始终夹在 0 到 1。
+// 第二个测试接入点“拖动手势核心”的线性那一半（进度条、自绘滚动条）：只认主指针的主键，第二根手指不重新开始、松开不提交，按住断了作废；值始终夹在 0 到 1。
 
 const setup = ({ beginValue = (sample: PointerSample) => sample.x / 100 }: { beginValue?: (sample: PointerSample) => number | null } = {}) => {
   const commits: number[] = []
@@ -60,13 +59,11 @@ describe('只认主指针的主键', () => {
     expect(pointer.down(40)).toBe(true)
     expect(values).toEqual([0.4])
 
-    // 第二根手指按下、移动、松开：都不插手
     expect(pointer.down(90, { pointerId: 2, isPrimary: false })).toBe(false)
     pointer.move(90, { pointerId: 2, isPrimary: false })
     pointer.up(90, { pointerId: 2, isPrimary: false })
     expect(values).toEqual([0.4])
 
-    // 第一根手指接着拖、松手
     pointer.move(70)
     pointer.up(70)
     expect(values).toEqual([0.4, 0.7, null])

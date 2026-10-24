@@ -82,7 +82,6 @@ describe('返回可收起的层', () => {
     }, 'session')
     history.listen(phase => stack.reconcile(phase))
 
-    // 多选：打开它的按钮在层开着时被工具条换掉，关掉后重新找到新入口
     let entry = 'old-entry'
     const selection = stack.register<{ from: string | null }>('selection', {
       history: () => false,
@@ -94,7 +93,6 @@ describe('返回可收起的层', () => {
     await selection.close()
     expect(focused).toEqual(['new-entry'])
 
-    // focusReturn 返回 null：退回 request.from
     focused.length = 0
     let missing: string | null = null
     const withNull = stack.register<{ from: string | null }>('with-null', {
@@ -107,7 +105,6 @@ describe('返回可收起的层', () => {
     await withNull.close()
     expect(focused).toEqual(['origin'])
 
-    // 没给 focusReturn：行为和其他层一样，用 request.from，fallback 原样交给适配器
     focused.length = 0
     fallbacks.length = 0
     const plain = stack.register<{ from: string | null }>('plain', {
@@ -120,7 +117,6 @@ describe('返回可收起的层', () => {
     expect(focused).toEqual(['plain-origin'])
     expect(fallbacks).toEqual(['[data-entry]'])
 
-    // focusReturn 和 request.from 都没有：把 null 交给适配器，由它兜底到 fallback 里的元素
     focused.length = 0
     fallbacks.length = 0
     const nothing = stack.register<{ from: string | null }>('nothing', {
@@ -599,12 +595,10 @@ describe('审查反例的历史与来源失效', () => {
         : null,
     })
 
-    // 歌曲菜单转交来的单曲选择器：多选没开也能打开
     expect(await picker.open({ from: 'more', mode: 'song' })).toBe('committed')
     expect(picker.request).toEqual({ from: 'more', mode: 'song' })
     await picker.close()
 
-    // 多选打开的选择器：来源没开时打不开；开着才打开，来源失效就跟着没
     expect(await picker.open({ from: 'select', mode: 'multi' })).toBe('cancelled')
     await selection.open({ from: 'select' })
     expect(await picker.open({ from: 'select', mode: 'multi' })).toBe('committed')

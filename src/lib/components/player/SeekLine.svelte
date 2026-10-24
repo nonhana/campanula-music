@@ -1,8 +1,7 @@
 <!--
-  桌面底栏顶边的进度线，也是滑块（DESIGN.md Player Bars）：平时是一条 2px 的薄荷线；鼠标移上去、键盘聚焦、拖动时往下加粗到 4px，
-  露出 4×14px 的深薄荷游标（和波浪进度条的游标同一个样子）。点按、拖动跳到那里（seek-slider.svelte.ts），
-  拖动时底栏左边的时间跟着走。点按区域是顶边上下 16px 高的一条，往上只伸出 6px，少挡住上面的内容。
-  放在 position: fixed 的底栏里，slider 由底栏创建（它的时间也要跟着拖动变）
+  桌面底栏顶边的进度线，也是滑块（DESIGN.md Player Bars）：平时 2px 薄荷线；悬停、聚焦、拖动时加粗到 4px，露出 4×14px 深薄荷游标。
+  点按、拖动跳到那里（seek-slider.svelte.ts），拖动时底栏左边的时间跟着走。点按区域是顶边上下 16px 高的一条，往上只伸 6px，少挡内容。
+  放在 position: fixed 的底栏里，slider 由底栏创建（它的时间也要跟着拖动变）。
 -->
 <script lang='ts'>
   import { getAppView } from '../shared/app-context.svelte'

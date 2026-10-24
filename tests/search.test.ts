@@ -14,8 +14,7 @@ import { useWorld } from './harness/world'
 
 const world = useWorld()
 
-// 搜索（#31、#32）：边输入边给建议；按搜索后拉四类结果（单曲、歌单、歌手、专辑，综合由它们拼成），每类一页一页地取；
-// 在结果里点一首歌是插播。录制见 tests/fixtures/netease/README.md 的 #31、#32 两条
+// 搜索（#31、#32）：边输入边给建议；按搜索后拉四类结果（单曲、歌单、歌手、专辑，综合由它们拼成），每类一页一页地取；在结果里点一首歌是插播。录制见 tests/fixtures/netease/README.md 的 #31、#32 两条
 /** 先打了“夜に”、再打完“夜に駆ける”时网易云给的建议 */
 const SUGGEST_YORU_NI = 'search/songs/001-search_suggest.json.gz'
 const SUGGEST_YORU_NI_KAKERU = 'search/songs/002-search_suggest.json.gz'
@@ -65,10 +64,7 @@ const TYPES: Record<SearchKind, number> = {
   albums: 10,
 }
 
-/**
- * 网易云对四类搜索各回什么：给了录制的回录制，没给的压着不回（用哪份录制都一样，永远不回）。
- * 四类一起发出去，到服务端的先后不固定，按 type 对上
- */
+/** 网易云对四类搜索各回什么：给了录制的回录制，没给的压着不回（用哪份录制都一样，永远不回）。四类一起发出去，到服务端的先后不固定，按 type 对上 */
 const replySearch = async (fixtures: Partial<Record<SearchKind, string>>): Promise<void> => {
   for (const kind of SEARCH_KINDS) {
     const fixture = fixtures[kind]
@@ -93,7 +89,6 @@ const searchHeld = async (app: App, keyword: string): Promise<void> => {
   await searchFor(app, keyword, {})
 }
 
-/** 显示着的一类结果；没显示就报错 */
 const shownList = <K extends SearchKind>(app: App, kind: K): Extract<SearchList<K>, { status: 'shown' }> => {
   const list = app.state.search.results?.[kind]
   if (list?.status !== 'shown')
@@ -101,7 +96,6 @@ const shownList = <K extends SearchKind>(app: App, kind: K): Extract<SearchList<
   return list as Extract<SearchList<K>, { status: 'shown' }>
 }
 
-/** 问过网易云哪些词的建议 */
 const suggestedKeywords = (): unknown[] => world.netease.calls.filter(call => call.module === 'search_suggest').map(call => call.query)
 
 /** 网易云被问了哪些词的这类结果（查询参数），按先后 */

@@ -7,8 +7,7 @@ import { queryKey } from '#lib/server/mock/query-key.js'
 
 import { buildIndex } from '../scripts/fixture-index.mts'
 
-// 录制索引是 mock 按模块 + 查询匹配的来源。索引和录制文件必须一一对应，每份录制都要过 SDK 结构定义校验
-// （SDK 还没导出结构的模块记 validated: false，mock 不拿它当可用录制）。
+// 录制索引是 mock 按模块 + 查询匹配的来源。索引和录制文件必须一一对应，每份录制都要过 SDK 结构定义校验（SDK 还没导出结构的模块记 validated: false，mock 不拿它当可用录制）。
 const ROOT = join(import.meta.dirname, '..')
 const INDEX = join(ROOT, 'tests/fixtures/netease/index.json')
 

@@ -1,10 +1,7 @@
 <!--
-  歌单封面的正方形取景器（#34，原型 Cropper）：图片在固定的正方形框下面移动、缩放。
-  一根手指拖动，两根手指捏合，鼠标滚轮缩放，下面的滑块也能缩放；方向键移动，+ / - 缩放。
-  框外盖一层晨光底色的薄纱，框是白色细边（浅色图片上也看得见）。拖动时页面和弹层都不滚（touch-action: none）。
-  crop 是工作位图上的正方形（单位是那张位图的像素），双向绑定；导出时直接用。
-  几何（平移、缩放、夹紧、crop ↔ 视图）在 cover-crop-core.ts 的纯核心里；指针接线用 press.ts 的 attachGrip，
-  按住断了（右键菜单、切走窗口、指针被收回、元素没了）就停止，不会留下悬停也在平移。
+  歌单封面的正方形取景器（#34，原型 Cropper）：图片在固定的正方形框下面移动、缩放。一根手指拖动，两根手指捏合，鼠标滚轮缩放，下面的滑块也能缩放；方向键移动，+ / - 缩放。
+  框外盖一层晨光底色的薄纱，框是白色细边（浅色图片上也看得见）；拖动时页面和弹层都不滚（touch-action: none）。crop 是工作位图上的正方形（单位是那张位图的像素），双向绑定，导出时直接用。
+  几何（平移、缩放、夹紧、crop ↔ 视图）在 cover-crop-core.ts 的纯核心里；指针接线用 press.ts 的 attachGrip，按住断了（右键菜单、切走窗口、指针被收回、元素没了）就停止，不会留下悬停也在平移。
   readonly：上传中、失败后只看取景结果，不再接收手势，也不显示滑块。
 -->
 <script lang='ts'>
@@ -26,7 +23,6 @@
     height: number
     /** 取景框边长（CSS 像素） */
     size: number
-    /** 只看：上传中、失败后 */
     readonly?: boolean
     crop: CoverCrop
   }
@@ -60,14 +56,12 @@
   const W = $derived(width * scale)
   const H = $derived(height * scale)
 
-  /** 手势改出来的新视图：记下来，顺手算出 crop */
   const apply = (next: CropView) => {
     view = next
     crop = cropOf(frame, view)
     placed = { ...crop }
   }
 
-  /** 框里的坐标 */
   const at = (sample: { x: number, y: number }): CropPoint => {
     const rect = host!.getBoundingClientRect()
     return { x: sample.x - rect.left, y: sample.y - rect.top }

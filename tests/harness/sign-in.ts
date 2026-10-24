@@ -24,10 +24,7 @@ export const LIBRARY_SYNC_MODULES: ReadonlySet<string> = new Set([
 /** Set-Cookie 的有效期属性：Max-Age 和 Expires 都写，和网易云下发的一样 */
 const expires = (days: number): string => `Max-Age=${days * 86400}; Expires=${new Date(Date.now() + days * 86400_000).toUTCString()}`
 
-/**
- * 网易云登录成功时下发的 Set-Cookie：写法照真的（同名的按不同路径下发好几条，验证关卡①一次登录约 28 条），
- * 值是假的。只存名字和值时加密后约 2 KB；连属性一起存会超过浏览器 4 KB 的上限
- */
+/** 网易云登录成功时下发的 Set-Cookie：写法照真的（同名的按不同路径下发好几条，验证关卡①一次登录约 28 条），值是假的。只存名字和值时加密后约 2 KB；连属性一起存会超过浏览器 4 KB 的上限 */
 export const signInCookies = (): string[] => {
   const logPaths = [
     '/api/clientlog',

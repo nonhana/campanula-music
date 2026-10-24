@@ -3,12 +3,10 @@ import { creditLine, thumbnailUrl } from '#lib/api/library.js'
 import type { Clock, MediaSessionCapability } from './browser'
 import type { Player, PlayerState } from './player'
 
-// 锁屏和通知栏上的播放控件（Media Session，Spec #11“客户端：播放队列与播放”）：显示当前这首的封面、歌名、歌手、专辑和进度，
-// 能暂停、接着放、切歌、拖进度条。按钮直接交给播放器，和界面上的按钮一样：上一首、下一首的换歌原因是 previous / next。
-// 进度只在跳变时告诉浏览器（换歌、时长变了、暂停和接着放、拖进度条、缓冲卡住后对不上了），中间由浏览器按播放速度自己往前推。
-// 下载了的歌（#38）用存在这台设备上的封面缩略图，断网时锁屏上照样有封面
+// 锁屏和通知栏上的播放控件（Media Session，Spec #11“客户端：播放队列与播放”）：显示当前这首的信息和进度，能暂停、切歌、拖进度。
+// 按钮直接交给播放器，上一首、下一首的换歌原因是 previous / next。进度只在跳变时告诉浏览器（换歌、时长变了、暂停和接着放、
+// 拖进度条、缓冲卡住后对不上了），中间由浏览器按播放速度自己往前推；下载了的歌（#38）用本机封面，断网时锁屏照样有封面。
 
-/** 封面取多大的缩略图（px） */
 const ARTWORK_SIZE = 512
 /** 浏览器推算的进度和实际的差出这么多秒，就重新告诉它 */
 const POSITION_DRIFT = 1
@@ -18,13 +16,13 @@ export interface MediaSessionContext {
   MediaMetadata: typeof MediaMetadata
   clock: Clock
   player: Player
-  /** 现在的播放状态：按锁屏上的播放、暂停时看要不要换 */
+  /** 按锁屏上的播放、暂停时看要不要换 */
   read: () => PlayerState
   /** 下载了的歌存着的这张封面的本机地址；没有时是 null */
   localCover: (coverUrl: string) => string | null
 }
 
-/** 接上锁屏和通知栏上的按钮。返回的函数在播放状态每次变了时调，更新锁屏和通知栏上显示的 */
+/** 返回的函数在播放状态每次变了时调，更新锁屏和通知栏上显示的 */
 export const connectMediaSession = ({ session, MediaMetadata, clock, player, read, localCover }: MediaSessionContext): (state: PlayerState) => void => {
   session.setActionHandler('play', () => {
     if (read().status === 'paused')
@@ -41,9 +39,9 @@ export const connectMediaSession = ({ session, MediaMetadata, clock, player, rea
       player.seek(details.seekTime)
   })
 
-  /** 锁屏上显示的是哪首歌；播放队列是空的时是 null */
+  /** 播放队列是空的时是 null */
   let shown: number | null = null
-  /** 上次告诉浏览器的进度（at：那一刻，毫秒）：浏览器从这里按播放速度往前推 */
+  /** at 是那一刻（毫秒）：浏览器从这里按播放速度往前推 */
   let told: { songId: number, duration: number, position: number, playing: boolean, at: number } | null = null
 
   return (state) => {

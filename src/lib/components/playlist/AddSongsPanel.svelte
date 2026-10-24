@@ -1,7 +1,6 @@
 <!--
   添加歌曲里面的内容（#35 补充；外壳是 AddSongs → DialogShell：桌面居中弹窗 560px、手机接近全屏的底部弹层）。每次打开都重新建。
-  一打开聚焦搜索框（data-autofocus，外壳打开时把焦点放上去）：停手 300ms 才问网易云，只取单曲第一页；没搜时列我喜欢的音乐（还没同步完时计数行写“同步中”）。
-  每行是勾选框、封面、歌名、歌手；已经在当前歌单里的是灰色的已勾选框、不能勾（读屏读“已在歌单里”）；重复勾只算一次（Map 按编号）。
+  一打开聚焦搜索框（data-autofocus）：停手 300ms 才问网易云，只取单曲第一页；没搜时列我喜欢的音乐（还没同步完时计数行写“同步中”）。每行是勾选框、封面、歌名、歌手；已经在当前歌单里的是灰色的已勾选框、不能勾（读屏读“已在歌单里”），重复勾只算一次（Map 按编号）。
   一次请求把勾选的全部加进去（App 的 addSongsToPlaylist），先改本地、立即生效，失败回滚并在弹窗里说原因；正在加入时“加入歌单”转圈、关不掉（addSongsDialog.busy）。
 -->
 <script lang='ts'>
@@ -31,7 +30,6 @@
   const SEARCH_DELAY = 300
   /** 选择器一行多高（px）：和歌曲行一样 */
   const ROW = SONG_ROW_HEIGHT
-  /** 搜索结果的几种样子 */
   type SearchView
     = | { status: 'idle' }
       | { status: 'loading' }
@@ -50,7 +48,6 @@
   let query = $state('')
   let search = $state<SearchView>({ status: 'idle' })
   const selected = new SvelteMap<number, Song>()
-  /** 这一次没加进去的原因：显示在弹层里，不用关掉才看得到提示条 */
   let failure = $state<ChangeFailure | { kind: 'missing' } | null>(null)
   let scroller = $state<HTMLElement>()
   let timer: ReturnType<typeof setTimeout> | undefined

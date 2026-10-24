@@ -19,8 +19,7 @@ import { checkIns, DAILY, likedSong, listener, storedCheckIns } from './harness/
 import { ANOTHER_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
-// 会话一轮（#69）：退出、登录失效、换账号之后，上一轮发出去的请求回来时不能再改新一轮的状态。
-// 这里从 App 的接缝看：旧的“需要登录”不把新登录的账号判成登录失效，旧的成功回复也不落进新会话。
+// 会话一轮（#69）：退出、登录失效、换账号之后，上一轮发出去的请求回来时不能再改新一轮的状态。这里从 App 的接缝看：旧的“需要登录”不把新登录的账号判成登录失效，旧的成功回复也不落进新会话。
 
 const world = useWorld()
 const { signInAtLikedTracks, signInWithLiked, replyLibrary } = listener(world)

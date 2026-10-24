@@ -76,7 +76,6 @@ describe('短信验证码登录', () => {
 })
 
 describe('扫码登录', () => {
-  /** 录下的二维码 key */
   const KEY = 'f124a8be-db3f-42f9-a236-30cc4130ed2c'
 
   const showQr = async () => {

@@ -1,10 +1,7 @@
 <!--
-  搜索（#31、#32，Spec #11“搜索”）。搜的词在地址的 q 里，选中的标签在 type 里（综合不写）：返回、刷新时照样打开这次搜索、停在这个标签
-  （不再记进搜索历史）。
-  桌面：搜索框在顶栏（DesktopSearchBox），这一页是内容区里的结果页：标题是“…”（读屏读“…”的搜索结果），下面是吸在顶栏下面的标签（SearchTabs），
-  再下面是综合（SearchOverview）或一类的全部（SearchKindResults）。
-  手机：从 logo 行的搜索按钮进来的整页，顶行是搜索框（PhoneSearchBar）；框空着时是搜索历史（没有就空着），打字时是建议，
-  框里是这一页搜的词时是结果，标签在骨架的标签行里（SignedInFrame）。返回这一页时滚动位置回到原来的样子
+  搜索（#31、#32，Spec #11“搜索”）。搜的词在地址的 q 里，选中的标签在 type 里（综合不写）：返回、刷新照样打开这次搜索、停在这个标签。
+  桌面：搜索框在顶栏，这一页是内容区里的结果（吸在顶栏下的 SearchTabs + 综合或一类的全部）。
+  手机：整页，顶行是搜索框；框空着是搜索历史、打字时是建议、框里是本页的词时是结果。返回这一页时滚动位置恢复。
 -->
 <script lang='ts'>
   import { page } from '$app/state'
@@ -25,7 +22,6 @@
 
   const view = getAppView()
   const signedIn = $derived(view.state.library !== null)
-  /** 这一页搜的词 */
   const keyword = $derived((page.url.searchParams.get('q') ?? '').trim())
   const tab = $derived(searchTabOf(page.url.searchParams.get('type')))
 
@@ -44,7 +40,6 @@
   // 听众在看这个词的结果：什么时候拉（登录后才拉）由 App 决定；换词、从别处回来都会重新报告
   $effect(() => view.app.viewing({ kind: 'search', keyword }))
 
-  /** 桌面吸在顶栏下面的标签行有多高 */
   let tabsHeight = $state(0)
   // 桌面：Tab 到、定位到的东西不藏在顶栏和标签行底下（DesktopShell 的 scroll-padding-top，DESIGN.md Layout · 滚动）
   $effect(() => {

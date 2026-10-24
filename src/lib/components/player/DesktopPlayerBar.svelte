@@ -25,10 +25,9 @@
   const view = getAppView()
   const { openPlayerPage } = playerPageActions()
   const player = $derived(view.state.player)
-  /** 当前这首：红心键跟着它 */
   const song = $derived(currentSong(player))
   const slider = createSeekSlider()
-  /** 左边的时间：拖动进度线时显示拖到哪 */
+  /** 拖动进度线时显示拖到哪 */
   const shownTime = $derived(slider.dragging === null
     ? player.position
     : slider.dragging * slider.duration)
@@ -36,7 +35,7 @@
 
 <SeekLine {slider} />
 
-<!-- 两边的按键、时间不缩，窄窗口（768）里中间的歌名让位，红心键不让 -->
+<!-- 两边按键、时间不缩；窄窗口（768）里中间歌名让位，红心键不让 -->
 <div class='grid grid-cols-[minmax(max-content,1fr)_minmax(0,440px)_minmax(max-content,1fr)] h-full items-center gap-6'>
   <div class='flex items-center gap-1.5'>
     <IconButton icon={SkipBack} filled label='上一首' onclick={() => view.app.previous()} />

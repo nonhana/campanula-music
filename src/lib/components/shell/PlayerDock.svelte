@@ -1,11 +1,8 @@
 <!--
-  播放条停靠（三个外框共用：DesktopShell、PhoneShell、SignedOutFrame）：播放队列里有歌时才有，
-  桌面是 80px 通栏，手机是离屏幕边 8px、64px 高的迷你条，底下垫一层晨光底的渐隐。
+  播放条停靠（三个外框共用：DesktopShell、PhoneShell、SignedOutFrame）：播放队列里有歌时才有，桌面是 80px 通栏，手机是离屏幕边 8px、64px 高的迷你条，底下垫一层晨光底的渐隐。
   第一次有歌时从屏幕底下浮上来，清空（包括退出登录，整个外框拿掉时）沉下去（motion.ts 的 dock）；手机多选时底部操作条占它的位置（replace）。
-  换页时原地不动：顶边起名字 player-bar、带 still，进度线照常走（ADR-0011；见 uno.config.ts）。
-  data-player-bar：点歌时封面飞到这里（cover-flight.svelte.ts），拖动排序也按它的上沿算边缘。
-  页面滚动条的下沿由 player-dock.ts 的 playerDockBottom 给出，外框只传“有没有”。
-  设计系统页的示意图（preview）只借这个容器：不起 player-bar / bar-fade 的名字、不标 data-player-bar，免得和真实播放条同名。
+  换页时原地不动：顶边起名字 player-bar、带 still，进度线照常走（ADR-0011；见 uno.config.ts）。data-player-bar：点歌时封面飞到这里（cover-flight.svelte.ts），拖动排序也按它的上沿算边缘。
+  页面滚动条的下沿由 player-dock.ts 的 playerDockBottom 给出，外框只传“有没有”；设计页的示意图（preview）只借容器，不起 player-bar / bar-fade 的名字、不标 data-player-bar。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
@@ -30,8 +27,7 @@
   const { present, replace, preview }: Props = $props()
   const view = getAppView()
   /**
-   * 播放队列真的空了（清空、退出登录）：播放条收起时才沉下去，换成手机布局、登录失效时跟着外框直接拿掉。
-   * 收起的那一刻直接读 App 的状态：外框整个拿掉时，组件里的 $derived 停在旧的值上
+   * 播放队列真的空了（清空、退出登录）：播放条收起时才沉下去，换成手机布局、登录失效时跟着外框直接拿掉。收起的那一刻直接读 App 的状态：外框整个拿掉时，组件里的 $derived 停在旧的值上
    */
   const emptied = () => queueEmpty(view.app.state.player)
   /** 设计页的示意图只借容器：不起真实播放条的名字、不标 data-player-bar */

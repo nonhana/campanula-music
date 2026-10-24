@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { CropFrame } from '#lib/components/playlist/cover-crop-core.js'
 import { centerCrop, createCropView, cropOf, maxZoomOf, nudgeCrop, panCrop, pinchCrop, wheelCrop, zoomBy, zoomTo } from '#lib/components/playlist/cover-crop-core.js'
 
-// 第二个测试接入点“拖动手势核心”的取景框那一半（#34 / #65）：不碰页面、不碰 Svelte。
-// 输入是图片尺寸、框的边长和一次手势，输出总是夹紧过的视图和裁剪；断言听众看到的结果：
-// 图片拖不出框、以焦点缩放时焦点下面那一块不动、裁剪和视图来回一致、缩放有上下限。
+// 第二个测试接入点“拖动手势核心”的取景框那一半（#34 / #65）：不碰页面、不碰 Svelte。输入是图片尺寸、框的边长和一次手势，输出总是夹紧过的视图和裁剪；断言听众看到的结果：图片拖不出框、以焦点缩放时焦点下面那一块不动、裁剪和视图来回一致、缩放有上下限。
 
 const frame: CropFrame = { width: 1000, height: 500, size: 300 }
 
@@ -71,7 +69,6 @@ describe('按焦点缩放', () => {
     const at = { x: 40, y: 250 }
     const up = wheelCrop(frame, start, -100, at)
     expect(up.zoom).toBeGreaterThan(1)
-    // 指针下面那一块不动
     const before = { x: (at.x - start.x) / (0.6 * start.zoom), y: (at.y - start.y) / (0.6 * start.zoom) }
     const after = { x: (at.x - up.x) / (0.6 * up.zoom), y: (at.y - up.y) / (0.6 * up.zoom) }
     expect(after.x).toBeCloseTo(before.x)
@@ -95,7 +92,6 @@ describe('方向键和两指', () => {
     const at = { x: 150, y: 150 }
     const next = pinchCrop(frame, start, start.zoom, 100, 200, at)
     expect(next.zoom).toBe(2)
-    // 中点下面的那一块不动
     const scale = 0.6 * start.zoom
     expect((at.x - next.x) / (0.6 * next.zoom)).toBeCloseTo((at.x - start.x) / scale)
   })

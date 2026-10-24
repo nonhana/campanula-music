@@ -10,16 +10,13 @@ import { moveMs } from '../shared/motion'
 import { DURATIONS } from '../shared/motion-tokens'
 import { SONG_ROW_HEIGHT } from '../songs/view'
 
-// 曲库里自建歌单之间的排序（#37，原型 docs/prototype/dnd.md 方案 C 的曲库部分）：手机是横版列表、桌面是封面网格，
-// 同一个排序器按当前布局量几何。点“排序”进入，按住把手立即拖；松手提交，点“完成”退出。
-// - 只有自建歌单参与；我喜欢的音乐固定在最前，收藏的歌单不参与（由 App 的 orderPlaylists / 延迟提交模块保证）
-// - 拖到上下边缘自动滚动；拖动中按 Esc 取消；焦点在某一行时 Alt + ↑ / ↓ 移一位，走同一个 commit
-// - 手势规则、边缘滚动、Esc、页边测量在 drag-sort.ts / drag-sort.svelte.ts 里只写一份；这里只量两种布局、画影子
+// 曲库自建歌单之间的排序（#37，原型 docs/prototype/dnd.md 方案 C）：手机横版列表、桌面封面网格，同一个排序器按当前布局量几何。
+// 点“排序”进入、按住把手立即拖、松手提交、点“完成”退出；只有自建歌单参与，我喜欢的音乐固定最前，收藏的不参与。
+// 边缘滚动、Esc、键盘 Alt+↑/↓ 都在 drag-sort.* 只写一份；这里只量两种布局、画影子。
 
 const ROW = SONG_ROW_HEIGHT
-/** 行与行之间（px） */
 const GAP = 8
-/** 浮起的卡片比原来那张四周多出来的白色衬边（px） */
+/** 浮起的卡片四周多出来的白色衬边（px） */
 const GHOST_PAD = 8
 const GAP_X = 20
 const GAP_Y = 24
@@ -54,13 +51,9 @@ interface GridScene {
 type Scene = RowsScene | GridScene
 
 interface PlaylistSortOptions {
-  /** 当前顺序（只有自建歌单的编号） */
   ids: () => readonly number[]
-  /** 编号对应的歌单，用来画浮起的那一张 */
   playlistOf: (id: number) => Playlist | undefined
-  /** 松手、键盘移动：提交新的顺序。App 返回顺序有没有改 */
   commit: (ids: readonly number[]) => boolean
-  /** 现在画的是手机横版列表还是桌面网格（窗口宽度变了会换） */
   layout: () => 'rows' | 'grid'
 }
 
@@ -204,16 +197,13 @@ target: gridTrackResult.target,
 }
 
 export class PlaylistSort {
-  /** 正在拖着 */
   readonly sort: DragSort<Scene>
-  /** 松手后浮起的那一张正落进空位 */
   settling = $state(false)
-  /** 落位时浮起的那一张去哪里 */
   settleX = $state(0)
   settleY = $state(0)
   private settleTimer: ReturnType<typeof setTimeout> | undefined
   private settlingId = $state<number | null>(null)
-  /** 落位动画期间列表继续显示松手时的顺序 */
+  /** 落位期间继续显示松手时的顺序 */
   private settleOrder = $state.raw<readonly number[] | null>(null)
 
   constructor(private readonly options: PlaylistSortOptions) {
@@ -226,25 +216,22 @@ export class PlaylistSort {
     })
   }
 
-  /** 正在拖着 */
   get dragging(): boolean {
     return this.sort.dragging
   }
 
-  /** 拖动中列表显示的顺序（预览），平时是 App 里的顺序 */
+  /** 平时是 App 里的顺序 */
   get order(): readonly number[] {
     return this.sort.preview ?? this.settleOrder ?? this.options.ids()
   }
 
-  /** 编号对应的歌单（浮起的那一张、给读屏的说明用） */
   playlistOf(id: number): Playlist | undefined {
     return this.options.playlistOf(id)
   }
 
-  /** 这一行是不是被拿起来了（列表里留空位）：落位动画播完才露出来 */
+  /** 列表里留空位；落位动画播完才露出来 */
   lifted = (id: number): boolean => (this.dragging || this.settling) && this.grabbedId === id
 
-  /** 浮起的是哪一张 */
   get grabbedId(): number | null {
     return this.dragging ? this.sort.grabbed : this.settlingId
   }
@@ -256,23 +243,23 @@ export class PlaylistSort {
 : this.options.playlistOf(id) ?? null
   }
 
-  /** 浮起的那一张跟到哪（视口坐标；落位时从这里滑到 settleX / settleY） */
+  /** 视口坐标；落位时从这里滑到 settleX / settleY */
   get ghost(): Rect {
     return this.sort.ghost
   }
 
-  /** 把手：按住立即拖（触屏、鼠标都一样，鼠标挪过 5px 才算） */
+  /** 按住立即拖（鼠标挪过 5px 才算） */
   handle(id: number): Attachment<HTMLElement> {
     return this.sort.handle(id)
   }
 
-  /** 拖动作废（Esc、页面藏起来、右键、指针被收回）：回到原处，什么都不提交 */
+  /** Esc、页面藏起来、右键、指针被收回：回到原处，不提交 */
   cancel(): void {
     this.stopSettle()
     this.sort.cancel()
   }
 
-  /** 键盘：焦点所在这一张 Alt + ↑ / ↓ 移一位（桌面） */
+  /** 焦点所在这一张 Alt+↑/↓ 移一位（桌面） */
   moveByKeyboard(id: number, delta: -1 | 1): boolean {
     if (this.dragging || this.settling)
       return false

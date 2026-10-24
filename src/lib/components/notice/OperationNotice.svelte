@@ -1,9 +1,8 @@
 <!--
-  提示条（改曲库、下载共用，#30、#33、#38；文案见 text.ts）：没改成（已经改回原样）说清哪件事没成、为什么，一直留着，直到关掉或被新的换掉；
-  加入歌单成功说一句“已加入「…」”，4 秒后自己走（App 的时钟管，换了一条就重新计时）。都可以关掉。
-  动作也由 App 决定（state.library.noticeActions）：这一块只照着画“撤销 / 重试 / 关闭”，不按种类猜该调哪个方法。
-  样子、位置、进出和播放的提示（PlayerNotice）一样：桌面底部正中，手机迷你播放条上方，手机播放页开着时顶上；换页时原地不动。
-  两条同时在时它排在播放提示外侧（底部的在上面，顶上的在下面），让出播放提示的高度；播放提示来了、走了，它横着不动、竖着平移过去（只动 transform）
+  提示条（改曲库、下载共用，#30、#33、#38；文案见 text.ts）：失败的一直留着直到关掉或被换掉，成功的 4 秒后自己走（App 的时钟管）。
+  动作也由 App 决定（state.library.noticeActions）：这里只照着画，不按种类猜该调哪个方法。
+  位置和播放提示（PlayerNotice）一样：桌面底部、手机迷你播放条上方、手机播放页开着时顶上；换页时原地不动。
+  两条同时在时排在播放提示外侧，让出它的高度；播放提示来了、走了，它横着不动、竖着平移过去（只动 transform）。
 -->
 <script lang='ts'>
   import { Check, CircleAlert, X } from '@lucide/svelte'
@@ -29,16 +28,13 @@
   const notice = $derived(view.state.library?.notice ?? null)
   /** App 说这条提示支持哪些动作：界面照着画按钮 */
   const actions = $derived(view.state.library?.noticeActions ?? [])
-  /** 播放提示也在：让出它的高度 */
   const offset = $derived(view.state.player.notice
     ? playerNoticeBox.height + GAP
     : 0)
 
-  /** 提示放在哪：和播放提示一样 */
   const place = $derived<NoticePlace>(!phone
     ? 'desktop'
     : overPlayerPage ? 'top' : 'bottom')
-  /** 让出播放提示：贴着底边的往上挪，贴着顶边的往下挪 */
   const shift = $derived(`translateY(${place === 'top'
     ? offset
     : -offset}px)`)

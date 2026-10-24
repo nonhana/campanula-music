@@ -14,7 +14,6 @@
     phone?: boolean
     /** 读屏读出的“正在加载什么” */
     label: string
-    /** 最外层的样式（例如白色面板） */
     class?: ClassValue
   }
 

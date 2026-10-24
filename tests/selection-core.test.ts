@@ -4,9 +4,7 @@ import type { Song } from '#lib/api/library.js'
 import type { Checked } from '#lib/components/library/selection-core.js'
 import { allOn, capabilitiesOf, extend, NONE, picked, selectAll, toggle } from '#lib/components/library/selection-core.js'
 
-// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、搜索时勾选的仍是整张歌单里的歌、
-// 能做什么按歌单种类给出。不碰页面、不碰 Svelte，只断言听众看得到的结果：勾了哪些歌、
-// 全选按钮亮不亮、加入歌单会带上哪几首、工具条上有哪些操作。
+// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、搜索时勾选的仍是整张歌单里的歌、能做什么按歌单种类给出。不碰页面、不碰 Svelte，只断言听众看得到的结果：勾了哪些歌、全选按钮亮不亮、加入歌单会带上哪几首、工具条上有哪些操作。
 
 const songsFrom = (ids: readonly number[]): Song[] => ids.map((id, index) => ({
   id,

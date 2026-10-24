@@ -1,11 +1,10 @@
 <!--
-  播放的提示：浮在播放条上方，一句话说什么没成、为什么。网络慢是状态，其余是出了问题；可以关掉。
-  手机上播放页开着时挪到顶上，不压住控制键。换页时和播放条一样原地不动（uno.config.ts 的 still）。
-  出现时从它贴着的那条边飘进来，走时淡出；播放页打开、收起时在旧位置淡出、新位置淡入，不跳（DESIGN.md Overlays，motion.ts 的 toast）。
-  量出自己多高（playerNoticeBox）：改曲库和下载的提示（notice/OperationNotice.svelte）同时在时排在它外侧，不重叠
+  播放的提示：浮在播放条上方，一句话说什么没成、为什么；网络慢是状态，其余是出错，可以关掉。手机播放页开着时挪到顶上，不压控制键。
+  换页时和播放条一样原地不动（uno.config.ts 的 still）；出现从贴着的边飘进来、走时淡出；播放页开合时旧位置淡出、新位置淡入。
+  量出自己多高（playerNoticeBox）：改曲库和下载的提示同时在时排在它外侧，不重叠。
 -->
 <script lang='ts' module>
-  /** 播放提示有多高（px）；提示走了留着上一次的，改曲库和下载的提示看播放提示在不在再用它 */
+  /** 提示走了留着上一次的，别处看播放提示在不在就用它 */
   export const playerNoticeBox = $state({ height: 0 })
 </script>
 
@@ -24,13 +23,13 @@
   const view = getAppView()
   const notice = $derived(view.state.player.notice)
 
-  /** 提示放在哪：桌面底部正中，手机迷你播放条上方，手机播放页开着时顶上 */
+  /** 桌面底部正中，手机迷你条上方，手机播放页开着时顶上 */
   const place = $derived<NoticePlace>(!phone
     ? 'desktop'
     : overPlayerPage ? 'top' : 'bottom')
   const arrival = noticeArrival(() => notice ? place : null)
 
-  /** 量出提示多高；换位置时正在淡出的那块（Svelte 标成 inert）不算 */
+  /** 换位置时正在淡出的那块（Svelte 标成 inert）不算 */
   const measure: Attachment<HTMLElement> = (node) => {
     const observer = new ResizeObserver(() => {
       if (!node.inert)
@@ -42,7 +41,7 @@
 </script>
 
 {#if notice}
-  <!-- 换了位置是另一块：旧位置上的淡出，新位置上的淡入。global：提示刚出现时这一块跟着外面的 if 一起建出来，也要飘进来 -->
+  <!-- 换位置是另一块：旧的淡出、新的淡入。global：刚出现时跟着外面的 if 建出来，也要飘进来 -->
   {#key place}
     <div
       class={[
@@ -79,7 +78,7 @@
 {/if}
 
 <style>
-  /* 换页时原地不动。正在淡出的那块（Svelte 标成 inert）不要名字：两块同名时浏览器会跳过这次换页的过渡 */
+  /* 换页时原地不动。正在淡出的那块不要名字：两块同名时浏览器会跳过这次换页过渡 */
   .notice:not([inert]) {
     view-transition-name: player-notice;
     view-transition-class: still;

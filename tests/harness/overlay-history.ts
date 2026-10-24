@@ -5,11 +5,9 @@ type Kind = 'write' | 'go' | 'leave' | 'traverse'
 type Phase = 'beforeCommit' | 'afterCommit'
 
 /**
- * 浏览器的 History push/replace 会在 Kit 等 onNavigate 之前就改掉物理条目
- * （Kit 3.1 client.js:2122–2150、2938–2954），page.state 要更晚才发布。取消时 goto 会 resolve
- * 却没有提交（:1971–1975、2900–2904）；navigation.complete 在被顶替时 reject（:2264–2266）。
- * 这个端口把这两种情况分开报，而不是回到 goto 的 void。越界的原生遍历不会发事件；
- * 端口对未知目标直接返回 cancelled、不发起遍历，所以两个适配器都不会去等一个等不到的 page.state 变化。
+ * 浏览器的 History push/replace 会在 Kit 等 onNavigate 之前就改掉物理条目（Kit 3.1 client.js:2122–2150、2938–2954），page.state 要更晚才发布。
+ * 取消时 goto 会 resolve 却没有提交（:1971–1975、2900–2904）；navigation.complete 在被顶替时 reject（:2264–2266）。这个端口把这两种情况分开报，而不是回到 goto 的 void。
+ * 越界的原生遍历不会发事件；端口对未知目标直接返回 cancelled、不发起遍历，所以两个适配器都不会去等一个等不到的 page.state 变化。
  */
 export class MemoryOverlayHistory implements OverlayHistory {
   private entries: OverlayPosition[]

@@ -31,10 +31,9 @@ interface NavigationIntent {
 }
 
 /**
- * Kit 3.1 没有“遍历完成”的 promise。它的 historyIndex（client.js:79、2927–2939、3305–3347）
- * 能在 page.state 还没更新时指认一条物理条目。这个版本相关的细节只留在这里，
- * 不进层、也不进纯核心。goto 可能在取消时照样 resolve；navigation.complete 和真正的目标
- * 必须同时对上（:1971–1975、2264–2283、2900–2904）。钩子在原生历史写入之后才跑。
+ * Kit 3.1 没有“遍历完成”的 promise。historyIndex（client.js:79、2927–2939、3305–3347）能在 page.state 还没更新时指认物理条目；
+ * 版本相关的细节只留在这里，不进层、也不进纯核心。goto 取消时也可能 resolve，navigation.complete 和真正的目标必须同时对上
+ * （:1971–1975、2264–2283、2900–2904）；钩子在原生历史写入之后才跑。
  */
 export const createOverlayHistory = (callbacks: { changed: (phase?: 'intent' | 'settled') => void, navigate: () => boolean }): OverlayHistory => {
   let active: Operation | null = null
@@ -110,9 +109,8 @@ position: read(),
         cancel()
       }
       else {
-        // 另一次导航还在跑时，Kit 会跳过 beforeNavigate（:1900–1905），这一次没有 cancel 可用。
-        // 拒绝关闭的层不能被这样带走，所以在原地顶替这次仍在加载的导航：把当前物理条目登记成
-        // 已知签名（否则 operate 的起点核对必然不通过），再按原来的条目浅写回去。
+        // 另一次导航还在跑时 Kit 会跳过 beforeNavigate（:1900–1905），没有 cancel 可用。拒绝关闭的层不能被带走，
+        // 所以在原地顶替这次导航：把当前物理条目登记成已知签名（否则 operate 的起点核对不通过），再按原条目浅写回去。
         moving = false
         const physical = {
 ...read(),
@@ -139,9 +137,8 @@ url: location.href,
       active.native = history.state
   })
 
-  // Kit 3.1 的 navigating 包装在运行时没有 shallow/event，尽管类型里有
-  // （runtime/app/state/client.svelte.js:110–129）。只用它提前判失效；
-  // 关闭门禁交给完整的导航钩子，每个意图只求值一次。
+  // Kit 3.1 的 navigating 包装在运行时没有 shallow/event（类型里有；runtime/app/state/client.svelte.js:110–129），
+  // 只用它提前判失效；关闭门禁交给完整的导航钩子，每个意图只求值一次。
   $effect.pre(() => {
     if (navigating.type === null)
       return
@@ -162,8 +159,8 @@ url: location.href,
     })
   })
 
-  // 一次遍历要两个事实都到齐才算完成：Kit 已经发布了目标条目的 page.state，
-  // 以及带着那条条目自己 metadata 的原生 popstate 到了（先后不限）。
+  // 一次遍历要两个事实都到齐：Kit 已发布目标条目的 page.state，
+  // 以及带那条条目自己 metadata 的原生 popstate 到了（先后不限）。
   const confirmTraversal = (operation: Operation): void => {
     if (active !== operation || !operation.receipt?.received || !operation.published)
       return
@@ -172,15 +169,14 @@ url: location.href,
       operation.finish({ status: 'committed', position: operation.published })
       return
     }
-    // 两个事实都到了，但历史在两者之间变了、又没有我们看到的意图：别让队列一直挂着。
+    // 两个事实都到了，但历史在两者之间变了、又没有我们看到的意图：别让队列一直挂着
     invalidate()
     callbacks.changed()
   }
 
   const observed = (): void => {
     const position = capture()
-    // 被顶替的 Kit 回调可能在原生历史已经移动之后才发布过期的 page.state，
-    // 不要把那份旧状态和另一条物理条目凑在一起。
+    // 被顶替的 Kit 回调可能在原生历史已经移动之后才发布过期的 page.state，不要把旧状态和另一条物理条目凑在一起
     if (location.href !== position.url)
       return
     if (signatures[position.cursor] === signature() && known[position.cursor]?.stamp !== position.stamp)
@@ -215,9 +211,8 @@ url: location.href,
   })
 
   onMount(() => {
-    // 只记下原生回执，单靠它永远不会让一次遍历完成。目标条目没有 pageUrl 时，
-    // Kit 自己的 popstate 监听会同步发布 page.state（client.js:3329–3373），
-    // trace 显示它早于这个监听到达。所以下一条命令必须等到 confirmTraversal 两个事实都对上。
+    // 只记下原生回执，单靠它永远不会让一次遍历完成。目标条目没有 pageUrl 时，Kit 自己的 popstate 监听会同步发布 page.state
+    // （client.js:3329–3373，早于这个监听到达），所以下一条命令必须等 confirmTraversal 两个事实都对上。
     const pop = (event: PopStateEvent) => {
       const metadata = event.state?.['sveltekit:metadata']
       if (active?.kind === 'go' && active.receipt && metadata?.historyIndex === active.cursor && metadata?.state === active.receipt.state && location.href === active.url) {
@@ -273,8 +268,7 @@ url: location.href,
       catch (error) {
         if (mine.invalidated || destroyed)
           return result('invalidated')
-        // 只撤销自己写下的那个原生对象。外部替换或遍历拥有的是另一个对象，
-        // 哪怕它复用了同一个历史索引和 URL。
+        // 只撤销自己写下的那个原生对象；外部替换或遍历拥有的是另一个对象，哪怕复用了同一个历史索引和 URL
         if (mine.native && history.state === mine.native) {
           active = null
           settled = mine.target!
@@ -317,7 +311,7 @@ cursor: from.cursor,
 url: target.url,
 stamp: target.stamp,
 }, () =>
-      // eslint-disable-next-line svelte/no-navigation-without-resolve -- 这个 URL 是从已提交的 Kit 页面里取的
+       // eslint-disable-next-line svelte/no-navigation-without-resolve -- 这个 URL 是从已提交的 Kit 页面里取的
        goto(target.url, {
 shallow,
 replace: true,
@@ -361,7 +355,7 @@ url: from.url,
 cursor: target.cursor,
 stamp,
 }, () =>
-      // eslint-disable-next-line svelte/no-navigation-without-resolve -- 空 URL 表示保留当前这一条历史不动
+       // eslint-disable-next-line svelte/no-navigation-without-resolve -- 空 URL 表示保留当前这一条历史不动
        goto('', {
 shallow: true,
 replace,

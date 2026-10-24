@@ -16,9 +16,7 @@ const CHECK_TOKEN = /^[\x21-\x7E]{1,1024}$/
 
 // 界面发请求前已经检查过格式，到这里还不对，说明请求不是 Campanula 的页面发的：回 400
 
-/**
- * 读请求体（JSON）里的字符串字段，每个都要符合格式
- */
+/** 读 JSON 里的字符串字段，每个都要符合格式 */
 export const readFields = async <K extends string>(request: Request, patterns: Record<K, RegExp>): Promise<Record<K, string>> => {
   const body: unknown = await request.json().catch(() => null)
   const fields = {} as Record<K, string>
@@ -49,10 +47,7 @@ export const readId = (name: string, value: string | null | undefined): number =
 /** 请求体里装编号列表的键：由请求类型定，写错键编译不过 */
 type IdListKey<Body> = { [K in keyof Body]-?: Body[K] extends number[] ? K : never }[keyof Body] & string
 
-/**
- * 读请求体（JSON）里的编号列表：1 到 max 个。键和端点的请求体类型绑在一起：
- * readIds(endpoints.songs, request, 'ids', …)；端点声明的是别的请求类型时编译不过。
- */
+/** 读 JSON 里的编号列表，1 到 max 个；键和端点的请求体类型绑在一起（readIds(endpoints.songs, request, 'ids', …)），写错编译不过 */
 export const readIds = async <Body>(_endpoint: Pick<PostEndpoint<unknown, Body, unknown>, 'request'>, request: Request, name: IdListKey<NonNullable<Body>>, max: number): Promise<number[]> => {
   const body: unknown = await request.json().catch(() => null)
   const ids = typeof body === 'object' && body !== null && name in body
@@ -70,7 +65,6 @@ export const readOffset = (value: string | null): number => {
   return Number(value)
 }
 
-/** 读网址里的音质 */
 export const readQuality = (value: string | null): Quality => {
   const quality = QUALITIES.find(item => item === value)
   if (!quality)
@@ -86,7 +80,6 @@ export const readKeywords = (value: string | null): string => {
   return keywords
 }
 
-/** 读网址里搜索结果是哪一类（单曲、歌单、歌手、专辑） */
 export const readSearchKind = (value: string): SearchKind => {
   const kind = SEARCH_KINDS.find(each => each === value)
   if (!kind)
@@ -132,7 +125,6 @@ const readObject = async (request: Request): Promise<Record<string, unknown>> =>
     : {}
 }
 
-/** 读红心的请求体（JSON）：哪首歌，红心还是取消红心 */
 export const readHeart = async (request: Request): Promise<HeartRequest> => {
   const { songId, hearted } = await readObject(request)
   if (!isNeteaseId(songId) || typeof hearted !== 'boolean')
@@ -140,7 +132,6 @@ export const readHeart = async (request: Request): Promise<HeartRequest> => {
   return { songId, hearted }
 }
 
-/** 读收藏专辑、歌手的请求体（JSON）：收藏还是取消收藏 */
 export const readCollect = async (request: Request): Promise<CollectRequest> => {
   const { collected } = await readObject(request)
   if (typeof collected !== 'boolean')
@@ -168,7 +159,6 @@ const readPlaylistName = (name: unknown): string => {
   return trimmed
 }
 
-/** 读新建歌单的请求体（JSON）：名称，是不是隐私歌单 */
 export const readPlaylistDraft = async (request: Request): Promise<CreatePlaylistRequest> => {
   const { name, private: isPrivate } = await readObject(request)
   if (typeof isPrivate !== 'boolean')
@@ -179,7 +169,6 @@ export const readPlaylistDraft = async (request: Request): Promise<CreatePlaylis
   }
 }
 
-/** 读改名称的请求体（JSON） */
 export const readPlaylistRename = async (request: Request): Promise<RenamePlaylistRequest> => {
   const { name } = await readObject(request)
   return {

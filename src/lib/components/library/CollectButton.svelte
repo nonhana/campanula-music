@@ -1,11 +1,8 @@
 <!--
-  收藏开关：收藏、取消收藏一张歌单、一张专辑、一位歌手（App 的 collect：先改本地、立即生效，没成会自己改回并在提示条里说明）。
-  三种样子，图标照 DESIGN.md 的图标词典：收藏是 CirclePlus，已收藏是 CircleCheck（深薄荷），三种样子都一样；
-  - pill：页面头部播放全部旁边（DESIGN.md Buttons）。桌面是描边胶囊“收藏 / 已收藏”；手机只留图标（工具档，ToolButton）；
-  - icon：搜索结果歌单行最右边的图标按钮（和 IconButton 一样：手机 44px、桌面 40px 的圆）；
-  - corner：搜索结果里歌手、专辑格子封面右下角始终可见的 32px 白色小圆（调用方负责绝对定位，和格子的链接并排、不嵌在里面），18px 图标。
-  自建歌单、我喜欢的音乐、没登录时不显示；对应的列表首次同步还没拿到（不知道收没收藏）时不能按。
-  是开关（aria-pressed）：胶囊的名字是“收藏 / 已收藏”（手机只留图标时也是），两种图标按钮的名字一直是“收藏专辑「…」”，按下了就是已收藏
+  收藏开关：收藏、取消收藏一张歌单、专辑、歌手（App 的 collect：先改本地、立即生效，没成会改回并在提示条说明）。图标照 DESIGN.md：
+  收藏 CirclePlus，已收藏 CircleCheck（深薄荷）。pill 是页面头部播放全部旁（桌面描边胶囊“收藏 / 已收藏”，手机只留图标）；
+  icon 是搜索结果歌单行最右（手机 44px、桌面 40px 圆）；corner 是歌手、专辑格子封面右下角始终可见的 32px 白圆（调用方定位，和链接并排）。
+  自建歌单、我喜欢的音乐、没登录时不显示；列表首次同步还没拿到时不能按。是开关（aria-pressed）。
 -->
 <script lang='ts'>
   import { CircleCheck, CirclePlus } from '@lucide/svelte'
@@ -20,7 +17,7 @@
 
   interface Props {
     target: CollectTarget
-    /** 歌单名、专辑名、歌手名：图标按钮读屏读出的名字里要用 */
+    /** 读屏读出的名字里要用 */
     name: string
     look: 'pill' | 'icon' | 'corner'
     class?: ClassValue
@@ -67,7 +64,7 @@
       ]}
       onclick={toggle}
     >
-      <!-- 收藏、取消收藏时新旧图标叠在同一格里交叉淡化 -->
+      <!-- 新旧图标叠在同一格里交叉淡化 -->
       {#key Icon}
         <span class='grid col-start-1 row-start-1' transition:iconSwap>
           <Icon size={look === 'icon'

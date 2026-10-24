@@ -3,7 +3,6 @@
   import DownloadsPage from '#lib/components/downloads/DownloadsPage.svelte'
   import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
 
-  /** 已下载里的搜索词 */
   let query = $state('')
   scrollSnapshot('/downloads', () => query, (value) => {
     query = value

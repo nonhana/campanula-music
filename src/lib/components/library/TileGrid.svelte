@@ -1,7 +1,6 @@
 <!--
-  格子网格（#75）：曲库、搜索、歌手页的专辑、两个歌单分区共用这一份加载 / 失败 / 空 / 条目的状态机。
-  按种类和排法（网格、架子、搜索综合里歌单那一排）给格宽和列数，骨架和内容用同一套排法；骨架淡出、内容依次飘入。
-  调用方只画每一格（tile 插槽）；空状态、失败说明和重试也由这里画，调用方给文案。
+  格子网格（#75）：曲库、搜索、歌手页的专辑、两个歌单分区共用这一份加载 / 失败 / 空 / 条目状态机。按种类和排法给格宽和列数，
+  骨架和内容同一套排法，骨架淡出、内容依次飘入；调用方只画每一格，空状态、失败说明和重试也由这里画。
 -->
 <script lang='ts' generics='T extends { id: number }'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -18,18 +17,15 @@
     kind: TileKind
     layout: TileGridLayout
     phone?: boolean
-    /** null：还在加载；空数组：一张都没有 */
+    /** null 还在加载；空数组一张都没有 */
     items: readonly T[] | null
     label: string
     loadingLabel: string
-    /** 搜索结果放在白色面板里：桌面上留 12px 内边距 */
     inset?: boolean
     failure?: { title: string, body?: string, retry: () => void } | null
-    /** 空列表的 StateBlock；列表为空但调用方自己藏起来（搜索综合、有"显示更多"时）可以不传 */
     empty?: { icon?: LucideIcon, title: string }
-    /** 骨架名字下面的第二行；要和 tile 画的一致（库里的歌手没有，搜索里的歌手有） */
+    /** 要和 tile 画的一致（库里的歌手没有，搜索里的歌手有） */
     detail?: boolean
-    /** 后来加进来的从第几项开始依次飘入（搜索“显示更多”） */
     staggerFrom?: number
     tile: Snippet<[T, number]>
   }

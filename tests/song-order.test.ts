@@ -12,9 +12,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks } = listener(world)
 
-// 多选里的拖动排序（#36，Spec #11“客户端：晚一点才提交的修改”“多选、拖拽与换封面”）：
-// 拖完先改本地，停手 2 秒才把整张歌单的新顺序一次提交；连拖两次只提交一次；
-// 失败退回原来的顺序、提示里可以重试；页面隐藏时立即提交；一次拖多首保持原来的先后。
+// 多选里的拖动排序（#36，Spec #11“客户端：晚一点才提交的修改”“多选、拖拽与换封面”）：拖完先改本地，停手 2 秒才把整张歌单的新顺序一次提交；连拖两次只提交一次；失败退回原来的顺序、提示里可以重试；页面隐藏时立即提交；一次拖多首保持原来的先后。
 // 录制见 tests/fixtures/netease/README.md 的验证关卡②
 /** 新建隐私歌单「Campanula 测试 · 可删除」，和紧接着读的详情（#33 录的） */
 const CREATED = { id: 900000023, create: 'playlist-edit/create/001-playlist_create.json.gz', detail: 'playlist-edit/create/002-playlist_detail.json.gz' }
@@ -75,7 +73,6 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     const ids = songs.map(song => song.id)
     expect(await storedTrackIds(device, CREATED.id)).toEqual(ids)
 
-    // 第一次：把最后一首挪到最前
     expect(app.moveSongs(CREATED.id, [ids[3]!], ids[0]!)).toBe(true)
     expect(shownTrackIds(app, CREATED.id)).toEqual([ids[3], ids[0], ids[1], ids[2]])
     expect(await storedTrackIds(device, CREATED.id)).toEqual(ids)
@@ -83,7 +80,6 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     await world.clock.advance(1000)
     expect(orderRequests(device)).toHaveLength(0)
 
-    // 第二次：再把第 2 首挪到最后，计时从头算
     expect(app.moveSongs(CREATED.id, [ids[1]!], null)).toBe(true)
     expect(shownTrackIds(app, CREATED.id)).toEqual([ids[3], ids[0], ids[2], ids[1]])
     await world.clock.advance(1999)
@@ -180,7 +176,6 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     await world.clock.advance(2000)
     expect(orderRequests(device)).toHaveLength(1)
 
-    // 第一份还压着：再拖一次，只改本地，不发第二份
     expect(app.moveSongs(CREATED.id, [b!], null)).toBe(true)
     expect(shownTrackIds(app, CREATED.id)).toEqual([d, a, c, b])
 
@@ -242,7 +237,6 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     const { app } = await createdWith(device, songsFrom(local))
     expect(shownTrackIds(app, CREATED.id)).toEqual(local)
 
-    // 把 first 挪回 second 前面：正好是录制里的顺序
     expect(app.moveSongs(CREATED.id, [first!], second!)).toBe(true)
     expect(shownTrackIds(app, CREATED.id)).toEqual(recorded)
 

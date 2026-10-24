@@ -4,8 +4,7 @@ import type { CoverCrop } from '#lib/api/cover.js'
 import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
 import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility } from '#lib/app/browser.js'
 
-// 浏览器能力替身：行为照浏览器标准写。
-// 浏览器直连网易云的图片传输（#34）、文件下载（#38）在这里；Background Fetch 由最早用到它的票加上。
+// 浏览器能力替身：行为照浏览器标准写。浏览器直连网易云的图片传输（#34）、文件下载（#38）在这里；Background Fetch 由最早用到它的票加上。
 
 /** App 的时钟：和世界的假时钟走同一个时间，定时按到期先后触发 */
 export const clockOn = (timers: FakeTimers): Clock => ({
@@ -48,13 +47,9 @@ export class FakePage extends EventTarget implements PageVisibility {
   }
 }
 
-/**
- * 网易云的反作弊令牌（官方 Watchman）：一个标签页一个。每次取一枚新的、170 个字符（和真的一样长）；
- * available 设成 false 时取不到（Watchman 没加载出来，例如被浏览器插件拦了）
- */
+/** 网易云的反作弊令牌（官方 Watchman）：一个标签页一个，每次取一枚新的、170 个字符（和真的一样长）；available 设成 false 时取不到（脚本没加载出来，例如被浏览器插件拦了） */
 export class FakeWatchman {
   available = true
-  /** 发出去的令牌，按先后 */
   readonly issued: string[] = []
 
   async checkToken(): Promise<string> {
@@ -82,7 +77,6 @@ export interface FakeCoverUpload {
   jpeg: Blob
   token: string
   signal: AbortSignal
-  /** 被取消了 */
   aborted: boolean
 }
 
@@ -91,10 +85,7 @@ interface WaitingUpload {
   reject: (error: Error) => void
 }
 
-/**
- * 换封面的浏览器能力替身（#34）：造测试图片、解码（按写的尺寸，长边缩到 3200）、导出 JPEG、直传网易云图片存储。
- * 直传可以压着不回（取消用）、设成失败、看传了什么；导出的大小可以设。
- */
+/** 换封面的浏览器能力替身（#34）：造测试图片、解码（按写的尺寸，长边缩到 3200）、导出 JPEG、直传网易云图片存储。直传可压着不回（取消用）、设成失败、看传了什么；导出大小可设。 */
 export class FakeImages {
   /** 直传失败：设成错误后，下一次直传以它失败 */
   uploadError: Error | null = null
@@ -102,13 +93,9 @@ export class FakeImages {
   holdUploads = false
   /** 导出的 JPEG 有多少字节（默认 300 KB） */
   exportBytes = 300_000
-  /** 导出失败 */
   exportError: Error | null = null
-  /** 直传过的，按先后 */
   readonly uploads: FakeCoverUpload[] = []
-  /** 导出过的，按先后 */
   readonly exports: { image: DecodedImage, crop: CoverCrop }[] = []
-  /** 释放过的图片地址 */
   readonly released: string[] = []
   #files = new WeakMap<File, FakeImageFile>()
   #images = new Map<DecodedImage, { released: boolean }>()
@@ -184,12 +171,10 @@ export class FakeImages {
     })
   }
 
-  /** 放行一个压着的直传 */
   releaseUpload(): void {
     this.#waiting.shift()?.resolve()
   }
 
-  /** 让一个压着的直传失败 */
   failUpload(error: Error): void {
     this.#waiting.shift()?.reject(error)
   }
@@ -207,12 +192,7 @@ export interface FakeTransfer {
   cut?: boolean
 }
 
-/**
- * 网易云的音频服务器、图片服务器（浏览器直连下载，#38）：一台设备一份，测试放上文件（地址 → 字节数、类型）。
- * 照 Fetch 标准：断网时请求直接以 TypeError 失败（network error）；服务器上没有这个文件回 404，fetch 本身成功，
- * 由 App 的下载能力当作失败；回 200 时按块传，传到一半连接断开（断网、服务器断开）时读响应体以 TypeError 失败。
- * 每传一块调一次 onProgress（到这一刻一共收到多少字节）
- */
+/** 网易云的音频服务器、图片服务器（浏览器直连下载，#38）：一台设备一份，测试放上文件（地址 → 字节数、类型）。 照 Fetch 标准：断网时请求直接以 TypeError 失败（network error）；没有这个文件回 404，fetch 本身成功、由 App 的下载能力当作失败； 回 200 按块传，传到一半连接断开（断网、服务器断开）时读响应体以 TypeError 失败。每传一块调一次 onProgress（到这一刻一共收到多少字节） */
 export class FakeFiles {
   readonly #files = new Map<string, FakeFile>()
   readonly #next = new Map<string, FakeTransfer>()
@@ -221,7 +201,6 @@ export class FakeFiles {
 
   constructor(private readonly network: NetworkStatus) {}
 
-  /** 服务器上放一个文件 */
   put(url: string, file: FakeFile): void {
     this.#files.set(url, file)
   }
@@ -254,10 +233,7 @@ export class FakeFiles {
   }
 }
 
-/**
- * 本机文件的地址（URL.createObjectURL），一台设备一份，测试按地址找回是哪个文件。照 File API 标准（§8.3 Blob URLs）：
- * revokeObjectURL 以后这个地址就失效了，再按它找不到文件（浏览器里拿它加载会失败）
- */
+/** 本机文件的地址（URL.createObjectURL），一台设备一份，测试按地址找回是哪个文件。照 File API 标准（§8.3 Blob URLs）：revokeObjectURL 以后这个地址就失效，再按它找不到文件（浏览器里拿它加载会失败） */
 export class FakeObjectUrls {
   readonly #blobs = new Map<string, Blob>()
   #count = 0
@@ -299,12 +275,9 @@ const invoke = (callback: LockGrantedCallback<unknown>, lock: Lock | null): Prom
 
 /**
  * 跨标签页的锁（Web Locks），一台设备一个，所有标签页共用。照 W3C Web Locks API（2025-09-24 编辑草案）§4 的算法写：
- * - 同名的请求按先后排队，只有排在最前、又不和已持有的锁冲突的才能拿到（grantable）；
- *   exclusive 和同名的任何锁冲突，shared 只和同名的 exclusive 冲突。
- * - 拿到锁后排一个任务（宏任务，§4.4 第 14 步“enqueue … on the responsible event loop”）调回调；
- *   回调返回的 promise 了结（成功或失败）才释放锁，request() 跟着它了结。
- * - ifAvailable：拿不到就不排队，回调收到 null，request() 不失败。
- * - signal：调回调之前被取消，request() 以取消的原因失败；还在排队就从队列里拿掉，已经拿到锁就释放、不调回调。
+ * - 同名的请求按先后排队，只有排在最前、又不和已持有的锁冲突的才能拿到（grantable）；exclusive 和同名的任何锁冲突，shared 只和同名的 exclusive 冲突。
+ * - 拿到锁后排一个任务（宏任务，§4.4 第 14 步“enqueue … on the responsible event loop”）调回调；回调返回的 promise 了结（成功或失败）才释放锁，request() 跟着它了结。
+ * - ifAvailable：拿不到就不排队，回调收到 null，request() 不失败。signal：调回调之前被取消，request() 以取消的原因失败；还在排队就从队列里拿掉，已经拿到锁就释放、不调回调。
  * - steal：App 没用到，替身没做，用到时照 §4.1 第 4 步补上。
  */
 export class FakeLocks implements LocksCapability {
@@ -313,7 +286,6 @@ export class FakeLocks implements LocksCapability {
   /** 已经排下、还没跑的回调任务有几个 */
   pending = 0
 
-  /** 在页面的事件循环里排一个任务 */
   #task(step: () => void): void {
     this.pending += 1
     setImmediate(() => {
@@ -419,12 +391,7 @@ export class FakeLocks implements LocksCapability {
   }
 }
 
-/**
- * 跨标签页的广播（BroadcastChannel），一台设备一份，所有标签页共用。照 HTML 标准 §9.5 postMessage() 的步骤：
- * - 关闭后再发抛 InvalidStateError；消息先结构化克隆（克隆不了照样抛出）；
- * - 送给同名、还没关闭的其他频道，不送给自己；按频道创建的先后，每个频道排一个任务（宏任务）送达，
- *   送达时已经关闭的就不送；收到时发 message 事件，消息在 data 里。
- */
+/** 跨标签页的广播（BroadcastChannel），一台设备一份，所有标签页共用。照 HTML 标准 §9.5 postMessage() 的步骤：关闭后再发抛 InvalidStateError； 消息先结构化克隆（克隆不了照样抛出）；送给同名、还没关闭的其他频道，不送给自己；按频道创建的先后，每个频道排一个任务（宏任务）送达， 送达时已经关闭的就不送；收到时发 message 事件，消息在 data 里。 */
 export class FakeBroadcast {
   readonly #open = new Set<FakeChannel>()
   /** 已经发出、还没送达的消息有几份 */
@@ -436,7 +403,6 @@ export class FakeBroadcast {
     return channel
   }
 
-  /** 频道发消息：克隆好的消息送给同名的其他频道 */
   deliver(source: FakeChannel, data: unknown): void {
     for (const destination of this.#open) {
       if (destination === source || destination.name !== source.name)
@@ -514,8 +480,7 @@ export class FakeMediaSession implements MediaSessionCapability {
       this.#handlers.delete(action)
   }
 
-  // 和浏览器一样按 Media Session 标准校验：不传或传空对象是清除；
-  // 时长必填且不为负，进度在 0 到时长之间，速度不为 0，不符合就抛 TypeError
+  // 和浏览器一样按 Media Session 标准校验：不传或传空对象是清除；时长必填且不为负，进度在 0 到时长之间，速度不为 0，不符合就抛 TypeError
   setPositionState(state?: MediaPositionState): void {
     if (!state || Object.keys(state).length === 0) {
       this.position = null
@@ -563,13 +528,9 @@ interface PendingPlay {
 }
 
 /**
- * 播放器（<audio>），照 HTML 标准“媒体元素”里 App 用到的部分：
- * - 设 src 就是重新加载（media element load algorithm）：停下、进度回到 0、时长变回 NaN、清掉出错，还没了结的 play() 以 AbortError 失败；
- *   加载出来之前设的 currentTime 记着，加载出来后从那里开始放（default playback start position）。
- * - play()：放完了的从头放；暂停着就改成没暂停、排任务发 play，数据还不够就再发 waiting，够了就发 playing、play() 成功。
- * - pause()：没暂停就改成暂停，排任务发 timeupdate、pause，还没了结的 play() 以 AbortError 失败。
- * 音频服务器那边由测试决定：数据什么时候够放（ready）、放到哪了（progress）、放完（end）、断流（stall）、出错（fail）。
- * 这些由测试直接调，事件当场发：测试本身就是事件循环里的一个任务
+ * 播放器（<audio>），照 HTML 标准“媒体元素”里 App 用到的部分：设 src 即重新加载（media element load algorithm，停下、进度归 0、时长变 NaN、清了出错，
+ * 未了结的 play() 以 AbortError 失败；加载前设的 currentTime 记着，加载后从那里开始放，即 default playback start position）。
+ * play()：放完的从头放；暂停就改成没暂停、排任务发 play，数据不够再发 waiting，够了发 playing、play() 成功。pause()：排任务发 timeupdate、pause，未了结的 play() 以 AbortError 失败；音频服务器那边由测试决定（ready / progress / end / stall / fail），测试直接调、事件当场发。
  */
 export class FakeAudio extends EventTarget implements AudioCapability {
   #src = ''
@@ -582,21 +543,15 @@ export class FakeAudio extends EventTarget implements AudioCapability {
   error: { code: number } | null = null
   /** 正在出声：没暂停、数据够放、发过 playing */
   sounding = false
-  /** 音频服务器给的数据够放了 */
   #ready = false
   #pending: PendingPlay[] = []
-  /** 所在的标签页关掉了 */
   #closed = false
 
   constructor(private readonly tasks: MediaTasks) {
     super()
   }
 
-  /**
-   * 标签页关掉了：文档没了，播放器跟着停下，不再出声、不再发事件，还没了结的 play() 也不会再了结。
-   * 依据 HTML 标准：媒体元素所在的文档不再 fully active 时停止播放（Playing the media resource）；
-   * 销毁文档时，它排着的任务直接丢掉、不再运行（destroy a document）
-   */
+  /** 标签页关掉了：文档没了，播放器跟着停下、不再出声、不再发事件，未了结的 play() 也不再了结。依据 HTML 标准：文档不再 fully active 时停止播放（Playing the media resource），销毁文档时排着的任务直接丢掉（destroy a document） */
   close(): void {
     this.#closed = true
     this.paused = true
@@ -678,7 +633,6 @@ export class FakeAudio extends EventTarget implements AudioCapability {
       this.#sound()
   }
 
-  /** 放到了第几秒 */
   progress(seconds: number): void {
     if (!this.sounding)
       throw new Error('播放器没在出声')
@@ -686,7 +640,6 @@ export class FakeAudio extends EventTarget implements AudioCapability {
     this.#fire('timeupdate')
   }
 
-  /** 放完了 */
   end(): void {
     if (!this.sounding)
       throw new Error('播放器没在出声')

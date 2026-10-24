@@ -13,16 +13,12 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInWithLiked, replyLibrary } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// 下载单曲与离线播放（#38，Spec #11“客户端：下载”、ADR-0006）：浏览器向服务端要下载地址，直连网易云的音频服务器、图片服务器
-// 把完整音频和封面缩略图下下来，连同歌词、歌曲信息存进这台设备。下载属于设备，和登录、登录的是哪个账号都无关。
-// 网易云的音频服务器、图片服务器那边（有哪些文件、传得快慢、传到一半断开）由测试在设备的文件替身上决定
+// 下载单曲与离线播放（#38，Spec #11“客户端：下载”、ADR-0006）：浏览器向服务端要下载地址，直连网易云的音频服务器、图片服务器把完整音频和封面缩略图下下来，连同歌词、歌曲信息存进这台设备。
+// 下载属于设备，和登录、登录的是哪个账号都无关；服务器那边（有哪些文件、传得快慢、传到一半断开）由测试在设备的文件替身上决定
 
 const LYRICS = 'playback/lyric_new.all-forms.json'
 
-/**
- * 我喜欢的音乐里的《LOSER》（米津玄師，第 4 页）：验证关卡①录了它极高音质的下载地址（9,757,301 字节的 mp3）。
- * 封面缩略图按 512 取（网易云的缩略图地址加 ?param=512y512）
- */
+/** 我喜欢的音乐里的《LOSER》（米津玄師，第 4 页）：验证关卡①录了它极高音质的下载地址（9,757,301 字节的 mp3）。封面缩略图按 512 取（网易云的缩略图地址加 ?param=512y512） */
 const LOSER = {
   id: 512359195,
   downloadUrl: 'playback/song_download_url_v1.vip-exhigh.json',
@@ -35,10 +31,7 @@ const COVER_BYTES = 41_000
 const NO_COPYRIGHT = 2108191414
 const TRIAL = 2636390698
 
-/**
- * 我喜欢的音乐的第 1～3 首：#38 录了它们极高音质的下载地址，
- * 和 playback/liked/ 的在线播放地址是同一批歌（tests/playback.test.ts 的 FIRST、SECOND、THIRD）
- */
+/** 我喜欢的音乐的第 1～3 首：#38 录了它们极高音质的下载地址，和 playback/liked/ 的在线播放地址是同一批歌（tests/playback.test.ts 的 FIRST、SECOND、THIRD） */
 const FIRST = { id: 3433267939, downloadUrl: 'playback/downloads/002-song_download_url_v1.json.gz', playUrl: 'playback/liked/001-song_url_v1.json.gz' }
 const SECOND = { id: 2662577181, downloadUrl: 'playback/downloads/003-song_download_url_v1.json.gz', playUrl: 'playback/liked/002-song_url_v1.json.gz' }
 const THIRD = { id: 4208408, downloadUrl: 'playback/downloads/004-song_download_url_v1.json.gz', playUrl: 'playback/liked/003-song_url_v1.json.gz' }
@@ -46,24 +39,18 @@ type Recorded = typeof FIRST
 const LIKED = { kind: 'playlist', id: 900000001 } as const
 const DOWNLOADS = { kind: 'downloads' } as const
 
-/** 网易云的音频服务器、图片服务器上放好《LOSER》的音频和封面缩略图 */
 const serveLoser = (device: Device): void => {
   device.files.put(LOSER.audio, { bytes: LOSER.bytes, type: 'audio/mpeg' })
   device.files.put(LOSER.cover, { bytes: COVER_BYTES, type: 'image/jpeg' })
 }
 
-/** 本机数据库里存着的下载 */
 const storedDownloads = async (device: Device): Promise<Record<string, any>[]> => ((await device.stored()).downloads ?? []).map(([, value]) => value as Record<string, any>)
 
-/** 发过的下载地址请求 */
 const downloadUrlRequests = (device: Device): string[] => device.requests.flatMap(request => request.path.includes('/download-url')
   ? [request.path]
   : [])
 
-/**
- * 下载这一首、等它下完（隔 1 秒才下完，已下载里按下完的先后排）：网易云回录下的下载地址和一份歌词，
- * 音频服务器上放着录制里那么大的文件，图片服务器上放着封面缩略图
- */
+/** 下载这一首、等它下完（隔 1 秒才下完，已下载里按下完的先后排）：网易云回录下的下载地址和一份歌词，音频服务器上放着录制里那么大的文件，图片服务器上放着封面缩略图 */
 const download = async (device: Device, app: App, recorded: Recorded): Promise<Song> => {
   await world.clock.advance(1000)
   const song = likedSong(app, recorded.id)
@@ -382,7 +369,6 @@ describe('放已下载的歌', () => {
     player.ready(192.648)
     await world.settle()
     expect(tab.sounding()).toBe(player)
-    // 下一首（第 2 首）没下载：空闲的播放器取它的播放地址
     expect(playUrlRequests(device)).toEqual([`/api/songs/${SECOND.id}/play-url?quality=exhigh`])
 
     app.next()
@@ -391,7 +377,6 @@ describe('放已下载的歌', () => {
     second.ready(240.413)
     await world.settle()
     expect(current(app)).toBe(SECOND.id)
-    // 再下一首（第 3 首）下载了：空闲的播放器装的是本机文件，不取播放地址
     expect(device.objectUrls.blobOf(player.src)?.size).toBe(((await loadFixture(THIRD.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }).data.size)
     expect(playUrlRequests(device)).toEqual([`/api/songs/${SECOND.id}/play-url?quality=exhigh`])
   })
@@ -444,7 +429,6 @@ describe('放已下载的歌', () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
-    // 我喜欢的音乐的第 1、3 首下载了，第 2 首没有
     const first = await download(device, app, FIRST)
     const third = await download(device, app, THIRD)
     device.setOnline(false)
@@ -459,7 +443,6 @@ describe('放已下载的歌', () => {
     await world.settle()
     const liked = app.state.library!.liked!.songs
     expect(app.state.player.queue.map(entry => entry.song.id)).toEqual(liked.map(song => song.id))
-    // 往前往后都只有第 3 首能放：转一圈回来
     expect(app.state.player.neighbors).toEqual({ previous: 2, next: 2 })
     const player = tab.audio.find(audio => !audio.paused)!
     player.ready(192.648)
@@ -469,7 +452,6 @@ describe('放已下载的歌', () => {
     player.end()
     await world.settle()
     expect(current(app)).toBe(third.id)
-    // 第 3 首在空闲的播放器里缓冲着本机文件
     tab.audio.find(audio => audio !== player)!.ready(310)
     await world.settle()
     app.next()

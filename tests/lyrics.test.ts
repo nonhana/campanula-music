@@ -8,8 +8,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtHearts } = listener(world)
 
-// 播放页的歌词（#25）：听众看歌词时用前台请求取，服务端把网易云的 lyric_new 整理成一行一行的歌词。
-// 录制是匿名录的，网易云替身不看歌曲编号，所以哪首歌都能配哪份录制
+// 播放页的歌词（#25）：听众看歌词时用前台请求取，服务端把网易云的 lyric_new 整理成一行一行的歌词。录制是匿名录的，网易云替身不看歌曲编号，所以哪首歌都能配哪份录制
 const ALL_FORMS = 'playback/lyric_new.all-forms.json'
 /** Shape of You：只有逐行歌词和翻译 */
 const TRANSLATION = 'playback/lyric_new.translation.json'
@@ -204,7 +203,6 @@ describe('歌词', () => {
 })
 
 describe('取歌词', () => {
-  /** 这台设备取过几次歌词 */
   const lyricRequests = (device: Device) => device.requests.filter(request => /^\/api\/songs\/\d+\/lyrics$/.test(request.path)).length
 
   it('取的时候显示加载中，同一首不重复取；取到了再打开同一首也不再取', async () => {

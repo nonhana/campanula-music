@@ -8,25 +8,21 @@ import type { SessionRound } from './session-round'
 
 // 登录页的两种方式（Spec #11“客户端：登录会话”）：扫码、短信验证码。不做账号密码登录。
 
-/** 扫码登录走到哪一步 */
 type QrLogin
   = | { step: 'loading' }
-  /** 没拿到二维码或查不到扫码状态：说明原因，重试就重新取一张 */
+    /** 重试就重新取一张 */
     | { step: 'failed', failure: RequestFailure }
     | { step: 'waiting', image: string }
-  /** 已扫码，等听众在手机上确认；带着扫码的账号的昵称和头像 */
+    /** 已扫码，等听众在手机上确认 */
     | { step: 'scanned', image: string, nickname: string, avatarUrl: string }
     | { step: 'expired', image: string }
-  /**
-   * 网易云要求先完成行为验证（8821）：image 是验证用的二维码，听众在手机上验证完点“继续登录”。
-   * checking：正在查验证完了没有；unverified：查过了，还没通过
-   */
+    /** 网易云要求先完成行为验证（8821）：image 是验证用的二维码；checking 是正在查，unverified 是查过了还没通过 */
     | { step: 'verifying', image: string, checking: boolean, unverified: boolean }
 
 type CaptchaStatus
   = | { status: 'idle' }
     | { status: 'sending' }
-  /** 已发出；resendAt（毫秒）之前不能重发 */
+    /** resendAt（毫秒）之前不能重发 */
     | { status: 'sent', resendAt: number }
     | { status: 'failed', failure: RequestFailure }
 
@@ -36,7 +32,6 @@ type SubmitStatus
     | { status: 'failed', failure: RequestFailure }
 
 export interface LoginState {
-  /** 没在显示二维码时是 null */
   qr: QrLogin | null
   sms: { captcha: CaptchaStatus, submit: SubmitStatus }
 }
@@ -49,7 +44,6 @@ export const INITIAL_LOGIN: LoginState = {
   },
 }
 
-/** 两次查询扫码状态之间隔多久 */
 const QR_POLL_MS = 2000
 /** 发出验证码后多久才能重发 */
 const CAPTCHA_RESEND_MS = 60_000
@@ -59,14 +53,11 @@ export interface LoginContext {
   session: SessionRound
   clock: Clock
   page: PageVisibility
-  /**
-   * 发登录请求之前：先发完还没发出去的退出，免得它把新的登录 Cookie 清掉。
-   * 退出还是没发成时返回原因，这次登录就不发了，说明原因让听众重试
-   */
+  /** 先发完还没发出去的退出，免得它把新的登录 Cookie 清掉；退出没发成时返回原因，这次登录就不发了 */
   beforeLogin: () => Promise<RequestFailure | null>
   read: () => LoginState
   write: (login: LoginState) => void
-  /** 登录成功，服务端已经设好登录 Cookie：App 拿出这个账号的曲库副本，切到登录后 */
+  /** 服务端已经设好登录 Cookie：App 拿出这个账号的曲库副本，切到登录后 */
   signedIn: (account: Account) => Promise<void>
 }
 
@@ -78,7 +69,6 @@ export interface Login {
   loginWithCaptcha: (phone: string, captcha: string) => Promise<void>
 }
 
-/** 显示着的登录二维码：查询扫码状态时带上 key */
 interface ShownQr {
   key: string
   image: string
@@ -86,9 +76,8 @@ interface ShownQr {
 
 export const createLogin = (context: LoginContext): Login => {
   const { api, clock, page } = context
-  /** 每换一张二维码、不再显示或登录成功就加一：旧请求回来时代数对不上，结果就不要 */
+  /** 每换一张二维码、不再显示或登录成功就加一：旧请求回来时代数对不上就不要 */
   let generation = 0
-  /** 正在显示的那张登录二维码；还在取或没在显示时是 null */
   let shown: ShownQr | null = null
   let cancelPoll = (): void => {}
 

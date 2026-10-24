@@ -11,9 +11,7 @@ import { TILE_GRID_SAFELIST } from './src/lib/components/library/tile-grid'
 import { AXES, cssEasing, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/shared/motion-tokens'
 import { colors, skeleton } from './uno.palette.mts'
 
-// 设计系统的源头（DESIGN.md、.impeccable/design.json）：色板在 uno.palette.ts，两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
-// 动效的数字在 src/lib/components/shared/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类。
-// 字体随项目打包（src/routes/+layout.svelte 引入 @fontsource-variable），不从网络加载。
+// 设计系统的源头（DESIGN.md、.impeccable/design.json）：色板在 uno.palette.ts，其余都在这里。动效的数字在 shared/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类；字体随项目打包（+layout.svelte 引入 @fontsource-variable），不从网络加载。
 
 /** 拉丁 → 简体 → 日文 → 繁体；日文、繁体按元素的 lang 把各自的字体提前（The Mixed Script Rule） */
 const FONT_SANS = `'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif`
@@ -24,9 +22,8 @@ const FONT_TC = `'Noto Sans Variable', 'Noto Sans TC Variable', 'Noto Sans SC Va
 const MOUSE_MEDIA = '@media (hover: hover) and (pointer: fine)'
 
 /**
- * 动效令牌的 CSS 变量。减少动态效果只在这里处理（DESIGN.md Motion）：透明度、颜色的时长（--duration-*）最多 150ms，
- * 位移、缩放、宽高的时长（--move-*）变成 0，循环（--loop-state）停住，按钮按下（--press-scale）不缩，
- * 换页的新页不再晚一步（--delay-float-in）。组件里不写这条媒体查询
+ * 动效令牌的 CSS 变量。减少动态效果只在这里处理（DESIGN.md Motion）：--duration-* 最多 150ms，--move-* 变成 0，
+ * 循环停住，按钮不缩。组件里不写这条媒体查询
  */
 const motionVariables = (reduced: boolean): string => {
   const lines = [
@@ -51,8 +48,8 @@ const motionVariables = (reduced: boolean): string => {
 }
 
 /**
- * 依次飘入（DESIGN.md Motion）：骨架换成内容时，一组里前 6 个依次晚 30ms 从下面飘上来，其余和第 6 个一起。
- * src/lib/components/shared/motion.ts 的 reveal 只在这一小会儿给这一组挂上 .revealing，之后才挂上的（虚拟列表滚出来的行）不飘
+ * 依次飘入（DESIGN.md Motion）：前 6 个依次晚 30ms 从下面飘上来，其余和第 6 个一起。
+ * shared/motion.ts 的 reveal 只在这一小会儿挂 .revealing，之后才挂上的（虚拟列表滚出来的行）不飘
  */
 const revealCss = (): string => {
   const delays = Array.from({ length: STAGGER.count - 1 }, (_, i) => {
@@ -81,12 +78,10 @@ const revealCss = (): string => {
 }
 
 /**
- * 换页（ADR-0011、DESIGN.md Navigation · 页面切换）。src/lib/components/shell/page-transition.ts 把方向放进 types：
- * up 进入下一层、down 返回、left / right 同一层之间按左右顺序（内容往哪边走）、fade 只淡入淡出。
- * 内容区就是根元素（root）的快照：页面是窗口在滚（ADR-0012），只有整个视口的快照不受滚动位置影响；
- * 顶栏、侧栏、播放条各自起了名字，不在这张快照里。它们带 view-transition-class：
- * still 原地不动、只放新的一帧（它是活的，播放条的进度线照常走）；crossfade 交叉淡化（手机顶行、标签行）。
- * 减少动态效果时位移的时长（--move-*）是 0、淡入淡出最多 150ms，只剩交叉淡化。ground 是整页的底色（晨光底）
+ * 换页（ADR-0011、DESIGN.md Navigation · 页面切换）。shell/page-transition.ts 把方向放进 types：
+ * up / down / left / right / fade。内容区就是根元素的快照：页面是窗口在滚（ADR-0012），只有整视口快照不受滚动位置影响；
+ * 顶栏、侧栏、播放条带 view-transition-class（still 原地只放新一帧，crossfade 交叉淡化），不在这张快照里。
+ * ground 是整页底色（晨光底）
  */
 const pageTransitionCss = (ground: string): string => {
   const reach = {
@@ -150,9 +145,8 @@ const pageTransitionCss = (ground: string): string => {
     }
 
     /*
-     * 同一种页面之间（桌面歌单页左栏换歌单）：同样快慢的交叉淡化，两页一样的地方（左栏）不闪。
-     * 浏览器自带的交叉淡化靠 plus-lighter 把两张叠成一张，它写在默认的 animation 里，这里改了 animation 就要自己补上；
-     * 没有它，淡到一半两页都半透明，透出底色，整个内容区像刷新了一下
+     * 同一种页面之间（桌面歌单页左栏换歌单）：两页一样的地方不闪。浏览器自带的交叉淡化靠 plus-lighter 把两张叠成一张，
+     * 它写在默认的 animation 里，改了 animation 就要自己补上；没有它，淡到一半透出底色，整个内容区像刷新了一下
      */
     html:active-view-transition-type(fade)::view-transition-old(root) {
       animation: page-fade-out var(--duration-state) var(--ease-out-soft) both;
@@ -165,8 +159,8 @@ const pageTransitionCss = (ground: string): string => {
     }
 
     /*
-     * 从格子飞到页头的封面（page-transition.ts 只给露在屏幕里、图已经加载好的封面这个名字）：
-     * 位置、大小一起变（480ms），两头是同一张图，交叉淡化时圆角跟着变（歌单、专辑 12px ↔ 16px，歌手一直是圆的）
+     * 从格子飞到页头的封面（page-transition.ts 只给露在屏幕里、图已加载的封面这个名字）：位置、大小一起变（480ms），
+     * 两头是同一张图；圆角跟着变（歌单、专辑 12px ↔ 16px，歌手一直是圆的）
      */
     ::view-transition-group(cover) {
       animation-duration: var(--move-focal-bar);

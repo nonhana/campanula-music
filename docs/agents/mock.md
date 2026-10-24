@@ -19,11 +19,11 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 
 `pnpm build` 后跑 `pnpm check:mock-isolation`：产物里不能出现 mock、录制数据、mock 路由或开发设计页；CI 和 pre-push 都会拦截这些回归。命令名保留，检查范围包含所有仅供开发的代码。
 
-死代码检查按需跑 `pnpm dlx knip`，配置与真实入口误报的原因在根目录 `knip.json`；不装进项目依赖、不进钩子。
+死代码检查按需跑 `pnpm dlx knip`；配置和真实入口的误报原因写在根目录 `knip.json`，不装进项目依赖，也不进钩子。
 
 ## 数据
 
-种子来自 `tests/fixtures/netease/` 里已经脱敏、脱敏检查过的录制，和测试用同一批文件、同一个 `index.json` 索引（`pnpm fixtures:index` 生成）。
+种子来自 `tests/fixtures/netease/` 里已经脱敏并通过检查的录制，和测试用同一批文件、同一个 `index.json` 索引（`pnpm fixtures:index` 生成）。
 
 | 场景里的种子 | 内容 |
 |---|---|
@@ -79,7 +79,7 @@ mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确
 
 录制前先 `pnpm tsx scripts/take-login.mts` 刷新 `_notes/campanula-login`。它只是录制用的快照，不影响浏览器登录；`openSession()` 会先只读查一次 `user_account`，登录失效就停下请作者扫码。写操作只在临时新建的隐私歌单上做，做完删掉（Spec #11 交付方式第 1 条）。
 
-录完跑 `pnpm fixtures:index`：每份录制都过 SDK 结构定义；没有结构的模块记 `validated: false`，mock 不拿它回答。最后补/跑对应测试，界面相关的再跑 `pnpm smoke:mock`。
+录完跑 `pnpm fixtures:index`：每份录制都要通过 SDK 结构定义的校验；没有结构的模块记为 `validated: false`，mock 不拿它回答。最后补上并运行对应测试，界面相关的再跑 `pnpm smoke:mock`。
 
 ## 限制
 

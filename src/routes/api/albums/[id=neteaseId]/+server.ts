@@ -4,7 +4,6 @@ import { respondSignedIn } from '#lib/server/session.js'
 
 import type { RequestHandler } from './$types'
 
-// 专辑页：曲目和简介
 export const GET: RequestHandler = ({ params, cookies }) => {
   const { id } = params
   return respondSignedIn(endpoints.album, cookies, listener => fetchAlbum(id, listener))

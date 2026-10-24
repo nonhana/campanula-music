@@ -18,7 +18,6 @@
   const hearts = $derived(view.state.library?.hearts ?? null)
   const hearted = $derived(hearts?.has(song.id) ?? false)
 
-  /** 按钮的大小和形状、没红心时的颜色、图标大小 */
   const LOOKS = {
     'row': { button: 'relative z-1 size-9 rounded-lg text-neutral-600', icon: 16 },
     'desktop': { button: 'size-10 rounded-full text-neutral-700', icon: 20 },

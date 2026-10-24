@@ -1,14 +1,11 @@
 import type { Grip } from '../shared/press'
 import { pressBroken } from '../shared/press'
 
-// 手机播放页左右拖封面切歌的手势核心（DESIGN.md Cover Wheel；Spec #11 第二个测试接入点“拖动手势核心”的转盘那一半，另一半是 drawer-core.ts）：
-// 不碰页面、不碰 Svelte 的纯逻辑。封面按钮把按下、移动、松开、点击交给它，它说转盘跟着手转了几格、松手切不切歌、这次算不算点按。
-// 往右拖是顺时针转（格数为正），松手切到上一首；往左拖切到下一首
+// 手机播放页左右拖封面切歌的手势核心（DESIGN.md Cover Wheel；Spec #11 第二个测试接入点“拖动手势核心”的转盘那一半）：
+// 不碰页面、不碰 Svelte。封面按钮把指针事件交给它，它说转盘跟手转了几格、松手切不切歌、算不算点按；往右为正、切上一首，往左切下一首。
 
-/** 切到上一首还是下一首 */
 export type WheelDirection = 'previous' | 'next'
 
-/** 转盘该怎么摆：拖着时被手转了几格（从按下的地方算，往右为正），不然停在原位（切歌时由换碟接着转） */
 export type WheelPose
   = | { dragging: true, turned: number }
     | { dragging: false }
@@ -18,11 +15,11 @@ export interface WheelCore extends Grip {
 }
 
 export interface WheelCoreOptions {
-  /** 手指横着挪多少 px，转盘转一格（相邻两张封面之间） */
+  /** 手指横着挪多少 px 转一格 */
   notch: () => number
-  /** 往这边有没有别的歌可换：播放队列里只有一首时两边都没有，拖得动，松手总是转回原位 */
+  /** 队列里只有一首时两边都没有：拖得动，松手总转回原位 */
   has: (direction: WheelDirection) => boolean
-  /** 松手时过了阈值：切到上一首 / 下一首 */
+  /** 松手时过了阈值：切歌 */
   commit: (direction: WheelDirection) => void
   /** 没拖动、只是点按（键盘的 Enter、空格也算） */
   tap: () => void
@@ -39,7 +36,7 @@ const FLICK = 1
 
 interface Press {
   pointerId: number
-  /** 按下的地方和时刻：拖过的距离、一甩的速度都从这里算 */
+  /** 拖过的距离、一甩的速度都从这里算 */
   x: number
   y: number
   time: number

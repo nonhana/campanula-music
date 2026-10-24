@@ -11,13 +11,12 @@ import { FakeAudio, FakeBroadcast, FakeFiles, FakeImages, FakeLocks, FakeMediaMe
 export interface SentRequest {
   method: string
   path: string
-  /** 请求体（JSON），没有就不写 */
   body?: unknown
-  /** 页面被隐藏也要发出去的请求（晚一点提交的修改）：只记带了的 */
+  /** 页面被隐藏也要发出去的请求（晚一点提交的修改），只记带了的 */
   keepalive?: true
 }
 
-/** 这台设备收到的服务端响应：方法、路径和状态码（请求正文、Cookie 之外只看这几样） */
+/** 这台设备收到的服务端响应：请求正文、Cookie 之外只看方法、路径和状态码 */
 interface ReceivedResponse {
   method: string
   path: string
@@ -29,27 +28,21 @@ export interface Tab {
   app: App
   /** 页面被隐藏（切到别的应用、锁屏） */
   hide: () => void
-  /** 页面回到前台 */
   show: () => void
   /**
-   * 关掉这个标签页（关掉浏览器标签页、划掉 App）：页面先被隐藏，之后页面里的脚本不再运行：
-   * 播放器停下不出声、不再发事件，定时不再触发，收不到广播和联网状态的变化。
-   * 依据 HTML 标准的 unload a document（先发 visibilitychange 变成 hidden）和 destroy a document（排着的任务丢掉，事件循环不再为它跑任务）。
+   * 关掉这个标签页（关掉标签页、划掉 App）：页面先被隐藏，之后脚本不再运行——播放器停下不出声、不再发事件，定时不再触发，收不到广播和联网状态变化。依据 HTML 标准的 unload a document（先发 visibilitychange 变成 hidden）和 destroy a document（排着的任务丢掉，事件循环不再为它跑任务）。
    * 替身没做到的：在路上的请求、排着的锁、本机数据库的连接不会跟着断，所以关之前先等设备停下（world.settle）
    */
   close: () => void
   mediaSession: FakeMediaSession
-  /** 这个标签页里网易云的反作弊令牌（Watchman） */
   watchman: FakeWatchman
   /** 这个标签页的播放器，按 App 新建的先后 */
   audio: readonly FakeAudio[]
-  /** 正在出声的播放器；没有就是 undefined */
   sounding: () => FakeAudio | undefined
 }
 
 /** 一台设备上的浏览器：Cookie、本机数据库、跨标签页的锁和广播、联网状态，开出来的标签页共用 */
 export interface Device {
-  /** 打开一个标签页，等 App 打开完 */
   open: () => Promise<Tab>
   /** 这台设备向 Campanula 服务端发出的请求，按先后；断网时没发出去的不算 */
   readonly requests: readonly SentRequest[]
@@ -57,7 +50,6 @@ export interface Device {
   readonly pending: readonly SentRequest[]
   /** 这台设备收到的服务端响应正文，按先后：页面脚本能读到的就是这些 */
   readonly responseBodies: readonly string[]
-  /** 这台设备收到的服务端响应（方法、路径、状态码），按先后 */
   readonly responses: readonly ReceivedResponse[]
   /** 这台设备存着的 Cookie（包括 httpOnly 的） */
   cookies: () => Promise<Cookie[]>
@@ -75,10 +67,7 @@ export interface Device {
   files: FakeFiles
   /** 本机文件的地址（blob:）：按地址找回是哪个文件 */
   objectUrls: FakeObjectUrls
-  /**
-   * 等这台设备上正在发的请求都回来、排着的锁回调、标签页之间的广播和播放器的事件都跑完、本机数据库的读写都做完、
-   * App 处理完（处理时又发的也等）
-   */
+  /** 等这台设备上正在发的请求都回来、排着的锁回调、标签页之间的广播和播放器的事件都跑完、本机数据库的读写都做完、 App 处理完（处理时又发的也等） */
   idle: () => Promise<void>
   /** 除了在路上的请求（pending），还有没做完的事：本机数据库事务、排着的锁回调、没送到的广播、播放器排着的事件 */
   busy: () => boolean
@@ -87,10 +76,7 @@ export interface Device {
 /** App 在本机数据库里用的库名（src/lib/app/local.ts），在浏览器的开发者工具里看到的就是它 */
 const LOCAL_DB = 'campanula'
 
-/**
- * 本机数据库正在做的事务：fake-indexeddb 一个请求一个任务（setImmediate）地做，几千首歌的写入要很多轮，
- * 只等一轮的话 App 还没写完、还没发下一个请求，idle() 就回来了。所有设备共用一个计数
- */
+/** 本机数据库正在做的事务：fake-indexeddb 一个请求一个任务（setImmediate）地做，几千首歌要很多轮，只等一轮 idle() 就回来了。所有设备共用一个计数 */
 let activeTransactions = 0
 const transaction = IDBDatabase.prototype.transaction
 IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parameters<IDBDatabase['transaction']>) {
@@ -105,7 +91,6 @@ IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parame
   return started
 }
 
-/** 读请求体：App 只发 JSON */
 const bodyOf = (init: RequestInit | undefined): Pick<SentRequest, 'body'> => typeof init?.body === 'string'
   ? {
       body: JSON.parse(init.body) as unknown,
@@ -115,7 +100,6 @@ const bodyOf = (init: RequestInit | undefined): Pick<SentRequest, 'body'> => typ
 /** 请求头：App 发出这个请求时的序号（stamp），服务端按它记请求是什么时候发出的（world.ts，网易云替身查对不上号用） */
 export const SENT_HEADER = 'x-test-sent'
 
-/** origin：测试进程里服务端的地址；clock：世界的时钟；stamp：取一个只增不减的序号（网易云替身的 nextOrder） */
 export const createDevice = (origin: string, clock: Clock, stamp: () => number): Device => {
   const jar = new CookieJar()
   const requests: SentRequest[] = []

@@ -40,20 +40,15 @@ export interface LayerOptions<R, F = never> {
   modal: boolean | ((request: Readonly<R>) => boolean)
   fallback?: string
   /**
-   * 关掉后焦点交给谁：打开这一层的按钮在层开着时会被换掉时用（多选）。
-   * 只在焦点归还（close / invalidate，以及它们经由 reconcile 的返回路径）里、rendered 之后调用；
-   * 返回 null 时回退 request.from（适配器只接受仍 connected 的），再回退 fallback（层内元素 / main）。
-   * 不传时和以前完全一样。
+   * 关掉后焦点交给谁：层开着时打开它的按钮被换掉时用（多选）。只在焦点归还、rendered 之后调用；
+   * 返回 null 时回退 request.from（仍 connected 的），再回退 fallback（层内元素 / main）。
    */
   focusReturn?: () => F | null
-  /** 只表示 DOM 包含关系，不表示业务归属。 */
+  /** 只表示 DOM 包含关系，不表示业务归属 */
   parent?: string
-  /**
-   * 这条请求不能比来源层活得更久（加入歌单的多选、换封面、播放队列）。
-   * 可以按请求给不同的来源层：同一个选择器，多选的请求依赖多选层，单曲的不依赖（#73）
-   */
+  /** 请求不能比来源层活得更久（加入歌单的多选、换封面、播放队列）；可按请求给不同的来源层（同一个选择器，多选依赖多选层、单曲不依赖，#73） */
   dependsOn?: string | ((request: Readonly<R>) => string | null)
-  /** 只有播放类的层才登记同一会话内的前进恢复。 */
+  /** 只有播放类的层才登记同一会话内的前进恢复 */
   restore?: () => boolean
   beforeClose?: () => boolean
   dismissed?: () => void
@@ -83,7 +78,6 @@ interface Registration<F> {
   sheet: boolean
 }
 
-/** 这一条请求依赖哪个来源层；不依赖是 null */
 const dependencyOf = <F>(options: LayerOptions<Request<F>, F>, request: Request<F>): string | null => typeof options.dependsOn === 'function'
   ? options.dependsOn(request)
   : options.dependsOn ?? null
@@ -100,7 +94,7 @@ interface Entry<F> {
 
 export const samePosition = (a: OverlayPosition, b: OverlayPosition): boolean => a.cursor === b.cursor && a.url === b.url && a.stamp === b.stamp
 
-/** 不依赖 DOM/Kit。看得见的层与它占住的历史条目是有意分开的两件事。 */
+/** 不依赖 DOM/Kit；看得见的层与它占住的历史条目是有意分开的两件事 */
 export class OverlayStack<F> {
   private readonly registrations = new WeakMap<object, Registration<F>>()
   private readonly remembered = new Map<number, Entry<F>>()
@@ -185,15 +179,13 @@ export class OverlayStack<F> {
 
   private covered(registration: Registration<F>, container: boolean): boolean {
     // 这一层自己不在栈里（例如播放页没开）时 findIndex 给 -1，slice(0) 把栈里所有 modal 层都算进去：
-    // 对 container 来说这正是想要的——外框里的提示条（PlayerLayer 的 layer.containerInert）在弹窗盖上来时该 inert，
-    // 和基线 inert={dialogOpen} 一致。对层元素自己（container=false）多算的 true 也无害：
-    // 没打开时组件本来就用 !request 把整块标成 inert。
+    // 对 container 正是想要的（外框里的提示条在弹窗盖上来时该 inert）；对层自己多算的 true 也无害，没打开时本来就标 inert。
     const index = this.layers.findIndex(entry => entry.registration === registration)
     return this.layers.slice(index + 1).some(entry => entry.modal && (!container || entry.registration.options.parent !== registration.name))
   }
 
   private permitted(entries: readonly Entry<F>[]): boolean {
-    // 一次关闭意图里，每个有副作用的守卫只从上往下求值一次。
+    // 一次关闭意图里，每个有副作用的守卫只从上往下求值一次
     for (let index = entries.length - 1; index >= 0; index -= 1) {
       const entry = entries[index]!
       if (entry.busy || entry.registration.options.beforeClose?.() === false)
@@ -202,7 +194,7 @@ export class OverlayStack<F> {
     return true
   }
 
-  /** 外部路由意图，包括自己还有操作在排队时到达的那些。 */
+  /** 外部路由意图，包括自己还有操作在排队时到达的 */
   navigate(): boolean {
     if (!this.permitted(this.layers))
       return false
@@ -211,11 +203,8 @@ export class OverlayStack<F> {
   }
 
   /**
-   * 换页、外部导航只撤掉看得见的层：可恢复的记忆（remembered）和它占过的槽位（slots）留着，
-   * 同一会话再走回这些历史条目时，reconcile 按标记把层重建出来（F1 的跨页前进）。
-   * 只有落到与本条同 URL 的条目才会重建：从别的 URL 落到带标记的条目时，这一趟只 clear 并返回，
-   * 要等同 URL 的下一次遍历（reconcile 的 URL 门槛）。
-   * 刷新、新会话由新的栈实例和条目上的会话标识挡掉；leaveTo 是真的离开，那时另外清空。
+   * 换页、外部导航只撤掉看得见的层：remembered 和它占过的 slots 留着，同一会话再走回这些条目时按标记重建（F1 跨页前进）。
+   * 只有落到与本条同 URL 的条目才重建，从别的 URL 落到带标记的条目时这一趟只 clear；刷新、新会话由新栈实例和会话标识挡掉。
    */
   clear(): void {
     this.generation += 1
@@ -275,13 +264,13 @@ export class OverlayStack<F> {
     this.presentation.changed()
   }
 
-  /** 焦点归还的唯一路径（close / invalidate，以及 reconcile 关掉层之后）：等 DOM 更新完再问 */
+  /** 焦点归还的唯一路径（close / invalidate、reconcile 关掉层之后）：等 DOM 更新完再问 */
   private async focus(entry: Entry<F>, current: () => boolean): Promise<void> {
     await this.presentation.rendered()
     if (!current())
       return
-    // 入口被层换掉时（多选）由登记方重新找；没有或返回 null 时回到 request.from。
-    // 适配器只接受仍 connected、不在 inert 里的元素，再兜底到 fallback（层内元素 / main）。
+    // 入口被层换掉时（多选）由登记方重新找；没有或返回 null 时回到 request.from
+    // 适配器只接受仍 connected、不在 inert 里的元素，再兜底到 fallback（层内元素 / main）
     const target = entry.registration.options.focusReturn?.() ?? entry.request.from
     this.presentation.focus(target, entry.registration.options.fallback)
   }
@@ -438,7 +427,7 @@ export class OverlayStack<F> {
       const result = await this.history.leave(path, this.history.read())
       if (!current() || result.status === 'invalidated')
         return 'invalidated'
-      // 只恢复仍然归自己所有的那条来源条目，绝不按前进差值盲退。
+      // 只恢复仍然归自己所有的来源条目，绝不按前进差值盲退
       if (result.status !== 'committed') {
         if (hadHistory) {
           const restored = await this.history.go(origin, result.position)
@@ -458,7 +447,7 @@ export class OverlayStack<F> {
     })
   }
 
-  /** 外部观察会立刻让排队中的命令失效，再按真实的最新条目对账。 */
+  /** 外部观察会立刻让排队中的命令失效，再按最新条目对账 */
   reconcile(phase: 'intent' | 'settled' = 'settled'): Promise<OverlayResult> {
     this.generation += 1
     if (phase === 'intent')
@@ -485,7 +474,7 @@ export class OverlayStack<F> {
           continue
         next.push(entry)
       }
-      // 普通的浅路由变化时，不占历史的层仍留在各自有历史的父层上面。
+      // 普通的浅路由变化时，不占历史的层仍留在各自有历史的父层上面
       const removed = this.layers.filter(entry => entry.cursor !== null && !next.includes(entry))
       if (removed.length) {
         const first = this.layers.indexOf(removed[0]!)
@@ -516,8 +505,8 @@ export class OverlayStack<F> {
       this.layers = live
       for (const entry of next)
         entry.registration.active = entry
-      // 恢复出来的层占的就是当前这条历史：槽位按真实条目重记一次，关它时 target() 才找得到。
-      // 用 this.position：上面若刚写过 replace，accept 已把它换成新 stamp 的那条，局部的 position 是写之前的。
+      // 恢复出来的层占的就是当前这条历史：槽位按真实条目重记一次，关它时 target() 才找得到
+      // 用 this.position：刚写过 replace 时 accept 已换成新 stamp，局部 position 是写之前的
       if (next.some(entry => entry.cursor === position.cursor))
         this.slots.set(position.cursor, this.position)
       this.presentation.changed()

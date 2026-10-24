@@ -1,10 +1,8 @@
 import type { LyricLine, LyricsResponse, LyricWord } from '#lib/api/playback.js'
 
-// 把网易云 lyric_new 的歌词整理成一行一行的（格式照录制，tests/fixtures/netease/playback/lyric_new.*.json）：
-// - lrc、tlyric、romalrc、ytlrc、yromalrc 是 LRC：每行前面一个或几个 [分:秒.小数] 时间标签；
-// - yrc 是逐字歌词：[行开始毫秒,行时长](词开始毫秒,词时长,0)词(…)词…；
-// - 两种里都夹着 JSON 写的署名行：{"t":毫秒,"c":[{"tx":"作词: "},{"tx":"米津玄師"}]}。
-// 翻译、音译按时刻配到原文的行上：yrc 配 ytlrc、yromalrc，lrc 配 tlyric、romalrc，录制里时刻都正好一样
+// 把 lyric_new 的歌词整理成一行一行（格式照录制，tests/fixtures/netease/playback/lyric_new.*.json）：lrc 一族每行带一个或几个
+// [分:秒.小数] 时间标签，yrc 是 [行开始毫秒,行时长](词开始毫秒,词时长,0)词…，两种里都夹着 JSON 署名行。
+// 翻译、音译按时刻配到原文行上：yrc 配 ytlrc、yromalrc，lrc 配 tlyric、romalrc
 
 interface LyricText {
   readonly lyric: string
@@ -84,7 +82,6 @@ const lrcLinesOf = (raw: string): Timed[] => {
   }))
 }
 
-/** yrc 的一行：词之间按 (开始,时长,0) 分开，两个标记中间的就是这个词 */
 const yrcLineOf = (raw: string): Timed | null => {
   const match = YRC_LINE.exec(raw)
   if (!match)
