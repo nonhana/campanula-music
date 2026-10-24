@@ -32,15 +32,22 @@ function isMockResult(value: MockResult | RawPlaylist): value is MockResult {
 /** 写歌单前先找它：不存在或已经删了就是 404，省得每个写方法重复一遍 */
 function playlistFor(data: SeedData, id: number): MockResult | RawPlaylist {
   const playlist = summaryOf(data, id)
-  if (!playlist || playlist.status === DELETED)
-    return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+  if (!playlist || playlist.status === DELETED) {
+    return {
+      ok: false,
+      status: 404,
+      body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+    }
+  }
   return playlist
 }
 
 function partsOf(data: SeedData, trackIds: readonly number[]): SongPart[] {
   return trackIds.flatMap((id) => {
     const part = data.songs.get(id)
-    return part ? [part] : []
+    return part
+      ? [part]
+      : []
   })
 }
 
@@ -92,8 +99,16 @@ export class MockStore {
   async userPlaylist(offset = 0, limit = 1000): Promise<Record<string, unknown>> {
     const data = await this.load()
     // 和网易云一样，列表里的歌单只有头部：tracks / trackIds 是 null（详情才带曲目），不然一份列表几十 MB
-    const playlist = data.playlists.slice(offset, offset + limit).map(item => ({ ...clone(item), tracks: null, trackIds: null }))
-    return { ...clone(data.templates.userPlaylist as Record<string, unknown>), playlist, more: false }
+    const playlist = data.playlists.slice(offset, offset + limit).map(item => ({
+      ...clone(item),
+      tracks: null,
+      trackIds: null,
+    }))
+    return {
+      ...clone(data.templates.userPlaylist as Record<string, unknown>),
+      playlist,
+      more: false,
+    }
   }
 
   async playlistDetail(id: number): Promise<PlaylistDetailBody | null> {
@@ -125,7 +140,10 @@ export class MockStore {
 
   async likelist(): Promise<Record<string, unknown>> {
     const data = await this.load()
-    return { ...clone(data.templates.likelist as Record<string, unknown>), ids: [...data.liked] }
+    return {
+      ...clone(data.templates.likelist as Record<string, unknown>),
+      ids: [...data.liked],
+    }
   }
 
   async albumSublist(offset = 0, limit = 1000): Promise<Record<string, unknown>> {
@@ -165,7 +183,10 @@ export class MockStore {
     }
     if (liked)
       syncSummary(liked, data)
-    return { ok: true, body: clone(data.templates[hearted ? 'likeAdd' : 'likeRemove'] as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates[hearted ? 'likeAdd' : 'likeRemove'] as Record<string, unknown>),
+    }
   }
 
   async addTracks(playlistId: number, songIds: readonly number[]): Promise<MockResult> {
@@ -176,11 +197,25 @@ export class MockStore {
     const playlist = found
     const existing = new Set(playlist.trackIds.map(track => track.id))
     const added = songIds.filter(id => !existing.has(id))
-    if (added.length === 0)
-      return { ok: false, status: 502, body: clone(data.templates.duplicateTracks as Record<string, unknown>) }
-    playlist.trackIds = [...added.map(id => ({ id })), ...playlist.trackIds]
+    if (added.length === 0) {
+      return {
+        ok: false,
+        status: 502,
+        body: clone(data.templates.duplicateTracks as Record<string, unknown>),
+      }
+    }
+    playlist.trackIds = [
+      ...added.map(id => ({ id })),
+      ...playlist.trackIds,
+    ]
     syncSummary(playlist, data)
-    return { ok: true, body: { ...clone(data.templates.playlistAdd as Record<string, unknown>), count: added.length } }
+    return {
+      ok: true,
+      body: {
+        ...clone(data.templates.playlistAdd as Record<string, unknown>),
+        count: added.length,
+      },
+    }
   }
 
   async removeTracks(playlistId: number, songIds: readonly number[]): Promise<MockResult> {
@@ -192,7 +227,13 @@ export class MockStore {
     const remove = new Set(songIds)
     playlist.trackIds = playlist.trackIds.filter(track => !remove.has(track.id))
     syncSummary(playlist, data)
-    return { ok: true, body: { ...clone(data.templates.playlistRemove as Record<string, unknown>), count: songIds.length } }
+    return {
+      ok: true,
+      body: {
+        ...clone(data.templates.playlistRemove as Record<string, unknown>),
+        count: songIds.length,
+      },
+    }
   }
 
   async orderTracks(playlistId: number, songIds: readonly number[]): Promise<MockResult> {
@@ -202,17 +243,28 @@ export class MockStore {
       return found
     const playlist = found
     const before = playlist.trackIds.map(track => track.id)
-    if (before.length !== songIds.length || !before.every(id => songIds.includes(id)))
-      return { ok: false, status: 400, body: clone(data.templates.orderUnconfirmed as Record<string, unknown>) }
+    if (before.length !== songIds.length || !before.every(id => songIds.includes(id))) {
+      return {
+        ok: false,
+        status: 400,
+        body: clone(data.templates.orderUnconfirmed as Record<string, unknown>),
+      }
+    }
     playlist.trackIds = songIds.map(id => ({ id }))
     syncSummary(playlist, data)
-    return { ok: true, body: clone(data.templates.playlistOrder as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates.playlistOrder as Record<string, unknown>),
+    }
   }
 
   async orderPlaylists(ids: readonly number[]): Promise<MockResult> {
     const data = await this.load()
     data.playlists = reorderSortable(data.playlists, ids, sortablePlaylist)
-    return { ok: true, body: clone(data.templates.playlistOrderUpdate as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates.playlistOrderUpdate as Record<string, unknown>),
+    }
   }
 
   async createPlaylist(name: string, privacy: number): Promise<MockResult> {
@@ -247,7 +299,13 @@ export class MockStore {
       body: {
         ...template,
         id,
-        playlist: { ...(template.playlist as Record<string, unknown>), id, name, privacy, trackCount: 0 },
+        playlist: {
+          ...(template.playlist as Record<string, unknown>),
+          id,
+          name,
+          privacy,
+          trackCount: 0,
+        },
       },
     }
   }
@@ -255,100 +313,175 @@ export class MockStore {
   async deletePlaylist(id: number): Promise<MockResult> {
     const data = await this.load()
     const playlist = summaryOf(data, id)
-    if (!playlist)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    if (!playlist) {
+      return {
+        ok: false,
+        status: 404,
+        body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+      }
+    }
     playlist.status = DELETED
     data.playlists = data.playlists.filter(item => item.id !== id)
-    return { ok: true, body: clone(data.templates.playlistDelete as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates.playlistDelete as Record<string, unknown>),
+    }
   }
 
   async renamePlaylist(id: number, name: string): Promise<MockResult> {
     const data = await this.load()
     const playlist = summaryOf(data, id)
-    if (!playlist)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    if (!playlist) {
+      return {
+        ok: false,
+        status: 404,
+        body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+      }
+    }
     playlist.name = name
     playlist.updateTime = Date.now()
-    return { ok: true, body: clone(data.templates.playlistName as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates.playlistName as Record<string, unknown>),
+    }
   }
 
   async describePlaylist(id: number, description: string): Promise<MockResult> {
     const data = await this.load()
     const playlist = summaryOf(data, id)
-    if (!playlist)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    if (!playlist) {
+      return {
+        ok: false,
+        status: 404,
+        body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+      }
+    }
     playlist.description = description
     playlist.updateTime = Date.now()
-    return { ok: true, body: clone(data.templates.playlistDesc as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates.playlistDesc as Record<string, unknown>),
+    }
   }
 
   async tagPlaylist(id: number, tags: readonly string[]): Promise<MockResult> {
     const data = await this.load()
     const playlist = summaryOf(data, id)
-    if (!playlist)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    if (!playlist) {
+      return {
+        ok: false,
+        status: 404,
+        body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+      }
+    }
     playlist.tags = [...tags]
     playlist.updateTime = Date.now()
-    return { ok: true, body: clone(data.templates.playlistTags as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates.playlistTags as Record<string, unknown>),
+    }
   }
 
   async publishPlaylist(id: number): Promise<MockResult> {
     const data = await this.load()
     const playlist = summaryOf(data, id)
-    if (!playlist)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    if (!playlist) {
+      return {
+        ok: false,
+        status: 404,
+        body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+      }
+    }
     playlist.privacy = 0
     playlist.updateTime = Date.now()
-    return { ok: true, body: clone(data.templates.playlistPrivacy as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates.playlistPrivacy as Record<string, unknown>),
+    }
   }
 
   async setCover(id: number, url: string): Promise<MockResult> {
     const data = await this.load()
     const playlist = summaryOf(data, id)
-    if (!playlist)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    if (!playlist) {
+      return {
+        ok: false,
+        status: 404,
+        body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+      }
+    }
     playlist.coverImgUrl = url
     playlist.updateTime = Date.now()
-    return { ok: true, body: { ...clone(data.templates.coverUpdate as Record<string, unknown>), data: { code: 200, url } } }
+    return {
+      ok: true,
+      body: {
+        ...clone(data.templates.coverUpdate as Record<string, unknown>),
+        data: { code: 200, url },
+      },
+    }
   }
 
   async subscribePlaylist(id: number, collected: boolean): Promise<MockResult> {
     const data = await this.load()
     const playlist = summaryOf(data, id)
-    if (!playlist)
-      return { ok: false, status: 404, body: clone(data.templates.missingPlaylist as Record<string, unknown>) }
+    if (!playlist) {
+      return {
+        ok: false,
+        status: 404,
+        body: clone(data.templates.missingPlaylist as Record<string, unknown>),
+      }
+    }
     playlist.subscribed = collected
     if (collected && !data.playlists.some(item => item.id === id))
       data.playlists.push(playlist)
     if (!collected)
       data.playlists = data.playlists.filter(item => item.id !== id || item.creator.userId === SELF_UID)
-    return { ok: true, body: clone(data.templates[collected ? 'playlistSubscribe' : 'playlistUnsubscribe'] as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates[collected ? 'playlistSubscribe' : 'playlistUnsubscribe'] as Record<string, unknown>),
+    }
   }
 
   async collectAlbum(id: number, collected: boolean): Promise<MockResult> {
     const data = await this.load()
     if (collected && !data.albums.some(album => album.id === id)) {
       const album = data.albumSummaries.get(id)
-      if (!album)
-        return { ok: false, status: 404, body: { code: 404, msg: 'Mock 没有这张专辑的收录信息' } }
+      if (!album) {
+        return {
+          ok: false,
+          status: 404,
+          body: { code: 404, msg: 'Mock 没有这张专辑的收录信息' },
+        }
+      }
       data.albums.unshift(clone(album))
     }
     if (!collected)
       data.albums = data.albums.filter(album => album.id !== id)
-    return { ok: true, body: clone(data.templates[collected ? 'albumSub' : 'albumUnsub'] as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates[collected ? 'albumSub' : 'albumUnsub'] as Record<string, unknown>),
+    }
   }
 
   async collectArtist(id: number, collected: boolean): Promise<MockResult> {
     const data = await this.load()
     if (collected && !data.artists.some(artist => artist.id === id)) {
       const artist = data.artistSummaries.get(id)
-      if (!artist)
-        return { ok: false, status: 404, body: { code: 404, msg: 'Mock 没有这位歌手的收藏信息' } }
+      if (!artist) {
+        return {
+          ok: false,
+          status: 404,
+          body: { code: 404, msg: 'Mock 没有这位歌手的收藏信息' },
+        }
+      }
       data.artists.unshift(clone(artist))
     }
     if (!collected)
       data.artists = data.artists.filter(artist => artist.id !== id)
-    return { ok: true, body: clone(data.templates[collected ? 'artistSub' : 'artistUnsub'] as Record<string, unknown>) }
+    return {
+      ok: true,
+      body: clone(data.templates[collected ? 'artistSub' : 'artistUnsub'] as Record<string, unknown>),
+    }
   }
 
   async clearPlaylist(id: number): Promise<void> {

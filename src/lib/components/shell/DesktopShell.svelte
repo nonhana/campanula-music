@@ -59,12 +59,18 @@
     {@render rail()}
     <!-- 最下面的让出播放条的位置：播放条浮上来时一起上去（360ms），沉下去时一起下来（200ms），不跳 -->
     {#if railEnd}
-      <div class={['mt-auto transition-transform', docked ? 'duration-move-panel -translate-y-20' : 'duration-move-panel-out ease-in-soft']}>
+      <div class={[
+        'mt-auto transition-transform',
+        docked ? 'duration-move-panel -translate-y-20' : 'duration-move-panel-out ease-in-soft',
+      ]}>
         {@render railEnd()}
       </div>
     {/if}
   </nav>
-  <main class={['pt-16 transition-[padding] duration-move-state', docked ? 'pb-28' : 'pb-12']}>
+  <main class={[
+    'pt-16 transition-[padding] duration-move-state',
+    docked ? 'pb-28' : 'pb-12',
+  ]}>
     <!-- 跟着侧栏让位：和侧栏一样，收起时等文字淡出再变 -->
     <div class={['pl-[var(--rail-width)] transition-[padding] duration-move-state', !railExpanded && 'delay-state-out']}>
       <div class='mx-auto max-w-[1280px] px-8 pt-4'>
@@ -73,5 +79,8 @@
     </div>
   </main>
   <PlayerDock present={docked} {preview} />
-  <Scrollbar page={{ top: '64px', bottom: playerDockBottom({ desktop: true, present: docked, withoutBar: '0px' }) }} {lookup} />
+  <Scrollbar page={{
+    top: '64px',
+    bottom: playerDockBottom({ desktop: true, present: docked, withoutBar: '0px' }),
+  }} {lookup} />
 </div>

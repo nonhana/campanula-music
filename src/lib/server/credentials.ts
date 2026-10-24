@@ -54,8 +54,15 @@ function key(): Buffer {
 function seal(login: LoginCookie): string {
   const iv = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', key(), iv)
-  const data = Buffer.concat([cipher.update(JSON.stringify(login), 'utf8'), cipher.final()])
-  return Buffer.concat([iv, data, cipher.getAuthTag()]).toString('base64url')
+  const data = Buffer.concat([
+    cipher.update(JSON.stringify(login), 'utf8'),
+    cipher.final(),
+  ])
+  return Buffer.concat([
+    iv,
+    data,
+    cipher.getAuthTag(),
+  ]).toString('base64url')
 }
 
 /** 解不开（被改过、换了密钥、格式不对）就当作没有 */
@@ -66,7 +73,10 @@ function unseal(value: string): LoginCookie | null {
   try {
     const decipher = createDecipheriv('aes-256-gcm', key(), raw.subarray(0, 12))
     decipher.setAuthTag(raw.subarray(raw.length - 16))
-    const text = Buffer.concat([decipher.update(raw.subarray(12, raw.length - 16)), decipher.final()]).toString('utf8')
+    const text = Buffer.concat([
+      decipher.update(raw.subarray(12, raw.length - 16)),
+      decipher.final(),
+    ]).toString('utf8')
     return JSON.parse(text) as LoginCookie
   }
   catch {
@@ -76,7 +86,9 @@ function unseal(value: string): LoginCookie | null {
 
 export function readLogin(cookies: Cookies): LoginCookie | null {
   const value = cookies.get(COOKIE_NAME)
-  return value ? unseal(value) : null
+  return value
+    ? unseal(value)
+    : null
 }
 
 /** 加密并检查浏览器上限：超过就报错，不能当作已经存好（验证关卡①的测试版丢过一次凭据） */
@@ -105,7 +117,13 @@ function writeLogin(cookies: Cookies, login: LoginCookie): void {
 
 /** 登录或续期成功：凭据和 deviceId 加密进登录 Cookie，这一刻就是上次续期的时间 */
 export function saveLogin(cookies: Cookies, deviceId: string, credentials: Record<string, string>): void {
-  writeLogin(cookies, { deviceId, session: { credentials, renewedAt: Date.now() } })
+  writeLogin(cookies, {
+    deviceId,
+    session: {
+      credentials,
+      renewedAt: Date.now(),
+    },
+  })
 }
 
 /**
@@ -113,7 +131,13 @@ export function saveLogin(cookies: Cookies, deviceId: string, credentials: Recor
  * 但走的仍是同一套加密和属性（#58：假登录复用 App 真实的加密 Cookie 流程）。
  */
 export function loginCookieHeader(deviceId: string, credentials: Record<string, string>): string {
-  const value = sealedValue({ deviceId, session: { credentials, renewedAt: Date.now() } })
+  const value = sealedValue({
+    deviceId,
+    session: {
+      credentials,
+      renewedAt: Date.now(),
+    },
+  })
   return `${COOKIE_NAME}=${encodeURIComponent(value)}; ${cookieAttributes()}`
 }
 

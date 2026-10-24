@@ -30,7 +30,9 @@ export interface FixtureIdentity {
 
 /** 读对照表；没有就是 null */
 export function loadIdentity(): FixtureIdentity | null {
-  return existsSync(IDENTITY_FILE) ? JSON.parse(readFileSync(IDENTITY_FILE, 'utf8')) as FixtureIdentity : null
+  return existsSync(IDENTITY_FILE)
+    ? JSON.parse(readFileSync(IDENTITY_FILE, 'utf8')) as FixtureIdentity
+    : null
 }
 
 function wholeNumber(number: number | string): RegExp {
@@ -44,13 +46,34 @@ function escape(text: string): string {
 /** 对照表变成一组 [说明, 正则] */
 function rulesOf(identity: FixtureIdentity): [string, RegExp][] {
   return [
-    ['本人 uid', wholeNumber(identity.self.uid)],
-    ['本人昵称', new RegExp(escape(identity.self.nickname))],
-    ['本人的歌手编号', wholeNumber(identity.artist.id)],
-    ['本人的歌手名', new RegExp(escape(identity.artist.name))],
-    ...Object.keys(identity.playlists).map((id): [string, RegExp] => [`本人歌单 ${id}`, wholeNumber(id)]),
-    ...Object.keys(identity.works).map((id): [string, RegExp] => [`本人作品 ${id}`, wholeNumber(id)]),
-    ...Object.keys(identity.users).map((id): [string, RegExp] => [`听众 ${id}`, wholeNumber(id)]),
+    [
+      '本人 uid',
+      wholeNumber(identity.self.uid),
+    ],
+    [
+      '本人昵称',
+      new RegExp(escape(identity.self.nickname)),
+    ],
+    [
+      '本人的歌手编号',
+      wholeNumber(identity.artist.id),
+    ],
+    [
+      '本人的歌手名',
+      new RegExp(escape(identity.artist.name)),
+    ],
+    ...Object.keys(identity.playlists).map((id): [string, RegExp] => [
+      `本人歌单 ${id}`,
+      wholeNumber(id),
+    ]),
+    ...Object.keys(identity.works).map((id): [string, RegExp] => [
+      `本人作品 ${id}`,
+      wholeNumber(id),
+    ]),
+    ...Object.keys(identity.users).map((id): [string, RegExp] => [
+      `听众 ${id}`,
+      wholeNumber(id),
+    ]),
   ]
 }
 
@@ -58,12 +81,18 @@ function rulesOf(identity: FixtureIdentity): [string, RegExp][] {
 export function findLeaks(text: string, identity: FixtureIdentity): string[] {
   return rulesOf(identity).flatMap(([label, pattern]) => {
     const match = pattern.exec(text)
-    return match ? [`${label}：…${text.slice(Math.max(0, match.index - 60), match.index + 60).replace(/\s+/g, ' ')}…`] : []
+    return match
+      ? [`${label}：…${text.slice(Math.max(0, match.index - 60), match.index + 60).replace(/\s+/g, ' ')}…`]
+      : []
   })
 }
 
 function fixtureFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? fixtureFiles(join(dir, entry.name)) : [join(dir, entry.name)])
+  return readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory()
+    ? fixtureFiles(join(dir, entry.name))
+    : [
+        join(dir, entry.name),
+      ])
 }
 
 function main(args: readonly string[]): number {
@@ -72,12 +101,18 @@ function main(args: readonly string[]): number {
     console.log(`录制脱敏检查跳过：没有 ${relative(ROOT, IDENTITY_FILE)}（只在作者本机）`)
     return 0
   }
-  const files = (args.length ? args.map(file => resolve(file)) : fixtureFiles(FIXTURES))
+  const files = (args.length
+    ? args.map(file => resolve(file))
+    : fixtureFiles(FIXTURES))
     .filter(file => file.startsWith(FIXTURES) && /\.json(?:\.gz)?$/.test(file) && existsSync(file))
   const problems = files.flatMap((file) => {
     const bytes = readFileSync(file)
-    const leaks = findLeaks((file.endsWith('.gz') ? gunzipSync(bytes) : bytes).toString('utf8'), identity)
-    return leaks.length ? [`${relative(ROOT, file)}\n  ${leaks.join('\n  ')}`] : []
+    const leaks = findLeaks((file.endsWith('.gz')
+      ? gunzipSync(bytes)
+      : bytes).toString('utf8'), identity)
+    return leaks.length
+      ? [`${relative(ROOT, file)}\n  ${leaks.join('\n  ')}`]
+      : []
   })
   if (problems.length) {
     console.error(`录制数据里还有作者的真实身份，先脱敏（tests/fixtures/netease/README.md「脱敏」）：\n${problems.join('\n')}`)

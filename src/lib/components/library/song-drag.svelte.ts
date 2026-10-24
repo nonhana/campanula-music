@@ -155,7 +155,9 @@ export class SongDrag {
     if (!this.dragging || this.movingIds.has(song.id))
       return index * ROW
     const rest = this.restIndex.get(song.id)!
-    return (rest < this.sort.target ? rest : rest + 1) * ROW
+    return (rest < this.sort.target
+? rest
+: rest + 1) * ROW
   }
 
   /** 被拖的行：拿起、拖动、落位、展开期间都挂载（keep） */
@@ -183,7 +185,9 @@ export class SongDrag {
     if (!this.expanding)
       return 0
     const k = this.moved.findIndex(item => item.id === song.id)
-    return k < 0 ? 0 : -k * ROW
+    return k < 0
+? 0
+: -k * ROW
   }
 
   /** 展开时第 k 首晚多少开始（ms），做成一叠行依次扇开 */
@@ -191,7 +195,9 @@ export class SongDrag {
     if (!this.expanding)
       return 0
     const k = this.moved.findIndex(item => item.id === song.id)
-    return k < 0 ? 0 : k * EXPAND_STAGGER
+    return k < 0
+? 0
+: k * EXPAND_STAGGER
   }
 
   /** 拖动、落位、展开：调用方只需要知道“正在排序” */
@@ -279,13 +285,26 @@ export class SongDrag {
     const edges = pageEdges()
     this.railTop = edges.top + 8
     this.railBottom = window.innerHeight - edges.bottom + 8
-    return { grabY: at.y - rect.top, left: hostRect.left, width: hostRect.width, height: ROW }
+    return {
+grabY: at.y - rect.top,
+left: hostRect.left,
+width: hostRect.width,
+height: ROW,
+}
   }
 
   private track(scene: SongScene, at: Point, edges: DragSortEdges, slots: number): { ghost: Rect, target: number } {
     if (this.scrubbing) {
       const target = clamp(this.scrubTarget, 0, slots)
-      return { ghost: { x: scene.left, y: this.listTop() + target * ROW, width: scene.width, height: ROW }, target }
+      return {
+ghost: {
+x: scene.left,
+y: this.listTop() + target * ROW,
+width: scene.width,
+height: ROW,
+},
+target,
+}
     }
     const row = rowTrack({
       grabY: scene.grabY,
@@ -296,11 +315,24 @@ export class SongDrag {
       minTop: edges.top + LABEL_GAP,
       maxTop: edges.bottom - ROW,
     }, at.y, slots)
-    return { ghost: { x: scene.left, y: row.y, width: scene.width, height: ROW }, target: row.target }
+    return {
+ghost: {
+x: scene.left,
+y: row.y,
+width: scene.width,
+height: ROW,
+},
+target: row.target,
+}
   }
 
   private slot(scene: SongScene, target: number): Rect {
-    return { x: scene.left, y: this.listTop() + target * ROW, width: scene.width, height: scene.height }
+    return {
+x: scene.left,
+y: this.listTop() + target * ROW,
+width: scene.width,
+height: scene.height,
+}
   }
 
   private started(state: DragSortState): void {

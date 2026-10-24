@@ -56,8 +56,14 @@
   let attempt = 0
 
   const term = $derived(query.trim())
-  const songs = $derived(term ? (search.status === 'shown' ? search.songs : []) : liked?.songs ?? [])
-  const chosen = $derived([...selected.values()])
+  const songs = $derived(term
+    ? (search.status === 'shown'
+      ? search.songs
+      : [])
+    : liked?.songs ?? [])
+  const chosen = $derived([
+    ...selected.values(),
+  ])
 
   // 停手 300ms 才搜；接着打字时上一次的回来也不要
   $effect(() => {
@@ -75,7 +81,9 @@
       const result = await view.app.searchSongs(keyword)
       if (mine !== attempt)
         return
-      search = result.ok ? { status: 'shown', songs: result.value } : { status: 'failed', failure: result.failure }
+      search = result.ok
+        ? { status: 'shown', songs: result.value }
+        : { status: 'failed', failure: result.failure }
     }, SEARCH_DELAY)
     return () => {
       if (timer)
@@ -93,7 +101,9 @@
     const result = await view.app.searchSongs(keyword)
     if (mine !== attempt)
       return
-    search = result.ok ? { status: 'shown', songs: result.value } : { status: 'failed', failure: result.failure }
+    search = result.ok
+      ? { status: 'shown', songs: result.value }
+      : { status: 'failed', failure: result.failure }
   }
 
   function inPlaylist(song: Song): boolean {
@@ -132,7 +142,9 @@
   <span
     class={[
       'grid size-[22px] flex-none place-items-center rounded-md border-[1.5px]',
-      added ? 'border-neutral-200 bg-neutral-200 text-neutral-500' : checked ? 'border-primary-900 bg-primary-900 text-white' : 'border-neutral-500 bg-white',
+      added
+        ? 'border-neutral-200 bg-neutral-200 text-neutral-500'
+        : checked ? 'border-primary-900 bg-primary-900 text-white' : 'border-neutral-500 bg-white',
     ]}
     aria-hidden='true'
   >
@@ -169,7 +181,10 @@
         kind='error'
         title='没能搜索歌曲'
         body={failureText(search.failure)}
-        action={{ label: '重试', run: () => void retry() }}
+        action={{
+          label: '重试',
+          run: () => void retry(),
+        }}
       />
     {:else if search.status === 'shown' && search.songs.length === 0}
       <StateBlock kind='empty' icon={SearchX} title={`没有搜到“${term}”`} />
@@ -206,7 +221,9 @@
 <div class='flex-none border-t border-neutral-100 px-4 py-3'>
   {#if failure}
     <p class='pb-2 text-caption text-error-700' role='alert'>
-      {failure.kind === 'missing' ? '这张歌单已经不在了' : changeFailureText(failure)}
+      {failure.kind === 'missing'
+        ? '这张歌单已经不在了'
+        : changeFailureText(failure)}
     </p>
   {/if}
   <div class='flex items-center gap-3'>

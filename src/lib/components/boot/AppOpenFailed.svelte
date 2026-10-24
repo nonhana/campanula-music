@@ -32,7 +32,10 @@
       case 'rateLimited':
       case 'upstreamChanged':
       case 'rejected':
-        return { title: '没能确认登录', body: failureText(failure) }
+        return {
+          title: '没能确认登录',
+          body: failureText(failure),
+        }
       default: {
         const unhandled: never = failure
         throw new Error(`不认识的失败：${JSON.stringify(unhandled)}`)

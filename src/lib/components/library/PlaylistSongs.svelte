@@ -50,9 +50,15 @@
   /** 不在曲库里的歌单：歌是打开时联网取的，说“加载”，不说“同步” */
   const outside = $derived(page.inLibrary === false)
   const term = $derived(query.trim())
-  const result = $derived(term && shown.kind === 'songs' ? view.app.searchPlaylist(playlistId, term) : null)
+  const result = $derived(term && shown.kind === 'songs'
+    ? view.app.searchPlaylist(playlistId, term)
+    : null)
   /** 列表里显示的歌：搜索时是搜到的 */
-  const songs = $derived(result ? result.songs : shown.kind === 'songs' ? shown.songs : [])
+  const songs = $derived(result
+    ? result.songs
+    : shown.kind === 'songs'
+    ? shown.songs
+    : [])
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
   const selection = playlistSelection
   /** 曲库里的这张歌单是哪一类；不在曲库里的歌单是 null */
@@ -72,7 +78,9 @@
     return '同步完才能排序'
   })
   /** 整张歌单里的歌：勾选和“加入歌单 / 移除”都用它，搜索时也一样 */
-  const allSongs = $derived(shown.kind === 'songs' ? shown.songs : [])
+  const allSongs = $derived(shown.kind === 'songs'
+    ? shown.songs
+    : [])
 
   /** 拖动排序（#36）：只在多选里、按每行的把手拖；勾选的几首一起拖，保持原来的先后 */
   let listHost = $state<HTMLElement>()
@@ -124,7 +132,9 @@
     const row = (event.target as Element).closest<HTMLElement>('[data-song-id]')
     if (!row)
       return
-    if (drag.moveByKeyboard(Number(row.dataset.songId), event.key === 'ArrowUp' ? -1 : 1)) {
+    if (drag.moveByKeyboard(Number(row.dataset.songId), event.key === 'ArrowUp'
+      ? -1
+      : 1)) {
       event.preventDefault()
       event.stopPropagation()
     }
@@ -132,13 +142,28 @@
 
   /** 列表状态交给 songs/SongList：歌单自己的失败在哪说、空状态说什么、能不能搜 */
   const listView = $derived.by((): SongListView => {
-    if (page.failure && page.failure.where === 'list')
-      return { kind: 'failed', title: liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载', body: failureText(page.failure.failure), retry }
+    if (page.failure && page.failure.where === 'list') {
+      return {
+        kind: 'failed',
+        title: liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载',
+        body: failureText(page.failure.failure),
+        retry,
+      }
+    }
     if (shown.kind === 'empty') {
       if (liked)
         return { kind: 'empty', icon: Heart, title: '还没有红心的歌' }
-      if (kind === 'own')
-        return { kind: 'empty', icon: ListMusic, title: '这张歌单还没有歌', action: { label: '添加歌曲', run: () => openAddSongs() } }
+      if (kind === 'own') {
+        return {
+          kind: 'empty',
+          icon: ListMusic,
+          title: '这张歌单还没有歌',
+          action: {
+            label: '添加歌曲',
+            run: () => openAddSongs(),
+          },
+        }
+      }
       return { kind: 'empty', icon: ListMusic, title: '这张歌单还没有歌' }
     }
     if (shown.kind === 'songs')
@@ -147,7 +172,13 @@
   })
 
   /** 歌单内搜索的“找到几首、可能不全”；没搜到时下面那句按在不在曲库里说 */
-  const search = $derived(result ? { term, incomplete: result.incomplete, incompleteBody: outside ? '还没加载完，加载完再搜一次' : '还没同步完，同步完再搜一次' } : null)
+  const search = $derived(result
+    ? {
+      term,
+      incomplete: result.incomplete,
+      incompleteBody: outside ? '还没加载完，加载完再搜一次' : '还没同步完，同步完再搜一次',
+    }
+    : null)
 
   /** 列表源：多选的勾选、⌘/Ctrl 点选、手机长按 */
   const selectionProps = $derived<SongSelection>({
@@ -157,14 +188,21 @@
     modifiers: (song, event) => {
       if (!selection.mode) {
         const from = event.currentTarget as HTMLElement
-        selection.enter({ from, focusEntry: rowEntryFocus(from) })
+        selection.enter({
+          from,
+          focusEntry: rowEntryFocus(from),
+        })
       }
       if (event.shiftKey)
         selection.range(song.id)
       else
         selection.toggle(song.id)
     },
-    longpress: (song, from) => selection.enter({ id: song.id, from, focusEntry: rowEntryFocus(from) }),
+    longpress: (song, from) => selection.enter({
+      id: song.id,
+      from,
+      focusEntry: rowEntryFocus(from),
+    }),
   })
 
   /** 拖动排序的几何：列表按 placeOf 摆行，被拖的行一直挂载 */
@@ -217,9 +255,20 @@
 {#snippet rowWrap(song: Song, i: number, row: Snippet<[Song, number]>)}
   {@const motion = drag.motionOf(song)}
   <div
-    class={['h-full origin-center', motion !== null && 'relative z-10', motion === 'pick' && 'drag-row-pick', motion === 'land' && 'drag-row-land']}
-    style:--drag-shift="{motion === 'pick' ? drag.liftShift(i) : motion === 'land' ? drag.landShift(song) : 0}px"
-    style:--drag-delay="{motion === 'land' ? drag.landDelay(song) : 0}ms"
+    class={[
+      'h-full origin-center',
+      motion !== null && 'relative z-10',
+      motion === 'pick' && 'drag-row-pick',
+      motion === 'land' && 'drag-row-land',
+    ]}
+    style:--drag-shift="{motion === 'pick'
+      ? drag.liftShift(i)
+      : motion === 'land'
+      ? drag.landShift(song)
+      : 0}px"
+    style:--drag-delay="{motion === 'land'
+      ? drag.landDelay(song)
+      : 0}ms"
   >
     {@render row(song, i)}
   </div>
@@ -228,7 +277,10 @@
 {#snippet notice()}
   {#if page.failure && page.failure.where === 'more'}
     <div transition:unfold>
-      <div class={['flex items-center gap-3 px-3 text-caption text-neutral-700', phone ? 'min-h-11 py-1' : 'py-2']} role='alert'>
+      <div class={[
+        'flex items-center gap-3 px-3 text-caption text-neutral-700',
+        phone ? 'min-h-11 py-1' : 'py-2',
+      ]} role='alert'>
         <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
         <span class='min-w-0 flex-1'>没加载完：{failureText(page.failure.failure)}</span>
         <TextButton desktop={{ variant: 'outline' }} class='max-md:-mr-3 md:h-9!' onclick={retry}>重试</TextButton>
@@ -312,16 +364,24 @@
     {search}
     skeleton={phone ? 8 : 10}
     headerHidden={false}
-    count={shown.kind === 'songs' ? shown.total : undefined}
+    count={shown.kind === 'songs'
+      ? shown.total
+      : undefined}
     countAction={phone ? countAction : undefined}
     {notice}
-    toolbar={!phone && selection.mode ? toolbar : undefined}
+    toolbar={!phone && selection.mode
+      ? toolbar
+      : undefined}
     selection={selectionProps}
     grip={sortable ? rowGrip : undefined}
-    drag={sortable && selection.mode ? dragHooks : undefined}
+    drag={sortable && selection.mode
+      ? dragHooks
+      : undefined}
     {rowWrap}
     bind:host={listHost}
-    contentClass={phone && drag.dragging ? 'clear-rail' : undefined}
+    contentClass={phone && drag.dragging
+      ? 'clear-rail'
+      : undefined}
     label='歌单里的歌曲'
   />
 </div>
@@ -337,7 +397,9 @@
     ]}
     style:left='{drag.ghostLeft}px'
     style:width='{drag.ghostWidth}px'
-    style:transform='translate3d(0, {(drag.settling || drag.expanding) ? drag.settleY : drag.ghostY}px, 0)'
+    style:transform='translate3d(0, {(drag.settling || drag.expanding)
+      ? drag.settleY
+      : drag.ghostY}px, 0)'
   >
     <div
       class='ghost-in ghost-scale h-full origin-center'
@@ -371,7 +433,10 @@
     <span class='absolute inset-x-0 top-0 h-6 text-center text-caption text-neutral-600 font-500 tabular-nums'>1</span>
     <span class='absolute inset-x-0 bottom-6 top-6'>
       <span
-        class={['absolute left-1/2 inset-y-0 w-2 -ml-1 rounded-full transition-[scale,background-color] duration-move-feedback ease-out-soft', drag.scrubbing ? 'bg-primary-200' : 'bg-primary-100']}
+        class={[
+          'absolute left-1/2 inset-y-0 w-2 -ml-1 rounded-full transition-[scale,background-color] duration-move-feedback ease-out-soft',
+          drag.scrubbing ? 'bg-primary-200' : 'bg-primary-100',
+        ]}
         style:scale={drag.scrubbing ? '1 1' : '0.5 1'}
       ></span>
       <span

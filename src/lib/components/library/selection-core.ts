@@ -11,7 +11,10 @@ export interface Checked {
 }
 
 /** 什么都没勾。只读，调用方不要改这个 Set */
-export const NONE: Checked = { ids: new Set(), anchor: null }
+export const NONE: Checked = {
+  ids: new Set(),
+  anchor: null,
+}
 
 /** 对勾选的歌能做什么：加入歌单对哪种歌单都有（不用判断）；移除只有自建；排序是自建和我喜欢的音乐 */
 export interface SelectionCapabilities {
@@ -42,12 +45,16 @@ export function toggle(state: Checked, id: number): Checked {
  * 正常连选时锚点不跟着走。
  */
 export function extend(state: Checked, visible: readonly number[], to: number): Checked {
-  const from = state.anchor === null ? -1 : visible.indexOf(state.anchor)
+  const from = state.anchor === null
+    ? -1
+    : visible.indexOf(state.anchor)
   const target = visible.indexOf(to)
   if (from < 0 || target < 0)
     return toggle(state, to)
   const ids = new Set(state.ids)
-  const [lo, hi] = from < target ? [from, target] : [target, from]
+  const [lo, hi] = from < target
+    ? [from, target]
+    : [target, from]
   for (let index = lo; index <= hi; index += 1)
     ids.add(visible[index]!)
   return { ids, anchor: state.anchor }

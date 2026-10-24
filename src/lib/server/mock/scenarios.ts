@@ -62,5 +62,9 @@ export function isScenarioName(value: unknown): value is ScenarioName {
 }
 
 export function configOf(name: ScenarioName): MockConfig {
-  return { ...DEFAULTS, ...PRESETS[name], name }
+  return {
+    ...DEFAULTS,
+    ...PRESETS[name],
+    name,
+  }
 }

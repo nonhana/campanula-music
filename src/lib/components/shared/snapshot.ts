@@ -12,7 +12,10 @@ import { atOnce } from './motion'
 export function scrollSnapshot<T>(id: RouteId, read: () => T, write: (value: T) => void): void {
   snapshot({
     id,
-    capture: () => ({ value: read(), scrollY: window.scrollY }),
+    capture: () => ({
+      value: read(),
+      scrollY: window.scrollY,
+    }),
     restore: ({ value, scrollY }) => {
       atOnce(() => write(value))
       window.scrollTo(0, scrollY)

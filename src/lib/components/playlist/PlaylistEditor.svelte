@@ -13,8 +13,18 @@
 
   const { playlistEditor } = getOverlays()
 
-  const TITLES = { new: '新建歌单', info: '编辑歌单信息', public: '改为公开歌单', delete: '删除歌单' } as const
-  const SIZES: Record<EditorRequest['mode'], DialogSize> = { new: 'form', info: 'wide', public: 'confirm', delete: 'confirm' }
+  const TITLES = {
+    new: '新建歌单',
+    info: '编辑歌单信息',
+    public: '改为公开歌单',
+    delete: '删除歌单',
+  } as const
+  const SIZES: Record<EditorRequest['mode'], DialogSize> = {
+    new: 'form',
+    info: 'wide',
+    public: 'confirm',
+    delete: 'confirm',
+  }
 </script>
 
 <DialogShell

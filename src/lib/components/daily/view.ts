@@ -9,7 +9,15 @@ import { failureText } from '../shared/failure'
 /** 从每日推荐放进播放队列的歌的播放来源 */
 export const DAILY_SOURCE: PlaySource = { kind: 'daily' }
 
-const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'] as const
+const WEEKDAYS = [
+  '星期日',
+  '星期一',
+  '星期二',
+  '星期三',
+  '星期四',
+  '星期五',
+  '星期六',
+] as const
 
 /** 日历上的一天：几月、几号、星期几 */
 export interface CalendarDay {
@@ -24,13 +32,19 @@ export interface CalendarDay {
  */
 export function dailyCalendarDay(daily: DailyState | null): CalendarDay {
   const date = new Date(`${daily?.day ?? dailyDayAt(Date.now())}T00:00:00Z`)
-  return { month: date.getUTCMonth() + 1, day: date.getUTCDate(), weekday: WEEKDAYS[date.getUTCDay()] }
+  return {
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+    weekday: WEEKDAYS[date.getUTCDay()],
+  }
 }
 
 /** 一共多长：不到一小时写“54 分钟”，否则“1 小时 54 分钟” */
 export function totalDuration(songs: readonly Song[]): string {
   const minutes = Math.round(songs.reduce((sum, song) => sum + song.duration, 0) / 60_000)
-  return minutes >= 60 ? `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分钟` : `${minutes} 分钟`
+  return minutes >= 60
+    ? `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分钟`
+    : `${minutes} 分钟`
 }
 
 /**
@@ -40,5 +54,9 @@ export function totalDuration(songs: readonly Song[]): string {
 export function dailyFailure(failure: DailyFailure): { title: string, body?: string, brief: string } {
   if (failure.kind === 'offline')
     return { title: '每日推荐要联网才能看', brief: '要联网才能看' }
-  return { title: '今天的每日推荐没能加载', body: failureText(failure), brief: '没能加载' }
+  return {
+    title: '今天的每日推荐没能加载',
+    body: failureText(failure),
+    brief: '没能加载',
+  }
 }

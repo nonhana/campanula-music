@@ -19,7 +19,9 @@ const SUCCESS_CODES: Record<string, readonly number[]> = {
 const DEFAULT_RETRY_AFTER = 30
 
 export function field(body: unknown, name: string): unknown {
-  return typeof body === 'object' && body !== null && name in body ? (body as Record<string, unknown>)[name] : undefined
+  return typeof body === 'object' && body !== null && name in body
+    ? (body as Record<string, unknown>)[name]
+    : undefined
 }
 
 /**
@@ -30,7 +32,9 @@ export function field(body: unknown, name: string): unknown {
 function failureStatus(module: string, code: unknown): number | undefined {
   if (typeof code !== 'number' || (SUCCESS_CODES[module] ?? [200]).includes(code))
     return undefined
-  return code > 100 && code < 600 ? code : 400
+  return code > 100 && code < 600
+    ? code
+    : 400
 }
 
 /**
@@ -47,8 +51,12 @@ function rateLimited(code: unknown, body: unknown): boolean {
  * SDK 2.x 的 decodeResponse 遇到这层就取里面的 body 再判断成败、校验结构，这里照做：录制文件保持原样
  */
 function unwrapped(module: string, body: unknown): unknown {
-  const inner = module === 'playlist_tracks' ? field(body, 'body') : undefined
-  return typeof inner === 'object' && inner !== null ? inner : body
+  const inner = module === 'playlist_tracks'
+    ? field(body, 'body')
+    : undefined
+  return typeof inner === 'object' && inner !== null
+    ? inner
+    : body
 }
 
 /** 一次录制的成败：失败时 status/body 照 SDK 抛出的样子，限流再加上 retryAfter（秒） */
@@ -64,7 +72,18 @@ export function fixtureOutcome(module: string, response: { status: number, body:
   const failedWith = failureStatus(module, code)
   const rejected = failedWith !== undefined
   const status = failedWith ?? response.status
-  if (rejected && rateLimited(code, body))
-    return { rejected, response: { status, body: { ...(body as object), retryAfter: DEFAULT_RETRY_AFTER }, retryAfter: DEFAULT_RETRY_AFTER } }
-  return { rejected, response: { status, body } }
+  if (rejected && rateLimited(code, body)) {
+    return {
+      rejected,
+      response: {
+        status,
+        body: { ...(body as object), retryAfter: DEFAULT_RETRY_AFTER },
+        retryAfter: DEFAULT_RETRY_AFTER,
+      },
+    }
+  }
+  return {
+    rejected,
+    response: { status, body },
+  }
 }

@@ -26,7 +26,13 @@
   const history = $derived(view.state.search.history)
   const typed = $derived(searchBox.draft.trim())
   const rows = $derived(suggestionRows(searchBox.draft, view.state.search.suggestions))
-  const ICONS = { search: Search, song: Music, artist: UserRound, album: Disc3, playlist: ListMusic }
+  const ICONS = {
+    search: Search,
+    song: Music,
+    artist: UserRound,
+    album: Disc3,
+    playlist: ListMusic,
+  }
 
   /** 清空搜索历史。这个按钮跟着就没了：用键盘按的，焦点回到搜索框（输入框是 combobox），不掉到页面最外面 */
   function clearHistory(event: MouseEvent) {
@@ -41,7 +47,10 @@
     <section class={phone ? 'px-4 pt-4' : 'px-5 pb-5 pt-4'} aria-labelledby='search-history-title'>
       <div class='flex items-center gap-2'>
         <h2 id='search-history-title' class='text-label text-neutral-900 font-600'>搜索历史</h2>
-        <TextButton tone='neutral' size='caption' class={['ml-auto', phone ? '-mr-3' : 'h-8! -mr-2']} onclick={clearHistory}>清空</TextButton>
+        <TextButton tone='neutral' size='caption' class={[
+          'ml-auto',
+          phone ? '-mr-3' : 'h-8! -mr-2',
+        ]} onclick={clearHistory}>清空</TextButton>
       </div>
       <ul class='mt-3 flex flex-wrap gap-2' aria-label='搜过的词'>
         {#each history as word (word)}
@@ -78,16 +87,27 @@
             searchBox.active = i
         }}
       >
-        <span class={['grid size-8 flex-none place-items-center rounded-full', row.kind === 'search' ? 'bg-primary-100 text-primary-950' : 'bg-neutral-100 text-neutral-600']}>
+        <span class={[
+          'grid size-8 flex-none place-items-center rounded-full',
+          row.kind === 'search'
+            ? 'bg-primary-100 text-primary-950'
+            : 'bg-neutral-100 text-neutral-600',
+        ]}>
           <Icon size={16} aria-hidden='true' />
         </span>
         {#if row.kind === 'search'}
-          <span class={['min-w-0 flex-1 truncate text-neutral-900', phone ? 'text-body' : 'text-label']}>搜索“<span class='font-600' lang={langOf(row.name)}>{row.name}</span>”</span>
+          <span class={[
+            'min-w-0 flex-1 truncate text-neutral-900',
+            phone ? 'text-body' : 'text-label',
+          ]}>搜索“<span class='font-600' lang={langOf(row.name)}>{row.name}</span>”</span>
           {#if !phone}
             <kbd class='flex-none border border-neutral-200 rounded-sm bg-white px-1.5 text-micro text-neutral-600 font-sans'>Enter</kbd>
           {/if}
         {:else}
-          <span class={['min-w-0 flex-1 truncate text-neutral-800', phone ? 'text-body' : 'text-label']} lang={langOf(row.name)}>{before}{#if matched}<mark class='rounded-sm bg-primary-100 px-px text-primary-950'>{matched}</mark>{/if}{after}</span>
+          <span class={[
+            'min-w-0 flex-1 truncate text-neutral-800',
+            phone ? 'text-body' : 'text-label',
+          ]} lang={langOf(row.name)}>{before}{#if matched}<mark class='rounded-sm bg-primary-100 px-px text-primary-950'>{matched}</mark>{/if}{after}</span>
           <span class='sr-only'>，{SUGGESTION_KINDS[row.kind]}</span>
         {/if}
       </button>

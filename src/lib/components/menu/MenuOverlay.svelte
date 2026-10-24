@@ -54,14 +54,22 @@
 
   const request = $derived(layer.request)
   const floating = $derived(request?.anchor ? request : null)
-  const sheetRequest = $derived(request && !request.anchor ? request : null)
+  const sheetRequest = $derived(request && !request.anchor
+    ? request
+    : null)
   const sheetOpen = $derived(sheetRequest !== null)
   /** 收起的动画里还画着刚才那一层 */
   let sheetShown = $state<R | null>(null)
   /** 浮动菜单本身：点外面、滚动时判断在不在里面 */
   let menu = $state<HTMLElement>()
-  const drawer = createDrawer(() => (sheetShown ? estimate(sheetShown, true) : 0))
-  const gripSheet = drawer.grip({ from: 'open', commit: () => layer.close(), tap: () => layer.close() })
+  const drawer = createDrawer(() => (sheetShown
+    ? estimate(sheetShown, true)
+    : 0))
+  const gripSheet = drawer.grip({
+    from: 'open',
+    commit: () => layer.close(),
+    tap: () => layer.close(),
+  })
 
   $effect.pre(() => {
     if (sheetRequest)
@@ -104,7 +112,13 @@
   function estimate(shown: R, sheet: boolean): number {
     const list = items(shown)
     const rows = list
-      ? list.reduce((total, item) => total + (sheet ? (mediaRow(item) ? SHEET_MEDIA_ROW : SHEET_ICON_ROW) : (mediaRow(item) ? FLOATING_MEDIA_ROW : FLOATING_ICON_ROW)) + (item.separated ? SEPARATOR : 0), 0)
+      ? list.reduce((total, item) => total + (sheet
+        ? (mediaRow(item)
+          ? SHEET_MEDIA_ROW
+          : SHEET_ICON_ROW)
+        : (mediaRow(item)
+        ? FLOATING_MEDIA_ROW
+        : FLOATING_ICON_ROW)) + (item.separated ? SEPARATOR : 0), 0)
       : LOADING_ROWS * (sheet ? SHEET_MEDIA_ROW : FLOATING_MEDIA_ROW)
     return sheet
       ? SHEET_BASE + headerHeight(header?.(shown, true), true) + rows
@@ -137,9 +151,13 @@
   const place: Attachment<HTMLElement> = (node) => {
     const anchor = floating!.anchor!
     const below = anchor.y + node.offsetHeight <= window.innerHeight - MARGIN
-    const left = Math.min(Math.max(MARGIN, anchor.end ? anchor.x - node.offsetWidth : anchor.x), window.innerWidth - node.offsetWidth - MARGIN)
+    const left = Math.min(Math.max(MARGIN, anchor.end
+      ? anchor.x - node.offsetWidth
+      : anchor.x), window.innerWidth - node.offsetWidth - MARGIN)
     node.style.left = `${left}px`
-    node.style.top = `${below ? anchor.y : Math.max(MARGIN, anchor.top - node.offsetHeight)}px`
+    node.style.top = `${below
+      ? anchor.y
+      : Math.max(MARGIN, anchor.top - node.offsetHeight)}px`
     node.style.transformOrigin = `${anchor.end ? 'right' : 'left'} ${below ? 'top' : 'bottom'}`
   }
 
@@ -156,7 +174,11 @@
     class={['fixed z-60 rounded-xl bg-white p-1.5 shadow-float', width]}
     inert={layer.inert || !request}
     {@attach place}
-    transition:pop={{ below: floating ? fitsBelow(floating) : true }}
+    transition:pop={{
+      below: floating
+        ? fitsBelow(floating)
+        : true,
+    }}
   >
     {#if head}
       <p class='px-2 pb-1.5 pt-1 text-caption text-neutral-600 font-500' aria-hidden='true'>

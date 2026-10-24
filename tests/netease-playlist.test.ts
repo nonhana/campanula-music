@@ -14,7 +14,11 @@ const DIR = 'library/netease-playlist'
 /** 搜“真夜中”的歌单结果里的一张，81 首 */
 const SMALL = { id: 95050200, detail: `${DIR}/001-playlist_detail.json.gz`, songs: `${DIR}/002-song_detail.json.gz` }
 /** 1,201 首：歌曲信息两页（1,000 首 + 201 首） */
-const BIG = { id: 2137987910, detail: `${DIR}/003-playlist_detail.json.gz`, pages: [`${DIR}/004-song_detail.json.gz`, `${DIR}/005-song_detail.json.gz`] }
+const BIG = {
+  id: 2137987910,
+  detail: `${DIR}/003-playlist_detail.json.gz`,
+  pages: [`${DIR}/004-song_detail.json.gz`, `${DIR}/005-song_detail.json.gz`],
+}
 /** 不存在的歌单：网易云回 404“歌单不存在” */
 const MISSING = { id: 99999999999, detail: `${DIR}/006-playlist_detail.json.gz` }
 /** #22 时在官方 App 里删掉的临时歌单 poems（创建者本人看）：网易云照样回 200，status 是 10 */
@@ -55,7 +59,9 @@ describe('打开不在曲库里的歌单', () => {
     await app.openPlaylist(SMALL.id)
 
     expect(device.requests.slice(-2).map(({ method, path }) => `${method} ${path}`)).toEqual([`GET /api/playlists/${SMALL.id}`, 'POST /api/songs'])
-    expect(world.netease.calls.findLast(call => call.module === 'playlist_detail')).toMatchObject({ query: { id: SMALL.id } })
+    expect(world.netease.calls.findLast(call => call.module === 'playlist_detail')).toMatchObject({
+      query: { id: SMALL.id },
+    })
     const page = app.state.library?.neteasePlaylist(SMALL.id)
     expect(page).toMatchObject({
       status: 'shown',
@@ -74,12 +80,16 @@ describe('打开不在曲库里的歌单', () => {
         more: null,
       },
     })
-    const songs = page?.status === 'shown' ? page.content.songs : []
+    const songs = page?.status === 'shown'
+      ? page.content.songs
+      : []
     expect(songs).toHaveLength(81)
     expect(songs[0]).toEqual({
       id: 3445419179,
       name: 'あかねさす頃',
-      artists: [{ id: 15021101, name: 'ずっと真夜中でいいのに。' }],
+      artists: [
+        { id: 15021101, name: 'ずっと真夜中でいいのに。' },
+      ],
       album: { id: 402730746, name: 'あかねさす頃', coverUrl: 'https://p3.music.126.net/ZI_saDvp5XFnpwPg1C_TNA==/109951174077481119.jpg' },
       duration: 210233,
       availability: 'full',
@@ -95,7 +105,9 @@ describe('打开不在曲库里的歌单', () => {
     const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(RADAR.detail)
-    await world.netease.reply(SMALL.songs, { until: never() })
+    await world.netease.reply(SMALL.songs, {
+      until: never(),
+    })
     void app.openPlaylist(RADAR.id)
     await world.settle()
 
@@ -103,7 +115,11 @@ describe('打开不在曲库里的歌单', () => {
     expect(paths).toContain(`/api/playlists/${RADAR.id}/track-ids`)
     expect(paths).not.toContain(`/api/playlists/${RADAR.id}`)
     expect(app.state.library?.neteasePlaylist(RADAR.id)).toBeNull()
-    expect(app.state.library?.songsOf(RADAR.id)).toMatchObject({ playlist: { kind: 'collected' }, total: 35, complete: false })
+    expect(app.state.library?.songsOf(RADAR.id)).toMatchObject({
+      playlist: { kind: 'collected' },
+      total: 35,
+      complete: false,
+    })
     expect((await device.stored()).tracks.map(([id]) => id)).toEqual([RADAR.id])
   })
 
@@ -115,7 +131,15 @@ describe('打开不在曲库里的歌单', () => {
     const songsRequests = device.requests.filter(request => request.path === '/api/songs')
     expect(songsRequests.map(request => (request.body as { ids: number[] }).ids.length)).toEqual([1000, 201])
     const partial = shownContent(app, BIG.id)
-    expect(partial).toMatchObject({ playlist: { name: '评论过万日语歌合集', tags: ['日语', '流行', 'ACG'] }, total: 1201, complete: false, more: { status: 'loading' } })
+    expect(partial).toMatchObject({
+      playlist: {
+        name: '评论过万日语歌合集',
+        tags: ['日语', '流行', 'ACG'],
+      },
+      total: 1201,
+      complete: false,
+      more: { status: 'loading' },
+    })
     expect(partial.songs).toHaveLength(1000)
 
     releasePage2()
@@ -150,7 +174,9 @@ describe('打开不在曲库里的歌单', () => {
     const partial = shownContent(app, BIG.id)
     const clicked = partial.songs.slice(1).find(song => song.availability !== 'noCopyright')!
 
-    await world.netease.reply(PLAY_URL, { until: never() })
+    await world.netease.reply(PLAY_URL, {
+      until: never(),
+    })
     app.play({ kind: 'playlist', id: BIG.id }, clicked.id)
     await world.settle()
     expect(queueIds(app)).toEqual(partial.songs.map(song => song.id))
@@ -174,7 +200,9 @@ describe('打开不在曲库里的歌单', () => {
     await app.openPlaylist(SMALL.id)
     const first = shownContent(app, SMALL.id)
 
-    await world.netease.reply(SMALL.detail, { until: never() })
+    await world.netease.reply(SMALL.detail, {
+      until: never(),
+    })
     void app.openPlaylist(SMALL.id)
     await world.settle()
     expect(device.pending.map(request => request.path)).toContain(`/api/playlists/${SMALL.id}`)
@@ -209,7 +237,10 @@ describe('打不开时说明原因', () => {
 
     device.setOnline(false)
     await app.openPlaylist(SMALL.id)
-    expect(app.state.library?.neteasePlaylist(SMALL.id)).toEqual({ status: 'failed', failure: { kind: 'offline' } })
+    expect(app.state.library?.neteasePlaylist(SMALL.id)).toEqual({
+      status: 'failed',
+      failure: { kind: 'offline' },
+    })
 
     device.setOnline(true)
     await world.netease.reply(SMALL.detail)
@@ -222,10 +253,16 @@ describe('打不开时说明原因', () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
 
-    for (const [playlist, reason] of [[MISSING, 'missing'], [DELETED, 'deleted'], [PRIVATE, 'private']] as const) {
+    for (const [playlist, reason] of [
+      [MISSING, 'missing'],
+      [DELETED, 'deleted'],
+      [PRIVATE, 'private'],
+    ] as const) {
       await world.netease.reply(playlist.detail)
       await app.openPlaylist(playlist.id)
-      expect(world.netease.calls.findLast(call => call.module === 'playlist_detail')).toMatchObject({ query: { id: playlist.id } })
+      expect(world.netease.calls.findLast(call => call.module === 'playlist_detail')).toMatchObject({
+        query: { id: playlist.id },
+      })
       expect(app.state.library?.neteasePlaylist(playlist.id)).toEqual({ status: 'unavailable', reason })
     }
     expect(device.requests.map(request => request.path)).not.toContain('/api/songs')
@@ -238,7 +275,13 @@ describe('打不开时说明原因', () => {
     await world.netease.reply(BIG.pages[0])
     await world.netease.reply('library/song_detail.liked-page4.502-null-artist.json.gz')
     await app.openPlaylist(BIG.id)
-    expect(shownContent(app, BIG.id)).toMatchObject({ complete: false, more: { status: 'failed', failure: { kind: 'upstreamChanged' } } })
+    expect(shownContent(app, BIG.id)).toMatchObject({
+      complete: false,
+      more: {
+        status: 'failed',
+        failure: { kind: 'upstreamChanged' },
+      },
+    })
     expect(shownContent(app, BIG.id).songs).toHaveLength(1000)
 
     await world.netease.reply(BIG.detail)

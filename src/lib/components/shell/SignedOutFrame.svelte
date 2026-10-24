@@ -36,7 +36,10 @@
 </script>
 
 <div class='contents' inert={overlays.stack.baseInert}>
-  <div class={['bg-primary-50 min-h-dvh', docked ? 'pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-28' : 'pb-[calc(32px+env(safe-area-inset-bottom))] md:pb-12']}>
+  <div class={[
+    'bg-primary-50 min-h-dvh',
+    docked ? 'pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-28' : 'pb-[calc(32px+env(safe-area-inset-bottom))] md:pb-12',
+  ]}>
     <header class='sticky top-0 z-40 h-14 flex items-center gap-3 bg-primary-50 pl-4 pr-3 md:fixed md:inset-x-0 md:h-16 md:pl-6 md:pr-6' data-page-top>
       <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到登录页'><Brand /></a>
       <a
@@ -51,7 +54,10 @@
     </main>
   </div>
   <PlayerDock present={docked} />
-  <Scrollbar page={{ top: desktopLayout.current ? '64px' : '56px', bottom: playerDockBottom({ desktop: desktopLayout.current, present: docked, withoutBar: '0px' }) }} {lookup} />
+  <Scrollbar page={{
+    top: desktopLayout.current ? '64px' : '56px',
+    bottom: playerDockBottom({ desktop: desktopLayout.current, present: docked, withoutBar: '0px' }),
+  }} {lookup} />
 </div>
 
 <PlayerLayer />

@@ -33,7 +33,9 @@
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const opened = $derived(library?.artistPage(id) ?? null)
-  const content = $derived(opened?.status === 'shown' ? opened.content : null)
+  const content = $derived(opened?.status === 'shown'
+    ? opened.content
+    : null)
   const artist = $derived(content?.artist ?? null)
   const more = $derived(content?.moreAlbums ?? null)
   /** 页头头像代表这一页：从格子点进来时，格子的头像飞到这里（Cover 的 flight） */
@@ -71,7 +73,10 @@
 
 {#if library}
   {#if opened?.status === 'failed'}
-    <div in:reveal><StateBlock kind='error' title='这位歌手的页面没能加载' body={failureText(opened.failure)} action={{ label: '重试', run: () => void view.app.openArtist(id) }} /></div>
+    <div in:reveal><StateBlock kind='error' title='这位歌手的页面没能加载' body={failureText(opened.failure)} action={{
+      label: '重试',
+      run: () => void view.app.openArtist(id),
+    }} /></div>
   {:else}
     <DetailHeader
       align='center'
@@ -102,7 +107,9 @@
         <section class='mt-10 pb-6' aria-labelledby='artist-albums'>
           <h2 id='artist-albums' class='text-title text-neutral-900 font-600'>专辑</h2>
           <div bind:this={albumList} class='mt-3'>
-            <TileGrid kind='album' layout='grid' items={content.albums} label='专辑' loadingLabel='正在加载专辑' empty={more ? undefined : { icon: Disc3, title: '还没有专辑' }} staggerFrom={appendedAt}>
+            <TileGrid kind='album' layout='grid' items={content.albums} label='专辑' loadingLabel='正在加载专辑' empty={more
+              ? undefined
+              : { icon: Disc3, title: '还没有专辑' }} staggerFrom={appendedAt}>
               {#snippet tile(album: ArtistAlbum)}
                 <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail='' year={yearOf(album.publishedAt)} />
               {/snippet}
@@ -120,7 +127,9 @@
         <section class='pt-6' aria-labelledby='artist-albums'>
           <h2 id='artist-albums' class='px-4 text-title-sm text-neutral-900 font-600'>专辑</h2>
           <div bind:this={albumList} class={phone ? '' : 'mt-3'}>
-            <TileGrid kind='album' layout='grid' {phone} items={content.albums} label='专辑' loadingLabel='正在加载专辑' empty={more ? undefined : { icon: Disc3, title: '还没有专辑' }} staggerFrom={appendedAt}>
+            <TileGrid kind='album' layout='grid' {phone} items={content.albums} label='专辑' loadingLabel='正在加载专辑' empty={more
+              ? undefined
+              : { icon: Disc3, title: '还没有专辑' }} staggerFrom={appendedAt}>
               {#snippet tile(album: ArtistAlbum)}
                 <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail='' year={yearOf(album.publishedAt)} {phone} />
               {/snippet}

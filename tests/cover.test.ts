@@ -26,13 +26,24 @@ describe('选图', () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
 
-    await app.prepareCover(JAZZ, device.images.file({ name: 'photo.jpg', type: 'image/jpeg', bytes: 3_000_000, width: 8000, height: 6000 }))
+    await app.prepareCover(JAZZ, device.images.file({
+      name: 'photo.jpg',
+      type: 'image/jpeg',
+      bytes: 3_000_000,
+      width: 8000,
+      height: 6000,
+    }))
 
     expect(app.state.cover).toMatchObject({
       status: 'cropping',
       playlistId: JAZZ,
       small: false,
-      image: { width: 3200, height: 2400, origWidth: 8000, origHeight: 6000 },
+      image: {
+        width: 3200,
+        height: 2400,
+        origWidth: 8000,
+        origHeight: 6000,
+      },
     })
     expect(device.requests.filter(request => request.path.includes('/cover'))).toEqual([])
   })
@@ -41,7 +52,12 @@ describe('选图', () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
 
-    await app.prepareCover(JAZZ, device.images.file({ name: 'avatar.jpg', type: 'image/jpeg', width: 200, height: 200 }))
+    await app.prepareCover(JAZZ, device.images.file({
+      name: 'avatar.jpg',
+      type: 'image/jpeg',
+      width: 200,
+      height: 200,
+    }))
 
     expect(app.state.cover).toMatchObject({ status: 'cropping', small: true })
   })
@@ -66,7 +82,10 @@ describe('选图', () => {
 
     await app.prepareCover(JAZZ, device.images.file({ name: '15917.heic', type: 'image/heic', decodable: false }))
 
-    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'heic' } })
+    expect(app.state.cover).toMatchObject({
+      status: 'unusable',
+      problem: { kind: 'heic' },
+    })
   })
 
   it('不是图片：解码失败、类型也不是图片', async () => {
@@ -75,7 +94,10 @@ describe('选图', () => {
 
     await app.prepareCover(JAZZ, device.images.file({ name: 'notes.txt', type: 'text/plain', decodable: false }))
 
-    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'notImage' } })
+    expect(app.state.cover).toMatchObject({
+      status: 'unusable',
+      problem: { kind: 'notImage' },
+    })
   })
 
   it('看着是图片但解不开：说图片读不出来', async () => {
@@ -84,7 +106,10 @@ describe('选图', () => {
 
     await app.prepareCover(JAZZ, device.images.file({ name: 'broken.jpg', type: 'image/jpeg', decodable: false }))
 
-    expect(app.state.cover).toMatchObject({ status: 'unusable', problem: { kind: 'unreadable' } })
+    expect(app.state.cover).toMatchObject({
+      status: 'unusable',
+      problem: { kind: 'unreadable' },
+    })
   })
 })
 
@@ -92,7 +117,12 @@ describe('三步上传', () => {
   it('申请凭证 → 浏览器直传 → 设为封面；成功时封面马上换成返回的地址，存进本机', async () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
-    await app.prepareCover(JAZZ, device.images.file({ name: 'photo.jpg', type: 'image/jpeg', width: 1200, height: 800 }))
+    await app.prepareCover(JAZZ, device.images.file({
+      name: 'photo.jpg',
+      type: 'image/jpeg',
+      width: 1200,
+      height: 800,
+    }))
     const crop = { x: 200, y: 60, size: 740 }
 
     await world.netease.reply(TOKEN)
@@ -100,8 +130,14 @@ describe('三步上传', () => {
     const outcome = await app.uploadCover(crop)
 
     expect(outcome).toEqual({ ok: true, coverUrl: NEW_COVER })
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${JAZZ}/cover`, body: { imgId: '109951174079391436' } })
-    expect(device.images.exports).toMatchObject([{ crop }])
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: `/api/playlists/${JAZZ}/cover`,
+      body: { imgId: '109951174079391436' },
+    })
+    expect(device.images.exports).toMatchObject([
+      { crop },
+    ])
     expect(device.images.uploads).toHaveLength(1)
     expect(device.images.uploads[0]).toMatchObject({ url: UPLOAD_URL, token: '' })
     expect(device.images.uploads[0].jpeg.size).toBe(300_000)
@@ -116,7 +152,12 @@ describe('三步上传', () => {
 const CROP = { x: 200, y: 60, size: 740 }
 
 async function ready(device: Device, app: import('#lib/app/app.js').App): Promise<void> {
-  await app.prepareCover(JAZZ, device.images.file({ name: 'photo.jpg', type: 'image/jpeg', width: 1200, height: 800 }))
+  await app.prepareCover(JAZZ, device.images.file({
+    name: 'photo.jpg',
+    type: 'image/jpeg',
+    width: 1200,
+    height: 800,
+  }))
 }
 
 describe('三步失败和取消', () => {
@@ -128,8 +169,19 @@ describe('三步失败和取消', () => {
     device.setOnline(false)
     const outcome = await app.uploadCover(CROP)
 
-    expect(outcome).toEqual({ ok: false, step: 'token', failure: { kind: 'offline' } })
-    expect(app.state.cover).toMatchObject({ status: 'failed', upload: { step: 'token', imgId: null, failure: { kind: 'offline' } } })
+    expect(outcome).toEqual({
+      ok: false,
+      step: 'token',
+      failure: { kind: 'offline' },
+    })
+    expect(app.state.cover).toMatchObject({
+      status: 'failed',
+      upload: {
+        step: 'token',
+        imgId: null,
+        failure: { kind: 'offline' },
+      },
+    })
     expect(device.images.uploads).toHaveLength(0)
     expect(world.netease.calls.some(call => call.module === 'playlist_cover_update')).toBe(false)
   })
@@ -143,8 +195,19 @@ describe('三步失败和取消', () => {
     device.images.uploadError = new TypeError('Failed to fetch')
     const outcome = await app.uploadCover(CROP)
 
-    expect(outcome).toEqual({ ok: false, step: 'upload', failure: { kind: 'uploadFailed' } })
-    expect(app.state.cover).toMatchObject({ status: 'failed', upload: { step: 'upload', imgId: null, failure: { kind: 'uploadFailed' } } })
+    expect(outcome).toEqual({
+      ok: false,
+      step: 'upload',
+      failure: { kind: 'uploadFailed' },
+    })
+    expect(app.state.cover).toMatchObject({
+      status: 'failed',
+      upload: {
+        step: 'upload',
+        imgId: null,
+        failure: { kind: 'uploadFailed' },
+      },
+    })
     expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${JAZZ}/cover/token`, body: {} })
     expect(world.netease.calls.some(call => call.module === 'playlist_cover_update')).toBe(false)
   })
@@ -155,7 +218,11 @@ describe('三步失败和取消', () => {
     await ready(device, app)
     await world.netease.reply(TOKEN)
     device.images.uploadError = new TypeError('Failed to fetch')
-    expect(await app.uploadCover(CROP)).toEqual({ ok: false, step: 'upload', failure: { kind: 'uploadFailed' } })
+    expect(await app.uploadCover(CROP)).toEqual({
+      ok: false,
+      step: 'upload',
+      failure: { kind: 'uploadFailed' },
+    })
 
     device.images.uploadError = null
     await world.netease.reply(TOKEN)
@@ -178,8 +245,15 @@ describe('三步失败和取消', () => {
 
     device.setOnline(false)
     device.images.releaseUpload()
-    expect(await uploading).toEqual({ ok: false, step: 'set', failure: { kind: 'offline' } })
-    expect(app.state.cover).toMatchObject({ status: 'failed', upload: { step: 'set', imgId: '109951174079391436' } })
+    expect(await uploading).toEqual({
+      ok: false,
+      step: 'set',
+      failure: { kind: 'offline' },
+    })
+    expect(app.state.cover).toMatchObject({
+      status: 'failed',
+      upload: { step: 'set', imgId: '109951174079391436' },
+    })
 
     device.setOnline(true)
     await world.netease.reply(SET_COVER)
@@ -198,7 +272,10 @@ describe('三步失败和取消', () => {
 
     const uploading = app.uploadCover(CROP)
     await world.settle()
-    expect(app.state.cover).toMatchObject({ status: 'uploading', upload: { step: 'token' } })
+    expect(app.state.cover).toMatchObject({
+      status: 'uploading',
+      upload: { step: 'token' },
+    })
 
     app.cancelCover()
     expect(app.state.cover).toMatchObject({ status: 'cropping', playlistId: JAZZ })
@@ -238,7 +315,10 @@ describe('三步失败和取消', () => {
 
     const uploading = app.uploadCover(CROP)
     await world.settle()
-    expect(app.state.cover).toMatchObject({ status: 'uploading', upload: { step: 'upload' } })
+    expect(app.state.cover).toMatchObject({
+      status: 'uploading',
+      upload: { step: 'upload' },
+    })
 
     app.cancelCover()
     expect(app.state.cover).toMatchObject({ status: 'cropping', playlistId: JAZZ })
@@ -253,8 +333,18 @@ describe('三步失败和取消', () => {
     await ready(device, app)
     device.images.exportError = new Error('canvas 出错')
 
-    expect(await app.uploadCover(CROP)).toEqual({ ok: false, step: null, failure: { kind: 'exportFailed' } })
-    expect(app.state.cover).toMatchObject({ status: 'failed', upload: { step: null, failure: { kind: 'exportFailed' } } })
+    expect(await app.uploadCover(CROP)).toEqual({
+      ok: false,
+      step: null,
+      failure: { kind: 'exportFailed' },
+    })
+    expect(app.state.cover).toMatchObject({
+      status: 'failed',
+      upload: {
+        step: null,
+        failure: { kind: 'exportFailed' },
+      },
+    })
     expect(device.images.uploads).toHaveLength(0)
     expect(world.netease.calls.some(call => call.module === 'image_upload_token')).toBe(false)
 
@@ -289,11 +379,17 @@ describe('三步失败和取消', () => {
     await world.netease.reply(SET_COVER, { until: setting.until })
     device.images.releaseUpload()
     await world.settle()
-    expect(app.state.cover).toMatchObject({ status: 'uploading', upload: { step: 'set' } })
+    expect(app.state.cover).toMatchObject({
+      status: 'uploading',
+      upload: { step: 'set' },
+    })
 
     app.cancelCover()
     app.closeCover()
-    expect(app.state.cover).toMatchObject({ status: 'uploading', upload: { step: 'set' } })
+    expect(app.state.cover).toMatchObject({
+      status: 'uploading',
+      upload: { step: 'set' },
+    })
 
     setting.release()
     expect(await uploading).toEqual({ ok: true, coverUrl: NEW_COVER })

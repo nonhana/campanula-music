@@ -13,7 +13,11 @@ const STATUS = {
 
 /** 按错误约定回 ErrorBody */
 export function errorResponse(error: ApiError): Response {
-  const headers: Record<string, string> = error.kind === 'rateLimited' ? { 'retry-after': String(error.retryAfter) } : {}
+  const headers: Record<string, string> = error.kind === 'rateLimited'
+    ? {
+        'retry-after': String(error.retryAfter),
+      }
+    : {}
   return Response.json({ error } satisfies ErrorBody, { status: STATUS[error.kind], headers })
 }
 

@@ -22,7 +22,9 @@
   </button>
   <span class='min-w-0 inline-flex flex-1 items-center gap-1.5 text-body text-neutral-900 font-500 tabular-nums' role='status'>
     <ListChecks size={16} class='flex-none' aria-hidden='true' />
-    <span class='min-w-0 truncate'>{playlistSelection.size > 0 ? `已选 ${formatCount(playlistSelection.size)} 首` : '选择歌曲'}</span>
+    <span class='min-w-0 truncate'>{playlistSelection.size > 0
+      ? `已选 ${formatCount(playlistSelection.size)} 首`
+      : '选择歌曲'}</span>
   </span>
   <TextButton icon={playlistSelection.allOn ? SquareMinus : CheckCheck} class='px-3.5!' onclick={() => playlistSelection.selectAll()}>
     {playlistSelection.allOn ? '全不选' : '全选'}

@@ -14,7 +14,12 @@ const { signInAtLikedTracks, dailySongs, openJazz, replyLibrary } = listener(wor
 /** 标签库（验证关卡②录的，70 个截到前 30 个，5 类都在） */
 const TAGS = 'playlist-edit/playlist_catlist.json'
 /** 新建隐私歌单「Campanula 测试 · 可删除」，和紧接着读的详情（#33 录的，假编号接着 #22 那套） */
-const CREATED = { id: 900000023, name: 'Campanula 测试 · 可删除', create: 'playlist-edit/create/001-playlist_create.json.gz', detail: 'playlist-edit/create/002-playlist_detail.json.gz' }
+const CREATED = {
+  id: 900000023,
+  name: 'Campanula 测试 · 可删除',
+  create: 'playlist-edit/create/001-playlist_create.json.gz',
+  detail: 'playlist-edit/create/002-playlist_detail.json.gz',
+}
 /** 新建时网易云说操作过于频繁（405）：连着新建两张时录到的 */
 const CREATE_RATE_LIMITED = 'playlist-edit/create/003-playlist_create.json.gz'
 const ADD = 'playlist-edit/playlist_tracks.add.json'
@@ -38,7 +43,9 @@ const LIKED_ID = 900000001
 /** 网易云建好新歌单、读回它的详情 */
 async function replyCreated(): Promise<void> {
   await world.netease.reply(CREATED.create)
-  await world.netease.reply(CREATED.detail, { when: { id: CREATED.id } })
+  await world.netease.reply(CREATED.detail, {
+    when: { id: CREATED.id },
+  })
 }
 
 const playlistIds = (app: App) => app.state.library?.playlists?.map(playlist => playlist.id)
@@ -63,11 +70,42 @@ describe('标签库', () => {
     expect(app.state.library?.playlistTags).toEqual({
       status: 'shown',
       content: [
-        { name: '语种', tags: ['华语', '欧美', '日语', '韩语', '粤语'] },
-        { name: '风格', tags: ['流行', '摇滚', '民谣', '电子', '舞曲', '说唱'] },
-        { name: '场景', tags: ['清晨', '夜晚', '学习', '工作', '午休', '下午茶', '地铁'] },
-        { name: '情感', tags: ['怀旧', '清新', '浪漫', '伤感', '治愈'] },
-        { name: '主题', tags: ['综艺', '影视原声', 'ACG', '儿童', '校园', '游戏', '70后'] },
+        {
+          name: '语种',
+          tags: ['华语', '欧美', '日语', '韩语', '粤语'],
+        },
+        {
+          name: '风格',
+          tags: ['流行', '摇滚', '民谣', '电子', '舞曲', '说唱'],
+        },
+        {
+          name: '场景',
+          tags: [
+            '清晨',
+            '夜晚',
+            '学习',
+            '工作',
+            '午休',
+            '下午茶',
+            '地铁',
+          ],
+        },
+        {
+          name: '情感',
+          tags: ['怀旧', '清新', '浪漫', '伤感', '治愈'],
+        },
+        {
+          name: '主题',
+          tags: [
+            '综艺',
+            '影视原声',
+            'ACG',
+            '儿童',
+            '校园',
+            '游戏',
+            '70后',
+          ],
+        },
       ],
     })
 
@@ -82,12 +120,18 @@ describe('标签库', () => {
 
     device.setOnline(false)
     await app.openPlaylistTags()
-    expect(app.state.library?.playlistTags).toEqual({ status: 'failed', failure: { kind: 'offline' } })
+    expect(app.state.library?.playlistTags).toEqual({
+      status: 'failed',
+      failure: { kind: 'offline' },
+    })
 
     device.setOnline(true)
     await world.netease.reply(TAGS)
     await app.openPlaylistTags()
-    expect(app.state.library?.playlistTags).toMatchObject({ status: 'shown', content: { length: 5 } })
+    expect(app.state.library?.playlistTags).toMatchObject({
+      status: 'shown',
+      content: { length: 5 },
+    })
   })
 })
 
@@ -99,20 +143,46 @@ describe('新建歌单', () => {
 
     const creating = held()
     await world.netease.reply(CREATED.create, { until: creating.until })
-    await world.netease.reply(CREATED.detail, { when: { id: CREATED.id } })
+    await world.netease.reply(CREATED.detail, {
+      when: { id: CREATED.id },
+    })
     const outcome = app.createPlaylist({ name: CREATED.name, private: true })
     await world.settle()
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: '/api/playlists', body: { name: CREATED.name, private: true } })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_create', query: { name: CREATED.name, privacy: '10' } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: '/api/playlists',
+      body: { name: CREATED.name, private: true },
+    })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_create',
+      query: { name: CREATED.name, privacy: '10' },
+    })
     expect(playlistIds(app)).toEqual(before)
 
     creating.release()
     expect(await outcome).toEqual({ ok: true, playlistId: CREATED.id })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_detail', query: { id: CREATED.id } })
-    expect(playlistIds(app)).toEqual([LIKED_ID, CREATED.id, ...before.slice(1)])
-    expect(app.state.library?.playlists?.[1]).toMatchObject({ name: CREATED.name, kind: 'own', private: true, creator: '测试听众', trackCount: 0 })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_detail',
+      query: { id: CREATED.id },
+    })
+    expect(playlistIds(app)).toEqual([
+      LIKED_ID,
+      CREATED.id,
+      ...before.slice(1),
+    ])
+    expect(app.state.library?.playlists?.[1]).toMatchObject({
+      name: CREATED.name,
+      kind: 'own',
+      private: true,
+      creator: '测试听众',
+      trackCount: 0,
+    })
     expect(app.state.library?.songsOf(CREATED.id)).toMatchObject({ songs: [], total: 0, complete: true })
-    expect(await storedPlaylistIds(device)).toEqual([LIKED_ID, CREATED.id, ...before.slice(1)])
+    expect(await storedPlaylistIds(device)).toEqual([
+      LIKED_ID,
+      CREATED.id,
+      ...before.slice(1),
+    ])
     expect(await storedTrackIds(device, CREATED.id)).toEqual([])
 
     // 曲目已经是全的（空的），打开它不用再拉
@@ -129,11 +199,27 @@ describe('新建歌单', () => {
     await replyCreated()
     await world.netease.reply(ADD)
     expect(await app.createPlaylist({ name: CREATED.name, private: true }, [song])).toEqual({ ok: true, playlistId: CREATED.id })
-    expect(app.state.library?.songsOf(CREATED.id)).toMatchObject({ songs: [song], total: 1 })
+    expect(app.state.library?.songsOf(CREATED.id)).toMatchObject({
+      songs: [song],
+      total: 1,
+    })
     await world.settle()
 
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${CREATED.id}/tracks`, body: { songIds: [song.id] } })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'added', change: { kind: 'addMany', playlist: { id: CREATED.id }, songs: [song] } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: `/api/playlists/${CREATED.id}/tracks`,
+      body: {
+        songIds: [song.id],
+      },
+    })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'added',
+      change: {
+        kind: 'addMany',
+        playlist: { id: CREATED.id },
+        songs: [song],
+      },
+    })
     expect(await storedTrackIds(device, CREATED.id)).toEqual([song.id])
   })
 
@@ -143,7 +229,10 @@ describe('新建歌单', () => {
     const before = playlistIds(app)
 
     await world.netease.reply(CREATE_RATE_LIMITED)
-    expect(await app.createPlaylist({ name: CREATED.name, private: true })).toEqual({ ok: false, failure: { kind: 'rateLimited', retryAfter: 30 } })
+    expect(await app.createPlaylist({ name: CREATED.name, private: true })).toEqual({
+      ok: false,
+      failure: { kind: 'rateLimited', retryAfter: 30 },
+    })
 
     expect(playlistIds(app)).toEqual(before)
     expect(await storedPlaylistIds(device)).toEqual(before)
@@ -155,18 +244,50 @@ describe('新建歌单', () => {
     const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
-    expect(await app.createPlaylist({ name: '  ', private: false })).toEqual({ ok: false, failure: { kind: 'invalid', problem: 'nameEmpty' } })
-    expect(await app.createPlaylist({ name: '夜'.repeat(21), private: false })).toEqual({ ok: false, failure: { kind: 'invalid', problem: 'nameTooLong' } })
-    expect(await app.createPlaylist({ name: `${'a'.repeat(39)}夜`, private: false })).toEqual({ ok: false, failure: { kind: 'invalid', problem: 'nameTooLong' } })
+    expect(await app.createPlaylist({ name: '  ', private: false })).toEqual({
+      ok: false,
+      failure: { kind: 'invalid', problem: 'nameEmpty' },
+    })
+    expect(await app.createPlaylist({
+      name: '夜'.repeat(21),
+      private: false,
+    })).toEqual({
+      ok: false,
+      failure: { kind: 'invalid', problem: 'nameTooLong' },
+    })
+    expect(await app.createPlaylist({ name: `${'a'.repeat(39)}夜`, private: false })).toEqual({
+      ok: false,
+      failure: { kind: 'invalid', problem: 'nameTooLong' },
+    })
     expect(device.requests.length).toBe(sent)
 
     await replyCreated()
     await app.createPlaylist({ name: ` ${'夜'.repeat(20)} `, private: false })
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: '/api/playlists', body: { name: '夜'.repeat(20), private: false } })
-    expect(world.netease.calls.find(call => call.module === 'playlist_create')).toMatchObject({ query: { name: '夜'.repeat(20), privacy: '0' } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: '/api/playlists',
+      body: {
+        name: '夜'.repeat(20),
+        private: false,
+      },
+    })
+    expect(world.netease.calls.find(call => call.module === 'playlist_create')).toMatchObject({
+      query: {
+        name: '夜'.repeat(20),
+        privacy: '0',
+      },
+    })
     await replyCreated()
-    await app.createPlaylist({ name: 'a'.repeat(40), private: false })
-    expect(device.requests.at(-1)).toMatchObject({ path: '/api/playlists', body: { name: 'a'.repeat(40) } })
+    await app.createPlaylist({
+      name: 'a'.repeat(40),
+      private: false,
+    })
+    expect(device.requests.at(-1)).toMatchObject({
+      path: '/api/playlists',
+      body: {
+        name: 'a'.repeat(40),
+      },
+    })
   })
 
   it('断网时新建：不发请求，直接说没建成（规则⑨）', async () => {
@@ -175,7 +296,10 @@ describe('新建歌单', () => {
     const sent = device.requests.length
 
     device.setOnline(false)
-    expect(await app.createPlaylist({ name: CREATED.name, private: true })).toEqual({ ok: false, failure: { kind: 'offline' } })
+    expect(await app.createPlaylist({ name: CREATED.name, private: true })).toEqual({
+      ok: false,
+      failure: { kind: 'offline' },
+    })
     expect(device.requests.length).toBe(sent)
   })
 
@@ -185,7 +309,15 @@ describe('新建歌单', () => {
     // 同一台设备再开一个标签页：后台同步的歌单列表压着
     await world.netease.reply('login/user_account.vip.json')
     const list = held()
-    await replyLibrary({ holds: { playlists: { until: list.until }, likedTracks: { until: never(), when: { id: LIKED_ID } } } })
+    await replyLibrary({
+      holds: {
+        playlists: { until: list.until },
+        likedTracks: {
+          until: never(),
+          when: { id: LIKED_ID },
+        },
+      },
+    })
     const { app } = await device.open()
     await world.settle()
 
@@ -210,13 +342,35 @@ describe('改名称、简介、标签', () => {
     await world.netease.reply(RENAME, { until: reply.until })
     await world.netease.reply(DESCRIBE, { until: reply.until })
     await world.netease.reply(RETAG, { until: reply.until })
-    const editing = app.editPlaylist(JAZZ.id, { name: ' 爵士 ', description: '周末下午听。\n', tags: ['华语', '流行', '夜晚'] })
-    expect(playlistOf(app, JAZZ.id)).toMatchObject({ name: '爵士', description: '周末下午听。', tags: ['华语', '流行', '夜晚'] })
+    const editing = app.editPlaylist(JAZZ.id, {
+      name: ' 爵士 ',
+      description: '周末下午听。\n',
+      tags: ['华语', '流行', '夜晚'],
+    })
+    expect(playlistOf(app, JAZZ.id)).toMatchObject({
+      name: '爵士',
+      description: '周末下午听。',
+      tags: ['华语', '流行', '夜晚'],
+    })
     await world.settle()
     expect(device.requests.slice(-3)).toEqual([
-      { method: 'POST', path: `/api/playlists/${JAZZ.id}/name`, body: { name: '爵士' } },
-      { method: 'POST', path: `/api/playlists/${JAZZ.id}/description`, body: { description: '周末下午听。' } },
-      { method: 'POST', path: `/api/playlists/${JAZZ.id}/tags`, body: { tags: ['华语', '流行', '夜晚'] } },
+      {
+        method: 'POST',
+        path: `/api/playlists/${JAZZ.id}/name`,
+        body: { name: '爵士' },
+      },
+      {
+        method: 'POST',
+        path: `/api/playlists/${JAZZ.id}/description`,
+        body: { description: '周末下午听。' },
+      },
+      {
+        method: 'POST',
+        path: `/api/playlists/${JAZZ.id}/tags`,
+        body: {
+          tags: ['华语', '流行', '夜晚'],
+        },
+      },
     ])
     // 三个请求一起发，到服务端的先后不固定
     const call = (module: string) => world.netease.calls.find(each => each.module === module)?.query
@@ -227,8 +381,16 @@ describe('改名称、简介、标签', () => {
 
     reply.release()
     await editing
-    expect(playlistOf(app, JAZZ.id)).toMatchObject({ name: '爵士', description: '周末下午听。', tags: ['华语', '流行', '夜晚'] })
-    expect(await storedPlaylist(device, JAZZ.id)).toMatchObject({ name: '爵士', description: '周末下午听。', tags: ['华语', '流行', '夜晚'] })
+    expect(playlistOf(app, JAZZ.id)).toMatchObject({
+      name: '爵士',
+      description: '周末下午听。',
+      tags: ['华语', '流行', '夜晚'],
+    })
+    expect(await storedPlaylist(device, JAZZ.id)).toMatchObject({
+      name: '爵士',
+      description: '周末下午听。',
+      tags: ['华语', '流行', '夜晚'],
+    })
     expect(app.state.library?.notice).toBeNull()
   })
 
@@ -241,19 +403,33 @@ describe('改名称、简介、标签', () => {
     expect(device.requests.length).toBe(sent)
 
     await world.netease.reply(RETAG)
-    await app.editPlaylist(JAZZ.id, { tags: ['华语'] })
+    await app.editPlaylist(JAZZ.id, {
+      tags: ['华语'],
+    })
     await world.netease.reply(DESCRIBE)
     await world.netease.reply(RETAG)
     await app.editPlaylist(JAZZ.id, { name: JAZZ.name, description: '周末下午听。', tags: [] })
     expect(device.requests.slice(-2)).toEqual([
-      { method: 'POST', path: `/api/playlists/${JAZZ.id}/description`, body: { description: '周末下午听。' } },
-      { method: 'POST', path: `/api/playlists/${JAZZ.id}/tags`, body: { tags: [] } },
+      {
+        method: 'POST',
+        path: `/api/playlists/${JAZZ.id}/description`,
+        body: { description: '周末下午听。' },
+      },
+      {
+        method: 'POST',
+        path: `/api/playlists/${JAZZ.id}/tags`,
+        body: { tags: [] },
+      },
     ])
     expect(playlistOf(app, JAZZ.id)).toMatchObject({ description: '周末下午听。', tags: [] })
 
     await world.netease.reply(DESCRIBE)
     await app.editPlaylist(JAZZ.id, { description: '' })
-    expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${JAZZ.id}/description`, body: { description: '' } })
+    expect(device.requests.at(-1)).toEqual({
+      method: 'POST',
+      path: `/api/playlists/${JAZZ.id}/description`,
+      body: { description: '' },
+    })
     expect(playlistOf(app, JAZZ.id)?.description).toBeNull()
   })
 
@@ -263,15 +439,28 @@ describe('改名称、简介、标签', () => {
 
     await world.netease.reply(RENAME_REJECTED)
     await world.netease.reply(RETAG)
-    await app.editPlaylist(JAZZ.id, { name: 'jazz · 周末', tags: ['华语'] })
+    await app.editPlaylist(JAZZ.id, {
+      name: 'jazz · 周末',
+      tags: ['华语'],
+    })
 
-    expect(playlistOf(app, JAZZ.id)).toMatchObject({ name: JAZZ.name, tags: ['华语'] })
+    expect(playlistOf(app, JAZZ.id)).toMatchObject({
+      name: JAZZ.name,
+      tags: ['华语'],
+    })
     expect(app.state.library?.notice).toMatchObject({
       kind: 'notChanged',
-      change: { kind: 'rename', playlist: { id: JAZZ.id }, name: 'jazz · 周末' },
+      change: {
+        kind: 'rename',
+        playlist: { id: JAZZ.id },
+        name: 'jazz · 周末',
+      },
       failure: { kind: 'rejected', code: 400, message: '标题字数异常，请修改' },
     })
-    expect(await storedPlaylist(device, JAZZ.id)).toMatchObject({ name: JAZZ.name, tags: ['华语'] })
+    expect(await storedPlaylist(device, JAZZ.id)).toMatchObject({
+      name: JAZZ.name,
+      tags: ['华语'],
+    })
   })
 
   it('网易云说改简介操作频繁：改回原来的简介，提示稍后再试', async () => {
@@ -282,7 +471,11 @@ describe('改名称、简介、标签', () => {
     await app.editPlaylist(JAZZ.id, { description: '周末下午听。' })
 
     expect(playlistOf(app, JAZZ.id)?.description).toBeNull()
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'describe' }, failure: { kind: 'rateLimited' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'describe' },
+      failure: { kind: 'rateLimited' },
+    })
     expect(await storedPlaylist(device, JAZZ.id)).toMatchObject({ description: null })
   })
 
@@ -291,10 +484,16 @@ describe('改名称、简介、标签', () => {
     const { app } = await signInAtLikedTracks(device)
 
     await world.netease.reply(RETAG_REJECTED)
-    await app.editPlaylist(JAZZ.id, { tags: ['华语', '流行', '夜晚'] })
+    await app.editPlaylist(JAZZ.id, {
+      tags: ['华语', '流行', '夜晚'],
+    })
 
     expect(playlistOf(app, JAZZ.id)?.tags).toEqual([])
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'tag' }, failure: { kind: 'rejected', code: 400, message: '标签数据非法' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'tag' },
+      failure: { kind: 'rejected', code: 400, message: '标签数据非法' },
+    })
   })
 
   it('标签超过 3 个、名称太长、简介超过 1000 个字：整次都不提交，说明原因', async () => {
@@ -302,14 +501,37 @@ describe('改名称、简介、标签', () => {
     const { app } = await signInAtLikedTracks(device)
     const sent = device.requests.length
 
-    await app.editPlaylist(JAZZ.id, { name: '爵士', tags: ['华语', '流行', '夜晚', '怀旧'] })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'tag' }, failure: { kind: 'invalid', problem: 'tooManyTags' } })
-    await app.editPlaylist(JAZZ.id, { name: '夜'.repeat(21) })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'rename' }, failure: { kind: 'invalid', problem: 'nameTooLong' } })
+    await app.editPlaylist(JAZZ.id, {
+      name: '爵士',
+      tags: ['华语', '流行', '夜晚', '怀旧'],
+    })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'tag' },
+      failure: { kind: 'invalid', problem: 'tooManyTags' },
+    })
+    await app.editPlaylist(JAZZ.id, {
+      name: '夜'.repeat(21),
+    })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'rename' },
+      failure: { kind: 'invalid', problem: 'nameTooLong' },
+    })
     await app.editPlaylist(JAZZ.id, { name: '' })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'rename' }, failure: { kind: 'invalid', problem: 'nameEmpty' } })
-    await app.editPlaylist(JAZZ.id, { description: '夜'.repeat(1001) })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'describe' }, failure: { kind: 'invalid', problem: 'descriptionTooLong' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'rename' },
+      failure: { kind: 'invalid', problem: 'nameEmpty' },
+    })
+    await app.editPlaylist(JAZZ.id, {
+      description: '夜'.repeat(1001),
+    })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'describe' },
+      failure: { kind: 'invalid', problem: 'descriptionTooLong' },
+    })
 
     expect(device.requests.length).toBe(sent)
     expect(playlistOf(app, JAZZ.id)).toMatchObject({ name: JAZZ.name, description: null, tags: [] })
@@ -321,10 +543,17 @@ describe('改名称、简介、标签', () => {
     const sent = device.requests.length
 
     device.setOnline(false)
-    await app.editPlaylist(JAZZ.id, { name: '爵士', tags: ['华语'] })
+    await app.editPlaylist(JAZZ.id, {
+      name: '爵士',
+      tags: ['华语'],
+    })
 
     expect(playlistOf(app, JAZZ.id)).toMatchObject({ name: JAZZ.name, tags: [] })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'rename' }, failure: { kind: 'offline' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: { kind: 'rename' },
+      failure: { kind: 'offline' },
+    })
     expect(device.requests.length).toBe(sent)
   })
 
@@ -334,7 +563,9 @@ describe('改名称、简介、标签', () => {
     const sent = device.requests.length
 
     await expect(app.editPlaylist(LIKED_ID, { name: '我的最爱' })).rejects.toThrow()
-    await expect(app.editPlaylist(COLLECTED_ID, { tags: ['华语'] })).rejects.toThrow()
+    await expect(app.editPlaylist(COLLECTED_ID, {
+      tags: ['华语'],
+    })).rejects.toThrow()
 
     expect(device.requests.length).toBe(sent)
     expect(playlistOf(app, LIKED_ID)?.name).toBe('测试听众喜欢的音乐')
@@ -359,7 +590,10 @@ describe('隐私歌单改公开', () => {
     expect(playlistOf(app, CREATED.id)?.private).toBe(false)
     await world.settle()
     expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${CREATED.id}/public`, body: {} })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_privacy', query: { id: CREATED.id } })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_privacy',
+      query: { id: CREATED.id },
+    })
     expect(await storedPlaylist(device, CREATED.id)).toMatchObject({ private: true })
 
     reply.release()
@@ -382,7 +616,14 @@ describe('隐私歌单改公开', () => {
     await app.publishPlaylist(CREATED.id)
 
     expect(playlistOf(app, CREATED.id)?.private).toBe(true)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'publish', playlist: { id: CREATED.id } }, failure: { kind: 'rateLimited' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: {
+        kind: 'publish',
+        playlist: { id: CREATED.id },
+      },
+      failure: { kind: 'rateLimited' },
+    })
     expect(await storedPlaylist(device, CREATED.id)).toMatchObject({ private: true })
   })
 })
@@ -401,7 +642,10 @@ describe('删除歌单', () => {
     expect(app.state.library?.songsOf(JAZZ.id)).toBeNull()
     await world.settle()
     expect(device.requests.at(-1)).toEqual({ method: 'POST', path: `/api/playlists/${JAZZ.id}/delete`, body: {} })
-    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'playlist_delete', query: { id: JAZZ.id } })
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_delete',
+      query: { id: JAZZ.id },
+    })
     expect(await storedPlaylistIds(device)).toContain(JAZZ.id)
 
     reply.release()
@@ -423,7 +667,14 @@ describe('删除歌单', () => {
 
     expect(playlistIds(app)).toEqual(before)
     expect(app.state.library?.songsOf(JAZZ.id)?.total).toBe(2)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'notChanged', change: { kind: 'delete', playlist: { id: JAZZ.id } }, failure: { kind: 'rateLimited' } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'notChanged',
+      change: {
+        kind: 'delete',
+        playlist: { id: JAZZ.id },
+      },
+      failure: { kind: 'rateLimited' },
+    })
     expect(await storedTrackIds(device, JAZZ.id)).toHaveLength(2)
   })
 

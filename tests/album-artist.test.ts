@@ -21,7 +21,11 @@ const THE_BOOK = { id: 379547126, fixture: `${DIR}/010-album.json.gz` }
 /** 专辑一页就取完的歌手（65 张） */
 const YOASOBI = { id: 33927412, songs: `${DIR}/003-artist_top_song.json.gz`, albums: `${DIR}/004-artist_album.json.gz` }
 /** 专辑超过一页的歌手（101 张） */
-const MARASY = { id: 14786, songs: `${DIR}/005-artist_top_song.json.gz`, albums: [`${DIR}/006-artist_album.json.gz`, `${DIR}/007-artist_album.json.gz`] }
+const MARASY = {
+  id: 14786,
+  songs: `${DIR}/005-artist_top_song.json.gz`,
+  albums: [`${DIR}/006-artist_album.json.gz`, `${DIR}/007-artist_album.json.gz`],
+}
 
 describe('专辑页', () => {
   it('打开收藏的专辑：用前台请求拉曲目、简介和发行时间，存进本机副本；再次打开 App 后歌曲数没变就不再拉，断网也能看', async () => {
@@ -32,7 +36,9 @@ describe('专辑页', () => {
     await world.netease.reply(KEEP_THE_VILLAGE_ALIVE.fixture)
     await app.openAlbum(KEEP_THE_VILLAGE_ALIVE.id)
 
-    expect(world.netease.calls.findLast(call => call.module === 'album')).toMatchObject({ query: { id: KEEP_THE_VILLAGE_ALIVE.id } })
+    expect(world.netease.calls.findLast(call => call.module === 'album')).toMatchObject({
+      query: { id: KEEP_THE_VILLAGE_ALIVE.id },
+    })
     const page = app.state.library?.albumPage(KEEP_THE_VILLAGE_ALIVE.id)
     expect(page).toMatchObject({
       status: 'shown',
@@ -54,7 +60,9 @@ describe('专辑页', () => {
     expect(page.content.songs[0]).toEqual({
       id: 32019373,
       name: 'C\'est La Vie',
-      artists: [{ id: 99995, name: 'Stereophonics' }],
+      artists: [
+        { id: 99995, name: 'Stereophonics' },
+      ],
       album: { id: KEEP_THE_VILLAGE_ALIVE.id, name: 'Keep The Village Alive', coverUrl: 'https://p3.music.126.net/GdQ9aQ3f3pscKhOpmIV4eA==/18345351510219723.jpg' },
       duration: 220320,
       availability: 'full',
@@ -80,7 +88,12 @@ describe('专辑页', () => {
     await app.openAlbum(SOUNDTRACK.id)
 
     const page = app.state.library?.albumPage(SOUNDTRACK.id)
-    expect(page).toMatchObject({ status: 'shown', content: { album: { name: '月に寄りそう乙女の作法2 COMPLETE SOUNDTRACK', description: null } } })
+    expect(page).toMatchObject({
+      status: 'shown',
+      content: {
+        album: { name: '月に寄りそう乙女の作法2 COMPLETE SOUNDTRACK', description: null },
+      },
+    })
     expect(page?.status === 'shown' && page.content.songs).toHaveLength(37)
   })
 
@@ -91,7 +104,15 @@ describe('专辑页', () => {
 
     await world.netease.reply(THE_BOOK.fixture)
     await app.openAlbum(THE_BOOK.id)
-    expect(app.state.library?.albumPage(THE_BOOK.id)).toMatchObject({ status: 'shown', content: { album: { name: 'THE BOOK for,', artist: { name: 'YOASOBI' } } } })
+    expect(app.state.library?.albumPage(THE_BOOK.id)).toMatchObject({
+      status: 'shown',
+      content: {
+        album: {
+          name: 'THE BOOK for,',
+          artist: { name: 'YOASOBI' },
+        },
+      },
+    })
     const calls = world.netease.calls.length
     await app.openAlbum(THE_BOOK.id)
     expect(world.netease.calls).toHaveLength(calls)
@@ -102,7 +123,10 @@ describe('专辑页', () => {
     device.setOnline(false)
     await reopened.openAlbum(THE_BOOK.id)
 
-    expect(reopened.state.library?.albumPage(THE_BOOK.id)).toEqual({ status: 'failed', failure: { kind: 'offline' } })
+    expect(reopened.state.library?.albumPage(THE_BOOK.id)).toEqual({
+      status: 'failed',
+      failure: { kind: 'offline' },
+    })
   })
 
   it('在官方 App 里取消收藏的专辑：同步拿到收藏的专辑后，本机存着的专辑页也删掉', async () => {
@@ -113,7 +137,11 @@ describe('专辑页', () => {
     await app.openAlbum(THE_BOOK.id)
     expect((await device.stored()).albumPages.map(([id]) => id)).toEqual([THE_BOOK.id])
 
-    const reopened = (await reopen(device, undefined, { albums: COLLECTED_ALBUMS, through: 'likedTracks', until: never() })).app
+    const reopened = (await reopen(device, undefined, {
+      albums: COLLECTED_ALBUMS,
+      through: 'likedTracks',
+      until: never(),
+    })).app
     expect(reopened.state.library?.albumPage(THE_BOOK.id)).toMatchObject({ status: 'shown' })
     await vi.waitFor(() => expect(reopened.state.library?.albums).toHaveLength(55))
 
@@ -136,7 +164,10 @@ describe('专辑页', () => {
     await app.logout()
     expect((await device.stored()).albumPages).toEqual([])
 
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, app, { another: true })
 
     expect(app.state.library?.albumPage(KEEP_THE_VILLAGE_ALIVE.id)).toBeNull()
@@ -157,14 +188,26 @@ describe('歌手页', () => {
     const sent = world.netease.calls.slice(-2).map(({ module, query }) => ({ module, query }))
     expect(sent).toHaveLength(2)
     expect(sent).toEqual(expect.arrayContaining([
-      { module: 'artist_top_song', query: { id: YOASOBI.id } },
-      { module: 'artist_album', query: { id: YOASOBI.id, limit: 100, offset: 0 } },
+      {
+        module: 'artist_top_song',
+        query: { id: YOASOBI.id },
+      },
+      {
+        module: 'artist_album',
+        query: { id: YOASOBI.id, limit: 100, offset: 0 },
+      },
     ]))
     const page = app.state.library?.artistPage(YOASOBI.id)
     expect(page).toMatchObject({
       status: 'shown',
       content: {
-        artist: { id: YOASOBI.id, name: 'YOASOBI', avatarUrl: 'https://p4.music.126.net/1f_5IU9FLWRZjAJVXu-ipA==/109951172064233940.jpg', songCount: 148, albumCount: 65 },
+        artist: {
+          id: YOASOBI.id,
+          name: 'YOASOBI',
+          avatarUrl: 'https://p4.music.126.net/1f_5IU9FLWRZjAJVXu-ipA==/109951172064233940.jpg',
+          songCount: 148,
+          albumCount: 65,
+        },
         moreAlbums: null,
       },
     })
@@ -174,7 +217,9 @@ describe('歌手页', () => {
     expect(page.content.hotSongs[0]).toEqual({
       id: 1472480890,
       name: '群青',
-      artists: [{ id: YOASOBI.id, name: 'YOASOBI' }],
+      artists: [
+        { id: YOASOBI.id, name: 'YOASOBI' },
+      ],
       album: { id: 94214994, name: '群青', coverUrl: 'https://p3.music.126.net/sF9I_mKMVNtsCD-ZXzfV_A==/109951165251958014.jpg' },
       duration: 248444,
       availability: 'full',
@@ -192,7 +237,10 @@ describe('歌手页', () => {
     device.setOnline(false)
     await reopened.openArtist(YOASOBI.id)
 
-    expect(reopened.state.library?.artistPage(YOASOBI.id)).toEqual({ status: 'failed', failure: { kind: 'offline' } })
+    expect(reopened.state.library?.artistPage(YOASOBI.id)).toEqual({
+      status: 'failed',
+      failure: { kind: 'offline' },
+    })
   })
 
   it('专辑超过一页的歌手：先显示前 100 张；再取一页从第 101 张接着取，取完就没有更多了', async () => {
@@ -202,16 +250,29 @@ describe('歌手页', () => {
     await world.netease.reply(MARASY.songs)
     await world.netease.reply(MARASY.albums[0])
     await app.openArtist(MARASY.id)
-    expect(app.state.library?.artistPage(MARASY.id)).toMatchObject({ status: 'shown', content: { artist: { albumCount: 101 }, moreAlbums: { status: 'notLoaded' } } })
+    expect(app.state.library?.artistPage(MARASY.id)).toMatchObject({
+      status: 'shown',
+      content: {
+        artist: { albumCount: 101 },
+        moreAlbums: { status: 'notLoaded' },
+      },
+    })
 
     await world.netease.reply(MARASY.albums[1])
     await app.moreArtistAlbums(MARASY.id)
 
     expect(device.requests.map(request => request.path)).toContain(`/api/artists/${MARASY.id}/albums?offset=100`)
-    expect(world.netease.calls.findLast(call => call.module === 'artist_album')).toMatchObject({ query: { id: MARASY.id, limit: 100, offset: 100 } })
+    expect(world.netease.calls.findLast(call => call.module === 'artist_album')).toMatchObject({
+      query: { id: MARASY.id, limit: 100, offset: 100 },
+    })
     const page = app.state.library?.artistPage(MARASY.id)
-    expect(page).toMatchObject({ status: 'shown', content: { moreAlbums: null } })
-    const albums = page?.status === 'shown' ? page.content.albums : []
+    expect(page).toMatchObject({
+      status: 'shown',
+      content: { moreAlbums: null },
+    })
+    const albums = page?.status === 'shown'
+      ? page.content.albums
+      : []
     expect(albums).toHaveLength(101)
     expect(albums.at(-1)).toMatchObject({ id: 45538, name: '幻想游戯~Museum of marasy' })
   })

@@ -41,7 +41,9 @@
   const { id, name, coverUrl, trackCount, creator, locked = false, phone = false, onkeydown, collectable = false, look = 'grid', current = false, flight = true }: Props = $props()
   const view = getAppView()
   const library = $derived(view.state.library)
-  const status = $derived(collectable && library ? collectState(library, { kind: 'playlist', id }) : null)
+  const status = $derived(collectable && library
+    ? collectState(library, { kind: 'playlist', id })
+    : null)
   /** 封面图代表点开的那一页（Cover 的 flight）；链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
   const page = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 </script>
@@ -49,13 +51,22 @@
 {#if look === 'nav'}
   <a
     href={resolve('/playlists/[id=neteaseId]', { id })}
-    class={['block rounded-xl p-4 transition-colors duration-feedback', current ? 'bg-primary-100' : 'mouse:hover:bg-white']}
+    class={[
+      'block rounded-xl p-4 transition-colors duration-feedback',
+      current ? 'bg-primary-100' : 'mouse:hover:bg-white',
+    ]}
     aria-current={current ? 'page' : undefined}
     {onkeydown}
   >
     <Cover url={coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={flight ? page : undefined} class='rounded-lg' />
-    <span class={['mt-2.5 block truncate text-label font-500', current ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(name)}>{name}</span>
-    <span class={['mt-0.5 block text-caption tabular-nums', current ? 'text-primary-900' : 'text-neutral-600']}>{formatCount(trackCount)} 首</span>
+    <span class={[
+      'mt-2.5 block truncate text-label font-500',
+      current ? 'text-primary-950' : 'text-neutral-900',
+    ]} lang={langOf(name)}>{name}</span>
+    <span class={[
+      'mt-0.5 block text-caption tabular-nums',
+      current ? 'text-primary-900' : 'text-neutral-600',
+    ]}>{formatCount(trackCount)} 首</span>
   </a>
 {:else if look === 'row'}
   <div class='relative min-w-0 flex flex-1 items-center gap-3'>
@@ -76,7 +87,10 @@
   <div class='relative min-w-0'>
     <a href={resolve('/playlists/[id=neteaseId]', { id })} class='group block min-w-0 rounded-lg' {onkeydown}>
       <Cover url={coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={flight ? page : undefined} class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
-      <span class={['mt-2.5 block truncate text-neutral-900 font-500', phone ? 'text-body' : 'text-label']} lang={langOf(name)}>{name}</span>
+      <span class={[
+        'mt-2.5 block truncate text-neutral-900 font-500',
+        phone ? 'text-body' : 'text-label',
+      ]} lang={langOf(name)}>{name}</span>
       <span class='mt-0.5 min-w-0 flex items-center gap-1 text-caption text-neutral-600'>
         <span class='flex-none tabular-nums'>{formatCount(trackCount)} 首</span>
         {#if locked}

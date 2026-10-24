@@ -56,7 +56,12 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
   const networkFailure = (error: unknown): Result<never> => {
     if (!(error instanceof TypeError))
       throw error
-    return { ok: false, failure: { kind: browser.network.onLine ? 'unreachable' : 'offline' } }
+    return {
+      ok: false,
+      failure: {
+        kind: browser.network.onLine ? 'unreachable' : 'offline',
+      },
+    }
   }
 
   async function request<Value>(path: string, init?: RequestInit): Promise<Result<Value>> {
@@ -75,11 +80,21 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
       if (!(error instanceof SyntaxError))
         return networkFailure(error)
       // 回了 200 却不是 JSON：中间的代理或强制门户（例如公共 Wi-Fi 的登录页）替服务端回的，没到 Campanula
-      return { ok: false, failure: { kind: response.ok ? 'unreachable' : 'serverError' } }
+      return {
+        ok: false,
+        failure: {
+          kind: response.ok ? 'unreachable' : 'serverError',
+        },
+      }
     }
     if (response.ok)
       return { ok: true, value: body as Value }
-    return { ok: false, failure: isErrorBody(body) ? body.error : { kind: 'serverError' } }
+    return {
+      ok: false,
+      failure: isErrorBody(body)
+        ? body.error
+        : { kind: 'serverError' },
+    }
   }
 
   function get<Params, Response>(endpoint: GetEndpoint<Params, Response>, ...args: ParamsArg<Params>): Promise<Result<Response>> {

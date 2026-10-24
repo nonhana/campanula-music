@@ -105,8 +105,11 @@
       return
     const id = Number(row.dataset.playlistId)
     const sorter = sort
-    if (!sorter.moveByKeyboard(id, event.key === 'ArrowUp' ? -1 : 1))
+    if (!sorter.moveByKeyboard(id, event.key === 'ArrowUp'
+      ? -1
+      : 1)) {
       return
+    }
     event.preventDefault()
     // 卡片换了位置以后浏览器会把焦点丢回 body：等这一帧排好，再把焦点放回这一张
     void tick().then(() => {
@@ -140,7 +143,10 @@
 {/if}
 
 {#if own === null && library.sync.status === 'failed'}
-  <div in:reveal><StateBlock kind='error' title='歌单列表没能同步' body={failureText(library.sync.failure)} action={{ label: '重试', run: () => view.app.retrySync() }} /></div>
+  <div in:reveal><StateBlock kind='error' title='歌单列表没能同步' body={failureText(library.sync.failure)} action={{
+    label: '重试',
+    run: () => view.app.retrySync(),
+  }} /></div>
 {:else}
   {#if sorting}
     <p class='sr-only' aria-live='polite'>{announcement}</p>
@@ -177,8 +183,15 @@
               data-playlist-sort
             >
               {#each sorted as playlist (playlist.id)}
-                <li data-playlist-id={playlist.id} class='relative' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
-                  <div class={['h-14 flex items-center gap-3 rounded-xl pl-3 pr-2', sort.lifted(playlist.id) ? 'bg-primary-100' : 'bg-white shadow-ambient']}>
+                <li data-playlist-id={playlist.id} class='relative' animate:flip={{
+                  duration: moveMs(DURATIONS.state),
+                }}>
+                  <div class={[
+                    'h-14 flex items-center gap-3 rounded-xl pl-3 pr-2',
+                    sort.lifted(playlist.id)
+                      ? 'bg-primary-100'
+                      : 'bg-white shadow-ambient',
+                  ]}>
                     <div class={['flex min-w-0 flex-1 items-center gap-3', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
                       <PlaylistTile
                         id={playlist.id}
@@ -210,7 +223,9 @@
         data-playlist-sort
       >
         {#each sorted as playlist (playlist.id)}
-          <li data-playlist-id={playlist.id} class='relative min-w-0' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
+          <li data-playlist-id={playlist.id} class='relative min-w-0' animate:flip={{
+            duration: moveMs(DURATIONS.state),
+          }}>
             <div class={['transition-opacity', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
               <PlaylistTile
                 id={playlist.id}

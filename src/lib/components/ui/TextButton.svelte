@@ -36,12 +36,23 @@
   const { tone = 'primary', strong = false, size = 'label', icon: Icon, href, busy = false, desktop, type = 'button', class: klass, onclick, children, ...rest }: Props = $props()
 
   const SIZES = { body: 'text-body', label: 'text-label', caption: 'text-caption' }
-  const weight = $derived(strong ? 'font-600' : size === 'body' ? 'font-400' : 'font-500')
+  const weight = $derived(strong
+    ? 'font-600'
+    : size === 'body'
+    ? 'font-400'
+    : 'font-500')
   const color = $derived(tone === 'primary'
     ? 'text-primary-900 disabled:text-neutral-500'
-    : [size === 'caption' ? 'text-neutral-600' : 'text-neutral-700', 'disabled:opacity-50'])
+    : [
+      size === 'caption'
+        ? 'text-neutral-600'
+        : 'text-neutral-700',
+      'disabled:opacity-50',
+    ])
   /** 按下时的浅底：进行中点不了，不给 */
-  const pressed = $derived(tone === 'primary' ? 'active:bg-primary-100' : 'active:bg-neutral-100')
+  const pressed = $derived(tone === 'primary'
+    ? 'active:bg-primary-100'
+    : 'active:bg-neutral-100')
   const click = busyClick(() => busy, event => onclick?.(event))
 </script>
 
@@ -54,7 +65,9 @@
     type={href ? undefined : type}
     class={[
       'h-11 inline-flex flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 transition-[background-color,color,opacity,transform] duration-feedback disabled:cursor-not-allowed',
-      busy ? 'cursor-progress' : ['press mouse:not-disabled:hover:(bg-primary-100 text-primary-950)', pressed],
+      busy
+        ? 'cursor-progress'
+        : ['press mouse:not-disabled:hover:(bg-primary-100 text-primary-950)', pressed],
       SIZES[size],
       weight,
       color,

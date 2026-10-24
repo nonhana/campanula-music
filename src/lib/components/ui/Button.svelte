@@ -41,9 +41,13 @@
   class={[
     'pill-hit h-10 inline-flex flex-none items-center justify-center whitespace-nowrap rounded-full text-label font-500 transition-[background-color,border-color,color,opacity,transform] duration-feedback disabled:cursor-not-allowed',
     // 没有图标的在文字前加 16px 转圈、隔 6px：两边各让出 11px（20 → 9），宽度不变
-    Icon ? 'gap-2 pl-4 pr-5' : busy ? 'gap-1.5 px-[9px]' : 'gap-2 px-5',
+    Icon
+      ? 'gap-2 pl-4 pr-5'
+      : busy ? 'gap-1.5 px-[9px]' : 'gap-2 px-5',
     look[variant].color,
-    busy ? 'cursor-progress' : ['enabled:press', look[variant].hover],
+    busy
+      ? 'cursor-progress'
+      : ['enabled:press', look[variant].hover],
     klass,
   ]}
   aria-busy={busy || undefined}

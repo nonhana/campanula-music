@@ -36,12 +36,19 @@ export function localize<T>(value: T): T {
 }
 
 function walk(value: unknown): unknown {
-  if (typeof value === 'string')
-    return isExternal(value) ? coverPath(value) : value
+  if (typeof value === 'string') {
+    return isExternal(value)
+      ? coverPath(value)
+      : value
+  }
   if (Array.isArray(value))
     return value.map(walk)
-  if (value !== null && typeof value === 'object')
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, walk(item)]))
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+      key,
+      walk(item),
+    ]))
+  }
   return value
 }
 

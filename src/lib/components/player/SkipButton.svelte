@@ -5,14 +5,23 @@
 
   const { direction, phone = false }: { direction: 'previous' | 'next', phone?: boolean } = $props()
   const view = getAppView()
-  const Icon = $derived(direction === 'previous' ? SkipBack : SkipForward)
+  const Icon = $derived(direction === 'previous'
+    ? SkipBack
+    : SkipForward)
 </script>
 
 <button
   type='button'
-  class={['grid w-16 flex-none place-items-center rounded-full bg-primary-100 text-primary-950 transition-[background-color,transform] duration-feedback press mouse:hover:bg-primary-200', phone ? 'h-14' : 'h-12']}
-  aria-label={direction === 'previous' ? '上一首' : '下一首'}
-  onclick={() => (direction === 'previous' ? view.app.previous() : view.app.next())}
+  class={[
+    'grid w-16 flex-none place-items-center rounded-full bg-primary-100 text-primary-950 transition-[background-color,transform] duration-feedback press mouse:hover:bg-primary-200',
+    phone ? 'h-14' : 'h-12',
+  ]}
+  aria-label={direction === 'previous'
+    ? '上一首'
+    : '下一首'}
+  onclick={() => (direction === 'previous'
+    ? view.app.previous()
+    : view.app.next())}
 >
   <Icon size={phone ? 22 : 20} fill='currentColor' aria-hidden='true' />
 </button>

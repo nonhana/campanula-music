@@ -46,14 +46,20 @@ export function centerCrop(width: number, height: number): CoverCrop {
 /** 从工作位图上的 crop 摆出视图（打开时、外面换了 crop 时） */
 export function createCropView(frame: CropFrame, crop: CoverCrop): CropView {
   const base = baseScaleOf(frame)
-  const zoom = clamp(crop.size > 0 ? frame.size / crop.size / base : 1, 1, maxZoomOf(frame))
+  const zoom = clamp(crop.size > 0
+    ? frame.size / crop.size / base
+    : 1, 1, maxZoomOf(frame))
   return clamped(frame, { zoom, x: -crop.x * base * zoom, y: -crop.y * base * zoom })
 }
 
 /** 现在露出来的是工作位图上的哪一块 */
 export function cropOf(frame: CropFrame, view: CropView): CoverCrop {
   const scale = baseScaleOf(frame) * view.zoom
-  return { x: clean(-view.x / scale), y: clean(-view.y / scale), size: frame.size / scale }
+  return {
+    x: clean(-view.x / scale),
+    y: clean(-view.y / scale),
+    size: frame.size / scale,
+  }
 }
 
 /** 图片跟着手指走 dx / dy（px）；拖出框就停在边上 */
@@ -129,5 +135,7 @@ function clamped(frame: CropFrame, view: CropView): CropView {
 }
 
 function clean(value: number): number {
-  return value === 0 ? 0 : value
+  return value === 0
+    ? 0
+    : value
 }

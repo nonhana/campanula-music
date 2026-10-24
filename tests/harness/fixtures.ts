@@ -37,7 +37,14 @@ async function load(path: string): Promise<LoadedFixture> {
   const code = field(response.body, 'code')
   // 录制时去掉了 Cookie（Spec #11 交付方式第 5 条）
   const outcome = (body: unknown): LoadedFixture =>
-    ({ module, query: raw.query as Record<string, unknown>, outcome: { rejected, response: { status: response.status, body, cookie: [] } } })
+    ({
+      module,
+      query: raw.query as Record<string, unknown>,
+      outcome: {
+        rejected,
+        response: { status: response.status, body, cookie: [] },
+      },
+    })
 
   if (response.retryAfter !== undefined)
     return outcome(response.body)
@@ -53,7 +60,9 @@ async function load(path: string): Promise<LoadedFixture> {
   const result = await schema['~standard'].validate(response.body)
   if (result.issues) {
     const issues = result.issues.map(({ message, path = [] }) =>
-      `  ${path.map(key => String(typeof key === 'object' ? key.key : key)).join('.')}: ${message}`)
+      `  ${path.map(key => String(typeof key === 'object'
+        ? key.key
+        : key)).join('.')}: ${message}`)
     throw new Error(`录制数据 ${path} 不符合 SDK 的结构定义 ${name}：\n${issues.join('\n')}`)
   }
   return outcome(result.value)

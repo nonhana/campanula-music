@@ -29,5 +29,11 @@
   }
 </script>
 
-<IconButton icon={volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2} label={volume === 0 ? '取消静音' : '静音'} onclick={toggleMute} />
+<IconButton icon={volume === 0
+  ? VolumeX
+  : volume < 0.5
+  ? Volume1
+  : Volume2} label={volume === 0
+  ? '取消静音'
+  : '静音'} onclick={toggleMute} />
 <VolumeSlider class={sliderClass} />

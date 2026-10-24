@@ -15,7 +15,9 @@ import { formatCount } from '../shared/text'
 
 /** 句子里的一张歌单：我喜欢的音乐直接写，别的加「」 */
 function playlistInText(playlist: Playlist): string {
-  return playlist.kind === 'liked' ? playlistName(playlist) : `「${playlist.name}」`
+  return playlist.kind === 'liked'
+    ? playlistName(playlist)
+    : `「${playlist.name}」`
 }
 
 /** 没改成的是哪件事（“没能红心《歌名》：”） */
@@ -114,8 +116,12 @@ export function operationNoticeText(notice: OperationNotice): string {
     case 'playlistMissing':
       return `${playlistInText(notice.change.playlist)}已经不在了，${missingAction(notice.change)}`
     case 'added': {
-      const count = notice.change.kind === 'addMany' ? notice.change.songs.length : 1
-      return count > 1 ? `已加入${playlistInText(notice.change.playlist)} ${formatCount(count)} 首` : `已加入${playlistInText(notice.change.playlist)}`
+      const count = notice.change.kind === 'addMany'
+        ? notice.change.songs.length
+        : 1
+      return count > 1
+        ? `已加入${playlistInText(notice.change.playlist)} ${formatCount(count)} 首`
+        : `已加入${playlistInText(notice.change.playlist)}`
     }
     case 'alreadyAdded':
       return `这些歌都已经在${playlistInText(notice.playlist)}里了`
@@ -126,7 +132,9 @@ export function operationNoticeText(notice: OperationNotice): string {
     case 'orderFailed': {
       // 没有原因（网易云回 -1、重读也不是新顺序）时只说没保存成，旁边有“重试”
       const unsaved = `没能保存${playlistInText(notice.playlist)}的顺序`
-      return notice.failure ? `${unsaved}：${changeFailureText(notice.failure)}` : unsaved
+      return notice.failure
+        ? `${unsaved}：${changeFailureText(notice.failure)}`
+        : unsaved
     }
     case 'playlistOrderFailed':
       return `没能保存自建歌单的顺序：${changeFailureText(notice.failure)}`

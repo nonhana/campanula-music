@@ -57,7 +57,9 @@ async function storedDownloads(device: Device): Promise<Record<string, any>[]> {
 
 /** 发过的下载地址请求 */
 function downloadUrlRequests(device: Device): string[] {
-  return device.requests.flatMap(request => request.path.includes('/download-url') ? [request.path] : [])
+  return device.requests.flatMap(request => request.path.includes('/download-url')
+    ? [request.path]
+    : [])
 }
 
 /**
@@ -92,7 +94,9 @@ describe('下载一首', () => {
     await world.settle()
 
     expect(device.requests.map(request => request.path)).toContain(`/api/songs/${LOSER.id}/download-url?quality=exhigh`)
-    expect(world.netease.calls.find(call => call.module === 'song_download_url_v1')).toMatchObject({ query: { id: LOSER.id, level: 'exhigh' } })
+    expect(world.netease.calls.find(call => call.module === 'song_download_url_v1')).toMatchObject({
+      query: { id: LOSER.id, level: 'exhigh' },
+    })
     expect(device.files.requests).toEqual(expect.arrayContaining([LOSER.audio, LOSER.cover]))
     const [stored] = await storedDownloads(device)
     expect(stored.song).toEqual(song)
@@ -117,7 +121,11 @@ describe('下载一首', () => {
 
     app.download(likedSong(app, LOSER.id))
     await world.settle()
-    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({ status: 'downloading', received: Math.floor(LOSER.bytes / 2), total: LOSER.bytes })
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({
+      status: 'downloading',
+      received: Math.floor(LOSER.bytes / 2),
+      total: LOSER.bytes,
+    })
     expect(app.state.downloads.songs).toEqual([])
 
     transfer.release()
@@ -160,8 +168,16 @@ describe('下载一首', () => {
 
     app.download(song)
     await world.settle()
-    expect(app.state.downloads.tasks.get(LOSER.id)).toEqual({ status: 'failed', song, failure: { kind: 'interrupted' } })
-    expect(app.state.library?.notice).toEqual({ kind: 'downloadFailed', song, failure: { kind: 'interrupted' } })
+    expect(app.state.downloads.tasks.get(LOSER.id)).toEqual({
+      status: 'failed',
+      song,
+      failure: { kind: 'interrupted' },
+    })
+    expect(app.state.library?.notice).toEqual({
+      kind: 'downloadFailed',
+      song,
+      failure: { kind: 'interrupted' },
+    })
     expect(await storedDownloads(device)).toEqual([])
     expect(app.state.downloads.songs).toEqual([])
 
@@ -186,7 +202,11 @@ describe('下载一首', () => {
 
     app.download(song)
     await world.settle()
-    expect(app.state.library?.notice).toEqual({ kind: 'downloadFailed', song, failure: { kind: 'interrupted' } })
+    expect(app.state.library?.notice).toEqual({
+      kind: 'downloadFailed',
+      song,
+      failure: { kind: 'interrupted' },
+    })
     expect(app.state.library?.noticeActions).toContain('retry')
 
     await world.netease.reply(LOSER.downloadUrl)
@@ -227,7 +247,13 @@ describe('下载一首', () => {
     app.download(song)
     await world.settle()
     expect(app.state.session.status).toBe('loginExpired')
-    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({ status: 'failed', failure: { kind: 'request', failure: { kind: 'needsLogin' } } })
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({
+      status: 'failed',
+      failure: {
+        kind: 'request',
+        failure: { kind: 'needsLogin' },
+      },
+    })
   })
 
   it('退出登录以后不能下载：不发请求，说明要先登录', async () => {
@@ -260,7 +286,10 @@ describe('下载属于这台设备', () => {
     expect(app.state.downloads.songs).toEqual([second, first])
     expect(await storedDownloads(device)).toHaveLength(2)
 
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, app, { another: true })
     await world.settle()
     expect(app.state.downloads.songs).toEqual([second, first])
@@ -284,7 +313,10 @@ describe('下载属于这台设备', () => {
 
     app.play(DOWNLOADS, first.id)
     await world.settle()
-    expect(app.state.player.queue).toEqual([{ song: second, source: DOWNLOADS }, { song: first, source: DOWNLOADS }])
+    expect(app.state.player.queue).toEqual([
+      { song: second, source: DOWNLOADS },
+      { song: first, source: DOWNLOADS },
+    ])
     expect(current(app)).toBe(first.id)
     const player = tab.audio.find(audio => !audio.paused)!
     expect(device.objectUrls.blobOf(player.src)).toMatchObject({ size: ((await loadFixture(FIRST.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }).data.size, type: 'audio/mpeg' })
@@ -328,7 +360,10 @@ describe('下载属于这台设备', () => {
     expect(app.state.player.status).toBe('paused')
     app.togglePlay()
     await world.settle()
-    expect(app.state.player).toMatchObject({ status: 'paused', notice: { kind: 'nothingPlayable' } })
+    expect(app.state.player).toMatchObject({
+      status: 'paused',
+      notice: { kind: 'nothingPlayable' },
+    })
     expect(playUrlRequests(device)).toEqual([])
   })
 })
@@ -483,7 +518,15 @@ describe('放已下载的歌', () => {
 
     const { app } = await device.open()
     expect(app.state.session.status).toBe('signedOut')
-    expect(app.state.player).toMatchObject({ queue: [{ song: second, source: DOWNLOADS }, { song: first, source: DOWNLOADS }], current: 1, position: 42, status: 'paused' })
+    expect(app.state.player).toMatchObject({
+      queue: [
+        { song: second, source: DOWNLOADS },
+        { song: first, source: DOWNLOADS },
+      ],
+      current: 1,
+      position: 42,
+      status: 'paused',
+    })
   })
 })
 
@@ -528,8 +571,20 @@ describe('听歌打卡', () => {
     app.next()
     await world.settle()
 
-    expect(checkIns(device)).toEqual([{ songId: first.id, body: { source: DOWNLOADS, seconds: 30 } }])
-    expect(world.netease.calls.filter(call => call.module === 'scrobble').map(call => call.query)).toEqual([{ id: first.id, sourceid: 0, source: 'download', time: 30 }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: first.id,
+        body: { source: DOWNLOADS, seconds: 30 },
+      },
+    ])
+    expect(world.netease.calls.filter(call => call.module === 'scrobble').map(call => call.query)).toEqual([
+      {
+        id: first.id,
+        sourceid: 0,
+        source: 'download',
+        time: 30,
+      },
+    ])
   })
 
   it('没登录时放已下载的歌不打卡；放到一半登录了，接着放，这首登录前听的秒数不补记，登录后听的照常打卡', async () => {
@@ -557,7 +612,10 @@ describe('听歌打卡', () => {
     expect(await storedCheckIns(device)).toEqual([])
 
     await world.clock.advance(25_000)
-    await replyLibrary({ through: 'hearts', until: never() })
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
     await signIn(world, app)
     await world.settle()
     expect(current(app)).toBe(first.id)
@@ -567,7 +625,12 @@ describe('听歌打卡', () => {
     await world.netease.reply(CHECK_IN)
     app.next()
     await world.settle()
-    expect(checkIns(device)).toEqual([{ songId: first.id, body: { source: DOWNLOADS, seconds: 15 } }])
+    expect(checkIns(device)).toEqual([
+      {
+        songId: first.id,
+        body: { source: DOWNLOADS, seconds: 15 },
+      },
+    ])
     expect(await storedCheckIns(device)).toEqual([])
   })
 })

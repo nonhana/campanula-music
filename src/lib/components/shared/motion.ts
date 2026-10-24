@@ -43,17 +43,23 @@ function instant(): boolean {
 export function fadeMs(ms: number): number {
   if (instant())
     return 0
-  return reducedMotion() ? Math.min(ms, REDUCED_FADE_MS) : ms
+  return reducedMotion()
+    ? Math.min(ms, REDUCED_FADE_MS)
+    : ms
 }
 
 /** 位移、缩放、宽高的时长：减少动态效果、页面在后台时是 0，直接到位 */
 export function moveMs(ms: number): number {
-  return reducedMotion() || instant() ? 0 : ms
+  return reducedMotion() || instant()
+    ? 0
+    : ms
 }
 
 /** 程序滚动（翻页键、歌词跟着当前行走）：减少动态效果时直接跳过去 */
 export function scrollBehavior(): ScrollBehavior {
-  return reducedMotion() ? 'auto' : 'smooth'
+  return reducedMotion()
+    ? 'auto'
+    : 'smooth'
 }
 
 /**
@@ -67,8 +73,14 @@ export function animateHeight(element: HTMLElement, from: number, to: number, du
   if (ms === 0 || Math.abs(to - from) < 1)
     return null
   return element.animate(
-    [{ height: `${from}px`, overflowY: 'clip' }, { height: `${to}px`, overflowY: 'clip' }],
-    { duration: ms, easing: cssEasing('out-soft') },
+    [
+      { height: `${from}px`, overflowY: 'clip' },
+      { height: `${to}px`, overflowY: 'clip' },
+    ],
+    {
+      duration: ms,
+      easing: cssEasing('out-soft'),
+    },
   )
 }
 
@@ -107,7 +119,11 @@ function cubicBezier([x1, y1, x2, y2]: readonly [number, number, number, number]
     }
     return s
   }
-  return t => (t <= 0 ? 0 : t >= 1 ? 1 : y(solve(t)))
+  return t => (t <= 0
+    ? 0
+    : t >= 1
+      ? 1
+      : y(solve(t)))
 }
 
 export const easeOutSoft = cubicBezier(EASINGS['out-soft'])
@@ -139,13 +155,21 @@ function twoWay<P>(motion: (node: Element, params: P, options: TransitionOptions
     const config = motion(node, params, { direction })
     const turning = path !== undefined
     path ??= config.css
-    return { ...config, css: path, delay: direction === 'out' || turning ? 0 : config.delay }
+    return {
+      ...config,
+      css: path,
+      delay: direction === 'out' || turning
+        ? 0
+        : config.delay,
+    }
   }
 }
 
 /** 进来先快后慢，出去越走越快 */
 function easingOf(options: TransitionOptions): (t: number) => number {
-  return options.direction === 'out' ? easeInSoft : easeOutSoft
+  return options.direction === 'out'
+    ? easeInSoft
+    : easeOutSoft
 }
 
 interface FadeParams {
@@ -165,7 +189,9 @@ export function fade(node: Element, params: FadeParams = {}, options: Transition
 function fadeOnce(_node: Element, { duration, delay = 0 }: FadeParams, options: TransitionOptions): TransitionConfig {
   const out = options.direction === 'out'
   return {
-    delay: instant() ? 0 : delay,
+    delay: instant()
+      ? 0
+      : delay,
     duration: fadeMs(duration ?? (out ? DURATIONS['state-out'] : DURATIONS.state)),
     easing: easingOf(options),
     css: t => `opacity: ${t}`,
@@ -183,7 +209,10 @@ export function fadeThrough(node: Element, _params?: undefined, options: Transit
 function fadeThroughOnce(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
   return options.direction === 'out'
     ? fadeOnce(node, {}, options)
-    : fadeOnce(node, { duration: DURATIONS.reveal, delay: fadeMs(DURATIONS['state-out']) }, options)
+    : fadeOnce(node, {
+        duration: DURATIONS.reveal,
+        delay: fadeMs(DURATIONS['state-out']),
+      }, options)
 }
 
 /**
@@ -223,8 +252,12 @@ const REVEAL_GROUP = '[data-reveal-group]'
  * .revealing 只在这一小会儿挂着，之后才挂上的（虚拟列表滚出来的行）不飘。减少动态效果时只淡入
  */
 export function reveal(node: HTMLElement): TransitionConfig {
-  const found = [...node.querySelectorAll(REVEAL_GROUP)]
-  const groups = found.length > 0 ? found : [node]
+  const found = [
+    ...node.querySelectorAll(REVEAL_GROUP),
+  ]
+  const groups = found.length > 0
+    ? found
+    : [node]
   for (const group of groups)
     group.classList.add('revealing')
   node.addEventListener('introend', () => {
@@ -262,13 +295,23 @@ function floatOnce(_node: Element, { toward, distance, duration, panel = false, 
   if (instant())
     return { duration: 0 }
   const out = options.direction === 'out'
-  const ms = duration ?? DURATIONS[panel ? (out ? 'panel-out' : 'panel') : (out ? 'state-out' : 'state')]
+  const ms = duration ?? DURATIONS[panel
+    ? (out ? 'panel-out' : 'panel')
+    : (out ? 'state-out' : 'state')]
   const easing = easingOf(options)
-  if (reducedMotion())
-    return { delay, duration: fadeMs(ms), easing, css: t => `opacity: ${t}` }
+  if (reducedMotion()) {
+    return {
+      delay,
+      duration: fadeMs(ms),
+      easing,
+      css: t => `opacity: ${t}`,
+    }
+  }
   const [x, y] = AXES[toward]
   // 飘入时偏在来的那一边（和 toward 相反），飘出时偏向去的那一边；u 从 1 到 0 是飘入，从 0 到 1 是飘出
-  const reach = (distance ?? (out ? FLOAT_DISTANCE.out : FLOAT_DISTANCE.in)) * (out ? 1 : -1)
+  const reach = (distance ?? (out ? FLOAT_DISTANCE.out : FLOAT_DISTANCE.in)) * (out
+    ? 1
+    : -1)
   return {
     delay,
     duration: ms,
@@ -294,7 +337,9 @@ function iconSwapOnce(_node: Element, _params: undefined, options: TransitionOpt
   return {
     duration: fadeMs(DURATIONS.feedback),
     easing: easingOf(options),
-    css: (t, u) => (scaled ? `opacity: ${t}; scale: ${1 - u * (1 - ICON_FROM_SCALE)}` : `opacity: ${t}`),
+    css: (t, u) => (scaled
+      ? `opacity: ${t}; scale: ${1 - u * (1 - ICON_FROM_SCALE)}`
+      : `opacity: ${t}`),
   }
 }
 
@@ -303,11 +348,22 @@ function iconSwapOnce(_node: Element, _params: undefined, options: TransitionOpt
  * 缩放的原点由调用的地方放在底边。减少动态效果时竖条不长，只淡入淡出
  */
 export function grow(_node: Element, _params?: undefined, options: TransitionOptions = {}): TransitionConfig {
-  const ms = options.direction === 'out' ? DURATIONS['state-out'] : DURATIONS.state
+  const ms = options.direction === 'out'
+    ? DURATIONS['state-out']
+    : DURATIONS.state
   const easing = easingOf(options)
-  if (reducedMotion())
-    return { duration: fadeMs(ms), easing, css: t => `opacity: ${t}` }
-  return { duration: moveMs(ms), easing, css: t => `scale: 1 ${t}` }
+  if (reducedMotion()) {
+    return {
+      duration: fadeMs(ms),
+      easing,
+      css: t => `opacity: ${t}`,
+    }
+  }
+  return {
+    duration: moveMs(ms),
+    easing,
+    css: t => `scale: 1 ${t}`,
+  }
 }
 
 /** 手机播放页的封面换成歌词时缩到这么大 */
@@ -320,11 +376,24 @@ const RECEDE_SCALE = 0.96
 export function recede(_node: Element, { delay = 0 }: { delay?: number } = {}, options: TransitionOptions = {}): TransitionConfig {
   if (instant())
     return { duration: 0 }
-  const ms = options.direction === 'out' ? DURATIONS['panel-out'] : DURATIONS.panel
+  const ms = options.direction === 'out'
+    ? DURATIONS['panel-out']
+    : DURATIONS.panel
   const easing = easingOf(options)
-  if (reducedMotion())
-    return { delay, duration: fadeMs(ms), easing, css: t => `opacity: ${t}` }
-  return { delay, duration: ms, easing, css: (t, u) => `opacity: ${t}; scale: ${1 - u * (1 - RECEDE_SCALE)}` }
+  if (reducedMotion()) {
+    return {
+      delay,
+      duration: fadeMs(ms),
+      easing,
+      css: t => `opacity: ${t}`,
+    }
+  }
+  return {
+    delay,
+    duration: ms,
+    easing,
+    css: (t, u) => `opacity: ${t}; scale: ${1 - u * (1 - RECEDE_SCALE)}`,
+  }
 }
 
 /**
@@ -339,7 +408,11 @@ export function dock(node: Element, { gone = true }: { gone?: boolean } = {}, op
   if (out && !gone)
     return {}
   const distance = innerHeight - node.getBoundingClientRect().top
-  return float(node, { toward: out ? 'down' : 'up', distance, duration: DURATIONS[out ? 'panel-out' : 'panel'] }, options)
+  return float(node, {
+    toward: out ? 'down' : 'up',
+    distance,
+    duration: DURATIONS[out ? 'panel-out' : 'panel'],
+  }, options)
 }
 
 /** 浮动菜单飘出来时从多远（px）、多大开始 */
@@ -359,11 +432,15 @@ function popOnce(node: Element, { below }: { below: boolean }, options: Transiti
   if (options.direction === 'out')
     return fadeOnce(node, {}, options)
   const moved = !reducedMotion()
-  const from = (below ? -1 : 1) * POP_DISTANCE
+  const from = (below
+    ? -1
+    : 1) * POP_DISTANCE
   return {
     duration: fadeMs(DURATIONS.state),
     easing: easingOf(options),
-    css: (t, u) => (moved ? `opacity: ${t}; translate: 0 ${from * u}px; scale: ${1 - u * (1 - POP_FROM_SCALE)}` : `opacity: ${t}`),
+    css: (t, u) => (moved
+      ? `opacity: ${t}; translate: 0 ${from * u}px; scale: ${1 - u * (1 - POP_FROM_SCALE)}`
+      : `opacity: ${t}`),
   }
 }
 
@@ -385,7 +462,9 @@ function dialogOnce(node: Element, _params: undefined, options: TransitionOption
   return {
     duration: fadeMs(DURATIONS.panel),
     easing: easingOf(options),
-    css: (t, u) => (moved ? `opacity: ${t}; translate: 0 ${DIALOG_DISTANCE * u}px; scale: ${1 - u * (1 - POP_FROM_SCALE)}` : `opacity: ${t}`),
+    css: (t, u) => (moved
+      ? `opacity: ${t}; translate: 0 ${DIALOG_DISTANCE * u}px; scale: ${1 - u * (1 - POP_FROM_SCALE)}`
+      : `opacity: ${t}`),
   }
 }
 
@@ -407,7 +486,11 @@ export function toast(node: Element, params: ToastParams, options: TransitionOpt
 function toastOnce(node: Element, { edge, moved = false }: ToastParams, options: TransitionOptions): TransitionConfig {
   return options.direction === 'out' || moved
     ? fadeOnce(node, {}, options)
-    : floatOnce(node, { toward: edge === 'bottom' ? 'up' : 'down' }, options)
+    : floatOnce(node, {
+        toward: edge === 'bottom'
+          ? 'up'
+          : 'down',
+      }, options)
 }
 
 /**

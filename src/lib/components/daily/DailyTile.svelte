@@ -17,11 +17,17 @@
 
   const view = getAppView()
   const daily = $derived(view.state.daily)
-  const songs = $derived(daily?.status === 'shown' ? daily.songs : null)
+  const songs = $derived(daily?.status === 'shown'
+    ? daily.songs
+    : null)
   const date = $derived(dailyCalendarDay(daily))
   /** 首数那一行：拉到了写几首，没拉成说为什么；正在拉是骨架 */
   const status = $derived(
-    songs ? `${formatCount(songs.length)} 首` : daily?.status === 'failed' ? dailyFailure(daily.failure).brief : null,
+    songs
+      ? `${formatCount(songs.length)} 首`
+      : daily?.status === 'failed'
+      ? dailyFailure(daily.failure).brief
+      : null,
   )
 
   // 首页挂着这个方块时听众就在看每日推荐（App 自己决定要不要先拉）：换到每日推荐页、离开首页都不用再调一次
@@ -33,7 +39,9 @@
   <a
     href={resolve('/daily')}
     class='size-full flex items-center gap-6 rounded-xl bg-white py-4 pl-5 pr-20 shadow-ambient transition-shadow duration-feedback xl:(flex-col items-stretch gap-0 p-5) mouse:hover:shadow-float'
-    aria-label='每日推荐，{date.month}月{date.day}日 {date.weekday}{status ? `，${status}` : ''}'
+    aria-label='每日推荐，{date.month}月{date.day}日 {date.weekday}{status
+      ? `，${status}`
+      : ''}'
   >
     <span class='contents xl:(flex items-start justify-between gap-3)'>
       <span class='flex-none'>

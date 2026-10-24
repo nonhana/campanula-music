@@ -31,8 +31,11 @@ function credentialsOf(server: ViteDevServer): Promise<{ loginCookieHeader: (dev
 
 async function readBody(req: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = []
-  for await (const chunk of req)
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string'
+      ? Buffer.from(chunk)
+      : chunk)
+  }
   return Buffer.concat(chunks)
 }
 
@@ -51,7 +54,9 @@ function redirect(res: ServerResponse, location: string, cookie: string): void {
 }
 
 function safeNext(value: string | null): string {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/'
+  return value && value.startsWith('/') && !value.startsWith('//')
+    ? value
+    : '/'
 }
 
 async function handle(server: ViteDevServer, req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -91,7 +96,9 @@ async function handle(server: ViteDevServer, req: IncomingMessage, res: ServerRe
 
   if (path === '/api/mock/scenario' && req.method === 'POST') {
     const body = (await readBody(req)).toString('utf8')
-    const input = body ? JSON.parse(body) as ScenarioName | (Partial<MockConfig> & { name?: ScenarioName }) : 'default'
+    const input = body
+      ? JSON.parse(body) as ScenarioName | (Partial<MockConfig> & { name?: ScenarioName })
+      : 'default'
     if (typeof input === 'object' && input.name !== undefined && !isScenarioName(input.name)) {
       json(res, 400, { error: `不认识的 mock 场景：${String(input.name)}` })
       return true
@@ -119,7 +126,9 @@ async function handle(server: ViteDevServer, req: IncomingMessage, res: ServerRe
 
   if (path.startsWith('/mock-assets/audio/') && path.endsWith('.wav')) {
     const id = Number(path.slice('/mock-assets/audio/'.length, -'.wav'.length))
-    const bytes = audioWav(Number.isFinite(id) ? id : 0)
+    const bytes = audioWav(Number.isFinite(id)
+      ? id
+      : 0)
     res.statusCode = 200
     res.setHeader('content-type', 'audio/wav')
     res.setHeader('content-length', String(bytes.length))
@@ -154,7 +163,11 @@ export function mockPlugin(): Plugin {
   return {
     name: 'campanula:mock-sdk',
     enforce: 'pre',
-    config: () => ({ ssr: { noExternal: ['hana-music-api'] } }),
+    config: () => ({
+      ssr: {
+        noExternal: ['hana-music-api'],
+      },
+    }),
     resolveId(id) {
       if (id === 'hana-music-api')
         return RUNTIME
@@ -169,10 +182,15 @@ export function mockPlugin(): Plugin {
             next()
         }, (error: unknown) => {
           console.error('mock 路由出错', error)
-          if (!res.headersSent)
-            json(res, 500, { error: 'mock 路由出错', message: String(error) })
-          else
+          if (!res.headersSent) {
+            json(res, 500, {
+              error: 'mock 路由出错',
+              message: String(error),
+            })
+          }
+          else {
             res.end()
+          }
         })
       })
     },

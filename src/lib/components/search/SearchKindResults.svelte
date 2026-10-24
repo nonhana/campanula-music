@@ -33,22 +33,49 @@
   const { keyword, kind, phone = false }: Props = $props()
   const view = getAppView()
   /** App 只记着最后一次搜的词的结果：记着的是别的词（刚换了词、还没打开）时当作还在加载 */
-  const list = $derived(view.state.search.results?.keyword === keyword ? view.state.search.results[kind] : { status: 'loading' } as const)
+  const list = $derived(view.state.search.results?.keyword === keyword
+    ? view.state.search.results[kind]
+    : { status: 'loading' } as const)
   /** 取到的这一类，带上是哪一类：模板里按 kind 分开画，各自拿到自己那一类的项 */
-  const shown = $derived(list.status === 'shown' ? { kind, items: list.items } as KindItems : null)
-  const more = $derived(list.status === 'shown' ? list.more : null)
+  const shown = $derived(list.status === 'shown'
+    ? { kind, items: list.items } as KindItems
+    : null)
+  const more = $derived(list.status === 'shown'
+    ? list.more
+    : null)
   const words = $derived(KIND_WORDS[kind])
-  const failed = $derived(list.status === 'failed' ? searchFailure(list.failure) : null)
-  const gridFailure = $derived(failed ? { title: failed.title, body: failed.body, retry: () => void view.app.openSearch(keyword) } : null)
-  const songs = $derived(shown?.kind === 'songs' ? shown.items : null)
-  const playlists = $derived(shown?.kind === 'playlists' ? shown.items : null)
-  const artists = $derived(shown?.kind === 'artists' ? shown.items : null)
-  const albums = $derived(shown?.kind === 'albums' ? shown.items : null)
+  const failed = $derived(list.status === 'failed'
+    ? searchFailure(list.failure)
+    : null)
+  const gridFailure = $derived(failed
+    ? {
+      title: failed.title,
+      body: failed.body,
+      retry: () => void view.app.openSearch(keyword),
+    }
+    : null)
+  const songs = $derived(shown?.kind === 'songs'
+    ? shown.items
+    : null)
+  const playlists = $derived(shown?.kind === 'playlists'
+    ? shown.items
+    : null)
+  const artists = $derived(shown?.kind === 'artists'
+    ? shown.items
+    : null)
+  const albums = $derived(shown?.kind === 'albums'
+    ? shown.items
+    : null)
   /** 单曲这一类的列表状态交给 songs/SongList：骨架、失败、空、歌曲都在它里面 */
   const songView = $derived.by((): SongListView => {
     if (list.status === 'failed') {
       const action = searchFailure(list.failure)
-      return { kind: 'failed', title: action.title, body: action.body, retry: () => void view.app.openSearch(keyword) }
+      return {
+        kind: 'failed',
+        title: action.title,
+        body: action.body,
+        retry: () => void view.app.openSearch(keyword),
+      }
     }
     if (!songs)
       return { kind: 'loading' }
@@ -61,7 +88,9 @@
   /** 上一次“显示更多”之前已经有几项：后加进来的从第几项开始依次飘入 */
   let appendedAt = $state(0)
   async function showMore() {
-    const before = list.status === 'shown' ? list.items.length : 0
+    const before = list.status === 'shown'
+      ? list.items.length
+      : 0
     appendedAt = before
     await view.app.moreSearchResults(keyword, kind)
     await tick()
@@ -93,12 +122,20 @@
     {/if}
   {:else if kind === 'playlists'}
     {#if list.status === 'failed' && failed}
-      <div in:reveal><StateBlock kind='error' title={failed.title} body={failed.body} action={{ label: '重试', run: () => void view.app.openSearch(keyword) }} /></div>
+      <div in:reveal><StateBlock kind='error' title={failed.title} body={failed.body} action={{
+        label: '重试',
+        run: () => void view.app.openSearch(keyword),
+      }} /></div>
     {:else if !playlists}
       <!-- 和歌单的行一样：64px，48px 封面，两行字 -->
       <div role='status' aria-busy='true' aria-label='正在搜索歌单' out:fadeAway>
-        {#each { length: phone ? 8 : 9 }, i (i)}
-          <div class={['h-16 flex items-center gap-3', phone ? 'px-4' : 'px-2']}>
+        {#each {
+          length: phone ? 8 : 9,
+        }, i (i)}
+          <div class={[
+            'h-16 flex items-center gap-3',
+            phone ? 'px-4' : 'px-2',
+          ]}>
             <span class='bone size-12 flex-none rounded-lg'></span>
             <span class='min-w-0 flex-1'>
               <span class='bone h-3.5 rounded-full' style:width={`${[62, 48, 71, 55, 66, 44, 58, 69, 51][i]}%`}></span>

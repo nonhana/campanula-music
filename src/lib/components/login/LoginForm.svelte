@@ -28,8 +28,14 @@
   // svelte-ignore state_referenced_locally
   let method = $state<Method>(phone ? 'sms' : 'qr')
   const methods = $derived<{ key: Method, label: string }[]>(phone
-    ? [{ key: 'sms', label: '短信验证码' }, { key: 'qr', label: '扫码' }]
-    : [{ key: 'qr', label: '扫码' }, { key: 'sms', label: '短信验证码' }])
+    ? [
+      { key: 'sms', label: '短信验证码' },
+      { key: 'qr', label: '扫码' },
+    ]
+    : [
+      { key: 'qr', label: '扫码' },
+      { key: 'sms', label: '短信验证码' },
+    ])
 
   $effect(() => {
     if (method !== 'qr')
@@ -59,7 +65,9 @@
     const order = methods.map(item => item.key)
     const from = panel!.getBoundingClientRect().height
     resizing?.cancel()
-    toward = order.indexOf(next) > order.indexOf(method) ? 'left' : 'right'
+    toward = order.indexOf(next) > order.indexOf(method)
+      ? 'left'
+      : 'right'
     method = next
     flushSync()
     // 正在飘走的那块 Svelte 标成 inert；连着来回切时留下来的可能是原来那块

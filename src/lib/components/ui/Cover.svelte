@@ -57,18 +57,28 @@
   }
 
   const { url, size, fluid = false, class: klass, eager = false, fallback: Fallback = Music, flight, placeholder, load = true }: Props = $props()
-  const source = $derived(url === null ? '' : coverSource(url, size))
+  const source = $derived(url === null
+    ? ''
+    : coverSource(url, size))
   const view = getAppView()
   /** 下载存着的这张封面图的缩略图（blob: 地址）；没有是 null */
-  const local = $derived(url === null ? null : view.state.downloads.coverOf(url))
-  const small = $derived(local ?? (url !== null && placeholder !== undefined && placeholder < size ? coverSource(url, placeholder) : null))
+  const local = $derived(url === null
+    ? null
+    : view.state.downloads.coverOf(url))
+  const small = $derived(local ?? (url !== null && placeholder !== undefined && placeholder < size
+    ? coverSource(url, placeholder)
+    : null))
   const reveal = createImageReveal(() => source)
 </script>
 
 <span
   class={['grid flex-none place-items-center overflow-hidden bg-primary-100 text-primary-950', fluid && 'aspect-square w-full', klass]}
-  style:width={fluid ? undefined : `${size}px`}
-  style:height={fluid ? undefined : `${size}px`}
+  style:width={fluid
+    ? undefined
+    : `${size}px`}
+  style:height={fluid
+    ? undefined
+    : `${size}px`}
   data-flight={flight}
 >
   {#if url === null || (reveal.status === 'broken' && !local)}

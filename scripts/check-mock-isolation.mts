@@ -7,7 +7,11 @@ import { DESIGN_PAGE_MARKER } from '../src/lib/dev/design-marker.ts'
 import { MOCK_RUNTIME_MARKER } from '../src/lib/server/mock/runtime.ts'
 
 const ROOT = join(import.meta.dirname, '..')
-const OUTPUTS = [join(ROOT, '.svelte-kit/output'), join(ROOT, 'build'), join(ROOT, '.vercel/output')]
+const OUTPUTS = [
+  join(ROOT, '.svelte-kit/output'),
+  join(ROOT, 'build'),
+  join(ROOT, '.vercel/output'),
+]
 const MARKERS = [
   MOCK_RUNTIME_MARKER,
   DESIGN_PAGE_MARKER,

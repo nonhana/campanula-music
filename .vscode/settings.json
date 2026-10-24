@@ -3,6 +3,8 @@
   "biome.enabled": false,
   "prettier.enable": false,
   "editor.formatOnSave": false,
+  // 临时排查：抓一次保存时 ESLint 服务器的请求日志
+  "eslint.trace.server": "verbose",
 
   // Auto fix
   "editor.codeActionsOnSave": {
@@ -48,5 +50,10 @@
     "scss",
     "pcss",
     "postcss"
-  ]
+  ],
+
+  "files.associations": {
+    "tsconfig*.json": "jsonc",
+    "knip.json": "jsonc"
+  }
 }

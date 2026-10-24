@@ -135,7 +135,13 @@
 </script>
 
 <div
-  class={['row relative h-full rounded-lg', selected && 'bg-primary-100', ghost && 'bg-white shadow-float', !off && !selected && !phone && 'mouse:hover:bg-neutral-50', phone && 'row-touch']}
+  class={[
+    'row relative h-full rounded-lg',
+    selected && 'bg-primary-100',
+    ghost && 'bg-white shadow-float',
+    !off && !selected && !phone && 'mouse:hover:bg-neutral-50',
+    phone && 'row-touch',
+  ]}
   role='presentation'
   data-song-id={song.id}
   oncontextmenu={event => openSongMenuAt(event, song, source)}
@@ -150,7 +156,13 @@
     {#if phone}<MorningWash start={selecting ? 104 : 70} onGround />{:else}<MorningWash start={104} />{/if}
   {/if}
   {#if phone}
-    <div class={['relative grid h-full items-center', selecting ? (grip ? 'grid-cols-[22px_48px_minmax(0,1fr)_44px] gap-3 pl-3 pr-1' : 'grid-cols-[22px_48px_minmax(0,1fr)] gap-3 pl-3 pr-1') : 'grid-cols-[48px_minmax(0,1fr)_44px] gap-3.5 pl-4 pr-1', off && !selected && 'opacity-45']}>
+    <div class={[
+      'relative grid h-full items-center',
+      selecting
+        ? (grip ? 'grid-cols-[22px_48px_minmax(0,1fr)_44px] gap-3 pl-3 pr-1' : 'grid-cols-[22px_48px_minmax(0,1fr)] gap-3 pl-3 pr-1')
+        : 'grid-cols-[48px_minmax(0,1fr)_44px] gap-3.5 pl-4 pr-1',
+      off && !selected && 'opacity-45',
+    ]}>
       {#if selecting}
         <span
           class={[

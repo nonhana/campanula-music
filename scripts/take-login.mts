@@ -49,11 +49,17 @@ const signedIn = await call('evaluate_script', { pageId, function: `async () => 
 if (!signedIn.includes('true'))
   throw new Error('专用窗口里还没登录：请作者在专用窗口（scripts/axi）里扫码登录，再跑一次')
 
-const requests = await call('list_network_requests', { pageId, resourceTypes: ['fetch'] })
+const requests = await call('list_network_requests', {
+  pageId,
+  resourceTypes: ['fetch'],
+})
 const reqid = new RegExp(`reqid=(\\d+) GET http://localhost:5173${probe.replace('?', '\\?')}`).exec(requests)?.[1]
 if (!reqid)
   throw new Error('DevTools 里没找到刚才的 /api/account 请求')
-const detail = await call('get_network_request', { pageId, reqid: Number(reqid) })
+const detail = await call('get_network_request', {
+  pageId,
+  reqid: Number(reqid),
+})
 const value = /campanula_login=([^;\s]+)/.exec(detail)?.[1]
 if (!value)
   throw new Error('/api/account 的请求头里没有 campanula_login')

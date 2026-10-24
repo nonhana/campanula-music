@@ -21,7 +21,9 @@ export function failureText(failure: RequestFailure): string {
       // 重试解决不了，只能站长升级
       return 'Campanula 需要升级，请告诉站长'
     case 'rejected':
-      return failure.message ? `网易云说：${failure.message}` : `网易云拒绝了这次操作（${failure.code}）`
+      return failure.message
+        ? `网易云说：${failure.message}`
+        : `网易云拒绝了这次操作（${failure.code}）`
     case 'needsLogin':
       return '需要重新登录'
     case 'cookieSecretMissing':

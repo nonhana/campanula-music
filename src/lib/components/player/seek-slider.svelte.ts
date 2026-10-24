@@ -50,7 +50,9 @@ export function createSeekSlider(): SeekSlider {
     if (!element)
       return null
     const rect = element.getBoundingClientRect()
-    return rect.width > 0 ? clamp((sample.x - rect.left) / rect.width, 0, 1) : 0
+    return rect.width > 0
+? clamp((sample.x - rect.left) / rect.width, 0, 1)
+: 0
   }
 
   const core = createSliderCore({
@@ -94,7 +96,9 @@ export function createSeekSlider(): SeekSlider {
     get duration() {
       return duration
     },
-    ratio: now => dragging ?? (duration > 0 ? clamp(now / duration, 0, 1) : 0),
+    ratio: now => dragging ?? (duration > 0
+? clamp(now / duration, 0, 1)
+: 0),
     attach: (node) => {
       element = node
       const detach = attachGrip(core)(node)

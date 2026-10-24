@@ -50,18 +50,45 @@ function translate(thrown: unknown): { failure: NeteaseFailure, body: unknown } 
   if (!isRecord(thrown) || typeof thrown.status !== 'number' || !('body' in thrown))
     throw thrown // 不是 SDK 的失败返回，是 Campanula 自己的缺陷
   const { status, body } = thrown
-  const fields = isRecord(body) ? body : {}
-  const code = typeof fields.code === 'number' ? fields.code : status
-  if (code === 301)
-    return { failure: { kind: 'needsLogin' }, body }
-  if (typeof fields.retryAfter === 'number')
-    return { failure: { kind: 'rateLimited', retryAfter: fields.retryAfter }, body }
-  if (isRecord(fields.upstreamShape))
-    return { failure: { kind: 'upstreamChanged' }, body }
-  if (status >= 500 && Object.keys(fields).every(key => key === 'code' || key === 'msg'))
-    return { failure: { kind: 'neteaseUnavailable' }, body }
-  const message = typeof fields.message === 'string' ? fields.message : typeof fields.msg === 'string' ? fields.msg : ''
-  return { failure: { kind: 'rejected', code, message }, body }
+  const fields = isRecord(body)
+    ? body
+    : {}
+  const code = typeof fields.code === 'number'
+    ? fields.code
+    : status
+  if (code === 301) {
+    return {
+      failure: { kind: 'needsLogin' },
+      body,
+    }
+  }
+  if (typeof fields.retryAfter === 'number') {
+    return {
+      failure: { kind: 'rateLimited', retryAfter: fields.retryAfter },
+      body,
+    }
+  }
+  if (isRecord(fields.upstreamShape)) {
+    return {
+      failure: { kind: 'upstreamChanged' },
+      body,
+    }
+  }
+  if (status >= 500 && Object.keys(fields).every(key => key === 'code' || key === 'msg')) {
+    return {
+      failure: { kind: 'neteaseUnavailable' },
+      body,
+    }
+  }
+  const message = typeof fields.message === 'string'
+    ? fields.message
+    : typeof fields.msg === 'string'
+      ? fields.msg
+      : ''
+  return {
+    failure: { kind: 'rejected', code, message },
+    body,
+  }
 }
 
 /** 日志里只写模块和失败的种类、网易云的返回码和说明，不写请求参数和 Cookie（手机号、验证码、凭据都在里面） */
@@ -160,7 +187,9 @@ export type QrCheck
  * 见 tests/fixtures/netease/README.md“构造的数据”
  */
 function verificationOf(body: unknown): { vid: string, type: string, token: string, evid: string, sign: string } | null {
-  const data = isRecord(body) && isRecord(body.data) ? body.data : null
+  const data = isRecord(body) && isRecord(body.data)
+    ? body.data
+    : null
   if (!data)
     return null
   let params: unknown = data.params
@@ -178,7 +207,13 @@ function verificationOf(body: unknown): { vid: string, type: string, token: stri
     || typeof params.event_id !== 'string' || typeof params.sign !== 'string') {
     return null
   }
-  return { vid: String(verifyId), type: String(verifyType), token: verifyToken, evid: params.event_id, sign: params.sign }
+  return {
+    vid: String(verifyId),
+    type: String(verifyType),
+    token: verifyToken,
+    evid: params.event_id,
+    sign: params.sign,
+  }
 }
 
 export async function checkLoginQr(key: string, listener: Listener): Promise<QrCheck> {
@@ -206,7 +241,10 @@ export async function checkLoginQr(key: string, listener: Listener): Promise<QrC
     case 802:
       return { status: 'scanned', nickname: body.nickname, avatarUrl: body.avatarUrl }
     case 803:
-      return { status: 'confirmed', credentials: credentialsFrom('login_qr_check', cookie) }
+      return {
+        status: 'confirmed',
+        credentials: credentialsFrom('login_qr_check', cookie),
+      }
     default: {
       const unhandled: never = body
       throw new Error(`不认识的扫码状态：${JSON.stringify(unhandled)}`)
@@ -314,7 +352,10 @@ export async function fetchPlaylists(uid: number, listener: Listener): Promise<P
  * 建好马上读一次它的详情（和歌单列表里的写法一样）。连着新建两张网易云会回 405“操作过于频繁”（#33 录制）
  */
 export async function createPlaylist(name: string, isPrivate: boolean, listener: Listener): Promise<Playlist> {
-  const { body: { id } } = await call('playlist_create', { name, privacy: String(isPrivate ? PRIVATE_PLAYLIST : 0) }, listener)
+  const { body: { id } } = await call('playlist_create', {
+    name,
+    privacy: String(isPrivate ? PRIVATE_PLAYLIST : 0),
+  }, listener)
   const { body } = await call('playlist_detail', { id }, listener)
   return libraryPlaylist(body.playlist, 'own')
 }
@@ -338,7 +379,10 @@ export async function describePlaylist(playlistId: number, description: string, 
 
 /** 网易云要的是用分号连起来的一串标签 */
 export async function tagPlaylist(playlistId: number, tags: readonly string[], listener: Listener): Promise<WriteResponse> {
-  await call('playlist_tags_update', { id: playlistId, tags: tags.join(';') }, listener)
+  await call('playlist_tags_update', {
+    id: playlistId,
+    tags: tags.join(';'),
+  }, listener)
   return { kind: 'done' }
 }
 
@@ -354,7 +398,11 @@ export async function publishPlaylist(playlistId: number, listener: Listener): P
  */
 export async function coverUploadToken(listener: Listener): Promise<CoverTokenResponse> {
   const { body } = await call('image_upload_token', {}, listener)
-  return { imgId: String(body.data.imgId), token: body.data.token, uploadUrl: body.data.uploadUrl }
+  return {
+    imgId: String(body.data.imgId),
+    token: body.data.token,
+    uploadUrl: body.data.uploadUrl,
+  }
 }
 
 /**
@@ -382,7 +430,9 @@ const UNAVAILABLE_CODES: Readonly<Record<number, PlaylistUnavailable>> = { 404: 
 /** 不在曲库里的一张歌单：头部和全部曲目编号；已删除、不存在、别人的隐私歌单说明打不开的原因 */
 export async function fetchPlaylistPage(playlistId: number, listener: Listener): Promise<PlaylistPageResponse> {
   const playlist = await call('playlist_detail', { id: playlistId }, listener).then(({ body }) => body.playlist, (error: unknown) => {
-    const reason = error instanceof NeteaseError && error.failure.kind === 'rejected' ? UNAVAILABLE_CODES[error.failure.code] : undefined
+    const reason = error instanceof NeteaseError && error.failure.kind === 'rejected'
+      ? UNAVAILABLE_CODES[error.failure.code]
+      : undefined
     if (!reason)
       throw error
     return reason
@@ -391,7 +441,12 @@ export async function fetchPlaylistPage(playlistId: number, listener: Listener):
     return { kind: 'unavailable', reason: playlist }
   if (playlist.status === DELETED_PLAYLIST)
     return { kind: 'unavailable', reason: 'deleted' }
-  return { kind: 'shown', playlist: playlistInfo(playlist), trackIds: playlist.trackIds.map(track => track.id), tracksUpdatedAt: playlist.trackUpdateTime }
+  return {
+    kind: 'shown',
+    playlist: playlistInfo(playlist),
+    trackIds: playlist.trackIds.map(track => track.id),
+    tracksUpdatedAt: playlist.trackUpdateTime,
+  }
 }
 
 /**
@@ -402,7 +457,10 @@ export async function fetchPlaylistTags(listener: Listener): Promise<PlaylistTag
   const { body } = await call('playlist_catlist', {}, listener)
   return Object.entries(body.categories)
     .sort(([a], [b]) => Number(a) - Number(b))
-    .map(([category, name]) => ({ name, tags: body.sub.filter(tag => tag.category === Number(category)).map(tag => tag.name) }))
+    .map(([category, name]) => ({
+      name,
+      tags: body.sub.filter(tag => tag.category === Number(category)).map(tag => tag.name),
+    }))
 }
 
 /** 网易云的歌（歌曲信息、专辑页、热门歌曲里的结构一样） */
@@ -427,7 +485,9 @@ interface Privilege {
 function availabilityOf(privilege: Privilege): Availability {
   if (privilege.st < 0)
     return 'noCopyright'
-  return privilege.pl > 0 ? 'full' : 'trial'
+  return privilege.pl > 0
+    ? 'full'
+    : 'trial'
 }
 
 /** 网易云的歌只留界面用得到的字段 */
@@ -453,7 +513,9 @@ function creditOf(artist: Credit): Credit {
 
 /** 歌曲信息，按 ids 的顺序；网易云没给的不在里面 */
 export async function fetchSongs(ids: readonly number[], listener: Listener): Promise<Song[]> {
-  const { body } = await call('song_detail', { ids: ids.join(',') }, listener)
+  const { body } = await call('song_detail', {
+    ids: ids.join(','),
+  }, listener)
   const byId = new Map(body.songs.map(song => [song.id, song]))
   // 权限信息在另一个数组里，按编号对上（录到的 51 份都是一首一条）
   const privileges = new Map(body.privileges.map(privilege => [privilege.id, privilege]))
@@ -464,7 +526,9 @@ export async function fetchSongs(ids: readonly number[], listener: Listener): Pr
     const privilege = privileges.get(id)
     if (!privilege)
       throw shapeChanged('song_detail', `歌曲 ${id} 没有权限信息`)
-    return [songOf(song, privilege)]
+    return [
+      songOf(song, privilege),
+    ]
   })
 }
 
@@ -479,7 +543,12 @@ export async function fetchPlayUrl(songId: number, quality: Quality, listener: L
   const item = body.data.find(data => data.id === songId)
   if (!item?.url)
     return { playable: false }
-  return { playable: true, url: https(item.url), trial: item.freeTrialInfo !== null, expiresIn: item.expi }
+  return {
+    playable: true,
+    url: https(item.url),
+    trial: item.freeTrialInfo !== null,
+    expiresIn: item.expi,
+  }
 }
 
 /**
@@ -492,7 +561,11 @@ export async function fetchDownloadUrl(songId: number, quality: Quality, listene
     throw shapeChanged('song_download_url_v1', `要的是歌曲 ${songId}，回的是 ${body.data.id}`)
   if (!body.data.url)
     return { downloadable: false }
-  return { downloadable: true, url: https(body.data.url), size: body.data.size }
+  return {
+    downloadable: true,
+    url: https(body.data.url),
+    size: body.data.size,
+  }
 }
 
 /** 打卡时告诉网易云的播放来源（SDK scrobble 的 source、sourceid，照它文档的“播放来源”） */
@@ -522,7 +595,11 @@ function checkInSourceOf(source: PlaySource): { source: string, sourceid: number
  * （验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31；#28、#29、#31（从搜索来的）真账号上确认计入）
  */
 export async function checkIn(songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<WriteResponse> {
-  await call('scrobble', { id: songId, ...checkInSourceOf(source), time: seconds }, listener)
+  await call('scrobble', {
+    id: songId,
+    ...checkInSourceOf(source),
+    time: seconds,
+  }, listener)
   return { kind: 'done' }
 }
 
@@ -551,7 +628,13 @@ export function fetchCollectedAlbums(listener: Listener): Promise<CollectedAlbum
   return everyPage(async (offset) => {
     const { body } = await call('album_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
     return {
-      items: body.data.map(album => ({ id: album.id, name: album.name, coverUrl: album.picUrl, artists: album.artists.map(creditOf), songCount: album.size })),
+      items: body.data.map(album => ({
+        id: album.id,
+        name: album.name,
+        coverUrl: album.picUrl,
+        artists: album.artists.map(creditOf),
+        songCount: album.size,
+      })),
       hasMore: body.hasMore,
     }
   })
@@ -591,7 +674,12 @@ function artistAlbums(artistId: number, offset: number, listener: Listener) {
 }
 
 function artistAlbumOf(album: { id: number, name: string, picUrl: string, publishTime: number }): ArtistAlbum {
-  return { id: album.id, name: album.name, coverUrl: album.picUrl, publishedAt: album.publishTime }
+  return {
+    id: album.id,
+    name: album.name,
+    coverUrl: album.picUrl,
+    publishedAt: album.publishTime,
+  }
 }
 
 /** 歌手页：头部（在专辑那一页的返回里）、热门歌曲和第一页专辑，两个调用一起发 */
@@ -602,7 +690,13 @@ export async function fetchArtist(artistId: number, listener: Listener): Promise
   ])
   const { artist } = albums.body
   return {
-    artist: { id: artist.id, name: artist.name, avatarUrl: artist.img1v1Url, songCount: artist.musicSize, albumCount: artist.albumSize },
+    artist: {
+      id: artist.id,
+      name: artist.name,
+      avatarUrl: artist.img1v1Url,
+      songCount: artist.musicSize,
+      albumCount: artist.albumSize,
+    },
     hotSongs: top.body.songs.map(songWithPrivilegeOf),
     albums: albums.body.hotAlbums.map(artistAlbumOf),
     moreAlbums: albums.body.more,
@@ -612,7 +706,10 @@ export async function fetchArtist(artistId: number, listener: Listener): Promise
 /** 歌手页后面的专辑 */
 export async function fetchArtistAlbums(artistId: number, offset: number, listener: Listener): Promise<ArtistAlbumsResponse> {
   const { body } = await artistAlbums(artistId, offset, listener)
-  return { albums: body.hotAlbums.map(artistAlbumOf), more: body.more }
+  return {
+    albums: body.hotAlbums.map(artistAlbumOf),
+    more: body.more,
+  }
 }
 
 /**
@@ -621,7 +718,9 @@ export async function fetchArtistAlbums(artistId: number, offset: number, listen
  */
 export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
   const { body } = await call('recommend_songs', {}, listener)
-  return { songs: body.data.dailySongs.map(songWithPrivilegeOf) }
+  return {
+    songs: body.data.dailySongs.map(songWithPrivilegeOf),
+  }
 }
 
 // 写操作（Spec #11“服务端：Campanula API”写操作一项，#30）。同一件事重复做（已经红心的再红心、已经收藏的再收藏），
@@ -641,12 +740,16 @@ const ALBUM_NOT_COLLECTED = 404
 
 /** 网易云拒绝的那部分失败；别的失败是 null */
 function rejection(error: unknown): Extract<NeteaseFailure, { kind: 'rejected' }> | null {
-  return error instanceof NeteaseError && error.failure.kind === 'rejected' ? error.failure : null
+  return error instanceof NeteaseError && error.failure.kind === 'rejected'
+    ? error.failure
+    : null
 }
 
 /** 这张歌单在网易云里已经不在了（歌单不存在，404）：统一成 missing；别的失败是 null。写接口的 missing 只在这里判断（读路径的 404 仍由 fetchPlaylistPage 映射成 PlaylistUnavailable） */
 function missing(error: unknown): { kind: 'missing' } | null {
-  return rejection(error)?.code === PLAYLIST_MISSING ? { kind: 'missing' } : null
+  return rejection(error)?.code === PLAYLIST_MISSING
+    ? { kind: 'missing' }
+    : null
 }
 
 /**
@@ -655,7 +758,11 @@ function missing(error: unknown): { kind: 'missing' } | null {
  */
 export async function addTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
   try {
-    await call('playlist_tracks', { op: 'add', pid: playlistId, tracks: songIds.join(',') }, listener)
+    await call('playlist_tracks', {
+      op: 'add',
+      pid: playlistId,
+      tracks: songIds.join(','),
+    }, listener)
   }
   catch (error) {
     const refused = rejection(error)
@@ -676,7 +783,11 @@ export async function addTracks(playlistId: number, songIds: readonly number[], 
  */
 export async function removeTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
   try {
-    await call('playlist_tracks', { op: 'del', pid: playlistId, tracks: songIds.join(',') }, listener)
+    await call('playlist_tracks', {
+      op: 'del',
+      pid: playlistId,
+      tracks: songIds.join(','),
+    }, listener)
   }
   catch (error) {
     const gone = missing(error)
@@ -697,7 +808,10 @@ const ORDER_UNCONFIRMED = -1
  */
 export async function updateSongOrder(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
   try {
-    await call('song_order_update', { pid: playlistId, ids: JSON.stringify(songIds) }, listener)
+    await call('song_order_update', {
+      pid: playlistId,
+      ids: JSON.stringify(songIds),
+    }, listener)
   }
   catch (error) {
     if (rejection(error)?.code === ORDER_UNCONFIRMED)
@@ -716,12 +830,17 @@ export async function updateSongOrder(playlistId: number, songIds: readonly numb
  * 别的失败原样交给调用方，客户端退回原来的顺序
  */
 export async function updatePlaylistOrder(playlistIds: readonly number[], listener: Listener): Promise<WriteResponse> {
-  await call('playlist_order_update', { ids: JSON.stringify(playlistIds) }, listener)
+  await call('playlist_order_update', {
+    ids: JSON.stringify(playlistIds),
+  }, listener)
   return { kind: 'done' }
 }
 
 export async function collectAlbum(albumId: number, collected: boolean, listener: Listener): Promise<WriteResponse> {
-  await call('album_sub', { id: albumId, t: collected ? 1 : 0 }, listener).catch((error: unknown) => {
+  await call('album_sub', {
+    id: albumId,
+    t: collected ? 1 : 0,
+  }, listener).catch((error: unknown) => {
     if (collected || rejection(error)?.code !== ALBUM_NOT_COLLECTED)
       throw error
   })
@@ -729,7 +848,10 @@ export async function collectAlbum(albumId: number, collected: boolean, listener
 }
 
 export async function collectArtist(artistId: number, collected: boolean, listener: Listener): Promise<WriteResponse> {
-  await call('artist_sub', { id: artistId, t: collected ? 1 : 0 }, listener)
+  await call('artist_sub', {
+    id: artistId,
+    t: collected ? 1 : 0,
+  }, listener)
   return { kind: 'done' }
 }
 
@@ -739,7 +861,12 @@ export async function collectArtist(artistId: number, collected: boolean, listen
  */
 export async function collectPlaylist(playlistId: number, change: PlaylistCollectRequest, listener: Listener): Promise<WriteResponse> {
   try {
-    await call('playlist_subscribe', { id: playlistId, t: change.collected ? 1 : 0 }, listener, change.collected ? { checkToken: change.checkToken } : {})
+    await call('playlist_subscribe', {
+      id: playlistId,
+      t: change.collected ? 1 : 0,
+    }, listener, change.collected
+      ? { checkToken: change.checkToken }
+      : {})
   }
   catch (error) {
     const gone = missing(error)
@@ -777,11 +904,21 @@ export async function fetchSuggestions(keywords: string, listener: Listener): Pr
 }
 
 /** 每类结果是网易云 cloudsearch 的哪个 type */
-const CLOUDSEARCH_TYPES: Record<SearchKind, number> = { songs: 1, playlists: 1000, artists: 100, albums: 10 }
+const CLOUDSEARCH_TYPES: Record<SearchKind, number> = {
+  songs: 1,
+  playlists: 1000,
+  artists: 100,
+  albums: 10,
+}
 
 /** 这类结果从网易云的第 offset 个起的一页。一个都没搜到时网易云不给列表，只给总数 0（#32 录制） */
 async function cloudsearch(kind: SearchKind, keywords: string, offset: number, listener: Listener) {
-  const { body } = await call('cloudsearch', { keywords, type: CLOUDSEARCH_TYPES[kind], limit: SEARCH_RESULTS_PER_REQUEST, offset }, listener)
+  const { body } = await call('cloudsearch', {
+    keywords,
+    type: CLOUDSEARCH_TYPES[kind],
+    limit: SEARCH_RESULTS_PER_REQUEST,
+    offset,
+  }, listener)
   return body.result
 }
 
@@ -789,7 +926,10 @@ async function cloudsearch(kind: SearchKind, keywords: string, offset: number, l
 export const searches: { [K in SearchKind]: (keywords: string, offset: number, listener: Listener) => Promise<SearchPageResponse<K>> } = {
   async songs(keywords, offset, listener) {
     const { songs = [], songCount = 0 } = await cloudsearch('songs', keywords, offset, listener)
-    return { items: songs.map(songWithPrivilegeOf), total: songCount }
+    return {
+      items: songs.map(songWithPrivilegeOf),
+      total: songCount,
+    }
   },
   async playlists(keywords, offset, listener) {
     const { playlists = [], playlistCount = 0 } = await cloudsearch('playlists', keywords, offset, listener)
@@ -807,12 +947,26 @@ export const searches: { [K in SearchKind]: (keywords: string, offset: number, l
   },
   async artists(keywords, offset, listener) {
     const { artists = [], artistCount = 0 } = await cloudsearch('artists', keywords, offset, listener)
-    return { items: artists.map(artist => ({ id: artist.id, name: artist.name, avatarUrl: artist.picUrl, songCount: artist.musicSize })), total: artistCount }
+    return {
+      items: artists.map(artist => ({
+        id: artist.id,
+        name: artist.name,
+        avatarUrl: artist.picUrl,
+        songCount: artist.musicSize,
+      })),
+      total: artistCount,
+    }
   },
   async albums(keywords, offset, listener) {
     const { albums = [], albumCount = 0 } = await cloudsearch('albums', keywords, offset, listener)
     return {
-      items: albums.map(album => ({ id: album.id, name: album.name, coverUrl: album.picUrl, artists: album.artists.map(creditOf), publishedAt: album.publishTime })),
+      items: albums.map(album => ({
+        id: album.id,
+        name: album.name,
+        coverUrl: album.picUrl,
+        artists: album.artists.map(creditOf),
+        publishedAt: album.publishTime,
+      })),
       total: albumCount,
     }
   },

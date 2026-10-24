@@ -72,7 +72,9 @@ class PlaylistScene implements DragSortAdapter<Scene> {
       return null
     const rect = card.getBoundingClientRect()
     if (this.layout() === 'rows') {
-      const rows = [...host.querySelectorAll<HTMLElement>('[data-playlist-id]')]
+      const rows = [
+...host.querySelectorAll<HTMLElement>('[data-playlist-id]'),
+]
       if (rows.length === 0)
         return null
       const pitch = rows.length >= 2
@@ -81,7 +83,9 @@ class PlaylistScene implements DragSortAdapter<Scene> {
       return {
         kind: 'rows',
         host,
-        pitch: pitch > 0 ? pitch : ROW + GAP,
+        pitch: pitch > 0
+? pitch
+: ROW + GAP,
         rowHeight: rect.height || ROW,
         grabY: at.y - rect.top,
         left: rect.left,
@@ -89,7 +93,9 @@ class PlaylistScene implements DragSortAdapter<Scene> {
       }
     }
 
-    const cards = [...host.querySelectorAll<HTMLElement>('[data-playlist-id]')]
+    const cards = [
+...host.querySelectorAll<HTMLElement>('[data-playlist-id]'),
+]
     const slots = cards.map((element) => {
       const box = element.getBoundingClientRect()
       return { left: box.left + scrollX, top: box.top + scrollY }
@@ -98,15 +104,23 @@ class PlaylistScene implements DragSortAdapter<Scene> {
     if (!first || slots.length === 0)
       return null
     const columns = slots.filter(slot => Math.abs(slot.top - first.top) < 1).length
-    const pitchX = columns > 1 ? slots[1]!.left - first.left : rect.width + GAP_X
-    const pitchY = slots.length > columns ? slots[columns]!.top - first.top : rect.height + GAP_Y
+    const pitchX = columns > 1
+? slots[1]!.left - first.left
+: rect.width + GAP_X
+    const pitchY = slots.length > columns
+? slots[columns]!.top - first.top
+: rect.height + GAP_Y
     return {
       kind: 'grid',
       grid: host,
       slots,
       columns,
-      pitchX: pitchX > 0 ? pitchX : rect.width + GAP_X,
-      pitchY: pitchY > 0 ? pitchY : rect.height + GAP_Y,
+      pitchX: pitchX > 0
+? pitchX
+: rect.width + GAP_X,
+      pitchY: pitchY > 0
+? pitchY
+: rect.height + GAP_Y,
       gridLeft: first.left,
       gridTop: first.top,
       grabX: at.x - (rect.left - GHOST_PAD),
@@ -127,7 +141,15 @@ class PlaylistScene implements DragSortAdapter<Scene> {
         minTop: edges.top + 8,
         maxTop: edges.bottom - scene.rowHeight,
       }, at.y, slots)
-      return { ghost: { x: scene.left, y: row.y, width: scene.width, height: scene.rowHeight }, target: row.target }
+      return {
+ghost: {
+x: scene.left,
+y: row.y,
+width: scene.width,
+height: scene.rowHeight,
+},
+target: row.target,
+}
     }
     const grid = scene.grid.getBoundingClientRect()
     const minX = grid.left - GHOST_PAD
@@ -149,7 +171,15 @@ class PlaylistScene implements DragSortAdapter<Scene> {
       minY,
       maxY,
     }, at.x, at.y, slots)
-    return { ghost: { x: gridTrackResult.x, y: gridTrackResult.y, width: scene.width, height: scene.height }, target: gridTrackResult.target }
+    return {
+ghost: {
+x: gridTrackResult.x,
+y: gridTrackResult.y,
+width: scene.width,
+height: scene.height,
+},
+target: gridTrackResult.target,
+}
   }
 
   slot(scene: Scene, target: number): Rect {
@@ -219,7 +249,9 @@ export class PlaylistSort {
 
   get grabbed(): Playlist | null {
     const id = this.grabbedId
-    return id === null ? null : this.options.playlistOf(id) ?? null
+    return id === null
+? null
+: this.options.playlistOf(id) ?? null
   }
 
   /** 浮起的那一张跟到哪（视口坐标；落位时从这里滑到 settleX / settleY） */

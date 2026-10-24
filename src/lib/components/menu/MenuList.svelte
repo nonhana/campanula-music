@@ -47,7 +47,9 @@
   let node = $state<HTMLElement>()
 
   function enabled(): HTMLElement[] {
-    return [...(node?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? [])]
+    return [
+      ...(node?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? []),
+    ]
   }
 
   function onkeydown(event: KeyboardEvent) {
@@ -66,12 +68,16 @@
     const at = list.indexOf(document.activeElement as HTMLElement)
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
-      const step = event.key === 'ArrowDown' ? 1 : -1
+      const step = event.key === 'ArrowDown'
+        ? 1
+        : -1
       list[(at + step + list.length) % list.length]?.focus()
     }
     else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault()
-      ;(event.key === 'Home' ? list[0] : list.at(-1))?.focus()
+      ;(event.key === 'Home'
+        ? list[0]
+        : list.at(-1))?.focus()
     }
   }
 
@@ -81,7 +87,9 @@
       return
     queueMicrotask(() => {
       const list = enabled()
-      ;((focus === 'last' ? list.at(-1) : list[0]) ?? element).focus({ preventScroll: true })
+      ;((focus === 'last'
+        ? list.at(-1)
+        : list[0]) ?? element).focus({ preventScroll: true })
     })
   }
 
@@ -92,15 +100,21 @@
     // 用 outline-none + 薄荷底，不画环。
     const base = [
       'w-full flex items-center text-left',
-      layout === 'popover' ? '' : 'outline-none',
+      layout === 'popover'
+        ? ''
+        : 'outline-none',
       'focus-visible:bg-primary-100',
     ].join(' ')
-    const tone = item.tone === 'destructive' ? 'text-error-700' : ''
+    const tone = item.tone === 'destructive'
+      ? 'text-error-700'
+      : ''
     if (layout === 'sheet') {
       return [
         base,
         'disabled:opacity-45 enabled:active:bg-primary-100',
-        media(item) ? 'h-15 rounded-xl gap-3 px-4 text-body' : 'h-13 rounded-lg gap-4 px-4 text-body',
+        media(item)
+          ? 'h-15 rounded-xl gap-3 px-4 text-body'
+          : 'h-13 rounded-lg gap-4 px-4 text-body',
         tone,
       ]
     }
@@ -110,7 +124,9 @@
     return [
       base,
       'transition-colors duration-feedback disabled:(cursor-not-allowed opacity-45) mouse:enabled:hover:bg-primary-50',
-      media(item) ? 'h-12 rounded-lg gap-3 px-2 text-label' : 'h-9 rounded-lg gap-3 px-3 text-label',
+      media(item)
+        ? 'h-12 rounded-lg gap-3 px-2 text-label'
+        : 'h-9 rounded-lg gap-3 px-3 text-label',
       tone || 'text-neutral-900',
     ]
   }
@@ -124,8 +140,12 @@
     }
   }
 
-  const iconSize = () => (layout === 'sheet' ? 20 : 18)
-  const coverSize = () => (layout === 'sheet' ? 44 : 36)
+  const iconSize = () => (layout === 'sheet'
+    ? 20
+    : 18)
+  const coverSize = () => (layout === 'sheet'
+    ? 44
+    : 36)
 </script>
 
 <div
@@ -135,15 +155,27 @@
   tabindex='-1'
   aria-label={label}
   {inert}
-  class={layout === 'popover' ? '' : 'outline-none'}
+  class={layout === 'popover'
+    ? ''
+    : 'outline-none'}
   {onkeydown}
   {@attach focusInitial}
 >
   {#if items === null}
     <div role='status' aria-busy='true' aria-label={loading}>
       {#each { length: SKELETON_ROWS }, i (i)}
-        <div class={['flex items-center gap-3', layout === 'sheet' ? 'h-15 px-4' : 'h-12 px-2']}>
-          <span class={['bone flex-none rounded-md', layout === 'sheet' ? 'size-11' : 'size-9']}></span>
+        <div class={[
+          'flex items-center gap-3',
+          layout === 'sheet'
+            ? 'h-15 px-4'
+            : 'h-12 px-2',
+        ]}>
+          <span class={[
+            'bone flex-none rounded-md',
+            layout === 'sheet'
+              ? 'size-11'
+              : 'size-9',
+          ]}></span>
           <span class='flex flex-1 flex-col gap-2'>
             <span class='bone h-3.5 rounded-full' style:width='{[64, 48, 56][i]}%'></span>
             <span class='bone h-3 w-1/4 rounded-full'></span>
@@ -154,7 +186,12 @@
   {:else}
     {#each items as item (item.key)}
       {#if item.separated}
-        <div class={['my-1 h-px bg-neutral-100', layout === 'sheet' ? 'mx-4' : 'mx-3']} role='separator'></div>
+        <div class={[
+          'my-1 h-px bg-neutral-100',
+          layout === 'sheet'
+            ? 'mx-4'
+            : 'mx-3',
+        ]} role='separator'></div>
       {/if}
       <button
         type='button'
@@ -168,7 +205,12 @@
           {@const leading = item.leading}
           {#if leading.kind === 'tile'}
             {@const Tile = leading.icon}
-            <span class={['grid flex-none place-items-center rounded-md bg-primary-100 text-primary-950', layout === 'sheet' ? 'size-11' : 'size-9']} aria-hidden='true'>
+            <span class={[
+              'grid flex-none place-items-center rounded-md bg-primary-100 text-primary-950',
+              layout === 'sheet'
+                ? 'size-11'
+                : 'size-9',
+            ]} aria-hidden='true'>
               <Tile size={18} />
             </span>
           {:else if leading.kind === 'cover'}
@@ -184,8 +226,13 @@
             {@const Icon = leading.icon}
             <Icon
               size={iconSize()}
-              class={['flex-none', iconClass(item.tone)]}
-              fill={item.tone === 'hearted' ? 'currentColor' : 'none'}
+              class={[
+                'flex-none',
+                iconClass(item.tone),
+              ]}
+              fill={item.tone === 'hearted'
+                ? 'currentColor'
+                : 'none'}
               aria-hidden='true'
             />
           {/if}
@@ -196,7 +243,12 @@
             <span class='block truncate text-caption text-neutral-600 tabular-nums'>{item.detail}</span>
           </span>
         {:else}
-          <span class={['min-w-0 truncate', item.leading?.kind === 'tile' ? 'text-neutral-900 font-500' : '']} lang={item.lang}>{item.label}</span>
+          <span class={[
+            'min-w-0 truncate',
+            item.leading?.kind === 'tile'
+              ? 'text-neutral-900 font-500'
+              : '',
+          ]} lang={item.lang}>{item.label}</span>
         {/if}
       </button>
     {/each}

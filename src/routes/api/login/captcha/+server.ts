@@ -11,7 +11,10 @@ import { withNetease } from '#lib/server/respond.js'
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const { phone } = await readFields<keyof CaptchaRequest>(request, { phone: PHONE })
   return withNetease(endpoints.sendCaptcha, async () => {
-    await sendCaptcha(phone, { deviceId: deviceIdFor(cookies), credentials: null })
+    await sendCaptcha(phone, {
+      deviceId: deviceIdFor(cookies),
+      credentials: null,
+    })
     return { sent: true } as const
   })
 }

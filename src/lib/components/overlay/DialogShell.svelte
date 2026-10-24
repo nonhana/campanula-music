@@ -58,7 +58,9 @@
 
   const dialogOpen = $derived(request !== null && !layer.asSheet)
   const sheetOpen = $derived(request !== null && layer.asSheet)
-  const drawer = createDrawer(() => (tall ? window.innerHeight - 24 : SHORT_SHEET_ESTIMATE))
+  const drawer = createDrawer(() => (tall
+    ? window.innerHeight - 24
+    : SHORT_SHEET_ESTIMATE))
   /** 拖过了阈值：收起；忙着时弹回去 */
   function commit() {
     if (layer.busy)
@@ -66,7 +68,11 @@
     else
       layer.close()
   }
-  const gripHandle = drawer.grip({ from: 'open', commit, tap: () => layer.close() })
+  const gripHandle = drawer.grip({
+    from: 'open',
+    commit,
+    tap: () => layer.close(),
+  })
   const gripTitle = drawer.grip({ from: 'open', commit })
 
   $effect(() => drawer.settle(sheetOpen))
@@ -79,7 +85,9 @@
 
 <!-- 手机弹层的标题：按住往下拖收起 -->
 {#snippet heading(classes: string)}
-  <h2 id={titleId} class={['touch-none', classes]} {@attach gripTitle}>{shown ? title(shown) : ''}</h2>
+  <h2 id={titleId} class={['touch-none', classes]} {@attach gripTitle}>{shown
+    ? title(shown)
+    : ''}</h2>
 {/snippet}
 
 {#if dialogOpen && shown}

@@ -49,7 +49,9 @@
     folding = !expanded
     flushSync()
     const lines = phone ? 4 : 3
-    const to = expanded ? element.scrollHeight : Number.parseFloat(getComputedStyle(element).lineHeight) * lines
+    const to = expanded
+      ? element.scrollHeight
+      : Number.parseFloat(getComputedStyle(element).lineHeight) * lines
     const animation = animateHeight(element, from, to, expanded ? DURATIONS.panel : DURATIONS['panel-out'])
     resizing = animation ?? undefined
     if (!animation) {
@@ -70,7 +72,11 @@
     <p
       bind:this={paragraph}
       id={textId}
-      class={['whitespace-pre-line break-words text-neutral-600', phone ? 'text-caption' : 'text-label', clamped && (phone ? 'line-clamp-4' : 'line-clamp-3')]}
+      class={[
+        'whitespace-pre-line break-words text-neutral-600',
+        phone ? 'text-caption' : 'text-label',
+        clamped && (phone ? 'line-clamp-4' : 'line-clamp-3'),
+      ]}
       lang={langOf(text)}
     >{text}</p>
     {#if clipped || expanded}

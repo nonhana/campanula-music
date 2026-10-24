@@ -89,7 +89,10 @@ export function ambiguities(): readonly string[] {
 }
 
 export function queueReply(module: string, outcome: Outcome): void {
-  outcomes.set(module, [...(outcomes.get(module) ?? []), outcome])
+  outcomes.set(module, [
+    ...(outcomes.get(module) ?? []),
+    outcome,
+  ])
 }
 
 export function reset(): void {
@@ -131,17 +134,30 @@ function checkOrder(module: string, query: unknown, span: RequestSpan, outcome: 
 
 // 和 SDK 的 invokeModule 同名同参数（config 默认是空对象）
 export async function invokeModule(module: string, query: unknown, config: CallConfig = {}): Promise<SdkResponse> {
-  calls.push({ module, query, config: structuredClone(config) })
+  calls.push({
+    module,
+    query,
+    config: structuredClone(config),
+  })
   const queued = outcomes.get(module) ?? []
   const queue = [...queued]
   const at = queued.findIndex(outcome => fits(outcome, query))
-  const outcome = at < 0 ? undefined : queued.splice(at, 1)[0]
+  const outcome = at < 0
+    ? undefined
+    : queued.splice(at, 1)[0]
   if (!outcome)
     throw new Error(`网易云替身：没有为 ${module} 准备录制数据`)
   const span = currentRequest()
   if (span && !anyOrder) {
     checkOrder(module, query, span, outcome)
-    taken.push({ module, query, span, outcome, queue, at: nextOrder() })
+    taken.push({
+      module,
+      query,
+      span,
+      outcome,
+      queue,
+      at: nextOrder(),
+    })
   }
   if (outcome.until) {
     held += 1

@@ -32,9 +32,13 @@
   const signedIn = $derived(view.state.session.status === 'signedIn')
   const phone = $derived(!desktopLayout.current)
   const term = $derived(query.trim())
-  const songs = $derived(all && term ? view.app.searchDownloads(term) : all)
+  const songs = $derived(all && term
+    ? view.app.searchDownloads(term)
+    : all)
   /** 拼贴的封面：前四首（不同的封面） */
-  const covers = $derived([...new Set((all ?? []).map(song => song.album.coverUrl))].slice(0, 4))
+  const covers = $derived([
+    ...new Set((all ?? []).map(song => song.album.coverUrl)),
+  ].slice(0, 4))
 
   /** 列表状态：还没从本机读出来 / 一首都没有 / 搜到的（搜不到由 SongList 画） */
   const listView = $derived.by((): SongListView => {
@@ -46,21 +50,28 @@
         icon: CircleArrowDown,
         title: '还没有下载的歌',
         body: `${signedIn ? '' : '登录后，'}在歌曲的“更多”菜单里下载，断网也能听`,
-        action: { label: signedIn ? '去曲库' : '登录', run: () => void goto(resolve('/')) },
+        action: {
+          label: signedIn ? '去曲库' : '登录',
+          run: () => void goto(resolve('/')),
+        },
       }
     }
     return { kind: 'songs', songs: songs ?? [] }
   })
 
   /** 本机下载还没读出来时不写“找到 0 首”：基线的表头在这种情况下写“标题” */
-  const search = $derived(term && all ? { term } : null)
+  const search = $derived(term && all
+    ? { term }
+    : null)
 </script>
 
 {#snippet collage(size: number)}
   <div class='relative flex-none' style:width='{size}px' style:height='{size}px'>
     {#if covers.length === 0}
       <span class='rounded-2xl grid size-full place-items-center bg-secondary-50 text-secondary-800' aria-hidden='true'>
-        <CircleArrowDown size={size > 100 ? 56 : 34} strokeWidth={1.5} />
+        <CircleArrowDown size={size > 100
+          ? 56
+          : 34} strokeWidth={1.5} />
       </span>
     {:else if covers.length < 4}
       <Cover url={covers[0]} {size} eager class='rounded-2xl shadow-ambient' />
@@ -91,7 +102,9 @@
     {@render collage(size)}
   {/snippet}
   {#snippet meta()}
-    <span class='tabular-nums'>{all === null ? '　' : `${formatCount(all.length)} 首`}</span>
+    <span class='tabular-nums'>{all === null
+      ? '　'
+      : `${formatCount(all.length)} 首`}</span>
   {/snippet}
   {#snippet note()}
     {#if !signedIn}{@render signedOutNote(phone)}{/if}

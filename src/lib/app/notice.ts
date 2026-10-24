@@ -109,5 +109,8 @@ export function createNotices({ clock, changed }: NoticesContext): Notices {
     changed()
   }
 
-  return { current: () => current, show }
+  return {
+    current: () => current,
+    show,
+  }
 }

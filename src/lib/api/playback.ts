@@ -1,7 +1,13 @@
 // 播放的接口（Spec #11“服务端：Campanula API”播放一项）。都要登录
 
 /** 在线播放音质，照网易云 song_url_v1 的 level：标准、较高、极高、无损、Hi-Res */
-export const QUALITIES = ['standard', 'higher', 'exhigh', 'lossless', 'hires'] as const
+export const QUALITIES = [
+  'standard',
+  'higher',
+  'exhigh',
+  'lossless',
+  'hires',
+] as const
 
 export type Quality = typeof QUALITIES[number]
 

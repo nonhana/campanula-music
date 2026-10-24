@@ -22,7 +22,9 @@ export async function readFields<K extends string>(request: Request, patterns: R
   const body: unknown = await request.json().catch(() => null)
   const fields = {} as Record<K, string>
   for (const name of Object.keys(patterns) as K[]) {
-    const value = typeof body === 'object' && body !== null && name in body ? (body as Record<K, unknown>)[name] : undefined
+    const value = typeof body === 'object' && body !== null && name in body
+      ? (body as Record<K, unknown>)[name]
+      : undefined
     if (typeof value !== 'string' || !patterns[name].test(value))
       error(400, `${name} 的格式不对`)
     fields[name] = value
@@ -37,7 +39,9 @@ function isNeteaseId(value: unknown): value is number {
 
 /** 读查询参数里的一个编号；路径参数由 src/params.ts 的 neteaseId 匹配器处理 */
 export function readId(name: string, value: string | null | undefined): number {
-  const id = /^\d{1,16}$/.test(value ?? '') ? Number(value) : Number.NaN
+  const id = /^\d{1,16}$/.test(value ?? '')
+    ? Number(value)
+    : Number.NaN
   if (!isNeteaseId(id))
     error(400, `${name} 的格式不对`)
   return id
@@ -52,7 +56,9 @@ type IdListKey<Body> = { [K in keyof Body]-?: Body[K] extends number[] ? K : nev
  */
 export async function readIds<Body>(_endpoint: Pick<PostEndpoint<unknown, Body, unknown>, 'request'>, request: Request, name: IdListKey<NonNullable<Body>>, max: number): Promise<number[]> {
   const body: unknown = await request.json().catch(() => null)
-  const ids = typeof body === 'object' && body !== null && name in body ? (body as Record<string, unknown>)[name] : undefined
+  const ids = typeof body === 'object' && body !== null && name in body
+    ? (body as Record<string, unknown>)[name]
+    : undefined
   if (!Array.isArray(ids) || ids.length === 0 || ids.length > max || !ids.every(isNeteaseId))
     error(400, `${name} 要有 1 到 ${max} 个编号`)
   return ids
@@ -91,7 +97,9 @@ export function readSearchKind(value: string): SearchKind {
 
 /** 读请求里的播放来源：每日推荐、已下载没有编号，一次搜索带着搜的词，其余要带编号 */
 function readSource(source: unknown): PlaySource {
-  const { kind, id, keyword } = (typeof source === 'object' && source !== null ? source : {}) as Partial<Record<'kind' | 'id' | 'keyword', unknown>>
+  const { kind, id, keyword } = (typeof source === 'object' && source !== null
+    ? source
+    : {}) as Partial<Record<'kind' | 'id' | 'keyword', unknown>>
   if (kind === 'daily' || kind === 'downloads')
     return { kind }
   if (kind === 'search') {
@@ -108,7 +116,9 @@ function readSource(source: unknown): PlaySource {
 /** 读听歌打卡的请求体（JSON）：播放来源，实际听了多少秒（正整数） */
 export async function readCheckIn(request: Request): Promise<CheckInRequest> {
   const body: unknown = await request.json().catch(() => null)
-  const { source, seconds } = (typeof body === 'object' && body !== null ? body : {}) as Partial<Record<keyof CheckInRequest, unknown>>
+  const { source, seconds } = (typeof body === 'object' && body !== null
+    ? body
+    : {}) as Partial<Record<keyof CheckInRequest, unknown>>
   const playSource = readSource(source)
   if (!Number.isSafeInteger(seconds) || (seconds as number) <= 0)
     error(400, 'seconds 要是正整数')
@@ -118,7 +128,9 @@ export async function readCheckIn(request: Request): Promise<CheckInRequest> {
 /** 读请求体（JSON）里的一个对象；不是对象时当作空的 */
 async function readObject(request: Request): Promise<Record<string, unknown>> {
   const body: unknown = await request.json().catch(() => null)
-  return typeof body === 'object' && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : {}
+  return typeof body === 'object' && body !== null && !Array.isArray(body)
+    ? body as Record<string, unknown>
+    : {}
 }
 
 /** 读红心的请求体（JSON）：哪首歌，红心还是取消红心 */
@@ -149,7 +161,9 @@ export async function readPlaylistCollect(request: Request): Promise<PlaylistCol
 
 /** 读歌单名称：去掉首尾空白后要能提交（不是空的，不超过 PLAYLIST_NAME_WIDTH 个宽度） */
 function readPlaylistName(name: unknown): string {
-  const trimmed = typeof name === 'string' ? name.trim() : ''
+  const trimmed = typeof name === 'string'
+    ? name.trim()
+    : ''
   if (nameProblem(trimmed))
     error(400, `name 要有 1 到 ${PLAYLIST_NAME_WIDTH} 个宽度（汉字算 2）`)
   return trimmed
@@ -160,13 +174,18 @@ export async function readPlaylistDraft(request: Request): Promise<CreatePlaylis
   const { name, private: isPrivate } = await readObject(request)
   if (typeof isPrivate !== 'boolean')
     error(400, '要有 private')
-  return { name: readPlaylistName(name), private: isPrivate }
+  return {
+    name: readPlaylistName(name),
+    private: isPrivate,
+  }
 }
 
 /** 读改名称的请求体（JSON） */
 export async function readPlaylistRename(request: Request): Promise<RenamePlaylistRequest> {
   const { name } = await readObject(request)
-  return { name: readPlaylistName(name) }
+  return {
+    name: readPlaylistName(name),
+  }
 }
 
 /** 读改简介的请求体（JSON）：最多 PLAYLIST_DESCRIPTION_LENGTH 个字，可以是空的（清空） */

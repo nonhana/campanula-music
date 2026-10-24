@@ -50,7 +50,9 @@ export function createDrawer(estimate: () => number): Drawer {
   const holdPage = createPageHold()
 
   /** 抽屉露出来的高度（不含底下垫的那一截） */
-  const size = () => (panel ? panel.offsetHeight - BLEED : estimate())
+  const size = () => (panel
+? panel.offsetHeight - BLEED
+: estimate())
 
   const core = createDrawerCore({
     size,
@@ -81,8 +83,12 @@ export function createDrawer(estimate: () => number): Drawer {
       // 所以停在整个拉开时不设，动起来才设
       $effect(() => {
         const at = position.current
-        element.style.transform = at === 0 ? '' : `translateY(calc(${at} * (100% - ${BLEED}px)))`
-        element.style.willChange = at === 0 ? '' : 'transform'
+        element.style.transform = at === 0
+? ''
+: `translateY(calc(${at} * (100% - ${BLEED}px)))`
+        element.style.willChange = at === 0
+? ''
+: 'transform'
       })
       return () => {
         if (panel === element)

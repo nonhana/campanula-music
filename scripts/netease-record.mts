@@ -56,7 +56,10 @@ export async function openSession(): Promise<Invoke> {
   decipher.setAuthTag(raw.subarray(raw.length - 16))
   let login: LoginCookie
   try {
-    login = JSON.parse(Buffer.concat([decipher.update(raw.subarray(12, raw.length - 16)), decipher.final()]).toString('utf8')) as LoginCookie
+    login = JSON.parse(Buffer.concat([
+      decipher.update(raw.subarray(12, raw.length - 16)),
+      decipher.final(),
+    ]).toString('utf8')) as LoginCookie
   }
   catch {
     throw new Error(`${LOGIN_FILE} 用本机 .env 的 COOKIE_SECRET 解不开（不是这个开发服务器发的 Cookie）：${RENEW}`)
@@ -64,7 +67,11 @@ export async function openSession(): Promise<Invoke> {
   if (!login.session)
     throw new Error(`这个登录 Cookie 里没有登录：${RENEW}`)
   // 和 src/lib/server/netease.ts 的 call() 一样：顶层的 deviceId 不在 SDK 的类型里，给隐式匿名注册用
-  const config: ModuleCallConfig & { deviceId: string } = { cookie: login.session.credentials, deviceId: login.deviceId, state: { deviceId: login.deviceId } }
+  const config: ModuleCallConfig & { deviceId: string } = {
+    cookie: login.session.credentials,
+    deviceId: login.deviceId,
+    state: { deviceId: login.deviceId },
+  }
   /** 调一个 SDK 模块；SDK 抛出的失败（带 status 和 body）当作一次返回 */
   async function invoke<K extends ModuleIdentifier>(module: K, query: QueryOf<K>): Promise<Outcome<K>> {
     try {
@@ -105,7 +112,9 @@ function sanitize(body: unknown, identity: FixtureIdentity, truncate: boolean): 
   const fakeUser = (uid: number): number => {
     if (uid <= 0)
       return uid
-    return uid === self.uid ? self.fakeUid : fake('users', 'user')(uid)
+    return uid === self.uid
+      ? self.fakeUid
+      : fake('users', 'user')(uid)
   }
   const truncated: Truncated[] = []
 
@@ -140,38 +149,60 @@ function sanitize(body: unknown, identity: FixtureIdentity, truncate: boolean): 
     }
     if (!isRecord(node))
       return node
-    const userId = typeof node.userId === 'number' && 'nickname' in node ? node.userId : null
+    const userId = typeof node.userId === 'number' && 'nickname' in node
+      ? node.userId
+      : null
     const out: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(node)) {
       const at = `${path}.${key}`
-      if ((key === 'userId' || key === 'uid') && typeof value === 'number')
+      if ((key === 'userId' || key === 'uid') && typeof value === 'number') {
         out[key] = fakeUser(value)
-      else if (node.id === artist.id && 'name' in node && (key === 'id' || key === 'name'))
-        out[key] = key === 'id' ? artist.fakeId : artist.fakeName
-      else if ((key === 'artistId' && value === artist.id) || (key === 'artistName' && value === artist.name))
-        out[key] = key === 'artistId' ? artist.fakeId : artist.fakeName
-      else if (['cookie', 'token', 'tokenJsonStr'].includes(key) && typeof value === 'string')
+      }
+      else if (node.id === artist.id && 'name' in node && (key === 'id' || key === 'name')) {
+        out[key] = key === 'id'
+          ? artist.fakeId
+          : artist.fakeName
+      }
+      else if ((key === 'artistId' && value === artist.id) || (key === 'artistName' && value === artist.name)) {
+        out[key] = key === 'artistId'
+          ? artist.fakeId
+          : artist.fakeName
+      }
+      else if (['cookie', 'token', 'tokenJsonStr'].includes(key) && typeof value === 'string') {
         out[key] = ''
-      else if (userId !== null && key === 'nickname')
-        out[key] = userId === self.uid ? self.fakeNickname : `用户${fakeUser(userId) - 10000000}`
-      else if (userId !== null && (key === 'avatarUrl' || key === 'backgroundUrl'))
+      }
+      else if (userId !== null && key === 'nickname') {
+        out[key] = userId === self.uid
+          ? self.fakeNickname
+          : `用户${fakeUser(userId) - 10000000}`
+      }
+      else if (userId !== null && (key === 'avatarUrl' || key === 'backgroundUrl')) {
         out[key] = PLACEHOLDER
-      else if (userId !== null && key === 'province')
+      }
+      else if (userId !== null && key === 'province') {
         out[key] = 110000
-      else if (userId !== null && key === 'city')
+      }
+      else if (userId !== null && key === 'city') {
         out[key] = 110101
-      else if (userId !== null && key === 'birthday')
+      }
+      else if (userId !== null && key === 'birthday') {
         out[key] = 631152000000
-      else if (userId !== null && ['signature', 'description', 'detailDescription'].includes(key))
+      }
+      else if (userId !== null && ['signature', 'description', 'detailDescription'].includes(key)) {
         out[key] = ''
-      else if (userId !== null && (key === 'avatarImgId' || key === 'backgroundImgId'))
+      }
+      else if (userId !== null && (key === 'avatarImgId' || key === 'backgroundImgId')) {
         out[key] = IMG_ID
-      else if (userId !== null && ['avatarImgIdStr', 'backgroundImgIdStr', 'avatarImgId_str'].includes(key))
+      }
+      else if (userId !== null && ['avatarImgIdStr', 'backgroundImgIdStr', 'avatarImgId_str'].includes(key)) {
         out[key] = String(IMG_ID)
-      else if (userId !== null && (key === 'avatarDetail' || key === 'remarkName'))
+      }
+      else if (userId !== null && (key === 'avatarDetail' || key === 'remarkName')) {
         out[key] = null
-      else
+      }
+      else {
         out[key] = walk(value, at)
+      }
     }
     return out
   }
@@ -179,10 +210,16 @@ function sanitize(body: unknown, identity: FixtureIdentity, truncate: boolean): 
 
   // 3. 换编号：本人歌单、作品、本人的 uid 和昵称在任意文字里都换（例如 commentThreadId、“XX喜欢的音乐”）
   let text = JSON.stringify(clean)
-  for (const [real, fakeId] of [...Object.entries(identity.playlists), ...Object.entries(identity.works)])
+  for (const [real, fakeId] of [
+    ...Object.entries(identity.playlists),
+    ...Object.entries(identity.works),
+  ])
     text = text.replace(wholeNumber(real), String(fakeId))
   text = text.replace(wholeNumber(self.uid), String(self.fakeUid)).replaceAll(self.nickname, self.fakeNickname)
-  return { body: JSON.parse(text), truncated }
+  return {
+    body: JSON.parse(text),
+    truncated,
+  }
 }
 
 export interface RecorderOptions {
@@ -214,7 +251,12 @@ export function createRecorder({ invoke, dir, viewer, truncate = true }: Recorde
     /** 调一次网易云并记下来，返回原样的结果，一次性脚本据此决定下一步 */
     async call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>): Promise<Outcome<K>> {
       const outcome = await invoke(module, query)
-      calls.push({ module, query, outcome, at: new Date().toISOString() })
+      calls.push({
+        module,
+        query,
+        outcome,
+        at: new Date().toISOString(),
+      })
       return outcome
     },
     /**
@@ -231,7 +273,16 @@ export function createRecorder({ invoke, dir, viewer, truncate = true }: Recorde
         const fixture = {
           module,
           query: sanitize(query, identity, false).body,
-          context: { recordedAt: at, sdk, region: 'local', ip: 'default', viewer, ...(truncated.length ? { truncated } : {}) },
+          context: {
+            recordedAt: at,
+            sdk,
+            region: 'local',
+            ip: 'default',
+            viewer,
+            ...(truncated.length
+              ? { truncated }
+              : {}),
+          },
           response: { status: outcome.status, body },
         }
         const text = `${JSON.stringify(fixture, null, 2)}\n`

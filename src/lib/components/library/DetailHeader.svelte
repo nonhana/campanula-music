@@ -86,7 +86,10 @@
       eager
       {flight}
       fallback={cover?.fallback}
-      class={[PHONE_COVER_CLASS, round ? 'rounded-full shadow-ambient' : 'rounded-xl shadow-ambient']}
+      class={[
+        PHONE_COVER_CLASS,
+        round ? 'rounded-full shadow-ambient' : 'rounded-xl shadow-ambient',
+      ]}
     />
   {:else}
     <Cover
@@ -115,11 +118,18 @@
 {#snippet actionsBlock(onPhone: boolean)}
   {#if onPhone}
     {#if actions}
-      <div class={['flex flex-wrap items-center gap-2', phoneLayout === 'center' ? 'mt-4 justify-center' : 'mt-4']}>{@render actions()}</div>
+      <div class={[
+        'flex flex-wrap items-center gap-2',
+        phoneLayout === 'center'
+          ? 'mt-4 justify-center'
+          : 'mt-4',
+      ]}>{@render actions()}</div>
     {/if}
     {#if trailing && trailingPhone}<div class='mt-4'>{@render trailing()}</div>{/if}
   {:else}
-    <div class={align === 'center' ? 'mt-6 flex items-center gap-2' : 'mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'}>
+    <div class={align === 'center'
+      ? 'mt-6 flex items-center gap-2'
+      : 'mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'}>
       {#if actions}<div class='flex flex-wrap items-center gap-2'>{@render actions()}</div>{/if}
       {#if trailing}<div class='ml-auto max-w-full'>{@render trailing()}</div>{/if}
     </div>
@@ -163,9 +173,19 @@
       {@render extraBlocks(true)}
     </header>
   {:else}
-    <header class={['flex pt-2', align === 'center' ? 'items-center gap-8' : 'gap-7']} in:reveal>
+    <header class={[
+      'flex pt-2',
+      align === 'center'
+        ? 'items-center gap-8'
+        : 'gap-7',
+    ]} in:reveal>
       {@render media(false)}
-      <div class={['min-w-0 flex flex-1 flex-col', align === 'center' ? 'justify-center' : 'pt-1']}>
+      <div class={[
+        'min-w-0 flex flex-1 flex-col',
+        align === 'center'
+          ? 'justify-center'
+          : 'pt-1',
+      ]}>
         {@render titleBlock(false, '')}
         {@render metaBlock(false)}
         {@render extraBlocks(false)}
@@ -174,14 +194,31 @@
   {/if}
 {:else if phone}
   <header class='px-4 pt-2 text-center' out:fadeAway aria-hidden='true'>
-    <span class={['bone block aspect-square w-full', PHONE_COVER_CLASS, round ? 'rounded-full' : 'rounded-xl']}></span>
+    <span class={[
+      'bone block aspect-square w-full',
+      PHONE_COVER_CLASS,
+      round ? 'rounded-full' : 'rounded-xl',
+    ]}></span>
     <span class='mx-auto mt-4 h-8 w-1/2 flex items-center'><span class='bone h-6 w-full rounded-full'></span></span>
     <span class='mx-auto mt-1.5 h-5 w-1/3 flex items-center'><span class='bone h-3 w-full rounded-full'></span></span>
   </header>
 {:else}
-  <header class={['pt-2', align === 'center' ? 'flex items-center gap-8' : 'flex gap-7']} out:fadeAway aria-hidden='true'>
-    <span class={['bone aspect-square flex-none', round ? 'rounded-full' : 'rounded-xl']} style:width={`${FLIGHT_COVER_SIZE}px`}></span>
-    <div class={['min-w-0 flex flex-1 flex-col', align === 'center' ? '' : 'pt-1']}>
+  <header class={[
+    'pt-2',
+    align === 'center'
+      ? 'flex items-center gap-8'
+      : 'flex gap-7',
+  ]} out:fadeAway aria-hidden='true'>
+    <span class={[
+      'bone aspect-square flex-none',
+      round ? 'rounded-full' : 'rounded-xl',
+    ]} style:width={`${FLIGHT_COVER_SIZE}px`}></span>
+    <div class={[
+      'min-w-0 flex flex-1 flex-col',
+      align === 'center'
+        ? ''
+        : 'pt-1',
+    ]}>
       <span class='h-9 w-2/5 flex items-center'><span class='bone h-7 w-full rounded-full'></span></span>
       <span class='mt-2 h-5 w-1/4 flex items-center'><span class='bone h-3.5 w-full rounded-full'></span></span>
     </div>

@@ -35,7 +35,12 @@ describe('mock SDK 边界', () => {
     const captcha = await invokeModule('captcha_sent', { ctcode: '86', phone: '13800000000' }, cookie)
     expect((captcha.body as { code: number }).code).toBe(200)
 
-    const search = await invokeModule('cloudsearch', { keywords: '夜に駆ける', type: 1, limit: 30, offset: 0 }, cookie)
+    const search = await invokeModule('cloudsearch', {
+      keywords: '夜に駆ける',
+      type: 1,
+      limit: 30,
+      offset: 0,
+    }, cookie)
     await validateBody('CloudsearchBody', search.body)
     expect(((search.body as { result: { songs: unknown[] } }).result.songs)).toHaveLength(30)
 
@@ -47,9 +52,26 @@ describe('mock SDK 边界', () => {
 
   it('外部地址全部换成本地资源，返回体里没有网易云域名', async () => {
     for (const [module, query, name] of [
-      ['user_playlist', { uid: 10000001, limit: 1000 }, 'UserPlaylistBody'],
-      ['playlist_detail', { id: 900000019 }, 'PlaylistDetailBody'],
-      ['cloudsearch', { keywords: '真夜中', type: 1, limit: 30, offset: 0 }, 'CloudsearchBody'],
+      [
+        'user_playlist',
+        { uid: 10000001, limit: 1000 },
+        'UserPlaylistBody',
+      ],
+      [
+        'playlist_detail',
+        { id: 900000019 },
+        'PlaylistDetailBody',
+      ],
+      [
+        'cloudsearch',
+        {
+          keywords: '真夜中',
+          type: 1,
+          limit: 30,
+          offset: 0,
+        },
+        'CloudsearchBody',
+      ],
     ] as const) {
       const result = await invokeModule(module, query, cookie)
       await validateBody(name, result.body)
@@ -75,7 +97,12 @@ describe('mock SDK 边界', () => {
 
   it('没覆盖的模块和查询明确失败，并记进覆盖报告', async () => {
     await expect(invokeModule('not_a_module', {}, cookie)).rejects.toMatchObject({ status: 500 })
-    await expect(invokeModule('cloudsearch', { keywords: '没录过', type: 1, limit: 30, offset: 0 }, cookie)).rejects.toMatchObject({ status: 500 })
+    await expect(invokeModule('cloudsearch', {
+      keywords: '没录过',
+      type: 1,
+      limit: 30,
+      offset: 0,
+    }, cookie)).rejects.toMatchObject({ status: 500 })
     const report = await coverage()
     expect((report.misses as unknown[]).length).toBeGreaterThanOrEqual(2)
   })
@@ -87,7 +114,10 @@ describe('mock SDK 边界', () => {
     await expect(invokeModule('likelist', { uid: 10000001 }, cookie)).rejects.toMatchObject({ status: 301 })
 
     await configure('rate-limited')
-    await expect(invokeModule('likelist', { uid: 10000001 }, cookie)).rejects.toMatchObject({ status: 405, body: { retryAfter: 30 } })
+    await expect(invokeModule('likelist', { uid: 10000001 }, cookie)).rejects.toMatchObject({
+      status: 405,
+      body: { retryAfter: 30 },
+    })
 
     await configure('deleted-playlist')
     expect(((await invokeModule('user_playlist', { uid: 10000001, limit: 1000 }, cookie)).body as { playlist: { id: number }[] }).playlist.some(item => item.id === 900000019)).toBe(false)

@@ -125,7 +125,10 @@
         href={resolve(tab.route)}
         data-sveltekit-replacestate
         aria-current={current ? 'page' : undefined}
-        class={['relative h-11 flex flex-none items-center px-3 text-body', current ? 'text-neutral-900 font-600' : 'text-neutral-500 font-500']}
+        class={[
+          'relative h-11 flex flex-none items-center px-3 text-body',
+          current ? 'text-neutral-900 font-600' : 'text-neutral-500 font-500',
+        ]}
       >
         {tab.label}
         {#if current}
@@ -166,7 +169,11 @@
     </DesktopShell>
   {:else}
     <PhoneShell
-      tabs={onLibrary ? libraryTabs : searching && showingResults() ? searchTabs : undefined}
+      tabs={onLibrary
+        ? libraryTabs
+        : searching && showingResults()
+        ? searchTabs
+        : undefined}
       replace={playlistSelection.mode ? selectionBar : undefined}
     >
       {#snippet header()}

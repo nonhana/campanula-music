@@ -38,18 +38,36 @@
   const ANCHOR = 0.38
 
   const view = getAppView()
-  const shown = $derived(view.state.lyrics?.songId === song.id ? view.state.lyrics : null)
-  const lyrics = $derived(shown?.status === 'shown' && (shown.lyrics.kind === 'word' || shown.lyrics.kind === 'line') ? shown.lyrics : null)
+  const shown = $derived(view.state.lyrics?.songId === song.id
+    ? view.state.lyrics
+    : null)
+  const lyrics = $derived(shown?.status === 'shown' && (shown.lyrics.kind === 'word' || shown.lyrics.kind === 'line')
+    ? shown.lyrics
+    : null)
   const lines = $derived(lyrics?.lines ?? null)
   const translated = $derived(lyrics?.translated ?? false)
   const romanized = $derived(lyrics?.romanized ?? false)
   const showTranslation = $derived(choices.translation && translated)
   const showRomanization = $derived(choices.romanization && romanized)
-  const active = $derived(lines ? lineIndexAt(lines, playhead.now) : -1)
+  const active = $derived(lines
+    ? lineIndexAt(lines, playhead.now)
+    : -1)
 
   const toggles = $derived([
-    { label: '翻译', has: translated, on: showTranslation, reason: '这首歌没有翻译', set: (on: boolean) => (choices.translation = on) },
-    { label: '音译', has: romanized, on: showRomanization, reason: '这首歌没有音译', set: (on: boolean) => (choices.romanization = on) },
+    {
+      label: '翻译',
+      has: translated,
+      on: showTranslation,
+      reason: '这首歌没有翻译',
+      set: (on: boolean) => (choices.translation = on),
+    },
+    {
+      label: '音译',
+      has: romanized,
+      on: showRomanization,
+      reason: '这首歌没有音译',
+      set: (on: boolean) => (choices.romanization = on),
+    },
   ])
 
   $effect(() => {
@@ -67,9 +85,18 @@
   function follow(smooth: boolean) {
     if (!scroller || performance.now() - scrolledAt < FOLLOW_PAUSE_MS)
       return
-    const line = active < 0 ? null : scroller.querySelector<HTMLElement>(`[data-line="${active}"]`)
-    const top = line ? line.offsetTop - scroller.clientHeight * ANCHOR : 0
-    scroller.scrollTo({ top, behavior: smooth ? scrollBehavior() : 'auto' })
+    const line = active < 0
+      ? null
+      : scroller.querySelector<HTMLElement>(`[data-line="${active}"]`)
+    const top = line
+      ? line.offsetTop - scroller.clientHeight * ANCHOR
+      : 0
+    scroller.scrollTo({
+      top,
+      behavior: smooth
+        ? scrollBehavior()
+        : 'auto',
+    })
   }
 
   // 换了当前行、开关了翻译音译（行高变了）、滚动区高度变了：把当前行放回 38%
@@ -94,7 +121,15 @@
   }
 
   /** 键盘滚动、Tab 到某一行也算听众自己在看 */
-  const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
+  const SCROLL_KEYS = new Set([
+    'ArrowUp',
+    'ArrowDown',
+    'PageUp',
+    'PageDown',
+    'Home',
+    'End',
+    ' ',
+  ])
 
   // 只是看听众有没有自己滚动，不是操作，所以直接挂在滚动区上
   function watchListenerScroll(target: HTMLElement) {
@@ -122,7 +157,10 @@
 <div class={['grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]', klass]}>
   {#if lines}
     <div class='col-start-1 row-start-1 min-h-0 flex flex-col' transition:fade>
-      <div class={['flex flex-none flex-wrap items-center gap-2', compact ? 'pb-1' : 'pb-2']}>
+      <div class={[
+        'flex flex-none flex-wrap items-center gap-2',
+        compact ? 'pb-1' : 'pb-2',
+      ]}>
         {#each toggles as toggle (toggle.label)}
           <FilterChip
             selected={toggle.on}
@@ -131,7 +169,9 @@
             onclick={() => toggle.set(!toggle.on)}
           >
             {#if toggle.on}<span class='grid' transition:fade={{ duration: DURATIONS.feedback }}><Check size={16} strokeWidth={2.4} aria-hidden='true' /></span>{/if}
-            {toggle.has ? toggle.label : `无${toggle.label}`}
+            {toggle.has
+              ? toggle.label
+              : `无${toggle.label}`}
             {#if !toggle.has}<span class='sr-only'>：{toggle.reason}</span>{/if}
           </FilterChip>
         {/each}
@@ -152,7 +192,10 @@
             <button
               type='button'
               data-line={i}
-              class={['line group block w-full rounded-xl px-2 text-left', compact ? 'py-2' : 'py-3']}
+              class={[
+                'line group block w-full rounded-xl px-2 text-left',
+                compact ? 'py-2' : 'py-3',
+              ]}
               aria-current={current ? 'true' : undefined}
               onclick={() => playFrom(line)}
             >
@@ -160,8 +203,14 @@
                 class={[
                   'line-text block font-600',
                   current
-                    ? [compact ? 'text-title' : 'text-headline', line.words ? 'text-neutral-600' : 'text-primary-950']
-                    : [compact ? 'text-title-sm' : 'text-title', 'text-neutral-600 mouse:group-hover:text-neutral-800'],
+                    ? [
+                      compact ? 'text-title' : 'text-headline',
+                      line.words ? 'text-neutral-600' : 'text-primary-950',
+                    ]
+                    : [
+                      compact ? 'text-title-sm' : 'text-title',
+                      'text-neutral-600 mouse:group-hover:text-neutral-800',
+                    ],
                 ]}
                 lang={langOf(line.text)}
               >
@@ -175,10 +224,18 @@
                 {/if}
               </span>
               {#if showRomanization && line.romanization}
-                <span class={['mt-1 block', compact ? 'text-caption' : 'text-label', current ? 'text-neutral-800' : 'text-neutral-600']} in:fade>{line.romanization}</span>
+                <span class={[
+                  'mt-1 block',
+                  compact ? 'text-caption' : 'text-label',
+                  current ? 'text-neutral-800' : 'text-neutral-600',
+                ]} in:fade>{line.romanization}</span>
               {/if}
               {#if showTranslation && line.translation}
-                <span class={['mt-1 block', compact ? 'text-label' : 'text-body', current ? 'text-neutral-800' : 'text-neutral-600']} in:fade>{line.translation}</span>
+                <span class={[
+                  'mt-1 block',
+                  compact ? 'text-label' : 'text-body',
+                  current ? 'text-neutral-800' : 'text-neutral-600',
+                ]} in:fade>{line.translation}</span>
               {/if}
             </button>
           {/each}
@@ -198,12 +255,21 @@
     </div>
   {:else if shown?.status === 'failed'}
     <div class='col-start-1 row-start-1 flex flex-col justify-center' transition:fade>
-      <StateBlock kind='error' title='歌词没加载出来' body={failureText(shown.failure)} action={{ label: '重试', run: () => void view.app.openLyrics(song.id) }} />
+      <StateBlock kind='error' title='歌词没加载出来' body={failureText(shown.failure)} action={{
+        label: '重试',
+        run: () => void view.app.openLyrics(song.id),
+      }} />
     </div>
   {:else}
-    <div class={['col-start-1 row-start-1 flex flex-col justify-center', compact ? 'gap-5' : 'gap-7']} role='status' aria-busy='true' aria-label='正在加载歌词' transition:fade>
+    <div class={[
+      'col-start-1 row-start-1 flex flex-col justify-center',
+      compact ? 'gap-5' : 'gap-7',
+    ]} role='status' aria-busy='true' aria-label='正在加载歌词' transition:fade>
       {#each [62, 78, 54, 70, 46] as width, i (i)}
-        <span class={['bone rounded-full', compact ? 'h-4' : 'h-5']} style:width='{width}%'></span>
+        <span class={[
+          'bone rounded-full',
+          compact ? 'h-4' : 'h-5',
+        ]} style:width='{width}%'></span>
       {/each}
     </div>
   {/if}

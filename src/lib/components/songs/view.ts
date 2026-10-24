@@ -43,5 +43,9 @@ export interface SongDragHooks {
 
 /** 歌曲列表里的一首在滚动条气泡里怎么写：第几首、歌名 */
 export function songMark(song: Song, index: number): ScrollMark {
-  return { caption: `第 ${formatCount(index + 1)} 首`, title: song.name, lang: langOf(song.name) }
+  return {
+    caption: `第 ${formatCount(index + 1)} 首`,
+    title: song.name,
+    lang: langOf(song.name),
+  }
 }

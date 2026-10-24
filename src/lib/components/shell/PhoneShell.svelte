@@ -44,7 +44,10 @@
   onDestroy(scrollPadding.release)
 </script>
 
-<div class={['min-h-dvh bg-primary-50', docked ? 'pb-[calc(96px+env(safe-area-inset-bottom))]' : 'pb-[calc(32px+env(safe-area-inset-bottom))]']}>
+<div class={[
+  'min-h-dvh bg-primary-50',
+  docked ? 'pb-[calc(96px+env(safe-area-inset-bottom))]' : 'pb-[calc(32px+env(safe-area-inset-bottom))]',
+]}>
   <!-- 顶行、标签行自己也铺上底色：换页时它们单独成块，不透明才盖得住下面飘动的内容 -->
   <div class='sticky top-0 z-20 bg-primary-50' bind:clientHeight={top} data-page-top>
     <header class='h-14 flex items-center gap-1 bg-primary-50 pl-4 pr-2' style:view-transition-name='phone-top' style:view-transition-class='crossfade'>
@@ -58,5 +61,8 @@
     {@render children()}
   </main>
   <PlayerDock present={docked} {replace} {preview} />
-  <Scrollbar page={{ top: `${top}px`, bottom: playerDockBottom({ desktop: false, present: docked, withoutBar: 'env(safe-area-inset-bottom)' }) }} {lookup} />
+  <Scrollbar page={{
+    top: `${top}px`,
+    bottom: playerDockBottom({ desktop: false, present: docked, withoutBar: 'env(safe-area-inset-bottom)' }),
+  }} {lookup} />
 </div>

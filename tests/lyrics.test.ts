@@ -22,15 +22,35 @@ describe('歌词', () => {
     await world.netease.reply(ALL_FORMS)
     await app.openLyrics(SONG)
 
-    expect(world.netease.calls.findLast(call => call.module === 'lyric_new')).toMatchObject({ query: { id: SONG } })
+    expect(world.netease.calls.findLast(call => call.module === 'lyric_new')).toMatchObject({
+      query: { id: SONG },
+    })
     const shown = app.state.lyrics
     if (shown?.status !== 'shown' || shown.lyrics.kind !== 'word')
       throw new Error(`没显示逐字歌词：${JSON.stringify(shown)}`)
     expect(shown.songId).toBe(SONG)
     expect(shown.lyrics.lines.slice(0, 4)).toEqual([
-      { start: 0, text: '作词: 米津玄師', words: null, translation: null, romanization: null },
-      { start: 0.276, text: '作曲: 米津玄師', words: null, translation: null, romanization: null },
-      { start: 0.552, text: '编曲: 米津玄師/室屋光一郎', words: null, translation: null, romanization: null },
+      {
+        start: 0,
+        text: '作词: 米津玄師',
+        words: null,
+        translation: null,
+        romanization: null,
+      },
+      {
+        start: 0.276,
+        text: '作曲: 米津玄師',
+        words: null,
+        translation: null,
+        romanization: null,
+      },
+      {
+        start: 0.552,
+        text: '编曲: 米津玄師/室屋光一郎',
+        words: null,
+        translation: null,
+        romanization: null,
+      },
       {
         start: 0.83,
         text: '夢ならばどれほどよかったでしょう',
@@ -77,8 +97,20 @@ describe('歌词', () => {
     expect(lines.every(line => line.words === null && line.romanization === null)).toBe(true)
     const first = lines.findIndex(line => line.text === 'The club isn\'t the best place to find a lover')
     expect(lines.slice(first, first + 2)).toEqual([
-      { start: 9.48, text: 'The club isn\'t the best place to find a lover', words: null, translation: '这俱乐部不是个能找到安慰的地方', romanization: null },
-      { start: 11.75, text: 'So the bar is where I go', words: null, translation: '所以我们去往酒吧', romanization: null },
+      {
+        start: 9.48,
+        text: 'The club isn\'t the best place to find a lover',
+        words: null,
+        translation: '这俱乐部不是个能找到安慰的地方',
+        romanization: null,
+      },
+      {
+        start: 11.75,
+        text: 'So the bar is where I go',
+        words: null,
+        translation: '所以我们去往酒吧',
+        romanization: null,
+      },
     ])
     // 26.88 秒那句之后是 29.58 秒的空行，下一行是 29.82 秒
     const beforeBreak = lines.findIndex(line => line.start === 26.88)
@@ -116,11 +148,19 @@ describe('歌词', () => {
 
     await world.netease.reply('playback/lyric_new.pure-music.json')
     await app.openLyrics(SONG)
-    expect(app.state.lyrics).toEqual({ songId: SONG, status: 'shown', lyrics: { kind: 'pureMusic' } })
+    expect(app.state.lyrics).toEqual({
+      songId: SONG,
+      status: 'shown',
+      lyrics: { kind: 'pureMusic' },
+    })
 
     await world.netease.reply('playback/lyric_new.uncollected.json')
     await app.openLyrics(SONG + 1)
-    expect(app.state.lyrics).toEqual({ songId: SONG + 1, status: 'shown', lyrics: { kind: 'none' } })
+    expect(app.state.lyrics).toEqual({
+      songId: SONG + 1,
+      status: 'shown',
+      lyrics: { kind: 'none' },
+    })
   })
 
   it('点歌词的一行：当前这首从这一行开始的地方接着放；停着时也从那里开始放', async () => {
@@ -143,7 +183,9 @@ describe('歌词', () => {
     const shown = app.state.lyrics
     if (shown?.status !== 'shown' || shown.lyrics.kind !== 'word')
       throw new Error('没显示歌词')
-    const lineAt = (text: string) => shown.lyrics.kind === 'word' ? shown.lyrics.lines.find(each => each.text === text)!.start : Number.NaN
+    const lineAt = (text: string) => shown.lyrics.kind === 'word'
+      ? shown.lyrics.lines.find(each => each.text === text)!.start
+      : Number.NaN
 
     app.playFrom(lineAt('古びた思い出の埃を払う'))
     expect(player.currentTime).toBe(17.3)
@@ -176,7 +218,11 @@ describe('取歌词', () => {
     await app.openLyrics(SONG)
     slow.release()
     await opening
-    expect(app.state.lyrics).toMatchObject({ songId: SONG, status: 'shown', lyrics: { kind: 'word' } })
+    expect(app.state.lyrics).toMatchObject({
+      songId: SONG,
+      status: 'shown',
+      lyrics: { kind: 'word' },
+    })
 
     await app.openLyrics(SONG)
     expect(lyricRequests(device)).toBe(1)
@@ -188,7 +234,11 @@ describe('取歌词', () => {
 
     device.setOnline(false)
     await app.openLyrics(SONG)
-    expect(app.state.lyrics).toEqual({ songId: SONG, status: 'failed', failure: { kind: 'offline' } })
+    expect(app.state.lyrics).toEqual({
+      songId: SONG,
+      status: 'failed',
+      failure: { kind: 'offline' },
+    })
 
     device.setOnline(true)
     await world.netease.reply(ALL_FORMS)
@@ -208,7 +258,11 @@ describe('取歌词', () => {
     await app.openLyrics(SONG + 1)
     slow.release()
     await first
-    expect(app.state.lyrics).toEqual({ songId: SONG + 1, status: 'shown', lyrics: { kind: 'pureMusic' } })
+    expect(app.state.lyrics).toEqual({
+      songId: SONG + 1,
+      status: 'shown',
+      lyrics: { kind: 'pureMusic' },
+    })
   })
 
   it('取歌词时服务端说需要登录（登录 Cookie 没了）：整个 App 变成登录失效，不再显示歌词', async () => {

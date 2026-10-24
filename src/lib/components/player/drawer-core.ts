@@ -68,7 +68,9 @@ function dragged(at: number, dy: number, size: number): number {
   const position = at + dy / size
   if (position > 1)
     return 1
-  return position < 0 ? 0 - dampened(-position * size) / size : position
+  return position < 0
+    ? 0 - dampened(-position * size) / size
+    : position
 }
 
 export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): DrawerCore {
@@ -92,8 +94,12 @@ export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): 
     },
     grip({ from, commit, tap }) {
       /** commit 后抽屉去的那一头，和往那头拖的方向（往下为 1） */
-      const target: DrawerEnd = from === 'open' ? 1 : 0
-      const toward = target === 1 ? 1 : -1
+      const target: DrawerEnd = from === 'open'
+        ? 1
+        : 0
+      const toward = target === 1
+        ? 1
+        : -1
       let press: Press | null = null
       /** 拖过、往横里挪开过之后，跟着来的那次指针 click 不算点按（下次按下时清掉） */
       let swallowClick = false
@@ -118,7 +124,13 @@ export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): 
           // 上一次没等到松开（松开没传到页面上）：先作废
           abandon()
           swallowClick = false
-          press = { pointerId: sample.pointerId, x: sample.x, y: sample.y, time: sample.time, from: null }
+          press = {
+            pointerId: sample.pointerId,
+            x: sample.x,
+            y: sample.y,
+            time: sample.time,
+            from: null,
+          }
           return true
         },
         move(sample) {
@@ -129,8 +141,11 @@ export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): 
           const dy = sample.y - press.y
           if (press.from === null) {
             const dx = sample.x - press.x
-            if (Math.hypot(dx, dy) < (sample.pointerType === 'touch' ? SLOP.touch : SLOP.other))
+            if (Math.hypot(dx, dy) < (sample.pointerType === 'touch'
+              ? SLOP.touch
+              : SLOP.other)) {
               return
+            }
             if (Math.abs(dy) < Math.abs(dx)) {
               // 先往横里挪的：不是拖抽屉，也不是点按
               press = null
@@ -140,7 +155,10 @@ export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): 
             // 按下后动画可能还在走：从这一刻画到的地方算起（拖过的距离仍从按下的地方算，和 Vaul 一样）
             press.from = drawnAt()
           }
-          setPose({ dragging: true, position: dragged(press.from, dy, size()) })
+          setPose({
+            dragging: true,
+            position: dragged(press.from, dy, size()),
+          })
         },
         release(sample) {
           if (press?.pointerId !== sample.pointerId)

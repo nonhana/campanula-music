@@ -21,8 +21,26 @@
   /** 开关：开着没有、按一下换成什么 */
   const toggle = $derived(
     kind === 'repeat'
-      ? { on: mode !== 'shuffle', label: PLAY_MODE_LABEL[mode === 'one' ? 'one' : 'loop'], icon: mode === 'one' ? Repeat1 : Repeat, to: (mode === 'loop' ? 'one' : 'loop') as PlayMode }
-      : { on: mode === 'shuffle', label: PLAY_MODE_LABEL.shuffle, icon: Shuffle, to: (mode === 'shuffle' ? 'loop' : 'shuffle') as PlayMode },
+      ? {
+        on: mode !== 'shuffle',
+        label: PLAY_MODE_LABEL[mode === 'one'
+          ? 'one'
+          : 'loop'],
+        icon: mode === 'one'
+          ? Repeat1
+          : Repeat,
+        to: (mode === 'loop'
+          ? 'one'
+          : 'loop') as PlayMode,
+      }
+      : {
+        on: mode === 'shuffle',
+        label: PLAY_MODE_LABEL.shuffle,
+        icon: Shuffle,
+        to: (mode === 'shuffle'
+          ? 'loop'
+          : 'shuffle') as PlayMode,
+      },
   )
 </script>
 
@@ -31,7 +49,9 @@
     icon={ICONS[mode]}
     label='播放模式：{PLAY_MODE_LABEL[mode]}'
     title={PLAY_MODE_LABEL[mode]}
-    class={mode === 'loop' ? undefined : 'text-primary-900!'}
+    class={mode === 'loop'
+      ? undefined
+      : 'text-primary-900!'}
     onclick={() => view.app.setPlayMode(NEXT_PLAY_MODE[mode])}
   />
 {:else}

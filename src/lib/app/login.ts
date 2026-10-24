@@ -40,7 +40,13 @@ export interface LoginState {
   sms: { captcha: CaptchaStatus, submit: SubmitStatus }
 }
 
-export const INITIAL_LOGIN: LoginState = { qr: null, sms: { captcha: { status: 'idle' }, submit: { status: 'idle' } } }
+export const INITIAL_LOGIN: LoginState = {
+  qr: null,
+  sms: {
+    captcha: { status: 'idle' },
+    submit: { status: 'idle' },
+  },
+}
 
 /** 两次查询扫码状态之间隔多久 */
 const QR_POLL_MS = 2000
@@ -85,9 +91,18 @@ export function createLogin(context: LoginContext): Login {
   let shown: ShownQr | null = null
   let cancelPoll = (): void => {}
 
-  const setQr = (next: QrLogin | null): void => context.write({ ...context.read(), qr: next })
+  const setQr = (next: QrLogin | null): void => context.write({
+    ...context.read(),
+    qr: next,
+  })
   const setSms = (next: Partial<LoginState['sms']>): void =>
-    context.write({ ...context.read(), sms: { ...context.read().sms, ...next } })
+    context.write({
+      ...context.read(),
+      sms: {
+        ...context.read().sms,
+        ...next,
+      },
+    })
 
   function forget(): void {
     generation += 1
@@ -125,12 +140,22 @@ export function createLogin(context: LoginContext): Login {
         setQr({ step: 'waiting', image: qr.image })
         return schedulePoll(qr)
       case 'scanned':
-        setQr({ step: 'scanned', image: qr.image, nickname: check.nickname, avatarUrl: check.avatarUrl })
+        setQr({
+          step: 'scanned',
+          image: qr.image,
+          nickname: check.nickname,
+          avatarUrl: check.avatarUrl,
+        })
         return schedulePoll(qr)
       case 'expired':
         return setQr({ step: 'expired', image: qr.image })
       case 'needsVerification':
-        return setQr({ step: 'verifying', image: check.image, checking: false, unverified: afterVerification })
+        return setQr({
+          step: 'verifying',
+          image: check.image,
+          checking: false,
+          unverified: afterVerification,
+        })
       case 'signedIn':
         return finish(check.account)
       default: {
@@ -153,7 +178,9 @@ export function createLogin(context: LoginContext): Login {
   /** 先发完还没发出去的退出，再发登录请求；退出没发成，这次就当作同样原因的失败 */
   async function afterPendingLogout<T>(send: () => Promise<Result<T>>): Promise<Result<T>> {
     const blocked = await context.beforeLogin()
-    return blocked ? { ok: false, failure: blocked } : send()
+    return blocked
+      ? { ok: false, failure: blocked }
+      : send()
   }
 
   return {
@@ -183,17 +210,29 @@ export function createLogin(context: LoginContext): Login {
         await handleCheck(qr, result, true)
     },
     async sendCaptcha(phone) {
-      setSms({ captcha: { status: 'sending' } })
+      setSms({
+        captcha: { status: 'sending' },
+      })
       const result = await afterPendingLogout(() => api.post(endpoints.sendCaptcha, { phone }))
-      setSms({ captcha: result.ok ? { status: 'sent', resendAt: clock.now() + CAPTCHA_RESEND_MS } : { status: 'failed', failure: result.failure } })
+      setSms({
+        captcha: result.ok
+          ? { status: 'sent', resendAt: clock.now() + CAPTCHA_RESEND_MS }
+          : { status: 'failed', failure: result.failure },
+      })
     },
     async loginWithCaptcha(phone, captcha) {
-      setSms({ submit: { status: 'submitting' } })
+      setSms({
+        submit: { status: 'submitting' },
+      })
       const result = await afterPendingLogout(() => api.post(endpoints.loginSms, { phone, captcha }))
-      if (result.ok)
+      if (result.ok) {
         await finish(result.value.account)
-      else
-        setSms({ submit: { status: 'failed', failure: result.failure } })
+      }
+      else {
+        setSms({
+          submit: { status: 'failed', failure: result.failure },
+        })
+      }
     },
   }
 }

@@ -54,7 +54,9 @@ export interface ImageReveal {
  */
 export function createImageReveal(source: () => string): ImageReveal {
   let seen = $state<{ source: string, status: Exclude<ImageStatus, 'loading'> } | null>(null)
-  const status = $derived(seen?.source === source() ? seen.status : 'loading')
+  const status = $derived(seen?.source === source()
+? seen.status
+: 'loading')
 
   return {
     get status() {
@@ -69,8 +71,14 @@ export function createImageReveal(source: () => string): ImageReveal {
         seen = { source: src, status: 'cached' }
       const onload = () => {
         loaded.add(src)
-        if (seen?.source !== src)
-          seen = { source: src, status: unseen() ? 'cached' : 'loaded' }
+        if (seen?.source !== src) {
+          seen = {
+source: src,
+status: unseen()
+? 'cached'
+: 'loaded',
+}
+}
       }
       // 缓存里的也可能已经被浏览器清掉、重新取时失败
       const onerror = () => (seen = { source: src, status: 'broken' })

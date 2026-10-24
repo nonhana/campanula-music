@@ -16,8 +16,16 @@ beforeAll(async () => {
   const vite = await createServer({
     configFile: false,
     logLevel: 'silent',
-    server: { middlewareMode: true, hmr: false, ws: false, watch: null },
-    plugins: [mockPlugin(), sveltekit()],
+    server: {
+      middlewareMode: true,
+      hmr: false,
+      ws: false,
+      watch: null,
+    },
+    plugins: [
+      mockPlugin(),
+      sveltekit(),
+    ],
   })
   const http = createHttpServer((req, res) => vite.middlewares(req, res))
   await new Promise<void>(resolve => http.listen(0, 'localhost', resolve))
@@ -34,7 +42,10 @@ afterAll(async () => {
 })
 
 async function api(path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`${origin}${path}`, { ...init, headers: { ...init.headers, cookie } })
+  return fetch(`${origin}${path}`, {
+    ...init,
+    headers: { ...init.headers, cookie },
+  })
 }
 
 describe('mock 开发服务器', () => {

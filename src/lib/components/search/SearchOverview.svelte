@@ -35,7 +35,9 @@
   const view = getAppView()
   const LOADING = { status: 'loading' } as const
   /** App 只记着最后一次搜的词的结果：记着的是别的词（刚换了词、还没打开）时当作还在加载 */
-  const results = $derived(view.state.search.results?.keyword === keyword ? view.state.search.results : null)
+  const results = $derived(view.state.search.results?.keyword === keyword
+    ? view.state.search.results
+    : null)
   const songs = $derived(results?.songs ?? LOADING)
   const playlists = $derived(results?.playlists ?? LOADING)
   const artists = $derived(results?.artists ?? LOADING)
@@ -44,15 +46,25 @@
   const none = (list: SearchList) => list.status === 'shown' && list.items.length === 0
   const nothing = $derived([songs, playlists, artists, albums].every(none))
 
-  const playlistItems = $derived(playlists.status === 'shown' ? playlists.items.slice(0, OVERVIEW_COUNTS.playlists) : null)
-  const artistItems = $derived(artists.status === 'shown' ? artists.items.slice(0, OVERVIEW_COUNTS.artists) : null)
-  const albumItems = $derived(albums.status === 'shown' ? albums.items.slice(0, OVERVIEW_COUNTS.albums) : null)
+  const playlistItems = $derived(playlists.status === 'shown'
+    ? playlists.items.slice(0, OVERVIEW_COUNTS.playlists)
+    : null)
+  const artistItems = $derived(artists.status === 'shown'
+    ? artists.items.slice(0, OVERVIEW_COUNTS.artists)
+    : null)
+  const albumItems = $derived(albums.status === 'shown'
+    ? albums.items.slice(0, OVERVIEW_COUNTS.albums)
+    : null)
 
   function failureOf(list: SearchList) {
     if (list.status !== 'failed')
       return null
     const failed = searchFailure(list.failure)
-    return { title: failed.title, body: failed.body, retry: () => void view.app.openSearch(keyword) }
+    return {
+      title: failed.title,
+      body: failed.body,
+      retry: () => void view.app.openSearch(keyword),
+    }
   }
 
   /** “查看全部”：切到那个标签 */
@@ -65,9 +77,18 @@
 {#snippet section(kind: SearchKind, list: SearchList, body: Snippet)}
   {#if !none(list)}
     <section class={phone ? 'pt-5 first:pt-0' : 'pt-8 first:pt-0'} aria-labelledby={`overview-${kind}`}>
-      <div class={['flex items-center gap-3', phone ? 'h-11 px-4' : 'mb-3']}>
-        <h2 id={`overview-${kind}`} class={['text-neutral-900 font-600', phone ? 'text-title-sm' : 'text-title']}>{KIND_WORDS[kind].label}</h2>
-        <TextButton href={resolve(searchPath(keyword, kind))} class={['ml-auto', phone ? '-mr-3' : 'h-9! -mr-4 px-4!']} onclick={event => seeAll(event, kind)}>查看全部</TextButton>
+      <div class={[
+        'flex items-center gap-3',
+        phone ? 'h-11 px-4' : 'mb-3',
+      ]}>
+        <h2 id={`overview-${kind}`} class={[
+          'text-neutral-900 font-600',
+          phone ? 'text-title-sm' : 'text-title',
+        ]}>{KIND_WORDS[kind].label}</h2>
+        <TextButton href={resolve(searchPath(keyword, kind))} class={[
+          'ml-auto',
+          phone ? '-mr-3' : 'h-9! -mr-4 px-4!',
+        ]} onclick={event => seeAll(event, kind)}>查看全部</TextButton>
       </div>
       {@render body()}
     </section>
@@ -76,7 +97,10 @@
 
 {#snippet songsBody()}
   {#if songs.status === 'failed'}
-    <div in:reveal><StateBlock kind='error' title={searchFailure(songs.failure).title} body={searchFailure(songs.failure).body} action={{ label: '重试', run: () => void view.app.openSearch(keyword) }} /></div>
+    <div in:reveal><StateBlock kind='error' title={searchFailure(songs.failure).title} body={searchFailure(songs.failure).body} action={{
+      label: '重试',
+      run: () => void view.app.openSearch(keyword),
+    }} /></div>
   {:else if songs.status === 'loading'}
     <!-- 白色面板就是骨架自己的最外层：整块一起淡出、让出高度（桌面 5 行是综合先列几首） -->
     <SkeletonRows
@@ -89,7 +113,10 @@
     <div in:reveal>
       <div class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}>
         <SongList
-          list={{ kind: 'songs', songs: songs.items.slice(0, OVERVIEW_COUNTS.songs) }}
+          list={{
+            kind: 'songs',
+            songs: songs.items.slice(0, OVERVIEW_COUNTS.songs),
+          }}
           source={{ kind: 'search', keyword }}
           {phone}
           loadingLabel='正在搜索单曲'

@@ -12,12 +12,22 @@ export function downloadItem(view: AppView, song: Song): { label: string, disabl
   const block = view.state.downloadBlock(song)
   switch (block) {
     case null:
-      return { label: view.state.downloads.tasks.get(song.id)?.status === 'failed' ? '重新下载' : '下载', disabled: false }
+      return {
+        label: view.state.downloads.tasks.get(song.id)?.status === 'failed'
+          ? '重新下载'
+          : '下载',
+        disabled: false,
+      }
     case 'downloaded':
       return { label: '已下载', disabled: true }
     case 'downloading': {
       const look = songLook(view, song).mark
-      return { label: look?.kind === 'downloading' ? `正在下载 ${look.percent}%` : '正在下载', disabled: true }
+      return {
+        label: look?.kind === 'downloading'
+          ? `正在下载 ${look.percent}%`
+          : '正在下载',
+        disabled: true,
+      }
     }
     case 'trial':
       return { label: '试听歌曲不能下载', disabled: true }

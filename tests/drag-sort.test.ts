@@ -28,7 +28,14 @@ function setup({ ids = [10, 20, 30, 40, 50], groupOf = id => [id], edges = { top
   const commits: (readonly number[])[] = []
   const results: DragSortResult[] = []
   /** 列表上沿（视口）：100，行距 64，行高 56，手指按在行顶下 0px */
-  const scene: RowTrack = { grabY: 0, listTop: 100, pitch: 64, height: 56, minTop: 8, maxTop: 744 }
+  const scene: RowTrack = {
+    grabY: 0,
+    listTop: 100,
+    pitch: 64,
+    height: 56,
+    minTop: 8,
+    maxTop: 744,
+  }
   const session = createDragSortSession<RowTrack>({
     ids: () => ids,
     groupOf,
@@ -76,7 +83,14 @@ function setup({ ids = [10, 20, 30, 40, 50], groupOf = id => [id], edges = { top
       grip.abandon(pointerId)
     },
   }
-  return { session, grip, pointer, commits, results, scene }
+  return {
+    session,
+    grip,
+    pointer,
+    commits,
+    results,
+    scene,
+  }
 }
 
 function dragging(session: DragSortSession): DragSortState {
@@ -103,8 +117,18 @@ describe('按下协议：鼠标 5px、触屏立即、只认主指针', () => {
     pointer.up(200, 150 + 64 * 4, 16, { pointerType: 'touch', pointerId: 2 })
 
     expect(session.state).toBeNull()
-    expect(commits).toEqual([[10, 30, 40, 50, 20]])
-    expect(results).toEqual([{ moved: true, order: [10, 30, 40, 50, 20], target: 4, cancelled: false, grabbed: 20 }])
+    expect(commits).toEqual([
+      [10, 30, 40, 50, 20],
+    ])
+    expect(results).toEqual([
+      {
+        moved: true,
+        order: [10, 30, 40, 50, 20],
+        target: 4,
+        cancelled: false,
+        grabbed: 20,
+      },
+    ])
   })
 
   it('触屏按下立即开始；鼠标要挪过 5px 才算，没挪够就松开的是点按', () => {
@@ -114,7 +138,15 @@ describe('按下协议：鼠标 5px、触屏立即、只认主指针', () => {
     touch.pointer.up(200, 150)
     expect(touch.session.state).toBeNull()
     expect(touch.commits).toEqual([])
-    expect(touch.results).toEqual([{ moved: false, order: [10, 20, 30, 40, 50], target: 1, cancelled: false, grabbed: 20 }])
+    expect(touch.results).toEqual([
+      {
+        moved: false,
+        order: [10, 20, 30, 40, 50],
+        target: 1,
+        cancelled: false,
+        grabbed: 20,
+      },
+    ])
 
     const mouse = setup({ pointerType: 'mouse' })
     expect(mouse.pointer.down(200, 150)).toBe(true)
@@ -142,7 +174,9 @@ describe('按下协议：鼠标 5px、触屏立即、只认主指针', () => {
     pointer.move(200, 150 + 64)
     pointer.up(200, 150 + 64)
     expect(session.state).toBeNull()
-    expect(commits).toEqual([[10, 30, 20, 40, 50]])
+    expect(commits).toEqual([
+      [10, 30, 20, 40, 50],
+    ])
   })
 
   it('非主指针、右键按下都不算', () => {
@@ -155,13 +189,51 @@ describe('按下协议：鼠标 5px、触屏立即、只认主指针', () => {
   it('上一次按住还没结束时又按下：先把旧的清干净，新的接着开始', () => {
     const { session, grip, commits } = setup({ pointerType: 'mouse' })
     // 鼠标按下还没挪够 5px
-    expect(grip.press({ pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1, x: 200, y: 150, time: 0 })).toBe(true)
+    expect(grip.press({
+      pointerId: 1,
+      pointerType: 'mouse',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      x: 200,
+      y: 150,
+      time: 0,
+    })).toBe(true)
     // 同一根手指没有 up，又按了一次（例如丢了 pointerup）：旧的 pending 不能留到这次
-    expect(grip.press({ pointerId: 2, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1, x: 200, y: 150, time: 20 })).toBe(true)
+    expect(grip.press({
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      x: 200,
+      y: 150,
+      time: 20,
+    })).toBe(true)
     expect(dragging(session).grabbed).toBe(20)
-    grip.move({ pointerId: 2, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1, x: 200, y: 214, time: 40 })
-    grip.release({ pointerId: 2, pointerType: 'touch', isPrimary: true, button: 0, buttons: 0, x: 200, y: 214, time: 60 })
-    expect(commits).toEqual([[10, 30, 20, 40, 50]])
+    grip.move({
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      x: 200,
+      y: 214,
+      time: 40,
+    })
+    grip.release({
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 0,
+      x: 200,
+      y: 214,
+      time: 60,
+    })
+    expect(commits).toEqual([
+      [10, 30, 20, 40, 50],
+    ])
   })
 
   it('开始拖时量不出几何（元素不在了）：这次按下不算', () => {
@@ -192,7 +264,9 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     expect(dragging(session).preview).toEqual([10, 30, 40, 50, 20])
 
     pointer.up(200, 150 + 64 * 4)
-    expect(commits).toEqual([[10, 30, 40, 50, 20]])
+    expect(commits).toEqual([
+      [10, 30, 40, 50, 20],
+    ])
     expect(session.state).toBeNull()
   })
 
@@ -223,12 +297,23 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     // 2、4 是一起挪的一组：原来的顺序里它们中间隔着 3
     const { session, commits } = setup({
       ids: [1, 2, 3, 4, 5, 6],
-      groupOf: id => (id === 2 ? [2, 4] : [id]),
+      groupOf: id => (id === 2
+        ? [2, 4]
+        : [id]),
       pointerType: 'touch',
     })
     const grip = session.grip(2)
     let time = 0
-    const at = (y: number) => ({ pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1, x: 0, y, time })
+    const at = (y: number) => ({
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      x: 0,
+      y,
+      time,
+    })
     grip.press(at(150))
     // 拿起时就是原来的顺序：2、4 在空位 1
     expect(session.state?.rest).toEqual([1, 3, 5, 6])
@@ -240,14 +325,21 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     expect(session.state?.target).toBe(3)
     expect(session.state?.preview).toEqual([1, 3, 5, 2, 4, 6])
     time += 16
-    grip.release({ ...at(150 + 64 * 2), buttons: 0 })
-    expect(commits).toEqual([[1, 3, 5, 2, 4, 6]])
+    grip.release({
+      ...at(150 + 64 * 2),
+      buttons: 0,
+    })
+    expect(commits).toEqual([
+      [1, 3, 5, 2, 4, 6],
+    ])
   })
 
   it('非连续的多选：原地松手、拖走再拖回原位都不提交；拖到别的空位才提交', () => {
     const setupGroup = () => setup({
       ids: [1, 2, 3, 4, 5, 6],
-      groupOf: id => (id === 2 ? [2, 4] : [id]),
+      groupOf: id => (id === 2
+        ? [2, 4]
+        : [id]),
       pointerType: 'touch',
     })
 
@@ -272,7 +364,9 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     moved.pointer.down(200, 150)
     moved.pointer.move(200, 150 + 64 * 2)
     moved.pointer.up(200, 150 + 64 * 2)
-    expect(moved.commits).toEqual([[1, 3, 5, 2, 4, 6]])
+    expect(moved.commits).toEqual([
+      [1, 3, 5, 2, 4, 6],
+    ])
     expect(moved.results[0]).toMatchObject({ moved: true })
   })
 
@@ -283,8 +377,14 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
 
     expect(() => pointer.up(200, 150 + 64)).toThrow('提交被拒绝')
 
-    expect(commits).toEqual([[10, 30, 20, 40, 50]])
-    expect(results.at(-1)).toMatchObject({ moved: true, order: [10, 30, 20, 40, 50], cancelled: false })
+    expect(commits).toEqual([
+      [10, 30, 20, 40, 50],
+    ])
+    expect(results.at(-1)).toMatchObject({
+      moved: true,
+      order: [10, 30, 20, 40, 50],
+      cancelled: false,
+    })
     expect(session.state).toBeNull()
     // 收干净了：下一次按下还能开始拖
     expect(pointer.down(200, 150)).toBe(true)
@@ -295,18 +395,27 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
 
 describe('键盘：Alt + ↑ / ↓ 移一位', () => {
   it('不在拖动时移动一格并提交；拖动中、核心关掉键盘时不接', () => {
-    const { session, pointer, commits } = setup({ ids: [1, 2, 3, 4] })
+    const { session, pointer, commits } = setup({
+      ids: [1, 2, 3, 4],
+    })
     expect(session.moveByKeyboard(3, -1)).toBe(true)
-    expect(commits).toEqual([[1, 3, 2, 4]])
+    expect(commits).toEqual([
+      [1, 3, 2, 4],
+    ])
     expect(session.moveByKeyboard(1, -1)).toBe(false)
     expect(session.moveByKeyboard(4, 1)).toBe(false)
 
     pointer.down(200, 150)
     expect(session.moveByKeyboard(2, 1)).toBe(false)
-    expect(commits).toEqual([[1, 3, 2, 4]])
+    expect(commits).toEqual([
+      [1, 3, 2, 4],
+    ])
     pointer.cancel()
 
-    const off = setup({ ids: [1, 2, 3], keyboard: false })
+    const off = setup({
+      ids: [1, 2, 3],
+      keyboard: false,
+    })
     expect(off.session.moveByKeyboard(1, 1)).toBe(false)
     expect(off.commits).toEqual([])
   })
@@ -323,7 +432,10 @@ describe('键盘：Alt + ↑ / ↓ 移一位', () => {
 
 describe('边缘滚动', () => {
   it('越靠边越快、停在边缘越久越快；滚动多少由核心算（绝对值）', () => {
-    const { session, pointer } = setup({ pointerType: 'touch', edges: { top: 0, bottom: 800 } })
+    const { session, pointer } = setup({
+      pointerType: 'touch',
+      edges: { top: 0, bottom: 800 },
+    })
     pointer.down(200, 400)
     expect(session.frame(0.016)).toBe(0)
 
@@ -359,7 +471,14 @@ describe('边缘滚动', () => {
 
 describe('几何：行列表和卡片网格', () => {
   it('行列表：按浮起那一行的中线算空位，拖出列表就停在头尾；0 个空位时只能是 0', () => {
-    const track: RowTrack = { grabY: 10, listTop: 100, pitch: 64, height: 56, minTop: 8, maxTop: 744 }
+    const track: RowTrack = {
+      grabY: 10,
+      listTop: 100,
+      pitch: 64,
+      height: 56,
+      minTop: 8,
+      maxTop: 744,
+    }
     expect(rowTrack(track, 200, 4)).toEqual({ y: 190, target: 1 })
     expect(rowTrack(track, 0, 4)).toEqual({ y: 8, target: 0 })
     expect(rowTrack(track, 900, 4)).toEqual({ y: 744, target: 4 })
@@ -388,7 +507,12 @@ describe('几何：行列表和卡片网格', () => {
     // 指针比夹紧后的 ghost 更靠下：ghost 停在 maxY，target 继续往下走到最后一格
     expect(gridTrack({ ...base, maxY: 100 }, 110, 1000, 5)).toEqual({ x: 110, y: 100, target: 5 })
     // 只有一列：列永远是 0，按行数
-    expect(gridTrack({ ...base, columns: 1, pitchY: 100, scrollY: 400 }, 5000, 610, 5).target).toBe(5)
+    expect(gridTrack({
+      ...base,
+      columns: 1,
+      pitchY: 100,
+      scrollY: 400,
+    }, 5000, 610, 5).target).toBe(5)
     // 指针在网格左上外：ghost 和 target 都停在开头
     expect(gridTrack(base, -100, -100, 5)).toEqual({ x: 0, y: 0, target: 0 })
   })

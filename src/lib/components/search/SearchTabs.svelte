@@ -21,14 +21,18 @@
 
   const { keyword, tab, phone = false }: Props = $props()
   const view = getAppView()
-  const results = $derived(view.state.search.results?.keyword === keyword ? view.state.search.results : null)
+  const results = $derived(view.state.search.results?.keyword === keyword
+    ? view.state.search.results
+    : null)
 
   /** 标签旁边写的总数：综合不写，还没拉到不写 */
   function totalOf(key: SearchTab): number | null {
     if (key === 'all' || !results)
       return null
     const list = results[key]
-    return list.status === 'shown' ? list.total : null
+    return list.status === 'shown'
+      ? list.total
+      : null
   }
 
   let strip = $state<HTMLElement>()
@@ -41,8 +45,12 @@
   function onkeydown(event: KeyboardEvent, index: number) {
     const last = SEARCH_TABS.length - 1
     const KEYS: Record<string, number> = {
-      ArrowRight: index === last ? 0 : index + 1,
-      ArrowLeft: index === 0 ? last : index - 1,
+      ArrowRight: index === last
+        ? 0
+        : index + 1,
+      ArrowLeft: index === 0
+        ? last
+        : index - 1,
       Home: 0,
       End: last,
     }
@@ -59,7 +67,10 @@
   }
 </script>
 
-<div bind:this={strip} class={['flex overflow-x-auto', phone ? 'px-2' : '-mx-3']} role='tablist' aria-label='搜索结果分类'>
+<div bind:this={strip} class={[
+  'flex overflow-x-auto',
+  phone ? 'px-2' : '-mx-3',
+]} role='tablist' aria-label='搜索结果分类'>
   {#each SEARCH_TABS as item, index (item.key)}
     {@const selected = item.key === tab}
     {@const total = totalOf(item.key)}
@@ -69,7 +80,9 @@
       role='tab'
       aria-selected={selected}
       aria-controls={SEARCH_PANEL_ID}
-      tabindex={selected ? 0 : -1}
+      tabindex={selected
+        ? 0
+        : -1}
       data-sveltekit-replacestate
       class={[
         'relative h-11 flex flex-none items-center rounded-lg px-3 text-body transition-colors duration-feedback',

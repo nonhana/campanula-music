@@ -76,15 +76,29 @@ describe('这一页歌单的答案', () => {
     const find = (kind: Playlist['kind']) => library.playlists!.find(playlist => playlist.kind === kind)!
 
     const liked = library.playlistPage(find('liked').id)
-    expect(liked).toMatchObject({ inLibrary: true, kind: 'liked', info: { id: find('liked').id }, songs: { kind: 'songs' }, can: { edit: false, sort: true, collect: false } })
+    expect(liked).toMatchObject({
+      inLibrary: true,
+      kind: 'liked',
+      info: { id: find('liked').id },
+      songs: { kind: 'songs' },
+      can: { edit: false, sort: true, collect: false },
+    })
     expect(liked.count).not.toBeNull()
     expect(liked.count!.loaded).toBe(liked.count!.total)
 
     const own = library.playlistPage(find('own').id)
-    expect(own).toMatchObject({ inLibrary: true, kind: 'own', can: { edit: true, sort: true, collect: false } })
+    expect(own).toMatchObject({
+      inLibrary: true,
+      kind: 'own',
+      can: { edit: true, sort: true, collect: false },
+    })
 
     const collected = library.playlistPage(find('collected').id)
-    expect(collected).toMatchObject({ inLibrary: true, kind: 'collected', can: { edit: false, sort: false, collect: true } })
+    expect(collected).toMatchObject({
+      inLibrary: true,
+      kind: 'collected',
+      can: { edit: false, sort: false, collect: true },
+    })
   })
 
   it('歌单列表还没到：答案说还不知道在不在曲库，不是“不在曲库”', async () => {
@@ -106,7 +120,12 @@ describe('这一页歌单的答案', () => {
     const collected = library().playlists!.find(playlist => playlist.kind === 'collected')!
     expect(library().playlistPage(collected.id).inLibrary).toBe(true)
 
-    expect(library().playlistPage(SMALL.id)).toMatchObject({ inLibrary: false, info: null, songs: { kind: 'loading' }, can: { collect: false } })
+    expect(library().playlistPage(SMALL.id)).toMatchObject({
+      inLibrary: false,
+      info: null,
+      songs: { kind: 'loading' },
+      can: { collect: false },
+    })
 
     await world.netease.reply(SMALL.detail)
     await world.netease.reply(SMALL.songs)
@@ -129,7 +148,12 @@ describe('这一页歌单的答案', () => {
       inLibrary: false,
       info: null,
       songs: { kind: 'loading' },
-      failure: { where: 'list', failure: { kind: 'offline' }, source: 'open', retry: 'open' },
+      failure: {
+        where: 'list',
+        failure: { kind: 'offline' },
+        source: 'open',
+        retry: 'open',
+      },
       count: null,
       can: { edit: false, sort: false, collect: false },
     })
@@ -157,7 +181,10 @@ describe('这一页歌单的答案', () => {
   it('打开失败优先于同步失败：答案说打开的那次没成，不是后台同步停下的原因', async () => {
     const device = world.device()
     const app = await syncWithRejectedPage(device)
-    expect(app.state.library!.sync).toMatchObject({ status: 'failed', failure: { kind: 'upstreamChanged' } })
+    expect(app.state.library!.sync).toMatchObject({
+      status: 'failed',
+      failure: { kind: 'upstreamChanged' },
+    })
     const before = app.state.library!.playlistPage(BANG_DREAM_ID)
     expect(before.songs).toMatchObject({ kind: 'songs', complete: false })
     // 已经有一部分歌时后台同步失败不在这一页说（由同步条说）
@@ -170,9 +197,17 @@ describe('这一页歌单的答案', () => {
       inLibrary: true,
       songs: { kind: 'songs', complete: false },
       // 后台同步留下的 upstreamChanged 仍在，但这一页说的是打开时断网
-      failure: { where: 'more', failure: { kind: 'offline' }, source: 'open', retry: 'open' },
+      failure: {
+        where: 'more',
+        failure: { kind: 'offline' },
+        source: 'open',
+        retry: 'open',
+      },
     })
-    expect(app.state.library!.sync).toMatchObject({ status: 'failed', failure: { kind: 'upstreamChanged' } })
+    expect(app.state.library!.sync).toMatchObject({
+      status: 'failed',
+      failure: { kind: 'upstreamChanged' },
+    })
   })
 
   it('我喜欢的音乐已经有一部分、后台同步又失败：这一页不重复说失败，同步条说并可重试', async () => {
@@ -187,7 +222,10 @@ describe('这一页歌单的答案', () => {
     expect(page.songs.songs).toHaveLength(3000)
     expect(page.more).toBeNull()
     expect(page.failure).toBeNull()
-    expect(library.syncNotice).toMatchObject({ kind: 'failed', failure: { kind: 'serverError' } })
+    expect(library.syncNotice).toMatchObject({
+      kind: 'failed',
+      failure: { kind: 'serverError' },
+    })
     expect(syncNoticeFor(library, page.failure?.where === 'list')).toMatchObject({ kind: 'failed' })
 
     // 重试从停下的地方重新开始；断网后停在等联网
@@ -200,7 +238,10 @@ describe('这一页歌单的答案', () => {
   it('同步条的进度由 App 算好：首次同步时是已同步 / 一共几首，同步完了就不显示', async () => {
     const { app } = await signInAtLikedTracks(world.device())
     const notice = app.state.library!.syncNotice
-    expect(notice).toMatchObject({ kind: 'syncing', progress: { done: 0 } })
+    expect(notice).toMatchObject({
+      kind: 'syncing',
+      progress: { done: 0 },
+    })
     if (notice?.kind !== 'syncing')
       throw new Error(`首次同步应该显示进度：${JSON.stringify(notice)}`)
     expect(notice.progress!.total).toBeGreaterThan(0)
@@ -210,16 +251,29 @@ describe('这一页歌单的答案', () => {
   })
 
   it('同步条：整块列表已经说明失败时不再重复，同步中 / 暂停 / 断网不受影响', () => {
-    const failed = { syncNotice: { kind: 'failed', failure: { kind: 'upstreamChanged' } } } as const
+    const failed = {
+      syncNotice: {
+        kind: 'failed',
+        failure: { kind: 'upstreamChanged' },
+      },
+    } as const
     expect(syncNoticeFor(failed, false)).toEqual(failed.syncNotice)
     expect(syncNoticeFor(failed, true)).toBeNull()
 
-    for (const notice of [{ kind: 'syncing', progress: null }, { kind: 'rateLimited' }, { kind: 'offline' }] as const)
+    for (const notice of [
+      { kind: 'syncing', progress: null },
+      { kind: 'rateLimited' },
+      { kind: 'offline' },
+    ] as const)
       expect(syncNoticeFor({ syncNotice: notice }, true)).toEqual(notice)
   })
 
   it('我喜欢的音乐整块失败：同步失败说“没能同步”并重新同步，打开失败说“没能加载”并重开', () => {
-    const base = { where: 'list' as const, failure: { kind: 'offline' as const }, retry: 'open' as const }
+    const base = {
+      where: 'list' as const,
+      failure: { kind: 'offline' as const },
+      retry: 'open' as const,
+    }
     expect(likedFailure({ ...base, source: 'sync' })).toEqual({ title: '我喜欢的音乐没能同步', retry: 'sync' })
     expect(likedFailure({ ...base, source: 'open' })).toEqual({ title: '我喜欢的音乐没能加载', retry: 'open' })
   })
@@ -228,10 +282,23 @@ describe('这一页歌单的答案', () => {
     const page = (complete: boolean): PlaylistPage => ({
       inLibrary: true,
       kind: 'own',
-      info: { id: 1, name: '测试歌单', coverUrl: '', creator: '测试听众', playCount: 0, description: null, tags: [] },
+      info: {
+        id: 1,
+        name: '测试歌单',
+        coverUrl: '',
+        creator: '测试听众',
+        playCount: 0,
+        description: null,
+        tags: [],
+      },
       private: false,
       content: null,
-      songs: { kind: 'songs', songs: [], total: 10, complete },
+      songs: {
+        kind: 'songs',
+        songs: [],
+        total: 10,
+        complete,
+      },
       more: null,
       failure: null,
       count: { loaded: 10, total: 10 },
@@ -251,20 +318,32 @@ describe('听众正在看 X / 离开了 X', () => {
 
     const leave = app.viewing({ kind: 'playlist', id: SMALL.id })
     await world.settle()
-    expect(app.state.library!.playlistPage(SMALL.id)).toMatchObject({ inLibrary: false, info: { id: SMALL.id }, songs: { kind: 'songs', total: 81, complete: true } })
+    expect(app.state.library!.playlistPage(SMALL.id)).toMatchObject({
+      inLibrary: false,
+      info: { id: SMALL.id },
+      songs: { kind: 'songs', total: 81, complete: true },
+    })
     const opened = detailCalls().length
 
     await world.netease.reply(COLLECT)
     await app.collect({ kind: 'playlist', id: SMALL.id }, true)
     await world.settle()
-    expect(app.state.library!.playlistPage(SMALL.id)).toMatchObject({ inLibrary: true, kind: 'collected', songs: { kind: 'songs', total: 81, complete: true } })
+    expect(app.state.library!.playlistPage(SMALL.id)).toMatchObject({
+      inLibrary: true,
+      kind: 'collected',
+      songs: { kind: 'songs', total: 81, complete: true },
+    })
     expect(detailCalls()).toHaveLength(opened)
 
     await world.netease.reply(SMALL.detail)
     await world.netease.reply(UNCOLLECT)
     await app.collect({ kind: 'playlist', id: SMALL.id }, false)
     await world.settle()
-    expect(app.state.library!.playlistPage(SMALL.id)).toMatchObject({ inLibrary: false, info: { id: SMALL.id }, songs: { kind: 'songs', total: 81, complete: true } })
+    expect(app.state.library!.playlistPage(SMALL.id)).toMatchObject({
+      inLibrary: false,
+      info: { id: SMALL.id },
+      songs: { kind: 'songs', total: 81, complete: true },
+    })
     expect(detailCalls()).toHaveLength(opened + 1)
     leave()
   })
@@ -289,11 +368,17 @@ describe('听众正在看 X / 离开了 X', () => {
     await world.settle()
     expect(app.state.daily).toMatchObject({ status: 'shown' })
 
-    for (const { fixture, type } of Object.values(SEARCH))
-      await world.netease.reply(fixture, { when: { type } })
+    for (const { fixture, type } of Object.values(SEARCH)) {
+      await world.netease.reply(fixture, {
+        when: { type },
+      })
+    }
     app.viewing({ kind: 'search', keyword: '真夜中' })
     await world.settle()
-    expect(app.state.search.results).toMatchObject({ keyword: '真夜中', songs: { status: 'shown' } })
+    expect(app.state.search.results).toMatchObject({
+      keyword: '真夜中',
+      songs: { status: 'shown' },
+    })
   })
 
   it('离开歌单：还没提交的移除立即提交，不等 5 秒', async () => {
@@ -316,7 +401,14 @@ describe('听众正在看 X / 离开了 X', () => {
     leave()
     await world.settle()
     expect(removeRequests(device)).toEqual([
-      { method: 'POST', path: `/api/playlists/${JAZZ_ID}/tracks/remove`, body: { songIds: [songId] }, keepalive: true },
+      {
+        method: 'POST',
+        path: `/api/playlists/${JAZZ_ID}/tracks/remove`,
+        body: {
+          songIds: [songId],
+        },
+        keepalive: true,
+      },
     ])
   })
 })

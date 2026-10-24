@@ -22,7 +22,12 @@ export function songMenuActions() {
       void shown.close()
       return
     }
-    void songMenu.open({ song, source, from: button, anchor: anchorBelow(event) })
+    void songMenu.open({
+song,
+source,
+from: button,
+anchor: anchorBelow(event),
+})
   }
 
   /**
@@ -40,9 +45,21 @@ export function songMenuActions() {
     const keyboard = event.clientX === 0 && event.clientY === 0
     const rect = row.getBoundingClientRect()
     const anchor = keyboard
-      ? { x: rect.right - 8, y: rect.bottom, top: rect.top, end: true }
-      : { x: event.clientX, y: event.clientY, top: event.clientY, end: false }
-    const focused = document.activeElement instanceof HTMLElement && row.contains(document.activeElement) ? document.activeElement : null
+      ? {
+x: rect.right - 8,
+y: rect.bottom,
+top: rect.top,
+end: true,
+}
+      : {
+x: event.clientX,
+y: event.clientY,
+top: event.clientY,
+end: false,
+}
+    const focused = document.activeElement instanceof HTMLElement && row.contains(document.activeElement)
+? document.activeElement
+: null
     void songMenu.open({ song, source, from: focused, anchor })
   }
 

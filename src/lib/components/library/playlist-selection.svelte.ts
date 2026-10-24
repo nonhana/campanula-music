@@ -66,7 +66,9 @@ export class PlaylistSelection {
   /** 勾着的歌，按整张歌单的先后（搜索时也是整张） */
   readonly picked = $derived.by(() => {
     const source = this.source
-    return source ? pickedSongs(source.songs(), this.checked.ids) : []
+    return source
+? pickedSongs(source.songs(), this.checked.ids)
+: []
   })
 
   get capabilities(): SelectionCapabilities {
@@ -132,7 +134,9 @@ export class PlaylistSelection {
     const source = this.source
     if (!source || !source.present() || this.mode)
       return
-    this.checked = id === undefined ? NONE : toggleChecked(NONE, id)
+    this.checked = id === undefined
+? NONE
+: toggleChecked(NONE, id)
     this.returnFocus = focusEntry ?? null
     this.entered = source.playlistId
     this.mode = true
@@ -183,7 +187,9 @@ export class PlaylistSelection {
     const source = this.source
     if (!source || this.picked.length === 0)
       return
-    const from = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+    const from = event.currentTarget instanceof HTMLElement
+? event.currentTarget
+: null
     void this.playlistPicker.open({
       mode: 'multi',
       songs: this.picked,

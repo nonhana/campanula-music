@@ -28,13 +28,20 @@
   }
 
   let { id, value = $bindable(), label, prefix, error, hint, input = $bindable(), action, aside, class: klass, disabled, ...rest }: Props = $props()
-  const note = $derived(error ? `${id}-error` : hint ? `${id}-hint` : undefined)
+  const note = $derived(error
+    ? `${id}-error`
+    : hint
+    ? `${id}-hint`
+    : undefined)
 </script>
 
 <div class={['flex flex-col', klass]}>
   <div class='flex items-baseline justify-between gap-3'>
     <label for={id} class='text-caption text-neutral-700 font-500'>{label}</label>
-    {#if aside}<span class={['text-caption tabular-nums', error ? 'text-error-700' : 'text-neutral-600']}>{aside}</span>{/if}
+    {#if aside}<span class={[
+      'text-caption tabular-nums',
+      error ? 'text-error-700' : 'text-neutral-600',
+    ]}>{aside}</span>{/if}
   </div>
   <div class='mt-1.5 flex gap-2'>
     <div

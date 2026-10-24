@@ -125,7 +125,11 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
     const next = clamp(target, 0, state.rest.length)
     if (next === state.target)
       return
-    state = { ...state, target: next, preview: previewOf(state.rest, state.moving, next) }
+    state = {
+      ...state,
+      target: next,
+      preview: previewOf(state.rest, state.moving, next),
+    }
     emit()
   }
 
@@ -158,7 +162,14 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
     const before = index - ids.slice(0, index).filter(item => wanted.has(item)).length
     scene = next
     pointer = at
-    state = { grabbed: id, moving, rest, target: before, startTarget: before, preview: previewOf(rest, moving, before) }
+    state = {
+      grabbed: id,
+      moving,
+      rest,
+      target: before,
+      startTarget: before,
+      preview: previewOf(rest, moving, before),
+    }
     holdAtEdge = 0
     options.onStart?.(state)
     emit()
@@ -179,7 +190,13 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
   function cancel() {
     if (!state || !pointer)
       return
-    end({ moved: false, order: state.preview, target: state.target, cancelled: true, grabbed: state.grabbed })
+    end({
+      moved: false,
+      order: state.preview,
+      target: state.target,
+      cancelled: true,
+      grabbed: state.grabbed,
+    })
   }
 
   function release(sample: PointerSample) {
@@ -202,11 +219,23 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
       }
       finally {
         // commit 抛错（调用方拒绝了这次顺序）也要把拖动态收干净：不然下一次按下会被 state 挡住
-        end({ moved, order: ended.preview, target: ended.target, cancelled: false, grabbed: ended.grabbed })
+        end({
+          moved,
+          order: ended.preview,
+          target: ended.target,
+          cancelled: false,
+          grabbed: ended.grabbed,
+        })
       }
       return
     }
-    end({ moved, order: ended.preview, target: ended.target, cancelled: false, grabbed: ended.grabbed })
+    end({
+      moved,
+      order: ended.preview,
+      target: ended.target,
+      cancelled: false,
+      grabbed: ended.grabbed,
+    })
   }
 
   function grip(id: number): Grip {
@@ -222,7 +251,12 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
         // 上一次没等到松开（右键菜单、切走窗口、松开没传到页面上）：先清干净，连 pending 一起
         if (press)
           abandon()
-        press = { pointerId: sample.pointerId, pending: sample.pointerType === 'touch' ? null : { x: sample.x, y: sample.y } }
+        press = {
+          pointerId: sample.pointerId,
+          pending: sample.pointerType === 'touch'
+            ? null
+            : { x: sample.x, y: sample.y },
+        }
         if (sample.pointerType !== 'touch')
           return true
         const started = begin(id, { x: sample.x, y: sample.y })
@@ -308,7 +342,9 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
 function neighbor(ids: readonly number[], id: number, delta: -1 | 1): { from: number, to: number } | null {
   const from = ids.indexOf(id)
   const to = from + delta
-  return from < 0 || to < 0 || to >= ids.length ? null : { from, to }
+  return from < 0 || to < 0 || to >= ids.length
+    ? null
+    : { from, to }
 }
 
 /** 把相邻的一项挪一位；挪不动（到两头、没有这一项）返回 null。按整张顺序提交的适配器用 */
@@ -332,7 +368,9 @@ export function movedBefore(ids: readonly number[], id: number, delta: -1 | 1): 
   const at = neighbor(ids, id, delta)
   if (!at)
     return undefined
-  return delta < 0 ? ids[at.to]! : ids[at.to + 1] ?? null
+  return delta < 0
+    ? ids[at.to]!
+    : ids[at.to + 1] ?? null
 }
 
 /** 行列表（手机歌单、虚拟歌曲列表）：按浮起那一行的中线算空位 */
@@ -386,5 +424,9 @@ export function gridTrack(g: GridTrack, pointerX: number, pointerY: number, slot
   const docY = pointerY + g.scrollY
   const column = clamp(Math.floor((docX - g.gridLeft) / g.pitchX), 0, g.columns - 1)
   const row = Math.max(0, Math.floor((docY - g.gridTop) / g.pitchY))
-  return { x, y, target: clamp(row * g.columns + column, 0, slots) }
+  return {
+    x,
+    y,
+    target: clamp(row * g.columns + column, 0, slots),
+  }
 }

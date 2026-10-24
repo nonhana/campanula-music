@@ -14,7 +14,10 @@ function setup() {
   const api = createApi({
     fetch: async (_path: string, init?: RequestInit) => {
       inits.push(init ?? {})
-      return new Response(JSON.stringify({ kind: 'done' }), { status: 200, headers: { 'content-type': 'application/json' } })
+      return new Response(JSON.stringify({ kind: 'done' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
     },
     network: {
       onLine: true,
@@ -27,7 +30,9 @@ function setup() {
 
 /** JSON.stringify({ data }) 的长度是 data 长度 + 11（已核对 65525 -> 65536、65526 -> 65537） */
 function bodyOf(dataLength: number): string {
-  return JSON.stringify({ data: 'x'.repeat(dataLength) })
+  return JSON.stringify({
+    data: 'x'.repeat(dataLength),
+  })
 }
 
 describe('api.post 的 keepalive 64 KiB 边界', () => {
@@ -36,7 +41,9 @@ describe('api.post 的 keepalive 64 KiB 边界', () => {
 
     const exact = bodyOf(65_525)
     expect(new TextEncoder().encode(exact).byteLength).toBe(64 * 1024)
-    await api.post(endpoint, { data: 'x'.repeat(65_525) }, { keepalive: true })
+    await api.post(endpoint, {
+      data: 'x'.repeat(65_525),
+    }, { keepalive: true })
     expect(inits[0]).toMatchObject({
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -46,7 +53,9 @@ describe('api.post 的 keepalive 64 KiB 边界', () => {
 
     const over = bodyOf(65_526)
     expect(new TextEncoder().encode(over).byteLength).toBe(64 * 1024 + 1)
-    await api.post(endpoint, { data: 'x'.repeat(65_526) }, { keepalive: true })
+    await api.post(endpoint, {
+      data: 'x'.repeat(65_526),
+    }, { keepalive: true })
     expect(inits[1]).toMatchObject({
       method: 'POST',
       headers: { 'content-type': 'application/json' },

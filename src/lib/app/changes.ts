@@ -70,12 +70,19 @@ export function playlistEdits(playlist: Playlist, edit: PlaylistEdit): Immediate
   const name = edit.name?.trim()
   if (name !== undefined && name !== playlist.name)
     changes.push({ kind: 'rename', playlist, name })
-  const description = edit.description === undefined ? undefined : edit.description.trim() || null
+  const description = edit.description === undefined
+    ? undefined
+    : edit.description.trim() || null
   if (description !== undefined && description !== (playlist.description?.trim() || null))
     changes.push({ kind: 'describe', playlist, description })
   const { tags } = edit
-  if (tags && (tags.length !== playlist.tags.length || tags.some((tag, index) => tag !== playlist.tags[index])))
-    changes.push({ kind: 'tag', playlist, tags: [...tags] })
+  if (tags && (tags.length !== playlist.tags.length || tags.some((tag, index) => tag !== playlist.tags[index]))) {
+    changes.push({
+      kind: 'tag',
+      playlist,
+      tags: [...tags],
+    })
+  }
   return changes
 }
 
@@ -85,9 +92,13 @@ export function changeProblem(change: Change): PlaylistEditProblem | null {
     case 'rename':
       return nameProblem(change.name)
     case 'describe':
-      return (change.description?.length ?? 0) > PLAYLIST_DESCRIPTION_LENGTH ? 'descriptionTooLong' : null
+      return (change.description?.length ?? 0) > PLAYLIST_DESCRIPTION_LENGTH
+        ? 'descriptionTooLong'
+        : null
     case 'tag':
-      return change.tags.length > PLAYLIST_TAGS_MAX ? 'tooManyTags' : null
+      return change.tags.length > PLAYLIST_TAGS_MAX
+        ? 'tooManyTags'
+        : null
     case 'heart':
     case 'add':
     case 'addMany':
@@ -165,13 +176,20 @@ export function targetOf(change: Change): string {
 
 /** 列表最前面加上 id，已经有了就不动 */
 function prepended(ids: number[], id: number): number[] {
-  return ids.includes(id) ? ids : [id, ...ids]
+  return ids.includes(id)
+    ? ids
+    : [id, ...ids]
 }
 
 /** 一张歌单的曲目最前面加上这首；本机还没有这张歌单的曲目、或者已经在里面了是 null */
 function tracksWith(replica: Replica, playlistId: number, songId: number): PlaylistTracks | null {
   const tracks = replica.tracks.get(playlistId)
-  return tracks && !tracks.trackIds.includes(songId) ? { ...tracks, trackIds: [songId, ...tracks.trackIds] } : null
+  return tracks && !tracks.trackIds.includes(songId)
+    ? {
+        ...tracks,
+        trackIds: [songId, ...tracks.trackIds],
+      }
+    : null
 }
 
 /** 一张歌单的曲目最前面加上这几首（按勾选的先后）；本机还没有这张歌单的曲目、或者都已经在里面了是 null */
@@ -180,7 +198,15 @@ function tracksWithMany(replica: Replica, playlistId: number, songs: readonly So
   if (!tracks)
     return null
   const fresh = songs.filter(song => !tracks.trackIds.includes(song.id)).map(song => song.id)
-  return fresh.length > 0 ? { ...tracks, trackIds: [...fresh, ...tracks.trackIds] } : null
+  return fresh.length > 0
+    ? {
+        ...tracks,
+        trackIds: [
+          ...fresh,
+          ...tracks.trackIds,
+        ],
+      }
+    : null
 }
 
 /** 一张歌单的曲目去掉这几首；本机还没有这张歌单的曲目、或者一首都不在里面是 null */
@@ -190,13 +216,17 @@ function tracksWithout(replica: Replica, playlistId: number, songIds: readonly n
     return null
   const removed = new Set(songIds)
   const kept = tracks.trackIds.filter(id => !removed.has(id))
-  return kept.length !== tracks.trackIds.length ? { ...tracks, trackIds: kept } : null
+  return kept.length !== tracks.trackIds.length
+    ? { ...tracks, trackIds: kept }
+    : null
 }
 
 /** 本机还没有的歌曲信息 */
 function missingSongs(replica: Replica, songs: readonly Song[]): Song[] | undefined {
   const missing = songs.filter(song => !replica.songs.has(song.id))
-  return missing.length > 0 ? missing : undefined
+  return missing.length > 0
+    ? missing
+    : undefined
 }
 
 /**
@@ -211,7 +241,13 @@ function orderedTracks(replica: Replica, playlistId: number, songIds: readonly n
   const ordered = songIds.filter(songId => present.has(songId))
   const seen = new Set(ordered)
   const kept = tracks.trackIds.filter(songId => !seen.has(songId))
-  return { ...tracks, trackIds: [...ordered, ...kept] }
+  return {
+    ...tracks,
+    trackIds: [
+      ...ordered,
+      ...kept,
+    ],
+  }
 }
 
 function heartPatch(replica: Replica, song: Song, hearted: boolean): LibraryPatch {
@@ -220,14 +256,28 @@ function heartPatch(replica: Replica, song: Song, hearted: boolean): LibraryPatc
   const likedTracks = liked && replica.tracks.get(liked.id)
   let tracks: ReadonlyMap<number, PlaylistTracks> | undefined
   if (liked && likedTracks) {
-    const trackIds = hearted ? prepended(likedTracks.trackIds, song.id) : likedTracks.trackIds.filter(id => id !== song.id)
-    if (trackIds.length !== likedTracks.trackIds.length)
-      tracks = new Map([[liked.id, { ...likedTracks, trackIds }]])
+    const trackIds = hearted
+      ? prepended(likedTracks.trackIds, song.id)
+      : likedTracks.trackIds.filter(id => id !== song.id)
+    if (trackIds.length !== likedTracks.trackIds.length) {
+      tracks = new Map([
+        [
+          liked.id,
+          { ...likedTracks, trackIds },
+        ],
+      ])
+    }
   }
   return {
-    hearts: hearts ? (hearted ? prepended(hearts, song.id) : hearts.filter(id => id !== song.id)) : undefined,
+    hearts: hearts
+      ? (hearted
+          ? prepended(hearts, song.id)
+          : hearts.filter(id => id !== song.id))
+      : undefined,
     tracks,
-    songs: hearted ? missingSongs(replica, [song]) : undefined,
+    songs: hearted
+      ? missingSongs(replica, [song])
+      : undefined,
   }
 }
 
@@ -236,7 +286,13 @@ function withCollected(playlists: Playlist[], playlist: Playlist): Playlist[] {
   if (playlists.some(item => item.id === playlist.id))
     return playlists
   const at = playlists.findIndex(item => item.kind === 'collected')
-  return at < 0 ? [...playlists, playlist] : [...playlists.slice(0, at), playlist, ...playlists.slice(at)]
+  return at < 0
+    ? [...playlists, playlist]
+    : [
+        ...playlists.slice(0, at),
+        playlist,
+        ...playlists.slice(at),
+      ]
 }
 
 /** 新建的歌单排在我喜欢的音乐后面（和刚在网易云里新建的一样，验证关卡②） */
@@ -244,20 +300,33 @@ function withCreated(playlists: Playlist[], playlist: Playlist): Playlist[] {
   if (playlists.some(item => item.id === playlist.id))
     return playlists
   const at = playlists.findIndex(item => item.kind === 'liked') + 1
-  return [...playlists.slice(0, at), playlist, ...playlists.slice(at)]
+  return [
+    ...playlists.slice(0, at),
+    playlist,
+    ...playlists.slice(at),
+  ]
 }
 
 /** 曲库里这张歌单改成 edit 之后的样子；歌单列表还没拿到、里面没有它时不动 */
 function editedPatch(replica: Replica, playlistId: number, edit: (playlist: Playlist) => Playlist): LibraryPatch {
   const { playlists } = replica
-  return playlists?.some(item => item.id === playlistId) ? { playlists: playlists.map(item => (item.id === playlistId ? edit(item) : item)) } : {}
+  return playlists?.some(item => item.id === playlistId)
+    ? {
+        playlists: playlists.map(item => (item.id === playlistId
+          ? edit(item)
+          : item)),
+      }
+    : {}
 }
 
 function toggled<T extends { id: number }>(items: T[] | null, item: T, collected: boolean): T[] | undefined {
   if (!items)
     return undefined
-  if (collected)
-    return items.some(each => each.id === item.id) ? items : [item, ...items]
+  if (collected) {
+    return items.some(each => each.id === item.id)
+      ? items
+      : [item, ...items]
+  }
   return items.filter(each => each.id !== item.id)
 }
 
@@ -269,34 +338,76 @@ export function changePatch(replica: Replica, change: ConfirmedChange): LibraryP
   switch (change.kind) {
     case 'add': {
       const tracks = tracksWith(replica, change.playlist.id, change.song.id)
-      return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined, songs: missingSongs(replica, [change.song]) }
+      return {
+        tracks: tracks
+          ? new Map([
+              [change.playlist.id, tracks],
+            ])
+          : undefined,
+        songs: missingSongs(replica, [change.song]),
+      }
     }
     case 'addMany': {
       const tracks = tracksWithMany(replica, change.playlist.id, change.songs)
-      return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined, songs: missingSongs(replica, change.songs) }
+      return {
+        tracks: tracks
+          ? new Map([
+              [change.playlist.id, tracks],
+            ])
+          : undefined,
+        songs: missingSongs(replica, change.songs),
+      }
     }
     case 'remove': {
       const tracks = tracksWithout(replica, change.playlist.id, change.songIds)
-      return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined }
+      return {
+        tracks: tracks
+          ? new Map([
+              [change.playlist.id, tracks],
+            ])
+          : undefined,
+      }
     }
     case 'order': {
       const tracks = orderedTracks(replica, change.playlist.id, change.songIds)
-      return { tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined }
+      return {
+        tracks: tracks
+          ? new Map([
+              [change.playlist.id, tracks],
+            ])
+          : undefined,
+      }
     }
     case 'playlistOrder':
-      return { playlists: replica.playlists ? reorderSortable(replica.playlists, change.playlistIds, playlist => canSortPlaylist(playlist.kind)) : undefined }
+      return {
+        playlists: replica.playlists
+          ? reorderSortable(replica.playlists, change.playlistIds, playlist => canSortPlaylist(playlist.kind))
+          : undefined,
+      }
     case 'collectAlbum':
-      return { albums: toggled(replica.albums, change.album, change.collected) }
+      return {
+        albums: toggled(replica.albums, change.album, change.collected),
+      }
     case 'collectArtist':
-      return { artists: toggled(replica.artists, change.artist, change.collected) }
+      return {
+        artists: toggled(replica.artists, change.artist, change.collected),
+      }
     case 'collectPlaylist': {
       const { playlist, collected, seed } = change
-      const playlists = replica.playlists && (collected ? withCollected(replica.playlists, playlist) : replica.playlists.filter(item => item.id !== playlist.id))
+      const playlists = replica.playlists && (collected
+        ? withCollected(replica.playlists, playlist)
+        : replica.playlists.filter(item => item.id !== playlist.id))
       const seeded = collected && seed && !replica.tracks.has(playlist.id)
       return {
         playlists: playlists ?? undefined,
-        tracks: seeded ? new Map([[playlist.id, seed.tracks]]) : undefined,
-        songs: seeded ? missingSongs(replica, seed.songs) : undefined,
+        tracks: seeded
+          ? new Map([
+              [playlist.id, seed.tracks],
+            ])
+          : undefined,
+        songs: seeded
+          ? missingSongs(replica, seed.songs)
+          : undefined,
       }
     }
     case 'create': {
@@ -304,8 +415,17 @@ export function changePatch(replica: Replica, change: ConfirmedChange): LibraryP
       // 新建的歌单是空的：曲目已经是全的，打开时不用再拉
       const seeded = !replica.tracks.has(playlist.id)
       return {
-        playlists: replica.playlists ? withCreated(replica.playlists, playlist) : undefined,
-        tracks: seeded ? new Map([[playlist.id, { version: playlist.tracksUpdatedAt, trackIds: [], complete: true }]]) : undefined,
+        playlists: replica.playlists
+          ? withCreated(replica.playlists, playlist)
+          : undefined,
+        tracks: seeded
+          ? new Map([
+              [
+                playlist.id,
+                { version: playlist.tracksUpdatedAt, trackIds: [], complete: true },
+              ],
+            ])
+          : undefined,
       }
     }
     case 'rename':
@@ -313,12 +433,17 @@ export function changePatch(replica: Replica, change: ConfirmedChange): LibraryP
     case 'describe':
       return editedPatch(replica, change.playlist.id, playlist => ({ ...playlist, description: change.description }))
     case 'tag':
-      return editedPatch(replica, change.playlist.id, playlist => ({ ...playlist, tags: [...change.tags] }))
+      return editedPatch(replica, change.playlist.id, playlist => ({
+        ...playlist,
+        tags: [...change.tags],
+      }))
     case 'publish':
       return editedPatch(replica, change.playlist.id, playlist => ({ ...playlist, private: false }))
     case 'delete':
       // 曲目跟着歌单列表一起删（patched）
-      return { playlists: replica.playlists?.filter(item => item.id !== change.playlist.id) }
+      return {
+        playlists: replica.playlists?.filter(item => item.id !== change.playlist.id),
+      }
     case 'cover':
       return editedPatch(replica, change.playlistId, playlist => ({ ...playlist, coverUrl: change.coverUrl }))
     default:

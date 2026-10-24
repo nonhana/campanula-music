@@ -19,7 +19,12 @@ export interface SuggestionsResponse {
 export type SearchKind = 'songs' | 'playlists' | 'artists' | 'albums'
 
 /** 四类的先后：标签和综合里都是这个顺序 */
-export const SEARCH_KINDS: readonly SearchKind[] = ['songs', 'playlists', 'artists', 'albums']
+export const SEARCH_KINDS: readonly SearchKind[] = [
+  'songs',
+  'playlists',
+  'artists',
+  'albums',
+]
 
 /** 每类结果一次取这么多（网易云自己的分页也是 30） */
 export const SEARCH_RESULTS_PER_REQUEST = 30

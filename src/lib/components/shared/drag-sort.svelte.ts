@@ -134,7 +134,9 @@ export class DragSort<S> {
 
   /** 落位时空位在视口的哪里。scene 保留到下一次按下，落位动画期间还能用 */
   settleAt(target: number): Rect | null {
-    return this.scene ? this.options.adapter.slot(this.scene, target) : null
+    return this.scene
+? this.options.adapter.slot(this.scene, target)
+: null
   }
 
   /** Esc、换了列表：作废，不提交 */

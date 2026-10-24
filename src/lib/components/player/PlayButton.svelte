@@ -25,7 +25,11 @@
       slow = false
     }
   })
-  const icon = $derived(status === 'paused' ? 'play' : busy && slow ? 'spinner' : 'pause')
+  const icon = $derived(status === 'paused'
+    ? 'play'
+    : busy && slow
+    ? 'spinner'
+    : 'pause')
 
   /** 按钮大小、图标大小、播放三角往右挪多少（看起来居中） */
   const LOOKS = {
@@ -41,7 +45,9 @@
     'grid flex-none place-items-center rounded-full bg-primary-950 text-white transition-[background-color,transform] duration-feedback press mouse:hover:bg-primary-900',
     look.button,
   ]}
-  aria-label={status === 'paused' ? '播放' : busy ? '暂停（正在加载）' : '暂停'}
+  aria-label={status === 'paused'
+    ? '播放'
+    : busy ? '暂停（正在加载）' : '暂停'}
   onclick={() => view.app.togglePlay()}
 >
   {#key icon}

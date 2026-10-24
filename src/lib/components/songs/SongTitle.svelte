@@ -27,9 +27,18 @@
   const artist = $derived(artistLine(song))
 </script>
 
-<span class={['min-w-0 flex items-center', tight ? 'gap-1.5' : 'gap-2']}>
+<span class={[
+  'min-w-0 flex items-center',
+  tight ? 'gap-1.5' : 'gap-2',
+]}>
   <span
-    class={['truncate font-500 transition-colors duration-state', size === 'body' ? 'text-body' : 'text-label', now ? 'text-primary-950' : 'text-neutral-900']}
+    class={[
+      'truncate font-500 transition-colors duration-state',
+      size === 'body'
+        ? 'text-body'
+        : 'text-label',
+      now ? 'text-primary-950' : 'text-neutral-900',
+    ]}
     lang={langOf(song.name)}
   >{song.name}</span>
   <SongBadge kind={look.badge} />

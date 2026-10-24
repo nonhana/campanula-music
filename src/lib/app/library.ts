@@ -358,7 +358,9 @@ type Outcome<T, F> = { ok: true, value: T } | { ok: false, failure: F } | null
 type Pulled = Outcome<void, OpenFailure>
 
 function chunks<T>(items: readonly T[], size: number): T[][] {
-  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, (index + 1) * size))
+  return Array.from({
+    length: Math.ceil(items.length / size),
+  }, (_, index) => items.slice(index * size, (index + 1) * size))
 }
 
 /** 本机已经有这张歌单最新、完整的曲目 */
@@ -402,8 +404,12 @@ function songsOf(replica: Replica, playlist: Playlist): PlaylistSongs {
   const tracks = replica.tracks.get(playlist.id)
   return {
     playlist,
-    songs: tracks ? tracks.trackIds.flatMap(id => replica.songs.get(id) ?? []) : [],
-    trackIds: tracks ? tracks.trackIds : [],
+    songs: tracks
+      ? tracks.trackIds.flatMap(id => replica.songs.get(id) ?? [])
+      : [],
+    trackIds: tracks
+      ? tracks.trackIds
+      : [],
     total: tracks ? tracks.trackIds.length : playlist.trackCount,
     complete: tracks?.complete ?? false,
   }
@@ -420,21 +426,39 @@ function songsViewOf(playlist: PlaylistSongs<unknown>, opening: PlaylistOpening 
   if (playlist.songs.length > 0) {
     const total = playlist.complete ? playlist.songs.length : playlist.total
     const failed = opening?.status === 'failed'
-      ? { where: 'more' as const, failure: opening.failure, source: 'open' as const, retry: 'open' as const }
+      ? {
+          where: 'more' as const,
+          failure: opening.failure,
+          source: 'open' as const,
+          retry: 'open' as const,
+        }
       : null
     return {
-      songs: { kind: 'songs', songs: playlist.songs, total, complete: playlist.complete },
+      songs: {
+        kind: 'songs',
+        songs: playlist.songs,
+        total,
+        complete: playlist.complete,
+      },
       more: opening,
       failure: failed,
       count: { loaded: playlist.songs.length, total },
     }
   }
-  if (playlist.complete)
-    return { songs: { kind: 'empty' }, more: opening, failure: null, count: { loaded: 0, total: 0 } }
+  if (playlist.complete) {
+    return {
+      songs: { kind: 'empty' },
+      more: opening,
+      failure: null,
+      count: { loaded: 0, total: 0 },
+    }
+  }
   return {
     songs: { kind: 'loading' },
     more: opening,
-    failure: failure ? { where: 'list', ...failure } : null,
+    failure: failure
+      ? { where: 'list', ...failure }
+      : null,
     count: null,
   }
 }
@@ -452,7 +476,14 @@ function playlistPageOf(replica: Replica, playlistId: number, songsOfPlaylist: (
       content: null,
       songs: { kind: 'loading' },
       more: null,
-      failure: syncFailure ? { where: 'list', failure: syncFailure, source: 'sync', retry: 'sync' } : null,
+      failure: syncFailure
+        ? {
+            where: 'list',
+            failure: syncFailure,
+            source: 'sync',
+            retry: 'sync',
+          }
+        : null,
       count: null,
       can: nothing,
     }
@@ -462,8 +493,12 @@ function playlistPageOf(replica: Replica, playlistId: number, songsOfPlaylist: (
     // 打开时拉过：以它为准；没拉过（还没到能拉的时候）才看后台同步
     const current = opening.get(playlistId) ?? null
     const failure = current
-      ? (current.status === 'failed' ? { failure: current.failure, source: 'open' as const, retry: 'open' as const } : null)
-      : syncFailure ? { failure: syncFailure, source: 'sync' as const, retry: 'open' as const } : null
+      ? (current.status === 'failed'
+          ? { failure: current.failure, source: 'open' as const, retry: 'open' as const }
+          : null)
+      : syncFailure
+        ? { failure: syncFailure, source: 'sync' as const, retry: 'open' as const }
+        : null
     return {
       inLibrary: true,
       kind: listed.playlist.kind,
@@ -483,15 +518,55 @@ function playlistPageOf(replica: Replica, playlistId: number, songsOfPlaylist: (
   switch (page?.status) {
     case undefined:
     case 'loading':
-      return { inLibrary: false, kind: null, info: null, private: false, content: null, songs: { kind: 'loading' }, more: null, failure: null, count: null, can: nothing }
+      return {
+        inLibrary: false,
+        kind: null,
+        info: null,
+        private: false,
+        content: null,
+        songs: { kind: 'loading' },
+        more: null,
+        failure: null,
+        count: null,
+        can: nothing,
+      }
     case 'failed':
-      return { inLibrary: false, kind: null, info: null, private: false, content: null, songs: { kind: 'loading' }, more: null, failure: { where: 'list', failure: page.failure, source: 'open', retry: 'open' }, count: null, can: nothing }
+      return {
+        inLibrary: false,
+        kind: null,
+        info: null,
+        private: false,
+        content: null,
+        songs: { kind: 'loading' },
+        more: null,
+        failure: {
+          where: 'list',
+          failure: page.failure,
+          source: 'open',
+          retry: 'open',
+        },
+        count: null,
+        can: nothing,
+      }
     case 'unavailable':
-      return { inLibrary: false, kind: null, info: null, private: false, content: null, songs: { kind: 'unavailable', reason: page.reason }, more: null, failure: null, count: null, can: nothing }
+      return {
+        inLibrary: false,
+        kind: null,
+        info: null,
+        private: false,
+        content: null,
+        songs: { kind: 'unavailable', reason: page.reason },
+        more: null,
+        failure: null,
+        count: null,
+        can: nothing,
+      }
     case 'shown': {
       const content = page.content
       const more = content.more
-      const failure = more?.status === 'failed' ? { failure: more.failure, source: 'open' as const, retry: 'open' as const } : null
+      const failure = more?.status === 'failed'
+        ? { failure: more.failure, source: 'open' as const, retry: 'open' as const }
+        : null
       return {
         inLibrary: false,
         kind: null,
@@ -528,10 +603,16 @@ function syncNoticeOf(replica: Replica, sync: SyncStatus): SyncNoticeState | nul
     for (const playlist of playlists) {
       const tracks = replica.tracks.get(playlist.id)
       const complete = tracks?.complete ?? false
-      const songs = tracks ? tracks.trackIds.reduce((count, id) => replica.songs.has(id) ? count + 1 : count, 0) : 0
+      const songs = tracks
+        ? tracks.trackIds.reduce((count, id) => replica.songs.has(id)
+            ? count + 1
+            : count, 0)
+        : 0
       if (!complete && (songs === 0 || playlist.kind === 'liked'))
         firstSync = true
-      done += complete ? (tracks?.trackIds.length ?? 0) : songs
+      done += complete
+        ? (tracks?.trackIds.length ?? 0)
+        : songs
       total += tracks?.trackIds.length ?? playlist.trackCount
     }
     progress = { done, total }
@@ -558,7 +639,9 @@ function syncNoticeOf(replica: Replica, sync: SyncStatus): SyncNoticeState | nul
  */
 export function syncNoticeFor(library: Pick<LibraryState, 'syncNotice'>, failureShown: boolean): SyncNoticeState | null {
   const notice = library.syncNotice
-  return failureShown && notice?.kind === 'failed' ? null : notice
+  return failureShown && notice?.kind === 'failed'
+    ? null
+    : notice
 }
 
 function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number, PlaylistOpening>, pages: Pages, notice: OperationNotice | null): LibraryState {
@@ -568,7 +651,9 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
   const songsOfPlaylist = (playlistId: number): PlaylistSongs | null => {
     if (!computed.has(playlistId)) {
       const playlist = playlists.get(playlistId)
-      computed.set(playlistId, playlist ? songsOf(replica, playlist) : null)
+      computed.set(playlistId, playlist
+        ? songsOf(replica, playlist)
+        : null)
     }
     return computed.get(playlistId) ?? null
   }
@@ -577,7 +662,9 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
   const albumPages = new Map(pages.albums)
   const artistPages = new Map(pages.artists)
   const neteasePages = new Map(pages.playlists)
-  const syncFailure = sync.status === 'failed' ? sync.failure : null
+  const syncFailure = sync.status === 'failed'
+    ? sync.failure
+    : null
   const pageCache = new Map<number, PlaylistPage>()
   const playlistPage = (playlistId: number): PlaylistPage => {
     let page = pageCache.get(playlistId)
@@ -590,14 +677,18 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
   return {
     playlists: replica.playlists,
     hearts: replica.hearts && new Set(replica.hearts),
-    liked: liked ? songsOfPlaylist(liked.id) : null,
+    liked: liked
+      ? songsOfPlaylist(liked.id)
+      : null,
     albums: replica.albums,
     artists: replica.artists,
     songsOf: songsOfPlaylist,
     opening: new Map(opening),
     albumPage: (albumId) => {
       const content = stored.get(albumId)
-      return albumPages.get(albumId) ?? (content ? { status: 'shown', content } : null)
+      return albumPages.get(albumId) ?? (content
+        ? { status: 'shown', content }
+        : null)
     },
     artistPage: artistId => artistPages.get(artistId) ?? null,
     neteasePlaylist: playlistId => neteasePages.get(playlistId) ?? null,
@@ -606,7 +697,9 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
     sync,
     syncNotice: syncNoticeOf(replica, sync),
     notice,
-    noticeActions: notice ? noticeActions(notice) : [],
+    noticeActions: notice
+      ? noticeActions(notice)
+      : [],
   }
 }
 
@@ -624,7 +717,10 @@ export function filterSongs(songs: readonly Song[], query: string): Song[] {
 
 /** 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成 */
 export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch {
-  return { songs: filterSongs(playlist.songs, query), incomplete: !playlist.complete }
+  return {
+    songs: filterSongs(playlist.songs, query),
+    incomplete: !playlist.complete,
+  }
 }
 
 function waitingStatus(waiting: Waiting): SyncStatus {
@@ -658,7 +754,12 @@ export function createLibrary(context: LibraryContext): Library {
   const waiting = new Map<number, AbortController>()
   let opening = new Map<number, PlaylistOpening>()
   /** 这次登录打开过的专辑页（本机存着、这次还没拉的不在这里）、歌手页、不在曲库里的歌单，取过的标签库 */
-  const pages = { albums: new Map<number, PageState<AlbumResponse>>(), artists: new Map<number, PageState<ArtistPage>>(), playlists: new Map<number, NeteasePlaylistPage>(), tags: null as PageState<PlaylistTagGroup[]> | null }
+  const pages = {
+    albums: new Map<number, PageState<AlbumResponse>>(),
+    artists: new Map<number, PageState<ArtistPage>>(),
+    playlists: new Map<number, NeteasePlaylistPage>(),
+    tags: null as PageState<PlaylistTagGroup[]> | null,
+  }
   /** 正在拉的专辑页：本机存着的专辑页拉的时候照常显示存着的，不记成加载中，所以另外记 */
   const fetchingAlbums = new Set<number>()
   /** 正在联网取的不在曲库里的歌单：打开过的再打开时照常显示记着的，所以另外记 */
@@ -692,7 +793,9 @@ export function createLibrary(context: LibraryContext): Library {
     local,
     session,
     replica: () => replica,
-    shown: () => replica ? shown(replica) : null,
+    shown: () => replica
+      ? shown(replica)
+      : null,
     overlay: {
       add: (entry) => {
         changes.push(entry)
@@ -766,9 +869,14 @@ export function createLibrary(context: LibraryContext): Library {
       return null
     // 单曲：我喜欢的音乐在最前，然后是自建歌单；多选按 Spec #98 去掉当前这张
     const listed = request.mode === 'song'
-      ? [...playlists.filter(playlist => playlist.kind === 'liked'), ...playlists.filter(playlist => playlist.kind === 'own')]
+      ? [
+          ...playlists.filter(playlist => playlist.kind === 'liked'),
+          ...playlists.filter(playlist => playlist.kind === 'own'),
+        ]
       : playlists.filter(playlist => playlist.kind === 'own' && playlist.id !== request.currentPlaylistId)
-    const song = request.mode === 'song' ? request.song : null
+    const song = request.mode === 'song'
+      ? request.song
+      : null
     return listed.map((playlist) => {
       const tracks = shownReplica.tracks.get(playlist.id)
       const total = tracks ? tracks.trackIds.length : playlist.trackCount
@@ -782,7 +890,9 @@ export function createLibrary(context: LibraryContext): Library {
         : song === null
           ? null
           : playlist.kind === 'liked'
-            ? (shownReplica.hearts?.includes(song.id) ? 'alreadyHearted' : null)
+            ? (shownReplica.hearts?.includes(song.id)
+                ? 'alreadyHearted'
+                : null)
             : alreadyInPlaylist ? 'alreadyInPlaylist' : null
       return { ...playlist, total, blocked }
     })
@@ -809,7 +919,11 @@ export function createLibrary(context: LibraryContext): Library {
     }
     if (fresh.length > TRACKS_PER_CHANGE) {
       const failure = { kind: 'invalid', problem: 'tooManySongs' } as const
-      notices.show({ kind: 'notChanged', change: { kind: 'addMany', playlist, songs: fresh }, failure })
+      notices.show({
+        kind: 'notChanged',
+        change: { kind: 'addMany', playlist, songs: fresh },
+        failure,
+      })
       return { ok: false, failure }
     }
     const result = await applyChange({ kind: 'addMany', playlist, songs: fresh })
@@ -817,8 +931,12 @@ export function createLibrary(context: LibraryContext): Library {
       return null
     if (result.ok && result.value === 'done')
       return { ok: true, added: fresh.length }
-    if (result.ok)
-      return { ok: false, failure: { kind: 'missing' } }
+    if (result.ok) {
+      return {
+        ok: false,
+        failure: { kind: 'missing' },
+      }
+    }
     return { ok: false, failure: result.failure }
   }
 
@@ -831,8 +949,11 @@ export function createLibrary(context: LibraryContext): Library {
   /** 发一个后台请求：经过后台通道（操作频繁、断网时等着再发）。这一轮结束、giveUp 了都不发 */
   function background<T>(mine: number, send: () => Promise<Result<T>>, giveUp?: AbortSignal): Promise<BackgroundSessionResult<T> | 'gaveUp'> {
     return session.background(send, (waitingFor) => {
-      if (session.isCurrent(mine))
-        publish(waitingFor ? waitingStatus(waitingFor) : { status: 'syncing' })
+      if (session.isCurrent(mine)) {
+        publish(waitingFor
+          ? waitingStatus(waitingFor)
+          : { status: 'syncing' })
+      }
     }, giveUp)
   }
 
@@ -892,8 +1013,17 @@ export function createLibrary(context: LibraryContext): Library {
   /** 一张歌单的曲目存进副本：tracks 是 at 那一刻的网易云，叠回那之后确认的修改 */
   function saveTracks(mine: number, playlistId: number, tracks: PlaylistTracks, at: number): Promise<boolean> {
     return save(mine, (current) => {
-      const merged = reapplied({ ...current, tracks: new Map([[playlistId, tracks]]) }, at).tracks.get(playlistId) ?? tracks
-      return { tracks: new Map([[playlistId, merged]]) }
+      const merged = reapplied({
+        ...current,
+        tracks: new Map([
+          [playlistId, tracks],
+        ]),
+      }, at).tracks.get(playlistId) ?? tracks
+      return {
+        tracks: new Map([
+          [playlistId, merged],
+        ]),
+      }
     }, () => {
       // 拉完了：之前打开时没拉成的说明不再显示
       if (tracks.complete)
@@ -935,7 +1065,9 @@ export function createLibrary(context: LibraryContext): Library {
     }
     if (deleted())
       return { ok: true, value: undefined }
-    return await saveTracks(mine, id, { ...tracks, complete: true }, at) ? { ok: true, value: undefined } : null
+    return await saveTracks(mine, id, { ...tracks, complete: true }, at)
+      ? { ok: true, value: undefined }
+      : null
   }
 
   /** 拉一张歌单；同一个版本已经有一处在拉（后台同步、听众打开）就等它，不重拉；拉的是别的版本就等它拉完再拉这个 */
@@ -976,8 +1108,11 @@ export function createLibrary(context: LibraryContext): Library {
     const fetched = await background(mine, request.send)
     if (!fetched || fetched === 'gaveUp')
       return null
-    if (fetched.ok)
-      return await save(mine, current => patchOf(fetched.value, current, request.at())) ? 'synced' : null
+    if (fetched.ok) {
+      return await save(mine, current => patchOf(fetched.value, current, request.at()))
+        ? 'synced'
+        : null
+    }
     if (skippable(fetched.failure))
       return fetched.failure
     publish({ status: 'failed', failure: fetched.failure })
@@ -1047,7 +1182,9 @@ export function createLibrary(context: LibraryContext): Library {
     }
     // 这一轮的请求都是在它开始以后发的：那之前确认的修改都已经在拿回来的数据里了，不用再记着
     changes = changes.filter(entry => entry.confirmedAt === null || entry.confirmedAt > startedAt)
-    publish(skipped ? { status: 'failed', failure: skipped } : { status: 'synced' })
+    publish(skipped
+      ? { status: 'failed', failure: skipped }
+      : { status: 'synced' })
   }
 
   function start(): void {
@@ -1071,21 +1208,39 @@ export function createLibrary(context: LibraryContext): Library {
       publish()
     }
     const before = pages.playlists.get(playlistId)
-    const shown = before?.status === 'shown' ? before.content : null
-    if (!shown)
+    const shown = before?.status === 'shown'
+      ? before.content
+      : null
+    if (!shown) {
       show({ status: 'loading' })
-    else if (shown.more)
-      show({ status: 'shown', content: { ...shown, more: { status: 'loading' } } })
+    }
+    else if (shown.more) {
+      show({
+        status: 'shown',
+        content: {
+          ...shown,
+          more: { status: 'loading' },
+        },
+      })
+    }
 
     const fetched = await session.api.get(endpoints.playlist, { id: playlistId })
     if (!fetched)
       return
     if (!fetched.ok) {
       fetchingPlaylists.delete(playlistId)
-      if (!shown)
+      if (!shown) {
         show({ status: 'failed', failure: fetched.failure })
-      else if (!shown.complete)
-        show({ status: 'shown', content: { ...shown, more: { status: 'failed', failure: fetched.failure } } })
+      }
+      else if (!shown.complete) {
+        show({
+          status: 'shown',
+          content: {
+            ...shown,
+            more: { status: 'failed', failure: fetched.failure },
+          },
+        })
+      }
       return
     }
     const page = fetched.value
@@ -1104,19 +1259,28 @@ export function createLibrary(context: LibraryContext): Library {
       tracksUpdatedAt,
     })
     for (const ids of chunks(trackIds.filter(id => !neteaseSongs.has(id)), SONGS_PER_REQUEST)) {
-      show({ status: 'shown', content: contentOf({ status: 'loading' }) })
+      show({
+        status: 'shown',
+        content: contentOf({ status: 'loading' }),
+      })
       const songs = await session.api.post(endpoints.songs, { ids })
       if (!songs)
         return
       if (!songs.ok) {
         fetchingPlaylists.delete(playlistId)
-        return show({ status: 'shown', content: contentOf({ status: 'failed', failure: songs.failure }) })
+        return show({
+          status: 'shown',
+          content: contentOf({ status: 'failed', failure: songs.failure }),
+        })
       }
       for (const song of songs.value.songs)
         neteaseSongs.set(song.id, song)
     }
     fetchingPlaylists.delete(playlistId)
-    show({ status: 'shown', content: contentOf(null) })
+    show({
+      status: 'shown',
+      content: contentOf(null),
+    })
   }
 
   /**
@@ -1129,7 +1293,9 @@ export function createLibrary(context: LibraryContext): Library {
   function submitted(result: SessionResult<WriteResponse>): Submitted | null {
     if (!result)
       return null
-    return result.ok ? { ok: true, value: result.value.kind } : result
+    return result.ok
+      ? { ok: true, value: result.value.kind }
+      : result
   }
 
   /**
@@ -1137,7 +1303,9 @@ export function createLibrary(context: LibraryContext): Library {
    * 发之前这一轮已经作废（退出、登录失效、换账号，可能就在排队或取令牌的时候）就不发，返回 null
    */
   async function submit(mine: number, change: ImmediateChange): Promise<Submitted | null> {
-    const send = <T>(call: () => Promise<Result<T>>): Promise<SessionResult<T>> | null => (session.isCurrent(mine) ? session.api.request(call) : null)
+    const send = <T>(call: () => Promise<Result<T>>): Promise<SessionResult<T>> | null => (session.isCurrent(mine)
+      ? session.api.request(call)
+      : null)
     const heart = heartOf(change)
     if (heart) {
       const result = await send(() => api.post(endpoints.heart, { songId: heart.song.id, hearted: heart.hearted }))
@@ -1147,11 +1315,15 @@ export function createLibrary(context: LibraryContext): Library {
       case 'heart':
         throw new Error('红心在上面已经提交了')
       case 'add': {
-        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: [change.song.id] }))
+        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, {
+          songIds: [change.song.id],
+        }))
         return result && submitted(result)
       }
       case 'addMany': {
-        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, { songIds: change.songs.map(song => song.id) }))
+        const result = await send(() => api.post(endpoints.addTracks, { id: change.playlist.id }, {
+          songIds: change.songs.map(song => song.id),
+        }))
         return result && submitted(result)
       }
       case 'collectAlbum': {
@@ -1166,8 +1338,12 @@ export function createLibrary(context: LibraryContext): Library {
         let body: PlaylistCollectRequest = { collected: false }
         if (change.collected) {
           const checkToken = await context.checkToken().catch(() => null)
-          if (!checkToken)
-            return { ok: false, failure: { kind: 'checkTokenUnavailable' } }
+          if (!checkToken) {
+            return {
+              ok: false,
+              failure: { kind: 'checkTokenUnavailable' },
+            }
+          }
           body = { collected: true, checkToken }
         }
         const result = await send(() => api.post(endpoints.collectPlaylist, { id: change.playlist.id }, body))
@@ -1219,7 +1395,15 @@ export function createLibrary(context: LibraryContext): Library {
         neteaseSongs.set(song.id, song)
       pages.playlists.set(change.playlist.id, {
         status: 'shown',
-        content: { playlist: change.playlist, songs, total, complete, more: null, trackIds: tracks.trackIds, tracksUpdatedAt: tracks.version },
+        content: {
+          playlist: change.playlist,
+          songs,
+          total,
+          complete,
+          more: null,
+          trackIds: tracks.trackIds,
+          tracksUpdatedAt: tracks.version,
+        },
       })
     }
   }
@@ -1243,7 +1427,14 @@ export function createLibrary(context: LibraryContext): Library {
     if (change.kind !== 'collectAlbum' || !change.collected)
       return patch
     const page = pages.albums.get(change.album.id)
-    return page?.status === 'shown' ? { ...patch, albumPages: new Map([[change.album.id, page.content]]) } : patch
+    return page?.status === 'shown'
+      ? {
+          ...patch,
+          albumPages: new Map([
+            [change.album.id, page.content],
+          ]),
+        }
+      : patch
   }
 
   /**
@@ -1299,7 +1490,11 @@ export function createLibrary(context: LibraryContext): Library {
       return null
     // 不合规的（界面先拦了，这里兜底）、断网时：不改，直接说没改成（规则⑨）
     const problem = changeProblem(change)
-    const failure: ChangeFailure | null = problem ? { kind: 'invalid', problem } : context.online() ? null : { kind: 'offline' }
+    const failure: ChangeFailure | null = problem
+      ? { kind: 'invalid', problem }
+      : context.online()
+        ? null
+        : { kind: 'offline' }
     if (failure) {
       notices.show({ kind: 'notChanged', change, failure })
       return { ok: false, failure }
@@ -1339,17 +1534,31 @@ export function createLibrary(context: LibraryContext): Library {
       if (!session.isCurrent(mine))
         return null
       forget()
-      const [stored, pending] = await Promise.all([local.readLibrary(), local.pendingChanges(account.id)])
+      const [stored, pending] = await Promise.all([
+        local.readLibrary(),
+        local.pendingChanges(account.id),
+      ])
       const shown: Replica = stored?.owner === account.id
         ? stored
-        : { owner: account.id, hearts: null, playlists: null, tracks: new Map(), songs: new Map(), albums: null, artists: null, albumPages: new Map() }
+        : {
+            owner: account.id,
+            hearts: null,
+            playlists: null,
+            tracks: new Map(),
+            songs: new Map(),
+            albums: null,
+            artists: null,
+            albumPages: new Map(),
+          }
       if (shown !== stored && session.isCurrent(mine))
         await local.resetLibrary(account.id)
       if (!session.isCurrent(mine))
         return null
       replica = shown
       // 上次关掉前有没确认的改动：同步拿到歌单列表以后重拉这几张、恢复原样（#35）
-      deferred.resume(stored?.owner === account.id ? pending : [])
+      deferred.resume(stored?.owner === account.id
+        ? pending
+        : [])
       status = { status: 'syncing' }
       return stateOf(shown, status, opening, pages, notices.current())
     },
@@ -1414,8 +1623,13 @@ export function createLibrary(context: LibraryContext): Library {
       const page = result.value
       pages.albums.set(albumId, { status: 'shown', content: page })
       publish()
-      if (current.albums?.some(album => album.id === albumId))
-        await save(mine, () => ({ albumPages: new Map([[albumId, page]]) }))
+      if (current.albums?.some(album => album.id === albumId)) {
+        await save(mine, () => ({
+          albumPages: new Map([
+            [albumId, page],
+          ]),
+        }))
+      }
     },
     async openArtist(artistId) {
       const shown = pages.artists.get(artistId)
@@ -1428,7 +1642,17 @@ export function createLibrary(context: LibraryContext): Library {
         return
       if (result.ok) {
         const { artist, hotSongs, albums, moreAlbums } = result.value
-        pages.artists.set(artistId, { status: 'shown', content: { artist, hotSongs, albums, moreAlbums: moreAlbums ? { status: 'notLoaded' } : null } })
+        pages.artists.set(artistId, {
+          status: 'shown',
+          content: {
+            artist,
+            hotSongs,
+            albums,
+            moreAlbums: moreAlbums
+              ? { status: 'notLoaded' }
+              : null,
+          },
+        })
       }
       else {
         pages.artists.set(artistId, { status: 'failed', failure: result.failure })
@@ -1444,14 +1668,31 @@ export function createLibrary(context: LibraryContext): Library {
         pages.artists.set(artistId, { status: 'shown', content })
         publish()
       }
-      show({ ...page, moreAlbums: { status: 'loading' } })
+      show({
+        ...page,
+        moreAlbums: { status: 'loading' },
+      })
       const result = await session.api.get(endpoints.artistAlbums, { id: artistId, offset: page.albums.length })
       if (!result)
         return
-      if (result.ok)
-        show({ ...page, albums: [...page.albums, ...result.value.albums], moreAlbums: result.value.more ? { status: 'notLoaded' } : null })
-      else
-        show({ ...page, moreAlbums: { status: 'failed', failure: result.failure } })
+      if (result.ok) {
+        show({
+          ...page,
+          albums: [
+            ...page.albums,
+            ...result.value.albums,
+          ],
+          moreAlbums: result.value.more
+            ? { status: 'notLoaded' }
+            : null,
+        })
+      }
+      else {
+        show({
+          ...page,
+          moreAlbums: { status: 'failed', failure: result.failure },
+        })
+      }
     },
     async openPlaylistTags() {
       const shown = pages.tags
@@ -1462,7 +1703,9 @@ export function createLibrary(context: LibraryContext): Library {
       const result = await session.api.get(endpoints.playlistTags)
       if (!result)
         return
-      pages.tags = result.ok ? { status: 'shown', content: result.value.groups } : { status: 'failed', failure: result.failure }
+      pages.tags = result.ok
+        ? { status: 'shown', content: result.value.groups }
+        : { status: 'failed', failure: result.failure }
       publish()
     },
     async change(change) {
@@ -1488,12 +1731,20 @@ export function createLibrary(context: LibraryContext): Library {
     async create(draft, songs = []) {
       const name = draft.name.trim()
       const problem = nameProblem(name)
-      if (problem)
-        return { ok: false, failure: { kind: 'invalid', problem } }
+      if (problem) {
+        return {
+          ok: false,
+          failure: { kind: 'invalid', problem },
+        }
+      }
       if (!replica)
         return null
-      if (!context.online())
-        return { ok: false, failure: { kind: 'offline' } }
+      if (!context.online()) {
+        return {
+          ok: false,
+          failure: { kind: 'offline' },
+        }
+      }
       const mine = session.current
       const result = await session.api.post(endpoints.createPlaylist, { name, private: draft.private })
       if (!result)

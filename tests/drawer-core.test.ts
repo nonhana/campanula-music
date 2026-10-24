@@ -29,7 +29,11 @@ function setup({ from = 'open', size = 800, open = from === 'open', pointerType 
     },
   })
   core.settle(open)
-  const grip = core.grip({ from, commit: () => said.push('commit'), tap: () => said.push('tap') })
+  const grip = core.grip({
+    from,
+    commit: () => said.push('commit'),
+    tap: () => said.push('tap'),
+  })
 
   let time = 0
   const sample = (y: number, buttons: number, extra: Partial<PointerSample> = {}): PointerSample => ({
@@ -213,12 +217,32 @@ describe('哪些按下才算开始拖', () => {
 
   it('第二根手指、鼠标右键按下都不开始拖', () => {
     const { core, grip, said } = setup()
-    const at = (y: number, extra: Partial<PointerSample>): PointerSample => ({ pointerId: 2, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1, x: 0, y, time: 0, ...extra })
+    const at = (y: number, extra: Partial<PointerSample>): PointerSample => ({
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      x: 0,
+      y,
+      time: 0,
+      ...extra,
+    })
     grip.press(at(100, { isPrimary: false }))
     grip.move(at(400, { isPrimary: false }))
     expect(core.pose.dragging).toBe(false)
-    grip.press(at(100, { pointerId: 3, pointerType: 'mouse', button: 2, buttons: 2 }))
-    grip.move(at(400, { pointerId: 3, pointerType: 'mouse', button: -1, buttons: 2 }))
+    grip.press(at(100, {
+      pointerId: 3,
+      pointerType: 'mouse',
+      button: 2,
+      buttons: 2,
+    }))
+    grip.move(at(400, {
+      pointerId: 3,
+      pointerType: 'mouse',
+      button: -1,
+      buttons: 2,
+    }))
     expect(core.pose.dragging).toBe(false)
     expect(said).toEqual([])
   })
@@ -347,7 +371,16 @@ describe('动画中抓住', () => {
 describe('按住结束了没有', () => {
   it('按住期间别的指针（第二根手指）松开、被取消：这次按住照常进行；按住真正结束（松开、作废、按住断了、往横里挪开）时 holding 变成 false', () => {
     const { core, grip, pointer } = setup()
-    const other = { pointerId: 9, pointerType: 'touch', isPrimary: false, button: 0, buttons: 0, x: 0, y: 0, time: 0 }
+    const other = {
+      pointerId: 9,
+      pointerType: 'touch',
+      isPrimary: false,
+      button: 0,
+      buttons: 0,
+      x: 0,
+      y: 0,
+      time: 0,
+    }
     expect(grip.holding).toBe(false)
     pointer.down(0)
     expect(grip.holding).toBe(true)

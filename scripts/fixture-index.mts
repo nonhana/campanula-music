@@ -41,12 +41,25 @@ export interface FixtureIndex {
 
 /** 数以千计的编号不进索引：预览里只留前 80 个字符 */
 function preview(value: unknown): unknown {
-  if (typeof value === 'string')
-    return value.length > 80 ? `${value.slice(0, 80)}…` : value
-  if (Array.isArray(value))
-    return value.length > 8 ? [...value.slice(0, 8).map(preview), `…共 ${value.length} 项`] : value.map(preview)
-  if (value !== null && typeof value === 'object')
-    return Object.fromEntries(Object.keys(value).sort().map(key => [key, preview((value as Record<string, unknown>)[key])]))
+  if (typeof value === 'string') {
+    return value.length > 80
+      ? `${value.slice(0, 80)}…`
+      : value
+  }
+  if (Array.isArray(value)) {
+    return value.length > 8
+      ? [
+          ...value.slice(0, 8).map(preview),
+          `…共 ${value.length} 项`,
+        ]
+      : value.map(preview)
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map(key => [
+      key,
+      preview((value as Record<string, unknown>)[key]),
+    ]))
+  }
   return value
 }
 
@@ -65,7 +78,9 @@ async function filesIn(dir: string): Promise<string[]> {
 
 async function metaOf(file: string, path: string): Promise<Record<string, unknown>> {
   const bytes = await readFile(file)
-  const text = path.endsWith('.gz') ? gunzipSync(bytes).toString('utf8') : bytes.toString('utf8')
+  const text = path.endsWith('.gz')
+    ? gunzipSync(bytes).toString('utf8')
+    : bytes.toString('utf8')
   const parsed = JSON.parse(text) as { context?: Record<string, unknown> }
   return parsed.context ?? {}
 }
@@ -94,13 +109,21 @@ export async function buildIndex(): Promise<FixtureIndex> {
       queryKey: queryKey(raw.query ?? {}),
       query: preview(raw.query ?? {}),
       status: response.status,
-      outcome: response.retryAfter !== undefined ? 'rateLimited' : rejected ? 'rejected' : 'ok',
+      outcome: response.retryAfter !== undefined
+        ? 'rateLimited'
+        : rejected ? 'rejected' : 'ok',
       validated,
       truncated: meta.truncated ?? null,
       constructed: meta.constructed === true,
-      viewer: typeof meta.viewer === 'string' ? meta.viewer : null,
-      sdk: typeof meta.sdk === 'string' ? meta.sdk : null,
-      note: typeof meta.note === 'string' ? meta.note : null,
+      viewer: typeof meta.viewer === 'string'
+        ? meta.viewer
+        : null,
+      sdk: typeof meta.sdk === 'string'
+        ? meta.sdk
+        : null,
+      note: typeof meta.note === 'string'
+        ? meta.note
+        : null,
     })
   }
   const modules: FixtureIndex['modules'] = {}

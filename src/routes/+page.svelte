@@ -39,8 +39,12 @@
   const likedId = $derived(library?.liked?.playlist.id ?? 0)
   const liked = $derived(library?.playlistPage(likedId) ?? null)
   /** 首页 liked 只有整块列表失败时才算“失败已说明”；部分歌的失败仍由同步条说 */
-  const notice = $derived(library && liked ? syncNoticeFor(library, liked.failure?.where === 'list') : null)
-  const strip = $derived(liked?.songs.kind === 'songs' ? liked.songs.songs.slice(0, 36) : [])
+  const notice = $derived(library && liked
+    ? syncNoticeFor(library, liked.failure?.where === 'list')
+    : null)
+  const strip = $derived(liked?.songs.kind === 'songs'
+    ? liked.songs.songs.slice(0, 36)
+    : [])
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
 
   /** 手机“我喜欢”标签里的歌单内搜索 */
@@ -69,7 +73,10 @@
   })
 
   function turn(dir: 1 | -1) {
-    stripEl?.scrollBy({ left: dir * stripEl.clientWidth, behavior: scrollBehavior() })
+    stripEl?.scrollBy({
+      left: dir * stripEl.clientWidth,
+      behavior: scrollBehavior(),
+    })
   }
 
   /** 我喜欢的音乐整块失败：同步失败重新同步，打开失败再打开这张歌单（拿不到资料时退回重新同步） */

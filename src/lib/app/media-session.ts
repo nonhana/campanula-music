@@ -63,7 +63,9 @@ export function connectMediaSession({ session, MediaMetadata, clock, player, rea
         title: song.name,
         artist: creditLine(song.artists),
         album: song.album.name ?? '',
-        artwork: [{ src: localCover(song.album.coverUrl) ?? thumbnailUrl(song.album.coverUrl, ARTWORK_SIZE), sizes: `${ARTWORK_SIZE}x${ARTWORK_SIZE}` }],
+        artwork: [
+          { src: localCover(song.album.coverUrl) ?? thumbnailUrl(song.album.coverUrl, ARTWORK_SIZE), sizes: `${ARTWORK_SIZE}x${ARTWORK_SIZE}` },
+        ],
       })
     }
     // 取地址、缓冲时也算在放：锁屏上一直是暂停键，切歌时不闪成播放键
@@ -73,11 +75,19 @@ export function connectMediaSession({ session, MediaMetadata, clock, player, rea
     const position = Math.min(state.position, duration)
     const now = clock.now()
     if (told && told.songId === song.id && told.duration === duration && told.playing === playing) {
-      const guessed = told.position + (playing ? (now - told.at) / 1000 : 0)
+      const guessed = told.position + (playing
+        ? (now - told.at) / 1000
+        : 0)
       if (Math.abs(position - guessed) <= POSITION_DRIFT)
         return
     }
-    told = { songId: song.id, duration, position, playing, at: now }
+    told = {
+      songId: song.id,
+      duration,
+      position,
+      playing,
+      at: now,
+    }
     session.setPositionState({ duration, position, playbackRate: 1 })
   }
 }

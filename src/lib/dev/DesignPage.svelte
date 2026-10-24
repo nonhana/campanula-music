@@ -29,7 +29,9 @@
       return direct
     const at = utility.lastIndexOf('-')
     const scale = palette[utility.slice(0, at)]
-    return typeof scale === 'string' ? scale : scale[utility.slice(at + 1)]
+    return typeof scale === 'string'
+      ? scale
+      : scale[utility.slice(at + 1)]
   }
 
   // 颜色名照 DESIGN.md，类名照 uno.config.ts 的色阶
@@ -37,57 +39,261 @@
     {
       title: '薄荷：选中、进度、正在播放、焦点',
       colors: [
-        { name: '晨光底', token: 'morning-ground', swatch: 'bg-primary-50', utility: 'primary-50' },
-        { name: '薄荷雾', token: 'mint-mist', swatch: 'bg-primary-100', utility: 'primary-100' },
-        { name: '薄荷玻璃', token: 'mint-glass', swatch: 'bg-primary-200', utility: 'primary-200' },
-        { name: '薄荷线', token: 'mint-line', swatch: 'bg-primary-300', utility: 'primary-300' },
-        { name: '薄荷', token: 'mint', swatch: 'bg-primary-400', utility: 'primary-400' },
-        { name: '新芽绿', token: 'mint-sprout', swatch: 'bg-primary-600', utility: 'primary-600' },
-        { name: '叶绿', token: 'mint-leaf', swatch: 'bg-primary-700', utility: 'primary-700' },
-        { name: '茎绿', token: 'mint-stem', swatch: 'bg-primary-800', utility: 'primary-800' },
-        { name: '深薄荷', token: 'deep-mint', swatch: 'bg-primary-900', utility: 'primary-900' },
-        { name: '森林墨', token: 'forest-ink', swatch: 'bg-primary-950', utility: 'primary-950' },
+        {
+          name: '晨光底',
+          token: 'morning-ground',
+          swatch: 'bg-primary-50',
+          utility: 'primary-50',
+        },
+        {
+          name: '薄荷雾',
+          token: 'mint-mist',
+          swatch: 'bg-primary-100',
+          utility: 'primary-100',
+        },
+        {
+          name: '薄荷玻璃',
+          token: 'mint-glass',
+          swatch: 'bg-primary-200',
+          utility: 'primary-200',
+        },
+        {
+          name: '薄荷线',
+          token: 'mint-line',
+          swatch: 'bg-primary-300',
+          utility: 'primary-300',
+        },
+        {
+          name: '薄荷',
+          token: 'mint',
+          swatch: 'bg-primary-400',
+          utility: 'primary-400',
+        },
+        {
+          name: '新芽绿',
+          token: 'mint-sprout',
+          swatch: 'bg-primary-600',
+          utility: 'primary-600',
+        },
+        {
+          name: '叶绿',
+          token: 'mint-leaf',
+          swatch: 'bg-primary-700',
+          utility: 'primary-700',
+        },
+        {
+          name: '茎绿',
+          token: 'mint-stem',
+          swatch: 'bg-primary-800',
+          utility: 'primary-800',
+        },
+        {
+          name: '深薄荷',
+          token: 'deep-mint',
+          swatch: 'bg-primary-900',
+          utility: 'primary-900',
+        },
+        {
+          name: '森林墨',
+          token: 'forest-ink',
+          swatch: 'bg-primary-950',
+          utility: 'primary-950',
+        },
       ],
     },
     {
       title: '蜜桃：这台设备、下载；珊瑚：红心',
       colors: [
-        { name: '蜜桃雾', token: 'peach-mist', swatch: 'bg-secondary-50', utility: 'secondary-50' },
-        { name: '蜜桃浅', token: 'peach-wash', swatch: 'bg-secondary-100', utility: 'secondary-100' },
-        { name: '蜜桃光', token: 'peach-glow', swatch: 'bg-secondary-200', utility: 'secondary-200' },
-        { name: '蜜桃枝', token: 'peach-ember', swatch: 'bg-secondary-800', utility: 'secondary-800' },
-        { name: '蜜桃木', token: 'peach-bark', swatch: 'bg-secondary-900', utility: 'secondary-900' },
-        { name: '珊瑚心', token: 'coral-heart', swatch: 'bg-accent-600', utility: 'accent-600' },
+        {
+          name: '蜜桃雾',
+          token: 'peach-mist',
+          swatch: 'bg-secondary-50',
+          utility: 'secondary-50',
+        },
+        {
+          name: '蜜桃浅',
+          token: 'peach-wash',
+          swatch: 'bg-secondary-100',
+          utility: 'secondary-100',
+        },
+        {
+          name: '蜜桃光',
+          token: 'peach-glow',
+          swatch: 'bg-secondary-200',
+          utility: 'secondary-200',
+        },
+        {
+          name: '蜜桃枝',
+          token: 'peach-ember',
+          swatch: 'bg-secondary-800',
+          utility: 'secondary-800',
+        },
+        {
+          name: '蜜桃木',
+          token: 'peach-bark',
+          swatch: 'bg-secondary-900',
+          utility: 'secondary-900',
+        },
+        {
+          name: '珊瑚心',
+          token: 'coral-heart',
+          swatch: 'bg-accent-600',
+          utility: 'accent-600',
+        },
       ],
     },
     {
       title: '中性色和状态',
       colors: [
-        { name: '纸白', token: 'paper', swatch: 'bg-white', utility: 'white' },
-        { name: '墨', token: 'ink', swatch: 'bg-neutral-900', utility: 'neutral-900' },
-        { name: '石墨深', token: 'graphite-deep', swatch: 'bg-neutral-800', utility: 'neutral-800' },
-        { name: '石墨重', token: 'graphite-strong', swatch: 'bg-neutral-700', utility: 'neutral-700' },
-        { name: '石墨', token: 'graphite', swatch: 'bg-neutral-600', utility: 'neutral-600' },
-        { name: '石墨淡', token: 'graphite-soft', swatch: 'bg-neutral-500', utility: 'neutral-500' },
-        { name: '发丝线', token: 'hairline', swatch: 'bg-neutral-200', utility: 'neutral-200' },
-        { name: '淡发丝', token: 'hairline-faint', swatch: 'bg-neutral-100', utility: 'neutral-100' },
-        { name: '试听底', token: 'trial-wash', swatch: 'bg-warning-50', utility: 'warning-50' },
-        { name: '试听字', token: 'trial-ink', swatch: 'bg-warning-900', utility: 'warning-900' },
-        { name: '出错底', token: 'error-wash', swatch: 'bg-error-50', utility: 'error-50' },
-        { name: '出错红', token: 'error-ink', swatch: 'bg-error-700', utility: 'error-700' },
+        {
+          name: '纸白',
+          token: 'paper',
+          swatch: 'bg-white',
+          utility: 'white',
+        },
+        {
+          name: '墨',
+          token: 'ink',
+          swatch: 'bg-neutral-900',
+          utility: 'neutral-900',
+        },
+        {
+          name: '石墨深',
+          token: 'graphite-deep',
+          swatch: 'bg-neutral-800',
+          utility: 'neutral-800',
+        },
+        {
+          name: '石墨重',
+          token: 'graphite-strong',
+          swatch: 'bg-neutral-700',
+          utility: 'neutral-700',
+        },
+        {
+          name: '石墨',
+          token: 'graphite',
+          swatch: 'bg-neutral-600',
+          utility: 'neutral-600',
+        },
+        {
+          name: '石墨淡',
+          token: 'graphite-soft',
+          swatch: 'bg-neutral-500',
+          utility: 'neutral-500',
+        },
+        {
+          name: '发丝线',
+          token: 'hairline',
+          swatch: 'bg-neutral-200',
+          utility: 'neutral-200',
+        },
+        {
+          name: '淡发丝',
+          token: 'hairline-faint',
+          swatch: 'bg-neutral-100',
+          utility: 'neutral-100',
+        },
+        {
+          name: '试听底',
+          token: 'trial-wash',
+          swatch: 'bg-warning-50',
+          utility: 'warning-50',
+        },
+        {
+          name: '试听字',
+          token: 'trial-ink',
+          swatch: 'bg-warning-900',
+          utility: 'warning-900',
+        },
+        {
+          name: '出错底',
+          token: 'error-wash',
+          swatch: 'bg-error-50',
+          utility: 'error-50',
+        },
+        {
+          name: '出错红',
+          token: 'error-ink',
+          swatch: 'bg-error-700',
+          utility: 'error-700',
+        },
       ],
     },
   ]
 
   const typeScale = [
-    { name: 'headline', size: '28 / 36', weight: 600, use: '桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）', cls: 'text-headline font-600', sample: '我喜欢的音乐', lang: undefined },
-    { name: 'headline-sm', size: '24 / 32', weight: 600, use: '手机的页面标题、桌面播放页的歌名', cls: 'text-headline-sm font-600', sample: '歌に形はないけれど', lang: 'ja' },
-    { name: 'title', size: '20 / 28', weight: 600, use: '首页的区块标题；手机播放页的歌名', cls: 'text-title font-600', sample: '歌单', lang: undefined },
-    { name: 'title-sm', size: '17 / 24', weight: '500 / 600', use: '弹窗标题、手机区块标题、播放队列标题、空状态标题、logo 字样', cls: 'text-title-sm font-600', sample: '清空全部下载？', lang: undefined },
-    { name: 'body', size: '15 / 22', weight: '400 / 500', use: '手机上的歌名、正文、说明；输入框', cls: 'text-body font-500', sample: '二人の絆 (U.N.オーエンは彼女なのか?)', lang: 'ja' },
-    { name: 'label', size: '14 / 20', weight: '400 / 500', use: '桌面的歌名、按钮、导航、chip', cls: 'text-label font-500', sample: '說好不哭 (with 五月天阿信)', lang: 'zh-TW' },
-    { name: 'caption', size: '13 / 20', weight: '400 / 500', use: '歌手、首数、时长、元信息、表头、提示', cls: 'text-caption font-400', sample: 'シャイニーカラーズ · 4,815 首 · 4:26', lang: 'ja' },
-    { name: 'micro', size: '11 / 18', weight: 500, use: '试听、无版权、未下载这类徽标', cls: 'text-micro font-500', sample: '试听 无版权 未下载', lang: undefined },
+    {
+      name: 'headline',
+      size: '28 / 36',
+      weight: 600,
+      use: '桌面的页面标题（歌单、专辑、歌手、已下载、搜索结果）',
+      cls: 'text-headline font-600',
+      sample: '我喜欢的音乐',
+      lang: undefined,
+    },
+    {
+      name: 'headline-sm',
+      size: '24 / 32',
+      weight: 600,
+      use: '手机的页面标题、桌面播放页的歌名',
+      cls: 'text-headline-sm font-600',
+      sample: '歌に形はないけれど',
+      lang: 'ja',
+    },
+    {
+      name: 'title',
+      size: '20 / 28',
+      weight: 600,
+      use: '首页的区块标题；手机播放页的歌名',
+      cls: 'text-title font-600',
+      sample: '歌单',
+      lang: undefined,
+    },
+    {
+      name: 'title-sm',
+      size: '17 / 24',
+      weight: '500 / 600',
+      use: '弹窗标题、手机区块标题、播放队列标题、空状态标题、logo 字样',
+      cls: 'text-title-sm font-600',
+      sample: '清空全部下载？',
+      lang: undefined,
+    },
+    {
+      name: 'body',
+      size: '15 / 22',
+      weight: '400 / 500',
+      use: '手机上的歌名、正文、说明；输入框',
+      cls: 'text-body font-500',
+      sample: '二人の絆 (U.N.オーエンは彼女なのか?)',
+      lang: 'ja',
+    },
+    {
+      name: 'label',
+      size: '14 / 20',
+      weight: '400 / 500',
+      use: '桌面的歌名、按钮、导航、chip',
+      cls: 'text-label font-500',
+      sample: '說好不哭 (with 五月天阿信)',
+      lang: 'zh-TW',
+    },
+    {
+      name: 'caption',
+      size: '13 / 20',
+      weight: '400 / 500',
+      use: '歌手、首数、时长、元信息、表头、提示',
+      cls: 'text-caption font-400',
+      sample: 'シャイニーカラーズ · 4,815 首 · 4:26',
+      lang: 'ja',
+    },
+    {
+      name: 'micro',
+      size: '11 / 18',
+      weight: 500,
+      use: '试听、无版权、未下载这类徽标',
+      cls: 'text-micro font-500',
+      sample: '试听 无版权 未下载',
+      lang: undefined,
+    },
   ] as const
 
   const radii = [
@@ -99,7 +305,11 @@
     { name: 'full', use: '按钮、搜索框、chip', cls: 'rounded-full' },
   ]
 
-  const filters = [{ key: 'standard', label: '标准' }, { key: 'higher', label: '较高' }, { key: 'exhigh', label: '极高' }] as const
+  const filters = [
+    { key: 'standard', label: '标准' },
+    { key: 'higher', label: '较高' },
+    { key: 'exhigh', label: '极高' },
+  ] as const
   type FilterKey = typeof filters[number]['key']
   let filter = $state<FilterKey>('standard')
   let query = $state('ロウワー')
@@ -254,7 +464,10 @@
           <StateBlock kind='empty' icon={ListMusic} title='这张歌单还没有歌' />
         </div>
         <div class='rounded-xl bg-white shadow-ambient'>
-          <StateBlock kind='error' title='这张歌单没能加载' body='网络已断开' action={{ label: '重试', run: () => {} }} />
+          <StateBlock kind='error' title='这张歌单没能加载' body='网络已断开' action={{
+            label: '重试',
+            run: () => {},
+          }} />
         </div>
       </div>
       <div class='mt-4 flex flex-wrap gap-3'>

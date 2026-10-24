@@ -65,7 +65,9 @@ describe('mock 曲库', () => {
     expect(list.some(item => item.id === createdId && item.trackCount === 0)).toBe(true)
     const before = (await store.likelist()).ids as number[]
     const seed = await buildSeed('before')
-    const song = [...seed.songs.keys()].find(id => !seed.liked.has(id))!
+    const song = [
+      ...seed.songs.keys(),
+    ].find(id => !seed.liked.has(id))!
     await store.heart(song, true)
     expect((await store.likelist()).ids as number[]).toContain(song)
     expect((await store.playlistDetail(LIKED_PLAYLIST))?.playlist.trackIds.map(track => track.id)).toContain(song)

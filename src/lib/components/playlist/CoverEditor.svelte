@@ -41,19 +41,27 @@
     { key: 'upload', label: '上传图片' },
     { key: 'set', label: '设为封面' },
   ] as const satisfies readonly { key: ShownStep, label: string }[]
-  const shownStep = (step: CoverStep): ShownStep => step === 'set' ? 'set' : 'upload'
+  const shownStep = (step: CoverStep): ShownStep => step === 'set'
+    ? 'set'
+    : 'upload'
   const orderOf = (step: ShownStep): number => STEPS.findIndex(item => item.key === step)
 
   /** 取景框边长：手机按屏宽，桌面固定；窗口太矮时留出按钮和说明的位置 */
-  const box = $derived(sheet ? Math.max(220, Math.min((innerWidth.current ?? 390) - 48, (innerHeight.current ?? 844) - 330)) : Math.max(260, Math.min(420, (innerHeight.current ?? 844) - 300)))
+  const box = $derived(sheet
+    ? Math.max(220, Math.min((innerWidth.current ?? 390) - 48, (innerHeight.current ?? 844) - 330))
+    : Math.max(260, Math.min(420, (innerHeight.current ?? 844) - 300)))
 
   let root = $state<HTMLElement>()
   let input = $state<HTMLInputElement>()
   /** 现在裁剪的是哪张预览：换了一张图才重置取景框 */
-  const croppedUrl = $derived(cover && 'image' in cover ? cover.image.url : null)
+  const croppedUrl = $derived(cover && 'image' in cover
+    ? cover.image.url
+    : null)
   let crop = $derived.by<CoverCrop>(() => {
     void croppedUrl
-    return untrack(() => cover && 'image' in cover ? centerCrop(cover.image.width, cover.image.height) : { x: 0, y: 0, size: 1 })
+    return untrack(() => cover && 'image' in cover
+      ? centerCrop(cover.image.width, cover.image.height)
+      : { x: 0, y: 0, size: 1 })
   })
 
   // 成功才关上（状态一变就收）；关的时候顺手收起浅路由
@@ -116,7 +124,9 @@
   } as const
 
   function stepState(step: ShownStep, upload: CoverUpload): 'done' | 'now' | 'todo' | 'fail' {
-    const current = upload.step === null ? -1 : orderOf(shownStep(upload.step))
+    const current = upload.step === null
+      ? -1
+      : orderOf(shownStep(upload.step))
     const at = orderOf(step)
     if (upload.failure && at === current)
       return 'fail'
@@ -170,7 +180,9 @@
       <header class='h-14 flex flex-none items-center gap-1 px-1'>
         <IconButton
           icon={X}
-          label={cover?.status === 'uploading' && cover.upload.step !== 'set' ? '取消上传' : '关闭'}
+          label={cover?.status === 'uploading' && cover.upload.step !== 'set'
+            ? '取消上传'
+            : '关闭'}
           disabled={!closable}
           onclick={close}
         />
@@ -227,7 +239,12 @@
         {#if why.body}<p class='mt-1.5 max-w-[36rem] text-body text-neutral-700'>{why.body}</p>{/if}
       </div>
     {:else if cover.status !== 'done'}
-      <div class={['flex flex-col items-center gap-3', cover.status === 'uploading' && cover.upload.step !== 'set' ? 'opacity-70' : '']}>
+      <div class={[
+        'flex flex-col items-center gap-3',
+        cover.status === 'uploading' && cover.upload.step !== 'set'
+          ? 'opacity-70'
+          : '',
+      ]}>
         <CoverCropper
           src={cover.image.url}
           width={cover.image.width}
@@ -248,7 +265,9 @@
             <ol class='w-full flex flex-col gap-2' aria-label='上传进度'>
               {#each STEPS as { key, label }, i (key)}
                 {@const state = stepState(key, cover.upload)}
-                <li class='flex items-center gap-2.5 text-label' aria-current={state === 'now' ? 'step' : undefined}>
+                <li class='flex items-center gap-2.5 text-label' aria-current={state === 'now'
+                  ? 'step'
+                  : undefined}>
                   <span class={['size-5 grid flex-none place-items-center rounded-full text-caption font-600', STEP_LOOK[state]]}>
                     {#if state === 'done'}
                       <Check size={13} aria-hidden='true' />
@@ -260,7 +279,11 @@
                       {i + 1}
                     {/if}
                   </span>
-                  <span class={state === 'todo' ? 'text-neutral-500' : state === 'fail' ? 'text-error-700' : 'text-neutral-900'}>{label}</span>
+                  <span class={state === 'todo'
+                    ? 'text-neutral-500'
+                    : state === 'fail'
+                    ? 'text-error-700'
+                    : 'text-neutral-900'}>{label}</span>
                   {#if state === 'done'}<span class='sr-only'>完成</span>{/if}
                 </li>
               {/each}

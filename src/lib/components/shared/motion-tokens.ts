@@ -120,7 +120,13 @@ export const LANDING_WAIT = 100
  * 换碟（DESIGN.md Cover Wheel）：封面挂在转盘边上，轴心在封面正下方、离封面中心 pivot 倍封面边长，相邻两张隔 pitch 度。
  * 歌名、歌手、专辑比封面晚 textDelay ms 横着飘：播放页旧的飘出 textOut px、新的飘进 textIn px（播放条用飘入飘出的默认距离）
  */
-export const WHEEL = { pivot: 1.6, pitch: 28, textDelay: 80, textOut: 12, textIn: 16 } as const
+export const WHEEL = {
+  pivot: 1.6,
+  pitch: 28,
+  textDelay: 80,
+  textOut: 12,
+  textIn: 16,
+} as const
 
 /**
  * 点歌时那一行的封面飞进播放条（DESIGN.md Song Row · 点歌）走的弧线有多弯：控制点离起止两点连线的正中 FLIGHT_ARC 倍连线长，

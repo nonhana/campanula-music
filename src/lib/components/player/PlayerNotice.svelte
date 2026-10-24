@@ -24,7 +24,9 @@
   const notice = $derived(view.state.player.notice)
 
   /** 提示放在哪：桌面底部正中，手机迷你播放条上方，手机播放页开着时顶上 */
-  const place = $derived<NoticePlace>(!phone ? 'desktop' : overPlayerPage ? 'top' : 'bottom')
+  const place = $derived<NoticePlace>(!phone
+    ? 'desktop'
+    : overPlayerPage ? 'top' : 'bottom')
   const arrival = noticeArrival(() => notice ? place : null)
 
   /** 量出提示多高；换位置时正在淡出的那块（Svelte 标成 inert）不算 */
@@ -46,10 +48,22 @@
         'notice fixed z-50 flex items-center gap-2.5 rounded-xl bg-white py-1.5 pl-3.5 pr-1.5 shadow-float',
         place === 'desktop'
           ? 'bottom-24 left-1/2 max-w-[min(560px,calc(100vw-48px))] w-max -translate-x-1/2'
-          : ['inset-x-2', place === 'top' ? 'top-16' : 'bottom-[calc(80px+env(safe-area-inset-bottom))]'],
+          : [
+            'inset-x-2',
+            place === 'top'
+              ? 'top-16'
+              : 'bottom-[calc(80px+env(safe-area-inset-bottom))]',
+          ],
       ]}
-      role={notice.kind === 'slow' ? 'status' : 'alert'}
-      transition:toast|global={{ edge: place === 'top' ? 'top' : 'bottom', moved: arrival.moved }}
+      role={notice.kind === 'slow'
+        ? 'status'
+        : 'alert'}
+      transition:toast|global={{
+        edge: place === 'top'
+          ? 'top'
+          : 'bottom',
+        moved: arrival.moved,
+      }}
       {@attach measure}
     >
       {#if notice.kind === 'slow'}

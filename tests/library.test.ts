@@ -95,17 +95,35 @@ describe('首次同步', () => {
       'POST /api/songs',
     ])
     // 我喜欢的音乐之后按歌单列表的顺序，每张拉一次曲目编号；歌曲信息只取还没有的：前面的歌单里已经有的不再取（和录制时取的一样）
-    expect(trackIdRequests(device)).toEqual([LIKED_ID, ...BEFORE.playlists.map(playlist => playlist.id)])
+    expect(trackIdRequests(device)).toEqual([
+      LIKED_ID,
+      ...BEFORE.playlists.map(playlist => playlist.id),
+    ])
     expect(songPages(device)).toEqual([
       ...[0, 1, 2, 3, 4].map(page => trackIds.slice(page * 1000, (page + 1) * 1000)),
       ...BEFORE.playlists.flatMap(playlist => playlist.pages.map(page => page.ids)),
     ])
     expect(world.netease.calls.filter(call => call.module !== 'song_detail').slice(2, 7).map(({ module, query }) => ({ module, query }))).toEqual([
-      { module: 'likelist', query: { uid: 10000001 } },
-      { module: 'user_playlist', query: { uid: 10000001, limit: 1000, offset: 0 } },
-      { module: 'album_sublist', query: { limit: 1000, offset: 0 } },
-      { module: 'artist_sublist', query: { limit: 1000, offset: 0 } },
-      { module: 'playlist_detail', query: { id: LIKED_ID } },
+      {
+        module: 'likelist',
+        query: { uid: 10000001 },
+      },
+      {
+        module: 'user_playlist',
+        query: { uid: 10000001, limit: 1000, offset: 0 },
+      },
+      {
+        module: 'album_sublist',
+        query: { limit: 1000, offset: 0 },
+      },
+      {
+        module: 'artist_sublist',
+        query: { limit: 1000, offset: 0 },
+      },
+      {
+        module: 'playlist_detail',
+        query: { id: LIKED_ID },
+      },
     ])
     const synced = app.state.library!
     expect(synced.sync).toEqual({ status: 'synced' })
@@ -117,7 +135,9 @@ describe('首次同步', () => {
     // 传到云盘、没匹配上曲库的歌照样同步下来：歌手名、专辑名是 null，由界面决定怎么显示
     expect(synced.liked?.songs.find(song => song.id === UPLOADED_SONG)).toMatchObject({
       name: 'Sugar life',
-      artists: [{ id: 0, name: null }],
+      artists: [
+        { id: 0, name: null },
+      ],
       album: { id: 0, name: null },
     })
     // 服务端只回界面用得到的字段：网易云的原始返回一页歌曲信息约 2.1 MB、曲目编号约 3.1 MB，Vercel 单次响应的上限是 4.5 MB
@@ -127,7 +147,9 @@ describe('首次同步', () => {
   it('歌单列表里每张歌单都带着简介、标签和播放次数：自建的、收藏的，和不在曲库里的歌单一样（user_playlist 和 playlist_detail 是同一份歌单，SDK 2.12.0）', async () => {
     const device = world.device()
     const { app } = await device.open()
-    await replyLibrary({ until: never() })
+    await replyLibrary({
+      until: never(),
+    })
     await signIn(world, app)
     await world.settle()
 
@@ -138,8 +160,18 @@ describe('首次同步', () => {
       tags: ['爵士', '夜晚', '怀旧'],
       playCount: 6173606,
     })
-    expect(playlists.find(playlist => playlist.id === BANG_DREAM_OWN_ID)).toMatchObject({ kind: 'own', description: '谢谢你带给我的感动！！', tags: [], playCount: 13 })
-    expect(playlists.find(playlist => playlist.id === RHYTHM_ID)).toMatchObject({ kind: 'own', description: null, tags: [], playCount: 439 })
+    expect(playlists.find(playlist => playlist.id === BANG_DREAM_OWN_ID)).toMatchObject({
+      kind: 'own',
+      description: '谢谢你带给我的感动！！',
+      tags: [],
+      playCount: 13,
+    })
+    expect(playlists.find(playlist => playlist.id === RHYTHM_ID)).toMatchObject({
+      kind: 'own',
+      description: null,
+      tags: [],
+      playCount: 439,
+    })
   })
 
   it('收藏的专辑和歌手各一次拿全，最近收藏的在前，存进本机副本；再次打开 App 先显示副本，不等同步，断网也照样在', async () => {
@@ -156,7 +188,9 @@ describe('首次同步', () => {
       id: 3149073,
       name: 'Keep The Village Alive',
       coverUrl: 'https://p3.music.126.net/GdQ9aQ3f3pscKhOpmIV4eA==/18345351510219723.jpg',
-      artists: [{ id: 99995, name: 'Stereophonics' }],
+      artists: [
+        { id: 99995, name: 'Stereophonics' },
+      ],
       songCount: 10,
     })
     expect(artists).toHaveLength(236)
@@ -180,7 +214,10 @@ describe('首次同步', () => {
     const app = await syncWithRejectedPage(device)
 
     const library = app.state.library!
-    expect(library.sync).toEqual({ status: 'failed', failure: { kind: 'upstreamChanged' } })
+    expect(library.sync).toEqual({
+      status: 'failed',
+      failure: { kind: 'upstreamChanged' },
+    })
     const bangDream = library.songsOf(BANG_DREAM_ID)!
     expect(bangDream).toMatchObject({ total: 1204, complete: false })
     expect(bangDream.songs.filter(song => BANG_DREAM_PAGE_2.ids.includes(song.id))).toEqual([])
@@ -196,7 +233,10 @@ describe('首次同步', () => {
 
     expect(songPages(device).slice(sentPages)).toEqual([BANG_DREAM_PAGE_2.ids])
     expect(trackIdRequests(device)).toHaveLength(sentTrackIds)
-    expect(app.state.library?.sync).toEqual({ status: 'failed', failure: { kind: 'upstreamChanged' } })
+    expect(app.state.library?.sync).toEqual({
+      status: 'failed',
+      failure: { kind: 'upstreamChanged' },
+    })
   })
 })
 
@@ -209,7 +249,12 @@ describe('本机副本', () => {
 
     const hearts = held()
     await world.netease.reply('login/user_account.vip.json')
-    await replyLibrary({ through: 'artists', holds: { hearts: { until: hearts.until } } })
+    await replyLibrary({
+      through: 'artists',
+      holds: {
+        hearts: { until: hearts.until },
+      },
+    })
     await world.netease.reply(PAGE_4_REJECTED)
     const { app } = await device.open()
 
@@ -237,7 +282,12 @@ describe('本机副本', () => {
     await world.netease.reply('login/logout.json')
     await app.logout()
     expect(app.state.library).toBeNull()
-    expect(await device.stored()).toMatchObject({ library: [], tracks: [], songs: [], albumPages: [] })
+    expect(await device.stored()).toMatchObject({
+      library: [],
+      tracks: [],
+      songs: [],
+      albumPages: [],
+    })
 
     const hearts = held()
     await replyLibrary({ through: 'hearts', until: hearts.until })
@@ -284,7 +334,13 @@ describe('本机副本', () => {
 
     expect(app.state.session).toEqual({ status: 'signedIn', account: ANOTHER_ACCOUNT })
     expect(app.state.library).toMatchObject({ playlists: null, liked: null, hearts: null })
-    expect(await device.stored()).toMatchObject({ library: [['owner', ANOTHER_ACCOUNT.id]], tracks: [], songs: [] })
+    expect(await device.stored()).toMatchObject({
+      library: [
+        ['owner', ANOTHER_ACCOUNT.id],
+      ],
+      tracks: [],
+      songs: [],
+    })
     expect(syncRequests(device).slice(sent).map(request => request.path)).toEqual(['/api/hearts?uid=10000002'])
   })
 })
@@ -307,7 +363,10 @@ describe('请求节奏', () => {
 
     const limitedAt = Date.now()
     expect(app.state.library?.sync).toEqual({ status: 'rateLimited', until: limitedAt + 30_000 })
-    expect(songPages(device)).toEqual([trackIds.slice(0, 1000), trackIds.slice(1000, 2000)])
+    expect(songPages(device)).toEqual([
+      trackIds.slice(0, 1000),
+      trackIds.slice(1000, 2000),
+    ])
 
     await world.clock.advance(29_999)
     expect(songPages(device)).toHaveLength(2)
@@ -382,7 +441,12 @@ describe('请求节奏', () => {
     expect(syncRequests(device)).toHaveLength(sent)
 
     const hearts = held()
-    await replyLibrary({ through: 'artists', holds: { hearts: { until: hearts.until } } })
+    await replyLibrary({
+      through: 'artists',
+      holds: {
+        hearts: { until: hearts.until },
+      },
+    })
     await world.netease.reply(PAGE_4_REJECTED)
     await signIn(world, reopened)
     expect(reopened.state.library?.songsOf(BANG_DREAM_ID)?.songs).toHaveLength(1204 - BANG_DREAM_PAGE_2.ids.length)
@@ -459,8 +523,15 @@ describe('歌单', () => {
     // 作者在官方 App 里往 poems 加了一首、移除了一首；录制时网易云另外三张歌单的更新时间也变了（歌没变）
     const app = await reopenWith(device, AFTER)
 
-    expect(trackIdRequests(device).slice(sentTrackIds)).toEqual([POEMS_ID, 900000012, 900000018, 3136952023])
-    expect(songPages(device).slice(sentPages)).toEqual([[910000111]])
+    expect(trackIdRequests(device).slice(sentTrackIds)).toEqual([
+      POEMS_ID,
+      900000012,
+      900000018,
+      3136952023,
+    ])
+    expect(songPages(device).slice(sentPages)).toEqual([
+      [910000111],
+    ])
     expect(app.state.library?.songsOf(POEMS_ID)?.songs.map(song => song.id)).toEqual([910000111, 910000102])
     expect(app.state.library?.sync).toEqual({ status: 'synced' })
   })
@@ -499,7 +570,14 @@ describe('歌单', () => {
     await adding
     await device.idle()
 
-    expect(app.state.library?.notice).toMatchObject({ kind: 'playlistMissing', change: { kind: 'add', playlist: { id: POEMS_ID }, song } })
+    expect(app.state.library?.notice).toMatchObject({
+      kind: 'playlistMissing',
+      change: {
+        kind: 'add',
+        playlist: { id: POEMS_ID },
+        song,
+      },
+    })
     expect(syncRequests(device).slice(sent).map(request => `${request.method} ${request.path}`)).toEqual([
       `POST /api/playlists/${POEMS_ID}/tracks`,
       'GET /api/hearts?uid=10000001',
@@ -573,7 +651,10 @@ describe('歌单', () => {
 
     device.setOnline(false)
     await app.openPlaylist(RHYTHM_ID)
-    expect(app.state.library?.opening.get(RHYTHM_ID)).toEqual({ status: 'failed', failure: { kind: 'offline' } })
+    expect(app.state.library?.opening.get(RHYTHM_ID)).toEqual({
+      status: 'failed',
+      failure: { kind: 'offline' },
+    })
     expect(app.state.library?.songsOf(RHYTHM_ID)).toMatchObject({ songs: [], complete: false })
 
     await replyAfterPoems()
@@ -746,8 +827,15 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
         await reply('artist_sublist', COLLECTED_ARTISTS)
       while (left('playlist_detail') < 2)
         await reply('playlist_detail', LIKED_TRACK_IDS)
-      while (left('song_detail') < 2)
-        await reply('song_detail', pick(['library/song_detail.vip.json', 'library/song_detail.vip.json', 'library/song_detail.vip.json', RATE_LIMITED, PAGE_4_REJECTED]))
+      while (left('song_detail') < 2) {
+        await reply('song_detail', pick([
+          'library/song_detail.vip.json',
+          'library/song_detail.vip.json',
+          'library/song_detail.vip.json',
+          RATE_LIMITED,
+          PAGE_4_REJECTED,
+        ]))
+      }
       while (left('logout') < 2)
         await reply('logout', 'login/logout.json')
       while (left('album') < 2)
@@ -765,8 +853,27 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
         await topUp()
         const { session, library } = app.state
         const actions = session.status === 'signedIn'
-          ? ['advance', 'release', 'release', 'network', 'logout', 'album', ...(library?.playlists ? ['open'] : []), ...(library?.sync.status === 'failed' ? ['retry'] : [])]
-          : ['advance', 'release', 'network', 'signIn', 'signIn']
+          ? [
+              'advance',
+              'release',
+              'release',
+              'network',
+              'logout',
+              'album',
+              ...(library?.playlists
+                ? ['open']
+                : []),
+              ...(library?.sync.status === 'failed'
+                ? ['retry']
+                : []),
+            ]
+          : [
+              'advance',
+              'release',
+              'network',
+              'signIn',
+              'signIn',
+            ]
         const action = pick(actions)
         steps.push(action)
         switch (action) {
@@ -789,7 +896,9 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
             // 不等它拉完：听众打开歌单后照样可以做别的。一半时候打开后台同步正轮到的那张（按歌单列表的顺序，第一张还没同步全的），
             // 前台和后台抢同一张歌单最容易出错
             const syncing = library!.playlists!.find(playlist => !library!.songsOf(playlist.id)?.complete)
-            void app.openPlaylist((syncing && random() < 0.5 ? syncing : pick(library!.playlists!)).id)
+            void app.openPlaylist((syncing && random() < 0.5
+              ? syncing
+              : pick(library!.playlists!)).id)
             break
           }
           case 'album':
@@ -814,7 +923,9 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
         const trackIdPaths = pending.filter(request => request.path.endsWith('/track-ids')).map(request => request.path)
         const sync = app.state.library?.sync.status
         /** 听众打开、正在用前台请求拉的歌单：每张最多再有一个请求在路上 */
-        const opening = [...app.state.library?.opening.values() ?? []].filter(open => open.status === 'loading').length
+        const opening = [
+          ...app.state.library?.opening.values() ?? [],
+        ].filter(open => open.status === 'loading').length
         expect(pending.length, `后台同步请求同时最多一个在路上（${where}）`).toBeLessThanOrEqual(1 + opening)
         expect(new Set(trackIdPaths).size, `同一张歌单的曲目编号不会同时拉两次（${where}）`).toBe(trackIdPaths.length)
         if (opening === 0)

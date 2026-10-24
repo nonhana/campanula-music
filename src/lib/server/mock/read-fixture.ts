@@ -8,6 +8,8 @@ const BASE = new URL('../../../../tests/fixtures/netease/', import.meta.url)
 
 export async function readFixture(path: string): Promise<RawFixture> {
   const bytes = await readFile(new URL(path, BASE))
-  const text = path.endsWith('.gz') ? gunzipSync(bytes).toString('utf8') : bytes.toString('utf8')
+  const text = path.endsWith('.gz')
+    ? gunzipSync(bytes).toString('utf8')
+    : bytes.toString('utf8')
   return JSON.parse(text) as RawFixture
 }

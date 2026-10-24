@@ -35,7 +35,12 @@ describe('加入歌单的目标和理由', () => {
     expect(rows).not.toBeNull()
 
     // 我喜欢的音乐在最前，然后是自建歌单（按歌单列表的顺序）；收藏的歌单不出现
-    expect(rows![0]).toMatchObject({ id: LIKED_ID, kind: 'liked', total: app.state.library?.liked?.total, blocked: null })
+    expect(rows![0]).toMatchObject({
+      id: LIKED_ID,
+      kind: 'liked',
+      total: app.state.library?.liked?.total,
+      blocked: null,
+    })
     expect(rows!.slice(1).every(target => target.kind === 'own')).toBe(true)
     expect(rows!.filter(target => target.kind === 'own').map(target => target.id)).toEqual(ownIds(app))
 
@@ -66,7 +71,14 @@ describe('加入歌单的目标和理由', () => {
     const { app } = await signInAtLikedTracks(device)
     // jazz 的曲目编号到了，歌曲信息还没到（录制里本来就没有它们的信息）
     await openJazz(app, { songsHeld: false })
-    const song: Song = { id: JAZZ_TRACKS[0]!, name: 'jazz 曲目', artists: [], album: { id: 0, name: '测试专辑', coverUrl: '' }, duration: 1, availability: 'full' }
+    const song: Song = {
+      id: JAZZ_TRACKS[0]!,
+      name: 'jazz 曲目',
+      artists: [],
+      album: { id: 0, name: '测试专辑', coverUrl: '' },
+      duration: 1,
+      availability: 'full',
+    }
 
     const rows = app.addTargets({ mode: 'song', song, currentPlaylistId: null })
     expect(rows!.find(target => target.id === JAZZ_ID)).toMatchObject({ blocked: null })
@@ -89,7 +101,14 @@ describe('加入歌单的目标和理由', () => {
   it('歌单列表还没同步到：两个模式都不给目标', async () => {
     const device = world.device()
     const { app } = await signInAtHearts(device)
-    const song: Song = { id: 1, name: '测试歌曲', artists: [], album: { id: 0, name: '测试专辑', coverUrl: '' }, duration: 1, availability: 'full' }
+    const song: Song = {
+      id: 1,
+      name: '测试歌曲',
+      artists: [],
+      album: { id: 0, name: '测试专辑', coverUrl: '' },
+      duration: 1,
+      availability: 'full',
+    }
 
     expect(app.state.library?.playlists).toBeNull()
     expect(app.addTargets({ mode: 'song', song, currentPlaylistId: null })).toBeNull()

@@ -28,10 +28,16 @@ export function playlistHeader(page: PlaylistPage): PlaylistHeader | null {
     return null
   const count = page.count === null
     ? ''
-    : page.songs.kind === 'songs' && !page.songs.complete ? `${formatCount(page.count.loaded)} / ${formatCount(page.count.total)} 首` : `${formatCount(page.count.total)} 首`
-  const plays = info.playCount > 0 ? `播放 ${formatPlays(info.playCount)}` : ''
+    : page.songs.kind === 'songs' && !page.songs.complete
+      ? `${formatCount(page.count.loaded)} / ${formatCount(page.count.total)} 首`
+      : `${formatCount(page.count.total)} 首`
+  const plays = info.playCount > 0
+    ? `播放 ${formatPlays(info.playCount)}`
+    : ''
   return {
-    name: page.kind === 'liked' ? '我喜欢的音乐' : info.name,
+    name: page.kind === 'liked'
+      ? '我喜欢的音乐'
+      : info.name,
     coverUrl: info.coverUrl,
     meta: [info.creator, count, plays].filter(Boolean),
     private: page.private,

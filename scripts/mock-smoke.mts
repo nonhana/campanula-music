@@ -48,6 +48,8 @@ try {
   console.log('mock 浏览器 smoke 通过：自动登录、同步 4,984 首、打开歌单、写入、刷新、重置')
 }
 catch (error) {
-  console.error(`mock 浏览器 smoke 失败：${error instanceof Error ? error.message : String(error)}`)
+  console.error(`mock 浏览器 smoke 失败：${error instanceof Error
+    ? error.message
+    : String(error)}`)
   process.exitCode = 1
 }

@@ -21,7 +21,9 @@ describe('打开 App', () => {
 
     expect(app.state.session).toEqual({ status: 'signedOut' })
     expect(app.state.library).toBeNull()
-    expect(device.requests).toEqual([{ method: 'GET', path: '/api/account' }])
+    expect(device.requests).toEqual([
+      { method: 'GET', path: '/api/account' },
+    ])
     expect(sessionModules()).toEqual([])
   })
 
@@ -31,14 +33,19 @@ describe('打开 App', () => {
 
     const { app } = await device.open()
 
-    expect(app.state.session).toEqual({ status: 'checkFailed', failure: { kind: 'offline' } })
+    expect(app.state.session).toEqual({
+      status: 'checkFailed',
+      failure: { kind: 'offline' },
+    })
     expect(device.requests).toEqual([])
 
     device.setOnline(true)
     await app.open()
 
     expect(app.state.session).toEqual({ status: 'signedOut' })
-    expect(device.requests).toEqual([{ method: 'GET', path: '/api/account' }])
+    expect(device.requests).toEqual([
+      { method: 'GET', path: '/api/account' },
+    ])
   })
 
   it('已登录：问网易云当前账号，显示头像和昵称', async () => {
@@ -145,7 +152,12 @@ describe('退出登录', () => {
     await device.idle()
 
     expect(other.state.session).toEqual({ status: 'signedOut' })
-    expect(sessionModules()).toEqual(['captcha_sent', 'login_cellphone', 'user_account', 'logout'])
+    expect(sessionModules()).toEqual([
+      'captcha_sent',
+      'login_cellphone',
+      'user_account',
+      'logout',
+    ])
   })
 
   it('另一个标签页正在打开、续期时退出：续期回来的新登录 Cookie 不会把刚退出的登录又带回来', async () => {
@@ -155,7 +167,10 @@ describe('退出登录', () => {
     await world.clock.advance(24 * HOUR)
 
     let renewalArrives!: () => void
-    await world.netease.reply('login/login_refresh.sms.json', { cookie: renewCookies(), until: new Promise(resolve => (renewalArrives = resolve)) })
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+      until: new Promise(resolve => (renewalArrives = resolve)),
+    })
     await world.netease.reply('login/user_account.vip.json')
     await world.netease.reply('login/logout.json')
     const opening = device.open()
@@ -203,7 +218,9 @@ describe('续期', () => {
     await device.open()
 
     await world.clock.advance(1)
-    await world.netease.reply('login/login_refresh.sms.json', { cookie: renewCookies() })
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    })
     await world.netease.reply('login/user_account.vip.json')
     const { app: renewed } = await device.open()
 
@@ -227,10 +244,16 @@ describe('续期', () => {
     const signedIn = world.netease.calls.length
     await world.clock.advance(24 * HOUR)
 
-    await world.netease.reply('login/login_refresh.sms.json', { cookie: renewCookies() })
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    })
     for (let tab = 0; tab < 3; tab += 1)
       await world.netease.reply('login/user_account.vip.json')
-    const tabs = await Promise.all([device.open(), device.open(), device.open()])
+    const tabs = await Promise.all([
+      device.open(),
+      device.open(),
+      device.open(),
+    ])
 
     for (const { app: opened } of tabs)
       expect(opened.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
@@ -249,7 +272,9 @@ describe('续期', () => {
     const signedIn = world.netease.calls.length
 
     await world.netease.reply('login/user_account.anonymous.json')
-    await world.netease.reply('login/login_refresh.sms.json', { cookie: renewCookies() })
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    })
     await world.netease.reply('login/user_account.vip.json')
     const { app: reopened } = await device.open()
 
@@ -279,9 +304,14 @@ describe('续期', () => {
     const { app: reopened } = await device.open()
 
     expect(reopened.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
-    expect(world.serverLogs).toContainEqual({ level: 'warn', text: expect.stringContaining('login_refresh') })
+    expect(world.serverLogs).toContainEqual({
+      level: 'warn',
+      text: expect.stringContaining('login_refresh'),
+    })
 
-    await world.netease.reply('login/login_refresh.sms.json', { cookie: renewCookies() })
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    })
     await world.netease.reply('login/user_account.vip.json')
     await device.open()
 
