@@ -48,8 +48,11 @@ export interface LayerOptions<R, F = never> {
   focusReturn?: () => F | null
   /** 只表示 DOM 包含关系，不表示业务归属。 */
   parent?: string
-  /** 这条请求不能比来源层活得更久（批量加入歌单、换封面、播放队列）。 */
-  dependsOn?: string
+  /**
+   * 这条请求不能比来源层活得更久（加入歌单的多选、换封面、播放队列）。
+   * 可以按请求给不同的来源层：同一个选择器，多选的请求依赖多选层，单曲的不依赖（#73）
+   */
+  dependsOn?: string | ((request: Readonly<R>) => string | null)
   /** 只有播放类的层才登记同一会话内的前进恢复。 */
   restore?: () => boolean
   beforeClose?: () => boolean
@@ -78,6 +81,11 @@ interface Registration<F> {
   active: Entry<F> | null
   pendingId: number | null
   sheet: boolean
+}
+
+/** 这一条请求依赖哪个来源层；不依赖是 null */
+function dependencyOf<F>(options: LayerOptions<Request<F>, F>, request: Request<F>): string | null {
+  return typeof options.dependsOn === 'function' ? options.dependsOn(request) : options.dependsOn ?? null
 }
 
 interface Entry<F> {
@@ -128,6 +136,9 @@ export class OverlayStack<F> {
         ...options,
         history: request => options.history(request as Readonly<R>),
         modal: typeof options.modal === 'function' ? request => (options.modal as (request: Readonly<R>) => boolean)(request as Readonly<R>) : options.modal,
+        dependsOn: typeof options.dependsOn === 'function'
+          ? request => (options.dependsOn as (request: Readonly<R>) => string | null)(request as Readonly<R>)
+          : options.dependsOn,
       },
       active: null,
       pendingId: null,
@@ -275,7 +286,8 @@ export class OverlayStack<F> {
         return 'invalidated'
       if ((source && (!previous || previous !== this.layers.at(-1) || previous.busy)) || registration.active)
         return 'cancelled'
-      if (registration.options.dependsOn && !this.layers.some(entry => entry.registration.name === registration.options.dependsOn && entry.valid))
+      const dependsOn = dependencyOf(registration.options, request)
+      if (dependsOn && !this.layers.some(entry => entry.registration.name === dependsOn && entry.valid))
         return 'cancelled'
       const from = this.history.read()
       const historical = registration.options.history(request)
@@ -354,7 +366,7 @@ export class OverlayStack<F> {
       const names = new Set([registration.name])
       const removed: Entry<F>[] = []
       for (const entry of this.layers) {
-        if (!names.has(entry.registration.name) && !names.has(entry.registration.options.dependsOn ?? ''))
+        if (!names.has(entry.registration.name) && !names.has(dependencyOf(entry.registration.options, entry.request) ?? ''))
           continue
         names.add(entry.registration.name)
         entry.valid = false
@@ -448,7 +460,8 @@ export class OverlayStack<F> {
         const active = this.layers.includes(entry)
         if (!active && !entry.registration.options.restore?.())
           continue
-        if (entry.registration.options.dependsOn && !next.some(parent => parent.registration.name === entry.registration.options.dependsOn))
+        const dependsOn = dependencyOf(entry.registration.options, entry.request)
+        if (dependsOn && !next.some(parent => parent.registration.name === dependsOn))
           continue
         next.push(entry)
       }

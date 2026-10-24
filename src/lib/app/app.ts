@@ -10,7 +10,7 @@ import type { CheckIns } from './check-ins'
 import type { CoverOutcome, CoverState } from './cover'
 import type { DailyState } from './daily'
 import type { DownloadBlock, DownloadsState } from './downloads'
-import type { AddSongsOutcome, CreateOutcome, Library, LibraryState, PlaylistSearch } from './library'
+import type { AddSongsOutcome, AddTarget, AddTargetsRequest, CreateOutcome, Library, LibraryState, PlaylistSearch } from './library'
 import type { LoginState } from './login'
 import type { LyricsState } from './lyrics'
 import type { NoticeAction } from './notice'
@@ -221,10 +221,11 @@ export interface App {
    */
   addSongsToPlaylist: (playlistId: number, songs: readonly Song[]) => Promise<AddSongsOutcome>
   /**
-   * 批量“加入歌单”的目标：除了当前歌单以外的自建歌单（我喜欢的音乐、收藏的歌单不出现，不做批量红心）。
-   * 歌单列表还没拿到时是 null
+   * 加入歌单的目标和不可选理由：单曲是我喜欢的音乐（在最前）和自建歌单，当前歌单、已红心、已在歌单里写明理由；
+   * 多选只有当前歌单以外的自建歌单（我喜欢的音乐、收藏的歌单不出现；红心只能一首一首点）。
+   * 界面照着画，措辞自己负责；歌单列表还没拿到时是 null
    */
-  addTargets: (currentPlaylistId: number) => Playlist[] | null
+  addTargets: (request: AddTargetsRequest) => AddTarget[] | null
   /**
    * 从自建歌单移除几首（多选）：先从本地拿掉，提示条留 5 秒撤销，没撤销才提交；失败放回原位、可以重试。
    * 我喜欢的音乐、收藏的歌单没有移除：不是自建歌单时抛错。断网时不改本地、直接说没改成

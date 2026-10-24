@@ -14,7 +14,7 @@ export interface HeartRequest {
 
 /**
  * 加入歌单、从歌单移除一次最多几首（验证关卡②：一次加 9,000 首成功；再大没验证过）。
- * 批量加入、批量移除都是一次请求带上全部编号
+ * 一次加入几首、一次移除几首都是一次请求带上全部编号
  */
 export const TRACKS_PER_CHANGE = 9000
 

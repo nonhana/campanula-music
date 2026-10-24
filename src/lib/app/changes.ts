@@ -138,7 +138,7 @@ export function targetOf(change: Change): string {
     case 'addMany':
     case 'remove':
     case 'order':
-      // 批量加歌、移除、排序都是同一张歌单的曲目：按先后一次一次提交，免得后发的先到
+      // 一次加几首、移除、排序都是同一张歌单的曲目：按先后一次一次提交，免得后发的先到
       return `tracks:${change.playlist.id}`
     case 'playlistOrder':
       // 曲库的整个歌单列表是一样东西：两次拖动的顺序按先后提交

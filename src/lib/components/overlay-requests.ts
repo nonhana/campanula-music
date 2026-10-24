@@ -30,10 +30,23 @@ export interface PlaylistMenuRequest extends MenuRequest {
   readonly playlistId: number
 }
 
-export interface BatchPickerRequest extends MenuRequest {
-  readonly songs: readonly Song[]
-  readonly currentPlaylistId: number
-}
+/**
+ * 加入歌单的选择器（#73）：单曲和多选共用同一个。
+ * mode song 是歌曲菜单转交来的，songs 只有这一首；mode multi 是多选的工具条打开的，songs 是勾选的几首。
+ * currentPlaylistId 是打开时所在的那张歌单：单曲菜单在歌单页打开时是它（“当前歌单”），多选一定是。
+ */
+export type AddToPlaylistRequest
+  = | (MenuRequest & {
+    readonly mode: 'song'
+    readonly song: Song
+    readonly songs: readonly Song[]
+    readonly currentPlaylistId: number | null
+  })
+  | (MenuRequest & {
+    readonly mode: 'multi'
+    readonly songs: readonly Song[]
+    readonly currentPlaylistId: number
+  })
 
 export type EditorRequest
   = | (DialogRequest & { readonly mode: 'new', readonly songs: readonly Song[] })
