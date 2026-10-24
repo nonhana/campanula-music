@@ -14,7 +14,7 @@ import process from 'node:process'
 
 import { createGenerator } from 'unocss'
 
-import config from '../uno.config.ts'
+import config from '../uno.config.mts'
 
 const ROOT = join(import.meta.dirname, '..')
 const SRC = join(ROOT, 'src')

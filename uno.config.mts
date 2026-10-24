@@ -9,7 +9,7 @@ import type { Theme } from 'unocss/preset-mini'
 
 import { TILE_GRID_SAFELIST } from './src/lib/components/library/tile-grid'
 import { AXES, cssEasing, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/shared/motion-tokens'
-import { colors, skeleton } from './uno.palette'
+import { colors, skeleton } from './uno.palette.mts'
 
 // 设计系统的源头（DESIGN.md、.impeccable/design.json）：色板在 uno.palette.ts，两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
 // 动效的数字在 src/lib/components/shared/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类。
