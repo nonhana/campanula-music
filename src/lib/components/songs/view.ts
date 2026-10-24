@@ -1,7 +1,7 @@
 import type { LucideIcon } from '@lucide/svelte'
 import type { Song } from '#lib/api/library.js'
-import type { ScrollMark } from '../ui/scroll-marks'
-import { formatCount, langOf } from '../text'
+import type { ScrollMark } from '../shared/scroll-marks'
+import { formatCount, langOf } from '../shared/text'
 
 /** 歌曲列表一行的高度（px，DESIGN.md Song Row）：列表、拖动、已下载、播放队列、添加歌曲共用 */
 export const SONG_ROW_HEIGHT = 56

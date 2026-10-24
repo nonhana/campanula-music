@@ -1,4 +1,4 @@
-import type { RequestFailure, Result } from './api'
+import type { RequestFailure, Result } from './api-client'
 import type { Clock, NetworkStatus } from './browser'
 
 // 请求节奏（Spec #11“客户端：请求节奏”，逻辑原型“原型证明有必要的做法”第 1 条）：

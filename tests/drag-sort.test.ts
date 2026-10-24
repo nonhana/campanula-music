@@ -1,7 +1,7 @@
-import type { DragSortEdges, DragSortResult, DragSortSession, DragSortState, GridTrack, RowTrack } from '#lib/components/drag-sort.js'
-import type { PointerSample } from '#lib/components/press.js'
+import type { DragSortEdges, DragSortResult, DragSortSession, DragSortState, GridTrack, RowTrack } from '#lib/components/shared/drag-sort.js'
+import type { PointerSample } from '#lib/components/shared/press.js'
 import { describe, expect, it } from 'vitest'
-import { createDragSortSession, gridTrack, movedBefore, rowTrack } from '#lib/components/drag-sort.js'
+import { createDragSortSession, gridTrack, movedBefore, rowTrack } from '#lib/components/shared/drag-sort.js'
 
 // 第二个测试接入点“拖动手势核心”（Spec #11 Testing Decisions，delivery.md 第 2 步）：
 // 不碰页面、不碰 Svelte 的纯逻辑。三个拖动排序器（手机歌单行、桌面歌单网格、多选拖歌）共用这一份按下协议、

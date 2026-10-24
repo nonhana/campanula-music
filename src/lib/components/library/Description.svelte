@@ -6,9 +6,9 @@
 -->
 <script lang='ts'>
   import { flushSync } from 'svelte'
-  import { animateHeight } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
-  import { langOf } from '../text'
+  import { animateHeight } from '../shared/motion'
+  import { DURATIONS } from '../shared/motion-tokens'
+  import { langOf } from '../shared/text'
 
   interface Props {
     text: string

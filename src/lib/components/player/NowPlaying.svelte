@@ -6,14 +6,14 @@
   两个播放条只差尺寸、按钮的悬停/按下样式和歌名与试听标之间的空隙，所以只把这几样当参数
 -->
 <script lang='ts'>
-  import { getAppView } from '../app-context.svelte'
-  import { landingOf } from '../cover-flight.svelte'
-  import { fade } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
-  import { currentSong } from '../now'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { fade } from '../shared/motion'
+  import { DURATIONS } from '../shared/motion-tokens'
+  import { artistLine, langOf } from '../shared/text'
   import SongBadge from '../songs/SongBadge.svelte'
-  import { artistLine, langOf } from '../text'
+  import { landingOf } from './cover-flight.svelte'
   import CoverWheel from './CoverWheel.svelte'
+  import { currentSong } from './now'
   import { playerPageActions, prefetchPageCover } from './player-page.svelte'
   import SongSwap from './SongSwap.svelte'
 

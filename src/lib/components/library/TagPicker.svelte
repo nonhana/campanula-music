@@ -9,7 +9,7 @@
   import type { PageState } from '#lib/app/library.js'
   import { X } from '@lucide/svelte'
   import { PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
-  import { failureText } from '../failure'
+  import { failureText } from '../shared/failure'
   import Button from '../ui/Button.svelte'
   import FilterChip from '../ui/FilterChip.svelte'
   import Scrollbar from '../ui/Scrollbar.svelte'

@@ -13,7 +13,7 @@
   import type { Snippet } from 'svelte'
   import type { HTMLButtonAttributes } from 'svelte/elements'
   import { LoaderCircle } from '@lucide/svelte'
-  import { busyClick } from './busy'
+  import { busyClick } from '../shared/busy'
 
   interface Props extends Omit<HTMLButtonAttributes, 'children'> {
     variant: 'primary' | 'download' | 'outline' | 'destructive'

@@ -8,8 +8,8 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { Lock } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { formatCount, langOf } from '../text'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { formatCount, langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
   import { collectState } from './collect'

@@ -7,12 +7,12 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { ChevronRight, CircleArrowDown } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import Brand from '../Brand.svelte'
-  import { desktopLayout } from '../layout'
-  import { float } from '../motion'
-  import { FLOAT_IN_DELAY } from '../motion-tokens'
-  import { formatCount } from '../text'
+  import Brand from '../boot/Brand.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { desktopLayout } from '../shared/layout'
+  import { float } from '../shared/motion'
+  import { FLOAT_IN_DELAY } from '../shared/motion-tokens'
+  import { formatCount } from '../shared/text'
   import Scrollbar from '../ui/Scrollbar.svelte'
   import LoginForm from './LoginForm.svelte'
 

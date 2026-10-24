@@ -7,8 +7,8 @@
   import type { Snippet } from 'svelte'
   import type { HTMLInputAttributes } from 'svelte/elements'
   import { Search, X } from '@lucide/svelte'
-  import { fade } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
+  import { fade } from '../shared/motion'
+  import { DURATIONS } from '../shared/motion-tokens'
 
   interface Props extends Omit<HTMLInputAttributes, 'value' | 'type' | 'aria-label'> {
     value: string

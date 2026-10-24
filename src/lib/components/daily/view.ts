@@ -2,7 +2,7 @@ import type { Song } from '#lib/api/library.js'
 import type { PlaySource } from '#lib/api/playback.js'
 import type { DailyFailure, DailyState } from '#lib/app/daily.js'
 import { dailyDayAt } from '#lib/app/daily.js'
-import { failureText } from '../failure'
+import { failureText } from '../shared/failure'
 
 // 每日推荐在界面上怎么写：哪一天、一共多长、没拉成时怎么说
 

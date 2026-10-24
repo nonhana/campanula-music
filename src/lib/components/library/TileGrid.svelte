@@ -7,7 +7,7 @@
   import type { LucideIcon } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import type { TileGridLayout, TileKind } from './tile-grid'
-  import { fadeAway, reveal, stagger } from '../motion'
+  import { fadeAway, reveal, stagger } from '../shared/motion'
   import StateBlock from '../ui/StateBlock.svelte'
   import Shelf from './Shelf.svelte'
   import { tileCellClass, tileGridLook, tileListClass } from './tile-grid'

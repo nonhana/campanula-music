@@ -1,5 +1,5 @@
 import type { WriteResponse } from '#lib/api/write.js'
-import type { Api, Result } from './api'
+import type { Api, Result } from './api-client'
 import type { LocksCapability } from './browser'
 import type { PendingCheckIn, PendingCheckIns } from './saved-queue'
 import type { SessionRound } from './session-round'

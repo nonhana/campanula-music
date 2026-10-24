@@ -4,8 +4,8 @@
 -->
 <script lang='ts'>
   import { ArrowUpDown, CircleArrowDown, CirclePlus, Ellipsis, ListMusic, ListPlus, ListX, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
-  import Brand from '#lib/components/Brand.svelte'
-  import { desktopLayout } from '#lib/components/layout.js'
+  import Brand from '#lib/components/boot/Brand.svelte'
+  import { desktopLayout } from '#lib/components/shared/layout.js'
   import DesktopShell from '#lib/components/shell/DesktopShell.svelte'
   import PhoneShell from '#lib/components/shell/PhoneShell.svelte'
   import Button from '#lib/components/ui/Button.svelte'
@@ -19,50 +19,62 @@
   import TextField from '#lib/components/ui/TextField.svelte'
   import ToolButton from '#lib/components/ui/ToolButton.svelte'
   import { DESIGN_PAGE_MARKER } from '#lib/dev/design-marker.js'
+  import { colors } from '../../../uno.palette'
+
+  /** 色板只在 uno.palette.ts 写一份（uno.config.ts 的 theme 也用它）：这里按工具类名读十六进制值（纸白 paper 是 white） */
+  const palette = colors as Record<string, string | Record<string, string>>
+  function colorHex(utility: string): string {
+    const direct = palette[utility]
+    if (typeof direct === 'string')
+      return direct
+    const at = utility.lastIndexOf('-')
+    const scale = palette[utility.slice(0, at)]
+    return typeof scale === 'string' ? scale : scale[utility.slice(at + 1)]
+  }
 
   // 颜色名照 DESIGN.md，类名照 uno.config.ts 的色阶
   const colorGroups = [
     {
       title: '薄荷：选中、进度、正在播放、焦点',
       colors: [
-        { name: '晨光底', token: 'morning-ground', swatch: 'bg-primary-50', utility: 'primary-50', hex: '#F5FCF9' },
-        { name: '薄荷雾', token: 'mint-mist', swatch: 'bg-primary-100', utility: 'primary-100', hex: '#E8F8F1' },
-        { name: '薄荷玻璃', token: 'mint-glass', swatch: 'bg-primary-200', utility: 'primary-200', hex: '#D1F1E3' },
-        { name: '薄荷线', token: 'mint-line', swatch: 'bg-primary-300', utility: 'primary-300', hex: '#B9EAD5' },
-        { name: '薄荷', token: 'mint', swatch: 'bg-primary-400', utility: 'primary-400', hex: '#A8E6CF' },
-        { name: '新芽绿', token: 'mint-sprout', swatch: 'bg-primary-600', utility: 'primary-600', hex: '#59CFA3' },
-        { name: '叶绿', token: 'mint-leaf', swatch: 'bg-primary-700', utility: 'primary-700', hex: '#37BE8C' },
-        { name: '茎绿', token: 'mint-stem', swatch: 'bg-primary-800', utility: 'primary-800', hex: '#2B976F' },
-        { name: '深薄荷', token: 'deep-mint', swatch: 'bg-primary-900', utility: 'primary-900', hex: '#206F52' },
-        { name: '森林墨', token: 'forest-ink', swatch: 'bg-primary-950', utility: 'primary-950', hex: '#1A5B43' },
+        { name: '晨光底', token: 'morning-ground', swatch: 'bg-primary-50', utility: 'primary-50' },
+        { name: '薄荷雾', token: 'mint-mist', swatch: 'bg-primary-100', utility: 'primary-100' },
+        { name: '薄荷玻璃', token: 'mint-glass', swatch: 'bg-primary-200', utility: 'primary-200' },
+        { name: '薄荷线', token: 'mint-line', swatch: 'bg-primary-300', utility: 'primary-300' },
+        { name: '薄荷', token: 'mint', swatch: 'bg-primary-400', utility: 'primary-400' },
+        { name: '新芽绿', token: 'mint-sprout', swatch: 'bg-primary-600', utility: 'primary-600' },
+        { name: '叶绿', token: 'mint-leaf', swatch: 'bg-primary-700', utility: 'primary-700' },
+        { name: '茎绿', token: 'mint-stem', swatch: 'bg-primary-800', utility: 'primary-800' },
+        { name: '深薄荷', token: 'deep-mint', swatch: 'bg-primary-900', utility: 'primary-900' },
+        { name: '森林墨', token: 'forest-ink', swatch: 'bg-primary-950', utility: 'primary-950' },
       ],
     },
     {
       title: '蜜桃：这台设备、下载；珊瑚：红心',
       colors: [
-        { name: '蜜桃雾', token: 'peach-mist', swatch: 'bg-secondary-50', utility: 'secondary-50', hex: '#FFF8F2' },
-        { name: '蜜桃浅', token: 'peach-wash', swatch: 'bg-secondary-100', utility: 'secondary-100', hex: '#FFEEE2' },
-        { name: '蜜桃光', token: 'peach-glow', swatch: 'bg-secondary-200', utility: 'secondary-200', hex: '#FFE1CC' },
-        { name: '蜜桃枝', token: 'peach-ember', swatch: 'bg-secondary-800', utility: 'secondary-800', hex: '#E6601F' },
-        { name: '蜜桃木', token: 'peach-bark', swatch: 'bg-secondary-900', utility: 'secondary-900', hex: '#B34719' },
-        { name: '珊瑚心', token: 'coral-heart', swatch: 'bg-accent-600', utility: 'accent-600', hex: '#FF3040' },
+        { name: '蜜桃雾', token: 'peach-mist', swatch: 'bg-secondary-50', utility: 'secondary-50' },
+        { name: '蜜桃浅', token: 'peach-wash', swatch: 'bg-secondary-100', utility: 'secondary-100' },
+        { name: '蜜桃光', token: 'peach-glow', swatch: 'bg-secondary-200', utility: 'secondary-200' },
+        { name: '蜜桃枝', token: 'peach-ember', swatch: 'bg-secondary-800', utility: 'secondary-800' },
+        { name: '蜜桃木', token: 'peach-bark', swatch: 'bg-secondary-900', utility: 'secondary-900' },
+        { name: '珊瑚心', token: 'coral-heart', swatch: 'bg-accent-600', utility: 'accent-600' },
       ],
     },
     {
       title: '中性色和状态',
       colors: [
-        { name: '纸白', token: 'paper', swatch: 'bg-white', utility: 'white', hex: '#FFFFFF' },
-        { name: '墨', token: 'ink', swatch: 'bg-neutral-900', utility: 'neutral-900', hex: '#111827' },
-        { name: '石墨深', token: 'graphite-deep', swatch: 'bg-neutral-800', utility: 'neutral-800', hex: '#1F2937' },
-        { name: '石墨重', token: 'graphite-strong', swatch: 'bg-neutral-700', utility: 'neutral-700', hex: '#374151' },
-        { name: '石墨', token: 'graphite', swatch: 'bg-neutral-600', utility: 'neutral-600', hex: '#4B5563' },
-        { name: '石墨淡', token: 'graphite-soft', swatch: 'bg-neutral-500', utility: 'neutral-500', hex: '#6B7280' },
-        { name: '发丝线', token: 'hairline', swatch: 'bg-neutral-200', utility: 'neutral-200', hex: '#E5E7EB' },
-        { name: '淡发丝', token: 'hairline-faint', swatch: 'bg-neutral-100', utility: 'neutral-100', hex: '#F3F4F6' },
-        { name: '试听底', token: 'trial-wash', swatch: 'bg-warning-50', utility: 'warning-50', hex: '#FFF8E1' },
-        { name: '试听字', token: 'trial-ink', swatch: 'bg-warning-900', utility: 'warning-900', hex: '#BF360C' },
-        { name: '出错底', token: 'error-wash', swatch: 'bg-error-50', utility: 'error-50', hex: '#FBE9E7' },
-        { name: '出错红', token: 'error-ink', swatch: 'bg-error-700', utility: 'error-700', hex: '#D32F2F' },
+        { name: '纸白', token: 'paper', swatch: 'bg-white', utility: 'white' },
+        { name: '墨', token: 'ink', swatch: 'bg-neutral-900', utility: 'neutral-900' },
+        { name: '石墨深', token: 'graphite-deep', swatch: 'bg-neutral-800', utility: 'neutral-800' },
+        { name: '石墨重', token: 'graphite-strong', swatch: 'bg-neutral-700', utility: 'neutral-700' },
+        { name: '石墨', token: 'graphite', swatch: 'bg-neutral-600', utility: 'neutral-600' },
+        { name: '石墨淡', token: 'graphite-soft', swatch: 'bg-neutral-500', utility: 'neutral-500' },
+        { name: '发丝线', token: 'hairline', swatch: 'bg-neutral-200', utility: 'neutral-200' },
+        { name: '淡发丝', token: 'hairline-faint', swatch: 'bg-neutral-100', utility: 'neutral-100' },
+        { name: '试听底', token: 'trial-wash', swatch: 'bg-warning-50', utility: 'warning-50' },
+        { name: '试听字', token: 'trial-ink', swatch: 'bg-warning-900', utility: 'warning-900' },
+        { name: '出错底', token: 'error-wash', swatch: 'bg-error-50', utility: 'error-50' },
+        { name: '出错红', token: 'error-ink', swatch: 'bg-error-700', utility: 'error-700' },
       ],
     },
   ]
@@ -129,7 +141,7 @@
               <span class='block px-3 py-2'>
                 <span class='block text-label text-neutral-900 font-500'>{color.name}</span>
                 <span class='block text-caption text-neutral-600'>{color.token}</span>
-                <span class='block text-caption text-neutral-500 tabular-nums'>{color.utility} · {color.hex}</span>
+                <span class='block text-caption text-neutral-500 tabular-nums'>{color.utility} · {colorHex(color.utility)}</span>
               </span>
             </li>
           {/each}

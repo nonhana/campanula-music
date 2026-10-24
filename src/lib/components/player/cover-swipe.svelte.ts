@@ -1,8 +1,8 @@
 import type { Attachment } from 'svelte/attachments'
 import type { WheelDirection } from './wheel-core'
 import { untrack } from 'svelte'
-import { WHEEL } from '../motion-tokens'
-import { attachGrip, createPageHold } from '../press'
+import { WHEEL } from '../shared/motion-tokens'
+import { attachGrip, createPageHold } from '../shared/press'
 import { createWheelCore } from './wheel-core'
 
 // 手机播放页左右拖封面切歌（DESIGN.md Cover Wheel）。怎么判断全在 wheel-core.ts（Spec #11 第二个测试接入点“拖动手势核心”），

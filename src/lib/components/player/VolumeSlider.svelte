@@ -1,7 +1,7 @@
 <!-- 音量滑杆：扁平细线，已走过的部分薄荷、滑块森林绿。原生滑杆，键盘 ←/→、Home / End 都能调 -->
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
-  import { getAppView } from '../app-context.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
 
   const { class: klass }: { class?: ClassValue } = $props()
   const view = getAppView()

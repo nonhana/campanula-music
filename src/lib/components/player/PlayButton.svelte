@@ -5,9 +5,9 @@
 -->
 <script lang='ts'>
   import { LoaderCircle, Pause, Play } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { iconSwap } from '../motion'
-  import { DELAYS } from '../motion-tokens'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { iconSwap } from '../shared/motion'
+  import { DELAYS } from '../shared/motion-tokens'
 
   const { size = 44 }: { size?: 44 | 64 | 72 } = $props()
   const view = getAppView()

@@ -1,8 +1,8 @@
-import type { DialogRequest } from '../overlay-requests'
-import type { OverlayLayer } from '../overlay-stack'
+import type { DialogRequest } from '../overlay/overlay-requests'
+import type { OverlayLayer } from '../overlay/overlay-stack'
 import type { Drawer } from './drawer.svelte'
 import { untrack } from 'svelte'
-import { getAppView } from '../app-context.svelte'
+import { getAppView } from '../shared/app-context.svelte'
 import { queueEmpty } from './view'
 
 /**

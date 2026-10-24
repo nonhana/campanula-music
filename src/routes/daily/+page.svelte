@@ -9,16 +9,16 @@
 -->
 <script lang='ts'>
   import type { SongListView } from '#lib/components/songs/view.js'
-  import { getAppView } from '#lib/components/app-context.svelte.js'
   import DailyNumber from '#lib/components/daily/DailyNumber.svelte'
   import { DAILY_SOURCE, dailyCalendarDay, dailyFailure, totalDuration } from '#lib/components/daily/view.js'
-  import { desktopLayout } from '#lib/components/layout.js'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
-  import { fade, reveal } from '#lib/components/motion.js'
-  import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import { getAppView } from '#lib/components/shared/app-context.svelte.js'
+  import { desktopLayout } from '#lib/components/shared/layout.js'
+  import { fade, reveal } from '#lib/components/shared/motion.js'
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
+  import { formatCount } from '#lib/components/shared/text.js'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import SongList from '#lib/components/songs/SongList.svelte'
-  import { formatCount } from '#lib/components/text.js'
   import Cover from '#lib/components/ui/Cover.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 

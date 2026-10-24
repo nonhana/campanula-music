@@ -2,14 +2,14 @@
   等高行的虚拟列表：只渲染视口附近的几十行（几千首也一样）。默认跟随页面滚动；
   放在自己的滚动容器里（播放页的播放队列）时传 scrollParent，跟随它滚动。
   滚动、窗口大小变化、列表变化时重算要渲染哪几行。
-  传了 markOf 时，告诉所在滚动区域的滚动条某个高度上是哪一行（ui/scroll-marks.ts），按住滚动条拖时气泡里写它。
+  传了 markOf 时，告诉所在滚动区域的滚动条某个高度上是哪一行（shared/scroll-marks.ts），按住滚动条拖时气泡里写它。
   行是依次飘入的一组（motion.ts 的 reveal）：骨架换成列表时前几行依次飘入，之后滚出来的行不飘
   拖动排序（#36）：placeOf 给出每一行放在哪个高度（拖动时让开空位），keep 让被拖的行一直挂载（Android 上手指底下的元素不能卸载）
 -->
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
-  import type { ScrollMark } from './scroll-marks'
-  import { getScrollLookup, hasScrollLookup } from './scroll-marks'
+  import type { ScrollMark } from '../shared/scroll-marks'
+  import { getScrollLookup, hasScrollLookup } from '../shared/scroll-marks'
 
   interface Props {
     items: readonly T[]

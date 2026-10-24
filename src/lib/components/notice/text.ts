@@ -4,9 +4,9 @@ import type { ChangeFailure } from '#lib/app/library.js'
 import type { OperationNotice } from '#lib/app/notice.js'
 import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import { downloadFailureText } from '../downloads/view'
-import { failureText } from '../failure'
-import { playlistName } from '../playlist-text'
-import { formatCount } from '../text'
+import { playlistName } from '../playlist/playlist-text'
+import { failureText } from '../shared/failure'
+import { formatCount } from '../shared/text'
 
 // 提示条（OperationNotice.svelte，改曲库和下载共用）说什么（#30、#33、#38）：没改成时说哪件事没成、为什么
 // （已经改回原样、放回原位看得见，不另写）；歌单不在了说它不在了、哪件事没成；加入歌单成功说加进了哪里；

@@ -5,11 +5,11 @@
 -->
 <script lang='ts'>
   import { syncNoticeFor } from '#lib/app/library.js'
-  import { getAppView } from '#lib/components/app-context.svelte.js'
-  import { desktopLayout } from '#lib/components/layout.js'
   import PlaylistGrid from '#lib/components/library/PlaylistGrid.svelte'
   import SyncNotice from '#lib/components/library/SyncNotice.svelte'
-  import { scrollSnapshot } from '#lib/components/snapshot.js'
+  import { getAppView } from '#lib/components/shared/app-context.svelte.js'
+  import { desktopLayout } from '#lib/components/shared/layout.js'
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
 
   const view = getAppView()
   const library = $derived(view.state.library)

@@ -5,7 +5,7 @@
 -->
 <script lang='ts'>
   import { ListMinus, ListPlus } from '@lucide/svelte'
-  import { getOverlays } from '../overlay-context'
+  import { getOverlays } from '../overlay/overlay-context'
 
   const { playlistSelection } = getOverlays()
   const none = $derived(playlistSelection.picked.length === 0)

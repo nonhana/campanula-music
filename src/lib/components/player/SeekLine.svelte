@@ -6,7 +6,7 @@
 -->
 <script lang='ts'>
   import type { SeekSlider } from './seek-slider.svelte'
-  import { getAppView } from '../app-context.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
 
   const { slider }: { slider: SeekSlider } = $props()
   const view = getAppView()

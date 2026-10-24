@@ -1,5 +1,5 @@
 import type { Song } from '#lib/api/library.js'
-import type { AppView } from '../app-context.svelte'
+import type { AppView } from '../shared/app-context.svelte'
 
 // 歌曲行上的状态（DESIGN.md Song Row · 状态、Chips · Badges）：能不能点、歌名后面的徽标、下载标记。
 // 规则只在 App 里推一次：现在能不能放读 state.playable（下载了的总能放，ADR-0006；没下载的要能在线放，无版权不能放）

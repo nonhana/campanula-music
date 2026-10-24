@@ -6,8 +6,8 @@
 -->
 <script lang='ts'>
   import { afterNavigate } from '$app/navigation'
-  import { atOnce, fade } from '../motion'
-  import { langOf } from '../text'
+  import { atOnce, fade } from '../shared/motion'
+  import { langOf } from '../shared/text'
   import { backBar, backTitle } from './back-title.svelte'
 
   // SvelteKit 恢复好滚动位置（返回一页时）才调这里：页名当场到位、不淡，换页的过渡拍新的一帧时已经是对的样子

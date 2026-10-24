@@ -8,8 +8,8 @@
 <script lang='ts'>
   import type { PlayMode } from '#lib/app/player.js'
   import { Repeat, Repeat1, Shuffle } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { iconSwap } from '../motion'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { iconSwap } from '../shared/motion'
   import IconButton from '../ui/IconButton.svelte'
   import { NEXT_PLAY_MODE, PLAY_MODE_LABEL } from './view'
 

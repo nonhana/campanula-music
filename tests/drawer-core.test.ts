@@ -1,5 +1,5 @@
 import type { DrawerPose, GripSource } from '#lib/components/player/drawer-core.js'
-import type { PointerSample } from '#lib/components/press.js'
+import type { PointerSample } from '#lib/components/shared/press.js'
 import { describe, expect, it } from 'vitest'
 import { createDrawerCore } from '#lib/components/player/drawer-core.js'
 

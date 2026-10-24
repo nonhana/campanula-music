@@ -8,12 +8,12 @@
 -->
 <script lang='ts'>
   import { innerHeight } from 'svelte/reactivity/window'
-  import { getAppView } from '../app-context.svelte'
-  import { desktopLayout } from '../layout'
-  import { currentSong } from '../now'
-  import { getOverlays } from '../overlay-context'
+  import { getOverlays } from '../overlay/overlay-context'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { desktopLayout } from '../shared/layout'
   import CoverTint from './CoverTint.svelte'
   import DesktopPlayerPage from './DesktopPlayerPage.svelte'
+  import { currentSong } from './now'
   import PhonePlayerPage from './PhonePlayerPage.svelte'
   import { createPlayhead } from './playhead.svelte'
   import { sourceName, turnOf } from './view'

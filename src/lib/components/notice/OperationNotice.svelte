@@ -8,10 +8,10 @@
 <script lang='ts'>
   import type { NoticePlace } from './arrival.svelte'
   import { Check, CircleAlert, X } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { toast } from '../motion'
-  import { getOverlays } from '../overlay-context'
+  import { getOverlays } from '../overlay/overlay-context'
   import { playerNoticeBox } from '../player/PlayerNotice.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { toast } from '../shared/motion'
   import IconButton from '../ui/IconButton.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import { noticeArrival } from './arrival.svelte'

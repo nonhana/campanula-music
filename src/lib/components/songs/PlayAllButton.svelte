@@ -6,7 +6,7 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import { Play } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
   import Button from '../ui/Button.svelte'
   import { songLook } from './song-look'
 

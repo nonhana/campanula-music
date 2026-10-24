@@ -1,7 +1,7 @@
 import type { Song } from '#lib/api/library.js'
 import type { DownloadFailure } from '#lib/app/downloads.js'
-import type { AppView } from '../app-context.svelte'
-import { failureText } from '../failure'
+import type { AppView } from '../shared/app-context.svelte'
+import { failureText } from '../shared/failure'
 import { songLook } from '../songs/song-look'
 
 // 下载在“更多”菜单里怎么显示（#38，DESIGN.md Song Row · 状态、Chips · Badges）：下载那一项的文案、没下成的原因。

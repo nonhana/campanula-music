@@ -10,7 +10,7 @@ import { endpoints } from '#lib/api/endpoints.js'
 // 3. 服务端用图片编号设为封面（playlist_cover_update）。
 // 前两步可以取消，取消后回到裁剪；第三步已经发出，不能取消（界面把按钮换成“正在设为封面”）。
 // 第三步失败后重试只再设一次，不重新上传；第一、二步失败重试从没成的那一步重来。
-// 设为封面不检查图片（验证关卡②）：没直传成功也回 200，封面会坏，所以第三步只在第二步成功之后发。
+// 设为封面不检查图片（验证关卡②）：没直传成功也回 200，歌单封面会坏，所以第三步只在第二步成功之后发。
 
 /** 选到的文件为什么不能用（界面只说是哪一种，不写文件名、大小） */
 export type CoverProblem
@@ -50,7 +50,7 @@ interface CoverCropped {
   small: boolean
 }
 
-/** 换封面走到哪了；关掉时是 null */
+/** 换歌单封面走到哪了；关掉时是 null */
 export type CoverState
   /** 正在读图、解码（超大图要一会儿） */
   = | { status: 'picking', playlistId: number }
@@ -59,7 +59,7 @@ export type CoverState
     | ({ status: 'cropping' } & CoverCropped)
     | ({ status: 'uploading' } & CoverCropped & { upload: CoverUpload & { failure: null } })
     | ({ status: 'failed' } & CoverCropped & { upload: CoverUpload & { failure: CoverFailure } })
-  /** 成功：封面已经是这个地址（用设封面返回的 data.url，刚设完读详情有时还是旧的） */
+  /** 成功：歌单封面已经是这个地址（用设为歌单封面后返回的 data.url，刚设完读详情有时还是旧的） */
     | { status: 'done', playlistId: number, coverUrl: string }
 
 /** 一次上传的结果；取消时是 null */
@@ -73,11 +73,11 @@ export interface CoverContext {
   images: ImageCapability
   upload: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
   write: (state: CoverState | null) => void
-  /** 换好了：把新封面地址写进曲库副本，立即显示 */
+  /** 换好了：把新歌单封面地址写进曲库副本，立即显示 */
   changed: (playlistId: number, coverUrl: string) => Promise<void>
 }
 
-export interface Cover {
+export interface PlaylistCoverEditor {
   /** 听众选好一张图：检查大小，读出来；能用就进裁剪，不能用说明原因 */
   prepare: (playlistId: number, file: File) => Promise<void>
   /** 按取景框裁成 800×800 JPEG，三步上传。取消时回来 null */
@@ -112,7 +112,7 @@ function looksHeic(file: File): boolean {
   return /^image\/hei[cf]/i.test(file.type) || /\.(?:heic|heif)$/i.test(file.name)
 }
 
-export function createCover(context: CoverContext): Cover {
+export function createCover(context: CoverContext): PlaylistCoverEditor {
   const { images } = context
   let state: CoverState | null = null
   let attempt: Attempt | null = null

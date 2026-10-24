@@ -6,11 +6,11 @@
   两种方式不一样高，卡片跟着变高变矮（面板 360ms）
 -->
 <script lang='ts'>
-  import type { Toward } from '../motion'
+  import type { Toward } from '../shared/motion'
   import { flushSync } from 'svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { animateHeight, float } from '../motion'
-  import { DURATIONS, FLOAT_IN_DELAY } from '../motion-tokens'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { animateHeight, float } from '../shared/motion'
+  import { DURATIONS, FLOAT_IN_DELAY } from '../shared/motion-tokens'
   import Segmented from '../ui/Segmented.svelte'
   import LoginQr from './LoginQr.svelte'
   import LoginSms from './LoginSms.svelte'

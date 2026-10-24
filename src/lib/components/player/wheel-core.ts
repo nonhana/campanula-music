@@ -1,5 +1,5 @@
-import type { Grip } from '../press'
-import { pressBroken } from '../press'
+import type { Grip } from '../shared/press'
+import { pressBroken } from '../shared/press'
 
 // 手机播放页左右拖封面切歌的手势核心（DESIGN.md Cover Wheel；Spec #11 第二个测试接入点“拖动手势核心”的转盘那一半，另一半是 drawer-core.ts）：
 // 不碰页面、不碰 Svelte 的纯逻辑。封面按钮把按下、移动、松开、点击交给它，它说转盘跟着手转了几格、松手切不切歌、这次算不算点按。

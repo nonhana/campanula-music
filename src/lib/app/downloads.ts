@@ -1,6 +1,6 @@
 import type { Song } from '#lib/api/library.js'
 import type { LyricsResponse } from '#lib/api/playback.js'
-import type { Api, Result } from './api'
+import type { Api, Result } from './api-client'
 import type { BrowserCapabilities, Clock } from './browser'
 import type { LocalDb, StoredDownload } from './local'
 import type { BackgroundFailure, BackgroundSessionResult, SessionRound } from './session-round'
