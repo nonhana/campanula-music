@@ -8,6 +8,9 @@
     "src",
     "tests",
     "scripts",
-    "vite.config.ts"
+    "eslint.config.mts",
+    "uno.config.mts",
+    "uno.palette.mts",
+    "vite.config.mts"
   ]
 }

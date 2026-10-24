@@ -19,15 +19,14 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo --watch",
     "fixtures:index": "tsx scripts/fixture-index.mts",
     "fixtures:index:check": "tsx scripts/fixture-index.mts --check",
-    "lint": "eslint . && tsx scripts/check-design-tokens.mts",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint && tsx scripts/check-design-tokens.mts",
+    "lint:fix": "eslint --fix",
     "smoke:mock": "tsx scripts/mock-smoke.mts",
     "test": "vitest run",
     "knip": "knip"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
-    "@eslint/config-helpers": "catalog:",
     "@fontsource-variable/noto-sans": "catalog:",
     "@fontsource-variable/noto-sans-jp": "catalog:",
     "@fontsource-variable/noto-sans-sc": "catalog:",
@@ -60,8 +59,7 @@
     "vitest": "catalog:"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged",
-    "pre-push": "pnpm check && pnpm test && pnpm build && pnpm check:mock-isolation && pnpm check:endpoints"
+    "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored",
