@@ -6,14 +6,14 @@
 -->
 <script lang='ts'>
   import type { Account } from '#lib/api/account.js'
-  import type { MenuItem } from '../menu'
+  import type { MenuItem } from '../menu/menu'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { LogOut, Settings } from '@lucide/svelte'
-  import Avatar from '../Avatar.svelte'
-  import MenuList from '../MenuList.svelte'
-  import { pop } from '../motion'
-  import { getOverlays } from '../overlay-context'
+  import Avatar from '../account/Avatar.svelte'
+  import MenuList from '../menu/MenuList.svelte'
+  import { getOverlays } from '../overlay/overlay-context'
+  import { pop } from '../shared/motion'
 
   const { account }: { account: Account } = $props()
   const { logoutConfirm } = getOverlays()

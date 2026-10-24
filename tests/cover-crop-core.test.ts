@@ -1,6 +1,6 @@
-import type { CropFrame } from '#lib/components/cover-crop-core.js'
+import type { CropFrame } from '#lib/components/playlist/cover-crop-core.js'
 import { describe, expect, it } from 'vitest'
-import { centerCrop, createCropView, cropOf, maxZoomOf, nudgeCrop, panCrop, pinchCrop, wheelCrop, zoomBy, zoomTo } from '#lib/components/cover-crop-core.js'
+import { centerCrop, createCropView, cropOf, maxZoomOf, nudgeCrop, panCrop, pinchCrop, wheelCrop, zoomBy, zoomTo } from '#lib/components/playlist/cover-crop-core.js'
 
 // 第二个测试接入点“拖动手势核心”的取景框那一半（#34 / #65）：不碰页面、不碰 Svelte。
 // 输入是图片尺寸、框的边长和一次手势，输出总是夹紧过的视图和裁剪；断言听众看到的结果：

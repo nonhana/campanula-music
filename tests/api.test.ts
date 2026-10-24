@@ -1,7 +1,7 @@
 import type { WriteResponse } from '#lib/api/write.js'
 import { describe, expect, it } from 'vitest'
 import { post } from '#lib/api/endpoint.js'
-import { createApi } from '#lib/app/api.js'
+import { createApi } from '#lib/app/api-client.js'
 
 // Api.post 自己管 64 KiB keepalive 上限（#70）：请求体按 UTF-8 字节数算，正好 64 KiB 可以用 keepalive，
 // 多一个字节就退回普通请求；other init（method/headers/body）不变。

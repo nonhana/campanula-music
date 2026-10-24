@@ -5,10 +5,10 @@
   新行的光先淡入（200ms），再随进度往右铺；挂上时已经在放的（虚拟列表滚出来的行）不淡。减少动态效果时光只跳到位
 -->
 <script lang='ts'>
-  import { getAppView } from '../app-context.svelte'
-  import { fade } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
-  import { progressOf } from '../now'
+  import { progressOf } from '../player/now'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { fade } from '../shared/motion'
+  import { DURATIONS } from '../shared/motion-tokens'
 
   interface Props {
     /** 光的起点（px）：歌名左边缘再往左一点 */

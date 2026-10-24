@@ -3,8 +3,8 @@
   迷你播放条上轻点、往上拖是打开播放页，跳进度在播放页的波浪进度条上。放在 position: relative（或 fixed）的播放条里
 -->
 <script lang='ts'>
-  import { getAppView } from '../app-context.svelte'
-  import { progressOf } from '../now'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { progressOf } from './now'
 
   const view = getAppView()
   const progress = $derived(progressOf(view.state.player))

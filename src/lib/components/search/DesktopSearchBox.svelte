@@ -8,9 +8,9 @@
 <script lang='ts'>
   import type { SuggestionRow } from './search-box.svelte'
   import { on } from 'svelte/events'
-  import { getAppView } from '../app-context.svelte'
-  import { pop } from '../motion'
-  import { langOf } from '../text'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { pop } from '../shared/motion'
+  import { langOf } from '../shared/text'
   import SearchField from '../ui/SearchField.svelte'
   import { activeSuggestionId, pickSuggestion, resetSearchBox, searchBox, searchBoxKey, SUGGESTION_LIST_ID, typeInSearchBox } from './search-box.svelte'
   import SearchSuggestions from './SearchSuggestions.svelte'

@@ -1,4 +1,4 @@
-import type { Api, Result } from '#lib/app/api.js'
+import type { Api, Result } from '#lib/app/api-client.js'
 import type { App } from '#lib/app/app.js'
 import type { BackgroundLane } from '#lib/app/pacing.js'
 import type { Player, PlayerState } from '#lib/app/player.js'

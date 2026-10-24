@@ -1,6 +1,6 @@
 # Campanula 自己的接口继续用 `+server.ts`，不用 SvelteKit 远程函数
 
-Campanula 的服务端接口仍是 `src/routes/api/**/+server.ts`，浏览器经 `src/lib/app/api.ts` 用 fetch 调用（ADR-0004）。路径和请求、响应类型对不上号的问题，用一份按领域命名的端点目录在编译期配对解决，不改用 SvelteKit 的远程函数（remote functions：`*.remote.ts` 里的 `query` / `command` / `form`）。2026-10-23 架构审查时对照 SvelteKit 3.1.0 的源码和文档评估，作者同日决定。
+Campanula 的服务端接口仍是 `src/routes/api/**/+server.ts`，浏览器经 `src/lib/app/api-client.ts` 用 fetch 调用（ADR-0004）。路径和请求、响应类型对不上号的问题，用一份按领域命名的端点目录在编译期配对解决，不改用 SvelteKit 的远程函数（remote functions：`*.remote.ts` 里的 `query` / `command` / `form`）。2026-10-23 架构审查时对照 SvelteKit 3.1.0 的源码和文档评估，作者同日决定。
 
 远程函数解决的是“组件里直接 `await` 服务端数据、类型自动配对”。Campanula 的组件从不直接调服务端，都经过去掉界面的整个 App（ADR-0007 的本地副本和请求节奏），用不上前一半；后一半端点目录就能给。而它和现有设计有几处直接冲突：
 

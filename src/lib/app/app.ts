@@ -3,7 +3,7 @@ import type { CoverCrop } from '#lib/api/cover.js'
 import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchedItems, SearchKind } from '#lib/api/search.js'
-import type { RequestFailure, Result } from './api'
+import type { RequestFailure, Result } from './api-client'
 import type { BrowserCapabilities } from './browser'
 import type { PlaylistEdit, PlaylistSeed } from './changes'
 import type { CheckIns } from './check-ins'
@@ -18,7 +18,7 @@ import type { Player, PlayerState, PlayMode } from './player'
 import type { SearchState } from './search'
 import type { Session } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
-import { createApi } from './api'
+import { createApi } from './api-client'
 import { changeProblem, playlistEdits } from './changes'
 import { createCheckIns } from './check-ins'
 import { createCover } from './cover'
@@ -85,7 +85,7 @@ export interface AppState {
   search: SearchState
   /** 这台设备上的下载（#38）：属于设备，没登录时也有 */
   downloads: DownloadsState
-  /** 换封面的裁剪页：没打开时是 null */
+  /** 换歌单封面的裁剪页：没打开时是 null */
   cover: CoverState | null
   /** 联网着（navigator.onLine）：断网时没下载的歌放不了（#38） */
   online: boolean
@@ -283,13 +283,13 @@ export interface App {
   /** 编辑歌单信息时取网易云的标签库：这次登录还没取到过就用前台请求取，拉到哪了看 state.library.playlistTags；没取成时再调一次就是重试 */
   openPlaylistTags: () => Promise<void>
   /**
-   * 换封面（Spec #11 用户故事 90–92）：读选好的图片，能用在 state.cover 里给裁剪页的预览和尺寸；
+   * 换歌单封面（Spec #11 用户故事 90–92）：读选好的图片，能用在 state.cover 里给裁剪页的预览和尺寸；
    * 不是图片、超过 20 MB、HEIC 解不开、读不出来时说明原因。长边超过 3200 的先缩小再裁
    */
   prepareCover: (playlistId: number, file: File) => Promise<void>
   /**
    * 把取景框里的部分裁成 800×800 JPEG，三步上传：申请上传凭证（服务器）→ 浏览器直传网易云的图片存储 → 设为封面（服务器）。
-   * 前两步取消后回到裁剪；第三步已经发出，不能取消。成功时封面马上换成设封面返回的地址
+   * 前两步取消后回到裁剪；第三步已经发出，不能取消。成功时歌单封面马上换成服务器返回的地址
    */
   uploadCover: (crop: CoverCrop) => Promise<CoverOutcome | null>
   /** 取消前两步（申请凭证、直传）：回到裁剪 */
@@ -304,7 +304,7 @@ export interface App {
    */
   noticeAction: (action: NoticeAction) => Promise<void>
   /**
-   * 下载一首（“更多”菜单、播放页的 •••）：完整音频、封面缩略图、歌词、歌曲信息一起存进这台设备（ADR-0006）。
+   * 下载一首（“更多”菜单、播放页的 •••）：完整音频、封面图缩略图、歌词、歌曲信息一起存进这台设备（ADR-0006）。
    * 下载地址按下载音质向服务端要（后台请求）；没下成的看 state.downloads.tasks，提示条里说明原因，再下一次就是重试。
    * 已经下载完、正在下、试听、无版权、断网时不下，返回原因（界面事先用 downloadBlock 标出来）
    */

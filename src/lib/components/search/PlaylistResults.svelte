@@ -7,11 +7,11 @@
 <script lang='ts'>
   import type { SearchedPlaylist } from '#lib/api/search.js'
   import { resolve } from '$app/paths'
-  import { getAppView } from '../app-context.svelte'
   import { collectState } from '../library/collect'
   import CollectButton from '../library/CollectButton.svelte'
-  import { stagger } from '../motion'
-  import { formatCount, formatPlays, langOf } from '../text'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { stagger } from '../shared/motion'
+  import { formatCount, formatPlays, langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
 

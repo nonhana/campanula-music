@@ -10,7 +10,7 @@
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
   import { Volume1, Volume2, VolumeX } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import VolumeSlider from './VolumeSlider.svelte'
 

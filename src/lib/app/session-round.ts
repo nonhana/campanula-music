@@ -1,6 +1,6 @@
 import type { Account } from '#lib/api/account.js'
 import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js'
-import type { Api, BodyArg, ParamsArg, PostOptions, RequestFailure, Result } from './api'
+import type { Api, BodyArg, ParamsArg, PostOptions, RequestFailure, Result } from './api-client'
 import type { BackgroundLane, Waiting } from './pacing'
 import { endpoints } from '#lib/api/endpoints.js'
 

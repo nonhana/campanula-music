@@ -1,5 +1,5 @@
 import type { WheelDirection, WheelPose } from '#lib/components/player/wheel-core.js'
-import type { PointerSample } from '#lib/components/press.js'
+import type { PointerSample } from '#lib/components/shared/press.js'
 import { describe, expect, it } from 'vitest'
 import { createWheelCore } from '#lib/components/player/wheel-core.js'
 

@@ -7,10 +7,11 @@ import {
   transformerVariantGroup,
 } from 'unocss'
 import { TILE_GRID_SAFELIST } from './src/lib/components/library/tile-grid'
-import { AXES, cssEasing, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/motion-tokens'
+import { AXES, cssEasing, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/shared/motion-tokens'
+import { colors, skeleton } from './uno.palette'
 
-// 设计系统的源头（DESIGN.md、.impeccable/design.json）：颜色、两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
-// 动效的数字在 src/lib/components/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类。
+// 设计系统的源头（DESIGN.md、.impeccable/design.json）：色板在 uno.palette.ts，两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
+// 动效的数字在 src/lib/components/shared/motion-tokens.ts（JS 也要用），这里把它们变成 CSS 变量和工具类。
 // 字体随项目打包（src/routes/+layout.svelte 引入 @fontsource-variable），不从网络加载。
 
 /** 拉丁 → 简体 → 日文 → 繁体；日文、繁体按元素的 lang 把各自的字体提前（The Mixed Script Rule） */
@@ -48,7 +49,7 @@ function motionVariables(reduced: boolean): string {
 
 /**
  * 依次飘入（DESIGN.md Motion）：骨架换成内容时，一组里前 6 个依次晚 30ms 从下面飘上来，其余和第 6 个一起。
- * src/lib/components/motion.ts 的 reveal 只在这一小会儿给这一组挂上 .revealing，之后才挂上的（虚拟列表滚出来的行）不飘
+ * src/lib/components/shared/motion.ts 的 reveal 只在这一小会儿给这一组挂上 .revealing，之后才挂上的（虚拟列表滚出来的行）不飘
  */
 function revealCss(): string {
   const delays = Array.from({ length: STAGGER.count - 1 }, (_, i) => {
@@ -187,105 +188,6 @@ function pageTransitionCss(ground: string): string {
   `
 }
 
-/** 色板：作者定义的源头。DESIGN.md 的颜色名都落在这几条色阶上，例如晨光底 morning-ground = primary-50 */
-const colors = {
-  primary: {
-    DEFAULT: '#A8E6CF',
-    50: '#F5FCF9',
-    100: '#E8F8F1',
-    200: '#D1F1E3',
-    300: '#B9EAD5',
-    400: '#A8E6CF',
-    500: '#80DBB9',
-    600: '#59CFA3',
-    700: '#37BE8C',
-    800: '#2B976F',
-    900: '#206F52',
-    950: '#1A5B43',
-  },
-  secondary: {
-    DEFAULT: '#FFD3B6',
-    50: '#FFF8F2',
-    100: '#FFEEE2',
-    200: '#FFE1CC',
-    300: '#FFD3B6',
-    400: '#FFBF99',
-    500: '#FFA877',
-    600: '#FF8F55',
-    700: '#FF7733',
-    800: '#E6601F',
-    900: '#B34719',
-    950: '#8C3914',
-  },
-  accent: {
-    DEFAULT: '#FF8C94',
-    50: '#FFF5F6',
-    100: '#FFE8EB',
-    200: '#FFD1D5',
-    300: '#FFBAC0',
-    400: '#FF8C94',
-    500: '#FF5E69',
-    600: '#FF3040',
-    700: '#E01D2C',
-    800: '#B31622',
-    900: '#8C1019',
-    950: '#6E0C14',
-  },
-  neutral: {
-    DEFAULT: '#6B7280',
-    50: '#F9FAFB',
-    100: '#F3F4F6',
-    200: '#E5E7EB',
-    300: '#D1D5DB',
-    400: '#9CA3AF',
-    500: '#6B7280',
-    600: '#4B5563',
-    700: '#374151',
-    800: '#1F2937',
-    900: '#111827',
-    950: '#0A0F1A',
-  },
-  success: {
-    DEFAULT: '#81C784',
-    50: '#F2FBF5',
-    100: '#E6F7EB',
-    200: '#C7EED1',
-    300: '#A8E6B7',
-    400: '#81C784',
-    500: '#66B366',
-    600: '#4A9951',
-    700: '#35793D',
-    800: '#265B2E',
-    900: '#1A4121',
-  },
-  warning: {
-    DEFAULT: '#FFC107',
-    50: '#FFF8E1',
-    100: '#FFECB3',
-    200: '#FFE082',
-    300: '#FFD54F',
-    400: '#FFC107',
-    500: '#FFA000',
-    600: '#FF8F00',
-    700: '#FF6F00',
-    800: '#E65100',
-    900: '#BF360C',
-  },
-  error: {
-    DEFAULT: '#E57373',
-    50: '#FBE9E7',
-    100: '#FFCCBC',
-    200: '#FFAB91',
-    300: '#FF8A65',
-    400: '#E57373',
-    500: '#EF5350',
-    600: '#E53935',
-    700: '#D32F2F',
-    800: '#C62828',
-    900: '#B71C1C',
-  },
-}
-
 export default defineConfig<Theme>({
   presets: [
     presetWind3(),
@@ -303,13 +205,13 @@ export default defineConfig<Theme>({
   // 只用设计系统的档位：零散的时长、曲线，逐个组件的“减少动态效果”写法，阶梯以外的字号、圆角、阴影、颜色都不生成。
   // scripts/check-design-tokens.mts 在 pnpm lint 里查所有写法（eslint 的 unocss/blocklist 只看得到纯字符串的 class）
   blocklist: [
-    [/^(?:transition-)?(?:duration|delay)-\d+$/, { message: '时长用动效令牌：duration-feedback / state / panel / focal 或具名的（src/lib/components/motion-tokens.ts）' }],
+    [/^(?:transition-)?(?:duration|delay)-\d+$/, { message: '时长用动效令牌：duration-feedback / state / panel / focal 或具名的（src/lib/components/shared/motion-tokens.ts）' }],
     [/^(?:transition-)?ease-(?:in|out|in-out)$/, { message: '曲线用 ease-out-soft（默认）或 ease-in-soft' }],
-    [/^motion-(?:reduce|safe):/, { message: '减少动态效果由动效令牌统一处理（uno.config.ts 的 motionVariables、src/lib/components/motion.ts），组件里不写' }],
+    [/^motion-(?:reduce|safe):/, { message: '减少动态效果由动效令牌统一处理（uno.config.ts 的 motionVariables、src/lib/components/shared/motion.ts），组件里不写' }],
     [/^text-\[/, { message: '字号用八档 text-<档名>（DESIGN.md Typography），颜色用色板' }],
     [/^rounded(?:-[trblse]{1,2})?-\[/, { message: '圆角用 rounded-sm / md / lg / xl / sheet / full（DESIGN.md Shapes）' }],
     [/^shadow-\[/, { message: '阴影用 shadow-ambient / float / chip / field-focus（DESIGN.md Elevation & Depth）' }],
-    [/^(?:bg|border|ring|outline|fill|stroke)-\[(?:#|rgb|hsl)/, { message: '颜色用 uno.config.ts 的色板（DESIGN.md Colors）' }],
+    [/^(?:bg|border|ring|outline|fill|stroke)-\[(?:#|rgb|hsl)/, { message: '颜色用 uno.palette.ts 的色板（DESIGN.md Colors）' }],
   ],
   variants: [
     // mouse:hover:bg-primary-100：操作细节按输入方式切换，不按宽度（DESIGN.md Layout）
@@ -444,7 +346,7 @@ export default defineConfig<Theme>({
         /* 加载中的骨架（歌曲行、封面格子、歌词、二维码）：一道很淡的光从左扫到右；减少动态效果时停住 */
         .bone {
           display: block;
-          background: linear-gradient(90deg, #e3eae6 0%, #f0f5f2 40%, #e3eae6 80%);
+          background: linear-gradient(90deg, ${skeleton.from} 0%, ${skeleton.to} 40%, ${skeleton.from} 80%);
           background-size: 240% 100%;
           animation: bone-sweep var(--loop-bone) ease-in-out infinite;
           animation-play-state: var(--loop-state);

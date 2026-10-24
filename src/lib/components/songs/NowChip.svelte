@@ -3,8 +3,8 @@
   换上这一行时带着竖条淡入（200ms），换走时淡出（120ms）（DESIGN.md Song Row · 点歌）；挂上时已经在放的（虚拟列表滚出来的行）不淡
 -->
 <script lang='ts'>
-  import { fade } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
+  import { fade } from '../shared/motion'
+  import { DURATIONS } from '../shared/motion-tokens'
   import NowBars from './NowBars.svelte'
 </script>
 

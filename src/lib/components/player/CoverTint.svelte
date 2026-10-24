@@ -9,8 +9,8 @@
 <script lang='ts'>
   import type { Attachment } from 'svelte/attachments'
   import { untrack } from 'svelte'
-  import { fadeMs } from '../motion'
-  import { cssEasing, DURATIONS } from '../motion-tokens'
+  import { fadeMs } from '../shared/motion'
+  import { cssEasing, DURATIONS } from '../shared/motion-tokens'
   import { coverSource } from '../ui/Cover.svelte'
   import { SMALL_COVER } from './view'
 

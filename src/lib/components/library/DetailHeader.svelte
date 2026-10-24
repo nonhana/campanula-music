@@ -1,8 +1,8 @@
 <!--
   详情页头（#75）：专辑、歌单、歌手、每日推荐、已下载共用这一份。
-  封面可以是方（专辑、歌单）、圆（歌手）或自定义图（每日推荐、已下载）；标题、信息行、可选标签、动作和尾部插槽由调用方给。
+  封面图可以是方（专辑、歌单）、圆（歌手）或自定义图（每日推荐、已下载）；标题、信息行、可选标签、动作和尾部插槽由调用方给。
   模块自己负责桌面 / 手机的布局断点、就绪前的骨架、淡入、手机返回栏的页名（pageHeading）和封面飞行终点。
-  尺寸：桌面封面 200px、手机 168px；封面飞行的缩略图取 FLIGHT_COVER_SIZE（ADR-0011）。
+  尺寸：桌面封面图 200px、手机 168px；封面飞行的缩略图取 FLIGHT_COVER_SIZE（ADR-0011）。
   手机三种排法：居中（专辑、歌单、歌手）、图在左标题在右（已下载）、图独占一行（每日推荐）。
   桌面动作：歌单、专辑、每日推荐、已下载贴底；歌手页头内容居中，动作跟在信息行下面（align='center'）。
   动作和尾部插槽（歌单内搜索、已下载搜索）在桌面上同一行靠右；手机上已下载的搜索另起一行，歌单内搜索回列表上方。
@@ -10,16 +10,16 @@
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
-  import { desktopLayout } from '../layout'
-  import { fadeAway, reveal } from '../motion'
+  import { desktopLayout } from '../shared/layout'
+  import { fadeAway, reveal } from '../shared/motion'
+  import { langOf } from '../shared/text'
   import { pageHeading } from '../shell/back-title.svelte'
-  import { langOf } from '../text'
   import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
   import { FLIGHT_COVER_SIZE } from './flight'
 
   interface Props {
-    /** 页头大封面；有 artwork 时不用它 */
+    /** 页头大封面图；有 artwork 时不用它 */
     cover?: { url: string | null, round?: boolean, fallback?: LucideIcon }
     /** 自定义图（每日推荐、已下载）：参数是桌面 / 手机上的参考尺寸、是不是手机布局 */
     artwork?: Snippet<[number, boolean]>
@@ -30,7 +30,7 @@
     ready?: boolean
     /** 桌面头部内容贴顶（歌单、专辑、每日推荐、已下载）或居中（歌手） */
     align?: 'start' | 'center'
-    /** 手机排法：封面居中 / 图在左标题在右 / 图独占一行 */
+    /** 手机排法：封面图居中 / 图在左标题在右 / 图独占一行 */
     phoneLayout?: 'center' | 'row' | 'banner'
     meta?: Snippet<[boolean]>
     tags?: readonly string[]
@@ -40,7 +40,7 @@
     trailing?: Snippet
     /** 尾部插槽也在手机上出现（已下载的搜索）；歌单内搜索只在桌面，手机上在列表上面 */
     trailingPhone?: boolean
-    /** 封面代表这一页：放封面飞行的终点（ADR-0011）；不给就不飞 */
+    /** 封面图代表这一页：放封面飞行的终点（ADR-0011）；不给就不飞 */
     flight?: string
   }
 
@@ -63,7 +63,7 @@
 
   const phone = $derived(!desktopLayout.current)
   const round = $derived(cover?.round ?? false)
-  /** 手机页头的封面宽度：真实封面和骨架共用，168 只写一次 */
+  /** 手机页头的封面图宽度：真实封面图和骨架共用，168 只写一次 */
   const PHONE_COVER_CLASS = 'mx-auto max-w-[168px]'
 </script>
 

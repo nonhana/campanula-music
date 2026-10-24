@@ -1,11 +1,11 @@
 import type { Attachment } from 'svelte/attachments'
 import type { Playlist } from '#lib/api/library.js'
-import type { DragSortEdges, DragSortResult, Point, Rect } from '../drag-sort'
-import type { DragSortAdapter, DragSortTrack } from '../drag-sort.svelte'
-import { gridTrack, rowTrack } from '../drag-sort'
-import { DragSort } from '../drag-sort.svelte'
-import { moveMs } from '../motion'
-import { DURATIONS } from '../motion-tokens'
+import type { DragSortEdges, DragSortResult, Point, Rect } from '../shared/drag-sort'
+import type { DragSortAdapter, DragSortTrack } from '../shared/drag-sort.svelte'
+import { gridTrack, rowTrack } from '../shared/drag-sort'
+import { DragSort } from '../shared/drag-sort.svelte'
+import { moveMs } from '../shared/motion'
+import { DURATIONS } from '../shared/motion-tokens'
 import { SONG_ROW_HEIGHT } from '../songs/view'
 
 // 曲库里自建歌单之间的排序（#37，原型 docs/prototype/dnd.md 方案 C 的曲库部分）：手机是横版列表、桌面是封面网格，

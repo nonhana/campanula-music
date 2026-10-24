@@ -5,7 +5,7 @@
  */
 export interface Endpoint<Response> {
   readonly method: 'GET' | 'POST'
-  /** 有没有参数：Api 据此把调用实参分成 params 和请求体（见 src/lib/app/api.ts） */
+  /** 有没有参数：Api 据此把调用实参分成 params 和请求体（见 src/lib/app/api-client.ts） */
   readonly takesParams: boolean
   readonly path: (params: never) => string
   /** 只在编译期用 */

@@ -9,13 +9,13 @@
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { desktopLayout } from '../layout'
-  import { dock, fade } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
   import { queueEmpty } from '../player/view'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { desktopLayout } from '../shared/layout'
+  import { dock, fade } from '../shared/motion'
+  import { DURATIONS } from '../shared/motion-tokens'
 
   interface Props {
     /** 播放条在不在：播放队列里有歌；手机上多选时底部操作条也占这个位置 */

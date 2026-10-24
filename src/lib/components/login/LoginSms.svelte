@@ -5,9 +5,9 @@
 -->
 <script lang='ts'>
   import { captchaProblem, phoneProblem } from '#lib/api/login.js'
-  import { getAppView } from '../app-context.svelte'
-  import { failureText } from '../failure'
-  import { unfold } from '../motion'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { failureText } from '../shared/failure'
+  import { unfold } from '../shared/motion'
   import Button from '../ui/Button.svelte'
   import TextField from '../ui/TextField.svelte'
 

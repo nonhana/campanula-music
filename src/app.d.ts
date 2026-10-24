@@ -9,7 +9,7 @@ declare global {
     // interface PageData {}
     interface PageState {
       /** 由浮层栈拥有的有序历史条目；请求与焦点只活在当前会话里。 */
-      overlays?: import('./lib/components/overlay-stack').OverlayMarker
+      overlays?: import('./lib/components/overlay/overlay-stack').OverlayMarker
     }
     // interface Platform {}
   }

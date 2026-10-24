@@ -13,13 +13,13 @@
     竖的（axis 'y'）贴右边，横的（'x'）贴底边；区域自己不要有内边距（放到里面那层），不然它会离开边上。
 -->
 <script lang='ts'>
-  import type { ScrollLookup, ScrollMark } from './scroll-marks'
+  import type { ScrollLookup, ScrollMark } from '../shared/scroll-marks'
   import { untrack } from 'svelte'
-  import { clamp } from '../clamp'
-  import { scrollBehavior } from '../motion'
-  import { DELAYS } from '../motion-tokens'
-  import { attachGrip } from '../press'
-  import { createSliderCore } from '../slider-core'
+  import { clamp } from '../shared/clamp'
+  import { scrollBehavior } from '../shared/motion'
+  import { DELAYS } from '../shared/motion-tokens'
+  import { attachGrip } from '../shared/press'
+  import { createSliderCore } from '../shared/slider-core'
   import { getSelectionMode, hasSelectionMode } from './selection-mode'
 
   interface Props {

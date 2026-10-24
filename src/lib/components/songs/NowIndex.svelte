@@ -4,8 +4,8 @@
   新旧叠在同一个网格格子里。挂上时已经在放的（虚拟列表滚出来的行）不长。减少动态效果时只交叉淡化
 -->
 <script lang='ts'>
-  import { fade, grow } from '../motion'
-  import { DURATIONS } from '../motion-tokens'
+  import { fade, grow } from '../shared/motion'
+  import { DURATIONS } from '../shared/motion-tokens'
   import NowBars from './NowBars.svelte'
 
   /** n：序号，从 1 开始；now：这一行正在放 */

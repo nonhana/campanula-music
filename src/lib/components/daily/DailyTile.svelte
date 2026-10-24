@@ -7,10 +7,10 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { Play } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { fade } from '../motion'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { fade } from '../shared/motion'
+  import { formatCount } from '../shared/text'
   import { songLook } from '../songs/song-look'
-  import { formatCount } from '../text'
   import Cover from '../ui/Cover.svelte'
   import DailyNumber from './DailyNumber.svelte'
   import { DAILY_SOURCE, dailyCalendarDay, dailyFailure } from './view'

@@ -5,8 +5,8 @@
 -->
 <script lang='ts'>
   import { ArrowLeft } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { langOf } from '../text'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { langOf } from '../shared/text'
   import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import { activeSuggestionId, searchBox, searchBoxKey, shownKeyword, SUGGESTION_LIST_ID, typeInSearchBox } from './search-box.svelte'

@@ -1,7 +1,7 @@
 <!-- 播放页上的上一首、下一首：薄荷雾底的胶囊（桌面 64×48，手机 64×56），森林墨实心图标；鼠标悬停加深一档 -->
 <script lang='ts'>
   import { SkipBack, SkipForward } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
 
   const { direction, phone = false }: { direction: 'previous' | 'next', phone?: boolean } = $props()
   const view = getAppView()

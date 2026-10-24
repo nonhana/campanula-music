@@ -1,4 +1,4 @@
-// 检查界面代码只用设计系统的档位（DESIGN.md、uno.config.ts、src/lib/components/motion-tokens.ts）。
+// 检查界面代码只用设计系统的档位（DESIGN.md、uno.config.ts、src/lib/components/shared/motion-tokens.ts）。
 // eslint 的 unocss/blocklist 只看得到 class='…' 这种纯字符串，看不到 class={[…]}、对象和三元里的类名；
 // 被禁的类名又不会报错，只是不生成 CSS，界面悄悄失效。这里用 UnoCSS 自己的提取器扫整个文件，再加上 CSS 和 TS 里的零散动效数字。
 // 用法：
@@ -17,7 +17,7 @@ import config from '../uno.config.ts'
 const ROOT = join(import.meta.dirname, '..')
 const SRC = join(ROOT, 'src')
 /** 动效数字的唯一出处 */
-const TOKENS_FILE = join(SRC, 'lib/components/motion-tokens.ts')
+const TOKENS_FILE = join(SRC, 'lib/components/shared/motion-tokens.ts')
 
 const RAW_MOTION = /\b\d+(?:\.\d+)?m?s\b|cubic-bezier\(/g
 const CSS_KEYWORD_EASING = /(?<![\w-])ease(?:-in|-out)?(?![\w-])/g
@@ -96,7 +96,7 @@ async function check(file: string): Promise<Finding[]> {
 
   if (file !== TOKENS_FILE) {
     for (const match of code.matchAll(RAW_MOTION))
-      findings.push({ file: name, line: lineOf(code, match.index), text: match[0], why: '时长、曲线只写在 src/lib/components/motion-tokens.ts，这里用 var(--duration-…) / var(--move-…) / var(--ease-…) 或 DURATIONS' })
+      findings.push({ file: name, line: lineOf(code, match.index), text: match[0], why: '时长、曲线只写在 src/lib/components/shared/motion-tokens.ts，这里用 var(--duration-…) / var(--move-…) / var(--ease-…) 或 DURATIONS' })
   }
 
   for (const style of code.matchAll(STYLE_BLOCK)) {

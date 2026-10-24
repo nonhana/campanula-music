@@ -11,8 +11,8 @@
   import type { ClassValue } from 'svelte/elements'
   import type { CollectTarget } from '#lib/app/app.js'
   import { CircleCheck, CirclePlus } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { iconSwap } from '../motion'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { iconSwap } from '../shared/motion'
   import ToolButton from '../ui/ToolButton.svelte'
   import { COLLECT_NOUNS, collectState } from './collect'
 

@@ -6,10 +6,10 @@
 -->
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'
-  import type { RequestFailure } from '#lib/app/api.js'
+  import type { RequestFailure } from '#lib/app/api-client.js'
   import { CircleAlert } from '@lucide/svelte'
-  import { failureText } from '../failure'
-  import { fade } from '../motion'
+  import { failureText } from '../shared/failure'
+  import { fade } from '../shared/motion'
   import Button from './Button.svelte'
 
   interface Props {

@@ -3,9 +3,9 @@ import type { GripSource } from './drawer-core'
 import { untrack } from 'svelte'
 import { quartOut } from 'svelte/easing'
 import { Tween } from 'svelte/motion'
-import { moveMs } from '../motion'
-import { DURATIONS } from '../motion-tokens'
-import { attachGrip, createPageHold } from '../press'
+import { moveMs } from '../shared/motion'
+import { DURATIONS } from '../shared/motion-tokens'
+import { attachGrip, createPageHold } from '../shared/press'
 import { createDrawerCore } from './drawer-core'
 
 // 从底下升起、缩回底下的抽屉（播放页、手机的播放队列弹层）。拖动怎么判断全在 drawer-core.ts（Spec #11 的第二个测试接入点），

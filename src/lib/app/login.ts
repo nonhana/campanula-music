@@ -1,6 +1,6 @@
 import type { Account } from '#lib/api/account.js'
 import type { QrCheckResponse } from '#lib/api/login.js'
-import type { Api, RequestFailure, Result } from './api'
+import type { Api, RequestFailure, Result } from './api-client'
 import type { Clock, PageVisibility } from './browser'
 import type { SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'

@@ -1,6 +1,6 @@
-import type { LayerOptions } from '../src/lib/components/overlay-stack'
+import type { LayerOptions } from '../src/lib/components/overlay/overlay-stack'
 import { describe, expect, it } from 'vitest'
-import { OverlayStack } from '../src/lib/components/overlay-stack'
+import { OverlayStack } from '../src/lib/components/overlay/overlay-stack'
 import { MemoryOverlayHistory } from './harness/overlay-history'
 
 describe('返回可收起的层', () => {

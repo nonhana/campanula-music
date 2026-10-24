@@ -2,9 +2,9 @@ import type { Song } from '#lib/api/library.js'
 import type { LyricLine, LyricWord, PlaySource } from '#lib/api/playback.js'
 import type { LibraryState } from '#lib/app/library.js'
 import type { PlayerNotice, PlayerState, PlayMode, SongChange } from '#lib/app/player.js'
-import { failureText } from '../failure'
-import { playlistName } from '../playlist-text'
-import { formatDuration } from '../text'
+import { playlistName } from '../playlist/playlist-text'
+import { failureText } from '../shared/failure'
+import { formatDuration } from '../shared/text'
 
 // 播放条、晨光行、播放页上怎么显示：界面组件只照着画
 

@@ -13,9 +13,9 @@
   import type { Attachment } from 'svelte/attachments'
   import type { NoticePlace } from '../notice/arrival.svelte'
   import { CircleAlert, LoaderCircle, X } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { toast } from '../motion'
   import { noticeArrival } from '../notice/arrival.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { toast } from '../shared/motion'
   import IconButton from '../ui/IconButton.svelte'
   import { noticeText } from './view'
 

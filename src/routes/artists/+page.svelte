@@ -4,13 +4,13 @@
 -->
 <script lang='ts'>
   import { syncNoticeFor } from '#lib/app/library.js'
-  import { getAppView } from '#lib/components/app-context.svelte.js'
-  import { desktopLayout } from '#lib/components/layout.js'
   import CollectedGrid from '#lib/components/library/CollectedGrid.svelte'
   import SyncNotice from '#lib/components/library/SyncNotice.svelte'
-  import { fade } from '#lib/components/motion.js'
-  import { scrollSnapshot } from '#lib/components/snapshot.js'
-  import { formatCount } from '#lib/components/text.js'
+  import { getAppView } from '#lib/components/shared/app-context.svelte.js'
+  import { desktopLayout } from '#lib/components/shared/layout.js'
+  import { fade } from '#lib/components/shared/motion.js'
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
+  import { formatCount } from '#lib/components/shared/text.js'
 
   const view = getAppView()
   const library = $derived(view.state.library)

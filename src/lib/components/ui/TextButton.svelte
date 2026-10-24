@@ -14,8 +14,8 @@
   import type { Snippet } from 'svelte'
   import type { HTMLButtonAttributes } from 'svelte/elements'
   import { LoaderCircle } from '@lucide/svelte'
-  import { desktopLayout } from '../layout'
-  import { busyClick } from './busy'
+  import { busyClick } from '../shared/busy'
+  import { desktopLayout } from '../shared/layout'
   import Button from './Button.svelte'
 
   interface Props extends Omit<HTMLButtonAttributes, 'children'> {

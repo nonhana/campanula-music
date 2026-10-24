@@ -1,27 +1,27 @@
 <!--
   歌曲行里点歌的按钮（DESIGN.md Song Row）：盖住整行，单击（轻点）整行就播放。放在 position: relative 的行里。
-  给了 cover（这一行的封面）的，点了换歌时封面飞进播放条（cover-flight.svelte.ts）；播放队列里的不给，在播放页里换碟。
+  给了 cover（这一行的封面图）的，点了换歌时封面图飞进播放条（cover-flight.svelte.ts）；播放队列里的不给，在播放页里换碟。
   键盘焦点环画在行内，不压到相邻的行（DESIGN.md Buttons · Focus）。无版权的歌不能点
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
-  import { getAppView } from '../app-context.svelte'
-  import { pick } from '../cover-flight.svelte'
+  import { pick } from '../player/cover-flight.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
 
   interface Props {
     disabled: boolean
     /** 正在播放这首 */
     now: boolean
     onplay: () => void
-    /** 多选：整行是一个勾选框，点了只勾选、不播放，也不飞封面 */
+    /** 多选：整行是一个勾选框，点了只勾选、不播放，也不飞封面图 */
     selecting?: boolean
     selected?: boolean
     /** 桌面的 ⌘/Ctrl 点选、Shift 连选：会进入同一个多选状态 */
     onselect?: (event: MouseEvent) => void
     /** 无版权：普通点按不播放，但多选、⌘/Ctrl 点选照样能勾 */
     unplayable?: boolean
-    /** 这一行的封面：点了换歌时它飞进播放条 */
+    /** 这一行的封面图：点了换歌时它飞进播放条 */
     cover?: HTMLElement
     /** 行是圆角的（白色面板里） */
     rounded?: boolean

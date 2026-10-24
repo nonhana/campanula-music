@@ -8,8 +8,8 @@
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
   import { Heart } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import { iconSwap } from '../motion'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { iconSwap } from '../shared/motion'
 
   const { song, size }: { song: Song, size: 'row' | 'desktop' | 'phone' | 'phone-page' } = $props()
   const view = getAppView()

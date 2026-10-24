@@ -1,5 +1,5 @@
 import type { PlayerState } from '#lib/app/player.js'
-import { reducedMotion } from '../motion'
+import { reducedMotion } from '../shared/motion'
 
 export interface Playhead {
   /** 当前这首放到第几秒 */

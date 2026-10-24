@@ -1,6 +1,6 @@
 import type { Attachment } from 'svelte/attachments'
 import type { Song } from '#lib/api/library.js'
-import { getOverlays } from '../overlay-context'
+import { getOverlays } from '../overlay/overlay-context'
 import { preloadCover } from '../ui/Cover.svelte'
 
 /** 播放条和播放页初始化时绑定到所在骨架的浮层会话；抽屉手势不变。 */

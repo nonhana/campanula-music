@@ -1,5 +1,5 @@
-import type { HistoryResult, OverlayDestination, OverlayHistory, OverlayMarker, OverlayPosition, OverlayResult } from '../../src/lib/components/overlay-stack'
-import { samePosition } from '../../src/lib/components/overlay-stack'
+import type { HistoryResult, OverlayDestination, OverlayHistory, OverlayMarker, OverlayPosition, OverlayResult } from '../../src/lib/components/overlay/overlay-stack'
+import { samePosition } from '../../src/lib/components/overlay/overlay-stack'
 
 type Kind = 'write' | 'go' | 'leave' | 'traverse'
 type Phase = 'beforeCommit' | 'afterCommit'

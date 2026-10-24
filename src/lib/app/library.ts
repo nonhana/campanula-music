@@ -1,7 +1,7 @@
 import type { Account } from '#lib/api/account.js'
 import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
-import type { Api, RequestFailure, Result } from './api'
+import type { Api, RequestFailure, Result } from './api-client'
 import type { Clock, PageVisibility } from './browser'
 import type { Change, ConfirmedChange, ImmediateChange } from './changes'
 import type { Deferred, PendingChange } from './deferred'

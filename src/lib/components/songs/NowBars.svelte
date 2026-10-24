@@ -2,7 +2,7 @@
   正在播放的三根小竖条（森林绿，DESIGN.md Morning Row）：在放时起伏，停着时停在原地；减少动态效果时不动
 -->
 <script lang='ts'>
-  import { getAppView } from '../app-context.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
 
   const view = getAppView()
   const playing = $derived(view.state.player.status === 'playing')

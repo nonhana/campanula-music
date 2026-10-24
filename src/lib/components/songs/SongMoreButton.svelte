@@ -7,8 +7,8 @@
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import { Ellipsis } from '@lucide/svelte'
-  import { getOverlays } from '../overlay-context'
-  import { songMenuActions } from '../song-menu.svelte'
+  import { songMenuActions } from '../menu/song-menu.svelte'
+  import { getOverlays } from '../overlay/overlay-context'
 
   const { song, source, size }: { song: Song, source: PlaySource, size: 'phone' | 'desktop' | 'cell' | 'desktop-page' | 'phone-page' } = $props()
   const { openSongMenuFrom } = songMenuActions()

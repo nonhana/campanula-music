@@ -8,10 +8,10 @@
 -->
 <script lang='ts'>
   import { LoaderCircle, RotateCw } from '@lucide/svelte'
-  import { getAppView } from '../app-context.svelte'
-  import Avatar from '../Avatar.svelte'
-  import { failureText } from '../failure'
-  import { fade, unfold } from '../motion'
+  import Avatar from '../account/Avatar.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { failureText } from '../shared/failure'
+  import { fade, unfold } from '../shared/motion'
   import Button from '../ui/Button.svelte'
 
   interface Props {

@@ -5,10 +5,10 @@
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
   import type { Turn } from './view'
-  import { getAppView } from '../app-context.svelte'
-  import { fade } from '../motion'
+  import { getAppView } from '../shared/app-context.svelte'
+  import { fade } from '../shared/motion'
+  import { artistLine, langOf } from '../shared/text'
   import SongBadge from '../songs/SongBadge.svelte'
-  import { artistLine, langOf } from '../text'
   import SongSwap from './SongSwap.svelte'
 
   const { song, turn, phone = false }: { song: Song, turn: Turn | null, phone?: boolean } = $props()

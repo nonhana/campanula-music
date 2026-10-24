@@ -7,8 +7,8 @@
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
-  import { desktopLayout } from '../layout'
-  import { getOverlays } from '../overlay-context'
+  import { getOverlays } from '../overlay/overlay-context'
+  import { desktopLayout } from '../shared/layout'
   import PlayerNotice from './PlayerNotice.svelte'
   import PlayerPage from './PlayerPage.svelte'
 

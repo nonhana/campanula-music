@@ -9,10 +9,10 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { Song } from '#lib/api/library.js'
-  import type { MotionConfig, TransitionOptions } from '../motion'
+  import type { MotionConfig, TransitionOptions } from '../shared/motion'
   import type { Place, Turn } from './view'
-  import { float } from '../motion'
-  import { FLOAT_IN_DELAY, WHEEL } from '../motion-tokens'
+  import { float } from '../shared/motion'
+  import { FLOAT_IN_DELAY, WHEEL } from '../shared/motion-tokens'
 
   interface Props {
     song: Song | null

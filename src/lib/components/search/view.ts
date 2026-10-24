@@ -1,7 +1,7 @@
 import type { SearchedItems, SearchKind, Suggestion } from '#lib/api/search.js'
 import type { SearchFailure } from '#lib/app/search.js'
 import { SEARCH_KINDS } from '#lib/api/search.js'
-import { failureText } from '../failure'
+import { failureText } from '../shared/failure'
 
 // 搜索在界面上怎么写：建议是哪一类、哪一段和搜索框里一样，结果页有哪些标签、每类叫什么，没搜成时怎么说
 

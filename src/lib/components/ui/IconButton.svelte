@@ -6,7 +6,7 @@
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
   import type { HTMLButtonAttributes } from 'svelte/elements'
-  import { iconSwap } from '../motion'
+  import { iconSwap } from '../shared/motion'
 
   interface Props extends Omit<HTMLButtonAttributes, 'children' | 'aria-label'> {
     icon: LucideIcon
