@@ -10,6 +10,7 @@
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
+
   import { desktopLayout } from '../shared/layout'
   import { fadeAway, reveal } from '../shared/motion'
   import { langOf } from '../shared/text'

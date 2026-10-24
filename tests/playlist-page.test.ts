@@ -1,11 +1,13 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Playlist } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
 import type { PlaylistPage } from '#lib/app/library.js'
-import type { Device } from './harness/device'
-import { describe, expect, it } from 'vitest'
 import { syncNoticeFor } from '#lib/app/library.js'
 import { likedFailure } from '#lib/components/library/liked-failure.js'
 import { playlistHeader } from '#lib/components/library/view.js'
+
+import type { Device } from './harness/device'
 import { DAILY, likedPage, listener, PLAYLISTS_WITH_POEMS, recordedBatch } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
@@ -46,7 +48,7 @@ const removeRequests = (device: Device) => device.requests.filter(request => req
 const detailCalls = () => world.netease.calls.filter(call => call.module === 'playlist_detail' && (call.query as { id: number }).id === SMALL.id)
 
 /** 登录并同步整个曲库，只有 Bang Dream 合集的第 2 页 SDK 认不出：同步最后停在“没能同步” */
-async function syncWithRejectedPage(device: Device): Promise<App> {
+const syncWithRejectedPage = async (device: Device): Promise<App> => {
   const { app } = await device.open()
   await replyLibrary()
   for (const page of [1, 2, 3, 4, 5] as const)
@@ -59,7 +61,7 @@ async function syncWithRejectedPage(device: Device): Promise<App> {
 }
 
 /** 登录，我喜欢的音乐取到第 3 页；第 4 页没有录制，后台同步在那里出错停下：liked 已经有 3,000 首、没取全 */
-async function syncWithPartialLiked(device: Device): Promise<App> {
+const syncWithPartialLiked = async (device: Device): Promise<App> => {
   const { app } = await device.open()
   await replyLibrary()
   for (const page of [1, 2, 3] as const)

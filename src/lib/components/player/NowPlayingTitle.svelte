@@ -4,12 +4,13 @@
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
-  import type { Turn } from './view'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { fade } from '../shared/motion'
   import { artistLine, langOf } from '../shared/text'
   import SongBadge from '../songs/SongBadge.svelte'
   import SongSwap from './SongSwap.svelte'
+  import type { Turn } from './view'
 
   const { song, turn, phone = false }: { song: Song, turn: Turn | null, phone?: boolean } = $props()
   const view = getAppView()

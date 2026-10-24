@@ -59,7 +59,7 @@ export type PhoneProblem = 'phoneEmpty' | 'phoneFormat'
 export type CaptchaProblem = 'captchaEmpty' | 'captchaFormat'
 
 /** 手机号不能提交的原因；能提交是 null。界面和服务端共用这一条 */
-export function phoneProblem(phone: string): PhoneProblem | null {
+export const phoneProblem = (phone: string): PhoneProblem | null => {
   if (!phone)
     return 'phoneEmpty'
   return PHONE.test(phone)
@@ -68,7 +68,7 @@ export function phoneProblem(phone: string): PhoneProblem | null {
 }
 
 /** 验证码不能提交的原因；能提交是 null。界面和服务端共用这一条 */
-export function captchaProblem(captcha: string): CaptchaProblem | null {
+export const captchaProblem = (captcha: string): CaptchaProblem | null => {
   if (!captcha)
     return 'captchaEmpty'
   return CAPTCHA.test(captcha)

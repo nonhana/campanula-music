@@ -1,10 +1,11 @@
-import type { QrCheckRequest } from '#lib/api/login.js'
-import type { RequestHandler } from './$types'
 import { endpoints } from '#lib/api/endpoints.js'
+import type { QrCheckRequest } from '#lib/api/login.js'
 import { deviceIdFor, saveLogin } from '#lib/server/credentials.js'
 import { checkLoginQr, fetchAccount } from '#lib/server/netease.js'
 import { QR_KEY, readFields } from '#lib/server/request.js'
 import { withNetease } from '#lib/server/respond.js'
+
+import type { RequestHandler } from './$types'
 
 // 查询扫码状态。听众在手机上确认后，先用新凭据问到账号，再把凭据和 deviceId 加密进登录 Cookie：
 // 问不到账号就不存，免得留下一个界面不知道的登录

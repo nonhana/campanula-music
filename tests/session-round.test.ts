@@ -1,17 +1,19 @@
-import type { Api, Result } from '#lib/app/api-client.js'
-import type { App } from '#lib/app/app.js'
-import type { BackgroundLane } from '#lib/app/pacing.js'
-import type { Player, PlayerState } from '#lib/app/player.js'
-import type { SavedPlayerStore } from '#lib/app/saved-queue.js'
-import type { FakeAudio } from './harness/browser'
-import type { Device, Tab } from './harness/device'
 import { IDBFactory } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
+
 import { endpoints } from '#lib/api/endpoints.js'
+import type { Api, Result } from '#lib/app/api-client.js'
+import type { App } from '#lib/app/app.js'
 import { createLocalDatabase } from '#lib/app/local.js'
+import type { BackgroundLane } from '#lib/app/pacing.js'
+import type { Player, PlayerState } from '#lib/app/player.js'
 import { INITIAL_PLAYER } from '#lib/app/player.js'
+import type { SavedPlayerStore } from '#lib/app/saved-queue.js'
 import { createSavedQueue } from '#lib/app/saved-queue.js'
 import { createSessionRound } from '#lib/app/session-round.js'
+
+import type { FakeAudio } from './harness/browser'
+import type { Device, Tab } from './harness/device'
 import { held, never } from './harness/hold'
 import { checkIns, DAILY, likedSong, listener, storedCheckIns } from './harness/listener'
 import { ANOTHER_ACCOUNT, signIn } from './harness/sign-in'
@@ -34,7 +36,7 @@ const SECOND = { id: 2662577181, url: 'playback/liked/002-song_url_v1.json.gz', 
 const THIRD = { id: 4208408, url: 'playback/liked/003-song_url_v1.json.gz', duration: 310 }
 
 /** 退出 A、登录 B：登录 B 的曲库同步只放红心，停在后面 */
-async function switchAccount(device: Device, app: App): Promise<void> {
+const switchAccount = async (device: Device, app: App): Promise<void> => {
   await world.netease.reply('login/logout.json')
   await app.logout()
   await replyLibrary({
@@ -45,7 +47,7 @@ async function switchAccount(device: Device, app: App): Promise<void> {
 }
 
 /** 同一台设备上两个标签页都登录着；A 先把曲库同步完，B 从本机副本读出同一份 */
-async function twoSignedInTabs(device: Device): Promise<{ tabA: Tab, tabB: Tab }> {
+const twoSignedInTabs = async (device: Device): Promise<{ tabA: Tab, tabB: Tab }> => {
   const tabA = await signInWithLiked(device)
   await world.netease.reply('login/user_account.vip.json')
   await replyLibrary({
@@ -60,7 +62,7 @@ async function twoSignedInTabs(device: Device): Promise<{ tabA: Tab, tabB: Tab }
 }
 
 /** 在一个标签页里放一首歌，让它出声；下一首的播放地址也备好 */
-async function playTrack(tab: Tab, song: typeof FIRST, next: typeof FIRST): Promise<FakeAudio> {
+const playTrack = async (tab: Tab, song: typeof FIRST, next: typeof FIRST): Promise<FakeAudio> => {
   await world.netease.reply(song.url, {
     when: { id: song.id },
   })
@@ -80,7 +82,7 @@ async function playTrack(tab: Tab, song: typeof FIRST, next: typeof FIRST): Prom
 }
 
 /** 一个只让测试手动回答的 Api：记录发过几次，回答排队 */
-function controlledApi(): { api: Api, pending: Array<(result: Result<unknown>) => void>, calls: () => number } {
+const controlledApi = (): { api: Api, pending: Array<(result: Result<unknown>) => void>, calls: () => number } => {
   const pending: Array<(result: Result<unknown>) => void> = []
   let calls = 0
   const api = {

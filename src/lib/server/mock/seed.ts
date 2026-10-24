@@ -1,7 +1,8 @@
 // Mock 的种子：用 tests/fixtures/netease 里录制的网易云返回拼出一份可读写的曲库。
 // 只读录制，不连网；歌单列表、歌单详情、歌曲信息、红心、收藏的专辑/歌手都来自录制。
-import type { RawFixture } from './fixture-format.ts'
 import { readdir } from 'node:fs/promises'
+
+import type { RawFixture } from './fixture-format.ts'
 import { fixtureOutcome } from './fixture-format.ts'
 import { readFixture } from './read-fixture.ts'
 
@@ -131,26 +132,18 @@ export interface SeedData {
 
 const SELF_UID = 10000001
 
-function bodyOf(fixture: RawFixture): RawFixture['response']['body'] {
-  return fixture.response.body
-}
+const bodyOf = (fixture: RawFixture): RawFixture['response']['body'] => fixture.response.body
 
-function detailBody(fixture: RawFixture): PlaylistDetailBody {
-  return fixture.response.body as PlaylistDetailBody
-}
+const detailBody = (fixture: RawFixture): PlaylistDetailBody => fixture.response.body as PlaylistDetailBody
 
-function listDetailFiles(folder: string): Promise<string[]> {
-  return readdir(new URL(`../../../../tests/fixtures/netease/${folder}/`, import.meta.url))
-    .then(names => names.filter(name => name.endsWith('playlist_detail.json.gz')).sort())
-}
+const listDetailFiles = (folder: string): Promise<string[]> => readdir(new URL(`../../../../tests/fixtures/netease/${folder}/`, import.meta.url))
+  .then(names => names.filter(name => name.endsWith('playlist_detail.json.gz')).sort())
 
-function songDetailFiles(folder: string): Promise<string[]> {
-  return readdir(new URL(`../../../../tests/fixtures/netease/${folder}/`, import.meta.url))
-    .then(names => names.filter(name => name.endsWith('song_detail.json.gz')).sort())
-}
+const songDetailFiles = (folder: string): Promise<string[]> => readdir(new URL(`../../../../tests/fixtures/netease/${folder}/`, import.meta.url))
+  .then(names => names.filter(name => name.endsWith('song_detail.json.gz')).sort())
 
 /** 搜索结果、专辑、热门歌曲里的歌带着自己的 privilege：收进歌曲库，加入歌单后刷新还能取到 */
-function collectInlineSongs(node: unknown, songs: Map<number, SongPart>): void {
+const collectInlineSongs = (node: unknown, songs: Map<number, SongPart>): void => {
   if (Array.isArray(node)) {
     node.forEach(item => collectInlineSongs(item, songs))
     return
@@ -167,7 +160,7 @@ function collectInlineSongs(node: unknown, songs: Map<number, SongPart>): void {
   Object.values(record).forEach(item => collectInlineSongs(item, songs))
 }
 
-function addSongs(songs: Map<number, SongPart>, body: Record<string, unknown>): void {
+const addSongs = (songs: Map<number, SongPart>, body: Record<string, unknown>): void => {
   const list = Array.isArray(body.songs)
     ? body.songs as RawSong[]
     : []
@@ -183,7 +176,7 @@ function addSongs(songs: Map<number, SongPart>, body: Record<string, unknown>): 
 }
 
 /** 用一份歌单详情的曲目补齐歌曲信息：详情里的 tracks 带着这些歌，privileges 按编号对上 */
-function addDetailSongs(songs: Map<number, SongPart>, detail: PlaylistDetailBody): void {
+const addDetailSongs = (songs: Map<number, SongPart>, detail: PlaylistDetailBody): void => {
   const privileges = new Map((detail.privileges ?? []).map(privilege => [privilege.id, privilege]))
   for (const song of detail.playlist.tracks ?? []) {
     const privilege = privileges.get(song.id)
@@ -193,7 +186,7 @@ function addDetailSongs(songs: Map<number, SongPart>, detail: PlaylistDetailBody
 }
 
 /** 歌单列表里的 tracks/trackIds 是 null：详情里才有曲目，把它们补进列表的头部 */
-function syncSummaries(playlists: RawPlaylist[], details: Map<number, PlaylistDetailBody>): void {
+const syncSummaries = (playlists: RawPlaylist[], details: Map<number, PlaylistDetailBody>): void => {
   for (const playlist of playlists) {
     const detail = details.get(playlist.id)
     if (detail) {
@@ -205,14 +198,12 @@ function syncSummaries(playlists: RawPlaylist[], details: Map<number, PlaylistDe
 }
 
 /** 这张歌单的头部：新建、改过的歌单没有自己的录制，用模板拼出来 */
-function patchPlaylist(playlist: RawPlaylist, next: Partial<RawPlaylist>): RawPlaylist {
-  return {
-    ...structuredClone(playlist),
-    ...next,
-  }
-}
+const patchPlaylist = (playlist: RawPlaylist, next: Partial<RawPlaylist>): RawPlaylist => ({
+  ...structuredClone(playlist),
+  ...next,
+})
 
-export async function buildSeed(seed: SeedName): Promise<SeedData> {
+export const buildSeed = async (seed: SeedName): Promise<SeedData> => {
   const before = 'library/sync/before'
   const chosen = `library/sync/${seed}`
   const playlists = (bodyOf(await readFixture(`${chosen}/001-user_playlist.json.gz`)) as { playlist: RawPlaylist[] }).playlist
@@ -412,7 +403,7 @@ export async function buildSeed(seed: SeedName): Promise<SeedData> {
 }
 
 /** 用一份详情模板拼出这张歌单的详情：头部照歌单列表里的，曲目按 trackIds 的顺序 */
-export function patchPlaylistDetail(template: PlaylistDetailBody, playlist: RawPlaylist, parts: SongPart[]): PlaylistDetailBody {
+export const patchPlaylistDetail = (template: PlaylistDetailBody, playlist: RawPlaylist, parts: SongPart[]): PlaylistDetailBody => {
   const body = structuredClone(template)
   body.playlist = patchPlaylist(playlist, {
     tracks: parts.map(part => part.song),

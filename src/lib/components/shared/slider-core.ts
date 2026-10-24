@@ -1,5 +1,5 @@
-import type { Grip, PointerSample } from './press'
 import { clamp } from './clamp'
+import type { Grip, PointerSample } from './press'
 import { pressBroken } from './press'
 
 // 线性拖动核心（进度条、自绘滚动条的滑块共用；Spec #11 第二个测试接入点“拖动手势核心”）：
@@ -21,14 +21,14 @@ export interface SliderCoreOptions {
 
 export type SliderCore = Grip
 
-export function createSliderCore({ begin, track, commit, cancel, onValue }: SliderCoreOptions): SliderCore {
+export const createSliderCore = ({ begin, track, commit, cancel, onValue }: SliderCoreOptions): SliderCore => {
   let press: { pointerId: number, value: number } | null = null
 
-  function stop() {
+  const stop = () => {
     press = null
   }
 
-  function abandon(pointerId?: number) {
+  const abandon = (pointerId?: number) => {
     if (!press || (pointerId !== undefined && pointerId !== press.pointerId))
       return
     stop()

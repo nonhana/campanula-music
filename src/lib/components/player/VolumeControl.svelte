@@ -8,8 +8,9 @@
 </script>
 
 <script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
   import { Volume1, Volume2, VolumeX } from '@lucide/svelte'
+  import type { ClassValue } from 'svelte/elements'
+
   import { getAppView } from '../shared/app-context.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import VolumeSlider from './VolumeSlider.svelte'
@@ -18,7 +19,7 @@
   const view = getAppView()
   const volume = $derived(view.state.player.volume)
 
-  function toggleMute() {
+  const toggleMute = () => {
     if (volume > 0) {
       unmuted = volume
       view.app.setVolume(0)

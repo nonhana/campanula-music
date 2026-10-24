@@ -1,9 +1,11 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+
 import type { FakeAudio } from './harness/browser'
-import type { Device, Tab } from './harness/device'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MEDIA_ERR_NETWORK, MEDIA_ERR_SRC_NOT_SUPPORTED } from './harness/browser'
+import type { Device, Tab } from './harness/device'
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
 import { checkIns, current, likedPage, likedSong, listener, PLAYLISTS_WITH_POEMS, playUrlRequests, queueIds, storedCheckIns } from './harness/listener'
@@ -47,7 +49,7 @@ const SEARCH_SONG = { id: TRIAL_ALBUM.song, url: TRIAL_URL, duration: 30.04 }
 const SEARCH_RESULTS = 'search/songs/003-cloudsearch.json.gz'
 
 /** 听众按搜索，单曲结果显示出来；不看的其他三类结果一直等着（和 search.test.ts 一样） */
-async function showSearch(app: App, keyword: string = SEARCHED.keyword, fixture = SEARCH_RESULTS): Promise<readonly Song[]> {
+const showSearch = async (app: App, keyword: string = SEARCHED.keyword, fixture = SEARCH_RESULTS): Promise<readonly Song[]> => {
   await world.netease.reply(fixture, {
     when: { type: 1 },
   })
@@ -66,7 +68,7 @@ async function showSearch(app: App, keyword: string = SEARCHED.keyword, fixture 
 }
 
 /** 搜索结果里的同一首歌先从我喜欢的音乐加入空队列并出声；再点搜索结果时，能核对当前这首的来源也没变 */
-async function playSearchedSongUntilSounding(tab: Tab): Promise<FakeAudio> {
+const playSearchedSongUntilSounding = async (tab: Tab): Promise<FakeAudio> => {
   await showSearch(tab.app)
   await world.netease.reply(SEARCH_SONG.url)
   tab.app.addToQueue(LIKED, likedSong(tab.app, SEARCH_SONG.id))
@@ -81,7 +83,7 @@ async function playSearchedSongUntilSounding(tab: Tab): Promise<FakeAudio> {
 }
 
 /** 点一首歌，让它出声：网易云回这首和下一首（空闲的播放器预先缓冲）的播放地址。返回出声的播放器 */
-async function playUntilSounding(tab: Tab, song: Recorded, next: Recorded): Promise<FakeAudio> {
+const playUntilSounding = async (tab: Tab, song: Recorded, next: Recorded): Promise<FakeAudio> => {
   await world.netease.reply(song.url)
   await world.netease.reply(next.url)
   tab.app.play(LIKED, song.id)
@@ -98,7 +100,7 @@ async function playUntilSounding(tab: Tab, song: Recorded, next: Recorded): Prom
 const other = (tab: Tab, player: FakeAudio) => tab.audio.find(audio => audio !== player)!
 
 /** 录下的播放地址：服务端换成 https 交给浏览器 */
-async function recordedUrl(path: string): Promise<string> {
+const recordedUrl = async (path: string): Promise<string> => {
   const { outcome } = await loadFixture(path)
   const body = outcome.response.body as { data: { url: string }[] }
   return body.data[0].url.replace(/^http:/, 'https:')
@@ -1305,7 +1307,7 @@ describe('换歌原因', () => {
 })
 
 /** 播放页上露出来的上一首、下一首（编号）：按上一首、下一首会换到的那首 */
-function neighborIds(app: App): { previous: number | null, next: number | null } {
+const neighborIds = (app: App): { previous: number | null, next: number | null } => {
   const { queue, neighbors } = app.state.player
   const id = (index: number | null) => (index === null
     ? null
@@ -1382,7 +1384,7 @@ describe('按上一首、下一首会换到哪首', () => {
 })
 
 /** 可重现的伪随机数（mulberry32）：失败时按打出来的种子重跑同一串操作；也拿来顶替 Math.random，让随机播放的顺序固定 */
-function seeded(seed: number): () => number {
+const seeded = (seed: number): () => number => {
   let state = seed
   return () => {
     state = (state + 0x6D2B79F5) | 0
@@ -1393,7 +1395,7 @@ function seeded(seed: number): () => number {
 }
 
 /** 用“加入播放队列”从空的播放队列放起：队列里就是这几首，从第一首开始（它的地址一直在取） */
-async function queueOf(app: App, songs: readonly Recorded[]): Promise<void> {
+const queueOf = async (app: App, songs: readonly Recorded[]): Promise<void> => {
   await world.netease.reply(songs[0].url, {
     until: never(),
   })
@@ -1402,12 +1404,10 @@ async function queueOf(app: App, songs: readonly Recorded[]): Promise<void> {
 }
 
 /** 连按 times 次下一首，依次换上来的歌 */
-function nextTimes(app: App, times: number): (number | null)[] {
-  return Array.from({ length: times }, () => {
-    app.next()
-    return current(app)
-  })
-}
+const nextTimes = (app: App, times: number): (number | null)[] => Array.from({ length: times }, () => {
+  app.next()
+  return current(app)
+})
 
 describe('播放模式', () => {
   afterEach(() => {
@@ -1551,7 +1551,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
      * 网易云总还有四份播放地址没用掉，一半压着。录到地址的只有几首：回的不是请求的那首时，服务端认作网易云没给地址，App 跳过它、
      * 接着取下一首的，正好也让“跳过”这条路走得到。连着跳过把四份都用完时，替身没有返回、服务端出错，App 停下说明原因
      */
-    async function topUp(): Promise<void> {
+    const topUp = async (): Promise<void> => {
       while (queued - world.netease.calls.filter(call => call.module === 'song_url_v1').length < 4) {
         queued += 1
         const { url } = pick(RECORDED)
@@ -1791,7 +1791,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
 // 后台播放与恢复（#27）：播放队列、当前这首、播放进度、这首已经听了多少秒都存在本机，重新打开时恢复（Spec #11“客户端：播放队列与播放”）
 
 /** 本机存着的进度；没有时是 undefined */
-async function storedProgress(device: Device): Promise<unknown> {
+const storedProgress = async (device: Device): Promise<unknown> => {
   const { player = [] } = await device.stored()
   return player.find(([key]) => key === 'progress')?.[1]
 }
@@ -1889,7 +1889,7 @@ describe('退出登录、换账号', () => {
   })
 
   /** 登录 Cookie 没了：下一个请求服务端说需要登录，整个 App 变成登录失效 */
-  async function expireLogin(device: Device, app: App): Promise<void> {
+  const expireLogin = async (device: Device, app: App): Promise<void> => {
     await device.setCookie('campanula_login=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict')
     await app.openLyrics(FIRST.id)
     if (app.state.session.status !== 'loginExpired')
@@ -2090,11 +2090,9 @@ describe('在线播放音质', () => {
 const CHECK_IN = 'playback/check-in/001-scrobble.json.gz'
 
 /** 服务端调网易云打卡时的参数，按先后 */
-function neteaseCheckIns(): unknown[] {
-  return world.netease.calls.flatMap(call => call.module === 'scrobble'
-    ? [call.query]
-    : [])
-}
+const neteaseCheckIns = (): unknown[] => world.netease.calls.flatMap(call => call.module === 'scrobble'
+  ? [call.query]
+  : [])
 
 describe('听歌打卡', () => {
   it('切走一首（按下一首）：按实际出声的秒数取整打卡，带上这首自己的播放来源；暂停着的时间不算。发成了本机不再留着', async () => {
@@ -2235,7 +2233,7 @@ describe('听歌打卡', () => {
   })
 
   /** 放 40 秒第一首，按下一首时才发现登录 Cookie 没了：打卡被说需要登录，App 变成登录失效 */
-  async function expireWhileCheckingIn(device: Device, tab: Tab): Promise<FakeAudio> {
+  const expireWhileCheckingIn = async (device: Device, tab: Tab): Promise<FakeAudio> => {
     const player = await playUntilSounding(tab, FIRST, SECOND)
     await world.clock.advance(40_000)
     await device.setCookie('campanula_login=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict')

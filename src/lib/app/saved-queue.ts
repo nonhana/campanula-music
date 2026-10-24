@@ -1,8 +1,9 @@
 import type { Account } from '#lib/api/account.js'
+
 import type { LocalDatabase } from './local'
+import { CHECK_INS, PLAYER, settled as requestResult } from './local'
 import type { CheckIn, Player, PlayerState, SavedPlayer, SavedProgress, SavedQueue } from './player'
 import type { SessionRound } from './session-round'
-import { CHECK_INS, PLAYER, settled as requestResult } from './local'
 
 // 保存的播放队列（Spec #11“客户端：播放队列与播放”、规则⑩，#69）：播放队列和进度存在这台设备上，
 // 记着它是哪个网易云账号的。归属、持久化、打卡归属和换账号的规则⑩都在这里，App 只发出“会话换了”。
@@ -65,54 +66,52 @@ export interface SavedQueueContext {
   sendBeforeLogout: (owner: number) => Promise<void>
 }
 
-function createPlayerStore(db: LocalDatabase): PlayerStore {
-  return {
-    async read() {
-      const store = (await db.open()).transaction(PLAYER).objectStore(PLAYER)
-      const [queue, progress] = await Promise.all([
-        requestResult(store.get('queue')) as Promise<StoredQueue | undefined>,
-        requestResult(store.get('progress')) as Promise<SavedProgress | undefined>,
-      ])
-      // 另一个标签页刚换了播放队列、这个标签页又存了一次自己的进度时，两份会对不上
-      if (!queue || !progress || !queue.entries.some(entry => entry.song.id === progress.songId))
-        return null
-      const { owner, ...saved } = queue
-      return {
-        owner,
-        saved: { queue: saved, progress },
-      }
-    },
-    save: (progress, queue, checkIns) => db.write(checkIns.length > 0
-      ? [PLAYER, CHECK_INS]
-      : [PLAYER], (transaction) => {
-      const store = transaction.objectStore(PLAYER)
-      if (queue)
-        store.put(queue, 'queue')
-      store.put(progress, 'progress')
-      for (const checkIn of checkIns)
-        transaction.objectStore(CHECK_INS).add(checkIn)
-    }),
-    delete: (checkIns = []) => db.write(checkIns.length > 0
-      ? [PLAYER, CHECK_INS]
-      : [PLAYER], (transaction) => {
-      transaction.objectStore(PLAYER).clear()
-      for (const checkIn of checkIns)
-        transaction.objectStore(CHECK_INS).add(checkIn)
-    }),
-    async pending() {
-      const store = (await db.open()).transaction(CHECK_INS).objectStore(CHECK_INS)
-      const [keys, values] = await Promise.all([
-        requestResult(store.getAllKeys()) as Promise<number[]>,
-        requestResult(store.getAll()) as Promise<PendingCheckIn[]>,
-      ])
-      return keys.map((key, index) => ({ key, checkIn: values[index] }))
-    },
-    deleteCheckIn: key => db.write([CHECK_INS], transaction => transaction.objectStore(CHECK_INS).delete(key)),
-    clearCheckIns: () => db.write([CHECK_INS], transaction => transaction.objectStore(CHECK_INS).clear()),
-  }
-}
+const createPlayerStore = (db: LocalDatabase): PlayerStore => ({
+  async read() {
+    const store = (await db.open()).transaction(PLAYER).objectStore(PLAYER)
+    const [queue, progress] = await Promise.all([
+      requestResult(store.get('queue')) as Promise<StoredQueue | undefined>,
+      requestResult(store.get('progress')) as Promise<SavedProgress | undefined>,
+    ])
+    // 另一个标签页刚换了播放队列、这个标签页又存了一次自己的进度时，两份会对不上
+    if (!queue || !progress || !queue.entries.some(entry => entry.song.id === progress.songId))
+      return null
+    const { owner, ...saved } = queue
+    return {
+      owner,
+      saved: { queue: saved, progress },
+    }
+  },
+  save: (progress, queue, checkIns) => db.write(checkIns.length > 0
+    ? [PLAYER, CHECK_INS]
+    : [PLAYER], (transaction) => {
+    const store = transaction.objectStore(PLAYER)
+    if (queue)
+      store.put(queue, 'queue')
+    store.put(progress, 'progress')
+    for (const checkIn of checkIns)
+      transaction.objectStore(CHECK_INS).add(checkIn)
+  }),
+  delete: (checkIns = []) => db.write(checkIns.length > 0
+    ? [PLAYER, CHECK_INS]
+    : [PLAYER], (transaction) => {
+    transaction.objectStore(PLAYER).clear()
+    for (const checkIn of checkIns)
+      transaction.objectStore(CHECK_INS).add(checkIn)
+  }),
+  async pending() {
+    const store = (await db.open()).transaction(CHECK_INS).objectStore(CHECK_INS)
+    const [keys, values] = await Promise.all([
+      requestResult(store.getAllKeys()) as Promise<number[]>,
+      requestResult(store.getAll()) as Promise<PendingCheckIn[]>,
+    ])
+    return keys.map((key, index) => ({ key, checkIn: values[index] }))
+  },
+  deleteCheckIn: key => db.write([CHECK_INS], transaction => transaction.objectStore(CHECK_INS).delete(key)),
+  clearCheckIns: () => db.write([CHECK_INS], transaction => transaction.objectStore(CHECK_INS).clear()),
+})
 
-export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
+export const createSavedQueue = (context: SavedQueueContext): SavedPlayerStore => {
   const store = createPlayerStore(context.db)
   /** 这一份播放队列属于哪个网易云账号；没登录、放的是已下载的歌时是 null */
   let owner: number | null = null
@@ -122,14 +121,14 @@ export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
   let writes: Promise<unknown> = Promise.resolve()
 
   /** 排进本机写盘的先后里；返回这一份做完 */
-  function chain(action: () => Promise<void>): Promise<void> {
+  const chain = (action: () => Promise<void>): Promise<void> => {
     const next = writes.then(action)
     writes = next.catch(() => {})
     return next
   }
 
   /** 记下这一轮的所有者：打卡只记给这个账号 */
-  function tagged(checkIns: readonly CheckIn[]): PendingCheckIn[] {
+  const tagged = (checkIns: readonly CheckIn[]): PendingCheckIn[] => {
     const current = owner
     return current === null
       ? []
@@ -137,11 +136,9 @@ export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
   }
 
   /** 保存的队列带着这一刻的归属；没登录时是 null（之后登录了就交给那个账号） */
-  function stored(queue: SavedQueue | undefined): StoredQueue | undefined {
-    return queue && { ...queue, owner }
-  }
+  const stored = (queue: SavedQueue | undefined): StoredQueue | undefined => queue && { ...queue, owner }
 
-  function save(progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]): void {
+  const save = (progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]): void => {
     const pending = tagged(checkIns)
     const taggedQueue = stored(queue)
     const work = chain(() => store.save(progress, taggedQueue, pending))
@@ -151,7 +148,7 @@ export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
       void work.catch(() => {})
   }
 
-  function forget(checkIns: readonly CheckIn[]): void {
+  const forget = (checkIns: readonly CheckIn[]): void => {
     const pending = tagged(checkIns)
     const work = chain(() => store.delete(pending))
     if (!leaving && pending.length > 0)
@@ -161,7 +158,7 @@ export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
   }
 
   /** 登录了：同一账号接着用；没登录时放的已下载的歌交给这个账号；换了别的账号清空（规则⑩） */
-  async function enter(account: Account): Promise<void> {
+  const enter = async (account: Account): Promise<void> => {
     const mine = context.session.current
     leaving = false
     const player = context.player()
@@ -188,7 +185,7 @@ export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
   }
 
   /** 没登录时打开 App：恢复只有已下载的歌的那一份；存着的是别的账号的就留着，等它登录 */
-  async function restoreAnonymous(): Promise<void> {
+  const restoreAnonymous = async (): Promise<void> => {
     const mine = context.session.current
     leaving = false
     await writes
@@ -203,7 +200,7 @@ export function createSavedQueue(context: SavedQueueContext): SavedPlayerStore {
   }
 
   /** 退出登录：停播放器、记下最后一首的打卡、删掉本机这一份；主动退出的标签页再把它直接发一次 */
-  async function leave(notify: boolean): Promise<void> {
+  const leave = async (notify: boolean): Promise<void> => {
     const mine = context.session.current
     leaving = true
     const departed = owner

@@ -1,5 +1,5 @@
-import type { Attachment } from 'svelte/attachments'
 import { untrack } from 'svelte'
+import type { Attachment } from 'svelte/attachments'
 
 /**
  * 手机二级页（歌单、专辑、歌手、每日推荐、已下载）返回栏里的页名（DESIGN.md Layout · 手机返回栏）：
@@ -33,8 +33,7 @@ export const backTitle = new BackTitle()
  * 写在页头的 h1 上：它就是返回栏里要淡入的页名。名字变了（改名、换了一张歌单）重新挂一次。
  * 挂上时就量一次：换页时页名跟着新页直接到位（BackTitle 的 #key），不先写着旧的再淡掉
  */
-export function pageHeading(text: string): Attachment<HTMLElement> {
-  return (element) => {
+export const pageHeading = (text: string): Attachment<HTMLElement> => (element) => {
     backTitle.heading = element
     backTitle.text = text
     backTitle.measure()
@@ -45,7 +44,6 @@ export function pageHeading(text: string): Attachment<HTMLElement> {
       backTitle.shown = false
     })
   }
-}
 
 /** 挂在返回栏里页名那一格上：量的时候和吸在顶上的那一块（返回栏）的下沿比 */
 export const backBar: Attachment<HTMLElement> = (element) => {

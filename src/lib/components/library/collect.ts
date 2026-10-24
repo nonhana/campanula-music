@@ -9,7 +9,7 @@ import type { LibraryState } from '#lib/app/library.js'
  */
 export type CollectState = 'own' | 'collected' | 'not' | 'unknown'
 
-export function collectState(library: LibraryState, target: CollectTarget): CollectState {
+export const collectState = (library: LibraryState, target: CollectTarget): CollectState => {
   switch (target.kind) {
     case 'playlist': {
       if (library.playlists === null)

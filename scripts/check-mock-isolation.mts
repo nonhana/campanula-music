@@ -3,6 +3,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import process from 'node:process'
+
 import { DESIGN_PAGE_MARKER } from '../src/lib/dev/design-marker.ts'
 import { MOCK_RUNTIME_MARKER } from '../src/lib/server/mock/runtime.ts'
 
@@ -22,7 +23,7 @@ const MARKERS = [
   'user_playlist.full',
 ]
 
-async function filesIn(dir: string): Promise<string[]> {
+const filesIn = async (dir: string): Promise<string[]> => {
   try {
     await stat(dir)
   }

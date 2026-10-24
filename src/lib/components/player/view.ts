@@ -2,6 +2,7 @@ import type { Song } from '#lib/api/library.js'
 import type { LyricLine, LyricWord, PlaySource } from '#lib/api/playback.js'
 import type { LibraryState } from '#lib/app/library.js'
 import type { PlayerNotice, PlayerState, PlayMode, SongChange } from '#lib/app/player.js'
+
 import { playlistName } from '../playlist/playlist-text'
 import { failureText } from '../shared/failure'
 import { formatDuration } from '../shared/text'
@@ -9,12 +10,10 @@ import { formatDuration } from '../shared/text'
 // 播放条、晨光行、播放页上怎么显示：界面组件只照着画
 
 /** 播放队列是空的：没有播放条、没有播放页 */
-export function queueEmpty(player: PlayerState): boolean {
-  return player.queue.length === 0
-}
+export const queueEmpty = (player: PlayerState): boolean => player.queue.length === 0
 
 /** 按上一首、下一首会换到的那首（手机播放页拖封面时从两边转进来）；没有别的歌可换时是 null */
-export function neighborSong(player: PlayerState, direction: keyof PlayerState['neighbors']): Song | null {
+export const neighborSong = (player: PlayerState, direction: keyof PlayerState['neighbors']): Song | null => {
   const index = player.neighbors[direction]
   return index === null
     ? null
@@ -47,7 +46,7 @@ export type Place = 'page' | 'bar'
  * 点选在播放页里是在播放队列里点的；在播放条上是在列表里点的，那一行的封面飞进来、落下时是 land（cover-flight.svelte.ts），
  * 飞不了的（减少动态效果、那一行的封面还没加载出来）照常往左转（The Cover Leads Rule：退回普通的换歌）
  */
-export function turnOf(change: SongChange | null): Turn | null {
+export const turnOf = (change: SongChange | null): Turn | null => {
   switch (change) {
     case null:
       return null
@@ -66,12 +65,10 @@ export function turnOf(change: SongChange | null): Turn | null {
 }
 
 /** 秒 → 分:秒 */
-export function formatSeconds(seconds: number): string {
-  return formatDuration(seconds * 1000)
-}
+export const formatSeconds = (seconds: number): string => formatDuration(seconds * 1000)
 
 /** 播放来源叫什么（“来自「我喜欢的音乐」”）；曲库里找不到（歌单在网易云里删掉了、专辑页还没打开过）时是 null。已下载没登录时也有名字 */
-export function sourceName(library: LibraryState | null, source: PlaySource): string | null {
+export const sourceName = (library: LibraryState | null, source: PlaySource): string | null => {
   if (source.kind === 'downloads')
     return '已下载'
   if (!library)
@@ -107,7 +104,7 @@ export function sourceName(library: LibraryState | null, source: PlaySource): st
 }
 
 /** 正在唱的那一行：已经开始的最后一行（间奏时还是上一行）；第一行开始之前是 -1 */
-export function lineIndexAt(lines: readonly LyricLine[], at: number): number {
+export const lineIndexAt = (lines: readonly LyricLine[], at: number): number => {
   let low = 0
   let high = lines.length - 1
   let found = -1
@@ -125,7 +122,7 @@ export function lineIndexAt(lines: readonly LyricLine[], at: number): number {
 }
 
 /** 一个词唱到了几成，0 到 1 */
-export function wordProgress(word: LyricWord, at: number): number {
+export const wordProgress = (word: LyricWord, at: number): number => {
   if (at <= word.start)
     return 0
   if (at >= word.end)
@@ -140,7 +137,7 @@ export const PLAY_MODE_LABEL: Record<PlayMode, string> = { loop: '列表循环',
 export const NEXT_PLAY_MODE: Record<PlayMode, PlayMode> = { loop: 'one', one: 'shuffle', shuffle: 'loop' }
 
 /** 播放的提示说什么：一句话，什么没成、为什么；下一步交给播放键 */
-export function noticeText(notice: PlayerNotice): string {
+export const noticeText = (notice: PlayerNotice): string => {
   switch (notice.kind) {
     case 'urlFailed':
       return `没取到播放地址：${failureText(notice.failure)}`

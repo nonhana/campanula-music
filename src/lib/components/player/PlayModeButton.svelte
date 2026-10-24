@@ -6,8 +6,10 @@
   换图标时新旧交叉淡化（motion.ts 的 iconSwap）
 -->
 <script lang='ts'>
-  import type { PlayMode } from '#lib/app/player.js'
   import { Repeat, Repeat1, Shuffle } from '@lucide/svelte'
+
+  import type { PlayMode } from '#lib/app/player.js'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { iconSwap } from '../shared/motion'
   import IconButton from '../ui/IconButton.svelte'

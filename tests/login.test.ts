@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { listener } from './harness/listener'
 import { RECORDED_ACCOUNT as ACCOUNT, signInCookies } from './harness/sign-in'
 import { useWorld } from './harness/world'
@@ -78,7 +79,7 @@ describe('扫码登录', () => {
   /** 录下的二维码 key */
   const KEY = 'f124a8be-db3f-42f9-a236-30cc4130ed2c'
 
-  async function showQr() {
+  const showQr = async () => {
     const device = world.device()
     const { app } = await device.open()
     await world.netease.reply('login/login_qr_key.json')

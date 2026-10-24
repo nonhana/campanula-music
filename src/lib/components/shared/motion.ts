@@ -1,6 +1,7 @@
-import type { TransitionConfig } from 'svelte/transition'
 import { flushSync } from 'svelte'
 import { prefersReducedMotion } from 'svelte/motion'
+import type { TransitionConfig } from 'svelte/transition'
+
 import { AXES, cssEasing, DURATIONS, EASINGS, FLOAT_DISTANCE, REDUCED_FADE_MS, STAGGER } from './motion-tokens'
 
 // 组件里的 JS 动效（Svelte 过渡、Tween、换碟、程序滚动）从这里取时长和曲线，减少动态效果也在这里统一处理（DESIGN.md Motion）：
@@ -8,14 +9,10 @@ import { AXES, cssEasing, DURATIONS, EASINGS, FLOAT_DISTANCE, REDUCED_FADE_MS, S
 // 看不见时不动：页面在后台（锁屏、切走）时时长都是 0，状态直接到位。浏览器在后台不画帧，这时开始的动画要等回到前台才播，就成了补放
 
 /** 系统设置里打开了“减少动态效果” */
-export function reducedMotion(): boolean {
-  return prefersReducedMotion.current
-}
+export const reducedMotion = (): boolean => prefersReducedMotion.current
 
 /** 页面在后台（锁屏、切走）：动效直接到位，回来时不补放 */
-export function unseen(): boolean {
-  return document.visibilityState === 'hidden'
-}
+export const unseen = (): boolean => document.visibilityState === 'hidden'
 
 /** 正在 atOnce() 里 */
 let settling = false
@@ -24,7 +21,7 @@ let settling = false
  * 状态一下子到位、不播过渡：返回一页时恢复的筛选、搜索词（snapshot.ts）。change 里改的状态当场画好，
  * 换页的过渡拍新的一帧时已经是恢复好的样子，滚动位置也按恢复好的高度算。不能在 effect 里调（flushSync）
  */
-export function atOnce(change: () => void): void {
+export const atOnce = (change: () => void): void => {
   settling = true
   try {
     flushSync(change)
@@ -35,12 +32,10 @@ export function atOnce(change: () => void): void {
 }
 
 /** 页面在后台，或者正在 atOnce() 里：直接到位 */
-function instant(): boolean {
-  return settling || unseen()
-}
+const instant = (): boolean => settling || unseen()
 
 /** 透明度、颜色的时长：减少动态效果时最多 150ms，页面在后台时是 0 */
-export function fadeMs(ms: number): number {
+export const fadeMs = (ms: number): number => {
   if (instant())
     return 0
   return reducedMotion()
@@ -49,18 +44,14 @@ export function fadeMs(ms: number): number {
 }
 
 /** 位移、缩放、宽高的时长：减少动态效果、页面在后台时是 0，直接到位 */
-export function moveMs(ms: number): number {
-  return reducedMotion() || instant()
-    ? 0
-    : ms
-}
+export const moveMs = (ms: number): number => reducedMotion() || instant()
+  ? 0
+  : ms
 
 /** 程序滚动（翻页键、歌词跟着当前行走）：减少动态效果时直接跳过去 */
-export function scrollBehavior(): ScrollBehavior {
-  return reducedMotion()
-    ? 'auto'
-    : 'smooth'
-}
+export const scrollBehavior = (): ScrollBehavior => reducedMotion()
+  ? 'auto'
+  : 'smooth'
 
 /**
  * 一次性的布局变化（DESIGN.md Motion · 不动布局的例外：专辑简介展开收起、登录卡片换登录方式时变高变矮）：
@@ -68,7 +59,7 @@ export function scrollBehavior(): ScrollBehavior {
  * 变的这一会儿竖着超出的部分裁掉，横着飘的不裁。没有要动的时候返回 null。
  * 连着变时，调用的地方先量此刻的高度、再 cancel 上一次的，从此刻的样子接着变
  */
-export function animateHeight(element: HTMLElement, from: number, to: number, duration: number): Animation | null {
+export const animateHeight = (element: HTMLElement, from: number, to: number, duration: number): Animation | null => {
   const ms = moveMs(duration)
   if (ms === 0 || Math.abs(to - from) < 1)
     return null
@@ -85,7 +76,7 @@ export function animateHeight(element: HTMLElement, from: number, to: number, du
 }
 
 /** CSS 的 cubic-bezier(x1, y1, x2, y2) 换成 JS 的缓动函数，和 CSS 里是同一条曲线（WebKit UnitBezier 的解法） */
-function cubicBezier([x1, y1, x2, y2]: readonly [number, number, number, number]): (t: number) => number {
+const cubicBezier = ([x1, y1, x2, y2]: readonly [number, number, number, number]): (t: number) => number => {
   const cx = 3 * x1
   const bx = 3 * (x2 - x1) - cx
   const ax = 1 - cx - bx
@@ -96,7 +87,7 @@ function cubicBezier([x1, y1, x2, y2]: readonly [number, number, number, number]
   const y = (s: number) => ((ay * s + by) * s + cy) * s
   const slope = (s: number) => (3 * ax * s + 2 * bx) * s + cx
   /** 横坐标是 t 的那一点的参数：先用牛顿法，斜率太平时退回二分 */
-  function solve(t: number): number {
+  const solve = (t: number): number => {
     let s = t
     for (let i = 0; i < 8; i += 1) {
       const error = x(s) - t
@@ -144,7 +135,7 @@ export type MotionConfig = TransitionConfig | ((options?: { direction?: 'in' | '
  * 只换时长和曲线，所以是沿着来的路回去，不先跳到另一边。in: / out: 分开写时掉头会先跳回起点。
  * 这样写时 delay 只给刚进来的那一头：新内容等一下再进来，旧的马上走；掉头回来的不等。正在 atOnce() 里、页面在后台时直接到位
  */
-function twoWay<P>(motion: (node: Element, params: P, options: TransitionOptions) => TransitionConfig, node: Element, params: P, options: TransitionOptions): MotionConfig {
+const twoWay = <P>(motion: (node: Element, params: P, options: TransitionOptions) => TransitionConfig, node: Element, params: P, options: TransitionOptions): MotionConfig => {
   if (options.direction !== 'both')
     return motion(node, params, options)
   if (instant())
@@ -166,11 +157,9 @@ function twoWay<P>(motion: (node: Element, params: P, options: TransitionOptions
 }
 
 /** 进来先快后慢，出去越走越快 */
-function easingOf(options: TransitionOptions): (t: number) => number {
-  return options.direction === 'out'
-    ? easeInSoft
-    : easeOutSoft
-}
+const easingOf = (options: TransitionOptions): (t: number) => number => options.direction === 'out'
+  ? easeInSoft
+  : easeOutSoft
 
 interface FadeParams {
   /** 两头都按这个时长；不写时淡入 200ms（状态）、淡出 120ms（退场） */
@@ -182,11 +171,9 @@ interface FadeParams {
  * 淡入淡出：同一块地方换内容时交叉淡化（新旧叠在同一个网格格子里），加载不出来的图标淡入，跟着数据冒出来的小东西（徽标、数字）。
  * 不写 duration 时淡入 200ms、淡出 120ms
  */
-export function fade(node: Element, params: FadeParams = {}, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(fadeOnce, node, params, options)
-}
+export const fade = (node: Element, params: FadeParams = {}, options: TransitionOptions = {}): MotionConfig => twoWay(fadeOnce, node, params, options)
 
-function fadeOnce(_node: Element, { duration, delay = 0 }: FadeParams, options: TransitionOptions): TransitionConfig {
+const fadeOnce = (_node: Element, { duration, delay = 0 }: FadeParams, options: TransitionOptions): TransitionConfig => {
   const out = options.direction === 'out'
   return {
     delay: instant()
@@ -202,18 +189,14 @@ function fadeOnce(_node: Element, { duration, delay = 0 }: FadeParams, options: 
  * 先淡出再淡入（DESIGN.md Overlays · 筛选）：一块地方整个换成别的（歌单筛选），旧的先淡出（退场 120ms），淡完新的再淡入（240ms），
  * 不让里面的东西各自挪位。新旧叠在同一个网格格子里，写 transition:fadeThrough
  */
-export function fadeThrough(node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(fadeThroughOnce, node, undefined, options)
-}
+export const fadeThrough = (node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig => twoWay(fadeThroughOnce, node, undefined, options)
 
-function fadeThroughOnce(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
-  return options.direction === 'out'
-    ? fadeOnce(node, {}, options)
-    : fadeOnce(node, {
-        duration: DURATIONS.reveal,
-        delay: fadeMs(DURATIONS['state-out']),
-      }, options)
-}
+const fadeThroughOnce = (node: Element, _params: undefined, options: TransitionOptions): TransitionConfig => options.direction === 'out'
+  ? fadeOnce(node, {}, options)
+  : fadeOnce(node, {
+      duration: DURATIONS.reveal,
+      delay: fadeMs(DURATIONS['state-out']),
+    }, options)
 
 /**
  * 骨架淡出（DESIGN.md Motion · 依次飘入）：写成 out:fadeAway，放在被内容替换掉的骨架上（骨架是上下排列里的一块）。
@@ -222,7 +205,7 @@ function fadeThroughOnce(node: Element, _params: undefined, options: TransitionO
  * 一块骨架只在最外层写一次（SkeletonRows 自己带）：隔着 {@render}、{:else if}、组件时里外两层会一起播，外层先量出整块的高度减掉，
  * 里层再减一次把外层压扁，后面的内容就被往上拉了里层那么高（#32 综合的单曲）。开发时套了两层会在控制台报错，作者试用时在控制台看得到
  */
-export function fadeAway(node: HTMLElement, { duration = DURATIONS['state-out'] }: { duration?: number } = {}, options: TransitionOptions = {}): TransitionConfig {
+export const fadeAway = (node: HTMLElement, { duration = DURATIONS['state-out'] }: { duration?: number } = {}, options: TransitionOptions = {}): TransitionConfig => {
   if (import.meta.env.DEV)
     checkSingleFadeAway(node)
   node.style.marginBottom = `calc(${getComputedStyle(node).marginBottom} - ${node.offsetHeight}px)`
@@ -235,7 +218,7 @@ export function fadeAway(node: HTMLElement, { duration = DURATIONS['state-out'] 
 }
 
 /** 开发时：正在淡出的骨架做个记号，里外又有一层在淡出就报错（两层都让出高度，后面的内容会被往上拉） */
-function checkSingleFadeAway(node: HTMLElement): void {
+const checkSingleFadeAway = (node: HTMLElement): void => {
   const nested = node.parentElement?.closest('[data-fading-away]') ?? node.querySelector('[data-fading-away]')
   if (nested)
     console.error('out:fadeAway 套在另一个 out:fadeAway 里：只在骨架的最外层写一次（motion.ts fadeAway 的注释）', node)
@@ -251,7 +234,7 @@ const REVEAL_GROUP = '[data-reveal-group]'
  * 飘的是一组的直接子元素：前 6 个依次晚 30ms 从下面飘上来，其余和第 6 个一起（uno.config.ts 的 .revealing）。
  * .revealing 只在这一小会儿挂着，之后才挂上的（虚拟列表滚出来的行）不飘。减少动态效果时只淡入
  */
-export function reveal(node: HTMLElement): TransitionConfig {
+export const reveal = (node: HTMLElement): TransitionConfig => {
   const found = [
     ...node.querySelectorAll(REVEAL_GROUP),
   ]
@@ -287,11 +270,9 @@ export interface FloatParams {
  * 飘入从反方向漂过来停住，先快后慢；飘出往 toward 漂走，越走越快。in:float 和 out:float 分开写，或者写 transition:float（见 twoWay）。
  * 减少动态效果时不漂，只淡入淡出（最多 150ms）；页面在后台时不等 delay，直接到位。漂动写在 translate 上，不碰元素自己的 transform
  */
-export function float(node: Element, params: FloatParams, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(floatOnce, node, params, options)
-}
+export const float = (node: Element, params: FloatParams, options: TransitionOptions = {}): MotionConfig => twoWay(floatOnce, node, params, options)
 
-function floatOnce(_node: Element, { toward, distance, duration, panel = false, delay = 0 }: FloatParams, options: TransitionOptions): TransitionConfig {
+const floatOnce = (_node: Element, { toward, distance, duration, panel = false, delay = 0 }: FloatParams, options: TransitionOptions): TransitionConfig => {
   if (instant())
     return { duration: 0 }
   const out = options.direction === 'out'
@@ -327,11 +308,9 @@ const ICON_FROM_SCALE = 0.85
  * 图标切换（播放 ↔ 暂停 ↔ 转圈、播放模式、音量）：新旧两个图标交叉淡化，新的从 85% 放大到位（反馈 120ms）。
  * 新旧叠在同一个网格格子里，写 transition:iconSwap。减少动态效果时只淡入淡出
  */
-export function iconSwap(node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(iconSwapOnce, node, undefined, options)
-}
+export const iconSwap = (node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig => twoWay(iconSwapOnce, node, undefined, options)
 
-function iconSwapOnce(_node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
+const iconSwapOnce = (_node: Element, _params: undefined, options: TransitionOptions): TransitionConfig => {
   const out = options.direction === 'out'
   const scaled = !out && !reducedMotion()
   return {
@@ -347,7 +326,7 @@ function iconSwapOnce(_node: Element, _params: undefined, options: TransitionOpt
  * 正在播放的三根竖条从底下长出来（状态 200ms），换走时缩回去（退场 120ms）（DESIGN.md Song Row · 点歌）。
  * 缩放的原点由调用的地方放在底边。减少动态效果时竖条不长，只淡入淡出
  */
-export function grow(_node: Element, _params?: undefined, options: TransitionOptions = {}): TransitionConfig {
+export const grow = (_node: Element, _params?: undefined, options: TransitionOptions = {}): TransitionConfig => {
   const ms = options.direction === 'out'
     ? DURATIONS['state-out']
     : DURATIONS.state
@@ -373,7 +352,7 @@ const RECEDE_SCALE = 0.96
  * 手机播放页封面 ↔ 歌词（DESIGN.md Lyrics）：封面换成歌词时缩到 96% 并淡出（退场 200ms），换回时从 96% 放大到位、淡入（面板 360ms）。
  * 用 in:recede 和 out:recede，delay 给换回时的封面（飘出开始 60ms 后才进来）；缩放的原点是元素中心。减少动态效果时只淡入淡出
  */
-export function recede(_node: Element, { delay = 0 }: { delay?: number } = {}, options: TransitionOptions = {}): TransitionConfig {
+export const recede = (_node: Element, { delay = 0 }: { delay?: number } = {}, options: TransitionOptions = {}): TransitionConfig => {
   if (instant())
     return { duration: 0 }
   const ms = options.direction === 'out'
@@ -403,7 +382,7 @@ export function recede(_node: Element, { delay = 0 }: { delay?: number } = {}, o
  * 用 in:dock 和 out:dock|global：骨架整个拿掉时（退出登录）也沉下去。gone 是播放队列真的空了；不是的话
  * （换了手机 / 桌面布局、登录失效）跟着骨架直接拿掉。减少动态效果时只淡入淡出
  */
-export function dock(node: Element, { gone = true }: { gone?: boolean } = {}, options: TransitionOptions = {}): MotionConfig {
+export const dock = (node: Element, { gone = true }: { gone?: boolean } = {}, options: TransitionOptions = {}): MotionConfig => {
   const out = options.direction === 'out'
   if (out && !gone)
     return {}
@@ -424,11 +403,9 @@ const POP_FROM_SCALE = 0.98
  * below：菜单在锚点下面（从上面 4px 飘下来），否则在上面。写 transition:pop；缩放的原点由调用的地方用 transform-origin 定。
  * 减少动态效果时只淡入淡出
  */
-export function pop(node: Element, params: { below: boolean }, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(popOnce, node, params, options)
-}
+export const pop = (node: Element, params: { below: boolean }, options: TransitionOptions = {}): MotionConfig => twoWay(popOnce, node, params, options)
 
-function popOnce(node: Element, { below }: { below: boolean }, options: TransitionOptions): TransitionConfig {
+const popOnce = (node: Element, { below }: { below: boolean }, options: TransitionOptions): TransitionConfig => {
   if (options.direction === 'out')
     return fadeOnce(node, {}, options)
   const moved = !reducedMotion()
@@ -451,11 +428,9 @@ const DIALOG_DISTANCE = 8
  * 弹窗（DESIGN.md Overlays）：从下面 8px、98% 大小飘到位（面板 360ms）；关掉时淡出（面板退场 200ms）。
  * 写 transition:dialog，遮罩另外写 transition:fade={{ duration: 200 }}。减少动态效果时只淡入淡出
  */
-export function dialog(node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(dialogOnce, node, undefined, options)
-}
+export const dialog = (node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig => twoWay(dialogOnce, node, undefined, options)
 
-function dialogOnce(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
+const dialogOnce = (node: Element, _params: undefined, options: TransitionOptions): TransitionConfig => {
   if (options.direction === 'out')
     return fadeOnce(node, { duration: DURATIONS['panel-out'] }, options)
   const moved = !reducedMotion()
@@ -479,19 +454,15 @@ interface ToastParams {
  * 提示条（DESIGN.md Overlays：播放提示…）：从它贴着的那条边飘进来（12px，状态 200ms），走时只淡出（退场 120ms）。
  * 写 transition:toast。减少动态效果时只淡入淡出
  */
-export function toast(node: Element, params: ToastParams, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(toastOnce, node, params, options)
-}
+export const toast = (node: Element, params: ToastParams, options: TransitionOptions = {}): MotionConfig => twoWay(toastOnce, node, params, options)
 
-function toastOnce(node: Element, { edge, moved = false }: ToastParams, options: TransitionOptions): TransitionConfig {
-  return options.direction === 'out' || moved
-    ? fadeOnce(node, {}, options)
-    : floatOnce(node, {
-        toward: edge === 'bottom'
-          ? 'up'
-          : 'down',
-      }, options)
-}
+const toastOnce = (node: Element, { edge, moved = false }: ToastParams, options: TransitionOptions): TransitionConfig => options.direction === 'out' || moved
+  ? fadeOnce(node, {}, options)
+  : floatOnce(node, {
+      toward: edge === 'bottom'
+        ? 'up'
+        : 'down',
+    }, options)
 
 /**
  * 会推开下面内容的一条（DESIGN.md Overlays：首次同步的通知条；歌单内搜索的“找到几首”、表单下面的报错和提示这类）：
@@ -499,11 +470,9 @@ function toastOnce(node: Element, { edge, moved = false }: ToastParams, options:
  * 这是“不动布局”的例外（一次性的布局变化）。写 transition:unfold，放在没有外边距、内边距、边框的外层上（展开的是它的高度）。
  * 透明度、位移只跟着展开了多少走，中途掉头时从此刻的样子接着走。减少动态效果时高度直接到位，只淡入淡出
  */
-export function unfold(node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig {
-  return twoWay(unfoldOnce, node, undefined, options)
-}
+export const unfold = (node: Element, _params?: undefined, options: TransitionOptions = {}): MotionConfig => twoWay(unfoldOnce, node, undefined, options)
 
-function unfoldOnce(node: Element, _params: undefined, options: TransitionOptions): TransitionConfig {
+const unfoldOnce = (node: Element, _params: undefined, options: TransitionOptions): TransitionConfig => {
   if (reducedMotion() || instant())
     return fadeOnce(node, {}, options)
   // 展开、收起到一半时外层的高度被动画压着：按里面内容的高度算
@@ -523,6 +492,4 @@ function unfoldOnce(node: Element, _params: undefined, options: TransitionOption
  * 一组里后来加进来的依次飘入（歌手页“显示更多专辑”）：和骨架换成内容一样（DESIGN.md Motion · 依次飘入），
  * 从下面 12px 飘上来（240ms），加进来的第 order 个（从 0 数）晚 order × 30ms，第 6 个以后和第 6 个一起。写 in:stagger
  */
-export function stagger(node: Element, { order }: { order: number }, options: TransitionOptions = {}): MotionConfig {
-  return float(node, { toward: 'up', duration: DURATIONS.reveal, delay: Math.min(order, STAGGER.count - 1) * STAGGER.step }, options)
-}
+export const stagger = (node: Element, { order }: { order: number }, options: TransitionOptions = {}): MotionConfig => float(node, { toward: 'up', duration: DURATIONS.reveal, delay: Math.min(order, STAGGER.count - 1) * STAGGER.step }, options)

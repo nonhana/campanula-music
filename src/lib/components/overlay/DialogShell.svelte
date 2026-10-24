@@ -19,15 +19,16 @@
 </script>
 
 <script lang='ts' generics='R extends DialogRequest'>
+  import { X } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import type { Attachment } from 'svelte/attachments'
-  import type { DialogRequest } from './overlay-requests'
-  import type { OverlayLayer } from './overlay-stack'
-  import { X } from '@lucide/svelte'
+
   import { createDrawer } from '../player/drawer.svelte'
   import { dialog, fade } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
+  import type { DialogRequest } from './overlay-requests'
+  import type { OverlayLayer } from './overlay-stack'
 
   interface Props {
     layer: OverlayLayer<R, HTMLElement>
@@ -62,7 +63,7 @@
     ? window.innerHeight - 24
     : SHORT_SHEET_ESTIMATE))
   /** 拖过了阈值：收起；忙着时弹回去 */
-  function commit() {
+  const commit = () => {
     if (layer.busy)
       drawer.settle(true)
     else

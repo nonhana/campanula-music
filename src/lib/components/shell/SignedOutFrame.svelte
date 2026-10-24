@@ -7,9 +7,10 @@
   改曲库和下载的提示条在登录后的外框里（没登录时不能改曲库、不能下载），这里没有
 -->
 <script lang='ts'>
-  import type { Snippet } from 'svelte'
   import { resolve } from '$app/paths'
+  import type { Snippet } from 'svelte'
   import { onDestroy } from 'svelte'
+
   import Brand from '../boot/Brand.svelte'
   import { setOverlays } from '../overlay/overlay-context'
   import OverlayHost from '../overlay/OverlayHost.svelte'

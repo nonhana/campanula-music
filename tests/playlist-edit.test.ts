@@ -1,6 +1,8 @@
-import type { App } from '#lib/app/app.js'
-import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
+
+import type { App } from '#lib/app/app.js'
+
+import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
 import { listener, storedLibrary, storedPlaylistIds, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
@@ -41,7 +43,7 @@ const DELETE_RATE_LIMITED = 'playlist-edit/playlist_delete.405-rate-limited.cons
 const LIKED_ID = 900000001
 
 /** 网易云建好新歌单、读回它的详情 */
-async function replyCreated(): Promise<void> {
+const replyCreated = async (): Promise<void> => {
   await world.netease.reply(CREATED.create)
   await world.netease.reply(CREATED.detail, {
     when: { id: CREATED.id },
@@ -52,9 +54,7 @@ const playlistIds = (app: App) => app.state.library?.playlists?.map(playlist => 
 const playlistOf = (app: App, playlistId: number) => app.state.library?.playlists?.find(playlist => playlist.id === playlistId)
 
 /** 本机副本里存着的这张歌单 */
-async function storedPlaylist(device: Device, playlistId: number): Promise<unknown> {
-  return (await storedLibrary(device, 'playlists') as { id: number }[]).find(playlist => playlist.id === playlistId)
-}
+const storedPlaylist = async (device: Device, playlistId: number): Promise<unknown> => (await storedLibrary(device, 'playlists') as { id: number }[]).find(playlist => playlist.id === playlistId)
 
 describe('标签库', () => {
   it('编辑歌单信息时实时取网易云的标签库，按语种、风格、场景、情感、主题分组；这次登录取到过就不再取', async () => {
@@ -573,7 +573,7 @@ describe('改名称、简介、标签', () => {
 })
 
 /** 新建一张隐私歌单（拿来改公开） */
-async function createPrivate(app: App): Promise<void> {
+const createPrivate = async (app: App): Promise<void> => {
   await replyCreated()
   await app.createPlaylist({ name: CREATED.name, private: true })
 }

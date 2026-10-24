@@ -1,6 +1,7 @@
-import type { WriteResponse } from '#lib/api/write.js'
 import { describe, expect, it } from 'vitest'
+
 import { post } from '#lib/api/endpoint.js'
+import type { WriteResponse } from '#lib/api/write.js'
 import { createApi } from '#lib/app/api-client.js'
 
 // Api.post 自己管 64 KiB keepalive 上限（#70）：请求体按 UTF-8 字节数算，正好 64 KiB 可以用 keepalive，
@@ -9,7 +10,7 @@ import { createApi } from '#lib/app/api-client.js'
 
 const endpoint = post<WriteResponse, { data: string }>(() => '/api/fake')
 
-function setup() {
+const setup = () => {
   const inits: RequestInit[] = []
   const api = createApi({
     fetch: async (_path: string, init?: RequestInit) => {
@@ -29,11 +30,9 @@ function setup() {
 }
 
 /** JSON.stringify({ data }) 的长度是 data 长度 + 11（已核对 65525 -> 65536、65526 -> 65537） */
-function bodyOf(dataLength: number): string {
-  return JSON.stringify({
-    data: 'x'.repeat(dataLength),
-  })
-}
+const bodyOf = (dataLength: number): string => JSON.stringify({
+  data: 'x'.repeat(dataLength),
+})
 
 describe('api.post 的 keepalive 64 KiB 边界', () => {
   it('正好 65536 字节带 keepalive；65537 字节只去掉 keepalive，method/headers/body 不变', async () => {

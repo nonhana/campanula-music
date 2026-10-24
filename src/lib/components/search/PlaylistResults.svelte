@@ -5,8 +5,10 @@
   自建歌单、我喜欢的音乐没有开关，在链接里标一个“自建”；没登录时两样都没有
 -->
 <script lang='ts'>
-  import type { SearchedPlaylist } from '#lib/api/search.js'
   import { resolve } from '$app/paths'
+
+  import type { SearchedPlaylist } from '#lib/api/search.js'
+
   import { collectState } from '../library/collect'
   import CollectButton from '../library/CollectButton.svelte'
   import { getAppView } from '../shared/app-context.svelte'
@@ -27,7 +29,7 @@
   const library = $derived(view.state.library)
 
   /** 首数、播放次数（是 0 时不写，和歌单页头部一样） */
-  function counts(playlist: SearchedPlaylist): string {
+  const counts = (playlist: SearchedPlaylist): string => {
     const tracks = `${formatCount(playlist.trackCount)} 首`
     return playlist.playCount > 0
       ? `${tracks} · 播放 ${formatPlays(playlist.playCount)}`

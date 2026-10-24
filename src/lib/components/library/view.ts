@@ -1,4 +1,5 @@
 import type { PlaylistPage } from '#lib/app/library.js'
+
 import { formatCount, formatPlays } from '../shared/text'
 
 // 歌单页专属的写法：头部资料按界面的写法排好。
@@ -22,7 +23,7 @@ export interface PlaylistHeader {
  * 首数和下面的列表对得上（DESIGN.md Do's）：有全了是实际有的歌，还在拉时写“拉到了几首 / 一共几首”，列表还没出来时不写。
  * 播放次数是 0 时不写：新歌单，或者刚从旧版本升上来、还没同步到真的值
  */
-export function playlistHeader(page: PlaylistPage): PlaylistHeader | null {
+export const playlistHeader = (page: PlaylistPage): PlaylistHeader | null => {
   const info = page.info
   if (!info)
     return null

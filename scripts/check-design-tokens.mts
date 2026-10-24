@@ -11,7 +11,9 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import process from 'node:process'
+
 import { createGenerator } from 'unocss'
+
 import config from '../uno.config.ts'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -32,7 +34,7 @@ interface Finding {
 }
 
 /** 注释换成空格（保留换行，行号不变）：注释里可以照常写“200ms” */
-function blankComments(code: string): string {
+const blankComments = (code: string): string => {
   const blank = (match: string) => match.replace(/[^\n]/g, ' ')
   return code
     .replace(/<!--[\s\S]*?-->/g, blank)
@@ -41,31 +43,23 @@ function blankComments(code: string): string {
 }
 
 /** <style> 里是 CSS 不是类名（例如循环用的 ease-in-out 关键字）：换成空格，只留 @apply / --at-apply 后面的类名 */
-function blankStyleExceptApply(code: string): string {
-  return code.replace(STYLE_BLOCK, (_, open: string, css: string, close: string) =>
-    open + css.replace(/(?:@apply|--at-apply:|--uno:)[^;}]*|[^\n]/g, kept => (APPLY.test(kept)
-      ? kept
-      : ' ')) + close)
-}
+const blankStyleExceptApply = (code: string): string => code.replace(STYLE_BLOCK, (_, open: string, css: string, close: string) =>
+  open + css.replace(/(?:@apply|--at-apply:|--uno:)[^;}]*|[^\n]/g, kept => (APPLY.test(kept)
+    ? kept
+    : ' ')) + close)
 
-function lineOf(code: string, index: number): number {
-  return code.slice(0, index).split('\n').length
-}
+const lineOf = (code: string, index: number): number => code.slice(0, index).split('\n').length
 
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter(entry => entry.isFile() && /\.(?:svelte|ts)$/.test(entry.name))
-    .map(entry => join(entry.parentPath, entry.name))
-}
+const sourceFiles = (dir: string): string[] => readdirSync(dir, { recursive: true, withFileTypes: true })
+  .filter(entry => entry.isFile() && /\.(?:svelte|ts)$/.test(entry.name))
+  .map(entry => join(entry.parentPath, entry.name))
 
 const uno = await createGenerator(config)
 
 /** 和 @unocss/eslint-plugin 的 blocklist 一样判断：类名本身，或者去掉变体（mouse:、enabled:）以后 */
-async function blockedReason(raw: string): Promise<string | null> {
+const blockedReason = async (raw: string): Promise<string | null> => {
   const reason = (hit: NonNullable<ReturnType<typeof uno.getBlocked>>) => {
     const message = hit[1]?.message
     return typeof message === 'function'
@@ -83,7 +77,7 @@ async function blockedReason(raw: string): Promise<string | null> {
   return null
 }
 
-async function check(file: string): Promise<Finding[]> {
+const check = async (file: string): Promise<Finding[]> => {
   const code = blankComments(readFileSync(file, 'utf8'))
   const name = relative(ROOT, file)
   const findings: Finding[] = []

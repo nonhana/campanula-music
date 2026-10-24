@@ -10,6 +10,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import { onDestroy } from 'svelte'
+
   import { getOverlays } from '../overlay/overlay-context'
   import { setScrollLookup } from '../shared/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'

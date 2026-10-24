@@ -5,6 +5,7 @@
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+
   import Button from '../ui/Button.svelte'
   import DialogBody from './DialogBody.svelte'
 

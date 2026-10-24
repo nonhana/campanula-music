@@ -1,29 +1,26 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { Checked } from '#lib/components/library/selection-core.js'
-import { describe, expect, it } from 'vitest'
 import { allOn, capabilitiesOf, extend, NONE, picked, selectAll, toggle } from '#lib/components/library/selection-core.js'
 
 // 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、搜索时勾选的仍是整张歌单里的歌、
 // 能做什么按歌单种类给出。不碰页面、不碰 Svelte，只断言听众看得到的结果：勾了哪些歌、
 // 全选按钮亮不亮、加入歌单会带上哪几首、工具条上有哪些操作。
 
-function songsFrom(ids: readonly number[]): Song[] {
-  return ids.map((id, index) => ({
-    id,
-    name: `测试歌曲 ${index + 1}`,
-    artists: [
-      { id: 0, name: '测试歌手' },
-    ],
-    album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
-    duration: 180_000,
-    availability: 'full',
-  }))
-}
+const songsFrom = (ids: readonly number[]): Song[] => ids.map((id, index) => ({
+  id,
+  name: `测试歌曲 ${index + 1}`,
+  artists: [
+    { id: 0, name: '测试歌手' },
+  ],
+  album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
+  duration: 180_000,
+  availability: 'full',
+}))
 
 /** 勾了哪些歌：按编号排好，和界面上看到的一致 */
-function selected(state: Checked): number[] {
-  return [...state.ids].sort((a, b) => a - b)
-}
+const selected = (state: Checked): number[] => [...state.ids].sort((a, b) => a - b)
 
 describe('勾选规则', () => {
   it('点一下勾上，再点一下取消', () => {

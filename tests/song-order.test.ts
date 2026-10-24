@@ -1,7 +1,9 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+
 import type { Device, Tab } from './harness/device'
-import { describe, expect, it } from 'vitest'
 import { loadFixture } from './harness/fixtures'
 import { held } from './harness/hold'
 import { listener, storedTrackIds } from './harness/listener'
@@ -27,21 +29,19 @@ const ORDER_MISSING = 'playlist-edit/song_order_update.deleted-playlist.json'
 const RE_READ = 'library/playlist_detail.own-small.json'
 
 /** 造几首歌：拖动排序的判定用编号，歌名只给人看 */
-function songsFrom(ids: readonly number[]): Song[] {
-  return ids.map((id, index) => ({
-    id,
-    name: `测试歌曲 ${index + 1}`,
-    artists: [
-      { id: 0, name: '测试歌手' },
-    ],
-    album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
-    duration: 180_000,
-    availability: 'full',
-  }))
-}
+const songsFrom = (ids: readonly number[]): Song[] => ids.map((id, index) => ({
+  id,
+  name: `测试歌曲 ${index + 1}`,
+  artists: [
+    { id: 0, name: '测试歌手' },
+  ],
+  album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
+  duration: 180_000,
+  availability: 'full',
+}))
 
 /** 建一张自建歌单，加入这几首歌（加入后按传入的先后排在最前） */
-async function createdWith(device: Device, songs: readonly Song[]): Promise<{ app: App, tab: Tab }> {
+const createdWith = async (device: Device, songs: readonly Song[]): Promise<{ app: App, tab: Tab }> => {
   const tab = await signInAtLikedTracks(device)
   const { app } = tab
   await world.netease.reply(CREATED.create)
@@ -57,9 +57,7 @@ async function createdWith(device: Device, songs: readonly Song[]): Promise<{ ap
   return { app, tab }
 }
 
-function shownTrackIds(app: App, playlistId: number): readonly number[] | undefined {
-  return app.state.library?.songsOf(playlistId)?.trackIds
-}
+const shownTrackIds = (app: App, playlistId: number): readonly number[] | undefined => app.state.library?.songsOf(playlistId)?.trackIds
 
 const orderRequests = (device: Device) => device.requests.filter(request => request.method === 'POST' && /\/api\/playlists\/\d+\/order$/.test(request.path))
 const orderCalls = () => world.netease.calls.filter(call => call.module === 'song_order_update')

@@ -1,21 +1,20 @@
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
+
 import type { CoverCrop } from '#lib/api/cover.js'
-import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility } from '#lib/app/browser.js'
 import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
+import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility } from '#lib/app/browser.js'
 
 // 浏览器能力替身：行为照浏览器标准写。
 // 浏览器直连网易云的图片传输（#34）、文件下载（#38）在这里；Background Fetch 由最早用到它的票加上。
 
 /** App 的时钟：和世界的假时钟走同一个时间，定时按到期先后触发 */
-export function clockOn(timers: FakeTimers): Clock {
-  return {
-    now: () => timers.now,
-    after(ms, callback) {
-      const id = timers.setTimeout(callback, ms)
-      return () => timers.clearTimeout(id)
-    },
-  }
-}
+export const clockOn = (timers: FakeTimers): Clock => ({
+  now: () => timers.now,
+  after(ms, callback) {
+    const id = timers.setTimeout(callback, ms)
+    return () => timers.clearTimeout(id)
+  },
+})
 
 /** 联网状态：一台设备一个，所有标签页共用；只在真的变了时发事件 */
 export class FakeNetwork extends EventTarget implements NetworkStatus {
@@ -296,9 +295,7 @@ interface LockRequest {
 }
 
 /** 调回调；回调同步抛错时当作返回了失败的 promise（WebIDL 对返回 Promise 的回调的规定） */
-function invoke(callback: LockGrantedCallback<unknown>, lock: Lock | null): Promise<unknown> {
-  return new Promise(resolve => resolve(callback(lock)))
-}
+const invoke = (callback: LockGrantedCallback<unknown>, lock: Lock | null): Promise<unknown> => new Promise(resolve => resolve(callback(lock)))
 
 /**
  * 跨标签页的锁（Web Locks），一台设备一个，所有标签页共用。照 W3C Web Locks API（2025-09-24 编辑草案）§4 的算法写：

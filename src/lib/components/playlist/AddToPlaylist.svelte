@@ -7,12 +7,14 @@
   歌单列表还没同步到时是几行骨架。选了就交给 App 加（先改本地、立即生效），然后关上
 -->
 <script lang='ts'>
-  import type { AddTarget, AddTargetBlock } from '#lib/app/library.js'
-  import type { MenuHeader, MenuItem } from '../menu/menu'
-  import type { AddToPlaylistRequest } from '../overlay/overlay-requests'
   import { Plus } from '@lucide/svelte'
+
+  import type { AddTarget, AddTargetBlock } from '#lib/app/library.js'
+
+  import type { MenuHeader, MenuItem } from '../menu/menu'
   import MenuOverlay from '../menu/MenuOverlay.svelte'
   import { getOverlays } from '../overlay/overlay-context'
+  import type { AddToPlaylistRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { artistLine, formatCount, langOf } from '../shared/text'
   import { playlistName } from './playlist-text'
@@ -29,7 +31,7 @@
   const view = getAppView()
 
   /** App 给的目标和理由；歌单列表还没同步到时是 null（画骨架） */
-  function targetsOf(request: AddToPlaylistRequest): AddTarget[] | null {
+  const targetsOf = (request: AddToPlaylistRequest): AddTarget[] | null => {
     const library = view.state.library
     if (!library?.playlists)
       return null
@@ -38,7 +40,7 @@
       : view.app.addTargets({ mode: 'multi', currentPlaylistId: request.currentPlaylistId })
   }
 
-  function itemsOf(request: AddToPlaylistRequest): readonly MenuItem[] | null {
+  const itemsOf = (request: AddToPlaylistRequest): readonly MenuItem[] | null => {
     const targets = targetsOf(request)
     if (!targets)
       return null
@@ -69,7 +71,7 @@
     ]
   }
 
-  function headerOf(request: AddToPlaylistRequest, sheet: boolean): MenuHeader {
+  const headerOf = (request: AddToPlaylistRequest, sheet: boolean): MenuHeader => {
     if (request.mode === 'multi')
       return { kind: 'text', title: '加入歌单', note: `${formatCount(request.songs.length)} 首` }
     if (!sheet)
@@ -84,14 +86,12 @@
     }
   }
 
-  function labelOf(request: AddToPlaylistRequest): string {
-    return request.mode === 'multi'
-      ? `加入歌单：${request.songs.length} 首`
-      : `加入歌单：${request.song.name}`
-  }
+  const labelOf = (request: AddToPlaylistRequest): string => request.mode === 'multi'
+    ? `加入歌单：${request.songs.length} 首`
+    : `加入歌单：${request.song.name}`
 
   /** 选了目标：单曲交给 App 加；多选交给多选模块（收起两层、退出多选，再一次加进去） */
-  function choose(target: AddTarget, request: AddToPlaylistRequest): void {
+  const choose = (target: AddTarget, request: AddToPlaylistRequest): void => {
     if (request.mode === 'multi') {
       void playlistSelection.addTo(target.id, request.songs)
       return
@@ -100,7 +100,7 @@
   }
 
   /** 新建歌单：选择器关上（不把焦点还回去，交给新建），打开新建；关掉新建后焦点回到打开菜单的那个按钮 */
-  function create(request: AddToPlaylistRequest): void {
+  const create = (request: AddToPlaylistRequest): void => {
     void playlistPicker.transfer(playlistEditor, { mode: 'new', songs: request.songs, from: request.from })
   }
 </script>

@@ -1,8 +1,10 @@
 <script lang='ts'>
-  import type { ErrorProps } from './$types'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
+
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
+
+  import type { ErrorProps } from './$types'
 
   const { error }: ErrorProps = $props()
   const title = $derived(error.status === 404

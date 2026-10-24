@@ -1,14 +1,16 @@
 import type { Attachment } from 'svelte/attachments'
-import type { Song } from '#lib/api/library.js'
-import type { DragSortEdges, DragSortResult, DragSortState, Point, Rect } from '../shared/drag-sort'
-import type { PlaylistSelection } from './playlist-selection.svelte'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
+
+import type { Song } from '#lib/api/library.js'
+
 import { clamp } from '../shared/clamp'
+import type { DragSortEdges, DragSortResult, DragSortState, Point, Rect } from '../shared/drag-sort'
 import { movedBefore, rowTrack } from '../shared/drag-sort'
 import { DragSort, pageEdges } from '../shared/drag-sort.svelte'
 import { DURATIONS, STAGGER } from '../shared/motion-tokens'
 import { formatCount } from '../shared/text'
 import { SONG_ROW_HEIGHT } from '../songs/view'
+import type { PlaylistSelection } from './playlist-selection.svelte'
 
 // 多选里的拖动排序（#36，Spec #11“多选、拖拽与换封面”，原型 docs/prototype/dnd.md）：
 // 只在多选模式里按每行的把手拖；平时行上没有把手，单击照常播放。

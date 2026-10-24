@@ -8,6 +8,7 @@
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
   import type { HTMLButtonAttributes } from 'svelte/elements'
+
   import { desktopLayout } from '../shared/layout'
   import Button from './Button.svelte'
   import IconButton from './IconButton.svelte'

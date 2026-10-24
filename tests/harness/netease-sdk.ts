@@ -59,9 +59,7 @@ let currentRequest: () => RequestSpan | undefined = () => undefined
 /** 记先后用的序号，只增不减：请求开始和结束（world.ts 记）、每次调用拿走回答，各占一个 */
 let order = 0
 
-export function nextOrder(): number {
-  return order++
-}
+export const nextOrder = (): number => order++
 
 /** 每次调用拿走的回答、什么时候拿的、它属于哪个请求，以及拿的那一刻这个模块排着的回答（按先后） */
 const taken: { module: string, query: unknown, span: RequestSpan, outcome: Outcome, queue: readonly Outcome[], at: number }[] = []
@@ -72,30 +70,26 @@ const ambiguous: string[] = []
 /** 这条测试的回答谁拿都行，不查对不上号（随机操作检查：哪个请求拿到哪份回答本来就是随机的一部分） */
 let anyOrder = false
 
-export function allowAnyOrder(): void {
+export const allowAnyOrder = (): void => {
   anyOrder = true
 }
 
-export function heldCalls(): number {
-  return held
-}
+export const heldCalls = (): number => held
 
-export function trackRequests(current: () => RequestSpan | undefined): void {
+export const trackRequests = (current: () => RequestSpan | undefined): void => {
   currentRequest = current
 }
 
-export function ambiguities(): readonly string[] {
-  return ambiguous
-}
+export const ambiguities = (): readonly string[] => ambiguous
 
-export function queueReply(module: string, outcome: Outcome): void {
+export const queueReply = (module: string, outcome: Outcome): void => {
   outcomes.set(module, [
     ...(outcomes.get(module) ?? []),
     outcome,
   ])
 }
 
-export function reset(): void {
+export const reset = (): void => {
   outcomes.clear()
   calls.length = 0
   held = 0
@@ -105,22 +99,18 @@ export function reset(): void {
 }
 
 /** 两个回答换过来也一样：同一份录制，一样压着（同一个 until，never() 是同一个）、一样成败、一样的 Cookie */
-function interchangeable(a: Outcome, b: Outcome): boolean {
-  return a.fixture === b.fixture && a.until === b.until && a.rejected === b.rejected
-    && JSON.stringify(a.response.cookie) === JSON.stringify(b.response.cookie)
-}
+const interchangeable = (a: Outcome, b: Outcome): boolean => a.fixture === b.fixture && a.until === b.until && a.rejected === b.rejected
+  && JSON.stringify(a.response.cookie) === JSON.stringify(b.response.cookie)
 
 /** 这个回答能不能回给这次调用：没写 when，或者 when 里的几项和查询参数都相等 */
-function fits(outcome: Outcome, query: unknown): boolean {
-  return !outcome.when || Object.entries(outcome.when).every(([key, value]) => (query as Record<string, unknown>)[key] === value)
-}
+const fits = (outcome: Outcome, query: unknown): boolean => !outcome.when || Object.entries(outcome.when).every(([key, value]) => (query as Record<string, unknown>)[key] === value)
 
 /**
  * 这次调用和别的请求里同一个模块的调用对不对得上号：这次的请求在别的调用拿走回答之前就已经发出来了（两边谁先到服务端不固定），
  * 那一刻排着的回答里这次的回答也在、排在后面，别的调用拿走的又也能回给这次、和这次的不一样——
  * 先后一对调，两边就拿反了（CI 上碰到过：#32 播放地址那条测试）
  */
-function checkOrder(module: string, query: unknown, span: RequestSpan, outcome: Outcome): void {
+const checkOrder = (module: string, query: unknown, span: RequestSpan, outcome: Outcome): void => {
   for (const other of taken) {
     if (other.module !== module || other.span === span || span.start > other.at)
       continue
@@ -133,7 +123,7 @@ function checkOrder(module: string, query: unknown, span: RequestSpan, outcome: 
 }
 
 // 和 SDK 的 invokeModule 同名同参数（config 默认是空对象）
-export async function invokeModule(module: string, query: unknown, config: CallConfig = {}): Promise<SdkResponse> {
+export const invokeModule = async (module: string, query: unknown, config: CallConfig = {}): Promise<SdkResponse> => {
   calls.push({
     module,
     query,

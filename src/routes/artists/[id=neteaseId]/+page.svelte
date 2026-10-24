@@ -7,12 +7,11 @@
   返回这一页时滚动位置回到原来的样子。头部播放热门歌曲旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标），点“已收藏”直接取消收藏、不确认
 -->
 <script lang='ts'>
-  import type { ArtistAlbum } from '#lib/api/library.js'
-  import type { SongListView } from '#lib/components/songs/view.js'
-  import type { PageProps } from './$types'
   import { resolve } from '$app/paths'
   import { Disc3, UserRound } from '@lucide/svelte'
   import { tick } from 'svelte'
+
+  import type { ArtistAlbum } from '#lib/api/library.js'
   import AlbumTile from '#lib/components/library/AlbumTile.svelte'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
@@ -25,8 +24,11 @@
   import { formatCount, yearOf } from '#lib/components/shared/text.js'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import SongList from '#lib/components/songs/SongList.svelte'
+  import type { SongListView } from '#lib/components/songs/view.js'
   import ShowMore from '#lib/components/ui/ShowMore.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
+
+  import type { PageProps } from './$types'
 
   const { params }: PageProps = $props()
   const view = getAppView()
@@ -58,7 +60,7 @@
   let albumList = $state<HTMLElement>()
   /** 上一次“显示更多”之前已经有几张：后加进来的从第几张开始依次飘入 */
   let appendedAt = $state(0)
-  async function showMore() {
+  const showMore = async () => {
     const shown = content?.albums.length ?? 0
     appendedAt = shown
     await view.app.moreArtistAlbums(id)

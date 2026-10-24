@@ -7,6 +7,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { HTMLInputAttributes } from 'svelte/elements'
+
   import { unfold } from '../shared/motion'
 
   interface Props extends Omit<HTMLInputAttributes, 'value' | 'id' | 'prefix'> {

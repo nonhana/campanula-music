@@ -1,4 +1,5 @@
 import type { App } from '#lib/app/app.js'
+
 import type { World } from './world'
 
 /** 假的网易云登录凭据（录制数据去掉了 Cookie） */
@@ -21,15 +22,13 @@ export const LIBRARY_SYNC_MODULES: ReadonlySet<string> = new Set([
 ])
 
 /** Set-Cookie 的有效期属性：Max-Age 和 Expires 都写，和网易云下发的一样 */
-function expires(days: number): string {
-  return `Max-Age=${days * 86400}; Expires=${new Date(Date.now() + days * 86400_000).toUTCString()}`
-}
+const expires = (days: number): string => `Max-Age=${days * 86400}; Expires=${new Date(Date.now() + days * 86400_000).toUTCString()}`
 
 /**
  * 网易云登录成功时下发的 Set-Cookie：写法照真的（同名的按不同路径下发好几条，验证关卡①一次登录约 28 条），
  * 值是假的。只存名字和值时加密后约 2 KB；连属性一起存会超过浏览器 4 KB 的上限
  */
-export function signInCookies(): string[] {
+export const signInCookies = (): string[] => {
   const logPaths = [
     '/api/clientlog',
     '/eapi/clientlog',
@@ -60,15 +59,13 @@ export function signInCookies(): string[] {
 export const RENEWED_MUSIC_U = `00C7A2${'5E1B8D3F6A'.repeat(32)}`
 
 /** 续期时网易云下发的 Set-Cookie：新的 MUSIC_U（重新算 180 天）和新的 __csrf（验证关卡①），值是假的 */
-export function renewCookies(): string[] {
-  return [
-    `MUSIC_U=${RENEWED_MUSIC_U}; ${expires(180)}; Path=/; HTTPOnly`,
-    `__csrf=0a1b2c3d4e5f60718293a4b5c6d7e8f9; ${expires(15)}; Path=/`,
-  ]
-}
+export const renewCookies = (): string[] => [
+  `MUSIC_U=${RENEWED_MUSIC_U}; ${expires(180)}; Path=/; HTTPOnly`,
+  `__csrf=0a1b2c3d4e5f60718293a4b5c6d7e8f9; ${expires(15)}; Path=/`,
+]
 
 /** 用短信验证码登录这个标签页的 App（网易云回录制数据）；another：登录的是另一个账号 */
-export async function signIn(world: World, app: App, { another = false } = {}): Promise<void> {
+export const signIn = async (world: World, app: App, { another = false } = {}): Promise<void> => {
   await world.netease.reply('login/captcha_sent.json')
   await app.sendCaptcha('13800138000')
   await world.netease.reply(another ? 'login/login_cellphone.200.another-account.constructed.json' : 'login/login_cellphone.200.json', {

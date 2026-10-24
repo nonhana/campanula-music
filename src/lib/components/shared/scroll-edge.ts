@@ -15,7 +15,7 @@ const ACCEL_TIME = 3000
  * 这一帧要滚多少（px，正数往下）、接下来记着的停在边缘多久（秒）。
  * dt 是这一帧的秒数，pointerY 是指针的视口纵坐标，top / bottom 是能拖动的区域。
  */
-export function edgeScroll(dt: number, pointerY: number, top: number, bottom: number, hold: number): { amount: number, hold: number } {
+export const edgeScroll = (dt: number, pointerY: number, top: number, bottom: number, hold: number): { amount: number, hold: number } => {
   let direction = 0
   let depth = 0
   if (pointerY < top + EDGE) {

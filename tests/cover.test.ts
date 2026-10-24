@@ -1,5 +1,6 @@
-import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
+
+import type { Device } from './harness/device'
 import { held } from './harness/hold'
 import { listener } from './harness/listener'
 import { useWorld } from './harness/world'
@@ -151,7 +152,7 @@ describe('三步上传', () => {
 /** 裁好的取景框（工作位图上的位置） */
 const CROP = { x: 200, y: 60, size: 740 }
 
-async function ready(device: Device, app: import('#lib/app/app.js').App): Promise<void> {
+const ready = async (device: Device, app: import('#lib/app/app.js').App): Promise<void> => {
   await app.prepareCover(JAZZ, device.images.file({
     name: 'photo.jpg',
     type: 'image/jpeg',

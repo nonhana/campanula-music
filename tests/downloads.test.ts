@@ -1,7 +1,9 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+
 import type { Device } from './harness/device'
-import { describe, expect, it } from 'vitest'
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
 import { checkIns, current, likedSong, listener, PLAYLISTS_WITH_POEMS, playUrlRequests, storedCheckIns } from './harness/listener'
@@ -45,28 +47,24 @@ const LIKED = { kind: 'playlist', id: 900000001 } as const
 const DOWNLOADS = { kind: 'downloads' } as const
 
 /** 网易云的音频服务器、图片服务器上放好《LOSER》的音频和封面缩略图 */
-function serveLoser(device: Device): void {
+const serveLoser = (device: Device): void => {
   device.files.put(LOSER.audio, { bytes: LOSER.bytes, type: 'audio/mpeg' })
   device.files.put(LOSER.cover, { bytes: COVER_BYTES, type: 'image/jpeg' })
 }
 
 /** 本机数据库里存着的下载 */
-async function storedDownloads(device: Device): Promise<Record<string, any>[]> {
-  return ((await device.stored()).downloads ?? []).map(([, value]) => value as Record<string, any>)
-}
+const storedDownloads = async (device: Device): Promise<Record<string, any>[]> => ((await device.stored()).downloads ?? []).map(([, value]) => value as Record<string, any>)
 
 /** 发过的下载地址请求 */
-function downloadUrlRequests(device: Device): string[] {
-  return device.requests.flatMap(request => request.path.includes('/download-url')
-    ? [request.path]
-    : [])
-}
+const downloadUrlRequests = (device: Device): string[] => device.requests.flatMap(request => request.path.includes('/download-url')
+  ? [request.path]
+  : [])
 
 /**
  * 下载这一首、等它下完（隔 1 秒才下完，已下载里按下完的先后排）：网易云回录下的下载地址和一份歌词，
  * 音频服务器上放着录制里那么大的文件，图片服务器上放着封面缩略图
  */
-async function download(device: Device, app: App, recorded: Recorded): Promise<Song> {
+const download = async (device: Device, app: App, recorded: Recorded): Promise<Song> => {
   await world.clock.advance(1000)
   const song = likedSong(app, recorded.id)
   const { data } = (await loadFixture(recorded.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }

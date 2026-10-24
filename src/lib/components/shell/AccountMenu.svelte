@@ -5,12 +5,14 @@
   行怎么画、行高和 ↑↓ / Home / End 由 MenuList 管（#73），这里只给条目数据和关上之后做什么。
 -->
 <script lang='ts'>
-  import type { Account } from '#lib/api/account.js'
-  import type { MenuItem } from '../menu/menu'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { LogOut, Settings } from '@lucide/svelte'
+
+  import type { Account } from '#lib/api/account.js'
+
   import Avatar from '../account/Avatar.svelte'
+  import type { MenuItem } from '../menu/menu'
   import MenuList from '../menu/MenuList.svelte'
   import { getOverlays } from '../overlay/overlay-context'
   import { pop } from '../shared/motion'
@@ -22,6 +24,16 @@
   let opening = $state<'first' | 'last'>('first')
   let root = $state<HTMLElement>()
   let trigger = $state<HTMLButtonElement>()
+
+  const openSettings = () => {
+    hide(false)
+    void goto(resolve('/settings'))
+  }
+
+  const confirmLogout = () => {
+    hide(false)
+    logoutConfirm.open({ from: trigger ?? null })
+  }
 
   const items: MenuItem[] = [
     {
@@ -38,18 +50,18 @@
     },
   ]
 
-  function show(focus: 'first' | 'last') {
+  const show = (focus: 'first' | 'last') => {
     opening = focus
     open = true
   }
 
-  function hide(returnFocus: boolean) {
+  const hide = (returnFocus: boolean) => {
     open = false
     if (returnFocus)
       trigger?.focus()
   }
 
-  function onTriggerKey(event: KeyboardEvent) {
+  const onTriggerKey = (event: KeyboardEvent) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       show(event.key === 'ArrowDown'
@@ -59,19 +71,9 @@
   }
 
   // 点菜单外面就关上
-  function onPointerDown(event: PointerEvent) {
+  const onPointerDown = (event: PointerEvent) => {
     if (open && !root?.contains(event.target as Node))
       hide(false)
-  }
-
-  function openSettings() {
-    hide(false)
-    void goto(resolve('/settings'))
-  }
-
-  function confirmLogout() {
-    hide(false)
-    logoutConfirm.open({ from: trigger ?? null })
   }
 </script>
 

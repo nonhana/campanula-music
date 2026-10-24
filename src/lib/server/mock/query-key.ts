@@ -5,11 +5,9 @@ import { createHash } from 'node:crypto'
 /** 超过这么长的字符串只留摘要：1000 个编号连起来约 10 KB */
 const LONG_VALUE = 256
 
-function digest(value: string): string {
-  return `#sha256:${createHash('sha256').update(value).digest('hex')}:${value.length}`
-}
+const digest = (value: string): string => `#sha256:${createHash('sha256').update(value).digest('hex')}:${value.length}`
 
-function canonical(value: unknown): unknown {
+const canonical = (value: unknown): unknown => {
   if (typeof value === 'string') {
     return value.length > LONG_VALUE
       ? digest(value)
@@ -27,6 +25,4 @@ function canonical(value: unknown): unknown {
 }
 
 /** 模块 + 查询参数的稳定键，JSON 的键按字母排，长字符串按摘要 */
-export function queryKey(query: unknown): string {
-  return JSON.stringify(canonical(query))
-}
+export const queryKey = (query: unknown): string => JSON.stringify(canonical(query))

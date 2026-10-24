@@ -1,7 +1,8 @@
-import type { DrawerPose, GripSource } from '#lib/components/player/drawer-core.js'
-import type { PointerSample } from '#lib/components/shared/press.js'
 import { describe, expect, it } from 'vitest'
+
+import type { DrawerPose, GripSource } from '#lib/components/player/drawer-core.js'
 import { createDrawerCore } from '#lib/components/player/drawer-core.js'
+import type { PointerSample } from '#lib/components/shared/press.js'
 
 // 第二个测试接入点“拖动手势核心”（Spec #11 Testing Decisions）的抽屉那一半，另一半是封面转盘（wheel-core.test.ts）。
 // 喂按下、移动、松开、点击、按住断了、浅路由开关，看抽屉跟手到哪、停在哪一头、改不改浅路由、算不算点按。
@@ -17,7 +18,7 @@ interface Setup {
   pointerType?: string
 }
 
-function setup({ from = 'open', size = 800, open = from === 'open', pointerType = 'mouse' }: Setup = {}) {
+const setup = ({ from = 'open', size = 800, open = from === 'open', pointerType = 'mouse' }: Setup = {}) => {
   /** 抽屉现在画在哪：停下时动画马上到位；测试里可以改成“动画还在半路” */
   let drawn = open ? 0 : 1
   const said: string[] = []

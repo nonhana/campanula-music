@@ -1,11 +1,13 @@
-import type { Plugin } from 'vite'
 import process from 'node:process'
+
 import adapterNode from '@sveltejs/adapter-node'
 import adapterVercel from '@sveltejs/adapter-vercel'
 import { sveltekit } from '@sveltejs/kit/vite'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 import UnoCSS from 'unocss/vite'
+import type { Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
+
 import { mockPlugin } from './src/lib/server/mock/vite-plugin.ts'
 
 /**
@@ -13,7 +15,7 @@ import { mockPlugin } from './src/lib/server/mock/vite-plugin.ts'
  * transformIndexHtml 永远不会被调用，只会让 SvelteKit 每读一次 vite 配置就警告一次（kit 3.1.0 没有关掉它的开关）。
  * 交给 Vite 之前把这个 hook 摘掉；扫描、生成 CSS 的其它 hook 不动。
  */
-function withoutHtmlHook(plugins: Plugin[]): Plugin[] {
+const withoutHtmlHook = (plugins: Plugin[]): Plugin[] => {
   for (const plugin of plugins)
     delete plugin.transformIndexHtml
   return plugins

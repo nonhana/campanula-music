@@ -1,5 +1,5 @@
-import type { Grip, PointerSample } from './press'
 import { clamp } from './clamp'
+import type { Grip, PointerSample } from './press'
 import { pressBroken } from './press'
 import { edgeScroll } from './scroll-edge'
 
@@ -101,25 +101,25 @@ interface Press {
   pending: Point | null
 }
 
-export function createDragSortSession<S>(options: DragSortSessionOptions<S>): DragSortSession {
+export const createDragSortSession = <S>(options: DragSortSessionOptions<S>): DragSortSession => {
   let state: DragSortState | null = null
   let pointer: Point | null = null
   let scene: S | null = null
   let press: Press | null = null
   let holdAtEdge = 0
 
-  function emit() {
+  const emit = () => {
     options.onChange?.(state)
   }
 
   /** 拖动中列表显示的顺序：把一起挪的几项放进空位 */
-  function previewOf(rest: readonly number[], moving: readonly number[], target: number): readonly number[] {
+  const previewOf = (rest: readonly number[], moving: readonly number[], target: number): readonly number[] => {
     const next = [...rest]
     next.splice(target, 0, ...moving)
     return next
   }
 
-  function setTarget(target: number) {
+  const setTarget = (target: number) => {
     if (!state || !scene || !pointer)
       return
     const next = clamp(target, 0, state.rest.length)
@@ -134,14 +134,14 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
   }
 
   /** 按指针位置重算空位；指针没动也每帧调用，列表在指针底下滚动时目标会变 */
-  function track() {
+  const track = () => {
     if (!state || !scene || !pointer)
       return
     setTarget(options.targetAt(scene, pointer, state.rest.length))
   }
 
   /** 开始拖：先量几何；拿不到就不接这次按下 */
-  function begin(id: number, at: Point): boolean {
+  const begin = (id: number, at: Point): boolean => {
     if (state)
       return false
     const next = options.begin(id, at)
@@ -177,7 +177,7 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
     return true
   }
 
-  function end(result: DragSortResult) {
+  const end = (result: DragSortResult) => {
     state = null
     pointer = null
     scene = null
@@ -187,7 +187,7 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
     emit()
   }
 
-  function cancel() {
+  const cancel = () => {
     if (!state || !pointer)
       return
     end({
@@ -199,7 +199,7 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
     })
   }
 
-  function release(sample: PointerSample) {
+  const release = (sample: PointerSample) => {
     if (!press || press.pointerId !== sample.pointerId)
       return
     // 鼠标还没挪够 5px：这次只是点按，不算拖
@@ -238,65 +238,63 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
     })
   }
 
-  function grip(id: number): Grip {
-    return {
-      get holding() {
-        return press !== null
-      },
-      press(sample) {
-        if (state || options.busy?.())
-          return false
-        if (!sample.isPrimary || sample.button !== 0)
-          return false
+  const grip = (id: number): Grip => ({
+    get holding() {
+      return press !== null
+    },
+    press(sample) {
+      if (state || options.busy?.())
+        return false
+      if (!sample.isPrimary || sample.button !== 0)
+        return false
         // 上一次没等到松开（右键菜单、切走窗口、松开没传到页面上）：先清干净，连 pending 一起
-        if (press)
-          abandon()
-        press = {
-          pointerId: sample.pointerId,
-          pending: sample.pointerType === 'touch'
-            ? null
-            : { x: sample.x, y: sample.y },
-        }
-        if (sample.pointerType !== 'touch')
-          return true
-        const started = begin(id, { x: sample.x, y: sample.y })
-        if (!started)
-          press = null
-        return started
-      },
-      move(sample) {
-        if (!press || press.pointerId !== sample.pointerId)
-          return
-        if (pressBroken(sample.buttons))
-          return abandon()
-        const at = { x: sample.x, y: sample.y }
-        if (press.pending) {
-          if (Math.hypot(at.x - press.pending.x, at.y - press.pending.y) < SLOP)
-            return
-          press.pending = null
-          if (!begin(id, at)) {
-            press = null
-            return
-          }
-        }
-        pointer = at
-        options.onPointer?.(at)
-        track()
-      },
-      release(sample) {
-        release(sample)
-      },
-      abandon(pointerId) {
-        abandon(pointerId)
-      },
-      click() {
-        // 排序把手没有点按行为；拖过以后的 click 一律吞掉（基线 attachWindowGrip 的做法）
+      if (press)
+        abandon()
+      press = {
+        pointerId: sample.pointerId,
+        pending: sample.pointerType === 'touch'
+          ? null
+          : { x: sample.x, y: sample.y },
+      }
+      if (sample.pointerType !== 'touch')
         return true
-      },
-    }
-  }
+      const started = begin(id, { x: sample.x, y: sample.y })
+      if (!started)
+        press = null
+      return started
+    },
+    move(sample) {
+      if (!press || press.pointerId !== sample.pointerId)
+        return
+      if (pressBroken(sample.buttons))
+        return abandon()
+      const at = { x: sample.x, y: sample.y }
+      if (press.pending) {
+        if (Math.hypot(at.x - press.pending.x, at.y - press.pending.y) < SLOP)
+          return
+        press.pending = null
+        if (!begin(id, at)) {
+          press = null
+          return
+        }
+      }
+      pointer = at
+      options.onPointer?.(at)
+      track()
+    },
+    release(sample) {
+      release(sample)
+    },
+    abandon(pointerId) {
+      abandon(pointerId)
+    },
+    click() {
+      // 排序把手没有点按行为；拖过以后的 click 一律吞掉（基线 attachWindowGrip 的做法）
+      return true
+    },
+  })
 
-  function abandon(pointerId?: number) {
+  const abandon = (pointerId?: number) => {
     if (!press)
       return
     if (pointerId !== undefined && pointerId !== press.pointerId)
@@ -339,7 +337,7 @@ export function createDragSortSession<S>(options: DragSortSessionOptions<S>): Dr
 }
 
 /** 相邻的一项能在哪：挪不动（到两头、没有这一项）时是 null */
-function neighbor(ids: readonly number[], id: number, delta: -1 | 1): { from: number, to: number } | null {
+const neighbor = (ids: readonly number[], id: number, delta: -1 | 1): { from: number, to: number } | null => {
   const from = ids.indexOf(id)
   const to = from + delta
   return from < 0 || to < 0 || to >= ids.length
@@ -348,7 +346,7 @@ function neighbor(ids: readonly number[], id: number, delta: -1 | 1): { from: nu
 }
 
 /** 把相邻的一项挪一位；挪不动（到两头、没有这一项）返回 null。按整张顺序提交的适配器用 */
-function moveKey(ids: readonly number[], id: number, delta: -1 | 1): readonly number[] | null {
+const moveKey = (ids: readonly number[], id: number, delta: -1 | 1): readonly number[] | null => {
   const at = neighbor(ids, id, delta)
   if (!at)
     return null
@@ -364,7 +362,7 @@ function moveKey(ids: readonly number[], id: number, delta: -1 | 1): readonly nu
  * - 返回 null：挪到最后（下移时后面没有歌了）
  * - 返回 undefined：挪不动（没有这一项、或者已经在两头）
  */
-export function movedBefore(ids: readonly number[], id: number, delta: -1 | 1): number | null | undefined {
+export const movedBefore = (ids: readonly number[], id: number, delta: -1 | 1): number | null | undefined => {
   const at = neighbor(ids, id, delta)
   if (!at)
     return undefined
@@ -388,7 +386,7 @@ export interface RowTrack {
   maxTop: number
 }
 
-export function rowTrack(g: RowTrack, pointerY: number, slots: number): { y: number, target: number } {
+export const rowTrack = (g: RowTrack, pointerY: number, slots: number): { y: number, target: number } => {
   const y = clamp(pointerY - g.grabY, g.minTop, g.maxTop)
   const target = clamp(Math.floor((y + g.height / 2 - g.listTop) / g.pitch), 0, slots)
   return { y, target }
@@ -417,7 +415,7 @@ export interface GridTrack {
  * 卡片网格：ghost 在视口里夹紧；目标空位用**未夹紧的指针 + 滚动量**算（和基线一致，
  * 指针被夹在网格边上、或者页面滚到下一行时，目标仍能继续前进）。
  */
-export function gridTrack(g: GridTrack, pointerX: number, pointerY: number, slots: number): { x: number, y: number, target: number } {
+export const gridTrack = (g: GridTrack, pointerX: number, pointerY: number, slots: number): { x: number, y: number, target: number } => {
   const x = clamp(pointerX - g.grabX, g.minX, g.maxX)
   const y = clamp(pointerY - g.grabY, g.minY, g.maxY)
   const docX = pointerX + g.scrollX

@@ -7,9 +7,10 @@
   框里是这一页搜的词时是结果，标签在骨架的标签行里（SignedInFrame）。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
-  import type { SuggestionRow } from '#lib/components/search/search-box.svelte.js'
   import { page } from '$app/state'
   import { Search } from '@lucide/svelte'
+
+  import type { SuggestionRow } from '#lib/components/search/search-box.svelte.js'
   import { pickSuggestion, showingResults } from '#lib/components/search/search-box.svelte.js'
   import SearchKindResults from '#lib/components/search/SearchKindResults.svelte'
   import SearchOverview from '#lib/components/search/SearchOverview.svelte'
@@ -53,7 +54,7 @@
   })
 
   /** 手机上点了搜索历史里的词、建议：收起键盘，搜它或打开歌手、专辑、歌单的页面 */
-  function pick(row: SuggestionRow) {
+  const pick = (row: SuggestionRow) => {
     if (document.activeElement instanceof HTMLElement)
       document.activeElement.blur()
     pickSuggestion(view.app, row)

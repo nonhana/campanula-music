@@ -1,5 +1,6 @@
 import type { Endpoint } from '#lib/api/endpoint.js'
 import type { ApiError, ErrorBody } from '#lib/api/errors.js'
+
 import { NeteaseError } from './netease'
 
 const STATUS = {
@@ -12,7 +13,7 @@ const STATUS = {
 } satisfies Record<ApiError['kind'], number>
 
 /** 按错误约定回 ErrorBody */
-export function errorResponse(error: ApiError): Response {
+export const errorResponse = (error: ApiError): Response => {
   const headers: Record<string, string> = error.kind === 'rateLimited'
     ? {
         'retry-after': String(error.retryAfter),
@@ -22,13 +23,12 @@ export function errorResponse(error: ApiError): Response {
 }
 
 /** 按端点的响应类型回 JSON：值和端点目录里那一条的响应类型对不上时编译不过；NoInfer 不让 unknown 反过来盖掉端点的类型 */
-export function json<Value>(_endpoint: Endpoint<Value>, body: NoInfer<Value>): Response {
+export const json = <Value>(_endpoint: Endpoint<Value>, body: NoInfer<Value>): Response =>
   // 端点只在编译期用：运行时和以前一样只回正文
-  return Response.json(body)
-}
+  Response.json(body)
 
 /** 跑接口的处理函数：调网易云失败时按错误约定回给客户端，其他错误照常抛出 */
-export async function withNetease<Value>(endpoint: Endpoint<Value>, handle: () => NoInfer<Value> | Promise<NoInfer<Value>>): Promise<Response> {
+export const withNetease = async <Value>(endpoint: Endpoint<Value>, handle: () => NoInfer<Value> | Promise<NoInfer<Value>>): Promise<Response> => {
   try {
     return json(endpoint, await handle())
   }

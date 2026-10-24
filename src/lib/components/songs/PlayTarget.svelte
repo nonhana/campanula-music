@@ -6,6 +6,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
+
   import { pick } from '../player/cover-flight.svelte'
   import { getAppView } from '../shared/app-context.svelte'
 
@@ -34,7 +35,7 @@
   const { disabled, now, onplay, selecting = false, selected = false, onselect, unplayable = false, cover, rounded = false, keyshortcuts, class: klass, children }: Props = $props()
   const view = getAppView()
 
-  function activate(event: MouseEvent): void {
+  const activate = (event: MouseEvent): void => {
     // 两种入口（点“多选”、⌘/Ctrl 点选）共用同一个勾选状态：手动多选里 Shift 也要连选
     if (onselect && (event.metaKey || event.ctrlKey || event.shiftKey)) {
       event.preventDefault()

@@ -88,12 +88,10 @@ export interface LibraryPatch {
 }
 
 /** 什么都不改 */
-export function emptyPatch(patch: LibraryPatch): boolean {
-  return Object.values(patch).every(part => part === undefined)
-}
+export const emptyPatch = (patch: LibraryPatch): boolean => Object.values(patch).every(part => part === undefined)
 
 /** 副本改过以后的样子（和 LocalDb.saveLibrary 写进本机数据库的一样）：不改原来的，改到的部分换成新的 */
-export function patched(replica: Replica, patch: LibraryPatch): Replica {
+export const patched = (replica: Replica, patch: LibraryPatch): Replica => {
   let { tracks, songs, albumPages } = replica
   if (patch.tracks || patch.playlists) {
     tracks = new Map(tracks)
@@ -175,38 +173,32 @@ export interface LocalDatabase {
   write: (stores: string[], change: (transaction: IDBTransaction) => void) => Promise<void>
 }
 
-export function settled<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
-}
+export const settled = <T>(request: IDBRequest<T>): Promise<T> => new Promise((resolve, reject) => {
+  request.onsuccess = () => resolve(request.result)
+  request.onerror = () => reject(request.error)
+})
 
-function committed(transaction: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve()
-    transaction.onerror = () => reject(transaction.error)
-    transaction.onabort = () => reject(transaction.error)
-  })
-}
+const committed = (transaction: IDBTransaction): Promise<void> => new Promise((resolve, reject) => {
+  transaction.oncomplete = () => resolve()
+  transaction.onerror = () => reject(transaction.error)
+  transaction.onabort = () => reject(transaction.error)
+})
 
 /** 写这一步要用到的存储区（LIBRARY 总要用：核对副本的主人） */
-function storesFor(patch: LibraryPatch): string[] {
-  return [
-    ...(patch.tracks || patch.playlists
-      ? [TRACKS]
-      : []),
-    ...(patch.songs
-      ? [SONGS]
-      : []),
-    ...(patch.albums || patch.albumPages
-      ? [ALBUM_PAGES]
-      : []),
-  ]
-}
+const storesFor = (patch: LibraryPatch): string[] => [
+  ...(patch.tracks || patch.playlists
+    ? [TRACKS]
+    : []),
+  ...(patch.songs
+    ? [SONGS]
+    : []),
+  ...(patch.albums || patch.albumPages
+    ? [ALBUM_PAGES]
+    : []),
+]
 
 /** 按编号存的存储区里，只留 kept 里有的那几项 */
-function dropAllBut(store: IDBObjectStore, kept: readonly { id: number }[]): void {
+const dropAllBut = (store: IDBObjectStore, kept: readonly { id: number }[]): void => {
   const ids = new Set(kept.map(item => item.id))
   const keys = store.getAllKeys()
   keys.onsuccess = () => {
@@ -220,7 +212,7 @@ function dropAllBut(store: IDBObjectStore, kept: readonly { id: number }[]): voi
 /** 存进本机以后才加的歌单字段：版本 3 加了创建者、是否隐私，版本 8 加了播放次数、简介、标签 */
 type StoredLater = 'creator' | 'private' | 'playCount' | 'description' | 'tags'
 
-function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: number): void {
+const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: number): void => {
   if (from < 1)
     database.createObjectStore(SESSION)
   if (from < 2) {
@@ -278,11 +270,11 @@ function upgrade(database: IDBDatabase, transaction: IDBTransaction, from: numbe
 }
 
 /** 打开本机数据库：同一个设备上的模块共用一个连接，升级只跑一次 */
-export function createLocalDatabase(indexedDB: IDBFactory): LocalDatabase {
+export const createLocalDatabase = (indexedDB: IDBFactory): LocalDatabase => {
   /** 打开以后就留着：之后的读写在调用的同一步里开事务，调用方在这之前做的检查到开事务时还成立 */
   let open: IDBDatabase | undefined
   let opening: Promise<IDBDatabase> | undefined
-  function database(): Promise<IDBDatabase> {
+  const database = (): Promise<IDBDatabase> => {
     opening ??= new Promise((resolve, reject) => {
       const request = indexedDB.open(NAME, VERSION)
       request.onupgradeneeded = event => upgrade(request.result, request.transaction!, event.oldVersion)
@@ -312,14 +304,12 @@ export function createLocalDatabase(indexedDB: IDBFactory): LocalDatabase {
   }
 }
 
-export function createLocalDb(db: LocalDatabase): LocalDb {
+export const createLocalDb = (db: LocalDatabase): LocalDb => {
   /** 在一个读写事务里改 stores，提交了才算完 */
-  function write(stores: string[], change: (transaction: IDBTransaction) => void): Promise<void> {
-    return db.write(stores, change)
-  }
+  const write = (stores: string[], change: (transaction: IDBTransaction) => void): Promise<void> => db.write(stores, change)
 
   /** 副本还是 owner 的才在同一个事务里改 stores；返回改了没有 */
-  async function writeLibrary(owner: number, stores: string[], change: (transaction: IDBTransaction) => void): Promise<boolean> {
+  const writeLibrary = async (owner: number, stores: string[], change: (transaction: IDBTransaction) => void): Promise<boolean> => {
     const transaction = (await db.open()).transaction([LIBRARY, ...stores], 'readwrite')
     const current = transaction.objectStore(LIBRARY).get('owner')
     let mine = false

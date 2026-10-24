@@ -1,12 +1,14 @@
-import type { Attachment } from 'svelte/attachments'
-import type { Song } from '#lib/api/library.js'
-import type { AppView } from '../shared/app-context.svelte'
-import type { Turn } from './view'
 import { tick, untrack } from 'svelte'
+import type { Attachment } from 'svelte/attachments'
+
+import type { Song } from '#lib/api/library.js'
+
+import type { AppView } from '../shared/app-context.svelte'
 import { fadeMs, reducedMotion, unseen } from '../shared/motion'
 import { cssEasing, DURATIONS, FLIGHT_ARC } from '../shared/motion-tokens'
 import { coverLoaded, preloadCover } from '../ui/Cover.svelte'
 import { currentSong } from './now'
+import type { Turn } from './view'
 import { turnOf } from './view'
 
 // 点歌时那一行的封面飞进播放条（DESIGN.md Song Row · 点歌，The Cover Leads Rule）。
@@ -39,7 +41,7 @@ const PLANE_LAYER = '45'
  * 在列表里点歌（PlayTarget）：play 放这一首；换了歌，这一行的封面 cover 就飞进播放条。
  * 点的就是正在放的那首（没换歌）、没给 cover（播放页的播放队列里点的，那里换碟）时不飞
  */
-export function pick(view: AppView, play: () => void, cover: HTMLElement | undefined): void {
+export const pick = (view: AppView, play: () => void, cover: HTMLElement | undefined): void => {
   const before = currentSong(view.state.player)
   play()
   const after = currentSong(view.state.player)
@@ -51,7 +53,7 @@ export function pick(view: AppView, play: () => void, cover: HTMLElement | undef
  * 起飞：从这一行加载好的那张封面飞到播放条的小窗。减少动态效果、页面在后台、这一行的封面还没加载出来时不飞，
  * 播放条照常换歌（view.ts 的 turnOf，往左转）
  */
-async function takeOff(song: Song, from: Song | null, cover: HTMLElement): Promise<void> {
+const takeOff = async (song: Song, from: Song | null, cover: HTMLElement): Promise<void> => {
   const mine = ++launches
   ground()
   const img = [
@@ -119,7 +121,7 @@ fill: 'forwards',
 }
 
 /** 拿掉飞的那张：在飞的，或者落下后还盖在小窗上等图的 */
-function ground(): void {
+const ground = (): void => {
   if (!plane)
     return
   plane.animation.cancel()
@@ -128,14 +130,14 @@ function ground(): void {
 }
 
 /** 不飞了：播放条直接显示当前这首 */
-function abort(): void {
+const abort = (): void => {
   launches += 1
   ground()
   flight = null
 }
 
 /** 落点停稳时在哪：播放条正从屏幕底下浮上来（motion.ts 的 dock，漂动写在 translate 上）时，减掉它此刻还差的那一段 */
-function restingRect(slot: HTMLElement): DOMRect {
+const restingRect = (slot: HTMLElement): DOMRect => {
   const rect = slot.getBoundingClientRect()
   const lift = Number.parseFloat(getComputedStyle(slot.closest('[data-player-bar]')!).translate.split(' ')[1] ?? '0')
   return new DOMRect(rect.x, rect.y - lift, rect.width, rect.height)
@@ -145,7 +147,7 @@ function restingRect(slot: HTMLElement): DOMRect {
  * 从 from 沿一道往上鼓的浅弧线飞到 to（二次贝塞尔曲线，分 STEPS 段），边飞边从 from 的大小变成 to 的大小。
  * 飞的图摆在 to 上，缩放的原点在左上角
  */
-function arc(from: DOMRect, to: DOMRect): Keyframe[] {
+const arc = (from: DOMRect, to: DOMRect): Keyframe[] => {
   const dx = to.x - from.x
   const dy = to.y - from.y
   const length = Math.hypot(dx, dy) || 1
@@ -178,7 +180,7 @@ export interface Landing {
  * 是个 getter：两个播放条共用这个组件，尺寸由调用方给。
  * 封面还在飞、或者落下后还盖在小窗上时，当前这首又变了（按了下一首、放完了、播放队列清空了）：飞的这张直接拿掉，换碟接手
  */
-export function landingOf(view: AppView, size: () => number): Landing {
+export const landingOf = (view: AppView, size: () => number): Landing => {
   const current = $derived(currentSong(view.state.player))
 
   $effect(() => {

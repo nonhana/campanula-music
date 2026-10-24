@@ -41,7 +41,7 @@ const YRC_WORD = /\((\d+),(\d+),-?\d+\)/g
 const seconds = (ms: number) => ms / 1000
 
 /** 署名行：{"t":毫秒,"c":[{"tx":…}]}，文字是各段 tx 连起来；认不出就是 null */
-function creditOf(raw: string): Timed | null {
+const creditOf = (raw: string): Timed | null => {
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
@@ -68,7 +68,7 @@ function creditOf(raw: string): Timed | null {
 }
 
 /** LRC 的一行：几个时间标签就是几行（同一句在几个时刻唱）；没有时间标签的（[ti:…] 这类）不要 */
-function lrcLinesOf(raw: string): Timed[] {
+const lrcLinesOf = (raw: string): Timed[] => {
   const match = LRC_LINE.exec(raw)
   if (!match)
     return []
@@ -85,7 +85,7 @@ function lrcLinesOf(raw: string): Timed[] {
 }
 
 /** yrc 的一行：词之间按 (开始,时长,0) 分开，两个标记中间的就是这个词 */
-function yrcLineOf(raw: string): Timed | null {
+const yrcLineOf = (raw: string): Timed | null => {
   const match = YRC_LINE.exec(raw)
   if (!match)
     return null
@@ -118,7 +118,7 @@ function yrcLineOf(raw: string): Timed | null {
 }
 
 /** 一整段歌词拆成行，按开始的时刻排（同一时刻的保持原来的先后）；空行不要 */
-function linesOf(lyric: string | undefined, format: 'lrc' | 'yrc'): Timed[] {
+const linesOf = (lyric: string | undefined, format: 'lrc' | 'yrc'): Timed[] => {
   const lines = (lyric ?? '').split(/\r?\n/).flatMap((raw): Timed[] => {
     const line = raw.trim()
     if (line.startsWith('{') || format === 'yrc') {
@@ -135,12 +135,10 @@ function linesOf(lyric: string | undefined, format: 'lrc' | 'yrc'): Timed[] {
 }
 
 /** 有真正的歌词（不只是署名） */
-function hasLyrics(lines: readonly Timed[]): boolean {
-  return lines.some(line => !line.credit)
-}
+const hasLyrics = (lines: readonly Timed[]): boolean => lines.some(line => !line.credit)
 
 /** 把翻译或音译的每一行配到时刻最近的原文行上；一行原文只配一行 */
-function matched(lines: readonly Timed[], extra: readonly Timed[]): (string | null)[] {
+const matched = (lines: readonly Timed[], extra: readonly Timed[]): (string | null)[] => {
   const out: (string | null)[] = lines.map(() => null)
   for (const item of extra) {
     if (item.credit)
@@ -156,7 +154,7 @@ function matched(lines: readonly Timed[], extra: readonly Timed[]): (string | nu
   return out
 }
 
-export function lyricsOf(body: NeteaseLyrics): LyricsResponse {
+export const lyricsOf = (body: NeteaseLyrics): LyricsResponse => {
   if (body.pureMusic === true)
     return { kind: 'pureMusic' }
   const byWord = linesOf(body.yrc?.lyric, 'yrc')

@@ -7,11 +7,9 @@ const ROOT = new URL('..', import.meta.url).pathname
 const BROWSER = `${ROOT}scripts/browser`
 const NAME = `Mock smoke ${Date.now()}`
 
-function run(args: string[]): string {
-  return execFileSync(BROWSER, args, { encoding: 'utf8', cwd: ROOT })
-}
+const run = (args: string[]): string => execFileSync(BROWSER, args, { encoding: 'utf8', cwd: ROOT })
 
-async function waitFor(what: string, check: () => boolean): Promise<void> {
+const waitFor = async (what: string, check: () => boolean): Promise<void> => {
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (check())
       return

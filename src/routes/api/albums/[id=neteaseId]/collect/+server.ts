@@ -1,8 +1,9 @@
-import type { RequestHandler } from './$types'
 import { endpoints } from '#lib/api/endpoints.js'
 import { collectAlbum } from '#lib/server/netease.js'
 import { readCollect } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
+
+import type { RequestHandler } from './$types'
 
 // 收藏或取消收藏专辑
 export const POST: RequestHandler = async ({ params, request, cookies }) => {

@@ -5,12 +5,13 @@
   换标签时滑过去（uno.config.ts 的 tab-line）。桌面吸在顶栏下面；手机放在骨架的标签行里，吸在搜索框下面，放不下时能左右滑
 -->
 <script lang='ts'>
-  import type { SearchTab } from './view'
   import { resolve } from '$app/paths'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { fade } from '../shared/motion'
   import { formatCount } from '../shared/text'
   import { selectSearchTab } from './search-box.svelte'
+  import type { SearchTab } from './view'
   import { SEARCH_PANEL_ID, SEARCH_TABS, searchPath, searchTabId } from './view'
 
   interface Props {
@@ -26,7 +27,7 @@
     : null)
 
   /** 标签旁边写的总数：综合不写，还没拉到不写 */
-  function totalOf(key: SearchTab): number | null {
+  const totalOf = (key: SearchTab): number | null => {
     if (key === 'all' || !results)
       return null
     const list = results[key]
@@ -42,7 +43,7 @@
     strip?.querySelector(`#${searchTabId(tab)}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   })
 
-  function onkeydown(event: KeyboardEvent, index: number) {
+  const onkeydown = (event: KeyboardEvent, index: number) => {
     const last = SEARCH_TABS.length - 1
     const KEYS: Record<string, number> = {
       ArrowRight: index === last
@@ -61,7 +62,7 @@
     void selectSearchTab(keyword, SEARCH_TABS[to].key)
   }
 
-  function onclick(event: MouseEvent, key: SearchTab) {
+  const onclick = (event: MouseEvent, key: SearchTab) => {
     event.preventDefault()
     void selectSearchTab(keyword, key)
   }

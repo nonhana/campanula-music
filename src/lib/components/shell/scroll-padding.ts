@@ -7,7 +7,7 @@
  */
 const seats: { value: string }[] = []
 
-function apply(): void {
+const apply = (): void => {
   document.documentElement.style.scrollPaddingTop = seats.at(-1)?.value ?? ''
 }
 
@@ -16,7 +16,7 @@ export interface PageScrollPadding {
   release: () => void
 }
 
-export function pageScrollPadding(): PageScrollPadding {
+export const pageScrollPadding = (): PageScrollPadding => {
   const seat = { value: '' }
   seats.push(seat)
   return {

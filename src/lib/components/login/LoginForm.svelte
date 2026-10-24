@@ -6,9 +6,10 @@
   两种方式不一样高，卡片跟着变高变矮（面板 360ms）
 -->
 <script lang='ts'>
-  import type { Toward } from '../shared/motion'
   import { flushSync } from 'svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
+  import type { Toward } from '../shared/motion'
   import { animateHeight, float } from '../shared/motion'
   import { DURATIONS, FLOAT_IN_DELAY } from '../shared/motion-tokens'
   import Segmented from '../ui/Segmented.svelte'
@@ -50,7 +51,7 @@
   /** 这次换方式往哪边走：往右边的标签换时内容往左走 */
   let toward = $state<Toward>('left')
   /** 换登录方式；focus：把焦点放到选中的那个方式上（从说明里的“改用……”切换时，原来的焦点会消失） */
-  function choose(next: Method, focus = false) {
+  const choose = (next: Method, focus = false) => {
     if (next !== method)
       switchTo(next)
     if (focus)
@@ -61,7 +62,7 @@
    * 新旧两种方式叠在同一格里，旧的飘走以前格子按高的那个算：高度从现在的样子变到新的那个（不动布局的例外），
    * 变的这一会儿竖着超出的部分裁掉（横着飘的不裁）
    */
-  function switchTo(next: Method) {
+  const switchTo = (next: Method) => {
     const order = methods.map(item => item.key)
     const from = panel!.getBoundingClientRect().height
     resizing?.cancel()

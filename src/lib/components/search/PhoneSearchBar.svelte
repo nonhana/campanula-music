@@ -5,6 +5,7 @@
 -->
 <script lang='ts'>
   import { ArrowLeft } from '@lucide/svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { langOf } from '../shared/text'
   import IconButton from '../ui/IconButton.svelte'
@@ -24,7 +25,7 @@
       input?.focus()
   })
 
-  function onkeydown(event: KeyboardEvent) {
+  const onkeydown = (event: KeyboardEvent) => {
     if (searchBoxKey(event, view.app) && event.key === 'Enter')
       input?.blur()
   }

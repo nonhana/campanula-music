@@ -4,9 +4,11 @@
   播放页里和旁边的红心键一样大：桌面 40px 的圆（desktop-page），手机 44px 的圆、图标大一号（phone-page）
 -->
 <script lang='ts'>
+  import { Ellipsis } from '@lucide/svelte'
+
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
-  import { Ellipsis } from '@lucide/svelte'
+
   import { songMenuActions } from '../menu/song-menu.svelte'
   import { getOverlays } from '../overlay/overlay-context'
 

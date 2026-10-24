@@ -1,5 +1,6 @@
-import type { LayerOptions } from '../src/lib/components/overlay/overlay-stack'
 import { describe, expect, it } from 'vitest'
+
+import type { LayerOptions } from '../src/lib/components/overlay/overlay-stack'
 import { OverlayStack } from '../src/lib/components/overlay/overlay-stack'
 import { MemoryOverlayHistory } from './harness/overlay-history'
 
@@ -446,7 +447,7 @@ describe('返回可收起的层', () => {
 })
 
 describe('审查反例的历史与来源失效', () => {
-  function scene() {
+  const scene = () => {
     const history = new MemoryOverlayHistory('/playlists/1')
     const stack = new OverlayStack<string>(history, {
       changed() {},

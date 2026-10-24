@@ -62,7 +62,7 @@ const BONES: Record<TileKind, { grid: { phone: number, desktop: number }, shelf:
   },
 }
 
-export function tileGridLook(kind: TileKind, layout: TileGridLayout, phone: boolean): TileGridLook {
+export const tileGridLook = (kind: TileKind, layout: TileGridLayout, phone: boolean): TileGridLook => {
   const mode = phone ? 'phone' : 'desktop'
   switch (layout) {
     case 'overview':
@@ -96,7 +96,7 @@ export function tileGridLook(kind: TileKind, layout: TileGridLayout, phone: bool
 }
 
 /** 骨架和内容用同一套排法：形状一致的骨架（DESIGN.md Do's） */
-export function tileListClass(look: TileGridLook, layout: TileGridLayout, phone: boolean, inset: boolean): string[] {
+export const tileListClass = (look: TileGridLook, layout: TileGridLayout, phone: boolean, inset: boolean): string[] => {
   if (layout === 'shelf') {
     return [
       'flex overflow-hidden pb-3 pt-1',
@@ -114,7 +114,7 @@ export function tileListClass(look: TileGridLook, layout: TileGridLayout, phone:
 }
 
 /** 每一格：网格里跟着列宽，架子上固定宽，搜索综合里放不下的藏起来（不进 Tab 顺序） */
-export function tileCellClass(look: TileGridLook, layout: TileGridLayout, index: number): (string | false)[] {
+export const tileCellClass = (look: TileGridLook, layout: TileGridLayout, index: number): (string | false)[] => {
   if (layout === 'shelf')
     return ['min-w-0 flex-none', look.width]
   if (layout === 'overview')
@@ -128,7 +128,7 @@ export function tileCellClass(look: TileGridLook, layout: TileGridLayout, index:
  * uno.config.ts 把这一份放进 safelist；class 名仍然只有这里一个出处。
  * 新增 kind / layout 时同步这里的数组。
  */
-function everyLookClass(): string[] {
+const everyLookClass = (): string[] => {
   const kinds: readonly TileKind[] = ['playlist', 'album', 'artist']
   const layouts: readonly TileGridLayout[] = ['grid', 'shelf', 'overview']
   const classes = kinds.flatMap(kind => layouts.flatMap(layout => [false, true].flatMap((phone) => {

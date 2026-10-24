@@ -1,7 +1,9 @@
-import type { Outcome } from './netease-sdk'
 import * as sdk from 'hana-music-api'
+
 import { field, fixtureOutcome } from '#lib/server/mock/fixture-format.js'
 import { readFixture } from '#lib/server/mock/read-fixture.js'
+
+import type { Outcome } from './netease-sdk'
 
 // Standard Schema 接口（https://standardschema.dev），SDK 导出的结构定义只承诺这一层（ADR-0005）
 interface StandardSchema {
@@ -20,9 +22,7 @@ const REJECTION_SCHEMAS: Record<string, string> = {
 }
 
 // Effect 的结构定义本身是函数，Standard Schema 接口挂在它的 ~standard 属性上
-function isStandardSchema(value: unknown): value is StandardSchema {
-  return (typeof value === 'object' || typeof value === 'function') && value !== null && '~standard' in value
-}
+const isStandardSchema = (value: unknown): value is StandardSchema => (typeof value === 'object' || typeof value === 'function') && value !== null && '~standard' in value
 
 interface LoadedFixture {
   module: string
@@ -30,7 +30,7 @@ interface LoadedFixture {
   outcome: Outcome
 }
 
-async function load(path: string): Promise<LoadedFixture> {
+const load = async (path: string): Promise<LoadedFixture> => {
   const raw = await readFixture(path)
   const { module } = raw
   const { rejected, response } = fixtureOutcome(module, raw.response)
@@ -78,7 +78,7 @@ const loaded = new Map<string, Promise<LoadedFixture>>()
  * - 失败：SDK 不校验失败返回的结构；另外导出了结构定义的（REJECTION_SCHEMAS）照样校验。
  *   网易云限流的失败，像 SDK 一样在 body 里加上 retryAfter。
  */
-export function loadFixture(path: string): Promise<LoadedFixture> {
+export const loadFixture = (path: string): Promise<LoadedFixture> => {
   let fixture = loaded.get(path)
   if (!fixture) {
     fixture = load(path)

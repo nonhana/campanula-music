@@ -6,12 +6,14 @@
   歌单、歌手、专辑的加载 / 失败 / 空和格宽交给 TileGrid（#75）；封面右下角的收藏小圆由 PlaylistTile / AlbumTile / ArtistTile 自己画。
 -->
 <script lang='ts'>
-  import type { Snippet } from 'svelte'
-  import type { SearchedItems, SearchedPlaylist, SearchKind } from '#lib/api/search.js'
-  import type { SearchList } from '#lib/app/search.js'
   import { resolve } from '$app/paths'
   import { SearchX } from '@lucide/svelte'
+  import type { Snippet } from 'svelte'
+
   import { creditLine } from '#lib/api/library.js'
+  import type { SearchedItems, SearchedPlaylist, SearchKind } from '#lib/api/search.js'
+  import type { SearchList } from '#lib/app/search.js'
+
   import AlbumTile from '../library/AlbumTile.svelte'
   import ArtistTile from '../library/ArtistTile.svelte'
   import PlaylistTile from '../library/PlaylistTile.svelte'
@@ -56,7 +58,7 @@
     ? albums.items.slice(0, OVERVIEW_COUNTS.albums)
     : null)
 
-  function failureOf(list: SearchList) {
+  const failureOf = (list: SearchList) => {
     if (list.status !== 'failed')
       return null
     const failed = searchFailure(list.failure)
@@ -68,7 +70,7 @@
   }
 
   /** “查看全部”：切到那个标签 */
-  function seeAll(event: MouseEvent, kind: SearchKind) {
+  const seeAll = (event: MouseEvent, kind: SearchKind) => {
     event.preventDefault()
     void selectSearchTab(keyword, kind)
   }

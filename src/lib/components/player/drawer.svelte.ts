@@ -1,11 +1,12 @@
-import type { Attachment } from 'svelte/attachments'
-import type { GripSource } from './drawer-core'
 import { untrack } from 'svelte'
+import type { Attachment } from 'svelte/attachments'
 import { quartOut } from 'svelte/easing'
 import { Tween } from 'svelte/motion'
+
 import { moveMs } from '../shared/motion'
 import { DURATIONS } from '../shared/motion-tokens'
 import { attachGrip, createPageHold } from '../shared/press'
+import type { GripSource } from './drawer-core'
 import { createDrawerCore } from './drawer-core'
 
 // 从底下升起、缩回底下的抽屉（播放页、手机的播放队列弹层）。拖动怎么判断全在 drawer-core.ts（Spec #11 的第二个测试接入点），
@@ -40,7 +41,7 @@ export interface Drawer {
 }
 
 /** estimate：抽屉还没画出来时（从播放条往上拖的头几帧）按多高算（px），画出来以后量它自己 */
-export function createDrawer(estimate: () => number): Drawer {
+export const createDrawer = (estimate: () => number): Drawer => {
   const position = new Tween(1, {
     // 中途松手时按剩下的距离算，最短也有一下反馈（120ms）
     duration: (from, to) => moveMs(Math.max(DURATIONS.feedback, DURATIONS.drawer * Math.abs(to - from))),

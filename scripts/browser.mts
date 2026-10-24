@@ -20,7 +20,7 @@ const rest = args.filter(arg => arg !== command && arg !== '--real')
 const origin = real ? REAL_ORIGIN : MOCK_ORIGIN
 const session = real ? 'campanula' : 'campanula-mock'
 
-function lock(): () => void {
+const lock = (): () => void => {
   mkdirSync(dirname(LOCK), { recursive: true })
   try {
     writeFileSync(LOCK, JSON.stringify({
@@ -54,7 +54,7 @@ function lock(): () => void {
   return () => rmSync(LOCK, { force: true })
 }
 
-function envOf(): NodeJS.ProcessEnv {
+const envOf = (): NodeJS.ProcessEnv => {
   if (real) {
     return {
       ...process.env,
@@ -71,7 +71,7 @@ function envOf(): NodeJS.ProcessEnv {
   }
 }
 
-function port(): number {
+const port = (): number => {
   const env = envOf()
   execFileSync('chrome-devtools-axi', ['pages'], { env, stdio: 'ignore' })
   const pidFile = real
@@ -84,7 +84,7 @@ function port(): number {
   return Number(found)
 }
 
-async function call(name: string, callArgs: Record<string, unknown>): Promise<string> {
+const call = async (name: string, callArgs: Record<string, unknown>): Promise<string> => {
   const bridge = port()
   const response = await fetch(`http://127.0.0.1:${bridge}/call`, {
     method: 'POST',
@@ -97,11 +97,9 @@ async function call(name: string, callArgs: Record<string, unknown>): Promise<st
   return reply.result
 }
 
-async function pages(): Promise<string> {
-  return call('list_pages', {})
-}
+const pages = async (): Promise<string> => call('list_pages', {})
 
-function pageIdOf(text: string, target: string): number | null {
+const pageIdOf = (text: string, target: string): number | null => {
   // 桥接进程的 list_pages 两种格式都见过：`1: title (url)` 和 `1: url`；CLI 的 pages 是 `1,url`
   for (const line of text.split('\n')) {
     const match = /^(\d+): (.*)$/.exec(line.trim())
@@ -115,7 +113,7 @@ function pageIdOf(text: string, target: string): number | null {
   return null
 }
 
-async function ensurePage(path = '/'): Promise<number> {
+const ensurePage = async (path = '/'): Promise<number> => {
   const text = await pages()
   const found = pageIdOf(text, origin)
   if (found !== null)
@@ -129,7 +127,7 @@ async function ensurePage(path = '/'): Promise<number> {
   return created
 }
 
-async function selectPage(pageId: number): Promise<void> {
+const selectPage = async (pageId: number): Promise<void> => {
   // 用 CLI 的 selectpage：它会把选中的页写进 CLI 自己的状态，随后的 eval/screenshot 才认
   cli([
     'selectpage',
@@ -138,14 +136,12 @@ async function selectPage(pageId: number): Promise<void> {
   ])
 }
 
-function cli(args: string[]): string {
-  return execFileSync('chrome-devtools-axi', args, {
-    env: envOf(),
-    encoding: 'utf8',
-  })
-}
+const cli = (args: string[]): string => execFileSync('chrome-devtools-axi', args, {
+  env: envOf(),
+  encoding: 'utf8',
+})
 
-function parseNested(output: string): unknown {
+const parseNested = (output: string): unknown => {
   let current: unknown = output
   for (let depth = 0; depth < 4 && typeof current === 'string'; depth += 1) {
     try {
@@ -158,7 +154,7 @@ function parseNested(output: string): unknown {
   return current
 }
 
-async function evaluate(pageId: number, expression: string): Promise<string> {
+const evaluate = async (pageId: number, expression: string): Promise<string> => {
   await selectPage(pageId)
   const output = cli(['eval', expression]).replace(/\nhelp\[[\s\S]*$/, '').replace(/^result:\s*/, '').trim()
   const parsed = parseNested(output)
@@ -167,18 +163,18 @@ async function evaluate(pageId: number, expression: string): Promise<string> {
     : JSON.stringify(parsed)
 }
 
-async function navigate(pageId: number, url: string): Promise<void> {
+const navigate = async (pageId: number, url: string): Promise<void> => {
   await call('navigate_page', { type: 'url', url, pageId })
 }
 
-async function mockStatus(): Promise<{ enabled: boolean, scenario: string, seed: string, offline: boolean }> {
+const mockStatus = async (): Promise<{ enabled: boolean, scenario: string, seed: string, offline: boolean }> => {
   const response = await fetch(`${MOCK_ORIGIN}/api/mock/status`)
   if (!response.ok)
     throw new Error(`mock 开发服务器没开：先 pnpm dev:mock（${MOCK_ORIGIN}）`)
   return response.json() as Promise<{ enabled: boolean, scenario: string, seed: string, offline: boolean }>
 }
 
-async function postMock(path: string, body?: unknown): Promise<void> {
+const postMock = async (path: string, body?: unknown): Promise<void> => {
   const response = await fetch(`${MOCK_ORIGIN}${path}`, body === undefined
     ? { method: 'POST' }
     : {
@@ -190,7 +186,7 @@ async function postMock(path: string, body?: unknown): Promise<void> {
     throw new Error(`mock ${path} 失败：${response.status} ${await response.text()}`)
 }
 
-async function accountSignedIn(pageId: number): Promise<{ signedIn: boolean, text: string }> {
+const accountSignedIn = async (pageId: number): Promise<{ signedIn: boolean, text: string }> => {
   const output = await evaluate(pageId, `(async () => { const r = await fetch('/api/account', { cache: 'no-store' }); const b = await r.json(); return JSON.stringify({ status: r.status, account: b.account ? { id: b.account.id, nickname: b.account.nickname } : null }) })()`)
   const state = JSON.parse(output) as { status: number, account: { id: number, nickname: string } | null }
   return {
@@ -199,7 +195,7 @@ async function accountSignedIn(pageId: number): Promise<{ signedIn: boolean, tex
   }
 }
 
-async function main(): Promise<void> {
+const main = async (): Promise<void> => {
   const release = lock()
   try {
     switch (command) {

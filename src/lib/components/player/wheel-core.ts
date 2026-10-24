@@ -47,18 +47,18 @@ interface Press {
   dragging: boolean
 }
 
-export function createWheelCore({ notch, has, commit, tap, onPose }: WheelCoreOptions): WheelCore {
+export const createWheelCore = ({ notch, has, commit, tap, onPose }: WheelCoreOptions): WheelCore => {
   let pose: WheelPose = { dragging: false }
   let press: Press | null = null
   /** 拖过之后跟着来的那次指针 click 不算点按（下次按下时清掉） */
   let swallowClick = false
 
-  function setPose(next: WheelPose) {
+  const setPose = (next: WheelPose) => {
     pose = next
     onPose(next)
   }
 
-  function abandon(pointerId?: number) {
+  const abandon = (pointerId?: number) => {
     if (!press || (pointerId !== undefined && pointerId !== press.pointerId))
       return
     const wasDragging = press.dragging

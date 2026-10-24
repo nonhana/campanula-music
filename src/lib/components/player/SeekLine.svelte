@@ -5,8 +5,8 @@
   放在 position: fixed 的底栏里，slider 由底栏创建（它的时间也要跟着拖动变）
 -->
 <script lang='ts'>
-  import type { SeekSlider } from './seek-slider.svelte'
   import { getAppView } from '../shared/app-context.svelte'
+  import type { SeekSlider } from './seek-slider.svelte'
 
   const { slider }: { slider: SeekSlider } = $props()
   const view = getAppView()

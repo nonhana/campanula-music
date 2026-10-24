@@ -1,12 +1,13 @@
+import { endpoints } from '#lib/api/endpoints.js'
 import type { Song } from '#lib/api/library.js'
+import { thumbnailUrl } from '#lib/api/library.js'
 import type { LyricsResponse } from '#lib/api/playback.js'
+import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
+
 import type { Api, Result } from './api-client'
 import type { BrowserCapabilities, Clock } from './browser'
 import type { LocalDb, StoredDownload } from './local'
 import type { BackgroundFailure, BackgroundSessionResult, SessionRound } from './session-round'
-import { endpoints } from '#lib/api/endpoints.js'
-import { thumbnailUrl } from '#lib/api/library.js'
-import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
 
 // 下载（Spec #11“客户端：下载”、ADR-0006，#38 先做单曲）：向服务端要下载地址、要歌词（后台请求，走请求节奏），
 // 浏览器直连网易云的音频服务器、图片服务器把完整音频和封面缩略图下下来，连同歌曲信息一次存进本机。
@@ -63,7 +64,7 @@ export interface DownloadsState {
  */
 export type DownloadBlock = 'downloaded' | 'downloading' | 'trial' | 'noCopyright' | 'signedOut' | 'offline'
 
-export function downloadBlock(song: Song, downloads: DownloadsState, { signedIn, online }: { signedIn: boolean, online: boolean }): DownloadBlock | null {
+export const downloadBlock = (song: Song, downloads: DownloadsState, { signedIn, online }: { signedIn: boolean, online: boolean }): DownloadBlock | null => {
   if (downloads.has(song.id))
     return 'downloaded'
   if (downloads.tasks.get(song.id)?.status === 'downloading')
@@ -111,11 +112,9 @@ export interface Downloads {
 }
 
 /** 存进本机时存储空间不够（IndexedDB 以 QuotaExceededError 失败）；别的错是 Campanula 自己的缺陷 */
-function storageFull(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'QuotaExceededError'
-}
+const storageFull = (error: unknown): boolean => error instanceof DOMException && error.name === 'QuotaExceededError'
 
-export function createDownloads(context: DownloadsContext): Downloads {
+export const createDownloads = (context: DownloadsContext): Downloads => {
   const { api, session, local, clock, browser } = context
   /** 下载完的，按歌曲编号；还没从本机读出来时是 null */
   let records: Map<number, StoredDownload> | null = null
@@ -131,14 +130,14 @@ export function createDownloads(context: DownloadsContext): Downloads {
   const coverUrls = new Map<string, string>()
 
   /** 下载完的这一首；不在时是界面、播放器接错了 */
-  function recordOf(songId: number): StoredDownload {
+  const recordOf = (songId: number): StoredDownload => {
     const record = records?.get(songId)
     if (!record)
       throw new Error(`这台设备上没有下载 ${songId}`)
     return record
   }
 
-  function setRecords(next: Map<number, StoredDownload>): void {
+  const setRecords = (next: Map<number, StoredDownload>): void => {
     records = next
     songs = [
       ...next.values(),
@@ -148,7 +147,7 @@ export function createDownloads(context: DownloadsContext): Downloads {
     ].map(record => [record.song.album.coverUrl, record]))
   }
 
-  function coverOf(coverUrl: string): string | null {
+  const coverOf = (coverUrl: string): string | null => {
     const record = covers.get(coverUrl)
     if (!record)
       return null
@@ -160,7 +159,7 @@ export function createDownloads(context: DownloadsContext): Downloads {
     return url
   }
 
-  function current(): DownloadsState {
+  const current = (): DownloadsState => {
     const shown = records
     return {
       songs,
@@ -170,32 +169,30 @@ export function createDownloads(context: DownloadsContext): Downloads {
     }
   }
 
-  function publish(): void {
+  const publish = (): void => {
     context.write(current())
   }
 
-  function setTask(task: DownloadTask): void {
+  const setTask = (task: DownloadTask): void => {
     tasks = new Map(tasks).set(task.song.id, task)
     publish()
   }
 
-  function fail(song: Song, failure: DownloadFailure): void {
+  const fail = (song: Song, failure: DownloadFailure): void => {
     setTask({ status: 'failed', song, failure })
     context.notify({ kind: 'downloadFailed', song, failure })
   }
 
   /** 后台请求（请求节奏）：断网、操作频繁由后台通道等过、重发过；退出、登录失效时这一轮结束，回 null */
-  function background<T>(send: () => Promise<Result<T>>): Promise<BackgroundSessionResult<T> | 'gaveUp'> {
-    return session.background(send, () => {})
-  }
+  const background = <T>(send: () => Promise<Result<T>>): Promise<BackgroundSessionResult<T> | 'gaveUp'> => session.background(send, () => {})
 
   /** 没拿到下载地址、歌词：这一轮结束（退出、登录失效）或者网易云拒绝了，这首标成没下成 */
-  function refused(song: Song, failure: Extract<DownloadFailure, { kind: 'request' }>['failure']): void {
+  const refused = (song: Song, failure: Extract<DownloadFailure, { kind: 'request' }>['failure']): void => {
     fail(song, { kind: 'request', failure })
   }
 
   /** 音频、封面：传到一半断开、服务器出错都算没传完 */
-  async function transfer(url: string, onProgress: (received: number) => void): Promise<Blob | null> {
+  const transfer = async (url: string, onProgress: (received: number) => void): Promise<Blob | null> => {
     try {
       return await browser.download(url, onProgress)
     }
@@ -204,7 +201,7 @@ export function createDownloads(context: DownloadsContext): Downloads {
     }
   }
 
-  async function run(song: Song): Promise<void> {
+  const run = async (song: Song): Promise<void> => {
     const [url, lyrics] = await Promise.all([
       background(() => api.get(endpoints.downloadUrl, { id: song.id, quality: DOWNLOAD_QUALITY })),
       background(() => api.get(endpoints.lyrics, { id: song.id })),

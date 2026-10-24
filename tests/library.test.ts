@@ -1,7 +1,8 @@
-import type { Device, SentRequest } from './harness/device'
-import type { RecordedPlaylist } from './harness/listener'
 import { describe, expect, it, vi } from 'vitest'
+
+import type { Device, SentRequest } from './harness/device'
 import { held, never } from './harness/hold'
+import type { RecordedPlaylist } from './harness/listener'
 import { COLLECTED_ALBUMS, COLLECTED_ARTISTS, HEARTS, isSync, LIKED_TRACK_IDS, likedPage, listener, PLAYLISTS_WITH_POEMS, recordedBatch, recordedTrackIds, songPages, syncRequests, trackIdRequests } from './harness/listener'
 import { ANOTHER_ACCOUNT, LIBRARY_SYNC_MODULES, RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
@@ -41,7 +42,7 @@ const BANG_DREAM_ID = 4943170241
 const BANG_DREAM_PAGE_2 = recorded(BANG_DREAM_ID).pages[1]
 
 /** 登录并同步整个曲库：只有 Bang Dream 合集的第 2 页 SDK 认不出，同步最后停在“没能同步” */
-async function syncWithRejectedPage(device: Device) {
+const syncWithRejectedPage = async (device: Device) => {
   const { app } = await device.open()
   await replyLibrary()
   for (const page of [1, 2, 3, 4, 5] as const)
@@ -505,7 +506,7 @@ describe('请求节奏', () => {
 
 describe('歌单', () => {
   /** 再打开一次 App：网易云回这一批录制里的歌单列表，和更新时间变了的歌单 */
-  async function reopenWith(device: Device, batch: { list: string, playlists: readonly RecordedPlaylist[] }) {
+  const reopenWith = async (device: Device, batch: { list: string, playlists: readonly RecordedPlaylist[] }) => {
     await world.netease.reply('login/user_account.vip.json')
     await replyLibrary({ playlists: batch.list, through: 'artists' })
     await replyPlaylists(batch.playlists)
@@ -593,7 +594,7 @@ describe('歌单', () => {
   })
 
   /** 登录并同步：我喜欢的音乐同步完了，后台正在等 poems 的曲目编号（压着不回） */
-  async function syncUntilPoems(device: Device) {
+  const syncUntilPoems = async (device: Device) => {
     const { app } = await device.open()
     await replyLibrary()
     for (const page of [1, 2, 3, 4, 5] as const)
@@ -607,7 +608,7 @@ describe('歌单', () => {
   }
 
   /** 后台同步接着往下：poems 的歌曲信息，然后别的歌单 */
-  async function replyAfterPoems(except: number[] = []): Promise<void> {
+  const replyAfterPoems = async (except: number[] = []): Promise<void> => {
     const [poems, ...rest] = BEFORE.playlists
     for (const page of poems.pages)
       await world.netease.reply(page.fixture)
@@ -766,7 +767,7 @@ describe('歌单', () => {
 
 describe('随机操作检查（借鉴逻辑原型）', () => {
   /** 可重现的伪随机数（mulberry32）：失败时按打出来的种子重跑同一串操作 */
-  function seeded(seed: number): () => number {
+  const seeded = (seed: number): () => number => {
     let state = seed
     return () => {
       state = (state + 0x6D2B79F5) | 0
@@ -795,7 +796,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
      * 网易云对一个模块的下一次调用回 fixture。同步和打开专辑页的返回一半压着，等随机操作放出来；
      * 退出、续期是听众正在等的，不压（压着的话退出、登录会一直等下去）
      */
-    async function reply(module: string, fixture: string): Promise<void> {
+    const reply = async (module: string, fixture: string): Promise<void> => {
       queued.set(module, (queued.get(module) ?? 0) + 1)
       if (!sometimesHeld.has(module) || random() < 0.5) {
         await world.netease.reply(fixture)
@@ -807,7 +808,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     }
 
     /** 每个模块都至少还有两份没用掉的返回：同步、退出、续期随时都可能发生 */
-    async function topUp(): Promise<void> {
+    const topUp = async (): Promise<void> => {
       const left = (module: string) => (queued.get(module) ?? 0) - world.netease.calls.filter(call => call.module === module).length
       while (left('likelist') < 2) {
         if (random() < 0.15) {

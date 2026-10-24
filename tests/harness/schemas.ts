@@ -1,7 +1,7 @@
 import * as sdk from 'hana-music-api'
 
 // SDK 导出的结构定义只承诺 Standard Schema 接口（ADR-0005）。mock 的合成返回也要过这一层。
-export async function validateBody(name: string, body: unknown): Promise<void> {
+export const validateBody = async (name: string, body: unknown): Promise<void> => {
   const schema = (sdk as Record<string, unknown>)[name]
   if (!schema || (typeof schema !== 'object' && typeof schema !== 'function'))
     throw new Error(`hana-music-api 没有导出 ${name}`)

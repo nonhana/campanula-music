@@ -1,9 +1,10 @@
 import type { Account } from '#lib/api/account.js'
+import { endpoints } from '#lib/api/endpoints.js'
 import type { QrCheckResponse } from '#lib/api/login.js'
+
 import type { Api, RequestFailure, Result } from './api-client'
 import type { Clock, PageVisibility } from './browser'
 import type { SessionRound } from './session-round'
-import { endpoints } from '#lib/api/endpoints.js'
 
 // 登录页的两种方式（Spec #11“客户端：登录会话”）：扫码、短信验证码。不做账号密码登录。
 
@@ -83,7 +84,7 @@ interface ShownQr {
   image: string
 }
 
-export function createLogin(context: LoginContext): Login {
+export const createLogin = (context: LoginContext): Login => {
   const { api, clock, page } = context
   /** 每换一张二维码、不再显示或登录成功就加一：旧请求回来时代数对不上，结果就不要 */
   let generation = 0
@@ -104,23 +105,23 @@ export function createLogin(context: LoginContext): Login {
       },
     })
 
-  function forget(): void {
+  const forget = (): void => {
     generation += 1
     shown = null
     cancelPoll()
   }
 
-  function finish(account: Account): Promise<void> {
+  const finish = (account: Account): Promise<void> => {
     forget()
     return context.signedIn(account)
   }
 
-  function schedulePoll(qr: ShownQr): void {
+  const schedulePoll = (qr: ShownQr): void => {
     const mine = generation
     cancelPoll = clock.after(QR_POLL_MS, () => void poll(mine, qr))
   }
 
-  async function poll(mine: number, qr: ShownQr): Promise<void> {
+  const poll = async (mine: number, qr: ShownQr): Promise<void> => {
     if (generation !== mine)
       return
     // 页面在后台（手机上切去网易云 App 扫码、桌面切了标签页）时不查，回到前台接着查
@@ -131,7 +132,7 @@ export function createLogin(context: LoginContext): Login {
       await handleCheck(qr, result, false)
   }
 
-  async function handleCheck(qr: ShownQr, result: Result<QrCheckResponse>, afterVerification: boolean): Promise<void> {
+  const handleCheck = async (qr: ShownQr, result: Result<QrCheckResponse>, afterVerification: boolean): Promise<void> => {
     if (!result.ok)
       return setQr({ step: 'failed', failure: result.failure })
     const check = result.value
@@ -165,7 +166,7 @@ export function createLogin(context: LoginContext): Login {
     }
   }
 
-  function stopQr(): void {
+  const stopQr = (): void => {
     forget()
     setQr(null)
   }
@@ -176,7 +177,7 @@ export function createLogin(context: LoginContext): Login {
   })
 
   /** 先发完还没发出去的退出，再发登录请求；退出没发成，这次就当作同样原因的失败 */
-  async function afterPendingLogout<T>(send: () => Promise<Result<T>>): Promise<Result<T>> {
+  const afterPendingLogout = async <T>(send: () => Promise<Result<T>>): Promise<Result<T>> => {
     const blocked = await context.beforeLogin()
     return blocked
       ? { ok: false, failure: blocked }

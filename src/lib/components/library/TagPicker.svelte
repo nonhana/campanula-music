@@ -5,10 +5,12 @@
   桌面上标签库那一块最高 188px、自己滚，手机上跟着弹层一起滚
 -->
 <script lang='ts'>
-  import type { PlaylistTagGroup } from '#lib/api/library.js'
-  import type { PageState } from '#lib/app/library.js'
   import { X } from '@lucide/svelte'
+
+  import type { PlaylistTagGroup } from '#lib/api/library.js'
   import { PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
+  import type { PageState } from '#lib/app/library.js'
+
   import { failureText } from '../shared/failure'
   import Button from '../ui/Button.svelte'
   import FilterChip from '../ui/FilterChip.svelte'
@@ -28,7 +30,7 @@
   /** 骨架几行、每行几个：和标签库差不多的样子 */
   const BONES = [5, 6, 7]
 
-  function toggle(tag: string) {
+  const toggle = (tag: string) => {
     if (tags.includes(tag))
       tags = tags.filter(each => each !== tag)
     else if (!full)

@@ -11,28 +11,24 @@
 -->
 <script lang='ts' module>
   import { thumbnailUrl } from '#lib/api/library.js'
+
   import { imageLoaded, preloadImage } from '../shared/image-reveal.svelte'
 
   /** 按显示尺寸 size 取的缩略图地址：按 2 倍屏取 */
-  export function coverSource(url: string, size: number): string {
-    return thumbnailUrl(url, size * 2)
-  }
+  export const coverSource = (url: string, size: number): string => thumbnailUrl(url, size * 2)
 
   /** 先在后台把这张封面图加载、解码好（url、size 和之后挂上的 Cover 一样），挂上时直接显示、不从薄荷底上淡入。返回加载完（或加载不出来）的那一刻 */
-  export function preloadCover(url: string, size: number): Promise<void> {
-    return preloadImage(coverSource(url, size))
-  }
+  export const preloadCover = (url: string, size: number): Promise<void> => preloadImage(coverSource(url, size))
 
   /** 这张封面图这次打开 App 以来加载过：挂上时直接显示 */
-  export function coverLoaded(url: string, size: number): boolean {
-    return imageLoaded(coverSource(url, size))
-  }
+  export const coverLoaded = (url: string, size: number): boolean => imageLoaded(coverSource(url, size))
 </script>
 
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
-  import type { ClassValue } from 'svelte/elements'
   import { Music } from '@lucide/svelte'
+  import type { ClassValue } from 'svelte/elements'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { createImageReveal } from '../shared/image-reveal.svelte'
   import { fade } from '../shared/motion'

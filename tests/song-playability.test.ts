@@ -1,7 +1,9 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+
 import type { Device } from './harness/device'
-import { describe, expect, it } from 'vitest'
 import { loadFixture } from './harness/fixtures'
 import { likedSong, listener, PLAYLISTS_WITH_POEMS } from './harness/listener'
 import { useWorld } from './harness/world'
@@ -21,7 +23,7 @@ const LYRICS = 'playback/lyric_new.all-forms.json'
 const COVER_BYTES = 41_000
 
 /** 下载这一首、等它下完：录制里有下载地址、音频大小和歌词；封面缩略图按 512 取 */
-async function download(device: Device, app: App, id: number): Promise<Song> {
+const download = async (device: Device, app: App, id: number): Promise<Song> => {
   await world.clock.advance(1000)
   const song = likedSong(app, id)
   const { data } = (await loadFixture(FIRST.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }

@@ -1,6 +1,7 @@
 import type { CollectedAlbum, CollectedArtist, Playlist, PlaylistEditProblem, Song } from '#lib/api/library.js'
-import type { LibraryPatch, PlaylistTracks, Replica } from './local'
 import { canSortPlaylist, nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_TAGS_MAX, reorderSortable } from '#lib/api/library.js'
+
+import type { LibraryPatch, PlaylistTracks, Replica } from './local'
 
 // 听众在 Campanula 里改曲库（红心、加入歌单、收藏，#30；歌单的增删改，#33，Spec #11“客户端：曲库副本”）：每种修改对副本做什么。
 // 只算不做：显示时叠在副本上（还没确认的），网易云确认了写进副本，同步拿回来的旧数据上再叠一次（确认得比它晚的）。
@@ -65,7 +66,7 @@ export interface PlaylistEdit {
 }
 
 /** 一次编辑要做的修改：名称、简介去掉首尾空白，和现在一样的不提交（标签照先后比） */
-export function playlistEdits(playlist: Playlist, edit: PlaylistEdit): ImmediateChange[] {
+export const playlistEdits = (playlist: Playlist, edit: PlaylistEdit): ImmediateChange[] => {
   const changes: ImmediateChange[] = []
   const name = edit.name?.trim()
   if (name !== undefined && name !== playlist.name)
@@ -87,7 +88,7 @@ export function playlistEdits(playlist: Playlist, edit: PlaylistEdit): Immediate
 }
 
 /** 这个修改不合规、不能提交的原因（界面先拦了，这里兜底）；能提交是 null */
-export function changeProblem(change: Change): PlaylistEditProblem | null {
+export const changeProblem = (change: Change): PlaylistEditProblem | null => {
   switch (change.kind) {
     case 'rename':
       return nameProblem(change.name)
@@ -119,7 +120,7 @@ export function changeProblem(change: Change): PlaylistEditProblem | null {
 }
 
 /** 这个修改是不是红心（加入我喜欢的音乐等于红心）：是的话红心还是取消红心 */
-export function heartOf(change: ConfirmedChange): { song: Song, hearted: boolean } | null {
+export const heartOf = (change: ConfirmedChange): { song: Song, hearted: boolean } | null => {
   if (change.kind === 'heart')
     return change
   if (change.kind === 'add' && change.playlist.kind === 'liked')
@@ -131,15 +132,13 @@ export function heartOf(change: ConfirmedChange): { song: Song, hearted: boolean
  * 一张歌单这样东西的排队键：收藏、取消收藏、删除都按它排；
  * 打开歌单前等它排完（deferred.settled）也用同一个键
  */
-export function playlistTarget(playlistId: number): string {
-  return `playlist:${playlistId}`
-}
+export const playlistTarget = (playlistId: number): string => `playlist:${playlistId}`
 
 /**
  * 改的是哪样东西：同一样东西的几次修改按先后一次一次提交，上一次网易云回了才发下一次，
  * 免得连点两下（红心、取消红心）到网易云的先后颠倒
  */
-export function targetOf(change: Change): string {
+export const targetOf = (change: Change): string => {
   const heart = heartOf(change)
   if (heart)
     return `heart:${heart.song.id}`
@@ -175,14 +174,12 @@ export function targetOf(change: Change): string {
 }
 
 /** 列表最前面加上 id，已经有了就不动 */
-function prepended(ids: number[], id: number): number[] {
-  return ids.includes(id)
-    ? ids
-    : [id, ...ids]
-}
+const prepended = (ids: number[], id: number): number[] => ids.includes(id)
+  ? ids
+  : [id, ...ids]
 
 /** 一张歌单的曲目最前面加上这首；本机还没有这张歌单的曲目、或者已经在里面了是 null */
-function tracksWith(replica: Replica, playlistId: number, songId: number): PlaylistTracks | null {
+const tracksWith = (replica: Replica, playlistId: number, songId: number): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   return tracks && !tracks.trackIds.includes(songId)
     ? {
@@ -193,7 +190,7 @@ function tracksWith(replica: Replica, playlistId: number, songId: number): Playl
 }
 
 /** 一张歌单的曲目最前面加上这几首（按勾选的先后）；本机还没有这张歌单的曲目、或者都已经在里面了是 null */
-function tracksWithMany(replica: Replica, playlistId: number, songs: readonly Song[]): PlaylistTracks | null {
+const tracksWithMany = (replica: Replica, playlistId: number, songs: readonly Song[]): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   if (!tracks)
     return null
@@ -210,7 +207,7 @@ function tracksWithMany(replica: Replica, playlistId: number, songs: readonly So
 }
 
 /** 一张歌单的曲目去掉这几首；本机还没有这张歌单的曲目、或者一首都不在里面是 null */
-function tracksWithout(replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null {
+const tracksWithout = (replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   if (!tracks)
     return null
@@ -222,7 +219,7 @@ function tracksWithout(replica: Replica, playlistId: number, songIds: readonly n
 }
 
 /** 本机还没有的歌曲信息 */
-function missingSongs(replica: Replica, songs: readonly Song[]): Song[] | undefined {
+const missingSongs = (replica: Replica, songs: readonly Song[]): Song[] | undefined => {
   const missing = songs.filter(song => !replica.songs.has(song.id))
   return missing.length > 0
     ? missing
@@ -233,7 +230,7 @@ function missingSongs(replica: Replica, songs: readonly Song[]): Song[] | undefi
  * 一张歌单的曲目换成提交的顺序：提交的顺序过期时（之后又加、又移除了歌），只排还在歌单里的那几首，
  * 没出现在提交里的歌按原来的先后接在后面。排序不会把歌加进来，也不会把已经移除的歌带回来
  */
-function orderedTracks(replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null {
+const orderedTracks = (replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   if (!tracks)
     return null
@@ -250,7 +247,7 @@ function orderedTracks(replica: Replica, playlistId: number, songIds: readonly n
   }
 }
 
-function heartPatch(replica: Replica, song: Song, hearted: boolean): LibraryPatch {
+const heartPatch = (replica: Replica, song: Song, hearted: boolean): LibraryPatch => {
   const { hearts } = replica
   const liked = replica.playlists?.find(playlist => playlist.kind === 'liked')
   const likedTracks = liked && replica.tracks.get(liked.id)
@@ -282,7 +279,7 @@ function heartPatch(replica: Replica, song: Song, hearted: boolean): LibraryPatc
 }
 
 /** 收藏的歌单排在自建歌单后面、收藏的歌单最前（和刚在网易云里收藏的一样） */
-function withCollected(playlists: Playlist[], playlist: Playlist): Playlist[] {
+const withCollected = (playlists: Playlist[], playlist: Playlist): Playlist[] => {
   if (playlists.some(item => item.id === playlist.id))
     return playlists
   const at = playlists.findIndex(item => item.kind === 'collected')
@@ -296,7 +293,7 @@ function withCollected(playlists: Playlist[], playlist: Playlist): Playlist[] {
 }
 
 /** 新建的歌单排在我喜欢的音乐后面（和刚在网易云里新建的一样，验证关卡②） */
-function withCreated(playlists: Playlist[], playlist: Playlist): Playlist[] {
+const withCreated = (playlists: Playlist[], playlist: Playlist): Playlist[] => {
   if (playlists.some(item => item.id === playlist.id))
     return playlists
   const at = playlists.findIndex(item => item.kind === 'liked') + 1
@@ -308,7 +305,7 @@ function withCreated(playlists: Playlist[], playlist: Playlist): Playlist[] {
 }
 
 /** 曲库里这张歌单改成 edit 之后的样子；歌单列表还没拿到、里面没有它时不动 */
-function editedPatch(replica: Replica, playlistId: number, edit: (playlist: Playlist) => Playlist): LibraryPatch {
+const editedPatch = (replica: Replica, playlistId: number, edit: (playlist: Playlist) => Playlist): LibraryPatch => {
   const { playlists } = replica
   return playlists?.some(item => item.id === playlistId)
     ? {
@@ -319,7 +316,7 @@ function editedPatch(replica: Replica, playlistId: number, edit: (playlist: Play
     : {}
 }
 
-function toggled<T extends { id: number }>(items: T[] | null, item: T, collected: boolean): T[] | undefined {
+const toggled = <T extends { id: number }>(items: T[] | null, item: T, collected: boolean): T[] | undefined => {
   if (!items)
     return undefined
   if (collected) {
@@ -331,7 +328,7 @@ function toggled<T extends { id: number }>(items: T[] | null, item: T, collected
 }
 
 /** 这个修改对副本做什么；副本里还没有的部分（首次同步还没拿到）不动 */
-export function changePatch(replica: Replica, change: ConfirmedChange): LibraryPatch {
+export const changePatch = (replica: Replica, change: ConfirmedChange): LibraryPatch => {
   const heart = heartOf(change)
   if (heart)
     return heartPatch(replica, heart.song, heart.hearted)

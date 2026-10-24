@@ -4,7 +4,7 @@ import type { RequestFailure } from '#lib/app/api-client.js'
  * 请求为什么没成功：一个原因短语，不带下一步、不带句号（DESIGN.md 文案）。
  * 调用的地方写成“没能 + 动作：原因”，或者原因单独做出错状态的正文；“重试”交给旁边的按钮
  */
-export function failureText(failure: RequestFailure): string {
+export const failureText = (failure: RequestFailure): string => {
   switch (failure.kind) {
     case 'offline':
       return '网络已断开'

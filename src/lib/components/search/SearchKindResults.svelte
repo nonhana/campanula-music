@@ -6,12 +6,12 @@
   没拉成时说明原因、能重试；一个都没有时只有“没有相关的…”的标题
 -->
 <script lang='ts'>
-  import type { SearchedItems, SearchKind } from '#lib/api/search.js'
-  import type { SongListView } from '../songs/view'
-  import type { KindItems } from './view'
   import { SearchX } from '@lucide/svelte'
   import { tick } from 'svelte'
+
   import { creditLine } from '#lib/api/library.js'
+  import type { SearchedItems, SearchKind } from '#lib/api/search.js'
+
   import AlbumTile from '../library/AlbumTile.svelte'
   import ArtistTile from '../library/ArtistTile.svelte'
   import TileGrid from '../library/TileGrid.svelte'
@@ -19,9 +19,11 @@
   import { fadeAway, reveal } from '../shared/motion'
   import { formatCount, yearOf } from '../shared/text'
   import SongList from '../songs/SongList.svelte'
+  import type { SongListView } from '../songs/view'
   import ShowMore from '../ui/ShowMore.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import PlaylistResults from './PlaylistResults.svelte'
+  import type { KindItems } from './view'
   import { KIND_WORDS, searchFailure } from './view'
 
   interface Props {
@@ -87,7 +89,7 @@
   let body = $state<HTMLElement>()
   /** 上一次“显示更多”之前已经有几项：后加进来的从第几项开始依次飘入 */
   let appendedAt = $state(0)
-  async function showMore() {
+  const showMore = async () => {
     const before = list.status === 'shown'
       ? list.items.length
       : 0

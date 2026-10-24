@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
+
 import { queryKey } from '#lib/server/mock/query-key.js'
+
 import { buildIndex } from '../scripts/fixture-index.mts'
 
 // 录制索引是 mock 按模块 + 查询匹配的来源。索引和录制文件必须一一对应，每份录制都要过 SDK 结构定义校验

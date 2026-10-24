@@ -6,9 +6,11 @@
   同步中、暂停、出错之间换的时候新的说明淡入
 -->
 <script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
-  import type { SyncNoticeState } from '#lib/app/library.js'
   import { CircleAlert, RefreshCw } from '@lucide/svelte'
+  import type { ClassValue } from 'svelte/elements'
+
+  import type { SyncNoticeState } from '#lib/app/library.js'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
   import { fade, unfold } from '../shared/motion'

@@ -1,10 +1,11 @@
+import { endpoints, searchPage } from '#lib/api/endpoints.js'
 import type { Song } from '#lib/api/library.js'
 import type { SearchedItems, SearchKind, SearchPageResponse, Suggestion } from '#lib/api/search.js'
+import { SEARCH_KINDS } from '#lib/api/search.js'
+
 import type { Clock } from './browser'
 import type { LocalDb } from './local'
 import type { SessionApi, SessionFailure, SessionResult, SessionRound } from './session-round'
-import { endpoints, searchPage } from '#lib/api/endpoints.js'
-import { SEARCH_KINDS } from '#lib/api/search.js'
 
 // 搜索（#31、#32，Spec #11“搜索”）：边输入边给建议；按搜索后单曲、歌单、歌手、专辑四类各自拉第一页（结果页的综合由它们拼成），
 // 每类再一页一页地取；搜索历史只存在这台设备上（和设置一样，退出、换账号都不删）。
@@ -64,15 +65,13 @@ export interface SearchState {
 export const INITIAL_SEARCH: SearchState = { history: [], suggestions: null, results: null }
 
 /** 把 keyword 记进搜索历史：排到最前，原来有的挪过来，超出的去掉最旧的 */
-function remembered(history: readonly string[], keyword: string): string[] {
-  return [
-    keyword,
-    ...history.filter(each => each !== keyword),
-  ].slice(0, SEARCH_HISTORY_MAX)
-}
+const remembered = (history: readonly string[], keyword: string): string[] => [
+  keyword,
+  ...history.filter(each => each !== keyword),
+].slice(0, SEARCH_HISTORY_MAX)
 
 /** 网易云的一页（从第 offset 个起）接在已经取到的后面：网易云翻页时在后面的页里又给了一次的（#32 录到过）只留第一次的 */
-function appended<K extends SearchKind>(items: readonly SearchedItems[K][], page: SearchPageResponse<K>, offset: number): SearchList<K> {
+const appended = <K extends SearchKind>(items: readonly SearchedItems[K][], page: SearchPageResponse<K>, offset: number): SearchList<K> => {
   const seen = new Set(items.map(item => item.id))
   const fresh: SearchedItems[K][] = []
   for (const item of page.items) {
@@ -127,21 +126,21 @@ export interface Search {
   clearHistory: () => Promise<void>
 }
 
-export function createSearch(context: SearchContext): Search {
+export const createSearch = (context: SearchContext): Search => {
   const { api, clock, local } = context
   /** 搜索框里最后打的词（去掉首尾空白） */
   let typed = ''
   /** 还在等听众停手：取消它 */
   let cancelWait: (() => void) | null = null
 
-  function update(next: Partial<SearchState>): void {
+  const update = (next: Partial<SearchState>): void => {
     context.write({
       ...context.read(),
       ...next,
     })
   }
 
-  async function ask(keyword: string): Promise<void> {
+  const ask = async (keyword: string): Promise<void> => {
     const result = await api.get(endpoints.suggestions, { keywords: keyword })
     if (keyword !== typed)
       return
@@ -156,17 +155,15 @@ export function createSearch(context: SearchContext): Search {
     })
   }
 
-  function stopWaiting(): void {
+  const stopWaiting = (): void => {
     cancelWait?.()
     cancelWait = null
   }
 
-  function pageOf<K extends SearchKind>(kind: K, keyword: string, offset: number): Promise<SessionResult<SearchPageResponse<K>>> {
-    return api.get(searchPage(kind), { keywords: keyword, offset })
-  }
+  const pageOf = <K extends SearchKind>(kind: K, keyword: string, offset: number): Promise<SessionResult<SearchPageResponse<K>>> => api.get(searchPage(kind), { keywords: keyword, offset })
 
   /** 换掉一类结果：还是这个词的结果页才换 */
-  function show<K extends SearchKind>(keyword: string, kind: K, list: SearchList<K>): void {
+  const show = <K extends SearchKind>(keyword: string, kind: K, list: SearchList<K>): void => {
     const results = context.read().results
     if (results?.keyword === keyword) {
       update({
@@ -175,7 +172,7 @@ export function createSearch(context: SearchContext): Search {
     }
   }
 
-  async function first(keyword: string, kind: SearchKind): Promise<void> {
+  const first = async (keyword: string, kind: SearchKind): Promise<void> => {
     const result = await pageOf(kind, keyword, 0)
     if (context.read().results?.keyword !== keyword)
       return
@@ -185,7 +182,7 @@ export function createSearch(context: SearchContext): Search {
       show(keyword, kind, { status: 'failed', failure: result.failure })
   }
 
-  function clear(): void {
+  const clear = (): void => {
     typed = ''
     stopWaiting()
     update({ suggestions: null, results: null })
@@ -196,7 +193,7 @@ export function createSearch(context: SearchContext): Search {
       clear()
   })
 
-  async function open(keyword: string): Promise<void> {
+  const open = async (keyword: string): Promise<void> => {
     const searched = keyword.trim()
     if (!searched)
       return
@@ -226,7 +223,7 @@ export function createSearch(context: SearchContext): Search {
     await Promise.all(kinds.map(kind => first(searched, kind)))
   }
 
-  async function more(keyword: string, kind: SearchKind): Promise<void> {
+  const more = async (keyword: string, kind: SearchKind): Promise<void> => {
     const results = context.read().results
     const list = results?.keyword === keyword
       ? results[kind]

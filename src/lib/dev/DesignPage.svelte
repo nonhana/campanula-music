@@ -4,6 +4,7 @@
 -->
 <script lang='ts'>
   import { ArrowUpDown, CircleArrowDown, CirclePlus, Ellipsis, ListMusic, ListPlus, ListX, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
+
   import Brand from '#lib/components/boot/Brand.svelte'
   import { desktopLayout } from '#lib/components/shared/layout.js'
   import DesktopShell from '#lib/components/shell/DesktopShell.svelte'
@@ -19,11 +20,12 @@
   import TextField from '#lib/components/ui/TextField.svelte'
   import ToolButton from '#lib/components/ui/ToolButton.svelte'
   import { DESIGN_PAGE_MARKER } from '#lib/dev/design-marker.js'
+
   import { colors } from '../../../uno.palette'
 
   /** 色板只在 uno.palette.ts 写一份（uno.config.ts 的 theme 也用它）：这里按工具类名读十六进制值（纸白 paper 是 white） */
   const palette = colors as Record<string, string | Record<string, string>>
-  function colorHex(utility: string): string {
+  const colorHex = (utility: string): string => {
     const direct = palette[utility]
     if (typeof direct === 'string')
       return direct

@@ -7,8 +7,9 @@
   模糊得很重，用小缩略图（SMALL_COVER，和歌曲行、换碟先铺的是同一张，不多下载）就够。铺满 position: relative（或 fixed）的容器
 -->
 <script lang='ts'>
-  import type { Attachment } from 'svelte/attachments'
   import { untrack } from 'svelte'
+  import type { Attachment } from 'svelte/attachments'
+
   import { fadeMs } from '../shared/motion'
   import { cssEasing, DURATIONS } from '../shared/motion-tokens'
   import { coverSource } from '../ui/Cover.svelte'
@@ -34,7 +35,7 @@
   let covering = false
 
   /** 换到最新那首的颜色：解码好了、上一层也淡完了才加上去 */
-  async function advance(): Promise<void> {
+  const advance = async (): Promise<void> => {
     const src = wanted
     if (layers.at(-1)!.src === src)
       return
@@ -59,24 +60,22 @@
   }
 
   /** 新加的一层从透明淡入，淡完拿掉底下的，再看要不要接着换 */
-  function enter(key: number): Attachment<HTMLImageElement> {
-    return (img) => {
-      if (key === 0)
-        return
-      const animation = img.animate([
-        { opacity: 0 },
-        { opacity: 1 },
-      ], {
-        duration: fadeMs(DURATIONS.tint),
-        easing: cssEasing('out-soft'),
-      })
-      animation.onfinish = () => {
-        layers = layers.filter(layer => layer.key >= key)
-        covering = false
-        void advance()
-      }
-      return () => animation.cancel()
+  const enter = (key: number): Attachment<HTMLImageElement> => (img) => {
+    if (key === 0)
+      return
+    const animation = img.animate([
+      { opacity: 0 },
+      { opacity: 1 },
+    ], {
+      duration: fadeMs(DURATIONS.tint),
+      easing: cssEasing('out-soft'),
+    })
+    animation.onfinish = () => {
+      layers = layers.filter(layer => layer.key >= key)
+      covering = false
+      void advance()
     }
+    return () => animation.cancel()
   }
 
   $effect(() => {

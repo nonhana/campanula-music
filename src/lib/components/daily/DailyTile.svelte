@@ -7,6 +7,7 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { Play } from '@lucide/svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { fade } from '../shared/motion'
   import { formatCount } from '../shared/text'

@@ -7,6 +7,7 @@
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+
   import Scrollbar from '../ui/Scrollbar.svelte'
 
   interface Props {

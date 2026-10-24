@@ -1,8 +1,9 @@
 import type { CoverCrop, CoverTokenResponse } from '#lib/api/cover.js'
-import type { DecodedImage, ImageCapability } from './browser'
-import type { SessionApi, SessionFailure, SessionRound } from './session-round'
 import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.js'
 import { endpoints } from '#lib/api/endpoints.js'
+
+import type { DecodedImage, ImageCapability } from './browser'
+import type { SessionApi, SessionFailure, SessionRound } from './session-round'
 
 // 换歌单封面（#34，Spec #11 用户故事 90–92）：选图、检查、裁剪，然后三步上传：
 // 1. 服务端申请上传凭证（image_upload_token）；
@@ -108,27 +109,23 @@ interface Attempt {
 }
 
 /** HEIC 的判断只能参考文件类型和扩展名：Android 的照片选择器给的是 HEIC 原图，文件名是媒体编号（验证关卡③） */
-function looksHeic(file: File): boolean {
-  return /^image\/hei[cf]/i.test(file.type) || /\.(?:heic|heif)$/i.test(file.name)
-}
+const looksHeic = (file: File): boolean => /^image\/hei[cf]/i.test(file.type) || /\.(?:heic|heif)$/i.test(file.name)
 
-export function createCover(context: CoverContext): PlaylistCoverEditor {
+export const createCover = (context: CoverContext): PlaylistCoverEditor => {
   const { images } = context
   let state: CoverState | null = null
   let attempt: Attempt | null = null
   /** 正在解码的那张图：换了图、关掉、退出后，之前解码的结果不要 */
   let decoding: object | null = null
 
-  function write(next: CoverState | null): void {
+  const write = (next: CoverState | null): void => {
     state = next
     context.write(next)
   }
 
-  function cropped(work: Attempt): CoverCropped {
-    return { playlistId: work.playlistId, image: work.image, small: work.small }
-  }
+  const cropped = (work: Attempt): CoverCropped => ({ playlistId: work.playlistId, image: work.image, small: work.small })
 
-  function uploading(step: CoverStep | null, failure: CoverFailure | null = null): void {
+  const uploading = (step: CoverStep | null, failure: CoverFailure | null = null): void => {
     const work = attempt
     if (!work)
       return
@@ -154,32 +151,30 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
   }
 
   /** 这张图已经不用了（取消、换图、关掉、退出）：之前发出去的结果不要 */
-  function stale(work: Attempt): boolean {
-    return work.canceled || attempt !== work
-  }
+  const stale = (work: Attempt): boolean => work.canceled || attempt !== work
 
-  function release(): void {
+  const release = (): void => {
     if (attempt)
       images.release(attempt.image)
     attempt = null
   }
 
   /** 这张图不再用了（换一张、关上、退出）：还在路上的结果都不要，图片放掉 */
-  function abandon(): void {
+  const abandon = (): void => {
     decoding = null
     attempt?.controller.abort()
     release()
   }
 
   /** 记下哪一步失败；这一轮结束时已经收起（leave），返回 null */
-  function failed(step: CoverStep | null, failure: CoverFailure): CoverOutcome | null {
+  const failed = (step: CoverStep | null, failure: CoverFailure): CoverOutcome | null => {
     if (!attempt)
       return null
     uploading(step, failure)
     return { ok: false, step, failure }
   }
 
-  async function decode(playlistId: number, file: File): Promise<void> {
+  const decode = async (playlistId: number, file: File): Promise<void> => {
     const mine = {}
     decoding = mine
     write({ status: 'picking', playlistId })
@@ -233,7 +228,7 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
   }
 
   /** 导出裁剪好的 JPEG；导出失败返回 false */
-  async function exportJpeg(work: Attempt): Promise<boolean> {
+  const exportJpeg = async (work: Attempt): Promise<boolean> => {
     if (work.jpeg)
       return true
     try {
@@ -248,7 +243,7 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
   }
 
   /** 从 from 这一步开始跑：token → upload → set。只重试没成的部分（第三步失败就只再设一次） */
-  async function run(from: CoverStep): Promise<CoverOutcome | null> {
+  const run = async (from: CoverStep): Promise<CoverOutcome | null> => {
     const work = attempt
     if (!work || work.running)
       return null
@@ -312,7 +307,7 @@ export function createCover(context: CoverContext): PlaylistCoverEditor {
   }
 
   /** 退出、登录失效：不管在做什么都收起来，释放图片 */
-  function leave(): void {
+  const leave = (): void => {
     abandon()
     write(null)
   }

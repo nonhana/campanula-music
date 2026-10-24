@@ -5,9 +5,11 @@
   排版（居中还是靠左、左右留白）由调用的地方给 class
 -->
 <script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
-  import type { RequestFailure } from '#lib/app/api-client.js'
   import { CircleAlert } from '@lucide/svelte'
+  import type { ClassValue } from 'svelte/elements'
+
+  import type { RequestFailure } from '#lib/app/api-client.js'
+
   import { failureText } from '../shared/failure'
   import { fade } from '../shared/motion'
   import Button from './Button.svelte'
@@ -25,7 +27,7 @@
 
   /** 这一次是没取成之后点的“重试” */
   let retrying = $state(false)
-  function onclick() {
+  const onclick = () => {
     retrying = more?.status === 'failed'
     onmore()
   }

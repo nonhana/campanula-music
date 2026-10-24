@@ -3,9 +3,11 @@
   列表还没出来（songs 是 null）、一首现在能放的都没有（无版权；断网、没登录时没下载的，#38）时不能按
 -->
 <script lang='ts'>
+  import { Play } from '@lucide/svelte'
+
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
-  import { Play } from '@lucide/svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
   import Button from '../ui/Button.svelte'
   import { songLook } from './song-look'

@@ -1,4 +1,3 @@
-import type { Theme } from 'unocss/preset-mini'
 import { presetRemToPx } from '@unocss/preset-rem-to-px'
 import {
   defineConfig,
@@ -6,6 +5,8 @@ import {
   transformerDirectives,
   transformerVariantGroup,
 } from 'unocss'
+import type { Theme } from 'unocss/preset-mini'
+
 import { TILE_GRID_SAFELIST } from './src/lib/components/library/tile-grid'
 import { AXES, cssEasing, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/shared/motion-tokens'
 import { colors, skeleton } from './uno.palette'
@@ -27,7 +28,7 @@ const MOUSE_MEDIA = '@media (hover: hover) and (pointer: fine)'
  * 位移、缩放、宽高的时长（--move-*）变成 0，循环（--loop-state）停住，按钮按下（--press-scale）不缩，
  * 换页的新页不再晚一步（--delay-float-in）。组件里不写这条媒体查询
  */
-function motionVariables(reduced: boolean): string {
+const motionVariables = (reduced: boolean): string => {
   const lines = [
     ...Object.entries(DURATIONS).flatMap(([name, ms]) => [
       `--duration-${name}: ${reduced
@@ -53,7 +54,7 @@ function motionVariables(reduced: boolean): string {
  * 依次飘入（DESIGN.md Motion）：骨架换成内容时，一组里前 6 个依次晚 30ms 从下面飘上来，其余和第 6 个一起。
  * src/lib/components/shared/motion.ts 的 reveal 只在这一小会儿给这一组挂上 .revealing，之后才挂上的（虚拟列表滚出来的行）不飘
  */
-function revealCss(): string {
+const revealCss = (): string => {
   const delays = Array.from({ length: STAGGER.count - 1 }, (_, i) => {
     const nth = i + 2
     return `.revealing > :nth-child(${nth === STAGGER.count
@@ -87,7 +88,7 @@ function revealCss(): string {
  * still 原地不动、只放新的一帧（它是活的，播放条的进度线照常走）；crossfade 交叉淡化（手机顶行、标签行）。
  * 减少动态效果时位移的时长（--move-*）是 0、淡入淡出最多 150ms，只剩交叉淡化。ground 是整页的底色（晨光底）
  */
-function pageTransitionCss(ground: string): string {
+const pageTransitionCss = (ground: string): string => {
   const reach = {
     up: PAGE_DISTANCE.in,
     down: PAGE_DISTANCE.in,

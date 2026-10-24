@@ -6,14 +6,15 @@
   真正的滑块（seek-slider.svelte.ts）：拖动、点按跳转，←/→ 快退快进 5 秒，Home / End 跳到头尾。touch：手机上点按区域更高
 -->
 <script lang='ts'>
-  import type { Playhead } from './playhead.svelte'
   import { untrack } from 'svelte'
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { easeOutSoft, moveMs } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
   import { currentSong } from './now'
+  import type { Playhead } from './playhead.svelte'
   import { createSeekSlider } from './seek-slider.svelte'
   import { formatSeconds } from './view'
 

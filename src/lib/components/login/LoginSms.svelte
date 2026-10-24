@@ -5,6 +5,7 @@
 -->
 <script lang='ts'>
   import { captchaProblem, phoneProblem } from '#lib/api/login.js'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
   import { unfold } from '../shared/motion'
@@ -50,17 +51,17 @@
 
   const masked = (value: string) => `+86 ${value.slice(0, 3)} **** ${value.slice(7)}`
 
-  function onPhoneInput() {
+  const onPhoneInput = () => {
     phone = phone.replace(/\D/g, '').slice(0, 11)
     phoneError = ''
   }
 
-  function onCaptchaInput() {
+  const onCaptchaInput = () => {
     captcha = captcha.replace(/\D/g, '').slice(0, 6)
     captchaError = ''
   }
 
-  function phoneOk(): boolean {
+  const phoneOk = (): boolean => {
     const problem = phoneProblem(phone)
     phoneError = problem === 'phoneEmpty'
       ? '先填手机号'
@@ -70,7 +71,7 @@
     return !phoneError
   }
 
-  async function sendCaptcha() {
+  const sendCaptcha = async () => {
     if (!phoneOk())
       return
     const target = phone
@@ -81,7 +82,7 @@
     }
   }
 
-  async function login(event: SubmitEvent) {
+  const login = async (event: SubmitEvent) => {
     event.preventDefault()
     if (!phoneOk())
       return

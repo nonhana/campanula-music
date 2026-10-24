@@ -7,8 +7,8 @@
   手机桌面一样高，调用方用 class 定高度和宽度（h-10 / h-11、w-full、max-w）
 -->
 <script lang='ts' generics='K extends string'>
-  import type { ClassValue } from 'svelte/elements'
   import { tick } from 'svelte'
+  import type { ClassValue } from 'svelte/elements'
 
   interface Props {
     /** 每格的 key 和字 */
@@ -42,7 +42,7 @@
     ArrowUp: at => at - 1,
   }
 
-  async function onkeydown(event: KeyboardEvent) {
+  const onkeydown = async (event: KeyboardEvent) => {
     const step = STEPS[event.key] ?? (role === 'radio'
       ? RADIO_STEPS[event.key]
       : undefined)

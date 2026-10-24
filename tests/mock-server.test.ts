@@ -1,8 +1,10 @@
-import type { AddressInfo } from 'node:net'
 import { createServer as createHttpServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
+
 import { sveltekit } from '@sveltejs/kit/vite'
 import { createServer } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
 import { mockPlugin } from '../src/lib/server/mock/vite-plugin.ts'
 
 // mock 开发服务器的 HTTP 行为：自动登录走真实加密 Cookie，写操作刷新后还在，reset 回种子。
@@ -41,12 +43,10 @@ afterAll(async () => {
   await closed?.()
 })
 
-async function api(path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`${origin}${path}`, {
-    ...init,
-    headers: { ...init.headers, cookie },
-  })
-}
+const api = async (path: string, init: RequestInit = {}): Promise<Response> => fetch(`${origin}${path}`, {
+  ...init,
+  headers: { ...init.headers, cookie },
+})
 
 describe('mock 开发服务器', () => {
   it('自动登录、账号、歌单、红心、播放地址都能用', async () => {

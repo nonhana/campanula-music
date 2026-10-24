@@ -1,8 +1,10 @@
 import type { Attachment } from 'svelte/attachments'
+
 import type { Playlist } from '#lib/api/library.js'
+
 import type { DragSortEdges, DragSortResult, Point, Rect } from '../shared/drag-sort'
-import type { DragSortAdapter, DragSortTrack } from '../shared/drag-sort.svelte'
 import { gridTrack, rowTrack } from '../shared/drag-sort'
+import type { DragSortAdapter, DragSortTrack } from '../shared/drag-sort.svelte'
 import { DragSort } from '../shared/drag-sort.svelte'
 import { moveMs } from '../shared/motion'
 import { DURATIONS } from '../shared/motion-tokens'

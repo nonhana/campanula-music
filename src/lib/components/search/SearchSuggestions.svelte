@@ -6,12 +6,13 @@
   建议列表是搜索框的 listbox：键盘留在搜索框里，↑↓ 选中哪一行由 searchBox.active 决定（search-box.svelte.ts）
 -->
 <script lang='ts'>
-  import type { SuggestionRow } from './search-box.svelte'
   import { Disc3, History, ListMusic, Music, Search, UserRound } from '@lucide/svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { langOf } from '../shared/text'
   import FilterChip from '../ui/FilterChip.svelte'
   import TextButton from '../ui/TextButton.svelte'
+  import type { SuggestionRow } from './search-box.svelte'
   import { searchBox, SUGGESTION_LIST_ID, suggestionId, suggestionRows } from './search-box.svelte'
   import { matchedParts, SUGGESTION_KINDS } from './view'
 
@@ -35,7 +36,7 @@
   }
 
   /** 清空搜索历史。这个按钮跟着就没了：用键盘按的，焦点回到搜索框（输入框是 combobox），不掉到页面最外面 */
-  function clearHistory(event: MouseEvent) {
+  const clearHistory = (event: MouseEvent) => {
     void view.app.clearSearchHistory()
     if (event.detail === 0)
       document.querySelector<HTMLInputElement>('input[role="combobox"]')?.focus()

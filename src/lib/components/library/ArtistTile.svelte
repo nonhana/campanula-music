@@ -7,6 +7,7 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { UserRound } from '@lucide/svelte'
+
   import { langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
   import CollectButton from './CollectButton.svelte'

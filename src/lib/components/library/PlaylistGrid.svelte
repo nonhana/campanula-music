@@ -9,12 +9,14 @@
   heading：歌单页 / 首页歌单区块的区块标题，两块各有自己的分节标题。
 -->
 <script lang='ts'>
-  import type { Snippet } from 'svelte'
-  import type { Playlist } from '#lib/api/library.js'
-  import type { LibraryState } from '#lib/app/library.js'
   import { ArrowUpDown, ListMusic, Plus } from '@lucide/svelte'
+  import type { Snippet } from 'svelte'
   import { tick } from 'svelte'
   import { flip } from 'svelte/animate'
+
+  import type { Playlist } from '#lib/api/library.js'
+  import type { LibraryState } from '#lib/app/library.js'
+
   import { getOverlays } from '../overlay/overlay-context'
   import { playlistName } from '../playlist/playlist-text'
   import { getAppView } from '../shared/app-context.svelte'
@@ -69,7 +71,7 @@
     sort.cancel()
   })
 
-  async function startSort() {
+  const startSort = async () => {
     if (!canOrder)
       return
     announcement = `正在排序，共 ${own?.length ?? 0} 张`
@@ -78,7 +80,7 @@
     document.querySelector<HTMLElement>('[data-playlist-sort] a')?.focus()
   }
 
-  async function finishSort() {
+  const finishSort = async () => {
     sorting = false
     sort.cancel()
     announcement = ''
@@ -87,7 +89,7 @@
   }
 
   /** 排序期间按 Esc 退出（焦点在哪都行；拖动中的 Esc 由 PlaylistSort 先接住） */
-  function onWindowKeydown(event: KeyboardEvent) {
+  const onWindowKeydown = (event: KeyboardEvent) => {
     // 有浮层开着时 Esc 先归最上层：浮动菜单不会让背景 inert，只看 inert 不够。
     // 也不能改成让宿主在捕获阶段监听：那会抢在拖动的取消之前。
     if (!sorting || stack.top || sort.dragging || event.defaultPrevented || event.key !== 'Escape')
@@ -97,7 +99,7 @@
   }
 
   /** 焦点在某一行时 Alt + ↑ / ↓ 移一位 */
-  function onListKeydown(event: KeyboardEvent) {
+  const onListKeydown = (event: KeyboardEvent) => {
     if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown'))
       return
     const row = (event.target as HTMLElement).closest<HTMLElement>('[data-playlist-id]')

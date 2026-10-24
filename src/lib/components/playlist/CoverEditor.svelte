@@ -8,13 +8,15 @@
   浮层栈把它叠在歌单编辑上面，统一处理返回、Esc、上传中钉住与关闭后的焦点。
 -->
 <script lang='ts'>
-  import type { CoverCrop } from '#lib/api/cover.js'
-  import type { RequestFailure } from '#lib/app/api-client.js'
-  import type { CoverFailure, CoverProblem, CoverStep, CoverUpload } from '#lib/app/cover.js'
   import { Check, CircleAlert, ImageOff, LoaderCircle, X } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { innerHeight, innerWidth } from 'svelte/reactivity/window'
+
+  import type { CoverCrop } from '#lib/api/cover.js'
   import { COVER_INPUT_MAX_BYTES } from '#lib/api/cover.js'
+  import type { RequestFailure } from '#lib/app/api-client.js'
+  import type { CoverFailure, CoverProblem, CoverStep, CoverUpload } from '#lib/app/cover.js'
+
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
@@ -100,11 +102,11 @@
     })
   })
 
-  function pick(): void {
+  const pick = (): void => {
     input?.click()
   }
 
-  function onfile(event: Event): void {
+  const onfile = (event: Event): void => {
     const element = event.currentTarget as HTMLInputElement
     const file = element.files?.[0]
     element.value = ''
@@ -112,7 +114,7 @@
       void view.app.prepareCover(request.playlistId, file)
   }
 
-  function close(): void {
+  const close = (): void => {
     void coverEditor.close()
   }
 
@@ -123,7 +125,7 @@
     todo: 'bg-neutral-100 text-neutral-500',
   } as const
 
-  function stepState(step: ShownStep, upload: CoverUpload): 'done' | 'now' | 'todo' | 'fail' {
+  const stepState = (step: ShownStep, upload: CoverUpload): 'done' | 'now' | 'todo' | 'fail' => {
     const current = upload.step === null
       ? -1
       : orderOf(shownStep(upload.step))
@@ -138,7 +140,7 @@
   }
 
   /** 选到的文件为什么不能用：标题一句话说清；还要说怎么换一张能用的才有正文 */
-  function problemText(problem: CoverProblem): { title: string, body?: string } {
+  const problemText = (problem: CoverProblem): { title: string, body?: string } => {
     switch (problem.kind) {
       case 'notImage':
         return { title: '这个文件不是图片', body: '请选 JPG、PNG 或 WebP 图片' }
@@ -152,7 +154,7 @@
   }
 
   /** 哪一步没成：一句话，请求本身的问题后面跟原因（failureText） */
-  function uploadFailureText(step: CoverStep | null, failure: CoverFailure): string {
+  const uploadFailureText = (step: CoverStep | null, failure: CoverFailure): string => {
     if (failure.kind === 'uploadFailed')
       return '图片没能上传'
     if (failure.kind === 'exportFailed')

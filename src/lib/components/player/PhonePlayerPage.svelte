@@ -7,10 +7,10 @@
   “更多”菜单和歌曲行里的是同一份（#38：能在这里下载当前这首），播放来源是这首歌自己的。放在 PlayerPage 里
 -->
 <script lang='ts'>
-  import type { Song } from '#lib/api/library.js'
-  import type { Playhead } from './playhead.svelte'
-  import type { Turn } from './view'
   import { ChevronDown, MicVocal } from '@lucide/svelte'
+
+  import type { Song } from '#lib/api/library.js'
+
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { fade, float, recede } from '../shared/motion'
@@ -25,9 +25,11 @@
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
   import { playerPageChoices as choices, playerPageActions } from './player-page.svelte'
+  import type { Playhead } from './playhead.svelte'
   import PlayModeButton from './PlayModeButton.svelte'
   import QueueList from './QueueList.svelte'
   import SkipButton from './SkipButton.svelte'
+  import type { Turn } from './view'
   import { neighborSong, PAGE_COVER } from './view'
   import WaveProgress from './WaveProgress.svelte'
 

@@ -8,6 +8,7 @@
 -->
 <script lang='ts'>
   import { innerHeight } from 'svelte/reactivity/window'
+
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'

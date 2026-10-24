@@ -6,9 +6,8 @@
   返回这一页时滚动位置回到原来的样子。头部播放全部旁边是收藏开关（桌面是“收藏 / 已收藏”胶囊，手机只留图标，#57），点“已收藏”直接取消收藏、不确认
 -->
 <script lang='ts'>
-  import type { SongListView } from '#lib/components/songs/view.js'
-  import type { PageProps } from './$types'
   import { resolve } from '$app/paths'
+
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
@@ -20,7 +19,10 @@
   import { formatCount, langOf, yearOf } from '#lib/components/shared/text.js'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import SongList from '#lib/components/songs/SongList.svelte'
+  import type { SongListView } from '#lib/components/songs/view.js'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
+
+  import type { PageProps } from './$types'
 
   const { params }: PageProps = $props()
   const view = getAppView()

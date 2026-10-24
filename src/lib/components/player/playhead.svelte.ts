@@ -1,4 +1,5 @@
 import type { PlayerState } from '#lib/app/player.js'
+
 import { reducedMotion } from '../shared/motion'
 
 export interface Playhead {
@@ -11,7 +12,7 @@ export interface Playhead {
  * 在放时从最近一次报的进度按经过的时间往前推，每帧更新；停着、缓冲时就是报的进度。
  * 减少动态效果时不往前推，只跟着报的进度跳。要在组件初始化时调用
  */
-export function createPlayhead(read: () => PlayerState): Playhead {
+export const createPlayhead = (read: () => PlayerState): Playhead => {
   // 只在进度、状态真的变了时重新起算：App 别的状态变了（例如曲库同步）不能把时刻拉回最近一次报的进度
   const position = $derived(read().position)
   const playing = $derived(read().status === 'playing')

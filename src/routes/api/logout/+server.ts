@@ -1,8 +1,9 @@
-import type { RequestHandler } from './$types'
 import { endpoints } from '#lib/api/endpoints.js'
 import { clearLogin, readLogin } from '#lib/server/credentials.js'
 import { logout, NeteaseError } from '#lib/server/netease.js'
 import { json } from '#lib/server/respond.js'
+
+import type { RequestHandler } from './$types'
 
 // 退出登录：带着凭据调网易云的退出，然后回过期的登录 Cookie。
 // 网易云那边没退成（断网、出错、本来就失效了）也照样删掉 Cookie：听众要的是这个浏览器不再登录；

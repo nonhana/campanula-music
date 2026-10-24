@@ -1,8 +1,9 @@
-import type { RequestHandler } from './$types'
 import { endpoints } from '#lib/api/endpoints.js'
 import { fetchHearts, heart } from '#lib/server/netease.js'
 import { readHeart, readId } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
+
+import type { RequestHandler } from './$types'
 
 // 红心了哪些歌：曲库同步的第一步，凭据失效时它最先认出来（网易云回 301）
 export const GET: RequestHandler = ({ url, cookies }) => {

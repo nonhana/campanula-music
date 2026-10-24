@@ -1,4 +1,5 @@
 import type { CoverCrop } from '#lib/api/cover.js'
+
 import { clamp } from '../shared/clamp'
 
 // 封面取景框的几何核心（#34；Spec #11 第二个测试接入点“拖动手势核心”）：不碰页面、不碰 Svelte 的纯逻辑。
@@ -28,23 +29,19 @@ export interface CropView {
 export interface CropPoint { x: number, y: number }
 
 /** 最多放大到 6 倍；原图本来就小（短边不到 160px 的 6 倍）时不再放大 */
-export function maxZoomOf({ width, height }: CropFrame): number {
-  return Math.max(1, Math.min(6, Math.min(width, height) / 160))
-}
+export const maxZoomOf = ({ width, height }: CropFrame): number => Math.max(1, Math.min(6, Math.min(width, height) / 160))
 
 /** 短边铺满取景框时，位图上的一个像素在框里有多大 */
-function baseScaleOf({ width, height, size }: CropFrame): number {
-  return size / Math.min(width, height)
-}
+const baseScaleOf = ({ width, height, size }: CropFrame): number => size / Math.min(width, height)
 
 /** 居中取最大的正方形（打开裁剪页时的起点） */
-export function centerCrop(width: number, height: number): CoverCrop {
+export const centerCrop = (width: number, height: number): CoverCrop => {
   const size = Math.min(width, height)
   return { x: (width - size) / 2, y: (height - size) / 2, size }
 }
 
 /** 从工作位图上的 crop 摆出视图（打开时、外面换了 crop 时） */
-export function createCropView(frame: CropFrame, crop: CoverCrop): CropView {
+export const createCropView = (frame: CropFrame, crop: CoverCrop): CropView => {
   const base = baseScaleOf(frame)
   const zoom = clamp(crop.size > 0
     ? frame.size / crop.size / base
@@ -53,7 +50,7 @@ export function createCropView(frame: CropFrame, crop: CoverCrop): CropView {
 }
 
 /** 现在露出来的是工作位图上的哪一块 */
-export function cropOf(frame: CropFrame, view: CropView): CoverCrop {
+export const cropOf = (frame: CropFrame, view: CropView): CoverCrop => {
   const scale = baseScaleOf(frame) * view.zoom
   return {
     x: clean(-view.x / scale),
@@ -63,12 +60,10 @@ export function cropOf(frame: CropFrame, view: CropView): CoverCrop {
 }
 
 /** 图片跟着手指走 dx / dy（px）；拖出框就停在边上 */
-export function panCrop(frame: CropFrame, view: CropView, dx: number, dy: number): CropView {
-  return clamped(frame, { ...view, x: view.x + dx, y: view.y + dy })
-}
+export const panCrop = (frame: CropFrame, view: CropView, dx: number, dy: number): CropView => clamped(frame, { ...view, x: view.x + dx, y: view.y + dy })
 
 /** 缩放到 zoom 倍，以框里的 at 为中心（默认框的中心：滑块、+ / - 键） */
-export function zoomTo(frame: CropFrame, view: CropView, zoom: number, at: CropPoint = centerOf(frame)): CropView {
+export const zoomTo = (frame: CropFrame, view: CropView, zoom: number, at: CropPoint = centerOf(frame)): CropView => {
   const next = clamp(zoom, 1, maxZoomOf(frame))
   if (next === view.zoom)
     return view
@@ -84,17 +79,13 @@ export function zoomTo(frame: CropFrame, view: CropView, zoom: number, at: CropP
 }
 
 /** 放大 / 缩小 factor 倍（+ / - 键、缩放按钮） */
-export function zoomBy(frame: CropFrame, view: CropView, factor: number, at: CropPoint = centerOf(frame)): CropView {
-  return zoomTo(frame, view, view.zoom * factor, at)
-}
+export const zoomBy = (frame: CropFrame, view: CropView, factor: number, at: CropPoint = centerOf(frame)): CropView => zoomTo(frame, view, view.zoom * factor, at)
 
 /** 滚轮：往上滚（deltaY 负）放大；以指针所在的点为焦点 */
-export function wheelCrop(frame: CropFrame, view: CropView, deltaY: number, at: CropPoint): CropView {
-  return zoomTo(frame, view, view.zoom * Math.exp(-deltaY / 400), at)
-}
+export const wheelCrop = (frame: CropFrame, view: CropView, deltaY: number, at: CropPoint): CropView => zoomTo(frame, view, view.zoom * Math.exp(-deltaY / 400), at)
 
 /** 方向键平移、+ / - 缩放；不认识的键返回 null */
-export function nudgeCrop(frame: CropFrame, view: CropView, key: string, shift: boolean): CropView | null {
+export const nudgeCrop = (frame: CropFrame, view: CropView, key: string, shift: boolean): CropView | null => {
   const step = shift ? 40 : 10
   switch (key) {
     case 'ArrowLeft': return panCrop(frame, view, step, 0)
@@ -113,18 +104,16 @@ export function nudgeCrop(frame: CropFrame, view: CropView, key: string, shift: 
  * 锚点是两根手指**当前**的中点 `at`（和基线的增量 zoomAt 等价：两指同距平移时缩放不变、图片不平移）。
  * 中点移动同时距离变化时，先缩放到目标、再以新中点夹紧，图片会跟手一点（不是双指平移）。
  */
-export function pinchCrop(frame: CropFrame, view: CropView, startZoom: number, startDistance: number, distance: number, at: CropPoint): CropView {
+export const pinchCrop = (frame: CropFrame, view: CropView, startZoom: number, startDistance: number, distance: number, at: CropPoint): CropView => {
   if (startDistance <= 0)
     return view
   return zoomTo(frame, view, startZoom * (distance / startDistance), at)
 }
 
-function centerOf(frame: CropFrame): CropPoint {
-  return { x: frame.size / 2, y: frame.size / 2 }
-}
+const centerOf = (frame: CropFrame): CropPoint => ({ x: frame.size / 2, y: frame.size / 2 })
 
 /** 夹紧：缩放有上下限，图片不能离开框（两边最多贴到框边） */
-function clamped(frame: CropFrame, view: CropView): CropView {
+const clamped = (frame: CropFrame, view: CropView): CropView => {
   const zoom = clamp(view.zoom, 1, maxZoomOf(frame))
   const scale = baseScaleOf(frame) * zoom
   return {
@@ -134,8 +123,6 @@ function clamped(frame: CropFrame, view: CropView): CropView {
   }
 }
 
-function clean(value: number): number {
-  return value === 0
-    ? 0
-    : value
-}
+const clean = (value: number): number => value === 0
+  ? 0
+  : value

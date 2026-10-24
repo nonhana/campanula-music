@@ -1,9 +1,10 @@
+import { endpoints } from '#lib/api/endpoints.js'
 import type { WriteResponse } from '#lib/api/write.js'
+
 import type { Api, Result } from './api-client'
 import type { LocksCapability } from './browser'
 import type { PendingCheckIn, PendingCheckIns } from './saved-queue'
 import type { SessionRound } from './session-round'
-import { endpoints } from '#lib/api/endpoints.js'
 
 // 听歌打卡（Spec #11“客户端：听歌打卡”）：一首歌听完了，播放器交出的打卡和进度存在同一个事务里，记着是哪个网易云账号的；
 // 再经后台通道发给同一个账号（请求节奏：断网时等联网，网易云说操作频繁时等到它给的时间），发成了再删。
@@ -29,11 +30,9 @@ export interface CheckIns {
   sendBeforeLogout: (owner: number) => Promise<void>
 }
 
-function postCheckIn(api: Api, { songId, source, seconds }: PendingCheckIn): Promise<Result<WriteResponse>> {
-  return api.post(endpoints.checkIn, { id: songId }, { source, seconds })
-}
+const postCheckIn = (api: Api, { songId, source, seconds }: PendingCheckIn): Promise<Result<WriteResponse>> => api.post(endpoints.checkIn, { id: songId }, { source, seconds })
 
-export function createCheckIns(context: CheckInsContext): CheckIns {
+export const createCheckIns = (context: CheckInsContext): CheckIns => {
   const { api, session, store, locks, account } = context
   /** 这个标签页正在发 */
   let sending: Promise<void> | null = null
@@ -44,7 +43,7 @@ export function createCheckIns(context: CheckInsContext): CheckIns {
    * 按记下的先后一条一条发 owner 的一轮（网易云的最近播放按收到的先后排），别的账号的删掉。换了账号、登录失效时停下；
    * 连不上（Campanula 的服务端、网易云）时这一条留着，这一轮停下，下次（再有歌听完、再登录、再打开 App）再发
    */
-  async function sendAll(owner: number): Promise<void> {
+  const sendAll = async (owner: number): Promise<void> => {
     for (const { key, checkIn } of await store.all()) {
       if (account() !== owner)
         return
@@ -79,7 +78,7 @@ export function createCheckIns(context: CheckInsContext): CheckIns {
     }
   }
 
-  function send(): void {
+  const send = (): void => {
     if (sending) {
       again = true
       return
