@@ -142,7 +142,7 @@ function anonymousDigest(deviceId: string): string {
  * 摘要里带 + 或 / 的会被网易云的匿名注册拒绝，随机生成约一半中招，所以只要摘要干净的
  * （验证关卡①；nonhana/hana-music-api#30 修好之后可以去掉这一步）
  */
-export function newDeviceId(): string {
+function newDeviceId(): string {
   let deviceId: string
   do deviceId = randomBytes(26).toString('hex').toUpperCase()
   while (/[+/]/.test(anonymousDigest(deviceId)))

@@ -6,7 +6,7 @@ export type MenuTone = 'hearted' | 'download' | 'destructive'
 /**
  * 行左边的标记：一个图标；薄荷雾方块里的图标（新建歌单）；封面图（我喜欢的音乐角上一颗珊瑚色实心心形）
  */
-export type MenuLeading
+type MenuLeading
   = | { readonly kind: 'icon', readonly icon: LucideIcon }
     | { readonly kind: 'tile', readonly icon: LucideIcon }
     | { readonly kind: 'cover', readonly url: string | null, readonly heart?: boolean }

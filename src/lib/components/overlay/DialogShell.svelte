@@ -9,7 +9,7 @@
 -->
 <script lang='ts' module>
   /** 桌面弹窗的宽度 */
-  export const DIALOG_SIZES = {
+  const DIALOG_SIZES = {
     confirm: 'max-w-[440px]',
     form: 'max-w-[480px]',
     picker: 'max-w-[560px]',

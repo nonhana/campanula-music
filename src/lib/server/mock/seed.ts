@@ -7,7 +7,7 @@ import { readFixture } from './read-fixture.ts'
 
 export type SeedName = 'before' | 'after' | 'deleted'
 
-export interface RawSong {
+interface RawSong {
   id: number
   name: string
   ar: unknown[]
@@ -16,7 +16,7 @@ export interface RawSong {
   [key: string]: unknown
 }
 
-export interface RawPrivilege {
+interface RawPrivilege {
   id: number
   st: number
   pl: number
@@ -56,11 +56,10 @@ export interface SongPart {
 }
 
 /** 录到的、能在线放的四首歌（playback/liked 里有 song_url_v1 的完整地址） */
-export const FOUR_PLAYABLE_IDS = [3433267939, 2662577181, 4208408, 2092188841] as const
+const FOUR_PLAYABLE_IDS = [3433267939, 2662577181, 4208408, 2092188841] as const
 export const FOUR_PLAYABLE_PLAYLIST = 900000024
 export const POEMS_PLAYLIST = 900000019
 export const LIKED_PLAYLIST = 900000001
-export const EMPTY_PLAYLIST = 900000023
 
 export interface SeedData {
   seed: SeedName

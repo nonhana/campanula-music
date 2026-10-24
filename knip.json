@@ -3,12 +3,14 @@
   // SvelteKit/Vite 插件已包含 src/hooks.server.ts、vite.config.ts；#lib/* 可从 package.json imports 正常解析。
   "entry": [
     "src/routes/**/+*.{ts,svelte}",
-    // src/env.ts 声明的 __CAMPANULA_MOCK__ 由 vite.config.ts 的 define 提供。
+    // SvelteKit 的 src/env.ts 入口：defineEnvVars 声明 COOKIE_SECRET / NETEASE_REAL_IP，由 Kit 加载。
     "src/env.ts",
+    // SvelteKit 的 files.params 入口：路由的 [id=neteaseId] 靠这里定义的匹配器，构建时由 Kit 加载。
+    "src/params.ts",
     "scripts/*.mts",
-    // 测试的真实服务端经 Vite 加载；mock 经 dev:mock 的 Vite 插件加载。
+    // 测试的真实服务端经 Vite 加载；mock 的 runtime 由 dev:mock 的 vite-plugin 动态导入（vite-plugin 经 vite.config.ts 可达）。
     "tests/**/*.test.ts",
-    "src/lib/server/mock/**"
+    "src/lib/server/mock/runtime.ts"
   ],
   "project": ["src/**/*.{ts,svelte}", "scripts/*.mts", "tests/**/*.ts", "*.{js,ts}"],
   "ignoreDependencies": [

@@ -13,7 +13,7 @@ export const HEARTS = 'library/likelist.json'
 /** #22：刚建好临时歌单 poems（2 首），54 张歌单。 */
 export const PLAYLISTS_WITH_POEMS = 'library/sync/before/001-user_playlist.json.gz'
 /** #22：已删掉 poems，53 张歌单，自建的都是公开的。 */
-export const PLAYLISTS_WITHOUT_POEMS = 'library/sync/deleted/001-user_playlist.json.gz'
+const PLAYLISTS_WITHOUT_POEMS = 'library/sync/deleted/001-user_playlist.json.gz'
 export const COLLECTED_ALBUMS = 'library/album-artist/001-album_sublist.json.gz'
 export const COLLECTED_ARTISTS = 'library/album-artist/002-artist_sublist.json.gz'
 export const LIKED_TRACK_IDS = 'library/playlist_detail.liked-full.json.gz'

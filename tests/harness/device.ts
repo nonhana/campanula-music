@@ -16,7 +16,7 @@ export interface SentRequest {
 }
 
 /** 这台设备收到的服务端响应：方法、路径和状态码（请求正文、Cookie 之外只看这几样） */
-export interface ReceivedResponse {
+interface ReceivedResponse {
   method: string
   path: string
   status: number

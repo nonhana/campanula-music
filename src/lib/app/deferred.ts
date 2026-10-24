@@ -71,7 +71,7 @@ interface Policy<C extends DeferredChange> {
 }
 
 /** 恢复上次没确认的改动时，重拉一张歌单的结果（见 Deferred.recover） */
-export type Recovered = 'recovered' | 'missing' | 'failed' | 'stopped'
+type Recovered = 'recovered' | 'missing' | 'failed' | 'stopped'
 
 export interface DeferredContext {
   clock: Clock

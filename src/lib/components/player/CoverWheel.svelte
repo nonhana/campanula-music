@@ -1,10 +1,10 @@
 <!--
-  换碟（DESIGN.md Cover Wheel）：封面挂在一个看不见的转盘边上，轴心在封面正下方、离封面中心 1.6 倍边长，相邻两张隔 28°。
-  当前这首换了就转一格：往左转时旧封面沿弧线转向左下、边转边淡出，新的从右下转到正中、边转边淡入；往右反过来。
+  换碟（DESIGN.md Cover Wheel）：封面图挂在一个看不见的转盘边上，轴心在封面图正下方、离封面图中心 1.6 倍边长，相邻两张隔 28°。
+  当前这首换了就转一格：往左转时旧封面图沿弧线转向左下、边转边淡出，新的从右下转到正中、边转边淡入；往右反过来。
   转到一半又换了：每张从此刻的样子接着走，新的那首直接转到正中，中间的歌不补转；新的那首正好还在转来的那一边（刚转走又换回来），就把那张转回来。
   减少动态效果时原地交叉淡化（150ms）；
-  turn 是 null（还没换过歌）、land（列表里点的歌，飞来的封面正好落在这里）或者页面在后台时直接换上，回来不补放。歌没变（播放队列里只有一首）不转。
-  手机播放页上按住封面左右拖（drag）：转盘跟着手转，上一首、下一首的封面从两边转进来，离正中越远越淡；
+  turn 是 null（还没换过歌）、land（列表里点的歌，飞来的封面图正好落在这里）或者页面在后台时直接换上，回来不补放。歌没变（播放队列里只有一首）不转。
+  手机播放页上按住封面图左右拖（drag）：转盘跟着手转，上一首、下一首的封面图从两边转进来，离正中越远越淡；
   拖起来时动画还在半路就从那里接着转，最多转到旁边那张停在正中。松手切了歌，换碟从拖到的样子接着转（旁边那张就是转回来的那张）；
   没切就 240ms 转回原位（减少动态效果时直接到位），两边那两张转回去、拿掉。拖动时减少动态效果也照样跟手。
   大图（几百 KB 一张）先铺小缩略图（SMALL_COVER，多半已经有了），大图到了从小图上淡入。转盘本来停着、单独换一首时新的那首马上取大图；
@@ -28,29 +28,29 @@
     turn: Turn | null
     /** 转一格多久（ms）：播放页 600，播放条 480 */
     duration: number
-    /** 封面缩略图按多大取（Cover 的 size） */
+    /** 封面图缩略图按多大取（Cover 的 size） */
     size: number
     fluid?: boolean
     eager?: boolean
-    /** 封面的圆角、阴影 */
+    /** 封面图的圆角、阴影 */
     class?: ClassValue
-    /** 手机播放页：按住封面左右拖时转盘被手转了几格（wheel-core 的 turned，往右为正）；没在拖是 null */
+    /** 手机播放页：按住封面图左右拖时转盘被手转了几格（wheel-core 的 turned，往右为正）；没在拖是 null */
     drag?: number | null
-    /** 拖动时从左边、右边转进来的上一首、下一首（按上一首、下一首会换到的那首）；没有别的歌可换时是 null。给了就先在后台把封面加载好 */
+    /** 拖动时从左边、右边转进来的上一首、下一首（按上一首、下一首会换到的那首）；没有别的歌可换时是 null。给了就先在后台把封面图加载好 */
     previous?: Song | null
     next?: Song | null
   }
 
   const { song, turn, duration, size, fluid = false, eager = false, class: klass, drag = null, previous = null, next = null }: Props = $props()
 
-  /** 转盘上的一张封面。key 区分同一首歌的两张（刚从一边转走，又从另一边转回来）；sharp：取了大图（之前加载过，或者停在正中过） */
+  /** 转盘上的一张封面图。key 区分同一首歌的两张（刚从一边转走，又从另一边转回来）；sharp：取了大图（之前加载过，或者停在正中过） */
   interface Disc {
     key: number
     song: Song
     sharp: boolean
   }
 
-  /** 一张封面此刻的样子：从正中转开了多少度（顺时针为正，往右下），透明度 */
+  /** 一张封面图此刻的样子：从正中转开了多少度（顺时针为正，往右下），透明度 */
   interface Pose {
     angle: number
     opacity: number
@@ -83,12 +83,12 @@
    */
   let held: { front: number, base: number, sides: (readonly [key: number, side: -1 | 1])[] } | null = null
 
-  /** 拖着时一张封面的样子：离正中越远越淡，转开一格（28°）就看不见了，和换碟时边转边淡一样 */
+  /** 拖着时一张封面图的样子：离正中越远越淡，转开一格（28°）就看不见了，和换碟时边转边淡一样 */
   function dragged(angle: number): Pose {
     return { angle, opacity: Math.max(0, 1 - Math.abs(angle) / WHEEL.pitch) }
   }
 
-  /** 一张封面此刻的样子：手摆着的；正在走的按动画进度在起止之间取（和画出来的一样）；还没挂上的在转进来的地方；其余停在正中 */
+  /** 一张封面图此刻的样子：手摆着的；正在走的按动画进度在起止之间取（和画出来的一样）；还没挂上的在转进来的地方；其余停在正中 */
   function poseOf(key: number): Pose {
     const angle = posed.get(key)
     if (angle !== undefined)
@@ -168,7 +168,7 @@
   function change(incoming: Song): void {
     const shown = discs.find(disc => disc.key === front)!
     if (shown.song.id === incoming.id) {
-      // 同一首歌的信息更新了（例如曲库同步换了封面地址）：照着换，不转。拖着时每次移动都走到这里，没变就什么都不做
+      // 同一首歌的信息更新了（例如曲库同步换了封面图地址）：照着换，不转。拖着时每次移动都走到这里，没变就什么都不做
       if (shown.song !== incoming)
         discs = discs.map(disc => (disc === shown ? { ...disc, song: incoming } : disc))
       return
@@ -192,7 +192,7 @@
       if (disc === back)
         continue
       const pose = poses.get(disc.key)!
-      // 已经看不见的（转走淡完了、拖着时转出一格的）直接拿掉：连着切歌时转盘上不堆着一摞透明的封面
+      // 已经看不见的（转走淡完了、拖着时转出一格的）直接拿掉：连着切歌时转盘上不堆着一摞透明的封面图
       if (pose.opacity < 0.01) {
         stop(disc.key)
         discs = discs.filter(other => other.key !== disc.key)
@@ -335,7 +335,7 @@
 <!-- span：播放条、手机播放页上放在按钮里 -->
 <span class='wheel' style:--pivot='{50 + WHEEL.pivot * 100}%'>
   {#each discs as disc (disc.key)}
-    <!-- 换了一张封面的信息（取大图、曲库同步换了地址）时 disc 是新的对象：挂载只看不变的 key，不然会重新挂一次、把正在走的动画停掉 -->
+    <!-- 换了一张封面图的信息（取大图、曲库同步换了地址）时 disc 是新的对象：挂载只看不变的 key，不然会重新挂一次、把正在走的动画停掉 -->
     {@const key = disc.key}
     <span class={['disc', key === front && 'front']} aria-hidden={key !== front} {@attach mount(key)}>
       <Cover url={disc.song.album.coverUrl} {size} {fluid} {eager} class={klass} placeholder={SMALL_COVER} load={disc.sharp} />

@@ -12,10 +12,10 @@ import { CHECK_INS, PLAYER, settled as requestResult } from './local'
 // - 每一份写进本机的播放队列、进度和打卡都带着同一个账号，打卡不会记到别人头上。
 
 /** 存着的播放队列那一份，加上它是哪个网易云账号的（换了别的账号登录就清空，规则⑩） */
-export interface StoredQueue extends SavedQueue { owner: number | null }
+interface StoredQueue extends SavedQueue { owner: number | null }
 
 /** 存着的播放队列和进度 */
-export interface StoredPlayer {
+interface StoredPlayer {
   /** 网易云账号的 uid；没登录时放的是 null */
   owner: number | null
   saved: SavedPlayer

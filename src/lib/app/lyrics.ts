@@ -7,7 +7,7 @@ import { endpoints } from '#lib/api/endpoints.js'
 // 会话一轮结束时 App 会清掉它；换了一首歌、旧一轮的回复不写进现在这首。
 
 /** 歌词没取到的原因 */
-export type LyricsFailure = SessionFailure
+type LyricsFailure = SessionFailure
 
 /** 打开的那首歌的歌词取到哪了 */
 export type LyricsState

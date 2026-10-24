@@ -32,7 +32,7 @@ import { noticeActions } from './notice'
 // 比那一刻晚确认的修改要叠回去，不然刚加进歌单的歌会从界面上消失（逻辑原型证明必须这样做）
 
 /** 同步没成功的原因；会话结束和请求节奏的等待都已经在会话一轮、后台通道里处理掉了 */
-export type SyncFailure = BackgroundFailure
+type SyncFailure = BackgroundFailure
 
 /** 打开歌单时没拉成的原因：前台请求不等，断网、操作频繁都直接说 */
 type OpenFailure = SessionFailure
@@ -97,7 +97,7 @@ export interface PlaylistSongs<P = Playlist> {
 }
 
 /** 听众打开的歌单还没同步全：正在用前台请求拉，或者没拉成 */
-export type PlaylistOpening
+type PlaylistOpening
   = | { status: 'loading' }
     | { status: 'failed', failure: OpenFailure }
 
@@ -136,7 +136,7 @@ export interface NeteasePlaylistSongs extends PlaylistSongs<PlaylistInfo> {
 type NeteasePlaylistPage = PageState<NeteasePlaylistSongs> | { status: 'unavailable', reason: PlaylistUnavailable }
 
 /** 这一页歌单的列表那一块显示什么（不含“没拉成”：那是 failure 的事） */
-export type PlaylistPageSongs
+type PlaylistPageSongs
   /** 还没拿到歌：骨架行 */
   = | { kind: 'loading' }
   /** 不在曲库里的歌单打不开（已被删除、不存在、别人的隐私歌单） */
