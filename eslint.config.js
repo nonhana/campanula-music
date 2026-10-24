@@ -1,8 +1,7 @@
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL } from 'node:url'
 
 import antfu from '@antfu/eslint-config'
 import { includeIgnoreFile } from '@eslint/config-helpers'
-import globals from 'globals'
 
 import { RESTRICTED_BROWSER_GLOBALS } from './src/lib/app/browser-globals.ts'
 
@@ -24,14 +23,6 @@ export default antfu(
     },
   },
   includeIgnoreFile(gitignorePath),
-  {
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
-    },
-  },
   {
     files: ['src/lib/app/**/*.ts'],
     ignores: ['src/lib/app/browser.ts'],

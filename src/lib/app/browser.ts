@@ -1,5 +1,11 @@
 import type { CoverCrop } from '#lib/api/cover.js'
-import { COVER_OUTPUT_MAX_BYTES, COVER_OUTPUT_MIN_QUALITY, COVER_OUTPUT_QUALITY, COVER_OUTPUT_SIZE, COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
+import {
+  COVER_OUTPUT_MAX_BYTES,
+  COVER_OUTPUT_MIN_QUALITY,
+  COVER_OUTPUT_QUALITY,
+  COVER_OUTPUT_SIZE,
+  COVER_WORK_MAX_SIDE,
+} from '#lib/api/cover.js'
 import { mock } from '#lib/mock-flag.js'
 
 /**
