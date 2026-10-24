@@ -62,7 +62,7 @@ export interface CollectTarget {
  * 听众正在看的那一页：App 自己决定什么时候去拉、副本到了要不要重拉、歌单进出曲库时怎么切换。
  * 页面只报告在看什么，不再各自判断“该不该打开”
  */
-export type ViewedPage
+type ViewedPage
   = | { kind: 'playlist', id: number }
     | { kind: 'album', id: number }
     | { kind: 'artist', id: number }

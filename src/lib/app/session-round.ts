@@ -33,7 +33,7 @@ export type Session
     | { status: 'signedIn', account: Account }
 
 /** 会话换了：登录、主动退出（本标签页或别的标签页）、登录失效、刚打开时没登录 */
-export type SessionChange
+type SessionChange
   = | { kind: 'anonymous' }
     | { kind: 'signedIn', account: Account }
     | { kind: 'signedOut', by: 'this-tab' | 'other-tab' }

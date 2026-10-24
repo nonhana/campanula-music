@@ -33,7 +33,7 @@ export function maxZoomOf({ width, height }: CropFrame): number {
 }
 
 /** 短边铺满取景框时，位图上的一个像素在框里有多大 */
-export function baseScaleOf({ width, height, size }: CropFrame): number {
+function baseScaleOf({ width, height, size }: CropFrame): number {
   return size / Math.min(width, height)
 }
 

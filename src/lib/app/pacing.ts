@@ -16,7 +16,7 @@ export type Waiting
     | { reason: 'offline' }
 
 /** 后台请求的结果：操作频繁和断网由这里等过、重发过，不会交给调用方 */
-export type BackgroundResult<T> = { ok: true, value: T } | { ok: false, failure: Exclude<RequestFailure, { kind: 'rateLimited' | 'offline' }> }
+type BackgroundResult<T> = { ok: true, value: T } | { ok: false, failure: Exclude<RequestFailure, { kind: 'rateLimited' | 'offline' }> }
 
 export interface BackgroundLane {
   /**

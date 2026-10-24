@@ -8,7 +8,7 @@ export interface RawFixture {
 }
 
 // SDK 2.4.0 decodeUpstreamBody 的 codes：模块把哪些 body.code 算成功。没列出来的模块只有 200
-export const SUCCESS_CODES: Record<string, readonly number[]> = {
+const SUCCESS_CODES: Record<string, readonly number[]> = {
   login_qr_check: [800, 801, 802, 803],
 }
 
@@ -16,7 +16,7 @@ export const SUCCESS_CODES: Record<string, readonly number[]> = {
  * 网易云限流时 SDK 建议等多久（秒）。SDK 2.4.0 的 retryAfterMs 读响应头 Retry-After，没有就是 30 秒；
  * 录制数据没有收录响应头，所以都按没有
  */
-export const DEFAULT_RETRY_AFTER = 30
+const DEFAULT_RETRY_AFTER = 30
 
 export function field(body: unknown, name: string): unknown {
   return typeof body === 'object' && body !== null && name in body ? (body as Record<string, unknown>)[name] : undefined
@@ -27,7 +27,7 @@ export function field(body: unknown, name: string): unknown {
  * SDK 就抛出，status 在 101~599 时等于 code，否则是 400。录制数据有的是 SDK 1.4.0 录的，
  * 录下的 status 不一定符合这个规矩（例如 status 200、code 400），所以只看 body.code
  */
-export function failureStatus(module: string, code: unknown): number | undefined {
+function failureStatus(module: string, code: unknown): number | undefined {
   if (typeof code !== 'number' || (SUCCESS_CODES[module] ?? [200]).includes(code))
     return undefined
   return code > 100 && code < 600 ? code : 400
@@ -37,7 +37,7 @@ export function failureStatus(module: string, code: unknown): number | undefined
  * 照 SDK 2.7.1 classifyConsumedRateLimit 认出网易云限流：返回码 429，或 405 且说明里有“操作频繁”“操作过于频繁”
  * （不看 HTTP 状态）
  */
-export function rateLimited(code: unknown, body: unknown): boolean {
+function rateLimited(code: unknown, body: unknown): boolean {
   const message = field(body, 'msg') ?? field(body, 'message')
   return code === 429 || (code === 405 && typeof message === 'string' && /操作(?:过于)?频繁/.test(message))
 }
@@ -46,7 +46,7 @@ export function rateLimited(code: unknown, body: unknown): boolean {
  * SDK 1.4.0 的 playlist_tracks 把返回多包了一层 { status, body: { code, … }, cookie }（tests/fixtures/netease/README.md）。
  * SDK 2.x 的 decodeResponse 遇到这层就取里面的 body 再判断成败、校验结构，这里照做：录制文件保持原样
  */
-export function unwrapped(module: string, body: unknown): unknown {
+function unwrapped(module: string, body: unknown): unknown {
   const inner = module === 'playlist_tracks' ? field(body, 'body') : undefined
   return typeof inner === 'object' && inner !== null ? inner : body
 }

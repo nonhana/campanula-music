@@ -3,7 +3,7 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 
-export const COVER_PREFIX = '/mock-assets/cover'
+const COVER_PREFIX = '/mock-assets/cover'
 export const AUDIO_PREFIX = '/mock-assets/audio'
 export const UPLOAD_PREFIX = '/mock-assets/uploads'
 export const UPLOAD_PATH = '/api/mock/upload'
@@ -22,7 +22,7 @@ function isExternal(value: string): boolean {
 }
 
 /** 封面、头像这类图片：同一条地址每次都给同一个本地图 */
-export function coverPath(url: string): string {
+function coverPath(url: string): string {
   const key = createHash('sha1').update(url).digest('hex').slice(0, 16)
   return `${COVER_PREFIX}/${key}.svg`
 }
