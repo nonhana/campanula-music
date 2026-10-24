@@ -1,8 +1,9 @@
 import type { PlaylistPage } from '#lib/app/library.js'
 import { formatCount, formatPlays } from '../text'
 
-// 歌单页专属的写法：头部资料按界面的写法排好、格子封面取多大。
+// 歌单页专属的写法：头部资料按界面的写法排好。
 // 哪些歌、失败显示在哪、能做什么，都在 App 的答案里（library.playlistPage）
+// 封面飞行两端共用的缩略图尺寸在 flight.ts（#75）。
 
 /** 歌单页的头部：把答案里的资料按界面的写法排好 */
 export interface PlaylistHeader {
@@ -38,10 +39,3 @@ export function playlistHeader(page: PlaylistPage): PlaylistHeader | null {
     tags: info.tags,
   }
 }
-
-/**
- * 歌单、专辑、歌手的格子（包括桌面歌单页的左栏）和它们页头的大封面都按这个尺寸（px）取缩略图：两头是同一个地址，
- * 从格子飞到页头时终点的图已经在缓存里，不会落在空的薄荷底上（ADR-0011）。
- * 页头比它小的（手机 168px）写成 fluid 再限宽，仍取这一张
- */
-export const FLIGHT_COVER_SIZE = 200

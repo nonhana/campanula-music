@@ -3,11 +3,11 @@
   专辑（一排横向架子）。每块右边“查看全部”切到那个标签（总数写在标签上，块标题旁不再写）。不做最佳匹配（作者定，DESIGN.md 桌面搜索）。
   四块各拉各的：还在拉的那块是形状一致的骨架，没拉成的那块说明原因、能重试，别的照常显示；
   一个都没有的那块不显示，四块都没有时只有“没有找到”的标题。手机上竖着排，歌单、歌手、专辑都是横向架子。
-  歌单、歌手、专辑的封面右下角压一个收藏小圆（CollectButton 的 corner，和格子的链接并排，不嵌在里面）；自建歌单、我喜欢的音乐在那里标“自建”
+  歌单、歌手、专辑的加载 / 失败 / 空和格宽交给 TileGrid（#75）；封面右下角的收藏小圆由 PlaylistTile / AlbumTile / ArtistTile 自己画。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
-  import type { SearchedPlaylist, SearchKind } from '#lib/api/search.js'
+  import type { SearchedItems, SearchedPlaylist, SearchKind } from '#lib/api/search.js'
   import type { SearchList } from '#lib/app/search.js'
   import { resolve } from '$app/paths'
   import { SearchX } from '@lucide/svelte'
@@ -15,17 +15,13 @@
   import { getAppView } from '../app-context.svelte'
   import AlbumTile from '../library/AlbumTile.svelte'
   import ArtistTile from '../library/ArtistTile.svelte'
-  import { collectState } from '../library/collect'
-  import CollectButton from '../library/CollectButton.svelte'
   import PlaylistTile from '../library/PlaylistTile.svelte'
-  import Shelf from '../library/Shelf.svelte'
-  import TileBone from '../library/TileBone.svelte'
-  import { fadeAway, reveal } from '../motion'
+  import TileGrid from '../library/TileGrid.svelte'
+  import { reveal } from '../motion'
   import SkeletonRows from '../songs/SkeletonRows.svelte'
   import SongList from '../songs/SongList.svelte'
   import { formatCount, yearOf } from '../text'
   import StateBlock from '../ui/StateBlock.svelte'
-  import Tag from '../ui/Tag.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import { selectSearchTab } from './search-box.svelte'
   import { KIND_WORDS, OVERVIEW_COUNTS, searchFailure, searchPath } from './view'
@@ -48,19 +44,16 @@
   const none = (list: SearchList) => list.status === 'shown' && list.items.length === 0
   const nothing = $derived([songs, playlists, artists, albums].every(none))
 
-  /** 桌面歌单那一排：1280px 以上 6 张，窄了 5 张、4 张；放不下的藏起来（不进 Tab 顺序），“查看全部”里都有。骨架和真的一样排 */
-  const PLAYLIST_ROW = 'grid grid-cols-4 gap-x-5 lg:grid-cols-5 xl:grid-cols-6'
-  function playlistCell(index: number): (string | false)[] {
-    return ['min-w-0', index === 4 && 'hidden lg:block', index === 5 && 'hidden xl:block']
+  const playlistItems = $derived(playlists.status === 'shown' ? playlists.items.slice(0, OVERVIEW_COUNTS.playlists) : null)
+  const artistItems = $derived(artists.status === 'shown' ? artists.items.slice(0, OVERVIEW_COUNTS.artists) : null)
+  const albumItems = $derived(albums.status === 'shown' ? albums.items.slice(0, OVERVIEW_COUNTS.albums) : null)
+
+  function failureOf(list: SearchList) {
+    if (list.status !== 'failed')
+      return null
+    const failed = searchFailure(list.failure)
+    return { title: failed.title, body: failed.body, retry: () => void view.app.openSearch(keyword) }
   }
-  /** 横向架子的格宽和间距（骨架和真的一样） */
-  const shelves = $derived({
-    playlists: { gap: 'gap-3', cell: 'w-[140px]' },
-    artists: { gap: phone ? 'gap-3' : 'gap-6', cell: phone ? 'w-[104px]' : 'w-[120px]' },
-    albums: { gap: phone ? 'gap-3' : 'gap-5', cell: phone ? 'w-[140px]' : 'w-[168px]' },
-  })
-  /** 架子骨架那一排：手机和真的架子一样离边 16px */
-  const shelfBones = (gap: string) => ['flex overflow-hidden pb-3 pt-1', gap, phone && 'px-4'].filter(Boolean).join(' ')
 
   /** “查看全部”：切到那个标签 */
   function seeAll(event: MouseEvent, kind: SearchKind) {
@@ -69,144 +62,68 @@
   }
 </script>
 
-{#snippet section(kind: SearchKind, list: SearchList, body: Snippet, bones: Snippet)}
+{#snippet section(kind: SearchKind, list: SearchList, body: Snippet)}
   {#if !none(list)}
     <section class={phone ? 'pt-5 first:pt-0' : 'pt-8 first:pt-0'} aria-labelledby={`overview-${kind}`}>
       <div class={['flex items-center gap-3', phone ? 'h-11 px-4' : 'mb-3']}>
         <h2 id={`overview-${kind}`} class={['text-neutral-900 font-600', phone ? 'text-title-sm' : 'text-title']}>{KIND_WORDS[kind].label}</h2>
         <TextButton href={resolve(searchPath(keyword, kind))} class={['ml-auto', phone ? '-mr-3' : 'h-9! -mr-4 px-4!']} onclick={event => seeAll(event, kind)}>查看全部</TextButton>
       </div>
-      <!-- 骨架和出错、内容放在同一串分支里：骨架换成内容时，骨架的淡出、内容的飘入才会播放。
-           淡出（out:fadeAway）写在每种骨架自己的最外层，这里不再包一层：两层都会让出高度，后面的内容被往上拉一截 -->
-      {#if list.status === 'failed'}
-        {@const failed = searchFailure(list.failure)}
-        <div in:reveal>
-          <StateBlock kind='error' title={failed.title} body={failed.body} action={{ label: '重试', run: () => void view.app.openSearch(keyword) }} />
-        </div>
-      {:else if list.status === 'loading'}
-        {@render bones()}
-      {:else}
-        <div in:reveal>{@render body()}</div>
-      {/if}
+      {@render body()}
     </section>
   {/if}
 {/snippet}
 
-{#snippet tileBones(count: number, listClass: string, cellClass: (index: number) => (string | false)[], round: boolean)}
-  <div class={listClass} role='status' aria-busy='true' aria-label='正在搜索' out:fadeAway>
-    {#each { length: count }, i (i)}
-      <TileBone class={cellClass(i)} {round} {phone} />
-    {/each}
-  </div>
-{/snippet}
-
 {#snippet songsBody()}
-  {#if songs.status === 'shown'}
-    <div class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}>
-      <SongList
-        list={{ kind: 'songs', songs: songs.items.slice(0, OVERVIEW_COUNTS.songs) }}
-        source={{ kind: 'search', keyword }}
-        {phone}
-        loadingLabel='正在搜索单曲'
-        bare
-        virtual={false}
-        label='单曲'
-      />
+  {#if songs.status === 'failed'}
+    <div in:reveal><StateBlock kind='error' title={searchFailure(songs.failure).title} body={searchFailure(songs.failure).body} action={{ label: '重试', run: () => void view.app.openSearch(keyword) }} /></div>
+  {:else if songs.status === 'loading'}
+    <!-- 白色面板就是骨架自己的最外层：整块一起淡出、让出高度（桌面 5 行是综合先列几首） -->
+    <SkeletonRows
+      count={OVERVIEW_COUNTS.songs}
+      {phone}
+      label='正在搜索单曲'
+      class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}
+    />
+  {:else}
+    <div in:reveal>
+      <div class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}>
+        <SongList
+          list={{ kind: 'songs', songs: songs.items.slice(0, OVERVIEW_COUNTS.songs) }}
+          source={{ kind: 'search', keyword }}
+          {phone}
+          loadingLabel='正在搜索单曲'
+          bare
+          virtual={false}
+          label='单曲'
+        />
+      </div>
     </div>
   {/if}
-{/snippet}
-
-{#snippet songsBones()}
-  <!-- 白色面板就是骨架自己的最外层：整块一起淡出、让出高度（桌面 5 行是综合先列几首） -->
-  <SkeletonRows
-    count={OVERVIEW_COUNTS.songs}
-    {phone}
-    label='正在搜索单曲'
-    class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}
-  />
 {/snippet}
 
 {#snippet playlistsBody()}
-  {#if playlists.status === 'shown'}
-    {@const first = playlists.items.slice(0, OVERVIEW_COUNTS.playlists)}
-    {#if phone}
-      <Shelf label='歌单' class={shelves.playlists.gap} phone>
-        {#each first as playlist (playlist.id)}
-          <li class={['relative min-w-0 flex-none', shelves.playlists.cell]}>
-            <PlaylistTile id={playlist.id} name={playlist.name} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={playlist.creator} phone />
-            {@render playlistCorner(playlist)}
-          </li>
-        {/each}
-      </Shelf>
-    {:else}
-      <!-- 一排封面（见 PLAYLIST_ROW） -->
-      <ul class={PLAYLIST_ROW} aria-label='歌单' data-reveal-group>
-        {#each first as playlist, i (playlist.id)}
-          <li class={['relative', playlistCell(i)]}>
-            <PlaylistTile id={playlist.id} name={playlist.name} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={playlist.creator} />
-            {@render playlistCorner(playlist)}
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  {/if}
-{/snippet}
-
-{#snippet playlistCorner(playlist: SearchedPlaylist)}
-  {@const target = { kind: 'playlist', id: playlist.id } as const}
-  {@const status = view.state.library && collectState(view.state.library, target)}
-  {#if status}
-    <!-- 和封面一样大的一格（自己不挡点击），收藏小圆或“自建”压在它的右下角（和 AlbumTile 的一样） -->
-    <div class='pointer-events-none absolute inset-x-0 top-0 aspect-square'>
-      {#if status === 'own'}
-        <span class='absolute bottom-2 right-2'><Tag>自建</Tag></span>
-      {:else}
-        <CollectButton {target} name={playlist.name} look='corner' class='pointer-events-auto absolute bottom-2 right-2' />
-      {/if}
-    </div>
-  {/if}
-{/snippet}
-
-{#snippet playlistsBones()}
-  <!-- 手机、桌面不用 {#if} 分开：{#if} 里面的 out:fadeAway 在骨架换成内容时不播 -->
-  {@render tileBones(
-    phone ? 3 : OVERVIEW_COUNTS.playlists,
-    phone ? shelfBones(shelves.playlists.gap) : PLAYLIST_ROW,
-    phone ? () => [shelves.playlists.cell, 'flex-none'] : playlistCell,
-    false,
-  )}
+  <TileGrid kind='playlist' layout={phone ? 'shelf' : 'overview'} {phone} items={playlistItems} label='歌单' loadingLabel='正在搜索歌单' failure={failureOf(playlists)}>
+    {#snippet tile(playlist: SearchedPlaylist)}
+      <PlaylistTile id={playlist.id} name={playlist.name} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={playlist.creator} collectable {phone} />
+    {/snippet}
+  </TileGrid>
 {/snippet}
 
 {#snippet artistsBody()}
-  {#if artists.status === 'shown'}
-    <Shelf label='歌手' class={shelves.artists.gap} {phone}>
-      {#each artists.items.slice(0, OVERVIEW_COUNTS.artists) as artist (artist.id)}
-        <li class={['min-w-0 flex-none', shelves.artists.cell]}>
-          <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首`} collectable />
-        </li>
-      {/each}
-    </Shelf>
-  {/if}
-{/snippet}
-
-{#snippet artistsBones()}
-  {@render tileBones(phone ? 4 : 9, shelfBones(shelves.artists.gap), () => [shelves.artists.cell, 'flex-none'], true)}
+  <TileGrid kind='artist' layout='shelf' {phone} items={artistItems} label='歌手' loadingLabel='正在搜索歌手' failure={failureOf(artists)}>
+    {#snippet tile(artist: SearchedItems['artists'])}
+      <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首`} collectable />
+    {/snippet}
+  </TileGrid>
 {/snippet}
 
 {#snippet albumsBody()}
-  {#if albums.status === 'shown'}
-    <Shelf label='专辑' class={shelves.albums.gap} {phone}>
-      {#each albums.items.slice(0, OVERVIEW_COUNTS.albums) as album (album.id)}
-        <li class={['min-w-0 flex-none', shelves.albums.cell]}>
-          <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} year={yearOf(album.publishedAt)} {phone} collectable />
-        </li>
-      {/each}
-    </Shelf>
-  {/if}
-{/snippet}
-
-{#snippet albumsBones()}
-  {@render tileBones(phone ? 3 : 7, shelfBones(shelves.albums.gap), () => [shelves.albums.cell, 'flex-none'], false)}
+  <TileGrid kind='album' layout='shelf' {phone} items={albumItems} label='专辑' loadingLabel='正在搜索专辑' failure={failureOf(albums)}>
+    {#snippet tile(album: SearchedItems['albums'])}
+      <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} year={yearOf(album.publishedAt)} {phone} collectable />
+    {/snippet}
+  </TileGrid>
 {/snippet}
 
 {#if nothing}
@@ -214,8 +131,8 @@
     <StateBlock kind='empty' icon={SearchX} title={`没有找到“${keyword}”`} />
   </div>
 {:else}
-  {@render section('songs', songs, songsBody, songsBones)}
-  {@render section('playlists', playlists, playlistsBody, playlistsBones)}
-  {@render section('artists', artists, artistsBody, artistsBones)}
-  {@render section('albums', albums, albumsBody, albumsBones)}
+  {@render section('songs', songs, songsBody)}
+  {@render section('playlists', playlists, playlistsBody)}
+  {@render section('artists', artists, artistsBody)}
+  {@render section('albums', albums, albumsBody)}
 {/if}

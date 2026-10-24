@@ -1,8 +1,9 @@
 <!--
   “已下载”页（#38，原型 DesktopDownloads / PhoneDownloads，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前。
   登录、没登录都是这一页：没登录时从登录页进来（外框是 SignedOutFrame），提示登录后可以红心、加入歌单。
-  桌面：200px 的拼贴封面头部（前四首的封面），标题、首数（没登录时加那句提示），播放全部和右边的搜索框；下面是白色面板里带表头的歌曲行。
-  手机：88px 的拼贴和标题一行，播放全部，下面单独一行搜索框，歌曲行直接放在晨光底上。
+  头部交给 DetailHeader（#75：自定义拼贴图、标题、首数、登录提示、播放全部、搜索、淡入、pageHeading 都在模块里）：
+  桌面是 200px 的拼贴封面，标题、首数（没登录时加那句提示），播放全部和右边的搜索框；手机是 88px 的拼贴和标题一行，
+  播放全部，下面单独一行搜索框。
   点一首（搜索结果里点也一样）就用整个已下载替换播放队列，播放来源是“已下载”。行的“更多”菜单里有删除下载。
   列表本身（骨架、空 / 搜不到、表头“找到几首”、虚拟化、行高）在 songs/SongList；头部的首数和列表对得上（DESIGN.md Do's）。
   返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot）
@@ -14,7 +15,7 @@
   import { CircleArrowDown, Info } from '@lucide/svelte'
   import { getAppView } from '../app-context.svelte'
   import { desktopLayout } from '../layout'
-  import { pageHeading } from '../shell/back-title.svelte'
+  import DetailHeader from '../library/DetailHeader.svelte'
   import PlayAllButton from '../songs/PlayAllButton.svelte'
   import SongList from '../songs/SongList.svelte'
   import { formatCount } from '../text'
@@ -29,6 +30,7 @@
   const view = getAppView()
   const all = $derived(view.state.downloads.songs)
   const signedIn = $derived(view.state.session.status === 'signedIn')
+  const phone = $derived(!desktopLayout.current)
   const term = $derived(query.trim())
   const songs = $derived(all && term ? view.app.searchDownloads(term) : all)
   /** 拼贴的封面：前四首（不同的封面） */
@@ -84,44 +86,26 @@
   </p>
 {/snippet}
 
-{#if desktopLayout.current}
-  <header class='flex gap-7 pt-2'>
-    {@render collage(200)}
-    <div class='min-w-0 flex flex-1 flex-col'>
-      <h1 class='text-headline text-neutral-900 font-600'>已下载</h1>
-      <p class='mt-2 text-label text-neutral-600 tabular-nums'>{all === null ? '　' : `${formatCount(all.length)} 首`}</p>
-      {#if !signedIn}
-        <div class='mt-2'>{@render signedOutNote(false)}</div>
-      {/if}
-      <div class='mt-auto flex items-center gap-2 pt-4'>
-        <PlayAllButton songs={all} source={SOURCE} />
-        {#if all && all.length > 0}
-          <SearchField label='在已下载里搜索' bind:value={query} class='ml-auto w-[280px]' />
-        {/if}
-      </div>
-    </div>
-  </header>
-  <div class='mt-6'>
-    <SongList list={listView} source={SOURCE} loadingLabel='正在读出这台设备上的下载' {search} skeleton={10} headerHidden={false} label='已下载的歌曲' />
-  </div>
-{:else}
-  <header class='px-4 pt-2'>
-    <div class='flex items-center gap-4'>
-      {@render collage(88)}
-      <div class='min-w-0'>
-        <h1 class='text-headline-sm text-neutral-900 font-600' {@attach pageHeading('已下载')}>已下载</h1>
-        <p class='mt-0.5 text-caption text-neutral-600 tabular-nums'>{all === null ? '　' : `${formatCount(all.length)} 首`}</p>
-      </div>
-    </div>
-    {#if !signedIn}
-      <div class='mt-4'>{@render signedOutNote(true)}</div>
-    {/if}
-    <div class='mt-4 flex items-center gap-2'>
-      <PlayAllButton songs={all} source={SOURCE} />
-    </div>
+<DetailHeader title='已下载' phoneLayout='row' trailingPhone>
+  {#snippet artwork(size: number)}
+    {@render collage(size)}
+  {/snippet}
+  {#snippet meta()}
+    <span class='tabular-nums'>{all === null ? '　' : `${formatCount(all.length)} 首`}</span>
+  {/snippet}
+  {#snippet note()}
+    {#if !signedIn}{@render signedOutNote(phone)}{/if}
+  {/snippet}
+  {#snippet actions()}
+    <PlayAllButton songs={all} source={SOURCE} />
+  {/snippet}
+  {#snippet trailing()}
     {#if all && all.length > 0}
-      <SearchField label='在已下载里搜索' bind:value={query} class='mt-4' />
+      <SearchField label='在已下载里搜索' bind:value={query} class={phone ? '' : 'w-[280px]'} />
     {/if}
-  </header>
-  <SongList list={listView} source={SOURCE} phone loadingLabel='正在读出这台设备上的下载' {search} skeleton={8} headerHidden={false} label='已下载的歌曲' />
-{/if}
+  {/snippet}
+</DetailHeader>
+
+<div class={phone ? '' : 'mt-6'}>
+  <SongList list={listView} source={SOURCE} loadingLabel='正在读出这台设备上的下载' {search} skeleton={phone ? 8 : 10} headerHidden={false} label='已下载的歌曲' {phone} />
+</div>

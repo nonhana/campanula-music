@@ -6,6 +6,7 @@ import {
   transformerDirectives,
   transformerVariantGroup,
 } from 'unocss'
+import { TILE_GRID_SAFELIST } from './src/lib/components/library/tile-grid'
 import { AXES, cssEasing, DELAYS, DURATIONS, EASINGS, FLOAT_DISTANCE, FLOAT_IN_DELAY, LOOPS, PAGE_DISTANCE, PRESS_SCALE, REDUCED_FADE_MS, STAGGER } from './src/lib/components/motion-tokens'
 
 // 设计系统的源头（DESIGN.md、.impeccable/design.json）：颜色、两档阴影、圆角、字号阶梯、动效和全局基础样式都在这里。
@@ -291,6 +292,8 @@ export default defineConfig<Theme>({
     presetRemToPx(),
   ],
   transformers: [transformerDirectives(), transformerVariantGroup()],
+  // 格子网格的格宽 / 列数 / 骨架排法在 tile-grid.ts 里拼出来，开发时的模块扫描看不到 .ts 字符串，这里显式带上
+  safelist: [...TILE_GRID_SAFELIST],
   shortcuts: {
     // 按下时轻轻缩一点（DESIGN.md Buttons）：可点的元素加 press（按钮常写 enabled:press）
     'press': 'active:scale-[var(--press-scale)]',

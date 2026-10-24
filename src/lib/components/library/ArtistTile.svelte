@@ -10,7 +10,7 @@
   import { langOf } from '../text'
   import Cover from '../ui/Cover.svelte'
   import CollectButton from './CollectButton.svelte'
-  import { FLIGHT_COVER_SIZE } from './view'
+  import { FLIGHT_COVER_SIZE } from './flight'
 
   interface Props {
     id: number
