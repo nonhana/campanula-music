@@ -626,7 +626,7 @@ describe('批量加入歌单', () => {
   it('目标只有其他自建歌单：当前歌单、收藏的歌单、我喜欢的音乐都不在里面', async () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
-    const targets = app.addTargets(JAZZ.id)
+    const targets = app.addTargets({ mode: 'multi', currentPlaylistId: JAZZ.id })
     expect(targets).not.toBeNull()
     expect(targets!.every(playlist => playlist.kind === 'own' && playlist.id !== JAZZ.id)).toBe(true)
     expect(targets!.map(playlist => playlist.id)).not.toContain(LIKED_ID)

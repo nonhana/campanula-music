@@ -46,11 +46,30 @@ export type ChangeFailure = OpenFailure | { kind: 'checkTokenUnavailable' } | { 
 /** 新建歌单的结果：建好了，或者没建成的原因 */
 export type CreateOutcome = { ok: true, playlistId: number } | { ok: false, failure: ChangeFailure }
 
-/** 批量加入歌单的结果：加了几首；一首都没加（都已经在歌单里了）也算成功。null：这一轮已经作废（退出、登录失效） */
+/** 一次把几首加入自建歌单（多选、添加歌曲）的结果：加了几首；一首都没加（都已经在歌单里了）也算成功。null：这一轮已经作废（退出、登录失效） */
 export type AddSongsOutcome
   = | { ok: true, added: number }
     | { ok: false, failure: ChangeFailure | { kind: 'missing' } }
     | null
+
+/** 加入歌单时一个目标不能选的理由：当前歌单、已红心、已在歌单里 */
+export type AddTargetBlock = 'currentPlaylist' | 'alreadyHearted' | 'alreadyInPlaylist'
+
+/** 加入歌单的一个目标：那张歌单，加上现在几首、能不能选（界面照着画，措辞留给自己） */
+export interface AddTarget extends Playlist {
+  /** 现在一共几首：拿到曲目编号后以编号为准（和列表上的首数对得上） */
+  readonly total: number
+  /** 不能选的理由；能选时是 null */
+  readonly blocked: AddTargetBlock | null
+}
+
+/**
+ * 加入歌单要哪些目标：单曲从我喜欢的音乐和自建歌单里选（heart 状态、歌在不在歌单里决定理由）；
+ * 多选只要当前歌单以外的自建歌单（Spec #11 #98：红心只能一首一首点，我喜欢的音乐和收藏的歌单不出现）
+ */
+export type AddTargetsRequest
+  = | { readonly mode: 'song', readonly song: Song, readonly currentPlaylistId: number | null }
+    | { readonly mode: 'multi', readonly currentPlaylistId: number }
 
 type SyncStatus
   /** 有一个同步请求在路上 */
@@ -317,10 +336,11 @@ export interface Library {
   /** 提示条换了：按当前的提示和副本重新发布一次曲库快照（App 的提示条换内容时用） */
   publish: () => void
   /**
-   * 批量“加入歌单”的目标：除了当前歌单以外的自建歌单（我喜欢的音乐、收藏的歌单不出现，不做批量红心）。
+   * 加入歌单的目标和不可选理由：单曲是我喜欢的音乐（在最前）和自建歌单，当前歌单、已红心、已在歌单里写明理由；
+   * 多选只有当前歌单以外的自建歌单（我喜欢的音乐、收藏的歌单不出现；红心只能一首一首点）。
    * 歌单列表还没拿到时是 null
    */
-  addTargets: (currentPlaylistId: number) => Playlist[] | null
+  addTargets: (request: AddTargetsRequest) => AddTarget[] | null
   /** 换封面成功：用网易云返回的封面地址写进副本（马上显示）；同步拿回来的旧数据上也会叠回去 */
   setCover: (playlistId: number, coverUrl: string) => Promise<void>
   /**
@@ -734,12 +754,38 @@ export function createLibrary(context: LibraryContext): Library {
     return deferred.flush(playlistId)
   }
 
-  /** 批量“加入歌单”的目标：除了当前歌单以外的自建歌单；歌单列表还没拿到时是 null */
-  function addTargets(currentPlaylistId: number): Playlist[] | null {
-    const playlists = replica?.playlists
+  /** 加入歌单的目标：规则（有哪些歌单、各自的理由、首数）只在这里一份（#73） */
+  function addTargets(request: AddTargetsRequest): AddTarget[] | null {
+    const current = replica
+    if (!current)
+      return null
+    // 界面看的是叠上未确认修改后的副本（和曲库页、列表上的首数一致）
+    const shownReplica = shown(current)
+    const playlists = shownReplica.playlists
     if (!playlists)
       return null
-    return playlists.filter(playlist => playlist.kind === 'own' && playlist.id !== currentPlaylistId)
+    // 单曲：我喜欢的音乐在最前，然后是自建歌单；多选按 Spec #98 去掉当前这张
+    const listed = request.mode === 'song'
+      ? [...playlists.filter(playlist => playlist.kind === 'liked'), ...playlists.filter(playlist => playlist.kind === 'own')]
+      : playlists.filter(playlist => playlist.kind === 'own' && playlist.id !== request.currentPlaylistId)
+    const song = request.mode === 'song' ? request.song : null
+    return listed.map((playlist) => {
+      const tracks = shownReplica.tracks.get(playlist.id)
+      const total = tracks ? tracks.trackIds.length : playlist.trackCount
+      // 界面“已在歌单里”= 基线交集：trackIds 有这首歌，且歌曲信息已经取到（等价于原来的 songs.some）。
+      // addSongs（多选/添加歌曲）写入去重只看 trackIds；单曲 addToPlaylist 不去重：
+      // 歌曲信息未到齐时会发一次重复加入，上游把重复 502 当成功，本地 no-op，提示仍是“已加入”。
+      // 要让界面和写入共用 trackIds 是行为收紧，需要另开票（#73 不夹带）。
+      const alreadyInPlaylist = song !== null && tracks?.trackIds.includes(song.id) === true && shownReplica.songs.has(song.id)
+      const blocked: AddTargetBlock | null = request.currentPlaylistId === playlist.id
+        ? 'currentPlaylist'
+        : song === null
+          ? null
+          : playlist.kind === 'liked'
+            ? (shownReplica.hearts?.includes(song.id) ? 'alreadyHearted' : null)
+            : alreadyInPlaylist ? 'alreadyInPlaylist' : null
+      return { ...playlist, total, blocked }
+    })
   }
 
   /** 一次加入几首：已经在歌单里的不再提交；全都已经在里面时什么都不发 */

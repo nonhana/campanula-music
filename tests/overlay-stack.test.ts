@@ -446,6 +446,32 @@ describe('审查反例的历史与来源失效', () => {
     expect(history.index).toBe(0)
   })
 
+  it('同一层按请求依赖来源：单曲那条不要求多选开着，多选那条随多选失效', async () => {
+    const history = new MemoryOverlayHistory('/playlists/1')
+    const stack = new OverlayStack<string>(history, { changed() {}, async rendered() {}, focus() {} }, 'session')
+    history.listen(phase => stack.reconcile(phase))
+    const selection = stack.register<{ from: string }>('selection', { history: () => false, modal: false })
+    const picker = stack.register<{ from: string, mode: 'song' | 'multi' }>('picker', {
+      history: () => false,
+      modal: false,
+      dependsOn: request => request.mode === 'multi' ? 'selection' : null,
+    })
+
+    // 歌曲菜单转交来的单曲选择器：多选没开也能打开
+    expect(await picker.open({ from: 'more', mode: 'song' })).toBe('committed')
+    expect(picker.request).toEqual({ from: 'more', mode: 'song' })
+    await picker.close()
+
+    // 多选打开的选择器：来源没开时打不开；开着才打开，来源失效就跟着没
+    expect(await picker.open({ from: 'select', mode: 'multi' })).toBe('cancelled')
+    await selection.open({ from: 'select' })
+    expect(await picker.open({ from: 'select', mode: 'multi' })).toBe('committed')
+    await selection.invalidate()
+    expect(picker.request).toBeNull()
+    expect(stack.top).toBeNull()
+    expect(history.index).toBe(0)
+  })
+
   it('来源变空保留独立播放页，其后关闭消费多选留下的物理槽', async () => {
     const { history, register } = scene()
     const selection = register('selection', { modal: false })

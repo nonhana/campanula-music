@@ -1,12 +1,11 @@
 import type { Component } from 'svelte'
-import type { BatchPickerRequest, DialogRequest, EditorRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
+import type { AddToPlaylistRequest, DialogRequest, EditorRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
 import type { LayerOptions } from './overlay-stack'
 import { onDestroy, onMount, tick } from 'svelte'
 import { createSubscriber } from 'svelte/reactivity'
 import AddSongs from './AddSongs.svelte'
 import AddToPlaylist from './AddToPlaylist.svelte'
 import { getAppView } from './app-context.svelte'
-import BatchAddToPlaylist from './BatchAddToPlaylist.svelte'
 import CoverEditor from './CoverEditor.svelte'
 import { desktopLayout } from './layout'
 import { PlaylistSelection } from './library/playlist-selection.svelte'
@@ -72,9 +71,12 @@ export function createOverlays() {
 
   // 每一层只登记一次：历史策略、组件、焦点和业务的关闭钩子。
   const songMenu = register<SongMenuRequest>('song-menu', menu, SongMenu)
-  const playlistPicker = register<SongMenuRequest>('playlist-picker', menu, AddToPlaylist)
+  // 单曲和多选共用一个选择器（#73）：多选那条请求不能比多选层活得更久，单曲的不依赖它
+  const playlistPicker = register<AddToPlaylistRequest>('playlist-picker', {
+    ...menu,
+    dependsOn: request => request.mode === 'multi' ? 'selection' : null,
+  }, AddToPlaylist)
   const playlistMenu = register<PlaylistMenuRequest>('playlist-menu', menu, PlaylistMenu)
-  const batchPicker = register<BatchPickerRequest>('batch-picker', { ...menu, dependsOn: 'selection' }, BatchAddToPlaylist)
   const playlistEditor = register<EditorRequest>('playlist-editor', dialog, PlaylistEditor)
   const addSongsDialog = register<PlaylistRequest>('add-songs', { ...dialog, fallback: '[data-add-songs-entry]' }, AddSongs)
   const coverEditor = register<PlaylistRequest>('cover-editor', {
@@ -106,7 +108,7 @@ export function createOverlays() {
     focusReturn: () => playlistSelection.returnTarget(),
     dismissed: () => playlistSelection.clear(),
   })
-  playlistSelection = new PlaylistSelection(selection, batchPicker, view.app)
+  playlistSelection = new PlaylistSelection(selection, playlistPicker, view.app)
   // 滚动条从这里知道“正在多选”，让开右边的触屏把手（#66）
   setSelectionMode(() => playlistSelection.mode)
   const playerDrawer = createDrawer(() => window.innerHeight)
@@ -118,5 +120,5 @@ export function createOverlays() {
   })
   onDestroy(() => stack.clear())
 
-  return { stack, mounted, songMenu, playlistPicker, playlistMenu, batchPicker, playlistEditor, addSongsDialog, coverEditor, logoutConfirm, player, queue, selection, playlistSelection, playerDrawer, playerLayer }
+  return { stack, mounted, songMenu, playlistPicker, playlistMenu, playlistEditor, addSongsDialog, coverEditor, logoutConfirm, player, queue, selection, playlistSelection, playerDrawer, playerLayer }
 }

@@ -1,6 +1,6 @@
 import type { Playlist, Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
-import type { BatchPickerRequest, DialogRequest, MenuAnchor } from '../overlay-requests'
+import type { AddToPlaylistRequest, DialogRequest, MenuAnchor } from '../overlay-requests'
 import type { OverlayLayer, OverlayResult } from '../overlay-stack'
 import type { Checked, SelectionCapabilities } from './selection-core'
 import { tick, untrack } from 'svelte'
@@ -29,16 +29,16 @@ export interface SelectionSource {
 
 export class PlaylistSelection {
   private readonly layer: OverlayLayer<DialogRequest, HTMLElement>
-  private readonly batchPicker: OverlayLayer<BatchPickerRequest, HTMLElement>
+  private readonly playlistPicker: OverlayLayer<AddToPlaylistRequest, HTMLElement>
   private readonly app: App
 
   constructor(
     layer: OverlayLayer<DialogRequest, HTMLElement>,
-    batchPicker: OverlayLayer<BatchPickerRequest, HTMLElement>,
+    playlistPicker: OverlayLayer<AddToPlaylistRequest, HTMLElement>,
     app: App,
   ) {
     this.layer = layer
-    this.batchPicker = batchPicker
+    this.playlistPicker = playlistPicker
     this.app = app
   }
 
@@ -176,7 +176,7 @@ export class PlaylistSelection {
   }
 
   /**
-   * 加入歌单：打开批量目标（当前歌单不可选、收藏的歌单和我喜欢的音乐不出现）。
+   * 加入歌单：打开选歌单（目标只有当前歌单以外的自建歌单，收藏的歌单和我喜欢的音乐不出现）。
    * anchor 由调用方按入口给：桌面工具条贴按钮，手机操作条固定底部弹层（null）。
    */
   addPicked(event: MouseEvent, anchor: MenuAnchor | null): void {
@@ -184,7 +184,8 @@ export class PlaylistSelection {
     if (!source || this.picked.length === 0)
       return
     const from = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-    void this.batchPicker.open({
+    void this.playlistPicker.open({
+      mode: 'multi',
       songs: this.picked,
       currentPlaylistId: source.playlistId,
       from,
@@ -192,7 +193,7 @@ export class PlaylistSelection {
     })
   }
 
-  /** 选了目标：收起多选（和上面的批量目标），再把菜单打开时看到的那几首一次加进去 */
+  /** 选了目标：收起多选（和上面打开的选歌单），再把菜单打开时看到的那几首一次加进去 */
   async addTo(playlistId: number, songs: readonly Song[]): Promise<void> {
     const result = await this.leave()
     if (result === 'committed')
