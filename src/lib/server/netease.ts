@@ -410,7 +410,8 @@ interface NeteaseSong {
   id: number
   name: string
   ar: readonly Credit[]
-  al: { id: number, name: string | null, picUrl: string }
+  // 单曲搜索（cloudsearch）里专辑名是可选的（SDK 2.13.0 起），其余接口都是必有的
+  al: { id: number, name?: string | null, picUrl: string }
   dt: number
 }
 
@@ -435,7 +436,7 @@ function songOf(song: NeteaseSong, privilege: Privilege): Song {
     id: song.id,
     name: song.name,
     artists: song.ar.map(creditOf),
-    album: { id: song.al.id, name: song.al.name, coverUrl: song.al.picUrl },
+    album: { id: song.al.id, name: song.al.name ?? null, coverUrl: song.al.picUrl },
     duration: song.dt,
     availability: availabilityOf(privilege),
   }
