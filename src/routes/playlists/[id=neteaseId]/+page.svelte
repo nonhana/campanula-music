@@ -3,6 +3,8 @@
   （窄于 1024px 时左栏收起，DESIGN.md Layout）；不在曲库里的歌单和专辑页一样是一栏，不显示左栏，和自己的歌单区分开。
   手机是二级页面：返回栏、居中的封面头部、简介卡片、歌单内搜索、歌曲行。
   每张歌单都在信息行下面显示标签，在头部下面显示简介（和专辑页共用的 Description，截断后可以展开），手机也一样。
+  头部交给 DetailHeader（#75：封面、标题、信息行、标签、动作、尾部搜索、骨架、淡入、pageHeading、封面飞行终点都在模块里）；
+  左栏的每一项用 PlaylistTile 的 nav 画法，不再另画一张歌单卡。
   打开时这张歌单还没同步全，App 就马上用前台请求拉它（viewing 之后由 App 决定），不等后台同步；
   不在曲库里的歌单不存进本机，每次打开都由 App 联网取。页面只读 App 给的答案（state.library.playlistPage）。
   页头信息行不写类别（方封面和旁边的按钮已经说明是歌单）。
@@ -24,23 +26,22 @@
   import { desktopLayout } from '#lib/components/layout.js'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
+  import DetailHeader from '#lib/components/library/DetailHeader.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
-  import { FLIGHT_COVER_SIZE, playlistHeader } from '#lib/components/library/view.js'
+  import PlaylistTile from '#lib/components/library/PlaylistTile.svelte'
+  import { playlistHeader } from '#lib/components/library/view.js'
   import { anchorBelow } from '#lib/components/menu-anchor.js'
-  import { atOnce, fadeAway, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
+  import { atOnce, reveal, scrollBehavior, stagger } from '#lib/components/motion.js'
   import { getOverlays } from '#lib/components/overlay-context.js'
   import { playlistName } from '#lib/components/playlist-text.js'
-  import { pageHeading } from '#lib/components/shell/back-title.svelte.js'
   import { scrollSnapshot } from '#lib/components/snapshot.js'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
-  import { formatCount, langOf } from '#lib/components/text.js'
+  import { langOf } from '#lib/components/text.js'
   import Button from '#lib/components/ui/Button.svelte'
-  import Cover from '#lib/components/ui/Cover.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
   import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
-  import Tag from '#lib/components/ui/Tag.svelte'
   import ToolButton from '#lib/components/ui/ToolButton.svelte'
 
   const { params }: PageProps = $props()
@@ -53,6 +54,7 @@
   /** 不在曲库里的歌单（歌单列表已经拿到、里面没有它） */
   const outside = $derived(page?.inLibrary === false)
   const header = $derived(page && playlistHeader(page))
+  const phone = $derived(!desktopLayout.current)
   /** 页头大封面代表这一页：从格子点进来时，格子的封面飞到这里（Cover 的 flight） */
   const here = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 
@@ -129,73 +131,61 @@
 
 <svelte:head><title>{name || '歌单'} · Campanula</title></svelte:head>
 
-{#snippet metaLine(phone: boolean)}
+{#snippet headerMeta()}
   {#if header}
-    <p class={['flex flex-wrap items-center gap-x-1.5 text-neutral-600', phone ? 'mt-1.5 justify-center text-caption' : 'mt-2 text-label']}>
-      {#each header.meta as part, i (i)}
-        {#if i > 0}<span aria-hidden='true'>·</span>{/if}
-        <span class='tabular-nums' lang={i === 0 ? langOf(part) : undefined}>{part}</span>
-      {/each}
-      {#if header.private}<span class='inline-flex items-center' role='img' aria-label='隐私歌单' title='隐私歌单'><Lock size={13} aria-hidden='true' /></span>{/if}
-    </p>
+    {#each header.meta as part, i (i)}
+      {#if i > 0}<span aria-hidden='true'>·</span>{/if}
+      <span class='tabular-nums' lang={i === 0 ? langOf(part) : undefined}>{part}</span>
+    {/each}
+    {#if header.private}<span class='inline-flex items-center' role='img' aria-label='隐私歌单' title='隐私歌单'><Lock size={13} aria-hidden='true' /></span>{/if}
   {/if}
 {/snippet}
 
-{#snippet actions()}
-  <div class='flex flex-wrap items-center gap-2'>
-    <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
-    {#if own}
-      <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
-    {/if}
-    {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !playlistSelection.mode}
-      <span class='contents' bind:this={desktopEntry}>
-        <Button
-          variant='outline'
-          icon={ListChecks}
-          onclick={(event: MouseEvent) => playlistSelection.enter({
-            from: event.currentTarget as HTMLElement,
-            focusFirst: true,
-            focusEntry: desktopEntryFocus,
-          })}
-        >{sortableList ? '多选 · 排序' : '多选'}</Button>
-      </span>
-    {/if}
-    {#if page?.can.collect}
-      <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
-    {/if}
-    {#if own}
-      <IconButton icon={Ellipsis} label='歌单操作：{name}' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />
-    {/if}
-  </div>
+{#snippet headerActions()}
+  <PlayAllButton songs={shown?.kind === 'songs' ? shown.songs : null} source={{ kind: 'playlist', id }} />
+  {#if own}
+    <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
+  {/if}
+  {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !playlistSelection.mode}
+    <span class='contents' bind:this={desktopEntry}>
+      <Button
+        variant='outline'
+        icon={ListChecks}
+        onclick={(event: MouseEvent) => playlistSelection.enter({
+          from: event.currentTarget as HTMLElement,
+          focusFirst: true,
+          focusEntry: desktopEntryFocus,
+        })}
+      >{sortableList ? '多选 · 排序' : '多选'}</Button>
+    </span>
+  {/if}
+  {#if page?.can.collect}
+    <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
+  {/if}
+  {#if own}
+    <IconButton icon={Ellipsis} label='歌单操作：{name}' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />
+  {/if}
+{/snippet}
+
+{#snippet headerSearch()}
+  <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
 {/snippet}
 
 {#snippet mainColumn(library: LibraryState)}
-  <!-- 首次同步时歌单列表到了才有页头：飘进来，不一下冒出来；带着页头打开这一页时不飘 -->
-  {#if header}
-    <header class='flex gap-7' in:reveal>
-      <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} eager flight={here} class='rounded-xl shadow-ambient' />
-      <div class='min-w-0 flex flex-1 flex-col pt-1'>
-        <h1 class='line-clamp-2 break-words text-headline text-neutral-900 font-600' lang={langOf(name)}>{name}</h1>
-        {@render metaLine(false)}
-        {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
-        <div class='mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'>
-          {@render actions()}
-          <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
-        </div>
-      </div>
-    </header>
-  {:else if outside}
-    <div class='flex gap-7' aria-hidden='true' out:fadeAway>
-      <span class='bone size-[200px] flex-none rounded-xl'></span>
-      <div class='min-w-0 flex flex-1 flex-col pt-2'>
-        <span class='bone h-7 w-2/5 rounded-full'></span>
-        <span class='bone mt-4 h-3.5 w-1/4 rounded-full'></span>
-      </div>
-    </div>
-  {/if}
+  <DetailHeader
+    ready={!!header}
+    cover={{ url: header?.coverUrl ?? null }}
+    title={name}
+    flight={here}
+    tags={header?.tags ?? []}
+  >
+    {#snippet meta()}{@render headerMeta()}{/snippet}
+    {#snippet actions()}{@render headerActions()}{/snippet}
+    {#snippet trailing()}{@render headerSearch()}{/snippet}
+  </DetailHeader>
   <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
-  {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} />{/key}</div>{/if}
-  <div class='mt-6'><PlaylistSongs {library} playlistId={id} bind:query entryFocus={desktopEntryFocus} /></div>
+  {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} {phone} />{/key}</div>{/if}
+  <div class={phone ? '' : 'mt-6'}><PlaylistSongs {library} playlistId={id} bind:query entryFocus={desktopEntryFocus} {phone} /></div>
 {/snippet}
 
 {#if library && page && page.songs.kind === 'unavailable'}
@@ -221,53 +211,34 @@
   </div>
 {:else if library && desktopLayout.current && outside}
   <!-- 不在曲库里的歌单：和专辑页一样一栏，不显示左栏 -->
-  <div class='pt-2'>{@render mainColumn(library)}</div>
+  {@render mainColumn(library)}
 {:else if library && desktopLayout.current}
   <!-- 左栏在视觉上排在前面，但 Tab 先到这张歌单（搜索、列表），不用先走完几十张歌单 -->
   <div class='grid items-start gap-8 lg:grid-cols-[208px_minmax(0,1fr)]'>
-    <div class='min-w-0 pt-2 lg:col-start-2 lg:row-start-1'>{@render mainColumn(library)}</div>
+    <div class='min-w-0 lg:col-start-2 lg:row-start-1'>{@render mainColumn(library)}</div>
 
     <nav bind:this={sideNav} class='sticky top-20 hidden max-h-[calc(100dvh-112px)] overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block' aria-label='曲库里的歌单'>
       <Scrollbar />
       <ul class='flex flex-col gap-1 px-2'>
         {#each library.playlists ?? [] as item, i (item.id)}
           {@const current = item.id === id}
-          {@const itemName = playlistName(item)}
-          {@const itemPage = resolve('/playlists/[id=neteaseId]', { id: item.id })}
           <!-- 首次同步时歌单列表到了，左栏的歌单依次飘入；之后同步来的新歌单也飘进来 -->
           <li in:stagger={{ order: i }}>
-            <a
-              href={itemPage}
-              class={['block rounded-xl p-4 transition-colors duration-feedback', current ? 'bg-primary-100' : 'mouse:hover:bg-white']}
-              aria-current={current ? 'page' : undefined}
-            >
-              <!-- 左栏的封面也是格子：点了飞到右边页头，返回时飞回这里（Cover 的 flight） -->
-              <Cover url={item.coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={itemPage} class='rounded-lg' />
-              <span class={['mt-2.5 block truncate text-label font-500', current ? 'text-primary-950' : 'text-neutral-900']} lang={langOf(itemName)}>{itemName}</span>
-              <span class={['mt-0.5 block text-caption tabular-nums', current ? 'text-primary-900' : 'text-neutral-600']}>{formatCount(current ? listedCount ?? item.trackCount : item.trackCount)} 首</span>
-            </a>
+            <PlaylistTile
+              id={item.id}
+              name={playlistName(item)}
+              coverUrl={item.coverUrl}
+              trackCount={current ? listedCount ?? item.trackCount : item.trackCount}
+              creator={null}
+              locked={item.private}
+              look='nav'
+              {current}
+            />
           </li>
         {/each}
       </ul>
     </nav>
   </div>
 {:else if library}
-  {#if header}
-    <header class='px-4 pt-2 text-center' in:reveal>
-      <Cover url={header.coverUrl} size={FLIGHT_COVER_SIZE} fluid eager flight={here} class='mx-auto max-w-[168px] rounded-xl shadow-ambient' />
-      <h1 class='line-clamp-2 mt-4 text-headline-sm text-neutral-900 font-600' lang={langOf(name)} {@attach pageHeading(name)}>{name}</h1>
-      {@render metaLine(true)}
-      {#if header.tags.length > 0}<p class='mt-2.5 flex flex-wrap justify-center gap-1.5'>{#each header.tags as tag (tag)}<Tag>{tag}</Tag>{/each}</p>{/if}
-      <div class='mt-4 flex justify-center'>{@render actions()}</div>
-    </header>
-  {:else if outside}
-    <div class='px-4 pt-2' aria-hidden='true' out:fadeAway>
-      <span class='bone mx-auto size-[168px] rounded-xl'></span>
-      <span class='bone mx-auto mt-5 h-6 w-1/2 rounded-full'></span>
-      <span class='bone mx-auto mt-3 h-3 w-1/3 rounded-full'></span>
-    </div>
-  {/if}
-  <!-- 换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
-  {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} phone />{/key}</div>{/if}
-  <PlaylistSongs {library} playlistId={id} bind:query phone />
+  {@render mainColumn(library)}
 {/if}

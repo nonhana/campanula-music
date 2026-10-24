@@ -4,34 +4,32 @@
   （桌面是实心胶囊，手机是文字按钮）；排序时不写使用说明，把手自己说话。
   手机保持横版列表、按每行右边的把手拖；桌面保持原来的封面网格，每张自建歌单封面右上角一个小白圆钮，按住它拖，
   卡片浮起、原位置留薄荷封面空位、其余卡片让位。收藏的歌单在下面，没有把手、不参与排序。
-  歌单列表还没拿到时两块都是骨架，没拿到就出错时能重试，一块一张都没有时只有一行标题。
-  骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）；手机换筛选/排序时整个格子先淡出再淡入，不让一个个格子各自挪位
-  （DESIGN.md Overlays · 筛选）。heading：歌单页 / 首页歌单区块的区块标题，两块各有自己的分节标题。
+  两块共用 TileGrid 的加载 / 失败 / 空 / 条目状态机；歌单卡本身只有 PlaylistTile 一种画法（#75）。
+  骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）；手机排序时整个格子先淡出再淡入，不让一个个格子各自挪位。
+  heading：歌单页 / 首页歌单区块的区块标题，两块各有自己的分节标题。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { Playlist } from '#lib/api/library.js'
   import type { LibraryState } from '#lib/app/library.js'
-  import { resolve } from '$app/paths'
-  import { ArrowUpDown, ListMusic, Lock, Plus } from '@lucide/svelte'
+  import { ArrowUpDown, ListMusic, Plus } from '@lucide/svelte'
   import { tick } from 'svelte'
   import { flip } from 'svelte/animate'
   import { getAppView } from '../app-context.svelte'
   import { failureText } from '../failure'
-  import { fade, fadeAway, fadeThrough, moveMs, reveal } from '../motion'
+  import { fade, fadeThrough, moveMs, reveal } from '../motion'
   import { DURATIONS } from '../motion-tokens'
   import { getOverlays } from '../overlay-context'
   import { playlistName } from '../playlist-text'
-  import { formatCount, langOf } from '../text'
-  import Cover from '../ui/Cover.svelte'
+  import { formatCount } from '../text'
   import StateBlock from '../ui/StateBlock.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import ToolButton from '../ui/ToolButton.svelte'
   import DragGrip from './DragGrip.svelte'
   import { PlaylistSort } from './playlist-sort.svelte'
   import PlaylistTile from './PlaylistTile.svelte'
-  import TileBone from './TileBone.svelte'
-  import { FLIGHT_COVER_SIZE } from './view'
+  import { tileGridLook } from './tile-grid'
+  import TileGrid from './TileGrid.svelte'
 
   interface Props {
     library: LibraryState
@@ -49,8 +47,8 @@
   /** 只有自建歌单参与排序；一张、还没有时没有可排的 */
   const canOrder = $derived((own?.length ?? 0) > 1)
   const sectionTag = $derived(`h${sectionLevel}`)
-  /** 骨架和真的网格一样排（DESIGN.md Do's：形状一致的骨架） */
-  const gridClass = $derived(['grid', phone ? 'grid-cols-2 gap-x-3 gap-y-5 px-4 pt-4' : 'grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-x-5 gap-y-6'])
+  /** 排序时的桌面网格和普通网格用同一份格宽 */
+  const desktopGrid = $derived(tileGridLook('playlist', 'grid', false))
 
   let sorting = $state(false)
   /** 键盘移动后给读屏的一句话 */
@@ -123,28 +121,16 @@
   const EMPTY = { own: '还没有自建歌单', collected: '还没有收藏的歌单' }
 </script>
 
-{#snippet sortGridCard(playlist: Playlist)}
-  <Cover url={playlist.coverUrl} size={FLIGHT_COVER_SIZE} fluid class='rounded-lg shadow-ambient' />
-  <span class='mt-2.5 block truncate text-label text-neutral-900 font-500' lang={langOf(playlist.name)}>{playlistName(playlist)}</span>
-  <span class='mt-0.5 min-w-0 flex items-center gap-1 text-caption text-neutral-600'>
-    <span class='flex-none tabular-nums'>{formatCount(playlist.trackCount)} 首</span>
-    {#if playlist.private}
-      <Lock size={12} class='flex-none' aria-hidden='true' /><span class='sr-only'>隐私歌单</span>
-    {/if}
-  </span>
-{/snippet}
-
-{#snippet sortRow(playlist: Playlist)}
-  <Cover url={playlist.coverUrl} size={40} class='rounded-md' />
-  <span class='min-w-0 flex-1'>
-    <span class='block truncate text-label text-neutral-900 font-500' lang={langOf(playlist.name)}>{playlistName(playlist)}</span>
-    <span class='mt-0.5 flex items-center gap-1 text-caption text-neutral-600'>
-      <span class='flex-none tabular-nums'>{formatCount(playlist.trackCount)} 首</span>
-      {#if playlist.private}
-        <Lock size={12} class='flex-none' aria-hidden='true' /><span class='sr-only'>隐私歌单</span>
-      {/if}
-    </span>
-  </span>
+{#snippet ownTile(playlist: Playlist)}
+  <PlaylistTile
+    id={playlist.id}
+    name={playlistName(playlist)}
+    coverUrl={playlist.coverUrl}
+    trackCount={playlist.trackCount}
+    creator={null}
+    locked={playlist.private}
+    {phone}
+  />
 {/snippet}
 
 <svelte:window onkeydown={onWindowKeydown} />
@@ -178,41 +164,22 @@
     </div>
 
     {#if own === null}
-      <div class={gridClass} role='status' aria-busy='true' aria-label='正在加载自建歌单' out:fadeAway>
-        {#each { length: phone ? 4 : 6 }, i (i)}
-          <TileBone {phone} />
-        {/each}
-      </div>
-    {:else}
-      <div in:reveal>
-        {#if phone}
-          {#key sorting ? 'sort' : 'own'}
-            <div transition:fadeThrough>
-              {#if sorting}
-                <ul
-                  class='w-full flex flex-col gap-2 px-4 pb-8'
-                  aria-label='自建歌单，正在排序'
-                  data-playlist-sort
-                >
-                  {#each sorted as playlist (playlist.id)}
-                    <li data-playlist-id={playlist.id} class='relative' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
-                      <div class={['h-14 flex items-center gap-3 rounded-xl pl-3 pr-2', sort.lifted(playlist.id) ? 'bg-primary-100' : 'bg-white shadow-ambient']}>
-                        <div class={['flex min-w-0 flex-1 items-center gap-3', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
-                          <a href={resolve('/playlists/[id=neteaseId]', { id: playlist.id })} class='min-w-0 flex flex-1 items-center gap-3 rounded-lg' onkeydown={onListKeydown}>
-                            {@render sortRow(playlist)}
-                          </a>
-                          <DragGrip label={playlistName(playlist)} size='phone' attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
-                        </div>
-                      </div>
-                    </li>
-                  {/each}
-                </ul>
-              {:else if own.length === 0}
-                <StateBlock kind='empty' icon={ListMusic} title={EMPTY.own} />
-              {:else}
-                <ul class={gridClass} aria-label='自建歌单' data-reveal-group>
-                  {#each own as playlist (playlist.id)}
-                    <li class='min-w-0'>
+      <TileGrid kind='playlist' layout='grid' {phone} items={null} label='自建歌单' loadingLabel='正在加载自建歌单'>
+        {#snippet tile(playlist: Playlist)}{@render ownTile(playlist)}{/snippet}
+      </TileGrid>
+    {:else if phone}
+      {#key sorting ? 'sort' : 'own'}
+        <div transition:fadeThrough>
+          {#if sorting}
+            <ul
+              class='w-full flex flex-col gap-2 px-4 pb-8'
+              aria-label='自建歌单，正在排序'
+              data-playlist-sort
+            >
+              {#each sorted as playlist (playlist.id)}
+                <li data-playlist-id={playlist.id} class='relative' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
+                  <div class={['h-14 flex items-center gap-3 rounded-xl pl-3 pr-2', sort.lifted(playlist.id) ? 'bg-primary-100' : 'bg-white shadow-ambient']}>
+                    <div class={['flex min-w-0 flex-1 items-center gap-3', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
                       <PlaylistTile
                         id={playlist.id}
                         name={playlistName(playlist)}
@@ -220,55 +187,57 @@
                         trackCount={playlist.trackCount}
                         creator={null}
                         locked={playlist.private}
-                        phone
+                        look='row'
+                        onkeydown={onListKeydown}
                       />
-                    </li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
-          {/key}
-        {:else}
-          {#if own.length === 0}
-            <StateBlock kind='empty' icon={ListMusic} title={EMPTY.own} />
-          {:else}
-            <ul
-              class={gridClass}
-              aria-label={sorting ? '自建歌单，正在排序' : '自建歌单'}
-              data-playlist-sort
-              data-reveal-group
-            >
-              {#each (sorting ? sorted : own) as playlist (playlist.id)}
-                {@const ownCard = sorting}
-                <li data-playlist-id={ownCard ? playlist.id : undefined} class='relative min-w-0' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
-                  <div class={['transition-opacity', ownCard && sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
-                    <PlaylistTile
-                      id={playlist.id}
-                      name={playlistName(playlist)}
-                      coverUrl={playlist.coverUrl}
-                      trackCount={playlist.trackCount}
-                      creator={null}
-                      locked={playlist.private}
-                      onkeydown={ownCard ? onListKeydown : undefined}
-                    />
+                      <DragGrip label={playlistName(playlist)} size='phone' attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
+                    </div>
                   </div>
-                  {#if ownCard && sort.lifted(playlist.id)}
-                    <div class='pointer-events-none absolute inset-x-0 top-0 aspect-square rounded-lg bg-primary-100'></div>
-                  {/if}
-                  {#if ownCard}
-                    <span
-                      class={['absolute right-2 top-2 z-10', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}
-                      in:fade={{ duration: DURATIONS.feedback }}
-                    >
-                      <DragGrip label={playlistName(playlist)} size='desktop' overlay attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
-                    </span>
-                  {/if}
                 </li>
               {/each}
             </ul>
+          {:else}
+            <TileGrid kind='playlist' layout='grid' {phone} items={own} label='自建歌单' loadingLabel='正在加载自建歌单' empty={{ icon: ListMusic, title: EMPTY.own }}>
+              {#snippet tile(playlist: Playlist)}{@render ownTile(playlist)}{/snippet}
+            </TileGrid>
           {/if}
-        {/if}
-      </div>
+        </div>
+      {/key}
+    {:else if sorting}
+      <ul
+        class={['grid', desktopGrid.list]}
+        aria-label='自建歌单，正在排序'
+        data-playlist-sort
+      >
+        {#each sorted as playlist (playlist.id)}
+          <li data-playlist-id={playlist.id} class='relative min-w-0' animate:flip={{ duration: moveMs(DURATIONS.state) }}>
+            <div class={['transition-opacity', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
+              <PlaylistTile
+                id={playlist.id}
+                name={playlistName(playlist)}
+                coverUrl={playlist.coverUrl}
+                trackCount={playlist.trackCount}
+                creator={null}
+                locked={playlist.private}
+                onkeydown={onListKeydown}
+              />
+            </div>
+            {#if sort.lifted(playlist.id)}
+              <div class='pointer-events-none absolute inset-x-0 top-0 aspect-square rounded-lg bg-primary-100'></div>
+            {/if}
+            <span
+              class={['absolute right-2 top-2 z-10', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}
+              in:fade={{ duration: DURATIONS.feedback }}
+            >
+              <DragGrip label={playlistName(playlist)} size='desktop' overlay attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
+            </span>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <TileGrid kind='playlist' layout='grid' {phone} items={own} label='自建歌单' loadingLabel='正在加载自建歌单' empty={{ icon: ListMusic, title: EMPTY.own }}>
+        {#snippet tile(playlist: Playlist)}{@render ownTile(playlist)}{/snippet}
+      </TileGrid>
     {/if}
   </section>
 
@@ -280,33 +249,19 @@
       {/if}
     </div>
 
-    {#if collected === null}
-      <div class={gridClass} role='status' aria-busy='true' aria-label='正在加载收藏的歌单' out:fadeAway>
-        {#each { length: phone ? 4 : 6 }, i (i)}
-          <TileBone {phone} />
-        {/each}
-      </div>
-    {:else if collected.length === 0}
-      <div in:reveal><StateBlock kind='empty' icon={ListMusic} title={EMPTY.collected} /></div>
-    {:else}
-      <div in:reveal>
-        <ul class={gridClass} aria-label='收藏的歌单' data-reveal-group>
-          {#each collected as playlist (playlist.id)}
-            <li class='min-w-0'>
-              <PlaylistTile
-                id={playlist.id}
-                name={playlistName(playlist)}
-                coverUrl={playlist.coverUrl}
-                trackCount={playlist.trackCount}
-                creator={playlist.creator}
-                locked={playlist.private}
-                {phone}
-              />
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/if}
+    <TileGrid kind='playlist' layout='grid' {phone} items={collected} label='收藏的歌单' loadingLabel='正在加载收藏的歌单' empty={{ icon: ListMusic, title: EMPTY.collected }}>
+      {#snippet tile(playlist: Playlist)}
+        <PlaylistTile
+          id={playlist.id}
+          name={playlistName(playlist)}
+          coverUrl={playlist.coverUrl}
+          trackCount={playlist.trackCount}
+          creator={playlist.creator}
+          locked={playlist.private}
+          {phone}
+        />
+      {/snippet}
+    </TileGrid>
   </section>
 {/if}
 
@@ -317,9 +272,18 @@
     style:width='{sort.ghost.width}px'
     style:transform='translate3d(0, {sort.settling ? sort.settleY : sort.ghost.y}px, 0)'
     aria-hidden='true'
+    inert={true}
   >
     <div class='h-14 flex items-center gap-3 rounded-xl bg-white pl-3 pr-2 shadow-float'>
-      {@render sortRow(sort.grabbed)}
+      <PlaylistTile
+        id={sort.grabbed.id}
+        name={playlistName(sort.grabbed)}
+        coverUrl={sort.grabbed.coverUrl}
+        trackCount={sort.grabbed.trackCount}
+        creator={null}
+        locked={sort.grabbed.private}
+        look='row'
+      />
       <DragGrip label={sort.grabbed.name} size='phone' ghost />
     </div>
   </div>
@@ -329,9 +293,18 @@
     style:width='{sort.ghost.width}px'
     style:transform='translate3d({sort.settling ? sort.settleX : sort.ghost.x}px, {sort.settling ? sort.settleY : sort.ghost.y}px, 0)'
     aria-hidden='true'
+    inert={true}
   >
     <div class='relative rounded-xl bg-white p-2 shadow-float'>
-      {@render sortGridCard(sort.grabbed)}
+      <PlaylistTile
+        id={sort.grabbed.id}
+        name={playlistName(sort.grabbed)}
+        coverUrl={sort.grabbed.coverUrl}
+        trackCount={sort.grabbed.trackCount}
+        creator={null}
+        locked={sort.grabbed.private}
+        flight={false}
+      />
       <span class='absolute right-4 top-4 z-10'>
         <DragGrip label={sort.grabbed.name} size='desktop' overlay ghost />
       </span>
