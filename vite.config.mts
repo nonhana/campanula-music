@@ -12,7 +12,7 @@ import { mockPlugin } from './src/lib/server/mock/vite-plugin.ts'
 
 const adapter = process.env.VERCEL
   ? adapterVercel({
-      runtime: 'nodejs26.x',
+      runtime: 'nodejs24.x',
       regions: ['hkg1'],
     })
   : adapterNode()
