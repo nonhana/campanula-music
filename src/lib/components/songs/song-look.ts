@@ -5,10 +5,10 @@ import type { AppView } from '../shared/app-context.svelte'
 // 歌曲行上的状态（DESIGN.md Song Row · 状态、Chips · Badges）：能不能点、歌名后面的徽标、下载标记。
 // 规则只在 App 里推一次：现在能不能放读 state.playable（下载了的总能放，ADR-0006；没下载的要能在线放，无版权不能放）
 
-/** 歌曲行上的下载标记：已下载（蜜桃枝图标）、下载中（蜜桃进度）、下载失败（出错红） */
+/** 歌曲行上的下载标记：已下载（蜜桃枝图标）、下载中（蜜桃进度）、下载失败（出错红）。一共多大还不知道（没拿到下载地址、网易云没给大小，#78）时 percent 是 null，不写百分数 */
 export type DownloadMark
   = | { kind: 'done' }
-    | { kind: 'downloading', percent: number }
+    | { kind: 'downloading', percent: number | null }
     | { kind: 'failed' }
 
 /** 跟在歌名后面的徽标：无版权、断网时没下载、只能试听。按这个先后只显示一个；下载了的歌放本机的完整音频，不显示 */
@@ -33,7 +33,7 @@ export const songLook = (view: AppView, song: Song): SongLook => {
           kind: 'downloading',
           percent: task.total
             ? Math.floor(task.received * 100 / task.total)
-            : 0,
+            : null,
         }
       : task?.status === 'failed'
         ? { kind: 'failed' }

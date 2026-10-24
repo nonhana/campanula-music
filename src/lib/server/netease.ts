@@ -316,15 +316,6 @@ const libraryPlaylist = (playlist: PlaylistSummary, kind: Playlist['kind']): Pla
   tracksUpdatedAt: playlist.trackUpdateTime ?? null,
 })
 
-/** 认不出是我喜欢的音乐、自建的还是收藏的（specialType 或创建者编号没给）：不猜，当作上游结构变了（#78 作者定） */
-const kindOf = (playlist: PlaylistSummary, uid: number): Playlist['kind'] => {
-  const specialType = playlist.specialType
-  const creator = playlist.creator?.userId
-  if (specialType == null || creator == null)
-    throw shapeChanged('user_playlist', `认不出歌单 ${playlist.id} 是哪一类`)
-  return playlistKindOf(specialType, creator, uid)
-}
-
 /**
  * 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样。凭据失效时网易云回 200 的匿名视角：
  * 每张歌单的 subscribed 都是 null（已登录时是 true / false，#21 实测），也看不到隐私歌单，当作需要登录；
@@ -336,8 +327,14 @@ export const fetchPlaylists = async (uid: number, listener: Listener): Promise<P
     const { body } = await call('user_playlist', { uid, limit: PLAYLISTS_PER_CALL, offset }, listener)
     if (body.playlist.length > 0 && body.playlist.every(playlist => playlist.subscribed === null))
       throw new NeteaseError({ kind: 'needsLogin' }, body)
-    for (const playlist of body.playlist)
-      playlists.push(libraryPlaylist(playlist, kindOf(playlist, uid)))
+    for (const playlist of body.playlist) {
+      // 认不出是我喜欢的音乐、自建的还是收藏的（specialType 或创建者编号没给）：不猜，当作上游结构变了（#78 作者定）
+      const { specialType } = playlist
+      const creator = playlist.creator?.userId
+      if (specialType == null || creator == null)
+        throw shapeChanged('user_playlist', `认不出歌单 ${playlist.id} 是哪一类`)
+      playlists.push(libraryPlaylist(playlist, playlistKindOf(specialType, creator, uid)))
+    }
     if (!body.more)
       return playlists
   }
