@@ -10,12 +10,8 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { replyLibrary, replyPlaylists, signInSynced } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// 作者的“我喜欢的音乐”（#21 录制，4,984 首）：每页 1,000 首。第 4 页里有 3 首传到云盘、没匹配上曲库的歌，
-// 歌手名、专辑名是 null（hana-music-api 2.4.0 起原样返回，nonhana/hana-music-api#48）
-/**
- * SDK 认不出返回的结构时整页拒掉（502）：2.3.0 对第 4 页的真实返回。2.4.0 起这一页能认出了，
- * 但别人看云盘上传的歌（歌名也是 null）时照样这样拒，所以留着当“这一页没取到”用
- */
+// 作者的“我喜欢的音乐”（#21 录制，4,984 首）：每页 1,000 首。第 4 页里有 3 首传到云盘、没匹配上曲库的歌，歌手名、专辑名是 null（hana-music-api 2.4.0 起原样返回，nonhana/hana-music-api#48）
+/** SDK 认不出返回的结构时整页拒掉（502）：2.3.0 对第 4 页的真实返回。2.4.0 起这一页能认出了，但别人看云盘上传的歌（歌名也是 null）时照样这样拒，所以留着当“这一页没取到”用 */
 const PAGE_4_REJECTED = 'library/song_detail.liked-page4.502-null-artist.json.gz'
 const RATE_LIMITED = 'library/song_detail.405-rate-limited.constructed.json'
 const LIKED_ID = 900000001
@@ -34,10 +30,7 @@ const AFTER = await recordedBatch('after')
 const DELETED = await recordedBatch('deleted')
 const recorded = (id: number) => BEFORE.playlists.find(playlist => playlist.id === id)!
 
-/**
- * 作者收藏的别人的合集（1,204 首）：第 2 页的 138 首后面的歌单里都没有，这一页没取到也不影响后面的歌单要取哪些歌。
- * 别人传到云盘的歌在我们看来歌名是 null，SDK 会整页拒掉（#21 留言），这里拿它当“这一页没取到”
- */
+/** 作者收藏的别人的合集（1,204 首）：第 2 页的 138 首后面的歌单里都没有，这一页没取到也不影响后面的歌单要取哪些歌。别人传到云盘的歌在我们看来歌名是 null，SDK 会整页拒掉（#21 留言），这里拿它当“这一页没取到” */
 const BANG_DREAM_ID = 4943170241
 const BANG_DREAM_PAGE_2 = recorded(BANG_DREAM_ID).pages[1]
 
@@ -66,7 +59,6 @@ describe('首次同步', () => {
 
     await signIn(world, app)
 
-    // 第 2 页还没回：第 1 页的 1,000 首已经能看到，歌单列表也到了
     await vi.waitFor(() => expect(app.state.library?.liked?.songs).toHaveLength(1000))
     const library = app.state.library!
     expect(library.playlists).toHaveLength(54)
@@ -74,7 +66,6 @@ describe('首次同步', () => {
     expect(library.liked?.total).toBe(4984)
     expect(library.liked?.songs.map(song => song.id)).toEqual(trackIds.slice(0, 1000))
     expect(library.sync).toEqual({ status: 'syncing' })
-    // 还没轮到的歌单：一首歌都还没有，一共几首先按网易云写的
     expect(library.songsOf(RHYTHM_ID)).toMatchObject({ songs: [], total: 35, complete: false })
 
     await world.netease.reply(likedPage(4))
@@ -95,7 +86,6 @@ describe('首次同步', () => {
       'POST /api/songs',
       'POST /api/songs',
     ])
-    // 我喜欢的音乐之后按歌单列表的顺序，每张拉一次曲目编号；歌曲信息只取还没有的：前面的歌单里已经有的不再取（和录制时取的一样）
     expect(trackIdRequests(device)).toEqual([
       LIKED_ID,
       ...BEFORE.playlists.map(playlist => playlist.id),
@@ -133,7 +123,6 @@ describe('首次同步', () => {
     expect(synced.playlists?.filter(playlist => !synced.songsOf(playlist.id)?.complete)).toEqual([])
     expect(synced.songsOf(RHYTHM_ID)?.songs.map(song => song.id)).toEqual(recorded(RHYTHM_ID).trackIds)
     expect(synced.songsOf(COLLECTED_ID)?.playlist).toMatchObject({ kind: 'collected', name: 'Jazz HipHop · 驶向落日的航班', creator: '用户4' })
-    // 传到云盘、没匹配上曲库的歌照样同步下来：歌手名、专辑名是 null，由界面决定怎么显示
     expect(synced.liked?.songs.find(song => song.id === UPLOADED_SONG)).toMatchObject({
       name: 'Sugar life',
       artists: [
@@ -625,7 +614,6 @@ describe('歌单', () => {
     await world.netease.reply(rhythm.pages[0].fixture)
     const opening = app.openPlaylist(RHYTHM_ID)
 
-    // 后台的请求和打开歌单的请求同时在路上
     await vi.waitFor(() => expect(world.netease.held).toBe(2))
     expect(device.pending.map(request => request.path)).toEqual([`/api/playlists/${POEMS_ID}/track-ids`, `/api/playlists/${RHYTHM_ID}/track-ids`])
     expect(app.state.library?.opening.get(RHYTHM_ID)).toEqual({ status: 'loading' })
@@ -700,7 +688,6 @@ describe('歌单', () => {
   it('打开 App 时先按本机旧的歌单列表拉开着的歌单，后台拿到新列表时它的更新时间变了：等旧的拉完再按新的重拉，不把旧的当成同步完', async () => {
     const device = world.device()
     const [poems] = BEFORE.playlists
-    // 第一次同步：poems 的歌曲信息没取到，本机只有它的曲目编号（旧版本）
     const { app: first } = await device.open()
     await replyLibrary()
     for (const page of [1, 2, 3, 4, 5] as const)
@@ -710,7 +697,6 @@ describe('歌单', () => {
     await device.idle()
     expect(first.state.library?.songsOf(POEMS_ID)).toMatchObject({ complete: false })
 
-    // 再打开 App，停在 poems 的歌单页：后台还在等红心，页面先按本机旧的歌单列表拉 poems
     const hearts = held()
     const oldPage = held()
     await world.netease.reply('login/user_account.vip.json')
@@ -720,7 +706,6 @@ describe('歌单', () => {
     const opening = app.openPlaylist(POEMS_ID)
     await vi.waitFor(() => expect(world.netease.held).toBe(2))
 
-    // 这时作者已经在官方 App 里改过 poems：后台拿到的新列表里，它的更新时间变了
     await world.netease.reply(AFTER.list)
     await replyLibrary({ from: 'albums', through: 'artists' })
     await replyPlaylists(AFTER.playlists)
@@ -792,10 +777,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     /** 一半压着的：同步和打开专辑页 */
     const sometimesHeld = new Set([...LIBRARY_SYNC_MODULES, 'album'])
 
-    /**
-     * 网易云对一个模块的下一次调用回 fixture。同步和打开专辑页的返回一半压着，等随机操作放出来；
-     * 退出、续期是听众正在等的，不压（压着的话退出、登录会一直等下去）
-     */
+    /** 网易云对一个模块的下一次调用回 fixture。同步和打开专辑页的返回一半压着，等随机操作放出来； 退出、续期是听众正在等的，不压（压着的话退出、登录会一直等下去） */
     const reply = async (module: string, fixture: string): Promise<void> => {
       queued.set(module, (queued.get(module) ?? 0) + 1)
       if (!sometimesHeld.has(module) || random() < 0.5) {

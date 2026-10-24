@@ -1,43 +1,37 @@
 import type { Grip } from '../shared/press'
 import { pressBroken } from '../shared/press'
 
-// 抽屉的拖动手势核心（Spec #11 的第二个测试接入点“拖动手势核心”的一半，另一半是封面转盘的 wheel-core.ts）：不碰页面、不碰 Svelte 的纯逻辑。
-// 抽屉从底下升起、缩回底下，位置 0 是整个拉开，1 是收在下面看不见；开没开着由层请求说了算（settle 收的就是它）。
-// 拖动来源（grip）把按下、移动、松开、点击交给它，它说抽屉跟手到哪、停在哪一头、要不要开 / 关那一层、这次算不算点按。
-// 规则照主流的 Vaul（github.com/emilkowalski/vaul）：挪过起拖距离才开始拖，
-// 松手时拖过自身高度的 1/4、或者整段拖动的速度超过 0.4px/ms 就去另一头，不到就回去
+// 抽屉的拖动手势核心（Spec #11 第二个测试接入点“拖动手势核心”的一半，另一半是 wheel-core.ts）：不碰页面、不碰 Svelte。
+// 位置 0 是整个拉开、1 是收在下面看不见；开没开着由层请求说了算（settle）。grip 把指针事件交给它，它说跟手到哪、停在哪头、算不算点按。
+// 规则照 Vaul（github.com/emilkowalski/vaul）：挪过起拖距离才开始拖；松手时拖过自身高度 1/4、或者速度超过 0.4px/ms 就去另一头。
 
-/** 0 整个拉开，1 收在下面看不见 */
 type DrawerEnd = 0 | 1
 
-/** 抽屉该怎么摆：拖着时跟手，不然停在层请求说的那一头（或者刚拖过去的那一头） */
 export type DrawerPose
   = | { dragging: true, position: number }
     | { dragging: false, end: DrawerEnd }
 
 export interface GripSource {
-  /** 从哪一头拖：把手是拉开着往下拖（open → 收起），播放条是收着往上拖（closed → 拉开） */
+  /** open：拉开着往下拖收起；closed：收着往上拖拉开 */
   from: 'open' | 'closed'
-  /** 松手时往另一头过了阈值：去开 / 关那一层（浅路由由浮层栈写） */
+  /** 往另一头过了阈值：去开 / 关那一层（浅路由由浮层栈写） */
   commit: () => void
-  /** 没拖动、只是点按（键盘的 Enter、空格也算） */
+  /** 没拖动、只是点按（键盘 Enter、空格也算） */
   tap?: () => void
 }
 
 export interface DrawerCore {
   readonly pose: DrawerPose
-  /** 层的请求说开着 / 关了：停到那一头。正在拖时先记下，松手时没拉到另一头就去那里 */
+  /** 停到层请求说的那一头；正在拖时先记下，松手没拉到另一头就去那里 */
   settle: (open: boolean) => void
-  /** 一个拖动来源，每个来源一份 */
   grip: (source: GripSource) => Grip
 }
 
 export interface DrawerCoreOptions {
-  /** 抽屉露出来的高度（px，不含底下垫的那一截）：把拖动的距离换成位置，1/4 也按它算 */
+  /** 抽屉露出来的高度（px，不含底下垫的那一截）：把拖动距离换成位置，1/4 也按它算 */
   size: () => number
-  /** 抽屉现在画在哪（动画可能还在半路）：开始拖时从这里接着走 */
+  /** 动画可能还在半路：开始拖时从这里接着走 */
   drawnAt: () => number
-  /** pose 变了 */
   onPose: (pose: DrawerPose) => void
 }
 
@@ -50,11 +44,11 @@ const SLOP = { touch: 10, other: 2 }
 
 interface Press {
   pointerId: number
-  /** 按下的地方和时刻：拖过的距离、一甩的速度都从这里算（和 Vaul 一样） */
+  /** 拖过的距离、一甩的速度都从这里算（和 Vaul 一样） */
   x: number
   y: number
   time: number
-  /** 开始拖的那一刻抽屉画在哪；还没挪够起拖距离时是 null */
+  /** 开始拖时抽屉画在哪；还没挪够起拖距离时是 null */
   from: number | null
 }
 

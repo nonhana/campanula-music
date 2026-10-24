@@ -4,14 +4,11 @@ import type { PlaySource } from '#lib/api/playback.js'
 import { getOverlays } from '../overlay/overlay-context'
 import { anchorBelow } from './menu-anchor'
 
-// 歌曲浮层的入口（DESIGN.md Song Row、Overlays）：“更多”菜单，和从菜单里打开的加入歌单（两层登记在 overlays.svelte.ts）。
-// “更多”菜单由歌曲行、首页歌曲格的 ••• 和右键打开。怎么出现按输入方式切换，不按宽度：
-// 触屏点 ••• 是底部弹层；鼠标点 •••、右键是贴着锚点的浮动菜单（窄窗口里也是）；键盘按 ••• 时看布局，手机布局用底部弹层。
+// 歌曲浮层的入口（DESIGN.md Song Row、Overlays）：“更多”菜单，和从菜单里打开的加入歌单（两层登记在 overlays.svelte.ts）。“更多”菜单由歌曲行、首页歌曲格的 ••• 和右键打开。
+// 怎么出现按输入方式切换，不按宽度：触屏点 ••• 是底部弹层；鼠标点 •••、右键是贴着锚点的浮动菜单（窄窗口里也是）；键盘按 ••• 时看布局，手机布局用底部弹层。
 // 加入歌单跟着菜单：菜单是浮动的，它就贴着同一个锚点浮出来；菜单是底部弹层，它也是底部弹层。
 
-/**
- * 在组件初始化时调用一次：每个歌曲行的入口都用所属外框的那份层会话（Session 销毁时层跟着清空）。
- */
+/** 在组件初始化时调用一次：每个歌曲行的入口都用所属外框的那份层会话（Session 销毁时层跟着清空） */
 export const songMenuActions = () => {
   const { songMenu, playlistPicker } = getOverlays()
 
@@ -32,8 +29,7 @@ anchor: anchorBelow(event),
   }
 
   /**
-   * 歌曲行的 oncontextmenu：鼠标右键在指针处打开浮动菜单；键盘的菜单键贴着这一行打开。
-   * 触屏长按留给多选（#35）：拦掉系统的选择文字 / 上下文菜单，不打开歌曲菜单
+   * 歌曲行的 oncontextmenu：鼠标右键在指针处打开浮动菜单，键盘的菜单键贴着这一行打开；触屏长按留给多选（#35），拦掉系统的选择文字 / 上下文菜单，不打开歌曲菜单
    */
   const openSongMenuAt = (event: MouseEvent, song: Song, source: PlaySource): void => {
     // 触屏长按留给多选（#35）：不要弹出系统的选择文字 / 上下文菜单

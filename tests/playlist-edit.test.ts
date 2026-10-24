@@ -10,9 +10,8 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks, dailySongs, openJazz, replyLibrary } = listener(world)
 
-// 歌单的增删改（#33，Spec #11“歌单编辑”“客户端：曲库副本”）：新建等网易云建好才进曲库，
-// 删除、名称、简介、标签、改公开先改本地、立即生效，网易云拒绝时改回原样并说明原因。
-// 录制见 tests/fixtures/netease/README.md 的验证关卡②和 #33 一条
+// 歌单的增删改（#33，Spec #11“歌单编辑”“客户端：曲库副本”）：新建等网易云建好才进曲库，删除、名称、简介、标签、改公开先改本地、立即生效，
+// 网易云拒绝时改回原样并说明原因。录制见 tests/fixtures/netease/README.md 的验证关卡②和 #33 一条
 /** 标签库（验证关卡②录的，70 个截到前 30 个，5 类都在） */
 const TAGS = 'playlist-edit/playlist_catlist.json'
 /** 新建隐私歌单「Campanula 测试 · 可删除」，和紧接着读的详情（#33 录的，假编号接着 #22 那套） */
@@ -42,7 +41,6 @@ const DELETE = 'playlist-edit/playlist_delete.json'
 const DELETE_RATE_LIMITED = 'playlist-edit/playlist_delete.405-rate-limited.constructed.json'
 const LIKED_ID = 900000001
 
-/** 网易云建好新歌单、读回它的详情 */
 const replyCreated = async (): Promise<void> => {
   await world.netease.reply(CREATED.create)
   await world.netease.reply(CREATED.detail, {
@@ -53,7 +51,6 @@ const replyCreated = async (): Promise<void> => {
 const playlistIds = (app: App) => app.state.library?.playlists?.map(playlist => playlist.id)
 const playlistOf = (app: App, playlistId: number) => app.state.library?.playlists?.find(playlist => playlist.id === playlistId)
 
-/** 本机副本里存着的这张歌单 */
 const storedPlaylist = async (device: Device, playlistId: number): Promise<unknown> => (await storedLibrary(device, 'playlists') as { id: number }[]).find(playlist => playlist.id === playlistId)
 
 describe('标签库', () => {
@@ -572,7 +569,6 @@ describe('改名称、简介、标签', () => {
   })
 })
 
-/** 新建一张隐私歌单（拿来改公开） */
 const createPrivate = async (app: App): Promise<void> => {
   await replyCreated()
   await app.createPlaylist({ name: CREATED.name, private: true })
@@ -601,7 +597,6 @@ describe('隐私歌单改公开', () => {
     expect(playlistOf(app, CREATED.id)?.private).toBe(false)
     expect(await storedPlaylist(device, CREATED.id)).toMatchObject({ private: false })
 
-    // 已经是公开的：什么都不发
     const sent = device.requests.length
     await app.publishPlaylist(CREATED.id)
     expect(device.requests.length).toBe(sent)

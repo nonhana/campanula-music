@@ -69,7 +69,6 @@ export const resetSearchBox = (app: App): void => {
   app.suggest('')
 }
 
-/** 听众打字、清空：边输入边给建议 */
 export const typeInSearchBox = (app: App, value: string): void => {
   searchBox.draft = value
   searchBox.active = -1
@@ -77,8 +76,7 @@ export const typeInSearchBox = (app: App, value: string): void => {
 }
 
 /**
- * 按搜索：记进搜索历史，打开这个词的结果页（搜的词放在地址的 q 里）。
- * 已经在搜索结果页上就换掉这一页：返回直接离开搜索，不在搜过的词之间来回
+ * 按搜索：记进搜索历史，打开这个词的结果页（搜的词放在地址的 q 里）。已经在搜索结果页上就换掉这一页：返回直接离开搜索，不在搜过的词之间来回
  */
 const submitSearch = (app: App, keyword: string): void => {
   const searched = keyword.trim()
@@ -92,9 +90,8 @@ const submitSearch = (app: App, keyword: string): void => {
 }
 
 /**
- * 点了建议列表的一行、搜索历史里的词（当作 { kind: 'search', name }）：
- * “搜索…”那一行、单曲、搜过的词就搜这个名字；歌手、专辑、歌单直接打开它的页面（不在曲库里的歌单由那一页现取，#56）。
- * 打开页面不算搜索：不记进搜索历史，也不先清空搜索框（换页后 afterNavigate 会换回来）
+ * 点了建议列表的一行、搜索历史里的词（当作 { kind: 'search', name }）：“搜索…”那一行、单曲、搜过的词就搜这个名字；歌手、专辑、歌单直接打开它的页面（不在曲库里的歌单由那一页现取，#56）。
+ * 打开页面不算搜索：不记进搜索历史，也不先清空搜索框（换页后 afterNavigate 会换回来）。
  */
 export const pickSuggestion = (app: App, row: SuggestionRow): void => {
   switch (row.kind) {

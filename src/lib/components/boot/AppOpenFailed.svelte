@@ -1,7 +1,6 @@
 <!--
   打开时没问到当前账号：标题说清是断网、连不上、服务端出错、网易云的问题，还是 Campanula 自己出了错，都能重试；
-  重试解决不了的那几种，正文只写“一直这样的话，请告诉站长”。
-  站长没配密钥时根布局显示 CookieSecretRequired，不到这里
+  重试解决不了的那几种正文只写“一直这样的话，请告诉站长”。站长没配密钥时根布局显示 CookieSecretRequired，不到这里。
 -->
 <script lang='ts'>
   import type { RequestFailure } from '#lib/app/api-client.js'
@@ -12,7 +11,7 @@
   import Brand from './Brand.svelte'
 
   interface Props {
-    /** appError：App 自己的缺陷（没想到的错误），不是网络或服务端的问题 */
+    /** 没想到的错误（不是网络或服务端） */
     failure: Exclude<RequestFailure, { kind: 'cookieSecretMissing' | 'needsLogin' }> | { kind: 'appError' }
     onretry: () => void
   }

@@ -1,7 +1,6 @@
 <!--
-  短信验证码登录（视觉原型 welcome-sms）：+86 手机号，获取验证码后 60 秒才能重发，填验证码登录。
-  发不出去、登录被拒时给出原因；网易云因为风控拒绝时原样显示它的说明，听众可以改用扫码。
-  发送、登录时按钮不换字，转圈（busy）。这些报错推开下面的登录键：出现时展开，走时淡出再收起（motion.ts 的 unfold）
+  短信验证码登录（视觉原型 welcome-sms）：+86 手机号，获取验证码后 60 秒才能重发。网易云因风控拒绝时原样显示它的说明。
+  发送、登录时按钮不换字，转圈（busy）；报错推开下面的登录键（motion.ts 的 unfold）。
 -->
 <script lang='ts'>
   import { captchaProblem, phoneProblem } from '#lib/api/login.js'
@@ -13,7 +12,6 @@
   import TextField from '../ui/TextField.svelte'
 
   interface Props {
-    /** 改用扫码 */
     onswitch: () => void
   }
 
@@ -26,7 +24,6 @@
   let captcha = $state('')
   let phoneError = $state('')
   let captchaError = $state('')
-  /** 验证码发到了哪个号码 */
   let sentTo = $state('')
   let phoneInput = $state<HTMLInputElement>()
   let captchaInput = $state<HTMLInputElement>()

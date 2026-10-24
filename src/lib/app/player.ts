@@ -6,15 +6,10 @@ import type { AudioCapability, Clock } from './browser'
 import type { PlaylistSongs } from './library'
 import type { SessionApi, SessionFailure } from './session-round'
 
-// 播放队列与播放（Spec #11“客户端：播放队列与播放”）。
-// 两个播放器轮流放（ADR-0010）：换歌时在空闲的那个上放，它出声了再停旧的，换歌的过程中一直有一个在放。
-// 当前这首出声后，空闲的那个先取好下一首的播放地址、缓冲着；当前这首快放完时它开始放（交接）。
-// 播放地址约 20 分钟过期：暂停很久后再放、或者放着放着过期了，重新取地址，从原来的位置接着放。
-// 播放队列一变（下一首播放、插播、移出、换播放模式、补上没同步完的歌）、换了在线播放音质，就重新准备空闲的播放器。
-// 下一首播放、加入播放队列、插播的边角照逻辑原型定下的规则①–⑤（docs/prototype/logic.md）。
-// 播放队列和进度存在本机（App 按网易云账号存；没登录时放已下载的歌也存，不属于任何账号），重新打开时恢复。
-// 已下载的歌（#38）放本机文件，不取播放地址；断网、没登录时没下载的歌放不了，换歌时跳过，列表循环只在能放的歌里转。
-// 一首歌听完了（播完或切走）就交出一次听歌打卡，和进度存在一起（Spec #11“客户端：听歌打卡”，#28）。
+// 播放队列与播放（Spec #11“客户端：播放队列与播放”）。两个播放器轮流放（ADR-0010）：换歌在空闲的那个上放，出声了再停旧的；
+// 当前这首出声后空闲的播放器先取下一首地址、缓冲着，快放完时交接。播放地址约 20 分钟过期，过期后重新取并从原位置接着放。
+// 下一首播放、加入播放队列、插播的边角照规则①–⑤（docs/prototype/logic.md）。播放队列和进度按网易云账号存在本机，重新打开时恢复。
+// 已下载的歌（#38）放本机文件；断网、没登录时没下载的跳过。一首歌听完就交出一次打卡，和进度存在一起（#28）。
 
 /** 当前这首剩这么多秒时，空闲的播放器开始放下一首（探针在真机上验证过 1 秒，ADR-0010） */
 const HANDOVER_LEAD = 1
@@ -29,69 +24,44 @@ const PREPARE_AGAIN_LEAD = 20
 /** 再准备之间至少隔这么久 */
 const PREPARE_AGAIN_INTERVAL_MS = 5_000
 
-/** 播放队列里的一首：每首各自记着播放来源 */
+/** 每首各自记着播放来源 */
 export interface QueueEntry {
   song: Song
   source: PlaySource
 }
 
-/**
- * - loading：在取当前这首的播放地址，一定有一个取地址的请求在路上
- * - buffering：地址有了，在等音频服务器的数据
- * - playing：在出声
- * - paused：停着（听众暂停了、出了问题停下了、播放队列是空的）
- */
+/** loading：在取地址，一定有请求在路上；buffering：地址有了、在等数据；playing：在出声；paused：停着（暂停、出错停下、队列空） */
 type PlaybackStatus = 'loading' | 'buffering' | 'playing' | 'paused'
 
-/** 要告诉听众的事 */
 export type PlayerNotice
-  /** 没取到播放地址，停下了：按播放重试 */
+  /** 没取到播放地址：按播放重试 */
   = | { kind: 'urlFailed', failure: SessionFailure }
-  /** 音频没加载下来（放到一半断流、一开始就没加载出来），停下了：按播放从原来的位置接着放 */
+    /** 音频没加载下来：按播放从原来的位置接着放 */
     | { kind: 'streamFailed' }
-  /** 缓冲很久了还没出声：还在等，接上了就接着放 */
+    /** 还在等，接上了就接着放 */
     | { kind: 'slow' }
-  /** 网易云没给这首的播放地址，跳过了 */
     | { kind: 'skipped', song: Song }
-  /** 播放队列里没有能放的歌 */
     | { kind: 'nothingPlayable' }
 
-/**
- * 当前这首是因为什么换上来的。界面换碟看它往哪转（DESIGN.md Cover Wheel），不靠前后序号猜：随机播放时序号不连续。
- * - next / previous：听众按了下一首、上一首
- * - pick：在列表里点歌、在播放队列里点歌
- * - continue：当前这首放完，自动接着放下一首（包括快放完时两个播放器交接，ADR-0010）
- * - skip：网易云没给要放的那首的播放地址，跳到它后面能放的
- */
+/** 界面换碟看它往哪转（DESIGN.md Cover Wheel），不靠前后序号猜：随机播放时序号不连续。continue 包括快放完时两个播放器交接（ADR-0010），skip 是没给地址跳到后面能放的 */
 export type SongChange = 'next' | 'previous' | 'pick' | 'continue' | 'skip'
 
-/**
- * 播放模式：列表循环（loop）、单曲循环（one，放完从头再放这首；按下一首、上一首照样换歌）、
- * 随机播放（shuffle，按另排的一份播放顺序放，播放队列的先后不变）
- */
+/** 单曲循环（one）放完从头再放这首、按下一首照样换歌；随机播放（shuffle）按另排的一份顺序放，播放队列的先后不变 */
 export type PlayMode = 'loop' | 'one' | 'shuffle'
 
 export interface PlayerState {
   queue: readonly QueueEntry[]
-  /** 当前这首在播放队列里的位置；播放队列是空的时是 null */
   current: number | null
   status: PlaybackStatus
-  /** 当前这首放到第几秒 */
   position: number
-  /** 当前这首多长（秒）；还不知道时是 null */
   duration: number | null
-  /** 当前这首只放试听片段 */
   trial: boolean
-  /** 音量，0 到 1 */
   volume: number
   notice: PlayerNotice | null
   /** 当前这首是因为什么换上来的；还没换过歌（播放队列是空的、重新打开 App 刚恢复）时是 null */
   change: SongChange | null
   mode: PlayMode
-  /**
-   * 按上一首、下一首会换到播放队列里的第几首（随机播放时按另排的顺序，跳过放不了的）。手机播放页拖封面时，转盘上露出来的就是这两首。
-   * 没有别的能放的歌（播放队列是空的、只有当前这首能放）时是 null：这时按下一首只会从头再放这首
-   */
+  /** 按上一首、下一首会换到第几首（随机时按另排的顺序，跳过放不了的）；手机播放页拖封面时转盘上露出的就是这两首。没有别的能放的歌时是 null */
   neighbors: { previous: number | null, next: number | null }
   /** 在线播放音质（设置页）：没设过时是极高。换了从下一首起生效，正在放的那首不换 */
   quality: Quality
@@ -114,7 +84,7 @@ export const INITIAL_PLAYER: PlayerState = {
   quality: 'exhigh',
 }
 
-/** 存在本机的播放队列那一份：播放队列、播放模式、随机播放的顺序、下一首播放、要补的歌单变了时重存 */
+/** 播放队列、播放模式、随机顺序、下一首播放、要补的歌单变了时重存 */
 export interface SavedQueue {
   entries: readonly QueueEntry[]
   mode: PlayMode
@@ -126,7 +96,6 @@ export interface SavedQueue {
   filling: { playlistId: number, have: readonly number[] } | null
 }
 
-/** 存在本机的进度：当前这首放到哪了、听了多久 */
 export interface SavedProgress {
   songId: number
   position: number
@@ -136,13 +105,12 @@ export interface SavedProgress {
   listened: number
 }
 
-/** 存在本机的播放队列和进度：重新打开 App 时恢复 */
 export interface SavedPlayer {
   queue: SavedQueue
   progress: SavedProgress
 }
 
-/** 一次听歌打卡：一首歌听完了（播完或切走，放到一半关掉 App 不算），实际听了多少秒（取整，至少 1 秒），带上这首自己的播放来源 */
+/** 一首歌听完了（播完或切走；放到一半关掉 App 不算），实际听了多少秒（取整，至少 1 秒） */
 export interface CheckIn {
   songId: number
   source: PlaySource
@@ -154,75 +122,58 @@ export interface PlayerContext {
   clock: Clock
   audio: () => AudioCapability
   write: (player: PlayerState) => void
-  /**
-   * 进度变了（放着时每过一秒、暂停、跳转、换歌）：存进本机。播放队列那一份也变了时 queue 一起给，没变是 undefined；
-   * 上次存过之后有歌听完了，它们的打卡在 checkIns 里。几样要存在一起（同一个事务）：重新打开时才对得上，打卡也不会记两次、漏记
-   */
+  /** 进度变了（放着时每秒、暂停、跳转、换歌）就存进本机；queue 没变是 undefined，打卡在 checkIns 里。几样要存在同一个事务：重新打开时才对得上，打卡也不会记两次、漏记 */
   save: (progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]) => void
-  /** 播放队列空了（清空、退出登录）：本机存着的删掉；空之前听完的那首的打卡在 checkIns 里，和删在同一个事务里存下 */
+  /** 队列空了（清空、退出登录）就删掉本机存着的；空之前听完的那首的打卡在 checkIns 里，和删在同一个事务里存下 */
   forget: (checkIns: readonly CheckIn[]) => void
-  /** 这首歌在这台设备上下载了（#38）：已下载的歌即使在线也放本机文件，断网、没登录时照样能放 */
+  /** 已下载的歌即使在线也放本机文件，断网、没登录时照样能放（#38） */
   downloaded: (songId: number) => boolean
-  /** 已下载的这首的本机文件地址（blob:） */
   localFile: (songId: number) => string
   /** 这首现在能不能放（App 的同一条规则）：不能时跳过、不取播放地址 */
   playable: (song: Song) => boolean
 }
 
 export interface Player {
-  /** 在列表里点一首歌：用整个列表替换播放队列，从这首开始放。列表还没同步全（complete 是 false）时同步全了再补上（规则⑫） */
+  /** 用整个列表替换播放队列，从这首开始放；complete 是 false 时同步全了再补上（规则⑫） */
   play: (source: PlaySource, songs: readonly Song[], songId: number, complete: boolean) => void
-  /**
-   * 曲库变了：点歌时还没同步全（不在曲库里的歌单：还没取全）的歌单有全了，就把还没进播放队列的歌补回它们在歌单里的位置（规则⑫）。
-   * songsOf 找的是曲库里的和打开着的不在曲库里的歌单
-   */
+  /** 点歌时还没同步全的歌单有全了，就把还没进播放队列的歌补回它们在歌单里的位置（规则⑫）；songsOf 找曲库里的和打开着的不在曲库里的歌单 */
   libraryChanged: (songsOf: (playlistId: number) => PlaylistSongs<{ id: number }> | null) => void
-  /** 在放就暂停，停着就接着放 */
   toggle: () => void
   next: () => void
   previous: () => void
-  /** 放播放队列里的第 index 首，播放队列不变。正在放的那首、现在放不了的不动 */
+  /** 播放队列不变；正在放的那首、现在放不了的不动 */
   jump: (index: number) => void
-  /** 下一首播放（GLOSSARY）：排在当前这首后面，等它放完再放。播放队列是空的就直接开始放（规则①） */
+  /** 排在当前这首后面；队列空就直接开始放（规则①） */
   playNext: (source: PlaySource, song: Song) => void
-  /** 加入播放队列：排到最后。播放队列是空的就直接开始放（规则①） */
+  /** 排到最后；队列空就直接开始放（规则①） */
   addToQueue: (source: PlaySource, song: Song) => void
-  /** 插播（GLOSSARY）：排在当前这首后面并立即播放 */
+  /** 排在当前这首后面并立即播放 */
   interject: (source: PlaySource, song: Song) => void
-  /** 从播放队列移出第 index 首。正在放的那首移不掉 */
+  /** 正在放的那首移不掉 */
   removeFromQueue: (index: number) => void
-  /** 清空播放队列：停下 */
+  /** 停下 */
   clearQueue: () => void
-  /** 当前这首跳到第 position 秒（超出的算开头、结尾）：在放就从那里接着放，停着就等按播放 */
+  /** 超出的算开头、结尾；在放就从那里接着放，停着就等按播放 */
   seek: (position: number) => void
-  /** 当前这首从第 position 秒开始放：跳过去，停着的也接着放（点歌词的一行） */
+  /** 点歌词的一行：停着的也接着放 */
   playFrom: (position: number) => void
   setVolume: (volume: number) => void
-  /** 换播放模式。换成随机播放时当前这首和还没放到的“下一首播放”留在最前，其余打乱；换回来时从当前这首接着按播放队列往下 */
+  /** 换成随机时当前这首和还没放到的“下一首播放”留在最前，其余打乱；换回来从当前这首接着按队列往下 */
   setMode: (mode: PlayMode) => void
-  /** 换在线播放音质：从下一首起生效，正在放的那首照旧放完；空闲的播放器按新音质重新准备 */
+  /** 从下一首起生效，正在放的那首照旧放完；空闲的播放器按新音质重新准备 */
   setQuality: (quality: Quality) => void
   dismissNotice: () => void
-  /** 退出登录、换了账号：停下，清空播放队列，之前取的播放地址都不要了（播放地址按账号给） */
+  /** 停下、清空队列，之前取的播放地址都不要了（地址按账号给） */
   stop: () => void
-  /**
-   * 重新打开 App：恢复存着的播放队列和进度（播放队列是空的时调；存着的当前这首要在存着的播放队列里）。
-   * 停着等按播放，不算换歌（change 是 null）；播放地址没存，按播放时重新取，从原来的位置接着放
-   */
+  /** 恢复存着的播放队列和进度；停着等按播放，不算换歌（change 是 null）。地址没存，按播放时重新取、从原位置接着放 */
   restore: (saved: SavedPlayer) => void
-  /**
-   * 哪些歌能放变了（#38：断网、联网，登录、退出，下载完一首、删了一首下载）：重算上一首、下一首，
-   * 空闲的播放器按现在能放的重新准备（断网时下一首是没下载的，就换成后面下载了的）
-   */
+  /** 哪些歌能放变了（#38）：重算上一首、下一首，空闲的播放器按现在能放的重新准备（断网时下一首没下载就换成后面下载了的） */
   availabilityChanged: () => void
-  /**
-   * 没登录时放着的播放队列（#38，只有已下载的歌）交给刚登录的账号：接着放，不换歌；
-   * 当前这首登录前已经听的秒数不算（不补记），从现在起重新算。整份播放队列重存一次，记成这个账号的
-   */
+  /** 没登录时放着的队列（#38，只有已下载的歌）交给刚登录的账号：接着放、不换歌；登录前已经听的秒数不补记。整份队列重存一次，记成这个账号的 */
   adopt: () => void
 }
 
-/** 取到的播放地址；已下载的歌是本机文件的地址（local），不过期 */
+/** 已下载的歌是本机文件的地址（local），不过期 */
 interface PlayUrl {
   url: string
   trial: boolean
@@ -234,7 +185,6 @@ interface PlayUrl {
 /** 取播放地址的结果；url 是 null：网易云没给地址；整体是 null：这一轮会话结束了 */
 type Fetched = { ok: true, url: PlayUrl | null } | { ok: false, failure: SessionFailure } | null
 
-/** 一个播放器和它装着的歌 */
 interface Deck {
   audio: AudioCapability
   song: Song | null
@@ -243,26 +193,26 @@ interface Deck {
   buffered: boolean
 }
 
-/** 正在换过去的播放器：放的是它装着的那首（deck.song），出声了就停掉旧的。handover：当前这首快放完了自动换（当前这首还没换过去） */
+/** 正在换过去的播放器：出声了就停掉旧的；handover 是快放完时自动换 */
 interface Incoming {
   deck: Deck
   handover: boolean
 }
 
-/** 点歌时还没同步全的歌单（规则⑫）：have 是点歌时已经同步了的那些歌 */
+/** 规则⑫：have 是点歌时已经同步了的那些歌 */
 interface Filling {
   playlistId: number
   have: ReadonlySet<number>
 }
 
-/** 播放器里的播放队列那一份：和 SavedQueue 一样，只是要补的歌单的 have 是 Set */
+/** 和 SavedQueue 一样，只是 filling.have 是 Set */
 type QueueParts = Omit<SavedQueue, 'filling'> & { filling: Filling | null }
 
 const durationOf = (deck: Deck): number | null => Number.isFinite(deck.audio.duration)
   ? deck.audio.duration
   : null
 
-/** 打乱的一份（Fisher–Yates） */
+/** Fisher–Yates */
 const shuffled = (ids: readonly number[]): number[] => {
   const result = [...ids]
   for (let i = result.length - 1; i > 0; i -= 1) {
@@ -272,7 +222,7 @@ const shuffled = (ids: readonly number[]): number[] => {
   return result
 }
 
-/** 进度要不要重存看这几样：当前这首、放到第几个整秒、时长、试听、在放还是停着 */
+/** 当前这首、整秒、时长、试听、在放还是停着 */
 const progressKey = (songId: number, state: Pick<PlayerState, 'position' | 'duration' | 'trial' | 'status'>): string => [
   songId,
   Math.floor(state.position),
@@ -282,15 +232,13 @@ const progressKey = (songId: number, state: Pick<PlayerState, 'position' | 'dura
 ].join()
 
 /**
- * 规则⑫：点歌时还没同步全的歌单同步全了，把点歌时还没有（不在 have 里）、现在也不在播放队列里的歌补进去，放回它们在歌单里的位置：
- * 排在歌单里它后面、已经在播放队列里的那首前面；后面没有的，排在歌单里最后一首已经在播放队列里的歌后面（一首都没有就排到最后）。
- * 已经同步的部分不一定在歌单最前面（别的歌单里同步过的歌也有歌曲信息）。点歌后听众移出的歌（在 have 里）不再补回来。
- * 还没放到的“下一首播放”（upNext，紧跟在当前这首后面）不当作位置，补上的歌也不插到它们前面。没有要补的就原样返回
+ * 规则⑫：同步全了就把点歌时还没有（不在 have 里）、现在也不在队列里的歌补回它们在歌单里的位置：排在歌单里它后面、
+ * 已经在队列里的那首前面，后面没有就排在最后一首已在队列里的歌后面。已经同步的部分不一定在歌单最前面；
+ * 点歌后移出的歌（在 have 里）不再补，upNext 不当作位置。没有要补的就原样返回。
  */
 const fillIn = (queue: readonly QueueEntry[], playlist: PlaylistSongs<{ id: number }>, have: ReadonlySet<number>, upNext: readonly number[]): readonly QueueEntry[] => {
   const inQueue = new Set(queue.map(entry => entry.song.id))
   const source: PlaySource = { kind: 'playlist', id: playlist.playlist.id }
-  /** 要补在某首前面的歌，按歌单的先后 */
   const before = new Map<number, QueueEntry[]>()
   let waiting: QueueEntry[] = []
   let last: number | null = null
@@ -312,7 +260,7 @@ const fillIn = (queue: readonly QueueEntry[], playlist: PlaylistSongs<{ id: numb
   if (missing === 0)
     return queue
   const filled: QueueEntry[] = []
-  /** 排在 last 后面的还没补：跳过紧跟着的“下一首播放”再补 */
+  /** 跳过紧跟着的“下一首播放”再补 */
   let tail = last === null
   for (const entry of queue) {
     if (tail && !upNext.includes(entry.song.id)) {
@@ -340,51 +288,35 @@ export const createPlayer = (context: PlayerContext): Player => {
   let startAt = 0
   /** 每准备一次空闲的播放器就加一：准备到一半又换了歌，就不往里装了 */
   let preparing = 0
-  /** 当前这首已经准备过下一首 */
   let prepared = false
   /** 点歌时这张歌单还没同步全：同步全了把后面的补上（规则⑫） */
   let filling: Filling | null = null
-  /**
-   * 听众选了“下一首播放”、还没放到的歌，后加的在前（规则⑤）：它们就紧跟在当前这首后面。
-   * 放到了就不再算（逻辑原型的随机操作检查：当前这首不会还记在“下一首播放”里）；退回上一首、在播放队列里点别的歌、点歌、清空后都不算了
-   */
+  /** 还没放到的“下一首播放”，后加的在前（规则⑤）；放到、退回上一首、点别的歌、清空后都不算 */
   let upNext: readonly number[] = []
-  /**
-   * 随机播放时的播放顺序（歌曲编号，和播放队列里的歌一一对应，转一圈接着从头）；不是随机播放时是 null，按播放队列的先后放。
-   * 下一首播放排在当前这首紧后面、加入播放队列排到最后，随机播放时也照字面（规则③）
-   */
+  /** 随机播放的顺序（歌曲编号，转一圈接着从头）；不是随机时是 null，按队列先后放。下一首播放仍紧跟在当前这首后面、加入队列仍到最后（规则③） */
   let order: readonly number[] | null = null
-  /** indexOfSong 用的：播放队列里每首歌的位置，播放队列换了才重算 */
+  /** 队列里每首歌的位置，队列换了才重算 */
   let positions: { queue: readonly QueueEntry[], index: Map<number, number> } = {
     queue: [],
     index: new Map(),
   }
-  /** 这个播放队列里网易云没给地址的歌：不再放 */
   const unavailable = new Set<number>()
   const urls = new Map<number, PlayUrl>()
   const fetching = new Map<number, Promise<Fetched>>()
-  /** 退出、换音质一次就加一：之前发出去的取地址请求回来时，地址不再存 */
   let epoch = 0
-  /** 上一次准备下一首的时刻：没准备好时快放完再准备一次，不要每次 timeupdate 都发请求 */
+  /** 没准备好时快放完再准备一次，不要每次 timeupdate 都发请求 */
   let lastPrepare = Number.NEGATIVE_INFINITY
   let cancelSlow: (() => void) | null = null
   let active: Deck
   let spare: Deck
-  /** 上次存进本机的播放队列那一份（各部分原样留着，比引用就知道变没变）；没存过、播放队列空了时是 null */
+  /** 各部分原样留着，比引用就知道变没变 */
   let savedQueue: QueueParts | null = null
-  /** 上次存的进度的要点（progressKey） */
   let savedProgressKey = ''
-  /** 当前这首在之前几段出声里听了多少秒（不算正在出声的这一段） */
   let heard = 0
-  /** 正在出声的这一段从什么时候开始（毫秒）；没在出声时是 null */
   let soundingSince: number | null = null
-  /** 上次存进本机之后听完的歌的打卡：下次存进度时一起存 */
   let finished: CheckIn[] = []
 
-  /**
-   * 发布一次：每次都按播放顺序、放不了的歌重算 neighbors（它们变的时候都跟着一次发布）。
-   * 所以 state.current 要一直指着 queue 里的当前这首：换播放队列时 queue 和 current 一起发布（publishQueue、play）
-   */
+  /** 每次发布都重算 neighbors；state.current 要一直指着 queue 里的当前这首：换队列时 queue 和 current 一起发布（publishQueue、play） */
   const publish = (next: Partial<PlayerState>): void => {
     state = {
       ...state,
@@ -405,15 +337,12 @@ export const createPlayer = (context: PlayerContext): Player => {
     persist()
   }
 
-  /** 当前这首已经听了多少秒：按实际出声的时间算，跳过去的不算 */
+  /** 按实际出声的时间算，跳过去的不算 */
   const listened = (): number => heard + (soundingSince === null
     ? 0
     : (clock.now() - soundingSince) / 1000)
 
-  /**
-   * 当前这首听完了（播完或切走；暂停、地址过期后接着放的是同一首，不算）：按实际出声的秒数取整记一次打卡，
-   * 下次存进度时一起存；取整后不到 1 秒的不记。之后从 0 秒算起
-   */
+  /** 听完（播完或切走；暂停、地址过期后接着放的是同一首，不算）就按实际出声的秒数取整记一次打卡，不到 1 秒不记；之后从 0 秒算起 */
   const endListen = (): void => {
     const seconds = Math.round(listened())
     if (seconds > 0 && state.current !== null) {
@@ -424,10 +353,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     soundingSince = null
   }
 
-  /**
-   * 播放队列或进度变了、有歌听完了就存进本机（重新打开时恢复）。进度按整秒看：放着时每秒存一次，暂停、跳转、换歌时马上存；
-   * 播放队列那一份只在它变了时重存。播放队列空了就删掉存着的
-   */
+  /** 进度按整秒看：放着时每秒存一次，暂停、跳转、换歌时马上存；队列只在变了时重存，空了就删掉存着的 */
   const persist = (): void => {
     const checkIns = finished
     finished = []
@@ -472,13 +398,13 @@ export const createPlayer = (context: PlayerContext): Player => {
 
   const fresh = (url: PlayUrl | null): url is PlayUrl => url !== null && clock.now() < url.expiresAt - URL_EXPIRY_MARGIN_MS
 
-  /** 播放器装着这首歌、地址没过期、没出错：正在放的这首可以接着放、拖进度（下载完、删了下载时照样，放完再换） */
+  /** 正在放的这首可以接着放、拖进度（下载完、删了下载时照样，放完再换） */
   const holds = (deck: Deck, song: Song): boolean => deck.song?.id === song.id && fresh(deck.url) && !deck.audio.error
 
-  /** 要换成这首时，空闲的播放器装着的能直接用：装着这首，下载了的装的是本机文件，没下载的（删了下载）装的是网易云的地址 */
+  /** 空闲的播放器装着的能直接用：装着这首，下载了的装本机文件，没下载的装网易云地址 */
   const primed = (deck: Deck, song: Song): boolean => holds(deck, song) && deck.url!.local === context.downloaded(song.id)
 
-  /** 已下载的歌：本机文件的地址，不取播放地址、不过期；没下载是 null */
+  /** 本机文件地址，不取播放地址、不过期；没下载是 null */
   const localUrl = (song: Song): PlayUrl | null => context.downloaded(song.id)
     ? {
         url: context.localFile(song.id),
@@ -488,11 +414,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       }
     : null
 
-  /**
-   * 这个播放器放的是当前这首，它的事件才算数。听众要放的那首还没出声时，当前这首在正在换过去的那个播放器上；
-   * 换歌时旧的那个还在出声，直到新的出声：它的进度、放完、出错都不算到新的这首上。
-   * 在取当前这首的地址时（loading）哪个都不算：单曲的播放队列换到自己时，旧的那个放的也是这首
-   */
+  /** 这个播放器放的是当前这首，它的事件才算数；换歌时旧的那个还在出声，直到新的出声。取地址时（loading）哪个都不算 */
   const isCurrent = (deck: Deck): boolean => {
     if (state.status === 'loading')
       return false
@@ -502,7 +424,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     return deck === shown && state.current !== null && deck.song?.id === state.queue[state.current].song.id
   }
 
-  /** 取一首歌的播放地址：已下载的用本机文件；没过期的直接用；同一首同时只取一次。取地址是听众在等的前台请求，马上发 */
+  /** 已下载的用本机文件，没过期的直接用，同一首同时只取一次；这是听众在等的前台请求，马上发 */
   const playUrl = (song: Song): Promise<Fetched> => {
     const cached = localUrl(song) ?? urls.get(song.id) ?? null
     if (fresh(cached))
@@ -536,16 +458,13 @@ export const createPlayer = (context: PlayerContext): Player => {
     return request
   }
 
-  /** 这首现在能不能放：规则在 App（state.playable），播放器不自己再推一遍 */
+  /** 规则在 App（state.playable），播放器不自己再推一遍 */
   const canPlay = (song: Song): boolean => context.playable(song)
 
-  /** 播放队列里这一首能不能放：现在能放，网易云也没说这首给不了地址（下载了的不用取地址） */
+  /** 能放，且网易云没说过给不了地址（下载了的不用取地址） */
   const playable = (entry: QueueEntry): boolean => canPlay(entry.song) && (context.downloaded(entry.song.id) || !unavailable.has(entry.song.id))
 
-  /**
-   * 从第 from 首往后（step 1）或往前（-1）数，第一首能放的：按播放顺序（随机播放时是另排的那份），转一圈回到 from 自己也算。
-   * 一首能放的都没有是 null
-   */
+  /** 从 from 往后（1）或往前（-1）数第一首能放的，按播放顺序（随机时是另排的），转一圈回到自己也算；都没有是 null */
   const playableFrom = (from: number, step: 1 | -1): number | null => {
     const { queue } = state
     const at = order
@@ -562,7 +481,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     return null
   }
 
-  /** 当前这首放完以后自动接着放的那首（单曲循环时是它自己）：一首能放的都没有、播放队列是空的时是 null */
+  /** 单曲循环时是它自己；一首能放的都没有、队列空时是 null */
   const following = (): number | null => {
     if (state.current === null)
       return null
@@ -571,7 +490,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     return playableFrom(state.current, 1)
   }
 
-  /** 按上一首、下一首会换到哪首（PlayerState.neighbors）：转一圈回到当前这首自己不算 */
+  /** 转一圈回到当前这首自己不算 */
   const neighbors = (): PlayerState['neighbors'] => {
     const { current } = state
     if (current === null)
@@ -585,7 +504,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     }
   }
 
-  /** 这首歌在播放队列里的位置（播放队列里同一首歌只有一份）；不在里面是 -1 */
+  /** 队列里同一首歌只有一份；不在里面是 -1 */
   const indexOfSong = (id: number): number => {
     if (positions.queue !== state.queue) {
       positions = {
@@ -605,7 +524,7 @@ export const createPlayer = (context: PlayerContext): Player => {
   }
 
   const play = (deck: Deck): void => {
-    // 出没出声看 playing 事件，加载出错看 error 事件；暂停、换地址打断的 play() 不用管
+    // 出没出声看 playing、加载出错看 error；暂停、换地址打断的 play() 不用管
     void deck.audio.play().catch(() => {})
   }
 
@@ -638,17 +557,14 @@ export const createPlayer = (context: PlayerContext): Player => {
     ? null
     : state.notice
 
-  /**
-   * 从 position 秒开始放播放队列里的第 index 首：在空闲的播放器上放，出声了再停旧的。
-   * change：为什么换成这首；是 null 时是同一首接着放（暂停后、地址过期后），原因不变
-   */
+  /** 在空闲的播放器上放，出声了再停旧的；change 是 null 时是同一首接着放（暂停后、地址过期后），原因不变 */
   const start = async (index: number, position: number, change: SongChange | null, notice: PlayerNotice | null = null): Promise<void> => {
     const mine = ++attempt
     preparing += 1
     prepared = false
     handoverFailed = false
     const { song } = state.queue[index]
-    // 正在换过去、还没出声的那首不要了（连按几次下一首）：停下它，免得它缓冲好了和当前这首一起出声
+    // 连按几次下一首：停下还没出声的那首，免得它缓冲好了和当前这首一起出声
     if (incoming && !primed(incoming.deck, song))
       incoming.deck.audio.pause()
     incoming = null
@@ -672,7 +588,7 @@ export const createPlayer = (context: PlayerContext): Player => {
         if (mine !== attempt)
           return
         if (fetched === null) {
-          // 这一轮会话结束了：App 会切到登录失效/未登录；先停下，不显示“取播放地址失败”
+          // 这一轮结束了：App 会切到登录失效/未登录；先停下，不显示“取播放地址失败”
           pauseAll()
           publish({ status: 'paused' })
           return
@@ -685,7 +601,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       }
       load(spare, song, url)
     }
-    // 不读 state.position：单曲的播放队列换到自己时，旧的播放器放的是同一首，取地址期间它还在报进度
+    // 不读 state.position：单曲的队列换到自己时，旧播放器放的是同一首，取地址期间它还在报进度
     spare.audio.currentTime = startAt
     incoming = { deck: spare, handover: false }
     publish({
@@ -704,7 +620,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     })
   }
 
-  /** 网易云没给这首的播放地址：跳过它放下一首能放的 */
+  /** 跳过它放下一首能放的 */
   const skip = (song: Song): void => {
     unavailable.add(song.id)
     const next = playableFrom(state.current!, 1)
@@ -719,7 +635,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     void start(next, 0, 'skip', { kind: 'skipped', song })
   }
 
-  /** 当前这首出声了：空闲的播放器取好下一首的地址、缓冲着 */
+  /** 空闲的播放器取好下一首的地址、缓冲着 */
   const prepareNext = async (): Promise<void> => {
     if (prepared || state.current === null)
       return
@@ -738,7 +654,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     if (!fetched)
       return
     if (!fetched.ok) {
-      // 快放完时（handOver）再准备一次
+      // 快放完时再准备一次
       return
     }
     if (!fetched.url) {
@@ -752,7 +668,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     load(spare, song, fetched.url)
   }
 
-  /** 当前这首快放完了：空闲的播放器装好了下一首，就让它开始放；还没装好就再准备一次 */
+  /** 空闲的播放器装好了下一首就让它开始放；还没装好就再准备一次 */
   const handOver = (): void => {
     if (incoming || handoverFailed || state.status !== 'playing' || state.current === null)
       return
@@ -773,7 +689,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     play(spare)
   }
 
-  /** 正在换过去的播放器出声了：停掉旧的，它就是当前的。快放完时交接的，这时才换成下一首 */
+  /** 停掉旧的，它就是当前的；快放完时交接的，这时才换成下一首 */
   const arrived = ({ deck, handover }: Incoming): void => {
     incoming = null
     stopSlow()
@@ -784,7 +700,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       old.audio.pause()
     }
     prepared = false
-    // 有歌出声了：之前没给地址的歌，下一轮再试一次（网易云偶尔一时不给）
+    // 之前没给地址的歌，下一轮再试一次（网易云偶尔一时不给）
     unavailable.clear()
     if (handover)
       endListen()
@@ -800,7 +716,6 @@ export const createPlayer = (context: PlayerContext): Player => {
     void prepareNext()
   }
 
-  /** 当前这首放完了 */
   const ended = (): void => {
     if (state.current === null)
       return
@@ -844,9 +759,8 @@ export const createPlayer = (context: PlayerContext): Player => {
     void start(next, 0, 'continue')
   }
 
-  /** 当前这首的音频没加载下来 */
   const streamFailed = (deck: Deck): void => {
-    // 地址过期了：重新取，从原来的位置接着放
+    // 地址过期了：重新取，从原位置接着放
     if (!fresh(deck.url) && state.current !== null) {
       void start(state.current, state.position, null, state.notice)
       return
@@ -880,7 +794,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       startSlow()
     })
     audio.addEventListener('pause', () => {
-      // 不是 App 暂停的（例如系统拿走了音频焦点）。事件是排着的：送到时已经又放了就不算
+      // 不是 App 暂停的（例如系统拿走音频焦点）；事件是排着的，送到时已经又放了就不算
       if (!incoming && isCurrent(deck) && audio.paused && !audio.ended && (state.status === 'playing' || state.status === 'buffering')) {
         stopSlow()
         publish({ status: 'paused' })
@@ -916,7 +830,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       }
       if (isCurrent(deck))
         return streamFailed(deck)
-      // 缓冲着的下一首没加载出来：交接时不用它，快放完时（handOver）重新取地址再准备
+      // 缓冲着的下一首没加载出来：交接时不用它，快放完时重新取地址再准备
       if (deck.song)
         urls.delete(deck.song.id)
       deck.song = null
@@ -939,10 +853,7 @@ export const createPlayer = (context: PlayerContext): Player => {
   active = deck()
   spare = deck()
 
-  /**
-   * 停着时按播放：当前这首接着放。它现在放不了了（#38：断网、没登录时它不是下载了的，比如刚删了下载），
-   * 就放后面第一首能放的；一首都没有就说明
-   */
+  /** 当前这首接着放；它现在放不了了（#38，比如刚删了下载）就放后面第一首能放的，一首都没有就说明 */
   const resume = (): void => {
     const index = state.current!
     const { song } = state.queue[index]
@@ -965,7 +876,6 @@ export const createPlayer = (context: PlayerContext): Player => {
     void start(index, state.position, null)
   }
 
-  /** 当前这首跳到第 position 秒（见 Player.seek） */
   const seek = (position: number): void => {
     if (state.current === null)
       return
@@ -977,7 +887,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       incoming.deck.audio.currentTime = 0
       incoming = null
     }
-    // 正在换过去的播放器（还没出声）、装着这首的当前播放器直接跳；都不是的（在取地址、地址过期了）放的时候从这里开始
+    // 正在换过去的（还没出声）、装着这首的当前播放器直接跳；都不是的放的时候从这里开始
     const deck = incoming?.deck ?? (holds(active, song)
       ? active
       : null)
@@ -987,15 +897,11 @@ export const createPlayer = (context: PlayerContext): Player => {
     publish({ position: at })
   }
 
-  /** 当前这首的编号；播放队列是空的时是 null */
   const currentId = (): number | null => state.current === null
     ? null
     : state.queue[state.current].song.id
 
-  /**
-   * 播放队列变了：当前这首按编号找回位置（播放队列里同一首歌只有一份）。
-   * 调用的地方都把当前这首留在播放队列里（正在放的那首移不掉、挪不走）；找不到就是这条约定被打破了，明确报错
-   */
+  /** 当前这首按编号找回位置；调用的地方都把当前这首留在队列里（正在放的那首移不掉、挪不走），找不到就是约定被打破了，明确报错 */
   const publishQueue = (queue: readonly QueueEntry[]): void => {
     const id = currentId()
     const current = queue.findIndex(entry => entry.song.id === id)
@@ -1004,11 +910,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     publish({ queue, current })
   }
 
-  /**
-   * 下一首播放（next）、加入播放队列（end）、插播（now）：播放队列是空的就只放这一首，直接开始放（规则①）；
-   * 这首本来就在播放队列里的话，从原位置挪过来，播放来源改成新的（规则②）。
-   * 正在放的那首什么都不变、不从头放；暂停着时插播它就是接着放。现在放不了的歌不放进来
-   */
+  /** 队列空就只放这一首、直接开始（规则①）；本来就在队列里就从原位置挪过来、播放来源改成新的（规则②）。正在放的那首不从头放，放不了的不放进来 */
   const add = (source: PlaySource, song: Song, how: 'next' | 'end' | 'now'): void => {
     if (!canPlay(song))
       return
@@ -1061,11 +963,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       queueChanged()
   }
 
-  /**
-   * 播放队列变了（下一首播放、加入播放队列、移出、换播放模式、补上没同步完的歌）：下一首可能变了，空闲的播放器重新准备（ADR-0010）。
-   * 已经开始交接、还没出声的那首不再是下一首的话，停下它，快放完时重新交接；之前交接失败的也重新准备、重新交接。
-   * 听众点的歌还没出声时，等它出声后再准备
-   */
+  /** 下一首可能变了，空闲的播放器重新准备（ADR-0010）；已经开始交接的若不再是下一首就停下它，快放完时重新交接。点的歌还没出声时，等出声后再准备 */
   const queueChanged = (): void => {
     if (incoming?.handover) {
       const next = following()
@@ -1081,7 +979,7 @@ export const createPlayer = (context: PlayerContext): Player => {
       void prepareNext()
   }
 
-  /** 清空播放队列：停下，两个播放器都不出声；还在取的地址、在准备的下一首回来了也不放 */
+  /** 两个播放器都不出声；还在取的地址、在准备的下一首回来了也不放 */
   const clear = (): void => {
     attempt += 1
     preparing += 1
@@ -1125,7 +1023,7 @@ export const createPlayer = (context: PlayerContext): Player => {
           have: new Set(songs.map(song => song.id)),
         }
       }
-      // 换播放队列之前：正在听的那首是旧播放队列里的
+      // 换队列之前：正在听的那首是旧队列里的
       endListen()
       publish({
         queue: songs.map(song => ({ song, source })),
@@ -1243,7 +1141,7 @@ export const createPlayer = (context: PlayerContext): Player => {
     setQuality(quality) {
       if (quality === state.quality)
         return
-      // 之前取的地址、在准备的下一首是原来的音质：不再用。正在放、正在换过去的那首照旧
+      // 之前取的地址、在准备的下一首是原来的音质，不再用；正在放、正在换过去的那首照旧
       epoch += 1
       preparing += 1
       urls.clear()

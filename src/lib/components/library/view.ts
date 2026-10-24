@@ -2,27 +2,20 @@ import type { PlaylistPage } from '#lib/app/library.js'
 
 import { formatCount, formatPlays } from '../shared/text'
 
-// 歌单页专属的写法：头部资料按界面的写法排好。
-// 哪些歌、失败显示在哪、能做什么，都在 App 的答案里（library.playlistPage）
-// 封面飞行两端共用的缩略图尺寸在 flight.ts（#75）。
+// 歌单页专属的写法：头部资料按界面排好；哪些歌、失败显示在哪、能做什么都在 App 的答案里（library.playlistPage）。封面飞行尺寸在 flight.ts（#75）。
 
-/** 歌单页的头部：把答案里的资料按界面的写法排好 */
 export interface PlaylistHeader {
   name: string
   coverUrl: string
-  /** 名字下面的一行：创建者、首数、播放次数（不写类别：方封面和旁边的按钮已经说明是歌单） */
+  /** 创建者、首数、播放次数；不写类别（方封面和旁边的按钮已经说明是歌单） */
   meta: string[]
   private: boolean
-  /** 简介：没写（或只有空白）时是 null */
+  /** 没写（或只有空白）时是 null */
   description: string | null
   tags: readonly string[]
 }
 
-/**
- * 歌单页的头部；答案里还没有歌单资料时是 null。
- * 首数和下面的列表对得上（DESIGN.md Do's）：有全了是实际有的歌，还在拉时写“拉到了几首 / 一共几首”，列表还没出来时不写。
- * 播放次数是 0 时不写：新歌单，或者刚从旧版本升上来、还没同步到真的值
- */
+/** 答案里还没有资料时是 null。首数和下面的列表对得上（DESIGN.md Do's）；播放次数是 0 时不写（新歌单或还没同步到真的值） */
 export const playlistHeader = (page: PlaylistPage): PlaylistHeader | null => {
   const info = page.info
   if (!info)

@@ -1,11 +1,9 @@
 <!--
-  播放页的歌词（DESIGN.md Lyrics）。挂上时去取（App.openLyrics：桌面右栏里一直挂着，手机上换成歌词时才挂上），换歌时跟着换。
-  逐字歌词：当前行里每个词两层同样的字叠在一起，上层按唱到的比例从左往右露出，唱到一半的字只亮一半；逐行歌词整行高亮。
-  当前行更大、更深，停在高度约 38% 的位置；听众自己滚动后 3 秒内不跟着走。点一行就从这一行开始放。
-  翻译、音译各一个开关，这首歌没有时开关禁用，写明“无翻译”“无音译”。纯音乐、没有歌词时说明；加载中是骨架，没取到时说明原因、能重试。
-  字色不浅于石墨（封面染底上石墨淡不到 4.5:1，The Light-Only Fog Rule）。
-  减少动态效果时：滚到当前行不平滑滚动，字号直接变，颜色 150ms 内渐变，逐字点亮跟着报的进度跳。compact：手机播放页里换掉封面那块时的字号。
-  加载中、歌词、纯音乐、没取到之间交叉淡化（新旧叠在同一格里）；打开翻译、音译时那几行淡入（DESIGN.md Motion）
+  播放页的歌词（DESIGN.md Lyrics）：挂上时取（桌面右栏一直挂着，手机换到歌词才挂），换歌跟着换。逐字歌词每个词两层同样的字，上层按唱到的比例
+  从左往右露出，唱到一半的字只亮一半；逐行歌词整行高亮。当前行更大更深、停在约 38% 的高度；听众自己滚动后 3 秒内不跟着走。点一行从这行开始放。
+  翻译、音译各一个开关，没有时禁用并写明；纯音乐、没有歌词时说明；加载中是骨架，没取到说明原因、能重试。字色不浅于石墨
+  （封面染底上石墨淡不到 4.5:1，The Light-Only Fog Rule）。减少动态效果时滚到当前行不平滑、字号直接变、颜色 150ms 渐变、逐字跟着报的进度跳；
+  compact 是手机播放页换掉封面那块时的字号。四种状态之间交叉淡化（新旧叠在同一格），打开翻译、音译时那几行淡入。
 -->
 <script lang='ts'>
   import { Check, Music } from '@lucide/svelte'
@@ -34,9 +32,9 @@
 
   const { song, playhead, compact = false, class: klass }: Props = $props()
 
-  /** 听众自己滚动后，这么久不跟着当前行走 */
+  /** 这么久不跟着当前行走 */
   const FOLLOW_PAUSE_MS = 3000
-  /** 当前行停在滚动区高度的这个位置 */
+  /** 滚动区高度的这个位置 */
   const ANCHOR = 0.38
 
   const view = getAppView()
@@ -78,10 +76,9 @@
 
   let scroller = $state<HTMLElement>()
   let height = $state(0)
-  /** 听众最近一次自己滚动歌词的时刻 */
   let scrolledAt = Number.NEGATIVE_INFINITY
   let resume: ReturnType<typeof setTimeout> | undefined
-  /** 已经滚到过当前行的那份歌词：换了一份（换歌）时第一次直接跳过去，不平滑滚动 */
+  /** 换了一份（换歌）时第一次直接跳过去，不平滑滚动 */
   let placedLines: readonly LyricLine[] | null = null
 
   const follow = (smooth: boolean) => {
@@ -101,7 +98,7 @@
     })
   }
 
-  // 换了当前行、开关了翻译音译（行高变了）、滚动区高度变了：把当前行放回 38%
+  // 换了当前行、开关翻译音译（行高变了）、滚动区高度变了：把当前行放回 38%
   $effect(() => {
     void active
     void showTranslation
@@ -115,14 +112,14 @@
 
   $effect(() => () => clearTimeout(resume))
 
-  /** 听众自己滚动（滚轮、触摸、键盘、Tab 到某一行）：先不跟着走，停手 3 秒后回到当前行 */
+  /** 滚轮、触摸、键盘、Tab 到某一行：先不跟着走，停手 3 秒后回到当前行 */
   const scrolledByListener = () => {
     scrolledAt = performance.now()
     clearTimeout(resume)
     resume = setTimeout(follow, FOLLOW_PAUSE_MS, true)
   }
 
-  /** 键盘滚动、Tab 到某一行也算听众自己在看 */
+  /** 键盘滚动、Tab 到某一行也算 */
   const SCROLL_KEYS = new Set([
     'ArrowUp',
     'ArrowDown',
@@ -133,7 +130,7 @@
     ' ',
   ])
 
-  // 只是看听众有没有自己滚动，不是操作，所以直接挂在滚动区上
+  // 只是看有没有自己滚动，不是操作，直接挂在滚动区上
   const watchListenerScroll = (target: HTMLElement) => {
     const onkey = (event: KeyboardEvent) => SCROLL_KEYS.has(event.key) && scrolledByListener()
     const onfocus = (event: FocusEvent) => event.target instanceof HTMLElement && event.target.matches(':focus-visible') && scrolledByListener()
@@ -149,7 +146,7 @@
     }
   }
 
-  /** 点一行：从这一行开始放（停着的也接着放），歌词马上跟回当前行 */
+  /** 从这一行开始放（停着的也接着放），歌词马上跟回当前行 */
   const playFrom = (line: LyricLine) => {
     view.app.playFrom(line.start)
     scrolledAt = Number.NEGATIVE_INFINITY
@@ -179,7 +176,7 @@
         {/each}
       </div>
 
-      <!-- 滚动区往两边各伸出 8px，行的焦点环有地方画，字和上面的开关对齐 -->
+      <!-- 滚动区两边各伸出 8px，焦点环有地方画，字和上面的开关对齐 -->
       <div
         {@attach watchListenerScroll}
         bind:this={scroller}
@@ -278,7 +275,7 @@
 </div>
 
 <style>
-  /* 滚动区自己当尺寸容器：上下留白按它的高度算，第一行、最后一行也能停在 38% */
+  /* 滚动区自己当尺寸容器：上下留白按高度算，第一行、最后一行也能停在 38% */
   .scroll {
     container-type: size;
     mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 82%, transparent 100%);
@@ -289,7 +286,7 @@
     padding-block: 38cqh 62cqh;
   }
 
-  /* 换到下一行：当前行变大变深（字号是移动，减少动态效果时直接变；颜色是淡入淡出，最多 150ms） */
+  /* 换到下一行：字号是移动（减少动态效果时直接变），颜色是淡入淡出（最多 150ms） */
   .line-text {
     transition:
       font-size var(--move-lyric-line) var(--ease-out-soft),

@@ -1,13 +1,8 @@
 <!--
-  文字按钮（DESIGN.md Buttons · Text）：没有底色和边框的字，点击范围 44px 高（桌面要矮一点的由调用方写 md:h-*），左右 12px。
-  图标说不清、或点错有代价的次级操作用它：完成、重试、撤销、清空、查看全部、取消 / 保存、全选。
-  tone：primary 深薄荷（默认），neutral 石墨（取消、清空）。strong 是 600 字重，给一行里起确认作用的那个（创建、保存、完成、撤销）。
-  size：字号跟着所在的那一行。默认 label；弹层标题行里的是 body（不 strong 时 400 字重）；说明行里的是 caption（neutral 时是浅一档的石墨）。
-  按下时浅底（primary 配薄荷雾，neutral 配淡发丝），鼠标悬停时薄荷雾底、森林墨字，按下时缩到 98%。
-  禁用：primary 变成石墨淡字，neutral 降到 50%。给了 href 就是链接（查看全部）。
-  进行中（busy，和 Button 一样）：文字不动，图标换成转圈；没有图标的转圈挂在文字左边、伸进左边的留白，不撑宽按钮；不能点，读屏读出忙碌。
-  desktop：桌面布局上不是文字，而是这种胶囊（Button），图标只画在胶囊上；手机布局照旧是文字。调用的地方不用分。
-  class 两种样子都加：只给一种的用 max-md: / md: 前缀（靠边放时 max-md:-mr-3 让字对齐边缘）
+  文字按钮（DESIGN.md Buttons · Text）：没有底色和边框的字，点击范围 44px 高（要矮的由调用方写 md:h-*）、左右 12px。
+  tone：primary 深薄荷（默认），neutral 石墨；strong 给一行里起确认作用的那个。size 跟着所在那一行。
+  进行中（busy，和 Button 一样）文字不动、图标换成转圈，转圈挂在文字左边不撑宽按钮。
+  desktop：桌面画成胶囊（Button）、图标只画在胶囊上；class 两种样子都加，只给一种的用 max-md: / md: 前缀。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -23,13 +18,9 @@
     tone?: 'primary' | 'neutral'
     strong?: boolean
     size?: 'body' | 'label' | 'caption'
-    /** 放在文字左边的 16px 图标 */
     icon?: LucideIcon
-    /** 给了就画成链接 */
     href?: string
-    /** 正在做：转圈、不能点 */
     busy?: boolean
-    /** 桌面布局上画成这种胶囊 */
     desktop?: { variant: 'primary' | 'outline', icon?: LucideIcon }
     children: Snippet
   }
@@ -50,7 +41,6 @@
         : 'text-neutral-700',
       'disabled:opacity-50',
     ])
-  /** 按下时的浅底：进行中点不了，不给 */
   const pressed = $derived(tone === 'primary'
     ? 'active:bg-primary-100'
     : 'active:bg-neutral-100')

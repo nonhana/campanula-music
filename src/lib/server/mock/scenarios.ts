@@ -1,5 +1,4 @@
-// mock 场景：默认种子、登录失效、限流、歌单已删除、空歌单、部分同步、延迟、断网。
-// 场景只影响 mock 的返回和状态，不改 App 代码（#58）。
+// mock 场景：默认种子、登录失效、限流、歌单已删除、空歌单、部分同步、延迟、断网；只影响 mock 的返回和状态，不改 App 代码（#58）。
 import type { SeedName } from './seed.ts'
 
 export type ScenarioName

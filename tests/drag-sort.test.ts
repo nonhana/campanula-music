@@ -4,10 +4,9 @@ import type { DragSortEdges, DragSortResult, DragSortSession, DragSortState, Gri
 import { createDragSortSession, gridTrack, movedBefore, rowTrack } from '#lib/components/shared/drag-sort.js'
 import type { PointerSample } from '#lib/components/shared/press.js'
 
-// 第二个测试接入点“拖动手势核心”（Spec #11 Testing Decisions，delivery.md 第 2 步）：
-// 不碰页面、不碰 Svelte 的纯逻辑。三个拖动排序器（手机歌单行、桌面歌单网格、多选拖歌）共用这一份按下协议、
-// 边缘滚动、目标位置、预览顺序、放下提交、作废撤回和 Alt + ↑ / ↓；这里喂 PointerSample，断言听众看到的结果：
-// 拿起的是哪几项、空位在第几个、列表显示什么顺序、提交了什么、作废时提交没有。
+// 第二个测试接入点“拖动手势核心”（Spec #11 Testing Decisions，delivery.md 第 2 步）：不碰页面、不碰 Svelte 的纯逻辑。
+// 三个拖动排序器（手机歌单行、桌面歌单网格、多选拖歌）共用这一份按下协议、边缘滚动、目标位置、预览顺序、放下提交、作废撤回和 Alt + ↑ / ↓；
+// 这里喂 PointerSample，断言听众看到的结果：拿起的是哪几项、空位在第几个、列表显示什么顺序、提交了什么、作废时提交没有。
 
 interface Setup {
   ids?: readonly number[]
@@ -104,14 +103,12 @@ describe('按下协议：鼠标 5px、触屏立即、只认主指针', () => {
   it('鼠标按下没挪够 5px 就被打断（右键、切走窗口），再用触屏按下仍能正常拖完', () => {
     const { session, pointer, commits, results } = setup({ pointerType: 'mouse' })
 
-    // 鼠标按下了，但没挪够 5px：这次按住被打断
     expect(pointer.down(200, 150)).toBe(true)
     pointer.move(200, 153)
     expect(session.state).toBeNull()
     pointer.cancel()
     expect(session.state).toBeNull()
 
-    // 再用手指按住同一行：立即开始拖，一直拖到最下面并松手
     expect(pointer.down(200, 150, { pointerType: 'touch', pointerId: 2 })).toBe(true)
     expect(dragging(session).grabbed).toBe(20)
     pointer.move(200, 150 + 64 * 4, 16, { pointerType: 'touch', pointerId: 2 })
@@ -165,13 +162,10 @@ describe('按下协议：鼠标 5px、触屏立即、只认主指针', () => {
     expect(pointer.down(200, 150)).toBe(true)
     expect(dragging(session).grabbed).toBe(20)
 
-    // 第二根手指按在别的行上：这次按下不算，正在拖的不受影响
     expect(pointer.down(200, 300, { isPrimary: false, pointerId: 2 })).toBe(false)
     expect(dragging(session).grabbed).toBe(20)
-    // 第二根手指松开：不管
     pointer.up(200, 300, 16, { pointerId: 2, isPrimary: false })
     expect(session.state).not.toBeNull()
-    // 第一根手指接着拖完
     pointer.move(200, 150 + 64)
     pointer.up(200, 150 + 64)
     expect(session.state).toBeNull()
@@ -189,7 +183,6 @@ describe('按下协议：鼠标 5px、触屏立即、只认主指针', () => {
 
   it('上一次按住还没结束时又按下：先把旧的清干净，新的接着开始', () => {
     const { session, grip, commits } = setup({ pointerType: 'mouse' })
-    // 鼠标按下还没挪够 5px
     expect(grip.press({
       pointerId: 1,
       pointerType: 'mouse',
@@ -295,7 +288,6 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
   })
 
   it('勾选的几首一起挪，保持原来的先后', () => {
-    // 2、4 是一起挪的一组：原来的顺序里它们中间隔着 3
     const { session, commits } = setup({
       ids: [1, 2, 3, 4, 5, 6],
       groupOf: id => (id === 2
@@ -316,11 +308,9 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
       time,
     })
     grip.press(at(150))
-    // 拿起时就是原来的顺序：2、4 在空位 1
     expect(session.state?.rest).toEqual([1, 3, 5, 6])
     expect(session.state?.preview).toEqual([1, 2, 4, 3, 5, 6])
     expect(session.state?.startTarget).toBe(1)
-    // 拖到两首之后：空位 3，一组仍然保持 2、4 的先后
     time += 16
     grip.move(at(150 + 64 * 2))
     expect(session.state?.target).toBe(3)
@@ -351,7 +341,6 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     expect(still.commits).toEqual([])
     expect(still.results[0]).toMatchObject({ moved: false })
 
-    // 拖到另一个空位再拖回原来的空位：也不提交
     const back = setupGroup()
     back.pointer.down(200, 150)
     back.pointer.move(200, 150 + 64 * 2)
@@ -360,7 +349,6 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     expect(back.commits).toEqual([])
     expect(back.results[0]).toMatchObject({ moved: false })
 
-    // 拖到另一个空位：正常提交，组内先后不变
     const moved = setupGroup()
     moved.pointer.down(200, 150)
     moved.pointer.move(200, 150 + 64 * 2)
@@ -387,7 +375,6 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
       cancelled: false,
     })
     expect(session.state).toBeNull()
-    // 收干净了：下一次按下还能开始拖
     expect(pointer.down(200, 150)).toBe(true)
     expect(session.state).not.toBeNull()
     pointer.cancel()

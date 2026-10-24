@@ -1,5 +1,4 @@
-// Mock 的状态化曲库：读都从这里生成，写都改这里；刷新页面看到的是同一份内存状态，
-// reset 回到种子。只存在于开发服务器，生产构建不加载（见 scripts/check-mock-isolation.mts）。
+// Mock 的状态化曲库：读都从这里生成、写都改这里，reset 回到种子；只存在于开发服务器，生产构建不加载（scripts/check-mock-isolation.mts）。
 import { canSortPlaylist, playlistKindOf, reorderSortable } from '#lib/api/library.js'
 
 import type { PlaylistDetailBody, RawPlaylist, SeedData, SeedName, SongPart } from './seed.ts'

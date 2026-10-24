@@ -3,17 +3,14 @@ import type { LucideIcon } from '@lucide/svelte'
 /** 菜单行的语气：红心了的实心心形（珊瑚色）、下载（蜜桃枝）、删除（出错红，文字也是红的） */
 export type MenuTone = 'hearted' | 'download' | 'destructive'
 
-/**
- * 行左边的标记：一个图标；薄荷雾方块里的图标（新建歌单）；封面图（我喜欢的音乐角上一颗珊瑚色实心心形）
- */
+/** 行左边的标记：一个图标；薄荷雾方块里的图标（新建歌单）；封面图（我喜欢的音乐角上一颗珊瑚色实心心形） */
 type MenuLeading
   = | { readonly kind: 'icon', readonly icon: LucideIcon }
     | { readonly kind: 'tile', readonly icon: LucideIcon }
     | { readonly kind: 'cover', readonly url: string | null, readonly heart?: boolean }
 
 /**
- * 菜单壳画的一行：歌曲菜单、歌单 •••、头像菜单、加入歌单的选择器都用这一份数据。
- * 行怎么画、多高、键盘怎么走由 MenuList 管；这里只说这一行是什么、能不能选、选了做什么（#73）
+ * 菜单壳画的一行：歌曲菜单、歌单 •••、头像菜单、加入歌单的选择器都用这一份数据。行怎么画、多高、键盘怎么走由 MenuList 管；这里只说这一行是什么、能不能选、选了做什么（#73）
  */
 export interface MenuItem {
   readonly key: string
@@ -25,11 +22,9 @@ export interface MenuItem {
   readonly leading?: MenuLeading
   readonly tone?: MenuTone
   readonly disabled?: boolean
-  /** 这一项上面有一条分隔线 */
   readonly separated?: boolean
   /**
-   * 选了之后菜单壳是否自动关上（默认关）。转交给另一层的项（加入歌单、新建歌单、编辑歌单）自己关，设成 false，
-   * 不然壳会在转交后又去关旧的一层
+   * 选了之后菜单壳是否自动关上（默认关）。转交给另一层的项（加入歌单、新建歌单、编辑歌单）自己关，设成 false，不然壳会在转交后又去关旧的一层
    */
   readonly closeOnChoose?: boolean
   readonly run: () => void

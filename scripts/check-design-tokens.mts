@@ -1,10 +1,6 @@
-// 检查界面代码只用设计系统的档位（DESIGN.md、uno.config.ts、src/lib/components/shared/motion-tokens.ts）。
-// eslint 的 unocss/blocklist 只看得到 class='…' 这种纯字符串，看不到 class={[…]}、对象和三元里的类名；
-// 被禁的类名又不会报错，只是不生成 CSS，界面悄悄失效。这里用 UnoCSS 自己的提取器扫整个文件，再加上 CSS 和 TS 里的零散动效数字。
-// 用法：
-//   pnpm tsx scripts/check-design-tokens.mts            查 src 下全部 .svelte、.ts
-//   pnpm tsx scripts/check-design-tokens.mts <文件>...   只查这些（提交前钩子传暂存的文件）
-// 查的是：
+// 检查界面代码只用设计系统的档位（DESIGN.md、uno.config.ts、src/lib/components/shared/motion-tokens.ts）。eslint 的 unocss/blocklist 只看得到 class='…' 这种纯字符串，
+// 看不到 class={[…]}、对象和三元里的类名；被禁的类名又不会报错，只是不生成 CSS，界面悄悄失效。这里用 UnoCSS 自己的提取器扫整个文件，再加上 CSS 和 TS 里的零散动效数字。
+// 用法：pnpm tsx scripts/check-design-tokens.mts [只查这些文件...]（不带文件查 src 下全部 .svelte、.ts；提交前钩子传暂存的文件）。查的是：
 //   1. uno.config.ts blocklist 里的类名（零散时长、曲线，motion-reduce:，阶梯以外的字号、圆角、阴影、颜色），不管写在哪种 class 写法里
 //   2. 注释以外的 120ms / 1.2s / cubic-bezier(…)：时长、曲线只写在 motion-tokens.ts
 //   3. <style> 里的 ease / ease-in / ease-out：曲线写 var(--ease-out-soft) / var(--ease-in-soft)；来回循环可以用 ease-in-out、linear

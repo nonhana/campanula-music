@@ -1,7 +1,7 @@
 <!--
-  每日推荐的日期数字。首页方块 56px、每日推荐页 88px、手机每日推荐页 72px，600、等宽数字、深薄荷：
-  这三个是图形，不算字号阶梯里的一档（DESIGN.md Typography），所以字号写在这里，不用 text-<档名>。
-  手机 logo 行的日历按钮里那个是墨色的小数字：原型是 10px，按阶梯归到 Micro。读屏另有文字说日期，这里不读
+  每日推荐的日期数字：首页方块 56px、每日推荐页 88px、手机每日推荐页 72px，600、等宽、深薄荷。
+  这三个是图形，不算字号阶梯里的一档（DESIGN.md Typography），所以字号写在这里、不用 text-<档名>。
+  手机 logo 行日历按钮里的那个是墨色小数字：原型 10px，按阶梯归到 Micro。读屏另有文字说日期。
 -->
 <script lang='ts'>
   import type { ClassValue } from 'svelte/elements'

@@ -1,7 +1,5 @@
-<!--
-  播放页左对齐的歌名、歌手、专辑：歌名桌面用 Headline-sm、手机用 Title（DESIGN.md Typography），只放试听片段时跟着“试听”徽标
-  （开始放才知道是不是试听：徽标淡入）。换歌时跟着换碟横着飘（SongSwap）
--->
+<!-- 播放页左对齐的歌名、歌手、专辑：歌名桌面 Headline-sm、手机 Title（DESIGN.md Typography）；只放试听时跟着“试听”徽标（开始放才知道，徽标淡入）。
+  换歌时跟着换碟横着飘（SongSwap）。 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
 

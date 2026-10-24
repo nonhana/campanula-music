@@ -9,12 +9,9 @@ import { playlistName } from '../playlist/playlist-text'
 import { failureText } from '../shared/failure'
 import { formatCount } from '../shared/text'
 
-// 提示条（OperationNotice.svelte，改曲库和下载共用）说什么（#30、#33、#38）：没改成时说哪件事没成、为什么
-// （已经改回原样、放回原位看得见，不另写）；歌单不在了说它不在了、哪件事没成；加入歌单成功说加进了哪里；
-// 下载没下成说哪首、为什么。都是一句话，不带句末句号（DESIGN.md 文案）。
-// 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
+// 提示条（OperationNotice.svelte，改曲库和下载共用）说什么（#30、#33、#38）：都是一句话、不带句末句号（DESIGN.md 文案）。
+// 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写。
 
-/** 句子里的一张歌单：我喜欢的音乐直接写，别的加「」 */
 const playlistInText = (playlist: Playlist): string => playlist.kind === 'liked'
   ? playlistName(playlist)
   : `「${playlist.name}」`
@@ -89,7 +86,6 @@ export const changeFailureText = (failure: ChangeFailure): string => {
   }
 }
 
-/** 歌单不在了时，没成的是哪件事 */
 const missingAction = (change: Extract<Change, { kind: 'add' | 'addMany' | 'remove' | 'order' | 'collectPlaylist' }>): string => {
   switch (change.kind) {
     case 'add':

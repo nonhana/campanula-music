@@ -1,9 +1,7 @@
 <!--
-  登录表单（登录页里的登录卡片）：扫码、短信验证码两种方式，随时切换。桌面默认扫码，手机默认短信验证码。
-  显示扫码时 App 查询扫码状态；切走或离开登录页就停止查询。
-  换方式时按标签的左右顺序横着走：往右边的标签换，旧的往左飘出、新的从右边飘进来（DESIGN.md Motion · 方向）；
-  上面的切换条是 ui/Segmented（标签页），选中那格下面的滑块跟着横着滑；
-  两种方式不一样高，卡片跟着变高变矮（面板 360ms）
+  登录表单（登录页里的登录卡片）：扫码、短信验证码两种方式。桌面默认扫码，手机默认短信验证码；
+  显示扫码时 App 查询扫码状态，切走或离开登录页就停止。换方式时按标签的左右顺序横着走（DESIGN.md Motion · 方向），
+  两种方式不一样高，卡片跟着变高变矮（面板 360ms）。
 -->
 <script lang='ts'>
   import { flushSync } from 'svelte'
@@ -17,7 +15,6 @@
   import LoginSms from './LoginSms.svelte'
 
   interface Props {
-    /** 手机布局：默认短信验证码，二维码要存进相册再识别 */
     phone: boolean
   }
 
@@ -46,7 +43,6 @@
   })
 
   let panel = $state<HTMLElement>()
-  /** 卡片正在跟着变高变矮 */
   let resizing: Animation | undefined
   /** 这次换方式往哪边走：往右边的标签换时内容往左走 */
   let toward = $state<Toward>('left')
@@ -58,10 +54,7 @@
       queueMicrotask(() => document.getElementById(`login-${next}-tab`)?.focus())
   }
 
-  /**
-   * 新旧两种方式叠在同一格里，旧的飘走以前格子按高的那个算：高度从现在的样子变到新的那个（不动布局的例外），
-   * 变的这一会儿竖着超出的部分裁掉（横着飘的不裁）
-   */
+  /** 新旧两种方式叠在同一格里，旧格子飘走前按新的高度变：这一会儿竖着超出的部分裁掉（横着飘的不裁） */
   const switchTo = (next: Method) => {
     const order = methods.map(item => item.key)
     const from = panel!.getBoundingClientRect().height

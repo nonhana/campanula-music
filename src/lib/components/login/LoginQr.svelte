@@ -1,10 +1,7 @@
 <!--
-  扫码登录（视觉原型 welcome-qr / scanned / expired）：等待扫码 → 已扫码，在手机上确认 → 登录；
-  二维码过期点码上的刷新图标；取不到、查不到时给出原因，能重试。取码中、等扫码时状态行只有转圈、跳动的小点，读屏文字留在状态行里。
-  网易云要求行为验证（8821）时换成验证用的二维码，听众在手机上验证完点“继续登录”（确认时按钮转圈）。
-  手机上扫不了自己屏幕上的码：把二维码存进相册，用网易云 App 的“扫一扫”从相册识别。
-  各步骤之间交叉淡化（DESIGN.md Motion）：骨架 ↔ 二维码、刷新出来的新码、盖在码上的头像和刷新键、码下面的状态和说明；
-  “还没有通过验证”、下面的按钮推开内容时展开、收起（motion.ts 的 unfold）
+  扫码登录（视觉原型 welcome-qr / scanned / expired）：等待扫码 → 已扫码，在手机上确认 → 登录；过期点码上的刷新，取不到时给出原因、能重试。
+  网易云要求行为验证（8821）时换成验证用的二维码，验证完点“继续登录”。手机上扫不了自己屏幕上的码：存进相册用网易云 App 识别。
+  状态行只有转圈、小点时读屏文字留在状态行里；各步骤交叉淡化（DESIGN.md Motion），展开、收起走 motion.ts 的 unfold。
 -->
 <script lang='ts'>
   import { LoaderCircle, RotateCw } from '@lucide/svelte'
@@ -16,9 +13,7 @@
   import Button from '../ui/Button.svelte'
 
   interface Props {
-    /** 手机布局：二维码要存进相册再识别 */
     phone: boolean
-    /** 改用短信验证码 */
     onswitch: () => void
   }
 
@@ -31,16 +26,12 @@
   const verifying = $derived(qr?.step === 'verifying')
   const dimmed = $derived(qr?.step === 'scanned' || qr?.step === 'expired')
   const size = $derived(phone ? 'size-[200px]' : 'size-[192px]')
-  /** 码下面那段说明说的是哪一种：换的时候交叉淡化 */
   const hint = $derived(qr?.step === 'failed'
     ? 'failed'
     : verifying ? 'verifying' : 'scan')
 
   let box = $state<HTMLElement>()
-  /**
-   * 刷新、重试时按钮会消失又出现：焦点原来在这里的，放回这一块（还有按钮就放到按钮上），键盘不会丢了位置。
-   * 正在淡出的按钮（Svelte 标成 inert）不算
-   */
+  /** 刷新、重试时按钮消失又出现：焦点原来在这里的放回这一块，正在淡出的按钮（Svelte 标成 inert）不算 */
   const refresh = async () => {
     const hadFocus = box?.contains(document.activeElement) ?? false
     await view.app.startQrLogin()
@@ -51,10 +42,9 @@
 
 <div class='flex flex-col items-center'>
   <div bind:this={box} tabindex='-1' class='relative border border-neutral-100 rounded-xl bg-white p-1'>
-    <!-- 撑开大小；骨架、二维码都叠在它上面，彼此交叉淡化 -->
     <span class={['block', size]} aria-hidden='true'></span>
     {#if image}
-      <!-- global：码第一次到时这一块跟着外面的 if 一起建出来，也要从骨架上淡进来；刷新出来的新码和旧码交叉淡化 -->
+      <!-- global：码第一次到时这一块跟着外面的 if 一起建出来，也要从骨架淡进来 -->
       {#key image}
         <span class='absolute inset-1' transition:fade|global>
           <!-- SDK 给的是黑白 PNG：盖一层森林墨、用 lighten 混合，黑色模块变成森林墨，白底不变 -->
@@ -100,7 +90,7 @@
   </div>
 
   <div class='mt-4 max-w-[300px] flex flex-col items-center text-center'>
-    <!-- 新旧两行叠在同一格里交叉淡化；只有转圈、小点的那两步也占一行高（h-5），换字时不跳 -->
+    <!-- 新旧两行叠在同一格交叉淡化；只有转圈、小点的那两步也占 h-5，换字时不跳 -->
     <p class='grid grid-cols-[minmax(0,1fr)] justify-items-center text-label' role='status'>
       {#key qr?.step ?? 'loading'}
         <span class='col-start-1 row-start-1 h-5 flex items-center gap-2' transition:fade>

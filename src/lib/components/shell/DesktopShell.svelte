@@ -1,12 +1,8 @@
 <!--
-  桌面骨架（768px 及以上，DESIGN.md Layout）：晨光底上 64px 顶栏、72px 图标侧栏（展开 220px，内容区跟着让位）、
-  内容区（最大宽 1280px、左右 32px）、80px 底部通栏。只管区域和尺寸；顶栏、侧栏里放什么由调用方传进来。
-  页面的滚动条贴着窗口右边，从顶栏下沿到底栏上沿；顶栏下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）。
-  页面里的歌曲列表从上下文拿 ScrollLookup，按住滚动条拖（平板触屏）时气泡写它最上面那首。
-  换页时只有内容区在动：顶栏、侧栏、底栏各自起了名字，过渡里原地不动（view-transition-class still，见 uno.config.ts）。
-  侧栏收起时先等文字淡出（SignedInFrame），再变窄。
-  播放条由 PlayerDock 停靠（三个外框共用）：第一次有歌时从屏幕底下浮上来，清空（包括退出登录，整个骨架拿掉时）沉下去；
-  侧栏最下面的（设置）跟着它一起上去、下来（只动 transform），不跳
+  桌面骨架（768px 及以上，DESIGN.md Layout）：晨光底上 64px 顶栏、72px 图标侧栏（展开 220px，内容区跟着让位）、内容区（最大宽 1280px）、80px 底部通栏；只管区域和尺寸，里面放什么由调用方传。
+  页面的滚动条贴着窗口右边，从顶栏下沿到底栏上沿，顶栏下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）；歌曲列表从上下文拿 ScrollLookup，按住滚动条拖时气泡写它最上面那首。
+  换页时只有内容区在动：顶栏、侧栏、底栏各自起了名字，过渡里原地不动（view-transition-class still，见 uno.config.ts）；侧栏收起时先等文字淡出（SignedInFrame），再变窄。
+  播放条由 PlayerDock 停靠：第一次有歌时从屏幕底下浮上来，清空（包括退出登录，整个骨架拿掉时）沉下去；侧栏最下面的设置跟着它上下（只动 transform），不跳。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
@@ -20,7 +16,6 @@
   import { pageScrollPadding } from './scroll-padding'
 
   interface Props {
-    /** 侧栏展开成带文字的 220px */
     railExpanded: boolean
     /** 顶栏：菜单键、logo、返回、正中的搜索框、头像 */
     header: Snippet

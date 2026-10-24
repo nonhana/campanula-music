@@ -1,7 +1,6 @@
 <!--
-  手机搜索页的顶行（视觉原型 PhoneSearch）：返回，加上占满剩下宽度的搜索框（有字时右边是清除）。
-  从 logo 行的搜索按钮进来时（还没搜）搜索框直接获得焦点、弹出键盘；结果页上框里是这次搜的词。
-  下面的搜索历史、建议、结果在页面里（routes/search），跟着框里的字换。键盘的搜索键、回车就搜（搜完收起键盘）
+  手机搜索页的顶行（视觉原型 PhoneSearch）：返回，加上占满剩下宽度的搜索框（有字时右边是清除）。从 logo 行的搜索按钮进来时（还没搜）搜索框直接获得焦点、弹出键盘；结果页上框里是这次搜的词。
+  下面的搜索历史、建议、结果在页面里（routes/search），跟着框里的字换；键盘的搜索键、回车就搜（搜完收起键盘）。
 -->
 <script lang='ts'>
   import { ArrowLeft } from '@lucide/svelte'
@@ -19,7 +18,6 @@
   /** 页面里正在显示建议列表：框里有字，又不是这一页搜的词 */
   const suggesting = $derived(searchBox.draft.trim() !== '' && searchBox.draft.trim() !== keyword)
 
-  // 还没搜：直接打字
   $effect(() => {
     if (!keyword)
       input?.focus()

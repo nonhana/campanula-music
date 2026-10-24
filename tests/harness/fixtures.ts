@@ -72,11 +72,8 @@ const load = async (path: string): Promise<LoadedFixture> => {
 const loaded = new Map<string, Promise<LoadedFixture>>()
 
 /**
- * 读一份录制数据（tests/fixtures/netease/ 下的相对路径），照 SDK 2.4.0 的规矩决定替身是返回还是抛出，
- * 并先过 SDK 导出的结构定义校验，防止测试数据是猜的（Spec #11 Testing Decisions）。
- * - 成功：必须符合模块的结构定义 <模块名>Body；SDK 还没导出时直接报错。
- * - 失败：SDK 不校验失败返回的结构；另外导出了结构定义的（REJECTION_SCHEMAS）照样校验。
- *   网易云限流的失败，像 SDK 一样在 body 里加上 retryAfter。
+ * 读一份录制数据（tests/fixtures/netease/ 下的相对路径），照 SDK 2.4.0 的规矩决定替身是返回还是抛出，并先过 SDK 导出的结构定义校验，防止测试数据是猜的（Spec #11 Testing Decisions）。
+ * 成功：必须符合模块的结构定义 <模块名>Body，SDK 还没导出时直接报错。失败：SDK 不校验失败返回的结构，另外导出了结构定义的（REJECTION_SCHEMAS）照样校验；网易云限流的失败像 SDK 一样在 body 里加上 retryAfter。
  */
 export const loadFixture = (path: string): Promise<LoadedFixture> => {
   let fixture = loaded.get(path)

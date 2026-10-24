@@ -11,9 +11,8 @@ import type { CheckInRequest, DownloadUrlResponse, LyricsResponse, PlayUrlRespon
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from './search.js'
 import type { WriteResponse } from './write.js'
 
-// Campanula 自己的接口目录（ADR-0013）：一个端点一条，写清方法、路径、请求和响应类型。
-// 路径借 SvelteKit 生成的路由 id（#63 之后路径参数是数字）；改错路由 id 或参数，pnpm check 会报错。
-// 关键词、查询参数的编码只在这里做。浏览器只打包这里拼路径的小函数，请求和响应类型只在编译期用（ADR-0005）。
+// Campanula 自己的接口目录（ADR-0013）：一个端点一条。路径借 SvelteKit 生成的路由 id（#63 之后路径参数是数字），
+// 改错路由 id 或参数 pnpm check 会报错；关键词、查询参数的编码只在这里做，浏览器只打包拼路径的小函数（ADR-0005）。
 
 /** 歌单、专辑、歌手、歌曲的路径参数都是网易云的编号 */
 interface NeteaseIdParams {
@@ -25,27 +24,21 @@ export const searchPage = <K extends SearchKind>(kind: K): GetEndpoint<{ keyword
   `${resolve('/api/search/[kind]', { kind })}?keywords=${encodeURIComponent(keywords)}&offset=${offset}`)
 
 export const endpoints = {
-  // 账号和登录（Spec #11“服务端：Campanula API”的登录部分）
 
-  /** GET /api/account：当前登录的网易云账号。没有登录 Cookie 时是 null，不调网易云 */
+  /** 没有登录 Cookie 时是 null，不调网易云 */
   account: get<AccountResponse>(() => resolve('/api/account')),
 
-  /** POST /api/login/qr：一张新的登录二维码 */
   loginQr: post<QrResponse>(() => resolve('/api/login/qr')),
 
-  /** POST /api/login/qr/check：扫码状态。登录成功时服务端已经设好登录 Cookie */
+  /** 登录成功时服务端已经设好登录 Cookie */
   checkLoginQr: post<QrCheckResponse, QrCheckRequest>(() => resolve('/api/login/qr/check')),
 
-  /** POST /api/login/captcha：发短信验证码，只支持中国大陆手机号（+86） */
+  /** 只支持中国大陆手机号（+86） */
   sendCaptcha: post<CaptchaResponse, CaptchaRequest>(() => resolve('/api/login/captcha')),
 
-  /** POST /api/login/sms：短信验证码登录成功，服务端已经设好登录 Cookie */
   loginSms: post<SmsLoginResponse, SmsLoginRequest>(() => resolve('/api/login/sms')),
 
-  /** POST /api/logout：服务端已经回了过期的登录 Cookie */
   logout: post<LogoutResponse>(() => resolve('/api/logout')),
-
-  // 曲库（Spec #11“服务端：Campanula API”曲库一项）
 
   /** GET /api/hearts?uid=：红心了哪些歌。决定红心状态以它为准（我喜欢的音乐的歌曲数会对不上几首，#21 留言） */
   hearts: get<HeartsResponse, { uid: number }>(({ uid }) => `${resolve('/api/hearts')}?uid=${uid}`),
@@ -59,22 +52,22 @@ export const endpoints = {
   /** POST /api/playlists：新建自建歌单。name 去掉了首尾空白，1 到 PLAYLIST_NAME_WIDTH 个宽度 */
   createPlaylist: post<CreatePlaylistResponse, CreatePlaylistRequest>(() => resolve('/api/playlists')),
 
-  /** GET /api/playlists/[id]：不在曲库里的一张歌单，每次打开都联网取（ADR-0007）。头部和全部曲目编号，打不开时说明原因 */
+  /** 不在曲库里的一张歌单，每次打开都联网取（ADR-0007）；头部和全部曲目编号，打不开时说明原因 */
   playlist: get<PlaylistPageResponse, NeteaseIdParams>(({ id }) =>
     resolve('/api/playlists/[id=neteaseId]', { id })),
 
-  /** GET /api/playlists/[id]/track-ids：这张歌单的全部曲目编号，按歌单里的顺序 */
+  /** 按歌单里的顺序 */
   trackIds: get<TrackIdsResponse, NeteaseIdParams>(({ id }) =>
     resolve('/api/playlists/[id=neteaseId]/track-ids', { id })),
 
-  /** POST /api/songs：按编号取歌曲信息，1 到 SONGS_PER_REQUEST 首 */
+  /** 1 到 SONGS_PER_REQUEST 首 */
   songs: post<SongsResponse, SongsRequest>(() => resolve('/api/songs')),
 
   /** POST /api/playlists/[id]/tracks：加入歌单（自建歌单；我喜欢的音乐用红心）。1 到 TRACKS_PER_CHANGE 首 */
   addTracks: post<WriteResponse, AddTracksRequest, NeteaseIdParams>(({ id }) =>
     resolve('/api/playlists/[id=neteaseId]/tracks', { id })),
 
-  /** POST /api/playlists/[id]/tracks/remove：从自建歌单移除歌。1 到 TRACKS_PER_CHANGE 首 */
+  /** 1 到 TRACKS_PER_CHANGE 首 */
   removeTracks: post<WriteResponse, RemoveTracksRequest, NeteaseIdParams>(({ id }) =>
     resolve('/api/playlists/[id=neteaseId]/tracks/remove', { id })),
 
@@ -109,15 +102,13 @@ export const endpoints = {
   tagPlaylist: post<WriteResponse, TagPlaylistRequest, NeteaseIdParams>(({ id }) =>
     resolve('/api/playlists/[id=neteaseId]/tags', { id })),
 
-  /** POST /api/playlists/[id]/public：隐私歌单改公开 */
   publishPlaylist: post<WriteResponse, void, NeteaseIdParams>(({ id }) =>
     resolve('/api/playlists/[id=neteaseId]/public', { id })),
 
-  /** POST /api/playlists/[id]/delete：删除自建歌单 */
   deletePlaylist: post<WriteResponse, void, NeteaseIdParams>(({ id }) =>
     resolve('/api/playlists/[id=neteaseId]/delete', { id })),
 
-  /** GET /api/playlist-tags：网易云的歌单标签库，每次都从网易云取，不写死（Spec #11；验证关卡②录到 70 个、5 类） */
+  /** 每次都从网易云取，不写死（Spec #11；验证关卡②录到 70 个、5 类） */
   playlistTags: get<PlaylistTagsResponse>(() => resolve('/api/playlist-tags')),
 
   /** GET /api/albums：收藏的专辑，最近收藏的在前，和网易云的顺序一样 */
@@ -126,7 +117,6 @@ export const endpoints = {
   /** GET /api/artists：收藏的歌手，最近收藏的在前，和网易云的顺序一样 */
   artists: get<CollectedArtistsResponse>(() => resolve('/api/artists')),
 
-  /** GET /api/albums/[id]：专辑页 */
   album: get<AlbumResponse, NeteaseIdParams>(({ id }) =>
     resolve('/api/albums/[id=neteaseId]', { id })),
 
@@ -134,19 +124,15 @@ export const endpoints = {
   artist: get<ArtistResponse, NeteaseIdParams>(({ id }) =>
     resolve('/api/artists/[id=neteaseId]', { id })),
 
-  /** GET /api/artists/[id]/albums?offset=：歌手页从第 offset 张往后的一页专辑 */
+  /** 从第 offset 张往后的一页专辑 */
   artistAlbums: get<ArtistAlbumsResponse, { id: number, offset: number }>(({ id, offset }) =>
     `${resolve('/api/artists/[id=neteaseId]/albums', { id })}?offset=${offset}`),
 
-  /** POST /api/albums/[id]/collect：收藏或取消收藏专辑 */
   collectAlbum: post<WriteResponse, CollectRequest, NeteaseIdParams>(({ id }) =>
     resolve('/api/albums/[id=neteaseId]/collect', { id })),
 
-  /** POST /api/artists/[id]/collect：收藏或取消收藏歌手 */
   collectArtist: post<WriteResponse, CollectRequest, NeteaseIdParams>(({ id }) =>
     resolve('/api/artists/[id=neteaseId]/collect', { id })),
-
-  // 发现和搜索（Spec #11“服务端：Campanula API”发现、搜索）
 
   /** GET /api/daily：网易云今天给这个账号的每日推荐，按网易云的顺序 */
   daily: get<DailyResponse>(() => resolve('/api/daily')),
@@ -154,8 +140,6 @@ export const endpoints = {
   /** GET /api/search/suggestions?keywords=：网易云给的建议，单曲、歌手、专辑、歌单依次排 */
   suggestions: get<SuggestionsResponse, { keywords: string }>(({ keywords }) =>
     `${resolve('/api/search/suggestions')}?keywords=${encodeURIComponent(keywords)}`),
-
-  // 播放（Spec #11“服务端：Campanula API”播放一项）
 
   /** GET /api/songs/[id]/play-url?quality=：一首歌的播放地址，浏览器拿它直连网易云的音频服务器 */
   playUrl: get<PlayUrlResponse, { id: number, quality: Quality }>(({ id, quality }) =>
@@ -165,7 +149,6 @@ export const endpoints = {
   downloadUrl: get<DownloadUrlResponse, { id: number, quality: Quality }>(({ id, quality }) =>
     `${resolve('/api/songs/[id=neteaseId]/download-url', { id })}?quality=${quality}`),
 
-  /** GET /api/songs/[id]/lyrics：一首歌的歌词 */
   lyrics: get<LyricsResponse, NeteaseIdParams>(({ id }) =>
     resolve('/api/songs/[id=neteaseId]/lyrics', { id })),
 

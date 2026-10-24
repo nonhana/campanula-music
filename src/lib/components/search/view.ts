@@ -6,7 +6,6 @@ import { failureText } from '../shared/failure'
 
 // 搜索在界面上怎么写：建议是哪一类、哪一段和搜索框里一样，结果页有哪些标签、每类叫什么，没搜成时怎么说
 
-/** 建议是哪一类 */
 export const SUGGESTION_KINDS: Record<Suggestion['kind'], string> = {
   song: '单曲',
   artist: '歌手',
@@ -28,7 +27,6 @@ export const KIND_WORDS: Record<SearchKind, { label: string, unit: string }> = {
   albums: { label: '专辑', unit: '张' },
 }
 
-/** 标签从左到右 */
 export const SEARCH_TABS: readonly { key: SearchTab, label: string }[] = [
   { key: 'all', label: '综合' },
   ...SEARCH_KINDS.map(kind => ({ key: kind, label: KIND_WORDS[kind].label })),

@@ -38,7 +38,7 @@
   const view = getAppView()
   const { closePlayerPage } = playerPageActions()
   const { playerDrawer } = getOverlays()
-  /** 当前这首在播放队列里的那一项：“更多”菜单里放进播放队列时用它自己的播放来源 */
+  /** “更多”菜单放进播放队列时用它自己的播放来源 */
   const entry = $derived(view.state.player.current === null
     ? null
     : view.state.player.queue[view.state.player.current])
@@ -57,7 +57,7 @@
   {#if source}
     <p class='min-w-0 truncate text-label text-neutral-700' transition:fade>来自「<span lang={langOf(source)}>{source}</span>」</p>
   {/if}
-  <!-- 给鼠标用的把手：键盘用旁边的收起键和 Esc，所以不进 Tab 顺序（和遮罩一样） -->
+  <!-- 给鼠标用的把手：键盘用收起键和 Esc，不进 Tab 顺序（和遮罩一样） -->
   <button
     type='button'
     class='group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab place-items-center rounded-full -translate-x-1/2'
@@ -69,7 +69,7 @@
   </button>
 </header>
 
-<!-- 窄于 1024px 时两栏按比例分，右栏的歌词不至于挤成一两个字一行。栏间距写在 --gap 上，换碟的遮罩按它算 -->
+<!-- 窄于 1024px 时两栏按比例分，右栏歌词不致挤成一两个字一行；栏间距写在 --gap 上，换碟遮罩按它算 -->
 <div class='columns relative grid grid-cols-[minmax(240px,1fr)_minmax(0,1.15fr)] mx-auto max-w-[1240px] min-h-0 w-full flex-1 px-8 pb-8 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] lg:px-12'>
   <section class='min-h-0 flex flex-col justify-center' aria-label='播放控制'>
     <div class='stage'>
@@ -108,7 +108,7 @@
   <section class='min-h-0 flex flex-col' aria-label='歌词和播放队列'>
     <Segmented options={PANELS} value={choices.panel} onchange={key => (choices.panel = key)} role='tab' id={uid} label='右栏显示' class='h-11 w-[232px] flex-none self-start bg-white/70 shadow-ambient' />
 
-    <!-- 歌词、播放队列并排放在一条轨道上，两块都一直挂着（歌词的滚动位置不丢），换标签时和分段条的滑块一起横着滑；看不见的那块 inert -->
+    <!-- 歌词、队列并排一条轨道，两块一直挂着（歌词滚动位置不丢），换标签和分段条滑块一起横滑；看不见的那块 inert -->
     <div class='track mt-5 min-h-0 flex-1' style:--shown={PANELS.findIndex(panel => panel.key === choices.panel)}>
       {#each PANELS as panel, index (panel.key)}
         {@const selected = choices.panel === panel.key}
@@ -127,7 +127,7 @@
 </div>
 
 <style>
-  /* 换碟只在左列里转：遮罩从左列两边各伸出半个栏间距，伸出的这一截里渐渐淡掉，转出去的封面碰不到歌词。
+     /* 换碟只在左列里转：遮罩两边各伸出半个栏间距并淡掉，转出去的封面碰不到歌词。
      上下多留出地方，转开的封面往下沉、封面的阴影都不被裁掉；它不接点按，盖着下面的歌名、进度条也不碍事 */
   .columns {
     --gap: 40px;
@@ -152,13 +152,13 @@
     pointer-events: none;
   }
 
-  /* 封面不能把下面的控制键挤出视口：视口矮时跟着缩 */
+  /* 视口矮时封面跟着缩，不把控制键挤出视口 */
   .cover {
     width: 100%;
     max-width: min(420px, calc(100dvh - 440px));
   }
 
-  /* 右栏的轨道：两块叠在同一格里，各自按离显示的那块隔几格横着摆（一格是自己的宽度再加 --track-gap），和分段条的滑块一起滑（面板 360ms）。
+     /* 右栏轨道：两块叠在一格，各自按离显示那块隔几格横摆（一格是自己的宽度加 --track-gap），和分段条滑块一起滑（面板 360ms）。
      左右各多留 --bleed 再裁掉，歌词行的焦点环、播放队列面板的阴影不被切掉；两块隔得比两倍 --bleed 宽，看不见的那块不露边。
      看不见的那块是透明的：减少动态效果时轨道不滑（--move-* 是 0），换成原地交叉淡化（最多 150ms）。
      下面两处时长、延迟用 --duration-* 减去 --move-*：正常时是 0，整条轨道不透明地滑；减少动态效果时就是淡入淡出的时长 */
@@ -173,7 +173,7 @@
     overflow-x: clip;
   }
 
-  /* 进来的：正常时一下变不透明再滑进来；减少动态效果时在原地淡入 */
+  /* 正常时先变不透明再滑进来；减少动态效果时原地淡入 */
   .slide {
     grid-area: 1 / 1;
     translate: calc((var(--slot) - var(--shown)) * (100% + var(--track-gap)));
@@ -182,7 +182,7 @@
       opacity calc(var(--duration-panel) - var(--move-panel)) var(--ease-out-soft);
   }
 
-  /* 出去的：正常时滑出去以后才变透明；减少动态效果时先在原地淡出，淡完再挪开 */
+  /* 正常时滑出去以后才变透明；减少动态效果时先原地淡出再挪开 */
   .slide.away {
     opacity: 0;
     transition:

@@ -37,7 +37,7 @@
     library: LibraryState
     phone?: boolean
     heading?: Snippet
-    /** 分节标题的级数：首页歌单区块的标题是 h2，两块用 h3；歌单页是 h1，两块用 h2 */
+    /** 首页歌单区块标题 h2、两块 h3；歌单页 h1、两块 h2 */
     sectionLevel?: 2 | 3
   }
 
@@ -46,25 +46,23 @@
   const { playlistEditor, stack } = getOverlays()
   const own = $derived(library.playlists?.filter(playlist => playlist.kind === 'own') ?? null)
   const collected = $derived(library.playlists?.filter(playlist => playlist.kind === 'collected') ?? null)
-  /** 只有自建歌单参与排序；一张、还没有时没有可排的 */
+  /** 只有自建歌单参与；一张、还没有时没有可排的 */
   const canOrder = $derived((own?.length ?? 0) > 1)
   const sectionTag = $derived(`h${sectionLevel}`)
-  /** 排序时的桌面网格和普通网格用同一份格宽 */
   const desktopGrid = $derived(tileGridLook('playlist', 'grid', false))
 
   let sorting = $state(false)
-  /** 键盘移动后给读屏的一句话 */
   let announcement = $state('')
 
   const commitOrder = (ids: readonly number[]) => view.app.orderPlaylists(ids)
-  /** 一个排序器：手机按横版列表量，桌面按封面网格量（#65） */
+  /** 手机按横版列表量，桌面按封面网格量（#65） */
   const sort = new PlaylistSort({
     ids: () => own?.map(playlist => playlist.id) ?? [],
     playlistOf: (id: number) => own?.find(playlist => playlist.id === id),
     commit: commitOrder,
     layout: () => phone ? 'rows' : 'grid',
   })
-  /** 排序时的自建歌单预览（手机列表、桌面网格共用） */
+  /** 手机列表、桌面网格共用 */
   const sorted = $derived(sort.order.map(id => own?.find(playlist => playlist.id === id)).filter(playlist => playlist !== undefined))
 
   $effect(() => () => {
@@ -88,17 +86,17 @@
     document.querySelector<HTMLElement>('[data-sort-entry]')?.focus()
   }
 
-  /** 排序期间按 Esc 退出（焦点在哪都行；拖动中的 Esc 由 PlaylistSort 先接住） */
+  /** 焦点在哪都行；拖动中的 Esc 由 PlaylistSort 先接住 */
   const onWindowKeydown = (event: KeyboardEvent) => {
-    // 有浮层开着时 Esc 先归最上层：浮动菜单不会让背景 inert，只看 inert 不够。
-    // 也不能改成让宿主在捕获阶段监听：那会抢在拖动的取消之前。
+    // 有浮层开着时 Esc 先归最上层：浮动菜单不会让背景 inert，只看 inert 不够
+    // 也不能让宿主在捕获阶段监听：那会抢在拖动的取消之前
     if (!sorting || stack.top || sort.dragging || event.defaultPrevented || event.key !== 'Escape')
       return
     event.preventDefault()
     void finishSort()
   }
 
-  /** 焦点在某一行时 Alt + ↑ / ↓ 移一位 */
+  /** 焦点在某一行时 Alt+↑/↓ 移一位 */
   const onListKeydown = (event: KeyboardEvent) => {
     if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown'))
       return
@@ -113,7 +111,7 @@
       return
     }
     event.preventDefault()
-    // 卡片换了位置以后浏览器会把焦点丢回 body：等这一帧排好，再把焦点放回这一张
+    // 卡片换位后浏览器会把焦点丢回 body：等这一帧排好再放回这一张
     void tick().then(() => {
       document.querySelector<HTMLElement>(`[data-playlist-id="${id}"] a`)?.focus()
       const order = sorter.order
@@ -122,7 +120,6 @@
     })
   }
 
-  /** 一块一张都没有：标题说清了，不写正文 */
   const EMPTY = { own: '还没有自建歌单', collected: '还没有收藏的歌单' }
 </script>
 

@@ -11,12 +11,9 @@ import type { LocalDb, Replica } from './local'
 import type { OperationNotice } from './notice'
 import type { SessionResult, SessionRound } from './session-round'
 
-// 晚一点才提交的修改（Spec #11“客户端：晚一点才提交的修改”，#70）：多选移除（5 秒撤销）、
-// 歌单内排序和自建歌单排序（停手 2 秒合并）、页面隐藏时立即提交、关掉再打开恢复没确认的改动。
-// 三种修改只有“停手多久、提交什么、网易云回来怎么办”不同，其余（计时、合并、按目标排队、keepalive、
-// 未确认标记与恢复、重试记忆、退出作废）都在这里写一份。
-// 请求都走会话一轮（SessionRound.api）：换轮后回来的旧回复直接丢掉，不会写进新一轮。
-// keepalive 只把标记交给 Api；请求体超过 64 KiB 时 Api 自己退回普通请求（api.ts）。
+// 晚一点才提交的修改（Spec #11“客户端：晚一点才提交的修改”，#70）：多选移除（5 秒撤销）、歌单内排序和自建歌单排序（停手 2 秒合并）。
+// 页面隐藏时立即提交，关掉再打开恢复没确认的改动；三种修改只有“停手多久、提交什么、网易云回来怎么办”不同。
+// 请求都走会话一轮（SessionRound.api），换轮后回来的旧回复直接丢掉；keepalive 只把标记交给 Api，请求体超过 64 KiB 时 Api 退回普通请求（api.ts）。
 
 /** 多选移除的提示条留多久（毫秒）：这之内可以撤销，过了才提交 */
 const REMOVE_UNDO_MS = 5000
@@ -27,39 +24,33 @@ type RemoveChange = Extract<DeferredChange, { kind: 'remove' }>
 type OrderChange = Extract<DeferredChange, { kind: 'order' }>
 type PlaylistOrderChange = Extract<DeferredChange, { kind: 'playlistOrder' }>
 type Outcome = SessionResult<WriteResponse>
-/** 这一轮还在时网易云回来的结果 */
 type Answer = Exclude<Outcome, null>
 
-/** 写进副本的一个修改（听众做的，或者网易云建好的新歌单、换好的封面）：网易云确认的那一刻（还没确认是 null），写进副本了没有 */
+/** 听众做的，或网易云建好的新歌单、换好的封面；confirmedAt 是网易云确认的那一刻（还没确认是 null） */
 export interface PendingChange {
   change: ConfirmedChange
   confirmedAt: number | null
   saved: boolean
 }
 
-/** 一份还没提交的修改：显示着的这一份、正在提交的那一份、计时和排队 */
 interface Pending<C extends DeferredChange> {
-  /** 最新要提交的修改 */
   change: C
-  /** 显示着的这一份修改；提交中又改了时会换一份新的 */
+  /** 提交中又改了时会换一份新的 */
   entry: PendingChange
-  /** 正在提交的那一份修改 */
   sendingEntry: PendingChange | null
-  /** 取消计时 */
   cancelTimer: () => void
-  /** 已经开始提交：同一份不重复发 */
+  /** 同一份不重复发 */
   sending: Promise<void> | null
-  /** 处理完了（提交成功、失败退回了、这一轮作废了）：不再提交 */
+  /** 提交成功、失败退回、这一轮作废了：不再提交 */
   settled: boolean
-  /** 开始提交时收起上一次失败的提示 */
+  /** 收起上一次失败的提示 */
   begin: () => void
-  /** 处理完了：从自己那一组里拿掉 */
   finish: (mine: number) => void
-  /** 意外出错（请求、本机数据库）：按没成功处理 */
+  /** 请求、本机数据库意外出错：按没成功处理 */
   failed: (mine: number, failure: ChangeFailure) => void
 }
 
-/** 一批还没提交的移除：removalId 认这一批，提示条的撤销和合并都只认这个编号，不当载荷的副本 */
+/** removalId 认这一批，撤销和合并都只认这个编号，不当载荷的副本 */
 interface PendingRemoval extends Pending<RemoveChange> {
   removalId: number
 }
@@ -79,73 +70,58 @@ export interface DeferredContext {
   page: PageVisibility
   local: LocalDb
   session: SessionRound
-  /** 显示着的副本（叠上还没确认的修改）；没登录时 null */
+  /** 叠上还没确认的修改；没登录时 null */
   shown: () => Replica | null
-  /** 本机副本（没有叠修改的）；没登录时 null */
+  /** 没有叠修改的；没登录时 null */
   replica: () => Replica | null
-  /** 还没确认的修改：叠到显示着的副本上、拿掉、确认后写进本机副本 */
   overlay: {
     add: (entry: PendingChange) => void
     remove: (match: (change: ConfirmedChange) => boolean) => void
     confirm: (mine: number, entry: PendingChange, change: Change) => Promise<boolean>
   }
-  /** 重新发布曲库状态 */
   publish: () => void
-  /** 换掉提示条（App 的提示条负责重新发布） */
+  /** App 的提示条负责重新发布 */
   notify: (notice: OperationNotice | null) => void
-  /** 当前提示条：提交前要看清掉的是不是自己的那一条 */
+  /** 提交前要看清掉的是不是自己的那一条 */
   notice: () => OperationNotice | null
-  /** 马上同步一次曲库（歌单在网易云里不在了） */
+  /** 歌单在网易云里不在了 */
   sync: () => void
-  /** 浏览器觉得联网着（navigator.onLine） */
   online: () => boolean
 }
 
 export interface Deferred {
-  /** 同一样东西的修改按先后一次一个：立即修改和晚一点提交的都走这一条队；上一件失败也不堵后面 */
+  /** 立即修改和晚一点提交的都走这一条队；上一件失败也不堵后面 */
   serialize: <T>(target: string, job: () => Promise<T>) => Promise<T>
-  /** 等这个目标当前的队排完（打开歌单前看它在不在曲库里） */
+  /** 打开歌单前看它在不在曲库里 */
   settled: (target: string) => Promise<void>
-  /**
-   * 从自建歌单移除几首：先改本地，5 秒内可以撤销，没撤销才提交。
-   * 已经不在本机曲目里的编号会被过滤；超过 TRACKS_PER_CHANGE 或断网时不改本地，只说明原因
-   */
+  /** 先改本地，5 秒内可以撤销，没撤销才提交；已经不在本机曲目里的编号被过滤，超过 TRACKS_PER_CHANGE 或断网时不改本地 */
   remove: (playlist: Playlist, songIds: readonly number[]) => void
-  /** 撤销提示条上的这一批移除（载荷里的 removalId）：整批放回原位，什么都不提交 */
+  /** 整批放回原位，什么都不提交 */
   undoRemove: (removalId: number) => void
-  /** 听众主动关掉提示条：如果关的是“撤销”那一条，忘掉它指向哪一批（计时和提交不受影响） */
+  /** 关的是“撤销”那一条就忘掉它指向哪一批（计时和提交不受影响） */
   dismiss: () => void
-  /** 5 秒撤销窗口里把这些歌加回来：从待提交的移除里拿掉，返回拿掉的编号 */
+  /** 从待提交的移除里拿掉，返回拿掉的编号 */
   restore: (playlistId: number, songIds: readonly number[]) => Set<number>
-  /** 重试提示条上没成功的移除（载荷里的歌单、编号）：重新从本地拿掉，马上提交 */
+  /** 重新从本地拿掉，马上提交 */
   retryRemove: (playlist: Playlist, songIds: readonly number[]) => Promise<void>
-  /**
-   * 把整张歌单的新顺序先改本地，停手 2 秒合并提交；返回顺序有没有改。
-   * 断网、歌单不能排序、要挪的歌不在列表里时返回 false，不改本地
-   */
+  /** 先改本地，停手 2 秒合并提交；断网、歌单不能排序、要挪的歌不在列表里时返回 false，不改本地 */
   moveSongs: (playlistId: number, songIds: readonly number[], before: number | null) => boolean
-  /** 重试提示条上没保存成功的排序（载荷里的歌单、顺序）：恢复刚才的顺序，马上提交 */
+  /** 恢复刚才的顺序，马上提交 */
   retryOrder: (playlist: Playlist, songIds: readonly number[]) => Promise<void>
-  /** 曲库里自建歌单之间的排序：只收全部自建歌单的先后，我喜欢的音乐由模块放在最前；不是这些时抛错 */
+  /** 只收全部自建歌单的先后，我喜欢的音乐由模块放在最前；不是这些时抛错 */
   orderPlaylists: (playlistIds: readonly number[]) => boolean
-  /** 重试提示条上没保存成功的自建歌单顺序（载荷里的先后）：恢复刚才的顺序，马上提交 */
+  /** 恢复刚才的顺序，马上提交 */
   retryPlaylistOrder: (playlistIds: readonly number[]) => Promise<void>
-  /** 页面隐藏（全部）或离开歌单（这一张）：把还没提交的修改立即提交 */
+  /** 页面隐藏（全部）或离开歌单（这一张）时立即提交 */
   flush: (playlistId?: number) => Promise<void>
   /**
-   * 上次关掉前没确认的改动：同步拿到歌单列表以后重拉这几张、丢掉本地改动。每种结果对本地的影响：
-   * - recovered：重拉成功，标记划掉，这张歌单的本地改动被网易云的覆盖，提示“已恢复原样”；
-   * - missing：这张歌单在网易云里已经不在了，标记划掉，参与“已恢复原样”；
-   * - failed：重拉没成功，标记留着，下一次同步/下次打开再试，不提示；
-   * - stopped：这一轮已经结束，停止恢复，标记留在本机，下次打开再试。
+   * 上次关掉前没确认的改动：同步拿到歌单列表后重拉这几张、丢掉本地改动。recovered 是重拉成功、标记划掉、提示“已恢复原样”；
+   * missing 是歌单已经不在了、标记划掉；failed 是重拉没成功、标记留着下次再试、不提示；stopped 是这一轮结束、标记留本机。
    */
   recover: (mine: number, reload: (playlistId: number) => Promise<Recovered>) => Promise<void>
-  /** 刚打开：接上本机记着的未确认歌单 */
+  /** 接上本机记着的未确认歌单 */
   resume: (playlistIds: readonly number[]) => void
-  /**
-   * 退出、登录失效、换账号：作废本标签页的计时和队列。
-   * 本机记着的未确认标记不在 `pending` 里，留给恢复流程（同账号下次打开时重拉）；不在这里删
-   */
+  /** 作废本标签页的计时和队列；本机记着的未确认标记留给恢复流程（同账号下次打开时重拉），不在这里删 */
   forget: () => void
 }
 
@@ -183,22 +159,15 @@ const orderProblem = (own: readonly Playlist[], playlistIds: readonly number[]):
     : `自建歌单顺序里混进了不是自建歌单的编号：${unknown}`
 }
 
-/** 晚一点才提交的修改在本标签页的全部状态：退出、换账号时整体换掉（本机标记不在里面） */
 interface PendingState {
-  /** 多选移除：本地已经拿掉、还没提交的 */
   removals: PendingRemoval[]
-  /**
-   * 当前（或最近一条被别的提示替换掉的）“撤销”提示指向哪一批；只用来找“上一批是谁”，
-   * 不是提示内容的第二份存储（提示载荷里的 removalId 才是界面看到的那一批）
-   */
+  /** 当前（或最近被别的提示替换掉的）“撤销”提示指向哪一批，只用来找“上一批是谁”；界面看到的那一批在提示载荷的 removalId 里 */
   noticeRemovalId: number | null
-  /** 拖动排序：本地已经改了、还没提交的，一张歌单一份 */
   orders: Map<number, Pending<OrderChange>>
-  /** 自建歌单之间的顺序：本地已经改了、还没提交的 */
   playlistOrder: Pending<PlaylistOrderChange> | null
-  /** 上次关闭前没确认的歌单：同步拿到歌单列表后先从网易云重拉这几张 */
+  /** 同步拿到歌单列表后先从网易云重拉这几张 */
   recovering: Set<number>
-  /** 这个标签页已经写进本机的标记：只增删自己写的那几张，别的标签页记下的不动 */
+  /** 只增删自己写的那几张，别的标签页记下的不动 */
   writtenMarkers: Set<number>
 }
 
@@ -214,14 +183,14 @@ const freshPending = (): PendingState => ({
 export const createDeferred = (context: DeferredContext): Deferred => {
   const { clock, local, session } = context
   let pending = freshPending()
-  /** 这个标签页里每一批移除的编号：只增不减，换轮也不重用 */
+  /** 只增不减，换轮也不重用 */
   let nextRemovalId = 1
-  /** 未确认标记一步一步写，免得几次写交错、后写的拿着旧的一组把前面的盖掉 */
+  /** 一步一步写，免得几次写交错、后写的拿着旧的一组把前面的盖掉 */
   let markerSaving: Promise<void> = Promise.resolve()
-  /** 同一样东西的修改按先后一个一个做：上一次连同收尾做完的那一刻 */
+  /** 上一次连同收尾做完的那一刻 */
   const queues = new Map<string, Promise<void>>()
 
-  /** 丢掉本标签页的全部待提交状态：计时、队列里的那一份；本机标记留给恢复流程 */
+  /** 丢掉计时、队列里的那一份；本机标记留给恢复流程 */
   const resetPending = (): void => {
     for (const item of pending.removals) {
       item.settled = true
@@ -654,7 +623,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     void saveMarkers(session.current)
   }
 
-  /** 听众主动关掉提示条：关的是“撤销”那一条时忘掉它指向哪一批；计时和提交不受影响 */
+  /** 关的是“撤销”那一条时忘掉它指向哪一批；计时和提交不受影响 */
   const dismiss = (): void => {
     const current = context.notice()
     if (current?.kind === 'removed' && pending.noticeRemovalId === current.removalId)
@@ -663,8 +632,8 @@ export const createDeferred = (context: DeferredContext): Deferred => {
 
   /**
    * 把这张歌单的待提交移除里的这几首拿掉（重新加入歌单时用）：别的歌继续按 5 秒计时，拿掉的放回原位。
-   * 和基线一样遍历这张歌单的全部待提交移除（提示被关掉、换掉以后也能把前一批加回来）；
-   * removalId / noticeRemovalId 只决定当前那条“撤销”提示要不要更新、指针什么时候清，不拿来筛候选。
+   * 遍历这张歌单的全部待提交移除（提示被关掉、换掉以后也能把前一批加回来）；removalId / noticeRemovalId 只决定
+   * 当前那条“撤销”提示要不要更新、指针什么时候清，不拿来筛候选。
    */
   const restore = (playlistId: number, songIds: readonly number[]): Set<number> => {
     const ids = new Set(songIds)
@@ -711,8 +680,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
   }
 
   const retryRemove = async (playlist: Playlist, songIds: readonly number[]): Promise<void> => {
-    // 用当前副本里的这一张：提示条可能开了一阵，名字、作者已经变了。
-    // 歌单已经不在当前副本里（在别处删了）就不提交，和 retryOrder 一样，等同步/恢复流程处理
+    // 用当前副本里的这一张（提示条可能开了一阵，名字、作者已经变了）；歌单已经不在副本里就不提交，等同步/恢复流程处理
     const fresh = context.replica()?.playlists?.find(item => item.id === playlist.id)
     if (!fresh)
       return
@@ -767,10 +735,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     return item
   }
 
-  /**
-   * 往已有的一份修改里合并新的载荷：正在提交时换一份新的显示着的修改，等这一份回来再发；
-   * 没在提交就改显示着的那一份，停手计时从头算
-   */
+  /** 正在提交时换一份新的显示着的修改、等这一份回来再发；没在提交就改显示着的那一份，停手计时从头算 */
   const mergePending = <C extends DeferredChange>(item: Pending<C>, change: C, mine: number, policy: Policy<C>): void => {
     item.change = change
     if (item.sending) {
@@ -816,7 +781,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     if (sameOrder(next, tracks.trackIds))
       return false
     if (!context.online()) {
-      // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
+      // 断网时先不改本地（规则⑨）；联网后点“重试”再把这次拖动排进去、提交
       show({
         kind: 'orderFailed',
         playlist,
@@ -872,7 +837,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       }
     }
     if (!context.online()) {
-      // 断网时先不改本地（规则⑨）；连上网络后点“重试”再把这次拖动排进去、提交
+      // 断网时先不改本地（规则⑨）；联网后点“重试”再把这次拖动排进去、提交
       show({
         kind: 'playlistOrderFailed',
         playlistIds: next,

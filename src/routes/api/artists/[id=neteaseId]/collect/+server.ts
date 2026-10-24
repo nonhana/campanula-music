@@ -5,7 +5,6 @@ import { respondSignedIn } from '#lib/server/session.js'
 
 import type { RequestHandler } from './$types'
 
-// 收藏或取消收藏歌手
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params
   const { collected } = await readCollect(request)

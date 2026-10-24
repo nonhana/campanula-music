@@ -5,45 +5,37 @@ import { CHECK_INS, PLAYER, settled as requestResult } from './local'
 import type { CheckIn, Player, PlayerState, SavedPlayer, SavedProgress, SavedQueue } from './player'
 import type { SessionRound } from './session-round'
 
-// 保存的播放队列（Spec #11“客户端：播放队列与播放”、规则⑩，#69）：播放队列和进度存在这台设备上，
-// 记着它是哪个网易云账号的。归属、持久化、打卡归属和换账号的规则⑩都在这里，App 只发出“会话换了”。
-// - 登录失效时队列还在（同一个账号重新登录接着放）；换了别的账号登录才清空；
-// - 没登录时放的已下载的歌（#38）不属于任何账号，登录了就交给这个账号，登录前听的秒数不补记；
-// - 主动退出：停下、把最后一首的打卡记进本机并直接发一次，再删掉本机这一份；别的标签页退出不重复发；
-// - 每一份写进本机的播放队列、进度和打卡都带着同一个账号，打卡不会记到别人头上。
+// 保存的播放队列（Spec #11“客户端：播放队列与播放”、规则⑩，#69）：播放队列和进度存在这台设备上，记着是哪个网易云账号的。
+// 登录失效时队列还在（同一个账号重新登录接着放），换了别的账号才清空；没登录时放的已下载的歌（#38）登录后交给这个账号，之前听的秒数不补记。
+// 主动退出时停下、把最后一首的打卡记进本机并直接发一次，再删掉本机这一份；每份队列、进度和打卡都带着同一个账号，不会记到别人头上。
 
-/** 存着的播放队列那一份，加上它是哪个网易云账号的（换了别的账号登录就清空，规则⑩） */
+/** 换了别的账号登录就清空（规则⑩） */
 interface StoredQueue extends SavedQueue { owner: number | null }
 
-/** 存着的播放队列和进度 */
 interface StoredPlayer {
-  /** 网易云账号的 uid；没登录时放的是 null */
+  /** 没登录时放的是 null */
   owner: number | null
   saved: SavedPlayer
 }
 
-/** 要发的听歌打卡，加上它是哪个网易云账号的：只补发给这个账号 */
+/** 只补发给这个账号 */
 export type PendingCheckIn = CheckIn & { owner: number }
 
 export interface PendingCheckIns {
-  /** 按记下的先后；key 用来删 */
+  /** key 用来删 */
   all: () => Promise<{ key: number, checkIn: PendingCheckIn }[]>
   remove: (key: number) => Promise<void>
-  /** 全部丢弃（退出登录） */
   clear: () => Promise<void>
 }
 
-/** 播放器要的本机保存：给播放器的 save / forget 回调 */
 export interface SavedPlayerStore {
-  /** 进度变了：存进度；播放队列那一份也变了、有歌听完了时，在同一个事务里一起存 */
+  /** 队列那一份也变了、有歌听完了时，在同一个事务里一起存 */
   save: (progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]) => void
-  /** 播放队列空了：本机存着的删掉；空之前听完的那首的打卡和删在同一个事务里存下 */
+  /** 空之前听完的那首的打卡和删在同一个事务里存下 */
   forget: (checkIns: readonly CheckIn[]) => void
-  /** 要发的打卡（补发、丢弃） */
   pending: PendingCheckIns
 }
 
-/** 播放队列、进度和听歌打卡的存储区：本机数据库只管存，内容由这里定义 */
 interface PlayerStore {
   read: () => Promise<StoredPlayer | null>
   save: (progress: SavedProgress, queue: StoredQueue | undefined, checkIns: readonly PendingCheckIn[]) => Promise<void>
@@ -56,13 +48,13 @@ interface PlayerStore {
 export interface SavedQueueContext {
   db: LocalDatabase
   session: SessionRound
-  /** 播放器在这里；保存的播放队列要让它停下、恢复、交接归属 */
+  /** 保存的播放队列要让它停下、恢复、交接归属 */
   player: () => Player
-  /** App 显示的播放状态：有没有正在放的那首（要不要把没登录时放的交给刚登录的账号） */
+  /** 有没有正在放的那首（要不要把没登录时放的交给刚登录的账号） */
   read: () => PlayerState
-  /** 有新的打卡记进本机了：发出去 */
+  /** 发出去 */
   send: () => void
-  /** 主动退出、登录 Cookie 还没删时：这个账号的打卡直接发一次，发没发成都不再管 */
+  /** 这个账号的打卡直接发一次，发没发成都不再管 */
   sendBeforeLogout: (owner: number) => Promise<void>
 }
 
@@ -113,21 +105,19 @@ const createPlayerStore = (db: LocalDatabase): PlayerStore => ({
 
 export const createSavedQueue = (context: SavedQueueContext): SavedPlayerStore => {
   const store = createPlayerStore(context.db)
-  /** 这一份播放队列属于哪个网易云账号；没登录、放的是已下载的歌时是 null */
+  /** 没登录、放的是已下载的歌时是 null */
   let owner: number | null = null
-  /** 正在退出：播放器停下来的那次保存会记下最后一首的打卡，但不在这里发，退出时统一发一次 */
+  /** 播放器停下来的那次保存会记下最后一首的打卡，但不在这里发，退出时统一发一次 */
   let leaving = false
-  /** 本机写盘按先后一步一步做 */
   let writes: Promise<unknown> = Promise.resolve()
 
-  /** 排进本机写盘的先后里；返回这一份做完 */
   const chain = (action: () => Promise<void>): Promise<void> => {
     const next = writes.then(action)
     writes = next.catch(() => {})
     return next
   }
 
-  /** 记下这一轮的所有者：打卡只记给这个账号 */
+  /** 打卡只记给这个账号 */
   const tagged = (checkIns: readonly CheckIn[]): PendingCheckIn[] => {
     const current = owner
     return current === null
@@ -135,7 +125,7 @@ export const createSavedQueue = (context: SavedQueueContext): SavedPlayerStore =
       : checkIns.map(checkIn => ({ ...checkIn, owner: current }))
   }
 
-  /** 保存的队列带着这一刻的归属；没登录时是 null（之后登录了就交给那个账号） */
+  /** 没登录时是 null（之后登录了就交给那个账号） */
   const stored = (queue: SavedQueue | undefined): StoredQueue | undefined => queue && { ...queue, owner }
 
   const save = (progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]): void => {
@@ -184,7 +174,7 @@ export const createSavedQueue = (context: SavedQueueContext): SavedPlayerStore =
       await store.delete()
   }
 
-  /** 没登录时打开 App：恢复只有已下载的歌的那一份；存着的是别的账号的就留着，等它登录 */
+  /** 恢复只有已下载的歌的那一份；存着的是别的账号的就留着，等它登录 */
   const restoreAnonymous = async (): Promise<void> => {
     const mine = context.session.current
     leaving = false
@@ -199,7 +189,7 @@ export const createSavedQueue = (context: SavedQueueContext): SavedPlayerStore =
       player.restore(storedPlayer.saved)
   }
 
-  /** 退出登录：停播放器、记下最后一首的打卡、删掉本机这一份；主动退出的标签页再把它直接发一次 */
+  /** 停播放器、记下最后一首的打卡、删掉本机这一份；主动退出的标签页再把它直接发一次 */
   const leave = async (notify: boolean): Promise<void> => {
     const mine = context.session.current
     leaving = true
@@ -210,7 +200,7 @@ export const createSavedQueue = (context: SavedQueueContext): SavedPlayerStore =
     context.player().stop()
     owner = null
     await writes
-    // 退出还没做完就换了新一轮（别的标签页、重新登录）：新的会话接手，不再删它刚存下的队列
+    // 退出还没做完就换了新一轮：新的会话接手，不再删它刚存下的队列
     if (!context.session.isCurrent(mine))
       return
     if (notify && departed !== null)

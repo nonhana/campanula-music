@@ -1,12 +1,7 @@
 <!--
-  “已下载”页（#38，原型 DesktopDownloads / PhoneDownloads，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前。
-  登录、没登录都是这一页：没登录时从登录页进来（外框是 SignedOutFrame），提示登录后可以红心、加入歌单。
-  头部交给 DetailHeader（#75：自定义拼贴图、标题、首数、登录提示、播放全部、搜索、淡入、pageHeading 都在模块里）：
-  桌面是 200px 的拼贴封面，标题、首数（没登录时加那句提示），播放全部和右边的搜索框；手机是 88px 的拼贴和标题一行，
-  播放全部，下面单独一行搜索框。
-  点一首（搜索结果里点也一样）就用整个已下载替换播放队列，播放来源是“已下载”。行的“更多”菜单里有删除下载。
-  列表本身（骨架、空 / 搜不到、表头“找到几首”、虚拟化、行高）在 songs/SongList；头部的首数和列表对得上（DESIGN.md Do's）。
-  返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot）
+  “已下载”页（#38，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前；登录与否都能进。
+  头部交给 DetailHeader（#75：拼贴图、标题、首数、登录提示、播放全部、搜索都在模块里）；列表本身在 songs/SongList。
+  点一首就用整个已下载替换播放队列，播放来源是“已下载”；行的“更多”菜单里有删除下载。搜索词和滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
   import { goto } from '$app/navigation'
@@ -23,7 +18,6 @@
   import Cover from '../ui/Cover.svelte'
   import SearchField from '../ui/SearchField.svelte'
 
-  /** 搜索词：页面存着，返回这一页时恢复 */
   let { query = $bindable() }: { query: string } = $props()
 
   const SOURCE = { kind: 'downloads' } as const
@@ -36,7 +30,6 @@
   const songs = $derived(all && term
     ? view.app.searchDownloads(term)
     : all)
-  /** 拼贴的封面：前四首（不同的封面） */
   const covers = $derived([
     ...new Set((all ?? []).map(song => song.album.coverUrl)),
   ].slice(0, 4))

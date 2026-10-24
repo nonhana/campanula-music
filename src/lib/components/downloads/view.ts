@@ -5,10 +5,8 @@ import type { AppView } from '../shared/app-context.svelte'
 import { failureText } from '../shared/failure'
 import { songLook } from '../songs/song-look'
 
-// 下载在“更多”菜单里怎么显示（#38，DESIGN.md Song Row · 状态、Chips · Badges）：下载那一项的文案、没下成的原因。
-// 现在能不能下、为什么不能由 App 给（state.downloadBlock，和 App.download 同一份规则）；行上的状态在 songs/song-look.ts
+// 下载在“更多”菜单里怎么显示（#38）：现在能不能下、为什么不能由 App 给（state.downloadBlock，和 App.download 同一份规则）。
 
-/** “更多”菜单里下载那一项：文案，能不能点 */
 export const downloadItem = (view: AppView, song: Song): { label: string, disabled: boolean } => {
   const block = view.state.downloadBlock(song)
   switch (block) {
@@ -45,7 +43,7 @@ export const downloadItem = (view: AppView, song: Song): { label: string, disabl
   }
 }
 
-/** 为什么没下成：原因短语，不带句号和下一步，拼在“没能下载《…》：”后面 */
+/** 原因短语，不带句号和下一步，拼在“没能下载《…》：”后面 */
 export const downloadFailureText = (failure: DownloadFailure): string => {
   switch (failure.kind) {
     case 'request':

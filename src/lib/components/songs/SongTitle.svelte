@@ -12,15 +12,12 @@
 
   interface Props {
     song: Song
-    /** 正在播放这首 */
     now: boolean
-    /** 这一行的状态：徽标、下载标记 */
     look: SongLook
     /** 桌面行、首页歌曲格、播放队列用 label，手机行用 body */
     size?: 'label' | 'body'
     /** 在歌手前面显示下载标记（手机行、首页歌曲格） */
     mark?: boolean
-    /** 歌名和歌手贴得紧一点（手机行、首页歌曲格） */
     tight?: boolean
   }
 

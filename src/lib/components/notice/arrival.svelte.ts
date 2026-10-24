@@ -2,8 +2,8 @@
 export type NoticePlace = 'desktop' | 'bottom' | 'top'
 
 /**
- * 提示条换位置的门闩：记住上一次在哪；换了位置只淡入（和旧位置上的交叉淡化），刚出现才从边上飘进来
- * （DESIGN.md Overlays，motion.ts 的 toast）。播放提示和改曲库、下载的提示共用这一份。
+ * 提示条换位置的门闩：记住上一次在哪；换了位置只淡入，刚出现才从边上飘进来（DESIGN.md Overlays，motion.ts 的 toast）。
+ * 播放提示和改曲库、下载的提示共用。
  */
 export const noticeArrival = (place: () => NoticePlace | null): { moved: boolean } => {
   let last: NoticePlace | null = null

@@ -1,8 +1,7 @@
 <!--
-  表单输入框（DESIGN.md Inputs）：歌单名称、手机号、验证码这类。纸白底、1px 发丝线、12px 圆角，44px 高，
-  标签在上面（右边可以带一段说明，例如歌单名称的字数），可以带一段固定的前缀（例如手机号的 +86），右边可以跟一个按钮（例如“获取验证码”）。
-  获得焦点时边框换成茎绿，外面一圈 3px 薄荷雾光环；出错时边框和说明文字用出错红；禁用降到 50%。
-  下面的报错、提示推开下面的内容：出现时展开、收起时淡出再收（motion.ts 的 unfold），报错和提示之间换的时候一个收一个展
+  表单输入框（DESIGN.md Inputs）：纸白底、1px 发丝线、12px 圆角、44px 高；标签在上（右边可带说明），可带固定前缀，右边可跟按钮。
+  获得焦点时边框换茎绿、外面一圈 3px 薄荷雾光环；出错时用出错红；禁用降到 50%。
+  下面的报错、提示推开内容：出现时展开、收起时淡出再收（motion.ts 的 unfold），两者互换时一个收一个展。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
@@ -14,17 +13,11 @@
     id: string
     value: string
     label: string
-    /** 输入框里左边固定的一段，不能改，例如 +86 */
     prefix?: string
-    /** 说清楚哪里不对、怎么改；有它时输入框标成出错 */
     error?: string
-    /** 输入框下面的提示（没出错时显示），例如“验证码已发到……” */
     hint?: string
-    /** 拿到 input 元素，用来移焦点 */
     input?: HTMLInputElement
-    /** 输入框右边跟着的按钮，和输入框一样高 */
     action?: Snippet
-    /** 标签那一行右边的说明，例如歌单名称写了多少（“12/40”） */
     aside?: string
   }
 
@@ -48,7 +41,6 @@
     <div
       class={[
         'h-11 min-w-0 flex flex-1 items-center border rounded-lg bg-white transition-[border-color,box-shadow,opacity] duration-feedback',
-        // 获得焦点时边框加粗成 2px：茎绿（出错时仍是出错红），外面一圈 3px 的浅色光环
         error
           ? 'border-error-700 focus-within:shadow-field-focus-error'
           : 'border-neutral-200 focus-within:(border-primary-800 shadow-field-focus)',

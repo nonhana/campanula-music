@@ -12,9 +12,8 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtLikedTracks, signInSynced, openJazz, reopen, replyLibrary } = listener(world)
 
-// 多选与批量操作（#35，Spec #11“多选、拖拽与换封面”“客户端：晚一点才提交的修改”）：
-// 批量加入歌单一次一个请求；批量移除先在本地拿掉，提示条留 5 秒撤销，页面隐藏立即用 keepalive 提交；
-// 提交失败放回原位、可以重试；没确认的改动下次打开时从网易云重拉这张歌单并提示。
+// 多选与批量操作（#35，Spec #11“多选、拖拽与换封面”“客户端：晚一点才提交的修改”）：批量加入歌单一次一个请求；批量移除先在本地拿掉，提示条留 5 秒撤销，
+// 页面隐藏立即用 keepalive 提交；提交失败放回原位、可以重试；没确认的改动下次打开时从网易云重拉这张歌单并提示。
 // 录制见 tests/fixtures/netease/README.md 的验证关卡②和 #33 一条
 const LIKED_ID = 900000001
 const JAZZ = { id: 900000002, name: 'jazz' }
@@ -381,7 +380,6 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     await world.netease.reply(REMOVE)
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
-    // 用“这些歌都已经在…”替换撤销提示：待撤销的那一批还在下面记着
     expect(await app.addSongsToPlaylist(JAZZ.id, songsFrom(1, JAZZ_TRACKS[1]))).toEqual({ ok: true, added: 0 })
     expect(app.state.library?.notice).toMatchObject({ kind: 'alreadyAdded' })
 
@@ -436,7 +434,6 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     })
 
     await app.noticeAction('undo')
-    // 后一批放回来了；前一批还按原来的 5 秒计时，没有撤销
     expect(totalOf(app, JAZZ.id)).toBe(1)
     expect(app.state.library?.songsOf(JAZZ.id)?.trackIds).toEqual([JAZZ_TRACKS[1]!])
     expect(app.state.library?.notice).toBeNull()
@@ -499,7 +496,6 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     const [first] = songsFrom(1, JAZZ_TRACKS[0])
     expect(await app.addSongsToPlaylist(JAZZ.id, [first!])).toEqual({ ok: true, added: 0 })
 
-    // 前一批的歌已经在待提交的移除里：直接放回，不发加入请求；提示换成“都已经在歌单里”
     expect(addRequests(device)).toHaveLength(addsBefore)
     expect(app.state.library?.songsOf(JAZZ.id)?.trackIds).toEqual([JAZZ_TRACKS[0]!])
     expect(app.state.library?.notice).toMatchObject({
@@ -614,7 +610,6 @@ describe('没确认的改动下次打开时恢复', () => {
     expect(second.app.state.library?.notice).toEqual({ kind: 'recovered' })
     expect(totalOf(second.app, JAZZ.id)).toBe(2)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
-    // 已经恢复过：本机不再留着这张歌单的未确认标记
     expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')).toBeUndefined()
   })
 
@@ -633,7 +628,6 @@ describe('没确认的改动下次打开时恢复', () => {
     tab.close()
     expect(removeRequests(device)).toHaveLength(1)
 
-    // 再打开：歌单列表拿到了，但重拉这张歌单回 404，恢复失败
     const albums = held()
     await world.netease.reply('login/user_account.vip.json')
     await replyLibrary({ through: 'albums', until: albums.until })
@@ -645,7 +639,6 @@ describe('没确认的改动下次打开时恢复', () => {
     expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')?.[1]).toEqual([JAZZ.id])
     second.close()
 
-    // 第三次打开：重拉成功，丢掉本地改动、提示已恢复，标记划掉
     await world.netease.reply('login/user_account.vip.json')
     await replyLibrary({ through: 'artists' })
     await world.netease.reply(JAZZ_DETAIL)
@@ -736,7 +729,6 @@ describe('登录失效与换账号', () => {
     // 换账号时旧账号的曲库副本和未确认标记一起清掉（ADR-0007：新账号不沿用）
     expect(await pendingChanges(device)).toBeUndefined()
 
-    // 旧账号再登录：重新同步曲库，但已经没有标记，不会提示“已恢复原样”
     await replyLibrary({
       until: never(),
     })

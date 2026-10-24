@@ -2,14 +2,10 @@ import type { CoverCrop } from '#lib/api/cover.js'
 
 import { clamp } from '../shared/clamp'
 
-// 封面取景框的几何核心（#34；Spec #11 第二个测试接入点“拖动手势核心”）：不碰页面、不碰 Svelte 的纯逻辑。
-// 取景框是一个固定的正方形，图片在它下面平移、缩放；这里只算“图片摆在框里的哪里、露出来的是哪一块”。
-// 输入是工作位图的宽高、框的边长和一次手势（平移多少、缩放到几倍、以框里的哪一点为中心、滚轮 / 方向键），
-// 输出总是夹紧过的视图和裁剪（crop 是工作位图上的正方形，单位是那张位图的像素）。
-// 规则照原来的 CoverCropper：短边正好铺满框，最多放大到 6 倍（原图短边不到 160px 时不再放大），
-// 图片不能被拖出框外；以焦点缩放时，焦点下面的那一块保持不动。
+// 封面取景框的几何核心（#34；Spec #11 第二个测试接入点“拖动手势核心”）：不碰页面、不碰 Svelte 的纯逻辑。取景框是固定正方形，图片在它下面平移、缩放。
+// 输入是工作位图的宽高、框的边长和一次手势（平移多少、缩放到几倍、以框里哪点为中心、滚轮 / 方向键），输出总是夹紧过的视图和裁剪（crop 是工作位图上的正方形，单位是那张位图的像素）。
+// 规则照原来的 CoverCropper：短边正好铺满框，最多放大到 6 倍（原图短边不到 160px 时不再放大），图片不能被拖出框外；以焦点缩放时焦点下面那一块保持不动。
 
-/** 取景框和它正在裁的图片 */
 export interface CropFrame {
   /** 工作位图的宽、高（px） */
   width: number
@@ -31,7 +27,6 @@ export interface CropPoint { x: number, y: number }
 /** 最多放大到 6 倍；原图本来就小（短边不到 160px 的 6 倍）时不再放大 */
 export const maxZoomOf = ({ width, height }: CropFrame): number => Math.max(1, Math.min(6, Math.min(width, height) / 160))
 
-/** 短边铺满取景框时，位图上的一个像素在框里有多大 */
 const baseScaleOf = ({ width, height, size }: CropFrame): number => size / Math.min(width, height)
 
 /** 居中取最大的正方形（打开裁剪页时的起点） */
@@ -49,7 +44,6 @@ export const createCropView = (frame: CropFrame, crop: CoverCrop): CropView => {
   return clamped(frame, { zoom, x: -crop.x * base * zoom, y: -crop.y * base * zoom })
 }
 
-/** 现在露出来的是工作位图上的哪一块 */
 export const cropOf = (frame: CropFrame, view: CropView): CoverCrop => {
   const scale = baseScaleOf(frame) * view.zoom
   return {
@@ -100,9 +94,7 @@ export const nudgeCrop = (frame: CropFrame, view: CropView, key: string, shift: 
 }
 
 /**
- * 两指捏合：每次移动都用**当前**视图 `view`，缩放到「起始缩放 startZoom × distance / startDistance」，
- * 锚点是两根手指**当前**的中点 `at`（和基线的增量 zoomAt 等价：两指同距平移时缩放不变、图片不平移）。
- * 中点移动同时距离变化时，先缩放到目标、再以新中点夹紧，图片会跟手一点（不是双指平移）。
+ * 两指捏合：每次移动都用**当前**视图 `view`，缩放到「起始缩放 startZoom × distance / startDistance」，锚点是两根手指**当前**的中点 `at`（和基线的增量 zoomAt 等价：两指同距平移时缩放不变、图片不平移）。中点移动同时距离变化时，先缩放到目标、再以新中点夹紧，图片会跟手一点（不是双指平移）。
  */
 export const pinchCrop = (frame: CropFrame, view: CropView, startZoom: number, startDistance: number, distance: number, at: CropPoint): CropView => {
   if (startDistance <= 0)

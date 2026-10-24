@@ -7,7 +7,6 @@ import type { Cookies } from '@sveltejs/kit'
 // 登录 Cookie（ADR-0003）：网易云凭据、deviceId、续期时间用站长配置的密钥加密并签名，
 // 交给听众的浏览器保管（httpOnly、Secure）。服务器不存，每次请求解开用完即弃。
 
-/** 登录 Cookie 里的东西 */
 export interface LoginCookie {
   /** 为这个听众生成的 deviceId：取二维码、发验证码时就生成，登录后沿用，每次调网易云都带上 */
   deviceId: string
@@ -23,10 +22,7 @@ export interface LoginCookie {
 const COOKIE_NAME = 'campanula_login'
 /** 浏览器会悄悄丢掉名字加值超过 4096 字节的 Cookie（RFC 6265bis 5.6） */
 const MAX_COOKIE_BYTES = 4096
-/**
- * 同一浏览器多久续期一次（Spec #11“客户端：登录会话”）。网易云凭据有效 180 天、每次续期重新算，
- * 续期后旧凭据也不会马上失效（验证关卡①），24 小时远短于这些，不用调
- */
+/** 同一浏览器多久续期一次（Spec #11“客户端：登录会话”）：凭据有效 180 天、续期重新算，24 小时远短于这些（验证关卡①） */
 const RENEW_INTERVAL_MS = 24 * 3600_000
 /** 密钥至少这么长：太短的密钥能被猜出来，拿到 Cookie 的人就能解开凭据 */
 export const MIN_SECRET_LENGTH = 32
@@ -38,7 +34,7 @@ const OPTIONS = {
   maxAge: 400 * 24 * 3600, // Chrome 允许的最长有效期；凭据本身什么时候失效由网易云决定
 } as const
 
-/** 站长有没有配好密钥（环境变量 COOKIE_SECRET） */
+/** 站长有没有配好 COOKIE_SECRET */
 export const cookieSecretConfigured = (): boolean => COOKIE_SECRET.length >= MIN_SECRET_LENGTH
 
 /** 加密用的密钥由站长的 COOKIE_SECRET 派生；没配好就明确失败（hooks.server.ts 已经先拦住了接口请求） */
@@ -123,10 +119,7 @@ export const saveLogin = (cookies: Cookies, deviceId: string, credentials: Recor
   })
 }
 
-/**
- * 同一条登录 Cookie 的 Set-Cookie 值：mock 的自动登录入口绕过 SvelteKit 的 cookies.set，
- * 但走的仍是同一套加密和属性（#58：假登录复用 App 真实的加密 Cookie 流程）。
- */
+/** mock 的自动登录入口绕过 SvelteKit 的 cookies.set，但走的仍是同一套加密和属性（#58） */
 export const loginCookieHeader = (deviceId: string, credentials: Record<string, string>): string => {
   const value = sealedValue({
     deviceId,
@@ -138,7 +131,6 @@ export const loginCookieHeader = (deviceId: string, credentials: Record<string, 
   return `${COOKIE_NAME}=${encodeURIComponent(value)}; ${cookieAttributes()}`
 }
 
-/** 离上次续期满 24 小时了 */
 export const renewalDue = (session: NonNullable<LoginCookie['session']>): boolean => Date.now() - session.renewedAt >= RENEW_INTERVAL_MS
 
 /** 回一个过期的登录 Cookie，浏览器收到就删掉它 */
@@ -156,11 +148,7 @@ const anonymousDigest = (deviceId: string): string => {
   return createHash('md5').update(xored, 'utf8').digest('base64')
 }
 
-/**
- * 新的 deviceId：52 位大写十六进制，和 SDK 生成的一样。
- * 摘要里带 + 或 / 的会被网易云的匿名注册拒绝，随机生成约一半中招，所以只要摘要干净的
- * （验证关卡①；nonhana/hana-music-api#30 修好之后可以去掉这一步）
- */
+/** 52 位大写十六进制，和 SDK 生成的一样。摘要里带 + 或 / 的会被网易云匿名注册拒绝，随机约一半中招，所以只要干净的（验证关卡①；nonhana/hana-music-api#30 修好之后可以去掉） */
 const newDeviceId = (): string => {
   let deviceId: string
   do deviceId = randomBytes(26).toString('hex').toUpperCase()

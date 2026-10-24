@@ -3,7 +3,6 @@
   静音前的音量记在模块里，在哪儿取消静音都回到它
 -->
 <script lang='ts' module>
-  /** 静音前的音量：取消静音时回到它 */
   let unmuted = 1
 </script>
 

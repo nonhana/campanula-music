@@ -1,11 +1,9 @@
 <!--
-  播放页里的播放队列（自己滚动的虚拟列表，原型 QueueList）：头部写有几首（来源在播放页顶上已经写着），右边“清空”
-  （点了直接清空、没有撤销，所以手机写字不用图标：TextButton，桌面是描边胶囊，#57）。
-  标题“播放队列”在桌面只给读屏（上面的标签已经写着），手机弹层上照旧显示；
-  56px 一行：序号（正在放的换成三根小竖条）、封面、歌名歌手、时长、移出键。轻点一行就放这一首，播放队列不变；
-  正在放的那行是晨光行，它移不掉（移出键的位置空着）；现在放不了的（无版权；断网、没登录时没下载的，#38）整行降到 45%、不能点，但能移出。打开时当前这首停在第二行的位置。
-  歌名、歌手、徽标这一块和歌曲行共用 songs/SongTitle；行高是 songs/view 的 SONG_ROW_HEIGHT。
-  清空：播放队列空了、停下，播放页跟着收起（播放条沉下去）。移出一首后焦点落在下一首的移出键上（最后一首时是上一首的，那是正在放的那首时落在“清空”上）
+  播放页里的播放队列（自己滚的虚拟列表，原型 QueueList）：头部写有几首（来源在播放页顶上已写），右边“清空”（点了直接清空、没有撤销，
+  手机用文字、桌面描边胶囊，#57）。标题“播放队列”桌面只给读屏，手机弹层照旧显示。56px 一行：序号（正在放的是三根小竖条）、
+  封面、歌名歌手、时长、移出键；轻点一行放这首、队列不变；正在放的那行是晨光行、移不掉；现在放不了的整行降到 45%、不能点但能移出。
+  打开时当前这首停在第二行。歌名、歌手、徽标和歌曲行共用 songs/SongTitle，行高是 songs/view 的 SONG_ROW_HEIGHT。
+  清空后队列空、停下，播放页跟着收起；移出后焦点落在下一首的移出键（最后一首是上一首的，正在放的那首落在“清空”）。
 -->
 <script lang='ts'>
   import { ListX, X } from '@lucide/svelte'
@@ -36,14 +34,14 @@
   const ROW = SONG_ROW_HEIGHT
   const uid = $props.id()
   const view = getAppView()
-  /** 按住滚动条拖时，气泡问队列最上面是哪一首 */
+  /** 气泡问队列最上面是哪一首 */
   const lookup = setScrollLookup({ markAt: null })
   const queue = $derived(view.state.player.queue)
   const current = $derived(view.state.player.current)
 
   let scroller = $state<HTMLElement>()
 
-  // 打开时把当前这首滚到第二行的位置；之后换歌不动听众自己滚到的地方
+  // 打开时把当前这首滚到第二行；之后换歌不动听众自己滚到的地方
   $effect(() => {
     if (scroller)
       scroller.scrollTop = Math.max(0, (untrack(() => current) ?? 0) * ROW - ROW)
@@ -54,7 +52,7 @@
   const remove = async (index: number) => {
     view.app.removeFromQueue(index)
     await tick()
-    // 下一首的移出键；移的是最后一首就是上一首的；它是正在放的那首（没有移出键）时落在“清空”上
+    // 下一首的移出键；最后一首就是上一首的；正在放的那首没有移出键，落在“清空”上
     const next = Math.min(index, view.state.player.queue.length - 1)
     const target = scroller?.querySelector<HTMLElement>(`[data-remove="${next}"]:not([inert])`) ?? section?.querySelector<HTMLElement>('[data-clear]')
     target?.focus()
@@ -75,7 +73,7 @@
     <TextButton tone='neutral' desktop={{ variant: 'outline', icon: ListX }} class='max-md:-mr-3 md:h-9! md:pl-3.5! md:pr-4!' data-clear onclick={clear}>清空</TextButton>
   </header>
 
-  <!-- 底下的 8px 留在滚动区外面：滚动条的下端不伸进面板的圆角 -->
+  <!-- 底下的 8px 留在滚动区外：滚动条下端不伸进面板圆角 -->
   <div bind:this={scroller} class='mb-2 min-h-0 flex-1 overflow-y-auto overscroll-contain'>
     <Scrollbar {lookup} />
     <div class='px-2'>
@@ -93,7 +91,7 @@
                 <SongTitle song={entry.song} {now} {look} />
               </PlayTarget>
               <span class='text-caption text-neutral-500 tabular-nums'>{formatDuration(entry.song.duration)}</span>
-              <!-- 正在放的那首没有移出键：换歌时新旧两行的移出键一个淡出、一个淡入 -->
+              <!-- 正在放的那首没有移出键：换歌时新旧两行一个淡出、一个淡入 -->
               <span class='grid size-9'>
                 {#if !now}
                   <button

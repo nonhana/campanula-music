@@ -1,14 +1,9 @@
 <!--
-  弹窗的外壳（DESIGN.md Overlays · 弹窗）：只管布局与抽屉呈现，层协议由浮层栈统一拥有。
-  桌面是居中弹窗：遮罩淡入，弹窗从下面 8px、98% 大小飘到位，关掉时淡出；顶上是标题（下面可以再跟一行说明）和关闭键，下面是内容。
-  手机是底部弹层，和播放页同一套抽屉：拉手、标题按住往下拖收起，点遮罩、返回、Esc 也收起。确认（size 是 confirm）贴着底边，
-  外壳画标题，没有关闭键（下面的按钮里有取消）；表单接近全屏，标题行里还有文字按钮（取消、创建），由内容自己排：
-  外壳把标题（带 id 和拖动）交给 children 的第三个参数，内容放进自己的标题行。标题的 id 只在外壳里。
-  size：确认 440px，表单 480px，挑歌 560px（添加歌曲），宽表单 680px（编辑歌单信息，左边封面右边字段）。
-  忙着时（layer.busy）关不掉；统一宿主把 Esc 只送给最上层，栈在 DOM 更新后归还焦点。
+  弹窗外壳（DESIGN.md Overlays · 弹窗）：只管布局与抽屉呈现，层协议由浮层栈统一拥有。桌面居中弹窗；手机底部弹层和播放页同一套抽屉
+  （拉手、拖标题收起、点遮罩/返回/Esc 收起）。确认（confirm）贴底边、外壳画标题、没有关闭键；表单接近全屏，标题行里的文字按钮由内容排。
+  宽度：确认 440、表单 480、挑歌 560、宽表单 680。忙着时关不掉；Esc 只给最上层，栈在 DOM 更新后归还焦点。
 -->
 <script lang='ts' module>
-  /** 桌面弹窗的宽度 */
   const DIALOG_SIZES = {
     confirm: 'max-w-[440px]',
     form: 'max-w-[480px]',
@@ -34,9 +29,9 @@
     layer: OverlayLayer<R, HTMLElement>
     title: (request: R) => string
     size: (request: R) => DialogSize
-    /** 桌面标题下面的一行说明（添加歌曲：加入「…」） */
+    /** 添加歌曲：加入「…」 */
     subtitle?: Snippet<[request: R]>
-    /** 里面的内容：每次打开都重新建；sheet 是在手机的底部弹层里，heading 是手机表单放进自己标题行的标题（classes 定样子） */
+    /** 每次打开都重新建；sheet 是在手机底部弹层里，heading 是手机表单放进自己标题行的标题 */
     children: Snippet<[request: R, sheet: boolean, heading: Snippet<[classes: string]>]>
   }
 
@@ -44,7 +39,7 @@
 
   const titleId = $derived(`${layer.name}-title`)
 
-  /** 贴着底边的弹层还没画出来时（打开的头一帧）按多高算（px） */
+  /** 打开的头一帧还没画出来时按多高算（px） */
   const SHORT_SHEET_ESTIMATE = 320
 
   const request = $derived(layer.request)
@@ -54,7 +49,6 @@
     if (request)
       shown = request
   })
-  /** 手机上是接近全屏的弹层（表单），不是的贴着底边（确认） */
   const tall = $derived(shown !== null && size(shown) !== 'confirm')
 
   const dialogOpen = $derived(request !== null && !layer.asSheet)
@@ -62,7 +56,7 @@
   const drawer = createDrawer(() => (tall
     ? window.innerHeight - 24
     : SHORT_SHEET_ESTIMATE))
-  /** 拖过了阈值：收起；忙着时弹回去 */
+  /** 拖过阈值就收起；忙着时弹回去 */
   const commit = () => {
     if (layer.busy)
       drawer.settle(true)
@@ -78,13 +72,13 @@
 
   $effect(() => drawer.settle(sheetOpen))
 
-  /** 打开时焦点落在标了 data-autofocus 的地方，没有就是第一个能操作的 */
+  /** 落在 data-autofocus，没有就是第一个能操作的 */
   const focusFirst: Attachment<HTMLElement> = (node) => {
     queueMicrotask(() => (node.querySelector<HTMLElement>('[data-autofocus]') ?? node.querySelector<HTMLElement>('input, textarea, button'))?.focus({ preventScroll: true }))
   }
 </script>
 
-<!-- 手机弹层的标题：按住往下拖收起 -->
+<!-- 按住往下拖收起 -->
 {#snippet heading(classes: string)}
   <h2 id={titleId} class={['touch-none', classes]} {@attach gripTitle}>{shown
     ? title(shown)

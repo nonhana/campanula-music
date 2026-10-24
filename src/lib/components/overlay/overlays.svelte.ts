@@ -44,7 +44,7 @@ export const createOverlays = () => {
     rendered: tick,
     focus(target, fallback) {
       // 归还顺序：focusReturn 找到的入口 / request.from（仍 connected、不在 inert 里才算）
-      // -> fallback（层内元素）-> main。多选入口被工具条换掉时由 focusReturn 重新找到（#66）。
+      // -> fallback（层内元素）-> main；多选入口被工具条换掉时由 focusReturn 重新找到（#66）
       const available = (node: HTMLElement | null) => node?.isConnected && !node.closest('[inert]')
 ? node
 : null
@@ -74,8 +74,8 @@ inert: () => layer.containerInert,
 }
     return layer
   }
-  // 菜单类层（浮动菜单、底部弹层）都不是 modal：和基线一样，开着时背景与提示条照常可交互（#64 行为不变）。
-  // Esc、返回、焦点归还都由栈按栈顶处理，不依赖 modal；弹窗、换封面、编辑、播放页仍是 modal。
+  // 菜单类层（浮动菜单、底部弹层）都不是 modal：开着时背景与提示条照常可交互（#64 行为不变）
+  // Esc、返回、焦点归还由栈按栈顶处理；弹窗、换封面、编辑、播放页仍是 modal
   const menu = {
 history: (request: MenuRequest) => request.anchor === null,
 modal: false,
@@ -85,9 +85,9 @@ history: () => !desktopLayout.current,
 modal: true,
 }
 
-  // 每一层只登记一次：历史策略、组件、焦点和业务的关闭钩子。
+  // 每一层只登记一次：历史策略、组件、焦点和业务的关闭钩子
   const songMenu = register<SongMenuRequest>('song-menu', menu, SongMenu)
-  // 单曲和多选共用一个选择器（#73）：多选那条请求不能比多选层活得更久，单曲的不依赖它
+  // 单曲和多选共用一个选择器（#73）：多选的请求不能比多选层活得更久，单曲不依赖它
   const playlistPicker = register<AddToPlaylistRequest>('playlist-picker', {
     ...menu,
     dependsOn: request => request.mode === 'multi'
@@ -112,9 +112,8 @@ modal: true,
   }, CoverEditor)
   const logoutConfirm = register<DialogRequest>('logout', dialog, LogoutConfirm)
   const canRestorePlayer = () => !queueEmpty(view.state.player)
-  // 播放页这一层**不挂组件**：播放页、播放提示由两个外框里的 PlayerLayer 挂载（它提供 data-overlay="player"）。
-  // mounted 只收有组件的层，OverlayHost 不会给它渲染空容器；历史、Esc/返回、忙时钉住、焦点兜底、
-  // containerInert（看 layers 里谁盖住它）都只认登记表，和有没有组件无关。回焦目标仍是播放条按钮（fallback）。
+  // 播放页这一层不挂组件：播放页、播放提示由 PlayerLayer 挂载（提供 data-overlay="player"）。mounted 只收有组件的层，
+  // OverlayHost 不渲染空容器；历史、Esc/返回、忙时钉住、焦点兜底、containerInert 只认登记表。回焦目标仍是播放条按钮。
   const player = register<DialogRequest>('player', {
 history: () => true,
 modal: true,
@@ -131,9 +130,8 @@ fallback: '[data-queue-entry]',
 })
   const selection = register<DialogRequest>('selection', {
     history: () => !desktopLayout.current,
-    // 多选只是列表上的一层状态（顶栏 / 底部操作条），不是 modal：和基线一样不压暗、不 inert 背景。
-    // 焦点归还给打开它的元素（按钮或行）；按钮在层开着时被工具条换掉，所以由多选给重新挂上的入口。
-    // 没有全局兜底查询（#66）。
+    // 多选只是列表上的一层状态（顶栏 / 底部操作条），不是 modal：不压暗、不 inert 背景；焦点还给打开它的元素，
+    // 按钮被工具条换掉时由多选给重新挂上的入口（没有全局兜底查询，#66）。
     modal: false,
     focusReturn: () => playlistSelection.returnTarget(),
     dismissed: () => playlistSelection.clear(),

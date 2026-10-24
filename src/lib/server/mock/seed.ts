@@ -1,5 +1,4 @@
-// Mock 的种子：用 tests/fixtures/netease 里录制的网易云返回拼出一份可读写的曲库。
-// 只读录制，不连网；歌单列表、歌单详情、歌曲信息、红心、收藏的专辑/歌手都来自录制。
+// Mock 的种子：用 tests/fixtures/netease 里录制的返回拼出一份可读写的曲库，只读录制、不连网。
 import { readdir } from 'node:fs/promises'
 
 import type { RawFixture } from './fixture-format.ts'

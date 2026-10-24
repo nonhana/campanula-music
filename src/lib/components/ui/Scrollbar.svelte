@@ -1,16 +1,13 @@
 <!--
-  自绘滚动条（DESIGN.md Components · Scrollbar，ADR-0012）。系统滚动条一律隐藏（uno.config.ts），换成这一条：浮在内容上、不占宽度。
-  平时 4px 石墨淡；鼠标移到贴边 16px 的那一条上、正在拖时加粗到 8px 茎绿。滚动时淡入，停下 1 秒后淡出；内容不比区域长时没有。
-  拖滑块跟着手滚，点滑块前后的空白处往那边翻一屏。
-  触屏：列表超过 4 屏、细条亮着时，按住滑块附近（44px 宽、上下各多 12px 的看不见的一块）能拖，快速定位；按轨道空白处不翻页。
-  传了 lookup（歌曲列表）时，按住那一块拖着的时候滑块左边有气泡，写列表最上面那一项（scroll-marks.ts）。只做竖的
-  只读滚动位置：除了听众拖滑块、点空白处，从不写；内容变长变短时只重新量，不动滚动位置、也不亮出来。
+  自绘滚动条（DESIGN.md Components · Scrollbar，ADR-0012）。系统滚动条一律隐藏（uno.config.ts），换成这一条：浮在内容上、不占宽度，
+  平时 4px、悬停或拖动时 8px，滚动时淡入、停下 1 秒后淡出，内容不比区域长时没有。只读滚动位置：除了听众拖滑块、点空白处，从不写；
+  内容变长变短时只重新量。拖滑块跟着手滚，点滑块前后的空白处往那边翻一屏。
+  触屏：列表超过 4 屏时，按住滑块附近（44px 宽、上下各多 12px 的看不见的一块）能拖，快速定位（照 Android 系统列表）；按轨道空白处不翻页。
+  传了 lookup（歌曲列表）时，拖动中滑块左边有气泡写列表最上面那一项（scroll-marks.ts）。只做竖的。
   滑块不进 Tab 顺序、读屏读不到，和系统滚动条一样：键盘照常由浏览器滚。
 
-  两种放法：
-  - 页面：传 page，贴着窗口右边，上下边避开顶栏、底栏；
-  - 区域：放进滚动区域，当它的第一个子元素。它粘在区域看得见的那一块里，所以滚轮、触控板在它上面照样滚这个区域。
-    竖的（axis 'y'）贴右边，横的（'x'）贴底边；区域自己不要有内边距（放到里面那层），不然它会离开边上。
+  两种放法：page（贴窗口右边，上下边避开顶栏、底栏）；或放进滚动区域当第一个子元素（粘在看得见的那一块里），
+  区域自己不要有内边距（放到里面那层），不然它会离开边上。
 -->
 <script lang='ts'>
   import { untrack } from 'svelte'
@@ -24,11 +21,8 @@
   import { getSelectionMode, hasSelectionMode } from './selection-mode'
 
   interface Props {
-    /** 跟着页面（窗口）滚：上下边（CSS 长度）是顶栏下沿、底栏上沿。不传就跟着所在的滚动区域滚 */
     page?: { top: string, bottom: string }
-    /** 滚动方向：竖的贴右边，横的贴底边 */
     axis?: 'x' | 'y'
-    /** 滚动区域的主人创建的那一份：按住那一块拖的时候，气泡问它最上面是哪一项 */
     lookup?: ScrollLookup
   }
 
@@ -52,7 +46,6 @@
 
   let host = $state<HTMLElement>()
   let strip = $state<HTMLElement>()
-  /** 触屏能按的那一块（只有竖的有） */
   let grip = $state<HTMLElement>()
   let stripWidth = $state(0)
   let stripHeight = $state(0)
@@ -63,20 +56,15 @@
     content: 0,
     cross: 0,
   })
-  /** 刚滚过（还没停够 1 秒） */
   let awake = $state(false)
-  /** 鼠标在贴边的那一条上 */
   let near = $state(false)
-  /** 正在拖滑块 */
   let dragging = $state(false)
-  /** 是不是按在触屏那一块上（快速定位，有气泡） */
+  /** 按在触屏那一块上（快速定位，有气泡） */
   let quick = $state(false)
-  /** 气泡里写的；松手后留着最后一次的，淡出时字不变 */
+  /** 松手后留着最后一次的，淡出时字不变 */
   let mark = $state<ScrollMark | null>(null)
   let bubbleHeight = $state(0)
-  /** 停下 1 秒后淡出的计时器 */
   let fadeTimer: ReturnType<typeof setTimeout> | undefined
-  /** 这次拖动从哪开始：指针沿滚动方向的位置、区域当时滚到哪 */
   let dragStart = { from: 0, start: 0 }
   /** 刚按下：第一次 onValue 不回写位置（基线 grab 也不写） */
   let starting = false
@@ -98,12 +86,9 @@
     : 0)
   const shown = $derived(scrollable && (awake || near || dragging))
   const thick = $derived(near || dragging)
-  /** 触屏这时能按住滑块：竖的、列表够长、细条亮着（拖着时一直算） */
   const grabbable = $derived(axis === 'y' && scrollable && metrics.content > LONG_PAGES * metrics.viewport && (awake || dragging) && !yielding)
-  /** 能按的那一块：比滑块上下各长 12px，不伸出这一条 */
   const gripTop = $derived(Math.max(0, INSET + offset - GRIP_SLOP))
   const gripBottom = $derived(Math.min(length, INSET + offset + thumb + GRIP_SLOP))
-  /** 气泡的中线对着滑块中间，碰到两头就停住 */
   const bubbleCenter = $derived(Math.min(Math.max(INSET + offset + thumb / 2, bubbleHeight / 2), length - bubbleHeight / 2))
 
   const scroller = (): HTMLElement | null => onPage
@@ -136,7 +121,6 @@
       mark = lookup?.markAt?.(strip.getBoundingClientRect().top) ?? null
   }
 
-  /** 亮出来，停够 1 秒再淡出 */
   const linger = () => {
     awake = true
     clearTimeout(fadeTimer)
@@ -182,7 +166,6 @@
     }
   })
 
-  /** 指针沿滚动方向的位置 */
   const along = (sample: { x: number, y: number }): number => axis === 'y'
     ? sample.y
     : sample.x
@@ -194,8 +177,7 @@
       : { left: position, behavior })
   }
 
-  // 拖滑块：指针怎么接（捕获、按住断了、作废、元素移除）由 attachGrip + 线性核心统一做；
-  // 这里只把指针的移动换成滚动位置。点在滑块前后的空白处仍然翻一屏，不算拖动。
+  // 拖滑块：指针怎么接（捕获、按住断了、作废、元素移除）由 attachGrip + 线性核心统一做，这里只把移动换成滚动位置；点空白处翻一屏不算拖动
   const core = createSliderCore({
     begin(sample) {
       if (!scrollable || !strip)
@@ -385,14 +367,13 @@
     height: 8px;
   }
 
-  /* 淡入 120ms */
   .shown .thumb {
     opacity: 1;
     transition-duration: var(--duration-feedback), var(--duration-feedback), var(--move-feedback);
     transition-timing-function: var(--ease-out-soft);
   }
 
-  /* 触屏能按的那一块：贴着右边 44px 宽，只在以触屏为主的设备上、能按的时候接手指。
+  /* 触屏能按的那一块：贴着右边 44px 宽，只在以触屏为主的设备上、能按的时候接手指；
      按住时不让浏览器拿去平移页面、下拉刷新，也不弹长按的选字和菜单 */
   .grip {
     position: absolute;

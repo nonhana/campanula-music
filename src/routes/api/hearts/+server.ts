@@ -11,7 +11,6 @@ export const GET: RequestHandler = ({ url, cookies }) => {
   return respondSignedIn(endpoints.hearts, cookies, async listener => ({ songIds: await fetchHearts(uid, listener) }))
 }
 
-// 红心或取消红心一首歌
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const { songId, hearted } = await readHeart(request)
   return respondSignedIn(endpoints.heart, cookies, listener => heart(songId, hearted, listener))

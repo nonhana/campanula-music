@@ -14,10 +14,7 @@ export interface Outcome {
   response: SdkResponse
   /** 有的话等它了结才回：模拟网易云回得慢，测请求之间的先后 */
   until?: Promise<void>
-  /**
-   * 有的话只回查询参数里这几项都相等的调用，别的调用跳过它、轮到后面的：
-   * 同一个模块几个请求一起发（搜索结果的综合同时搜四类）时，到服务端的先后不固定，按参数对上
-   */
+  /** 有的话只回查询参数里这几项都相等的调用，别的调用跳过它、轮到后面的： 同一个模块几个请求一起发（搜索结果的综合同时搜四类）时，到服务端的先后不固定，按参数对上 */
   when?: Record<string, unknown>
   /** 回的是哪份录制（tests/fixtures/netease/ 下的路径）：两个回答是不是同一份，看它 */
   fixture?: string
@@ -28,10 +25,7 @@ export interface RequestSpan {
   start: number
 }
 
-/**
- * 调用配置里替身关心的部分，照 SDK 的 ModuleCallConfig：凭据（Cookie 的名字和值）、realIP，
- * 以及 deviceId（顶层的给隐式匿名注册用，state 里的给每次请求的 Cookie 头用）
- */
+/** 调用配置里替身关心的部分，照 SDK 的 ModuleCallConfig：凭据（Cookie 的名字和值）、realIP，以及 deviceId（顶层的给隐式匿名注册用，state 里的给请求的 Cookie 头用） */
 export interface CallConfig {
   cookie?: Record<string, string | number | boolean | undefined> | string
   deviceId?: string
@@ -47,10 +41,8 @@ export interface Call {
 
 const outcomes = new Map<string, Outcome[]>()
 
-/** 服务端调过的模块，按先后 */
 export const calls: Call[] = []
 
-/** 正在等 until 了结、还没回的调用 */
 let held = 0
 
 /** 当前这次调用属于服务端正在处理的哪个请求（world.ts 设置） */
@@ -105,11 +97,7 @@ const interchangeable = (a: Outcome, b: Outcome): boolean => a.fixture === b.fix
 /** 这个回答能不能回给这次调用：没写 when，或者 when 里的几项和查询参数都相等 */
 const fits = (outcome: Outcome, query: unknown): boolean => !outcome.when || Object.entries(outcome.when).every(([key, value]) => (query as Record<string, unknown>)[key] === value)
 
-/**
- * 这次调用和别的请求里同一个模块的调用对不对得上号：这次的请求在别的调用拿走回答之前就已经发出来了（两边谁先到服务端不固定），
- * 那一刻排着的回答里这次的回答也在、排在后面，别的调用拿走的又也能回给这次、和这次的不一样——
- * 先后一对调，两边就拿反了（CI 上碰到过：#32 播放地址那条测试）
- */
+/** 这次调用和别的请求里同一个模块的调用对不对得上号：这次的请求在别的调用拿走回答之前就发出来了（谁先到服务端不固定）， 那一刻排着的回答里这次的也在、排在后面，别的调用拿走的又也能回给这次、和这次的不一样——先后一对调两边就拿反了（CI 上碰到过：#32 播放地址那条测试） */
 const checkOrder = (module: string, query: unknown, span: RequestSpan, outcome: Outcome): void => {
   for (const other of taken) {
     if (other.module !== module || other.span === span || span.start > other.at)

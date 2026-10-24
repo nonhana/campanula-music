@@ -5,78 +5,59 @@ import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 
 const NAME = 'campanula'
 const VERSION = 9
-/** 登录会话的小事，按名字存 */
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
 const LIBRARY = 'library'
-/** 每张歌单的曲目，按歌单编号存 */
 const TRACKS = 'tracks'
 /** 歌曲信息，按歌曲编号存；几张歌单里都有的歌只存一份 */
 const SONGS = 'songs'
-/** 打开过的收藏的专辑的专辑页，按专辑编号存（#23 留言：专辑页不在后台整批同步） */
+/** 打开过的收藏的专辑的专辑页（#23：专辑页不在后台整批同步） */
 const ALBUM_PAGES = 'albumPages'
 const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS, ALBUM_PAGES]
-/** 播放队列和进度（#27），按名字存：queue（播放队列那一份，记着是哪个网易云账号的）、progress（当前这首放到哪了） */
+/** 播放队列和进度（#27）；queue 记着是哪个网易云账号的 */
 export const PLAYER = 'player'
 /** 这台设备上的设置和搜索历史，按名字存：playQuality（在线播放音质）、searchHistory（#31）。不属于哪个网易云账号，退出、换账号都不删 */
 const SETTINGS = 'settings'
-/** 要发的听歌打卡（#28），按记下的先后自动编号：记着是哪个网易云账号的，发成了、丢弃时删掉 */
+/** 要发的听歌打卡（#28），按记下的先后自动编号，记着是哪个网易云账号的 */
 export const CHECK_INS = 'checkIns'
-/**
- * 下载（#38）：这台设备上下载完的歌，按歌曲编号存：歌曲信息、完整音频、封面缩略图、歌词。
- * 属于这台设备，不属于哪个网易云账号：退出、换账号都不删（ADR-0006）
- */
+/** 下载（#38）：歌曲信息、完整音频、封面缩略图、歌词；属于这台设备，退出、换账号都不删（ADR-0006） */
 const DOWNLOADS = 'downloads'
 
-/** 这台设备上的一首下载（#38）：断网、没登录时也完整可用（ADR-0006） */
+/** 断网、没登录时也完整可用（#38，ADR-0006） */
 export interface StoredDownload {
   song: Song
-  /** 完整音频：在线播放用的同一份普通格式（mp3、flac），不是 .ncm */
+  /** 在线播放用的同一份普通格式（mp3、flac），不是 .ncm */
   audio: Blob
-  /** 封面缩略图 */
   cover: Blob
   lyrics: LyricsResponse
-  /** 下载完的那一刻（毫秒）：已下载页按它排，最近下载完的在前 */
+  /** 已下载页按它排，最近下载完的在前 */
   downloadedAt: number
 }
 
-/** 一张歌单在本机的曲目 */
 export interface PlaylistTracks {
-  /** 拉这份曲目编号时，歌单列表里这张歌单的 tracksUpdatedAt：网易云那边的变了才重拉 */
+  /** 拉这份编号时歌单列表里的 tracksUpdatedAt：网易云那边变了才重拉 */
   version: number
-  /** 按歌单里的顺序 */
   trackIds: number[]
-  /** 这份编号的歌曲信息都取过一遍了（网易云没给的歌不再取） */
+  /** 网易云没给的歌不再取 */
   complete: boolean
 }
 
-/**
- * 曲库副本：同一时间只存一个网易云账号的（主动退出时删除，换账号登录时清掉，ADR-0007）。
- * 还没同步到的部分是 null 或不在 Map 里
- */
+/** 同一时间只存一个网易云账号的（主动退出时删除，换账号登录时清掉，ADR-0007）；还没同步到的是 null 或不在 Map 里 */
 export interface Replica {
-  /** 网易云账号的 uid */
   owner: number
-  /** 红心了的歌 */
   hearts: number[] | null
   playlists: Playlist[] | null
-  /** 按歌单编号 */
   tracks: Map<number, PlaylistTracks>
-  /** 按歌曲编号 */
   songs: Map<number, Song>
   /** 收藏的专辑，最近收藏的在前 */
   albums: CollectedAlbum[] | null
   /** 收藏的歌手，最近收藏的在前 */
   artists: CollectedArtist[] | null
-  /** 打开过的收藏的专辑的专辑页，按专辑编号；不再收藏时删掉 */
+  /** 打开过的收藏的专辑的专辑页；不再收藏时删掉 */
   albumPages: Map<number, AlbumResponse>
 }
 
-/**
- * 改曲库副本的一步：给了的部分整个换掉，tracks、songs、albumPages 按编号换掉给了的那几项。
- * 换了歌单列表时，不在列表里的歌单的曲目一起删；换了收藏的专辑时，不再收藏的专辑存着的专辑页一起删；
- * 专辑页只存还在收藏的专辑里的（本机数据库里核对：别的标签页可能刚取消收藏）
- */
+/** 给了的部分整个换掉，tracks、songs、albumPages 按编号换掉给了的那几项；换了歌单列表或收藏的专辑时，连带删掉不在里面的曲目和专辑页 */
 export interface LibraryPatch {
   hearts?: number[]
   playlists?: Playlist[]
@@ -87,10 +68,9 @@ export interface LibraryPatch {
   albumPages?: ReadonlyMap<number, AlbumResponse>
 }
 
-/** 什么都不改 */
 export const emptyPatch = (patch: LibraryPatch): boolean => Object.values(patch).every(part => part === undefined)
 
-/** 副本改过以后的样子（和 LocalDb.saveLibrary 写进本机数据库的一样）：不改原来的，改到的部分换成新的 */
+/** 和 LocalDb.saveLibrary 写进本机数据库的一样；不改原来的，改到的部分换成新的 */
 export const patched = (replica: Replica, patch: LibraryPatch): Replica => {
   let { tracks, songs, albumPages } = replica
   if (patch.tracks || patch.playlists) {
@@ -133,43 +113,35 @@ export interface LocalDb {
   /** 退出时服务端还没回过期的登录 Cookie（断网、服务端出错）：要再发一次退出，在那之前 App 当作未登录 */
   pendingLogout: () => Promise<boolean>
   setPendingLogout: (pending: boolean) => Promise<void>
-  /** 本机的曲库副本；从没同步过或已经删了时是 null */
   readLibrary: () => Promise<Replica | null>
-  /** 换成 owner 的空副本：原来的（别的账号的）整个删掉 */
+  /** 原来的（别的账号的）整个删掉 */
   resetLibrary: (owner: number) => Promise<void>
   deleteLibrary: () => Promise<void>
-  /**
-   * 这个账号有改动还没确认的歌单（晚一点才提交的修改，#35）：下次打开时要从网易云重拉这几张、丢掉本地改动。
-   * 存在 LIBRARY 里，退出、换账号时跟着副本一起清掉
-   */
+  /** 有改动还没确认的歌单（#35）：下次打开时从网易云重拉这几张、丢掉本地改动；存在 LIBRARY 里，跟着副本一起清掉 */
   pendingChanges: (owner: number) => Promise<number[]>
-  /** 记下这张歌单有改动还没确认（只加这一张，别的标签页记下的不动）；副本不是 owner 的时什么都不写，返回 false */
+  /** 只加这一张，别的标签页记下的不动；副本不是 owner 的时什么都不写，返回 false */
   addPendingChange: (owner: number, playlistId: number) => Promise<boolean>
-  /** 这张歌单的改动确认了、恢复了或者撤销了：划掉这一张，别的标签页记下的不动 */
+  /** 划掉这一张，别的标签页记下的不动 */
   removePendingChange: (owner: number, playlistId: number) => Promise<boolean>
-  /**
-   * 改曲库副本（同步拿到的、听众改了并且网易云确认了的），见 LibraryPatch：同一个事务里先核对副本还是不是 owner 的，
-   * 不是（别的标签页退出删了、换了账号）就什么都不写，返回 false
-   */
+  /** 见 LibraryPatch；同一个事务里先核对副本还是不是 owner 的，不是（别的标签页退出删了、换了账号）就什么都不写，返回 false */
   saveLibrary: (owner: number, patch: LibraryPatch) => Promise<boolean>
-  /** 在线播放音质；没设过时是 null */
+  /** 没设过时是 null */
   playQuality: () => Promise<Quality | null>
   savePlayQuality: (quality: Quality) => Promise<void>
-  /** 搜索历史，新的在前；没搜过时是空的 */
+  /** 新的在前；没搜过时是空的 */
   searchHistory: () => Promise<string[]>
-  /** 在一个事务里读出搜索历史、按 change 改好再存（别的标签页刚记下的不会被盖掉），返回存下的 */
+  /** 一个事务里读、改、存（别的标签页刚记下的不会被盖掉），返回存下的 */
   changeSearchHistory: (change: (history: string[]) => string[]) => Promise<string[]>
-  /** 这台设备上的下载（#38），不分先后；没有下载时是空的 */
+  /** 没有下载时是空的 */
   readDownloads: () => Promise<StoredDownload[]>
-  /** 存下一首下载完的歌（换掉同一首以前的）；存储空间不够时以 QuotaExceededError 失败 */
+  /** 换掉同一首以前的；存储空间不够时以 QuotaExceededError 失败 */
   saveDownload: (download: StoredDownload) => Promise<void>
   deleteDownload: (songId: number) => Promise<void>
 }
 
-/** 本机数据库：打开（含升级）、在一个读写事务里改存储区。播放队列、打卡和别的模块共用这一个连接 */
+/** 打开（含升级）、在一个读写事务里改存储区；播放队列、打卡和别的模块共用这一个连接 */
 export interface LocalDatabase {
   open: () => Promise<IDBDatabase>
-  /** 在一个读写事务里改 stores，提交了才算完 */
   write: (stores: string[], change: (transaction: IDBTransaction) => void) => Promise<void>
 }
 
@@ -271,7 +243,7 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
 
 /** 打开本机数据库：同一个设备上的模块共用一个连接，升级只跑一次 */
 export const createLocalDatabase = (indexedDB: IDBFactory): LocalDatabase => {
-  /** 打开以后就留着：之后的读写在调用的同一步里开事务，调用方在这之前做的检查到开事务时还成立 */
+  /** 之后的读写在调用的同一步里开事务，调用方在这之前做的检查到开事务时还成立 */
   let open: IDBDatabase | undefined
   let opening: Promise<IDBDatabase> | undefined
   const database = (): Promise<IDBDatabase> => {
@@ -280,7 +252,7 @@ export const createLocalDatabase = (indexedDB: IDBFactory): LocalDatabase => {
       request.onupgradeneeded = event => upgrade(request.result, request.transaction!, event.oldVersion)
       request.onsuccess = () => {
         open = request.result
-        // 新版本的标签页要升级本机数据库时，这个（旧的）标签页让开，免得把升级卡住；它之后的读写会失败，刷新就好
+        // 新版本的标签页要升级时这个（旧的）让开，免得把升级卡住；它之后的读写会失败，刷新就好
         open.onversionchange = () => open?.close()
         resolve(open)
       }
@@ -305,10 +277,9 @@ export const createLocalDatabase = (indexedDB: IDBFactory): LocalDatabase => {
 }
 
 export const createLocalDb = (db: LocalDatabase): LocalDb => {
-  /** 在一个读写事务里改 stores，提交了才算完 */
   const write = (stores: string[], change: (transaction: IDBTransaction) => void): Promise<void> => db.write(stores, change)
 
-  /** 副本还是 owner 的才在同一个事务里改 stores；返回改了没有 */
+  /** 副本还是 owner 的才改；返回改了没有 */
   const writeLibrary = async (owner: number, stores: string[], change: (transaction: IDBTransaction) => void): Promise<boolean> => {
     const transaction = (await db.open()).transaction([LIBRARY, ...stores], 'readwrite')
     const current = transaction.objectStore(LIBRARY).get('owner')

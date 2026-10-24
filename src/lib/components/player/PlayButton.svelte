@@ -1,7 +1,7 @@
 <!--
-  圆形播放键（森林墨底、白色图标）：播放条上 44px（DESIGN.md Player Bars），桌面播放页 64px（play-button-large），手机播放页 72px。
-  停着时是播放，要放时是暂停；取播放地址、缓冲超过 300ms 才淡入转圈（地址取过的歌缓冲一下就好，不在每次点歌时闪一下），
-  按下去照样停下。图标之间交叉淡化，新图标从 85% 放大到位。出了问题停下时按它就是重试
+  圆形播放键（森林墨底、白图标）：播放条 44px（DESIGN.md Player Bars），桌面播放页 64px，手机 72px。停着是播放、要放是暂停；
+  取地址、缓冲超过 300ms 才淡入转圈（地址取过的歌缓冲一下就好，不在每次点歌时闪），按下去照样停。图标交叉淡化、新的从 85% 放大；
+  出错停下时按它就是重试。
 -->
 <script lang='ts'>
   import { LoaderCircle, Pause, Play } from '@lucide/svelte'
@@ -15,7 +15,7 @@
   const status = $derived(view.state.player.status)
   const busy = $derived(status === 'loading' || status === 'buffering')
 
-  /** 取地址、缓冲已经超过 300ms */
+  /** 取地址、缓冲超过 300ms */
   let slow = $state(false)
   $effect(() => {
     if (!busy)
@@ -32,7 +32,7 @@
     ? 'spinner'
     : 'pause')
 
-  /** 按钮大小、图标大小、播放三角往右挪多少（看起来居中） */
+  /** 播放三角往右挪这么多才看起来居中 */
   const LOOKS = {
     44: { button: 'size-11', icon: 20, nudge: 'ml-0.5' },
     64: { button: 'size-16 shadow-ambient', icon: 26, nudge: 'ml-1' },
@@ -52,7 +52,7 @@
   onclick={() => view.app.togglePlay()}
 >
   {#key icon}
-    <!-- 新旧图标叠在同一格里交叉淡化 -->
+    <!-- 新旧图标叠在同一格交叉淡化 -->
     <span class='grid col-start-1 row-start-1' transition:iconSwap>
       {#if icon === 'spinner'}
         <LoaderCircle size={look.icon} class='animate-spin' aria-hidden='true' />

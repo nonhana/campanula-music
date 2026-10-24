@@ -20,28 +20,28 @@
   import { FLIGHT_COVER_SIZE } from './flight'
 
   interface Props {
-    /** 页头大封面图；有 artwork 时不用它 */
+    /** 有 artwork 时不用它 */
     cover?: { url: string | null, round?: boolean, fallback?: LucideIcon }
-    /** 自定义图（每日推荐、已下载）：参数是桌面 / 手机上的参考尺寸、是不是手机布局 */
+    /** 参数是桌面 / 手机上的参考尺寸、是不是手机布局 */
     artwork?: Snippet<[number, boolean]>
     title: string
-    /** h1 里只给读屏的补充（每日推荐的日期）；桌面上日期在信息行里，不重复 */
+    /** 桌面上日期在信息行里，这里不重复 */
     screenReaderTitle?: string
-    /** 资料到了；自定义图的页头一直画内容 */
+    /** 自定义图的页头一直画内容 */
     ready?: boolean
-    /** 桌面头部内容贴顶（歌单、专辑、每日推荐、已下载）或居中（歌手） */
+    /** 贴顶（歌单、专辑、每日推荐、已下载）或居中（歌手） */
     align?: 'start' | 'center'
-    /** 手机排法：封面图居中 / 图在左标题在右 / 图独占一行 */
+    /** 封面图居中 / 图在左标题在右 / 图独占一行 */
     phoneLayout?: 'center' | 'row' | 'banner'
     meta?: Snippet<[boolean]>
     tags?: readonly string[]
     actions?: Snippet
     note?: Snippet
-    /** 桌面上和动作同一行靠右；手机上另起一行（歌单内搜索、已下载搜索） */
+    /** 桌面和动作同一行靠右；手机另起一行（歌单内搜索、已下载搜索） */
     trailing?: Snippet
-    /** 尾部插槽也在手机上出现（已下载的搜索）；歌单内搜索只在桌面，手机上在列表上面 */
+    /** 已下载的搜索；歌单内搜索只在桌面，手机上在列表上面 */
     trailingPhone?: boolean
-    /** 封面图代表这一页：放封面飞行的终点（ADR-0011）；不给就不飞 */
+    /** 放封面飞行的终点（ADR-0011）；不给就不飞 */
     flight?: string
   }
 
@@ -64,7 +64,7 @@
 
   const phone = $derived(!desktopLayout.current)
   const round = $derived(cover?.round ?? false)
-  /** 手机页头的封面图宽度：真实封面图和骨架共用，168 只写一次 */
+  /** 真实封面图和骨架共用，168 只写一次 */
   const PHONE_COVER_CLASS = 'mx-auto max-w-[168px]'
 </script>
 

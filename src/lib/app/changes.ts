@@ -3,10 +3,9 @@ import { canSortPlaylist, nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_TAG
 
 import type { LibraryPatch, PlaylistTracks, Replica } from './local'
 
-// 听众在 Campanula 里改曲库（红心、加入歌单、收藏，#30；歌单的增删改，#33，Spec #11“客户端：曲库副本”）：每种修改对副本做什么。
-// 只算不做：显示时叠在副本上（还没确认的），网易云确认了写进副本，同步拿回来的旧数据上再叠一次（确认得比它晚的）。
-// 同一件事做两遍结果不变（已经红心的再红心、已经在歌单里的再加），所以重复叠也没关系。
-// 新建歌单不是听众先改本地的修改（Change）：等网易云建好、给了编号才写进副本（ConfirmedChange 的 create），之后照样叠在同步拿回来的旧歌单列表上
+// 听众改曲库（红心、加入歌单、收藏，#30；歌单的增删改，#33，Spec #11“客户端：曲库副本”）时每种修改对副本做什么。只算不做：
+// 显示时叠在副本上，确认了写进副本，同步拿回来的旧数据上再叠一次（确认得比它晚的）；同一件事做两遍结果不变，重复叠没关系。
+// 新建歌单不是先改本地的修改（Change）：等网易云建好、给了编号才写进副本（ConfirmedChange 的 create）。
 
 /** 收藏一张不在曲库里的歌单时，打开着它就带上已经取到的曲目：收藏后它进了曲库，不用再拉一遍 */
 export interface PlaylistSeed {
@@ -14,58 +13,49 @@ export interface PlaylistSeed {
   songs: readonly Song[]
 }
 
-/** 听众做的修改：先改本地、立即生效，再提交给网易云 */
 export type Change
   = | { kind: 'heart', song: Song, hearted: boolean }
-  /** 加入歌单：自建歌单，或我喜欢的音乐（等于红心） */
+    /** 自建歌单，或我喜欢的音乐（等于红心） */
     | { kind: 'add', playlist: Playlist, song: Song }
-  /** 一次加入几首（多选、添加歌曲选择器，#35）：自建歌单，一个请求带上全部编号 */
+    /** 一个请求带上全部编号（#35） */
     | { kind: 'addMany', playlist: Playlist, songs: readonly Song[] }
-  /** 从自建歌单移除几首（#35）：先在本地拿掉，提示条留 5 秒撤销，没撤销才提交 */
+    /** 先在本地拿掉，提示条留 5 秒撤销，没撤销才提交（#35） */
     | { kind: 'remove', playlist: Playlist, songIds: number[] }
-  /** 整张歌单的新顺序（#36）：拖完先改本地，停手 2 秒才一次提交；自建歌单和我喜欢的音乐都能排 */
+    /** 拖完先改本地，停手 2 秒才一次提交；自建歌单和我喜欢的音乐都能排（#36） */
     | { kind: 'order', playlist: Playlist, songIds: number[] }
-  /** 曲库里自建歌单之间的顺序（#37）：我喜欢的音乐和全部自建歌单的编号，我喜欢的音乐在最前；收藏的歌单不参与 */
+    /** 我喜欢的音乐在最前；收藏的歌单不参与（#37） */
     | { kind: 'playlistOrder', playlistIds: number[] }
     | { kind: 'collectAlbum', album: CollectedAlbum, collected: boolean }
     | { kind: 'collectArtist', artist: CollectedArtist, collected: boolean }
     | { kind: 'collectPlaylist', playlist: Playlist, collected: boolean, seed: PlaylistSeed | null }
-  /** 自建歌单改名称（去掉了首尾空白） */
+    /** 去掉了首尾空白 */
     | { kind: 'rename', playlist: Playlist, name: string }
-  /** 自建歌单改简介（去掉了首尾空白）；清空是 null */
+    /** 清空是 null */
     | { kind: 'describe', playlist: Playlist, description: string | null }
-  /** 自建歌单换一组标签（从标签库里选的，照选的先后） */
+    /** 从标签库里选的，照选的先后 */
     | { kind: 'tag', playlist: Playlist, tags: string[] }
-  /** 隐私歌单改公开（改不回去，Spec #11 Out of Scope） */
+    /** 改不回去（Spec #11 Out of Scope） */
     | { kind: 'publish', playlist: Playlist }
-  /** 删除自建歌单 */
     | { kind: 'delete', playlist: Playlist }
 
-/**
- * 晚一点才提交的三种修改（#70）：移除、歌单内排序、自建歌单之间的排序。它们由 deferred 模块提交，
- * 立即修改的提交路径（library.submit）不接它们。
- */
+/** 移除、歌单内排序、自建歌单之间的排序（#70），由 deferred 模块提交；立即修改的提交路径（library.submit）不接它们 */
 export type DeferredChange = Extract<Change, { kind: 'remove' | 'order' | 'playlistOrder' }>
-/** 立即提交的修改：剩下那些先改本地、马上发一次请求的 */
 export type ImmediateChange = Exclude<Change, DeferredChange>
 
-/**
- * 网易云确认了、要写进副本的：听众做的修改，网易云建好的自建歌单（没有先改本地这一步），
- * 和换好的封面（图先传上去、网易云确认才拿到新地址，也没有先改本地这一步）
- */
+/** 要写进副本的：听众做的修改，网易云建好的自建歌单，和换好的封面（后两者没有先改本地这一步） */
 export type ConfirmedChange
   = | Change
     | { kind: 'create', playlist: Playlist }
     | { kind: 'cover', playlistId: number, coverUrl: string }
 
-/** 编辑歌单信息时填的名称、简介、标签：没给的不改 */
+/** 没给的不改 */
 export interface PlaylistEdit {
   name?: string
   description?: string
   tags?: readonly string[]
 }
 
-/** 一次编辑要做的修改：名称、简介去掉首尾空白，和现在一样的不提交（标签照先后比） */
+/** 名称、简介去掉首尾空白，和现在一样的不提交（标签照先后比） */
 export const playlistEdits = (playlist: Playlist, edit: PlaylistEdit): ImmediateChange[] => {
   const changes: ImmediateChange[] = []
   const name = edit.name?.trim()
@@ -128,16 +118,10 @@ export const heartOf = (change: ConfirmedChange): { song: Song, hearted: boolean
   return null
 }
 
-/**
- * 一张歌单这样东西的排队键：收藏、取消收藏、删除都按它排；
- * 打开歌单前等它排完（deferred.settled）也用同一个键
- */
+/** 收藏、取消收藏、删除都按它排；打开歌单前等它排完（deferred.settled）也用同一个键 */
 export const playlistTarget = (playlistId: number): string => `playlist:${playlistId}`
 
-/**
- * 改的是哪样东西：同一样东西的几次修改按先后一次一次提交，上一次网易云回了才发下一次，
- * 免得连点两下（红心、取消红心）到网易云的先后颠倒
- */
+/** 同一样东西的几次修改按先后一次一次提交，上一次网易云回了才发下一次，免得连点两下（红心、取消红心）的先后颠倒 */
 export const targetOf = (change: Change): string => {
   const heart = heartOf(change)
   if (heart)
@@ -173,12 +157,10 @@ export const targetOf = (change: Change): string => {
   }
 }
 
-/** 列表最前面加上 id，已经有了就不动 */
 const prepended = (ids: number[], id: number): number[] => ids.includes(id)
   ? ids
   : [id, ...ids]
 
-/** 一张歌单的曲目最前面加上这首；本机还没有这张歌单的曲目、或者已经在里面了是 null */
 const tracksWith = (replica: Replica, playlistId: number, songId: number): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   return tracks && !tracks.trackIds.includes(songId)
@@ -189,7 +171,6 @@ const tracksWith = (replica: Replica, playlistId: number, songId: number): Playl
     : null
 }
 
-/** 一张歌单的曲目最前面加上这几首（按勾选的先后）；本机还没有这张歌单的曲目、或者都已经在里面了是 null */
 const tracksWithMany = (replica: Replica, playlistId: number, songs: readonly Song[]): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   if (!tracks)
@@ -206,7 +187,6 @@ const tracksWithMany = (replica: Replica, playlistId: number, songs: readonly So
     : null
 }
 
-/** 一张歌单的曲目去掉这几首；本机还没有这张歌单的曲目、或者一首都不在里面是 null */
 const tracksWithout = (replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   if (!tracks)
@@ -218,7 +198,6 @@ const tracksWithout = (replica: Replica, playlistId: number, songIds: readonly n
     : null
 }
 
-/** 本机还没有的歌曲信息 */
 const missingSongs = (replica: Replica, songs: readonly Song[]): Song[] | undefined => {
   const missing = songs.filter(song => !replica.songs.has(song.id))
   return missing.length > 0
@@ -226,10 +205,7 @@ const missingSongs = (replica: Replica, songs: readonly Song[]): Song[] | undefi
     : undefined
 }
 
-/**
- * 一张歌单的曲目换成提交的顺序：提交的顺序过期时（之后又加、又移除了歌），只排还在歌单里的那几首，
- * 没出现在提交里的歌按原来的先后接在后面。排序不会把歌加进来，也不会把已经移除的歌带回来
- */
+/** 提交的顺序过期时只排还在歌单里的那几首，没出现在提交里的按原来的先后接在后面；排序不会加歌，也不会把移除的带回来 */
 const orderedTracks = (replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null => {
   const tracks = replica.tracks.get(playlistId)
   if (!tracks)
@@ -278,7 +254,7 @@ const heartPatch = (replica: Replica, song: Song, hearted: boolean): LibraryPatc
   }
 }
 
-/** 收藏的歌单排在自建歌单后面、收藏的歌单最前（和刚在网易云里收藏的一样） */
+/** 收藏的歌单排在自建歌单后面、收藏的最前（和刚在网易云里收藏的一样） */
 const withCollected = (playlists: Playlist[], playlist: Playlist): Playlist[] => {
   if (playlists.some(item => item.id === playlist.id))
     return playlists
@@ -292,7 +268,7 @@ const withCollected = (playlists: Playlist[], playlist: Playlist): Playlist[] =>
       ]
 }
 
-/** 新建的歌单排在我喜欢的音乐后面（和刚在网易云里新建的一样，验证关卡②） */
+/** 排在我喜欢的音乐后面（和刚在网易云里新建的一样，验证关卡②） */
 const withCreated = (playlists: Playlist[], playlist: Playlist): Playlist[] => {
   if (playlists.some(item => item.id === playlist.id))
     return playlists
@@ -304,7 +280,6 @@ const withCreated = (playlists: Playlist[], playlist: Playlist): Playlist[] => {
   ]
 }
 
-/** 曲库里这张歌单改成 edit 之后的样子；歌单列表还没拿到、里面没有它时不动 */
 const editedPatch = (replica: Replica, playlistId: number, edit: (playlist: Playlist) => Playlist): LibraryPatch => {
   const { playlists } = replica
   return playlists?.some(item => item.id === playlistId)
@@ -327,7 +302,7 @@ const toggled = <T extends { id: number }>(items: T[] | null, item: T, collected
   return items.filter(each => each.id !== item.id)
 }
 
-/** 这个修改对副本做什么；副本里还没有的部分（首次同步还没拿到）不动 */
+/** 副本里还没有的部分（首次同步还没拿到）不动 */
 export const changePatch = (replica: Replica, change: ConfirmedChange): LibraryPatch => {
   const heart = heartOf(change)
   if (heart)

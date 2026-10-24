@@ -3,17 +3,14 @@ import type { LyricsResponse } from '#lib/api/playback.js'
 
 import type { SessionApi, SessionFailure, SessionRound } from './session-round'
 
-// 播放页的歌词（#25）：听众看歌词时才取（前台请求，不排队），只记着最近打开的那首。
-// 下载了的歌（#38）用存在这台设备上的歌词，断网、没登录时也有。
-// 会话一轮结束时 App 会清掉它；换了一首歌、旧一轮的回复不写进现在这首。
+// 播放页的歌词（#25）：听众看歌词时才取（前台请求，不排队），只记着最近打开的那首；下载了的歌（#38）用本机歌词。
+// 会话一轮结束时 App 清掉它，换了一首歌、旧一轮的回复不写进现在这首。
 
-/** 歌词没取到的原因 */
 type LyricsFailure = SessionFailure
 
-/** 打开的那首歌的歌词取到哪了 */
 export type LyricsState
   = | { songId: number, status: 'loading' }
-  /** 没取到：说明原因，再打开一次就是重试 */
+    /** 再打开一次就是重试 */
     | { songId: number, status: 'failed', failure: LyricsFailure }
     | { songId: number, status: 'shown', lyrics: LyricsResponse }
 
@@ -22,12 +19,11 @@ export interface LyricsContext {
   session: SessionRound
   read: () => LyricsState | null
   write: (lyrics: LyricsState | null) => void
-  /** 下载了的这首存着的歌词；没下载是 null */
   stored: (songId: number) => LyricsResponse | null
 }
 
 export interface Lyrics {
-  /** 看这首歌的歌词：已经取到、正在取就不再取；没取到过、上次没取成就取 */
+  /** 已经取到、正在取就不再取；没取到过、上次没取成就取 */
   open: (songId: number) => Promise<void>
 }
 

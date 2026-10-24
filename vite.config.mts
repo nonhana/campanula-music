@@ -22,9 +22,8 @@ export default defineConfig(({ command }) => ({
     __CAMPANULA_MOCK__: JSON.stringify(command === 'serve' && process.env.CAMPANULA_MOCK === '1'),
   },
   plugins: [
-    // SvelteKit 没有 index.html（开发时 app.html 由 SvelteKit 自己拼，构建产物里也没有），UnoCSS 插件注册的
-    // transformIndexHtml 永远不会被调用，只会让 SvelteKit 每读一次 vite 配置就警告一次（kit 3.1.0 没有关掉它的开关）。
-    // 交给 Vite 之前把这个 hook 摘掉；扫描、生成 CSS 的其它 hook 不动。
+    // SvelteKit 没有 index.html，UnoCSS 注册的 transformIndexHtml 永远不会被调用，只让 SvelteKit 每次读配置都警告一次
+    // （kit 3.1.0 没有关掉它的开关）。交给 Vite 前把这个 hook 摘掉，扫描、生成 CSS 的其它 hook 不动。
     ...((plugins: Plugin[]): Plugin[] => {
       for (const plugin of plugins)
         delete plugin.transformIndexHtml

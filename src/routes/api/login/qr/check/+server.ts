@@ -7,8 +7,7 @@ import { withNetease } from '#lib/server/respond.js'
 
 import type { RequestHandler } from './$types'
 
-// 查询扫码状态。听众在手机上确认后，先用新凭据问到账号，再把凭据和 deviceId 加密进登录 Cookie：
-// 问不到账号就不存，免得留下一个界面不知道的登录
+// 查询扫码状态。确认后先用新凭据问到账号，再把凭据和 deviceId 加密进登录 Cookie；问不到账号就不存，免得留下一个界面不知道的登录
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const { key } = await readFields<keyof QrCheckRequest>(request, { key: QR_KEY })
   return withNetease(endpoints.checkLoginQr, async () => {

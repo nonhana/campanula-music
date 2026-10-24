@@ -1,5 +1,4 @@
-// mock 的 Vite 插件：只在 CAMPANULA_MOCK=1 的 dev 服务器里把服务端 import 'hana-music-api' 换成 mock，
-// 并挂上自动登录、重置、场景、覆盖报告和本地资源的路由。生产构建不加载这个插件（#58）。
+// mock 的 Vite 插件：只在 CAMPANULA_MOCK=1 的 dev 服务器里把 hana-music-api 换成 mock，并挂上自动登录、重置、场景、覆盖报告和本地资源的路由；生产构建不加载（#58）。
 import { Buffer } from 'node:buffer'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { fileURLToPath } from 'node:url'

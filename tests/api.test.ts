@@ -4,9 +4,7 @@ import { post } from '#lib/api/endpoint.js'
 import type { WriteResponse } from '#lib/api/write.js'
 import { createApi } from '#lib/app/api-client.js'
 
-// Api.post 自己管 64 KiB keepalive 上限（#70）：请求体按 UTF-8 字节数算，正好 64 KiB 可以用 keepalive，
-// 多一个字节就退回普通请求；other init（method/headers/body）不变。
-// 这是 Api 模块的接缝：App 接缝的两条 >64 KiB 测试只能证明最终行为，测不到 65536/65537 的边界。
+// Api.post 自己管 64 KiB keepalive 上限（#70）：请求体按 UTF-8 字节数算，正好 64 KiB 可以用 keepalive，多一个字节就退回普通请求，other init（method/headers/body）不变。这是 Api 模块的接缝：App 接缝的两条 >64 KiB 测试只能证明最终行为，测不到 65536/65537 的边界。
 
 const endpoint = post<WriteResponse, { data: string }>(() => '/api/fake')
 

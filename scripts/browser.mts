@@ -1,5 +1,4 @@
-// 统一的浏览器命令：mock 是日常验证的默认路径，真账号只用于交付前由作者试用。
-// 一个浏览器进程、一个专用上下文；同一时间只允许一个 agent 操作（文件锁）。
+// 统一的浏览器命令：mock 是日常验证的默认路径，真账号只用于交付前由作者试用。一个浏览器进程、一个专用上下文；同一时间只允许一个 agent 操作（文件锁）。
 // 用法：scripts/browser check|open|exec|screenshot|reset|scenario|coverage|offline|port [参数]
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'

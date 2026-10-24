@@ -15,8 +15,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInWithLiked, signInAtLikedTracks, reopen, replyLibrary } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// 点歌就播放（#24）：浏览器拿服务端取的播放地址直连网易云的音频服务器，两个播放器轮流放（ADR-0010）。
-// 音频服务器那边（数据什么时候够放、放到哪了、断流）由测试在播放器替身上决定
+// 点歌就播放（#24）：浏览器拿服务端取的播放地址直连网易云的音频服务器，两个播放器轮流放（ADR-0010）；音频服务器那边（数据什么时候够放、放到哪了、断流）由测试在播放器替身上决定
 
 const LIKED = { kind: 'playlist', id: 900000001 } as const
 
@@ -96,7 +95,6 @@ const playUntilSounding = async (tab: Tab, song: Recorded, next: Recorded): Prom
   return player
 }
 
-/** 另一个播放器 */
 const other = (tab: Tab, player: FakeAudio) => tab.audio.find(audio => audio !== player)!
 
 /** 录下的播放地址：服务端换成 https 交给浏览器 */
@@ -503,7 +501,6 @@ describe('两个播放器交替（ADR-0010）', () => {
     expect(player.paused).toBe(true)
     expect(current(app)).toBe(SECOND.id)
     expect(app.state.player).toMatchObject({ status: 'playing', duration: SECOND.duration })
-    // 换下来的那个接着缓冲第三首
     expect(player.src).toBe(await recordedUrl(THIRD.url))
   })
 
@@ -1036,7 +1033,6 @@ describe('下一首播放、加入播放队列、插播', () => {
     const { app } = tab
     const player = await playUntilSounding(tab, FIRST, SECOND)
     const spare = other(tab, player)
-    // 下一首还没缓冲好：剩 5 秒就开始交接
     player.progress(188)
     await world.settle()
     expect(spare.paused).toBe(false)
@@ -1403,7 +1399,6 @@ const queueOf = async (app: App, songs: readonly Recorded[]): Promise<void> => {
     app.addToQueue(LIKED, likedSong(app, song.id))
 }
 
-/** 连按 times 次下一首，依次换上来的歌 */
 const nextTimes = (app: App, times: number): (number | null)[] => Array.from({ length: times }, () => {
   app.next()
   return current(app)
@@ -1547,10 +1542,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     let holds: (() => void)[] = []
     let queued = 0
 
-    /**
-     * 网易云总还有四份播放地址没用掉，一半压着。录到地址的只有几首：回的不是请求的那首时，服务端认作网易云没给地址，App 跳过它、
-     * 接着取下一首的，正好也让“跳过”这条路走得到。连着跳过把四份都用完时，替身没有返回、服务端出错，App 停下说明原因
-     */
+    /** 网易云总还有四份播放地址没用掉，一半压着。录到地址的只有几首：回的不是请求的那首时，服务端认作网易云没给地址，App 跳过它、接着取下一首的，正好也让“跳过”这条路走得到。连着跳过把四份都用完时，替身没有返回、服务端出错，App 停下说明原因 */
     const topUp = async (): Promise<void> => {
       while (queued - world.netease.calls.filter(call => call.module === 'song_url_v1').length < 4) {
         queued += 1
@@ -1790,7 +1782,6 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
 
 // 后台播放与恢复（#27）：播放队列、当前这首、播放进度、这首已经听了多少秒都存在本机，重新打开时恢复（Spec #11“客户端：播放队列与播放”）
 
-/** 本机存着的进度；没有时是 undefined */
 const storedProgress = async (device: Device): Promise<unknown> => {
   const { player = [] } = await device.stored()
   return player.find(([key]) => key === 'progress')?.[1]
@@ -1826,7 +1817,6 @@ describe('关掉再打开', () => {
       source: album,
     })
     expect(again.sounding()).toBeUndefined()
-    // 还没放到的下一首播放照旧：切到随机播放时它留在最前
     reopened.setPlayMode('shuffle')
     expect(neighborIds(reopened).next).toBe(LAST.id)
 
@@ -2260,7 +2250,6 @@ describe('听歌打卡', () => {
       },
     ])
 
-    // 缓冲好的下一首接着放
     other(tab, player).ready(SECOND.duration)
     await world.settle()
     expect(current(app)).toBe(SECOND.id)

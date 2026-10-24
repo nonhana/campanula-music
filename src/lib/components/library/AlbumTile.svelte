@@ -1,7 +1,7 @@
 <!--
-  一张专辑的格子：方形圆角封面、专辑名、下面一行灰字（收藏的专辑写歌手，歌手页的专辑写年份，搜索结果写“歌手 · 年份”）。点开是专辑页。
-  曲库的专辑标签、桌面首页的专辑架子、歌手页的专辑、搜索结果都用它。歌手名太长时截断歌手，年份照样看得见。
-  搜索结果里（collectable）封面右下角压一个始终可见的收藏小圆（CollectButton 的 corner）：和链接并排放在同一格里，不嵌在链接里
+  一张专辑的格子：方形圆角封面、专辑名、下面一行灰字（收藏的写歌手，歌手页的写年份，搜索写“歌手 · 年份”）。曲库的专辑标签、
+  桌面首页的架子、歌手页的专辑、搜索结果都用它；歌手名太长时截断歌手、年份照样看得见。搜索结果里（collectable）封面右下角压一个
+  收藏小圆（CollectButton 的 corner），和链接并排放在同一格、不嵌在链接里。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -15,17 +15,15 @@
     id: number
     name: string
     coverUrl: string
-    /** 第二行；没有就不写 */
     detail: string
-    /** 第二行最后的发行年份（跟在 detail 后面，不截断）；不写是 null */
+    /** 跟在 detail 后面，不截断；不写是 null */
     year?: number | null
     phone?: boolean
-    /** 封面右下角放收藏开关（只在搜索结果里） */
     collectable?: boolean
   }
 
   const { id, name, coverUrl, detail, year = null, phone = false, collectable = false }: Props = $props()
-  /** 封面代表点开的那一页（Cover 的 flight）；链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
+  /** 链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
   const page = $derived(resolve('/albums/[id=neteaseId]', { id }))
 </script>
 

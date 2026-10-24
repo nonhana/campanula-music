@@ -1,8 +1,6 @@
 <!--
-  桌面顶栏右边的头像（视觉原型 DesktopShell）：点开是账号菜单，显示头像和昵称，可以去设置、退出登录（先确认：LogoutConfirm，关上后焦点回到头像）。
-  菜单从头像下面飘出来，关上时淡出（DESIGN.md Overlays，motion.ts 的 pop）；连点头像时从此刻的样子掉头，不留残影。
-  键盘：Enter / 空格 / ↓ 打开并聚焦第一项，↑↓ 在菜单项之间移动，Esc 关上并回到头像，Tab 离开时关上；
-  行怎么画、行高和 ↑↓ / Home / End 由 MenuList 管（#73），这里只给条目数据和关上之后做什么。
+  桌面顶栏右边的头像（视觉原型 DesktopShell）：点开是账号菜单，显示头像和昵称，可以去设置、退出登录（先确认：LogoutConfirm，关上后焦点回到头像）；菜单从头像下面飘出来，关上时淡出（DESIGN.md Overlays，motion.ts 的 pop）。
+  键盘：Enter / 空格 / ↓ 打开并聚焦第一项，↑↓ 在菜单项之间移动，Esc 关上并回到头像，Tab 离开时关上；行怎么画、行高和 ↑↓ / Home / End 由 MenuList 管（#73）。
 -->
 <script lang='ts'>
   import { goto } from '$app/navigation'
