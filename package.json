@@ -46,7 +46,6 @@
     "eslint": "catalog:",
     "eslint-plugin-svelte": "catalog:",
     "fake-indexeddb": "catalog:",
-    "globals": "catalog:",
     "hana-music-api": "catalog:",
     "knip": "catalog:",
     "lint-staged": "catalog:",

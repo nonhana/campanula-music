@@ -224,9 +224,6 @@ catalogs:
     fake-indexeddb:
       specifier: ^6.2.6
       version: 6.2.6
-    globals:
-      specifier: ^17.13.0
-      version: 17.13.0
     hana-music-api:
       specifier: ^2.13.0
       version: 2.13.0
@@ -328,9 +325,6 @@ importers:
       fake-indexeddb:
         specifier: 'catalog:'
         version: 6.2.6
-      globals:
-        specifier: 'catalog:'
-        version: 17.13.0
       hana-music-api:
         specifier: 'catalog:'
         version: 2.13.0
