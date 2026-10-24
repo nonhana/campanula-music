@@ -10,14 +10,16 @@
   换封面的裁剪页（CoverEditor）再盖在编辑上面；开着时后面的都不能操作。
 -->
 <script lang='ts'>
-  import type { RouteId } from '$app/types'
-  import type { LucideIcon } from '@lucide/svelte'
-  import type { Snippet } from 'svelte'
-  import type { Account } from '#lib/api/account.js'
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
+  import type { RouteId } from '$app/types'
+  import type { LucideIcon } from '@lucide/svelte'
   import { ArrowLeft, Calendar, CalendarDays, CircleArrowDown, House, Menu, Search, Settings } from '@lucide/svelte'
+  import type { Snippet } from 'svelte'
+
+  import type { Account } from '#lib/api/account.js'
+
   import Brand from '../boot/Brand.svelte'
   import DailyNumber from '../daily/DailyNumber.svelte'
   import { dailyCalendarDay } from '../daily/view'
@@ -85,7 +87,7 @@
   })
   // 骨架在打开 App 问完账号后才挂上，那时第一次换页已经过去了：直接打开（刷新）搜索结果页时，搜索框里也要是这一页搜的词
   resetSearchBox(view.app)
-  function back() {
+  const back = () => {
     if (cameFromApp)
       history.back()
     else
@@ -93,17 +95,15 @@
   }
 
   /** 侧栏的一项：当前项是薄荷玻璃底；收起时只有图标，名字给读屏和悬停提示 */
-  function railItem(id: RouteId, label: string, current = route === id) {
-    return {
-      'class': [
-        'h-12 w-full flex items-center gap-3 rounded-lg px-3 text-left transition-colors duration-feedback',
-        current ? 'bg-primary-200 text-primary-950' : 'text-neutral-600 mouse:hover:(bg-primary-100 text-primary-950)',
-      ],
-      'aria-current': current ? 'page' as const : undefined,
-      'aria-label': railExpanded ? undefined : label,
-      'title': railExpanded ? undefined : label,
-    }
-  }
+  const railItem = (id: RouteId, label: string, current = route === id) => ({
+    'class': [
+      'h-12 w-full flex items-center gap-3 rounded-lg px-3 text-left transition-colors duration-feedback',
+      current ? 'bg-primary-200 text-primary-950' : 'text-neutral-600 mouse:hover:(bg-primary-100 text-primary-950)',
+    ],
+    'aria-current': current ? 'page' as const : undefined,
+    'aria-label': railExpanded ? undefined : label,
+    'title': railExpanded ? undefined : label,
+  })
 </script>
 
 {#snippet railContent(label: string, Icon: LucideIcon)}

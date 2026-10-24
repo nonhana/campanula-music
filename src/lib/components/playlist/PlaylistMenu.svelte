@@ -5,11 +5,12 @@
   菜单行、行高和键盘在 MenuList（#73）。
 -->
 <script lang='ts'>
-  import type { MenuHeader, MenuItem } from '../menu/menu'
-  import type { PlaylistMenuRequest } from '../overlay/overlay-requests'
   import { Globe, Pencil, Trash2 } from '@lucide/svelte'
+
+  import type { MenuHeader, MenuItem } from '../menu/menu'
   import MenuOverlay from '../menu/MenuOverlay.svelte'
   import { getOverlays } from '../overlay/overlay-context'
+  import type { PlaylistMenuRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { langOf } from '../shared/text'
 
@@ -18,11 +19,9 @@
   const view = getAppView()
   const { playlistEditor, playlistMenu } = getOverlays()
 
-  function playlistOf(request: PlaylistMenuRequest) {
-    return view.state.library?.playlists?.find(playlist => playlist.id === request.playlistId) ?? null
-  }
+  const playlistOf = (request: PlaylistMenuRequest) => view.state.library?.playlists?.find(playlist => playlist.id === request.playlistId) ?? null
 
-  function itemsOf(request: PlaylistMenuRequest): MenuItem[] {
+  const itemsOf = (request: PlaylistMenuRequest): MenuItem[] => {
     const playlist = playlistOf(request)
     if (playlist?.kind !== 'own')
       return []
@@ -58,12 +57,12 @@
   }
 
   /** 菜单关上（不把焦点还回去，交给编辑），打开对应的编辑；关掉编辑后焦点回到 ••• */
-  function edit(mode: Edit, request: PlaylistMenuRequest): void {
+  const edit = (mode: Edit, request: PlaylistMenuRequest): void => {
     void playlistMenu.transfer(playlistEditor, { mode, playlistId: request.playlistId, from: request.from })
   }
 
   /** 底部弹层的头：封面图和歌单名；浮动菜单没有 */
-  function headerOf(request: PlaylistMenuRequest, sheet: boolean): MenuHeader | null {
+  const headerOf = (request: PlaylistMenuRequest, sheet: boolean): MenuHeader | null => {
     const playlist = playlistOf(request)
     if (!sheet || !playlist)
       return null

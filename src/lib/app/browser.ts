@@ -147,16 +147,14 @@ declare global {
   }
 }
 
-function withTimeout<T>(work: Promise<T>, what: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error(`${what}超时`)), WATCHMAN.timeout)
-    work.then(resolve, reject).finally(() => window.clearTimeout(timer))
-  })
-}
+const withTimeout = <T>(work: Promise<T>, what: string): Promise<T> => new Promise((resolve, reject) => {
+  const timer = window.setTimeout(() => reject(new Error(`${what}超时`)), WATCHMAN.timeout)
+  work.then(resolve, reject).finally(() => window.clearTimeout(timer))
+})
 
 /** 页面里 Watchman 的脚本：只加载一次；没加载出来时下次再试 */
 let watchmanScript: Promise<void> | undefined
-function loadWatchmanScript(): Promise<void> {
+const loadWatchmanScript = (): Promise<void> => {
   watchmanScript ??= new Promise<void>((resolve, reject) => {
     const script = document.createElement('script')
     script.src = WATCHMAN.script
@@ -179,7 +177,7 @@ function loadWatchmanScript(): Promise<void> {
  * 初始化没成（网络、被拦）时下次再试；已经有 window.WM 就直接用它
  */
 let watchman: Promise<Watchman> | undefined
-function loadWatchman(): Promise<Watchman> {
+const loadWatchman = (): Promise<Watchman> => {
   watchman ??= withTimeout(loadWatchmanScript().then(() => window.WM ?? new Promise<Watchman>((resolve, reject) => window.initWatchman!({
     auto: true,
     productNumber: WATCHMAN.product,
@@ -199,7 +197,7 @@ function loadWatchman(): Promise<Watchman> {
   return watchman
 }
 
-async function watchmanToken(): Promise<string> {
+const watchmanToken = async (): Promise<string> => {
   // mock 开发环境不向网易云加载 Watchman 脚本（#58：mock 不发外网请求）；服务端也接受这个固定令牌
   if (mock)
     return 'mock-watchman-token'
@@ -223,7 +221,7 @@ interface Decoded {
 /** 解码出来的位图和预览地址：DecodedImage 只有界面要用的尺寸和地址，位图留在这里给裁切用 */
 const decoded = new WeakMap<DecodedImage, Decoded>()
 
-function drawWhite(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+const drawWhite = (canvas: HTMLCanvasElement): CanvasRenderingContext2D => {
   const context = canvas.getContext('2d')
   if (!context)
     throw new Error('浏览器不给 canvas 的绘图上下文')
@@ -233,13 +231,11 @@ function drawWhite(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   return context
 }
 
-function toJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
-  return new Promise((resolve, reject) => canvas.toBlob(blob => blob
-    ? resolve(blob)
-    : reject(new Error('浏览器没能导出 JPEG')), 'image/jpeg', quality))
-}
+const toJpeg = (canvas: HTMLCanvasElement, quality: number): Promise<Blob> => new Promise((resolve, reject) => canvas.toBlob(blob => blob
+  ? resolve(blob)
+  : reject(new Error('浏览器没能导出 JPEG')), 'image/jpeg', quality))
 
-async function decodeImage(file: File): Promise<DecodedImage> {
+const decodeImage = async (file: File): Promise<DecodedImage> => {
   // imageOrientation: 'from-image' 让手机竖拍的照片按 EXIF 摆正
   let bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
   const origWidth = bitmap.width
@@ -272,7 +268,7 @@ async function decodeImage(file: File): Promise<DecodedImage> {
   return image
 }
 
-function releaseImage(image: DecodedImage): void {
+const releaseImage = (image: DecodedImage): void => {
   const entry = decoded.get(image)
   if (!entry)
     return
@@ -281,7 +277,7 @@ function releaseImage(image: DecodedImage): void {
   URL.revokeObjectURL(entry.url)
 }
 
-async function exportCoverJpeg(image: DecodedImage, crop: CoverCrop): Promise<Blob> {
+const exportCoverJpeg = async (image: DecodedImage, crop: CoverCrop): Promise<Blob> => {
   const entry = decoded.get(image)
   if (!entry)
     throw new Error('这张图已经释放了，不能再裁')
@@ -298,7 +294,7 @@ async function exportCoverJpeg(image: DecodedImage, crop: CoverCrop): Promise<Bl
   return blob
 }
 
-async function uploadCoverImage(url: string, jpeg: Blob, token: string, signal: AbortSignal): Promise<void> {
+const uploadCoverImage = async (url: string, jpeg: Blob, token: string, signal: AbortSignal): Promise<void> => {
   const response = await window.fetch(url, {
     method: 'POST',
     headers: { 'x-nos-token': token, 'content-type': 'image/jpeg' },
@@ -309,7 +305,7 @@ async function uploadCoverImage(url: string, jpeg: Blob, token: string, signal: 
     throw new Error(`图片存储回了 ${response.status}`)
 }
 
-async function download(url: string, onProgress: (received: number) => void): Promise<Blob> {
+const download = async (url: string, onProgress: (received: number) => void): Promise<Blob> => {
   const response = await window.fetch(url)
   if (!response.ok || !response.body)
     throw new Error(`文件服务器回了 ${response.status}`)
@@ -324,35 +320,33 @@ async function download(url: string, onProgress: (received: number) => void): Pr
   return new Blob(chunks, { type: response.headers.get('content-type') ?? '' })
 }
 
-export function realBrowserCapabilities(): BrowserCapabilities {
-  return {
-    fetch: (path, init) => window.fetch(path, init),
-    clock: {
-      now: () => Date.now(),
-      after(ms, callback) {
-        const id = window.setTimeout(callback, ms)
-        return () => window.clearTimeout(id)
-      },
+export const realBrowserCapabilities = (): BrowserCapabilities => ({
+  fetch: (path, init) => window.fetch(path, init),
+  clock: {
+    now: () => Date.now(),
+    after(ms, callback) {
+      const id = window.setTimeout(callback, ms)
+      return () => window.clearTimeout(id)
     },
-    indexedDB: window.indexedDB,
-    network: {
-      get onLine() {
-        return navigator.onLine
-      },
-      addEventListener: (type, listener) => window.addEventListener(type, listener),
-      removeEventListener: (type, listener) => window.removeEventListener(type, listener),
+  },
+  indexedDB: window.indexedDB,
+  network: {
+    get onLine() {
+      return navigator.onLine
     },
-    page: document,
-    mediaSession: navigator.mediaSession,
-    MediaMetadata: window.MediaMetadata,
-    locks: navigator.locks,
-    broadcastChannel: name => new BroadcastChannel(name),
-    audio: () => new Audio(),
-    checkToken: watchmanToken,
-    images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
-    uploadCoverImage,
-    download,
-    objectUrl: blob => URL.createObjectURL(blob),
-    revokeObjectUrl: url => URL.revokeObjectURL(url),
-  }
-}
+    addEventListener: (type, listener) => window.addEventListener(type, listener),
+    removeEventListener: (type, listener) => window.removeEventListener(type, listener),
+  },
+  page: document,
+  mediaSession: navigator.mediaSession,
+  MediaMetadata: window.MediaMetadata,
+  locks: navigator.locks,
+  broadcastChannel: name => new BroadcastChannel(name),
+  audio: () => new Audio(),
+  checkToken: watchmanToken,
+  images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
+  uploadCoverImage,
+  download,
+  objectUrl: blob => URL.createObjectURL(blob),
+  revokeObjectUrl: url => URL.revokeObjectURL(url),
+})

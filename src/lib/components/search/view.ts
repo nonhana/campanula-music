@@ -1,6 +1,7 @@
 import type { SearchedItems, SearchKind, Suggestion } from '#lib/api/search.js'
-import type { SearchFailure } from '#lib/app/search.js'
 import { SEARCH_KINDS } from '#lib/api/search.js'
+import type { SearchFailure } from '#lib/app/search.js'
+
 import { failureText } from '../shared/failure'
 
 // 搜索在界面上怎么写：建议是哪一类、哪一段和搜索框里一样，结果页有哪些标签、每类叫什么，没搜成时怎么说
@@ -34,22 +35,16 @@ export const SEARCH_TABS: readonly { key: SearchTab, label: string }[] = [
 ]
 
 /** 地址里的 type 是哪个标签：四类之一，没有或者不认识的是综合 */
-export function searchTabOf(type: string | null): SearchTab {
-  return SEARCH_KINDS.find(kind => kind === type) ?? 'all'
-}
+export const searchTabOf = (type: string | null): SearchTab => SEARCH_KINDS.find(kind => kind === type) ?? 'all'
 
 /** 结果页这个标签的地址（resolve 之前）：选中的标签写进 type，综合不写 */
-export function searchPath(keyword: string, tab: SearchTab): `/search?q=${string}` {
-  return `/search?q=${encodeURIComponent(keyword)}${tab === 'all'
-    ? ''
-    : `&type=${tab}`}`
-}
+export const searchPath = (keyword: string, tab: SearchTab): `/search?q=${string}` => `/search?q=${encodeURIComponent(keyword)}${tab === 'all'
+  ? ''
+  : `&type=${tab}`}`
 
 /** 标签和它管的那一块内容的 id（读屏把标签和内容对上：aria-controls、aria-labelledby） */
 export const SEARCH_PANEL_ID = 'search-results'
-export function searchTabId(tab: SearchTab): string {
-  return `search-tab-${tab}`
-}
+export const searchTabId = (tab: SearchTab): string => `search-tab-${tab}`
 
 /** 综合里每类先列几项：单曲几行，歌单一排（宽屏 6 张，窄了少几张），歌手、专辑一排横向架子 */
 export const OVERVIEW_COUNTS: Record<SearchKind, number> = {
@@ -60,7 +55,7 @@ export const OVERVIEW_COUNTS: Record<SearchKind, number> = {
 }
 
 /** 名字里和搜索框里的字一样的那一段（不分大小写）：[前面, 一样的, 后面]；网易云按拼音、简繁这类找到的没有一样的，整段在前面 */
-export function matchedParts(name: string, typed: string): [string, string, string] {
+export const matchedParts = (name: string, typed: string): [string, string, string] => {
   const at = typed
     ? name.toLowerCase().indexOf(typed.toLowerCase())
     : -1
@@ -74,7 +69,7 @@ export function matchedParts(name: string, typed: string): [string, string, stri
 }
 
 /** 搜索结果没拉到时怎么说：断网时标题说要联网，不写正文；别的正文是原因 */
-export function searchFailure(failure: SearchFailure): { title: string, body?: string } {
+export const searchFailure = (failure: SearchFailure): { title: string, body?: string } => {
   if (failure.kind === 'offline')
     return { title: '搜索要联网' }
   return {

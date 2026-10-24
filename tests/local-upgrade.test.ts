@@ -1,5 +1,7 @@
-import type { Song } from '#lib/api/library.js'
 import { describe, expect, it } from 'vitest'
+
+import type { Song } from '#lib/api/library.js'
+
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
 import { listener, PLAYLISTS_WITH_POEMS } from './harness/listener'

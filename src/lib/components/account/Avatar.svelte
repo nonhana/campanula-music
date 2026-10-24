@@ -3,9 +3,11 @@
   加载完从薄荷底上淡入，缓存里有的直接显示（image-reveal.svelte.ts）；加载不出来时淡入一个人形图标，不留破图。
 -->
 <script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
   import { User } from '@lucide/svelte'
+  import type { ClassValue } from 'svelte/elements'
+
   import { thumbnailUrl } from '#lib/api/library.js'
+
   import { createImageReveal } from '../shared/image-reveal.svelte'
   import { fade } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'

@@ -37,7 +37,7 @@ const NEEDS_LOGIN = {
   failure: { kind: 'needsLogin' },
 } as const
 
-export function createBackgroundLane({ clock, network }: { clock: Clock, network: NetworkStatus }): BackgroundLane {
+export const createBackgroundLane = ({ clock, network }: { clock: Clock, network: NetworkStatus }): BackgroundLane => {
   /** 网易云说操作频繁：到这个时间（毫秒）之前后台请求都不发 */
   let pausedUntil = 0
   let stopped = false
@@ -47,26 +47,24 @@ export function createBackgroundLane({ clock, network }: { clock: Clock, network
   const sleepers = new Set<() => void>()
 
   /** 等到 until，或联网，或被 stop() 叫醒，或调用方不等了 */
-  function sleep(wake: { until: number } | 'online', giveUp: AbortSignal | undefined): Promise<void> {
-    return new Promise((resolve) => {
-      let cancelTimer = (): void => {}
-      const done = () => {
-        sleepers.delete(done)
-        cancelTimer()
-        network.removeEventListener('online', done)
-        giveUp?.removeEventListener('abort', done)
-        resolve()
-      }
-      sleepers.add(done)
-      giveUp?.addEventListener('abort', done)
-      if (wake === 'online')
-        network.addEventListener('online', done)
-      else
-        cancelTimer = clock.after(wake.until - clock.now(), done)
-    })
-  }
+  const sleep = (wake: { until: number } | 'online', giveUp: AbortSignal | undefined): Promise<void> => new Promise((resolve) => {
+    let cancelTimer = (): void => {}
+    const done = () => {
+      sleepers.delete(done)
+      cancelTimer()
+      network.removeEventListener('online', done)
+      giveUp?.removeEventListener('abort', done)
+      resolve()
+    }
+    sleepers.add(done)
+    giveUp?.addEventListener('abort', done)
+    if (wake === 'online')
+      network.addEventListener('online', done)
+    else
+      cancelTimer = clock.after(wake.until - clock.now(), done)
+  })
 
-  function stop(): void {
+  const stop = (): void => {
     stopped = true
     epoch += 1
     for (const wake of [...sleepers])

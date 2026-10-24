@@ -8,15 +8,17 @@
   readonly：上传中、失败后只看取景结果，不再接收手势，也不显示滑块。
 -->
 <script lang='ts'>
-  import type { CoverCrop } from '#lib/api/cover.js'
-  import type { Grip, PointerSample } from '../shared/press'
-  import type { CropFrame, CropPoint, CropView } from './cover-crop-core.js'
   import { ZoomIn, ZoomOut } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { SvelteMap } from 'svelte/reactivity'
+
+  import type { CoverCrop } from '#lib/api/cover.js'
+
+  import type { Grip, PointerSample } from '../shared/press'
   import { attachGrip, pressBroken } from '../shared/press'
   import IconButton from '../ui/IconButton.svelte'
   import { createCropView, cropOf, maxZoomOf, nudgeCrop, panCrop, pinchCrop, wheelCrop, zoomBy, zoomTo } from './cover-crop-core'
+  import type { CropFrame, CropPoint, CropView } from './cover-crop-core.js'
 
   interface Props {
     src: string
@@ -59,14 +61,14 @@
   const H = $derived(height * scale)
 
   /** 手势改出来的新视图：记下来，顺手算出 crop */
-  function apply(next: CropView) {
+  const apply = (next: CropView) => {
     view = next
     crop = cropOf(frame, view)
     placed = { ...crop }
   }
 
   /** 框里的坐标 */
-  function at(sample: { x: number, y: number }): CropPoint {
+  const at = (sample: { x: number, y: number }): CropPoint => {
     const rect = host!.getBoundingClientRect()
     return { x: sample.x - rect.left, y: sample.y - rect.top }
   }
@@ -81,7 +83,7 @@
   let last: CropPoint | null = null
 
   /** 按住断了（右键、切走窗口、指针被收回、按钮已经松开）或 readonly 中途翻转：收手，不提交 */
-  function abandonPan(pointerId?: number) {
+  const abandonPan = (pointerId?: number) => {
     // 第二根手指被取消、收回捕获：只收它，正在拖的那一根接着走
     if (pointerId !== undefined) {
       pointers.delete(pointerId)
@@ -144,11 +146,9 @@
   }
   const panAttach = attachGrip(pan)
 
-  function touchPoint(event: PointerEvent): CropPoint {
-    return at(event)
-  }
+  const touchPoint = (event: PointerEvent): CropPoint => at(event)
 
-  function onpointerdown(event: PointerEvent) {
+  const onpointerdown = (event: PointerEvent) => {
     if (readonly)
       return
     host?.setPointerCapture(event.pointerId)
@@ -158,7 +158,7 @@
       startPinch()
   }
 
-  function onpointermove(event: PointerEvent) {
+  const onpointermove = (event: PointerEvent) => {
     if (readonly) {
       abandonPan()
       return
@@ -187,7 +187,7 @@
     apply(pinchCrop(frame, view, pinch.zoom, pinch.distance, distance, middle))
   }
 
-  function onpointerup(event: PointerEvent) {
+  const onpointerup = (event: PointerEvent) => {
     pointers.delete(event.pointerId)
     if (pointers.size < 2)
       pinch = null
@@ -199,7 +199,7 @@
     dragging = pointers.size > 0
   }
 
-  function startPinch() {
+  const startPinch = () => {
     const [a, b] = [
       ...pointers.values(),
     ]
@@ -211,14 +211,14 @@
     }
   }
 
-  function onwheel(event: WheelEvent) {
+  const onwheel = (event: WheelEvent) => {
     if (readonly)
       return
     event.preventDefault()
     apply(wheelCrop(frame, view, event.deltaY, at(event)))
   }
 
-  function onkeydown(event: KeyboardEvent) {
+  const onkeydown = (event: KeyboardEvent) => {
     if (readonly)
       return
     const next = nudgeCrop(frame, view, event.key, event.shiftKey)

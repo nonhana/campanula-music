@@ -1,5 +1,6 @@
-import type { Attachment } from 'svelte/attachments'
 import { untrack } from 'svelte'
+import type { Attachment } from 'svelte/attachments'
+
 import { unseen } from './motion'
 
 /** loading：还没好，透明；cached：加载过、缓存里有，直接显示；loaded：刚加载完，淡入；broken：加载不出来，换成图标 */
@@ -20,7 +21,7 @@ const preloading = new Map<string, { img: HTMLImageElement, done: Promise<void> 
  * 先在后台把图加载、解码好、记下来，之后挂上时直接显示（手机播放页的上一首、下一首封面：拖封面时一露出来就在）。
  * 只等 load 不够：没解码的图第一次画出来时可能先空一帧。返回加载完（或者加载不出来）的那一刻
  */
-export function preloadImage(src: string): Promise<void> {
+export const preloadImage = (src: string): Promise<void> => {
   if (loaded.has(src))
     return Promise.resolve()
   let pending = preloading.get(src)
@@ -37,9 +38,7 @@ export function preloadImage(src: string): Promise<void> {
 }
 
 /** 这次打开 App 以来加载过这个地址 */
-export function imageLoaded(src: string): boolean {
-  return loaded.has(src)
-}
+export const imageLoaded = (src: string): boolean => loaded.has(src)
 
 export interface ImageReveal {
   readonly status: ImageStatus
@@ -52,7 +51,7 @@ export interface ImageReveal {
  * 加载过的（虚拟列表滚回来、刚看过的）直接显示，不再淡一次；页面在后台时加载完的也直接显示，回来时不补一次淡入。
  * 加载不出来时调用方换成图标。按地址记：换了一张图就从头来，上一张没加载出来不连累下一张。source 是 img 的地址，要在组件初始化时调用
  */
-export function createImageReveal(source: () => string): ImageReveal {
+export const createImageReveal = (source: () => string): ImageReveal => {
   let seen = $state<{ source: string, status: Exclude<ImageStatus, 'loading'> } | null>(null)
   const status = $derived(seen?.source === source()
 ? seen.status

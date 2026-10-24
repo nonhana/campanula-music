@@ -10,9 +10,10 @@
 </script>
 
 <script lang='ts'>
-  import type { Attachment } from 'svelte/attachments'
-  import type { NoticePlace } from '../notice/arrival.svelte'
   import { CircleAlert, LoaderCircle, X } from '@lucide/svelte'
+  import type { Attachment } from 'svelte/attachments'
+
+  import type { NoticePlace } from '../notice/arrival.svelte'
   import { noticeArrival } from '../notice/arrival.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { toast } from '../shared/motion'

@@ -1,11 +1,13 @@
 // mock 的 Vite 插件：只在 CAMPANULA_MOCK=1 的 dev 服务器里把服务端 import 'hana-music-api' 换成 mock，
 // 并挂上自动登录、重置、场景、覆盖报告和本地资源的路由。生产构建不加载这个插件（#58）。
-import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { Plugin, RunnableDevEnvironment, ViteDevServer } from 'vite'
-import type { MockConfig, ScenarioName } from './scenarios.ts'
 import { Buffer } from 'node:buffer'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { fileURLToPath } from 'node:url'
+
+import type { Plugin, RunnableDevEnvironment, ViteDevServer } from 'vite'
+
 import { audioWav, coverSvg, saveUpload, uploadOf } from './assets.ts'
+import type { MockConfig, ScenarioName } from './scenarios.ts'
 import { isScenarioName } from './scenarios.ts'
 
 const RUNTIME = fileURLToPath(new URL('./runtime.ts', import.meta.url))
@@ -19,17 +21,17 @@ interface Configured {
   coverage: () => Promise<Record<string, unknown>>
 }
 
-function runtimeOf(server: ViteDevServer): Promise<Configured> {
+const runtimeOf = (server: ViteDevServer): Promise<Configured> => {
   const runner = (server.environments.ssr as RunnableDevEnvironment).runner
   return runner.import(RUNTIME) as Promise<Configured>
 }
 
-function credentialsOf(server: ViteDevServer): Promise<{ loginCookieHeader: (deviceId: string, credentials: Record<string, string>) => string }> {
+const credentialsOf = (server: ViteDevServer): Promise<{ loginCookieHeader: (deviceId: string, credentials: Record<string, string>) => string }> => {
   const runner = (server.environments.ssr as RunnableDevEnvironment).runner
   return runner.import(CREDENTIALS) as Promise<{ loginCookieHeader: (deviceId: string, credentials: Record<string, string>) => string }>
 }
 
-async function readBody(req: IncomingMessage): Promise<Buffer> {
+const readBody = async (req: IncomingMessage): Promise<Buffer> => {
   const chunks: Buffer[] = []
   for await (const chunk of req) {
     chunks.push(typeof chunk === 'string'
@@ -39,27 +41,25 @@ async function readBody(req: IncomingMessage): Promise<Buffer> {
   return Buffer.concat(chunks)
 }
 
-function json(res: ServerResponse, status: number, value: unknown): void {
+const json = (res: ServerResponse, status: number, value: unknown): void => {
   res.statusCode = status
   res.setHeader('content-type', 'application/json; charset=utf-8')
   res.setHeader('cache-control', 'no-store')
   res.end(JSON.stringify(value))
 }
 
-function redirect(res: ServerResponse, location: string, cookie: string): void {
+const redirect = (res: ServerResponse, location: string, cookie: string): void => {
   res.statusCode = 303
   res.setHeader('set-cookie', cookie)
   res.setHeader('location', location)
   res.end()
 }
 
-function safeNext(value: string | null): string {
-  return value && value.startsWith('/') && !value.startsWith('//')
-    ? value
-    : '/'
-}
+const safeNext = (value: string | null): string => value && value.startsWith('/') && !value.startsWith('//')
+  ? value
+  : '/'
 
-async function handle(server: ViteDevServer, req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+const handle = async (server: ViteDevServer, req: IncomingMessage, res: ServerResponse): Promise<boolean> => {
   const url = new URL(req.url ?? '/', 'http://localhost')
   const path = url.pathname
   if (!path.startsWith('/api/mock/') && path !== '/mock/login' && path !== '/mock' && !path.startsWith('/mock-assets/'))
@@ -159,40 +159,38 @@ async function handle(server: ViteDevServer, req: IncomingMessage, res: ServerRe
 }
 
 /** 只在 dev + CAMPANULA_MOCK=1 时加到 vite 插件里；生产构建不会加载 mock 代码 */
-export function mockPlugin(): Plugin {
-  return {
-    name: 'campanula:mock-sdk',
-    enforce: 'pre',
-    config: () => ({
-      ssr: {
-        noExternal: ['hana-music-api'],
-      },
-    }),
-    resolveId(id) {
-      if (id === 'hana-music-api')
-        return RUNTIME
-      if (id.startsWith('hana-music-api/'))
-        throw new Error(`mock 只替换了 hana-music-api 本身，服务端不能引用 ${id}`)
-      return null
+export const mockPlugin = (): Plugin => ({
+  name: 'campanula:mock-sdk',
+  enforce: 'pre',
+  config: () => ({
+    ssr: {
+      noExternal: ['hana-music-api'],
     },
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        void handle(server, req, res).then((handled) => {
-          if (!handled)
-            next()
-        }, (error: unknown) => {
-          console.error('mock 路由出错', error)
-          if (!res.headersSent) {
-            json(res, 500, {
-              error: 'mock 路由出错',
-              message: String(error),
-            })
-          }
-          else {
-            res.end()
-          }
-        })
+  }),
+  resolveId(id) {
+    if (id === 'hana-music-api')
+      return RUNTIME
+    if (id.startsWith('hana-music-api/'))
+      throw new Error(`mock 只替换了 hana-music-api 本身，服务端不能引用 ${id}`)
+    return null
+  },
+  configureServer(server) {
+    server.middlewares.use((req, res, next) => {
+      void handle(server, req, res).then((handled) => {
+        if (!handled)
+          next()
+      }, (error: unknown) => {
+        console.error('mock 路由出错', error)
+        if (!res.headersSent) {
+          json(res, 500, {
+            error: 'mock 路由出错',
+            message: String(error),
+          })
+        }
+        else {
+          res.end()
+        }
       })
-    },
-  }
-}
+    })
+  },
+})

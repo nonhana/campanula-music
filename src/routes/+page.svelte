@@ -7,6 +7,7 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { ChevronLeft, ChevronRight, Heart } from '@lucide/svelte'
+
   import { syncNoticeFor } from '#lib/app/library.js'
   import DailyTile from '#lib/components/daily/DailyTile.svelte'
   import CollectedGrid from '#lib/components/library/CollectedGrid.svelte'
@@ -59,7 +60,7 @@
   let atStart = $state(true)
   let atEnd = $state(false)
 
-  function measureStrip() {
+  const measureStrip = () => {
     if (!stripEl)
       return
     atStart = stripEl.scrollLeft < 4
@@ -72,7 +73,7 @@
     measureStrip()
   })
 
-  function turn(dir: 1 | -1) {
+  const turn = (dir: 1 | -1) => {
     stripEl?.scrollBy({
       left: dir * stripEl.clientWidth,
       behavior: scrollBehavior(),
@@ -80,7 +81,7 @@
   }
 
   /** 我喜欢的音乐整块失败：同步失败重新同步，打开失败再打开这张歌单（拿不到资料时退回重新同步） */
-  function retryLiked() {
+  const retryLiked = () => {
     if (!liked?.failure)
       return
     const action = likedFailure(liked.failure)

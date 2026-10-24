@@ -1,10 +1,12 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { SearchKind } from '#lib/api/search.js'
+import { SEARCH_KINDS } from '#lib/api/search.js'
 import type { App } from '#lib/app/app.js'
 import type { SearchList } from '#lib/app/search.js'
-import { describe, expect, it } from 'vitest'
-import { SEARCH_KINDS } from '#lib/api/search.js'
 import { SUGGEST_DELAY } from '#lib/app/search.js'
+
 import { held, never } from './harness/hold'
 import { DAILY, listener } from './harness/listener'
 import { signIn } from './harness/sign-in'
@@ -67,7 +69,7 @@ const TYPES: Record<SearchKind, number> = {
  * 网易云对四类搜索各回什么：给了录制的回录制，没给的压着不回（用哪份录制都一样，永远不回）。
  * 四类一起发出去，到服务端的先后不固定，按 type 对上
  */
-async function replySearch(fixtures: Partial<Record<SearchKind, string>>): Promise<void> {
+const replySearch = async (fixtures: Partial<Record<SearchKind, string>>): Promise<void> => {
   for (const kind of SEARCH_KINDS) {
     const fixture = fixtures[kind]
     await world.netease.reply(fixture ?? SONGS_MAYONAKA, {
@@ -80,19 +82,19 @@ async function replySearch(fixtures: Partial<Record<SearchKind, string>>): Promi
 }
 
 /** 按搜索，网易云按 fixtures 回（没给的压着），等回来的都处理完 */
-async function searchFor(app: App, keyword: string, fixtures: Partial<Record<SearchKind, string>>): Promise<void> {
+const searchFor = async (app: App, keyword: string, fixtures: Partial<Record<SearchKind, string>>): Promise<void> => {
   await replySearch(fixtures)
   void app.search(keyword)
   await world.settle()
 }
 
 /** 按搜索，网易云压着四类结果都不回：只看搜索历史 */
-async function searchHeld(app: App, keyword: string): Promise<void> {
+const searchHeld = async (app: App, keyword: string): Promise<void> => {
   await searchFor(app, keyword, {})
 }
 
 /** 显示着的一类结果；没显示就报错 */
-function shownList<K extends SearchKind>(app: App, kind: K): Extract<SearchList<K>, { status: 'shown' }> {
+const shownList = <K extends SearchKind>(app: App, kind: K): Extract<SearchList<K>, { status: 'shown' }> => {
   const list = app.state.search.results?.[kind]
   if (list?.status !== 'shown')
     throw new Error(`${kind} 没显示：${JSON.stringify(list)}`)
@@ -100,23 +102,19 @@ function shownList<K extends SearchKind>(app: App, kind: K): Extract<SearchList<
 }
 
 /** 问过网易云哪些词的建议 */
-function suggestedKeywords(): unknown[] {
-  return world.netease.calls.filter(call => call.module === 'search_suggest').map(call => call.query)
-}
+const suggestedKeywords = (): unknown[] => world.netease.calls.filter(call => call.module === 'search_suggest').map(call => call.query)
 
 /** 网易云被问了哪些词的这类结果（查询参数），按先后 */
-function searched(kind: SearchKind): unknown[] {
-  return world.netease.calls.filter(call => call.module === 'cloudsearch' && (call.query as { type: number }).type === TYPES[kind]).map(call => call.query)
-}
+const searched = (kind: SearchKind): unknown[] => world.netease.calls.filter(call => call.module === 'cloudsearch' && (call.query as { type: number }).type === TYPES[kind]).map(call => call.query)
 
 /** 按搜索，网易云回录下的单曲结果（别的几类压着）；返回显示出来的歌 */
-async function searchShown(app: App, keyword: string, fixture: string): Promise<readonly Song[]> {
+const searchShown = async (app: App, keyword: string, fixture: string): Promise<readonly Song[]> => {
   await searchFor(app, keyword, { songs: fixture })
   return shownList(app, 'songs').items
 }
 
 /** 打了 keyword、停手后网易云回录下的建议；返回显示出来的建议 */
-async function suggested(app: App, keyword: string, fixture: string): Promise<unknown> {
+const suggested = async (app: App, keyword: string, fixture: string): Promise<unknown> => {
   await world.netease.reply(fixture)
   app.suggest(keyword)
   await world.clock.advance(SUGGEST_DELAY)

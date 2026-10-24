@@ -5,9 +5,9 @@
   把手本身不用按；悬停提示只写这组快捷键。overlay 是网格卡片上用的小白圆钮，class 用来定位置。
 -->
 <script lang='ts'>
+  import { GripVertical } from '@lucide/svelte'
   import type { Attachment } from 'svelte/attachments'
   import type { ClassValue } from 'svelte/elements'
-  import { GripVertical } from '@lucide/svelte'
 
   interface Props {
     /** 这一行 / 这一张是什么（歌名、歌单名），读屏读成“拖动排序：…” */

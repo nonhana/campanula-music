@@ -5,10 +5,11 @@
   条目还没拿到（歌单列表还在同步）时画几行骨架，读屏读 loading 给的名字。
 -->
 <script lang='ts'>
-  import type { Attachment } from 'svelte/attachments'
-  import type { MenuItem, MenuTone } from './menu'
   import { Heart } from '@lucide/svelte'
+  import type { Attachment } from 'svelte/attachments'
+
   import Cover from '../ui/Cover.svelte'
+  import type { MenuItem, MenuTone } from './menu'
 
   type Layout = 'menu' | 'sheet' | 'popover'
 
@@ -46,13 +47,11 @@
 
   let node = $state<HTMLElement>()
 
-  function enabled(): HTMLElement[] {
-    return [
-      ...(node?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? []),
-    ]
-  }
+  const enabled = (): HTMLElement[] => [
+    ...(node?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? []),
+  ]
 
-  function onkeydown(event: KeyboardEvent) {
+  const onkeydown = (event: KeyboardEvent) => {
     if (event.key === 'Tab') {
       onTab?.(event)
       return
@@ -95,7 +94,7 @@
 
   const media = (item: MenuItem) => item.leading?.kind === 'cover' || item.leading?.kind === 'tile'
 
-  function rowClass(item: MenuItem): string[] {
+  const rowClass = (item: MenuItem): string[] => {
     // 焦点环：只让头像菜单（popover）走全局的 2px 茎绿环；浮动菜单、底部弹层是整行按钮，按基线和 DESIGN 的行例外
     // 用 outline-none + 薄荷底，不画环。
     const base = [
@@ -131,7 +130,7 @@
     ]
   }
 
-  function iconClass(tone: MenuTone | undefined): string {
+  const iconClass = (tone: MenuTone | undefined): string => {
     switch (tone) {
       case 'hearted': return 'text-accent-600'
       case 'download': return 'text-secondary-800'

@@ -5,9 +5,10 @@
   音质是一行 5 格的分段条（ui/Segmented，单选组）：选中的那格下面的滑块横着滑过去，方向键切换并选中，Tab 只停在选中的那一格
 -->
 <script lang='ts'>
-  import type { Quality } from '#lib/api/playback.js'
   import { resolve } from '$app/paths'
   import { ChevronRight, CircleArrowDown, LogOut } from '@lucide/svelte'
+
+  import type { Quality } from '#lib/api/playback.js'
   import { QUALITIES } from '#lib/api/playback.js'
   import Avatar from '#lib/components/account/Avatar.svelte'
   import { getOverlays } from '#lib/components/overlay/overlay-context.js'
@@ -37,7 +38,7 @@
   /** 这台设备上下载了几首；还没从本机读出来时是 null */
   const downloaded = $derived(view.state.downloads.songs?.length ?? null)
 
-  function confirmLogout(event: MouseEvent) {
+  const confirmLogout = (event: MouseEvent) => {
     logoutConfirm.open({ from: event.currentTarget as HTMLElement })
   }
 </script>

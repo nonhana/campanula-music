@@ -6,14 +6,15 @@
   两条同时在时它排在播放提示外侧（底部的在上面，顶上的在下面），让出播放提示的高度；播放提示来了、走了，它横着不动、竖着平移过去（只动 transform）
 -->
 <script lang='ts'>
-  import type { NoticePlace } from './arrival.svelte'
   import { Check, CircleAlert, X } from '@lucide/svelte'
+
   import { getOverlays } from '../overlay/overlay-context'
   import { playerNoticeBox } from '../player/PlayerNotice.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { toast } from '../shared/motion'
   import IconButton from '../ui/IconButton.svelte'
   import TextButton from '../ui/TextButton.svelte'
+  import type { NoticePlace } from './arrival.svelte'
   import { noticeArrival } from './arrival.svelte'
   import { operationNoticeText } from './text'
 

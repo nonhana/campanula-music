@@ -1,19 +1,21 @@
-import type { AddressInfo } from 'node:net'
-import type { Plugin, RunnableDevEnvironment } from 'vite'
-import type { Device } from './device'
-import type { Call, RequestSpan } from './netease-sdk'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { createServer as createHttpServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { format } from 'node:util'
+
 import { withGlobal } from '@sinonjs/fake-timers'
 import { sveltekit } from '@sveltejs/kit/vite'
+import type { Plugin, RunnableDevEnvironment } from 'vite'
 import { createServer } from 'vite'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
+
 import { clockOn } from './browser'
+import type { Device } from './device'
 import { createDevice, SENT_HEADER } from './device'
 import { loadFixture } from './fixtures'
+import type { Call, RequestSpan } from './netease-sdk'
 
 // 测试接入点“去掉界面的整个 App”（Spec #11 Testing Decisions）：
 // 世界里有一个在测试进程里真实运行的服务端、一个网易云替身和一个共用的时钟；
@@ -82,34 +84,32 @@ export interface World {
 const SDK_PROBE = 'virtual:campanula-sdk-probe'
 
 /** 服务端 import 'hana-music-api' 时换成网易云替身 */
-function replaceSdk(): Plugin {
-  return {
-    name: 'campanula:netease-fake',
-    enforce: 'pre',
-    // Vite 跑服务端代码时，node_modules 里的包默认绕过插件直接加载，替身就失效了
-    config: () => ({
-      ssr: {
-        noExternal: ['hana-music-api'],
-      },
-    }),
-    resolveId(id) {
-      if (id === 'hana-music-api')
-        return FAKE_SDK
-      if (id.startsWith('hana-music-api/'))
-        throw new Error(`网易云替身只替换了 hana-music-api 本身，服务端不能引用 ${id}`)
-      if (id === SDK_PROBE)
-        return `\0${SDK_PROBE}`
+const replaceSdk = (): Plugin => ({
+  name: 'campanula:netease-fake',
+  enforce: 'pre',
+  // Vite 跑服务端代码时，node_modules 里的包默认绕过插件直接加载，替身就失效了
+  config: () => ({
+    ssr: {
+      noExternal: ['hana-music-api'],
     },
-    load(id) {
-      if (id === `\0${SDK_PROBE}`)
-        return `export { invokeModule } from 'hana-music-api'`
-    },
-  }
-}
+  }),
+  resolveId(id) {
+    if (id === 'hana-music-api')
+      return FAKE_SDK
+    if (id.startsWith('hana-music-api/'))
+      throw new Error(`网易云替身只替换了 hana-music-api 本身，服务端不能引用 ${id}`)
+    if (id === SDK_PROBE)
+      return `\0${SDK_PROBE}`
+  },
+  load(id) {
+    if (id === `\0${SDK_PROBE}`)
+      return `export { invokeModule } from 'hana-music-api'`
+  },
+})
 
 /* eslint-disable no-console -- 依赖库也可能用 console.log 打日志，都算服务器日志，所以接管全部方法 */
 /** 记下服务端处理请求时打的日志，照常打印出来方便排查 */
-function captureServerLogs(serving: AsyncLocalStorage<RequestSpan>) {
+const captureServerLogs = (serving: AsyncLocalStorage<RequestSpan>) => {
   const logs: ServerLog[] = []
   const originals = LOG_METHODS.map(level => [level, console[level]] as const)
   for (const [level, original] of originals) {
@@ -133,7 +133,7 @@ function captureServerLogs(serving: AsyncLocalStorage<RequestSpan>) {
 }
 /* eslint-enable no-console */
 
-async function startWorld() {
+const startWorld = async () => {
   Object.assign(process.env, SITE_ENV)
   const vite = await createServer({
     configFile: false,
@@ -207,7 +207,7 @@ async function startWorld() {
  * 在测试文件顶层调用：整个文件共用一个世界，每条测试开始前清空网易云替身、日志和时钟；
  * 每条测试结束时等这条测试的设备停下（网易云替身压着的不等），免得后台同步之类的请求落进下一条测试
  */
-export function useWorld(): World {
+export const useWorld = (): World => {
   let started: Awaited<ReturnType<typeof startWorld>> | undefined
   const current = () => {
     if (!started)
@@ -230,7 +230,7 @@ export function useWorld(): World {
 
   // 压着的调用永远不会自己回来，不能 await 它们，只能一轮一轮地看：连着两轮什么都没在做才算停下。
   // 压着的调用分在哪台设备上不知道，所以把所有设备在路上的请求加起来比
-  async function settle(): Promise<void> {
+  const settle = async (): Promise<void> => {
     for (let quiet = 0; quiet < 2;) {
       await new Promise(resolve => setImmediate(resolve))
       const pending = devices.reduce((sum, device) => sum + device.pending.length, 0)

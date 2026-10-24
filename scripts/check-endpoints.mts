@@ -9,7 +9,7 @@ const API_DIR = join(ROOT, 'src/routes/api')
 const ENDPOINTS = join(ROOT, 'src/lib/api/endpoints.ts')
 const SEARCH = join(ROOT, 'src/lib/api/search.ts')
 
-async function routeFiles(dir: string): Promise<string[]> {
+const routeFiles = async (dir: string): Promise<string[]> => {
   const entries = await readdir(dir, { withFileTypes: true })
   const files: string[] = []
   for (const entry of entries) {

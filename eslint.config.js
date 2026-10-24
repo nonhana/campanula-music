@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+
 import antfu from '@antfu/eslint-config'
 import { includeIgnoreFile } from '@eslint/config-helpers'
 import globals from 'globals'
@@ -55,6 +56,74 @@ export default antfu(
           name,
           message: `App 里不直接用 ${name}：从 BrowserCapabilities（src/lib/app/browser.ts）拿，测试里才能换成替身`,
         })),
+      ],
+    },
+  },
+  {
+    // 全项目统一：箭头函数优先（关掉 antfu 的 function 声明约定）、直接返回对象、
+    // import 按来源分组（组间空一行）并排序；参考 hana-music-api 的 oxfmt sortImports
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,svelte}'],
+    rules: {
+      'antfu/top-level-function': 'off',
+      'func-style': ['error', 'expression'],
+      'arrow-body-style': ['error', 'as-needed'],
+      // 箭头函数不提升：互相引用、工具函数放后面都是常态。
+      // 真正的初始化期 TDZ 由测试和构建兜底，不靠书写顺序报错
+      'no-use-before-define': [
+        'error',
+        {
+          functions: false,
+          variables: false,
+          classes: false,
+          enums: true,
+          typedefs: true,
+          ignoreTypeReferences: true,
+          allowNamedExports: false,
+        },
+      ],
+      'ts/no-use-before-define': [
+        'error',
+        {
+          functions: false,
+          variables: false,
+          classes: false,
+          enums: true,
+          typedefs: true,
+          ignoreTypeReferences: true,
+          allowNamedExports: false,
+        },
+      ],
+      'perfectionist/sort-imports': [
+        'error',
+        {
+          groups: [
+            'side-effect',
+            ['type-builtin', 'value-builtin'],
+            ['type-external', 'value-external'],
+            [
+              'type-internal',
+              'value-internal',
+              'type-subpath',
+              'value-subpath',
+            ],
+            [
+              'type-parent',
+              'value-parent',
+              'type-sibling',
+              'value-sibling',
+              'type-index',
+              'value-index',
+            ],
+            'side-effect-style',
+            'style',
+            'unknown',
+          ],
+          newlinesBetween: 1,
+          order: 'asc',
+          type: 'natural',
+          partitionByComment: true,
+          sortSideEffects: false,
+        },
       ],
     },
   },

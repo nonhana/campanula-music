@@ -1,4 +1,5 @@
 import type { Attachment } from 'svelte/attachments'
+
 import type { DragSortEdges, DragSortResult, DragSortSession, DragSortState, Point, Rect } from './drag-sort'
 import { createDragSortSession } from './drag-sort'
 import { attachWindowGrip, createPageHold } from './press'
@@ -206,7 +207,7 @@ export class DragSort<S> {
 }
 
 /** 页面上沿：吸在顶上的顶栏下沿；下沿：迷你播放条 / 底部操作条 / 桌面播放条的上沿 */
-export function pageEdges(): DragSortEdges {
+export const pageEdges = (): DragSortEdges => {
   const top = document.querySelector<HTMLElement>('[data-page-top]')?.getBoundingClientRect().bottom ?? 0
   const bar = document.querySelector<HTMLElement>('[data-player-bar]')?.getBoundingClientRect().top ?? window.innerHeight
   return { top, bottom: bar }

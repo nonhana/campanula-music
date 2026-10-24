@@ -1,9 +1,11 @@
+import { tick, untrack } from 'svelte'
+
 import type { Playlist, Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+
 import type { AddToPlaylistRequest, DialogRequest, MenuAnchor } from '../overlay/overlay-requests'
 import type { OverlayLayer, OverlayResult } from '../overlay/overlay-stack'
 import type { Checked, SelectionCapabilities } from './selection-core'
-import { tick, untrack } from 'svelte'
 import { allOn as allVisibleOn, capabilitiesOf, extend, NONE, picked as pickedSongs, selectAll as selectAllVisible, toggle as toggleChecked } from './selection-core'
 
 // 多选（GLOSSARY：一张列表里勾选多首歌，一起加入歌单、下载或移除；自建歌单和我喜欢的音乐还能拖动排序）。

@@ -1,4 +1,5 @@
 import type { Song } from '#lib/api/library.js'
+
 import type { AppView } from '../shared/app-context.svelte'
 
 // 歌曲行上的状态（DESIGN.md Song Row · 状态、Chips · Badges）：能不能点、歌名后面的徽标、下载标记。
@@ -21,7 +22,7 @@ export interface SongLook {
 }
 
 /** 一首歌在列表里现在是什么样子：能不能放由 App 给，下载标记和徽标照着画 */
-export function songLook(view: AppView, song: Song): SongLook {
+export const songLook = (view: AppView, song: Song): SongLook => {
   const { downloads } = view.state
   const downloaded = downloads.has(song.id)
   const task = downloads.tasks.get(song.id)

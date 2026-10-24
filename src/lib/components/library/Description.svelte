@@ -6,6 +6,7 @@
 -->
 <script lang='ts'>
   import { flushSync } from 'svelte'
+
   import { animateHeight } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
   import { langOf } from '../shared/text'
@@ -41,7 +42,7 @@
     return () => observer.disconnect()
   })
 
-  function toggle() {
+  const toggle = () => {
     const element = paragraph!
     const from = element.getBoundingClientRect().height
     resizing?.cancel()

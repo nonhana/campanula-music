@@ -1,17 +1,19 @@
+import { NETEASE_REAL_IP } from '$app/env/private'
 import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf, PlaylistSummary } from 'hana-music-api'
+import { invokeModule } from 'hana-music-api'
+
 import type { Account } from '#lib/api/account.js'
 import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
 import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import { ARTIST_ALBUMS_PER_REQUEST, playlistKindOf } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { DownloadUrlResponse, LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
-import type { WriteResponse } from '#lib/api/write.js'
-import { NETEASE_REAL_IP } from '$app/env/private'
-import { invokeModule } from 'hana-music-api'
-import { ARTIST_ALBUMS_PER_REQUEST, playlistKindOf } from '#lib/api/library.js'
 import { SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.js'
+import type { WriteResponse } from '#lib/api/write.js'
+
 import { lyricsOf } from './lyrics'
 
 // 网易云适配层（Spec #11“服务端：网易云适配层”）：服务端里只有这里调 hana-music-api。
@@ -34,9 +36,7 @@ export class NeteaseError extends Error {
 
 type QueryOf<K extends ModuleIdentifier> = Parameters<typeof invokeModule<K>>[1]
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
  * SDK 失败时抛出 { status, body, cookie }（照 SDK 2.7.1 的 normalizeFailure、classifyConsumedRateLimit，文档见它的 programmatic-api.md）：
@@ -46,7 +46,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *   body 是网易云原样的返回加上 retryAfter（秒，网易云没给 Retry-After 时是 30；405 那种录到的一次没给，nonhana/hana-music-api#60）。只有这种失败带 retryAfter；
  * - SDK 自己生成的失败（超时 504、连不上或读不懂返回 502、匿名注册失败 502）：body 只有 code 和 msg。
  */
-function translate(thrown: unknown): { failure: NeteaseFailure, body: unknown } {
+const translate = (thrown: unknown): { failure: NeteaseFailure, body: unknown } => {
   if (!isRecord(thrown) || typeof thrown.status !== 'number' || !('body' in thrown))
     throw thrown // 不是 SDK 的失败返回，是 Campanula 自己的缺陷
   const { status, body } = thrown
@@ -92,7 +92,7 @@ function translate(thrown: unknown): { failure: NeteaseFailure, body: unknown } 
 }
 
 /** 日志里只写模块和失败的种类、网易云的返回码和说明，不写请求参数和 Cookie（手机号、验证码、凭据都在里面） */
-function describe(failure: NeteaseFailure): string {
+const describe = (failure: NeteaseFailure): string => {
   switch (failure.kind) {
     case 'needsLogin':
       return '需要登录'
@@ -114,7 +114,7 @@ function describe(failure: NeteaseFailure): string {
 /** 只有个别模块要的调用配置：收藏歌单的反作弊令牌（只透传，不记日志，见 describe） */
 type ExtraConfig = Pick<ModuleCallConfig, 'checkToken'>
 
-async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, listener: Listener, extra: ExtraConfig = {}): Promise<ModuleResponseOf<K>> {
+const call = async <K extends ModuleIdentifier>(module: K, query: QueryOf<K>, listener: Listener, extra: ExtraConfig = {}): Promise<ModuleResponseOf<K>> => {
   // state 里的 deviceId 用在每次请求的 Cookie 头里。顶层的 deviceId 不在 SDK 的类型里，是给隐式匿名注册用的：
   // 没登录的调用由 SDK 先匿名注册，拿到的匿名身份 SDK 自己存在进程里，同一个实例里之后的匿名调用都共用它，
   // 所以只有实例里第一次匿名注册用到这个 deviceId（SDK 2.2.0 ensureAnonymousEffect）。Campanula 自己不存任何状态
@@ -139,7 +139,7 @@ async function call<K extends ModuleIdentifier>(module: K, query: QueryOf<K>, li
  * 从网易云下发的 Set-Cookie 里取出凭据，叠在 base 上：只留名字和值（同名的后者覆盖），值为空或已经过期的删掉。
  * 没有下发新的 MUSIC_U 就算不上登录或续期成功：当作上游结构变了，和 call() 一样记一条日志
  */
-function credentialsFrom(module: ModuleIdentifier, setCookies: readonly string[], base: Record<string, string> = {}): Record<string, string> {
+const credentialsFrom = (module: ModuleIdentifier, setCookies: readonly string[], base: Record<string, string> = {}): Record<string, string> => {
   const credentials: Record<string, string> = { ...base }
   for (const line of setCookies) {
     const [pair = '', ...attributes] = line.split(';')
@@ -160,14 +160,14 @@ function credentialsFrom(module: ModuleIdentifier, setCookies: readonly string[]
 }
 
 /** 网易云的返回 SDK 认得、但对不上 Campanula 依赖的约定：当作上游结构变了，和 call() 一样记一条日志 */
-function shapeChanged(module: ModuleIdentifier, detail: string): NeteaseError {
+const shapeChanged = (module: ModuleIdentifier, detail: string): NeteaseError => {
   const failure = { kind: 'upstreamChanged' } as const
   console.warn(`网易云 ${module} 失败：${describe(failure)}（${detail}）`)
   return new NeteaseError(failure, null)
 }
 
 /** 一张新的登录二维码 */
-export async function createLoginQr(listener: Listener): Promise<QrResponse> {
+export const createLoginQr = async (listener: Listener): Promise<QrResponse> => {
   const { body: { data: { unikey: key } } } = await call('login_qr_key', {}, listener)
   const { body } = await call('login_qr_create', { key, qrimg: true }, listener)
   return { key, image: body.data.qrimg }
@@ -186,7 +186,7 @@ export type QrCheck
  * 8821 还没录到过：字段照开源实现 saltbo/zme 的 NeteaseRiskData（params 可能是对象也可能是 JSON 字符串），
  * 见 tests/fixtures/netease/README.md“构造的数据”
  */
-function verificationOf(body: unknown): { vid: string, type: string, token: string, evid: string, sign: string } | null {
+const verificationOf = (body: unknown): { vid: string, type: string, token: string, evid: string, sign: string } | null => {
   const data = isRecord(body) && isRecord(body.data)
     ? body.data
     : null
@@ -216,7 +216,7 @@ function verificationOf(body: unknown): { vid: string, type: string, token: stri
   }
 }
 
-export async function checkLoginQr(key: string, listener: Listener): Promise<QrCheck> {
+export const checkLoginQr = async (key: string, listener: Listener): Promise<QrCheck> => {
   let response: ModuleResponseOf<'login_qr_check'>
   try {
     response = await call('login_qr_check', { key }, listener)
@@ -253,12 +253,12 @@ export async function checkLoginQr(key: string, listener: Listener): Promise<QrC
 }
 
 /** 发短信验证码（只支持 +86） */
-export async function sendCaptcha(phone: string, listener: Listener): Promise<void> {
+export const sendCaptcha = async (phone: string, listener: Listener): Promise<void> => {
   await call('captcha_sent', { phone, ctcode: '86' }, listener)
 }
 
 /** 短信验证码登录：拿到凭据，以及登录的账号 */
-export async function loginWithCaptcha(phone: string, captcha: string, listener: Listener): Promise<{ credentials: Record<string, string>, account: Account }> {
+export const loginWithCaptcha = async (phone: string, captcha: string, listener: Listener): Promise<{ credentials: Record<string, string>, account: Account }> => {
   const { body, cookie } = await call('login_cellphone', { phone, captcha, countrycode: '86' }, listener)
   return {
     credentials: credentialsFrom('login_cellphone', cookie),
@@ -267,7 +267,7 @@ export async function loginWithCaptcha(phone: string, captcha: string, listener:
 }
 
 /** 当前登录的账号。凭据已经失效时网易云照样回 200，但只剩匿名身份、没有个人资料：当作需要登录 */
-export async function fetchAccount(listener: Listener): Promise<Account> {
+export const fetchAccount = async (listener: Listener): Promise<Account> => {
   const { body } = await call('user_account', {}, listener)
   if (!body.account || body.account.anonimousUser || !body.profile)
     throw new NeteaseError({ kind: 'needsLogin' }, body)
@@ -281,20 +281,20 @@ export type SignedInListener = Listener & { credentials: Record<string, string> 
  * 续期：网易云下发新的 MUSIC_U（重新算 180 天）和新的 __csrf，叠在原来的凭据上。
  * 续期后旧的凭据不会马上失效（验证关卡①：17.6 分钟后还能用）
  */
-export async function renewLogin(listener: SignedInListener): Promise<Record<string, string>> {
+export const renewLogin = async (listener: SignedInListener): Promise<Record<string, string>> => {
   const { cookie } = await call('login_refresh', {}, listener)
   return credentialsFrom('login_refresh', cookie, listener.credentials)
 }
 
 /** 退出登录：网易云只注销同一个 deviceId 上的登录，听众在其他设备上的登录不受影响（验证关卡①） */
-export async function logout(listener: Listener): Promise<void> {
+export const logout = async (listener: Listener): Promise<void> => {
   await call('logout', {}, listener)
 }
 
 // 曲库（Spec #11“服务端：Campanula API”曲库一项）。uid 是界面问到的当前账号，凭据才决定网易云把谁当作听众
 
 /** 红心了哪些歌（likelist）。凭据失效时网易云回 301（#21 实测），曲库同步靠它先认出登录失效 */
-export async function fetchHearts(uid: number, listener: Listener): Promise<number[]> {
+export const fetchHearts = async (uid: number, listener: Listener): Promise<number[]> => {
   const { body } = await call('likelist', { uid }, listener)
   return [...body.ids]
 }
@@ -305,28 +305,24 @@ const PLAYLISTS_PER_CALL = 1000
 const PRIVATE_PLAYLIST = 10
 
 /** 歌单头部的信息：歌单列表（user_playlist）和歌单详情（playlist_detail）给的是同一份歌单（SDK 2.12.0），曲库里的、不在曲库里的都用这一份 */
-function playlistInfo(playlist: PlaylistSummary): PlaylistInfo {
-  return {
-    id: playlist.id,
-    name: playlist.name,
-    coverUrl: playlist.coverImgUrl,
-    creator: playlist.creator.nickname,
-    playCount: playlist.playCount,
-    description: playlist.description,
-    tags: [...playlist.tags],
-  }
-}
+const playlistInfo = (playlist: PlaylistSummary): PlaylistInfo => ({
+  id: playlist.id,
+  name: playlist.name,
+  coverUrl: playlist.coverImgUrl,
+  creator: playlist.creator.nickname,
+  playCount: playlist.playCount,
+  description: playlist.description,
+  tags: [...playlist.tags],
+})
 
 /** 曲库里的一张歌单：歌单列表里的、新建后读回的详情里的是同一份 */
-function libraryPlaylist(playlist: PlaylistSummary, kind: Playlist['kind']): Playlist {
-  return {
-    ...playlistInfo(playlist),
-    kind,
-    private: playlist.privacy === PRIVATE_PLAYLIST,
-    trackCount: playlist.trackCount,
-    tracksUpdatedAt: playlist.trackUpdateTime,
-  }
-}
+const libraryPlaylist = (playlist: PlaylistSummary, kind: Playlist['kind']): Playlist => ({
+  ...playlistInfo(playlist),
+  kind,
+  private: playlist.privacy === PRIVATE_PLAYLIST,
+  trackCount: playlist.trackCount,
+  tracksUpdatedAt: playlist.trackUpdateTime,
+})
 
 /**
  * 歌单列表：我喜欢的音乐、自建的、收藏的，顺序和网易云给的一样。
@@ -334,7 +330,7 @@ function libraryPlaylist(playlist: PlaylistSummary, kind: Playlist['kind']): Pla
  * 而且看不到隐私歌单。当作需要登录：拿它去同步，隐私歌单就像被删了一样。
  * 要全部都是 null 才算：万一已登录时有哪张歌单是 null，不至于把听众当成掉了登录
  */
-export async function fetchPlaylists(uid: number, listener: Listener): Promise<Playlist[]> {
+export const fetchPlaylists = async (uid: number, listener: Listener): Promise<Playlist[]> => {
   const playlists: Playlist[] = []
   for (let offset = 0; ; offset += PLAYLISTS_PER_CALL) {
     const { body } = await call('user_playlist', { uid, limit: PLAYLISTS_PER_CALL, offset }, listener)
@@ -351,7 +347,7 @@ export async function fetchPlaylists(uid: number, listener: Listener): Promise<P
  * 新建自建歌单。新建的返回里 SDK 只声明了编号和名称（creator 是 null，#33 录制），封面、隐私、曲目更新时间都要读：
  * 建好马上读一次它的详情（和歌单列表里的写法一样）。连着新建两张网易云会回 405“操作过于频繁”（#33 录制）
  */
-export async function createPlaylist(name: string, isPrivate: boolean, listener: Listener): Promise<Playlist> {
+export const createPlaylist = async (name: string, isPrivate: boolean, listener: Listener): Promise<Playlist> => {
   const { body: { id } } = await call('playlist_create', {
     name,
     privacy: String(isPrivate ? PRIVATE_PLAYLIST : 0),
@@ -362,23 +358,23 @@ export async function createPlaylist(name: string, isPrivate: boolean, listener:
 
 // 改自建歌单（#33）。歌单已经被删掉时这几样网易云都照样回 200（验证关卡②、#33 录制），要等下一次同步才发现
 
-export async function deletePlaylist(playlistId: number, listener: Listener): Promise<WriteResponse> {
+export const deletePlaylist = async (playlistId: number, listener: Listener): Promise<WriteResponse> => {
   await call('playlist_delete', { id: playlistId }, listener)
   return { kind: 'done' }
 }
 
-export async function renamePlaylist(playlistId: number, name: string, listener: Listener): Promise<WriteResponse> {
+export const renamePlaylist = async (playlistId: number, name: string, listener: Listener): Promise<WriteResponse> => {
   await call('playlist_name_update', { id: playlistId, name }, listener)
   return { kind: 'done' }
 }
 
-export async function describePlaylist(playlistId: number, description: string, listener: Listener): Promise<WriteResponse> {
+export const describePlaylist = async (playlistId: number, description: string, listener: Listener): Promise<WriteResponse> => {
   await call('playlist_desc_update', { id: playlistId, desc: description }, listener)
   return { kind: 'done' }
 }
 
 /** 网易云要的是用分号连起来的一串标签 */
-export async function tagPlaylist(playlistId: number, tags: readonly string[], listener: Listener): Promise<WriteResponse> {
+export const tagPlaylist = async (playlistId: number, tags: readonly string[], listener: Listener): Promise<WriteResponse> => {
   await call('playlist_tags_update', {
     id: playlistId,
     tags: tags.join(';'),
@@ -387,7 +383,7 @@ export async function tagPlaylist(playlistId: number, tags: readonly string[], l
 }
 
 /** 隐私歌单改公开：已经是公开的再改一次也回 200（验证关卡②） */
-export async function publishPlaylist(playlistId: number, listener: Listener): Promise<WriteResponse> {
+export const publishPlaylist = async (playlistId: number, listener: Listener): Promise<WriteResponse> => {
   await call('playlist_privacy', { id: playlistId }, listener)
   return { kind: 'done' }
 }
@@ -396,7 +392,7 @@ export async function publishPlaylist(playlistId: number, listener: Listener): P
  * 申请封面的上传凭证（#34）：imgId 是这张图的编号，token 直传时放进 x-nos-token，uploadUrl 是图片存储的地址。
  * token 是凭据，只交给浏览器、不记日志（ADR-0003；hana-music-api 的 image_upload_token）
  */
-export async function coverUploadToken(listener: Listener): Promise<CoverTokenResponse> {
+export const coverUploadToken = async (listener: Listener): Promise<CoverTokenResponse> => {
   const { body } = await call('image_upload_token', {}, listener)
   return {
     imgId: String(body.data.imgId),
@@ -409,7 +405,7 @@ export async function coverUploadToken(listener: Listener): Promise<CoverTokenRe
  * 用直传成功的图片编号设为封面（#34）：返回新封面的地址，用它显示（刚设完读歌单详情有时还是旧的，验证关卡②）。
  * 网易云不检查图片：只申请了凭证、没直传也回 200，所以调用方只在直传成功后调它
  */
-export async function setPlaylistCover(playlistId: number, imgId: string, listener: Listener): Promise<SetCoverResponse> {
+export const setPlaylistCover = async (playlistId: number, imgId: string, listener: Listener): Promise<SetCoverResponse> => {
   const { body } = await call('playlist_cover_update', { id: playlistId, imgId }, listener)
   if (body.code !== 200)
     throw new NeteaseError({ kind: 'rejected', code: body.code, message: body.msg }, body)
@@ -417,7 +413,7 @@ export async function setPlaylistCover(playlistId: number, imgId: string, listen
 }
 
 /** 一张歌单的全部曲目编号（SDK 的 playlist_detail 一次要 10 万首）。我喜欢的音乐约 5,000 首时网易云原始返回约 3.1 MB，这里只留编号 */
-export async function fetchTrackIds(playlistId: number, listener: Listener): Promise<number[]> {
+export const fetchTrackIds = async (playlistId: number, listener: Listener): Promise<number[]> => {
   const { body } = await call('playlist_detail', { id: playlistId }, listener)
   return body.playlist.trackIds.map(track => track.id)
 }
@@ -428,7 +424,7 @@ const DELETED_PLAYLIST = 10
 const UNAVAILABLE_CODES: Readonly<Record<number, PlaylistUnavailable>> = { 404: 'missing', 401: 'private' }
 
 /** 不在曲库里的一张歌单：头部和全部曲目编号；已删除、不存在、别人的隐私歌单说明打不开的原因 */
-export async function fetchPlaylistPage(playlistId: number, listener: Listener): Promise<PlaylistPageResponse> {
+export const fetchPlaylistPage = async (playlistId: number, listener: Listener): Promise<PlaylistPageResponse> => {
   const playlist = await call('playlist_detail', { id: playlistId }, listener).then(({ body }) => body.playlist, (error: unknown) => {
     const reason = error instanceof NeteaseError && error.failure.kind === 'rejected'
       ? UNAVAILABLE_CODES[error.failure.code]
@@ -453,7 +449,7 @@ export async function fetchPlaylistPage(playlistId: number, listener: Listener):
  * 歌单的标签库（编辑歌单的标签只能从这里选）：网易云的分类（categories，编号 → 名字）按编号排，
  * 每类里是标签（sub 里 category 是这一类的），照网易云的顺序
  */
-export async function fetchPlaylistTags(listener: Listener): Promise<PlaylistTagGroup[]> {
+export const fetchPlaylistTags = async (listener: Listener): Promise<PlaylistTagGroup[]> => {
   const { body } = await call('playlist_catlist', {}, listener)
   return Object.entries(body.categories)
     .sort(([a], [b]) => Number(a) - Number(b))
@@ -482,7 +478,7 @@ interface Privilege {
   pl: number
 }
 
-function availabilityOf(privilege: Privilege): Availability {
+const availabilityOf = (privilege: Privilege): Availability => {
   if (privilege.st < 0)
     return 'noCopyright'
   return privilege.pl > 0
@@ -491,28 +487,22 @@ function availabilityOf(privilege: Privilege): Availability {
 }
 
 /** 网易云的歌只留界面用得到的字段 */
-function songOf(song: NeteaseSong, privilege: Privilege): Song {
-  return {
-    id: song.id,
-    name: song.name,
-    artists: song.ar.map(creditOf),
-    album: { id: song.al.id, name: song.al.name ?? null, coverUrl: song.al.picUrl },
-    duration: song.dt,
-    availability: availabilityOf(privilege),
-  }
-}
+const songOf = (song: NeteaseSong, privilege: Privilege): Song => ({
+  id: song.id,
+  name: song.name,
+  artists: song.ar.map(creditOf),
+  album: { id: song.al.id, name: song.al.name ?? null, coverUrl: song.al.picUrl },
+  duration: song.dt,
+  availability: availabilityOf(privilege),
+})
 
 /** 专辑页、热门歌曲、每日推荐、单曲搜索里每首歌带着自己的权限信息 */
-function songWithPrivilegeOf(song: NeteaseSong & { privilege: Privilege }): Song {
-  return songOf(song, song.privilege)
-}
+const songWithPrivilegeOf = (song: NeteaseSong & { privilege: Privilege }): Song => songOf(song, song.privilege)
 
-function creditOf(artist: Credit): Credit {
-  return { id: artist.id, name: artist.name }
-}
+const creditOf = (artist: Credit): Credit => ({ id: artist.id, name: artist.name })
 
 /** 歌曲信息，按 ids 的顺序；网易云没给的不在里面 */
-export async function fetchSongs(ids: readonly number[], listener: Listener): Promise<Song[]> {
+export const fetchSongs = async (ids: readonly number[], listener: Listener): Promise<Song[]> => {
   const { body } = await call('song_detail', {
     ids: ids.join(','),
   }, listener)
@@ -533,12 +523,10 @@ export async function fetchSongs(ids: readonly number[], listener: Listener): Pr
 }
 
 /** 网易云给的音频地址是 http，换成 https（音频服务器支持，页面是 https 的） */
-function https(url: string): string {
-  return url.replace(/^http:\/\//, 'https://')
-}
+const https = (url: string): string => url.replace(/^http:\/\//, 'https://')
 
 /** 一首歌的播放地址 */
-export async function fetchPlayUrl(songId: number, quality: Quality, listener: Listener): Promise<PlayUrlResponse> {
+export const fetchPlayUrl = async (songId: number, quality: Quality, listener: Listener): Promise<PlayUrlResponse> => {
   const { body } = await call('song_url_v1', { id: songId, level: quality }, listener)
   const item = body.data.find(data => data.id === songId)
   if (!item?.url)
@@ -555,7 +543,7 @@ export async function fetchPlayUrl(songId: number, quality: Quality, listener: L
  * 下载一首用的地址（song_download_url_v1，SDK 声明了 url、size）。网易云没给地址（无版权，这个账号下不了完整的）时 url 是 null。
  * 地址是 http 的，换成 https（音频服务器支持，验证关卡③）
  */
-export async function fetchDownloadUrl(songId: number, quality: Quality, listener: Listener): Promise<DownloadUrlResponse> {
+export const fetchDownloadUrl = async (songId: number, quality: Quality, listener: Listener): Promise<DownloadUrlResponse> => {
   const { body } = await call('song_download_url_v1', { id: songId, level: quality }, listener)
   if (body.data.id !== songId)
     throw shapeChanged('song_download_url_v1', `要的是歌曲 ${songId}，回的是 ${body.data.id}`)
@@ -569,7 +557,7 @@ export async function fetchDownloadUrl(songId: number, quality: Quality, listene
 }
 
 /** 打卡时告诉网易云的播放来源（SDK scrobble 的 source、sourceid，照它文档的“播放来源”） */
-function checkInSourceOf(source: PlaySource): { source: string, sourceid: number } {
+const checkInSourceOf = (source: PlaySource): { source: string, sourceid: number } => {
   switch (source.kind) {
     case 'playlist':
       return { source: 'list', sourceid: source.id }
@@ -594,7 +582,7 @@ function checkInSourceOf(source: PlaySource): { source: string, sourceid: number
  * 听歌打卡。网易云回 200 不等于计入了听歌排行，计入有 10–30 分钟延迟
  * （验证关卡①；SDK 2.8.1 起改发 clientlog 才计入，nonhana/hana-music-api#31；#28、#29、#31（从搜索来的）真账号上确认计入）
  */
-export async function checkIn(songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<WriteResponse> {
+export const checkIn = async (songId: number, source: PlaySource, seconds: number, listener: Listener): Promise<WriteResponse> => {
   await call('scrobble', {
     id: songId,
     ...checkInSourceOf(source),
@@ -604,7 +592,7 @@ export async function checkIn(songId: number, source: PlaySource, seconds: numbe
 }
 
 /** 一首歌的歌词：逐字、逐行、翻译、音译（lyric_new；旧的 lyric 模块 SDK 没有收窄，不用） */
-export async function fetchLyrics(songId: number, listener: Listener): Promise<LyricsResponse> {
+export const fetchLyrics = async (songId: number, listener: Listener): Promise<LyricsResponse> => {
   const { body } = await call('lyric_new', { id: songId }, listener)
   return lyricsOf(body)
 }
@@ -613,7 +601,7 @@ export async function fetchLyrics(songId: number, listener: Listener): Promise<L
 const COLLECTED_PER_CALL = 1000
 
 /** 一页一页要到底：page 取从第 offset 个起的一页 */
-async function everyPage<T>(page: (offset: number) => Promise<{ items: T[], hasMore: boolean }>): Promise<T[]> {
+const everyPage = async <T>(page: (offset: number) => Promise<{ items: T[], hasMore: boolean }>): Promise<T[]> => {
   const items: T[] = []
   for (let offset = 0; ; offset += COLLECTED_PER_CALL) {
     const next = await page(offset)
@@ -624,35 +612,31 @@ async function everyPage<T>(page: (offset: number) => Promise<{ items: T[], hasM
 }
 
 /** 收藏的专辑，和网易云的顺序一样（最近收藏的在前） */
-export function fetchCollectedAlbums(listener: Listener): Promise<CollectedAlbum[]> {
-  return everyPage(async (offset) => {
-    const { body } = await call('album_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
-    return {
-      items: body.data.map(album => ({
-        id: album.id,
-        name: album.name,
-        coverUrl: album.picUrl,
-        artists: album.artists.map(creditOf),
-        songCount: album.size,
-      })),
-      hasMore: body.hasMore,
-    }
-  })
-}
+export const fetchCollectedAlbums = (listener: Listener): Promise<CollectedAlbum[]> => everyPage(async (offset) => {
+  const { body } = await call('album_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
+  return {
+    items: body.data.map(album => ({
+      id: album.id,
+      name: album.name,
+      coverUrl: album.picUrl,
+      artists: album.artists.map(creditOf),
+      songCount: album.size,
+    })),
+    hasMore: body.hasMore,
+  }
+})
 
 /** 收藏的歌手，和网易云的顺序一样（最近收藏的在前） */
-export function fetchCollectedArtists(listener: Listener): Promise<CollectedArtist[]> {
-  return everyPage(async (offset) => {
-    const { body } = await call('artist_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
-    return {
-      items: body.data.map(artist => ({ id: artist.id, name: artist.name, avatarUrl: artist.picUrl })),
-      hasMore: body.hasMore,
-    }
-  })
-}
+export const fetchCollectedArtists = (listener: Listener): Promise<CollectedArtist[]> => everyPage(async (offset) => {
+  const { body } = await call('artist_sublist', { limit: COLLECTED_PER_CALL, offset }, listener)
+  return {
+    items: body.data.map(artist => ({ id: artist.id, name: artist.name, avatarUrl: artist.picUrl })),
+    hasMore: body.hasMore,
+  }
+})
 
 /** 专辑页：曲目和简介 */
-export async function fetchAlbum(albumId: number, listener: Listener): Promise<AlbumResponse> {
+export const fetchAlbum = async (albumId: number, listener: Listener): Promise<AlbumResponse> => {
   const { body: { album, songs } } = await call('album', { id: albumId }, listener)
   return {
     album: {
@@ -669,21 +653,17 @@ export async function fetchAlbum(albumId: number, listener: Listener): Promise<A
 }
 
 /** 歌手的一页专辑（新的在前）：从第 offset 张起，每页 ARTIST_ALBUMS_PER_REQUEST 张 */
-function artistAlbums(artistId: number, offset: number, listener: Listener) {
-  return call('artist_album', { id: artistId, limit: ARTIST_ALBUMS_PER_REQUEST, offset }, listener)
-}
+const artistAlbums = (artistId: number, offset: number, listener: Listener) => call('artist_album', { id: artistId, limit: ARTIST_ALBUMS_PER_REQUEST, offset }, listener)
 
-function artistAlbumOf(album: { id: number, name: string, picUrl: string, publishTime: number }): ArtistAlbum {
-  return {
-    id: album.id,
-    name: album.name,
-    coverUrl: album.picUrl,
-    publishedAt: album.publishTime,
-  }
-}
+const artistAlbumOf = (album: { id: number, name: string, picUrl: string, publishTime: number }): ArtistAlbum => ({
+  id: album.id,
+  name: album.name,
+  coverUrl: album.picUrl,
+  publishedAt: album.publishTime,
+})
 
 /** 歌手页：头部（在专辑那一页的返回里）、热门歌曲和第一页专辑，两个调用一起发 */
-export async function fetchArtist(artistId: number, listener: Listener): Promise<ArtistResponse> {
+export const fetchArtist = async (artistId: number, listener: Listener): Promise<ArtistResponse> => {
   const [top, albums] = await Promise.all([
     call('artist_top_song', { id: artistId }, listener),
     artistAlbums(artistId, 0, listener),
@@ -704,7 +684,7 @@ export async function fetchArtist(artistId: number, listener: Listener): Promise
 }
 
 /** 歌手页后面的专辑 */
-export async function fetchArtistAlbums(artistId: number, offset: number, listener: Listener): Promise<ArtistAlbumsResponse> {
+export const fetchArtistAlbums = async (artistId: number, offset: number, listener: Listener): Promise<ArtistAlbumsResponse> => {
   const { body } = await artistAlbums(artistId, offset, listener)
   return {
     albums: body.hotAlbums.map(artistAlbumOf),
@@ -716,7 +696,7 @@ export async function fetchArtistAlbums(artistId: number, offset: number, listen
  * 每日推荐。凭据失效时网易云照样回 200，给的是 30 首通用推荐（验证关卡①），这里认不出来：
  * 登录失效靠打开 App 时问账号、后台同步时的红心（回 301）发现
  */
-export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
+export const fetchDaily = async (listener: Listener): Promise<DailyResponse> => {
   const { body } = await call('recommend_songs', {}, listener)
   return {
     songs: body.data.dailySongs.map(songWithPrivilegeOf),
@@ -727,7 +707,7 @@ export async function fetchDaily(listener: Listener): Promise<DailyResponse> {
 // 网易云多半照样回 200（验证关卡②）；回的不是 200 但结果已经是听众要的样子的，也当成做好了
 
 /** 红心或取消红心一首歌（like 一次只收一首）。重复做都回 200（验证关卡②） */
-export async function heart(songId: number, hearted: boolean, listener: Listener): Promise<WriteResponse> {
+export const heart = async (songId: number, hearted: boolean, listener: Listener): Promise<WriteResponse> => {
   await call('like', { id: songId, like: hearted }, listener)
   return { kind: 'done' }
 }
@@ -739,24 +719,20 @@ const PLAYLIST_MISSING = 404
 const ALBUM_NOT_COLLECTED = 404
 
 /** 网易云拒绝的那部分失败；别的失败是 null */
-function rejection(error: unknown): Extract<NeteaseFailure, { kind: 'rejected' }> | null {
-  return error instanceof NeteaseError && error.failure.kind === 'rejected'
-    ? error.failure
-    : null
-}
+const rejection = (error: unknown): Extract<NeteaseFailure, { kind: 'rejected' }> | null => error instanceof NeteaseError && error.failure.kind === 'rejected'
+  ? error.failure
+  : null
 
 /** 这张歌单在网易云里已经不在了（歌单不存在，404）：统一成 missing；别的失败是 null。写接口的 missing 只在这里判断（读路径的 404 仍由 fetchPlaylistPage 映射成 PlaylistUnavailable） */
-function missing(error: unknown): { kind: 'missing' } | null {
-  return rejection(error)?.code === PLAYLIST_MISSING
-    ? { kind: 'missing' }
-    : null
-}
+const missing = (error: unknown): { kind: 'missing' } | null => rejection(error)?.code === PLAYLIST_MISSING
+  ? { kind: 'missing' }
+  : null
 
 /**
  * 加入自建歌单：新加的排在最前，已经在歌单里的网易云跳过；整批都已经在歌单里时网易云回 502“歌单内歌曲重复”，也算加好了。
  * 歌单已经被删掉时网易云回 404“歌单不存在”（验证关卡②）
  */
-export async function addTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
+export const addTracks = async (playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> => {
   try {
     await call('playlist_tracks', {
       op: 'add',
@@ -781,7 +757,7 @@ export async function addTracks(playlistId: number, songIds: readonly number[], 
  * 从自建歌单移除歌：不在歌单里的歌网易云也照样回 200（验证关卡②）。
  * 歌单已经被删掉时网易云回 404“歌单不存在”（验证关卡②）；别的失败原样交给调用方
  */
-export async function removeTracks(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
+export const removeTracks = async (playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> => {
   try {
     await call('playlist_tracks', {
       op: 'del',
@@ -806,7 +782,7 @@ const ORDER_UNCONFIRMED = -1
  * 歌单已经被删掉时网易云回 404“歌单不存在”。改动几千首位置时网易云约 3.3 秒后回 HTTP 400 / -1，但新顺序其实已经生效，
  * 所以认成 unconfirmed，由客户端重新读一次这张歌单、和提交的顺序比一比
  */
-export async function updateSongOrder(playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> {
+export const updateSongOrder = async (playlistId: number, songIds: readonly number[], listener: Listener): Promise<WriteResponse> => {
   try {
     await call('song_order_update', {
       pid: playlistId,
@@ -829,14 +805,14 @@ export async function updateSongOrder(playlistId: number, songIds: readonly numb
  * 已经删掉的歌单网易云会忽略、照样回 200（验证关卡②录到了这种返回），所以没有 missing；
  * 别的失败原样交给调用方，客户端退回原来的顺序
  */
-export async function updatePlaylistOrder(playlistIds: readonly number[], listener: Listener): Promise<WriteResponse> {
+export const updatePlaylistOrder = async (playlistIds: readonly number[], listener: Listener): Promise<WriteResponse> => {
   await call('playlist_order_update', {
     ids: JSON.stringify(playlistIds),
   }, listener)
   return { kind: 'done' }
 }
 
-export async function collectAlbum(albumId: number, collected: boolean, listener: Listener): Promise<WriteResponse> {
+export const collectAlbum = async (albumId: number, collected: boolean, listener: Listener): Promise<WriteResponse> => {
   await call('album_sub', {
     id: albumId,
     t: collected ? 1 : 0,
@@ -847,7 +823,7 @@ export async function collectAlbum(albumId: number, collected: boolean, listener
   return { kind: 'done' }
 }
 
-export async function collectArtist(artistId: number, collected: boolean, listener: Listener): Promise<WriteResponse> {
+export const collectArtist = async (artistId: number, collected: boolean, listener: Listener): Promise<WriteResponse> => {
   await call('artist_sub', {
     id: artistId,
     t: collected ? 1 : 0,
@@ -859,7 +835,7 @@ export async function collectArtist(artistId: number, collected: boolean, listen
  * 收藏歌单带上浏览器现取的反作弊令牌（官方网页版的写法，SDK 2.12.0），取消收藏不带（#30 留言）。
  * 歌单已经被删掉：照加歌、歌单详情的样子当成网易云回 404“歌单不存在”（收藏时的这种返回还没录到过）
  */
-export async function collectPlaylist(playlistId: number, change: PlaylistCollectRequest, listener: Listener): Promise<WriteResponse> {
+export const collectPlaylist = async (playlistId: number, change: PlaylistCollectRequest, listener: Listener): Promise<WriteResponse> => {
   try {
     await call('playlist_subscribe', {
       id: playlistId,
@@ -880,16 +856,14 @@ export async function collectPlaylist(playlistId: number, change: PlaylistCollec
 // 搜索（Spec #11“服务端：Campanula API”搜索一项，#31）
 
 /** 比较歌名是否看起来一样时用的写法：全角半角归一（NFKC），波浪线的几种写法（～〜∼~）当成一个 */
-function lookalike(name: string): string {
-  return name.normalize('NFKC').replace(/[\u301C\u223C]/g, '~')
-}
+const lookalike = (name: string): string => name.normalize('NFKC').replace(/[\u301C\u223C]/g, '~')
 
 /**
  * 边输入边给的建议（网页版的建议）：网易云给了哪类就列哪类，不另外补，也不跨类别去重。网易云说的先后（order）SDK 没声明，
  * 这里固定成单曲、歌手、专辑、歌单（#31 录到的几次网易云都是这个顺序）。
  * 点单曲是搜这首的名字：名字看起来一样的几首（例如一个用 ～、一个用 〜）只留第一首
  */
-export async function fetchSuggestions(keywords: string, listener: Listener): Promise<SuggestionsResponse> {
+export const fetchSuggestions = async (keywords: string, listener: Listener): Promise<SuggestionsResponse> => {
   const { body } = await call('search_suggest', { keywords }, listener)
   const { songs = [], artists = [], albums = [], playlists = [] } = body.result
   const looks = songs.map(song => lookalike(song.name))
@@ -912,7 +886,7 @@ const CLOUDSEARCH_TYPES: Record<SearchKind, number> = {
 }
 
 /** 这类结果从网易云的第 offset 个起的一页。一个都没搜到时网易云不给列表，只给总数 0（#32 录制） */
-async function cloudsearch(kind: SearchKind, keywords: string, offset: number, listener: Listener) {
+const cloudsearch = async (kind: SearchKind, keywords: string, offset: number, listener: Listener) => {
   const { body } = await call('cloudsearch', {
     keywords,
     type: CLOUDSEARCH_TYPES[kind],

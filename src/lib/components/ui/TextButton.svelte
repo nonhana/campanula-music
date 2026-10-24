@@ -11,9 +11,10 @@
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
+  import { LoaderCircle } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import type { HTMLButtonAttributes } from 'svelte/elements'
-  import { LoaderCircle } from '@lucide/svelte'
+
   import { busyClick } from '../shared/busy'
   import { desktopLayout } from '../shared/layout'
   import Button from './Button.svelte'

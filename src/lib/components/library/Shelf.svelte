@@ -6,6 +6,7 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
+
   import Scrollbar from '../ui/Scrollbar.svelte'
 
   interface Props {
@@ -20,7 +21,7 @@
   const { label, class: klass, phone = false, children }: Props = $props()
 
   /** 键盘焦点移到架子里看不全的一项：把它滚进视野 */
-  function keepInView(event: FocusEvent) {
+  const keepInView = (event: FocusEvent) => {
     if (event.target instanceof HTMLElement)
       event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }

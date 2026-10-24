@@ -1,9 +1,10 @@
 import type { Navigation } from '$app/navigation'
-import type { HistoryResult, OverlayHistory, OverlayMarker, OverlayPosition, OverlayResult } from './overlay-stack'
 import { beforeNavigate, goto, onNavigate } from '$app/navigation'
 import { resolve } from '$app/paths'
 import { navigating, page } from '$app/state'
 import { onDestroy, onMount, tick, untrack } from 'svelte'
+
+import type { HistoryResult, OverlayHistory, OverlayMarker, OverlayPosition, OverlayResult } from './overlay-stack'
 import { samePosition } from './overlay-stack'
 
 interface Operation {
@@ -35,7 +36,7 @@ interface NavigationIntent {
  * 不进层、也不进纯核心。goto 可能在取消时照样 resolve；navigation.complete 和真正的目标
  * 必须同时对上（:1971–1975、2264–2283、2900–2904）。钩子在原生历史写入之后才跑。
  */
-export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | 'settled') => void, navigate: () => boolean }): OverlayHistory {
+export const createOverlayHistory = (callbacks: { changed: (phase?: 'intent' | 'settled') => void, navigate: () => boolean }): OverlayHistory => {
   let active: Operation | null = null
   let destroyed = false
   let previous = page.state
@@ -45,7 +46,7 @@ export function createOverlayHistory(callbacks: { changed: (phase?: 'intent' | '
   const signatures: Record<number, unknown> = {}
   let moving = false
 
-  function cursor(): number {
+  const cursor = (): number => {
     const index: unknown = history.state?.['sveltekit:metadata']?.historyIndex
     if (typeof index !== 'number' || !Number.isSafeInteger(index))
       throw new TypeError('Kit history entry has no historyIndex')
@@ -65,13 +66,13 @@ stamp: page.state.overlays?.stamp,
 status,
 position: read(),
 })
-  function remember(position: OverlayPosition): void {
+  const remember = (position: OverlayPosition): void => {
     known[position.cursor] = position
     signatures[position.cursor] = signature()
   }
   remember(settled)
 
-  function invalidate(): void {
+  const invalidate = (): void => {
     if (!active)
       return
     const interrupted = active
@@ -80,7 +81,7 @@ position: read(),
     interrupted.finish(result('invalidated'))
   }
 
-  function ownNavigation(navigation: NavigationIntent): boolean {
+  const ownNavigation = (navigation: NavigationIntent): boolean => {
     if (!active)
       return false
     if (active.navigation)
@@ -93,7 +94,7 @@ position: read(),
     return matches
   }
 
-  function navigationStarted(navigation: Navigation, cancel?: () => void): void {
+  const navigationStarted = (navigation: Navigation, cancel?: () => void): void => {
     if (seenNavigations.has(navigation.complete))
       return
     seenNavigations.add(navigation.complete)
@@ -163,7 +164,7 @@ url: location.href,
 
   // 一次遍历要两个事实都到齐才算完成：Kit 已经发布了目标条目的 page.state，
   // 以及带着那条条目自己 metadata 的原生 popstate 到了（先后不限）。
-  function confirmTraversal(operation: Operation): void {
+  const confirmTraversal = (operation: Operation): void => {
     if (active !== operation || !operation.receipt?.received || !operation.published)
       return
     if (cursor() === operation.cursor && location.href === operation.url && signature() === operation.receipt.state) {
@@ -176,7 +177,7 @@ url: location.href,
     callbacks.changed()
   }
 
-  function observed(): void {
+  const observed = (): void => {
     const position = capture()
     // 被顶替的 Kit 回调可能在原生历史已经移动之后才发布过期的 page.state，
     // 不要把那份旧状态和另一条物理条目凑在一起。
@@ -236,7 +237,7 @@ url: location.href,
     invalidate()
   })
 
-  async function operate(operation: Omit<Operation, 'invalidated' | 'finish'>, perform?: () => Promise<void>): Promise<HistoryResult> {
+  const operate = async (operation: Omit<Operation, 'invalidated' | 'finish'>, perform?: () => Promise<void>): Promise<HistoryResult> => {
     if (destroyed || moving || active || !samePosition(operation.from, read()) || cursor() !== operation.from.cursor || signatures[operation.from.cursor] !== signature() || location.href !== operation.from.url)
       return result('invalidated')
     let finish!: (value: HistoryResult) => void
@@ -304,7 +305,7 @@ position: read(),
     return Promise.race([work, interrupted])
   }
 
-  function restorePosition(target: OverlayPosition, from: OverlayPosition, shallow: boolean): Promise<HistoryResult> {
+  const restorePosition = (target: OverlayPosition, from: OverlayPosition, shallow: boolean): Promise<HistoryResult> => {
     const marker = target.marker ?? (target.stamp
 ? { session: target.stamp, ids: [], stamp: target.stamp }
 : undefined)
@@ -315,19 +316,18 @@ target,
 cursor: from.cursor,
 url: target.url,
 stamp: target.stamp,
-}, () => {
+}, () =>
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- 这个 URL 是从已提交的 Kit 页面里取的
-      return goto(target.url, {
+       goto(target.url, {
 shallow,
 replace: true,
 state: marker
 ? { overlays: marker }
 : {},
-})
-    })
+}))
   }
 
-  function go(target: OverlayPosition, from: OverlayPosition): Promise<HistoryResult> {
+  const go = (target: OverlayPosition, from: OverlayPosition): Promise<HistoryResult> => {
     if (destroyed || moving || active || !samePosition(from, read()) || cursor() !== from.cursor || signatures[from.cursor] !== signature() || location.href !== from.url)
       return Promise.resolve(result('invalidated'))
     if (samePosition(target, from))
@@ -344,7 +344,7 @@ url: target.url,
 })
   }
 
-  function write(marker: OverlayMarker | undefined, replace: boolean, from: OverlayPosition): Promise<HistoryResult> {
+  const write = (marker: OverlayMarker | undefined, replace: boolean, from: OverlayPosition): Promise<HistoryResult> => {
     const stamp = crypto.randomUUID()
     const value = { session: marker?.session ?? stamp, ids: marker?.ids ?? [], stamp }
     const target = {
@@ -360,14 +360,13 @@ target,
 url: from.url,
 cursor: target.cursor,
 stamp,
-}, () => {
+}, () =>
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- 空 URL 表示保留当前这一条历史不动
-      return goto('', {
+       goto('', {
 shallow: true,
 replace,
 state: { overlays: value },
-})
-    })
+}))
   }
 
   return {

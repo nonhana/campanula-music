@@ -8,6 +8,7 @@
 -->
 <script lang='ts'>
   import { ListMusic, SkipBack, SkipForward } from '@lucide/svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
   import HeartButton from '../songs/HeartButton.svelte'
   import IconButton from '../ui/IconButton.svelte'

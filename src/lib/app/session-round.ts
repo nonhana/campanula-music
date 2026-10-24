@@ -1,8 +1,9 @@
 import type { Account } from '#lib/api/account.js'
 import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js'
+import { endpoints } from '#lib/api/endpoints.js'
+
 import type { Api, BodyArg, ParamsArg, PostOptions, RequestFailure, Result } from './api-client'
 import type { BackgroundLane, Waiting } from './pacing'
-import { endpoints } from '#lib/api/endpoints.js'
 
 // 会话一轮（#69）：登录、退出、登录失效时换一轮。一轮里的请求都绑定在换轮前的编号上：
 // - 这一轮结束时，还在路上的请求回来直接丢掉（结果是 null），不写进新一轮的状态；
@@ -66,13 +67,11 @@ export interface SessionRound {
 }
 
 /** 把失败去掉 needsLogin；是 needsLogin 时返回 null（调用方负责让这一轮结束） */
-function withoutNeedsLogin(failure: RequestFailure): SessionFailure | null {
-  return failure.kind === 'needsLogin'
-    ? null
-    : failure
-}
+const withoutNeedsLogin = (failure: RequestFailure): SessionFailure | null => failure.kind === 'needsLogin'
+  ? null
+  : failure
 
-export function createSessionRound({ api, lane, expired }: { api: Api, lane: BackgroundLane, expired: () => void }): SessionRound {
+export const createSessionRound = ({ api, lane, expired }: { api: Api, lane: BackgroundLane, expired: () => void }): SessionRound => {
   let current = 1
   /** 这一轮是不是登录着的一轮：没登录时的 401 不当成“登录失效” */
   let signedIn = false
@@ -82,7 +81,7 @@ export function createSessionRound({ api, lane, expired }: { api: Api, lane: Bac
    * 请求回来时：这一轮已经换过就丢掉；还是这一轮而网易云说要登录，就让 App 变成登录失效（一次）。
    * 已经登录着才叫登录失效：未登录时发的请求回 401，只说明这一轮没有结果
    */
-  async function settle<T>(pending: Promise<Result<T>>, mine: number): Promise<SessionResult<T>> {
+  const settle = async <T>(pending: Promise<Result<T>>, mine: number): Promise<SessionResult<T>> => {
     const result = await pending
     if (mine !== current)
       return null
@@ -97,7 +96,7 @@ export function createSessionRound({ api, lane, expired }: { api: Api, lane: Bac
     return { ok: false, failure }
   }
 
-  function request<T>(send: () => Promise<Result<T>>): Promise<SessionResult<T>> {
+  const request = <T>(send: () => Promise<Result<T>>): Promise<SessionResult<T>> => {
     const mine = current
     if (!signedIn)
       return Promise.resolve(null)
@@ -114,7 +113,7 @@ export function createSessionRound({ api, lane, expired }: { api: Api, lane: Bac
     request,
   }
 
-  async function background<T>(send: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void, giveUp?: AbortSignal): Promise<BackgroundSessionResult<T> | 'gaveUp'> {
+  const background = async <T>(send: () => Promise<Result<T>>, onWaiting: (waiting: Waiting | null) => void, giveUp?: AbortSignal): Promise<BackgroundSessionResult<T> | 'gaveUp'> => {
     const mine = current
     if (!signedIn)
       return null
@@ -136,7 +135,7 @@ export function createSessionRound({ api, lane, expired }: { api: Api, lane: Bac
     }
   }
 
-  async function checkAccount(): Promise<Session | null> {
+  const checkAccount = async (): Promise<Session | null> => {
     const mine = current
     const result = await api.get(endpoints.account)
     if (mine !== current)
@@ -154,7 +153,7 @@ export function createSessionRound({ api, lane, expired }: { api: Api, lane: Bac
       : null
   }
 
-  async function change(next: SessionChange): Promise<void> {
+  const change = async (next: SessionChange): Promise<void> => {
     // 这一行必须同步执行：第一个 needsLogin 在这里加一后，同一轮里后来的 401 才会被 settle 丢掉
     current += 1
     signedIn = next.kind === 'signedIn'

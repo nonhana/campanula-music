@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { never } from './harness/hold'
 import { listener } from './harness/listener'
 import { useWorld } from './harness/world'
@@ -18,9 +19,7 @@ const CHECK_IN = 'discover/daily/002-scrobble.json.gz'
 const SOME_PLAY_URL = 'playback/liked/001-song_url_v1.json.gz'
 
 /** 每日推荐拉过几次 */
-function dailyCalls(): number {
-  return world.netease.calls.filter(call => call.module === 'recommend_songs').length
-}
+const dailyCalls = (): number => world.netease.calls.filter(call => call.module === 'recommend_songs').length
 
 describe('每日推荐', () => {
   it('打开每日推荐：用前台请求拉今天这份，歌曲只留界面用得到的字段', async () => {

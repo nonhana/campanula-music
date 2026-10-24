@@ -1,16 +1,18 @@
 // 开发环境的网易云替身：Vite 只在 CAMPANULA_MOCK=1 的 dev 服务器里把 hana-music-api 换到这里。
 // 读按模块 + 查询从录制和状态化 store 里取，写改 store；没覆盖的明确报错并记进覆盖报告。
-import type { ModuleCallConfig } from 'hana-music-api'
-import type { MockConfig, ScenarioName } from './scenarios.ts'
-import type { SeedName } from './seed.ts'
-import type { MockResult } from './store.ts'
 import { readFile } from 'node:fs/promises'
+
+import type { ModuleCallConfig } from 'hana-music-api'
+
 import { AUDIO_PREFIX, audioWav, clearUploads, localize, UPLOAD_PATH, UPLOAD_PREFIX } from './assets.ts'
 import { fixtureOutcome } from './fixture-format.ts'
 import { queryKey } from './query-key.ts'
 import { readFixture } from './read-fixture.ts'
+import type { MockConfig, ScenarioName } from './scenarios.ts'
 import { configOf, isScenarioName } from './scenarios.ts'
+import type { SeedName } from './seed.ts'
 import { POEMS_PLAYLIST } from './seed.ts'
+import type { MockResult } from './store.ts'
 import { MockStore } from './store.ts'
 
 /** 这份代码只能出现在 dev 产物里；构建检查靠这个标记确认它没进生产包 */
@@ -33,9 +35,7 @@ const SESSION_MODULES = new Set([
 ])
 const DEVICE_ID = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const CREDENTIALS = { MUSIC_U: 'mock-music-u', __csrf: 'mock-csrf' }
-function cookieFor(musicU = 'mock-music-u'): string[] {
-  return [`MUSIC_U=${musicU}; Path=/; Max-Age=15552000`, '__csrf=mock-csrf; Path=/']
-}
+const cookieFor = (musicU = 'mock-music-u'): string[] => [`MUSIC_U=${musicU}; Path=/; Max-Age=15552000`, '__csrf=mock-csrf; Path=/']
 
 /** 照 SDK 抛出 { status, body } 的样子：服务端的 translate() 靠这两个属性认网易云的失败 */
 class SdkFailure extends Error {
@@ -54,11 +54,9 @@ interface IndexEntry {
 }
 
 /** 同一个模块 + 查询可能录了失败和成功两份：优先成功，其次失败；没有校验过的录制不拿来回答 */
-function choose(entries: IndexEntry[]): IndexEntry | null {
-  return entries.find(entry => entry.validated && entry.outcome === 'ok')
-    ?? entries.find(entry => entry.validated)
-    ?? null
-}
+const choose = (entries: IndexEntry[]): IndexEntry | null => entries.find(entry => entry.validated && entry.outcome === 'ok')
+  ?? entries.find(entry => entry.validated)
+  ?? null
 
 interface Index {
   recordings: number
@@ -88,12 +86,12 @@ const state: RuntimeState = ((globalThis as Record<string, unknown>)[STATE_KEY] 
   lastCoverImgId: 'mock-cover',
 }) as RuntimeState
 
-async function index(): Promise<Index> {
+const index = async (): Promise<Index> => {
   indexPromise ??= readFile(INDEX_FILE, 'utf8').then(text => JSON.parse(text) as Index)
   return indexPromise
 }
 
-async function fixture(entry: IndexEntry): Promise<{ rejected: boolean, status: number, body: unknown }> {
+const fixture = async (entry: IndexEntry): Promise<{ rejected: boolean, status: number, body: unknown }> => {
   let loaded = fixtureCache.get(entry.path)
   if (!loaded) {
     loaded = readFixture(entry.path).then((raw) => {
@@ -105,13 +103,13 @@ async function fixture(entry: IndexEntry): Promise<{ rejected: boolean, status: 
   return loaded
 }
 
-function miss(module: string, query: unknown): never {
+const miss = (module: string, query: unknown): never => {
   state.misses.push({ module, query, scenario: state.config.name })
   console.error(`Mock 未覆盖：模块 ${module}，查询 ${JSON.stringify(query)}，场景 ${state.config.name}。看 GET /api/mock/coverage 补录制`)
   throw new SdkFailure(500, { code: 500, msg: `Mock 未覆盖：${module}` })
 }
 
-async function entryFor(module: string, query: unknown): Promise<IndexEntry | null> {
+const entryFor = async (module: string, query: unknown): Promise<IndexEntry | null> => {
   const current = await index()
   const key = queryKey(query)
   const candidates = current.entries.filter(entry => entry.module === module && entry.queryKey === key)
@@ -147,7 +145,7 @@ async function entryFor(module: string, query: unknown): Promise<IndexEntry | nu
   return null
 }
 
-async function fallback(module: string, query: unknown, { generic = false } = {}): Promise<unknown> {
+const fallback = async (module: string, query: unknown, { generic = false } = {}): Promise<unknown> => {
   const entry = await entryFor(module, query) ?? (generic
     ? choose((await index()).entries.filter(item => item.module === module))
     : null)
@@ -159,12 +157,10 @@ async function fallback(module: string, query: unknown, { generic = false } = {}
   return localize(loaded.body)
 }
 
-function clone<T>(value: T): T {
-  return structuredClone(value)
-}
+const clone = <T>(value: T): T => structuredClone(value)
 
 /** 写操作的结果：成功就本地化返回，失败照 SDK 的样子抛出去 */
-function write(result: MockResult): { status: number, body: unknown, cookie: string[] } {
+const write = (result: MockResult): { status: number, body: unknown, cookie: string[] } => {
   if (!result.ok)
     throw new SdkFailure(result.status, result.body)
   return {
@@ -174,29 +170,23 @@ function write(result: MockResult): { status: number, body: unknown, cookie: str
   }
 }
 
-function num(value: unknown): number {
-  return typeof value === 'number'
-    ? value
-    : Number(value)
-}
+const num = (value: unknown): number => typeof value === 'number'
+  ? value
+  : Number(value)
 
-function str(value: unknown): string {
-  return typeof value === 'string'
-    ? value
-    : String(value ?? '')
-}
+const str = (value: unknown): string => typeof value === 'string'
+  ? value
+  : String(value ?? '')
 
-function idsOf(value: unknown): number[] {
+const idsOf = (value: unknown): number[] => {
   if (Array.isArray(value))
     return value.map(num)
   return str(value).split(',').filter(Boolean).map(Number)
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
 
-export async function configure(input: ScenarioName | (Partial<MockConfig> & { name?: ScenarioName }) = 'default'): Promise<void> {
+export const configure = async (input: ScenarioName | (Partial<MockConfig> & { name?: ScenarioName }) = 'default'): Promise<void> => {
   const name = typeof input === 'string'
     ? input
     : input.name ?? 'default'
@@ -220,27 +210,23 @@ export async function configure(input: ScenarioName | (Partial<MockConfig> & { n
     await state.store.clearPlaylist(POEMS_PLAYLIST)
 }
 
-export async function reset(): Promise<void> {
+export const reset = async (): Promise<void> => {
   await configure('default')
 }
 
-export function loginCredentials(): { deviceId: string, credentials: Record<string, string> } {
-  return {
-    deviceId: DEVICE_ID,
-    credentials: { ...CREDENTIALS },
-  }
-}
+export const loginCredentials = (): { deviceId: string, credentials: Record<string, string> } => ({
+  deviceId: DEVICE_ID,
+  credentials: { ...CREDENTIALS },
+})
 
-export function status(): { enabled: true, scenario: ScenarioName, seed: SeedName, offline: boolean } {
-  return {
-    enabled: true,
-    scenario: state.config.name,
-    seed: state.config.seed,
-    offline: state.config.offline,
-  }
-}
+export const status = (): { enabled: true, scenario: ScenarioName, seed: SeedName, offline: boolean } => ({
+  enabled: true,
+  scenario: state.config.name,
+  seed: state.config.seed,
+  offline: state.config.offline,
+})
 
-export async function coverage(): Promise<Record<string, unknown>> {
+export const coverage = async (): Promise<Record<string, unknown>> => {
   const current = await index()
   const used = [
     ...new Set(state.calls.map(call => call.module)),
@@ -258,14 +244,14 @@ export async function coverage(): Promise<Record<string, unknown>> {
   }
 }
 
-function hasCredentials(callConfig: ModuleCallConfig): boolean {
+const hasCredentials = (callConfig: ModuleCallConfig): boolean => {
   const cookie = callConfig.cookie
   return typeof cookie === 'object' && cookie !== null
     ? Boolean(cookie.MUSIC_U)
     : Boolean(cookie)
 }
 
-export async function invokeModule(module: string, query: Record<string, unknown> = {}, callConfig: ModuleCallConfig = {}): Promise<{ status: number, body: unknown, cookie: string[] }> {
+export const invokeModule = async (module: string, query: Record<string, unknown> = {}, callConfig: ModuleCallConfig = {}): Promise<{ status: number, body: unknown, cookie: string[] }> => {
   state.calls.push({ module, query })
   if (state.config.latencyMs > 0)
     await sleep(state.config.latencyMs)

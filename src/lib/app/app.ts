@@ -1,39 +1,40 @@
 import type { Account } from '#lib/api/account.js'
 import type { CoverCrop } from '#lib/api/cover.js'
+import { endpoints } from '#lib/api/endpoints.js'
 import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchedItems, SearchKind } from '#lib/api/search.js'
+
 import type { RequestFailure, Result } from './api-client'
+import { createApi } from './api-client'
 import type { BrowserCapabilities } from './browser'
 import type { PlaylistEdit, PlaylistSeed } from './changes'
-import type { CheckIns } from './check-ins'
-import type { CoverOutcome, CoverState } from './cover'
-import type { DailyState } from './daily'
-import type { DownloadBlock, DownloadsState } from './downloads'
-import type { AddSongsOutcome, AddTarget, AddTargetsRequest, CreateOutcome, Library, LibraryState, PlaylistSearch } from './library'
-import type { LoginState } from './login'
-import type { LyricsState } from './lyrics'
-import type { NoticeAction } from './notice'
-import type { Player, PlayerState, PlayMode } from './player'
-import type { SearchState } from './search'
-import type { Session } from './session-round'
-import { endpoints } from '#lib/api/endpoints.js'
-import { createApi } from './api-client'
 import { changeProblem, playlistEdits } from './changes'
+import type { CheckIns } from './check-ins'
 import { createCheckIns } from './check-ins'
+import type { CoverOutcome, CoverState } from './cover'
 import { createCover } from './cover'
+import type { DailyState } from './daily'
 import { createDaily } from './daily'
+import type { DownloadBlock, DownloadsState } from './downloads'
 import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
+import type { AddSongsOutcome, AddTarget, AddTargetsRequest, CreateOutcome, Library, LibraryState, PlaylistSearch } from './library'
 import { createLibrary, filterSongs, searchPlaylist } from './library'
 import { createLocalDatabase, createLocalDb } from './local'
+import type { LoginState } from './login'
 import { createLogin, INITIAL_LOGIN } from './login'
+import type { LyricsState } from './lyrics'
 import { createLyrics } from './lyrics'
 import { connectMediaSession } from './media-session'
+import type { NoticeAction } from './notice'
 import { createNotices, noticeActions } from './notice'
 import { createBackgroundLane } from './pacing'
+import type { Player, PlayerState, PlayMode } from './player'
 import { createPlayer, INITIAL_PLAYER } from './player'
 import { createSavedQueue } from './saved-queue'
+import type { SearchState } from './search'
 import { createSearch, INITIAL_SEARCH } from './search'
+import type { Session } from './session-round'
 import { createSessionRound } from './session-round'
 
 /**
@@ -315,10 +316,19 @@ export interface App {
   searchDownloads: (query: string) => readonly Song[]
 }
 
-export function createApp(browser: BrowserCapabilities): App {
+export const createApp = (browser: BrowserCapabilities): App => {
   const api = createApi(browser)
   const db = createLocalDatabase(browser.indexedDB)
   const local = createLocalDb(db)
+  /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放（#38） */
+  const streamable = (): boolean => state.online && state.session.status === 'signedIn'
+
+  /** 每首歌现在能不能放：下载了的永远能放；没下载的要能在线放，无版权的不能放（界面只读这一条规则） */
+  const playable = (song: Song): boolean => state.downloads.has(song.id) || (song.availability !== 'noCopyright' && streamable())
+
+  /** 下载那一项现在能不能选、为什么不能：和 App.download 的判断是同一份输入 */
+  const downloadBlockForApp = (song: Song): DownloadBlock | null => downloadBlockFor(song, state.downloads, { signedIn: state.session.status === 'signedIn', online: state.online })
+
   let state: AppState = {
     session: { status: 'checking' },
     login: INITIAL_LOGIN,
@@ -340,7 +350,7 @@ export function createApp(browser: BrowserCapabilities): App {
   /** 已经排了这一次发布之后的派发：同一轮里连着变只派发一次 */
   let viewingQueued = false
 
-  function update(next: Partial<AppState>) {
+  const update = (next: Partial<AppState>) => {
     state = {
       ...state,
       ...next,
@@ -353,7 +363,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 这一页要“打开”的条件：只有它变了才去拉，失败不会因为别的状态发布而自动重试 */
-  function viewingKey(page: ViewedPage): string {
+  const viewingKey = (page: ViewedPage): string => {
     const signedIn = state.session.status === 'signedIn'
     const shown = state.library
     switch (page.kind) {
@@ -377,19 +387,14 @@ export function createApp(browser: BrowserCapabilities): App {
     }
   }
 
-  /** 现在能不能在线放：联网着、登录着。不能时只有下载了的歌能放（#38） */
-  function streamable(): boolean {
-    return state.online && state.session.status === 'signedIn'
-  }
-
-  /** 每首歌现在能不能放：下载了的永远能放；没下载的要能在线放，无版权的不能放（界面只读这一条规则） */
-  function playable(song: Song): boolean {
-    return state.downloads.has(song.id) || (song.availability !== 'noCopyright' && streamable())
-  }
-
-  /** 下载那一项现在能不能选、为什么不能：和 App.download 的判断是同一份输入 */
-  function downloadBlockForApp(song: Song): DownloadBlock | null {
-    return downloadBlockFor(song, state.downloads, { signedIn: state.session.status === 'signedIn', online: state.online })
+  /** 会话一轮发现网易云说需要登录、续期也没成功：各模块自己收起，曲库副本留在本机，同一个账号重新登录后接着用 */
+  const loginExpired = (): void => {
+    void round.change({ kind: 'loginExpired' })
+    update({
+      session: { status: 'loginExpired' },
+      library: null,
+    })
+    player.availabilityChanged()
   }
 
   const lane = createBackgroundLane(browser)
@@ -436,7 +441,7 @@ export function createApp(browser: BrowserCapabilities): App {
    * 这时浏览器里还留着上一个登录 Cookie，不能接着登录，否则之后补发的退出会把新的登录也退掉
    */
   let finishingLogout: Promise<RequestFailure | null> | undefined
-  function finishLogout(): Promise<RequestFailure | null> {
+  const finishLogout = (): Promise<RequestFailure | null> => {
     finishingLogout ??= browser.locks.request(LOGIN_COOKIE_LOCK, async () => {
       if (!await local.pendingLogout())
         return null
@@ -453,6 +458,11 @@ export function createApp(browser: BrowserCapabilities): App {
     return finishingLogout
   }
   browser.network.addEventListener('online', () => void finishLogout())
+
+  /** 下载完了一首、删了一首（#38）：哪些歌能离线放变了。下载建好时要用到，所以放在它前面 */
+  const downloadsChanged = (): void => {
+    player.availabilityChanged()
+  }
 
   const downloads = createDownloads({
     api,
@@ -490,13 +500,8 @@ export function createApp(browser: BrowserCapabilities): App {
     localCover: coverUrl => state.downloads.coverOf(coverUrl),
   })
   /** 锁屏和通知栏上显示的跟着播放状态变。写成函数声明：锁屏的按钮要用播放器，播放器发布时又要用锁屏，两边互相引用 */
-  function showOnLockScreen(next: PlayerState): void {
+  const showOnLockScreen = (next: PlayerState): void => {
     lockScreen(next)
-  }
-
-  /** 下载完了一首、删了一首（#38）：哪些歌能离线放变了。写成函数声明：播放器要放下载的文件，下载先建好 */
-  function downloadsChanged(): void {
-    player.availabilityChanged()
   }
 
   // 断网、联网（#38）：没下载的歌能不能放跟着变
@@ -560,7 +565,7 @@ export function createApp(browser: BrowserCapabilities): App {
    * “正在看”变了、曲库或会话变了：只在条件真的变了时交给对应的模块。
    * 和页面原来的 $effect 一样，等这一次状态发布会话走完再动手（收藏、取消收藏的排队也登记好了，open 会等它）
    */
-  function applyViewing(): void {
+  const applyViewing = (): void => {
     const current = viewing
     if (!current)
       return
@@ -578,7 +583,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 把“正在看”交给对应的模块；状态在排队期间又变了也照现在的来（open* 自己幂等） */
-  function openViewingPage(): void {
+  const openViewingPage = (): void => {
     const current = viewing
     if (!current)
       return
@@ -613,7 +618,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 听众开始看这一页：返回的函数在离开时调用（歌单离开时提交还没提交的移除和排序） */
-  function view(page: ViewedPage): () => void {
+  const view = (page: ViewedPage): () => void => {
     const token = ++viewingToken
     viewing = { page, token, applied: '' }
     applyViewing()
@@ -629,6 +634,35 @@ export function createApp(browser: BrowserCapabilities): App {
     }
   }
 
+  /**
+   * 登录了：先拿出这个账号的曲库副本，和登录状态一起显示，再在后台同步。
+   * 播放队列的归属、恢复和规则⑩在 saved-queue 里：会话一轮发“登录了”，它照着换。
+   */
+  const signedIn = async (account: Account): Promise<void> => {
+    const entered = round.change({ kind: 'signedIn', account })
+    const mine = round.current
+    const [shown, quality, history] = await Promise.all([
+      library.enter(account),
+      local.playQuality(),
+      local.searchHistory(),
+    ])
+    await entered
+    if (!round.isCurrent(mine) || !shown)
+      return
+    if (quality)
+      player.setQuality(quality)
+    update({
+      session: { status: 'signedIn', account },
+      login: INITIAL_LOGIN,
+      library: shown,
+      search: { ...state.search, history },
+    })
+    player.availabilityChanged()
+    library.sync()
+    // 登录失效期间、断网时记下的打卡补发给这个账号；别的账号的丢弃
+    checkIns.send()
+  }
+
   const login = createLogin({
     api,
     session: round,
@@ -641,7 +675,7 @@ export function createApp(browser: BrowserCapabilities): App {
   })
 
   /** 会话换成未登录：各模块在会话一轮里登记了自己的清理，播放队列由 saved-queue 停下并删掉 */
-  function signedOut(by: 'this-tab' | 'other-tab'): Promise<void> {
+  const signedOut = (by: 'this-tab' | 'other-tab'): Promise<void> => {
     const changed = round.change({ kind: 'signedOut', by })
     update({
       session: { status: 'signedOut' },
@@ -653,7 +687,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 点歌时的整个列表；还没打开、没显示出来时是 null。已下载属于这台设备，没登录时也有 */
-  function listOf(source: ListSource): { songs: readonly Song[], complete: boolean } | null {
+  const listOf = (source: ListSource): { songs: readonly Song[], complete: boolean } | null => {
     if (source.kind === 'downloads')
       return state.downloads.songs && { songs: state.downloads.songs, complete: true }
     const shown = state.library
@@ -688,7 +722,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 这次搜索的单曲结果里（已经取到的那些）的这一首；结果不是这个词的、还没显示出来时是 undefined */
-  function searchedSong(keyword: string, songId: number): Song | undefined {
+  const searchedSong = (keyword: string, songId: number): Song | undefined => {
     const results = state.search.results
     const songs = results?.keyword === keyword
       ? results.songs
@@ -699,7 +733,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 这次搜索结果里（已经取到的那些）的这一项；不是搜索结果时是 undefined */
-  function searchedItem<K extends Exclude<SearchKind, 'songs'>>(kind: K, id: number): SearchedItems[K] | undefined {
+  const searchedItem = <K extends Exclude<SearchKind, 'songs'>>(kind: K, id: number): SearchedItems[K] | undefined => {
     const list = state.search.results?.[kind]
     return list?.status === 'shown'
       ? (list.items as SearchedItems[K][]).find(item => item.id === id)
@@ -710,7 +744,7 @@ export function createApp(browser: BrowserCapabilities): App {
    * 收藏、取消收藏的这张歌单在曲库里的样子：曲库里的照旧；打开着的不在曲库里的歌单连同已经取到的曲目；
    * 搜索结果里的只有头部。都不是时是 null
    */
-  function playlistToCollect(shown: LibraryState, id: number): { playlist: Playlist, seed: PlaylistSeed | null } | null {
+  const playlistToCollect = (shown: LibraryState, id: number): { playlist: Playlist, seed: PlaylistSeed | null } | null => {
     const listed = shown.playlists?.find(playlist => playlist.id === id)
     if (listed)
       return { playlist: listed, seed: null }
@@ -753,7 +787,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 收藏、取消收藏的这张专辑：曲库里的照旧，或者打开着的专辑页、搜索结果里的；都不是时是 null */
-  function albumToCollect(shown: LibraryState, id: number): CollectedAlbum | null {
+  const albumToCollect = (shown: LibraryState, id: number): CollectedAlbum | null => {
     const listed = shown.albums?.find(album => album.id === id)
     if (listed)
       return listed
@@ -782,7 +816,7 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 收藏、取消收藏的这位歌手：曲库里的照旧，或者打开着的歌手页、搜索结果里的；都不是时是 null */
-  function artistToCollect(shown: LibraryState, id: number): CollectedArtist | null {
+  const artistToCollect = (shown: LibraryState, id: number): CollectedArtist | null => {
     const listed = shown.artists?.find(artist => artist.id === id)
     if (listed)
       return listed
@@ -796,50 +830,11 @@ export function createApp(browser: BrowserCapabilities): App {
   }
 
   /** 要改的这张自建歌单；不是自建歌单（我喜欢的音乐、收藏的、不在曲库里的）就是界面接错了 */
-  function ownPlaylist(playlistId: number): Playlist {
+  const ownPlaylist = (playlistId: number): Playlist => {
     const playlist = state.library?.playlists?.find(item => item.id === playlistId)
     if (playlist?.kind !== 'own')
       throw new Error(`只有自建歌单能改、能删：${playlistId}`)
     return playlist
-  }
-
-  /** 会话一轮发现网易云说需要登录、续期也没成功：各模块自己收起，曲库副本留在本机，同一个账号重新登录后接着用 */
-  function loginExpired(): void {
-    void round.change({ kind: 'loginExpired' })
-    update({
-      session: { status: 'loginExpired' },
-      library: null,
-    })
-    player.availabilityChanged()
-  }
-
-  /**
-   * 登录了：先拿出这个账号的曲库副本，和登录状态一起显示，再在后台同步。
-   * 播放队列的归属、恢复和规则⑩在 saved-queue 里：会话一轮发“登录了”，它照着换。
-   */
-  async function signedIn(account: Account): Promise<void> {
-    const entered = round.change({ kind: 'signedIn', account })
-    const mine = round.current
-    const [shown, quality, history] = await Promise.all([
-      library.enter(account),
-      local.playQuality(),
-      local.searchHistory(),
-    ])
-    await entered
-    if (!round.isCurrent(mine) || !shown)
-      return
-    if (quality)
-      player.setQuality(quality)
-    update({
-      session: { status: 'signedIn', account },
-      login: INITIAL_LOGIN,
-      library: shown,
-      search: { ...state.search, history },
-    })
-    player.availabilityChanged()
-    library.sync()
-    // 登录失效期间、断网时记下的打卡补发给这个账号；别的账号的丢弃
-    checkIns.send()
   }
 
   // 一个标签页退出，同一浏览器里开着的其他标签页跟着变成未登录（退出请求由退出的那个标签页发）

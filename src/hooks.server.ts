@@ -1,4 +1,5 @@
 import type { Handle } from '@sveltejs/kit/hooks'
+
 import { cookieSecretConfigured, MIN_SECRET_LENGTH } from '#lib/server/credentials.js'
 import { errorResponse } from '#lib/server/respond.js'
 

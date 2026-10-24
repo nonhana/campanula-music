@@ -3,8 +3,9 @@
   下载失败只有出错红的感叹号，“下载失败”是读屏名字和悬停提示。column：桌面歌曲行的状态列；inline：手机行、首页歌曲格里歌手前面（只有图标和百分数，文字给读屏）
 -->
 <script lang='ts'>
-  import type { DownloadMark } from './song-look'
   import { CircleAlert, CircleArrowDown } from '@lucide/svelte'
+
+  import type { DownloadMark } from './song-look'
 
   const { mark, variant }: { mark: DownloadMark, variant: 'column' | 'inline' } = $props()
   const size = $derived(variant === 'inline'

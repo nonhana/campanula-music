@@ -1,11 +1,12 @@
-import type { PointerSample } from '#lib/components/shared/press.js'
 import { describe, expect, it } from 'vitest'
+
+import type { PointerSample } from '#lib/components/shared/press.js'
 import { createSliderCore } from '#lib/components/shared/slider-core.js'
 
 // 第二个测试接入点“拖动手势核心”的线性那一半（进度条、自绘滚动条）：只认主指针的主键，
 // 第二根手指不重新开始、松开不提交，按住断了作废；值始终夹在 0 到 1。
 
-function setup({ beginValue = (sample: PointerSample) => sample.x / 100 }: { beginValue?: (sample: PointerSample) => number | null } = {}) {
+const setup = ({ beginValue = (sample: PointerSample) => sample.x / 100 }: { beginValue?: (sample: PointerSample) => number | null } = {}) => {
   const commits: number[] = []
   const values: (number | null)[] = []
   let cancels = 0

@@ -1,5 +1,6 @@
 import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js'
 import type { ApiError, ErrorBody } from '#lib/api/errors.js'
+
 import type { BrowserCapabilities } from './browser'
 
 /** 请求 Campanula 服务端没成功的原因：前三种是请求本身的问题，其余是服务端按错误约定回的 */
@@ -30,9 +31,7 @@ export interface PostOptions {
 /** 浏览器只给带 keepalive 的请求 64 KiB 的请求体（Fetch 标准）；按 UTF-8 字节数算 */
 const KEEPALIVE_MAX_BYTES = 64 * 1024
 
-function fitsKeepalive(body: string): boolean {
-  return new TextEncoder().encode(body).byteLength <= KEEPALIVE_MAX_BYTES
-}
+const fitsKeepalive = (body: string): boolean => new TextEncoder().encode(body).byteLength <= KEEPALIVE_MAX_BYTES
 
 /** Campanula 服务端的接口，按端点目录（#lib/api/endpoints）调用：网址、请求体和响应类型都来自端点那一条 */
 export interface Api {
@@ -41,17 +40,13 @@ export interface Api {
 }
 
 /** 从端点调用的实参里取 params：没有参数的端点本身是 void，调用时没有这个实参 */
-function paramsOf<Params>(args: readonly unknown[], takesParams = true): Params {
-  return (takesParams ? args[0] : undefined) as Params
-}
+const paramsOf = <Params>(args: readonly unknown[], takesParams = true): Params => (takesParams ? args[0] : undefined) as Params
 
-function isErrorBody(body: unknown): body is ErrorBody {
-  return typeof body === 'object' && body !== null && 'error' in body
-    && typeof body.error === 'object' && body.error !== null && 'kind' in body.error
-}
+const isErrorBody = (body: unknown): body is ErrorBody => typeof body === 'object' && body !== null && 'error' in body
+  && typeof body.error === 'object' && body.error !== null && 'kind' in body.error
 
 /** Campanula 服务端的接口：同源，浏览器自动带上登录 Cookie；请求和响应都是 JSON */
-export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'>): Api {
+export const createApi = (browser: Pick<BrowserCapabilities, 'fetch' | 'network'>): Api => {
   // fetch 和读响应体只在网络出错时抛 TypeError（Fetch 标准的 network error），其他错误照常抛出
   const networkFailure = (error: unknown): Result<never> => {
     if (!(error instanceof TypeError))
@@ -64,7 +59,7 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
     }
   }
 
-  async function request<Value>(path: string, init?: RequestInit): Promise<Result<Value>> {
+  const request = async <Value>(path: string, init?: RequestInit): Promise<Result<Value>> => {
     let response: Response
     try {
       response = await browser.fetch(path, init)
@@ -97,11 +92,9 @@ export function createApi(browser: Pick<BrowserCapabilities, 'fetch' | 'network'
     }
   }
 
-  function get<Params, Response>(endpoint: GetEndpoint<Params, Response>, ...args: ParamsArg<Params>): Promise<Result<Response>> {
-    return request<Response>(endpoint.path(paramsOf<Params>(args)), { method: endpoint.method })
-  }
+  const get = <Params, Response>(endpoint: GetEndpoint<Params, Response>, ...args: ParamsArg<Params>): Promise<Result<Response>> => request<Response>(endpoint.path(paramsOf<Params>(args)), { method: endpoint.method })
 
-  function post<Params, Request, Response>(endpoint: PostEndpoint<Params, Request, Response>, ...args: [...ParamsArg<Params>, ...BodyArg<Request>, options?: PostOptions]): Promise<Result<Response>> {
+  const post = <Params, Request, Response>(endpoint: PostEndpoint<Params, Request, Response>, ...args: [...ParamsArg<Params>, ...BodyArg<Request>, options?: PostOptions]): Promise<Result<Response>> => {
     // 实参依次是 params（端点有参数时）、body、options；没有请求体的端点也留着 body 的位置，options 不会错位
     const given: readonly unknown[] = args
     const offset = endpoint.takesParams ? 1 : 0

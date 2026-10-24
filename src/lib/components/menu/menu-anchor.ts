@@ -7,7 +7,7 @@ const BUTTON_GAP = 4
 /**
  * ••• 按钮的 onclick 打开浮层时贴在哪：触屏是底部弹层（null），鼠标贴着按钮（右边对齐）；键盘按下的看布局，手机布局用底部弹层
  */
-export function anchorBelow(event: MouseEvent): MenuAnchor | null {
+export const anchorBelow = (event: MouseEvent): MenuAnchor | null => {
   const pointer = event instanceof PointerEvent
     ? event.pointerType
     : ''

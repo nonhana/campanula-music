@@ -1,7 +1,8 @@
-import type { RouteId } from '$app/types'
-import type { Toward } from '../shared/motion'
 import { onNavigate } from '$app/navigation'
+import type { RouteId } from '$app/types'
 import { onMount } from 'svelte'
+
+import type { Toward } from '../shared/motion'
 import { reducedMotion } from '../shared/motion'
 import { LANDING_WAIT } from '../shared/motion-tokens'
 
@@ -15,7 +16,7 @@ type PageTurn = Toward | 'fade'
  * - 后退、前进（delta）：返回往下沉，前进往上浮；
  * - 点进去的：回到曲库是返回，其余（曲库 → 歌单、专辑、歌手、设置，专辑 → 歌手）是进入下一层
  */
-function pageTurn(from: RouteId, to: RouteId, delta: number | undefined, tabs: readonly RouteId[]): PageTurn {
+const pageTurn = (from: RouteId, to: RouteId, delta: number | undefined, tabs: readonly RouteId[]): PageTurn => {
   const fromTab = tabs.indexOf(from)
   const toTab = tabs.indexOf(to)
   if (fromTab >= 0 && toTab >= 0) {
@@ -39,12 +40,10 @@ function pageTurn(from: RouteId, to: RouteId, delta: number | undefined, tabs: r
 const COVER = 'cover'
 
 /** 封面图已经加载好：飞到位时不是空的薄荷底（The Cover Leads Rule） */
-function loaded(img: HTMLImageElement | null): img is HTMLImageElement {
-  return img !== null && img.complete && img.naturalWidth > 0
-}
+const loaded = (img: HTMLImageElement | null): img is HTMLImageElement => img !== null && img.complete && img.naturalWidth > 0
 
 /** 降落那一头的图：缓存里的等它标成加载好（最多 LANDING_WAIT），再等它解码好 */
-async function landingReady(img: HTMLImageElement): Promise<boolean> {
+const landingReady = async (img: HTMLImageElement): Promise<boolean> => {
   if (!img.complete) {
     await new Promise<void>((done) => {
       const timer = setTimeout(done, LANDING_WAIT)
@@ -63,7 +62,7 @@ async function landingReady(img: HTMLImageElement): Promise<boolean> {
  * 封面图正中那一点露在内容区里：在窗口里、在顶栏下面（两种骨架都把顶栏的高度写在 scroll-padding-top 上），
  * 没被架子这类滚动容器裁掉。按位置算：拍新的一帧之前，浏览器的点按测试只认 <html>
  */
-function exposed(cover: HTMLElement): boolean {
+const exposed = (cover: HTMLElement): boolean => {
   const { left, top, width, height } = cover.getBoundingClientRect()
   const x = left + width / 2
   const y = top + height / 2
@@ -84,11 +83,9 @@ function exposed(cover: HTMLElement): boolean {
  * 页面里代表 page 这一页的封面图（Cover 的 flight）：格子里是点开它的那一格，它自己的页头是大封面图。
  * 桌面歌单页里这一页有两张（页头、左栏当前这一项），页头在 DOM 里排在前面：起飞、降落都先找到页头，页头滚走了才轮到左栏那张
  */
-function coversOf(page: string): HTMLElement[] {
-  return [
-    ...document.querySelectorAll<HTMLElement>(`[data-flight="${CSS.escape(page)}"]`),
-  ]
-}
+const coversOf = (page: string): HTMLElement[] => [
+  ...document.querySelectorAll<HTMLElement>(`[data-flight="${CSS.escape(page)}"]`),
+]
 
 /**
  * 换页用浏览器的 View Transitions（ADR-0011），要在组件初始化时调用。tabs 是曲库标签的地址，从左到右。
@@ -99,7 +96,7 @@ function coversOf(page: string): HTMLElement[] {
  * - Android 的返回手势自己放了“预览上一页”的动画（hasUAVisualTransition）：不再叠一层，直接换；
  * - 不支持的浏览器直接换页。播放页的开关是浅路由，不经过这里
  */
-export function pageTransitions(tabs: readonly RouteId[]): void {
+export const pageTransitions = (tabs: readonly RouteId[]): void => {
   let running: ViewTransition | null = null
   /** 最近一次点按到的链接：点的是格子，它的封面图飞到新页的页头 */
   let pressed: HTMLAnchorElement | null = null
@@ -112,7 +109,7 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
   /** 现在叫 COVER 的封面图；换页、过渡结束时去掉名字，免得下一次换页时两个元素同名 */
   let named: HTMLElement | null = null
 
-  function name(cover: HTMLElement | null) {
+  const name = (cover: HTMLElement | null) => {
     if (named)
       named.style.viewTransitionName = ''
     named = cover
@@ -124,7 +121,7 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
    * 起飞：点的是格子（link 是点到的链接），飞的是被点的那一格；回到格子所在的那一页，飞的是页头的大封面图。
    * 减少动态效果时不飞（只剩交叉淡化）。返回两头共用的页面地址
    */
-  function takeOff(link: HTMLAnchorElement | null, from: URL, to: URL): string | null {
+  const takeOff = (link: HTMLAnchorElement | null, from: URL, to: URL): string | null => {
     const tile = link?.querySelector<HTMLElement>(`[data-flight="${CSS.escape(to.pathname)}"]`) ?? null
     if (tile)
       grids.set(to.href, (grids.get(to.href) ?? new Set()).add(from.href))
@@ -147,7 +144,7 @@ export function pageTransitions(tabs: readonly RouteId[]): void {
    * 找不到（页头还是骨架、格子滚出了屏幕、图没到）就只有起飞那一头，它跟着旧页一起飘出（uno.config.ts）。
    * current：这次过渡还没被下一次换页顶掉；顶掉了名字归下一次管
    */
-  async function land(page: string, current: () => boolean) {
+  const land = async (page: string, current: () => boolean) => {
     const cover = coversOf(page).find(exposed)
     const img = cover?.querySelector('img')
     if (cover && img && await landingReady(img) && current())

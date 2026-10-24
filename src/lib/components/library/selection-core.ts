@@ -22,15 +22,13 @@ export interface SelectionCapabilities {
   readonly sort: boolean
 }
 
-export function capabilitiesOf(kind: Playlist['kind'] | null): SelectionCapabilities {
-  return {
-    remove: kind === 'own',
-    sort: kind !== null && canSortPlaylist(kind),
-  }
-}
+export const capabilitiesOf = (kind: Playlist['kind'] | null): SelectionCapabilities => ({
+  remove: kind === 'own',
+  sort: kind !== null && canSortPlaylist(kind),
+})
 
 /** 点一下：勾上或取消，锚点放在这一首（下次 Shift 连选从这里起） */
-export function toggle(state: Checked, id: number): Checked {
+export const toggle = (state: Checked, id: number): Checked => {
   const ids = new Set(state.ids)
   if (ids.has(id))
     ids.delete(id)
@@ -44,7 +42,7 @@ export function toggle(state: Checked, id: number): Checked {
  * 锚点不在现在显示的列表里（搜索换过）时退化为点选这一首，锚点随之改为这一首；
  * 正常连选时锚点不跟着走。
  */
-export function extend(state: Checked, visible: readonly number[], to: number): Checked {
+export const extend = (state: Checked, visible: readonly number[], to: number): Checked => {
   const from = state.anchor === null
     ? -1
     : visible.indexOf(state.anchor)
@@ -61,12 +59,10 @@ export function extend(state: Checked, visible: readonly number[], to: number): 
 }
 
 /** 显示着的歌是不是都勾上了；一首都没有时不算 */
-export function allOn(state: Checked, visible: readonly number[]): boolean {
-  return visible.length > 0 && visible.every(id => state.ids.has(id))
-}
+export const allOn = (state: Checked, visible: readonly number[]): boolean => visible.length > 0 && visible.every(id => state.ids.has(id))
 
 /** 全选显示着的歌；都勾上了就全不选（连搜索前勾的一起清掉） */
-export function selectAll(state: Checked, visible: readonly number[]): Checked {
+export const selectAll = (state: Checked, visible: readonly number[]): Checked => {
   if (allOn(state, visible))
     return NONE
   const ids = new Set(state.ids)
@@ -76,6 +72,4 @@ export function selectAll(state: Checked, visible: readonly number[]): Checked {
 }
 
 /** 勾着的歌，按整张歌单的先后（搜索时也不按搜到的先后） */
-export function picked(songs: readonly Song[], ids: ReadonlySet<number>): readonly Song[] {
-  return songs.filter(song => ids.has(song.id))
-}
+export const picked = (songs: readonly Song[], ids: ReadonlySet<number>): readonly Song[] => songs.filter(song => ids.has(song.id))

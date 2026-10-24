@@ -1,8 +1,9 @@
+import { untrack } from 'svelte'
+
 import type { DialogRequest } from '../overlay/overlay-requests'
 import type { OverlayLayer } from '../overlay/overlay-stack'
-import type { Drawer } from './drawer.svelte'
-import { untrack } from 'svelte'
 import { getAppView } from '../shared/app-context.svelte'
+import type { Drawer } from './drawer.svelte'
 import { queueEmpty } from './view'
 
 /**
@@ -23,7 +24,7 @@ export interface PlayerLayerState {
  * 在 createOverlays 里创建一次（外框初始化时）：层的请求、抽屉、App 的状态都只有一份。
  * 创建时的组件上下文就是 effect 的主人，跟着外框一起卸下。
  */
-export function createPlayerLayer(player: OverlayLayer<DialogRequest, HTMLElement>, drawer: Drawer): PlayerLayerState {
+export const createPlayerLayer = (player: OverlayLayer<DialogRequest, HTMLElement>, drawer: Drawer): PlayerLayerState => {
   const view = getAppView()
   const hasQueue = $derived(!queueEmpty(view.state.player))
   const open = $derived(hasQueue && player.request !== null)

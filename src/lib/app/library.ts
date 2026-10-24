@@ -1,20 +1,21 @@
 import type { Account } from '#lib/api/account.js'
+import { endpoints } from '#lib/api/endpoints.js'
 import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import { canSortPlaylist, nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
+
 import type { Api, RequestFailure, Result } from './api-client'
 import type { Clock, PageVisibility } from './browser'
 import type { Change, ConfirmedChange, ImmediateChange } from './changes'
+import { changePatch, changeProblem, heartOf, playlistTarget, targetOf } from './changes'
 import type { Deferred, PendingChange } from './deferred'
+import { createDeferred } from './deferred'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
+import { emptyPatch, patched } from './local'
 import type { NoticeAction, Notices, OperationNotice } from './notice'
+import { noticeActions } from './notice'
 import type { Waiting } from './pacing'
 import type { BackgroundFailure, BackgroundSessionResult, SessionFailure, SessionResult, SessionRound } from './session-round'
-import { endpoints } from '#lib/api/endpoints.js'
-import { canSortPlaylist, nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
-import { changePatch, changeProblem, heartOf, playlistTarget, targetOf } from './changes'
-import { createDeferred } from './deferred'
-import { emptyPatch, patched } from './local'
-import { noticeActions } from './notice'
 
 // 曲库副本和同步（Spec #11“客户端：曲库副本”，ADR-0007）：登录后先显示本机副本，再在后台和网易云同步。
 // 同步一步一步来：红心 → 歌单列表 → 收藏的专辑 → 收藏的歌手 → 每张歌单（我喜欢的音乐在最前，然后按歌单列表的顺序）。
@@ -357,25 +358,21 @@ type Outcome<T, F> = { ok: true, value: T } | { ok: false, failure: F } | null
 /** 拉一张歌单的结果 */
 type Pulled = Outcome<void, OpenFailure>
 
-function chunks<T>(items: readonly T[], size: number): T[][] {
-  return Array.from({
-    length: Math.ceil(items.length / size),
-  }, (_, index) => items.slice(index * size, (index + 1) * size))
-}
+const chunks = <T>(items: readonly T[], size: number): T[][] => Array.from({
+  length: Math.ceil(items.length / size),
+}, (_, index) => items.slice(index * size, (index + 1) * size))
 
 /** 本机已经有这张歌单最新、完整的曲目 */
-function upToDate(replica: Replica, playlist: Playlist): boolean {
+const upToDate = (replica: Replica, playlist: Playlist): boolean => {
   const tracks = replica.tracks.get(playlist.id)
   return tracks?.version === playlist.tracksUpdatedAt && tracks.complete
 }
 
 /** 后台请求经过后台通道，断网、操作频繁在那里等过、重发过；只有前台请求会因为它们失败 */
-function isSyncFailure(failure: OpenFailure): failure is SyncFailure {
-  return failure.kind !== 'offline' && failure.kind !== 'rateLimited'
-}
+const isSyncFailure = (failure: OpenFailure): failure is SyncFailure => failure.kind !== 'offline' && failure.kind !== 'rateLimited'
 
 /** 同步时内容网易云不认、SDK 认不出：跳过这一项接着同步别的，最后说没同步完；连不上、出错就停下 */
-function skippable(failure: SyncFailure): boolean {
+const skippable = (failure: SyncFailure): boolean => {
   switch (failure.kind) {
     case 'upstreamChanged':
     case 'rejected':
@@ -400,7 +397,7 @@ interface Pages {
   tags: PageState<PlaylistTagGroup[]> | null
 }
 
-function songsOf(replica: Replica, playlist: Playlist): PlaylistSongs {
+const songsOf = (replica: Replica, playlist: Playlist): PlaylistSongs => {
   const tracks = replica.tracks.get(playlist.id)
   return {
     playlist,
@@ -422,7 +419,7 @@ type SongsFailure = Pick<PlaylistPageFailure, 'failure' | 'source' | 'retry'>
  * 一张歌单的列表那一块、其余的、失败和首数：这些规则只在这里一份。
  * 已经有一部分歌时，后台同步的失败不在这一页说（交给同步条）；前台打开没拉成在列表上方说。
  */
-function songsViewOf(playlist: PlaylistSongs<unknown>, opening: PlaylistOpening | null, failure: SongsFailure | null): Pick<PlaylistPage, 'songs' | 'more' | 'failure' | 'count'> {
+const songsViewOf = (playlist: PlaylistSongs<unknown>, opening: PlaylistOpening | null, failure: SongsFailure | null): Pick<PlaylistPage, 'songs' | 'more' | 'failure' | 'count'> => {
   if (playlist.songs.length > 0) {
     const total = playlist.complete ? playlist.songs.length : playlist.total
     const failed = opening?.status === 'failed'
@@ -464,7 +461,7 @@ function songsViewOf(playlist: PlaylistSongs<unknown>, opening: PlaylistOpening 
 }
 
 /** 这一页歌单的答案：在曲库里的看本机副本，不在曲库里的看打开时取到的；打开失败优先于同步失败 */
-function playlistPageOf(replica: Replica, playlistId: number, songsOfPlaylist: (id: number) => PlaylistSongs | null, neteasePages: ReadonlyMap<number, NeteasePlaylistPage>, opening: ReadonlyMap<number, PlaylistOpening>, syncFailure: SyncFailure | null): PlaylistPage {
+const playlistPageOf = (replica: Replica, playlistId: number, songsOfPlaylist: (id: number) => PlaylistSongs | null, neteasePages: ReadonlyMap<number, NeteasePlaylistPage>, opening: ReadonlyMap<number, PlaylistOpening>, syncFailure: SyncFailure | null): PlaylistPage => {
   const nothing = { edit: false, sort: false, collect: false } as const
   // 歌单列表还没到：不知道在不在曲库，列表整块是加载中；同步停了就说原因
   if (replica.playlists === null) {
@@ -588,7 +585,7 @@ function playlistPageOf(replica: Replica, playlistId: number, songsOfPlaylist: (
  * 同步条：首次同步（还有歌单一首都没同步到，或者我喜欢的音乐还没同步全）、同步暂停或同步停下时显示；
  * 曲库已经在本机、只是在后台比对时不打扰。
  */
-function syncNoticeOf(replica: Replica, sync: SyncStatus): SyncNoticeState | null {
+const syncNoticeOf = (replica: Replica, sync: SyncStatus): SyncNoticeState | null => {
   if (sync.status === 'failed')
     return { kind: 'failed', failure: sync.failure }
   if (sync.status === 'synced')
@@ -637,14 +634,14 @@ function syncNoticeOf(replica: Replica, sync: SyncStatus): SyncNoticeState | nul
  * 同步条实际显示什么：当前页已经用整块列表说了同一次失败（failureShown）时，不再重复一条 failed；
  * 同步中、暂停、断网照常显示。failureShown 由宿主页面按自己的答案给，不读当前看的是哪一页
  */
-export function syncNoticeFor(library: Pick<LibraryState, 'syncNotice'>, failureShown: boolean): SyncNoticeState | null {
+export const syncNoticeFor = (library: Pick<LibraryState, 'syncNotice'>, failureShown: boolean): SyncNoticeState | null => {
   const notice = library.syncNotice
   return failureShown && notice?.kind === 'failed'
     ? null
     : notice
 }
 
-function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number, PlaylistOpening>, pages: Pages, notice: OperationNotice | null): LibraryState {
+const stateOf = (replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number, PlaylistOpening>, pages: Pages, notice: OperationNotice | null): LibraryState => {
   const playlists = new Map(replica.playlists?.map(playlist => [playlist.id, playlist]))
   // 几十张歌单、上万首：界面看哪张才算哪张
   const computed = new Map<number, PlaylistSongs | null>()
@@ -704,26 +701,22 @@ function stateOf(replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
 }
 
 /** 搜索时不分大小写和全角半角：“ＤＪ”和“dj”一样 */
-function folded(text: string): string {
-  return text.normalize('NFKC').toLowerCase()
-}
+const folded = (text: string): string => text.normalize('NFKC').toLowerCase()
 
 /** 在一串歌里搜索：歌名、歌手、专辑里有搜索词的，按原来的先后；不分大小写和全角半角。搜索词是空的就是全部 */
-export function filterSongs(songs: readonly Song[], query: string): Song[] {
+export const filterSongs = (songs: readonly Song[], query: string): Song[] => {
   const term = folded(query.trim())
   const matches = (text: string | null) => text !== null && folded(text).includes(term)
   return songs.filter(song => matches(song.name) || matches(song.album.name) || song.artists.some(artist => matches(artist.name)))
 }
 
 /** 歌单内搜索：在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成 */
-export function searchPlaylist(playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch {
-  return {
-    songs: filterSongs(playlist.songs, query),
-    incomplete: !playlist.complete,
-  }
-}
+export const searchPlaylist = (playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch => ({
+  songs: filterSongs(playlist.songs, query),
+  incomplete: !playlist.complete,
+})
 
-function waitingStatus(waiting: Waiting): SyncStatus {
+const waitingStatus = (waiting: Waiting): SyncStatus => {
   switch (waiting.reason) {
     case 'rateLimited':
       return { status: 'rateLimited', until: waiting.until }
@@ -736,7 +729,7 @@ function waitingStatus(waiting: Waiting): SyncStatus {
   }
 }
 
-export function createLibrary(context: LibraryContext): Library {
+export const createLibrary = (context: LibraryContext): Library => {
   const { api, session, local, clock, notices } = context
   /** 显示着的副本；没登录时是 null */
   let replica: Replica | null = null
@@ -777,16 +770,17 @@ export function createLibrary(context: LibraryContext): Library {
   let saving: Promise<unknown> = Promise.resolve()
 
   /** 显示的副本：还没写进副本的修改叠在上面 */
-  function shown(current: Replica): Replica {
-    return changes.filter(entry => !entry.saved).reduce((view, entry) => patched(view, changePatch(view, entry.change)), current)
-  }
+  const shown = (current: Replica): Replica => changes.filter(entry => !entry.saved).reduce((view, entry) => patched(view, changePatch(view, entry.change)), current)
 
   /** 同步拿回来的是 at 那一刻的网易云：比它晚确认的修改叠回去 */
-  function reapplied(view: Replica, at: number): Replica {
-    return changes.filter(entry => entry.confirmedAt !== null && entry.confirmedAt > at).reduce((next, entry) => patched(next, changePatch(next, entry.change)), view)
-  }
+  const reapplied = (view: Replica, at: number): Replica => changes.filter(entry => entry.confirmedAt !== null && entry.confirmedAt > at).reduce((next, entry) => patched(next, changePatch(next, entry.change)), view)
 
   /** 晚一点才提交的修改（#70）：计时、合并、排队、标记与恢复都在这个模块里 */
+  const start = (): void => {
+    const mine = session.current
+    running = running.then(() => run(mine))
+  }
+
   const deferred: Deferred = createDeferred({
     clock,
     page: context.page,
@@ -818,47 +812,35 @@ export function createLibrary(context: LibraryContext): Library {
     online: context.online,
   })
   /** 从自建歌单移除几首（#35）：先改本地，5 秒内可撤销，没撤销才提交 */
-  function removeSongs(playlist: Playlist, songIds: readonly number[]): void {
+  const removeSongs = (playlist: Playlist, songIds: readonly number[]): void => {
     deferred.remove(playlist, songIds)
   }
 
-  function undoRemove(removalId: number): void {
+  const undoRemove = (removalId: number): void => {
     deferred.undoRemove(removalId)
   }
 
-  function dismissNotice(): void {
+  const dismissNotice = (): void => {
     deferred.dismiss()
   }
 
-  function retryRemove(playlist: Playlist, songIds: readonly number[]): Promise<void> {
-    return deferred.retryRemove(playlist, songIds)
-  }
+  const retryRemove = (playlist: Playlist, songIds: readonly number[]): Promise<void> => deferred.retryRemove(playlist, songIds)
 
   /** 多选里的拖动排序（#36）：把整张歌单的新顺序先改本地，停手 2 秒合并提交 */
-  function moveSongs(playlistId: number, songIds: readonly number[], before: number | null): boolean {
-    return deferred.moveSongs(playlistId, songIds, before)
-  }
+  const moveSongs = (playlistId: number, songIds: readonly number[], before: number | null): boolean => deferred.moveSongs(playlistId, songIds, before)
 
-  function retryOrder(playlist: Playlist, songIds: readonly number[]): Promise<void> {
-    return deferred.retryOrder(playlist, songIds)
-  }
+  const retryOrder = (playlist: Playlist, songIds: readonly number[]): Promise<void> => deferred.retryOrder(playlist, songIds)
 
   /** 曲库里自建歌单之间的排序（#37）：只收自建歌单的先后，我喜欢的音乐由模块放在最前 */
-  function orderPlaylists(playlistIds: readonly number[]): boolean {
-    return deferred.orderPlaylists(playlistIds)
-  }
+  const orderPlaylists = (playlistIds: readonly number[]): boolean => deferred.orderPlaylists(playlistIds)
 
-  function retryPlaylistOrder(playlistIds: readonly number[]): Promise<void> {
-    return deferred.retryPlaylistOrder(playlistIds)
-  }
+  const retryPlaylistOrder = (playlistIds: readonly number[]): Promise<void> => deferred.retryPlaylistOrder(playlistIds)
 
   /** 页面被隐藏（切到后台、锁屏、关页面）或离开歌单：把还没提交的移除、排序立即提交 */
-  function flush(playlistId?: number): Promise<void> {
-    return deferred.flush(playlistId)
-  }
+  const flush = (playlistId?: number): Promise<void> => deferred.flush(playlistId)
 
   /** 加入歌单的目标：规则（有哪些歌单、各自的理由、首数）只在这里一份（#73） */
-  function addTargets(request: AddTargetsRequest): AddTarget[] | null {
+  const addTargets = (request: AddTargetsRequest): AddTarget[] | null => {
     const current = replica
     if (!current)
       return null
@@ -899,7 +881,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 一次加入几首：已经在歌单里的不再提交；全都已经在里面时什么都不发 */
-  async function addSongs(playlist: Playlist, songs: readonly Song[]): Promise<AddSongsOutcome> {
+  const addSongs = async (playlist: Playlist, songs: readonly Song[]): Promise<AddSongsOutcome> => {
     const current = replica
     if (!current)
       return null
@@ -940,28 +922,26 @@ export function createLibrary(context: LibraryContext): Library {
     return { ok: false, failure: result.failure }
   }
 
-  function publish(next: SyncStatus = status): void {
+  const publish = (next: SyncStatus = status): void => {
     status = next
     if (replica)
       context.write(stateOf(shown(replica), status, opening, pages, notices.current()))
   }
 
   /** 发一个后台请求：经过后台通道（操作频繁、断网时等着再发）。这一轮结束、giveUp 了都不发 */
-  function background<T>(mine: number, send: () => Promise<Result<T>>, giveUp?: AbortSignal): Promise<BackgroundSessionResult<T> | 'gaveUp'> {
-    return session.background(send, (waitingFor) => {
-      if (session.isCurrent(mine)) {
-        publish(waitingFor
-          ? waitingStatus(waitingFor)
-          : { status: 'syncing' })
-      }
-    }, giveUp)
-  }
+  const background = <T>(mine: number, send: () => Promise<Result<T>>, giveUp?: AbortSignal): Promise<BackgroundSessionResult<T> | 'gaveUp'> => session.background(send, (waitingFor) => {
+    if (session.isCurrent(mine)) {
+      publish(waitingFor
+        ? waitingStatus(waitingFor)
+        : { status: 'syncing' })
+    }
+  }, giveUp)
 
   /**
    * 拉歌单时的一个请求：听众打开着这张歌单就马上发（前台请求）；否则是后台请求，
    * 在后台通道里等着的时候听众打开了它，就不再等，改成马上发
    */
-  async function playlistRequest<T>(mine: number, playlistId: number, send: () => Promise<Result<T>>): Promise<Outcome<T, OpenFailure>> {
+  const playlistRequest = async <T>(mine: number, playlistId: number, send: () => Promise<Result<T>>): Promise<Outcome<T, OpenFailure>> => {
     if (!urgent.has(playlistId)) {
       const giveUp = new AbortController()
       waiting.set(playlistId, giveUp)
@@ -975,7 +955,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 记下请求发出的那一刻（被拒后重发时重记）：拿回来的就是那一刻的网易云 */
-  function stamped<T>(send: () => Promise<Result<T>>): { send: () => Promise<Result<T>>, at: () => number } {
+  const stamped = <T>(send: () => Promise<Result<T>>): { send: () => Promise<Result<T>>, at: () => number } => {
     let at = 0
     return {
       send: () => {
@@ -993,7 +973,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 别的标签页退出删了副本、或换了账号时，LocalDb 在写的事务里核对副本的主人，对不上就不写：这一轮停下，
    * 退出的那个标签页会广播过来（App 跟着变成未登录）
    */
-  function save(mine: number, patchOf: (current: Replica) => LibraryPatch, after?: () => void): Promise<boolean> {
+  const save = (mine: number, patchOf: (current: Replica) => LibraryPatch, after?: () => void): Promise<boolean> => {
     const step = saving.then(async () => {
       const current = replica
       if (!session.isCurrent(mine) || !current)
@@ -1011,29 +991,27 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 一张歌单的曲目存进副本：tracks 是 at 那一刻的网易云，叠回那之后确认的修改 */
-  function saveTracks(mine: number, playlistId: number, tracks: PlaylistTracks, at: number): Promise<boolean> {
-    return save(mine, (current) => {
-      const merged = reapplied({
-        ...current,
-        tracks: new Map([
-          [playlistId, tracks],
-        ]),
-      }, at).tracks.get(playlistId) ?? tracks
-      return {
-        tracks: new Map([
-          [playlistId, merged],
-        ]),
-      }
-    }, () => {
-      // 拉完了：之前打开时没拉成的说明不再显示
-      if (tracks.complete)
-        opening.delete(playlistId)
-    })
-  }
+  const saveTracks = (mine: number, playlistId: number, tracks: PlaylistTracks, at: number): Promise<boolean> => save(mine, (current) => {
+    const merged = reapplied({
+      ...current,
+      tracks: new Map([
+        [playlistId, tracks],
+      ]),
+    }, at).tracks.get(playlistId) ?? tracks
+    return {
+      tracks: new Map([
+        [playlistId, merged],
+      ]),
+    }
+  }, () => {
+    // 拉完了：之前打开时没拉成的说明不再显示
+    if (tracks.complete)
+      opening.delete(playlistId)
+  })
 
   /** 把一张歌单拉到和网易云一致：更新时间变了才重拉曲目编号，再取还没有的歌曲信息 */
   /** force：上次关掉前有没确认的改动（#35），就算本机的版本看起来没变也从网易云重拉一遍 */
-  async function pull(mine: number, current: Replica, playlist: Playlist, force = false): Promise<Pulled> {
+  const pull = async (mine: number, current: Replica, playlist: Playlist, force = false): Promise<Pulled> => {
     const { id } = playlist
     /** 拉的时候新的歌单列表到了，这张已经在网易云里删掉：不再往本机写它的曲目（列表到的时候已经删过了） */
     const deleted = () => current.playlists !== null && !current.playlists.some(item => item.id === id)
@@ -1071,7 +1049,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 拉一张歌单；同一个版本已经有一处在拉（后台同步、听众打开）就等它，不重拉；拉的是别的版本就等它拉完再拉这个 */
-  function load(mine: number, current: Replica, playlist: Playlist, force = false): Promise<Pulled> {
+  const load = (mine: number, current: Replica, playlist: Playlist, force = false): Promise<Pulled> => {
     const { id, tracksUpdatedAt: version } = playlist
     const existing = pulling.get(id)
     if (existing?.version === version && (existing.force || !force))
@@ -1089,7 +1067,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 后台同步一张歌单。听众打开它时前台请求没拉成（断网、操作频繁）：后台照常排队，等联网、等到时间再拉 */
-  async function syncPlaylist(mine: number, current: Replica, playlist: Playlist): Promise<Outcome<void, SyncFailure>> {
+  const syncPlaylist = async (mine: number, current: Replica, playlist: Playlist): Promise<Outcome<void, SyncFailure>> => {
     for (;;) {
       const result = await load(mine, current, playlist)
       if (!result || result.ok)
@@ -1103,7 +1081,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 同步收藏的专辑或歌手的列表：一个请求拿全，叠回比它晚确认的修改，存进本机副本。返回 'synced'：存好了；
    * 返回同步失败：内容网易云不认、SDK 认不出，跳过它接着同步别的；null：这一轮作废了，或者停下了（已经说明了原因）
    */
-  async function syncCollected<T>(mine: number, send: () => Promise<Result<T>>, patchOf: (value: T, current: Replica, at: number) => LibraryPatch): Promise<'synced' | SyncFailure | null> {
+  const syncCollected = async <T>(mine: number, send: () => Promise<Result<T>>, patchOf: (value: T, current: Replica, at: number) => LibraryPatch): Promise<'synced' | SyncFailure | null> => {
     const request = stamped(send)
     const fetched = await background(mine, request.send)
     if (!fetched || fetched === 'gaveUp')
@@ -1119,7 +1097,7 @@ export function createLibrary(context: LibraryContext): Library {
     return null
   }
 
-  async function run(mine: number): Promise<void> {
+  const run = async (mine: number): Promise<void> => {
     const current = replica
     if (!session.isCurrent(mine) || !current)
       return
@@ -1187,11 +1165,6 @@ export function createLibrary(context: LibraryContext): Library {
       : { status: 'synced' })
   }
 
-  function start(): void {
-    const mine = session.current
-    running = running.then(() => run(mine))
-  }
-
   /**
    * 打开不在曲库里的歌单：每次打开都联网取头部和全部曲目编号，再按页取还没有的歌曲信息，取到一页就显示一页。
    * 打开过的再打开时先显示记着的，取到了换成新的；没取成也照样显示记着的，歌还没取全时说没取成。
@@ -1199,7 +1172,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 上一次打开还在取（取几千首的歌曲信息要几秒）：它就是刚联网取的，不再取一遍。
    * 已删除、不存在、别人的隐私歌单说明打不开的原因
    */
-  async function openNetease(playlistId: number): Promise<void> {
+  const openNetease = async (playlistId: number): Promise<void> => {
     if (fetchingPlaylists.has(playlistId))
       return
     fetchingPlaylists.add(playlistId)
@@ -1290,7 +1263,7 @@ export function createLibrary(context: LibraryContext): Library {
   type Submitted = { ok: true, value: WriteResponse['kind'] } | { ok: false, failure: ChangeFailure }
 
   /** 写接口统一回 done / missing / unconfirmed（#lib/api/write）：这里只做一次映射 */
-  function submitted(result: SessionResult<WriteResponse>): Submitted | null {
+  const submitted = (result: SessionResult<WriteResponse>): Submitted | null => {
     if (!result)
       return null
     return result.ok
@@ -1302,7 +1275,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 把一个修改提交给网易云（前台请求，马上发）。收藏歌单先现取一枚反作弊令牌。
    * 发之前这一轮已经作废（退出、登录失效、换账号，可能就在排队或取令牌的时候）就不发，返回 null
    */
-  async function submit(mine: number, change: ImmediateChange): Promise<Submitted | null> {
+  const submit = async (mine: number, change: ImmediateChange): Promise<Submitted | null> => {
     const send = <T>(call: () => Promise<Result<T>>): Promise<SessionResult<T>> | null => (session.isCurrent(mine)
       ? session.api.request(call)
       : null)
@@ -1380,7 +1353,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 取消收藏前，把它现在显示的样子记成这次登录打开过的页：取消后它不在曲库里了，页面照常显示这些，
    * 不用变回加载中（不在曲库里的歌单另外联网重取一遍，取到了换成新的）
    */
-  function keepPage(current: Replica, change: Change): void {
+  const keepPage = (current: Replica, change: Change): void => {
     if (change.kind === 'collectAlbum' && !change.collected && pages.albums.get(change.album.id)?.status !== 'shown') {
       const stored = current.albumPages.get(change.album.id)
       if (stored)
@@ -1412,7 +1385,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 网易云确认了、没有先改本地这一步的修改（新建好的歌单、换好的封面）：记下来、立即显示，
    * 再写进副本；同步拿回来的、比它旧的歌单列表上也会叠回去
    */
-  async function confirm(mine: number, change: ConfirmedChange): Promise<boolean> {
+  const confirm = async (mine: number, change: ConfirmedChange): Promise<boolean> => {
     const entry: PendingChange = { change, confirmedAt: ++tick, saved: false }
     changes.push(entry)
     publish()
@@ -1422,7 +1395,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 网易云确认了这个修改：写进副本。收藏专辑时打开着它的专辑页，专辑页一起存（断网也能看） */
-  function confirmedPatch(current: Replica, change: Change): LibraryPatch {
+  const confirmedPatch = (current: Replica, change: Change): LibraryPatch => {
     const patch = changePatch(current, change)
     if (change.kind !== 'collectAlbum' || !change.collected)
       return patch
@@ -1441,7 +1414,7 @@ export function createLibrary(context: LibraryContext): Library {
    * 网易云回了这个修改：成了就写进副本（加入歌单再提示一句）；歌单已经不在了就改回原样，马上同步一次；
    * 没成就改回原样并说明原因，需要登录（续期也没成功）时整个 App 变成登录失效
    */
-  async function settleChange(mine: number, entry: PendingChange, change: Change, result: Submitted): Promise<void> {
+  const settleChange = async (mine: number, entry: PendingChange, change: Change, result: Submitted): Promise<void> => {
     if (result.ok && result.value === 'done') {
       entry.confirmedAt = ++tick
       await save(mine, now => confirmedPatch(now, change), () => {
@@ -1463,7 +1436,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 换了一轮（登录、退出、登录失效）：上一轮打开、正在拉的、还没提交完的修改都不算了 */
-  function forget(): void {
+  const forget = (): void => {
     pulling.clear()
     urgent.clear()
     waiting.clear()
@@ -1479,7 +1452,7 @@ export function createLibrary(context: LibraryContext): Library {
     changes = []
   }
 
-  async function applyChange(change: ImmediateChange): Promise<Submitted | null> {
+  const applyChange = async (change: ImmediateChange): Promise<Submitted | null> => {
     const current = replica
     if (!current)
       return null
@@ -1517,7 +1490,7 @@ export function createLibrary(context: LibraryContext): Library {
   }
 
   /** 退出、登录失效、换账号：上一轮打开、正在拉的、还没提交完的修改都不算了 */
-  function leave(): void {
+  const leave = (): void => {
     forget()
     replica = null
   }

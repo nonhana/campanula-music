@@ -4,9 +4,10 @@
   获得焦点时边框换成茎绿，外面一圈 3px 薄荷雾光环；禁用时降到 50%
 -->
 <script lang='ts'>
+  import { Search, X } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import type { HTMLInputAttributes } from 'svelte/elements'
-  import { Search, X } from '@lucide/svelte'
+
   import { fade } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
 
@@ -22,7 +23,7 @@
 
   let { value = $bindable(), label, input = $bindable(), hint, class: klass, disabled, ...rest }: Props = $props()
 
-  function clear() {
+  const clear = () => {
     value = ''
     input?.focus()
   }

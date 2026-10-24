@@ -9,16 +9,17 @@
   返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot）
 -->
 <script lang='ts'>
-  import type { SongListView } from '../songs/view'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { CircleArrowDown, Info } from '@lucide/svelte'
+
   import DetailHeader from '../library/DetailHeader.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'
   import { formatCount } from '../shared/text'
   import PlayAllButton from '../songs/PlayAllButton.svelte'
   import SongList from '../songs/SongList.svelte'
+  import type { SongListView } from '../songs/view'
   import Cover from '../ui/Cover.svelte'
   import SearchField from '../ui/SearchField.svelte'
 

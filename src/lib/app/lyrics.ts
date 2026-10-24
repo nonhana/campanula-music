@@ -1,6 +1,7 @@
-import type { LyricsResponse } from '#lib/api/playback.js'
-import type { SessionApi, SessionFailure, SessionRound } from './session-round'
 import { endpoints } from '#lib/api/endpoints.js'
+import type { LyricsResponse } from '#lib/api/playback.js'
+
+import type { SessionApi, SessionFailure, SessionRound } from './session-round'
 
 // 播放页的歌词（#25）：听众看歌词时才取（前台请求，不排队），只记着最近打开的那首。
 // 下载了的歌（#38）用存在这台设备上的歌词，断网、没登录时也有。
@@ -30,10 +31,10 @@ export interface Lyrics {
   open: (songId: number) => Promise<void>
 }
 
-export function createLyrics(context: LyricsContext): Lyrics {
+export const createLyrics = (context: LyricsContext): Lyrics => {
   const { api } = context
 
-  function clear(): void {
+  const clear = (): void => {
     context.write(null)
   }
 

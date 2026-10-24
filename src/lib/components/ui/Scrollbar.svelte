@@ -13,12 +13,13 @@
     竖的（axis 'y'）贴右边，横的（'x'）贴底边；区域自己不要有内边距（放到里面那层），不然它会离开边上。
 -->
 <script lang='ts'>
-  import type { ScrollLookup, ScrollMark } from '../shared/scroll-marks'
   import { untrack } from 'svelte'
+
   import { clamp } from '../shared/clamp'
   import { scrollBehavior } from '../shared/motion'
   import { DELAYS } from '../shared/motion-tokens'
   import { attachGrip } from '../shared/press'
+  import type { ScrollLookup, ScrollMark } from '../shared/scroll-marks'
   import { createSliderCore } from '../shared/slider-core'
   import { getSelectionMode, hasSelectionMode } from './selection-mode'
 
@@ -105,13 +106,11 @@
   /** 气泡的中线对着滑块中间，碰到两头就停住 */
   const bubbleCenter = $derived(Math.min(Math.max(INSET + offset + thumb / 2, bubbleHeight / 2), length - bubbleHeight / 2))
 
-  function scroller(): HTMLElement | null {
-    return onPage
-      ? document.documentElement
-      : host?.parentElement ?? null
-  }
+  const scroller = (): HTMLElement | null => onPage
+    ? document.documentElement
+    : host?.parentElement ?? null
 
-  function measure() {
+  const measure = () => {
     const el = scroller()
     if (!el)
       return
@@ -132,13 +131,13 @@
   }
 
   /** 按住那一块拖着时，问列表这一条上沿（看得见的最上面）是哪一项 */
-  function readMark() {
+  const readMark = () => {
     if (quick && dragging && strip)
       mark = lookup?.markAt?.(strip.getBoundingClientRect().top) ?? null
   }
 
   /** 亮出来，停够 1 秒再淡出 */
-  function linger() {
+  const linger = () => {
     awake = true
     clearTimeout(fadeTimer)
     fadeTimer = setTimeout(() => (awake = false), DELAYS.scrollbar)
@@ -184,14 +183,12 @@
   })
 
   /** 指针沿滚动方向的位置 */
-  function along(sample: { x: number, y: number }): number {
-    return axis === 'y'
-      ? sample.y
-      : sample.x
-  }
+  const along = (sample: { x: number, y: number }): number => axis === 'y'
+    ? sample.y
+    : sample.x
 
   /** 只在听众拖滑块、点空白处时调用：这是它唯一写滚动位置的地方 */
-  function moveTo(position: number, behavior: ScrollBehavior) {
+  const moveTo = (position: number, behavior: ScrollBehavior) => {
     scroller()?.scrollTo(axis === 'y'
       ? { top: position, behavior }
       : { left: position, behavior })

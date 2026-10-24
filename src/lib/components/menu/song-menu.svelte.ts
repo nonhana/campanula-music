@@ -1,5 +1,6 @@
 import type { Song } from '#lib/api/library.js'
 import type { PlaySource } from '#lib/api/playback.js'
+
 import { getOverlays } from '../overlay/overlay-context'
 import { anchorBelow } from './menu-anchor'
 
@@ -11,11 +12,11 @@ import { anchorBelow } from './menu-anchor'
 /**
  * 在组件初始化时调用一次：每个歌曲行的入口都用所属外框的那份层会话（Session 销毁时层跟着清空）。
  */
-export function songMenuActions() {
+export const songMenuActions = () => {
   const { songMenu, playlistPicker } = getOverlays()
 
   /** ••• 按钮的 onclick：触屏用底部弹层，鼠标用贴着按钮的浮动菜单；键盘按下的看布局。菜单或加入歌单已经从这个按钮打开着就关上 */
-  function openSongMenuFrom(event: MouseEvent, song: Song, source: PlaySource): void {
+  const openSongMenuFrom = (event: MouseEvent, song: Song, source: PlaySource): void => {
     const button = event.currentTarget as HTMLElement
     const shown = [songMenu, playlistPicker].find(layer => layer.request?.from === button)
     if (shown) {
@@ -34,7 +35,7 @@ anchor: anchorBelow(event),
    * 歌曲行的 oncontextmenu：鼠标右键在指针处打开浮动菜单；键盘的菜单键贴着这一行打开。
    * 触屏长按留给多选（#35）：拦掉系统的选择文字 / 上下文菜单，不打开歌曲菜单
    */
-  function openSongMenuAt(event: MouseEvent, song: Song, source: PlaySource): void {
+  const openSongMenuAt = (event: MouseEvent, song: Song, source: PlaySource): void => {
     // 触屏长按留给多选（#35）：不要弹出系统的选择文字 / 上下文菜单
     if (event instanceof PointerEvent && event.pointerType === 'touch') {
       event.preventDefault()

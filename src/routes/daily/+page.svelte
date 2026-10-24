@@ -8,7 +8,6 @@
   点一首歌、播放全部都用整份每日推荐替换播放队列，播放来源是每日推荐。返回这一页时滚动位置回到原来的样子
 -->
 <script lang='ts'>
-  import type { SongListView } from '#lib/components/songs/view.js'
   import DailyNumber from '#lib/components/daily/DailyNumber.svelte'
   import { DAILY_SOURCE, dailyCalendarDay, dailyFailure, totalDuration } from '#lib/components/daily/view.js'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
@@ -19,6 +18,7 @@
   import { formatCount } from '#lib/components/shared/text.js'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import SongList from '#lib/components/songs/SongList.svelte'
+  import type { SongListView } from '#lib/components/songs/view.js'
   import Cover from '#lib/components/ui/Cover.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 

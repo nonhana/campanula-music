@@ -1,11 +1,12 @@
+import { error } from '@sveltejs/kit'
+
 import type { SetCoverRequest } from '#lib/api/cover.js'
 import type { PostEndpoint } from '#lib/api/endpoint.js'
 import type { CollectRequest, CreatePlaylistRequest, DescribePlaylistRequest, HeartRequest, PlaylistCollectRequest, RenamePlaylistRequest, TagPlaylistRequest } from '#lib/api/library.js'
-import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
-import type { SearchKind } from '#lib/api/search.js'
-import { error } from '@sveltejs/kit'
 import { nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
+import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
 import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
+import type { SearchKind } from '#lib/api/search.js'
 import { SEARCH_KINDS } from '#lib/api/search.js'
 
 /** 二维码的 key（网易云给的 UUID） */
@@ -18,7 +19,7 @@ const CHECK_TOKEN = /^[\x21-\x7E]{1,1024}$/
 /**
  * 读请求体（JSON）里的字符串字段，每个都要符合格式
  */
-export async function readFields<K extends string>(request: Request, patterns: Record<K, RegExp>): Promise<Record<K, string>> {
+export const readFields = async <K extends string>(request: Request, patterns: Record<K, RegExp>): Promise<Record<K, string>> => {
   const body: unknown = await request.json().catch(() => null)
   const fields = {} as Record<K, string>
   for (const name of Object.keys(patterns) as K[]) {
@@ -33,12 +34,10 @@ export async function readFields<K extends string>(request: Request, patterns: R
 }
 
 /** 网易云的编号（uid、歌单、歌曲）：正整数 */
-function isNeteaseId(value: unknown): value is number {
-  return Number.isSafeInteger(value) && (value as number) > 0
-}
+const isNeteaseId = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0
 
 /** 读查询参数里的一个编号；路径参数由 src/params.ts 的 neteaseId 匹配器处理 */
-export function readId(name: string, value: string | null | undefined): number {
+export const readId = (name: string, value: string | null | undefined): number => {
   const id = /^\d{1,16}$/.test(value ?? '')
     ? Number(value)
     : Number.NaN
@@ -54,7 +53,7 @@ type IdListKey<Body> = { [K in keyof Body]-?: Body[K] extends number[] ? K : nev
  * 读请求体（JSON）里的编号列表：1 到 max 个。键和端点的请求体类型绑在一起：
  * readIds(endpoints.songs, request, 'ids', …)；端点声明的是别的请求类型时编译不过。
  */
-export async function readIds<Body>(_endpoint: Pick<PostEndpoint<unknown, Body, unknown>, 'request'>, request: Request, name: IdListKey<NonNullable<Body>>, max: number): Promise<number[]> {
+export const readIds = async <Body>(_endpoint: Pick<PostEndpoint<unknown, Body, unknown>, 'request'>, request: Request, name: IdListKey<NonNullable<Body>>, max: number): Promise<number[]> => {
   const body: unknown = await request.json().catch(() => null)
   const ids = typeof body === 'object' && body !== null && name in body
     ? (body as Record<string, unknown>)[name]
@@ -65,14 +64,14 @@ export async function readIds<Body>(_endpoint: Pick<PostEndpoint<unknown, Body, 
 }
 
 /** 读网址里分页的 offset：从第几个起，0 或正整数 */
-export function readOffset(value: string | null): number {
+export const readOffset = (value: string | null): number => {
   if (!/^\d{1,6}$/.test(value ?? ''))
     error(400, 'offset 的格式不对')
   return Number(value)
 }
 
 /** 读网址里的音质 */
-export function readQuality(value: string | null): Quality {
+export const readQuality = (value: string | null): Quality => {
   const quality = QUALITIES.find(item => item === value)
   if (!quality)
     error(400, 'quality 的格式不对')
@@ -80,7 +79,7 @@ export function readQuality(value: string | null): Quality {
 }
 
 /** 读网址里的搜索关键词：去掉首尾空白后不能是空的 */
-export function readKeywords(value: string | null): string {
+export const readKeywords = (value: string | null): string => {
   const keywords = value?.trim() ?? ''
   if (!keywords)
     error(400, 'keywords 不能是空的')
@@ -88,7 +87,7 @@ export function readKeywords(value: string | null): string {
 }
 
 /** 读网址里搜索结果是哪一类（单曲、歌单、歌手、专辑） */
-export function readSearchKind(value: string): SearchKind {
+export const readSearchKind = (value: string): SearchKind => {
   const kind = SEARCH_KINDS.find(each => each === value)
   if (!kind)
     error(400, 'kind 的格式不对')
@@ -96,7 +95,7 @@ export function readSearchKind(value: string): SearchKind {
 }
 
 /** 读请求里的播放来源：每日推荐、已下载没有编号，一次搜索带着搜的词，其余要带编号 */
-function readSource(source: unknown): PlaySource {
+const readSource = (source: unknown): PlaySource => {
   const { kind, id, keyword } = (typeof source === 'object' && source !== null
     ? source
     : {}) as Partial<Record<'kind' | 'id' | 'keyword', unknown>>
@@ -114,7 +113,7 @@ function readSource(source: unknown): PlaySource {
 }
 
 /** 读听歌打卡的请求体（JSON）：播放来源，实际听了多少秒（正整数） */
-export async function readCheckIn(request: Request): Promise<CheckInRequest> {
+export const readCheckIn = async (request: Request): Promise<CheckInRequest> => {
   const body: unknown = await request.json().catch(() => null)
   const { source, seconds } = (typeof body === 'object' && body !== null
     ? body
@@ -126,7 +125,7 @@ export async function readCheckIn(request: Request): Promise<CheckInRequest> {
 }
 
 /** 读请求体（JSON）里的一个对象；不是对象时当作空的 */
-async function readObject(request: Request): Promise<Record<string, unknown>> {
+const readObject = async (request: Request): Promise<Record<string, unknown>> => {
   const body: unknown = await request.json().catch(() => null)
   return typeof body === 'object' && body !== null && !Array.isArray(body)
     ? body as Record<string, unknown>
@@ -134,7 +133,7 @@ async function readObject(request: Request): Promise<Record<string, unknown>> {
 }
 
 /** 读红心的请求体（JSON）：哪首歌，红心还是取消红心 */
-export async function readHeart(request: Request): Promise<HeartRequest> {
+export const readHeart = async (request: Request): Promise<HeartRequest> => {
   const { songId, hearted } = await readObject(request)
   if (!isNeteaseId(songId) || typeof hearted !== 'boolean')
     error(400, '要有 songId 和 hearted')
@@ -142,7 +141,7 @@ export async function readHeart(request: Request): Promise<HeartRequest> {
 }
 
 /** 读收藏专辑、歌手的请求体（JSON）：收藏还是取消收藏 */
-export async function readCollect(request: Request): Promise<CollectRequest> {
+export const readCollect = async (request: Request): Promise<CollectRequest> => {
   const { collected } = await readObject(request)
   if (typeof collected !== 'boolean')
     error(400, '要有 collected')
@@ -150,7 +149,7 @@ export async function readCollect(request: Request): Promise<CollectRequest> {
 }
 
 /** 读收藏歌单的请求体（JSON）：收藏时要带着反作弊令牌，取消收藏不带 */
-export async function readPlaylistCollect(request: Request): Promise<PlaylistCollectRequest> {
+export const readPlaylistCollect = async (request: Request): Promise<PlaylistCollectRequest> => {
   const { collected, checkToken } = await readObject(request)
   if (collected === false)
     return { collected }
@@ -160,7 +159,7 @@ export async function readPlaylistCollect(request: Request): Promise<PlaylistCol
 }
 
 /** 读歌单名称：去掉首尾空白后要能提交（不是空的，不超过 PLAYLIST_NAME_WIDTH 个宽度） */
-function readPlaylistName(name: unknown): string {
+const readPlaylistName = (name: unknown): string => {
   const trimmed = typeof name === 'string'
     ? name.trim()
     : ''
@@ -170,7 +169,7 @@ function readPlaylistName(name: unknown): string {
 }
 
 /** 读新建歌单的请求体（JSON）：名称，是不是隐私歌单 */
-export async function readPlaylistDraft(request: Request): Promise<CreatePlaylistRequest> {
+export const readPlaylistDraft = async (request: Request): Promise<CreatePlaylistRequest> => {
   const { name, private: isPrivate } = await readObject(request)
   if (typeof isPrivate !== 'boolean')
     error(400, '要有 private')
@@ -181,7 +180,7 @@ export async function readPlaylistDraft(request: Request): Promise<CreatePlaylis
 }
 
 /** 读改名称的请求体（JSON） */
-export async function readPlaylistRename(request: Request): Promise<RenamePlaylistRequest> {
+export const readPlaylistRename = async (request: Request): Promise<RenamePlaylistRequest> => {
   const { name } = await readObject(request)
   return {
     name: readPlaylistName(name),
@@ -189,7 +188,7 @@ export async function readPlaylistRename(request: Request): Promise<RenamePlayli
 }
 
 /** 读改简介的请求体（JSON）：最多 PLAYLIST_DESCRIPTION_LENGTH 个字，可以是空的（清空） */
-export async function readPlaylistDescription(request: Request): Promise<DescribePlaylistRequest> {
+export const readPlaylistDescription = async (request: Request): Promise<DescribePlaylistRequest> => {
   const { description } = await readObject(request)
   if (typeof description !== 'string' || description.length > PLAYLIST_DESCRIPTION_LENGTH)
     error(400, `description 最多 ${PLAYLIST_DESCRIPTION_LENGTH} 个字`)
@@ -200,7 +199,7 @@ export async function readPlaylistDescription(request: Request): Promise<Describ
 const TAG = /^[^;\s][^;]*$/
 
 /** 读换标签的请求体（JSON）：0 到 PLAYLIST_TAGS_MAX 个不重复的标签 */
-export async function readPlaylistTags(request: Request): Promise<TagPlaylistRequest> {
+export const readPlaylistTags = async (request: Request): Promise<TagPlaylistRequest> => {
   const { tags } = await readObject(request)
   if (!Array.isArray(tags) || tags.length > PLAYLIST_TAGS_MAX || !tags.every(tag => typeof tag === 'string' && TAG.test(tag)) || new Set(tags).size !== tags.length)
     error(400, `tags 要有 0 到 ${PLAYLIST_TAGS_MAX} 个不重复的标签`)
@@ -208,7 +207,7 @@ export async function readPlaylistTags(request: Request): Promise<TagPlaylistReq
 }
 
 /** 读设为封面的请求体（JSON）：直传成功的图片编号（网易云给的一长串数字，超出 JavaScript 的安全整数，按字符串收） */
-export async function readCoverImage(request: Request): Promise<SetCoverRequest> {
+export const readCoverImage = async (request: Request): Promise<SetCoverRequest> => {
   const { imgId } = await readObject(request)
   if (typeof imgId !== 'string' || !/^\d{1,20}$/.test(imgId))
     error(400, 'imgId 的格式不对')

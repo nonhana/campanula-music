@@ -5,6 +5,7 @@
 -->
 <script lang='ts'>
   import type { RequestFailure } from '#lib/app/api-client.js'
+
   import { failureText } from '../shared/failure'
   import Scrollbar from '../ui/Scrollbar.svelte'
   import StateBlock from '../ui/StateBlock.svelte'

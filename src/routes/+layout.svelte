@@ -1,5 +1,6 @@
 <script lang='ts'>
   import { page } from '$app/state'
+
   import { createApp } from '#lib/app/app.js'
   import { realBrowserCapabilities } from '#lib/app/browser.js'
   import AppOpenFailed from '#lib/components/boot/AppOpenFailed.svelte'
@@ -37,7 +38,7 @@
 
   /** open() 没想到的错误是 App 自己的缺陷：不能让界面一直停在“正在打开”，说明是 Campanula 出错，能重试 */
   let failedUnexpectedly = $state(false)
-  function open() {
+  const open = () => {
     failedUnexpectedly = false
     app?.open().catch((error: unknown) => {
       console.error('打开 App 失败', error)

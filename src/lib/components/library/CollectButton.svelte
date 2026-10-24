@@ -8,9 +8,11 @@
   是开关（aria-pressed）：胶囊的名字是“收藏 / 已收藏”（手机只留图标时也是），两种图标按钮的名字一直是“收藏专辑「…」”，按下了就是已收藏
 -->
 <script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
-  import type { CollectTarget } from '#lib/app/app.js'
   import { CircleCheck, CirclePlus } from '@lucide/svelte'
+  import type { ClassValue } from 'svelte/elements'
+
+  import type { CollectTarget } from '#lib/app/app.js'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { iconSwap } from '../shared/motion'
   import ToolButton from '../ui/ToolButton.svelte'
@@ -34,7 +36,7 @@
   const Icon = $derived(collected ? CircleCheck : CirclePlus)
   const label = $derived(`收藏${COLLECT_NOUNS[target.kind]}「${name}」`)
 
-  function toggle() {
+  const toggle = () => {
     void view.app.collect(target, !collected)
   }
 </script>

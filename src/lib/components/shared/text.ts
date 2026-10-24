@@ -12,7 +12,7 @@ const TRADITIONAL = /[們個說這樣對時會從來發現與機關點經國長�
  * 歌名、歌手、专辑、歌单名的 lang（DESIGN.md The Mixed Script Rule）：含假名的标 ja，繁体标 zh-TW，
  * 其余跟随页面（undefined）
  */
-export function langOf(...texts: string[]): 'ja' | 'zh-TW' | undefined {
+export const langOf = (...texts: string[]): 'ja' | 'zh-TW' | undefined => {
   const all = texts.join(' ')
   if (KANA.test(all))
     return 'ja'
@@ -22,27 +22,21 @@ export function langOf(...texts: string[]): 'ja' | 'zh-TW' | undefined {
 }
 
 /** 一首歌的歌手一行（见 creditLine） */
-export function artistLine(song: Song): string {
-  return creditLine(song.artists)
-}
+export const artistLine = (song: Song): string => creditLine(song.artists)
 
 /** 专辑的发行年份（本地时区）；网易云没给时间时是 null */
-export function yearOf(publishedAt: number): number | null {
-  return publishedAt > 0
-    ? new Date(publishedAt).getFullYear()
-    : null
-}
+export const yearOf = (publishedAt: number): number | null => publishedAt > 0
+  ? new Date(publishedAt).getFullYear()
+  : null
 
 /** 首数等：千位加逗号（4,984） */
-export function formatCount(count: number): string {
-  return count.toLocaleString('en-US')
-}
+export const formatCount = (count: number): string => count.toLocaleString('en-US')
 
 /**
  * 播放次数：一万以上按“万”写、一亿以上按“亿”写，不到一百（万、亿）留一位小数（27.3 万、1618 万、2.5 亿、253 亿），
  * 一万以下照写（9,999）。网易云自己的歌单有播放两百多亿次的（私人雷达）
  */
-export function formatPlays(count: number): string {
+export const formatPlays = (count: number): string => {
   if (count < 10_000)
     return formatCount(count)
   const [unit, label] = count < 100_000_000
@@ -55,7 +49,7 @@ export function formatPlays(count: number): string {
 }
 
 /** 时长：分:秒 */
-export function formatDuration(ms: number): string {
+export const formatDuration = (ms: number): string => {
   const seconds = Math.max(0, Math.floor(ms / 1000))
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }

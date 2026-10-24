@@ -1,5 +1,6 @@
-import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
+
+import type { Device } from './harness/device'
 import { held } from './harness/hold'
 import { listener } from './harness/listener'
 import { useWorld } from './harness/world'

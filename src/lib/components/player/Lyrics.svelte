@@ -8,11 +8,12 @@
   加载中、歌词、纯音乐、没取到之间交叉淡化（新旧叠在同一格里）；打开翻译、音译时那几行淡入（DESIGN.md Motion）
 -->
 <script lang='ts'>
+  import { Check, Music } from '@lucide/svelte'
   import type { ClassValue } from 'svelte/elements'
+
   import type { Song } from '#lib/api/library.js'
   import type { LyricLine } from '#lib/api/playback.js'
-  import type { Playhead } from './playhead.svelte'
-  import { Check, Music } from '@lucide/svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
   import { fade, scrollBehavior } from '../shared/motion'
@@ -21,6 +22,7 @@
   import FilterChip from '../ui/FilterChip.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
   import { playerPageChoices as choices } from './player-page.svelte'
+  import type { Playhead } from './playhead.svelte'
   import { lineIndexAt, wordProgress } from './view'
 
   interface Props {
@@ -82,7 +84,7 @@
   /** 已经滚到过当前行的那份歌词：换了一份（换歌）时第一次直接跳过去，不平滑滚动 */
   let placedLines: readonly LyricLine[] | null = null
 
-  function follow(smooth: boolean) {
+  const follow = (smooth: boolean) => {
     if (!scroller || performance.now() - scrolledAt < FOLLOW_PAUSE_MS)
       return
     const line = active < 0
@@ -114,7 +116,7 @@
   $effect(() => () => clearTimeout(resume))
 
   /** 听众自己滚动（滚轮、触摸、键盘、Tab 到某一行）：先不跟着走，停手 3 秒后回到当前行 */
-  function scrolledByListener() {
+  const scrolledByListener = () => {
     scrolledAt = performance.now()
     clearTimeout(resume)
     resume = setTimeout(follow, FOLLOW_PAUSE_MS, true)
@@ -132,7 +134,7 @@
   ])
 
   // 只是看听众有没有自己滚动，不是操作，所以直接挂在滚动区上
-  function watchListenerScroll(target: HTMLElement) {
+  const watchListenerScroll = (target: HTMLElement) => {
     const onkey = (event: KeyboardEvent) => SCROLL_KEYS.has(event.key) && scrolledByListener()
     const onfocus = (event: FocusEvent) => event.target instanceof HTMLElement && event.target.matches(':focus-visible') && scrolledByListener()
     target.addEventListener('wheel', scrolledByListener, { passive: true })
@@ -148,7 +150,7 @@
   }
 
   /** 点一行：从这一行开始放（停着的也接着放），歌词马上跟回当前行 */
-  function playFrom(line: LyricLine) {
+  const playFrom = (line: LyricLine) => {
     view.app.playFrom(line.start)
     scrolledAt = Number.NEGATIVE_INFINITY
   }

@@ -6,6 +6,7 @@ import { dirname, join, relative } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath as toPath } from 'node:url'
 import { gunzipSync } from 'node:zlib'
+
 import { fixtureOutcome } from '../src/lib/server/mock/fixture-format.ts'
 import { queryKey } from '../src/lib/server/mock/query-key.ts'
 import { readFixture } from '../src/lib/server/mock/read-fixture.ts'
@@ -40,7 +41,7 @@ export interface FixtureIndex {
 }
 
 /** 数以千计的编号不进索引：预览里只留前 80 个字符 */
-function preview(value: unknown): unknown {
+const preview = (value: unknown): unknown => {
   if (typeof value === 'string') {
     return value.length > 80
       ? `${value.slice(0, 80)}…`
@@ -63,7 +64,7 @@ function preview(value: unknown): unknown {
   return value
 }
 
-async function filesIn(dir: string): Promise<string[]> {
+const filesIn = async (dir: string): Promise<string[]> => {
   const entries = await readdir(dir, { withFileTypes: true })
   const files: string[] = []
   for (const entry of entries) {
@@ -76,7 +77,7 @@ async function filesIn(dir: string): Promise<string[]> {
   return files
 }
 
-async function metaOf(file: string, path: string): Promise<Record<string, unknown>> {
+const metaOf = async (file: string, path: string): Promise<Record<string, unknown>> => {
   const bytes = await readFile(file)
   const text = path.endsWith('.gz')
     ? gunzipSync(bytes).toString('utf8')
@@ -85,7 +86,7 @@ async function metaOf(file: string, path: string): Promise<Record<string, unknow
   return parsed.context ?? {}
 }
 
-export async function buildIndex(): Promise<FixtureIndex> {
+export const buildIndex = async (): Promise<FixtureIndex> => {
   const files = (await filesIn(FIXTURES)).filter(file => file !== INDEX).sort()
   const entries: IndexEntry[] = []
   for (const file of files) {
@@ -147,11 +148,9 @@ export async function buildIndex(): Promise<FixtureIndex> {
   }
 }
 
-function serialize(index: FixtureIndex): string {
-  return `${JSON.stringify(index, null, 2)}\n`
-}
+const serialize = (index: FixtureIndex): string => `${JSON.stringify(index, null, 2)}\n`
 
-async function main(): Promise<void> {
+const main = async (): Promise<void> => {
   const check = process.argv.includes('--check')
   const index = await buildIndex()
   const text = serialize(index)

@@ -8,6 +8,7 @@
 -->
 <script lang='ts' generics='T'>
   import type { Snippet } from 'svelte'
+
   import type { ScrollMark } from '../shared/scroll-marks'
   import { getScrollLookup, hasScrollLookup } from '../shared/scroll-marks'
 
@@ -43,7 +44,7 @@
 
   const slots = $derived(items.length)
 
-  function measure() {
+  const measure = () => {
     if (!host)
       return
     const viewport = scrollParent

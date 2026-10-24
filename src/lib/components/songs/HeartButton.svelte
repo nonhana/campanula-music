@@ -6,8 +6,10 @@
   手机播放页（44px 的圆，图标大一号）
 -->
 <script lang='ts'>
-  import type { Song } from '#lib/api/library.js'
   import { Heart } from '@lucide/svelte'
+
+  import type { Song } from '#lib/api/library.js'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { iconSwap } from '../shared/motion'
 

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+
 import { listener } from './harness/listener'
 import { RECORDED_ACCOUNT as ACCOUNT, MUSIC_U, renewCookies, RENEWED_MUSIC_U, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
@@ -7,9 +8,7 @@ const world = useWorld()
 const { sessionCalls, sessionModules } = listener(world)
 
 /** 从第 since 次调用起，每次调网易云的模块和带的 MUSIC_U */
-function credentialsUsed(since: number) {
-  return sessionCalls(since).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])
-}
+const credentialsUsed = (since: number) => sessionCalls(since).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])
 
 const HOUR = 3600_000
 

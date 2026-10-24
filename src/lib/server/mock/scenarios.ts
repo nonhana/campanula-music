@@ -57,14 +57,10 @@ const PRESETS: Record<ScenarioName, Partial<Omit<MockConfig, 'name'>>> = {
   'offline': { offline: true },
 }
 
-export function isScenarioName(value: unknown): value is ScenarioName {
-  return typeof value === 'string' && Object.hasOwn(PRESETS, value)
-}
+export const isScenarioName = (value: unknown): value is ScenarioName => typeof value === 'string' && Object.hasOwn(PRESETS, value)
 
-export function configOf(name: ScenarioName): MockConfig {
-  return {
-    ...DEFAULTS,
-    ...PRESETS[name],
-    name,
-  }
-}
+export const configOf = (name: ScenarioName): MockConfig => ({
+  ...DEFAULTS,
+  ...PRESETS[name],
+  name,
+})

@@ -7,6 +7,7 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
   import { ChevronRight, CircleArrowDown } from '@lucide/svelte'
+
   import Brand from '../boot/Brand.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'

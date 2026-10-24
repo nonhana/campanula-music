@@ -8,14 +8,14 @@
   - 已经有一部分歌时，其余的没拉成在列表上方说明；多选里不能排序时也说清楚。
 -->
 <script lang='ts'>
+  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SquareMinus, X } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
+  import { untrack } from 'svelte'
+
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
-  import type { SongListView, SongSelection } from '../songs/view'
-  import type { SelectionSource } from './playlist-selection.svelte'
-  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SquareMinus, X } from '@lucide/svelte'
-  import { untrack } from 'svelte'
+
   import { anchorBelow } from '../menu/menu-anchor'
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
@@ -24,10 +24,12 @@
   import { formatCount } from '../shared/text'
   import SongList from '../songs/SongList.svelte'
   import SongRow from '../songs/SongRow.svelte'
+  import type { SongListView, SongSelection } from '../songs/view'
   import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import DragGrip from './DragGrip.svelte'
+  import type { SelectionSource } from './playlist-selection.svelte'
   import { SongDrag } from './song-drag.svelte'
 
   const { addSongsDialog, playlistSelection } = getOverlays()
@@ -108,14 +110,12 @@
   $effect(() => () => selection.detach(selectionSource))
 
   /** 行入口的退出归还：行还在就回行；被虚拟列表回收了就回稳定的多选入口（手机图标 / 桌面按钮） */
-  function rowEntryFocus(from: HTMLElement): () => HTMLElement | null {
-    return () => {
-      if (from.isConnected)
-        return from
-      return phone
-        ? phoneEntry?.querySelector<HTMLElement>('button') ?? null
-        : entryFocus?.() ?? null
-    }
+  const rowEntryFocus = (from: HTMLElement): () => HTMLElement | null => () => {
+    if (from.isConnected)
+      return from
+    return phone
+      ? phoneEntry?.querySelector<HTMLElement>('button') ?? null
+      : entryFocus?.() ?? null
   }
 
   // 退出多选、换了列表（搜索、歌单加载完重排）：拖动作废，不提交
@@ -126,7 +126,7 @@
   })
 
   /** 桌面：焦点在某一行时 Alt + ↑ / ↓ 移一位（#36）；走的和拖动是同一个 App 操作 */
-  function onListKeydown(event: KeyboardEvent): void {
+  const onListKeydown = (event: KeyboardEvent): void => {
     if (!sortable || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown'))
       return
     const row = (event.target as Element).closest<HTMLElement>('[data-song-id]')
@@ -214,14 +214,14 @@
     marks: !drag.dragging,
   })
 
-  function retry() {
+  const retry = () => {
     if (page.failure?.retry === 'sync')
       view.app.retrySync()
     else
       void view.app.openPlaylist(playlistId)
   }
 
-  function openAddSongs(event?: MouseEvent): void {
+  const openAddSongs = (event?: MouseEvent): void => {
     addSongsDialog.open({ playlistId, from: event?.currentTarget as HTMLElement ?? null })
   }
 </script>

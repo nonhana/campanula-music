@@ -5,6 +5,7 @@
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
+
   import { langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
   import CollectButton from './CollectButton.svelte'

@@ -13,13 +13,15 @@
   铺满父元素：父元素定大小、决定裁不裁切（播放条的圆角小窗、桌面播放页左列的遮罩）
 -->
 <script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
-  import type { Song } from '#lib/api/library.js'
-  import type { Turn } from './view'
   import { untrack } from 'svelte'
+  import type { ClassValue } from 'svelte/elements'
+
+  import type { Song } from '#lib/api/library.js'
+
   import { fadeMs, moveMs, reducedMotion, unseen } from '../shared/motion'
   import { cssEasing, DURATIONS, WHEEL } from '../shared/motion-tokens'
   import Cover, { coverLoaded, preloadCover } from '../ui/Cover.svelte'
+  import type { Turn } from './view'
   import { SMALL_COVER } from './view'
 
   interface Props {
@@ -90,15 +92,13 @@
   let held: { front: number, base: number, sides: (readonly [key: number, side: -1 | 1])[] } | null = null
 
   /** 拖着时一张封面图的样子：离正中越远越淡，转开一格（28°）就看不见了，和换碟时边转边淡一样 */
-  function dragged(angle: number): Pose {
-    return {
-      angle,
-      opacity: Math.max(0, 1 - Math.abs(angle) / WHEEL.pitch),
-    }
-  }
+  const dragged = (angle: number): Pose => ({
+    angle,
+    opacity: Math.max(0, 1 - Math.abs(angle) / WHEEL.pitch),
+  })
 
   /** 一张封面图此刻的样子：手摆着的；正在走的按动画进度在起止之间取（和画出来的一样）；还没挂上的在转进来的地方；其余停在正中 */
-  function poseOf(key: number): Pose {
+  const poseOf = (key: number): Pose => {
     const angle = posed.get(key)
     if (angle !== undefined)
       return dragged(angle)
@@ -114,7 +114,7 @@
   }
 
   /** 拖着时直接摆在元素的 style 上；null 是拿掉，交回动画和样式表 */
-  function setStyle(element: HTMLElement, pose: Pose | null): void {
+  const setStyle = (element: HTMLElement, pose: Pose | null): void => {
     element.style.transform = pose
       ? `rotate(${pose.angle}deg)`
       : ''
@@ -123,13 +123,13 @@
       : ''
   }
 
-  function stop(key: number): void {
+  const stop = (key: number): void => {
     running.get(key)?.animation.cancel()
     running.delete(key)
   }
 
   /** 从此刻的样子 from 走到 to；leaving：走完就拿掉，走完之前一直停在 to 的样子。没转动（交叉淡化）时只动透明度 */
-  function move(key: number, from: Pose, to: Pose, ms: number, easing: string, leaving: boolean): void {
+  const move = (key: number, from: Pose, to: Pose, ms: number, easing: string, leaving: boolean): void => {
     const element = elements.get(key)
     if (!element) {
       // 还没挂上就要走的：从没露过面，直接拿掉
@@ -166,7 +166,7 @@
   }
 
   /** 正中那张取大图（转盘停下来时，或者它本来就是大图）；它到了（或者加载不出来）、没在拖，再取上一首、下一首的（下面的 effect） */
-  function sharpen(): void {
+  const sharpen = (): void => {
     const shown = discs.find(disc => disc.key === front)!
     if (!shown.sharp) {
       discs = discs.map(disc => (disc === shown
@@ -181,7 +181,7 @@
   }
 
   /** 直接换上：不转，正在转的都拿掉 */
-  function settle(incoming: Song): void {
+  const settle = (incoming: Song): void => {
     for (const { animation } of running.values())
       animation.cancel()
     running.clear()
@@ -194,7 +194,7 @@
     sharpen()
   }
 
-  function change(incoming: Song): void {
+  const change = (incoming: Song): void => {
     const shown = discs.find(disc => disc.key === front)!
     if (shown.song.id === incoming.id) {
       // 同一首歌的信息更新了（例如曲库同步换了封面图地址）：照着换，不转。拖着时每次移动都走到这里，没变就什么都不做
@@ -275,7 +275,7 @@
   }
 
   /** 拖起来：正中那张停在此刻的样子；上一首、下一首摆到它两边（刚转走、还在淡出的那张正好是它，就把那张接过来） */
-  function hold(): NonNullable<typeof held> {
+  const hold = (): NonNullable<typeof held> => {
     const base = poseOf(front).angle / WHEEL.pitch
     frontReady = false
     stop(front)
@@ -307,7 +307,7 @@
     return { front, base, sides }
   }
 
-  function place(key: number, angle: number): void {
+  const place = (key: number, angle: number): void => {
     posed.set(key, angle)
     const element = elements.get(key)
     if (element)
@@ -315,7 +315,7 @@
   }
 
   /** 拖着：整个转盘转到 base + turned 格，最多转到旁边那张停在正中 */
-  function follow(turned: number): void {
+  const follow = (turned: number): void => {
     held ??= hold()
     // 拖着时换了歌（放完自动接续）：换碟已经接手，等这次拖动作废
     if (held.front !== front)
@@ -330,7 +330,7 @@
    * 松手、作废：切了歌的话换碟已经从拖到的样子接着转；没切就转回原位，两边那两张转回去、拿掉。
    * 松手切歌时 App 同步发布新的当前这首（start 在第一个 await 之前），song 和 drag 在同一次更新里一起变
    */
-  function letGo(): void {
+  const letGo = (): void => {
     const { front: grabbed, sides } = held!
     held = null
     if (grabbed === front) {
@@ -377,23 +377,21 @@
   })
 
   /** 挂上一张：拖着时摆在手转到的地方；刚加上的那张从转来的地方开始转（在这一帧画出来之前） */
-  function mount(key: number) {
-    return (element: HTMLElement) => {
-      elements.set(key, element)
-      const angle = posed.get(key)
-      const start = entering.get(key)
-      if (angle !== undefined) {
-        setStyle(element, dragged(angle))
-      }
-      else if (start) {
-        entering.delete(key)
-        move(key, start.from, REST, start.ms, cssEasing('out-soft'), false)
-      }
-      return () => {
-        running.get(key)?.animation.cancel()
-        running.delete(key)
-        elements.delete(key)
-      }
+  const mount = (key: number) => (element: HTMLElement) => {
+    elements.set(key, element)
+    const angle = posed.get(key)
+    const start = entering.get(key)
+    if (angle !== undefined) {
+      setStyle(element, dragged(angle))
+    }
+    else if (start) {
+      entering.delete(key)
+      move(key, start.from, REST, start.ms, cssEasing('out-soft'), false)
+    }
+    return () => {
+      running.get(key)?.animation.cancel()
+      running.delete(key)
+      elements.delete(key)
     }
   }
 </script>

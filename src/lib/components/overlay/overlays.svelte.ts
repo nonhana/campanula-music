@@ -1,8 +1,7 @@
 import type { Component } from 'svelte'
-import type { AddToPlaylistRequest, DialogRequest, EditorRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
-import type { LayerOptions } from './overlay-stack'
 import { onDestroy, onMount, tick } from 'svelte'
 import { createSubscriber } from 'svelte/reactivity'
+
 import LogoutConfirm from '../account/LogoutConfirm.svelte'
 import { PlaylistSelection } from '../library/playlist-selection.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
@@ -18,9 +17,11 @@ import { getAppView } from '../shared/app-context.svelte'
 import { desktopLayout } from '../shared/layout'
 import { setSelectionMode } from '../ui/selection-mode'
 import { createOverlayHistory } from './overlay-history.svelte'
+import type { AddToPlaylistRequest, DialogRequest, EditorRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
+import type { LayerOptions } from './overlay-stack'
 import { OverlayStack } from './overlay-stack'
 
-export function createOverlays() {
+export const createOverlays = () => {
   const view = getAppView()
   let notify = () => {}
   const read = createSubscriber((update) => {
@@ -62,7 +63,7 @@ export function createOverlays() {
     },
   }, crypto.randomUUID())
   const mounted: { name: string, component: Component, inert: () => boolean }[] = []
-  function register<R extends DialogRequest>(name: string, options: LayerOptions<R, HTMLElement>, component?: Component) {
+  const register = <R extends DialogRequest>(name: string, options: LayerOptions<R, HTMLElement>, component?: Component) => {
     const layer = stack.register<R>(name, options)
     if (component) {
       mounted.push({

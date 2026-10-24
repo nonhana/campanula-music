@@ -5,9 +5,10 @@
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
-  import type { PlaylistRequest } from '../overlay/overlay-requests'
+
   import DialogShell from '../overlay/DialogShell.svelte'
   import { getOverlays } from '../overlay/overlay-context'
+  import type { PlaylistRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { langOf } from '../shared/text'
   import TextButton from '../ui/TextButton.svelte'

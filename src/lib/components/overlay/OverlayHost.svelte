@@ -3,7 +3,7 @@
 
   const overlays = getOverlays()
 
-  function onkeydown(event: KeyboardEvent) {
+  const onkeydown = (event: KeyboardEvent) => {
     // drag-sort / playlist-sort / song-drag 在捕获阶段消费 Esc。
     // 让那次取消先做完，同一个事件不要再关一层浮层。
     if (event.key !== 'Escape' || event.defaultPrevented || !overlays.stack.top)

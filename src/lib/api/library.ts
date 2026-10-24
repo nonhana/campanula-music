@@ -95,7 +95,7 @@ export interface Playlist extends PlaylistInfo {
 const LIKED_SPECIAL_TYPE = 5
 
 /** 从 user_playlist 的 specialType 和创建者认出这张歌单是哪一类（和曲库同步、mock 共用） */
-export function playlistKindOf(specialType: number, creatorUserId: number, uid: number): Playlist['kind'] {
+export const playlistKindOf = (specialType: number, creatorUserId: number, uid: number): Playlist['kind'] => {
   if (specialType === LIKED_SPECIAL_TYPE)
     return 'liked'
   return creatorUserId === uid
@@ -104,16 +104,14 @@ export function playlistKindOf(specialType: number, creatorUserId: number, uid: 
 }
 
 /** 这张歌单能不能手动排序：自建歌单和我喜欢的音乐（#36）；收藏的歌单不能 */
-export function canSortPlaylist(kind: Playlist['kind']): boolean {
-  return kind === 'own' || kind === 'liked'
-}
+export const canSortPlaylist = (kind: Playlist['kind']): boolean => kind === 'own' || kind === 'liked'
 
 /**
  * 把提交的顺序套到一组歌单上（#37）：只排 isSortable 的那些，别的原位不动；
  * 提交里没出现的按原来的先后接在后面，已经不在列表里的编号忽略。返回新的列表，不改原来的。
  * 曲库副本、提交前补齐和 mock 的写入共用这一条规则
  */
-export function reorderSortable<T extends { id: number }>(items: readonly T[], ids: readonly number[], isSortable: (item: T) => boolean): T[] {
+export const reorderSortable = <T extends { id: number }>(items: readonly T[], ids: readonly number[], isSortable: (item: T) => boolean): T[] => {
   const byId = new Map(items.map(item => [item.id, item]))
   const ordered: T[] = []
   for (const id of ids) {
@@ -150,7 +148,7 @@ export const PLAYLIST_TAGS_MAX = 3
  * 歌单名称有多宽：ASCII 字符算 1，别的（汉字、假名、全角符号）算 2。按 UTF-16 码元数，表情这类占两个码元的算 4：
  * 网易云怎么算表情不知道，往宽里算，不放过网易云会拒的名称
  */
-export function nameWidth(name: string): number {
+export const nameWidth = (name: string): number => {
   let width = 0
   for (let index = 0; index < name.length; index += 1) {
     width += name.charCodeAt(index) < 0x80
@@ -164,7 +162,7 @@ export function nameWidth(name: string): number {
 export type PlaylistEditProblem = 'nameEmpty' | 'nameTooLong' | 'descriptionTooLong' | 'tooManyTags' | 'tooManySongs'
 
 /** 歌单名称（去掉首尾空白后的）不能提交的原因；能提交是 null */
-export function nameProblem(name: string): PlaylistEditProblem | null {
+export const nameProblem = (name: string): PlaylistEditProblem | null => {
   if (!name)
     return 'nameEmpty'
   return nameWidth(name) > PLAYLIST_NAME_WIDTH
@@ -232,7 +230,7 @@ export interface Credit {
 }
 
 /** 歌手一行：没有名字的歌手（传到云盘、没匹配上曲库的歌）不列；一个都没有时写“未知歌手” */
-export function creditLine(credits: readonly Credit[]): string {
+export const creditLine = (credits: readonly Credit[]): string => {
   const names = credits.flatMap(artist => artist.name ?? [])
   return names.length > 0
     ? names.join(' / ')
@@ -240,9 +238,7 @@ export function creditLine(credits: readonly Credit[]): string {
 }
 
 /** 网易云图片（coverUrl、头像）的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */
-export function thumbnailUrl(url: string, pixels: number): string {
-  return `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
-}
+export const thumbnailUrl = (url: string, pixels: number): string => `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
 
 export interface Song {
   id: number

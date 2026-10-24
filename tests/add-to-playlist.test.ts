@@ -1,6 +1,8 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
-import { describe, expect, it } from 'vitest'
+
 import { listener } from './harness/listener'
 import { useWorld } from './harness/world'
 
@@ -20,9 +22,7 @@ const ADD = 'playlist-edit/playlist_tracks.add.json'
 /** 红心 */
 const LIKE = 'like-collect/like.like.json'
 
-function ownIds(app: App): number[] {
-  return app.state.library?.playlists?.filter(playlist => playlist.kind === 'own').map(playlist => playlist.id) ?? []
-}
+const ownIds = (app: App): number[] => app.state.library?.playlists?.filter(playlist => playlist.kind === 'own').map(playlist => playlist.id) ?? []
 
 describe('加入歌单的目标和理由', () => {
   it('单曲：我喜欢的音乐在最前；当前歌单、已红心、已在歌单里各写明理由', async () => {

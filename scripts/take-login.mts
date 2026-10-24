@@ -13,7 +13,7 @@ const BASE = 'http://localhost:5173'
 const port = execFileSync(join(ROOT, 'scripts/axi'), ['port'], { encoding: 'utf8' }).trim()
 
 /** 调一个 DevTools 工具（经专用浏览器的桥接进程，见 scripts/axi） */
-async function call(name: string, args: Record<string, unknown>): Promise<string> {
+const call = async (name: string, args: Record<string, unknown>): Promise<string> => {
   const response = await fetch(`http://127.0.0.1:${port}/call`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -28,7 +28,7 @@ async function call(name: string, args: Record<string, unknown>): Promise<string
 const pages = await call('list_pages', {})
 
 /** 桥接进程的 list_pages 两种格式都见过：`1: title (url)` 和 `1: url` */
-function pageIdOf(text: string, target: string): number {
+const pageIdOf = (text: string, target: string): number => {
   for (const line of text.split('\n')) {
     const match = /^(\d+): (.*)$/.exec(line.trim())
     if (!match)

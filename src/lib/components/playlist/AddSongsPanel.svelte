@@ -5,14 +5,16 @@
   一次请求把勾选的全部加进去（App 的 addSongsToPlaylist），先改本地、立即生效，失败回滚并在弹窗里说原因；正在加入时“加入歌单”转圈、关不掉（addSongsDialog.busy）。
 -->
 <script lang='ts'>
+  import { Check, SearchX } from '@lucide/svelte'
+  import { SvelteMap } from 'svelte/reactivity'
+
   import type { Song } from '#lib/api/library.js'
   import type { RequestFailure } from '#lib/app/api-client.js'
   import type { ChangeFailure } from '#lib/app/library.js'
-  import type { PlaylistRequest } from '../overlay/overlay-requests'
-  import { Check, SearchX } from '@lucide/svelte'
-  import { SvelteMap } from 'svelte/reactivity'
+
   import { changeFailureText } from '../notice/text'
   import { getOverlays } from '../overlay/overlay-context'
+  import type { PlaylistRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
   import { artistLine, formatCount, langOf } from '../shared/text'
@@ -91,7 +93,7 @@
     }
   })
 
-  async function retry(): Promise<void> {
+  const retry = async (): Promise<void> => {
     const keyword = query.trim()
     if (!keyword)
       return
@@ -106,11 +108,9 @@
       : { status: 'failed', failure: result.failure }
   }
 
-  function inPlaylist(song: Song): boolean {
-    return existing.has(song.id)
-  }
+  const inPlaylist = (song: Song): boolean => existing.has(song.id)
 
-  function toggle(song: Song): void {
+  const toggle = (song: Song): void => {
     if (inPlaylist(song) || addSongsDialog.busy)
       return
     if (selected.has(song.id))
@@ -119,7 +119,7 @@
       selected.set(song.id, song)
   }
 
-  async function submit(): Promise<void> {
+  const submit = async (): Promise<void> => {
     if (addSongsDialog.busy || chosen.length === 0)
       return
     addSongsDialog.setBusy(true)

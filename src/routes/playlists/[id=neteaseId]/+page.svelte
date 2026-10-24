@@ -14,13 +14,13 @@
   返回这一页时，搜索词和滚动位置都回到原来的样子（存在 SvelteKit 的 snapshot 里，跟着浏览历史走）
 -->
 <script lang='ts'>
-  import type { LucideIcon } from '@lucide/svelte'
-  import type { PlaylistUnavailable } from '#lib/api/library.js'
-  import type { LibraryState } from '#lib/app/library.js'
-  import type { PageProps } from './$types'
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
+  import type { LucideIcon } from '@lucide/svelte'
   import { Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
+
+  import type { PlaylistUnavailable } from '#lib/api/library.js'
+  import type { LibraryState } from '#lib/app/library.js'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
@@ -43,6 +43,8 @@
   import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
   import ToolButton from '#lib/components/ui/ToolButton.svelte'
+
+  import type { PageProps } from './$types'
 
   const { params }: PageProps = $props()
   const view = getAppView()
@@ -91,7 +93,7 @@
   const sortableList = $derived(page?.can.sort ?? false)
 
   /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上 */
-  function openMenu(event: MouseEvent) {
+  const openMenu = (event: MouseEvent) => {
     const button = event.currentTarget as HTMLElement
     if (playlistMenu.request?.from === button)
       return playlistMenu.close()
@@ -103,7 +105,7 @@
   }
 
   /** 自建歌单的“添加歌曲”：桌面居中弹窗、手机底部弹层。 */
-  function openAddSongs(event: MouseEvent) {
+  const openAddSongs = (event: MouseEvent) => {
     addSongsDialog.open({ playlistId: id, from: event.currentTarget as HTMLElement })
   }
 

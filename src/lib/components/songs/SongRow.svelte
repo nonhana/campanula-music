@@ -21,10 +21,12 @@
 </script>
 
 <script lang='ts'>
+  import { Check } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
+
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
-  import { Check } from '@lucide/svelte'
+
   import { songMenuActions } from '../menu/song-menu.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { formatDuration, langOf } from '../shared/text'
@@ -91,14 +93,14 @@
       clearTimeout(timer)
   })
 
-  function cancelLongPress(): void {
+  const cancelLongPress = (): void => {
     if (timer)
       clearTimeout(timer)
     timer = undefined
     origin = null
   }
 
-  function down(event: PointerEvent): void {
+  const down = (event: PointerEvent): void => {
     if (ghost || selecting || event.pointerType === 'mouse' || (event.target as Element).closest('[data-more], [data-grip]'))
       return
     // 长按进入多选后，退出时焦点回到这一行能接焦点的按钮（不在模块里查全局 DOM）
@@ -114,12 +116,12 @@
     }, LONG_PRESS)
   }
 
-  function move(event: PointerEvent): void {
+  const move = (event: PointerEvent): void => {
     if (origin && Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > MOVE_SLOP)
       cancelLongPress()
   }
 
-  function activate(): void {
+  const activate = (): void => {
     if (longPressed) {
       longPressed = false
       return
@@ -128,7 +130,7 @@
   }
 
   /** 多选时整行都能点：点在按钮（点歌、红心、•••）上时不重复处理 */
-  function rowclick(event: MouseEvent): void {
+  const rowclick = (event: MouseEvent): void => {
     if (selecting && !(event.target as Element).closest('button'))
       activate()
   }

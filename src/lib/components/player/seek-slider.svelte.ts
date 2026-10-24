@@ -1,4 +1,5 @@
 import type { Attachment } from 'svelte/attachments'
+
 import { getAppView } from '../shared/app-context.svelte'
 import { clamp } from '../shared/clamp'
 import { attachGrip } from '../shared/press'
@@ -39,14 +40,14 @@ interface SliderAttributes {
 }
 
 /** 在组件初始化时调用 */
-export function createSeekSlider(): SeekSlider {
+export const createSeekSlider = (): SeekSlider => {
   const view = getAppView()
   const duration = $derived(shownDuration(view.state.player))
   let dragging = $state<number | null>(null)
   let element: HTMLElement | null = null
 
   /** 指针在滑块上的哪里（0 到 1）；按下时捕获了指针，拖出滑块外面也按它的左右算 */
-  function ratioAt(sample: { x: number }): number | null {
+  const ratioAt = (sample: { x: number }): number | null => {
     if (!element)
       return null
     const rect = element.getBoundingClientRect()
@@ -71,7 +72,7 @@ export function createSeekSlider(): SeekSlider {
     onValue: value => (dragging = value),
   })
 
-  function onkeydown(event: KeyboardEvent) {
+  const onkeydown = (event: KeyboardEvent) => {
     if (duration <= 0)
       return
     const at = view.state.player.position

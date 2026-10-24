@@ -1,8 +1,9 @@
 import type { Playlist, PlaylistEditProblem } from '#lib/api/library.js'
+import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import type { Change } from '#lib/app/changes.js'
 import type { ChangeFailure } from '#lib/app/library.js'
 import type { OperationNotice } from '#lib/app/notice.js'
-import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, TRACKS_PER_CHANGE } from '#lib/api/library.js'
+
 import { downloadFailureText } from '../downloads/view'
 import { playlistName } from '../playlist/playlist-text'
 import { failureText } from '../shared/failure'
@@ -14,14 +15,12 @@ import { formatCount } from '../shared/text'
 // 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写
 
 /** 句子里的一张歌单：我喜欢的音乐直接写，别的加「」 */
-function playlistInText(playlist: Playlist): string {
-  return playlist.kind === 'liked'
-    ? playlistName(playlist)
-    : `「${playlist.name}」`
-}
+const playlistInText = (playlist: Playlist): string => playlist.kind === 'liked'
+  ? playlistName(playlist)
+  : `「${playlist.name}」`
 
 /** 没改成的是哪件事（“没能红心《歌名》：”） */
-function attempted(change: Change): string {
+const attempted = (change: Change): string => {
   switch (change.kind) {
     case 'heart':
       return `没能${change.hearted ? '' : '取消'}红心《${change.song.name}》：`
@@ -59,7 +58,7 @@ function attempted(change: Change): string {
 }
 
 /** 名称、简介、标签哪里不合规：写上限，不带句号 */
-export function editProblemText(problem: PlaylistEditProblem): string {
+export const editProblemText = (problem: PlaylistEditProblem): string => {
   switch (problem) {
     case 'nameEmpty':
       return '名称不能为空'
@@ -79,7 +78,7 @@ export function editProblemText(problem: PlaylistEditProblem): string {
 }
 
 /** 为什么没改成：一个原因短语，不带下一步、不带句号（同 failureText） */
-export function changeFailureText(failure: ChangeFailure): string {
+export const changeFailureText = (failure: ChangeFailure): string => {
   switch (failure.kind) {
     case 'checkTokenUnavailable':
       return '网易云的安全组件没加载出来，可能被拦截插件挡住了'
@@ -91,7 +90,7 @@ export function changeFailureText(failure: ChangeFailure): string {
 }
 
 /** 歌单不在了时，没成的是哪件事 */
-function missingAction(change: Extract<Change, { kind: 'add' | 'addMany' | 'remove' | 'order' | 'collectPlaylist' }>): string {
+const missingAction = (change: Extract<Change, { kind: 'add' | 'addMany' | 'remove' | 'order' | 'collectPlaylist' }>): string => {
   switch (change.kind) {
     case 'add':
     case 'addMany':
@@ -109,7 +108,7 @@ function missingAction(change: Extract<Change, { kind: 'add' | 'addMany' | 'remo
   }
 }
 
-export function operationNoticeText(notice: OperationNotice): string {
+export const operationNoticeText = (notice: OperationNotice): string => {
   switch (notice.kind) {
     case 'notChanged':
       return attempted(notice.change) + changeFailureText(notice.failure)

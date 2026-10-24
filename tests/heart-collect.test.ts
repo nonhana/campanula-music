@@ -1,6 +1,8 @@
-import type { App } from '#lib/app/app.js'
-import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
+
+import type { App } from '#lib/app/app.js'
+
+import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
 import { JAZZ_DETAIL, listener, SOME_SONGS, storedLibrary, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
@@ -518,7 +520,7 @@ describe('收藏', () => {
 
 describe('同步拿回来的旧数据', () => {
   /** 同一台设备再开一个标签页：后台同步的红心压着（返回 release 放出），歌单列表压着不回 */
-  async function reopenWithHeartsHeld(device: Device): Promise<{ app: App, releaseHearts: () => void }> {
+  const reopenWithHeartsHeld = async (device: Device): Promise<{ app: App, releaseHearts: () => void }> => {
     await world.netease.reply('login/user_account.vip.json')
     const hearts = held()
     await replyLibrary({

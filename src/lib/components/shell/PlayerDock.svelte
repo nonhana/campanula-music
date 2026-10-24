@@ -9,6 +9,7 @@
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte'
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte'
   import { queueEmpty } from '../player/view'

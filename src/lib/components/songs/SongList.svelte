@@ -6,12 +6,13 @@
   点一首歌用整个列表替换播放队列（App.play 按播放来源决定；搜索是插播）。
 -->
 <script lang='ts'>
+  import { ListMusic, SearchX } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import type { ClassValue } from 'svelte/elements'
+
   import type { Song } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
-  import type { SongDragHooks, SongListView, SongSearch, SongSelection } from './view'
-  import { ListMusic, SearchX } from '@lucide/svelte'
+
   import { currentSong } from '../player/now'
   import { getAppView } from '../shared/app-context.svelte'
   import { fade, reveal, stagger } from '../shared/motion'
@@ -20,6 +21,7 @@
   import VirtualList from '../ui/VirtualList.svelte'
   import SkeletonRows from './SkeletonRows.svelte'
   import SongRow, { SONG_COLUMNS, SONG_GRID } from './SongRow.svelte'
+  import type { SongDragHooks, SongListView, SongSearch, SongSelection } from './view'
   import { SONG_ROW_HEIGHT, songMark } from './view'
 
   interface Props {
@@ -114,11 +116,11 @@
   /** 手机数量行：搜索时写找到几首；给 count / countAction 的不搜时也出现 */
   const countRow = $derived(list.kind === 'songs' && (search !== null || count !== undefined || countAction !== undefined))
 
-  function play(song: Song): void {
+  const play = (song: Song): void => {
     view.app.play(source, song.id)
   }
 
-  function activate(song: Song): void {
+  const activate = (song: Song): void => {
     if (selection?.active)
       selection.toggle(song)
     else

@@ -5,10 +5,11 @@
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
+
   import type { DialogSize } from '../overlay/DialogShell.svelte'
-  import type { EditorRequest } from '../overlay/overlay-requests'
   import DialogShell from '../overlay/DialogShell.svelte'
   import { getOverlays } from '../overlay/overlay-context'
+  import type { EditorRequest } from '../overlay/overlay-requests'
   import PlaylistEditorPanel from './PlaylistEditorPanel.svelte'
 
   const { playlistEditor } = getOverlays()

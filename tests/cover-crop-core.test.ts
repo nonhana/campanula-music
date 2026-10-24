@@ -1,5 +1,6 @@
-import type { CropFrame } from '#lib/components/playlist/cover-crop-core.js'
 import { describe, expect, it } from 'vitest'
+
+import type { CropFrame } from '#lib/components/playlist/cover-crop-core.js'
 import { centerCrop, createCropView, cropOf, maxZoomOf, nudgeCrop, panCrop, pinchCrop, wheelCrop, zoomBy, zoomTo } from '#lib/components/playlist/cover-crop-core.js'
 
 // 第二个测试接入点“拖动手势核心”的取景框那一半（#34 / #65）：不碰页面、不碰 Svelte。

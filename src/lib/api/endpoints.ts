@@ -1,14 +1,15 @@
+import { resolve } from '$app/paths'
+
 import type { AccountResponse } from './account.js'
 import type { CoverTokenResponse, SetCoverRequest, SetCoverResponse } from './cover.js'
 import type { DailyResponse } from './discover.js'
 import type { GetEndpoint } from './endpoint.js'
+import { get, post } from './endpoint.js'
 import type { AddTracksRequest, AlbumResponse, ArtistAlbumsResponse, ArtistResponse, CollectedAlbumsResponse, CollectedArtistsResponse, CollectRequest, CreatePlaylistRequest, CreatePlaylistResponse, DescribePlaylistRequest, HeartRequest, HeartsResponse, PlaylistCollectRequest, PlaylistOrderRequest, PlaylistPageResponse, PlaylistsResponse, PlaylistTagsResponse, RemoveTracksRequest, RenamePlaylistRequest, SongOrderRequest, SongsRequest, SongsResponse, TagPlaylistRequest, TrackIdsResponse } from './library.js'
 import type { CaptchaRequest, CaptchaResponse, LogoutResponse, QrCheckRequest, QrCheckResponse, QrResponse, SmsLoginRequest, SmsLoginResponse } from './login.js'
 import type { CheckInRequest, DownloadUrlResponse, LyricsResponse, PlayUrlResponse, Quality } from './playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from './search.js'
 import type { WriteResponse } from './write.js'
-import { resolve } from '$app/paths'
-import { get, post } from './endpoint.js'
 
 // Campanula 自己的接口目录（ADR-0013）：一个端点一条，写清方法、路径、请求和响应类型。
 // 路径借 SvelteKit 生成的路由 id（#63 之后路径参数是数字）；改错路由 id 或参数，pnpm check 会报错。
@@ -20,10 +21,8 @@ interface NeteaseIdParams {
 }
 
 /** 搜索结果的一页：items 的形状由 kind 定（服务端的 searches 按 kind 塑形），所以响应类型跟着 kind 走 */
-export function searchPage<K extends SearchKind>(kind: K): GetEndpoint<{ keywords: string, offset: number }, SearchPageResponse<K>> {
-  return get<SearchPageResponse<K>, { keywords: string, offset: number }>(({ keywords, offset }) =>
-    `${resolve('/api/search/[kind]', { kind })}?keywords=${encodeURIComponent(keywords)}&offset=${offset}`)
-}
+export const searchPage = <K extends SearchKind>(kind: K): GetEndpoint<{ keywords: string, offset: number }, SearchPageResponse<K>> => get<SearchPageResponse<K>, { keywords: string, offset: number }>(({ keywords, offset }) =>
+  `${resolve('/api/search/[kind]', { kind })}?keywords=${encodeURIComponent(keywords)}&offset=${offset}`)
 
 export const endpoints = {
   // 账号和登录（Spec #11“服务端：Campanula API”的登录部分）

@@ -4,9 +4,10 @@
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
-  import type { SongLook } from './song-look'
+
   import { artistLine, langOf } from '../shared/text'
   import DownloadMark from './DownloadMark.svelte'
+  import type { SongLook } from './song-look'
   import SongBadge from './SongBadge.svelte'
 
   interface Props {

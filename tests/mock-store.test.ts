@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+
 import { buildSeed, FOUR_PLAYABLE_PLAYLIST, LIKED_PLAYLIST, POEMS_PLAYLIST } from '../src/lib/server/mock/seed.ts'
 import { MockStore } from '../src/lib/server/mock/store.ts'
 
 // mock 的状态化曲库：种子从录制拼出来，写改状态、读回能看到，reset 回种子。
 const store = new MockStore('before')
 
-async function playlists() {
-  return (await store.userPlaylist()).playlist as { id: number, name: string, trackCount: number, trackIds: { id: number }[], privacy: number, status: number }[]
-}
+const playlists = async () => (await store.userPlaylist()).playlist as { id: number, name: string, trackCount: number, trackIds: { id: number }[], privacy: number, status: number }[]
 
 describe('mock 曲库', () => {
   beforeEach(async () => {

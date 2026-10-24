@@ -10,7 +10,7 @@ export const UPLOAD_PATH = '/api/mock/upload'
 
 const EXTERNAL_HOST = /(?:^|\.)(?:music\.126\.net|127\.net|netease\.com|163\.com)$/i
 
-function isExternal(value: string): boolean {
+const isExternal = (value: string): boolean => {
   if (!/^https?:\/\//i.test(value))
     return false
   try {
@@ -22,7 +22,7 @@ function isExternal(value: string): boolean {
 }
 
 /** 封面、头像这类图片：同一条地址每次都给同一个本地图 */
-function coverPath(url: string): string {
+const coverPath = (url: string): string => {
   const key = createHash('sha1').update(url).digest('hex').slice(0, 16)
   return `${COVER_PREFIX}/${key}.svg`
 }
@@ -31,11 +31,9 @@ function coverPath(url: string): string {
  * 把返回体里所有指向网易云的外网地址换成开发服务器自己的地址。
  * 只认已知的网易云域名；别的地址原样保留（录制里几乎没有，真出现就是 mock 没本地化，测试会查）。
  */
-export function localize<T>(value: T): T {
-  return walk(value) as T
-}
+export const localize = <T>(value: T): T => walk(value) as T
 
-function walk(value: unknown): unknown {
+const walk = (value: unknown): unknown => {
   if (typeof value === 'string') {
     return isExternal(value)
       ? coverPath(value)
@@ -62,7 +60,7 @@ const PALETTE = [
 ] as const
 
 /** 一张确定的本地封面：同一条地址每次颜色和图案一样，不带任何外网引用 */
-export function coverSvg(key: string): string {
+export const coverSvg = (key: string): string => {
   const sum = [...key].reduce((total, char) => total + char.charCodeAt(0), 0)
   const [from, to] = PALETTE[sum % PALETTE.length]
   // 三套抽象图案，按地址的摘要选一套：比画一个音符更像一张封面，也不会出现奇怪的白色方块
@@ -77,7 +75,7 @@ export function coverSvg(key: string): string {
 const audioCache = new Map<number, Buffer>()
 
 /** 一段 2 秒、440Hz 的本地 WAV：播放条、进度、自动下一首都能真的动起来，不依赖外网 */
-export function audioWav(songId: number): Buffer {
+export const audioWav = (songId: number): Buffer => {
   const cached = audioCache.get(songId)
   if (cached)
     return cached
@@ -109,14 +107,12 @@ export function audioWav(songId: number): Buffer {
 /** 浏览器直传的封面，按 imgId 存在内存里；mock 重启就没了，和整份状态一样 */
 const uploads = new Map<string, { type: string, bytes: Buffer }>()
 
-export function saveUpload(imgId: string, type: string, bytes: Buffer): void {
+export const saveUpload = (imgId: string, type: string, bytes: Buffer): void => {
   uploads.set(imgId, { type, bytes })
 }
 
-export function uploadOf(imgId: string): { type: string, bytes: Buffer } | undefined {
-  return uploads.get(imgId)
-}
+export const uploadOf = (imgId: string): { type: string, bytes: Buffer } | undefined => uploads.get(imgId)
 
-export function clearUploads(): void {
+export const clearUploads = (): void => {
   uploads.clear()
 }

@@ -1,14 +1,15 @@
+import { endpoints } from '#lib/api/endpoints.js'
 import type { Playlist } from '#lib/api/library.js'
+import { canSortPlaylist, reorderSortable, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
+
 import type { Clock, PageVisibility } from './browser'
 import type { Change, ConfirmedChange, DeferredChange } from './changes'
+import { targetOf } from './changes'
 import type { ChangeFailure } from './library'
 import type { LocalDb, Replica } from './local'
 import type { OperationNotice } from './notice'
 import type { SessionResult, SessionRound } from './session-round'
-import { endpoints } from '#lib/api/endpoints.js'
-import { canSortPlaylist, reorderSortable, TRACKS_PER_CHANGE } from '#lib/api/library.js'
-import { targetOf } from './changes'
 
 // 晚一点才提交的修改（Spec #11“客户端：晚一点才提交的修改”，#70）：多选移除（5 秒撤销）、
 // 歌单内排序和自建歌单排序（停手 2 秒合并）、页面隐藏时立即提交、关掉再打开恢复没确认的改动。
@@ -148,16 +149,12 @@ export interface Deferred {
   forget: () => void
 }
 
-function sameOrder(a: readonly number[], b: readonly number[]): boolean {
-  return a.length === b.length && a.every((id, index) => id === b[index])
-}
+const sameOrder = (a: readonly number[], b: readonly number[]): boolean => a.length === b.length && a.every((id, index) => id === b[index])
 
-function entryOf(change: Change): PendingChange {
-  return { change, confirmedAt: null, saved: false }
-}
+const entryOf = (change: Change): PendingChange => ({ change, confirmedAt: null, saved: false })
 
 /** 曲库里能排序的歌单，按当前的先后：我喜欢的音乐在最前，然后是自建歌单 */
-function sortablePlaylists(current: Replica): Playlist[] | null {
+const sortablePlaylists = (current: Replica): Playlist[] | null => {
   if (!current.playlists)
     return null
   const sortable = current.playlists.filter(playlist => canSortPlaylist(playlist.kind))
@@ -168,13 +165,13 @@ function sortablePlaylists(current: Replica): Playlist[] | null {
 }
 
 /** 过期、缺了几张的顺序补成能提交的：还在的照提交的先后，没出现的按原来的先后接在后面 */
-function normalizedPlaylistOrder(current: Replica, playlistIds: readonly number[]): number[] {
+const normalizedPlaylistOrder = (current: Replica, playlistIds: readonly number[]): number[] => {
   const sortable = sortablePlaylists(current) ?? []
   return reorderSortable(sortable, playlistIds, () => true).map(playlist => playlist.id)
 }
 
 /** 自建歌单顺序不对时抛的错：调用方只该传全部自建歌单的编号（编程错误，不静默修好） */
-function orderProblem(own: readonly Playlist[], playlistIds: readonly number[]): string | null {
+const orderProblem = (own: readonly Playlist[], playlistIds: readonly number[]): string | null => {
   if (playlistIds.length !== own.length)
     return `自建歌单顺序不对：要 ${own.length} 张，给了 ${playlistIds.length} 张`
   if (new Set(playlistIds).size !== playlistIds.length)
@@ -205,18 +202,16 @@ interface PendingState {
   writtenMarkers: Set<number>
 }
 
-function freshPending(): PendingState {
-  return {
-    removals: [],
-    noticeRemovalId: null,
-    orders: new Map(),
-    playlistOrder: null,
-    recovering: new Set(),
-    writtenMarkers: new Set(),
-  }
-}
+const freshPending = (): PendingState => ({
+  removals: [],
+  noticeRemovalId: null,
+  orders: new Map(),
+  playlistOrder: null,
+  recovering: new Set(),
+  writtenMarkers: new Set(),
+})
 
-export function createDeferred(context: DeferredContext): Deferred {
+export const createDeferred = (context: DeferredContext): Deferred => {
   const { clock, local, session } = context
   let pending = freshPending()
   /** 这个标签页里每一批移除的编号：只增不减，换轮也不重用 */
@@ -227,7 +222,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   const queues = new Map<string, Promise<void>>()
 
   /** 丢掉本标签页的全部待提交状态：计时、队列里的那一份；本机标记留给恢复流程 */
-  function resetPending(): void {
+  const resetPending = (): void => {
     for (const item of pending.removals) {
       item.settled = true
       item.cancelTimer()
@@ -243,11 +238,11 @@ export function createDeferred(context: DeferredContext): Deferred {
     pending = freshPending()
   }
 
-  function show(notice: OperationNotice | null): void {
+  const show = (notice: OperationNotice | null): void => {
     context.notify(notice)
   }
 
-  function serialize<T>(target: string, job: () => Promise<T>): Promise<T> {
+  const serialize = <T>(target: string, job: () => Promise<T>): Promise<T> => {
     const before = queues.get(target) ?? Promise.resolve()
     const run = before.then(job)
     const tail = run.then(() => {}, () => {})
@@ -259,7 +254,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     return run
   }
 
-  async function settled(target: string): Promise<void> {
+  const settled = async (target: string): Promise<void> => {
     let tail = queues.get(target)
     while (tail) {
       await tail
@@ -271,7 +266,7 @@ export function createDeferred(context: DeferredContext): Deferred {
    * 本机记的“这几张歌单有改动还没确认”：正在提交的、上次关掉前没确认完的。
    * 只加/删这个标签页写过的，别的标签页同时在改别的歌单时不会被盖掉
    */
-  function saveMarkers(mine: number): Promise<void> {
+  const saveMarkers = (mine: number): Promise<void> => {
     const current = context.replica()
     if (!current)
       return Promise.resolve()
@@ -301,7 +296,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 停手 window 毫秒后提交这一份；重新计时会取消上一份 */
-  function schedule<C extends DeferredChange>(mine: number, item: Pending<C>, policy: Policy<C>): void {
+  const schedule = <C extends DeferredChange>(mine: number, item: Pending<C>, policy: Policy<C>): void => {
     item.cancelTimer()
     item.cancelTimer = clock.after(policy.window, () => {
       void commit(mine, item, policy, { keepalive: false })
@@ -309,7 +304,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 提交一份修改：成功后接着发最新的，或者收尾。三种修改共用这一份骨架 */
-  async function commit<C extends DeferredChange>(mine: number, item: Pending<C>, policy: Policy<C>, { keepalive, immediate = false }: { keepalive: boolean, immediate?: boolean }): Promise<void> {
+  const commit = async <C extends DeferredChange>(mine: number, item: Pending<C>, policy: Policy<C>, { keepalive, immediate = false }: { keepalive: boolean, immediate?: boolean }): Promise<void> => {
     if (item.settled)
       return
     if (item.sending)
@@ -355,7 +350,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 把这些修改提交给网易云（前台请求）；这一轮已经结束就不发 */
-  function submit(mine: number, change: RemoveChange | OrderChange | PlaylistOrderChange, keepalive: boolean): Promise<Outcome> {
+  const submit = (mine: number, change: RemoveChange | OrderChange | PlaylistOrderChange, keepalive: boolean): Promise<Outcome> => {
     if (!session.isCurrent(mine))
       return Promise.resolve(null)
     const options = keepalive
@@ -372,7 +367,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 网易云确认了显示着的这一份：写进副本；提交中又改了的话返回 true，接着发最新的 */
-  async function accepted<C extends DeferredChange>(mine: number, item: Pending<C>, entry: PendingChange, sent: C): Promise<boolean> {
+  const accepted = async <C extends DeferredChange>(mine: number, item: Pending<C>, entry: PendingChange, sent: C): Promise<boolean> => {
     if (!await context.overlay.confirm(mine, entry, sent))
       return false
     item.sendingEntry = null
@@ -388,7 +383,7 @@ export function createDeferred(context: DeferredContext): Deferred {
    * 网易云回了 -1 或者超时：重新读一次这张歌单，和提交的顺序一样就算成功（几千首位置都变时其实已经生效）。
    * 重读没成功、或者顺序不一样都是没有生效
    */
-  async function orderLanded(playlistId: number, songIds: readonly number[]): Promise<boolean> {
+  const orderLanded = async (playlistId: number, songIds: readonly number[]): Promise<boolean> => {
     const result = await session.api.get(endpoints.trackIds, { id: playlistId })
     if (!result?.ok)
       return false
@@ -402,7 +397,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 排序没成功：去掉这张歌单的排序修改（本地退回原来的顺序），提示条带上“重试”用的顺序 */
-  function orderFailed(mine: number, item: Pending<OrderChange>, failure: ChangeFailure | null): void {
+  const orderFailed = (mine: number, item: Pending<OrderChange>, failure: ChangeFailure | null): void => {
     if (!session.isCurrent(mine))
       return
     const { playlist, songIds } = item.change
@@ -417,7 +412,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 排序时网易云说这张歌单已经不在了：退回原来的顺序，马上同步一次曲库 */
-  function orderMissing(mine: number, item: Pending<OrderChange>, sent: OrderChange): void {
+  const orderMissing = (mine: number, item: Pending<OrderChange>, sent: OrderChange): void => {
     if (!session.isCurrent(mine))
       return
     context.overlay.remove(change => change.kind === 'order' && change.playlist.id === sent.playlist.id)
@@ -427,7 +422,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 自建歌单顺序没成功：去掉这次的修改（本地退回原来的顺序），提示条带上“重试”用的顺序 */
-  function playlistOrderFailed(mine: number, item: Pending<PlaylistOrderChange>, failure: ChangeFailure): void {
+  const playlistOrderFailed = (mine: number, item: Pending<PlaylistOrderChange>, failure: ChangeFailure): void => {
     if (!session.isCurrent(mine))
       return
     const playlistIds = [...item.change.playlistIds]
@@ -503,7 +498,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     },
   }
 
-  function startRemoval(mine: number, playlist: Playlist, songIds: readonly number[]): PendingRemoval {
+  const startRemoval = (mine: number, playlist: Playlist, songIds: readonly number[]): PendingRemoval => {
     const change: RemoveChange = {
       kind: 'remove',
       playlist,
@@ -559,7 +554,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 先从本地拿掉，记下未确认；undo 时提示条留 5 秒撤销，否则马上提交（retry 用） */
-  function applyRemoval(mine: number, playlist: Playlist, songIds: readonly number[], { undo }: { undo: boolean }): PendingRemoval {
+  const applyRemoval = (mine: number, playlist: Playlist, songIds: readonly number[], { undo }: { undo: boolean }): PendingRemoval => {
     // 5 秒内又移除了一批：同一张歌单合成一条提示（撤销两批一起放回，计时从头算）；
     // 不同歌单的先提交上一批，别让它悄悄在后面提交、撤销不到了。
     // “上一批”看私有的 noticeRemovalId：提示条被 added 等换掉以后它仍然记着，和基线一样会先提交
@@ -605,7 +600,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     return item
   }
 
-  function remove(playlist: Playlist, songIds: readonly number[]): void {
+  const remove = (playlist: Playlist, songIds: readonly number[]): void => {
     const current = context.replica()
     if (!current)
       return
@@ -642,7 +637,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 撤销提示条上的这一批移除（载荷里的 removalId）：整批放回原位；这一批就撤完了时连计时一起停掉 */
-  function undoRemove(removalId: number): void {
+  const undoRemove = (removalId: number): void => {
     const item = pending.removals.find(each => each.removalId === removalId && !each.settled && !each.sending)
     if (!item)
       return
@@ -660,7 +655,7 @@ export function createDeferred(context: DeferredContext): Deferred {
   }
 
   /** 听众主动关掉提示条：关的是“撤销”那一条时忘掉它指向哪一批；计时和提交不受影响 */
-  function dismiss(): void {
+  const dismiss = (): void => {
     const current = context.notice()
     if (current?.kind === 'removed' && pending.noticeRemovalId === current.removalId)
       pending.noticeRemovalId = null
@@ -671,7 +666,7 @@ export function createDeferred(context: DeferredContext): Deferred {
    * 和基线一样遍历这张歌单的全部待提交移除（提示被关掉、换掉以后也能把前一批加回来）；
    * removalId / noticeRemovalId 只决定当前那条“撤销”提示要不要更新、指针什么时候清，不拿来筛候选。
    */
-  function restore(playlistId: number, songIds: readonly number[]): Set<number> {
+  const restore = (playlistId: number, songIds: readonly number[]): Set<number> => {
     const ids = new Set(songIds)
     const restored = new Set<number>()
     for (const item of [...pending.removals]) {
@@ -715,7 +710,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     return restored
   }
 
-  async function retryRemove(playlist: Playlist, songIds: readonly number[]): Promise<void> {
+  const retryRemove = async (playlist: Playlist, songIds: readonly number[]): Promise<void> => {
     // 用当前副本里的这一张：提示条可能开了一阵，名字、作者已经变了。
     // 歌单已经不在当前副本里（在别处删了）就不提交，和 retryOrder 一样，等同步/恢复流程处理
     const fresh = context.replica()?.playlists?.find(item => item.id === playlist.id)
@@ -736,7 +731,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     await commit(mine, item, removalPolicy, { keepalive: false })
   }
 
-  function startOrder(mine: number, playlist: Playlist, songIds: readonly number[]): Pending<OrderChange> {
+  const startOrder = (mine: number, playlist: Playlist, songIds: readonly number[]): Pending<OrderChange> => {
     const change: OrderChange = {
       kind: 'order',
       playlist,
@@ -776,7 +771,7 @@ export function createDeferred(context: DeferredContext): Deferred {
    * 往已有的一份修改里合并新的载荷：正在提交时换一份新的显示着的修改，等这一份回来再发；
    * 没在提交就改显示着的那一份，停手计时从头算
    */
-  function mergePending<C extends DeferredChange>(item: Pending<C>, change: C, mine: number, policy: Policy<C>): void {
+  const mergePending = <C extends DeferredChange>(item: Pending<C>, change: C, mine: number, policy: Policy<C>): void => {
     item.change = change
     if (item.sending) {
       if (item.entry === item.sendingEntry) {
@@ -792,7 +787,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     schedule(mine, item, policy)
   }
 
-  function moveSongs(playlistId: number, songIds: readonly number[], before: number | null): boolean {
+  const moveSongs = (playlistId: number, songIds: readonly number[], before: number | null): boolean => {
     const current = context.replica()
     const display = context.shown()
     if (!current || !display)
@@ -844,7 +839,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     return true
   }
 
-  function orderPlaylists(playlistIds: readonly number[]): boolean {
+  const orderPlaylists = (playlistIds: readonly number[]): boolean => {
     const current = context.replica()
     const display = context.shown()
     if (!current || !display?.playlists)
@@ -895,7 +890,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     return true
   }
 
-  function startPlaylistOrder(mine: number, playlistIds: readonly number[]): Pending<PlaylistOrderChange> {
+  const startPlaylistOrder = (mine: number, playlistIds: readonly number[]): Pending<PlaylistOrderChange> => {
     const change: PlaylistOrderChange = {
       kind: 'playlistOrder',
       playlistIds: [...playlistIds],
@@ -930,7 +925,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     return item
   }
 
-  async function retryOrder(playlist: Playlist, songIds: readonly number[]): Promise<void> {
+  const retryOrder = async (playlist: Playlist, songIds: readonly number[]): Promise<void> => {
     const current = context.replica()
     if (!current)
       return
@@ -955,7 +950,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     await commit(mine, item, orderPolicy, { keepalive: false, immediate: true })
   }
 
-  async function retryPlaylistOrder(playlistIds: readonly number[]): Promise<void> {
+  const retryPlaylistOrder = async (playlistIds: readonly number[]): Promise<void> => {
     const current = context.replica()
     if (!current)
       return
@@ -974,7 +969,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     await commit(mine, item, playlistOrderPolicy, { keepalive: false, immediate: true })
   }
 
-  async function flush(playlistId?: number): Promise<void> {
+  const flush = async (playlistId?: number): Promise<void> => {
     const mine = session.current
     await Promise.all([
       ...pending.removals
@@ -993,7 +988,7 @@ export function createDeferred(context: DeferredContext): Deferred {
     ])
   }
 
-  async function recover(mine: number, reload: (playlistId: number) => Promise<Recovered>): Promise<void> {
+  const recover = async (mine: number, reload: (playlistId: number) => Promise<Recovered>): Promise<void> => {
     if (pending.recovering.size === 0)
       return
     let recovered = false
@@ -1013,12 +1008,12 @@ export function createDeferred(context: DeferredContext): Deferred {
     await saveMarkers(mine)
   }
 
-  function resume(playlistIds: readonly number[]): void {
+  const resume = (playlistIds: readonly number[]): void => {
     pending.recovering = new Set(playlistIds)
     pending.writtenMarkers = new Set(pending.recovering)
   }
 
-  function forget(): void {
+  const forget = (): void => {
     resetPending()
     queues.clear()
   }

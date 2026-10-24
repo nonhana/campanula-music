@@ -4,10 +4,12 @@
   骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）。架子见 Shelf
 -->
 <script lang='ts'>
-  import type { CollectedAlbum, CollectedArtist } from '#lib/api/library.js'
-  import type { LibraryState } from '#lib/app/library.js'
   import { Disc3, UserRound } from '@lucide/svelte'
+
+  import type { CollectedAlbum, CollectedArtist } from '#lib/api/library.js'
   import { creditLine } from '#lib/api/library.js'
+  import type { LibraryState } from '#lib/app/library.js'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
   import AlbumTile from './AlbumTile.svelte'

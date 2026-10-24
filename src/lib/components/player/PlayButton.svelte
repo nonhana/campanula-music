@@ -5,6 +5,7 @@
 -->
 <script lang='ts'>
   import { LoaderCircle, Pause, Play } from '@lucide/svelte'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { iconSwap } from '../shared/motion'
   import { DELAYS } from '../shared/motion-tokens'

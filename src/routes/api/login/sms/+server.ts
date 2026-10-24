@@ -1,11 +1,12 @@
-import type { SmsLoginRequest } from '#lib/api/login.js'
-import type { RequestHandler } from './$types'
 import { endpoints } from '#lib/api/endpoints.js'
+import type { SmsLoginRequest } from '#lib/api/login.js'
 import { CAPTCHA, PHONE } from '#lib/api/login.js'
 import { deviceIdFor, saveLogin } from '#lib/server/credentials.js'
 import { loginWithCaptcha } from '#lib/server/netease.js'
 import { readFields } from '#lib/server/request.js'
 import { withNetease } from '#lib/server/respond.js'
+
+import type { RequestHandler } from './$types'
 
 // 短信验证码登录：成功就把凭据和 deviceId 加密进登录 Cookie。
 // 网易云可能因为风控拒绝（10004），说明原样交给界面，听众可以改用扫码

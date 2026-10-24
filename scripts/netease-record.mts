@@ -2,15 +2,17 @@
 // 用这里的三样东西：openSession 解开登录 Cookie，createRecorder 记下每次调用，save 脱敏、查残留、写文件。
 // 脱敏照 README「脱敏」，用作者本机的 _notes/fixture-identity.json（本人身份和真假编号对照），
 // 录到新的人、本人新的歌单和作品时补进对照表，下一批录制沿用同一套假编号。
-import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
-import type { LoginCookie } from '../src/lib/server/credentials.ts'
-import type { FixtureIdentity } from './fixture-identity.mts'
 import { Buffer } from 'node:buffer'
 import { createDecipheriv, hkdfSync } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
+
+import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf } from 'hana-music-api'
 import { invokeModule } from 'hana-music-api'
+
+import type { LoginCookie } from '../src/lib/server/credentials.ts'
+import type { FixtureIdentity } from './fixture-identity.mts'
 import { findLeaks, IDENTITY_FILE, loadIdentity } from './fixture-identity.mts'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -33,16 +35,14 @@ export type Outcome<K extends ModuleIdentifier>
 
 export type Invoke = <K extends ModuleIdentifier>(module: K, query: QueryOf<K>) => Promise<Outcome<K>>
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
  * 解开 LOGIN_FILE 里的登录 Cookie，拿到调 SDK 用的凭据，先只读问一次 user_account 确认登录有效：
  * 凭据失效时网易云照样回 200，只是账号是 null（README「录制」），不先查就会录成匿名看到的数据。
  * 和 src/lib/server/credentials.ts 的加密对应：COOKIE_SECRET 派生的 AES-256-GCM。凭据只在内存里
  */
-export async function openSession(): Promise<Invoke> {
+export const openSession = async (): Promise<Invoke> => {
   if (!existsSync(LOGIN_FILE))
     throw new Error(`没有 ${LOGIN_FILE}：${RENEW}`)
   const sealed = readFileSync(LOGIN_FILE, 'utf8').trim()
@@ -73,7 +73,7 @@ export async function openSession(): Promise<Invoke> {
     state: { deviceId: login.deviceId },
   }
   /** 调一个 SDK 模块；SDK 抛出的失败（带 status 和 body）当作一次返回 */
-  async function invoke<K extends ModuleIdentifier>(module: K, query: QueryOf<K>): Promise<Outcome<K>> {
+  const invoke = async <K extends ModuleIdentifier>(module: K, query: QueryOf<K>): Promise<Outcome<K>> => {
     try {
       const response = await invokeModule(module, query, config)
       return { ok: true, status: response.status, body: response.body }
@@ -90,9 +90,7 @@ export async function openSession(): Promise<Invoke> {
   return invoke
 }
 
-function wholeNumber(number: number | string): RegExp {
-  return new RegExp(`(?<![0-9])${number}(?![0-9])`, 'g')
-}
+const wholeNumber = (number: number | string): RegExp => new RegExp(`(?<![0-9])${number}(?![0-9])`, 'g')
 
 /** 截短的数组：在返回里的位置和原来的长度 */
 interface Truncated {
@@ -104,7 +102,7 @@ interface Truncated {
  * 脱敏一次调用的返回。identity 会被补上新录到的人、本人歌单和作品（调用方负责存回文件）。
  * 返回脱敏后的 body 和截短的记录
  */
-function sanitize(body: unknown, identity: FixtureIdentity, truncate: boolean): { body: unknown, truncated: Truncated[] } {
+const sanitize = (body: unknown, identity: FixtureIdentity, truncate: boolean): { body: unknown, truncated: Truncated[] } => {
   const { self, artist } = identity
   const fake = (table: 'playlists' | 'works' | 'users', counter: keyof FixtureIdentity['next']) =>
     (real: number): number => (identity[table][real] ??= identity.next[counter]++)
@@ -241,7 +239,7 @@ interface Call {
 }
 
 /** 记下一批调用，最后一起脱敏、写文件 */
-export function createRecorder({ invoke, dir, viewer, truncate = true }: RecorderOptions) {
+export const createRecorder = ({ invoke, dir, viewer, truncate = true }: RecorderOptions) => {
   const identity = loadIdentity()
   if (!identity)
     throw new Error(`没有 ${IDENTITY_FILE}：先在作者本机建好本人身份和对照表（README「录制」）`)

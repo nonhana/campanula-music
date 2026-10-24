@@ -12,19 +12,21 @@
   桌面是 DialogBody，右下角 取消 / 创建（保存）。确认的排版是 ConfirmPanel
 -->
 <script lang='ts'>
-  import type { Snippet } from 'svelte'
-  import type { ChangeFailure } from '#lib/app/library.js'
-  import type { EditorRequest } from '../overlay/overlay-requests'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { Camera, Lock } from '@lucide/svelte'
+  import type { Snippet } from 'svelte'
   import { untrack } from 'svelte'
+
   import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH } from '#lib/api/library.js'
+  import type { ChangeFailure } from '#lib/app/library.js'
+
   import TagPicker from '../library/TagPicker.svelte'
   import { changeFailureText, editProblemText } from '../notice/text'
   import ConfirmPanel from '../overlay/ConfirmPanel.svelte'
   import DialogBody from '../overlay/DialogBody.svelte'
   import { getOverlays } from '../overlay/overlay-context'
+  import type { EditorRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'
   import { unfold } from '../shared/motion'
@@ -94,7 +96,7 @@
   })
 
   /** 等网易云建好才关上；这时关不掉、“创建”转圈（playlistEditor.busy），没建成就在这里说原因，填好的不丢 */
-  async function create() {
+  const create = async () => {
     if (request.mode !== 'new' || blocked || playlistEditor.busy)
       return
     playlistEditor.setBusy(true)
@@ -107,7 +109,7 @@
       playlistEditor.close()
   }
 
-  function save() {
+  const save = () => {
     if (!playlist || blocked)
       return
     void view.app.editPlaylist(playlist.id, { name, description, tags })
@@ -115,11 +117,11 @@
   }
 
   /** 换封面：先选图，选到了才打开裁剪页（取消选择就什么都不做） */
-  function chooseCover(): void {
+  const chooseCover = (): void => {
     coverInput?.click()
   }
 
-  function onCoverPicked(event: Event): void {
+  const onCoverPicked = (event: Event): void => {
     const element = event.currentTarget as HTMLInputElement
     const file = element.files?.[0]
     element.value = ''
@@ -129,7 +131,7 @@
     void view.app.prepareCover(playlist.id, file)
   }
 
-  function submit(event: SubmitEvent) {
+  const submit = (event: SubmitEvent) => {
     event.preventDefault()
     if (request.mode === 'new')
       void create()
@@ -137,7 +139,7 @@
       save()
   }
 
-  function publish() {
+  const publish = () => {
     if (!playlist)
       return
     void view.app.publishPlaylist(playlist.id)
@@ -145,7 +147,7 @@
   }
 
   /** 在这张歌单的页面上删：先回到曲库（换掉这一页的浏览记录；桌面是首页，手机是歌单标签），再删，不留在已经删掉的歌单页上 */
-  async function remove() {
+  const remove = async () => {
     if (!playlist)
       return
     const { id } = playlist

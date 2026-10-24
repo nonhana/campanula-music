@@ -59,12 +59,10 @@ interface Press {
 }
 
 /** 往拉开那边拖过头 overdrag px 时只走这么多 px（Vaul 的 dampenValue：头 6px 多不动，之后按对数慢慢走） */
-function dampened(overdrag: number): number {
-  return Math.max(0, 8 * (Math.log(overdrag + 1) - 2))
-}
+const dampened = (overdrag: number): number => Math.max(0, 8 * (Math.log(overdrag + 1) - 2))
 
 /** 按下时在 at、拖过 dy px：往收起那边最多到完全收起，往拉开那边拖过头时有阻尼 */
-function dragged(at: number, dy: number, size: number): number {
+const dragged = (at: number, dy: number, size: number): number => {
   const position = at + dy / size
   if (position > 1)
     return 1
@@ -73,12 +71,12 @@ function dragged(at: number, dy: number, size: number): number {
     : position
 }
 
-export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): DrawerCore {
+export const createDrawerCore = ({ size, drawnAt, onPose }: DrawerCoreOptions): DrawerCore => {
   let pose: DrawerPose = { dragging: false, end: 1 }
   /** 层请求要的那一头 */
   let wanted: DrawerEnd = 1
 
-  function setPose(next: DrawerPose) {
+  const setPose = (next: DrawerPose) => {
     pose = next
     onPose(next)
   }
@@ -104,7 +102,7 @@ export function createDrawerCore({ size, drawnAt, onPose }: DrawerCoreOptions): 
       /** 拖过、往横里挪开过之后，跟着来的那次指针 click 不算点按（下次按下时清掉） */
       let swallowClick = false
 
-      function abandon(pointerId?: number) {
+      const abandon = (pointerId?: number) => {
         if (!press || (pointerId !== undefined && pointerId !== press.pointerId))
           return
         const wasDragging = press.from !== null

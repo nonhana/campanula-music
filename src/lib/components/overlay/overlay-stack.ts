@@ -84,11 +84,9 @@ interface Registration<F> {
 }
 
 /** 这一条请求依赖哪个来源层；不依赖是 null */
-function dependencyOf<F>(options: LayerOptions<Request<F>, F>, request: Request<F>): string | null {
-  return typeof options.dependsOn === 'function'
-    ? options.dependsOn(request)
-    : options.dependsOn ?? null
-}
+const dependencyOf = <F>(options: LayerOptions<Request<F>, F>, request: Request<F>): string | null => typeof options.dependsOn === 'function'
+  ? options.dependsOn(request)
+  : options.dependsOn ?? null
 
 interface Entry<F> {
   id: number
@@ -100,9 +98,7 @@ interface Entry<F> {
   valid: boolean
 }
 
-export function samePosition(a: OverlayPosition, b: OverlayPosition): boolean {
-  return a.cursor === b.cursor && a.url === b.url && a.stamp === b.stamp
-}
+export const samePosition = (a: OverlayPosition, b: OverlayPosition): boolean => a.cursor === b.cursor && a.url === b.url && a.stamp === b.stamp
 
 /** 不依赖 DOM/Kit。看得见的层与它占住的历史条目是有意分开的两件事。 */
 export class OverlayStack<F> {

@@ -8,6 +8,7 @@
 -->
 <script lang='ts'>
   import { LoaderCircle, RotateCw } from '@lucide/svelte'
+
   import Avatar from '../account/Avatar.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
@@ -40,7 +41,7 @@
    * 刷新、重试时按钮会消失又出现：焦点原来在这里的，放回这一块（还有按钮就放到按钮上），键盘不会丢了位置。
    * 正在淡出的按钮（Svelte 标成 inert）不算
    */
-  async function refresh() {
+  const refresh = async () => {
     const hadFocus = box?.contains(document.activeElement) ?? false
     await view.app.startQrLogin()
     if (hadFocus)

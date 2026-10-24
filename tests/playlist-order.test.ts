@@ -1,6 +1,8 @@
-import type { App } from '#lib/app/app.js'
-import type { Device } from './harness/device'
 import { describe, expect, it } from 'vitest'
+
+import type { App } from '#lib/app/app.js'
+
+import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
 import { listener, storedPlaylistIds } from './harness/listener'
 import { signIn } from './harness/sign-in'
@@ -40,14 +42,10 @@ const OWN = [
 ]
 const A_COLLECTED = 3_200_013_727
 
-function shownIds(app: App): readonly number[] {
-  return app.state.library?.playlists?.map(playlist => playlist.id) ?? []
-}
+const shownIds = (app: App): readonly number[] => app.state.library?.playlists?.map(playlist => playlist.id) ?? []
 
 /** 收藏的歌单的先后：排序动不到它们 */
-function collectedOf(app: App): readonly number[] {
-  return shownIds(app).slice(1 + OWN.length)
-}
+const collectedOf = (app: App): readonly number[] => shownIds(app).slice(1 + OWN.length)
 
 const orderRequests = (device: Device) => device.requests.filter(request => request.method === 'POST' && request.path === '/api/library/order')
 const orderCalls = () => world.netease.calls.filter(call => call.module === 'playlist_order_update')

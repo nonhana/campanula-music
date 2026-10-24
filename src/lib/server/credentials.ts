@@ -1,7 +1,8 @@
-import type { Cookies } from '@sveltejs/kit'
 import { Buffer } from 'node:buffer'
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto'
+
 import { COOKIE_SECRET } from '$app/env/private'
+import type { Cookies } from '@sveltejs/kit'
 
 // 登录 Cookie（ADR-0003）：网易云凭据、deviceId、续期时间用站长配置的密钥加密并签名，
 // 交给听众的浏览器保管（httpOnly、Secure）。服务器不存，每次请求解开用完即弃。
@@ -38,12 +39,10 @@ const OPTIONS = {
 } as const
 
 /** 站长有没有配好密钥（环境变量 COOKIE_SECRET） */
-export function cookieSecretConfigured(): boolean {
-  return COOKIE_SECRET.length >= MIN_SECRET_LENGTH
-}
+export const cookieSecretConfigured = (): boolean => COOKIE_SECRET.length >= MIN_SECRET_LENGTH
 
 /** 加密用的密钥由站长的 COOKIE_SECRET 派生；没配好就明确失败（hooks.server.ts 已经先拦住了接口请求） */
-function key(): Buffer {
+const key = (): Buffer => {
   const secret = COOKIE_SECRET
   if (!secret || secret.length < MIN_SECRET_LENGTH)
     throw new Error('没有配置 COOKIE_SECRET，不能加密登录 Cookie')
@@ -51,7 +50,7 @@ function key(): Buffer {
 }
 
 /** AES-256-GCM 加密并签名：iv(12) | 密文 | tag(16)，base64url */
-function seal(login: LoginCookie): string {
+const seal = (login: LoginCookie): string => {
   const iv = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', key(), iv)
   const data = Buffer.concat([
@@ -66,7 +65,7 @@ function seal(login: LoginCookie): string {
 }
 
 /** 解不开（被改过、换了密钥、格式不对）就当作没有 */
-function unseal(value: string): LoginCookie | null {
+const unseal = (value: string): LoginCookie | null => {
   const raw = Buffer.from(value, 'base64url')
   if (raw.length < 12 + 16)
     return null
@@ -84,7 +83,7 @@ function unseal(value: string): LoginCookie | null {
   }
 }
 
-export function readLogin(cookies: Cookies): LoginCookie | null {
+export const readLogin = (cookies: Cookies): LoginCookie | null => {
   const value = cookies.get(COOKIE_NAME)
   return value
     ? unseal(value)
@@ -92,7 +91,7 @@ export function readLogin(cookies: Cookies): LoginCookie | null {
 }
 
 /** 加密并检查浏览器上限：超过就报错，不能当作已经存好（验证关卡①的测试版丢过一次凭据） */
-function sealedValue(login: LoginCookie): string {
+const sealedValue = (login: LoginCookie): string => {
   const value = seal(login)
   const bytes = COOKIE_NAME.length + 1 + value.length
   if (bytes > MAX_COOKIE_BYTES)
@@ -101,22 +100,20 @@ function sealedValue(login: LoginCookie): string {
 }
 
 /** Cookie 属性只写一次：cookies.set 和 mock 的 Set-Cookie 头用同一份 */
-function cookieAttributes(): string {
-  return [
-    `Path=${OPTIONS.path}`,
-    OPTIONS.httpOnly && 'HttpOnly',
-    `SameSite=${OPTIONS.sameSite}`,
-    `Max-Age=${OPTIONS.maxAge}`,
-    OPTIONS.secure && 'Secure',
-  ].filter(Boolean).join('; ')
-}
+const cookieAttributes = (): string => [
+  `Path=${OPTIONS.path}`,
+  OPTIONS.httpOnly && 'HttpOnly',
+  `SameSite=${OPTIONS.sameSite}`,
+  `Max-Age=${OPTIONS.maxAge}`,
+  OPTIONS.secure && 'Secure',
+].filter(Boolean).join('; ')
 
-function writeLogin(cookies: Cookies, login: LoginCookie): void {
+const writeLogin = (cookies: Cookies, login: LoginCookie): void => {
   cookies.set(COOKIE_NAME, sealedValue(login), OPTIONS)
 }
 
 /** 登录或续期成功：凭据和 deviceId 加密进登录 Cookie，这一刻就是上次续期的时间 */
-export function saveLogin(cookies: Cookies, deviceId: string, credentials: Record<string, string>): void {
+export const saveLogin = (cookies: Cookies, deviceId: string, credentials: Record<string, string>): void => {
   writeLogin(cookies, {
     deviceId,
     session: {
@@ -130,7 +127,7 @@ export function saveLogin(cookies: Cookies, deviceId: string, credentials: Recor
  * 同一条登录 Cookie 的 Set-Cookie 值：mock 的自动登录入口绕过 SvelteKit 的 cookies.set，
  * 但走的仍是同一套加密和属性（#58：假登录复用 App 真实的加密 Cookie 流程）。
  */
-export function loginCookieHeader(deviceId: string, credentials: Record<string, string>): string {
+export const loginCookieHeader = (deviceId: string, credentials: Record<string, string>): string => {
   const value = sealedValue({
     deviceId,
     session: {
@@ -142,19 +139,17 @@ export function loginCookieHeader(deviceId: string, credentials: Record<string, 
 }
 
 /** 离上次续期满 24 小时了 */
-export function renewalDue(session: NonNullable<LoginCookie['session']>): boolean {
-  return Date.now() - session.renewedAt >= RENEW_INTERVAL_MS
-}
+export const renewalDue = (session: NonNullable<LoginCookie['session']>): boolean => Date.now() - session.renewedAt >= RENEW_INTERVAL_MS
 
 /** 回一个过期的登录 Cookie，浏览器收到就删掉它 */
-export function clearLogin(cookies: Cookies): void {
+export const clearLogin = (cookies: Cookies): void => {
   cookies.delete(COOKIE_NAME, OPTIONS)
 }
 
 const ID_XOR_KEY = '3go8&$8*3*3h0k(2)2'
 
 /** SDK 匿名注册时 deviceId 的摘要（hana-music-api 的 createAnonymousUsername） */
-function anonymousDigest(deviceId: string): string {
+const anonymousDigest = (deviceId: string): string => {
   let xored = ''
   for (let index = 0; index < deviceId.length; index += 1)
     xored += String.fromCharCode(deviceId.charCodeAt(index) ^ ID_XOR_KEY.charCodeAt(index % ID_XOR_KEY.length))
@@ -166,7 +161,7 @@ function anonymousDigest(deviceId: string): string {
  * 摘要里带 + 或 / 的会被网易云的匿名注册拒绝，随机生成约一半中招，所以只要摘要干净的
  * （验证关卡①；nonhana/hana-music-api#30 修好之后可以去掉这一步）
  */
-function newDeviceId(): string {
+const newDeviceId = (): string => {
   let deviceId: string
   do deviceId = randomBytes(26).toString('hex').toUpperCase()
   while (/[+/]/.test(anonymousDigest(deviceId)))
@@ -174,7 +169,7 @@ function newDeviceId(): string {
 }
 
 /** 登录前的请求（取二维码、发验证码）用的 deviceId：沿用登录 Cookie 里的；没有就生成一个，存进登录 Cookie */
-export function deviceIdFor(cookies: Cookies): string {
+export const deviceIdFor = (cookies: Cookies): string => {
   const login = readLogin(cookies)
   if (login)
     return login.deviceId

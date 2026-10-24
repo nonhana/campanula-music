@@ -1,11 +1,13 @@
+import { readdir } from 'node:fs/promises'
+
 import type { Playlist, Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+
 import type { Device, SentRequest, Tab } from './device'
-import type { World } from './world'
-import { readdir } from 'node:fs/promises'
 import { loadFixture } from './fixtures'
 import { never } from './hold'
 import { LIBRARY_SYNC_MODULES, signIn } from './sign-in'
+import type { World } from './world'
 
 // 听众场景仍走 World / Device / Tab 的整个 App 接入点，不替换 App 内部。
 // 写新测试先选同步停点；下面的录制有不同含义，不能为了共用准备把 before 换成 deleted。
@@ -31,7 +33,7 @@ export interface RecordedPlaylist {
 }
 
 /** #22 的批次：before 是完整曲库（不含已用 #21 录过的我喜欢的音乐），after/deleted 只录变了的歌单。 */
-export async function recordedBatch(name: 'before' | 'after' | 'deleted'): Promise<{ list: string, playlists: RecordedPlaylist[] }> {
+export const recordedBatch = async (name: 'before' | 'after' | 'deleted'): Promise<{ list: string, playlists: RecordedPlaylist[] }> => {
   const dir = `library/sync/${name}`
   const files = (await readdir(new URL(`../fixtures/netease/${dir}`, import.meta.url))).sort().map(file => `${dir}/${file}`)
   const playlists: RecordedPlaylist[] = []
@@ -56,7 +58,7 @@ export async function recordedBatch(name: 'before' | 'after' | 'deleted'): Promi
   return { list: files[0], playlists }
 }
 
-export async function recordedTrackIds(): Promise<number[]> {
+export const recordedTrackIds = async (): Promise<number[]> => {
   const { outcome } = await loadFixture(LIKED_TRACK_IDS)
   return (outcome.response.body as { playlist: { trackIds: { id: number }[] } }).playlist.trackIds.map(track => track.id)
 }
@@ -74,12 +76,12 @@ interface SyncOptions {
 }
 
 /** 每个测试文件绑定自己的世界和原来的歌单录制；同步的准备顺序只在 replyLibrary 写一份。 */
-export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } = {}) {
+export const listener = (world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } = {}) => {
   /** 从第 since 次调用起调过的网易云，不算后台同步曲库的。 */
   const sessionCalls = (since = 0) => world.netease.calls.slice(since).filter(call => !LIBRARY_SYNC_MODULES.has(call.module))
   const sessionModules = () => sessionCalls().map(call => call.module)
 
-  async function replyLibrary({ from = 'hearts', through = 'likedTracks', until, holds = {}, playlists: list = playlists, albums = COLLECTED_ALBUMS }: SyncOptions = {}): Promise<void> {
+  const replyLibrary = async ({ from = 'hearts', through = 'likedTracks', until, holds = {}, playlists: list = playlists, albums = COLLECTED_ALBUMS }: SyncOptions = {}): Promise<void> => {
     const steps: [SyncStep, string][] = [
       ['hearts', HEARTS],
       ['playlists', list],
@@ -98,12 +100,12 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
     }
   }
 
-  async function replyLikedSongs(): Promise<void> {
+  const replyLikedSongs = async (): Promise<void> => {
     for (const page of [1, 2, 3, 4, 5])
       await world.netease.reply(likedPage(page))
   }
 
-  async function replyPlaylists(recordings: readonly RecordedPlaylist[], { rejected, rejection }: { rejected?: string, rejection?: string } = {}): Promise<void> {
+  const replyPlaylists = async (recordings: readonly RecordedPlaylist[], { rejected, rejection }: { rejected?: string, rejection?: string } = {}): Promise<void> => {
     for (const playlist of recordings) {
       await world.netease.reply(playlist.detail)
       for (const page of playlist.pages) {
@@ -115,7 +117,7 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   }
 
   /** 登录，第一步红心还在路上（不需要曲库的歌词、每日推荐、搜索）。 */
-  async function signInAtHearts(device: Device): Promise<Tab> {
+  const signInAtHearts = async (device: Device): Promise<Tab> => {
     const tab = await device.open()
     await replyLibrary({
       through: 'hearts',
@@ -126,7 +128,7 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   }
 
   /** 红心、歌单列表、收藏已显示；我喜欢的音乐的编号仍在路上。 */
-  async function signInAtLikedTracks(device: Device, { albums = COLLECTED_ALBUMS, until = never() } = {}): Promise<Tab> {
+  const signInAtLikedTracks = async (device: Device, { albums = COLLECTED_ALBUMS, until = never() } = {}): Promise<Tab> => {
     const tab = await device.open()
     await replyLibrary({ albums, until })
     await signIn(world, tab.app)
@@ -135,7 +137,7 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   }
 
   /** 我喜欢的音乐已取全，下一张歌单的编号仍在路上。 */
-  async function signInWithLiked(device: Device): Promise<Tab> {
+  const signInWithLiked = async (device: Device): Promise<Tab> => {
     const tab = await device.open()
     await replyLibrary()
     await replyLikedSongs()
@@ -150,7 +152,7 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   }
 
   /** 整个曲库已同步；按原列表挑 before 的详情，不把 deleted 的列表换成 before。 */
-  async function signInSynced(device: Device): Promise<Tab> {
+  const signInSynced = async (device: Device): Promise<Tab> => {
     const tab = await device.open()
     await replyLibrary()
     await replyLikedSongs()
@@ -166,7 +168,7 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   }
 
   /** 同一账号再打开；给了旧 tab 就先关掉，否则是另开一个标签页。红心压着，只看本机副本。 */
-  async function reopen(device: Device, tab?: Tab, options: Omit<SyncOptions, 'from'> = {}): Promise<Tab> {
+  const reopen = async (device: Device, tab?: Tab, options: Omit<SyncOptions, 'from'> = {}): Promise<Tab> => {
     if (tab) {
       await world.settle()
       tab.close()
@@ -182,7 +184,7 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   }
 
   /** 每日推荐里的 31 首歌：拿来播放、红心、加入歌单。 */
-  async function dailySongs(app: App): Promise<readonly Song[]> {
+  const dailySongs = async (app: App): Promise<readonly Song[]> => {
     await world.netease.reply(DAILY)
     await app.openDaily()
     const daily = app.state.daily
@@ -192,7 +194,7 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
   }
 
   /** 原测试的 jazz 准备：只看编号/首数；是否放出那份别的歌曲信息必须由调用者明确选择。 */
-  async function openJazz(app: App, { songsHeld }: { songsHeld: boolean }): Promise<void> {
+  const openJazz = async (app: App, { songsHeld }: { songsHeld: boolean }): Promise<void> => {
     await world.netease.reply(JAZZ_DETAIL)
     await world.netease.reply(SOME_SONGS, {
       until: songsHeld
@@ -222,53 +224,47 @@ export function listener(world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
 }
 
 /** 本机副本的一项；不是 App 内部读法，是 Device.stored 的可观察结果。 */
-export async function storedLibrary(device: Device, key: string): Promise<unknown> {
-  return (await device.stored()).library.find(([name]) => name === key)?.[1]
-}
+export const storedLibrary = async (device: Device, key: string): Promise<unknown> => (await device.stored()).library.find(([name]) => name === key)?.[1]
 
-export async function storedTrackIds(device: Device, playlistId: number): Promise<number[] | undefined> {
+export const storedTrackIds = async (device: Device, playlistId: number): Promise<number[] | undefined> => {
   const tracks = (await device.stored()).tracks.find(([id]) => id === playlistId)?.[1] as { trackIds: number[] } | undefined
   return tracks?.trackIds
 }
 
-export async function storedPlaylistIds(device: Device): Promise<number[]> {
+export const storedPlaylistIds = async (device: Device): Promise<number[]> => {
   const playlists = await storedLibrary(device, 'playlists') as Playlist[]
   return playlists.map(playlist => playlist.id)
 }
 
-export async function storedCheckIns(device: Device): Promise<unknown[]> {
+export const storedCheckIns = async (device: Device): Promise<unknown[]> => {
   const { checkIns = [] } = await device.stored()
   return checkIns.map(([, value]) => value)
 }
 
-export function checkIns(device: Device): { songId: number, body: unknown }[] {
-  return device.requests.flatMap((request) => {
-    const match = /^\/api\/songs\/(\d+)\/check-in$/.exec(request.path)
-    return match
-      ? [
-          {
-            songId: Number(match[1]),
-            body: request.body,
-          },
-        ]
-      : []
-  })
-}
+export const checkIns = (device: Device): { songId: number, body: unknown }[] => device.requests.flatMap((request) => {
+  const match = /^\/api\/songs\/(\d+)\/check-in$/.exec(request.path)
+  return match
+    ? [
+        {
+          songId: Number(match[1]),
+          body: request.body,
+        },
+      ]
+    : []
+})
 
-export function playUrlRequests(device: Device): string[] {
-  return device.requests.flatMap(request => request.path.includes('/play-url')
-    ? [request.path]
-    : [])
-}
+export const playUrlRequests = (device: Device): string[] => device.requests.flatMap(request => request.path.includes('/play-url')
+  ? [request.path]
+  : [])
 
-export function current(app: App): number | null {
+export const current = (app: App): number | null => {
   const { queue, current } = app.state.player
   return current === null
     ? null
     : queue[current].song.id
 }
 
-export function likedSong(app: App, id: number): Song {
+export const likedSong = (app: App, id: number): Song => {
   const song = app.state.library?.liked?.songs.find(each => each.id === id)
   if (!song)
     throw new Error(`我喜欢的音乐里没有 ${id}`)

@@ -4,6 +4,7 @@
 -->
 <script lang='ts'>
   import { CheckCheck, ListChecks, SquareMinus, X } from '@lucide/svelte'
+
   import { getOverlays } from '../overlay/overlay-context'
   import { formatCount } from '../shared/text'
   import TextButton from '../ui/TextButton.svelte'

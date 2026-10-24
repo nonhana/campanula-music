@@ -1,6 +1,7 @@
-import type { App, AppState } from '#lib/app/app.js'
 import { createContext } from 'svelte'
 import { createSubscriber } from 'svelte/reactivity'
+
+import type { App, AppState } from '#lib/app/app.js'
 
 /** 界面用的 App：读 state 时订阅 App，状态一变界面跟着更新 */
 export interface AppView {
@@ -8,7 +9,7 @@ export interface AppView {
   readonly state: AppState
 }
 
-export function viewOf(app: App): AppView {
+export const viewOf = (app: App): AppView => {
   const subscribe = createSubscriber(update => app.subscribe(update))
   return {
     app,

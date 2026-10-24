@@ -1,7 +1,9 @@
+import { describe, expect, it } from 'vitest'
+
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+
 import type { Device } from './harness/device'
-import { describe, expect, it } from 'vitest'
 import { held, never } from './harness/hold'
 import { JAZZ_DETAIL, listener, SOME_SONGS, storedTrackIds } from './harness/listener'
 import { RECORDED_ACCOUNT, signIn } from './harness/sign-in'
@@ -38,9 +40,7 @@ const RELOAD_FAILED = 'library/netease-playlist/006-playlist_detail.json.gz'
 const NEEDS_LOGIN_SEARCH = 'search/cloudsearch.301-invalid.constructed.json'
 
 /** 显示着的首数：jazz 的两首歌没有录制歌曲信息，列表里只有编号，所以看首数、看本机副本里的顺序 */
-function totalOf(app: App, playlistId: number): number | null {
-  return app.state.library?.songsOf(playlistId)?.total ?? null
-}
+const totalOf = (app: App, playlistId: number): number | null => app.state.library?.songsOf(playlistId)?.total ?? null
 
 const removeRequests = (device: Device) => device.requests.filter(request => request.path.endsWith('/tracks/remove'))
 const addRequests = (device: Device) => device.requests.filter(request => request.method === 'POST' && request.path.endsWith('/tracks'))
@@ -48,21 +48,19 @@ const orderRequests = (device: Device) => device.requests.filter(request => requ
 const pendingChanges = async (device: Device) => (await device.stored()).library?.find(([key]) => key === 'pendingChanges')?.[1]
 
 /** 造几首歌：批量加入时由界面从搜索或我喜欢的音乐里给（App 只收 Song） */
-function songsFrom(count: number, firstId = 2_000_000_000): Song[] {
-  return Array.from({ length: count }, (_, index) => ({
-    id: firstId + index,
-    name: `测试歌曲 ${index + 1}`,
-    artists: [
-      { id: 0, name: '测试歌手' },
-    ],
-    album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
-    duration: 180_000,
-    availability: 'full',
-  }))
-}
+const songsFrom = (count: number, firstId = 2_000_000_000): Song[] => Array.from({ length: count }, (_, index) => ({
+  id: firstId + index,
+  name: `测试歌曲 ${index + 1}`,
+  artists: [
+    { id: 0, name: '测试歌手' },
+  ],
+  album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
+  duration: 180_000,
+  availability: 'full',
+}))
 
 /** 两张各自能移除的自建歌单：jazz（录制里的两首）和新建的 CREATED（两首）。用来对照“上一批”与提示被替换。 */
-async function twoRemovablePlaylists(device: Device): Promise<{ app: App, createdTracks: readonly number[] }> {
+const twoRemovablePlaylists = async (device: Device): Promise<{ app: App, createdTracks: readonly number[] }> => {
   const { app } = await signInAtLikedTracks(device)
   await openJazz(app, { songsHeld: false })
   await world.netease.reply(CREATED.create)

@@ -6,6 +6,7 @@
 -->
 <script lang='ts'>
   import { afterNavigate } from '$app/navigation'
+
   import { atOnce, fade } from '../shared/motion'
   import { langOf } from '../shared/text'
   import { backBar, backTitle } from './back-title.svelte'

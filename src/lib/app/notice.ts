@@ -1,4 +1,5 @@
 import type { Playlist } from '#lib/api/library.js'
+
 import type { Clock } from './browser'
 import type { Change } from './changes'
 import type { DownloadNotice } from './downloads'
@@ -48,7 +49,7 @@ const AUTO_DISMISS_MS = 4000
  * 这条提示条支持哪些动作：界面照着画按钮，App 的动作入口照着做。
  * 一次移除超过上限时报的不是可以重试的失败（重试也一样），所以没有重试
  */
-export function noticeActions(notice: OperationNotice): readonly NoticeAction[] {
+export const noticeActions = (notice: OperationNotice): readonly NoticeAction[] => {
   switch (notice.kind) {
     case 'removed':
       return ['undo', 'dismiss']
@@ -86,12 +87,12 @@ export interface Notices {
   show: (notice: OperationNotice | null) => void
 }
 
-export function createNotices({ clock, changed }: NoticesContext): Notices {
+export const createNotices = ({ clock, changed }: NoticesContext): Notices => {
   let current: OperationNotice | null = null
   /** 这一条自动消失的计时 */
   let cancel = () => {}
 
-  function show(next: OperationNotice | null): void {
+  const show = (next: OperationNotice | null): void => {
     if (next === current)
       return
     cancel()

@@ -9,21 +9,22 @@
   菜单行、行高和键盘在 MenuList（#73）。登录后的骨架和没登录时的已下载页里各放一份，盖在播放页上面
 -->
 <script lang='ts'>
-  import type { SongMenuRequest } from '../overlay/overlay-requests'
-  import type { MenuHeader, MenuItem } from './menu'
   import { CircleArrowDown, Heart, ListEnd, ListPlus, ListStart, Play, Trash2 } from '@lucide/svelte'
+
   import { downloadItem } from '../downloads/view'
   import { getOverlays } from '../overlay/overlay-context'
+  import type { SongMenuRequest } from '../overlay/overlay-requests'
   import { currentSong } from '../player/now'
   import { getAppView } from '../shared/app-context.svelte'
   import { artistLine, langOf } from '../shared/text'
   import { songLook } from '../songs/song-look'
+  import type { MenuHeader, MenuItem } from './menu'
   import MenuOverlay from './MenuOverlay.svelte'
 
   const view = getAppView()
   const { songMenu, playlistPicker } = getOverlays()
 
-  function itemsOf(request: SongMenuRequest): MenuItem[] {
+  const itemsOf = (request: SongMenuRequest): MenuItem[] => {
     const { song, source } = request
     const fromDownloads = source.kind === 'downloads' && view.state.downloads.has(song.id)
     const remove: MenuItem = {
@@ -119,7 +120,7 @@
   }
 
   /** 底部弹层的头：封面、歌名、歌手；浮动菜单没有 */
-  function headerOf({ song }: SongMenuRequest, sheet: boolean): MenuHeader | null {
+  const headerOf = ({ song }: SongMenuRequest, sheet: boolean): MenuHeader | null => {
     if (!sheet)
       return null
     const artist = artistLine(song)

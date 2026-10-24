@@ -12,9 +12,7 @@ export const EASINGS = {
 } as const
 
 /** 曲线的 CSS 写法：uno.config.ts 的 --ease-* 变量、Web Animations（element.animate 的 easing）都用它；组件的 CSS 里写 var(--ease-…) */
-export function cssEasing(name: keyof typeof EASINGS): string {
-  return `cubic-bezier(${EASINGS[name].join(', ')})`
-}
+export const cssEasing = (name: keyof typeof EASINGS): string => `cubic-bezier(${EASINGS[name].join(', ')})`
 
 /**
  * 时长（ms）。CSS 里每个都有两个变量：

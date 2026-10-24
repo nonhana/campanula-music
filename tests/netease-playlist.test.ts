@@ -1,6 +1,8 @@
+import { describe, expect, it } from 'vitest'
+
 import type { App } from '#lib/app/app.js'
 import type { NeteasePlaylistSongs } from '#lib/app/library.js'
-import { describe, expect, it } from 'vitest'
+
 import { held, never } from './harness/hold'
 import { listener, queueIds } from './harness/listener'
 import { useWorld } from './harness/world'
@@ -31,7 +33,7 @@ const RADAR = { id: 3136952023, detail: 'library/sync/deleted/002-playlist_detai
 const PLAY_URL = 'playback/liked/001-song_url_v1.json.gz'
 
 /** 打开着的不在曲库里的歌单显示的样子 */
-function shownContent(app: App, playlistId: number): NeteasePlaylistSongs {
+const shownContent = (app: App, playlistId: number): NeteasePlaylistSongs => {
   const page = app.state.library?.neteasePlaylist(playlistId)
   if (page?.status !== 'shown')
     throw new Error(`歌单 ${playlistId} 没显示：${JSON.stringify(page)}`)
@@ -39,7 +41,7 @@ function shownContent(app: App, playlistId: number): NeteasePlaylistSongs {
 }
 
 /** 打开 1,201 首的歌单，第二页歌曲信息压着：显示着前 1,000 首。返回放出第二页的函数 */
-async function openBigHeldAtPage2(app: App): Promise<() => void> {
+const openBigHeldAtPage2 = async (app: App): Promise<() => void> => {
   await world.netease.reply(BIG.detail)
   await world.netease.reply(BIG.pages[0])
   const page2 = held()

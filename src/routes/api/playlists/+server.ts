@@ -1,8 +1,9 @@
-import type { RequestHandler } from './$types'
 import { endpoints } from '#lib/api/endpoints.js'
 import { createPlaylist, fetchPlaylists } from '#lib/server/netease.js'
 import { readId, readPlaylistDraft } from '#lib/server/request.js'
 import { respondSignedIn } from '#lib/server/session.js'
+
+import type { RequestHandler } from './$types'
 
 // 歌单列表：我喜欢的音乐、自建的、收藏的
 export const GET: RequestHandler = ({ url, cookies }) => {

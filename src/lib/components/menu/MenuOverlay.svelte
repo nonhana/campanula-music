@@ -8,13 +8,14 @@
 -->
 <script lang='ts' generics='R extends MenuRequest'>
   import type { Attachment } from 'svelte/attachments'
+
   import type { MenuRequest } from '../overlay/overlay-requests'
   import type { OverlayLayer } from '../overlay/overlay-stack'
-  import type { MenuHeader, MenuItem } from './menu'
   import { createDrawer } from '../player/drawer.svelte'
   import { pop } from '../shared/motion'
   import Cover from '../ui/Cover.svelte'
   import Scrollbar from '../ui/Scrollbar.svelte'
+  import type { MenuHeader, MenuItem } from './menu'
   import MenuList from './MenuList.svelte'
 
   interface Props {
@@ -109,7 +110,7 @@
   const mediaRow = (item: MenuItem) => item.leading?.kind === 'cover' || item.leading?.kind === 'tile'
 
   /** 这一层有多高（px）：还没画出来时按行和头部算，决定浮动菜单往下还是往上飘、抽屉打开的头一帧 */
-  function estimate(shown: R, sheet: boolean): number {
+  const estimate = (shown: R, sheet: boolean): number => {
     const list = items(shown)
     const rows = list
       ? list.reduce((total, item) => total + (sheet
@@ -125,7 +126,7 @@
       : FLOATING_PADDING + headerHeight(header?.(shown, false), false) + rows
   }
 
-  function headerHeight(head: MenuHeader | null | undefined, sheet: boolean): number {
+  const headerHeight = (head: MenuHeader | null | undefined, sheet: boolean): number => {
     if (!head)
       return 0
     if (!sheet)
@@ -136,16 +137,14 @@
   }
 
   /** 打开浮层时选了这一项：动作自己跑；不转交的项由壳关上这一层 */
-  function choose(item: MenuItem): void {
+  const choose = (item: MenuItem): void => {
     item.run()
     if (item.closeOnChoose !== false)
       void layer.close()
   }
 
   /** 菜单在锚点下面放得下（按估计的高度）：往下飘，放不下就翻到锚点上面 */
-  function fitsBelow(shown: R): boolean {
-    return shown.anchor!.y + estimate(shown, false) <= window.innerHeight - MARGIN
-  }
+  const fitsBelow = (shown: R): boolean => shown.anchor!.y + estimate(shown, false) <= window.innerHeight - MARGIN
 
   /** 摆好浮动菜单：贴着锚点，不出视口 */
   const place: Attachment<HTMLElement> = (node) => {

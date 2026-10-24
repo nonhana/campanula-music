@@ -1,7 +1,8 @@
 // Mock 的状态化曲库：读都从这里生成，写都改这里；刷新页面看到的是同一份内存状态，
 // reset 回到种子。只存在于开发服务器，生产构建不加载（见 scripts/check-mock-isolation.mts）。
-import type { PlaylistDetailBody, RawPlaylist, SeedData, SeedName, SongPart } from './seed.ts'
 import { canSortPlaylist, playlistKindOf, reorderSortable } from '#lib/api/library.js'
+
+import type { PlaylistDetailBody, RawPlaylist, SeedData, SeedName, SongPart } from './seed.ts'
 import { buildSeed, patchPlaylistDetail } from './seed.ts'
 
 export type MockResult
@@ -12,25 +13,17 @@ const SELF_UID = 10000001
 const DELETED = 10
 
 /** 能手动排序的歌单：我喜欢的音乐和自建歌单（收藏的歌单不参与，#37） */
-function sortablePlaylist(playlist: RawPlaylist): boolean {
-  return canSortPlaylist(playlistKindOf(playlist.specialType, playlist.creator.userId, SELF_UID))
-}
+const sortablePlaylist = (playlist: RawPlaylist): boolean => canSortPlaylist(playlistKindOf(playlist.specialType, playlist.creator.userId, SELF_UID))
 
-function clone<T>(value: T): T {
-  return structuredClone(value)
-}
+const clone = <T>(value: T): T => structuredClone(value)
 
-function summaryOf(data: SeedData, id: number): RawPlaylist | undefined {
-  return data.byId.get(id)
-}
+const summaryOf = (data: SeedData, id: number): RawPlaylist | undefined => data.byId.get(id)
 
 /** RawPlaylist 有索引签名，`'ok' in` 收窄不了：用显式的守卫 */
-function isMockResult(value: MockResult | RawPlaylist): value is MockResult {
-  return typeof (value as { ok?: unknown }).ok === 'boolean'
-}
+const isMockResult = (value: MockResult | RawPlaylist): value is MockResult => typeof (value as { ok?: unknown }).ok === 'boolean'
 
 /** 写歌单前先找它：不存在或已经删了就是 404，省得每个写方法重复一遍 */
-function playlistFor(data: SeedData, id: number): MockResult | RawPlaylist {
+const playlistFor = (data: SeedData, id: number): MockResult | RawPlaylist => {
   const playlist = summaryOf(data, id)
   if (!playlist || playlist.status === DELETED) {
     return {
@@ -42,16 +35,14 @@ function playlistFor(data: SeedData, id: number): MockResult | RawPlaylist {
   return playlist
 }
 
-function partsOf(data: SeedData, trackIds: readonly number[]): SongPart[] {
-  return trackIds.flatMap((id) => {
-    const part = data.songs.get(id)
-    return part
-      ? [part]
-      : []
-  })
-}
+const partsOf = (data: SeedData, trackIds: readonly number[]): SongPart[] => trackIds.flatMap((id) => {
+  const part = data.songs.get(id)
+  return part
+    ? [part]
+    : []
+})
 
-function syncSummary(playlist: RawPlaylist, data: SeedData, now = Date.now()): void {
+const syncSummary = (playlist: RawPlaylist, data: SeedData, now = Date.now()): void => {
   playlist.trackIds = playlist.trackIds.filter(track => typeof track.id === 'number')
   playlist.trackCount = playlist.trackIds.length
   playlist.tracks = partsOf(data, playlist.trackIds.map(track => track.id)).map(part => part.song)

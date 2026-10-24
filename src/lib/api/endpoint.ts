@@ -31,15 +31,11 @@ export interface PostEndpoint<Params, Request, Response> extends Endpoint<Respon
  * 泛型顺序是 Response 在前：Request/Params 有默认值，TypeScript 不允许必填类型参数跟在有默认值的后面（TS2706）。
  * 目录里没有参数的条目写 `() => …`，有参数的写 `(params) => …`：takesParams 由 path 的参数个数得出。
  */
-export function get<Response, Params = void>(path: (params: Params) => string): GetEndpoint<Params, Response> {
-  return { method: 'GET', takesParams: path.length > 0, path }
-}
+export const get = <Response, Params = void>(path: (params: Params) => string): GetEndpoint<Params, Response> => ({ method: 'GET', takesParams: path.length > 0, path })
 
 /**
  * POST 端点。Response 从条目推出；没有请求体时 Request 不写，没有参数时 Params 不写。
  * 泛型顺序是 Response 在前：Request/Params 有默认值，TypeScript 不允许必填类型参数跟在有默认值的后面（TS2706）。
  * 目录里没有参数的条目写 `() => …`，有参数的写 `(params) => …`：takesParams 由 path 的参数个数得出。
  */
-export function post<Response, Request = void, Params = void>(path: (params: Params) => string): PostEndpoint<Params, Request, Response> {
-  return { method: 'POST', takesParams: path.length > 0, path }
-}
+export const post = <Response, Request = void, Params = void>(path: (params: Params) => string): PostEndpoint<Params, Request, Response> => ({ method: 'POST', takesParams: path.length > 0, path })

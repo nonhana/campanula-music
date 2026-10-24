@@ -1,6 +1,7 @@
+import { creditLine, thumbnailUrl } from '#lib/api/library.js'
+
 import type { Clock, MediaSessionCapability } from './browser'
 import type { Player, PlayerState } from './player'
-import { creditLine, thumbnailUrl } from '#lib/api/library.js'
 
 // 锁屏和通知栏上的播放控件（Media Session，Spec #11“客户端：播放队列与播放”）：显示当前这首的封面、歌名、歌手、专辑和进度，
 // 能暂停、接着放、切歌、拖进度条。按钮直接交给播放器，和界面上的按钮一样：上一首、下一首的换歌原因是 previous / next。
@@ -24,7 +25,7 @@ export interface MediaSessionContext {
 }
 
 /** 接上锁屏和通知栏上的按钮。返回的函数在播放状态每次变了时调，更新锁屏和通知栏上显示的 */
-export function connectMediaSession({ session, MediaMetadata, clock, player, read, localCover }: MediaSessionContext): (state: PlayerState) => void {
+export const connectMediaSession = ({ session, MediaMetadata, clock, player, read, localCover }: MediaSessionContext): (state: PlayerState) => void => {
   session.setActionHandler('play', () => {
     if (read().status === 'paused')
       player.toggle()
