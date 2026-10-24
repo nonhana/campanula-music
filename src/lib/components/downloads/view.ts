@@ -22,7 +22,7 @@ export const downloadItem = (view: AppView, song: Song): { label: string, disabl
     case 'downloading': {
       const look = songLook(view, song).mark
       return {
-        label: look?.kind === 'downloading'
+        label: look?.kind === 'downloading' && look.percent !== null
           ? `正在下载 ${look.percent}%`
           : '正在下载',
         disabled: true,

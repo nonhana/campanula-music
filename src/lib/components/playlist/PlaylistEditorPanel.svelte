@@ -24,7 +24,7 @@
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'
   import { unfold } from '../shared/motion'
-  import { formatCount, langOf } from '../shared/text'
+  import { formatCount, formatSongCount, langOf } from '../shared/text'
   import Button from '../ui/Button.svelte'
   import Cover from '../ui/Cover.svelte'
   import TextButton from '../ui/TextButton.svelte'
@@ -263,10 +263,11 @@
         <p class='text-body text-neutral-700'>公开后，你的网易云主页和搜索里都能看到<span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlistName(playlist)}」</span></p>
         <p class='mt-3 rounded-lg bg-warning-50 px-3.5 py-2.5 text-caption text-warning-900'>公开后不能改回隐私</p>
       {:else if playlist && request.mode === 'delete'}
+        {@const count = formatSongCount(songCount)}
         <p class='text-body text-neutral-700'>
-          <span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlistName(playlist)}」</span>里的{songCount === null
+          <span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlistName(playlist)}」</span>里的{count === null
             ? ''
-            : ` ${formatCount(songCount)} 首`}歌随歌单移除，红心不受影响。
+            : ` ${count}`}歌随歌单移除，红心不受影响。
         </p>
         <p class='mt-3 text-caption text-neutral-600'>删除后不能恢复。</p>
       {/if}
