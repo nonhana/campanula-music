@@ -880,7 +880,11 @@ export const createPlayer = (context: PlayerContext): Player => {
     if (state.current === null)
       return
     const { song } = state.queue[state.current]
-    const at = Math.min(Math.max(0, position), state.duration ?? song.duration / 1000)
+    // 时长还不知道（音频没加载出来、网易云也没给，#78）：只挡住跳到开头之前
+    const duration = state.duration ?? (song.duration === null
+      ? Number.POSITIVE_INFINITY
+      : song.duration / 1000)
+    const at = Math.min(Math.max(0, position), duration)
     if (incoming?.handover) {
       // 快放完时空闲的播放器已经开始放下一首：往回跳就不交接了，它停下等着，再放到结尾时重新交接
       incoming.deck.audio.pause()

@@ -11,6 +11,7 @@
   import type { PlaylistMenuRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { langOf } from '../shared/text'
+  import { playlistName } from './playlist-text'
 
   type Edit = 'info' | 'public' | 'delete'
 
@@ -66,7 +67,7 @@
     return {
       kind: 'media',
       coverUrl: playlist.coverUrl,
-      title: playlist.name,
+      title: playlistName(playlist),
       titleLang: langOf(playlist.name),
     }
   }
@@ -74,7 +75,12 @@
 
 <MenuOverlay
   layer={playlistMenu}
-  label={request => `歌单操作：${playlistOf(request)?.name ?? ''}`}
+  label={(request) => {
+    const playlist = playlistOf(request)
+    return `歌单操作：${playlist
+      ? playlistName(playlist)
+      : ''}`
+  }}
   width='w-60'
   items={itemsOf}
   header={headerOf}

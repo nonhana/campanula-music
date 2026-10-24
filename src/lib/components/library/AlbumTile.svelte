@@ -13,8 +13,9 @@
 
   interface Props {
     id: number
-    name: string
-    coverUrl: string
+    /** 网易云没给专辑名时是 null，这一行不显示（#78） */
+    name: string | null
+    coverUrl: string | null
     detail: string
     /** 跟在 detail 后面，不截断；不写是 null */
     year?: number | null
@@ -30,12 +31,19 @@
 <div class='relative min-w-0'>
   <a href={resolve('/albums/[id=neteaseId]', { id })} class='group block min-w-0 rounded-lg'>
     <Cover url={coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={page} class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
-    <span class={[
-      'mt-2.5 block truncate text-neutral-900 font-500',
-      phone ? 'text-body' : 'text-label',
-    ]} lang={langOf(name)}>{name}</span>
+    {#if name !== null}
+      <span class={[
+        'mt-2.5 block truncate text-neutral-900 font-500',
+        phone ? 'text-body' : 'text-label',
+      ]} lang={langOf(name)}>{name}</span>
+    {/if}
     {#if detail || year !== null}
-      <span class='mt-0.5 min-w-0 flex gap-1 text-caption text-neutral-600 tabular-nums'>
+      <span class={[
+        'min-w-0 flex gap-1 text-caption text-neutral-600 tabular-nums',
+        name === null
+          ? 'mt-2.5'
+          : 'mt-0.5',
+      ]}>
         {#if detail}<span class='truncate' lang={langOf(detail)}>{detail}</span>{/if}
         {#if year !== null}<span class='flex-none'>{detail
           ? `· ${year}`

@@ -28,15 +28,16 @@ export interface StoredDownload {
   song: Song
   /** 在线播放用的同一份普通格式（mp3、flac），不是 .ncm */
   audio: Blob
-  cover: Blob
+  /** 网易云没给封面时是 null，显示默认封面（#78） */
+  cover: Blob | null
   lyrics: LyricsResponse
   /** 已下载页按它排，最近下载完的在前 */
   downloadedAt: number
 }
 
 export interface PlaylistTracks {
-  /** 拉这份编号时歌单列表里的 tracksUpdatedAt：网易云那边变了才重拉 */
-  version: number
+  /** 拉这份编号时歌单列表里的 tracksUpdatedAt：网易云那边变了才重拉；网易云没给时是 null（#78） */
+  version: number | null
   trackIds: number[]
   /** 网易云没给的歌不再取 */
   complete: boolean

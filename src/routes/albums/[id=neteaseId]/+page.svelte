@@ -66,7 +66,7 @@
     >
       {#snippet meta(onPhone: boolean)}
         {#if album && content}
-          {#if album.artist.id > 0 && album.artist.name}
+          {#if album.artist.id !== null && album.artist.id > 0 && album.artist.name}
             <a
               href={resolve('/artists/[id=neteaseId]', { id: album.artist.id })}
               class={['rounded text-primary-900 font-500 underline-offset-3 mouse:hover:underline', onPhone && 'min-h-8 inline-flex items-center']}

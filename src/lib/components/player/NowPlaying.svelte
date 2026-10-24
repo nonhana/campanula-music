@@ -6,6 +6,8 @@
   两个播放条只差尺寸、按钮的悬停/按下样式和歌名与试听标之间的空隙，所以只把这几样当参数
 -->
 <script lang='ts'>
+  import { songTitle } from '#lib/api/library.js'
+
   import { getAppView } from '../shared/app-context.svelte'
   import { fade } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
@@ -37,7 +39,7 @@
 </script>
 
 {#if song}
-  <button type='button' class={['min-w-0 flex flex-1 items-center gap-3 rounded-lg text-left', buttonClass]} aria-label='打开播放页：{song.name}' {@attach gripSong}>
+  <button type='button' class={['min-w-0 flex flex-1 items-center gap-3 rounded-lg text-left', buttonClass]} aria-label='打开播放页：{songTitle(song)}' {@attach gripSong}>
     <span class='flex-none overflow-hidden rounded-md' style:width='{size}px' style:height='{size}px' {@attach landing.slot}>
       {#if landing.song}
         <CoverWheel song={landing.song} turn={landing.turn} duration={DURATIONS['focal-bar']} size={size} eager class='rounded-md' />
@@ -46,7 +48,7 @@
     <SongSwap song={landing.song} turn={landing.turn} place='bar'>
       {#snippet children(shown)}
         <span class={['min-w-0 flex items-center', nameClass]}>
-          <span class='truncate text-label text-neutral-900 font-500' lang={langOf(shown.name)}>{shown.name}</span>
+          <span class='truncate text-label text-neutral-900 font-500' lang={langOf(shown.name)}>{songTitle(shown)}</span>
           {#if player.trial}<span class='flex flex-none' transition:fade><SongBadge kind='trial' /></span>{/if}
         </span>
         <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(shown))}>{artistLine(shown)}</span>

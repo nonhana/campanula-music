@@ -7,6 +7,8 @@
 <script lang='ts'>
   import { CircleArrowDown, Heart, ListEnd, ListPlus, ListStart, Play, Trash2 } from '@lucide/svelte'
 
+  import { songTitle } from '#lib/api/library.js'
+
   import { downloadItem } from '../downloads/view'
   import { getOverlays } from '../overlay/overlay-context'
   import type { SongMenuRequest } from '../overlay/overlay-requests'
@@ -122,7 +124,7 @@
     return {
       kind: 'media',
       coverUrl: song.album.coverUrl,
-      title: song.name,
+      title: songTitle(song),
       titleLang: langOf(song.name),
       subtitle: artist,
       subtitleLang: langOf(artist),
@@ -132,7 +134,7 @@
 
 <MenuOverlay
   layer={songMenu}
-  label={({ song }) => `更多操作：${song.name}`}
+  label={({ song }) => `更多操作：${songTitle(song)}`}
   width='w-62'
   items={itemsOf}
   header={headerOf}

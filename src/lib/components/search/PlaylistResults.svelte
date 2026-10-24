@@ -9,9 +9,10 @@
 
   import { collectState } from '../library/collect'
   import CollectButton from '../library/CollectButton.svelte'
+  import { playlistName } from '../playlist/playlist-text'
   import { getAppView } from '../shared/app-context.svelte'
   import { stagger } from '../shared/motion'
-  import { formatCount, formatPlays, langOf } from '../shared/text'
+  import { formatPlays, formatSongCount, langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
 
@@ -26,13 +27,13 @@
   const view = getAppView()
   const library = $derived(view.state.library)
 
-  /** 首数、播放次数（是 0 时不写，和歌单页头部一样） */
-  const counts = (playlist: SearchedPlaylist): string => {
-    const tracks = `${formatCount(playlist.trackCount)} 首`
-    return playlist.playCount > 0
-      ? `${tracks} · 播放 ${formatPlays(playlist.playCount)}`
-      : tracks
-  }
+  /** 首数、播放次数（是 0 时不写，和歌单页头部一样）；网易云没给的不写（#78） */
+  const counts = (playlist: SearchedPlaylist): string[] => [
+    formatSongCount(playlist.trackCount),
+    playlist.playCount !== null && playlist.playCount > 0
+      ? `播放 ${formatPlays(playlist.playCount)}`
+      : null,
+  ].filter((part): part is string => part !== null)
 </script>
 
 <ul aria-label='歌单' data-reveal-group>
@@ -40,6 +41,7 @@
     {@const target = { kind: 'playlist', id: playlist.id } as const}
     {@const status = library && collectState(library, target)}
     {@const toggle = status !== null && status !== 'own'}
+    {@const meta = counts(playlist)}
     <li class={['h-16 flex items-center transition-colors duration-feedback mouse:hover:bg-primary-100', !phone && 'rounded-lg', toggle && 'pr-1']} in:stagger={{ order: i - appendedAt }}>
       <a
         href={resolve('/playlists/[id=neteaseId]', { id: playlist.id })}
@@ -56,15 +58,19 @@
           <span class={[
             'block truncate text-neutral-900 font-500',
             phone ? 'text-body' : 'text-label',
-          ]} lang={langOf(playlist.name)}>{playlist.name}</span>
-          <span class='block truncate text-caption text-neutral-600 tabular-nums'>
-            <span lang={langOf(playlist.creator)}>{playlist.creator}</span> · {counts(playlist)}
-          </span>
+          ]} lang={langOf(playlist.name)}>{playlistName(playlist)}</span>
+          {#if playlist.creator !== null || meta.length > 0}
+            <span class='block truncate text-caption text-neutral-600 tabular-nums'>
+              {#if playlist.creator !== null}<span lang={langOf(playlist.creator)}>{playlist.creator}</span>{/if}{playlist.creator !== null && meta.length > 0
+                ? ' · '
+                : ''}{meta.join(' · ')}
+            </span>
+          {/if}
         </span>
         {#if status === 'own'}<Tag>自建</Tag>{/if}
       </a>
       {#if toggle}
-        <CollectButton {target} name={playlist.name} look='icon' />
+        <CollectButton {target} name={playlistName(playlist)} look='icon' />
       {/if}
     </li>
   {/each}

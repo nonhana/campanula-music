@@ -1,4 +1,5 @@
 import type { Song } from '#lib/api/library.js'
+import { songTitle } from '#lib/api/library.js'
 import type { LyricLine, LyricWord, PlaySource } from '#lib/api/playback.js'
 import type { LibraryState } from '#lib/app/library.js'
 import type { PlayerNotice, PlayerState, PlayMode, SongChange } from '#lib/app/player.js'
@@ -128,7 +129,7 @@ export const noticeText = (notice: PlayerNotice): string => {
     case 'slow':
       return '网络有点慢'
     case 'skipped':
-      return `《${notice.song.name}》放不了，跳过了`
+      return `《${songTitle(notice.song)}》放不了，跳过了`
     case 'nothingPlayable':
       return '播放队列里没有能放的歌'
     default: {

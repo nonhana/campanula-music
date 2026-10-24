@@ -10,6 +10,7 @@
   import { untrack } from 'svelte'
 
   import type { Song } from '#lib/api/library.js'
+  import { songTitle } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
 
@@ -212,11 +213,11 @@
 </script>
 
 {#snippet rowGrip(song: Song)}
-  <DragGrip label={song.name} size={phone ? 'phone' : 'desktop'} attach={drag.handle(song)} />
+  <DragGrip label={songTitle(song)} size={phone ? 'phone' : 'desktop'} attach={drag.handle(song)} />
 {/snippet}
 
 {#snippet ghostGrip(song: Song)}
-  <DragGrip label={song.name} size={phone ? 'phone' : 'desktop'} ghost />
+  <DragGrip label={songTitle(song)} size={phone ? 'phone' : 'desktop'} ghost />
 {/snippet}
 
 {#snippet ghostRow()}

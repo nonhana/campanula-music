@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "checkedWith": "hana-music-api@2.13.0",
-  "recordings": 328,
+  "checkedWith": "hana-music-api@3.1.0",
+  "recordings": 333,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -41,9 +41,9 @@
       }
     },
     "album": {
-      "count": 4,
+      "count": 5,
       "outcomes": {
-        "ok": 4
+        "ok": 5
       }
     },
     "artist_detail": {
@@ -66,16 +66,16 @@
       }
     },
     "playlist_detail": {
-      "count": 70,
+      "count": 71,
       "outcomes": {
-        "ok": 68,
+        "ok": 69,
         "rejected": 2
       }
     },
     "song_detail": {
-      "count": 58,
+      "count": 59,
       "outcomes": {
-        "ok": 56,
+        "ok": 57,
         "rateLimited": 1,
         "rejected": 1
       }
@@ -87,9 +87,9 @@
       }
     },
     "user_playlist": {
-      "count": 7,
+      "count": 9,
       "outcomes": {
-        "ok": 7
+        "ok": 9
       }
     },
     "user_record": {
@@ -564,6 +564,22 @@
       "note": null
     },
     {
+      "path": "library/album.missing-fields.constructed.json",
+      "module": "album",
+      "queryKey": "{\"id\":84072830}",
+      "query": {
+        "id": 84072830
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "anonymous",
+      "sdk": "hana-music-api@1.4.0",
+      "note": "构造（#78）：宽松字段缺了。照 library/album.json 复制，去掉专辑的 name、picUrl、artist、publishTime，那首歌的 name、ar、al.picUrl、dt 和 privilege 里的 st、pl"
+    },
+    {
       "path": "library/album_sublist.json",
       "module": "album_sublist",
       "queryKey": "{\"limit\":100}",
@@ -610,7 +626,7 @@
       },
       "status": 200,
       "outcome": "ok",
-      "validated": false,
+      "validated": true,
       "truncated": null,
       "constructed": false,
       "viewer": "anonymous",
@@ -690,7 +706,7 @@
       },
       "status": 200,
       "outcome": "ok",
-      "validated": false,
+      "validated": true,
       "truncated": [
         {
           "path": "body.hotSongs",
@@ -929,6 +945,22 @@
       "note": null
     },
     {
+      "path": "library/playlist_detail.missing-fields.constructed.json",
+      "module": "playlist_detail",
+      "queryKey": "{\"id\":95050200}",
+      "query": {
+        "id": 95050200
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.10.0",
+      "note": "构造（#78）：宽松字段缺了。照 library/netease-playlist/001-playlist_detail.json.gz 复制，去掉歌单的 name、coverImgUrl、creator；曲目只留前两首（trackIds、tracks、privileges 一起截）"
+    },
+    {
       "path": "library/playlist_detail.own-small.json",
       "module": "playlist_detail",
       "queryKey": "{\"id\":900000015}",
@@ -1137,6 +1169,22 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@2.3.0",
       "note": null
+    },
+    {
+      "path": "library/song_detail.missing-privilege.constructed.json",
+      "module": "song_detail",
+      "queryKey": "{\"ids\":\"3445419179,3402169401\"}",
+      "query": {
+        "ids": "3445419179,3402169401"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.10.0",
+      "note": "构造（#78）：一首歌没有权限信息。照 library/netease-playlist/002-song_detail.json.gz 复制，只留 playlist_detail.missing-fields.constructed.json 的那两首，去掉第二首在 privileges 里的那一条"
     },
     {
       "path": "library/song_detail.vip.json",
@@ -3284,6 +3332,23 @@
       "note": null
     },
     {
+      "path": "library/user_playlist.after-no-track-update-time.constructed.json.gz",
+      "module": "user_playlist",
+      "queryKey": "{\"limit\":1000,\"uid\":10000001}",
+      "query": {
+        "limit": 1000,
+        "uid": 10000001
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@2.4.0",
+      "note": "构造（#78）：曲目变动时间缺了。照 library/sync/after/001-user_playlist.json.gz 复制，去掉每张歌单的 trackUpdateTime"
+    },
+    {
       "path": "library/user_playlist.anonymous-view.json.gz",
       "module": "user_playlist",
       "queryKey": "{\"limit\":1000,\"offset\":0,\"uid\":10000001}",
@@ -3341,6 +3406,23 @@
       "note": null
     },
     {
+      "path": "library/user_playlist.unknown-kind.constructed.json",
+      "module": "user_playlist",
+      "queryKey": "{\"limit\":1000,\"uid\":10000001}",
+      "query": {
+        "limit": 1000,
+        "uid": 10000001
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@1.4.0",
+      "note": "构造（#78）：认不出歌单种类。照 library/user_playlist.json 复制，只留前三张，去掉我喜欢的音乐（900000001）的 specialType"
+    },
+    {
       "path": "library/user_record.all.json",
       "module": "user_record",
       "queryKey": "{\"type\":0,\"uid\":10000001}",
@@ -3350,7 +3432,7 @@
       },
       "status": 200,
       "outcome": "ok",
-      "validated": false,
+      "validated": true,
       "truncated": [
         {
           "path": "body.allData",
@@ -3372,7 +3454,7 @@
       },
       "status": 200,
       "outcome": "ok",
-      "validated": false,
+      "validated": true,
       "truncated": [
         {
           "path": "body.weekData",
@@ -4109,7 +4191,7 @@
       "query": {},
       "status": 200,
       "outcome": "ok",
-      "validated": false,
+      "validated": true,
       "truncated": null,
       "constructed": false,
       "viewer": "vip-qr",
@@ -4123,7 +4205,7 @@
       "query": {},
       "status": 200,
       "outcome": "ok",
-      "validated": false,
+      "validated": true,
       "truncated": null,
       "constructed": false,
       "viewer": "vip-qr",

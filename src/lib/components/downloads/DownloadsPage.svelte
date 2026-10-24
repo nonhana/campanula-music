@@ -30,8 +30,9 @@
   const songs = $derived(all && term
     ? view.app.searchDownloads(term)
     : all)
+  /** 没有封面的歌（#78）不进拼图 */
   const covers = $derived([
-    ...new Set((all ?? []).map(song => song.album.coverUrl)),
+    ...new Set((all ?? []).flatMap(song => song.album.coverUrl ?? [])),
   ].slice(0, 4))
 
   /** 列表状态：还没从本机读出来 / 一首都没有 / 搜到的（搜不到由 SongList 画） */

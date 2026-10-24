@@ -4,6 +4,7 @@
 -->
 <script lang='ts'>
   import type { Song } from '#lib/api/library.js'
+  import { songTitle } from '#lib/api/library.js'
 
   import { artistLine, langOf } from '../shared/text'
   import DownloadMark from './DownloadMark.svelte'
@@ -38,7 +39,7 @@
       now ? 'text-primary-950' : 'text-neutral-900',
     ]}
     lang={langOf(song.name)}
-  >{song.name}</span>
+  >{songTitle(song)}</span>
   <SongBadge kind={look.badge} />
 </span>
 {#if mark}

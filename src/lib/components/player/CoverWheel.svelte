@@ -53,8 +53,8 @@
 
   const REST: Pose = { angle: 0, opacity: 1 }
 
-  /** 小转盘（播放条）的大图就是小缩略图；加载过的直接用 */
-  const sharpNow = (s: Song) => size <= SMALL_COVER || coverLoaded(s.album.coverUrl, size)
+  /** 小转盘（播放条）的大图就是小缩略图；加载过的直接用；没有封面（#78）的显示 Cover 的默认图，不用取 */
+  const sharpNow = (s: Song) => size <= SMALL_COVER || s.album.coverUrl === null || coverLoaded(s.album.coverUrl, size)
 
   let discs = $state.raw<Disc[]>([
     {
@@ -161,7 +161,11 @@
         : disc))
     }
     const key = front
-    void preloadCover(shown.song.album.coverUrl, size).then(() => {
+    const url = shown.song.album.coverUrl
+    // 没有封面（#78）：不用取，当作已经到了
+    void (url === null
+      ? Promise.resolve()
+      : preloadCover(url, size)).then(() => {
       if (key === front && !held)
         frontReady = true
     })
@@ -352,7 +356,7 @@
   $effect(() => {
     const ready = frontReady
     for (const neighbor of [previous, next]) {
-      if (!neighbor)
+      if (!neighbor || neighbor.album.coverUrl === null)
         continue
       void preloadCover(neighbor.album.coverUrl, SMALL_COVER)
       if (ready)

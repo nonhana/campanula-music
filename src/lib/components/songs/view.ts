@@ -1,6 +1,7 @@
 import type { LucideIcon } from '@lucide/svelte'
 
 import type { Song } from '#lib/api/library.js'
+import { songTitle } from '#lib/api/library.js'
 
 import type { ScrollMark } from '../shared/scroll-marks'
 import { formatCount, langOf } from '../shared/text'
@@ -46,6 +47,6 @@ export interface SongDragHooks {
 /** 歌曲列表里的一首在滚动条气泡里怎么写：第几首、歌名 */
 export const songMark = (song: Song, index: number): ScrollMark => ({
   caption: `第 ${formatCount(index + 1)} 首`,
-  title: song.name,
+  title: songTitle(song),
   lang: langOf(song.name),
 })

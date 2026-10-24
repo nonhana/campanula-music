@@ -33,7 +33,7 @@ export interface SetCoverRequest {
   imgId: string
 }
 
-/** 刚设完马上读歌单详情有时还是旧的（验证关卡②） */
+/** 刚设完马上读歌单详情有时还是旧的（验证关卡②）；网易云没给新封面的地址时是 null，等下次同步再拿到（#78） */
 export interface SetCoverResponse {
-  url: string
+  url: string | null
 }

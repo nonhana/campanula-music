@@ -16,9 +16,10 @@
   import ArtistTile from '../library/ArtistTile.svelte'
   import PlaylistTile from '../library/PlaylistTile.svelte'
   import TileGrid from '../library/TileGrid.svelte'
+  import { playlistName } from '../playlist/playlist-text'
   import { getAppView } from '../shared/app-context.svelte'
   import { reveal } from '../shared/motion'
-  import { formatCount, yearOf } from '../shared/text'
+  import { formatSongCount, yearOf } from '../shared/text'
   import SkeletonRows from '../songs/SkeletonRows.svelte'
   import SongList from '../songs/SongList.svelte'
   import StateBlock from '../ui/StateBlock.svelte'
@@ -131,7 +132,7 @@
 {#snippet playlistsBody()}
   <TileGrid kind='playlist' layout={phone ? 'shelf' : 'overview'} {phone} items={playlistItems} label='歌单' loadingLabel='正在搜索歌单' failure={failureOf(playlists)}>
     {#snippet tile(playlist: SearchedPlaylist)}
-      <PlaylistTile id={playlist.id} name={playlist.name} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={playlist.creator} collectable {phone} />
+      <PlaylistTile id={playlist.id} name={playlistName(playlist)} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={playlist.creator} collectable {phone} />
     {/snippet}
   </TileGrid>
 {/snippet}
@@ -139,7 +140,7 @@
 {#snippet artistsBody()}
   <TileGrid kind='artist' layout='shelf' {phone} items={artistItems} label='歌手' loadingLabel='正在搜索歌手' failure={failureOf(artists)}>
     {#snippet tile(artist: SearchedItems['artists'])}
-      <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首`} collectable />
+      <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={formatSongCount(artist.songCount) ?? undefined} collectable />
     {/snippet}
   </TileGrid>
 {/snippet}

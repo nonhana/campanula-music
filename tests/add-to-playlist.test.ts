@@ -47,7 +47,7 @@ describe('加入歌单的目标和理由', () => {
     const afterAdd = app.addTargets({ mode: 'song', song, currentPlaylistId: JAZZ_ID })
     const added = afterAdd!.find(target => target.id === other!.id)
     expect(added).toMatchObject({ blocked: 'alreadyInPlaylist' })
-    expect(added!.total).toBe(before + 1)
+    expect(added!.total).toBe(before! + 1)
     expect(added!.total).toBe(app.state.library?.songsOf(other!.id)?.total ?? -1)
 
     await world.netease.reply(LIKE)

@@ -7,6 +7,7 @@
   import { Ellipsis } from '@lucide/svelte'
 
   import type { Song } from '#lib/api/library.js'
+  import { songTitle } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
 
   import { songMenuActions } from '../menu/song-menu.svelte'
@@ -38,7 +39,7 @@
     look.button,
     open && 'bg-primary-100 text-primary-950',
   ]}
-  aria-label='更多操作：{song.name}'
+  aria-label='更多操作：{songTitle(song)}'
   aria-haspopup='menu'
   aria-expanded={open}
   onclick={event => openSongMenuFrom(event, song, source)}

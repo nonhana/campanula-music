@@ -12,7 +12,7 @@
   import type { Snippet } from 'svelte'
   import { untrack } from 'svelte'
 
-  import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH } from '#lib/api/library.js'
+  import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, songTitle } from '#lib/api/library.js'
   import type { ChangeFailure } from '#lib/app/library.js'
 
   import TagPicker from '../library/TagPicker.svelte'
@@ -29,6 +29,7 @@
   import Cover from '../ui/Cover.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import TextField from '../ui/TextField.svelte'
+  import { playlistName } from './playlist-text'
 
   const { coverEditor, playlistEditor } = getOverlays()
 
@@ -176,7 +177,7 @@
         </span>
       </label>
       {#if request.songs.length === 1}
-        <p class='text-caption text-neutral-600'>建好后加入<span lang={langOf(request.songs[0]!.name)}>《{request.songs[0]!.name}》</span></p>
+        <p class='text-caption text-neutral-600'>建好后加入<span lang={langOf(request.songs[0]!.name)}>《{songTitle(request.songs[0]!)}》</span></p>
       {:else if request.songs.length > 1}
         <p class='text-caption text-neutral-600'>建好后加入这 {formatCount(request.songs.length)} 首</p>
       {/if}
@@ -259,11 +260,13 @@
     : '取消'} oncancel={() => playlistEditor.close()}>
     {#snippet body()}
       {#if playlist && request.mode === 'public'}
-        <p class='text-body text-neutral-700'>公开后，你的网易云主页和搜索里都能看到<span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span></p>
+        <p class='text-body text-neutral-700'>公开后，你的网易云主页和搜索里都能看到<span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlistName(playlist)}」</span></p>
         <p class='mt-3 rounded-lg bg-warning-50 px-3.5 py-2.5 text-caption text-warning-900'>公开后不能改回隐私</p>
       {:else if playlist && request.mode === 'delete'}
         <p class='text-body text-neutral-700'>
-          <span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlist.name}」</span>里的 {formatCount(songCount)} 首歌随歌单移除，红心不受影响。
+          <span class='text-neutral-900 font-500' lang={langOf(playlist.name)}>「{playlistName(playlist)}」</span>里的{songCount === null
+            ? ''
+            : ` ${formatCount(songCount)} 首`}歌随歌单移除，红心不受影响。
         </p>
         <p class='mt-3 text-caption text-neutral-600'>删除后不能恢复。</p>
       {/if}

@@ -43,14 +43,15 @@ export const pick = (view: AppView, play: () => void, cover: HTMLElement | undef
     void takeOff(after, flight ? flight.from : before, cover)
 }
 
-/** 从这一行加载好的封面飞到小窗；减少动态效果、页面在后台、封面还没加载出来时不飞，播放条照常换歌（view.ts 的 turnOf，往左转） */
+/** 从这一行加载好的封面飞到小窗；减少动态效果、页面在后台、封面还没加载出来、网易云没给封面时不飞，播放条照常换歌（view.ts 的 turnOf，往左转） */
 const takeOff = async (song: Song, from: Song | null, cover: HTMLElement): Promise<void> => {
   const mine = ++launches
   ground()
   const img = [
 ...cover.querySelectorAll('img'),
 ].findLast(each => each.complete && each.naturalWidth > 0)
-  if (!img || reducedMotion() || unseen()) {
+  const url = song.album.coverUrl
+  if (!img || url === null || reducedMotion() || unseen()) {
     flight = null
     return
   }
@@ -67,7 +68,6 @@ const takeOff = async (song: Song, from: Song | null, cover: HTMLElement): Promi
   }
   const { size } = landingSlot
   const end = restingRect(landingSlot.element)
-  const url = song.album.coverUrl
   const ready = preloadCover(url, size)
   const element = document.createElement('img')
   element.src = img.currentSrc

@@ -8,6 +8,7 @@
   import { SvelteMap } from 'svelte/reactivity'
 
   import type { Song } from '#lib/api/library.js'
+  import { songTitle } from '#lib/api/library.js'
   import type { RequestFailure } from '#lib/app/api-client.js'
   import type { ChangeFailure } from '#lib/app/library.js'
 
@@ -162,7 +163,7 @@
     {@render checkbox(song)}
     <Cover url={song.album.coverUrl} size={40} class='rounded-md' />
     <span class='min-w-0 flex-1'>
-      <span class='block truncate text-body text-neutral-900 font-500' lang={langOf(song.name)}>{song.name}</span>
+      <span class='block truncate text-body text-neutral-900 font-500' lang={langOf(song.name)}>{songTitle(song)}</span>
       <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(song))}>{artistLine(song)}</span>
     </span>
     {#if disabled}<span class='sr-only'>已在歌单里</span>{/if}

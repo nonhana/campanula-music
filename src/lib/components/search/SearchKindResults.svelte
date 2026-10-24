@@ -14,7 +14,7 @@
   import TileGrid from '../library/TileGrid.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { fadeAway, reveal } from '../shared/motion'
-  import { formatCount, yearOf } from '../shared/text'
+  import { formatSongCount, yearOf } from '../shared/text'
   import SongList from '../songs/SongList.svelte'
   import type { SongListView } from '../songs/view'
   import ShowMore from '../ui/ShowMore.svelte'
@@ -153,7 +153,7 @@
   {:else if kind === 'artists'}
     <TileGrid kind='artist' layout='grid' {phone} inset={!phone} items={artists} label='歌手' loadingLabel={`正在搜索${words.label}`} failure={gridFailure} empty={{ icon: SearchX, title: `没有相关的${words.label}` }} staggerFrom={appendedAt}>
       {#snippet tile(artist: SearchedItems['artists'])}
-        <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={`${formatCount(artist.songCount)} 首`} collectable />
+        <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={formatSongCount(artist.songCount) ?? undefined} collectable />
       {/snippet}
     </TileGrid>
     {#if artists && artists.length > 0}

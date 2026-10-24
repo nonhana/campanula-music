@@ -26,7 +26,7 @@ const download = async (device: Device, app: App, id: number): Promise<Song> => 
   const song = likedSong(app, id)
   const { data } = (await loadFixture(FIRST.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }
   device.files.put(data.url.replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
-  device.files.put(`${song.album.coverUrl.replace(/^http:/, 'https:')}?param=512y512`, { bytes: COVER_BYTES, type: 'image/jpeg' })
+  device.files.put(`${song.album.coverUrl!.replace(/^http:/, 'https:')}?param=512y512`, { bytes: COVER_BYTES, type: 'image/jpeg' })
   await world.netease.reply(FIRST.downloadUrl)
   await world.netease.reply(LYRICS)
   app.download(song)

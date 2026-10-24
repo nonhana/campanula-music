@@ -82,7 +82,9 @@
     bind:this={trigger}
     type='button'
     class='press rounded-full transition-transform duration-move-feedback mouse:hover:brightness-95'
-    aria-label='账号：{account.nickname}'
+    aria-label={account.nickname === null
+      ? '账号'
+      : `账号：${account.nickname}`}
     aria-haspopup='menu'
     aria-expanded={open}
     aria-controls={open ? 'account-menu' : undefined}
@@ -101,7 +103,9 @@
     >
       <div class='flex items-center gap-3 px-2 pb-3 pt-1.5'>
         <Avatar url={account.avatarUrl} size={40} />
-        <p class='min-w-0 truncate text-label text-neutral-900 font-500'>{account.nickname}</p>
+        {#if account.nickname !== null}
+          <p class='min-w-0 truncate text-label text-neutral-900 font-500'>{account.nickname}</p>
+        {/if}
       </div>
       <div class='mb-1 h-px bg-neutral-100' role='separator'></div>
       <MenuList
