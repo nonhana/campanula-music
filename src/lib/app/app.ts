@@ -295,6 +295,8 @@ export const createApp = (browser: BrowserCapabilities): App => {
 
   /** 会话一轮发现网易云说需要登录、续期也没成功：各模块自己收起，曲库副本留在本机，同一个账号重新登录后接着用 */
   const loginExpired = (): void => {
+    // 服务端已经不认这个登录了：断网时不要再用本机记着的账号冒充登录
+    void local.setCachedAccount(null).catch(() => {})
     void round.change({ kind: 'loginExpired' })
     update({
       session: { status: 'loginExpired' },
@@ -567,6 +569,8 @@ export const createApp = (browser: BrowserCapabilities): App => {
     await entered
     if (!round.isCurrent(mine) || !shown)
       return
+    // 记不住也不挡着打开：本机账号只是断网时先用一下
+    await local.setCachedAccount(account).catch(() => {})
     if (quality)
       player.setQuality(quality)
     update({
@@ -594,14 +598,17 @@ export const createApp = (browser: BrowserCapabilities): App => {
 
   /** 各模块在会话一轮里登记了自己的清理，播放队列由 saved-queue 停下并删掉 */
   const signedOut = (by: 'this-tab' | 'other-tab'): Promise<void> => {
-    const changed = round.change({ kind: 'signedOut', by })
+    const changed = Promise.all([
+      round.change({ kind: 'signedOut', by }),
+      local.setCachedAccount(null).catch(() => {}),
+    ])
     update({
       session: { status: 'signedOut' },
       login: INITIAL_LOGIN,
       library: null,
     })
     player.availabilityChanged()
-    return changed
+    return changed.then(() => {})
   }
 
   /** 还没打开、没显示出来时是 null；已下载属于这台设备，没登录时也有 */
@@ -800,10 +807,29 @@ export const createApp = (browser: BrowserCapabilities): App => {
         return
       if (session.status === 'signedIn')
         return signedIn(session.account)
-      if (session.status === 'signedOut')
+      // 断网时问不到当前账号：用本机记着的账号先打开本机副本（ADR-0007），联网后接着同步；没有本机账号才当作未登录（已下载的歌照样能看、能放）
+      if (session.status === 'checkFailed' && session.failure.kind === 'offline') {
+        const account = await local.cachedAccount()
+        // 读本机数据库的时候别的标签页退出了：新一轮说了算，不要再把它拉回来
+        if (!round.isCurrent(asked))
+          return
+        if (account)
+          return signedIn(account)
         await round.change({ kind: 'anonymous' })
-      else if (session.status === 'loginExpired')
+        update({
+          session: { status: 'signedOut' },
+        })
+        return
+      }
+      // 服务端说没有登录、或者登录已经失效：本机记着的账号也跟着作废（断网时不要冒充登录）
+      if (session.status === 'signedOut') {
+        await local.setCachedAccount(null).catch(() => {})
+        await round.change({ kind: 'anonymous' })
+      }
+      else if (session.status === 'loginExpired') {
+        void local.setCachedAccount(null).catch(() => {})
         void round.change({ kind: 'loginExpired' })
+      }
       update({ session })
     },
     startQrLogin: login.startQr,

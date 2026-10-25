@@ -8,6 +8,7 @@
   import { ChevronRight, CircleArrowDown } from '@lucide/svelte'
 
   import Brand from '../boot/Brand.svelte'
+  import OfflineBar from '../notice/OfflineBar.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'
   import { float } from '../shared/motion'
@@ -30,6 +31,9 @@
   <header class='mx-auto h-14 max-w-[1280px] flex items-center px-4 md:h-16 md:px-8'>
     <Brand />
   </header>
+  {#if !view.state.online}
+    <OfflineBar phone={!desktopLayout.current} />
+  {/if}
   <main class='px-4 pt-2 md:px-8 md:pt-[8vh]'>
     <section class='mx-auto max-w-[420px] w-full rounded-xl bg-white p-4 shadow-ambient md:p-7' aria-labelledby='login-title'>
       <h1 id='login-title' class='mb-5 text-title text-neutral-900 font-600'>用网易云账号登录</h1>

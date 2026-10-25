@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- 可蒙版图标：同一个花，缩进安全区（中央 80% 的圆），底铺满整个方块 -->
+  <rect width="512" height="512" fill="#E8F8F1"/>
+  <g transform="translate(256 256) scale(11.0933) translate(-12 -12)" fill="none" stroke="#37BE8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5"/>
+    <path d="M12 7.5V9"/>
+    <path d="M7.5 12H9"/>
+    <path d="M16.5 12H15"/>
+    <path d="M12 16.5V15"/>
+    <path d="m8 8 1.88 1.88"/>
+    <path d="M14.12 9.88 16 8"/>
+    <path d="m8 16 1.88-1.88"/>
+    <path d="M14.12 14.12 16 16"/>
+  </g>
+</svg>

@@ -13,10 +13,12 @@
   import Brand from '../boot/Brand.svelte'
   import PhoneSelectionActionBar from '../library/PhoneSelectionActionBar.svelte'
   import PhoneSelectionTopBar from '../library/PhoneSelectionTopBar.svelte'
+  import OfflineBar, { OFFLINE_BAR_HEIGHT } from '../notice/OfflineBar.svelte'
   import { setOverlays } from '../overlay/overlay-context'
   import OverlayHost from '../overlay/OverlayHost.svelte'
   import { createOverlays } from '../overlay/overlays.svelte'
   import PlayerLayer from '../player/PlayerLayer.svelte'
+  import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'
   import { setScrollLookup } from '../shared/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
@@ -25,16 +27,23 @@
   import { pageScrollPadding } from './scroll-padding'
 
   const { children }: { children: Snippet } = $props()
+  const view = getAppView()
   const overlays = setOverlays(createOverlays())
   const lookup = setScrollLookup({ markAt: null })
   const docked = $derived(overlays.playerLayer.hasQueue)
   /** 手机上多选时底部操作条占播放条的位置 */
   const selecting = $derived(overlays.multiSelect.mode && !desktopLayout.current)
   const scrollPadding = pageScrollPadding()
+  /** 顶栏高度（桌面 64px、手机 56px）；断网时下面还贴着提示条 */
+  const top = $derived((desktopLayout.current
+    ? 64
+    : 56) + (view.state.online
+    ? 0
+    : OFFLINE_BAR_HEIGHT))
 
-  // 顶栏高度（桌面 64px、手机 56px）再加 8px，和两个骨架一样写在 scroll-padding-top 上（DESIGN.md Layout · 滚动）：
-  // 页内定位、Tab 到的东西、焦点环都不藏在顶栏底下；换页时判断封面露没露也按它算（page-transition.ts）
-  $effect(() => scrollPadding.set(desktopLayout.current ? '72px' : '64px'))
+  // 再加 8px，和两个骨架一样写在 scroll-padding-top 上（DESIGN.md Layout · 滚动）：页内定位、Tab 到的东西、
+  // 焦点环都不藏在顶栏底下；换页时判断封面露没露也按它算（page-transition.ts）
+  $effect(() => scrollPadding.set(`${top + 8}px`))
   onDestroy(scrollPadding.release)
 </script>
 
@@ -43,12 +52,17 @@
 {/snippet}
 
 <div class='contents' inert={overlays.stack.baseInert}>
-  <div class={[
-    'bg-primary-50 min-h-dvh',
-    docked || selecting
-      ? 'pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-28'
-      : 'pb-[calc(32px+env(safe-area-inset-bottom))] md:pb-12',
-  ]}>
+  <div
+    class={[
+      'bg-primary-50 min-h-dvh',
+      docked || selecting
+        ? 'pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-28'
+        : 'pb-[calc(32px+env(safe-area-inset-bottom))] md:pb-12',
+    ]}
+    style:--offline-bar-height={view.state.online
+      ? '0px'
+      : `${OFFLINE_BAR_HEIGHT}px`}
+  >
     <header class='sticky top-0 z-40 h-14 flex items-center gap-3 bg-primary-50 pl-4 pr-3 md:fixed md:inset-x-0 md:h-16 md:pl-6 md:pr-6' data-page-top>
       {#if selecting}
         <PhoneSelectionTopBar />
@@ -61,6 +75,11 @@
       {/if}
     </header>
     <main class='md:pt-16'>
+      {#if !view.state.online}
+        <div class='sticky top-14 z-30 md:top-16'>
+          <OfflineBar phone={!desktopLayout.current} />
+        </div>
+      {/if}
       <div class='md:mx-auto md:max-w-[1200px] md:px-8 md:pt-4'>
         {@render children()}
       </div>
@@ -68,7 +87,7 @@
   </div>
   <PlayerDock present={docked || selecting} replace={selecting ? selectionBar : undefined} />
   <Scrollbar page={{
-    top: desktopLayout.current ? '64px' : '56px',
+    top: `${top}px`,
     bottom: playerDockBottom({ desktop: desktopLayout.current, present: docked || selecting, withoutBar: '0px' }),
   }} {lookup} />
 </div>

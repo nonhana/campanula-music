@@ -75,7 +75,7 @@
     {#if keyword}
       <h1 class='pt-2 text-headline text-neutral-900 font-600'>“<span lang={langOf(keyword)}>{keyword}</span>”<span class='sr-only'>的搜索结果</span></h1>
       <!-- 底色比内容区两边各宽 12px：架子伸出去的格子、阴影滚到它底下时也盖得住 -->
-      <div class='sticky top-16 z-10 mt-3 bg-primary-50 px-3 -mx-3' bind:clientHeight={tabsHeight}>
+      <div class='sticky z-10 mt-3 bg-primary-50 px-3 -mx-3' style:top='calc(4rem + var(--offline-bar-height, 0px))' bind:clientHeight={tabsHeight}>
         <SearchTabs {keyword} {tab} />
       </div>
       {@render results(false)}

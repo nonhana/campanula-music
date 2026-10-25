@@ -10,7 +10,6 @@
   ],
   "project": ["src/**/*.{ts,svelte}", "scripts/*.mts", "tests/**/*.ts", "*.mts"],
   "ignoreDependencies": [
-    "@typescript/native",
     "uno.css"
   ],
   "ignoreBinaries": [

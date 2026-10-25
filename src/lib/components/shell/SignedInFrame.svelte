@@ -142,7 +142,7 @@
 
 <div class='contents' inert={overlays.stack.baseInert}>
   {#if desktopLayout.current}
-    <DesktopShell {railExpanded}>
+    <DesktopShell {railExpanded} offline={!view.state.online}>
       {#snippet header()}
         <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
         <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
@@ -161,6 +161,7 @@
     </DesktopShell>
   {:else}
     <PhoneShell
+      offline={!view.state.online}
       tabs={onLibrary
         ? libraryTabs
         : searching && showingResults()

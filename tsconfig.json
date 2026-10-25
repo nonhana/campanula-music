@@ -12,5 +12,8 @@
     "uno.config.mts",
     "uno.palette.mts",
     "vite.config.mts"
+  ],
+  "exclude": [
+    "src/service-worker"
   ]
 }

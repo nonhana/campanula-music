@@ -1,11 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { listener } from './harness/listener'
+import { never } from './harness/hold'
+import { current, listener } from './harness/listener'
 import { RECORDED_ACCOUNT as ACCOUNT, MUSIC_U, renewCookies, RENEWED_MUSIC_U, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
-const { sessionCalls, sessionModules } = listener(world)
+const { downloadLiked, replyLibrary, sessionCalls, sessionModules, signInAtHearts, signInWithLiked } = listener(world)
+
+/** 我喜欢的音乐里的第 1 首：录了极高音质的下载地址 */
+const FIRST = { id: 3433267939, downloadUrl: 'playback/downloads/002-song_download_url_v1.json.gz' }
+const LIKED = { kind: 'playlist', id: 900000001 } as const
 
 /** 从第 since 次调用起，每次调网易云的模块和带的 MUSIC_U */
 const credentialsUsed = (since: number) => sessionCalls(since).map(({ module, config }) => [module, (config.cookie as Record<string, string>).MUSIC_U])
@@ -26,16 +31,13 @@ describe('打开 App', () => {
     expect(sessionModules()).toEqual([])
   })
 
-  it('断网时打开：不知道有没有登录，界面能说明是断网；联网后重新打开就是未登录', async () => {
+  it('从没登录过的设备断网时打开：当作未登录，不发请求；联网后重新打开能问到账号', async () => {
     const device = world.device()
     device.setOnline(false)
 
     const { app } = await device.open()
 
-    expect(app.state.session).toEqual({
-      status: 'checkFailed',
-      failure: { kind: 'offline' },
-    })
+    expect(app.state.session).toEqual({ status: 'signedOut' })
     expect(device.requests).toEqual([])
 
     device.setOnline(true)
@@ -45,6 +47,62 @@ describe('打开 App', () => {
     expect(device.requests).toEqual([
       { method: 'GET', path: '/api/account' },
     ])
+  })
+
+  it('登录过、断网后重新打开：直接显示本机曲库副本和播放队列，只放下载了的歌；联网后接着同步，不重新登录', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    const first = await downloadLiked(device, app, FIRST)
+    app.play(LIKED, first.id)
+    await world.settle()
+    await world.settle()
+    tab.close()
+    const before = device.requests.length
+
+    device.setOnline(false)
+    const reopened = await device.open()
+    const offline = reopened.app
+    await world.settle()
+
+    expect(offline.state.session).toEqual({ status: 'signedIn', account: ACCOUNT })
+    expect(offline.state.online).toBe(false)
+    expect(device.requests.slice(before)).toEqual([])
+    expect(offline.state.library?.hearts?.size).toBeGreaterThan(0)
+    expect(offline.state.library?.liked?.songs.map(song => song.id)).toContain(FIRST.id)
+    expect(current(offline)).toBe(FIRST.id)
+    expect(offline.state.downloads.has(FIRST.id)).toBe(true)
+    expect(offline.state.library?.sync).toEqual({ status: 'offline' })
+    expect(offline.state.playable(first)).toBe(true)
+    const other = offline.state.library!.liked!.songs.find(song => song.id !== FIRST.id)!
+    expect(offline.state.playable(other)).toBe(false)
+
+    // 联网后接着同步：只发曲库同步的请求，不再问当前账号（本机账号已经显示出来了）
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
+    device.setOnline(true)
+    await world.settle()
+
+    const resumed = device.requests.slice(before).map(request => request.path)
+    expect(resumed.some(path => path.startsWith('/api/hearts'))).toBe(true)
+    expect(resumed).not.toContain('/api/account')
+  })
+
+  it('退出登录后断网打开：仍是未登录，不会拿本机的旧账号显示曲库', async () => {
+    const device = world.device()
+    const tab = await signInAtHearts(device)
+    await world.netease.reply('login/logout.json')
+    await tab.app.logout()
+    await world.settle()
+    tab.close()
+
+    device.setOnline(false)
+    const { app } = await device.open()
+
+    expect(app.state.session).toEqual({ status: 'signedOut' })
+    expect(app.state.library).toBeNull()
   })
 
   it('已登录：问网易云当前账号，显示头像和昵称', async () => {
@@ -83,6 +141,23 @@ describe('打开 App', () => {
     const { app: reopened } = await device.open()
 
     expect(reopened.state.session).toEqual({ status: 'loginExpired' })
+  })
+
+  it('服务端说登录已经失效后断网打开：不会拿本机记着的旧账号冒充登录', async () => {
+    const device = world.device()
+    const { app } = await device.open()
+    await signIn(world, app)
+
+    await world.netease.reply('login/user_account.invalid.json')
+    await world.netease.reply('login/login_refresh.301-invalid.json')
+    const { app: reopened } = await device.open()
+    expect(reopened.state.session).toEqual({ status: 'loginExpired' })
+
+    device.setOnline(false)
+    const { app: offline } = await device.open()
+
+    expect(offline.state.session).toEqual({ status: 'signedOut' })
+    expect(offline.state.library).toBeNull()
   })
 })
 

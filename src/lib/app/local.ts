@@ -1,3 +1,4 @@
+import type { Account } from '#lib/api/account.js'
 import type { AlbumResponse, CollectedAlbum, CollectedArtist, Playlist, Song } from '#lib/api/library.js'
 import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 
@@ -116,6 +117,9 @@ export interface LocalDb {
   /** 退出时服务端还没回过期的登录 Cookie（断网、服务端出错）：要再发一次退出，在那之前 App 当作未登录 */
   pendingLogout: () => Promise<boolean>
   setPendingLogout: (pending: boolean) => Promise<void>
+  /** 上次登录的账号：断网打开时先用它显示本机副本，不用等问服务端；退出登录时删掉 */
+  cachedAccount: () => Promise<Account | null>
+  setCachedAccount: (account: Account | null) => Promise<void>
   readLibrary: () => Promise<Replica | null>
   /** 原来的（别的账号的）整个删掉 */
   resetLibrary: (owner: number) => Promise<void>
@@ -361,6 +365,17 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
         store.put(true, 'pendingLogout')
       else
         store.delete('pendingLogout')
+    }),
+    async cachedAccount() {
+      const store = (await db.open()).transaction(SESSION).objectStore(SESSION)
+      return (await settled(store.get('account')) as Account | undefined) ?? null
+    },
+    setCachedAccount: account => write([SESSION], (transaction) => {
+      const store = transaction.objectStore(SESSION)
+      if (account)
+        store.put(account, 'account')
+      else
+        store.delete('account')
     }),
     async readLibrary() {
       const transaction = (await db.open()).transaction(LIBRARY_STORES)

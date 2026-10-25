@@ -4,6 +4,9 @@
 <head>
 	<meta charset="utf-8" />
 	<link rel="icon" href="%sveltekit.assets%/favicon.ico" />
+	<!-- 桌面和手机都装成独立窗口；手机装成应用后锁竖屏（Spec #11“客户端：App 外壳（PWA）”） -->
+	<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+	<meta name="theme-color" content="#F5FCF9" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<!-- 只有浅色主题，退出 Android Chrome 的自动深色（ADR-0008） -->
 	<meta name="color-scheme" content="only light" />
