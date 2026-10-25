@@ -4,6 +4,7 @@ import { createSubscriber } from 'svelte/reactivity'
 
 import LogoutConfirm from '../account/LogoutConfirm.svelte'
 import DeleteDownloadsConfirm from '../downloads/DeleteDownloadsConfirm.svelte'
+import DownloadPicker from '../downloads/DownloadPicker.svelte'
 import ExportDialog from '../downloads/ExportDialog.svelte'
 import { MultiSelect } from '../library/multi-select.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
@@ -19,7 +20,7 @@ import { getAppView } from '../shared/app-context.svelte'
 import { desktopLayout } from '../shared/layout'
 import { setSelectionMode } from '../ui/selection-mode'
 import { createOverlayHistory } from './overlay-history.svelte'
-import type { AddToPlaylistRequest, DeleteDownloadsRequest, DialogRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
+import type { AddToPlaylistRequest, DeleteDownloadsRequest, DialogRequest, DownloadPickerRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
 import type { LayerOptions } from './overlay-stack'
 import { OverlayStack } from './overlay-stack'
 
@@ -99,6 +100,7 @@ modal: true,
   const playlistMenu = register<PlaylistMenuRequest>('playlist-menu', menu, PlaylistMenu)
   const playlistEditor = register<EditorRequest>('playlist-editor', dialog, PlaylistEditor)
   const addSongsDialog = register<PlaylistRequest>('add-songs', { ...dialog, fallback: '[data-add-songs-entry]' }, AddSongs)
+  const downloadPicker = register<DownloadPickerRequest>('download-picker', dialog, DownloadPicker)
   const coverEditor = register<PlaylistRequest>('cover-editor', {
     ...dialog,
     dependsOn: 'playlist-editor',
@@ -179,6 +181,7 @@ playlistPicker,
 playlistMenu,
 playlistEditor,
 addSongsDialog,
+downloadPicker,
 coverEditor,
 logoutConfirm,
 exportDialog,

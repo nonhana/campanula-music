@@ -5,7 +5,8 @@
   尺寸：桌面封面图 200px、手机 168px；封面飞行的缩略图取 FLIGHT_COVER_SIZE（ADR-0011）。
   手机三种排法：居中（专辑、歌单、歌手）、图在左标题在右（已下载）、图独占一行（每日推荐）。
   桌面动作：歌单、专辑、每日推荐、已下载贴底；歌手页头内容居中，动作跟在信息行下面（align='center'）。
-  页头只放动作，不放搜索：搜索跟着它过滤的列表走（歌单在 PlaylistSongs、已下载在 DownloadsPage），避免动作行越加越长时把搜索挤成孤立的一行（#39 UI 调整）。
+  桌面动作行是一条不会换行的工具栏：左边动作、右边搜索；按工具栏自身宽度决定紧凑，动作太多时由调用方把管理动作收进 •••。
+  手机不塞搜索：手机页头是居中的，搜索仍在页头下方（歌单在简介后、已下载在“正在下载”前）。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -35,7 +36,10 @@
     phoneLayout?: 'center' | 'row' | 'banner'
     meta?: Snippet<[boolean]>
     tags?: readonly string[]
-    actions?: Snippet
+    /** 参数是桌面工具栏是否放不下完整动作（手机固定 false） */
+    actions?: Snippet<[boolean]>
+    /** 桌面动作行右端的搜索；手机不渲染，调用方仍把搜索放在页头下方 */
+    search?: Snippet<[boolean]>
     note?: Snippet
     /** 放封面飞行的终点（ADR-0011）；不给就不飞 */
     flight?: string
@@ -52,11 +56,16 @@
     meta,
     tags = [],
     actions,
+    search,
     note,
     flight,
   }: Props = $props()
 
   const phone = $derived(!desktopLayout.current)
+  /** 桌面动作行的实际宽度；按它切紧凑，不按视口（左栏收起、封面尺寸变化都会改可用宽度） */
+  let toolbarWidth = $state(0)
+  /** 完整动作 + 搜索最小宽度放不下时，调用方把添加 / 多选收进 ••• */
+  const compact = $derived(search !== undefined && toolbarWidth > 0 && toolbarWidth < 500)
   const round = $derived(cover?.round ?? false)
   /** 真实封面图和骨架共用，168 只写一次 */
   const PHONE_COVER_CLASS = 'mx-auto max-w-[168px]'
@@ -118,13 +127,22 @@
         phoneLayout === 'center'
           ? 'mt-4 justify-center'
           : 'mt-4',
-      ]}>{@render actions()}</div>
+      ]}>{@render actions(false)}</div>
     {/if}
   {:else}
-    {#if actions}
+    {#if actions || search}
       <div class={align === 'center'
-        ? 'mt-6 flex items-center gap-2'
-        : 'mt-auto flex flex-wrap items-center gap-2 pt-4'}>{@render actions()}</div>
+        ? 'mt-6'
+        : 'mt-auto pt-4'}>
+        <div class='min-w-0 flex items-center gap-3' bind:clientWidth={toolbarWidth}>
+          {#if actions}
+            <div class='flex flex-none items-center gap-2'>{@render actions(compact)}</div>
+          {/if}
+          {#if search}
+            <div class='min-w-0 flex flex-1 justify-end'>{@render search(compact)}</div>
+          {/if}
+        </div>
+      </div>
     {/if}
   {/if}
 {/snippet}

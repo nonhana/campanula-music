@@ -38,6 +38,7 @@ describe('每日推荐', () => {
       ],
       album: { id: 35012060, name: 'Ryuichi Sakamoto - Music For Film', coverUrl: 'http://p3.music.126.net/XDu14l6k0aObvUs4nFFFGw==/18339853951789381.jpg' },
       duration: 256069,
+      downloadSize: 10245268,
       availability: 'full',
       trackNumber: 3,
       disc: '1',

@@ -9,6 +9,7 @@
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
+  import { getOverlays } from '#lib/components/overlay/overlay-context.js'
   import { getAppView } from '#lib/components/shared/app-context.svelte.js'
   import { failureText } from '#lib/components/shared/failure.js'
   import { desktopLayout } from '#lib/components/shared/layout.js'
@@ -25,6 +26,7 @@
 
   const { params }: PageProps = $props()
   const view = getAppView()
+  const { downloadPicker } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const opened = $derived(library?.albumPage(id) ?? null)
@@ -53,6 +55,20 @@
 
 <svelte:head><title>{album?.name ?? '专辑'} · Campanula</title></svelte:head>
 
+{#snippet artistLink(onPhone: boolean)}
+  {#if album}
+    {#if album.artist.id !== null && album.artist.id > 0 && album.artist.name}
+      <a
+        href={resolve('/artists/[id=neteaseId]', { id: album.artist.id })}
+        class={['rounded text-primary-900 font-500 underline-offset-3 mouse:hover:underline', onPhone && 'min-h-8 inline-flex items-center']}
+        lang={langOf(album.artist.name)}
+      >{album.artist.name}</a>
+    {:else}
+      <span lang={langOf(album.artist.name ?? '')}>{album.artist.name ?? '未知歌手'}</span>
+    {/if}
+  {/if}
+{/snippet}
+
 {#if library}
   {#if opened?.status === 'failed'}
     <div in:reveal><StateBlock kind='error' title='这张专辑没能加载' body={failureText(opened.failure)} action={{
@@ -68,15 +84,7 @@
     >
       {#snippet meta(onPhone: boolean)}
         {#if album && content}
-          {#if album.artist.id !== null && album.artist.id > 0 && album.artist.name}
-            <a
-              href={resolve('/artists/[id=neteaseId]', { id: album.artist.id })}
-              class={['rounded text-primary-900 font-500 underline-offset-3 mouse:hover:underline', onPhone && 'min-h-8 inline-flex items-center']}
-              lang={langOf(album.artist.name)}
-            >{album.artist.name}</a>
-          {:else}
-            <span lang={langOf(album.artist.name ?? '')}>{album.artist.name ?? '未知歌手'}</span>
-          {/if}
+          {@render artistLink(onPhone)}
           {#if year}<span aria-hidden='true'>·</span><span class='tabular-nums'>{year}</span>{/if}
           <span aria-hidden='true'>·</span><span class='tabular-nums'>{formatCount(content.songs.length)} 首</span>
         {/if}
@@ -84,7 +92,11 @@
       {#snippet actions()}
         {#if album}
           <PlayAllButton songs={content?.songs ?? null} source={{ kind: 'album', id }} />
-          <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online || !content || content.songs.length === 0} onclick={() => void view.app.downloadAlbum(id)}>下载</Button>
+          <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online || !content || content.songs.length === 0} onclick={(event: MouseEvent) => downloadPicker.open({
+            kind: 'album',
+            albumId: id,
+            from: event.currentTarget as HTMLElement,
+          })}>下载</Button>
           <CollectButton target={{ kind: 'album', id }} name={album.name} look='pill' />
         {/if}
       {/snippet}

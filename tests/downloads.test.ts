@@ -1105,4 +1105,38 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
     expect(app.state.downloads.paused).toBe('storageFull')
     expect(device.requests.filter(request => request.path.includes('/download-url'))).toEqual([])
   })
+
+  it('弹窗只选一部分：不同步补上剩下的（fill 为 false）', async () => {
+    const device = world.device()
+    await world.netease.reply(HEARTS)
+    await world.netease.reply(PLAYLISTS_WITH_POEMS)
+    await world.netease.reply(COLLECTED_ALBUMS)
+    await world.netease.reply(COLLECTED_ARTISTS)
+    await world.netease.reply(LIKED_TRACK_IDS)
+    const page2 = held()
+    for (const page of [1, 2, 3, 4, 5]) {
+      await world.netease.reply(likedPage(page), page === 2
+        ? { until: page2.until }
+        : {})
+    }
+    const tab = await device.open()
+    await signIn(world, tab.app)
+    await world.settle()
+    const { app } = tab
+    expect(app.state.library?.liked).toMatchObject({ complete: false })
+    const synced = app.state.library!.liked!.songs
+    const chosen = synced.filter(song => song.availability === 'full').slice(0, 1)
+    expect(chosen).toHaveLength(1)
+
+    device.storage.quota = 0
+    await app.downloadPlaylist(900000001, chosen, { fill: false })
+    await world.settle()
+    expect(app.state.downloads.tasks.size).toBe(1)
+
+    // 后面的歌同步进来，但没有设置“已加载全选”，所以不补
+    page2.release()
+    await world.settle()
+    expect(app.state.library?.liked).toMatchObject({ complete: true })
+    expect(app.state.downloads.tasks.size).toBe(1)
+  })
 })

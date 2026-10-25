@@ -4,7 +4,8 @@
   头部交给 DetailHeader（#75），左栏用 PlaylistTile 的 nav 画法。页面只读 App 给的答案（state.library.playlistPage）：
   打开时还没同步全就由 App 用前台请求拉，不等后台同步；不在曲库里的不存进本机，每次打开都联网取。
   动作：收藏开关（不在曲库里的和收藏的歌单有）、自建歌单的“添加歌曲”和 •••（#33）、曲库里的歌单和专辑的“下载”（#39）；我喜欢的音乐只有下载。
-  操作行分三档：播放（主）、下载 / 收藏（页面级次级）、添加歌曲 / 多选 / •••（管理类，图标簇）。歌单内搜索跟着列表走，在列表上方（#39 UI 调整）。
+  操作行分三档：播放（主）、下载 / 收藏（页面级次级）、添加歌曲 / 多选 / •••（管理类，图标簇）。桌面搜索在动作行右端，
+  按工具栏自身宽度把管理动作收进 •••；手机搜索仍在简介下面。页头的“下载”打开选歌弹窗。
   返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot，跟着浏览历史走）。
 -->
 <script lang='ts'>
@@ -16,6 +17,7 @@
   import type { PlaylistUnavailable } from '#lib/api/library.js'
   import { playlistName } from '#lib/api/library.js'
   import type { LibraryState } from '#lib/app/library.js'
+  import Avatar from '#lib/components/account/Avatar.svelte'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
@@ -34,13 +36,14 @@
   import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
+  import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   import type { PageProps } from './$types'
 
   const { params }: PageProps = $props()
   const view = getAppView()
-  const { addSongsDialog, multiSelect, playlistMenu } = getOverlays()
+  const { addSongsDialog, downloadPicker, multiSelect, playlistMenu } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const page = $derived(library?.playlistPage(id) ?? null)
@@ -77,10 +80,10 @@
   /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：桌面的入口写“多选 · 排序”（#36） */
   const sortableList = $derived(page?.can.sort ?? false)
   /** 桌面的多选入口：手机在数量行，桌面放在操作行的图标簇里 */
-  const canMulti = $derived(desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !multiSelect.mode)
+  const canMulti = $derived(desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0)
 
-  /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上 */
-  const openMenu = (event: MouseEvent) => {
+  /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上。紧凑时它同时收着添加 / 多选 */
+  const openMenu = (event: MouseEvent, compact = false) => {
     const button = event.currentTarget as HTMLElement
     if (playlistMenu.request?.from === button)
       return playlistMenu.close()
@@ -88,6 +91,7 @@
       playlistId: id,
       from: button,
       anchor: anchorBelow(event),
+      compact,
     })
   }
 
@@ -129,48 +133,123 @@
 
 {#snippet headerMeta()}
   {#if header}
+    {#if header.creator}
+      <span class='min-w-0 inline-flex items-center gap-1.5'>
+        <Avatar url={header.creatorAvatarUrl} size={20} />
+        <span class='truncate' lang={langOf(header.creator)}>{header.creator}</span>
+      </span>
+      {#if header.meta.length > 0}<span aria-hidden='true'>·</span>{/if}
+    {/if}
     {#each header.meta as part, i (i)}
       {#if i > 0}<span aria-hidden='true'>·</span>{/if}
-      <span class='tabular-nums' lang={i === 0
-        ? langOf(part)
-        : undefined}>{part}</span>
+      <span class='tabular-nums'>{part}</span>
     {/each}
     {#if header.private}<span class='inline-flex items-center' role='img' aria-label='隐私歌单' title='隐私歌单'><Lock size={13} aria-hidden='true' /></span>{/if}
   {/if}
 {/snippet}
 
-{#snippet headerActions()}
+{#snippet headerSearch(compact: boolean)}
+  <SearchField
+    label='在歌单里搜索'
+    bind:value={query}
+    placeholder={compact
+      ? '搜索'
+      : '在歌单里搜索'}
+    class='max-w-[280px] min-w-[128px] w-full'
+    disabled={shown?.kind !== 'songs'}
+  />
+{/snippet}
+
+{#snippet headerActions(compact: boolean)}
   <PlayAllButton songs={shown?.kind === 'songs'
     ? shown.songs
     : null} source={{ kind: 'playlist', id }} />
   {#if page?.inLibrary === true && shown?.kind === 'songs' && shown.songs.length > 0}
-    <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online} onclick={() => void view.app.downloadPlaylist(id)}>下载</Button>
+    {#if compact && page?.can.collect}
+      <!-- 收藏的歌单在紧凑宽度多一个收藏开关：下载收成同色的图标，给搜索留出能打字的宽度 -->
+      <Button
+        variant='download'
+        icon={CircleArrowDown}
+        class='w-10 px-0!'
+        title='下载'
+        aria-label='下载'
+        disabled={!view.state.online}
+        onclick={(event: MouseEvent) => downloadPicker.open({
+          kind: 'playlist',
+          playlistId: id,
+          from: event.currentTarget as HTMLElement,
+        })}
+      ></Button>
+    {:else}
+      <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online} onclick={(event: MouseEvent) => downloadPicker.open({
+        kind: 'playlist',
+        playlistId: id,
+        from: event.currentTarget as HTMLElement,
+      })}>下载</Button>
+    {/if}
   {/if}
   {#if page?.can.collect}
-    <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
+    <CollectButton target={{ kind: 'playlist', id }} {name} look={compact ? 'icon' : 'pill'} />
   {/if}
   {#if own || canMulti}
     <!-- 管理类操作收进一组安静的工具图标：带字胶囊只留给播放、下载、收藏 -->
     <span class='flex items-center gap-1 md:ml-1'>
-      {#if own}
+      {#if own && !compact}
         <IconButton icon={ListPlus} label='添加歌曲' title='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
       {/if}
-      {#if canMulti}
+      {#if canMulti && (!compact || !own)}
         <span class='contents' bind:this={desktopEntry}>
           <IconButton
             icon={ListChecks}
-            label={sortableList ? '多选和排序' : '多选'}
-            title={sortableList ? '多选和排序' : '多选'}
-            onclick={(event: MouseEvent) => multiSelect.enter({
-              from: event.currentTarget as HTMLElement,
-              focusFirst: true,
-              focusEntry: desktopEntryFocus,
-            })}
+            label={multiSelect.mode
+              ? '退出多选'
+              : sortableList
+              ? '多选和排序'
+              : '多选'}
+            title={multiSelect.mode
+              ? '退出多选'
+              : sortableList
+              ? '多选和排序'
+              : '多选'}
+            aria-pressed={multiSelect.mode}
+            class={multiSelect.mode ? 'bg-primary-100 text-primary-950' : undefined}
+            onclick={(event: MouseEvent) => multiSelect.mode
+              ? multiSelect.leave()
+              : multiSelect.enter({
+                from: event.currentTarget as HTMLElement,
+                focusFirst: true,
+                focusEntry: desktopEntryFocus,
+              })}
           />
         </span>
       {/if}
       {#if own}
-        <IconButton icon={Ellipsis} label='歌单操作：{name}' title='歌单操作' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />
+        <IconButton
+          icon={multiSelect.mode && compact
+            ? ListChecks
+            : Ellipsis}
+          label={multiSelect.mode && compact
+            ? '退出多选'
+            : `歌单操作：${name}`}
+          title={multiSelect.mode && compact
+            ? '退出多选'
+            : '歌单操作'}
+          aria-pressed={multiSelect.mode && compact
+            ? true
+            : undefined}
+          aria-haspopup={multiSelect.mode && compact
+            ? undefined
+            : 'menu'}
+          aria-expanded={multiSelect.mode && compact
+            ? undefined
+            : playlistMenu.request?.playlistId === id}
+          class={multiSelect.mode && compact
+            ? 'bg-primary-100 text-primary-950'
+            : undefined}
+          onclick={multiSelect.mode && compact
+            ? () => multiSelect.leave()
+            : (event: MouseEvent) => openMenu(event, compact)}
+        />
       {/if}
     </span>
   {/if}
@@ -185,7 +264,8 @@
     tags={header?.tags ?? []}
   >
     {#snippet meta()}{@render headerMeta()}{/snippet}
-    {#snippet actions()}{@render headerActions()}{/snippet}
+    {#snippet actions(compact: boolean)}{@render headerActions(compact)}{/snippet}
+    {#snippet search(compact: boolean)}{@render headerSearch(compact)}{/snippet}
   </DetailHeader>
   <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
   {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} {phone} />{/key}</div>{/if}

@@ -18,6 +18,7 @@ export const plainSong = (song: Song): Song => ({
     coverUrl: song.album.coverUrl,
   },
   duration: song.duration,
+  downloadSize: song.downloadSize,
   availability: song.availability,
   trackNumber: song.trackNumber,
   disc: song.disc,

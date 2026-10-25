@@ -1,6 +1,6 @@
 <!--
   “已下载”页（#38，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前；登录与否都能进。
-  头部交给 DetailHeader（#75：拼贴图、标题、首数、登录提示、播放全部、多选都在模块里）；列表本身在 songs/SongList；搜索贴着页头、在“正在下载”上方（桌面右对齐、手机通栏），几千首排队时也不会沉到最下面。
+  头部交给 DetailHeader（#75：拼贴图、标题、首数、登录提示、播放全部、多选都在模块里）；列表本身在 songs/SongList；桌面搜索在页头动作行的右端，手机通栏放在页头下方，几千首排队时也不会沉到最下面。
   头部下面是 DownloadsTasks（#39）：“正在下载”的排队、进度、失败和重试，空间不够时的整队暂停和“继续下载”。
   点一首就用整个已下载替换播放队列，播放来源是“已下载”；行的“更多”菜单里有导出、删除下载。搜索词和滚动位置随浏览历史恢复。
   多选（#79）只有导出和删除，登录与否都能用：入口桌面在头部（`ListChecks` 图标，和歌单页的管理类操作同一档），手机在首数那一行，也能 ⌘/Ctrl/Shift 点行、长按行进入。
@@ -156,7 +156,18 @@
   </p>
 {/snippet}
 
-<DetailHeader title='已下载' phoneLayout='row'>
+{#snippet headerSearch(compact: boolean)}
+  <SearchField
+    label='在已下载里搜索'
+    bind:value={query}
+    placeholder={compact
+      ? '搜索'
+      : '在已下载里搜索'}
+    class='max-w-[280px] min-w-[128px] w-full'
+  />
+{/snippet}
+
+<DetailHeader title='已下载' phoneLayout='row' search={headerSearch}>
   {#snippet artwork(size: number)}
     {@render collage(size)}
   {/snippet}
@@ -170,21 +181,26 @@
   {/snippet}
   {#snippet actions()}
     <PlayAllButton songs={all} source={SOURCE} />
-    {#if !phone && all && all.length > 0 && !selection.mode}
+    {#if !phone && all && all.length > 0}
       <span class='contents' bind:this={desktopEntry}>
-        <IconButton icon={ListChecks} label='多选' title='多选' onclick={enterFrom} />
+        <IconButton
+          icon={ListChecks}
+          label={selection.mode ? '退出多选' : '多选'}
+          title={selection.mode ? '退出多选' : '多选'}
+          aria-pressed={selection.mode}
+          class={selection.mode ? 'bg-primary-100 text-primary-950' : undefined}
+          onclick={selection.mode
+            ? () => selection.leave()
+            : enterFrom}
+        />
       </span>
     {/if}
   {/snippet}
 </DetailHeader>
 
-{#if all && all.length > 0}
-  <div class={phone
-    ? 'px-4 pt-3'
-    : 'mt-4 flex justify-end'}>
-    <SearchField label='在已下载里搜索' bind:value={query} class={phone
-      ? ''
-      : 'max-w-full w-[280px]'} />
+{#if phone && all && all.length > 0}
+  <div class='px-4 pt-3'>
+    <SearchField label='在已下载里搜索' bind:value={query} />
   </div>
 {/if}
 

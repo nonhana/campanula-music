@@ -25,6 +25,8 @@ export interface SongMenuRequest extends MenuRequest {
 
 export interface PlaylistMenuRequest extends MenuRequest {
   readonly playlistId: number
+  /** 桌面动作行放不下添加 / 多选时，由 ••• 一并收着 */
+  readonly compact: boolean
 }
 
 /** 加入歌单的选择器（#73）：song 是歌曲菜单转交的（songs 只有一首），multi 是多选工具条打开的（勾选的几首）；currentPlaylistId 是打开时所在的歌单 */
@@ -48,6 +50,11 @@ export type EditorRequest
 export interface PlaylistRequest extends DialogRequest {
   readonly playlistId: number
 }
+
+/** 页头“下载”打开的选歌弹窗（#39）：歌单或专辑，列当前页的歌让人挑 */
+export type DownloadPickerRequest
+  = | (DialogRequest & { readonly kind: 'playlist', readonly playlistId: number })
+    | (DialogRequest & { readonly kind: 'album', readonly albumId: number })
 
 /** 导出（#79）：歌曲菜单转交的一首，或多选工具条打开的勾选的几首（multi：不能比多选层活得更久，写完收起多选） */
 export interface ExportRequest extends DialogRequest {

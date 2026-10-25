@@ -52,6 +52,8 @@ export interface PlaylistInfo {
   coverUrl: string | null
   /** 收藏的、不在曲库里的歌单下面写是谁的 */
   creator: string | null
+  /** 创建者的头像；网易云没给时是 null（#39） */
+  creatorAvatarUrl: string | null
   playCount: number | null
   /** 没写时是 null */
   description: string | null
@@ -235,6 +237,8 @@ export interface Song {
   }
   /** 时长，毫秒 */
   duration: number | null
+  /** 极高音质（现在的下载音质）整首多少字节；网易云没给时是 null（#39）。下载前只用来估算，实际以下载地址返回的大小为准 */
+  downloadSize: number | null
   /** 网易云的权限信息 privilege；列表里事先标出来，播放时以取到的播放地址为准。权限标记缺了按能完整播放（#78） */
   availability: Availability
   /** 专辑里的第几首；网易云不知道时写 0 */

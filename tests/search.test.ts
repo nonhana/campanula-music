@@ -300,6 +300,7 @@ describe('单曲结果', () => {
       ],
       album: { id: 73881727, name: 'Light Mellow 松原みき', coverUrl: 'http://p3.music.126.net/rddYSzo2ZLxZ3HMerP_-0A==/109951172387752494.jpg' },
       duration: 274400,
+      downloadSize: 10978787,
       availability: 'full',
       trackNumber: 1,
       disc: '1',
