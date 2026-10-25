@@ -284,6 +284,7 @@ describe('这一页歌单的答案', () => {
         name: '测试歌单',
         coverUrl: '',
         creator: '测试听众',
+        creatorAvatarUrl: null,
         playCount: 0,
         description: null,
         tags: [],
@@ -303,6 +304,10 @@ describe('这一页歌单的答案', () => {
     })
     expect(playlistHeader(page(false))?.meta).toContain('10 / 10 首')
     expect(playlistHeader(page(true))?.meta).toContain('10 首')
+    expect(playlistHeader(page(true))).toMatchObject({
+      creator: '测试听众',
+      creatorAvatarUrl: null,
+    })
   })
 })
 

@@ -300,6 +300,7 @@ const playlistInfo = (playlist: PlaylistSummary): PlaylistInfo => ({
   name: playlist.name ?? null,
   coverUrl: playlist.coverImgUrl ?? null,
   creator: playlist.creator?.nickname ?? null,
+  creatorAvatarUrl: playlist.creator?.avatarUrl ?? null,
   playCount: playlist.playCount ?? null,
   description: playlist.description ?? null,
   tags: [
@@ -457,6 +458,8 @@ interface NeteaseSong {
   readonly ar?: readonly NeteaseArtist[] | null
   readonly al?: { readonly id?: number | null, readonly name?: string | null, readonly picUrl?: string | null } | null
   readonly dt?: number | null
+  /** 320kbps（exhigh）的文件大小；下载前估算用 */
+  readonly h?: { readonly size?: number | null } | null
   readonly no?: number | null
   readonly cd?: string | null
   readonly alia?: readonly string[] | null
@@ -488,6 +491,7 @@ const songOf = (song: NeteaseSong, privilege: Privilege | null | undefined): Son
   artists: (song.ar ?? []).map(creditOf),
   album: { id: song.al?.id ?? null, name: song.al?.name ?? null, coverUrl: song.al?.picUrl ?? null },
   duration: song.dt ?? null,
+  downloadSize: song.h?.size ?? null,
   availability: availabilityOf(privilege),
   trackNumber: song.no ?? null,
   disc: song.cd ?? null,

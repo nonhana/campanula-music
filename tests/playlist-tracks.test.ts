@@ -55,6 +55,7 @@ const songsFrom = (count: number, firstId = 2_000_000_000): Song[] => Array.from
   ],
   album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
   duration: 180_000,
+  downloadSize: null,
   availability: 'full',
   trackNumber: null,
   disc: null,

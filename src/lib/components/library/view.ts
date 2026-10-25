@@ -9,7 +9,11 @@ export interface PlaylistHeader {
   name: string
   /** 网易云没给封面时是 null，显示默认封面 */
   coverUrl: string | null
-  /** 创建者、首数、播放次数；不写类别（方封面和旁边的按钮已经说明是歌单）。网易云没给的不写（#78） */
+  /** 创建者；不写类别（方封面和旁边的按钮已经说明是歌单）。网易云没给的不写（#78） */
+  creator: string | null
+  /** 创建者头像；没有用户页，只显示，不链接 */
+  creatorAvatarUrl: string | null
+  /** 首数、播放次数，和创建者之间用 · 隔开；网易云没给的不写（#78） */
   meta: string[]
   private: boolean
   /** 没写（或只有空白）时是 null */
@@ -33,7 +37,9 @@ export const playlistHeader = (page: PlaylistPage): PlaylistHeader | null => {
   return {
     name: playlistName({ name: info.name, kind: page.kind }),
     coverUrl: info.coverUrl,
-    meta: [info.creator, count, plays].filter((part): part is string => Boolean(part)),
+    creator: info.creator,
+    creatorAvatarUrl: info.creatorAvatarUrl,
+    meta: [count, plays].filter((part): part is string => Boolean(part)),
     private: page.private,
     description: info.description?.trim() || null,
     tags: info.tags,

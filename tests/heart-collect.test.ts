@@ -490,6 +490,7 @@ describe('收藏', () => {
       name: '听·ずっと真夜中でいいのに。热门精选|あいつら全員同窓会',
       coverUrl: expect.any(String),
       creator: '用户332',
+      creatorAvatarUrl: null,
       playCount: 912449,
       trackCount: 30,
       description: null,

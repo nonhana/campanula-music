@@ -210,10 +210,13 @@ export interface App {
   download: (song: Song) => DownloadBlock | null
   /** 多选里的下载：把勾选的几首按 source 记来源，跳过已下载、试听、无版权的歌并逐项说明（#39） */
   downloadSongs: (songs: readonly Song[], source: DownloadSource) => Promise<DownloadBatchOutcome | DownloadStartBlock>
-  /** 整张歌单：先用已经同步的部分，同步完把后面的补进队列（规则⑫） */
-  downloadPlaylist: (playlistId: number) => Promise<DownloadBatchOutcome | DownloadStartBlock>
-  /** 整张专辑：专辑页的曲目一次取全，全部进队列 */
-  downloadAlbum: (albumId: number) => Promise<DownloadBatchOutcome | DownloadStartBlock>
+  /**
+   * 整张歌单或弹窗里选的几首：songs 不传时是已经同步的全部；fill 是“已加载的可下载歌全选”，
+   * 为 true 且还没同步完时，同步完把后面的补进队列（规则⑫）
+   */
+  downloadPlaylist: (playlistId: number, songs?: readonly Song[], options?: { fill?: boolean }) => Promise<DownloadBatchOutcome | DownloadStartBlock>
+  /** 整张专辑或弹窗里选的几首：专辑页的曲目一次取全，全部进队列 */
+  downloadAlbum: (albumId: number, songs?: readonly Song[]) => Promise<DownloadBatchOutcome | DownloadStartBlock>
   /** 重试一首没下成的（保留它原来的来源） */
   retryDownload: (songId: number) => void
   /** 存储空间不够、整队暂停后，腾出空间点“继续下载”（规则⑪） */
@@ -762,6 +765,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
       ? {
           playlist: {
             ...searched,
+            creatorAvatarUrl: null,
             description: null,
             tags: [],
             kind: 'collected',
@@ -1104,7 +1108,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     },
     download: downloads.download,
     downloadSongs: (songs, source) => downloads.add(songs, source),
-    async downloadPlaylist(playlistId) {
+    async downloadPlaylist(playlistId, songs, options) {
       const shown = state.library
       if (!shown)
         return 'signedOut'
@@ -1118,12 +1122,14 @@ export const createApp = (browser: BrowserCapabilities): App => {
         }),
       }
       const content = page.content
-      const outcome = await downloads.add(content?.songs ?? [], source, {
-        filling: content !== null && !content.complete,
-      })
+      const selected = songs ?? content?.songs ?? []
+      const selectedIds = new Set(selected.map(song => song.id))
+      const allLoaded = content !== null && selected.length === content.songs.length && content.songs.every(song => selectedIds.has(song.id))
+      const filling = content !== null && !content.complete && (options?.fill ?? allLoaded)
+      const outcome = await downloads.add(selected, source, { filling })
       if (outcome === 'signedOut' || outcome === 'offline')
         return outcome
-      if (content && !content.complete) {
+      if (filling) {
         pendingPlaylists.set(playlistId, {
           source,
           seen: new Set(content.songs.map(song => song.id)),
@@ -1136,7 +1142,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
       }
       return outcome
     },
-    async downloadAlbum(albumId) {
+    async downloadAlbum(albumId, songs) {
       const page = state.library?.albumPage(albumId)
       if (page?.status !== 'shown') {
         return {
@@ -1146,7 +1152,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
           noCopyright: 0,
         }
       }
-      return downloads.add(page.content.songs, {
+      return downloads.add(songs ?? page.content.songs, {
         kind: 'album',
         id: albumId,
         name: page.content.album.name ?? '未知专辑',

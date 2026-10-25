@@ -46,6 +46,7 @@ describe('宽松字段缺了', () => {
         artists: [],
         album: { id: ALBUM.id, name: '夜に駆ける', coverUrl: null },
         duration: null,
+        downloadSize: 10442754,
         availability: 'full',
         trackNumber: 1,
         disc: '01',

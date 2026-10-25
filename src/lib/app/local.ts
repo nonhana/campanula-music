@@ -5,7 +5,7 @@ import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 11
+const VERSION = 12
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
 const LIBRARY = 'library'
@@ -213,20 +213,21 @@ const dropAllBut = (store: IDBObjectStore, kept: readonly { id: number }[]): voi
   }
 }
 
-/** 存进本机以后才加的歌单字段：版本 3 加了创建者、是否隐私，版本 8 加了播放次数、简介、标签 */
-type StoredLater = 'creator' | 'private' | 'playCount' | 'description' | 'tags'
+/** 存进本机以后才加的歌单字段：版本 3 加了创建者、是否隐私，版本 8 加了播放次数、简介、标签，版本 12 加了创建者头像 */
+type StoredLater = 'creator' | 'private' | 'playCount' | 'description' | 'tags' | 'creatorAvatarUrl'
 
-/** 版本 10（#79）给歌曲信息加的几项 */
-type SongAddedIn10 = 'trackNumber' | 'disc' | 'aliases' | 'translations' | 'publishedAt'
-type StoredSong = Omit<Song, SongAddedIn10> & Partial<Pick<Song, SongAddedIn10>>
+/** 版本 10（#79）给歌曲信息加的几项，版本 12 加了下载大小 */
+type SongAddedLater = 'trackNumber' | 'disc' | 'aliases' | 'translations' | 'publishedAt' | 'downloadSize'
+type StoredSong = Omit<Song, SongAddedLater> & Partial<Pick<Song, SongAddedLater>>
 
-/** 之前存的歌曲信息里没有 #79 加的几项：补上“网易云没给” */
-const songAddedIn10 = (song: StoredSong): Song => ({
+/** 之前存的歌曲信息里没有后来加的几项：补上“网易云没给” */
+const songAddedLater = (song: StoredSong): Song => ({
   trackNumber: null,
   disc: null,
   aliases: [],
   translations: [],
   publishedAt: null,
+  downloadSize: null,
   ...song,
 })
 
@@ -243,7 +244,7 @@ type StoredDownloadBefore11 = Omit<StoredDownload, 'song' | 'lyrics' | 'album' |
 
 const downloadAddedIn11 = (download: StoredDownloadBefore11): StoredDownload => ({
   ...download,
-  song: songAddedIn10(download.song),
+  song: songAddedLater(download.song),
   lyrics: 'lines' in download.lyrics
     ? { yrc: null, romalrc: null, ...download.lyrics }
     : download.lyrics,
@@ -261,9 +262,9 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
     database.createObjectStore(TRACKS)
     database.createObjectStore(SONGS, { keyPath: 'id' })
   }
-  // 3（#22）：歌单多了创建者和是否隐私；8（#56）：多了播放次数、简介和标签。存着的歌单列表补上空的值，
-  // 曲库照样能先显示，下一次同步拿到真的值。两次一起补，免得前一次补的被后一次读到的旧列表盖掉
-  if (from >= 2 && from < 8) {
+  // 3（#22）：歌单多了创建者和是否隐私；8（#56）：多了播放次数、简介和标签；12（#39）：多了创建者头像。
+  // 存着的歌单列表补上空的值，曲库照样能先显示，下一次同步拿到真的值。几次一起补，免得前一次补的被后一次读到的旧列表盖掉
+  if (from >= 2 && from < 12) {
     const library = transaction.objectStore(LIBRARY)
     const stored = library.get('playlists')
     stored.onsuccess = () => {
@@ -271,6 +272,7 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
       if (playlists) {
         library.put(playlists.map(playlist => ({
           creator: '',
+          creatorAvatarUrl: null,
           private: false,
           playCount: 0,
           description: null,
@@ -319,13 +321,14 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
           ...queue,
           entries: queue.entries.map(entry => ({
             ...entry,
-            song: songAddedIn10(entry.song),
+            song: songAddedLater(entry.song),
           })),
         }, 'queue')
       }
     }
   }
   // 11（#39）：下载多了来源。音频很大，升级时不重写，读出来时补上“单独下载”（downloadAddedIn11）
+  // 12（#39）：歌单多了创建者头像，歌曲信息多了下载大小；歌单在上面补，歌曲读出来时由 songAddedLater 补
 }
 
 /** 打开本机数据库：同一个设备上的模块共用一个连接，升级只跑一次 */
