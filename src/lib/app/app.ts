@@ -17,7 +17,7 @@ import type { CoverOutcome, CoverState } from './cover'
 import { createCover } from './cover'
 import type { DailyState } from './daily'
 import { createDaily } from './daily'
-import type { DownloadBatchOutcome, DownloadBlock, DownloadSource, DownloadsState, DownloadStartBlock } from './downloads'
+import type { DownloadBatchOutcome, DownloadBlock, DownloadRemoval, DownloadSource, DownloadsState, DownloadStartBlock } from './downloads'
 import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
 import type { ExportState } from './export'
 import { createExports } from './export'
@@ -223,6 +223,12 @@ export interface App {
   resumeDownloads: () => void
   /** 没登录时也能删 */
   deleteDownloads: (songIds: readonly number[]) => Promise<void>
+  /** 按歌单删除下载（规则⑦）：别处也下载过的留着，只去掉这张歌单；没登录时也能用（#40） */
+  deletePlaylistDownloads: (playlistId: number) => Promise<DownloadRemoval>
+  /** 一键清空（#40）：删掉所有下载，排队中和正在下的也停 */
+  clearDownloads: () => Promise<DownloadRemoval>
+  /** 设置页的下载音质（#40）：和在线播放音质分开，只影响之后开始下的歌 */
+  setDownloadQuality: (quality: Quality) => void
   /**
    * 把这几首下载另存进听众选的文件夹，连同歌曲信息（#79，ADR-0014）。必须在听众点按的那一下里调用：先弹出文件夹选择器，听众取消就什么都不做；
    * 返回的 Promise 在写完、取消时了结。浏览器不能选文件夹（exportable 是 false）时不要调用；正在导出时什么都不做
@@ -1167,6 +1173,16 @@ export const createApp = (browser: BrowserCapabilities): App => {
         notices.show(null)
     },
     deleteDownloads: downloads.remove,
+    deletePlaylistDownloads(playlistId) {
+      // 还没补完的整张歌单也停下，免得同步完又补回来（规则⑫）
+      pendingPlaylists.delete(playlistId)
+      return downloads.removePlaylist(playlistId)
+    },
+    clearDownloads() {
+      pendingPlaylists.clear()
+      return downloads.clear()
+    },
+    setDownloadQuality: downloads.setQuality,
     exportDownloads: exports.start,
     cancelExport: exports.cancel,
     closeExport: exports.close,

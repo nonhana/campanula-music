@@ -66,3 +66,10 @@ export interface ExportRequest extends DialogRequest {
 export interface DeleteDownloadsRequest extends DialogRequest {
   readonly songs: readonly Song[]
 }
+
+/** 按歌单删除下载之前确认（#40）：只删从这张歌单下的，别处也下载过的留着（规则⑦） */
+export interface DeletePlaylistDownloadsRequest extends DialogRequest {
+  readonly playlistId: number
+  readonly name: string
+  readonly count: number
+}

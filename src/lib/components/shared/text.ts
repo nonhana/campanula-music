@@ -50,5 +50,17 @@ export const formatDuration = (ms: number): string => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
 
+/** 已用空间（设置页，#40）：不到 1 MB 按 KB，1 GB 及以上按 GB，都只留一位小数；0 写 0 MB */
+export const formatStorageSize = (bytes: number): string => {
+  if (bytes === 0)
+    return '0 MB'
+  const mb = bytes / 1024 / 1024
+  if (mb < 1)
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  if (mb < 1024)
+    return `${mb.toFixed(1)} MB`
+  return `${(mb / 1024).toFixed(1)} GB`
+}
+
 /** 字节数按 MB 写，一位小数（导出时写明多大、写到哪儿，#79）；不带单位，单位由调用处写一次（“3.2/9.8 MB”） */
 export const formatMegabytes = (bytes: number): string => (bytes / 1024 / 1024).toFixed(1)

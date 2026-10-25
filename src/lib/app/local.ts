@@ -17,7 +17,7 @@ const ALBUM_PAGES = 'albumPages'
 const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS, ALBUM_PAGES]
 /** 播放队列和进度（#27）；queue 记着是哪个网易云账号的 */
 export const PLAYER = 'player'
-/** 这台设备上的设置和搜索历史，按名字存：playQuality（在线播放音质）、searchHistory（#31）。不属于哪个网易云账号，退出、换账号都不删 */
+/** 这台设备上的设置和搜索历史，按名字存：playQuality（在线播放音质）、downloadQuality（下载音质，#40）、searchHistory（#31）。不属于哪个网易云账号，退出、换账号都不删 */
 const SETTINGS = 'settings'
 /** 要发的听歌打卡（#28），按记下的先后自动编号，记着是哪个网易云账号的 */
 export const CHECK_INS = 'checkIns'
@@ -31,12 +31,15 @@ export type DownloadSource
     | { kind: 'playlist', id: number, name: string }
     | { kind: 'album', id: number, name: string }
 
+/** 是不是同一处来源：单独下载只认单独下载，歌单 / 专辑按编号 */
+export const sameDownloadSource = (a: DownloadSource, b: DownloadSource): boolean => a.kind === b.kind
+  && (a.kind === 'single' || (b.kind !== 'single' && a.id === b.id))
+
 /** 新的来源补进去，同一个歌单 / 专辑只留一处（名字取新的），单独下载只留一处 */
 export const mergeDownloadSources = (sources: readonly DownloadSource[], added: readonly DownloadSource[]): DownloadSource[] => {
   const merged = [...sources]
   for (const source of added) {
-    const index = merged.findIndex(existing => existing.kind === source.kind
-      && (source.kind === 'single' || (existing.kind !== 'single' && existing.id === source.id)))
+    const index = merged.findIndex(existing => sameDownloadSource(existing, source))
     if (index === -1)
       merged.push(source)
     else
@@ -158,6 +161,9 @@ export interface LocalDb {
   /** 没设过时是 null */
   playQuality: () => Promise<Quality | null>
   savePlayQuality: (quality: Quality) => Promise<void>
+  /** 下载音质（#40），和在线播放音质分开；没设过时是 null */
+  downloadQuality: () => Promise<Quality | null>
+  saveDownloadQuality: (quality: Quality) => Promise<void>
   /** 新的在前；没搜过时是空的 */
   searchHistory: () => Promise<string[]>
   /** 一个事务里读、改、存（别的标签页刚记下的不会被盖掉），返回存下的 */
@@ -168,6 +174,8 @@ export interface LocalDb {
   saveDownload: (download: StoredDownload) => Promise<void>
   /** 这几首已经下载了、又从一张歌单或专辑点了下载：把新的来源补进去（#39 规则⑦）；返回补好的，没有的不在里面 */
   addDownloadSources: (songIds: readonly number[], sources: readonly DownloadSource[]) => Promise<ReadonlyMap<number, DownloadSource[]>>
+  /** 按歌单删除时，别处也下载过的只去掉这张歌单（#40 规则⑦）；返回改好的，没有的不在里面 */
+  removeDownloadSource: (songIds: readonly number[], source: DownloadSource) => Promise<ReadonlyMap<number, DownloadSource[]>>
   deleteDownloads: (songIds: readonly number[]) => Promise<void>
 }
 
@@ -388,6 +396,29 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
       transaction.objectStore(store).clear()
   }
 
+  /** 一个事务里改这几首下载的来源（#39 加、#40 按歌单去掉），返回改好的 */
+  const changeDownloadSources = async (songIds: readonly number[], change: (sources: readonly DownloadSource[]) => DownloadSource[]): Promise<ReadonlyMap<number, DownloadSource[]>> => {
+    const changed = new Map<number, DownloadSource[]>()
+    await write([DOWNLOADS], (transaction) => {
+      const store = transaction.objectStore(DOWNLOADS)
+      for (const songId of songIds) {
+        const stored = store.get(songId)
+        stored.onsuccess = () => {
+          if (!stored.result)
+            return
+          const download = downloadAddedIn11(stored.result as StoredDownloadBefore11)
+          const next = change(download.sources)
+          changed.set(songId, next)
+          store.put({
+            ...download,
+            sources: next,
+          }, songId)
+        }
+      }
+    })
+    return changed
+  }
+
   return {
     async pendingLogout() {
       const store = (await db.open()).transaction(SESSION).objectStore(SESSION)
@@ -516,6 +547,12 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
       return quality ?? null
     },
     savePlayQuality: quality => write([SETTINGS], transaction => transaction.objectStore(SETTINGS).put(quality, 'playQuality')),
+    async downloadQuality() {
+      const store = (await db.open()).transaction(SETTINGS).objectStore(SETTINGS)
+      const quality = await settled(store.get('downloadQuality')) as Quality | undefined
+      return quality ?? null
+    },
+    saveDownloadQuality: quality => write([SETTINGS], transaction => transaction.objectStore(SETTINGS).put(quality, 'downloadQuality')),
     async searchHistory() {
       const store = (await db.open()).transaction(SETTINGS).objectStore(SETTINGS)
       const history = await settled(store.get('searchHistory')) as string[] | undefined
@@ -538,27 +575,8 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
       return (await settled(store.getAll()) as StoredDownloadBefore11[]).map(downloadAddedIn11)
     },
     saveDownload: download => write([DOWNLOADS], transaction => transaction.objectStore(DOWNLOADS).put(download, download.song.id)),
-    async addDownloadSources(songIds, sources) {
-      const merged = new Map<number, DownloadSource[]>()
-      await write([DOWNLOADS], (transaction) => {
-        const store = transaction.objectStore(DOWNLOADS)
-        for (const songId of songIds) {
-          const stored = store.get(songId)
-          stored.onsuccess = () => {
-            if (!stored.result)
-              return
-            const download = downloadAddedIn11(stored.result as StoredDownloadBefore11)
-            const next = mergeDownloadSources(download.sources, sources)
-            merged.set(songId, next)
-            store.put({
-              ...download,
-              sources: next,
-            }, songId)
-          }
-        }
-      })
-      return merged
-    },
+    addDownloadSources: (songIds, sources) => changeDownloadSources(songIds, existing => mergeDownloadSources(existing, sources)),
+    removeDownloadSource: (songIds, source) => changeDownloadSources(songIds, existing => existing.filter(each => !sameDownloadSource(each, source))),
     deleteDownloads: songIds => write([DOWNLOADS], (transaction) => {
       for (const songId of songIds)
         transaction.objectStore(DOWNLOADS).delete(songId)

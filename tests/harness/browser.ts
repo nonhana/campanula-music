@@ -35,9 +35,21 @@ export class FakeNetwork extends EventTarget implements NetworkStatus {
 export class FakeStorage {
   usage = 0
   quota = Number.MAX_SAFE_INTEGER
+  /** 申请持久存储了几次（#40）：App 只该申请一次 */
+  persistCalls = 0
+  /** 浏览器答不答应；默认答应 */
+  persistResult = true
 
   async estimate(): Promise<StorageEstimate> {
-    return { usage: this.usage, quota: this.quota }
+    return {
+      usage: this.usage,
+      quota: this.quota,
+    }
+  }
+
+  async persist(): Promise<boolean> {
+    this.persistCalls += 1
+    return this.persistResult
   }
 }
 
