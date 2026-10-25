@@ -4,7 +4,7 @@ import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 9
+const VERSION = 10
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
 const LIBRARY = 'library'
@@ -31,6 +31,8 @@ export interface StoredDownload {
   /** 网易云没给封面时是 null，显示默认封面（#78） */
   cover: Blob | null
   lyrics: LyricsResponse
+  /** 下载时顺手取的专辑信息（#79）：导出时写进文件，不再联网；取不到、#79 以前下载的是 null */
+  album: AlbumResponse['album'] | null
   /** 已下载页按它排，最近下载完的在前 */
   downloadedAt: number
 }
@@ -137,7 +139,7 @@ export interface LocalDb {
   readDownloads: () => Promise<StoredDownload[]>
   /** 换掉同一首以前的；存储空间不够时以 QuotaExceededError 失败 */
   saveDownload: (download: StoredDownload) => Promise<void>
-  deleteDownload: (songId: number) => Promise<void>
+  deleteDownloads: (songIds: readonly number[]) => Promise<void>
 }
 
 /** 打开（含升级）、在一个读写事务里改存储区；播放队列、打卡和别的模块共用这一个连接 */
@@ -185,6 +187,38 @@ const dropAllBut = (store: IDBObjectStore, kept: readonly { id: number }[]): voi
 /** 存进本机以后才加的歌单字段：版本 3 加了创建者、是否隐私，版本 8 加了播放次数、简介、标签 */
 type StoredLater = 'creator' | 'private' | 'playCount' | 'description' | 'tags'
 
+/** 版本 10（#79）给歌曲信息加的几项 */
+type SongAddedIn10 = 'trackNumber' | 'disc' | 'aliases' | 'translations' | 'publishedAt'
+type StoredSong = Omit<Song, SongAddedIn10> & Partial<Pick<Song, SongAddedIn10>>
+
+/** 之前存的歌曲信息里没有 #79 加的几项：补上“网易云没给” */
+const songAddedIn10 = (song: StoredSong): Song => ({
+  trackNumber: null,
+  disc: null,
+  aliases: [],
+  translations: [],
+  publishedAt: null,
+  ...song,
+})
+
+type Lines = Extract<LyricsResponse, { lines: unknown }>
+
+/** 版本 9 存的下载（#38）：音频很大，升级时不重写，读出来时补上 #79 加的几项（网易云没给、没取到） */
+type StoredDownloadIn9 = Omit<StoredDownload, 'song' | 'lyrics' | 'album'> & {
+  song: StoredSong
+  lyrics: Exclude<LyricsResponse, Lines> | (Omit<Lines, 'yrc' | 'romalrc'> & Partial<Pick<Lines, 'yrc' | 'romalrc'>>)
+  album?: StoredDownload['album']
+}
+
+const downloadAddedIn10 = (download: StoredDownloadIn9): StoredDownload => ({
+  ...download,
+  song: songAddedIn10(download.song),
+  lyrics: 'lines' in download.lyrics
+    ? { yrc: null, romalrc: null, ...download.lyrics }
+    : download.lyrics,
+  album: download.album ?? null,
+})
+
 const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: number): void => {
   if (from < 1)
     database.createObjectStore(SESSION)
@@ -215,9 +249,9 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
   // 4（#23）：收藏的专辑和歌手的列表存在 LIBRARY 里，打开过的专辑页另存一处
   if (from < 4)
     database.createObjectStore(ALBUM_PAGES)
-  // 5（#24）：歌曲多了能不能放（availability）。存着的歌曲信息和专辑页里没有，删掉；每张歌单记成歌曲信息还没取全，
-  // 下一次同步重新取（歌单列表、红心、收藏的专辑和歌手照样先显示）
-  if (from >= 2 && from < 5) {
+  // 5（#24）：歌曲多了能不能放（availability）；10（#79）：歌曲多了第几首、碟号、别名、译名、发行时间，专辑页多了发行公司。
+  // 存着的歌曲信息和专辑页里没有，删掉；每张歌单记成歌曲信息还没取全，下一次同步重新取（歌单列表、红心、收藏的专辑和歌手照样先显示）
+  if (from >= 2 && from < 10) {
     transaction.objectStore(SONGS).clear()
     transaction.objectStore(ALBUM_PAGES).clear()
     const tracks = transaction.objectStore(TRACKS).openCursor()
@@ -240,6 +274,23 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
   // 9（#38）：下载。版本 8 以前的什么都不用改
   if (from < 9)
     database.createObjectStore(DOWNLOADS)
+  // 10（#79）：保存的播放队列里的歌补上新加的几项，播放队列照样恢复
+  if (from >= 6 && from < 10) {
+    const player = transaction.objectStore(PLAYER)
+    const stored = player.get('queue')
+    stored.onsuccess = () => {
+      const queue = stored.result as { entries: { song: StoredSong }[] } | undefined
+      if (queue) {
+        player.put({
+          ...queue,
+          entries: queue.entries.map(entry => ({
+            ...entry,
+            song: songAddedIn10(entry.song),
+          })),
+        }, 'queue')
+      }
+    }
+  }
 }
 
 /** 打开本机数据库：同一个设备上的模块共用一个连接，升级只跑一次 */
@@ -435,9 +486,12 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
     },
     async readDownloads() {
       const store = (await db.open()).transaction(DOWNLOADS).objectStore(DOWNLOADS)
-      return await settled(store.getAll()) as StoredDownload[]
+      return (await settled(store.getAll()) as StoredDownloadIn9[]).map(downloadAddedIn10)
     },
     saveDownload: download => write([DOWNLOADS], transaction => transaction.objectStore(DOWNLOADS).put(download, download.song.id)),
-    deleteDownload: songId => write([DOWNLOADS], transaction => transaction.objectStore(DOWNLOADS).delete(songId)),
+    deleteDownloads: songIds => write([DOWNLOADS], (transaction) => {
+      for (const songId of songIds)
+        transaction.objectStore(DOWNLOADS).delete(songId)
+    }),
   }
 }

@@ -18,6 +18,8 @@ import type { DailyState } from './daily'
 import { createDaily } from './daily'
 import type { DownloadBlock, DownloadsState } from './downloads'
 import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
+import type { ExportState } from './export'
+import { createExports } from './export'
 import type { AddSongsOutcome, AddTarget, AddTargetsRequest, CreateOutcome, Library, LibraryState, PlaylistSearch } from './library'
 import { createLibrary, filterSongs, searchPlaylist } from './library'
 import { createLocalDatabase, createLocalDb } from './local'
@@ -74,6 +76,10 @@ export interface AppState {
   search: SearchState
   /** 属于设备，没登录时也有（#38） */
   downloads: DownloadsState
+  /** 浏览器能选文件夹（ADR-0014）：不能时不显示“导出” */
+  readonly exportable: boolean
+  /** 这一次导出（#79）：选好文件夹以后到听众看完结果；没在导出是 null */
+  exporting: ExportState | null
   cover: CoverState | null
   /** 联网着（navigator.onLine）：断网时没下载的歌放不了（#38） */
   online: boolean
@@ -201,7 +207,16 @@ export interface App {
   /** 完整音频、封面缩略图、歌词、歌曲信息一起存进这台设备（ADR-0006）；下载地址按下载音质后台请求。现在不下时返回原因（界面事先用 downloadBlock 标出来） */
   download: (song: Song) => DownloadBlock | null
   /** 没登录时也能删 */
-  deleteDownload: (songId: number) => Promise<void>
+  deleteDownloads: (songIds: readonly number[]) => Promise<void>
+  /**
+   * 把这几首下载另存进听众选的文件夹，连同歌曲信息（#79，ADR-0014）。必须在听众点按的那一下里调用：先弹出文件夹选择器，听众取消就什么都不做；
+   * 返回的 Promise 在写完、取消时了结。浏览器不能选文件夹（exportable 是 false）时不要调用；正在导出时什么都不做
+   */
+  exportDownloads: (songIds: readonly number[]) => Promise<void>
+  /** 正在写的这首丢弃，已经写完的留着 */
+  cancelExport: () => void
+  /** 看完结果收起；正在写时什么都不做 */
+  closeExport: () => void
   /** 在这台设备上的下载里即时完成；还没从本机读出来时是空的 */
   searchDownloads: (query: string) => readonly Song[]
 }
@@ -229,6 +244,8 @@ export const createApp = (browser: BrowserCapabilities): App => {
     search: INITIAL_SEARCH,
     cover: null,
     downloads: INITIAL_DOWNLOADS,
+    exportable: browser.pickFolder !== null,
+    exporting: null,
     online: browser.network.onLine,
     playable,
     downloadBlock: downloadBlockForApp,
@@ -359,11 +376,30 @@ export const createApp = (browser: BrowserCapabilities): App => {
     local,
     clock: browser.clock,
     browser,
+    albumPage: (albumId) => {
+      const page = state.library?.albumPage(albumId)
+      return page?.status === 'shown'
+        ? page.content
+        : null
+    },
     online: () => browser.network.onLine,
     signedIn: () => state.session.status === 'signedIn',
     write: next => update({ downloads: next }),
     notify: notices.show,
     changed: downloadsChanged,
+  })
+
+  const { pickFolder } = browser
+  const exports = createExports({
+    // 浏览器不能选文件夹时界面不显示“导出”（exportable），调到这里是 Campanula 的缺陷
+    pickFolder: () => {
+      if (!pickFolder)
+        throw new Error('这个浏览器不能选文件夹，不该导出')
+      return pickFolder()
+    },
+    stored: downloads.stored,
+    sizeOf: songId => state.downloads.sizeOf(songId),
+    write: next => update({ exporting: next }),
   })
 
   player = createPlayer({
@@ -958,7 +994,10 @@ export const createApp = (browser: BrowserCapabilities): App => {
       }
     },
     download: downloads.download,
-    deleteDownload: downloads.remove,
+    deleteDownloads: downloads.remove,
+    exportDownloads: exports.start,
+    cancelExport: exports.cancel,
+    closeExport: exports.close,
     searchDownloads: query => filterSongs(state.downloads.songs ?? [], query),
   }
 }

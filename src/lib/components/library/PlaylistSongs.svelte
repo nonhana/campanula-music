@@ -5,7 +5,7 @@
   点歌（包括搜索结果）用整张歌单替换队列；其余的没拉成、多选里不能排序都在列表上方说明。
 -->
 <script lang='ts'>
-  import { CheckCheck, CircleAlert, Heart, ListChecks, ListMinus, ListMusic, ListPlus, SquareMinus, X } from '@lucide/svelte'
+  import { CircleAlert, Heart, ListChecks, ListMusic } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import { untrack } from 'svelte'
 
@@ -14,7 +14,6 @@
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
 
-  import { anchorBelow } from '../menu/menu-anchor'
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
@@ -27,10 +26,11 @@
   import SearchField from '../ui/SearchField.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import DragGrip from './DragGrip.svelte'
-  import type { SelectionSource } from './playlist-selection.svelte'
+  import type { SelectionSource } from './multi-select.svelte'
+  import SelectionToolbar from './SelectionToolbar.svelte'
   import { SongDrag } from './song-drag.svelte'
 
-  const { addSongsDialog, playlistSelection } = getOverlays()
+  const { addSongsDialog, multiSelect } = getOverlays()
 
   interface Props {
     library: LibraryState
@@ -57,7 +57,7 @@
     ? shown.songs
     : [])
   const source = $derived<PlaySource>({ kind: 'playlist', id: playlistId })
-  const selection = playlistSelection
+  const selection = multiSelect
   const kind = $derived(page.kind)
   const sortableList = $derived(page.can.sort)
   /** 歌都同步全了、每首都有歌曲信息（不然列表和整张歌单对不上），也没在搜索、没在重新拉 */
@@ -88,7 +88,7 @@
 
   /** 多选从这里读整张歌单、显示着的歌和种类；换歌单、列表消失、离开页面由模块自己退出 */
   const selectionSource: SelectionSource = {
-    get playlistId() { return playlistId },
+    get key() { return playlistId },
     songs: () => allSongs,
     visible: () => songs.map(song => song.id),
     kind: () => kind,
@@ -297,41 +297,7 @@
 {/snippet}
 
 {#snippet toolbar()}
-  <div class='h-9 flex items-center gap-1.5 rounded-lg bg-primary-50 pl-3 pr-1' role='toolbar' aria-label='对选中的歌'>
-    <span class='inline-flex flex-none items-center gap-1.5 text-caption text-neutral-900 font-500 tabular-nums' role='status'>
-      <ListChecks size={14} aria-hidden='true' />已选 {formatCount(selection.size)} 首
-    </span>
-    <button
-      type='button'
-      class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-primary-900 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
-      onclick={() => selection.selectAll()}
-    >
-      {#if selection.allOn}<SquareMinus size={14} aria-hidden='true' />{:else}<CheckCheck size={14} aria-hidden='true' />{/if}
-      {selection.allOn ? '全不选' : '全选'}
-    </button>
-    <span class='flex-1'></span>
-    <button
-      type='button'
-      class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
-      disabled={selection.picked.length === 0}
-      onclick={event => selection.addPicked(event, anchorBelow(event))}
-    ><ListPlus size={15} aria-hidden='true' />加入歌单</button>
-    {#if selection.capabilities.remove}
-      <button
-        type='button'
-        class='h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption text-neutral-800 font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
-        disabled={selection.picked.length === 0}
-        onclick={() => selection.removePicked()}
-      ><ListMinus size={15} aria-hidden='true' />移除</button>
-    {/if}
-    <span class='mx-1 h-5 w-px bg-neutral-200' aria-hidden='true'></span>
-    <button
-      type='button'
-      class='h-8 inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 text-caption text-neutral-700 font-500 transition-colors duration-feedback mouse:hover:bg-primary-100'
-      title='Esc'
-      onclick={() => selection.leave()}
-    ><X size={14} aria-hidden='true' />取消选择</button>
-  </div>
+  <SelectionToolbar />
 {/snippet}
 
 {#if phone}

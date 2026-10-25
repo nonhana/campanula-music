@@ -1,7 +1,7 @@
 import type { Playlist, Song } from '#lib/api/library.js'
 import { canSortPlaylist } from '#lib/api/library.js'
 
-// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、能做什么按歌单种类给出。
+// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、能做什么按列表种类给出（歌单的种类，或已下载页，#79）。
 // 不碰页面、不碰 Svelte；多选模块只把列表源和 App 接上来，三个工具条只读结果、调用动作。
 
 export interface Checked {
@@ -15,15 +15,25 @@ export const NONE: Checked = {
   anchor: null,
 }
 
-/** 对勾选的歌能做什么：加入歌单对哪种歌单都有（不用判断）；移除只有自建；排序是自建和我喜欢的音乐 */
+/** 在哪种列表里多选：哪一种歌单，或已下载页 */
+export type SelectionKind = Playlist['kind'] | 'downloads'
+
+/** 对勾选的歌能做什么：加入歌单是歌单里都有；移除只有自建；排序是自建和我喜欢的音乐；导出、删除只在已下载页（#79） */
 export interface SelectionCapabilities {
+  readonly add: boolean
   readonly remove: boolean
   readonly sort: boolean
+  readonly export: boolean
+  readonly delete: boolean
 }
 
-export const capabilitiesOf = (kind: Playlist['kind'] | null): SelectionCapabilities => ({
+/** exportable：浏览器能选文件夹，不能时没有导出（ADR-0014） */
+export const capabilitiesOf = (kind: SelectionKind | null, exportable: boolean): SelectionCapabilities => ({
+  add: kind !== 'downloads',
   remove: kind === 'own',
-  sort: kind !== null && canSortPlaylist(kind),
+  sort: kind !== null && kind !== 'downloads' && canSortPlaylist(kind),
+  export: kind === 'downloads' && exportable,
+  delete: kind === 'downloads',
 })
 
 /** 点一下：勾上或取消，锚点放在这一首（下次 Shift 连选从这里起） */

@@ -2,9 +2,9 @@ import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
 
 import type { CoverCrop } from '#lib/api/cover.js'
 import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
-import type { AudioCapability, ChannelCapability, Clock, DecodedImage, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility } from '#lib/app/browser.js'
+import type { AudioCapability, ChannelCapability, Clock, DecodedImage, FileCapability, FolderCapability, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, WritableCapability } from '#lib/app/browser.js'
 
-// 浏览器能力替身：行为照浏览器标准写。浏览器直连网易云的图片传输（#34）、文件下载（#38）在这里；Background Fetch 由最早用到它的票加上。
+// 浏览器能力替身：行为照浏览器标准写。浏览器直连网易云的图片传输（#34）、文件下载（#38）、导出时听众选的文件夹（#79）在这里；Background Fetch 由最早用到它的票加上。
 
 /** App 的时钟：和世界的假时钟走同一个时间，定时按到期先后触发 */
 export const clockOn = (timers: FakeTimers): Clock => ({
@@ -251,6 +251,129 @@ export class FakeObjectUrls {
   /** 这个地址是哪个文件；不是 createObjectURL 给的、已经 revoke 了的是 undefined */
   blobOf(url: string): Blob | undefined {
     return this.#blobs.get(url)
+  }
+}
+
+/** 下一次往文件里写时怎么样：until 了结之前写不完；error：写的时候失败（空间不够是 QuotaExceededError） */
+export interface FakeWrite {
+  until?: Promise<void>
+  error?: DOMException
+}
+
+/**
+ * 听众在选择器里选的一个文件夹（#79），测试建好交给 device.folders.next。照 File System 标准的 FileSystemDirectoryHandle：
+ * getFileHandle 带 create 时没有就马上建一个空文件，不带时没有就以 NotFoundError 失败，名字不合法（空、“.”“..”、带 / 或 \）以 TypeError 失败。
+ * 照 File System Access 标准的 FileSystemWritableFileStream 和 Streams 标准：写进一份临时副本，close 时才换掉文件内容；abort 丢掉临时副本，
+ * 正在写的那一次（已经交给文件系统）照样写完、abort 等它写完才了结，之后 close 失败；已经出错、关上的流 abort 什么都不做
+ */
+export class FakeFolder implements FolderCapability {
+  /** 文件夹里的文件：名字 → 内容（临时副本不算） */
+  readonly files = new Map<string, Blob>()
+  readonly #next = new Map<string, FakeWrite>()
+  readonly #started = new Map<string, () => void>()
+
+  /** existing：文件夹里本来就有的文件 */
+  constructor(readonly name: string, existing: readonly string[] = []) {
+    for (const file of existing)
+      this.files.set(file, new Blob())
+  }
+
+  /** 下一次往这个文件里写时怎么样 */
+  nextWrite(file: string, write: FakeWrite): void {
+    this.#next.set(file, write)
+  }
+
+  /** 开始往这个文件里写时了结 */
+  writing(file: string): Promise<void> {
+    return new Promise(resolve => this.#started.set(file, resolve))
+  }
+
+  async getFileHandle(name: string, { create = false } = {}): Promise<FileCapability> {
+    if (!name || name === '.' || name === '..' || /[/\\]/.test(name))
+      throw new TypeError(`Name is not allowed: ${name}`)
+    if (!this.files.has(name)) {
+      if (!create)
+        throw new DOMException(`A requested file or directory could not be found: ${name}`, 'NotFoundError')
+      this.files.set(name, new Blob())
+    }
+    return {
+      createWritable: async () => this.#writable(name),
+    }
+  }
+
+  async removeEntry(name: string): Promise<void> {
+    if (!this.files.delete(name))
+      throw new DOMException(`A requested file or directory could not be found: ${name}`, 'NotFoundError')
+  }
+
+  #writable(name: string): WritableCapability {
+    const chunks: Blob[] = []
+    let state: 'writable' | 'erroring' | 'errored' | 'closed' = 'writable'
+    let inFlight: Promise<unknown> | null = null
+    return {
+      write: async (data) => {
+        if (state !== 'writable')
+          throw new TypeError('The stream is not writable')
+        const planned = this.#next.get(name) ?? {}
+        this.#next.delete(name)
+        this.#started.get(name)?.()
+        this.#started.delete(name)
+        const writing = (async () => {
+          await planned.until
+          if (planned.error) {
+            state = 'errored'
+            throw planned.error
+          }
+          chunks.push(data)
+        })()
+        inFlight = writing
+        try {
+          await writing
+        }
+        finally {
+          inFlight = null
+        }
+      },
+      close: async () => {
+        if (state !== 'writable')
+          throw new TypeError('The stream is not writable')
+        state = 'closed'
+        this.files.set(name, new Blob(chunks))
+      },
+      abort: async () => {
+        if (state === 'errored' || state === 'closed')
+          return
+        state = 'erroring'
+        await inFlight?.catch(() => {})
+        state = 'errored'
+        chunks.length = 0
+      },
+    }
+  }
+}
+
+/** 下一次打开文件夹选择器时听众怎么做：选这个文件夹，或者取消 */
+export type FolderChoice = FakeFolder | 'cancel'
+
+/** 文件夹选择器（showDirectoryPicker，#79），一台设备一份。照 File System Access 标准：听众取消时以 AbortError 失败。supported 为 false：这个浏览器不支持选文件夹 */
+export class FakeFolders {
+  supported = true
+  /** 打开过几次选择器 */
+  opened = 0
+  readonly #choices: FolderChoice[] = []
+
+  next(choice: FolderChoice): void {
+    this.#choices.push(choice)
+  }
+
+  async pick(): Promise<FakeFolder> {
+    this.opened += 1
+    const choice = this.#choices.shift()
+    if (choice === undefined)
+      throw new Error('测试没有排好听众在文件夹选择器里怎么做')
+    if (choice === 'cancel')
+      throw new DOMException('The user aborted a request.', 'AbortError')
+    return choice
   }
 }
 

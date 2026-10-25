@@ -1,5 +1,6 @@
 import type { Song } from '#lib/api/library.js'
 import type { DownloadFailure } from '#lib/app/downloads.js'
+import type { ExportFailure } from '#lib/app/export.js'
 
 import type { AppView } from '../shared/app-context.svelte'
 import { failureText } from '../shared/failure'
@@ -57,6 +58,22 @@ export const downloadFailureText = (failure: DownloadFailure): string => {
     default: {
       const unhandled: never = failure
       throw new Error(`不认识的下载失败：${JSON.stringify(unhandled)}`)
+    }
+  }
+}
+
+/** 一首没导出的原因（#79）：短语，不带句号和下一步，拼在“《…》：”后面 */
+export const exportFailureText = (failure: ExportFailure): string => {
+  switch (failure.kind) {
+    case 'storageFull':
+      return '空间不够'
+    case 'notAllowed':
+      return '文件夹不让写'
+    case 'failed':
+      return '写入时出错'
+    default: {
+      const unhandled: never = failure
+      throw new Error(`不认识的导出失败：${JSON.stringify(unhandled)}`)
     }
   }
 }

@@ -15,6 +15,11 @@ const songsFrom = (ids: readonly number[]): Song[] => ids.map((id, index) => ({
   album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
   duration: 180_000,
   availability: 'full',
+  trackNumber: null,
+  disc: null,
+  aliases: [],
+  translations: [],
+  publishedAt: null,
 }))
 
 /** 勾了哪些歌：按编号排好，和界面上看到的一致 */
@@ -74,11 +79,35 @@ describe('勾选规则', () => {
   })
 })
 
-describe('歌单种类决定能做什么', () => {
-  it('自建歌单能移除和排序；我喜欢的音乐只能排序；收藏的和不在曲库里的都不能', () => {
-    expect(capabilitiesOf('own')).toEqual({ remove: true, sort: true })
-    expect(capabilitiesOf('liked')).toEqual({ remove: false, sort: true })
-    expect(capabilitiesOf('collected')).toEqual({ remove: false, sort: false })
-    expect(capabilitiesOf(null)).toEqual({ remove: false, sort: false })
+describe('列表种类决定能做什么', () => {
+  it('歌单里都能加入歌单；自建歌单能移除和排序，我喜欢的音乐只能排序，收藏的和不在曲库里的都不能；不导出、不删除下载', () => {
+    const playlist = {
+      add: true,
+      remove: false,
+      sort: false,
+      export: false,
+      delete: false,
+    }
+    expect(capabilitiesOf('own', true)).toEqual({ ...playlist, remove: true, sort: true })
+    expect(capabilitiesOf('liked', true)).toEqual({ ...playlist, sort: true })
+    expect(capabilitiesOf('collected', true)).toEqual(playlist)
+    expect(capabilitiesOf(null, true)).toEqual(playlist)
+  })
+
+  it('已下载页只有导出和删除（#79）；浏览器不能选文件夹时没有导出（ADR-0014）', () => {
+    expect(capabilitiesOf('downloads', true)).toEqual({
+      add: false,
+      remove: false,
+      sort: false,
+      export: true,
+      delete: true,
+    })
+    expect(capabilitiesOf('downloads', false)).toEqual({
+      add: false,
+      remove: false,
+      sort: false,
+      export: false,
+      delete: true,
+    })
   })
 })

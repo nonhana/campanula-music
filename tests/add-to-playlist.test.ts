@@ -67,6 +67,11 @@ describe('加入歌单的目标和理由', () => {
       album: { id: 0, name: '测试专辑', coverUrl: '' },
       duration: 1,
       availability: 'full',
+      trackNumber: null,
+      disc: null,
+      aliases: [],
+      translations: [],
+      publishedAt: null,
     }
 
     const rows = app.addTargets({ mode: 'song', song, currentPlaylistId: null })
@@ -96,6 +101,11 @@ describe('加入歌单的目标和理由', () => {
       album: { id: 0, name: '测试专辑', coverUrl: '' },
       duration: 1,
       availability: 'full',
+      trackNumber: null,
+      disc: null,
+      aliases: [],
+      translations: [],
+      publishedAt: null,
     }
 
     expect(app.state.library?.playlists).toBeNull()

@@ -56,6 +56,11 @@ const songsFrom = (count: number, firstId = 2_000_000_000): Song[] => Array.from
   album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
   duration: 180_000,
   availability: 'full',
+  trackNumber: null,
+  disc: null,
+  aliases: [],
+  translations: [],
+  publishedAt: null,
 }))
 
 /** 两张各自能移除的自建歌单：jazz（录制里的两首）和新建的 CREATED（两首）。用来对照“上一批”与提示被替换。 */

@@ -229,6 +229,16 @@ export interface Song {
   duration: number | null
   /** 网易云的权限信息 privilege；列表里事先标出来，播放时以取到的播放地址为准。权限标记缺了按能完整播放（#78） */
   availability: Availability
+  /** 专辑里的第几首；网易云不知道时写 0 */
+  trackNumber: number | null
+  /** 第几张碟，网易云写的原文：“01”“1/2”“CD 01 …”，也有“A”“无”“0” */
+  disc: string | null
+  /** 别名 */
+  aliases: string[]
+  /** 译名 */
+  translations: string[]
+  /** 发行时间（毫秒）；网易云不知道时写 0，专辑页里的歌不给 */
+  publishedAt: number | null
 }
 
 export type Availability = 'full' | 'trial' | 'noCopyright'
@@ -288,6 +298,8 @@ export interface AlbumResponse {
     description: string | null
     /** 网易云写的歌曲数：本机存着的专辑页按它判断收藏的专辑变没变（和收藏的专辑列表里的 songCount 比） */
     songCount: number | null
+    /** 发行公司；网易云没写时可能是空字符串 */
+    company: string | null
   }
   songs: Song[]
 }

@@ -93,6 +93,11 @@ describe('打开不在曲库里的歌单', () => {
       album: { id: 402730746, name: 'あかねさす頃', coverUrl: 'https://p3.music.126.net/ZI_saDvp5XFnpwPg1C_TNA==/109951174077481119.jpg' },
       duration: 210233,
       availability: 'full',
+      trackNumber: 1,
+      disc: '01',
+      aliases: [],
+      translations: [],
+      publishedAt: 1791388800000,
     })
     expect(app.state.library?.songsOf(SMALL.id)).toBeNull()
     const stored = await device.stored()

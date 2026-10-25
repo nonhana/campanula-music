@@ -36,6 +36,11 @@ const songsFrom = (ids: readonly number[]): Song[] => ids.map((id, index) => ({
   album: { id: 0, name: '测试专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
   duration: 180_000,
   availability: 'full',
+  trackNumber: null,
+  disc: null,
+  aliases: [],
+  translations: [],
+  publishedAt: null,
 }))
 
 /** 建一张自建歌单，加入这几首歌（加入后按传入的先后排在最前） */

@@ -42,6 +42,34 @@ export interface BrowserCapabilities {
   /** 同 URL.createObjectURL：播放器、图片拿它放本机存着的下载 */
   objectUrl: (blob: Blob) => string
   revokeObjectUrl: (url: string) => void
+  /**
+   * 选一个文件夹往里写（#79 导出，ADR-0014）：同 showDirectoryPicker({ mode: 'readwrite', startIn: 'music' })，必须在听众点按的那一下里调用；
+   * 听众取消时以 AbortError 失败，不给写的权限时以 NotAllowedError 失败。浏览器不支持选文件夹时是 null，界面不显示“导出”
+   */
+  pickFolder: (() => Promise<FolderCapability>) | null
+}
+
+/** 照 File System 标准的 FileSystemDirectoryHandle，导出只用这几样 */
+export interface FolderCapability {
+  readonly name: string
+  /** create 为 true 时没有就马上建一个空文件；为 false 且没有时以 NotFoundError 失败。名字不合法时以 TypeError 失败，没有写的权限时 NotAllowedError */
+  getFileHandle: (name: string, options?: { create?: boolean }) => Promise<FileCapability>
+  /** 没有这个文件时以 NotFoundError 失败 */
+  removeEntry: (name: string) => Promise<void>
+}
+
+/** FileSystemFileHandle：写进一份临时副本，close 时才换掉文件内容，abort 丢掉临时副本（File System Access 标准） */
+export interface FileCapability {
+  createWritable: () => Promise<WritableCapability>
+}
+
+/** FileSystemWritableFileStream */
+export interface WritableCapability {
+  /** 空间不够时以 QuotaExceededError 失败 */
+  write: (data: Blob) => Promise<void>
+  close: () => Promise<void>
+  /** 还没写完的那一次跟着失败（Streams 标准的 abort） */
+  abort: () => Promise<void>
 }
 
 /** 按 EXIF 摆正过的图片（换封面用） */
@@ -304,33 +332,42 @@ const download = async (url: string, onProgress: (received: number) => void): Pr
   return new Blob(chunks, { type: response.headers.get('content-type') ?? '' })
 }
 
-export const realBrowserCapabilities = (): BrowserCapabilities => ({
-  fetch: (path, init) => window.fetch(path, init),
-  clock: {
-    now: () => Date.now(),
-    after(ms, callback) {
-      const id = window.setTimeout(callback, ms)
-      return () => window.clearTimeout(id)
+/** File System Access 标准的 showDirectoryPicker（TypeScript 自带的 DOM 类型里还没有），Android Chrome、桌面 Chrome 和 Edge 有 */
+type DirectoryPicker = (options: { mode: 'readwrite', startIn: 'music' }) => Promise<FileSystemDirectoryHandle>
+
+export const realBrowserCapabilities = (): BrowserCapabilities => {
+  const picker = (window as Window & { showDirectoryPicker?: DirectoryPicker }).showDirectoryPicker
+  return {
+    fetch: (path, init) => window.fetch(path, init),
+    clock: {
+      now: () => Date.now(),
+      after(ms, callback) {
+        const id = window.setTimeout(callback, ms)
+        return () => window.clearTimeout(id)
+      },
     },
-  },
-  indexedDB: window.indexedDB,
-  network: {
-    get onLine() {
-      return navigator.onLine
+    indexedDB: window.indexedDB,
+    network: {
+      get onLine() {
+        return navigator.onLine
+      },
+      addEventListener: (type, listener) => window.addEventListener(type, listener),
+      removeEventListener: (type, listener) => window.removeEventListener(type, listener),
     },
-    addEventListener: (type, listener) => window.addEventListener(type, listener),
-    removeEventListener: (type, listener) => window.removeEventListener(type, listener),
-  },
-  page: document,
-  mediaSession: navigator.mediaSession,
-  MediaMetadata: window.MediaMetadata,
-  locks: navigator.locks,
-  broadcastChannel: name => new BroadcastChannel(name),
-  audio: () => new Audio(),
-  checkToken: watchmanToken,
-  images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
-  uploadCoverImage,
-  download,
-  objectUrl: blob => URL.createObjectURL(blob),
-  revokeObjectUrl: url => URL.revokeObjectURL(url),
-})
+    page: document,
+    mediaSession: navigator.mediaSession,
+    MediaMetadata: window.MediaMetadata,
+    locks: navigator.locks,
+    broadcastChannel: name => new BroadcastChannel(name),
+    audio: () => new Audio(),
+    checkToken: watchmanToken,
+    images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
+    uploadCoverImage,
+    download,
+    objectUrl: blob => URL.createObjectURL(blob),
+    revokeObjectUrl: url => URL.revokeObjectURL(url),
+    pickFolder: picker
+      ? () => picker.call(window, { mode: 'readwrite', startIn: 'music' })
+      : null,
+  }
+}

@@ -49,3 +49,6 @@ export const formatDuration = (ms: number): string => {
   const seconds = Math.max(0, Math.floor(ms / 1000))
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
+
+/** 字节数按 MB 写，一位小数（导出时写明多大、写到哪儿，#79）；不带单位，单位由调用处写一次（“3.2/9.8 MB”） */
+export const formatMegabytes = (bytes: number): string => (bytes / 1024 / 1024).toFixed(1)

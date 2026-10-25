@@ -58,6 +58,9 @@
 - nonhana/campanula-music#38（2026-10-21 北京时间）：`playback/downloads/` 下“已下载”的打卡和几首歌的下载地址。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.12.0`，参数和 Campanula 服务端发的一样；文件名前的序号是调用的先后：
   - `001-scrobble`：从“已下载”放的歌听完打卡，播放来源照 SDK 文档「播放来源」：`source: 'download'`、`sourceid: 0`（已下载不是一张歌单，没有稳定的编号），`time` 是整首的整数秒，**只打卡 1 次**（21:37）。打卡对象是本周听歌排行的最后一首《Kraken (The Cup Shanty)》（3416515543），打卡前本周 1 次、得分 12；**18.8 分钟后变成 2 次、得分 25**，计入了排行。前后读排行用的 `user_record`、`user_detail` 都只读，没有录进仓库。
   - `002`–`004-song_download_url_v1`：我喜欢的音乐的第 1～3 首（3433267939、2662577181、4208408，和 `playback/liked/` 的在线播放地址是同一批歌）极高音质（`exhigh`）的下载地址，只读各 1 次，都给了完整的地址（7,708,256、9,619,374、12,427,187 字节）。另外录过无版权那首前面一首（2092188841）的，测试没用上，删了。
+- nonhana/campanula-music#79（2026-10-25 北京时间）：`playback/export/` 下导出用的录制。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@3.1.0`，参数和 Campanula 服务端发的一样，全部只读、各 1 次；文件名前的序号是调用的先后：
+  - `001`、`002-song_download_url_v1`：我喜欢的音乐第 1 页里同一张专辑《Keep The Village Alive》（3149073，专辑页是 #23 录的 `library/album-artist/008-album`）的两首《Fight Or Flight》（34586046）、《Sunny》（34586048）极高音质的下载地址，都给了完整的地址（8,848,240、10,384,240 字节）。测试拿它们当“同一批下载里同一张专辑只取一次”。
+  - `003-album`：要一张不存在的专辑（编号照 `library/netease-playlist/006-playlist_detail` 用 99999999999），网易云回 `{ "resourceState": false, "code": 404 }`。测试拿它当“专辑信息取不到时下载照常成功”，不关心专辑信息的下载测试也回它。
 
 供 nonhana/hana-music-api#17–#22 的契约测试和 Campanula 自己的测试使用。自动化测试只读这些文件，不连真实账号（Spec #11“交付方式”第 3 条）。
 

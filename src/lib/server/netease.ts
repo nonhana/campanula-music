@@ -457,6 +457,11 @@ interface NeteaseSong {
   readonly ar?: readonly NeteaseArtist[] | null
   readonly al?: { readonly id?: number | null, readonly name?: string | null, readonly picUrl?: string | null } | null
   readonly dt?: number | null
+  readonly no?: number | null
+  readonly cd?: string | null
+  readonly alia?: readonly string[] | null
+  readonly tns?: readonly string[] | null
+  readonly publishTime?: number | null
 }
 
 /** st 小于 0 是无版权（登录后录到的都是 -200），pl 是能在线放的最高码率、0 是放不了完整的；没登录时搜索里的 st 是 -100（#31 留言），Campanula 只在登录后搜 */
@@ -484,6 +489,15 @@ const songOf = (song: NeteaseSong, privilege: Privilege | null | undefined): Son
   album: { id: song.al?.id ?? null, name: song.al?.name ?? null, coverUrl: song.al?.picUrl ?? null },
   duration: song.dt ?? null,
   availability: availabilityOf(privilege),
+  trackNumber: song.no ?? null,
+  disc: song.cd ?? null,
+  aliases: [
+    ...song.alia ?? [],
+  ],
+  translations: [
+    ...song.tns ?? [],
+  ],
+  publishedAt: song.publishTime ?? null,
 })
 
 /** 专辑页、热门歌曲、每日推荐、单曲搜索里每首歌带着自己的权限信息 */
@@ -626,6 +640,7 @@ export const fetchAlbum = async (albumId: number, listener: Listener): Promise<A
       publishedAt: album.publishTime ?? null,
       description: album.description ?? null,
       songCount: album.size ?? null,
+      company: album.company ?? null,
     },
     songs: songs.map(songWithPrivilegeOf),
   }

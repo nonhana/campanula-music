@@ -11,8 +11,21 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtHearts, reopen, replyLibrary, replyLikedSongs } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
-// v8 的存储区、键和内容格式取自 30765b4^:src/lib/app/local.ts / player.ts，独立建立旧库，不调用当前 createLocalDb 或 upgrade。v8 还没有 downloads。
-const savedSong: Song = {
+// v9 的存储区、键和内容格式取自 d79cf95:src/lib/app/local.ts / player.ts / downloads.ts，独立建立旧库，不调用当前 createLocalDb 或 upgrade。
+// v9 的歌曲信息还没有第几首、碟号、别名、译名、发行时间（#79），下载还没有专辑信息，歌词还没有逐字歌词、音译的原文。
+
+type SongIn9 = Omit<Song, 'trackNumber' | 'disc' | 'aliases' | 'translations' | 'publishedAt'>
+
+/** #79 加的几项在旧数据里没有：读出来是“网易云没给” */
+const NOT_GIVEN = {
+  trackNumber: null,
+  disc: null,
+  aliases: [],
+  translations: [],
+  publishedAt: null,
+}
+
+const savedSong: SongIn9 = {
   id: 3433267939,
   name: '旧版存着的歌',
   artists: [
@@ -23,8 +36,19 @@ const savedSong: Song = {
   availability: 'full',
 }
 
+const downloadedSong: SongIn9 = {
+  id: 2662577181,
+  name: '旧版下载的歌',
+  artists: [
+    { id: 2, name: '旧版下载的歌手' },
+  ],
+  album: { id: 2, name: '旧版下载的专辑', coverUrl: null },
+  duration: 240413,
+  availability: 'full',
+}
+
 describe('本机数据库升级', () => {
-  it('v8 → v9：不用重新登录，曲库、播放队列和进度、设置仍在；继续同步没取全的歌曲，并能下载到新增的存储区', async () => {
+  it('v9 → v10：不用重新登录，曲库、播放队列和进度、设置、下载仍在；歌曲信息重新取（带上第几首等），旧的下载和播放队列里的歌补上“网易云没给”', async () => {
     // 由真服务端签发登录 Cookie，再交给装着旧版数据库的设备；不手造密文。
     const signedIn = world.device()
     const login = await signInAtHearts(signedIn)
@@ -34,7 +58,7 @@ describe('本机数据库升级', () => {
     const device = world.device()
     for (const cookie of await signedIn.cookies())
       await device.setCookie(cookie.toString())
-    await device.preload(8, (database) => {
+    await device.preload(9, (database) => {
       database.createObjectStore('session')
       const library = database.createObjectStore('library')
       library.put(10000001, 'owner')
@@ -59,7 +83,7 @@ describe('本机数据库升级', () => {
       database.createObjectStore('tracks').put({
         version: 1,
         trackIds: [3433267939, 2662577181],
-        complete: false,
+        complete: true,
       }, 900000001)
       database.createObjectStore('songs', { keyPath: 'id' }).put(savedSong)
       database.createObjectStore('albumPages')
@@ -88,6 +112,28 @@ describe('本机数据库升级', () => {
       settings.put('lossless', 'playQuality')
       settings.put(['夜に駆ける'], 'searchHistory')
       database.createObjectStore('checkIns', { autoIncrement: true })
+      database.createObjectStore('downloads').put({
+        song: downloadedSong,
+        audio: new Blob([
+          new Uint8Array(1000),
+        ], { type: 'audio/mpeg' }),
+        cover: null,
+        lyrics: {
+          kind: 'line',
+          lines: [
+            {
+              start: 1,
+              text: '旧版存着的歌词',
+              words: null,
+              translation: null,
+              romanization: null,
+            },
+          ],
+          translated: false,
+          romanized: false,
+        },
+        downloadedAt: 1,
+      }, 2662577181)
     })
 
     const hearts = held()
@@ -95,12 +141,9 @@ describe('本机数据库升级', () => {
     const { app } = tab
     await world.settle()
     expect(app.state.session).toMatchObject({ status: 'signedIn', account: RECORDED_ACCOUNT })
-    expect(app.state.library?.liked).toMatchObject({
-      total: 2,
-      complete: false,
-      songs: [savedSong],
-    })
+    expect(app.state.library?.playlists?.map(playlist => playlist.id)).toEqual([900000001])
     expect(app.state.library?.hearts?.has(3433267939)).toBe(true)
+    expect(app.state.library?.liked).toMatchObject({ total: 2, complete: false })
     expect(app.state.player).toMatchObject({
       current: 0,
       position: 42,
@@ -111,15 +154,23 @@ describe('本机数据库升级', () => {
     })
     expect(app.state.player.queue).toEqual([
       {
-        song: savedSong,
+        song: {
+          ...savedSong,
+          ...NOT_GIVEN,
+        },
         source: { kind: 'playlist', id: 900000001 },
       },
     ])
     expect(app.state.search.history).toEqual(['夜に駆ける'])
-    expect(app.state.downloads.songs).toEqual([])
+    expect(app.state.downloads.songs).toEqual([
+      {
+        ...downloadedSong,
+        ...NOT_GIVEN,
+      },
+    ])
     expect(device.requests.some(request => request.path.includes('/login/'))).toBe(false)
 
-    // v9 不使完整数据失效；这个旧副本本来就没取全，仍按网易云的版本与曲目补齐。
+    // v10 使存着的歌曲信息失效：按网易云的版本与曲目重新取，带上第几首、碟号这些
     await replyLibrary({ from: 'playlists' })
     await replyLikedSongs()
     await replyLibrary({
@@ -129,33 +180,36 @@ describe('本机数据库升级', () => {
     hearts.release()
     await world.settle()
     expect(app.state.library?.liked).toMatchObject({ total: 4984, complete: true })
-    expect(app.state.library?.liked?.songs.some(song => song.id === 2662577181)).toBe(true)
     expect(device.requests.some(request => request.path === '/api/songs')).toBe(true)
-    expect((await device.stored()).songs.find(([id]) => id === 3433267939)?.[1]).toEqual(savedSong)
+    expect((await device.stored()).songs.find(([id]) => id === 3433267939)?.[1]).toMatchObject({
+      name: '夏に溶ける (feat. 鏡音リン)',
+      trackNumber: 1,
+      disc: '01',
+      publishedAt: 1789315200000,
+    })
 
+    const song = app.state.library!.liked!.songs.find(liked => liked.id === 3433267939)!
     const fixture = 'playback/downloads/002-song_download_url_v1.json.gz'
     const { outcome } = await loadFixture(fixture)
     const { data } = outcome.response.body as { data: { url: string, size: number } }
     device.files.put(data.url.replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
-    device.files.put(`${savedSong.album.coverUrl}?param=512y512`, { bytes: 100, type: 'image/jpeg' })
+    device.files.put(`${song.album.coverUrl!.replace(/^http:/, 'https:')}?param=512y512`, { bytes: 100, type: 'image/jpeg' })
     await world.netease.reply(fixture)
     await world.netease.reply('playback/lyric_new.all-forms.json')
-    app.download(savedSong)
+    await world.netease.reply('playback/export/003-album.json.gz')
+    app.download(song)
     await world.settle()
     expect(app.state.downloads.has(3433267939)).toBe(true)
-    expect((await device.stored()).downloads).toEqual([
-      [
-        3433267939,
-        expect.objectContaining({
-          song: savedSong,
-          audio: expect.objectContaining({ size: 7708256 }),
-        }),
-      ],
-    ])
 
     tab.close()
     const reopened = await reopen(device)
-    expect(reopened.app.state.downloads.has(3433267939)).toBe(true)
+    expect(reopened.app.state.downloads.songs).toEqual([
+      song,
+      {
+        ...downloadedSong,
+        ...NOT_GIVEN,
+      },
+    ])
     expect(reopened.app.state.player.position).toBe(42)
   })
 })

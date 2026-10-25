@@ -1,22 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Song } from '#lib/api/library.js'
-import type { App } from '#lib/app/app.js'
-
 import type { Device } from './harness/device'
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
-import { checkIns, current, likedSong, listener, PLAYLISTS_WITH_POEMS, playUrlRequests, storedCheckIns } from './harness/listener'
+import { ALBUM_MISSING, checkIns, DOWNLOAD_COVER_BYTES as COVER_BYTES, current, likedSong, listener, DOWNLOAD_LYRICS as LYRICS, PLAYLISTS_WITH_POEMS, playUrlRequests, serveDownload as serve, storedCheckIns, VILLAGE } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
-const { signInWithLiked, replyLibrary } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
+const { signInWithLiked, replyLibrary, downloadLiked: download } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
 // 下载单曲与离线播放（#38，Spec #11“客户端：下载”、ADR-0006）：浏览器向服务端要下载地址，直连网易云的音频服务器、图片服务器把完整音频和封面缩略图下下来，连同歌词、歌曲信息存进这台设备。
 // 下载属于设备，和登录、登录的是哪个账号都无关；服务器那边（有哪些文件、传得快慢、传到一半断开）由测试在设备的文件替身上决定
-
-const LYRICS = 'playback/lyric_new.all-forms.json'
 
 /** 我喜欢的音乐里的《LOSER》（米津玄師，第 4 页）：验证关卡①录了它极高音质的下载地址（9,757,301 字节的 mp3）。封面缩略图按 512 取（网易云的缩略图地址加 ?param=512y512） */
 const LOSER = {
@@ -26,7 +21,6 @@ const LOSER = {
   bytes: 9_757_301,
   cover: 'https://p3.music.126.net/IeyCexR3Hg9NnVY9TDCD3w==/109951166530781958.jpg?param=512y512',
 }
-const COVER_BYTES = 41_000
 /** 我喜欢的音乐里无版权的一首（Sea Of Tired（Slowed）），和只能放试听片段的一首（第 2 页，会员歌） */
 const NO_COPYRIGHT = 2108191414
 const TRIAL = 2636390698
@@ -35,7 +29,7 @@ const TRIAL = 2636390698
 const FIRST = { id: 3433267939, downloadUrl: 'playback/downloads/002-song_download_url_v1.json.gz', playUrl: 'playback/liked/001-song_url_v1.json.gz' }
 const SECOND = { id: 2662577181, downloadUrl: 'playback/downloads/003-song_download_url_v1.json.gz', playUrl: 'playback/liked/002-song_url_v1.json.gz' }
 const THIRD = { id: 4208408, downloadUrl: 'playback/downloads/004-song_download_url_v1.json.gz', playUrl: 'playback/liked/003-song_url_v1.json.gz' }
-type Recorded = typeof FIRST
+
 const LIKED = { kind: 'playlist', id: 900000001 } as const
 const DOWNLOADS = { kind: 'downloads' } as const
 
@@ -50,22 +44,6 @@ const downloadUrlRequests = (device: Device): string[] => device.requests.flatMa
   ? [request.path]
   : [])
 
-/** 下载这一首、等它下完（隔 1 秒才下完，已下载里按下完的先后排）：网易云回录下的下载地址和一份歌词，音频服务器上放着录制里那么大的文件，图片服务器上放着封面缩略图 */
-const download = async (device: Device, app: App, recorded: Recorded): Promise<Song> => {
-  await world.clock.advance(1000)
-  const song = likedSong(app, recorded.id)
-  const { data } = (await loadFixture(recorded.downloadUrl)).outcome.response.body as { data: { url: string, size: number } }
-  device.files.put((data.url as string).replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
-  device.files.put(`${song.album.coverUrl!.replace(/^http:/, 'https:')}?param=512y512`, { bytes: COVER_BYTES, type: 'image/jpeg' })
-  await world.netease.reply(recorded.downloadUrl)
-  await world.netease.reply(LYRICS)
-  app.download(song)
-  await world.settle()
-  if (!app.state.downloads.has(song.id))
-    throw new Error(`《${song.name}》没下完：${JSON.stringify(app.state.downloads.tasks.get(song.id))}`)
-  return song
-}
-
 describe('下载一首', () => {
   it('完整音频、封面缩略图、歌词和歌曲信息一起存进这台设备：下载地址按极高音质向服务端要，音频和封面由浏览器直连网易云下', async () => {
     const device = world.device()
@@ -74,6 +52,7 @@ describe('下载一首', () => {
     serveLoser(device)
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
 
     app.download(song)
     await world.settle()
@@ -91,6 +70,10 @@ describe('下载一首', () => {
     expect(stored.lyrics.kind).toBe('word')
     expect(stored.lyrics.lines).toHaveLength(45)
     expect(stored.lyrics.lines[3]).toMatchObject({ text: '夢ならばどれほどよかったでしょう', translation: '如果这一切都是梦境该有多好' })
+    expect(stored.lyrics).toMatchObject({
+      yrc: expect.stringContaining('[830,4980](830,380,0)夢(1210,330,0)な'),
+      romalrc: expect.stringContaining('[00:00.850]yu me na ra ba do re ho do yo ka tta de sho u'),
+    })
     expect(app.state.downloads.songs).toEqual([song])
     expect(app.state.downloads.tasks.size).toBe(0)
   })
@@ -103,6 +86,7 @@ describe('下载一首', () => {
     device.files.next(LOSER.audio, { until: transfer.until })
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
 
     app.download(likedSong(app, LOSER.id))
     await world.settle()
@@ -131,6 +115,7 @@ describe('下载一首', () => {
     serveLoser(device)
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
     expect(app.download(likedSong(app, LOSER.id))).toBeNull()
     expect(app.download(likedSong(app, LOSER.id))).toBe('downloading')
     await world.settle()
@@ -150,6 +135,7 @@ describe('下载一首', () => {
     device.files.next(LOSER.audio, { cut: true })
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
 
     app.download(song)
     await world.settle()
@@ -168,6 +154,7 @@ describe('下载一首', () => {
 
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
     expect(app.download(song)).toBeNull()
     await world.settle()
     expect(device.files.requests.filter(url => url === LOSER.audio)).toHaveLength(2)
@@ -184,6 +171,7 @@ describe('下载一首', () => {
     device.files.next(LOSER.audio, { cut: true })
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
 
     app.download(song)
     await world.settle()
@@ -196,6 +184,7 @@ describe('下载一首', () => {
 
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
     await app.noticeAction('retry')
     await world.settle()
 
@@ -211,6 +200,7 @@ describe('下载一首', () => {
     const slow = held()
     await world.netease.reply(LOSER.downloadUrl, { until: slow.until })
     await world.netease.reply(LYRICS, { until: slow.until })
+    await world.netease.reply(ALBUM_MISSING)
     app.download(song)
     await world.settle()
 
@@ -311,7 +301,7 @@ describe('下载属于这台设备', () => {
     expect(app.state.player).toMatchObject({ status: 'playing', trial: false })
     expect(playUrlRequests(device)).toEqual([])
 
-    await app.deleteDownload(second.id)
+    await app.deleteDownloads([second.id])
     expect(app.state.downloads.songs).toEqual([first])
     expect((await storedDownloads(device)).map(stored => stored.song.id)).toEqual([first.id])
   })
@@ -332,11 +322,11 @@ describe('下载属于这台设备', () => {
     player.ready(192.648)
     await world.settle()
 
-    await app.deleteDownload(first.id)
+    await app.deleteDownloads([first.id])
     await world.settle()
     expect(current(app)).toBe(first.id)
     expect(app.state.player.neighbors).toEqual({ previous: 0, next: 0 })
-    await app.deleteDownload(second.id)
+    await app.deleteDownloads([second.id])
     await world.settle()
     expect(app.state.player.neighbors).toEqual({ previous: null, next: null })
 
@@ -528,6 +518,97 @@ describe('已下载页', () => {
     await world.settle()
     expect(current(app)).toBe(second.id)
     expect(app.state.player.queue.map(entry => entry.source)).toEqual([DOWNLOADS, DOWNLOADS])
+  })
+})
+
+describe('下载时多存的歌曲信息（#79）', () => {
+  it('歌曲信息里有第几首、碟号、别名、译名、发行时间；下载时顺手取专辑信息（专辑歌手、歌曲数、发行日期、发行公司），和下载存在一起', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, VILLAGE.fightOrFlight.id)
+    expect(song).toMatchObject({
+      trackNumber: 6,
+      disc: '1',
+      aliases: [],
+      translations: [],
+      publishedAt: 1441900800007,
+    })
+    await serve(device, song, VILLAGE.fightOrFlight.downloadUrl)
+    await world.netease.reply(VILLAGE.fightOrFlight.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(VILLAGE.page)
+
+    app.download(song)
+    await world.settle()
+
+    expect(device.requests.map(request => request.path)).toContain(`/api/albums/${VILLAGE.id}`)
+    const [stored] = await storedDownloads(device)
+    expect(stored.song).toEqual(song)
+    expect(stored.album).toMatchObject({
+      id: VILLAGE.id,
+      artist: { name: 'Stereophonics' },
+      songCount: 10,
+      publishedAt: 1441900800000,
+      company: '华纳音乐',
+    })
+  })
+
+  it('同一批下载里同一张专辑只取一次：两首一起下，专辑页只要一次，两首都存上这份专辑信息', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    for (const recorded of [VILLAGE.fightOrFlight, VILLAGE.sunny]) {
+      await serve(device, likedSong(app, recorded.id), recorded.downloadUrl)
+      await world.netease.reply(recorded.downloadUrl, {
+        when: { id: recorded.id },
+      })
+      await world.netease.reply(LYRICS)
+    }
+    await world.netease.reply(VILLAGE.page)
+
+    app.download(likedSong(app, VILLAGE.fightOrFlight.id))
+    app.download(likedSong(app, VILLAGE.sunny.id))
+    await world.settle()
+
+    expect(world.netease.calls.filter(call => call.module === 'album').map(call => call.query)).toEqual([
+      { id: VILLAGE.id },
+    ])
+    expect(app.state.downloads.songs).toHaveLength(2)
+    expect((await storedDownloads(device)).map(stored => stored.album?.company)).toEqual(['华纳音乐', '华纳音乐'])
+  })
+
+  it('专辑取不到（网易云说没有这张专辑）时照常下载，只是少专辑信息', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, VILLAGE.fightOrFlight.id)
+    await serve(device, song, VILLAGE.fightOrFlight.downloadUrl)
+    await world.netease.reply(VILLAGE.fightOrFlight.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(song)
+    await world.settle()
+
+    expect(app.state.downloads.songs).toEqual([song])
+    const [stored] = await storedDownloads(device)
+    expect(stored.album).toBeNull()
+  })
+
+  it('这台设备上有这张专辑的专辑页时不再取，用专辑页里的', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    await world.netease.reply(VILLAGE.page)
+    await app.openAlbum(VILLAGE.id)
+    const song = likedSong(app, VILLAGE.fightOrFlight.id)
+    await serve(device, song, VILLAGE.fightOrFlight.downloadUrl)
+    await world.netease.reply(VILLAGE.fightOrFlight.downloadUrl)
+    await world.netease.reply(LYRICS)
+
+    app.download(song)
+    await world.settle()
+
+    expect(world.netease.calls.filter(call => call.module === 'album')).toHaveLength(1)
+    const [stored] = await storedDownloads(device)
+    expect(stored.album).toMatchObject({ id: VILLAGE.id, company: '华纳音乐' })
   })
 })
 

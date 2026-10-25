@@ -41,7 +41,7 @@
   const { account, children }: { account: Account, children: Snippet } = $props()
   const view = getAppView()
   const overlays = setOverlays(createOverlays())
-  const { playlistSelection } = overlays
+  const { multiSelect } = overlays
 
   const route = $derived(page.route.id)
   /** 歌单页、专辑页、歌手页（属于曲库） */
@@ -166,10 +166,10 @@
         : searching && showingResults()
         ? searchTabs
         : undefined}
-      replace={playlistSelection.mode ? selectionBar : undefined}
+      replace={multiSelect.mode ? selectionBar : undefined}
     >
       {#snippet header()}
-        {#if playlistSelection.mode}
+        {#if multiSelect.mode}
           <PhoneSelectionTopBar />
         {:else if searching}
           <PhoneSearchBar onback={back} />
