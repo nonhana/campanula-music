@@ -7,6 +7,7 @@ import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
 import type { Api, Result } from './api-client'
 import type { BrowserCapabilities, Clock } from './browser'
 import type { LocalDb, StoredDownload } from './local'
+import { plainSong } from './plain'
 import type { BackgroundFailure, BackgroundSessionResult, SessionRound } from './session-round'
 
 // 下载（Spec #11“客户端：下载”、ADR-0006，#38 先做单曲）：向服务端要下载地址、歌词（后台请求），浏览器直连网易云的音频、图片服务器
@@ -25,6 +26,10 @@ export type DownloadFailure
     | { kind: 'interrupted' }
     /** 这台设备的存储空间不够 */
     | { kind: 'storageFull' }
+    /** 存进本机时出了别的错（代理、数据库被别的标签页卡住等）；重试可能好 */
+    | { kind: 'saveFailed' }
+    /** Campanula 自己的缺陷：不让任务一直停在“下载中” */
+    | { kind: 'appError' }
 
 type DownloadTask
   /** 正在下：音频已经收到多少字节、一共多少字节（还没拿到下载地址、网易云没给大小时不知道，是 null） */
@@ -280,9 +285,10 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       await local.saveDownload(record)
     }
     catch (error) {
-      if (!storageFull(error))
-        throw error
-      return fail(song, { kind: 'storageFull' })
+      if (storageFull(error))
+        return fail(song, { kind: 'storageFull' })
+      console.error('下载没能存进这台设备', error)
+      return fail(song, { kind: 'saveFailed' })
     }
     setRecords(new Map(records).set(song.id, record))
     tasks = new Map(tasks)
@@ -303,7 +309,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       return loading
     },
     download(song) {
-      const blocked = downloadBlock(song, current(), {
+      const plain = plainSong(song)
+      const blocked = downloadBlock(plain, current(), {
         signedIn: context.signedIn(),
         online: context.online(),
       })
@@ -311,11 +318,14 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         return blocked
       setTask({
         status: 'downloading',
-        song,
+        song: plain,
         received: 0,
         total: null,
       })
-      void run(song)
+      void run(plain).catch((error: unknown) => {
+        console.error('下载出错', error)
+        fail(plain, { kind: 'appError' })
+      })
       return null
     },
     async remove(songIds) {

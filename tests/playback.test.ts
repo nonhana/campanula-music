@@ -1835,6 +1835,26 @@ describe('关掉再打开', () => {
     expect(reopened.state.player).toMatchObject({ status: 'playing', position: 100, change: null })
   })
 
+  it('“下一首播放”“加入播放队列”从“更多”菜单拿到的是 Svelte 状态代理：队列照样存进本机，重新打开还在', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    const { app } = tab
+    await playUntilSounding(tab, FIRST, SECOND)
+
+    await world.netease.reply('library/album-artist/008-album.json.gz')
+    await app.openAlbum(3149073)
+    const page = app.state.library?.albumPage(3149073)
+    if (page?.status !== 'shown')
+      throw new Error('专辑页没打开')
+    const song = page.content.songs.find(item => !queueIds(app).includes(item.id))!
+    app.playNext(new Proxy({ kind: 'album', id: 3149073 }, {}), new Proxy(song, {}))
+    await world.settle()
+    expect(queueIds(app)).toContain(song.id)
+
+    const { app: reopened } = await reopen(device, tab)
+    expect(reopened.state.player.queue.map(entry => entry.song.id)).toContain(song.id)
+  })
+
   it('这首已经听了多少秒也存着：关掉时不算这首结束，再打开按播放后接着累计；按实际出声的时间算，跳过去的不算（听歌打卡按它算，规则⑥、#28）', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)

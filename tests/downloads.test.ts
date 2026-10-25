@@ -45,6 +45,27 @@ const downloadUrlRequests = (device: Device): string[] => device.requests.flatMa
   : [])
 
 describe('下载一首', () => {
+  it('界面传进来的 Song 是 Svelte 的状态代理：下载照样存进本机，不会卡在 100%', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, FIRST.id)
+    // Svelte 5 的 $state 会把歌变成代理，IndexedDB 克隆不了代理；App 收到界面传来的对象要能自己处理
+    const proxied = new Proxy(song, {})
+
+    await serve(device, song, FIRST.downloadUrl)
+    await world.netease.reply(FIRST.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    app.download(proxied)
+    await world.settle()
+
+    expect(app.state.downloads.has(FIRST.id)).toBe(true)
+    expect(app.state.downloads.tasks.has(FIRST.id)).toBe(false)
+    const [stored] = ((await device.stored()).downloads ?? []).map(([, value]) => value as Record<string, any>)
+    expect(stored.song).toEqual(song)
+    expect(() => structuredClone(stored.song)).not.toThrow()
+  })
+
   it('完整音频、封面缩略图、歌词和歌曲信息一起存进这台设备：下载地址按极高音质向服务端要，音频和封面由浏览器直连网易云下', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)
