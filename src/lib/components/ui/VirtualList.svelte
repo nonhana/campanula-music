@@ -1,5 +1,5 @@
 <!--
-  等高行的虚拟列表：只渲染视口附近的几十行，默认跟随页面滚动，放进自己的滚动容器时传 scrollParent。
+  等高行的虚拟列表：只渲染视口附近的几十行，默认跟随页面滚动，放进自己的滚动容器时传 scrollParent；列表上方的东西挪了位置时传 remeasure，变了重新量一次。
   传了 markOf 时告诉滚动区域的气泡某个高度上是哪一行（shared/scroll-marks.ts）。行是依次飘入的一组（motion.ts 的 reveal）。
   拖动排序（#36）：placeOf 给出每一行的高度（拖动时让开空位），keep 让被拖的行一直挂载（Android 上手指底下的元素不能卸载）。
 -->
@@ -25,9 +25,11 @@
     /** 拖动排序时每一行移动的过渡；不拖时不加，滚出来、换列表时直接到位 */
     animatePlace?: boolean
     hidden?: (item: T, index: number) => boolean
+    /** 外面有东西挪动了列表的位置（例如上方多了一行状态）：变了就重新量一次可见范围 */
+    remeasure?: unknown
   }
 
-  const { items, itemHeight, overscan = 8, scrollParent, getKey, row, markOf, placeOf, keep, animatePlace = false, hidden }: Props = $props()
+  const { items, itemHeight, overscan = 8, scrollParent, getKey, row, markOf, placeOf, keep, animatePlace = false, hidden, remeasure }: Props = $props()
   const lookup = hasScrollLookup()
     ? getScrollLookup()
     : null
@@ -51,9 +53,10 @@
   }
 
   $effect(() => {
-    // 列表变了（同步进来新的歌）也要重算
+    // 列表变了（同步进来新的歌）、外面的东西挪了位置也要重算
     void items.length
     void slots
+    void remeasure
     measure()
   })
 

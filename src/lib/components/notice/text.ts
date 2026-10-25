@@ -1,11 +1,10 @@
 import type { Playlist, PlaylistEditProblem } from '#lib/api/library.js'
-import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, songTitle, TRACKS_PER_CHANGE } from '#lib/api/library.js'
+import { PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX, playlistName, songTitle, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import type { Change } from '#lib/app/changes.js'
 import type { ChangeFailure } from '#lib/app/library.js'
 import type { OperationNotice } from '#lib/app/notice.js'
 
 import { downloadFailureText } from '../downloads/view'
-import { playlistName } from '../playlist/playlist-text'
 import { failureText } from '../shared/failure'
 import { formatCount } from '../shared/text'
 
@@ -142,6 +141,22 @@ export const operationNoticeText = (notice: OperationNotice): string => {
       return '上次关闭前的修改没保存成功，已恢复原样'
     case 'downloadFailed':
       return `没能下载《${songTitle(notice.song)}》：${downloadFailureText(notice.failure)}`
+    case 'downloadsAdded': {
+      const parts: string[] = []
+      if (notice.queued > 0)
+        parts.push(`已加入下载 ${formatCount(notice.queued)} 首`)
+      if (notice.downloaded > 0)
+        parts.push(`${formatCount(notice.downloaded)} 首已下载过`)
+      if (notice.trial > 0)
+        parts.push(`${formatCount(notice.trial)} 首试听歌曲不能下载`)
+      if (notice.noCopyright > 0)
+        parts.push(`${formatCount(notice.noCopyright)} 首无版权`)
+      if (notice.filling)
+        parts.push('还没同步完，同步完把后面的补上')
+      return parts.join('；')
+    }
+    case 'downloadsPaused':
+      return '存储空间不够，下载已暂停'
     default: {
       const unhandled: never = notice
       throw new Error(`不认识的提示：${JSON.stringify(unhandled)}`)

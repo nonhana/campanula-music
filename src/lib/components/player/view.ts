@@ -1,10 +1,9 @@
 import type { Song } from '#lib/api/library.js'
-import { songTitle } from '#lib/api/library.js'
+import { playlistName, songTitle } from '#lib/api/library.js'
 import type { LyricLine, LyricWord, PlaySource } from '#lib/api/playback.js'
 import type { LibraryState } from '#lib/app/library.js'
 import type { PlayerNotice, PlayerState, PlayMode, SongChange } from '#lib/app/player.js'
 
-import { playlistName } from '../playlist/playlist-text'
 import { failureText } from '../shared/failure'
 import { formatDuration } from '../shared/text'
 

@@ -209,6 +209,14 @@ export const creditLine = (credits: readonly Credit[]): string => {
 /** 歌名：网易云没给时写“未知歌曲”（#78）。只在显示时换，数据里仍是 null：导出不能把它当成歌名写进文件 */
 export const songTitle = (song: Pick<Song, 'name'>): string => song.name ?? '未知歌曲'
 
+/**
+ * 歌单的名字：我喜欢的音乐在网易云里叫“某某喜欢的音乐”，界面上统一叫“我喜欢的音乐”；网易云没给名字时写“未命名歌单”（#78），
+ * 只在显示时换，数据里仍是 null。不在曲库里的歌单、搜索结果没有 kind。
+ */
+export const playlistName = (playlist: { name: string | null, kind?: Playlist['kind'] | null }): string => playlist.kind === 'liked'
+  ? '我喜欢的音乐'
+  : playlist.name ?? '未命名歌单'
+
 /** 网易云图片（coverUrl、头像）的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */
 export const thumbnailUrl = (url: string, pixels: number): string => `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
 

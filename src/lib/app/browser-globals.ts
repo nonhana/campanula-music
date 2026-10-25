@@ -16,6 +16,7 @@ const BROWSER_GLOBALS_BY_CAPABILITY = {
   images: ['createImageBitmap', 'document'],
   uploadCoverImage: ['fetch'],
   download: ['fetch'],
+  storage: ['navigator'],
   objectUrl: ['URL'],
   revokeObjectUrl: ['URL'],
   pickFolder: ['showDirectoryPicker'],

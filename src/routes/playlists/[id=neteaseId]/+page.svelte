@@ -3,16 +3,17 @@
   DESIGN.md Layout），不在曲库里的和专辑页一样是一栏；手机是返回栏 + 居中封面头部 + 简介 + 歌单内搜索 + 歌曲行。
   头部交给 DetailHeader（#75），左栏用 PlaylistTile 的 nav 画法。页面只读 App 给的答案（state.library.playlistPage）：
   打开时还没同步全就由 App 用前台请求拉，不等后台同步；不在曲库里的不存进本机，每次打开都联网取。
-  动作：收藏开关（不在曲库里的和收藏的歌单有）、自建歌单的“添加歌曲”和 •••（#33）；我喜欢的音乐都没有。
+  动作：收藏开关（不在曲库里的和收藏的歌单有）、自建歌单的“添加歌曲”和 •••（#33）、曲库里的歌单和专辑的“下载”（#39）；我喜欢的音乐只有下载。
   返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot，跟着浏览历史走）。
 -->
 <script lang='ts'>
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import type { LucideIcon } from '@lucide/svelte'
-  import { Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
+  import { CircleArrowDown, Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
 
   import type { PlaylistUnavailable } from '#lib/api/library.js'
+  import { playlistName } from '#lib/api/library.js'
   import type { LibraryState } from '#lib/app/library.js'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
@@ -22,7 +23,6 @@
   import { playlistHeader } from '#lib/components/library/view.js'
   import { anchorBelow } from '#lib/components/menu/menu-anchor.js'
   import { getOverlays } from '#lib/components/overlay/overlay-context.js'
-  import { playlistName } from '#lib/components/playlist/playlist-text.js'
   import { getAppView } from '#lib/components/shared/app-context.svelte.js'
   import { failureText } from '#lib/components/shared/failure.js'
   import { desktopLayout } from '#lib/components/shared/layout.js'
@@ -142,6 +142,9 @@
   <PlayAllButton songs={shown?.kind === 'songs'
     ? shown.songs
     : null} source={{ kind: 'playlist', id }} />
+  {#if page?.inLibrary === true && shown?.kind === 'songs' && shown.songs.length > 0}
+    <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online} onclick={() => void view.app.downloadPlaylist(id)}>下载</Button>
+  {/if}
   {#if own}
     <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
   {/if}

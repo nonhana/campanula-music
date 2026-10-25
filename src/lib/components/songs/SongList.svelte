@@ -66,6 +66,8 @@
     contentClass?: ClassValue
     /** 列表内容的位置：拖动排序量宽高、退出多选接回焦点用它 */
     host?: HTMLElement
+    /** 列表上方的东西挪了位置（已下载页的“正在下载”）：变了就重新量一次虚拟列表 */
+    remeasure?: unknown
   }
 
   let {
@@ -93,6 +95,7 @@
     label = '歌曲',
     contentClass,
     host = $bindable(),
+    remeasure,
   }: Props = $props()
 
   const revealContent = $derived(wantedReveal ?? !bare)
@@ -203,6 +206,7 @@
           animatePlace={drag?.animatePlace}
           hidden={drag?.hidden}
           row={listRow}
+          {remeasure}
         />
       </div>
     {:else}

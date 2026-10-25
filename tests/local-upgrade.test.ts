@@ -48,7 +48,7 @@ const downloadedSong: SongIn9 = {
 }
 
 describe('本机数据库升级', () => {
-  it('v9 → v10：不用重新登录，曲库、播放队列和进度、设置、下载仍在；歌曲信息重新取（带上第几首等），旧的下载和播放队列里的歌补上“网易云没给”', async () => {
+  it('v9 → v11：不用重新登录，曲库、播放队列和进度、设置、下载仍在；歌曲信息重新取（带上第几首等），旧的下载和播放队列里的歌补上“网易云没给”和“单独下载”来源', async () => {
     // 由真服务端签发登录 Cookie，再交给装着旧版数据库的设备；不手造密文。
     const signedIn = world.device()
     const login = await signInAtHearts(signedIn)
@@ -168,6 +168,10 @@ describe('本机数据库升级', () => {
         ...NOT_GIVEN,
       },
     ])
+    // #39 以前下载的都是单独下载的：来源补上“单独”，升级不重写音频
+    expect(app.state.downloads.sourcesOf(2662577181)).toEqual([
+      { kind: 'single' },
+    ])
     expect(device.requests.some(request => request.path.includes('/login/'))).toBe(false)
 
     // v10 使存着的歌曲信息失效：按网易云的版本与曲目重新取，带上第几首、碟号这些
@@ -213,7 +217,7 @@ describe('本机数据库升级', () => {
     expect(reopened.app.state.player.position).toBe(42)
   })
 
-  it('v4 → 10：歌单列表补上后加的字段；v5 删掉旧的歌曲信息和专辑页、每张歌单记成歌曲信息还没取全，下次同步重取；播放队列、设置、打卡、下载的存储区建好', async () => {
+  it('v4 → 11：歌单列表补上后加的字段；v5 删掉旧的歌曲信息和专辑页、每张歌单记成歌曲信息还没取全，下次同步重取；播放队列、设置、打卡、下载的存储区建好', async () => {
     // v4 的存储区、键和内容格式取自 b00949d:src/lib/app/local.ts：歌单还没有播放次数、简介、标签（v8），歌曲还没有能不能放（v5），
     // 播放队列和设置（v6）、打卡（v7）、下载（v9）的存储区都还没有。
     const signedIn = world.device()

@@ -18,9 +18,10 @@ export const NONE: Checked = {
 /** 在哪种列表里多选：哪一种歌单，或已下载页 */
 export type SelectionKind = Playlist['kind'] | 'downloads'
 
-/** 对勾选的歌能做什么：加入歌单是歌单里都有；移除只有自建；排序是自建和我喜欢的音乐；导出、删除只在已下载页（#79） */
+/** 对勾选的歌能做什么：加入歌单是歌单里都有；下载是歌单、专辑和多选里都有；移除只有自建；排序是自建和我喜欢的音乐；导出、删除只在已下载页（#79） */
 export interface SelectionCapabilities {
   readonly add: boolean
+  readonly download: boolean
   readonly remove: boolean
   readonly sort: boolean
   readonly export: boolean
@@ -30,6 +31,7 @@ export interface SelectionCapabilities {
 /** exportable：浏览器能选文件夹，不能时没有导出（ADR-0014） */
 export const capabilitiesOf = (kind: SelectionKind | null, exportable: boolean): SelectionCapabilities => ({
   add: kind !== 'downloads',
+  download: kind !== null && kind !== 'downloads',
   remove: kind === 'own',
   sort: kind !== null && kind !== 'downloads' && canSortPlaylist(kind),
   export: kind === 'downloads' && exportable,

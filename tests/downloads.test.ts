@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Device } from './harness/device'
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
-import { ALBUM_MISSING, checkIns, DOWNLOAD_COVER_BYTES as COVER_BYTES, current, likedSong, listener, DOWNLOAD_LYRICS as LYRICS, PLAYLISTS_WITH_POEMS, playUrlRequests, serveDownload as serve, storedCheckIns, VILLAGE } from './harness/listener'
+import { ALBUM_MISSING, checkIns, COLLECTED_ALBUMS, COLLECTED_ARTISTS, DOWNLOAD_COVER_BYTES as COVER_BYTES, current, HEARTS, LIKED_TRACK_IDS, likedPage, likedSong, listener, DOWNLOAD_LYRICS as LYRICS, PLAYLISTS_WITH_POEMS, playUrlRequests, serveDownload as serve, storedCheckIns, VILLAGE } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -39,6 +39,20 @@ const serveLoser = (device: Device): void => {
 }
 
 const storedDownloads = async (device: Device): Promise<Record<string, any>[]> => ((await device.stored()).downloads ?? []).map(([, value]) => value as Record<string, any>)
+
+/** 下载地址的录制里音频地址和字节数 */
+const audioOf = async (fixture: string): Promise<{ url: string, size: number }> => {
+  const { data } = (await loadFixture(fixture)).outcome.response.body as { data: { url: string, size: number } }
+  return {
+    url: data.url.replace(/^http:/, 'https:'),
+    size: data.size,
+  }
+}
+
+/** 只挑音频地址的下载记录（封面也是同一个替身里的请求） */
+const audioStarts = (device: Device, url: string): number[] => device.files.requests.flatMap((each, index) => each === url
+  ? [device.files.starts[index]!]
+  : [])
 
 const downloadUrlRequests = (device: Device): string[] => device.requests.flatMap(request => request.path.includes('/download-url')
   ? [request.path]
@@ -138,7 +152,7 @@ describe('下载一首', () => {
     await world.netease.reply(LYRICS)
     await world.netease.reply(ALBUM_MISSING)
     expect(app.download(likedSong(app, LOSER.id))).toBeNull()
-    expect(app.download(likedSong(app, LOSER.id))).toBe('downloading')
+    expect(app.download(likedSong(app, LOSER.id))).toBe('queued')
     await world.settle()
     expect(app.download(likedSong(app, LOSER.id))).toBe('downloaded')
     await world.settle()
@@ -148,7 +162,7 @@ describe('下载一首', () => {
     expect(app.state.downloads.tasks.size).toBe(0)
   })
 
-  it('音频传到一半断开：标成没下成、说明原因，什么都不存；重试从头再下一遍', async () => {
+  it('音频传到一半断开：标成没下成、说明原因，什么都不存；重试从断点接着下，不从头下', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)
     const song = likedSong(app, LOSER.id)
@@ -160,9 +174,10 @@ describe('下载一首', () => {
 
     app.download(song)
     await world.settle()
-    expect(app.state.downloads.tasks.get(LOSER.id)).toEqual({
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({
       status: 'failed',
-      song,
+      received: Math.floor(LOSER.bytes / 2),
+      total: LOSER.bytes,
       failure: { kind: 'interrupted' },
     })
     expect(app.state.library?.notice).toEqual({
@@ -179,6 +194,12 @@ describe('下载一首', () => {
     expect(app.download(song)).toBeNull()
     await world.settle()
     expect(device.files.requests.filter(url => url === LOSER.audio)).toHaveLength(2)
+    expect(device.files.requests.flatMap((url, index) => url === LOSER.audio
+      ? [device.files.starts[index]!]
+      : [])).toEqual([
+      0,
+      Math.floor(LOSER.bytes / 2),
+    ])
     expect(app.state.downloads.tasks.size).toBe(0)
     expect(app.state.downloads.songs).toEqual([song])
     expect(await storedDownloads(device)).toHaveLength(1)
@@ -214,7 +235,7 @@ describe('下载一首', () => {
     expect(app.state.library?.notice).toBeNull()
   })
 
-  it('网易云回得慢、下载地址还没回来时退出登录：回来的“需要登录”不算登录失效，App 是退出了；这首标成没下成', async () => {
+  it('网易云回得慢、下载地址还没回来时退出登录：回来的“需要登录”不算登录失效，App 是退出了；这首留在队列里等下一次登录', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)
     const song = likedSong(app, LOSER.id)
@@ -232,9 +253,11 @@ describe('下载一首', () => {
     slow.release()
     await world.settle()
     expect(app.state.session.status).toBe('signedOut')
+    expect(app.state.downloads.songs).toEqual([])
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({ status: 'queued' })
   })
 
-  it('后台通道停着时（登录失效）要下载地址：回“需要登录”，这首标成没下成；登录失效本身照常', async () => {
+  it('后台通道停着时（登录失效）要下载地址：登录失效照常，这首留在队列里，重新登录后再接着下', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)
     const song = likedSong(app, LOSER.id)
@@ -243,12 +266,10 @@ describe('下载一首', () => {
     app.download(song)
     await world.settle()
     expect(app.state.session.status).toBe('loginExpired')
+    expect(app.state.downloads.songs).toEqual([])
     expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({
-      status: 'failed',
-      failure: {
-        kind: 'request',
-        failure: { kind: 'needsLogin' },
-      },
+      status: 'queued',
+      received: 0,
     })
   })
 
@@ -714,5 +735,374 @@ describe('听歌打卡', () => {
       },
     ])
     expect(await storedCheckIns(device)).toEqual([])
+  })
+})
+
+describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
+  it('整张歌单：跳过已下载、试听、无版权并逐项说明；排队、下载中、完成各自记着；每首记下从哪张歌单、专辑来的', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const first = await download(device, app, FIRST)
+    const second = likedSong(app, SECOND.id)
+    const third = likedSong(app, THIRD.id)
+    const trial = likedSong(app, TRIAL)
+    const noCopyright = likedSong(app, NO_COPYRIGHT)
+    await serve(device, second, SECOND.downloadUrl)
+    await serve(device, third, THIRD.downloadUrl)
+    const secondAudio = await audioOf(SECOND.downloadUrl)
+    const transfer = held()
+    device.files.next(secondAudio.url, { until: transfer.until })
+    await world.netease.reply(SECOND.downloadUrl)
+    await world.netease.reply(THIRD.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    await world.netease.reply(ALBUM_MISSING)
+
+    const source = { kind: 'playlist', id: LIKED.id, name: '我喜欢的音乐' } as const
+    const outcome = await app.downloadSongs([
+      first,
+      second,
+      third,
+      trial,
+      noCopyright,
+    ], source)
+    expect(outcome).toEqual({
+      queued: 2,
+      downloaded: 1,
+      trial: 1,
+      noCopyright: 1,
+    })
+    await world.settle()
+    expect(app.state.library?.notice).toEqual({
+      kind: 'downloadsAdded',
+      queued: 2,
+      downloaded: 1,
+      trial: 1,
+      noCopyright: 1,
+    })
+    expect([
+      ...app.state.downloads.tasks.keys(),
+    ]).toEqual([SECOND.id, THIRD.id])
+    expect(app.state.downloads.tasks.get(SECOND.id)).toMatchObject({
+      status: 'downloading',
+      received: Math.floor(secondAudio.size / 2),
+      total: secondAudio.size,
+      sources: [source],
+    })
+    expect(app.state.downloads.tasks.get(THIRD.id)).toEqual({
+      status: 'queued',
+      song: third,
+      sources: [source],
+      received: 0,
+      total: null,
+    })
+
+    transfer.release()
+    await world.settle()
+    expect(app.state.downloads.tasks.size).toBe(0)
+    expect(app.state.downloads.has(SECOND.id)).toBe(true)
+    expect(app.state.downloads.has(THIRD.id)).toBe(true)
+
+    const stored = await storedDownloads(device)
+    const sourcesOf = (songId: number) => stored.find(record => record.song.id === songId)!.sources
+    expect(sourcesOf(FIRST.id)).toEqual([
+      { kind: 'single' },
+      source,
+    ])
+    expect(sourcesOf(SECOND.id)).toEqual([source])
+    expect(sourcesOf(THIRD.id)).toEqual([source])
+
+    // 已经下载过的再从专辑点下载：只补来源，不再下一次（规则⑦）
+    const album = { kind: 'album', id: VILLAGE.id, name: 'Keep The Village Alive' } as const
+    expect(await app.downloadSongs([second], album)).toEqual({
+      queued: 0,
+      downloaded: 1,
+      trial: 0,
+      noCopyright: 0,
+    })
+    expect((await storedDownloads(device)).find(record => record.song.id === SECOND.id)!.sources).toEqual([source, album])
+  })
+
+  it('整张专辑：专辑页的曲目全部进队列，每首记下专辑来源；空间不够就整队暂停，一首都没开始', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    await world.netease.reply(VILLAGE.page)
+    await app.openAlbum(VILLAGE.id)
+    await world.settle()
+    const opened = app.state.library?.albumPage(VILLAGE.id)
+    if (opened?.status !== 'shown')
+      throw new Error(`专辑页没打开：${JSON.stringify(opened)}`)
+    const album = {
+      kind: 'album',
+      id: VILLAGE.id,
+      name: opened.content.album.name,
+    } as const
+    // 一点空间都没有：整队暂停，连下载地址都不取（规则⑪）
+    device.storage.quota = 0
+
+    const outcome = await app.downloadAlbum(VILLAGE.id)
+    expect(outcome).toMatchObject({
+      queued: opened.content.songs.filter(song => song.availability === 'full').length,
+    })
+    await world.settle()
+    expect(app.state.downloads.paused).toBe('storageFull')
+    expect(app.state.downloads.tasks.size).toBe(opened.content.songs.filter(song => song.availability === 'full').length)
+    expect([
+      ...app.state.downloads.tasks.values(),
+    ].every(task => JSON.stringify(task.sources) === JSON.stringify([album]))).toBe(true)
+    expect(app.state.library?.notice).toEqual({ kind: 'downloadsPaused' })
+    expect(app.state.library?.noticeActions).toContain('resume')
+    expect(downloadUrlRequests(device)).toEqual([])
+  })
+
+  it('断网中断后联网自动重新排队，从断点接着下，不从头下', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    serveLoser(device)
+    const transfer = held()
+    device.files.next(LOSER.audio, { until: transfer.until, cut: true })
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(song)
+    await world.settle()
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({ status: 'downloading' })
+
+    device.setOnline(false)
+    transfer.release()
+    await world.settle()
+    expect(app.state.online).toBe(false)
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({
+      status: 'queued',
+      received: Math.floor(LOSER.bytes / 2),
+      total: LOSER.bytes,
+    })
+    expect(app.state.downloads.tasks.get(LOSER.id)?.status).not.toBe('failed')
+    expect(await storedDownloads(device)).toEqual([])
+
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    device.setOnline(true)
+    await world.settle()
+
+    expect(audioStarts(device, LOSER.audio)).toEqual([
+      0,
+      Math.floor(LOSER.bytes / 2),
+    ])
+    expect(app.state.downloads.tasks.size).toBe(0)
+    const [stored] = await storedDownloads(device)
+    expect(stored.audio).toMatchObject({ size: LOSER.bytes, type: 'audio/mpeg' })
+    expect(app.state.downloads.songs).toEqual([song])
+  })
+
+  it('服务器不支持分段请求、回了整份文件：之前收到的作废，从头收一遍，文件不重复也不缺', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    serveLoser(device)
+    const transfer = held()
+    device.files.next(LOSER.audio, { until: transfer.until, cut: true })
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(song)
+    await world.settle()
+    device.setOnline(false)
+    transfer.release()
+    await world.settle()
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({
+      status: 'queued',
+      received: Math.floor(LOSER.bytes / 2),
+    })
+
+    // 这次音频服务器不认 Range：回整份文件，App 把断点丢掉、从头收
+    device.files.put(LOSER.audio, {
+      bytes: LOSER.bytes,
+      type: 'audio/mpeg',
+      ranges: false,
+    })
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    device.setOnline(true)
+    await world.settle()
+
+    expect(audioStarts(device, LOSER.audio)).toEqual([
+      0,
+      Math.floor(LOSER.bytes / 2),
+    ])
+    const [stored] = await storedDownloads(device)
+    expect(stored.audio).toMatchObject({ size: LOSER.bytes, type: 'audio/mpeg' })
+    expect(app.state.downloads.songs).toEqual([song])
+  })
+
+  it('存储空间不够：整队暂停、只提示一次，腾出空间点“继续下载”后从断点接着下', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    serveLoser(device)
+    const transfer = held()
+    device.files.next(LOSER.audio, { until: transfer.until, cut: true })
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(song)
+    await world.settle()
+    device.setOnline(false)
+    transfer.release()
+    await world.settle()
+    expect(app.state.downloads.tasks.get(LOSER.id)).toMatchObject({
+      status: 'queued',
+      received: Math.floor(LOSER.bytes / 2),
+    })
+
+    // 联网了，但一点空间都没有：先暂停整队，不要下载地址、不要开始传
+    device.storage.quota = 0
+    const requested = downloadUrlRequests(device).length
+    device.setOnline(true)
+    await world.settle()
+    expect(app.state.downloads.paused).toBe('storageFull')
+    expect(app.state.library?.notice).toEqual({ kind: 'downloadsPaused' })
+    expect(app.state.library?.noticeActions).toContain('resume')
+    expect(downloadUrlRequests(device)).toHaveLength(requested)
+
+    // 腾出空间，点“继续下载”：用同一条下载地址从断点接着下
+    device.storage.quota = Number.MAX_SAFE_INTEGER
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    app.resumeDownloads()
+    await world.settle()
+    expect(app.state.downloads.paused).toBeNull()
+    expect(app.state.library?.notice).toBeNull()
+    expect(audioStarts(device, LOSER.audio)).toEqual([
+      0,
+      Math.floor(LOSER.bytes / 2),
+    ])
+    expect(app.state.downloads.songs).toEqual([song])
+  })
+
+  it('退出登录时正在下的那首继续下完；排队中的留着，新账号登录后才去取地址，拿不到完整音频的标失败并说明原因（规则⑧）', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const first = likedSong(app, FIRST.id)
+    const second = likedSong(app, SECOND.id)
+    const third = likedSong(app, THIRD.id)
+    for (const recorded of [FIRST, SECOND, THIRD])
+      await serve(device, likedSong(app, recorded.id), recorded.downloadUrl)
+    const firstAudio = await audioOf(FIRST.downloadUrl)
+    const transfer = held()
+    device.files.next(firstAudio.url, { until: transfer.until })
+    await world.netease.reply(FIRST.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(first)
+    app.download(second)
+    app.download(third)
+    await world.settle()
+    expect(app.state.downloads.tasks.get(FIRST.id)).toMatchObject({ status: 'downloading' })
+    expect(app.state.downloads.tasks.get(SECOND.id)).toMatchObject({ status: 'queued' })
+    expect(app.state.downloads.tasks.get(THIRD.id)).toMatchObject({ status: 'queued' })
+    const requested = downloadUrlRequests(device)
+
+    await world.netease.reply('login/logout.json')
+    await app.logout()
+    await world.settle()
+    expect(app.state.session.status).toBe('signedOut')
+    expect(app.state.downloads.tasks.size).toBe(3)
+    expect(downloadUrlRequests(device)).toEqual(requested)
+
+    // 地址已经拿到：退出后照样下完
+    transfer.release()
+    await world.settle()
+    expect(app.state.downloads.has(FIRST.id)).toBe(true)
+    expect(app.state.downloads.tasks.has(SECOND.id)).toBe(true)
+    expect(app.state.downloads.tasks.has(THIRD.id)).toBe(true)
+
+    // 换另一个账号：排队中的用新登录去取地址；第三首这个账号下不了完整的
+    await replyLibrary({
+      through: 'hearts',
+      until: never(),
+    })
+    await world.netease.reply(SECOND.downloadUrl)
+    await world.netease.reply('playback/downloads/005-song_download_url_v1.no-full-audio.constructed.json')
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    await world.netease.reply(ALBUM_MISSING)
+    await signIn(world, app, { another: true })
+    await world.settle()
+
+    expect(app.state.session).toMatchObject({ status: 'signedIn' })
+    expect(app.state.downloads.has(SECOND.id)).toBe(true)
+    expect(app.state.downloads.tasks.get(THIRD.id)).toMatchObject({
+      status: 'failed',
+      failure: { kind: 'unavailable' },
+      sources: [
+        { kind: 'single' },
+      ],
+    })
+    const loginAt = device.requests.findLastIndex(request => request.path === '/api/login/sms')
+    const secondUrlAt = device.requests.findIndex(request => request.path.includes(`/api/songs/${SECOND.id}/download-url`))
+    expect(secondUrlAt).toBeGreaterThan(loginAt)
+  })
+
+  it('歌单还没同步完就下载整张：先把已经同步的放进队列，同步完把后面的补上（规则⑫）', async () => {
+    const device = world.device()
+    await world.netease.reply(HEARTS)
+    await world.netease.reply(PLAYLISTS_WITH_POEMS)
+    await world.netease.reply(COLLECTED_ALBUMS)
+    await world.netease.reply(COLLECTED_ARTISTS)
+    await world.netease.reply(LIKED_TRACK_IDS)
+    const page2 = held()
+    for (const page of [1, 2, 3, 4, 5]) {
+      await world.netease.reply(likedPage(page), page === 2
+        ? { until: page2.until }
+        : {})
+    }
+    const tab = await device.open()
+    await signIn(world, tab.app)
+    await world.settle()
+    const { app } = tab
+    expect(app.state.library?.liked).toMatchObject({ complete: false })
+    const synced = app.state.library!.liked!.songs
+    expect(synced.length).toBeGreaterThan(0)
+    expect(synced.length).toBeLessThan(4984)
+
+    // 一点空间都没有：队列一进来就暂停，不会有任何下载请求
+    device.storage.quota = 0
+    await app.downloadPlaylist(900000001)
+    await world.settle()
+    const fullSynced = synced.filter(song => song.availability === 'full').length
+    expect(app.state.downloads.paused).toBe('storageFull')
+    expect(app.state.downloads.tasks.size).toBe(fullSynced)
+    expect([
+      ...app.state.downloads.tasks.values(),
+    ][0]?.sources).toEqual([
+      {
+        kind: 'playlist',
+        id: 900000001,
+        name: '我喜欢的音乐',
+      },
+    ])
+
+    // 同步完：后面的歌继续补进同一个队列，暂停着的也照样补
+    const queuedBefore = app.state.downloads.tasks.size
+    page2.release()
+    await world.settle()
+    expect(app.state.library?.liked).toMatchObject({ complete: true })
+    const all = app.state.library!.liked!.songs
+    expect(all.length).toBeGreaterThan(synced.length)
+    expect(app.state.downloads.tasks.size).toBe(all.filter(song => song.availability === 'full').length)
+    expect(app.state.downloads.tasks.size).toBeGreaterThan(queuedBefore)
+    expect(app.state.downloads.paused).toBe('storageFull')
+    expect(device.requests.filter(request => request.path.includes('/download-url'))).toEqual([])
   })
 })

@@ -2,7 +2,7 @@ import type { Song } from '#lib/api/library.js'
 import { creditLine } from '#lib/api/library.js'
 
 // 界面上通用的文字：语言标记、歌手一行、首数 / 播放次数 / 时长。歌单页专属的写法在 library/view.ts，
-// 歌单名字在 playlist/playlist-text.ts，播放来源名在 player/view.ts，现在这首歌在 player/now.ts
+// 歌单名字在 api/library.ts（playlistName），播放来源名在 player/view.ts，现在这首歌在 player/now.ts
 
 const KANA = /[\u3040-\u30FF\u31F0-\u31FF\uFF66-\uFF9F]/
 /** 用来粗略认出繁体中文（视觉原型 data.ts 的做法） */

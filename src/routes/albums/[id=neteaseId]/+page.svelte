@@ -1,9 +1,10 @@
 <!--
   专辑页：桌面是 200px 封面头部（名字、“歌手 · 年份 · 几首”）、简介、白色面板里带曲序的歌曲行；手机是返回栏 + 居中封面头部 + 简介 + 歌曲行。
-  头部交给 DetailHeader（#75）。告诉 App 听众在看这一张专辑（viewing），什么时候拉由 App 决定。滚动位置随浏览历史恢复。
+  头部交给 DetailHeader（#75）。告诉 App 听众在看这一张专辑（viewing），什么时候拉由 App 决定；播放全部旁边的“下载”把整张专辑排进下载队列（#39）。滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
+  import { CircleArrowDown } from '@lucide/svelte'
 
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
@@ -17,6 +18,7 @@
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import SongList from '#lib/components/songs/SongList.svelte'
   import type { SongListView } from '#lib/components/songs/view.js'
+  import Button from '#lib/components/ui/Button.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   import type { PageProps } from './$types'
@@ -82,6 +84,7 @@
       {#snippet actions()}
         {#if album}
           <PlayAllButton songs={content?.songs ?? null} source={{ kind: 'album', id }} />
+          <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online || !content || content.songs.length === 0} onclick={() => void view.app.downloadAlbum(id)}>下载</Button>
           <CollectButton target={{ kind: 'album', id }} name={album.name} look='pill' />
         {/if}
       {/snippet}

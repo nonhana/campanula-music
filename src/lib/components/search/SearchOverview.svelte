@@ -8,7 +8,7 @@
   import { SearchX } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
 
-  import { creditLine } from '#lib/api/library.js'
+  import { creditLine, playlistName } from '#lib/api/library.js'
   import type { SearchedItems, SearchedPlaylist, SearchKind } from '#lib/api/search.js'
   import type { SearchList } from '#lib/app/search.js'
 
@@ -16,7 +16,6 @@
   import ArtistTile from '../library/ArtistTile.svelte'
   import PlaylistTile from '../library/PlaylistTile.svelte'
   import TileGrid from '../library/TileGrid.svelte'
-  import { playlistName } from '../playlist/playlist-text'
   import { getAppView } from '../shared/app-context.svelte'
   import { reveal } from '../shared/motion'
   import { formatSongCount, yearOf } from '../shared/text'

@@ -6,7 +6,7 @@ import type { App } from '#lib/app/app.js'
 import { createApp } from '#lib/app/app.js'
 import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } from '#lib/app/browser.js'
 
-import { FakeAudio, FakeBroadcast, FakeFiles, FakeFolders, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeWatchman, MediaTasks } from './browser'
+import { FakeAudio, FakeBroadcast, FakeFiles, FakeFolders, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
 
 export interface SentRequest {
   method: string
@@ -65,6 +65,8 @@ export interface Device {
   images: FakeImages
   /** 网易云的音频服务器、图片服务器：测试放上文件，App 下载时直连这里（#38） */
   files: FakeFiles
+  /** 这台设备给这个站点多少存储空间（#39）：改 usage、quota 模拟空间不够 */
+  storage: FakeStorage
   /** 本机文件的地址（blob:）：按地址找回是哪个文件 */
   objectUrls: FakeObjectUrls
   /** 导出时听众选的文件夹（#79）：测试排好下一次在选择器里选哪个文件夹或取消；打开标签页前把 supported 设成 false，就是不支持选文件夹的浏览器 */
@@ -118,6 +120,7 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number):
   const files = new FakeFiles(network)
   const objectUrls = new FakeObjectUrls()
   const folders = new FakeFolders()
+  const storage = new FakeStorage()
 
   const track = (work: Promise<unknown>): void => {
     inFlight.add(work)
@@ -245,11 +248,12 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number):
           track(work)
           return work
         },
-        download(url, onProgress) {
-          const work = files.download(url, onProgress)
+        download(url, onChunk, options) {
+          const work = files.download(url, onChunk, options)
           track(work)
           return work
         },
+        storage,
         objectUrl: blob => objectUrls.create(blob),
         revokeObjectUrl: url => objectUrls.revoke(url),
         pickFolder: folders.supported
@@ -333,6 +337,7 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number):
     },
     setOnline: online => network.set(online),
     files,
+    storage,
     objectUrls,
     folders,
     images,

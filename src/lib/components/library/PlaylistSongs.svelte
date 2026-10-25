@@ -10,7 +10,7 @@
   import { untrack } from 'svelte'
 
   import type { Song } from '#lib/api/library.js'
-  import { songTitle } from '#lib/api/library.js'
+  import { playlistName, songTitle } from '#lib/api/library.js'
   import type { PlaySource } from '#lib/api/playback.js'
   import type { LibraryState } from '#lib/app/library.js'
 
@@ -92,6 +92,14 @@
     songs: () => allSongs,
     visible: () => songs.map(song => song.id),
     kind: () => kind,
+    downloadSource: () => ({
+      kind: 'playlist',
+      id: playlistId,
+      name: playlistName({
+        name: page.info?.name ?? null,
+        kind,
+      }),
+    }),
     present: () => shown.kind === 'songs',
     focusFirst: () => listHost?.querySelector<HTMLElement>('[data-play-target]')?.focus({ preventScroll: true }),
   }

@@ -2,6 +2,7 @@ import { tick, untrack } from 'svelte'
 
 import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+import type { DownloadSource } from '#lib/app/downloads.js'
 
 import type { AddToPlaylistRequest, DeleteDownloadsRequest, DialogRequest, ExportRequest, MenuAnchor } from '../overlay/overlay-requests'
 import type { OverlayLayer, OverlayResult } from '../overlay/overlay-stack'
@@ -20,6 +21,8 @@ export interface SelectionSource {
   /** Shift 连选和全选只看这些 */
   readonly visible: () => readonly number[]
   readonly kind: () => SelectionKind | null
+  /** 下载勾选的歌时记的来源（#39）；已下载页没有下载，给 null */
+  readonly downloadSource: () => DownloadSource | null
   /** 加载中、出错、空态、换列表：不在了就退出多选 */
   readonly present: () => boolean
   readonly focusFirst: () => void
@@ -181,6 +184,15 @@ export class MultiSelect {
     const result = await this.leave()
     if (result === 'committed')
       await this.app.addSongsToPlaylist(playlistId, songs)
+  }
+
+  /** 整批下载勾选的歌（#39）：来源记成这一页的歌单，然后退出多选 */
+  downloadPicked(): void {
+    const source = this.source?.downloadSource() ?? null
+    if (!source || this.picked.length === 0 || !this.capabilities.download || !this.app.state.online || this.app.state.session.status !== 'signedIn')
+      return
+    void this.app.downloadSongs(this.picked, source)
+    void this.leave()
   }
 
   /** 先在本地拿掉，提示条留 5 秒撤销；然后退出多选 */

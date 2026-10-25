@@ -1,6 +1,7 @@
 <!--
   “已下载”页（#38，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前；登录与否都能进。
   头部交给 DetailHeader（#75：拼贴图、标题、首数、登录提示、播放全部、多选、搜索都在模块里）；列表本身在 songs/SongList。
+  头部下面是 DownloadsTasks（#39）：“正在下载”的排队、进度、失败和重试，空间不够时的整队暂停和“继续下载”。
   点一首就用整个已下载替换播放队列，播放来源是“已下载”；行的“更多”菜单里有导出、删除下载。搜索词和滚动位置随浏览历史恢复。
   多选（#79）只有导出和删除，登录与否都能用：入口桌面在头部，手机在首数那一行（和歌单页一样），也能 ⌘/Ctrl/Shift 点行、长按行进入。
 -->
@@ -23,6 +24,7 @@
   import Cover from '../ui/Cover.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
+  import DownloadsTasks from './DownloadsTasks.svelte'
 
   let { query = $bindable() }: { query: string } = $props()
 
@@ -31,6 +33,8 @@
   const view = getAppView()
   const { multiSelect: selection } = getOverlays()
   const all = $derived(view.state.downloads.songs)
+  /** 正在下载那一块每少一首，下面的列表就往上挪一行：让它重新量可见范围 */
+  const taskCount = $derived(view.state.downloads.tasks.size)
   const signedIn = $derived(view.state.session.status === 'signedIn')
   const phone = $derived(!desktopLayout.current)
   const term = $derived(query.trim())
@@ -78,6 +82,7 @@
     songs: () => all ?? [],
     visible: () => (songs ?? []).map(song => song.id),
     kind: () => 'downloads',
+    downloadSource: () => null,
     present: () => all !== null && all.length > 0,
     focusFirst: () => listHost?.querySelector<HTMLElement>('[data-play-target]')?.focus({ preventScroll: true }),
   }
@@ -179,6 +184,8 @@
   {/snippet}
 </DetailHeader>
 
+<DownloadsTasks />
+
 {#snippet countAction()}
   {#if !selection.mode && all && all.length > 0}
     <span class='contents' bind:this={phoneEntry}>
@@ -207,5 +214,6 @@
       : undefined}
     selection={selectionProps}
     bind:host={listHost}
+    remeasure={taskCount}
   />
 </div>

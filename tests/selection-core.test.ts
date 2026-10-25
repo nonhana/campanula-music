@@ -80,9 +80,10 @@ describe('勾选规则', () => {
 })
 
 describe('列表种类决定能做什么', () => {
-  it('歌单里都能加入歌单；自建歌单能移除和排序，我喜欢的音乐只能排序，收藏的和不在曲库里的都不能；不导出、不删除下载', () => {
+  it('歌单里都能加入歌单、下载；自建歌单能移除和排序，我喜欢的音乐只能排序，收藏的和不在曲库里的都不能；不导出、不删除下载', () => {
     const playlist = {
       add: true,
+      download: true,
       remove: false,
       sort: false,
       export: false,
@@ -91,12 +92,13 @@ describe('列表种类决定能做什么', () => {
     expect(capabilitiesOf('own', true)).toEqual({ ...playlist, remove: true, sort: true })
     expect(capabilitiesOf('liked', true)).toEqual({ ...playlist, sort: true })
     expect(capabilitiesOf('collected', true)).toEqual(playlist)
-    expect(capabilitiesOf(null, true)).toEqual(playlist)
+    expect(capabilitiesOf(null, true)).toEqual({ ...playlist, download: false })
   })
 
   it('已下载页只有导出和删除（#79）；浏览器不能选文件夹时没有导出（ADR-0014）', () => {
     expect(capabilitiesOf('downloads', true)).toEqual({
       add: false,
+      download: false,
       remove: false,
       sort: false,
       export: true,
@@ -104,6 +106,7 @@ describe('列表种类决定能做什么', () => {
     })
     expect(capabilitiesOf('downloads', false)).toEqual({
       add: false,
+      download: false,
       remove: false,
       sort: false,
       export: false,
