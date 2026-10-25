@@ -1,11 +1,11 @@
 <!--
   详情页头（#75）：专辑、歌单、歌手、每日推荐、已下载共用这一份。
-  封面图可以是方（专辑、歌单）、圆（歌手）或自定义图（每日推荐、已下载）；标题、信息行、可选标签、动作和尾部插槽由调用方给。
+  封面图可以是方（专辑、歌单）、圆（歌手）或自定义图（每日推荐、已下载）；标题、信息行、可选标签和动作由调用方给。
   模块自己负责桌面 / 手机的布局断点、就绪前的骨架、淡入、手机返回栏的页名（pageHeading）和封面飞行终点。
   尺寸：桌面封面图 200px、手机 168px；封面飞行的缩略图取 FLIGHT_COVER_SIZE（ADR-0011）。
   手机三种排法：居中（专辑、歌单、歌手）、图在左标题在右（已下载）、图独占一行（每日推荐）。
   桌面动作：歌单、专辑、每日推荐、已下载贴底；歌手页头内容居中，动作跟在信息行下面（align='center'）。
-  动作和尾部插槽（歌单内搜索、已下载搜索）在桌面上同一行靠右；手机上已下载的搜索另起一行，歌单内搜索回列表上方。
+  页头只放动作，不放搜索：搜索跟着它过滤的列表走（歌单在 PlaylistSongs、已下载在 DownloadsPage），避免动作行越加越长时把搜索挤成孤立的一行（#39 UI 调整）。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -37,10 +37,6 @@
     tags?: readonly string[]
     actions?: Snippet
     note?: Snippet
-    /** 桌面和动作同一行靠右；手机另起一行（歌单内搜索、已下载搜索） */
-    trailing?: Snippet
-    /** 已下载的搜索；歌单内搜索只在桌面，手机上在列表上面 */
-    trailingPhone?: boolean
     /** 放封面飞行的终点（ADR-0011）；不给就不飞 */
     flight?: string
   }
@@ -57,8 +53,6 @@
     tags = [],
     actions,
     note,
-    trailing,
-    trailingPhone = false,
     flight,
   }: Props = $props()
 
@@ -126,14 +120,12 @@
           : 'mt-4',
       ]}>{@render actions()}</div>
     {/if}
-    {#if trailing && trailingPhone}<div class='mt-4'>{@render trailing()}</div>{/if}
   {:else}
-    <div class={align === 'center'
-      ? 'mt-6 flex items-center gap-2'
-      : 'mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-3 pt-4'}>
-      {#if actions}<div class='flex flex-wrap items-center gap-2'>{@render actions()}</div>{/if}
-      {#if trailing}<div class='ml-auto max-w-full'>{@render trailing()}</div>{/if}
-    </div>
+    {#if actions}
+      <div class={align === 'center'
+        ? 'mt-6 flex items-center gap-2'
+        : 'mt-auto flex flex-wrap items-center gap-2 pt-4'}>{@render actions()}</div>
+    {/if}
   {/if}
 {/snippet}
 
