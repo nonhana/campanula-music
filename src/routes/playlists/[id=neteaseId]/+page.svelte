@@ -4,6 +4,7 @@
   头部交给 DetailHeader（#75），左栏用 PlaylistTile 的 nav 画法。页面只读 App 给的答案（state.library.playlistPage）：
   打开时还没同步全就由 App 用前台请求拉，不等后台同步；不在曲库里的不存进本机，每次打开都联网取。
   动作：收藏开关（不在曲库里的和收藏的歌单有）、自建歌单的“添加歌曲”和 •••（#33）、曲库里的歌单和专辑的“下载”（#39）；我喜欢的音乐只有下载。
+  操作行分三档：播放（主）、下载 / 收藏（页面级次级）、添加歌曲 / 多选 / •••（管理类，图标簇）。歌单内搜索跟着列表走，在列表上方（#39 UI 调整）。
   返回这一页时，搜索词和滚动位置都回到原来的样子（snapshot，跟着浏览历史走）。
 -->
 <script lang='ts'>
@@ -33,9 +34,7 @@
   import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import Scrollbar from '#lib/components/ui/Scrollbar.svelte'
-  import SearchField from '#lib/components/ui/SearchField.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
-  import ToolButton from '#lib/components/ui/ToolButton.svelte'
 
   import type { PageProps } from './$types'
 
@@ -77,6 +76,8 @@
   const own = $derived(page?.can.edit ?? false)
   /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：桌面的入口写“多选 · 排序”（#36） */
   const sortableList = $derived(page?.can.sort ?? false)
+  /** 桌面的多选入口：手机在数量行，桌面放在操作行的图标簇里 */
+  const canMulti = $derived(desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !multiSelect.mode)
 
   /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上 */
   const openMenu = (event: MouseEvent) => {
@@ -145,32 +146,34 @@
   {#if page?.inLibrary === true && shown?.kind === 'songs' && shown.songs.length > 0}
     <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online} onclick={() => void view.app.downloadPlaylist(id)}>下载</Button>
   {/if}
-  {#if own}
-    <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
-  {/if}
-  {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !multiSelect.mode}
-    <span class='contents' bind:this={desktopEntry}>
-      <Button
-        variant='outline'
-        icon={ListChecks}
-        onclick={(event: MouseEvent) => multiSelect.enter({
-          from: event.currentTarget as HTMLElement,
-          focusFirst: true,
-          focusEntry: desktopEntryFocus,
-        })}
-      >{sortableList ? '多选 · 排序' : '多选'}</Button>
-    </span>
-  {/if}
   {#if page?.can.collect}
     <CollectButton target={{ kind: 'playlist', id }} {name} look='pill' />
   {/if}
-  {#if own}
-    <IconButton icon={Ellipsis} label='歌单操作：{name}' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />
+  {#if own || canMulti}
+    <!-- 管理类操作收进一组安静的工具图标：带字胶囊只留给播放、下载、收藏 -->
+    <span class='flex items-center gap-1 md:ml-1'>
+      {#if own}
+        <IconButton icon={ListPlus} label='添加歌曲' title='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
+      {/if}
+      {#if canMulti}
+        <span class='contents' bind:this={desktopEntry}>
+          <IconButton
+            icon={ListChecks}
+            label={sortableList ? '多选和排序' : '多选'}
+            title={sortableList ? '多选和排序' : '多选'}
+            onclick={(event: MouseEvent) => multiSelect.enter({
+              from: event.currentTarget as HTMLElement,
+              focusFirst: true,
+              focusEntry: desktopEntryFocus,
+            })}
+          />
+        </span>
+      {/if}
+      {#if own}
+        <IconButton icon={Ellipsis} label='歌单操作：{name}' title='歌单操作' aria-haspopup='menu' aria-expanded={playlistMenu.request?.playlistId === id} onclick={openMenu} />
+      {/if}
+    </span>
   {/if}
-{/snippet}
-
-{#snippet headerSearch()}
-  <SearchField label='在歌单里搜索' bind:value={query} class='max-w-full w-[280px]' disabled={shown?.kind !== 'songs'} />
 {/snippet}
 
 {#snippet mainColumn(library: LibraryState)}
@@ -183,7 +186,6 @@
   >
     {#snippet meta()}{@render headerMeta()}{/snippet}
     {#snippet actions()}{@render headerActions()}{/snippet}
-    {#snippet trailing()}{@render headerSearch()}{/snippet}
   </DetailHeader>
   <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
   {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} {phone} />{/key}</div>{/if}
