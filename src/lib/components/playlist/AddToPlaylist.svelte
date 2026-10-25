@@ -6,7 +6,7 @@
 <script lang='ts'>
   import { Plus } from '@lucide/svelte'
 
-  import { songTitle } from '#lib/api/library.js'
+  import { playlistName, songTitle } from '#lib/api/library.js'
   import type { AddTarget, AddTargetBlock } from '#lib/app/library.js'
 
   import type { MenuHeader, MenuItem } from '../menu/menu'
@@ -15,7 +15,6 @@
   import type { AddToPlaylistRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { artistLine, formatCount, formatSongCount, langOf } from '../shared/text'
-  import { playlistName } from './playlist-text'
 
   const { playlistEditor, playlistPicker, multiSelect } = getOverlays()
 

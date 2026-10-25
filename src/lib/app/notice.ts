@@ -9,7 +9,7 @@ import type { ChangeFailure } from './library'
 // 界面只照着画。重试用的数据就在载荷里；支持哪些动作由 noticeActions 算出来，“不能重试”就是没有重试动作。
 // 自动消失也在这里，走 App 的时钟：加入歌单成功 4 秒后自己走，换了一条就重新计时。
 
-export type NoticeAction = 'undo' | 'retry' | 'dismiss'
+export type NoticeAction = 'undo' | 'retry' | 'dismiss' | 'resume'
 
 /** 改曲库、下载后要告诉听众的事；下载失败也走这一条 */
 export type OperationNotice
@@ -46,10 +46,13 @@ export const noticeActions = (notice: OperationNotice): readonly NoticeAction[] 
     case 'playlistOrderFailed':
     case 'downloadFailed':
       return ['retry', 'dismiss']
+    case 'downloadsPaused':
+      return ['resume', 'dismiss']
     case 'notChanged':
     case 'playlistMissing':
     case 'added':
     case 'alreadyAdded':
+    case 'downloadsAdded':
     case 'recovered':
       return ['dismiss']
     default: {
@@ -82,7 +85,7 @@ export const createNotices = ({ clock, changed }: NoticesContext): Notices => {
     cancel()
     cancel = () => {}
     current = next
-    if (next?.kind === 'added' || next?.kind === 'alreadyAdded') {
+    if (next?.kind === 'added' || next?.kind === 'alreadyAdded' || next?.kind === 'downloadsAdded') {
       cancel = clock.after(AUTO_DISMISS_MS, () => {
         cancel = () => {}
         if (current !== next)

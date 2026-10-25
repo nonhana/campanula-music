@@ -2,6 +2,7 @@ import type { Account } from '#lib/api/account.js'
 import type { CoverCrop } from '#lib/api/cover.js'
 import { endpoints } from '#lib/api/endpoints.js'
 import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
+import { playlistName } from '#lib/api/library.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchedItems, SearchKind } from '#lib/api/search.js'
 
@@ -16,7 +17,7 @@ import type { CoverOutcome, CoverState } from './cover'
 import { createCover } from './cover'
 import type { DailyState } from './daily'
 import { createDaily } from './daily'
-import type { DownloadBlock, DownloadsState } from './downloads'
+import type { DownloadBatchOutcome, DownloadBlock, DownloadSource, DownloadsState, DownloadStartBlock } from './downloads'
 import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
 import type { ExportState } from './export'
 import { createExports } from './export'
@@ -207,6 +208,16 @@ export interface App {
   noticeAction: (action: NoticeAction) => Promise<void>
   /** 完整音频、封面缩略图、歌词、歌曲信息一起存进这台设备（ADR-0006）；下载地址按下载音质后台请求。现在不下时返回原因（界面事先用 downloadBlock 标出来） */
   download: (song: Song) => DownloadBlock | null
+  /** 多选里的下载：把勾选的几首按 source 记来源，跳过已下载、试听、无版权的歌并逐项说明（#39） */
+  downloadSongs: (songs: readonly Song[], source: DownloadSource) => Promise<DownloadBatchOutcome | DownloadStartBlock>
+  /** 整张歌单：先用已经同步的部分，同步完把后面的补进队列（规则⑫） */
+  downloadPlaylist: (playlistId: number) => Promise<DownloadBatchOutcome | DownloadStartBlock>
+  /** 整张专辑：专辑页的曲目一次取全，全部进队列 */
+  downloadAlbum: (albumId: number) => Promise<DownloadBatchOutcome | DownloadStartBlock>
+  /** 重试一首没下成的（保留它原来的来源） */
+  retryDownload: (songId: number) => void
+  /** 存储空间不够、整队暂停后，腾出空间点“继续下载”（规则⑪） */
+  resumeDownloads: () => void
   /** 没登录时也能删 */
   deleteDownloads: (songIds: readonly number[]) => Promise<void>
   /**
@@ -267,6 +278,9 @@ export const createApp = (browser: BrowserCapabilities): App => {
     // 这一页要不要打开只看曲库和会话；播放进度之类的发布不重新算
     if (next.library !== undefined || next.session !== undefined)
       applyViewing()
+    // 规则⑫：歌单同步到了新的一页，把还没进队列的补上
+    if (next.library !== undefined)
+      fillPendingPlaylists()
   }
 
   /** 这一页要“打开”的条件：只有它变了才去拉，失败不会因为别的状态发布而自动重试 */
@@ -319,8 +333,12 @@ export const createApp = (browser: BrowserCapabilities): App => {
     // 提示条换了让曲库重发一次：这一条提示和它支持的动作都从当前这一份副本算出来
     changed: () => library.publish(),
   })
-  // 会话换了（登录、退出、登录失效、换账号）：上一条提示条不算了
-  round.onChange(() => notices.show(null))
+  // 会话换了（登录、退出、登录失效、换账号）：上一条提示条不算了；还没同步完的整张歌单下载也跟这次登录走
+  const pendingPlaylists = new Map<number, { source: DownloadSource, seen: Set<number> }>()
+  round.onChange(() => {
+    pendingPlaylists.clear()
+    notices.show(null)
+  })
   // 三个东西互相要用：播放器保存队列、队列发打卡、打卡读队列。先声明，建好以后才用到
   let player: Player
   let checkIns: CheckIns
@@ -379,6 +397,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     local,
     clock: browser.clock,
     browser,
+    storage: browser.storage,
     albumPage: (albumId) => {
       const page = state.library?.albumPage(albumId)
       return page?.status === 'shown'
@@ -391,6 +410,48 @@ export const createApp = (browser: BrowserCapabilities): App => {
     notify: notices.show,
     changed: downloadsChanged,
   })
+
+  /** 规则⑫：整张歌单点了下载、当时还没同步完，同步来的新歌继续补进队列；不打断已经排着的 */
+  let fillingPlaylists = false
+  let fillAgain = false
+  const fillPendingPlaylists = (): void => {
+    if (fillingPlaylists) {
+      fillAgain = true
+      return
+    }
+    if (pendingPlaylists.size === 0)
+      return
+    if (!state.library) {
+      pendingPlaylists.clear()
+      return
+    }
+    fillingPlaylists = true
+    void (async () => {
+      for (const [playlistId, pending] of pendingPlaylists) {
+        const content = state.library?.playlistPage(playlistId).content
+        if (!content)
+          continue
+        const songs = content.songs.filter(song => !pending.seen.has(song.id))
+        if (songs.length > 0) {
+          const added = await downloads.add(songs, pending.source, { quiet: true })
+          if (added === 'signedOut' || added === 'offline')
+            continue
+          for (const song of songs)
+            pending.seen.add(song.id)
+        }
+        if (content.complete)
+          pendingPlaylists.delete(playlistId)
+      }
+    })().catch((error: unknown) => {
+      console.error('补整张歌单的下载时出错', error)
+    }).finally(() => {
+      fillingPlaylists = false
+      if (fillAgain) {
+        fillAgain = false
+        fillPendingPlaylists()
+      }
+    })
+  }
 
   const { pickFolder } = browser
   const exports = createExports({
@@ -437,6 +498,9 @@ export const createApp = (browser: BrowserCapabilities): App => {
     browser.network.addEventListener(type, () => {
       update({ online: browser.network.onLine })
       player.availabilityChanged()
+      // 断网停下的下载，联网后接着走（规则⑪ 之外，断网中断也是这一条）；还没补完的整张歌单也再补一次（规则⑫）
+      downloads.wake()
+      fillPendingPlaylists()
     })
   }
 
@@ -580,6 +644,8 @@ export const createApp = (browser: BrowserCapabilities): App => {
       library: shown,
       search: { ...state.search, history },
     })
+    // 排队中的下载等的是“登录以后”：App 的登录状态到这里才更新，队列再试一次（规则⑧）
+    downloads.wake()
     player.availabilityChanged()
     library.sync()
     // 登录失效期间、断网时记下的打卡补发给这个账号；别的账号的丢弃
@@ -1018,12 +1084,18 @@ export const createApp = (browser: BrowserCapabilities): App => {
               return library.retryPlaylistOrder(notice.playlistIds)
             case 'downloadFailed':
               // 开始重下了才关掉；断网、没登录时下不了，提示条留着
-              if (downloads.download(notice.song) === null)
+              if (downloads.retry(notice.song.id))
                 notices.show(null)
               return
             default:
               return
           }
+        case 'resume':
+          if (notice.kind === 'downloadsPaused') {
+            downloads.resume()
+            notices.show(null)
+          }
+          return
         default: {
           const unhandled: never = action
           throw new Error(`不认识的提示条动作：${JSON.stringify(unhandled)}`)
@@ -1031,6 +1103,63 @@ export const createApp = (browser: BrowserCapabilities): App => {
       }
     },
     download: downloads.download,
+    downloadSongs: (songs, source) => downloads.add(songs, source),
+    async downloadPlaylist(playlistId) {
+      const shown = state.library
+      if (!shown)
+        return 'signedOut'
+      const page = shown.playlistPage(playlistId)
+      const source: DownloadSource = {
+        kind: 'playlist',
+        id: playlistId,
+        name: playlistName({
+          name: page.info?.name ?? null,
+          kind: page.kind,
+        }),
+      }
+      const content = page.content
+      const outcome = await downloads.add(content?.songs ?? [], source, {
+        filling: content !== null && !content.complete,
+      })
+      if (outcome === 'signedOut' || outcome === 'offline')
+        return outcome
+      if (content && !content.complete) {
+        pendingPlaylists.set(playlistId, {
+          source,
+          seen: new Set(content.songs.map(song => song.id)),
+        })
+        // 等下载来源写盘、提示条发布的时候，曲库可能又同步到了下一页：马上再对一次，不用等下一次发布
+        fillPendingPlaylists()
+      }
+      else {
+        pendingPlaylists.delete(playlistId)
+      }
+      return outcome
+    },
+    async downloadAlbum(albumId) {
+      const page = state.library?.albumPage(albumId)
+      if (page?.status !== 'shown') {
+        return {
+          queued: 0,
+          downloaded: 0,
+          trial: 0,
+          noCopyright: 0,
+        }
+      }
+      return downloads.add(page.content.songs, {
+        kind: 'album',
+        id: albumId,
+        name: page.content.album.name ?? '未知专辑',
+      })
+    },
+    retryDownload(songId) {
+      downloads.retry(songId)
+    },
+    resumeDownloads() {
+      downloads.resume()
+      if (notices.current()?.kind === 'downloadsPaused')
+        notices.show(null)
+    },
     deleteDownloads: downloads.remove,
     exportDownloads: exports.start,
     cancelExport: exports.cancel,

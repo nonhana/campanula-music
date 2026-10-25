@@ -35,10 +35,13 @@ export interface BrowserCapabilities {
   /** 把导出的 JPEG 传到 uploadUrl（跨域 POST，带上传凭证，可以中途取消）；只用于换封面的第二步（#34） */
   uploadCoverImage: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
   /**
-   * 跨域 GET 下载一个文件（#38）：音频、图片服务器都允许跨域（验证关卡③），不带 Cookie；每收到一块数据调 onProgress。
-   * 不是 2xx 时失败；断网、传到一半断开时以 TypeError 失败（Fetch 标准的 network error）。
+   * 跨域 GET 下载一个文件（#38）：音频、图片服务器都允许跨域（验证关卡③），不带 Cookie；每收到一块数据就交给 onChunk。
+   * from > 0 时带 Range 从这一字节开始（断点续传，#39；音频服务器的 CORS 允许 Range 头）；服务器不支持分段、回了整份文件时先调 restart 再从头交。
+   * 断网、传到一半断开时以 TypeError 失败（Fetch 标准的 network error）；不是 2xx 时失败。成功时返回文件类型。
    */
-  download: (url: string, onProgress: (received: number) => void) => Promise<Blob>
+  download: (url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, options?: DownloadOptions) => Promise<{ type: string }>
+  /** 同 navigator.storage.estimate()：报告这台设备上这个站点已用、最多能用多少字节（#39 存储不够时暂停下载）；浏览器没给的是 null */
+  storage: { estimate: () => Promise<StorageEstimate> }
   /** 同 URL.createObjectURL：播放器、图片拿它放本机存着的下载 */
   objectUrl: (blob: Blob) => string
   revokeObjectUrl: (url: string) => void
@@ -56,6 +59,18 @@ export interface FolderCapability {
   getFileHandle: (name: string, options?: { create?: boolean }) => Promise<FileCapability>
   /** 没有这个文件时以 NotFoundError 失败 */
   removeEntry: (name: string) => Promise<void>
+}
+
+/** 从 from 字节开始的下载；服务器不支持分段时 restart 先清掉之前收到的 */
+export interface DownloadOptions {
+  from?: number
+  restart?: () => void
+}
+
+/** 照 StorageEstimate：usage、quota 可能没给 */
+export interface StorageEstimate {
+  usage: number | null
+  quota: number | null
 }
 
 /** FileSystemFileHandle：写进一份临时副本，close 时才换掉文件内容，abort 丢掉临时副本（File System Access 标准） */
@@ -317,19 +332,39 @@ const uploadCoverImage = async (url: string, jpeg: Blob, token: string, signal: 
     throw new Error(`图片存储回了 ${response.status}`)
 }
 
-const download = async (url: string, onProgress: (received: number) => void): Promise<Blob> => {
-  const response = await window.fetch(url)
+const download = async (url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, { from = 0, restart }: DownloadOptions = {}): Promise<{ type: string }> => {
+  const response = await window.fetch(url, from > 0
+    ? {
+        headers: { Range: `bytes=${from}-` },
+      }
+    : undefined)
   if (!response.ok || !response.body)
     throw new Error(`文件服务器回了 ${response.status}`)
-  const reader = response.body.getReader()
-  const chunks: Uint8Array<ArrayBuffer>[] = []
-  let received = 0
-  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
-    chunks.push(chunk.value)
-    received += chunk.value.byteLength
-    onProgress(received)
+  if (from > 0) {
+    if (response.status === 206) {
+      // 回的必须是这一段：对不上号时把之前收到的作废、下次从头来（音频服务器的 CORS 暴露了 Content-Range，一般读得到）
+      const range = response.headers.get('content-range')
+      if (range !== null) {
+        const start = Number(/^bytes (\d+)-/.exec(range)?.[1])
+        if (start !== from) {
+          restart?.()
+          throw new Error(`文件服务器回的第 ${Number.isNaN(start)
+            ? '未知'
+            : start} 段，要的是 ${from}`)
+        }
+      }
+      // 跨域时没暴露 Content-Range：206 本来就是对我们 Range 的回应，按这一段收
+    }
+    else {
+      // 服务器不支持分段，回了整份文件：之前收到的作废，从头来
+      restart?.()
+    }
   }
-  return new Blob(chunks, { type: response.headers.get('content-type') ?? '' })
+  const type = response.headers.get('content-type') ?? ''
+  const reader = response.body.getReader()
+  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read())
+    onChunk(chunk.value)
+  return { type }
 }
 
 /** File System Access 标准的 showDirectoryPicker（TypeScript 自带的 DOM 类型里还没有），Android Chrome、桌面 Chrome 和 Edge 有 */
@@ -364,6 +399,12 @@ export const realBrowserCapabilities = (): BrowserCapabilities => {
     images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
     uploadCoverImage,
     download,
+    storage: {
+      async estimate() {
+        const { usage = null, quota = null } = await navigator.storage.estimate()
+        return { usage, quota }
+      },
+    },
     objectUrl: blob => URL.createObjectURL(blob),
     revokeObjectUrl: url => URL.revokeObjectURL(url),
     pickFolder: picker

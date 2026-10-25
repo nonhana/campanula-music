@@ -12,7 +12,7 @@
   import type { Snippet } from 'svelte'
   import { untrack } from 'svelte'
 
-  import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, songTitle } from '#lib/api/library.js'
+  import { nameProblem, nameWidth, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, playlistName, songTitle } from '#lib/api/library.js'
   import type { ChangeFailure } from '#lib/app/library.js'
 
   import TagPicker from '../library/TagPicker.svelte'
@@ -29,7 +29,6 @@
   import Cover from '../ui/Cover.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import TextField from '../ui/TextField.svelte'
-  import { playlistName } from './playlist-text'
 
   const { coverEditor, playlistEditor } = getOverlays()
 

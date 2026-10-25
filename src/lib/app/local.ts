@@ -5,7 +5,7 @@ import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 10
+const VERSION = 11
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
 const LIBRARY = 'library'
@@ -24,6 +24,27 @@ export const CHECK_INS = 'checkIns'
 /** 下载（#38）：歌曲信息、完整音频、封面缩略图、歌词；属于这台设备，退出、换账号都不删（ADR-0006） */
 const DOWNLOADS = 'downloads'
 
+/** 这首下载是从哪儿来的（#39 规则⑦）：单独下载的，或者几张歌单、几张专辑，可以有几处；#40 按歌单删除下载用它，不能靠曲库副本判断 */
+export type DownloadSource
+  = | { kind: 'single' }
+    /** name 是下载时的名字：退出后曲库副本删了，未登录时也要能按歌单删除 */
+    | { kind: 'playlist', id: number, name: string }
+    | { kind: 'album', id: number, name: string }
+
+/** 新的来源补进去，同一个歌单 / 专辑只留一处（名字取新的），单独下载只留一处 */
+export const mergeDownloadSources = (sources: readonly DownloadSource[], added: readonly DownloadSource[]): DownloadSource[] => {
+  const merged = [...sources]
+  for (const source of added) {
+    const index = merged.findIndex(existing => existing.kind === source.kind
+      && (source.kind === 'single' || (existing.kind !== 'single' && existing.id === source.id)))
+    if (index === -1)
+      merged.push(source)
+    else
+      merged[index] = source
+  }
+  return merged
+}
+
 /** 断网、没登录时也完整可用（#38，ADR-0006） */
 export interface StoredDownload {
   song: Song
@@ -34,6 +55,8 @@ export interface StoredDownload {
   lyrics: LyricsResponse
   /** 下载时顺手取的专辑信息（#79）：导出时写进文件，不再联网；取不到、#79 以前下载的是 null */
   album: AlbumResponse['album'] | null
+  /** 这首是从哪儿下载的（#39 规则⑦）；#39 以前下载的都是单独下载 */
+  sources: DownloadSource[]
   /** 已下载页按它排，最近下载完的在前 */
   downloadedAt: number
 }
@@ -143,6 +166,8 @@ export interface LocalDb {
   readDownloads: () => Promise<StoredDownload[]>
   /** 换掉同一首以前的；存储空间不够时以 QuotaExceededError 失败 */
   saveDownload: (download: StoredDownload) => Promise<void>
+  /** 这几首已经下载了、又从一张歌单或专辑点了下载：把新的来源补进去（#39 规则⑦）；返回补好的，没有的不在里面 */
+  addDownloadSources: (songIds: readonly number[], sources: readonly DownloadSource[]) => Promise<ReadonlyMap<number, DownloadSource[]>>
   deleteDownloads: (songIds: readonly number[]) => Promise<void>
 }
 
@@ -207,20 +232,25 @@ const songAddedIn10 = (song: StoredSong): Song => ({
 
 type Lines = Extract<LyricsResponse, { lines: unknown }>
 
-/** 版本 9 存的下载（#38）：音频很大，升级时不重写，读出来时补上 #79 加的几项（网易云没给、没取到） */
-type StoredDownloadIn9 = Omit<StoredDownload, 'song' | 'lyrics' | 'album'> & {
+/** 版本 9 存的下载（#38）：音频很大，升级时不重写，读出来时补上 #79 加的几项（网易云没给、没取到）和 #39 加的来源 */
+type StoredDownloadBefore11 = Omit<StoredDownload, 'song' | 'lyrics' | 'album' | 'sources'> & {
   song: StoredSong
   lyrics: Exclude<LyricsResponse, Lines> | (Omit<Lines, 'yrc' | 'romalrc'> & Partial<Pick<Lines, 'yrc' | 'romalrc'>>)
   album?: StoredDownload['album']
+  /** #39 以前没有：那些都是单独下载的 */
+  sources?: DownloadSource[]
 }
 
-const downloadAddedIn10 = (download: StoredDownloadIn9): StoredDownload => ({
+const downloadAddedIn11 = (download: StoredDownloadBefore11): StoredDownload => ({
   ...download,
   song: songAddedIn10(download.song),
   lyrics: 'lines' in download.lyrics
     ? { yrc: null, romalrc: null, ...download.lyrics }
     : download.lyrics,
   album: download.album ?? null,
+  sources: download.sources ?? [
+    { kind: 'single' },
+  ],
 })
 
 const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: number): void => {
@@ -295,6 +325,7 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
       }
     }
   }
+  // 11（#39）：下载多了来源。音频很大，升级时不重写，读出来时补上“单独下载”（downloadAddedIn11）
 }
 
 /** 打开本机数据库：同一个设备上的模块共用一个连接，升级只跑一次 */
@@ -501,9 +532,30 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
     },
     async readDownloads() {
       const store = (await db.open()).transaction(DOWNLOADS).objectStore(DOWNLOADS)
-      return (await settled(store.getAll()) as StoredDownloadIn9[]).map(downloadAddedIn10)
+      return (await settled(store.getAll()) as StoredDownloadBefore11[]).map(downloadAddedIn11)
     },
     saveDownload: download => write([DOWNLOADS], transaction => transaction.objectStore(DOWNLOADS).put(download, download.song.id)),
+    async addDownloadSources(songIds, sources) {
+      const merged = new Map<number, DownloadSource[]>()
+      await write([DOWNLOADS], (transaction) => {
+        const store = transaction.objectStore(DOWNLOADS)
+        for (const songId of songIds) {
+          const stored = store.get(songId)
+          stored.onsuccess = () => {
+            if (!stored.result)
+              return
+            const download = downloadAddedIn11(stored.result as StoredDownloadBefore11)
+            const next = mergeDownloadSources(download.sources, sources)
+            merged.set(songId, next)
+            store.put({
+              ...download,
+              sources: next,
+            }, songId)
+          }
+        }
+      })
+      return merged
+    },
     deleteDownloads: songIds => write([DOWNLOADS], (transaction) => {
       for (const songId of songIds)
         transaction.objectStore(DOWNLOADS).delete(songId)

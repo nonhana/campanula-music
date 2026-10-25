@@ -5,6 +5,8 @@
 <script lang='ts'>
   import type { Snippet } from 'svelte'
 
+  import { playlistName } from '#lib/api/library.js'
+
   import DialogShell from '../overlay/DialogShell.svelte'
   import { getOverlays } from '../overlay/overlay-context'
   import type { PlaylistRequest } from '../overlay/overlay-requests'
@@ -12,7 +14,6 @@
   import { langOf } from '../shared/text'
   import TextButton from '../ui/TextButton.svelte'
   import AddSongsPanel from './AddSongsPanel.svelte'
-  import { playlistName } from './playlist-text'
 
   const view = getAppView()
   const { addSongsDialog } = getOverlays()

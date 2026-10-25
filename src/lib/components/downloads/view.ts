@@ -20,6 +20,8 @@ export const downloadItem = (view: AppView, song: Song): { label: string, disabl
       }
     case 'downloaded':
       return { label: '已下载', disabled: true }
+    case 'queued':
+      return { label: '排队中', disabled: true }
     case 'downloading': {
       const look = songLook(view, song).mark
       return {
@@ -50,11 +52,9 @@ export const downloadFailureText = (failure: DownloadFailure): string => {
     case 'request':
       return failureText(failure.failure)
     case 'unavailable':
-      return '这个账号可能下载不了完整音频'
+      return '这个账号下不了完整的音频'
     case 'interrupted':
       return '连接断了'
-    case 'storageFull':
-      return '存储空间不够了'
     case 'saveFailed':
       return '存储时出错'
     case 'appError':

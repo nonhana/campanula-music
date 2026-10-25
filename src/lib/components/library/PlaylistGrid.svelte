@@ -15,10 +15,10 @@
   import { flip } from 'svelte/animate'
 
   import type { Playlist } from '#lib/api/library.js'
+  import { playlistName } from '#lib/api/library.js'
   import type { LibraryState } from '#lib/app/library.js'
 
   import { getOverlays } from '../overlay/overlay-context'
-  import { playlistName } from '../playlist/playlist-text'
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
   import { fade, fadeThrough, moveMs, reveal } from '../shared/motion'

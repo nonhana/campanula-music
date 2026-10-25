@@ -41,8 +41,8 @@
   const arrival = noticeArrival(() => notice ? place : null)
 
   /** 配 ✓ 的：加入了、都已经在歌单里、移除了；别的（没改成、上次的修改没保存成功）配感叹号 */
-  const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed')
-  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed' || notice?.kind === 'playlistOrderFailed' || notice?.kind === 'downloadFailed')
+  const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed' || notice?.kind === 'downloadsAdded')
+  const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed' || notice?.kind === 'playlistOrderFailed' || notice?.kind === 'downloadFailed' || notice?.kind === 'downloadsPaused')
 </script>
 
 {#if notice}
@@ -77,6 +77,8 @@
         <p class='min-w-0 flex-1 text-caption text-neutral-800'>{operationNoticeText(notice)}</p>
         {#if actions.includes('undo')}
           <TextButton strong class='md:h-10 px-3.5!' onclick={() => void view.app.noticeAction('undo')}>撤销</TextButton>
+        {:else if actions.includes('resume')}
+          <TextButton strong class='md:h-10 px-3.5!' onclick={() => void view.app.noticeAction('resume')}>继续下载</TextButton>
         {:else if actions.includes('retry')}
           <TextButton strong class='md:h-10 px-3.5!' onclick={() => void view.app.noticeAction('retry')}>重试</TextButton>
         {/if}

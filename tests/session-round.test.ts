@@ -15,7 +15,7 @@ import { createSessionRound } from '#lib/app/session-round.js'
 import type { FakeAudio } from './harness/browser'
 import type { Device, Tab } from './harness/device'
 import { held, never } from './harness/hold'
-import { ALBUM_MISSING, checkIns, DAILY, likedSong, listener, storedCheckIns } from './harness/listener'
+import { ALBUM_MISSING, checkIns, DAILY, likedSong, listener, serveDownload, storedCheckIns } from './harness/listener'
 import { ANOTHER_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -26,6 +26,8 @@ const { signInAtLikedTracks, signInWithLiked, replyLibrary } = listener(world)
 
 const SEARCH_301 = 'search/cloudsearch.301-invalid.constructed.json'
 const DOWNLOAD_301 = 'playback/downloads/song_download_url_v1.301-invalid.constructed.json'
+const DOWNLOAD_OK = 'playback/downloads/002-song_download_url_v1.json.gz'
+const LYRICS = 'playback/lyric_new.all-forms.json'
 const LYRICS_301 = 'playback/lyric_new.301-invalid.constructed.json'
 const CHECK_IN = 'playback/check-in/001-scrobble.json.gz'
 const CHECK_IN_405 = 'playback/check-in/scrobble.405-rate-limited.constructed.json'
@@ -125,19 +127,25 @@ describe('旧会话的回复', () => {
     expect(app.state.session).toEqual({ status: 'signedIn', account: ANOTHER_ACCOUNT })
   })
 
-  it('退出前要的下载地址，新账号登录后才回 401：不把新会话判成登录失效，也不开始下载', async () => {
+  it('退出前要的下载地址，新账号登录后才回 401：不把新会话判成登录失效，排队的那首用新账号接着下', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)
     const song = likedSong(app, FIRST.id)
+    await serveDownload(device, song, DOWNLOAD_OK)
     const slow = held()
     await world.netease.reply(DOWNLOAD_301, { until: slow.until })
-    await world.netease.reply('playback/lyric_new.all-forms.json')
+    await world.netease.reply(LYRICS)
     await world.netease.reply(ALBUM_MISSING)
     await world.netease.reply('login/login_refresh.301-invalid.json')
 
     expect(app.download(song)).toBeNull()
     await world.settle()
     expect(device.pending.map(request => request.path)).toContain('/api/songs/3433267939/download-url?quality=exhigh')
+
+    // 新账号登录后队列接着走：用新会话重新要地址、歌词、专辑
+    await world.netease.reply(DOWNLOAD_OK)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
     await switchAccount(device, app)
 
     slow.release()
@@ -145,15 +153,9 @@ describe('旧会话的回复', () => {
 
     expect(device.responses).toContainEqual({ method: 'GET', path: '/api/songs/3433267939/download-url?quality=exhigh', status: 401 })
     expect(app.state.session).toEqual({ status: 'signedIn', account: ANOTHER_ACCOUNT })
-    expect(app.state.downloads.songs).toEqual([])
-    expect(app.state.downloads.tasks.get(3433267939)).toMatchObject({
-      status: 'failed',
-      failure: {
-        kind: 'request',
-        failure: { kind: 'needsLogin' },
-      },
-    })
-    expect((await device.stored()).downloads ?? []).toEqual([])
+    expect(app.state.downloads.tasks.size).toBe(0)
+    expect(app.state.downloads.has(FIRST.id)).toBe(true)
+    expect((await device.stored()).downloads ?? []).toHaveLength(1)
   })
 
   it('退出前打开的歌词，新账号登录后才回 401：不把新会话判成登录失效', async () => {

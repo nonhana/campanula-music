@@ -5,11 +5,11 @@
 <script lang='ts'>
   import { resolve } from '$app/paths'
 
+  import { playlistName } from '#lib/api/library.js'
   import type { SearchedPlaylist } from '#lib/api/search.js'
 
   import { collectState } from '../library/collect'
   import CollectButton from '../library/CollectButton.svelte'
-  import { playlistName } from '../playlist/playlist-text'
   import { getAppView } from '../shared/app-context.svelte'
   import { stagger } from '../shared/motion'
   import { formatPlays, formatSongCount, langOf } from '../shared/text'

@@ -4,15 +4,18 @@
   歌单页和已下载页共用，这里只是视图。
 -->
 <script lang='ts'>
-  import { CheckCheck, FolderDown, ListChecks, ListMinus, ListPlus, SquareMinus, Trash2, X } from '@lucide/svelte'
+  import { CheckCheck, CircleArrowDown, FolderDown, ListChecks, ListMinus, ListPlus, SquareMinus, Trash2, X } from '@lucide/svelte'
 
   import { anchorBelow } from '../menu/menu-anchor'
   import { getOverlays } from '../overlay/overlay-context'
+  import { getAppView } from '../shared/app-context.svelte'
   import { formatCount } from '../shared/text'
 
   const { multiSelect: selection } = getOverlays()
+  const view = getAppView()
   const can = $derived(selection.capabilities)
   const none = $derived(selection.picked.length === 0)
+  const offline = $derived(!view.state.online)
   const ACTION = 'h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-caption font-500 transition-colors duration-feedback disabled:opacity-45 mouse:enabled:hover:bg-primary-100'
 </script>
 
@@ -32,6 +35,11 @@
   {#if can.add}
     <button type='button' class={[ACTION, 'text-neutral-800']} disabled={none} onclick={event => selection.addPicked(event, anchorBelow(event))}>
       <ListPlus size={15} aria-hidden='true' />加入歌单
+    </button>
+  {/if}
+  {#if can.download}
+    <button type='button' class={[ACTION, 'text-neutral-800']} disabled={none || offline} title={offline ? '断网时不能下载' : undefined} onclick={() => selection.downloadPicked()}>
+      <CircleArrowDown size={15} aria-hidden='true' />下载
     </button>
   {/if}
   {#if can.remove}

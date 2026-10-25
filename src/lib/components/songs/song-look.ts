@@ -8,6 +8,7 @@ import type { AppView } from '../shared/app-context.svelte'
 /** 歌曲行上的下载标记：已下载（蜜桃枝图标）、下载中（蜜桃进度）、下载失败（出错红）。一共多大还不知道（没拿到下载地址、网易云没给大小，#78）时 percent 是 null，不写百分数 */
 export type DownloadMark
   = | { kind: 'done' }
+    | { kind: 'queued' }
     | { kind: 'downloading', percent: number | null }
     | { kind: 'failed' }
 
@@ -35,9 +36,11 @@ export const songLook = (view: AppView, song: Song): SongLook => {
             ? Math.floor(task.received * 100 / task.total)
             : null,
         }
-      : task?.status === 'failed'
-        ? { kind: 'failed' }
-        : null
+      : task?.status === 'queued'
+        ? { kind: 'queued' }
+        : task?.status === 'failed'
+          ? { kind: 'failed' }
+          : null
   const off = !view.state.playable(song)
   // 徽标：无版权优先；下载了的放本机的完整音频，不标试听
   const badge: SongBadgeKind | null = downloaded

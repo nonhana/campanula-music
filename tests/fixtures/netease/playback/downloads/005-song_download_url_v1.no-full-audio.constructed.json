@@ -1,0 +1,73 @@
+{
+  "module": "song_download_url_v1",
+  "query": {
+    "id": 4208408,
+    "level": "exhigh"
+  },
+  "context": {
+    "recordedAt": "2026-10-25T00:00:00.000Z",
+    "sdk": "hana-music-api@3.1.0",
+    "region": "local",
+    "ip": "default",
+    "viewer": "vip-qr",
+    "constructed": true,
+    "note": "#39：换了一个账号后这个账号下不了完整音频。复制 #38 无版权那首的真实返回体（2108191414），只把 data.id、query.id 换成 4208408；真遇到时替换成录制"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "code": 200,
+      "data": {
+        "accompany": null,
+        "auEff": null,
+        "beatType": 0,
+        "br": 0,
+        "canExtend": false,
+        "channelLayout": null,
+        "closedGain": 0,
+        "closedPeak": 0,
+        "code": -110,
+        "effectTypes": null,
+        "encodeType": null,
+        "expi": 1200,
+        "fee": 0,
+        "flag": 1081345,
+        "freeTimeTrialPrivilege": {
+          "remainTime": 0,
+          "resConsumable": false,
+          "type": 0,
+          "userConsumable": false
+        },
+        "freeTrialInfo": null,
+        "freeTrialPrivilege": {
+          "cannotListenReason": null,
+          "freeLimitTagType": null,
+          "listenType": null,
+          "playReason": null,
+          "resConsumable": false,
+          "userConsumable": false
+        },
+        "gain": 0,
+        "id": 4208408,
+        "immerseType": null,
+        "level": null,
+        "levelConfuse": null,
+        "md5": null,
+        "message": null,
+        "musicId": null,
+        "payed": 0,
+        "peak": null,
+        "podcastCtrp": null,
+        "rightSource": 0,
+        "size": 0,
+        "sr": 0,
+        "time": 0,
+        "type": null,
+        "uf": null,
+        "url": null,
+        "urlSource": 0,
+        "name": null
+      }
+    }
+  }
+}

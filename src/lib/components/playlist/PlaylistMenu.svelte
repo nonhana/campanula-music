@@ -5,13 +5,14 @@
 <script lang='ts'>
   import { Globe, Pencil, Trash2 } from '@lucide/svelte'
 
+  import { playlistName } from '#lib/api/library.js'
+
   import type { MenuHeader, MenuItem } from '../menu/menu'
   import MenuOverlay from '../menu/MenuOverlay.svelte'
   import { getOverlays } from '../overlay/overlay-context'
   import type { PlaylistMenuRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
   import { langOf } from '../shared/text'
-  import { playlistName } from './playlist-text'
 
   type Edit = 'info' | 'public' | 'delete'
 

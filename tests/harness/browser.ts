@@ -2,7 +2,7 @@ import type { Clock as FakeTimers } from '@sinonjs/fake-timers'
 
 import type { CoverCrop } from '#lib/api/cover.js'
 import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js'
-import type { AudioCapability, ChannelCapability, Clock, DecodedImage, FileCapability, FolderCapability, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, WritableCapability } from '#lib/app/browser.js'
+import type { AudioCapability, ChannelCapability, Clock, DecodedImage, DownloadOptions, FileCapability, FolderCapability, LocksCapability, MediaSessionCapability, NetworkStatus, PageVisibility, StorageEstimate, WritableCapability } from '#lib/app/browser.js'
 
 // 浏览器能力替身：行为照浏览器标准写。浏览器直连网易云的图片传输（#34）、文件下载（#38）、导出时听众选的文件夹（#79）在这里；Background Fetch 由最早用到它的票加上。
 
@@ -28,6 +28,16 @@ export class FakeNetwork extends EventTarget implements NetworkStatus {
       return
     this.#onLine = online
     this.dispatchEvent(new Event(online ? 'online' : 'offline'))
+  }
+}
+
+/** 这台设备给这个站点多少存储空间：usage、quota 由测试改；默认空间很够 */
+export class FakeStorage {
+  usage = 0
+  quota = Number.MAX_SAFE_INTEGER
+
+  async estimate(): Promise<StorageEstimate> {
+    return { usage: this.usage, quota: this.quota }
   }
 }
 
@@ -180,24 +190,27 @@ export class FakeImages {
   }
 }
 
-/** 网易云服务器上的一个文件：多少字节、什么类型 */
+/** 网易云服务器上的一个文件：多少字节、什么类型；ranges=false 模拟不支持分段请求的服务器 */
 export interface FakeFile {
   bytes: number
   type: string
+  ranges?: boolean
 }
 
-/** 下一次下载这个文件时怎么传：until 了结之前只传一半；cut：传到一半连接断开 */
+/** 下一次下载这个文件时怎么传：until 了结之前只传（剩下的一半）；cut：传到一半连接断开 */
 export interface FakeTransfer {
   until?: Promise<void>
   cut?: boolean
 }
 
-/** 网易云的音频服务器、图片服务器（浏览器直连下载，#38）：一台设备一份，测试放上文件（地址 → 字节数、类型）。 照 Fetch 标准：断网时请求直接以 TypeError 失败（network error）；没有这个文件回 404，fetch 本身成功、由 App 的下载能力当作失败； 回 200 按块传，传到一半连接断开（断网、服务器断开）时读响应体以 TypeError 失败。每传一块调一次 onProgress（到这一刻一共收到多少字节） */
+/** 网易云的音频服务器、图片服务器（浏览器直连下载，#38）：一台设备一份，测试放上文件（地址 → 字节数、类型）。 照 Fetch 标准：断网时请求直接以 TypeError 失败（network error）；没有这个文件回 404，fetch 本身成功、由 App 的下载能力当作失败； 回 200 / 206 按块传，传到一半连接断开（断网、服务器断开）时读响应体以 TypeError 失败。每块数据调一次 onChunk；从 from 字节开始（断点续传，#39），不支持分段时调 restart 再从头交 */
 export class FakeFiles {
   readonly #files = new Map<string, FakeFile>()
   readonly #next = new Map<string, FakeTransfer>()
   /** 下载过的地址，按先后（断网时没发出去的不算） */
   readonly requests: string[] = []
+  /** 每次下载从第几字节开始，和 requests 一一对应 */
+  readonly starts: number[] = []
 
   constructor(private readonly network: NetworkStatus) {}
 
@@ -210,26 +223,32 @@ export class FakeFiles {
     this.#next.set(url, transfer)
   }
 
-  async download(url: string, onProgress: (received: number) => void): Promise<Blob> {
+  async download(url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, { from = 0, restart }: DownloadOptions = {}): Promise<{ type: string }> {
     if (!this.network.onLine)
       throw new TypeError('Failed to fetch')
     this.requests.push(url)
+    this.starts.push(from)
     const file = this.#files.get(url)
     if (!file)
       throw new Error('文件服务器回了 404')
+    if (from > 0 && file.ranges === false) {
+      restart?.()
+      from = 0
+    }
     const transfer = this.#next.get(url) ?? {}
     this.#next.delete(url)
-    const half = Math.floor(file.bytes / 2)
+    const half = from + Math.floor((file.bytes - from) / 2)
     if (transfer.until || transfer.cut) {
-      onProgress(half)
+      onChunk(new Uint8Array(half - from))
       await transfer.until
       if (transfer.cut || !this.network.onLine)
         throw new TypeError('network error')
+      onChunk(new Uint8Array(file.bytes - half))
     }
-    onProgress(file.bytes)
-    return new Blob([
-      new Uint8Array(file.bytes),
-    ], { type: file.type })
+    else {
+      onChunk(new Uint8Array(file.bytes - from))
+    }
+    return { type: file.type }
   }
 }
 
