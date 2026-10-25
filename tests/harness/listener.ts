@@ -24,6 +24,27 @@ export const DAILY = 'discover/daily/001-recommend_songs.json.gz'
 export const JAZZ_DETAIL = 'library/sync/before/004-playlist_detail.json.gz'
 /** 不是 jazz 的歌曲信息：原测试只看编号/首数，不把它说成 jazz 的真实歌曲。 */
 export const SOME_SONGS = 'library/sync/before/003-song_detail.json.gz'
+/** 下载时一起取的歌词：逐字、逐行、翻译、音译都有（#38） */
+export const DOWNLOAD_LYRICS = 'playback/lyric_new.all-forms.json'
+/** 网易云说没有这张专辑：#79 用不存在的编号要的，真实返回 { resourceState: false, code: 404 }。下载时顺手取的专辑信息不是要看的，就回它 */
+export const ALBUM_MISSING = 'playback/export/003-album.json.gz'
+
+/**
+ * 我喜欢的音乐里同一张专辑的两首（第 1 页）：专辑 3149073《Keep The Village Alive》，10 首、华纳音乐，专辑页是 #23 录的；
+ * 两首的极高音质下载地址是 #79 录的
+ */
+export const VILLAGE = {
+  id: 3149073,
+  page: 'library/album-artist/008-album.json.gz',
+  fightOrFlight: { id: 34586046, downloadUrl: 'playback/export/001-song_download_url_v1.json.gz' },
+  sunny: { id: 34586048, downloadUrl: 'playback/export/002-song_download_url_v1.json.gz' },
+}
+
+/** 录了极高音质下载地址的一首：编号和下载地址的录制 */
+export interface Downloadable {
+  id: number
+  downloadUrl: string
+}
 
 export interface RecordedPlaylist {
   id: number
@@ -207,6 +228,24 @@ export const listener = (world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
     await world.settle()
   }
 
+  /**
+   * 下载我喜欢的音乐里的这一首、等它下完（隔 1 秒才下完，已下载里按下完的先后排）：音频服务器上放着下载地址的录制里那么大的文件，
+   * 图片服务器上放着封面缩略图；网易云回下载地址、歌词和专辑页（不给就回“没有这张专辑”）
+   */
+  const downloadLiked = async (device: Device, app: App, { id, downloadUrl }: Downloadable, { album = ALBUM_MISSING } = {}): Promise<Song> => {
+    await world.clock.advance(1000)
+    const song = likedSong(app, id)
+    await serveDownload(device, song, downloadUrl)
+    await world.netease.reply(downloadUrl)
+    await world.netease.reply(DOWNLOAD_LYRICS)
+    await world.netease.reply(album)
+    app.download(song)
+    await world.settle()
+    if (!app.state.downloads.has(id))
+      throw new Error(`《${song.name}》没下完：${JSON.stringify(app.state.downloads.tasks.get(id))}`)
+    return song
+  }
+
   return {
     replyLibrary,
     replyLikedSongs,
@@ -218,6 +257,7 @@ export const listener = (world: World, { playlists = PLAYLISTS_WITHOUT_POEMS } =
     reopen,
     dailySongs,
     openJazz,
+    downloadLiked,
     sessionCalls,
     sessionModules,
   }
@@ -278,3 +318,13 @@ export const isSync = (request: SentRequest) => ['/api/albums', '/api/artists'].
 export const syncRequests = (device: Device) => device.requests.filter(isSync)
 export const songPages = (device: Device) => syncRequests(device).filter(request => request.path === '/api/songs').map(request => (request.body as { ids: number[] }).ids)
 export const trackIdRequests = (device: Device) => syncRequests(device).flatMap(request => request.path.match(/^\/api\/playlists\/(\d+)\/track-ids$/)?.[1] ?? []).map(Number)
+
+/** 下载用的封面缩略图有多大（字节） */
+export const DOWNLOAD_COVER_BYTES = 41_000
+
+/** 音频服务器、图片服务器上放好这首：下载地址的录制里那么大的音频，和 512 的封面缩略图 */
+export const serveDownload = async (device: Device, song: Song, downloadUrl: string): Promise<void> => {
+  const { data } = (await loadFixture(downloadUrl)).outcome.response.body as { data: { url: string, size: number } }
+  device.files.put(data.url.replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
+  device.files.put(`${song.album.coverUrl!.replace(/^http:/, 'https:')}?param=512y512`, { bytes: DOWNLOAD_COVER_BYTES, type: 'image/jpeg' })
+}

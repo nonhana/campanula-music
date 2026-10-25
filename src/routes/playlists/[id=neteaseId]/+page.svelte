@@ -41,7 +41,7 @@
 
   const { params }: PageProps = $props()
   const view = getAppView()
-  const { addSongsDialog, playlistSelection, playlistMenu } = getOverlays()
+  const { addSongsDialog, multiSelect, playlistMenu } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const page = $derived(library?.playlistPage(id) ?? null)
@@ -145,12 +145,12 @@
   {#if own}
     <ToolButton icon={ListPlus} label='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
   {/if}
-  {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !playlistSelection.mode}
+  {#if desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0 && !multiSelect.mode}
     <span class='contents' bind:this={desktopEntry}>
       <Button
         variant='outline'
         icon={ListChecks}
-        onclick={(event: MouseEvent) => playlistSelection.enter({
+        onclick={(event: MouseEvent) => multiSelect.enter({
           from: event.currentTarget as HTMLElement,
           focusFirst: true,
           focusEntry: desktopEntryFocus,

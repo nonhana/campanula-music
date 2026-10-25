@@ -1,48 +1,50 @@
 import { tick, untrack } from 'svelte'
 
-import type { Playlist, Song } from '#lib/api/library.js'
+import type { Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
 
-import type { AddToPlaylistRequest, DialogRequest, MenuAnchor } from '../overlay/overlay-requests'
+import type { AddToPlaylistRequest, DeleteDownloadsRequest, DialogRequest, ExportRequest, MenuAnchor } from '../overlay/overlay-requests'
 import type { OverlayLayer, OverlayResult } from '../overlay/overlay-stack'
-import type { Checked, SelectionCapabilities } from './selection-core'
+import type { Checked, SelectionCapabilities, SelectionKind } from './selection-core'
 import { allOn as allVisibleOn, capabilitiesOf, extend, NONE, picked as pickedSongs, selectAll as selectAllVisible, toggle as toggleChecked } from './selection-core'
 
-// 多选（GLOSSARY：一张列表里勾选多首歌，一起加入歌单、下载或移除；自建歌单和我喜欢的音乐还能排序）。
-// 生命周期都在这一个文件：进入、离开（返回手势、Esc、换歌单、离开页面）、焦点归还（按钮入口进入后先落第一行），以及“对勾选的歌做事”。
+// 多选（GLOSSARY：一张列表里勾选多首歌，一起加入歌单、下载或移除；自建歌单和我喜欢的音乐还能排序；已下载页里导出、删除，#79）。
+// 生命周期都在这一个文件：进入、离开（返回手势、Esc、换列表、离开页面）、焦点归还（按钮入口进入后先落第一行），以及“对勾选的歌做事”。
 // 三个工具条只读状态、调用这里的动作，返回和 Esc 仍由 #64 的浮层栈拥有；手机那层经浮层栈登记（只压一条浅路由），没有单独视图。
 
 export interface SelectionSource {
-  readonly playlistId: number
-  /** 勾选和“加入歌单 / 移除”都用它（搜索时也是整张） */
+  /** 换了列表就退出多选：歌单是它的编号，已下载页是 'downloads' */
+  readonly key: number | 'downloads'
+  /** 勾选和“加入歌单 / 移除 / 导出 / 删除”都用它（搜索时也是整张） */
   readonly songs: () => readonly Song[]
   /** Shift 连选和全选只看这些 */
   readonly visible: () => readonly number[]
-  readonly kind: () => Playlist['kind'] | null
-  /** 加载中、出错、空态、换歌单：不在了就退出多选 */
+  readonly kind: () => SelectionKind | null
+  /** 加载中、出错、空态、换列表：不在了就退出多选 */
   readonly present: () => boolean
   readonly focusFirst: () => void
 }
 
-export class PlaylistSelection {
-  private readonly layer: OverlayLayer<DialogRequest, HTMLElement>
-  private readonly playlistPicker: OverlayLayer<AddToPlaylistRequest, HTMLElement>
+interface Layers {
+  selection: OverlayLayer<DialogRequest, HTMLElement>
+  playlistPicker: OverlayLayer<AddToPlaylistRequest, HTMLElement>
+  exportDialog: OverlayLayer<ExportRequest, HTMLElement>
+  deleteDownloads: OverlayLayer<DeleteDownloadsRequest, HTMLElement>
+}
+
+export class MultiSelect {
+  private readonly layers: Layers
   private readonly app: App
 
-  constructor(
-    layer: OverlayLayer<DialogRequest, HTMLElement>,
-    playlistPicker: OverlayLayer<AddToPlaylistRequest, HTMLElement>,
-    app: App,
-  ) {
-    this.layer = layer
-    this.playlistPicker = playlistPicker
+  constructor(layers: Layers, app: App) {
+    this.layers = layers
     this.app = app
   }
 
   mode = $state(false)
   private checked = $state.raw<Checked>(NONE)
   private source = $state.raw<SelectionSource | null>(null)
-  private entered: number | null = null
+  private entered: number | 'downloads' | null = null
   private watching: (() => void) | null = null
   /** 入口按钮会被工具条换掉，所以给的是“重新找到它”的回调 */
   private returnFocus: (() => HTMLElement | null) | null = null
@@ -63,7 +65,7 @@ export class PlaylistSelection {
   })
 
   get capabilities(): SelectionCapabilities {
-    return capabilitiesOf(this.source?.kind() ?? null)
+    return capabilitiesOf(this.source?.kind() ?? null, this.app.state.exportable)
   }
 
   has(id: number): boolean {
@@ -78,15 +80,15 @@ export class PlaylistSelection {
     return target
   }
 
-  /** 换歌单、列表消失都会自己退出；卸载时调用 detach */
+  /** 换列表、列表消失都会自己退出；卸载时调用 detach */
   attach(source: SelectionSource): void {
     this.watching?.()
     this.source = source
-    if (this.mode && this.entered !== source.playlistId)
+    if (this.mode && this.entered !== source.key)
       this.exit()
     this.watching = $effect.root(() => {
       $effect(() => {
-        const id = source.playlistId
+        const id = source.key
         const present = source.present()
         untrack(() => {
           if (this.mode && (id !== this.entered || !present))
@@ -121,9 +123,9 @@ export class PlaylistSelection {
 ? NONE
 : toggleChecked(NONE, id)
     this.returnFocus = focusEntry ?? null
-    this.entered = source.playlistId
+    this.entered = source.key
     this.mode = true
-    void this.layer.open({ from }).then((result) => {
+    void this.layers.selection.open({ from }).then((result) => {
       // 历史正好在动、会话刚换代时 open 会被取消或作废：别留下一个没有层的多选
       if (result !== 'committed')
         this.clear()
@@ -140,7 +142,7 @@ export class PlaylistSelection {
     }
   }
 
-  leave = (): Promise<OverlayResult> => this.layer.closeThrough()
+  leave = (): Promise<OverlayResult> => this.layers.selection.closeThrough()
 
   toggle(id: number): void {
     if (!this.mode)
@@ -163,16 +165,13 @@ export class PlaylistSelection {
   /** 打开选歌单（只有当前歌单以外的自建歌单）；anchor 按入口给：桌面工具条贴按钮，手机操作条固定底部弹层（null） */
   addPicked(event: MouseEvent, anchor: MenuAnchor | null): void {
     const source = this.source
-    if (!source || this.picked.length === 0)
+    if (!source || typeof source.key !== 'number' || this.picked.length === 0)
       return
-    const from = event.currentTarget instanceof HTMLElement
-? event.currentTarget
-: null
-    void this.playlistPicker.open({
+    void this.layers.playlistPicker.open({
       mode: 'multi',
       songs: this.picked,
-      currentPlaylistId: source.playlistId,
-      from,
+      currentPlaylistId: source.key,
+      from: opener(event),
       anchor,
     })
   }
@@ -188,10 +187,38 @@ export class PlaylistSelection {
   removePicked(): void {
     const source = this.source
     const songs = this.picked
-    if (!source || songs.length === 0 || !this.capabilities.remove)
+    if (!source || typeof source.key !== 'number' || songs.length === 0 || !this.capabilities.remove)
       return
-    this.app.removeFromPlaylist(source.playlistId, songs.map(song => song.id))
+    this.app.removeFromPlaylist(source.key, songs.map(song => song.id))
     void this.leave()
+  }
+
+  /** 打开导出（#79）：先写明首数和大小，选文件夹在弹窗里点 */
+  exportPicked(event: MouseEvent): void {
+    if (this.picked.length === 0 || !this.capabilities.export)
+      return
+    void this.layers.exportDialog.open({
+songs: this.picked,
+multi: true,
+from: opener(event),
+})
+  }
+
+  /** 删除勾选的下载前先确认（#79） */
+  deletePicked(event: MouseEvent): void {
+    if (this.picked.length === 0 || !this.capabilities.delete)
+      return
+    void this.layers.deleteDownloads.open({
+songs: this.picked,
+from: opener(event),
+})
+  }
+
+  /** 收起确认和多选，再把确认时看到的那几首一次删掉；导出完一键删除也走这里 */
+  async deleteDownloads(songs: readonly Song[]): Promise<void> {
+    const result = await this.leave()
+    if (result === 'committed')
+      await this.app.deleteDownloads(songs.map(song => song.id))
   }
 
   /** 浮层栈把这一层拿掉时（换页、后退、会话清理）复位；不在别处调用 */
@@ -205,6 +232,11 @@ export class PlaylistSelection {
   private exit(): void {
     this.returnFocus = null
     this.clear()
-    void this.layer.invalidate()
+    void this.layers.selection.invalidate()
   }
 }
+
+/** 点的那个按钮：关掉后焦点回到它 */
+const opener = (event: MouseEvent): HTMLElement | null => event.currentTarget instanceof HTMLElement
+  ? event.currentTarget
+  : null

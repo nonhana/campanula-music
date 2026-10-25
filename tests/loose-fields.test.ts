@@ -47,6 +47,11 @@ describe('宽松字段缺了', () => {
         album: { id: ALBUM.id, name: '夜に駆ける', coverUrl: null },
         duration: null,
         availability: 'full',
+        trackNumber: 1,
+        disc: '01',
+        aliases: [],
+        translations: ['向夜晚奔去'],
+        publishedAt: null,
       },
     ])
   })

@@ -36,6 +36,7 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 - 写入（拖拽排序、加歌/移除、新建/删除/改名/简介/标签/隐私/封面、红心、收藏）改的是服务端内存里的同一份状态，刷新页面、重新打开歌单都能看到；`reset` 回到种子。
 - 封面、头像、歌曲音频、图片直传都指向开发服务器自己：`/mock-assets/cover/*.svg`、`/mock-assets/audio/*.wav`、`/mock-assets/uploads/*`。mock 环境不会向网易云或其他外网发请求。
 - 下载（#38）的地址同样是 `/mock-assets/audio/*.wav`，封面缩略图是本地的 SVG。下载存在浏览器的本机数据库里（属于设备），`reset` 不清它；要回到没有下载，在 DevTools 的 Application 面板删掉 IndexedDB 里的 `campanula`，或者在已下载页逐首删除。
+- 导出（#79）在 mock 里也能走一遍：选文件夹、进度、取消、写完的结果和“从 Campanula 删除”都是真的。但 mock 的下载是 WAV、封面是 SVG：WAV 会照“不是 fLaC 就按 mp3”写上 ID3 标签，SVG 封面不写进文件，导出的文件别的播放器不一定认。歌曲信息写得对不对看 `tests/song-info-core.test.ts`，真的 mp3 / flac 由作者在真账号上试。
 
 ## 场景
 

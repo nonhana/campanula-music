@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@3.1.0",
-  "recordings": 333,
+  "recordings": 336,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -41,9 +41,10 @@
       }
     },
     "album": {
-      "count": 5,
+      "count": 6,
       "outcomes": {
-        "ok": 5
+        "ok": 5,
+        "rejected": 1
       }
     },
     "artist_detail": {
@@ -208,9 +209,9 @@
       }
     },
     "song_download_url_v1": {
-      "count": 8,
+      "count": 10,
       "outcomes": {
-        "ok": 7,
+        "ok": 9,
         "rejected": 1
       }
     },
@@ -4336,6 +4337,56 @@
       "viewer": "invalid",
       "sdk": "hana-music-api@2.12.0",
       "note": "构造的失败返回：返回体照 library/likelist.301-invalid.json 的真实 301 录制（凭据无效时网易云只回 { msg: null, code: 301 }），把模块和查询换成下载地址 song_download_url_v1。下载地址上的 301 没单独录到，测试 #69 的旧会话保护用"
+    },
+    {
+      "path": "playback/export/001-song_download_url_v1.json.gz",
+      "module": "song_download_url_v1",
+      "queryKey": "{\"id\":34586046,\"level\":\"exhigh\"}",
+      "query": {
+        "id": 34586046,
+        "level": "exhigh"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.1.0",
+      "note": null
+    },
+    {
+      "path": "playback/export/002-song_download_url_v1.json.gz",
+      "module": "song_download_url_v1",
+      "queryKey": "{\"id\":34586048,\"level\":\"exhigh\"}",
+      "query": {
+        "id": 34586048,
+        "level": "exhigh"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.1.0",
+      "note": null
+    },
+    {
+      "path": "playback/export/003-album.json.gz",
+      "module": "album",
+      "queryKey": "{\"id\":99999999999}",
+      "query": {
+        "id": 99999999999
+      },
+      "status": 404,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.1.0",
+      "note": null
     },
     {
       "path": "playback/liked/001-song_url_v1.json.gz",

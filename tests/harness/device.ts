@@ -6,7 +6,7 @@ import type { App } from '#lib/app/app.js'
 import { createApp } from '#lib/app/app.js'
 import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } from '#lib/app/browser.js'
 
-import { FakeAudio, FakeBroadcast, FakeFiles, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeWatchman, MediaTasks } from './browser'
+import { FakeAudio, FakeBroadcast, FakeFiles, FakeFolders, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeWatchman, MediaTasks } from './browser'
 
 export interface SentRequest {
   method: string
@@ -67,6 +67,8 @@ export interface Device {
   files: FakeFiles
   /** 本机文件的地址（blob:）：按地址找回是哪个文件 */
   objectUrls: FakeObjectUrls
+  /** 导出时听众选的文件夹（#79）：测试排好下一次在选择器里选哪个文件夹或取消；打开标签页前把 supported 设成 false，就是不支持选文件夹的浏览器 */
+  folders: FakeFolders
   /** 等这台设备上正在发的请求都回来、排着的锁回调、标签页之间的广播和播放器的事件都跑完、本机数据库的读写都做完、 App 处理完（处理时又发的也等） */
   idle: () => Promise<void>
   /** 除了在路上的请求（pending），还有没做完的事：本机数据库事务、排着的锁回调、没送到的广播、播放器排着的事件 */
@@ -115,6 +117,7 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number):
   const inFlight = new Set<Promise<unknown>>()
   const files = new FakeFiles(network)
   const objectUrls = new FakeObjectUrls()
+  const folders = new FakeFolders()
 
   const track = (work: Promise<unknown>): void => {
     inFlight.add(work)
@@ -249,6 +252,9 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number):
         },
         objectUrl: blob => objectUrls.create(blob),
         revokeObjectUrl: url => objectUrls.revoke(url),
+        pickFolder: folders.supported
+          ? () => folders.pick()
+          : null,
       })
       await app.open()
       return {
@@ -328,6 +334,7 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number):
     setOnline: online => network.set(online),
     files,
     objectUrls,
+    folders,
     images,
     async idle() {
       // 先让一轮：刚调的 App 操作可能还没来得及发请求、开事务

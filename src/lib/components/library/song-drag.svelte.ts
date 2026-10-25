@@ -10,7 +10,7 @@ import { DragSort, pageEdges } from '../shared/drag-sort.svelte'
 import { DURATIONS, STAGGER } from '../shared/motion-tokens'
 import { formatCount } from '../shared/text'
 import { SONG_ROW_HEIGHT } from '../songs/view'
-import type { PlaylistSelection } from './playlist-selection.svelte'
+import type { MultiSelect } from './multi-select.svelte'
 
 // 多选里的拖动排序（#36，Spec #11“多选、拖拽与换封面”，原型 docs/prototype/dnd.md）：只在多选里按每行把手拖，平时没有把手。
 // - 勾选的几首一起拖、保持先后；一起被拿走的行收起来，页面往回滚同样的高度，手指底下不跳。
@@ -30,7 +30,7 @@ const EXPAND_STAGGER = STAGGER.step
 
 interface SongDragOptions {
   songs: () => readonly Song[]
-  selection: PlaylistSelection
+  selection: MultiSelect
   /** 挪到 before 前（null 是最后）；App 会按列表里的先后排 */
   move: (songIds: readonly number[], before: number | null) => boolean
   host: () => HTMLElement | undefined

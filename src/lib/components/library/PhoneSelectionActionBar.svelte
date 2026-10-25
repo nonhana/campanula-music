@@ -1,33 +1,59 @@
-<!-- 手机多选底部操作条（原型 PhoneActionBar）：占迷你播放条的位置，拇指够得着。加入歌单对哪种歌单都有；移除只有自建歌单有
-  （我喜欢的音乐、收藏的歌单没有）。能做什么由多选模块按歌单种类给出（#66），这里只是视图。 -->
+<!-- 手机多选底部操作条（原型 PhoneActionBar）：占迷你播放条的位置，拇指够得着。能做什么由多选模块按列表种类给出（#66），这里只是视图：
+  歌单里加入歌单，自建歌单还能移除（我喜欢的音乐、收藏的歌单没有）；已下载页只有导出和删除（#79），浏览器不能选文件夹时没有导出（ADR-0014）。 -->
 <script lang='ts'>
-  import { ListMinus, ListPlus } from '@lucide/svelte'
+  import type { LucideIcon } from '@lucide/svelte'
+  import { FolderDown, ListMinus, ListPlus, Trash2 } from '@lucide/svelte'
 
   import { getOverlays } from '../overlay/overlay-context'
 
-  const { playlistSelection } = getOverlays()
-  const none = $derived(playlistSelection.picked.length === 0)
+  const { multiSelect } = getOverlays()
+  const none = $derived(multiSelect.picked.length === 0)
+  const actions = $derived(([
+    multiSelect.capabilities.add && {
+      label: '加入歌单',
+      icon: ListPlus,
+      run: (event: MouseEvent) => multiSelect.addPicked(event, null),
+    },
+    multiSelect.capabilities.remove && {
+      label: '移除',
+      icon: ListMinus,
+      run: () => multiSelect.removePicked(),
+    },
+    multiSelect.capabilities.export && {
+      label: '导出',
+      icon: FolderDown,
+      run: (event: MouseEvent) => multiSelect.exportPicked(event),
+    },
+    multiSelect.capabilities.delete && {
+      label: '删除',
+      icon: Trash2,
+      destructive: true,
+      run: (event: MouseEvent) => multiSelect.deletePicked(event),
+    },
+  ] satisfies (false | { label: string, icon: LucideIcon, destructive?: true, run: (event: MouseEvent) => void })[]).filter(action => action !== false))
 </script>
 
-<div class='grid h-full' class:grid-cols-2={playlistSelection.capabilities.remove} class:grid-cols-1={!playlistSelection.capabilities.remove}>
-  <button
-    type='button'
-    class='h-full flex flex-col items-center justify-center gap-1 rounded-l-xl text-neutral-800 active:bg-primary-100 disabled:opacity-45'
-    disabled={none}
-    onclick={event => playlistSelection.addPicked(event, null)}
-  >
-    <ListPlus size={20} aria-hidden='true' />
-    <span class='text-caption font-500'>加入歌单</span>
-  </button>
-  {#if playlistSelection.capabilities.remove}
+<div class={[
+  'grid h-full',
+  actions.length === 2
+    ? 'grid-cols-2'
+    : 'grid-cols-1',
+]}>
+  {#each actions as action, i (action.label)}
+    {@const Icon = action.icon}
     <button
       type='button'
-      class='h-full flex flex-col items-center justify-center gap-1 rounded-r-xl text-neutral-800 active:bg-primary-100 disabled:opacity-45'
+      class={[
+        'h-full flex flex-col items-center justify-center gap-1 active:bg-primary-100 disabled:opacity-45',
+        action.destructive ? 'text-error-700' : 'text-neutral-800',
+        i === 0 && 'rounded-l-xl',
+        i === actions.length - 1 && 'rounded-r-xl',
+      ]}
       disabled={none}
-      onclick={() => playlistSelection.removePicked()}
+      onclick={action.run}
     >
-      <ListMinus size={20} aria-hidden='true' />
-      <span class='text-caption font-500'>移除</span>
+      <Icon size={20} aria-hidden='true' />
+      <span class='text-caption font-500'>{action.label}</span>
     </button>
-  {/if}
+  {/each}
 </div>

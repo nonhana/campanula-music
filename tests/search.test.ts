@@ -301,6 +301,11 @@ describe('单曲结果', () => {
       album: { id: 73881727, name: 'Light Mellow 松原みき', coverUrl: 'http://p3.music.126.net/rddYSzo2ZLxZ3HMerP_-0A==/109951172387752494.jpg' },
       duration: 274400,
       availability: 'full',
+      trackNumber: 1,
+      disc: '1',
+      aliases: [],
+      translations: ['午夜之门/留在我身边', 'Mayonaka no Door~stay with me (Single ver.)'],
+      publishedAt: 310233600000,
     })
   })
 

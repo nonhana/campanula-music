@@ -3,7 +3,9 @@ import { onDestroy, onMount, tick } from 'svelte'
 import { createSubscriber } from 'svelte/reactivity'
 
 import LogoutConfirm from '../account/LogoutConfirm.svelte'
-import { PlaylistSelection } from '../library/playlist-selection.svelte'
+import DeleteDownloadsConfirm from '../downloads/DeleteDownloadsConfirm.svelte'
+import ExportDialog from '../downloads/ExportDialog.svelte'
+import { MultiSelect } from '../library/multi-select.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
 import { createDrawer } from '../player/drawer.svelte'
 import { createPlayerLayer } from '../player/player-layer.svelte'
@@ -17,7 +19,7 @@ import { getAppView } from '../shared/app-context.svelte'
 import { desktopLayout } from '../shared/layout'
 import { setSelectionMode } from '../ui/selection-mode'
 import { createOverlayHistory } from './overlay-history.svelte'
-import type { AddToPlaylistRequest, DialogRequest, EditorRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
+import type { AddToPlaylistRequest, DeleteDownloadsRequest, DialogRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
 import type { LayerOptions } from './overlay-stack'
 import { OverlayStack } from './overlay-stack'
 
@@ -31,7 +33,7 @@ export const createOverlays = () => {
     }
   })
   let stack!: OverlayStack<HTMLElement>
-  let playlistSelection!: PlaylistSelection
+  let multiSelect!: MultiSelect
   const history = createOverlayHistory({
     changed: (phase) => {
       void stack.reconcile(phase)
@@ -111,6 +113,22 @@ modal: true,
     dismissed: () => view.app.closeCover(),
   }, CoverEditor)
   const logoutConfirm = register<DialogRequest>('logout', dialog, LogoutConfirm)
+  // 导出（#79）：多选打开的不能比多选层活得更久，歌曲菜单转交的不依赖它。正在写时 Esc、返回、关闭键都是取消：
+  // 正在写的这首丢弃，弹窗留着给结果（和换封面的上传中一样钉住）
+  const exportDialog = register<ExportRequest>('export', {
+    ...dialog,
+    dependsOn: request => request.multi
+      ? 'selection'
+      : null,
+    beforeClose: () => {
+      if (view.state.exporting?.status !== 'writing')
+        return true
+      view.app.cancelExport()
+      return false
+    },
+    dismissed: () => view.app.closeExport(),
+  }, ExportDialog)
+  const deleteDownloadsConfirm = register<DeleteDownloadsRequest>('delete-downloads', { ...dialog, dependsOn: 'selection' }, DeleteDownloadsConfirm)
   const canRestorePlayer = () => !queueEmpty(view.state.player)
   // 播放页这一层不挂组件：播放页、播放提示由 PlayerLayer 挂载（提供 data-overlay="player"）。mounted 只收有组件的层，
   // OverlayHost 不渲染空容器；历史、Esc/返回、忙时钉住、焦点兜底、containerInert 只认登记表。回焦目标仍是播放条按钮。
@@ -133,12 +151,17 @@ fallback: '[data-queue-entry]',
     // 多选只是列表上的一层状态（顶栏 / 底部操作条），不是 modal：不压暗、不 inert 背景；焦点还给打开它的元素，
     // 按钮被工具条换掉时由多选给重新挂上的入口（没有全局兜底查询，#66）。
     modal: false,
-    focusReturn: () => playlistSelection.returnTarget(),
-    dismissed: () => playlistSelection.clear(),
+    focusReturn: () => multiSelect.returnTarget(),
+    dismissed: () => multiSelect.clear(),
   })
-  playlistSelection = new PlaylistSelection(selection, playlistPicker, view.app)
+  multiSelect = new MultiSelect({
+selection,
+playlistPicker,
+exportDialog,
+deleteDownloads: deleteDownloadsConfirm,
+}, view.app)
   // 滚动条从这里知道“正在多选”，让开右边的触屏把手（#66）
-  setSelectionMode(() => playlistSelection.mode)
+  setSelectionMode(() => multiSelect.mode)
   const playerDrawer = createDrawer(() => window.innerHeight)
   /** 播放页层：队列非空 × 播放页开着 × 抽屉可见（两个外框共用这一份推导） */
   const playerLayer = createPlayerLayer(player, playerDrawer)
@@ -158,10 +181,12 @@ playlistEditor,
 addSongsDialog,
 coverEditor,
 logoutConfirm,
+exportDialog,
+deleteDownloadsConfirm,
 player,
 queue,
 selection,
-playlistSelection,
+multiSelect,
 playerDrawer,
 playerLayer,
 }

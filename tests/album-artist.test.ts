@@ -50,6 +50,7 @@ describe('专辑页', () => {
           publishedAt: 1441900800000,
           description: expect.stringMatching(/^＊顶著‘英伦摇滚超级救世主乐团’/),
           songCount: 10,
+          company: '华纳音乐',
         },
       },
     })
@@ -65,6 +66,11 @@ describe('专辑页', () => {
       album: { id: KEEP_THE_VILLAGE_ALIVE.id, name: 'Keep The Village Alive', coverUrl: 'https://p3.music.126.net/GdQ9aQ3f3pscKhOpmIV4eA==/18345351510219723.jpg' },
       duration: 220320,
       availability: 'full',
+      trackNumber: 1,
+      disc: '1',
+      aliases: [],
+      translations: [],
+      publishedAt: null,
     })
 
     const reopened = (await reopen(device)).app
@@ -222,6 +228,11 @@ describe('歌手页', () => {
       album: { id: 94214994, name: '群青', coverUrl: 'https://p3.music.126.net/sF9I_mKMVNtsCD-ZXzfV_A==/109951165251958014.jpg' },
       duration: 248444,
       availability: 'full',
+      trackNumber: 1,
+      disc: '01',
+      aliases: [],
+      translations: [],
+      publishedAt: 1598889600000,
     })
     expect(page.content.albums).toHaveLength(65)
     expect(page.content.albums[0]).toEqual({

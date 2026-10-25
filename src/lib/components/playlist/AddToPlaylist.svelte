@@ -17,7 +17,7 @@
   import { artistLine, formatCount, formatSongCount, langOf } from '../shared/text'
   import { playlistName } from './playlist-text'
 
-  const { playlistEditor, playlistPicker, playlistSelection } = getOverlays()
+  const { playlistEditor, playlistPicker, multiSelect } = getOverlays()
 
   /** 不能选的理由怎么写（答案里给的是理由本身，措辞留在这里） */
   const BLOCKED: Record<AddTargetBlock, string> = {
@@ -91,7 +91,7 @@
   /** 选了目标：单曲交给 App 加；多选交给多选模块（收起两层、退出多选，再一次加进去） */
   const choose = (target: AddTarget, request: AddToPlaylistRequest): void => {
     if (request.mode === 'multi') {
-      void playlistSelection.addTo(target.id, request.songs)
+      void multiSelect.addTo(target.id, request.songs)
       return
     }
     void view.app.addToPlaylist(target.id, request.song)

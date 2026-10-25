@@ -184,5 +184,11 @@ export const lyricsOf = (body: NeteaseLyrics): LyricsResponse => {
     })),
     translated: translations.some(text => text !== null),
     romanized: romanizations.some(text => text !== null),
+    yrc: body.yrc?.lyric?.trim()
+      ? body.yrc.lyric
+      : null,
+    romalrc: body.romalrc?.lyric?.trim()
+      ? body.romalrc.lyric
+      : null,
   }
 }

@@ -18,6 +18,7 @@ const BROWSER_GLOBALS_BY_CAPABILITY = {
   download: ['fetch'],
   objectUrl: ['URL'],
   revokeObjectUrl: ['URL'],
+  pickFolder: ['showDirectoryPicker'],
 } as const satisfies Record<keyof BrowserCapabilities, readonly string[]>
 
 /** 不在 BrowserCapabilities 里、但同样只准在 browser.ts 用的全局对象 */

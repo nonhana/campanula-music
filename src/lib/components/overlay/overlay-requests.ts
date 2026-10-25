@@ -48,3 +48,14 @@ export type EditorRequest
 export interface PlaylistRequest extends DialogRequest {
   readonly playlistId: number
 }
+
+/** 导出（#79）：歌曲菜单转交的一首，或多选工具条打开的勾选的几首（multi：不能比多选层活得更久，写完收起多选） */
+export interface ExportRequest extends DialogRequest {
+  readonly songs: readonly Song[]
+  readonly multi: boolean
+}
+
+/** 删除多选里勾选的几首下载之前确认（#79） */
+export interface DeleteDownloadsRequest extends DialogRequest {
+  readonly songs: readonly Song[]
+}

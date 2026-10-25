@@ -86,5 +86,8 @@ export type LyricsResponse
   = | { kind: 'pureMusic' }
   /** 网易云没有这首的歌词 */
     | { kind: 'none' }
-    /** word：有逐字歌词；line：只有逐行的，lines 按开始的时刻排。translated、romanized：有没有一行配上了翻译、音译（没有时界面禁用开关） */
-    | { kind: 'word' | 'line', lines: LyricLine[], translated: boolean, romanized: boolean }
+    /**
+     * word：有逐字歌词；line：只有逐行的，lines 按开始的时刻排。translated、romanized：有没有一行配上了翻译、音译（没有时界面禁用开关）。
+     * yrc、romalrc：网易云给的逐字歌词、音译原文，导出时原样写进文件（#79），界面不用；网易云没给是 null
+     */
+    | { kind: 'word' | 'line', lines: LyricLine[], translated: boolean, romanized: boolean, yrc: string | null, romalrc: string | null }

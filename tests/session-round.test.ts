@@ -15,7 +15,7 @@ import { createSessionRound } from '#lib/app/session-round.js'
 import type { FakeAudio } from './harness/browser'
 import type { Device, Tab } from './harness/device'
 import { held, never } from './harness/hold'
-import { checkIns, DAILY, likedSong, listener, storedCheckIns } from './harness/listener'
+import { ALBUM_MISSING, checkIns, DAILY, likedSong, listener, storedCheckIns } from './harness/listener'
 import { ANOTHER_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -132,6 +132,7 @@ describe('旧会话的回复', () => {
     const slow = held()
     await world.netease.reply(DOWNLOAD_301, { until: slow.until })
     await world.netease.reply('playback/lyric_new.all-forms.json')
+    await world.netease.reply(ALBUM_MISSING)
     await world.netease.reply('login/login_refresh.301-invalid.json')
 
     expect(app.download(song)).toBeNull()
