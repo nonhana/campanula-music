@@ -137,7 +137,7 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 ```
 
 - tsx 只跑不查类型。一次性脚本要查类型，就先放进 `scripts/` 跑一次 `pnpm check`（`scripts/**/*.mts` 在类型检查里），再挪回 `_notes/scripts/`。
-- 登录 Cookie：`pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi`，作者在里面扫码登录过）取 `campanula_login`，存进作者本机的 `_notes/campanula-login`。录制脚本只从这个文件读，值不出现在命令行和对话里。`openSession()` 先只读问一次 `user_account`：文件不在、用本机 `.env` 的 `COOKIE_SECRET` 解不开、或者登录已经失效（账号是 null）都直接报错，停下来请作者在专用窗口里扫码，再取一次。
+- 登录 Cookie：`pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi.sh`，作者在里面扫码登录过）取 `campanula_login`，存进作者本机的 `_notes/campanula-login`。录制脚本只从这个文件读，值不出现在命令行和对话里。`openSession()` 先只读问一次 `user_account`：文件不在、用本机 `.env` 的 `COOKIE_SECRET` 解不开、或者登录已经失效（账号是 null）都直接报错，停下来请作者在专用窗口里扫码，再取一次。
 - `save()` 按上面「脱敏」的规则处理，写之前用 `scripts/fixture-identity.mts` 查残留；对照表在作者本机的 `_notes/fixture-identity.json`（本人的 uid、昵称、歌手编号和名字，本人歌单、作品、其他听众的真假编号对照）。录到新的人、本人新的歌单和作品时补进对照表，之后的录制沿用同一套假编号。
 - 提交时 `lint-staged` 对暂存的录制跑同一个检查，有残留就拦下；没有对照表的机器（CI）跳过。手动查全部：`pnpm tsx scripts/fixture-identity.mts`。
 - 对照表不在了要重建：本人身份用 `/api/account`，本人歌单的真实编号用浏览器里的 `/api/playlists`，作品的真实编号用本机副本里歌手是本人的歌，按名字和录制里 `99999999` 的歌对上。

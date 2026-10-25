@@ -1,4 +1,4 @@
-// 从专用浏览器（scripts/axi）取登录 Cookie，存进 _notes/campanula-login，给录制脚本（netease-record.mts 的 openSession）用。作者先在专用窗口里扫码登录过（开发服务器开着）。
+// 从专用浏览器（scripts/axi.sh）取登录 Cookie，存进 _notes/campanula-login，给录制脚本（netease-record.mts 的 openSession）用。作者先在专用窗口里扫码登录过（开发服务器开着）。
 // Cookie 是 httpOnly 的，页面脚本读不到：这里让页面发一次 /api/account，再从 DevTools 记下的请求头里取 campanula_login。值只写进文件，不打印。用法：pnpm tsx scripts/take-login.mts
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
@@ -8,9 +8,9 @@ const ROOT = join(import.meta.dirname, '..')
 const LOGIN_FILE = join(ROOT, '_notes/campanula-login')
 const BASE = 'http://localhost:5173'
 
-const port = execFileSync(join(ROOT, 'scripts/axi'), ['port'], { encoding: 'utf8' }).trim()
+const port = execFileSync(join(ROOT, 'scripts/axi.sh'), ['port'], { encoding: 'utf8' }).trim()
 
-/** 调一个 DevTools 工具（经专用浏览器的桥接进程，见 scripts/axi） */
+/** 调一个 DevTools 工具（经专用浏览器的桥接进程，见 scripts/axi.sh） */
 const call = async (name: string, args: Record<string, unknown>): Promise<string> => {
   const response = await fetch(`http://127.0.0.1:${port}/call`, {
     method: 'POST',
@@ -36,7 +36,7 @@ const pageIdOf = (text: string, target: string): number => {
     if (url === target || url.startsWith(`${target}/`))
       return Number(match[1])
   }
-  throw new Error(`专用窗口里没有打开着 ${target} 的标签页：开发服务器开着吗？用 scripts/axi open ${target}/ 打开，在里面扫码登录`)
+  throw new Error(`专用窗口里没有打开着 ${target} 的标签页：开发服务器开着吗？用 scripts/axi.sh open ${target}/ 打开，在里面扫码登录`)
 }
 
 const pageId = pageIdOf(pages, BASE)
@@ -45,7 +45,7 @@ const pageId = pageIdOf(pages, BASE)
 const probe = `/api/account?take-login=${Date.now()}`
 const signedIn = await call('evaluate_script', { pageId, function: `async () => (await (await fetch('${probe}')).json()).account !== null` })
 if (!signedIn.includes('true'))
-  throw new Error('专用窗口里还没登录：请作者在专用窗口（scripts/axi）里扫码登录，再跑一次')
+  throw new Error('专用窗口里还没登录：请作者在专用窗口（scripts/axi.sh）里扫码登录，再跑一次')
 
 const requests = await call('list_network_requests', {
   pageId,

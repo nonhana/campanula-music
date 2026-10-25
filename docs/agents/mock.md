@@ -10,7 +10,7 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 ```
 
 - 独立端口 `http://localhost:5174`，和普通的 `pnpm dev`（5173，真账号）同时开着也不冲突。
-- 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的。
+- 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser.sh open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的。
 - 页面左下角显示 `Mock · 测试数据`。
 - 退出登录后，UI 的扫码 / 短信登录流程照常可用；mock 的二维码会直接成功。要回到已登录，再访问一次 `/mock/login`。
 - `/design` 在 `pnpm dev` 和 `pnpm dev:mock` 都能打开；设计页主体不进生产包，部署后的路由返回 404（#61）。
@@ -40,10 +40,10 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 ## 场景
 
 ```sh
-scripts/browser scenario login-expired
-scripts/browser scenario rate-limited
-scripts/browser reset          # 回到 default
-scripts/browser coverage       # 看 mock 调过哪些模块、缺哪些录制
+scripts/browser.sh scenario login-expired
+scripts/browser.sh scenario rate-limited
+scripts/browser.sh reset          # 回到 default
+scripts/browser.sh coverage       # 看 mock 调过哪些模块、缺哪些录制
 ```
 
 | 场景 | 看到什么 |
@@ -55,19 +55,19 @@ scripts/browser coverage       # 看 mock 调过哪些模块、缺哪些录制
 | `empty-playlist` | poems 是 0 首 |
 | `partial-sync` | 第二次取歌曲信息失败，曲库停在同步了一半 |
 | `slow` | 每次网易云调用晚 800ms，看骨架和加载状态 |
-| `offline` | API 回 503（连不上）；要看真正的断网，用 `scripts/browser offline on` |
+| `offline` | API 回 503（连不上）；要看真正的断网，用 `scripts/browser.sh offline on` |
 
 场景只影响 mock，不改 App 代码。自定义参数可以直接 `POST /api/mock/scenario`，例如 `{"name":"slow","latencyMs":2000}`。
 
 ## 没覆盖的模块
 
-mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确失败，服务端日志写清模块、查询、场景，`GET /api/mock/coverage`（或 `scripts/browser coverage`）的 `misses` 里也有一条；不会静默回退到真账号。
+mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确失败，服务端日志写清模块、查询、场景，`GET /api/mock/coverage`（或 `scripts/browser.sh coverage`）的 `misses` 里也有一条；不会静默回退到真账号。
 
 要补：按 `tests/fixtures/netease/README.md`「录制」用 `scripts/netease-record.mts` 录，再跑 `pnpm fixtures:index`。
 
 ### 缺数据怎么处理
 
-先跑一遍要做的界面，让 mock 报错，`scripts/browser coverage` 会给出模块、查询、场景。按缺的东西分：
+先跑一遍要做的界面，让 mock 报错，`scripts/browser.sh coverage` 会给出模块、查询、场景。按缺的东西分：
 
 | 缺什么 | 怎么做 |
 |---|---|

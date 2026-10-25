@@ -8,7 +8,7 @@
     "tests/**/*.test.ts",
     "src/lib/server/mock/runtime.ts"
   ],
-  "project": ["src/**/*.{ts,svelte}", "scripts/*.mts", "tests/**/*.ts", "*.{js,ts}"],
+  "project": ["src/**/*.{ts,svelte}", "scripts/*.mts", "tests/**/*.ts", "*.mts"],
   "ignoreDependencies": [
     "@typescript/native",
     "uno.css"

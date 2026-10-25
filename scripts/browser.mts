@@ -1,5 +1,5 @@
 // 统一的浏览器命令：mock 是日常验证的默认路径，真账号只用于交付前由作者试用。一个浏览器进程、一个专用上下文；同一时间只允许一个 agent 操作（文件锁）。
-// 用法：scripts/browser check|open|exec|screenshot|reset|scenario|coverage|offline|port [参数]
+// 用法：scripts/browser.sh check|open|exec|screenshot|reset|scenario|coverage|offline|port [参数]
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -222,7 +222,7 @@ const main = async (): Promise<void> => {
           const pageId = await ensurePage('/api/account')
           const account = await accountSignedIn(pageId)
           if (!account.signedIn) {
-            console.error(`真账号没登录：请在专用窗口（scripts/axi）里扫码一次，再跑 scripts/browser check --real。${account.text}`)
+            console.error(`真账号没登录：请在专用窗口（scripts/axi.sh）里扫码一次，再跑 scripts/browser.sh check --real。${account.text}`)
             process.exitCode = 1
             return
           }
@@ -248,7 +248,7 @@ const main = async (): Promise<void> => {
         if (real) {
           const account = await accountSignedIn(pageId)
           if (!account.signedIn) {
-            console.error(`真账号没登录：请先在专用窗口（scripts/axi）里扫码。没有继续打开页面。${account.text}`)
+            console.error(`真账号没登录：请先在专用窗口（scripts/axi.sh）里扫码。没有继续打开页面。${account.text}`)
             process.exitCode = 1
             return
           }

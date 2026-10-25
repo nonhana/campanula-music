@@ -26,8 +26,8 @@
 
 ### Mock 与浏览器验证
 
-- 日常界面、动效和 reviewer 验证走 mock：`pnpm dev:mock`（5174），`scripts/browser`（默认 mock，不需要登录）。见 `docs/agents/mock.md`。
-- 真账号只用于作者最后的交付试用，走专用浏览器 `scripts/axi`；打开前先 `scripts/browser check --real`，不是登录态就停下请作者扫码。见 `docs/agents/browser.md`。
+- 日常界面、动效和 reviewer 验证走 mock：`pnpm dev:mock`（5174），`scripts/browser.sh`（默认 mock，不需要登录）。见 `docs/agents/mock.md`。
+- 真账号只用于作者最后的交付试用，走专用浏览器 `scripts/axi.sh`；打开前先 `scripts/browser.sh check --real`，不是登录态就停下请作者扫码。见 `docs/agents/browser.md`。
 - reviewer 不自己启动 Chrome；父 agent 用 mock 做视觉验证，把结论和截图路径交给 reviewer。
 
 ## 代码地图

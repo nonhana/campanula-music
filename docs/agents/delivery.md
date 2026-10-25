@@ -18,10 +18,10 @@
    - 第五个是“会话一轮 / 保存的播放队列核心” `src/lib/app/session-round.ts` 和 `src/lib/app/saved-queue.ts`（`tests/session-round.test.ts` 的纯逻辑部分）：用假的 `Api`、`BackgroundLane`、`Player` 和本机数据库，测两个并发 needsLogin 只让 `expired`、`lane.stop`、`current` 各前进一次且两个结果都是 null；别的标签页退出时停播不写最后一首打卡、也不直接发。这里不测 App 状态、界面和真实网易云。
    - 写新测试前先看 `tests/harness/listener.ts`：从按领域命名的登录、同步停点、本机副本读取和请求过滤场景开始；只有新的听众行为才在测试文件里加准备步骤。
    - 网易云的返回只用验证关卡录下、脱敏过的数据（`tests/fixtures/netease/`），用 `world.netease.reply()` 放进去，不连真实账号。
-   - 缺录制数据时用 `scripts/netease-record.mts`（`pnpm tsx` 跑）录，做法和脱敏规则见 `tests/fixtures/netease/README.md`「录制」。录制用的登录 Cookie 用 `pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi`）取；录制开始前会确认登录有效，失效时停下来请作者在专用窗口里扫码。
+   - 缺录制数据时用 `scripts/netease-record.mts`（`pnpm tsx` 跑）录，做法和脱敏规则见 `tests/fixtures/netease/README.md`「录制」。录制用的登录 Cookie 用 `pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi.sh`）取；录制开始前会确认登录有效，失效时停下来请作者在专用窗口里扫码。
    - SDK 的成败规矩看 `tests/harness/netease-sdk.ts` 和 `fixtures.ts` 的注释；上游 README 还没写，见 nonhana/hana-music-api#43。
    - 缺哪种浏览器能力的替身，就在这张票里加进 `src/lib/app/browser.ts` 和 `tests/harness/browser.ts`。
-3. **界面票**：设计从视觉原型的源码读，规则以 `DESIGN.md` 为准，读法见 `campanula-ui-acceptance` skill 第 1 步。实现者的自查走 mock（`pnpm dev:mock`、`scripts/browser`，见 `docs/agents/mock.md`）；验收仍由作者亲手试用（Spec #11「交付方式」），实现者不拍截图、不做成批的浏览器检查。写代码时碰到读代码弄不清的浏览器行为（例如第三方脚本在本机能不能用），先用一句话问作者要不要在专用窗口（`scripts/axi`）里查一次。截图、浏览器检查、动效逐帧只在作者点名时做，用那个 skill 的工具。
+3. **界面票**：设计从视觉原型的源码读，规则以 `DESIGN.md` 为准，读法见 `campanula-ui-acceptance` skill 第 1 步。实现者的自查走 mock（`pnpm dev:mock`、`scripts/browser.sh`，见 `docs/agents/mock.md`）；验收仍由作者亲手试用（Spec #11「交付方式」），实现者不拍截图、不做成批的浏览器检查。写代码时碰到读代码弄不清的浏览器行为（例如第三方脚本在本机能不能用），先用一句话问作者要不要在专用窗口（`scripts/axi.sh`）里查一次。截图、浏览器检查、动效逐帧只在作者点名时做，用那个 skill 的工具。
 4. **真账号**：作者试用就是真账号验证。日常实现和 reviewer 都走 mock（见 `docs/agents/browser.md`），reviewer 不自己启动 Chrome。实现者只在上游行为还没被证明过时（新接的网易云模块、SDK 修复还没在真账号上成功过），先问作者，同意后用一次性脚本查，遵守 Spec #11「交付方式」里的五条规矩，并记录做了什么。需要作者在场时（扫码、收短信、用真机），停下来叫作者。
 5. **收尾**：用 `/code-review` 审一遍，提交并**推送** `rewrite/v1`（推送前钩子跑 `pnpm check`、`pnpm test`、`pnpm build`）。只提交不推送，CI 和 Vercel 都不会跑，作者没法在手机上验收。
    - 推送后等 CI 成功：`gh run list --branch rewrite/v1`，确认这次提交的 run 是 `completed / success`。

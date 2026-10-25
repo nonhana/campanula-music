@@ -18,7 +18,7 @@ export interface MockConfig {
   seed: SeedName
   /** 每次 SDK 调用先等这么久，模拟网易云回得慢 */
   latencyMs: number
-  /** 所有 API 请求回 503（连不上）；真断网用 scripts/browser offline on */
+  /** 所有 API 请求回 503（连不上）；真断网用 scripts/browser.sh offline on */
   offline: boolean
   /** 打开 App 时网易云说需要登录，续期也回 301 */
   loginExpired: boolean
