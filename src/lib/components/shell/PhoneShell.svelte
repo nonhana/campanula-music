@@ -1,12 +1,13 @@
 <!--
   手机骨架（窄于 768px，DESIGN.md Layout）：顶上一行（logo、搜索、每日推荐；二级页面是返回栏），下面可以跟文字标签（我喜欢 / 歌单 / 专辑 / 歌手），底部是离屏幕边 8px 浮起的迷你播放条和一层晨光底的渐隐。
-  只管区域和尺寸，顶行、标签行里放什么由调用方传；滚动条从顶行（连着标签）下沿到迷你播放条上沿，顶行下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）；歌曲列表从上下文拿 ScrollLookup。
+  只管区域和尺寸，顶行、标签行里放什么由调用方传；断网时顶行下面多一条提示条（#42），跟着一起吸在顶上。滚动条从顶行（连着标签、提示条）下沿到迷你播放条上沿，顶行下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）；歌曲列表从上下文拿 ScrollLookup。
   换页时（uno.config.ts）：顶行、标签行交叉淡化，迷你播放条和渐隐原地不动，只有内容在动；播放条由 PlayerDock 停靠：第一次有歌时浮上来、渐隐跟着淡入，清空时沉下去。
 -->
 <script lang='ts'>
   import type { Snippet } from 'svelte'
   import { onDestroy } from 'svelte'
 
+  import OfflineBar from '../notice/OfflineBar.svelte'
   import { getOverlays } from '../overlay/overlay-context'
   import { setScrollLookup } from '../shared/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
@@ -15,6 +16,8 @@
   import { pageScrollPadding } from './scroll-padding'
 
   interface Props {
+    /** 断网：顶行下面贴一条提示，跟着顶行一起吸在顶上 */
+    offline?: boolean
     /** 56px 高的顶行 */
     header: Snippet
     /** 跟着顶行吸在页面顶上的文字标签 */
@@ -26,7 +29,7 @@
     children: Snippet
   }
 
-  const { header, tabs, replace, preview, children }: Props = $props()
+  const { offline = false, header, tabs, replace, preview, children }: Props = $props()
   const lookup = setScrollLookup({ markAt: null })
   const { playerLayer } = getOverlays()
   /** 底下有没有东西：播放条、占它位置的多选操作条，或设计页的示意图 */
@@ -52,6 +55,9 @@
     </header>
     {#if tabs}
       <div class='bg-primary-50' style:view-transition-name='phone-tabs' style:view-transition-class='crossfade'>{@render tabs()}</div>
+    {/if}
+    {#if offline}
+      <OfflineBar phone />
     {/if}
   </div>
   <main>

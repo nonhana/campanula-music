@@ -212,4 +212,120 @@ describe('本机数据库升级', () => {
     ])
     expect(reopened.app.state.player.position).toBe(42)
   })
+
+  it('v4 → 10：歌单列表补上后加的字段；v5 删掉旧的歌曲信息和专辑页、每张歌单记成歌曲信息还没取全，下次同步重取；播放队列、设置、打卡、下载的存储区建好', async () => {
+    // v4 的存储区、键和内容格式取自 b00949d:src/lib/app/local.ts：歌单还没有播放次数、简介、标签（v8），歌曲还没有能不能放（v5），
+    // 播放队列和设置（v6）、打卡（v7）、下载（v9）的存储区都还没有。
+    const signedIn = world.device()
+    const login = await signInAtHearts(signedIn)
+    await world.settle()
+    login.close()
+
+    const device = world.device()
+    for (const cookie of await signedIn.cookies())
+      await device.setCookie(cookie.toString())
+    const oldPlaylist = {
+      id: 900000001,
+      name: '我喜欢的音乐',
+      kind: 'liked',
+      private: false,
+      coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg',
+      creator: '测试听众',
+      trackCount: 2,
+      tracksUpdatedAt: 1,
+    }
+    const oldSong = {
+      id: 3433267939,
+      name: '旧版存着的歌',
+      artists: [
+        { id: 1, name: '旧版存着的歌手' },
+      ],
+      album: { id: 1, name: '旧版存着的专辑', coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg' },
+      duration: 192648,
+    }
+    await device.preload(4, (database) => {
+      database.createObjectStore('session')
+      const library = database.createObjectStore('library')
+      library.put(10000001, 'owner')
+      library.put([3433267939], 'hearts')
+      library.put([oldPlaylist], 'playlists')
+      library.put([
+        {
+          id: 3149073,
+          name: '旧版收藏的专辑',
+          coverUrl: null,
+          artists: [],
+          songCount: 10,
+        },
+      ], 'collectedAlbums')
+      library.put([], 'collectedArtists')
+      database.createObjectStore('tracks').put({
+        version: 1,
+        trackIds: [3433267939, 2662577181],
+        complete: true,
+      }, 900000001)
+      database.createObjectStore('songs', { keyPath: 'id' }).put(oldSong)
+      database.createObjectStore('albumPages').put({
+        album: { id: 3149073, name: '旧版收藏的专辑' },
+        songs: [],
+      }, 3149073)
+    })
+
+    const hearts = held()
+    const tab = await reopen(device, undefined, { until: hearts.until })
+    const { app } = tab
+    await world.settle()
+
+    expect(app.state.session).toMatchObject({ status: 'signedIn', account: RECORDED_ACCOUNT })
+    expect(app.state.library?.playlists).toEqual([
+      {
+        ...oldPlaylist,
+        playCount: 0,
+        description: null,
+        tags: [],
+      },
+    ])
+    expect(app.state.library?.liked).toMatchObject({ total: 2, complete: false })
+    expect(device.requests.some(request => request.path.includes('/login/'))).toBe(false)
+
+    const upgraded = await device.stored()
+    expect(upgraded.songs).toEqual([])
+    expect(upgraded.albumPages).toEqual([])
+    expect(upgraded.tracks.find(([id]) => id === 900000001)?.[1]).toMatchObject({
+      trackIds: [3433267939, 2662577181],
+      complete: false,
+    })
+    // 新的存储区建好了，旧版没有的这几样是空的
+    expect(upgraded.player).toEqual([])
+    expect(upgraded.settings).toEqual([])
+    expect(upgraded.checkIns).toEqual([])
+    expect(upgraded.downloads).toEqual([])
+
+    // 下一次同步按网易云的曲目重新取歌曲信息（带上 v5 加的能不能放、v10 加的第几首等）
+    await replyLibrary({ from: 'playlists' })
+    await replyLikedSongs()
+    await replyLibrary({
+      from: 'likedTracks',
+      until: never(),
+    })
+    hearts.release()
+    await world.settle()
+    expect(device.requests.some(request => request.path === '/api/songs')).toBe(true)
+    expect((await device.stored()).songs.find(([id]) => id === 3433267939)?.[1]).toMatchObject({
+      name: '夏に溶ける (feat. 鏡音リン)',
+      availability: 'full',
+      trackNumber: 1,
+      disc: '01',
+    })
+
+    // 专辑页也重新取：收藏的专辑列表还在，打开时按它拉一次
+    await world.netease.reply('library/album-artist/008-album.json.gz')
+    await app.openAlbum(3149073)
+    await world.settle()
+    expect(world.netease.calls.findLast(call => call.module === 'album')).toMatchObject({
+      query: { id: 3149073 },
+    })
+    expect(app.state.library?.albumPage(3149073)).toMatchObject({ status: 'shown' })
+    expect((await device.stored()).albumPages.map(([id]) => id)).toEqual([3149073])
+  })
 })

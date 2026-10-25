@@ -226,7 +226,13 @@
   <div class='grid items-start gap-8 lg:grid-cols-[208px_minmax(0,1fr)]'>
     <div class='min-w-0 lg:col-start-2 lg:row-start-1'>{@render mainColumn(library)}</div>
 
-    <nav bind:this={sideNav} class='sticky top-20 hidden max-h-[calc(100dvh-112px)] overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block' aria-label='曲库里的歌单'>
+    <nav
+      bind:this={sideNav}
+      class='sticky hidden overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block'
+      style:top='calc(5rem + var(--offline-bar-height, 0px))'
+      style:max-height='calc(100dvh - 112px - var(--offline-bar-height, 0px))'
+      aria-label='曲库里的歌单'
+    >
       <Scrollbar />
       <ul class='flex flex-col gap-1 px-2'>
         {#each library.playlists ?? [] as item, i (item.id)}
