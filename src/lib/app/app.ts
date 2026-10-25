@@ -31,6 +31,7 @@ import { connectMediaSession } from './media-session'
 import type { NoticeAction } from './notice'
 import { createNotices, noticeActions } from './notice'
 import { createBackgroundLane } from './pacing'
+import { plainSong, plainSource } from './plain'
 import type { Player, PlayerState, PlayMode } from './player'
 import { createPlayer, INITIAL_PLAYER } from './player'
 import { createSavedQueue } from './saved-queue'
@@ -864,7 +865,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     cancelCover: cover.cancel,
     retryCover: cover.retry,
     closeCover: cover.close,
-    createPlaylist: library.create,
+    createPlaylist: (draft, songs) => library.create(draft, songs?.map(plainSong)),
     async editPlaylist(playlistId, edit) {
       const changes = playlistEdits(ownPlaylist(playlistId), edit)
       // 有一样不合规、断网时整次都不提交：只说一次原因，不让后一样的提示盖掉前一样的
@@ -889,6 +890,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     moreSearchResults: search.more,
     clearSearchHistory: search.clearHistory,
     play(source, songId) {
+      source = plainSource(source)
       if (source.kind === 'search') {
         const song = searchedSong(source.keyword, songId)
         if (song)
@@ -900,6 +902,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
         player.play(source, list.songs, songId, list.complete)
     },
     playAll(source) {
+      source = plainSource(source)
       if (source.kind === 'search')
         throw new Error('搜索结果没有播放全部：在搜索里点歌是插播')
       const list = listOf(source)
@@ -911,8 +914,8 @@ export const createApp = (browser: BrowserCapabilities): App => {
     next: player.next,
     previous: player.previous,
     playFromQueue: player.jump,
-    playNext: player.playNext,
-    addToQueue: player.addToQueue,
+    playNext: (source, song) => player.playNext(plainSource(source), plainSong(song)),
+    addToQueue: (source, song) => player.addToQueue(plainSource(source), plainSong(song)),
     removeFromQueue: player.removeFromQueue,
     clearQueue: player.clearQueue,
     setPlayMode: player.setMode,
@@ -925,14 +928,22 @@ export const createApp = (browser: BrowserCapabilities): App => {
     },
     dismissPlayerNotice: player.dismissNotice,
     openLyrics: lyrics.open,
-    heart: (song, hearted) => library.change({ kind: 'heart', song, hearted }),
+    heart: (song, hearted) => library.change({
+      kind: 'heart',
+      song: plainSong(song),
+      hearted,
+    }),
     async addToPlaylist(playlistId, song) {
       const playlist = state.library?.playlists?.find(item => item.id === playlistId)
       if (!playlist || playlist.kind === 'collected')
         throw new Error(`只能加入自建歌单和我喜欢的音乐：${playlistId}`)
-      return library.change({ kind: 'add', playlist, song })
+      return library.change({
+        kind: 'add',
+        playlist,
+        song: plainSong(song),
+      })
     },
-    addSongsToPlaylist: async (playlistId, songs) => library.addSongs(ownPlaylist(playlistId), songs),
+    addSongsToPlaylist: async (playlistId, songs) => library.addSongs(ownPlaylist(playlistId), songs.map(plainSong)),
     addTargets: library.addTargets,
     removeFromPlaylist(playlistId, songIds) {
       library.removeSongs(ownPlaylist(playlistId), songIds)

@@ -55,6 +55,10 @@ export const downloadFailureText = (failure: DownloadFailure): string => {
       return '连接断了'
     case 'storageFull':
       return '存储空间不够了'
+    case 'saveFailed':
+      return '存储时出错'
+    case 'appError':
+      return 'Campanula 出错了'
     default: {
       const unhandled: never = failure
       throw new Error(`不认识的下载失败：${JSON.stringify(unhandled)}`)
