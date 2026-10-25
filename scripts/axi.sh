@@ -1,8 +1,8 @@
 #!/bin/sh
 # Campanula 的专用浏览器（chrome-devtools-axi）：会话名 campanula，登录存在 ~/.cache/campanula-axi/chrome-profile，
 # 用看得见的窗口打开。作者在这个窗口里扫码登录一次，之后一直沿用；不碰作者平时用的 Chrome。
-# 用法：scripts/axi <chrome-devtools-axi 的命令>，例如 scripts/axi eval "location.href"。
-# scripts/axi port：打印桥接进程的端口（没开就先开）。sweep.py、take-login.mts 直接往这个端口的 /call 发 DevTools 工具调用，
+# 用法：scripts/axi.sh <chrome-devtools-axi 的命令>，例如 scripts/axi.sh eval "location.href"。
+# scripts/axi.sh port：打印桥接进程的端口（没开就先开）。sweep.py、take-login.mts 直接往这个端口的 /call 发 DevTools 工具调用，
 # 那是 axi 0.1.44 没写进 README 的内部接口，所以这里固定版本：升级前先确认 /call 的请求和返回没变，再改 VERSION。
 set -eu
 VERSION=0.1.44

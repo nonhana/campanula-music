@@ -1,6 +1,6 @@
 # 一次 eval 拍完一批验收截图、做完一批检查（Python eval 里 `%load .agents/skills/campanula-ui-acceptance/scripts/sweep.py`）。
-# 浏览器默认是 mock（scripts/browser：campanula-mock 会话，不需要登录，写入安全）。
-# 真账号只用 scripts/browser --real 走专用窗口 scripts/axi，交付前由作者试用；reviewer 不自己开 Chrome。
+# 浏览器默认是 mock（scripts/browser.sh：campanula-mock 会话，不需要登录，写入安全）。
+# 真账号只用 scripts/browser.sh --real 走专用窗口 scripts/axi.sh，交付前由作者试用；reviewer 不自己开 Chrome。
 # shoot：静态画面。每张：换视口 → 写拦截规则、按需清空本机副本 → 打开页面 → 等到页面画出来、骨架都换成内容 → 跑检查 → 截图存文件。
 #        每张都报布局偏移（没人操作时东西自己挪了位置）和页面里的报错。
 # roundtrip：点进去再返回，比返回前后的滚动位置、横向架子、选中的标签。keys：按一串键，报每次焦点落在哪。
@@ -29,7 +29,7 @@ BASE = os.environ.get('CAMPANULA_BROWSER_ORIGIN', 'http://localhost:5173' if REA
 # 专用窗口里打开着 BASE 的那个标签页在 list_pages 里的编号：第一次调 DevTools 前自动找（_page()），没有就开一个；
 # 浏览器重开后编号会变，call() 连不上时会重新找
 PAGE = None
-# 浏览器桥接进程的端口：第一次调 DevTools 前用 scripts/browser port 拿（没开就先开；mock 默认）
+# 浏览器桥接进程的端口：第一次调 DevTools 前用 scripts/browser.sh port 拿（没开就先开；mock 默认）
 _PORT = None
 VIEWPORTS = {
     'phone': ('390x844x2,mobile,touch', '390x844'),
@@ -193,7 +193,7 @@ def _post(name, args):
 
 
 def _browser_args():
-    return [str(ROOT / 'scripts/browser'), *(['--real'] if REAL_BROWSER else [])]
+    return [str(ROOT / 'scripts/browser.sh'), *(['--real'] if REAL_BROWSER else [])]
 
 
 async def call(name, args):

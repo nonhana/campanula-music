@@ -19,10 +19,10 @@ const PLACEHOLDER = 'https://p1.music.126.net/placeholder/avatar.jpg'
 const IMG_ID = 109951000000000000
 /** README「脱敏」：超过 30 项的数组只留前 30 项（整页录制要测分页时传 truncate: false） */
 const KEEP = 30
-/** 登录 Cookie 存在这个文件（_notes/ 不进 git）：pnpm tsx scripts/take-login.mts 从专用浏览器（scripts/axi）取。录制脚本从这里读，值不经过命令行 */
+/** 登录 Cookie 存在这个文件（_notes/ 不进 git）：pnpm tsx scripts/take-login.mts 从专用浏览器（scripts/axi.sh）取。录制脚本从这里读，值不经过命令行 */
 const LOGIN_FILE = join(ROOT, '_notes/campanula-login')
 /** 登录 Cookie 不在、解不开、已经失效时怎么办 */
-const RENEW = '请作者在专用窗口（scripts/axi，开发服务器开着）里扫码登录，再跑 pnpm tsx scripts/take-login.mts'
+const RENEW = '请作者在专用窗口（scripts/axi.sh，开发服务器开着）里扫码登录，再跑 pnpm tsx scripts/take-login.mts'
 
 type QueryOf<K extends ModuleIdentifier> = Parameters<typeof invokeModule<K>>[1]
 

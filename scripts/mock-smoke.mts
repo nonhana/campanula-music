@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import process from 'node:process'
 
 const ROOT = new URL('..', import.meta.url).pathname
-const BROWSER = `${ROOT}scripts/browser`
+const BROWSER = `${ROOT}scripts/browser.sh`
 const NAME = `Mock smoke ${Date.now()}`
 
 const run = (args: string[]): string => execFileSync(BROWSER, args, { encoding: 'utf8', cwd: ROOT })
@@ -21,7 +21,7 @@ const waitFor = async (what: string, check: () => boolean): Promise<void> => {
 try {
   const status = JSON.parse(run(['check'])) as { mode: string, enabled?: boolean }
   if (status.mode !== 'mock' || !status.enabled)
-    throw new Error('scripts/browser check 不是 mock 模式')
+    throw new Error('scripts/browser.sh check 不是 mock 模式')
 
   run(['open', '/'])
   await waitFor('曲库同步', () => run(['exec', 'document.body.innerText.includes(\'我喜欢的音乐\') && document.body.innerText.includes(\'4,984\')']).includes('true'))
