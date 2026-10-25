@@ -41,7 +41,14 @@ export interface BrowserCapabilities {
    */
   download: (url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, options?: DownloadOptions) => Promise<{ type: string }>
   /** 同 navigator.storage.estimate()：报告这台设备上这个站点已用、最多能用多少字节（#39 存储不够时暂停下载）；浏览器没给的是 null */
-  storage: { estimate: () => Promise<StorageEstimate> }
+  storage: {
+    estimate: () => Promise<StorageEstimate>
+    /**
+     * 同 navigator.storage.persist()：申请持久存储，浏览器清理空间时不删下载（#40）。
+     * 浏览器直接给结果（已经持久、这次答应）是 true，不答应是 false；失败时以异常拒绝
+     */
+    persist: () => Promise<boolean>
+  }
   /** 同 URL.createObjectURL：播放器、图片拿它放本机存着的下载 */
   objectUrl: (blob: Blob) => string
   revokeObjectUrl: (url: string) => void
@@ -404,6 +411,7 @@ export const realBrowserCapabilities = (): BrowserCapabilities => {
         const { usage = null, quota = null } = await navigator.storage.estimate()
         return { usage, quota }
       },
+      persist: () => navigator.storage.persist(),
     },
     objectUrl: blob => URL.createObjectURL(blob),
     revokeObjectUrl: url => URL.revokeObjectURL(url),

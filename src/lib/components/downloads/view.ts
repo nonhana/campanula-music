@@ -1,6 +1,7 @@
 import type { Song } from '#lib/api/library.js'
-import type { DownloadFailure } from '#lib/app/downloads.js'
+import type { DownloadFailure, DownloadsState } from '#lib/app/downloads.js'
 import type { ExportFailure } from '#lib/app/export.js'
+import type { DownloadSource } from '#lib/app/local.js'
 
 import type { AppView } from '../shared/app-context.svelte'
 import { failureText } from '../shared/failure'
@@ -80,4 +81,34 @@ export const exportFailureText = (failure: ExportFailure): string => {
       throw new Error(`不认识的导出失败：${JSON.stringify(unhandled)}`)
     }
   }
+}
+
+/** 从哪张歌单下载过、各有几首（#40 设置页的按歌单删除）：只看下载里记着的来源，没登录时也有 */
+export interface PlaylistDownloadSource {
+  id: number
+  name: string
+  count: number
+}
+
+export const playlistDownloadSources = (downloads: DownloadsState): PlaylistDownloadSource[] => {
+  const found = new Map<number, PlaylistDownloadSource>()
+  const add = (sources: readonly DownloadSource[]): void => {
+    for (const source of sources) {
+      if (source.kind !== 'playlist')
+        continue
+      const existing = found.get(source.id)
+      if (existing)
+        existing.count += 1
+      else
+        found.set(source.id, { id: source.id, name: source.name, count: 1 })
+    }
+  }
+  for (const song of downloads.songs ?? [])
+    add(downloads.sourcesOf(song.id))
+  // 排队中、下载中的也算：按歌单删除时它们会和已下载的歌一起停掉
+  for (const task of downloads.tasks.values())
+    add(task.sources)
+  return [
+    ...found.values(),
+  ].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
 }

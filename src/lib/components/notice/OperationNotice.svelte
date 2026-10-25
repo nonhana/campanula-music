@@ -41,7 +41,7 @@
   const arrival = noticeArrival(() => notice ? place : null)
 
   /** 配 ✓ 的：加入了、都已经在歌单里、移除了；别的（没改成、上次的修改没保存成功）配感叹号 */
-  const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed' || notice?.kind === 'downloadsAdded')
+  const informative = $derived(notice?.kind === 'added' || notice?.kind === 'alreadyAdded' || notice?.kind === 'removed' || notice?.kind === 'downloadsAdded' || notice?.kind === 'downloadsRemoved')
   const alerting = $derived(notice?.kind === 'notChanged' || notice?.kind === 'playlistMissing' || notice?.kind === 'removeFailed' || notice?.kind === 'orderFailed' || notice?.kind === 'playlistOrderFailed' || notice?.kind === 'downloadFailed' || notice?.kind === 'downloadsPaused')
 </script>
 

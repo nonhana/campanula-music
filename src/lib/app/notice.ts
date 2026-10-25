@@ -48,6 +48,8 @@ export const noticeActions = (notice: OperationNotice): readonly NoticeAction[] 
       return ['retry', 'dismiss']
     case 'downloadsPaused':
       return ['resume', 'dismiss']
+    case 'downloadsRemoved':
+      return ['dismiss']
     case 'notChanged':
     case 'playlistMissing':
     case 'added':
@@ -85,7 +87,7 @@ export const createNotices = ({ clock, changed }: NoticesContext): Notices => {
     cancel()
     cancel = () => {}
     current = next
-    if (next?.kind === 'added' || next?.kind === 'alreadyAdded' || next?.kind === 'downloadsAdded') {
+    if (next?.kind === 'added' || next?.kind === 'alreadyAdded' || next?.kind === 'downloadsAdded' || next?.kind === 'downloadsRemoved') {
       cancel = clock.after(AUTO_DISMISS_MS, () => {
         cancel = () => {}
         if (current !== next)

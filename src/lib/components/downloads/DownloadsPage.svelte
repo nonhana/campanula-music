@@ -4,15 +4,17 @@
   头部下面是 DownloadsTasks（#39）：“正在下载”的排队、进度、失败和重试，空间不够时的整队暂停和“继续下载”。
   点一首就用整个已下载替换播放队列，播放来源是“已下载”；行的“更多”菜单里有导出、删除下载。搜索词和滚动位置随浏览历史恢复。
   多选（#79）只有导出和删除，登录与否都能用：入口桌面在头部（`ListChecks` 图标，和歌单页的管理类操作同一档），手机在首数那一行，也能 ⌘/Ctrl/Shift 点行、长按行进入。
+  头部操作行最后的“下载管理”•••（#40）里是按歌单删除下载，登录与否都有；没有从歌单下载的歌时这一项不可选。
 -->
 <script lang='ts'>
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { CircleArrowDown, Info, ListChecks } from '@lucide/svelte'
+  import { CircleArrowDown, Info, ListChecks, MoreHorizontal } from '@lucide/svelte'
 
   import DetailHeader from '../library/DetailHeader.svelte'
   import type { SelectionSource } from '../library/multi-select.svelte'
   import SelectionToolbar from '../library/SelectionToolbar.svelte'
+  import { anchorBelow } from '../menu/menu-anchor'
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'
@@ -30,7 +32,7 @@
   const SOURCE = { kind: 'downloads' } as const
 
   const view = getAppView()
-  const { multiSelect: selection } = getOverlays()
+  const { downloadsMenu, multiSelect: selection } = getOverlays()
   const all = $derived(view.state.downloads.songs)
   /** 正在下载那一块每少一首，下面的列表就往上挪一行：让它重新量可见范围 */
   const taskCount = $derived(view.state.downloads.tasks.size)
@@ -117,6 +119,18 @@
     }),
   })
 
+  const openMenu = (event: MouseEvent): void => {
+    const button = event.currentTarget as HTMLElement
+    if (downloadsMenu.request?.from === button) {
+      void downloadsMenu.close()
+      return
+    }
+    downloadsMenu.open({
+      from: button,
+      anchor: anchorBelow(event),
+    })
+  }
+
   const enterFrom = (event: MouseEvent): void => selection.enter({
     from: event.currentTarget as HTMLElement,
     focusFirst: true,
@@ -194,6 +208,9 @@
             : enterFrom}
         />
       </span>
+    {/if}
+    {#if all && all.length > 0}
+      <IconButton icon={MoreHorizontal} label='下载管理' title='下载管理' onclick={openMenu} />
     {/if}
   {/snippet}
 </DetailHeader>

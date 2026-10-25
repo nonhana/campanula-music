@@ -6,7 +6,7 @@ import type { OperationNotice } from '#lib/app/notice.js'
 
 import { downloadFailureText } from '../downloads/view'
 import { failureText } from '../shared/failure'
-import { formatCount } from '../shared/text'
+import { formatCount, formatMegabytes } from '../shared/text'
 
 // 提示条（OperationNotice.svelte，改曲库和下载共用）说什么（#30、#33、#38）：都是一句话、不带句末句号（DESIGN.md 文案）。
 // 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写。网易云没给专辑名、歌手名时不写这一项（#78）
@@ -153,10 +153,20 @@ export const operationNoticeText = (notice: OperationNotice): string => {
         parts.push(`${formatCount(notice.noCopyright)} 首无版权`)
       if (notice.filling)
         parts.push('还没同步完，同步完把后面的补上')
-      return parts.join('；')
+      return parts.length > 0
+        ? parts.join('；')
+        : '已停止下载'
     }
     case 'downloadsPaused':
       return '存储空间不够，下载已暂停'
+    case 'downloadsRemoved': {
+      const parts: string[] = []
+      if (notice.removed > 0)
+        parts.push(`已删除 ${formatCount(notice.removed)} 首下载，腾出 ${formatMegabytes(notice.freed)} MB`)
+      if (notice.kept > 0)
+        parts.push(`${formatCount(notice.kept)} 首从别处也下载过，留着`)
+      return parts.join('；')
+    }
     default: {
       const unhandled: never = notice
       throw new Error(`不认识的提示：${JSON.stringify(unhandled)}`)

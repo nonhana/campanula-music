@@ -1,13 +1,13 @@
 import { endpoints } from '#lib/api/endpoints.js'
 import type { AlbumResponse, Song } from '#lib/api/library.js'
 import { thumbnailUrl } from '#lib/api/library.js'
-import type { LyricsResponse } from '#lib/api/playback.js'
+import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
 
 import type { Api, Result } from './api-client'
 import type { BrowserCapabilities, Clock } from './browser'
 import type { DownloadSource, LocalDb, StoredDownload } from './local'
-import { mergeDownloadSources } from './local'
+import { mergeDownloadSources, sameDownloadSource } from './local'
 import { plainSong } from './plain'
 import type { BackgroundFailure, BackgroundSessionResult, SessionRound } from './session-round'
 
@@ -22,6 +22,9 @@ export type { DownloadSource }
 
 /** 封面缩略图按多大存（px）：和锁屏上的封面一样大，断网时播放页、锁屏也看得清 */
 const DOWNLOAD_COVER_SIZE = 512
+
+/** 一首下载占多少字节：音频加封面缩略图（已用空间、腾出的空间、导出前的大小都按它） */
+const recordBytes = (record: StoredDownload): number => record.audio.size + (record.cover?.size ?? 0)
 
 export type DownloadFailure
   /** 没拿到下载地址、歌词（这一轮会话结束时不算失败，任务留在队列里等重新登录，规则⑧）；断网、操作频繁由请求节奏等过 */
@@ -50,6 +53,8 @@ export type DownloadNotice
     | { kind: 'downloadsAdded', queued: number, downloaded: number, trial: number, noCopyright: number, filling?: true }
     /** 存储空间不够，整队暂停（规则⑪）；腾出空间后点“继续下载” */
     | { kind: 'downloadsPaused' }
+    /** 删掉了几首下载（按歌单删除、一键清空，#40）；kept 是别处也下载过、只去掉这张歌单的 */
+    | { kind: 'downloadsRemoved', removed: number, kept: number, freed: number }
 
 export interface DownloadsState {
   /** 最近下载完的在前；还没从本机读出来时是 null */
@@ -58,6 +63,10 @@ export interface DownloadsState {
   tasks: ReadonlyMap<number, DownloadTask>
   /** 存储空间不够，整队暂停（规则⑪）；腾出空间后 resume */
   paused: 'storageFull' | null
+  /** 下载音质（#40），和在线播放音质分开；换了对之后开始下的歌生效 */
+  quality: Quality
+  /** 下载完的歌一共占多少字节（音频加封面缩略图）：设置页的“已用空间”（#40） */
+  bytes: number
   has: (songId: number) => boolean
   /** 这张封面（网易云原图地址，同一张专辑共用）的本机缩略图地址：断网时封面、锁屏照样显示；没有下载完的歌用它时是 null */
   coverOf: (coverUrl: string) => string | null
@@ -72,6 +81,13 @@ export type DownloadBlock = 'downloaded' | 'queued' | 'downloading' | 'trial' | 
 
 /** 整批下载现在开不了：没登录，或者断网 */
 export type DownloadStartBlock = Extract<DownloadBlock, 'signedOut' | 'offline'>
+
+/** 删掉了一批下载：removed 是真的删掉的、kept 是别处也下载过只去掉这张歌单的、freed 是腾出的字节 */
+export interface DownloadRemoval {
+  removed: number
+  kept: number
+  freed: number
+}
 
 /** 一次整批下载的结果：自动跳过的不下，逐项数出来 */
 export interface DownloadBatchOutcome {
@@ -102,6 +118,8 @@ export const INITIAL_DOWNLOADS: DownloadsState = {
   songs: null,
   tasks: new Map(),
   paused: null,
+  quality: DOWNLOAD_QUALITY,
+  bytes: 0,
   has: () => false,
   coverOf: () => null,
   sourcesOf: () => [],
@@ -114,7 +132,7 @@ export interface DownloadsContext {
   local: LocalDb
   clock: Clock
   browser: Pick<BrowserCapabilities, 'download' | 'objectUrl' | 'revokeObjectUrl'>
-  storage: Pick<BrowserCapabilities['storage'], 'estimate'>
+  storage: Pick<BrowserCapabilities['storage'], 'estimate' | 'persist'>
   /** 这台设备上有没有这张专辑的专辑页（曲库副本里的、这次登录打开过的）；没有是 null */
   albumPage: (albumId: number) => AlbumResponse | null
   online: () => boolean
@@ -140,6 +158,12 @@ export interface Downloads {
   resume: () => void
   /** 没登录时也能删；它们的本机文件地址不再用 */
   remove: (songIds: readonly number[]) => Promise<void>
+  /** 按歌单删除（规则⑦）：别处也下载过的只去掉这张歌单、留着；没登录时也能用（只看下载里记着的来源，#40） */
+  removePlaylist: (playlistId: number) => Promise<DownloadRemoval>
+  /** 一键清空（#40）：删掉所有下载，排队中和正在下的也停，解除暂停 */
+  clear: () => Promise<DownloadRemoval>
+  /** 设置页换了下载音质：只影响之后开始下的歌 */
+  setQuality: (quality: Quality) => void
   /** 整条下载：导出时把音频、封面、歌词和歌曲信息写进文件（#79） */
   stored: (songId: number) => StoredDownload
   /** 用到时才建，删掉下载时收回 */
@@ -176,6 +200,14 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   /** 排队、下载中、失败：Map 的先后就是排队的先后 */
   const tasks = new Map<number, DownloadTask>()
   let paused: 'storageFull' | null = null
+  /** 下载音质（#40）：只影响之后开始下的歌；正在下的那首已经拿到地址，照旧下完 */
+  let quality: Quality = DOWNLOAD_QUALITY
+  /** 下载完的歌一共占多少字节（音频加封面缩略图） */
+  let bytes = 0
+  /** 持久存储只申请一次：浏览器拒绝也不挡着下载（#40） */
+  let persistAsked = false
+  /** 每首下载是第几次尝试：按歌单删除、一键清空时作废在途的那一次，下完了也不会写回来 */
+  const attempts = new Map<number, number>()
   /** 断点已经收到的字节：只在这次打开期间留着，下完、放弃时删掉 */
   const parts = new Map<number, Uint8Array<ArrayBuffer>[]>()
   const partBytes = new Map<number, number>()
@@ -201,9 +233,13 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
 
   const setRecords = (next: Map<number, StoredDownload>): void => {
     records = next
-    songs = [
+    const stored = [
       ...next.values(),
-    ].sort((a, b) => b.downloadedAt - a.downloadedAt).map(record => record.song)
+    ]
+    songs = stored
+      .sort((a, b) => b.downloadedAt - a.downloadedAt)
+      .map(record => record.song)
+    bytes = stored.reduce((sum, record) => sum + recordBytes(record), 0)
     covers = new Map([
       ...next.values(),
     ].flatMap(({ song, cover }) => song.album.coverUrl !== null && cover !== null
@@ -231,13 +267,12 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       songs,
       tasks,
       paused,
+      quality,
+      bytes,
       has: songId => shown?.has(songId) ?? false,
       coverOf,
       sourcesOf: songId => shown?.get(songId)?.sources ?? [],
-      sizeOf: (songId) => {
-        const { audio, cover } = recordOf(songId)
-        return audio.size + (cover?.size ?? 0)
-      },
+      sizeOf: songId => recordBytes(recordOf(songId)),
     }
   }
 
@@ -323,6 +358,21 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     context.notify({ kind: 'downloadsPaused' })
   }
 
+  /** 开始下第一首时申请持久存储（#40）：浏览器清理空间时不删下载；拒绝也照样下，只申请一次 */
+  const askPersist = (): void => {
+    if (persistAsked)
+      return
+    persistAsked = true
+    void context.storage.persist().catch(() => {})
+  }
+
+  const attemptOf = (songId: number): number => attempts.get(songId) ?? 0
+
+  /** 作废这一首在途的那一次下载（按歌单删除、一键清空）：它下完了也不会写回来 */
+  const forgetAttempt = (songId: number): void => {
+    attempts.set(songId, attemptOf(songId) + 1)
+  }
+
   /** 断网、操作频繁由后台通道等过、重发过；这一轮结束时回 null */
   const background = <T>(send: () => Promise<Result<T>>): Promise<BackgroundSessionResult<T> | 'gaveUp'> => session.background(send, () => {})
 
@@ -351,7 +401,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   /** 要下载地址、歌词、专辑信息；这一轮结束了（退出、登录失效、断网等）回 wait，任务留在队列里，下一次登录 / 联网接着来 */
   const prepare = async (song: Song): Promise<PreparedResult> => {
     const [url, lyrics, album] = await Promise.all([
-      background(() => api.get(endpoints.downloadUrl, { id: song.id, quality: DOWNLOAD_QUALITY })),
+      background(() => api.get(endpoints.downloadUrl, { id: song.id, quality })),
       background(() => api.get(endpoints.lyrics, { id: song.id })),
       albumOf(song),
     ])
@@ -401,9 +451,12 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   }
 
   /** 存进本机。空间不够就整队暂停（规则⑪），音频留在内存里，腾出空间后直接存，不再下 */
-  const save = async (songId: number, record: StoredDownload): Promise<StepResult> => {
-    const size = record.audio.size + (record.cover?.size ?? 0)
-    if (!await enoughSpace(size)) {
+  const save = async (songId: number, record: StoredDownload, token: number): Promise<StepResult> => {
+    const space = await enoughSpace(recordBytes(record))
+    // 清空、按歌单删除正好落在这段等待里：这一首已经不要了，存也不存、暂停也不暂停
+    if (attemptOf(songId) !== token || !tasks.has(songId))
+      return 'next'
+    if (!space) {
       ready.set(songId, record)
       clearParts(songId)
       const task = tasks.get(songId)
@@ -416,6 +469,9 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       await local.saveDownload(record)
     }
     catch (error) {
+      // 存的时候被清空、按歌单删掉了：不要再留 ready、也不要再暂停
+      if (attemptOf(songId) !== token || !tasks.has(songId))
+        return 'next'
       if (storageFull(error)) {
         ready.set(songId, record)
         clearParts(songId)
@@ -430,6 +486,11 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       // 音频已经收全了：重试时先再存一次，不必重下
       ready.set(songId, record)
       return fail(record.song, record.sources, { kind: 'saveFailed' })
+    }
+    // 存的时候这一首已经被删掉了（按歌单删除、一键清空正好碰上）：刚写进去的再删掉，不留下
+    if (attemptOf(songId) !== token || !tasks.has(songId)) {
+      await local.deleteDownloads([songId]).catch(() => {})
+      return 'next'
     }
     const sources = liveSources(songId, record.sources)
     const saved = {
@@ -452,18 +513,31 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       return 'next'
     const { song } = task
     const sources = task.sources
+    const token = attemptOf(songId)
     const waiting = ready.get(songId)
-    if (waiting)
-      return await save(songId, waiting)
+    if (waiting) {
+      if (attemptOf(songId) !== token)
+        return 'next'
+      return await save(songId, waiting, token)
+    }
     if (!context.signedIn() || !context.online())
       return 'wait'
     // 一点空间都没有时不用先要地址：整队暂停，腾出空间再继续（规则⑪）
-    if (!await enoughSpace(1)) {
+    const anySpace = await enoughSpace(1)
+    if (attemptOf(songId) !== token || !tasks.has(songId)) {
+      clearParts(songId)
+      return 'next'
+    }
+    if (!anySpace) {
       pause()
       return 'wait'
     }
 
     const prepared = await prepare(song)
+    if (attemptOf(songId) !== token || !tasks.has(songId)) {
+      clearParts(songId)
+      return 'next'
+    }
     if (prepared.kind === 'wait')
       return 'wait'
     if (prepared.kind === 'failed')
@@ -482,7 +556,12 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     tasks.set(songId, queuedTask(song, liveSources(songId, sources), received, total))
     publish()
 
-    if (total !== null && !await enoughSpace(total)) {
+    const roomForAll = total === null || await enoughSpace(total)
+    if (attemptOf(songId) !== token || !tasks.has(songId)) {
+      clearParts(songId)
+      return 'next'
+    }
+    if (!roomForAll) {
       pause()
       return 'wait'
     }
@@ -532,6 +611,11 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       : browser.download(thumbnailUrl(coverUrl, DOWNLOAD_COVER_SIZE), chunk => coverChunks.push(chunk))
     const [audioResult, coverResult] = await Promise.allSettled([transferAudio, transferCover])
 
+    // 下完了，但这一首已经被按歌单删除、一键清空删掉了：丢掉刚收到的，不写回来
+    if (attemptOf(songId) !== token || !tasks.has(songId)) {
+      clearParts(songId)
+      return 'next'
+    }
     if (audioResult.status === 'rejected') {
       // 断网、断流：音频留着，联网后从断点接着下
       if (!context.online()) {
@@ -565,7 +649,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       sources: [...sources],
       downloadedAt: clock.now(),
     }
-    return await save(songId, record)
+    return await save(songId, record, token)
   }
 
   const pump = (): void => {
@@ -615,17 +699,41 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     })()
   }
 
+  const loadRecords = (): Promise<void> => {
+    loading ??= Promise.all([
+      local.readDownloads(),
+      local.downloadQuality(),
+    ]).then(([stored, saved]) => {
+      quality = saved ?? DOWNLOAD_QUALITY
+      setRecords(new Map(stored.map(record => [record.song.id, record])))
+      publish()
+    }, (error: unknown) => {
+      loading = undefined
+      throw error
+    })
+    return loading
+  }
+
+  /** 删掉的下载不再用的本机地址收回：这几首的音频；没有别的下载用这张封面时，封面也收回 */
+  const revokeDownloads = (dropped: readonly StoredDownload[]): void => {
+    for (const { song } of dropped) {
+      const audio = audioUrls.get(song.id)
+      if (audio)
+        browser.revokeObjectUrl(audio)
+      audioUrls.delete(song.id)
+      const { coverUrl } = song.album
+      const cover = coverUrl === null
+        ? undefined
+        : coverUrls.get(coverUrl)
+      if (coverUrl !== null && cover && !covers.has(coverUrl)) {
+        browser.revokeObjectUrl(cover)
+        coverUrls.delete(coverUrl)
+      }
+    }
+  }
+
   return {
-    load() {
-      loading ??= local.readDownloads().then((stored) => {
-        setRecords(new Map(stored.map(record => [record.song.id, record])))
-        publish()
-      }, (error: unknown) => {
-        loading = undefined
-        throw error
-      })
-      return loading
-    },
+    load: loadRecords,
     download(song) {
       const plain = plainSong(song)
       const blocked = downloadBlock(plain, current(), {
@@ -634,6 +742,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       })
       if (blocked)
         return blocked
+      askPersist()
       const existing = tasks.get(plain.id)
       if (existing) {
         // 失败的重试：保留原来的来源，再加“单独下载”
@@ -740,6 +849,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
             : {}),
         })
       }
+      if (outcome.queued > 0)
+        askPersist()
       pump()
       return outcome
     },
@@ -768,23 +879,133 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       for (const songId of songIds)
         next.delete(songId)
       setRecords(next)
-      // 不再用的本机地址收回：这几首的音频；没有别的下载用这张封面时，封面也收回
-      for (const { song } of removed) {
-        const audio = audioUrls.get(song.id)
-        if (audio)
-          browser.revokeObjectUrl(audio)
-        audioUrls.delete(song.id)
-        const { coverUrl } = song.album
-        const cover = coverUrl === null
-          ? undefined
-          : coverUrls.get(coverUrl)
-        if (coverUrl !== null && cover && !covers.has(coverUrl)) {
-          browser.revokeObjectUrl(cover)
-          coverUrls.delete(coverUrl)
-        }
-      }
+      revokeDownloads(removed)
       publish()
       context.changed()
+    },
+    async removePlaylist(playlistId) {
+      const source: DownloadSource = {
+        kind: 'playlist',
+        id: playlistId,
+        name: '',
+      }
+      await loadRecords()
+      // 先把在途的、排队的任务处理掉：作废的这一次就算下完了也不会写回来
+      let tasksChanged = false
+      for (const [songId, task] of [...tasks]) {
+        if (!task.sources.some(each => sameDownloadSource(each, source)))
+          continue
+        const rest = task.sources.filter(each => !sameDownloadSource(each, source))
+        if (rest.length > 0) {
+          tasks.set(songId, {
+            ...task,
+            sources: rest,
+          })
+        }
+        else {
+          tasks.delete(songId)
+          forgetAttempt(songId)
+          clearParts(songId)
+          ready.delete(songId)
+        }
+        tasksChanged = true
+      }
+
+      const keptIds: number[] = []
+      const removedIds: number[] = []
+      let kept = 0
+      for (const [songId, record] of records ?? []) {
+        if (!record.sources.some(each => sameDownloadSource(each, source)))
+          continue
+        if (record.sources.some(each => !sameDownloadSource(each, source))) {
+          keptIds.push(songId)
+          kept += 1
+        }
+        else {
+          removedIds.push(songId)
+        }
+      }
+      const dropped = removedIds.map(recordOf)
+      const freed = dropped.reduce((sum, record) => sum + recordBytes(record), 0)
+      if (removedIds.length > 0)
+        await local.deleteDownloads(removedIds)
+      const persisted = keptIds.length > 0
+        ? await local.removeDownloadSource(keptIds, source)
+        : new Map<number, DownloadSource[]>()
+      if (keptIds.length > 0 || removedIds.length > 0) {
+        const next = new Map(records)
+        for (const [songId, sources] of persisted) {
+          const record = next.get(songId)
+          if (record) {
+            next.set(songId, {
+              ...record,
+              sources,
+            })
+          }
+        }
+        for (const songId of removedIds)
+          next.delete(songId)
+        setRecords(next)
+      }
+      if (removedIds.length > 0 || tasksChanged) {
+        revokeDownloads(dropped)
+        publish()
+        context.changed()
+      }
+      else if (keptIds.length > 0) {
+        publish()
+      }
+      const removal: DownloadRemoval = {
+        removed: dropped.length,
+        kept,
+        freed,
+      }
+      if (removedIds.length > 0 || keptIds.length > 0)
+        context.notify({ kind: 'downloadsRemoved', ...removal })
+      return removal
+    },
+    async clear() {
+      await loadRecords()
+      const dropped = [
+        ...(records?.values() ?? []),
+      ]
+      const freed = dropped.reduce((sum, record) => sum + recordBytes(record), 0)
+      const taskIds = [
+        ...tasks.keys(),
+      ]
+      for (const songId of taskIds) {
+        forgetAttempt(songId)
+        clearParts(songId)
+        ready.delete(songId)
+      }
+      tasks.clear()
+      paused = null
+      if (dropped.length > 0)
+        await local.deleteDownloads(dropped.map(record => record.song.id))
+      setRecords(new Map())
+      revokeDownloads(dropped)
+      publish()
+      context.changed()
+      if (dropped.length > 0 || taskIds.length > 0) {
+        context.notify({
+          kind: 'downloadsRemoved',
+          removed: dropped.length,
+          kept: 0,
+          freed,
+        })
+      }
+      return {
+        removed: dropped.length,
+        kept: 0,
+        freed,
+      }
+    },
+    setQuality(next) {
+      if (next === quality)
+        return
+      quality = next
+      publish()
+      void local.saveDownloadQuality(next)
     },
     stored: recordOf,
     audioUrl(songId) {

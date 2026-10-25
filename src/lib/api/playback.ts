@@ -46,7 +46,7 @@ export type PlayUrlResponse
   /** 网易云没给地址：无版权，或者这个账号放不了 */
   | { playable: false }
 
-/** 下载音质：设置页的下载音质（#40）加上之前固定是极高，和在线播放音质分开（Spec #11“客户端：下载”） */
+/** 下载音质的默认值：没在设置页设过时是极高（#40，和在线播放音质分开，Spec #11“客户端：下载”） */
 export const DOWNLOAD_QUALITY: Quality = 'exhigh'
 
 /** 浏览器拿它直连音频服务器把整首存进这台设备（#38）；只给完整音频的地址，没给（无版权、这个账号下不了完整的）时是 downloadable: false */

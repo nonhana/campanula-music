@@ -3,9 +3,13 @@ import { onDestroy, onMount, tick } from 'svelte'
 import { createSubscriber } from 'svelte/reactivity'
 
 import LogoutConfirm from '../account/LogoutConfirm.svelte'
+import ClearDownloadsConfirm from '../downloads/ClearDownloadsConfirm.svelte'
 import DeleteDownloadsConfirm from '../downloads/DeleteDownloadsConfirm.svelte'
+import DeletePlaylistDownloadsConfirm from '../downloads/DeletePlaylistDownloadsConfirm.svelte'
 import DownloadPicker from '../downloads/DownloadPicker.svelte'
+import DownloadsMenu from '../downloads/DownloadsMenu.svelte'
 import ExportDialog from '../downloads/ExportDialog.svelte'
+import PlaylistDownloadsDialog from '../downloads/PlaylistDownloadsDialog.svelte'
 import { MultiSelect } from '../library/multi-select.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
 import { createDrawer } from '../player/drawer.svelte'
@@ -20,7 +24,7 @@ import { getAppView } from '../shared/app-context.svelte'
 import { desktopLayout } from '../shared/layout'
 import { setSelectionMode } from '../ui/selection-mode'
 import { createOverlayHistory } from './overlay-history.svelte'
-import type { AddToPlaylistRequest, DeleteDownloadsRequest, DialogRequest, DownloadPickerRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
+import type { AddToPlaylistRequest, DeleteDownloadsRequest, DeletePlaylistDownloadsRequest, DialogRequest, DownloadPickerRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
 import type { LayerOptions } from './overlay-stack'
 import { OverlayStack } from './overlay-stack'
 
@@ -131,6 +135,11 @@ modal: true,
     dismissed: () => view.app.closeExport(),
   }, ExportDialog)
   const deleteDownloadsConfirm = register<DeleteDownloadsRequest>('delete-downloads', { ...dialog, dependsOn: 'selection' }, DeleteDownloadsConfirm)
+  // 下载管理（#40）：设置页“按歌单删除”先列出有下载的歌单，选一张再确认；一键清空单独确认
+  const downloadsMenu = register<MenuRequest>('downloads-menu', menu, DownloadsMenu)
+  const playlistDownloads = register<DialogRequest>('playlist-downloads', dialog, PlaylistDownloadsDialog)
+  const deletePlaylistDownloadsConfirm = register<DeletePlaylistDownloadsRequest>('delete-playlist-downloads', { ...dialog, dependsOn: 'playlist-downloads' }, DeletePlaylistDownloadsConfirm)
+  const clearDownloadsConfirm = register<DialogRequest>('clear-downloads', dialog, ClearDownloadsConfirm)
   const canRestorePlayer = () => !queueEmpty(view.state.player)
   // 播放页这一层不挂组件：播放页、播放提示由 PlayerLayer 挂载（提供 data-overlay="player"）。mounted 只收有组件的层，
   // OverlayHost 不渲染空容器；历史、Esc/返回、忙时钉住、焦点兜底、containerInert 只认登记表。回焦目标仍是播放条按钮。
@@ -186,6 +195,10 @@ coverEditor,
 logoutConfirm,
 exportDialog,
 deleteDownloadsConfirm,
+downloadsMenu,
+playlistDownloads,
+deletePlaylistDownloadsConfirm,
+clearDownloadsConfirm,
 player,
 queue,
 selection,
