@@ -1,4 +1,4 @@
-<!-- Campanula 的 logo：Lucide 的 flower 图形，叶绿描边。图形和颜色不改，也不旋转（PRODUCT.md、DESIGN.md） -->
+<!-- Campanula 的 logo：Lucide 的 flower 图形，叶绿描边。图形和颜色不改，也不旋转（PRODUCT.md、DESIGN.md）。src/app.html 的第一帧里有一份一样的，改这里时一起改 -->
 <script lang='ts'>
   interface Props {
     size?: number

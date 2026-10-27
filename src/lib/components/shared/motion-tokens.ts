@@ -51,8 +51,6 @@ export const DURATIONS = {
 export const DELAYS = {
   /** 超过这么久播放键才淡入转圈，不在每次点歌时闪 */
   'spinner': 300,
-  /** 打开 App 时 logo 晚这么久才淡入，通常请求先回来 */
-  'opening': 400,
   /** 滚动停下、鼠标离开或松开滑块这么久后，滚动条才淡出 */
   'scrollbar': 1000,
   /** 宽度开始变化这么久后文字才淡入 */
@@ -108,8 +106,14 @@ export const WHEEL = {
   textIn: 16,
 } as const
 
-/** 点歌时封面飞进播放条（DESIGN.md Song Row · 点歌）的弧线：控制点离起止连线正中 FLIGHT_ARC 倍连线长，往上鼓 */
+/** 飞行的弧线（点歌时封面飞进播放条、打开 App 时 logo 归位；motion.ts 的 flightArc）：控制点离起止连线正中 FLIGHT_ARC 倍连线长，往上鼓 */
 export const FLIGHT_ARC = 0.12
+
+/**
+ * 打开 App 时内容区从 logo 落点那边一块块飘出来（DESIGN.md Motion · 打开 App，boot/opening.ts）：花起飞 delay ms 后离落点最近的那块先来，
+ * 按离落点的远近依次晚到，最远的再晚 spread ms；每块（和 logo 旁的字样）从 blur px 的薄雾里清晰起来
+ */
+export const OPENING = { delay: 160, spread: 320, blur: 6 } as const
 
 /** 按钮按下时缩到这么大；减少动态效果时不缩。CSS 变量 --press-scale，工具类 press */
 export const PRESS_SCALE = 0.98

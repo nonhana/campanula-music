@@ -4,8 +4,8 @@ import type { Attachment } from 'svelte/attachments'
 import type { Song } from '#lib/api/library.js'
 
 import type { AppView } from '../shared/app-context.svelte'
-import { fadeMs, reducedMotion, unseen } from '../shared/motion'
-import { cssEasing, DURATIONS, FLIGHT_ARC } from '../shared/motion-tokens'
+import { fadeMs, flightArc, reducedMotion, unseen } from '../shared/motion'
+import { cssEasing, DURATIONS } from '../shared/motion-tokens'
 import { coverLoaded, preloadCover } from '../ui/Cover.svelte'
 import { currentSong } from './now'
 import type { Turn } from './view'
@@ -30,7 +30,6 @@ let plane: { element: HTMLElement, animation: Animation } | null = null
 /** 播放条上的封面小窗（落点）和它的 Cover size */
 let landingSlot: { element: HTMLElement, size: number } | null = null
 
-const STEPS = 12
 /** 飞的图盖在播放条（40）上面，播放的提示、播放页（50）下面 */
 const PLANE_LAYER = '45'
 
@@ -85,7 +84,7 @@ const takeOff = async (song: Song, from: Song | null, cover: HTMLElement): Promi
     pointerEvents: 'none',
   })
   document.body.append(element)
-  const animation = element.animate(arc(start, end), {
+  const animation = element.animate(flightArc(start, end), {
 duration: DURATIONS['focal-bar'],
 easing: cssEasing('out-soft'),
 fill: 'forwards',
@@ -131,26 +130,6 @@ const restingRect = (slot: HTMLElement): DOMRect => {
   const rect = slot.getBoundingClientRect()
   const lift = Number.parseFloat(getComputedStyle(slot.closest('[data-player-bar]')!).translate.split(' ')[1] ?? '0')
   return new DOMRect(rect.x, rect.y - lift, rect.width, rect.height)
-}
-
-/** 从 from 沿往上鼓的浅弧线飞到 to（二次贝塞尔，分 STEPS 段），边飞边变成 to 的大小；图摆在 to 上，缩放原点在左上角 */
-const arc = (from: DOMRect, to: DOMRect): Keyframe[] => {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const length = Math.hypot(dx, dy) || 1
-  // 控制点在连线正中往外推，推向和连线垂直、朝上的那一边（竖直往下飞时往右）
-  const bend = FLIGHT_ARC * length * (dx < 0
-? -1
-: 1)
-  const cx = from.x + dx / 2 + (dy / length) * bend
-  const cy = from.y + dy / 2 - (dx / length) * bend
-  return Array.from({ length: STEPS + 1 }, (_, i) => {
-    const t = i / STEPS
-    const x = (1 - t) ** 2 * from.x + 2 * (1 - t) * t * cx + t ** 2 * to.x
-    const y = (1 - t) ** 2 * from.y + 2 * (1 - t) * t * cy + t ** 2 * to.y
-    const scale = (from.width + (to.width - from.width) * t) / to.width
-    return { transform: `translate(${x - to.x}px, ${y - to.y}px) scale(${scale})` }
-  })
 }
 
 export interface Landing {

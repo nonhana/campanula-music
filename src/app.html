@@ -13,9 +13,28 @@
 	<title>Campanula</title>
 	<meta name="referrer" content="no-referrer" />
 	%sveltekit.head%
+	<!-- 第一帧（脚本还没跑完）就是晨光底和正中的花；Svelte 挂上时 +layout.svelte 拿掉它，换成同一位置、同样大小的打开中（boot/AppOpening.svelte） -->
+	<style>
+		html { background: #F5FCF9; }
+		#first-frame { position: fixed; inset: 0; display: grid; place-items: center; }
+	</style>
 </head>
 
 <body data-sveltekit-preload-data="hover">
+	<div id="first-frame" aria-hidden="true">
+		<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#37be8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<circle cx="12" cy="12" r="3"></circle>
+			<path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5"></path>
+			<path d="M12 7.5V9"></path>
+			<path d="M7.5 12H9"></path>
+			<path d="M16.5 12H15"></path>
+			<path d="M12 16.5V15"></path>
+			<path d="m8 8 1.88 1.88"></path>
+			<path d="M14.12 9.88 16 8"></path>
+			<path d="m8 16 1.88-1.88"></path>
+			<path d="M14.12 14.12 16 16"></path>
+		</svg>
+	</div>
 	<div style="display: contents">
 		%sveltekit.body%
 	</div>

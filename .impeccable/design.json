@@ -568,6 +568,11 @@
         "purpose": "点歌时封面飞进播放条。点的是正在放的那首、在播放页的播放队列里点歌时不飞；连续快点只有最后一首在飞。"
       },
       {
+        "name": "logo-homing",
+        "value": "first frame (src/app.html, before scripts run): morning ground and the 40px flower centered, still while the session is checked (no delayed fade-in, no breathing); when the opening screen gives way the new screen fades in as usual (360ms) while a fixed copy of the flower (z 45) flies along the cover-flight arc to the new screen's Brand logo and shrinks to 28px in 600ms ease-out-soft, both real flowers hidden meanwhile; the wordmark floats in 12px from behind the flower over 200ms with a 6px blur clearing, settling with it; header, rail and player bar only fade; the content area ripples out from the landing point: split into pieces (each item of a data-reveal-group, other blocks whole, only those in the viewport), each drifts 12px from the landing side and clears from a 6px blur over 360ms ease-out-soft, the nearest starting 160ms after takeoff and the farthest 320ms later (motion-tokens OPENING); no Brand on the new screen (phone deep link to a sub page): the flower fades out with the old screen and drifts 6px up, the ripple starts from the screen center; reduced motion / hidden page: crossfade only (boot/opening.ts)",
+        "purpose": "打开 App 的仪式感来自同一朵花一路陪到底：第一帧就在，问到账号后飞回自己在左上角的位置，内容从它的落点漾开；最先的一块花起飞 160ms 就到，整段不到 0.9 秒。"
+      },
+      {
         "name": "panel-track",
         "value": "lyrics / queue panels side by side, track translateX 0 ↔ -50% over 360ms ease-out-soft, in step with the tab indicator",
         "purpose": "桌面播放页右栏换标签。两块都一直挂着，看不见的那块不能被 Tab 到。"
@@ -599,7 +604,7 @@
       },
       {
         "name": "crossfade-in-place",
-        "value": "old and new stacked in one grid cell (grid-cols-[minmax(0,1fr)], col-start-1 row-start-1), in 200ms / out 120ms; app screens (opening, login, library, errors): new screen fades in over 360ms, the old one fades out in place over 200ms and gives up its height at once (out:fadeAway)",
+        "value": "old and new stacked in one grid cell (grid-cols-[minmax(0,1fr)], col-start-1 row-start-1), in 200ms / out 120ms; app screens (opening, login, library, errors): new screen fades in over 360ms, the old one fades out in place over 200ms and gives up its height at once (out:fadeAway); leaving the opening screen adds logo-homing",
         "purpose": "歌单内搜索的列表、二维码各步骤、歌词的加载中 ↔ 歌词、图标按钮换图标、整个 App 换屏。登录方式换的时候横着走（360 / 200ms），卡片高度跟着变（360ms）。"
       },
       {

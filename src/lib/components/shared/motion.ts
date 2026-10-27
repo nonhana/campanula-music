@@ -2,7 +2,7 @@ import { flushSync } from 'svelte'
 import { prefersReducedMotion } from 'svelte/motion'
 import type { TransitionConfig } from 'svelte/transition'
 
-import { AXES, cssEasing, DURATIONS, EASINGS, FLOAT_DISTANCE, REDUCED_FADE_MS, STAGGER } from './motion-tokens'
+import { AXES, cssEasing, DURATIONS, EASINGS, FLIGHT_ARC, FLOAT_DISTANCE, REDUCED_FADE_MS, STAGGER } from './motion-tokens'
 
 // 组件里的 JS 动效（Svelte 过渡、Tween、换碟、程序滚动）从这里取时长和曲线，减少动态效果也在这里统一处理（DESIGN.md Motion）：
 // 位移、缩放、平滑滚动去掉，淡入淡出和颜色变化留着、最多 150ms，组件里不再自己判断；CSS 那一半在 uno.config.ts。
@@ -62,6 +62,31 @@ export const animateHeight = (element: HTMLElement, from: number, to: number, du
       easing: cssEasing('out-soft'),
     },
   )
+}
+
+const FLIGHT_STEPS = 12
+
+/**
+ * 飞行（点歌时封面飞进播放条、打开 App 时 logo 归位）的 Web Animations 关键帧：从 from 沿往上鼓的浅弧线飞到 to（二次贝塞尔，分 FLIGHT_STEPS 段），
+ * 边飞边变成 to 的大小。飞的元素摆在 to 上、缩放原点在左上角
+ */
+export const flightArc = (from: DOMRect, to: DOMRect): Keyframe[] => {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  const length = Math.hypot(dx, dy) || 1
+  // 控制点在连线正中往外推，推向和连线垂直、朝上的那一边（竖直往下飞时往右）
+  const bend = FLIGHT_ARC * length * (dx < 0
+    ? -1
+    : 1)
+  const cx = from.x + dx / 2 + (dy / length) * bend
+  const cy = from.y + dy / 2 - (dx / length) * bend
+  return Array.from({ length: FLIGHT_STEPS + 1 }, (_, i) => {
+    const t = i / FLIGHT_STEPS
+    const x = (1 - t) ** 2 * from.x + 2 * (1 - t) * t * cx + t ** 2 * to.x
+    const y = (1 - t) ** 2 * from.y + 2 * (1 - t) * t * cy + t ** 2 * to.y
+    const scale = (from.width + (to.width - from.width) * t) / to.width
+    return { transform: `translate(${x - to.x}px, ${y - to.y}px) scale(${scale})` }
+  })
 }
 
 /** CSS 的 cubic-bezier 换成 JS 缓动函数，和 CSS 同一条曲线（WebKit UnitBezier 的解法） */
@@ -201,8 +226,8 @@ const checkSingleFadeAway = (node: HTMLElement): void => {
   node.dataset.fadingAway = ''
 }
 
-/** node 里标了 data-reveal-group 的元素（虚拟列表、网格），没有就是 node 自己 */
-const REVEAL_GROUP = '[data-reveal-group]'
+/** node 里标了 data-reveal-group 的元素（虚拟列表、网格），没有就是 node 自己；打开 App 时也按它把内容区拆成一块块（boot/opening.ts） */
+export const REVEAL_GROUP = '[data-reveal-group]'
 
 /**
  * 骨架换成内容时依次飘入（in:reveal，DESIGN.md Motion），放在骨架所在 {#if} 的另一分支；页面打开时内容已经在就不播，换页整页一起飘。
