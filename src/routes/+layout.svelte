@@ -7,6 +7,7 @@
   import AppOpening from '#lib/components/boot/AppOpening.svelte'
   import CookieSecretRequired from '#lib/components/boot/CookieSecretRequired.svelte'
   import HttpsRequired from '#lib/components/boot/HttpsRequired.svelte'
+  import { arrival } from '#lib/components/boot/opening.js'
   import LoginPage from '#lib/components/login/LoginPage.svelte'
   import { setAppView, viewOf } from '#lib/components/shared/app-context.svelte.js'
   import { DURATIONS } from '#lib/components/shared/motion-tokens.js'
@@ -24,6 +25,9 @@
   import 'uno.css'
 
   const { children } = $props()
+
+  // app.html 的第一帧（晨光底、正中的花）交给 Svelte：打开中在同一位置画同样的花，挂上前后看不出交接
+  document.getElementById('first-frame')?.remove()
 
   // 页面关闭了服务端渲染，这里只在浏览器里运行。安全上下文 = HTTPS 或本机 localhost：Service Worker、
   // Background Fetch、Storage API、带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
@@ -67,10 +71,10 @@
 
 <!--
   换屏时新的一屏淡入（面板 360ms），旧的一屏原地淡出（200ms）、马上不占高度，新的一屏从窗口顶上开始（motion.ts 的 fadeAway）。
-  旧的在下面、新的盖在上面
+  旧的在下面、新的盖在上面。从打开中换过来时，正中的花再飞到新一屏左上角，内容区从花的落点那边一块块漾开（boot/opening.ts）
 -->
 {#key screen}
-  <div in:fade={{ duration: DURATIONS.panel }} out:fadeAway={{ duration: DURATIONS['panel-out'] }}>
+  <div in:fade={{ duration: DURATIONS.panel }} out:fadeAway={{ duration: DURATIONS['panel-out'] }} {@attach arrival}>
     {#if !session}
       <HttpsRequired />
     {:else if failedUnexpectedly}

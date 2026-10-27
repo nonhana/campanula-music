@@ -1,7 +1,7 @@
 /**
  * 设计系统的色板：作者定义的唯一来源，DESIGN.md 的颜色名都落在这些色阶上（晨光底 = primary-50，纸白 = white）。
  * uno.config.ts 放进 theme.colors；/design 页也读这一份（不能 import uno.config.ts：它会加载 unocss 的预设）。
- * 例外：svg/Logo.svelte 的叶绿描边写死 #37BE8C（DESIGN.md「一处不改」），改 primary-700 / mint-leaf 时同步改 Logo。
+ * 例外：svg/Logo.svelte 的叶绿描边写死 #37BE8C（DESIGN.md「一处不改」），改 primary-700 / mint-leaf 时同步改 Logo；src/app.html 第一帧的花和晨光底（primary-50）也写死，一起改。
  */
 export const colors = {
   white: '#FFFFFF',
