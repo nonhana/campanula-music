@@ -1,6 +1,6 @@
 <!--
   菜单类浮层的外壳：只管浮动菜单与抽屉的呈现，开关、历史、Esc、inert 和归还焦点由浮层栈统一拥有。鼠标打开的是贴着锚点的浮动菜单：从锚点那一侧飘出来，关掉时淡出（DESIGN.md Overlays），
-  点外面、滚动（菜单里面自己滚不算）、窗口变了、换页都关上；触屏是底部弹层：和播放页同一套抽屉，按住拉手或上面那一块往下拖、点按拉手或遮罩都收起，返回也先收起它。
+  点外面、锚点被滚动带走（旁边的滚动区滚起来不算）、窗口变了、换页都关上；触屏是底部弹层：和播放页同一套抽屉，按住拉手或上面那一块往下拖、点按拉手或遮罩都收起，返回也先收起它。
   菜单行、行高和菜单键盘在 MenuList（menu.ts 的条目数据）：调用方只说有哪些行、头部是什么（#73）。选了之后壳自己关上这一层；转交给另一层的项（加入歌单、新建歌单、编辑歌单）设 closeOnChoose: false，自己关。
 -->
 <script lang='ts' generics='R extends MenuRequest'>
@@ -73,7 +73,7 @@
 
   $effect(() => drawer.settle(sheetOpen))
 
-  // 浮动菜单：点外面（打开它的那个按钮除外：再点一下是关上）、滚动、窗口变了、换页都关上，焦点留在点到的地方
+  // 浮动菜单：点外面（打开它的那个按钮除外：再点一下是关上）、锚点被滚动带走、窗口变了、换页都关上，焦点留在点到的地方
   $effect(() => {
     if (!floating)
       return
@@ -87,8 +87,15 @@
       if (!menu?.contains(target) && !shown.from?.contains(target))
         dismiss()
     }
+    // 菜单是固定定位，和锚点错开只发生在锚点自己挪了的时候：旁边的滚动区（歌词、播放队列）滚起来不算，菜单里自己滚也不算。
+    // 打开时没记到锚点（右键点在没有聚焦的那一行、从坐标打开）就没有位置可比，照旧任何滚动都关
+    const from = shown.from
+    const anchorAt = from?.getBoundingClientRect()
+    const shifted = (now: DOMRect | undefined) => !anchorAt || !now
+      || Math.abs(now.left - anchorAt.left) > 0.5
+      || Math.abs(now.top - anchorAt.top) > 0.5
     const onScroll = (event: Event) => {
-      if (!menu?.contains(event.target as Node))
+      if (!menu?.contains(event.target as Node) && shifted(from?.getBoundingClientRect()))
         dismiss()
     }
     window.addEventListener('pointerdown', onPointerDown, true)
