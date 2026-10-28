@@ -1,6 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   "entry": [
+    "src/lib/components/notice/use-toast.svelte.ts",
     "src/routes/**/+*.{ts,svelte}",
     "src/env.ts",
     "src/params.ts",

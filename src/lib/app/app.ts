@@ -29,8 +29,8 @@ import { createLogin, INITIAL_LOGIN } from './login'
 import type { LyricsState } from './lyrics'
 import { createLyrics } from './lyrics'
 import { connectMediaSession } from './media-session'
-import type { NoticeAction } from './notice'
-import { createNotices, noticeActions } from './notice'
+import type { NoticeAction, NoticeEntry, NoticeTone, ShowNoticeOptions } from './notice'
+import { createNotices } from './notice'
 import { createBackgroundLane } from './pacing'
 import { plainSong, plainSource } from './plain'
 import type { Player, PlayerState, PlayMode } from './player'
@@ -70,6 +70,8 @@ export interface AppState {
   login: LoginState
   /** 曲库副本（ADR-0007）：登录了才有，先显示本机副本，再在后台同步 */
   library: LibraryState | null
+  /** 提示条（最多 3 条）：这里是唯一数据源，界面只照着画；登录前后都在 */
+  notices: readonly NoticeEntry[]
   player: PlayerState
   lyrics: LyricsState | null
   /** 只在这次登录期间记着 */
@@ -164,8 +166,8 @@ export interface App {
   dismissPlayerNotice: () => void
   /** 已经取到、正在取就不再取 */
   openLyrics: (songId: number) => Promise<void>
-  /** 先改本地、立即生效，再提交；没改成时改回原样。断网时不改，直接说没改成（规则⑨） */
-  heart: (song: Song, hearted: boolean) => Promise<void>
+  /** 先改本地、立即生效，再提交；没改成时改回原样。断网时不改，直接说没改成（规则⑨）。notify 只给“更多”菜单：行内心形不提示 */
+  heart: (song: Song, hearted: boolean, options?: { notify?: boolean }) => Promise<void>
   /** 自建歌单，或我喜欢的音乐（等于红心）；先改本地，成了提示“已加入”，歌单已经不在了就改回原样并马上同步 */
   addToPlaylist: (playlistId: number, song: Song) => Promise<void>
   /** 一个请求带上全部编号；已经在歌单里的不再提交，全都已经在里面时什么都不发 */
@@ -204,8 +206,12 @@ export interface App {
   retryCover: () => Promise<CoverOutcome | null>
   /** 释放图片；正在设为封面时关不掉 */
   closeCover: () => void
-  /** 按 noticeActions(notices.current()) 判断支持不支持，重试和撤销的数据来自提示条自己的载荷；没有提示条、不支持时什么都不做 */
-  noticeAction: (action: NoticeAction) => Promise<void>
+  /**
+   * 按这一条的 actions 判断支持不支持，重试和撤销的数据来自提示条自己的载荷；没有这一条、不支持时什么都不做
+   */
+  noticeAction: (id: number, action: NoticeAction) => Promise<void>
+  /** 纯界面事件的一句话（复制、权限这类）走同一摞提示条：成功 4 秒后走，失败一直留着；业务动作不发这个 */
+  toast: (tone: NoticeTone, text: string, options?: ShowNoticeOptions) => number
   /** 完整音频、封面缩略图、歌词、歌曲信息一起存进这台设备（ADR-0006）；下载地址按下载音质后台请求。现在不下时返回原因（界面事先用 downloadBlock 标出来） */
   download: (song: Song) => DownloadBlock | null
   /** 多选里的下载：把勾选的几首按 source 记来源，跳过已下载、试听、无版权的歌并逐项说明（#39） */
@@ -219,10 +225,14 @@ export interface App {
   downloadAlbum: (albumId: number, songs?: readonly Song[]) => Promise<DownloadBatchOutcome | DownloadStartBlock>
   /** 重试一首没下成的（保留它原来的来源） */
   retryDownload: (songId: number) => void
+  /** 取消一首排队、下载中、失败的（已下载页、下载面板）：已经下完的不动 */
+  cancelDownload: (songId: number) => void
+  /** 下载面板的“全部取消”：排队、下载中、失败的都停，连同还没补完的整张歌单下载 */
+  cancelAllDownloads: () => void
   /** 存储空间不够、整队暂停后，腾出空间点“继续下载”（规则⑪） */
   resumeDownloads: () => void
   /** 没登录时也能删 */
-  deleteDownloads: (songIds: readonly number[]) => Promise<void>
+  deleteDownloads: (songIds: readonly number[]) => Promise<DownloadRemoval>
   /** 按歌单删除下载（规则⑦）：别处也下载过的留着，只去掉这张歌单；没登录时也能用（#40） */
   deletePlaylistDownloads: (playlistId: number) => Promise<DownloadRemoval>
   /** 一键清空（#40）：删掉所有下载，排队中和正在下的也停 */
@@ -259,6 +269,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     session: { status: 'checking' },
     login: INITIAL_LOGIN,
     library: null,
+    notices: [],
     player: INITIAL_PLAYER,
     lyrics: null,
     daily: null,
@@ -339,14 +350,19 @@ export const createApp = (browser: BrowserCapabilities): App => {
    */
   const notices = createNotices({
     clock: browser.clock,
-    // 提示条换了让曲库重发一次：这一条提示和它支持的动作都从当前这一份副本算出来
-    changed: () => library.publish(),
+    changed: () => {
+      // 新的这一摞是界面的数据源；曲库快照里的旧投影（兼容期）也重发一次
+      update({
+        notices: notices.list(),
+      })
+      library.publish()
+    },
   })
-  // 会话换了（登录、退出、登录失效、换账号）：上一条提示条不算了；还没同步完的整张歌单下载也跟这次登录走
+  // 会话换了（登录、退出、登录失效、换账号）：上一条登录的提示都不算了；还没同步完的整张歌单下载也跟这次登录走
   const pendingPlaylists = new Map<number, { source: DownloadSource, seen: Set<number> }>()
   round.onChange(() => {
     pendingPlaylists.clear()
-    notices.show(null)
+    notices.clear()
   })
   // 三个东西互相要用：播放器保存队列、队列发打卡、打卡读队列。先声明，建好以后才用到
   let player: Player
@@ -416,7 +432,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     online: () => browser.network.onLine,
     signedIn: () => state.session.status === 'signedIn',
     write: next => update({ downloads: next }),
-    notify: notices.show,
+    notices,
     changed: downloadsChanged,
   })
 
@@ -847,6 +863,49 @@ export const createApp = (browser: BrowserCapabilities): App => {
     }
   })
 
+  /** 这一条提示上按了按钮：载荷从它自己身上取；界面只在 entry.actions 里有这个动作时才调到这里 */
+  const actOnNotice = async (entry: NoticeEntry, action: NoticeAction): Promise<void> => {
+    const notice = entry.notice
+    switch (action) {
+      case 'undo':
+        if (notice.kind === 'removed')
+          library.undoRemove(notice.removalId)
+        return
+      case 'dismiss':
+        // 撤销那一条还要让 deferred 忘掉它指向哪一批（计时和提交不受影响）
+        if (notice.kind === 'removed')
+          library.dismissRemoval(notice.removalId)
+        notices.hide(entry.id)
+        return
+      case 'retry':
+        switch (notice.kind) {
+          case 'removeFailed':
+            return library.retryRemove(notice.playlist, notice.songIds)
+          case 'orderFailed':
+            return library.retryOrder(notice.playlist, notice.songIds)
+          case 'playlistOrderFailed':
+            return library.retryPlaylistOrder(notice.playlistIds)
+          case 'downloadFailed':
+            // 开始重下了才关掉；断网、没登录时下不了，提示条留着
+            if (downloads.retry(notice.song.id))
+              notices.hide(entry.id)
+            return
+          default:
+            return
+        }
+      case 'resume':
+        if (notice.kind === 'downloadsPaused') {
+          downloads.resume()
+          notices.hide(entry.id)
+        }
+        return
+      default: {
+        const unhandled: never = action
+        throw new Error(`不认识的提示条动作：${JSON.stringify(unhandled)}`)
+      }
+    }
+  }
+
   return {
     get state() {
       return state
@@ -941,24 +1000,49 @@ export const createApp = (browser: BrowserCapabilities): App => {
     cancelCover: cover.cancel,
     retryCover: cover.retry,
     closeCover: cover.close,
-    createPlaylist: (draft, songs) => library.create(draft, songs?.map(plainSong)),
-    async editPlaylist(playlistId, edit) {
+    editPlaylist: async (playlistId, edit) => {
       const changes = playlistEdits(ownPlaylist(playlistId), edit)
       // 有一样不合规、断网时整次都不提交：只说一次原因，不让后一样的提示盖掉前一样的
       const refused = changes.find(change => changeProblem(change)) ?? (browser.network.onLine ? undefined : changes[0])
-      if (refused)
-        return library.change(refused)
+      if (refused) {
+        await library.change(refused)
+        return
+      }
       await Promise.all(changes.map(change => library.change(change)))
+    },
+    async createPlaylist(draft, songs) {
+      const outcome = await library.create(draft, songs?.map(plainSong))
+      // 有歌时由“已加入”那条负责，不重复
+      if (outcome?.ok && (songs?.length ?? 0) === 0) {
+        notices.show({
+          kind: 'playlistCreated',
+          name: draft.name.trim(),
+        })
+      }
+      return outcome
     },
     async publishPlaylist(playlistId) {
       const playlist = ownPlaylist(playlistId)
-      if (playlist.private)
-        await library.change({ kind: 'publish', playlist })
+      if (!playlist.private)
+        return
+      const result = await library.change({ kind: 'publish', playlist })
+      if (result?.ok && result.value === 'done') {
+        notices.show({
+          kind: 'playlistPublished',
+          name: playlistName(playlist),
+        })
+      }
     },
-    deletePlaylist: async playlistId => library.change({
-      kind: 'delete',
-      playlist: ownPlaylist(playlistId),
-    }),
+    async deletePlaylist(playlistId) {
+      const playlist = ownPlaylist(playlistId)
+      const result = await library.change({ kind: 'delete', playlist })
+      if (result?.ok && result.value === 'done') {
+        notices.show({
+          kind: 'playlistDeleted',
+          name: playlistName(playlist),
+        })
+      }
+    },
     openDaily: daily.open,
     suggest: search.suggest,
     search: search.search,
@@ -990,8 +1074,26 @@ export const createApp = (browser: BrowserCapabilities): App => {
     next: player.next,
     previous: player.previous,
     playFromQueue: player.jump,
-    playNext: (source, song) => player.playNext(plainSource(source), plainSong(song)),
-    addToQueue: (source, song) => player.addToQueue(plainSource(source), plainSong(song)),
+    playNext(source, song) {
+      const outcome = player.playNext(plainSource(source), plainSong(song))
+      if (outcome !== 'ignored') {
+        notices.show({
+          kind: 'queuedNext',
+          count: 1,
+          started: outcome === 'started',
+        })
+      }
+    },
+    addToQueue(source, song) {
+      const outcome = player.addToQueue(plainSource(source), plainSong(song))
+      if (outcome !== 'ignored') {
+        notices.show({
+          kind: 'queuedEnd',
+          count: 1,
+          started: outcome === 'started',
+        })
+      }
+    },
     removeFromQueue: player.removeFromQueue,
     clearQueue: player.clearQueue,
     setPlayMode: player.setMode,
@@ -1004,16 +1106,21 @@ export const createApp = (browser: BrowserCapabilities): App => {
     },
     dismissPlayerNotice: player.dismissNotice,
     openLyrics: lyrics.open,
-    heart: (song, hearted) => library.change({
-      kind: 'heart',
-      song: plainSong(song),
-      hearted,
-    }),
+    async heart(song, hearted, options) {
+      const plain = plainSong(song)
+      const result = await library.change({
+        kind: 'heart',
+        song: plain,
+        hearted,
+      })
+      if (options?.notify && result?.ok && result.value === 'done')
+        notices.show({ kind: 'hearted', song: plain, hearted })
+    },
     async addToPlaylist(playlistId, song) {
       const playlist = state.library?.playlists?.find(item => item.id === playlistId)
       if (!playlist || playlist.kind === 'collected')
         throw new Error(`只能加入自建歌单和我喜欢的音乐：${playlistId}`)
-      return library.change({
+      await library.change({
         kind: 'add',
         playlist,
         song: plainSong(song),
@@ -1043,25 +1150,30 @@ export const createApp = (browser: BrowserCapabilities): App => {
         case 'playlist': {
           const found = playlistToCollect(shown, target.id)
           if (found?.playlist.kind === 'collected') {
-            return library.change({
+            await library.change({
               kind: 'collectPlaylist',
               playlist: found.playlist,
               collected,
               seed: found.seed,
             })
+            return
           }
           break
         }
         case 'album': {
           const album = albumToCollect(shown, target.id)
-          if (album)
-            return library.change({ kind: 'collectAlbum', album, collected })
+          if (album) {
+            await library.change({ kind: 'collectAlbum', album, collected })
+            return
+          }
           break
         }
         case 'artist': {
           const artist = artistToCollect(shown, target.id)
-          if (artist)
-            return library.change({ kind: 'collectArtist', artist, collected })
+          if (artist) {
+            await library.change({ kind: 'collectArtist', artist, collected })
+            return
+          }
           break
         }
         default: {
@@ -1071,47 +1183,17 @@ export const createApp = (browser: BrowserCapabilities): App => {
       }
       throw new Error(`界面上没有这样东西，收藏不了：${JSON.stringify(target)}`)
     },
-    async noticeAction(action) {
-      const notice = notices.current()
-      if (!notice || !noticeActions(notice).includes(action))
-        return
-      switch (action) {
-        case 'undo':
-          if (notice.kind === 'removed')
-            library.undoRemove(notice.removalId)
-          return
-        case 'dismiss':
-          library.dismissNotice()
-          notices.show(null)
-          return
-        case 'retry':
-          switch (notice.kind) {
-            case 'removeFailed':
-              return library.retryRemove(notice.playlist, notice.songIds)
-            case 'orderFailed':
-              return library.retryOrder(notice.playlist, notice.songIds)
-            case 'playlistOrderFailed':
-              return library.retryPlaylistOrder(notice.playlistIds)
-            case 'downloadFailed':
-              // 开始重下了才关掉；断网、没登录时下不了，提示条留着
-              if (downloads.retry(notice.song.id))
-                notices.show(null)
-              return
-            default:
-              return
-          }
-        case 'resume':
-          if (notice.kind === 'downloadsPaused') {
-            downloads.resume()
-            notices.show(null)
-          }
-          return
-        default: {
-          const unhandled: never = action
-          throw new Error(`不认识的提示条动作：${JSON.stringify(unhandled)}`)
-        }
-      }
+    noticeAction: (id: number, action: NoticeAction): Promise<void> => {
+      const entry = notices.list().find(each => each.id === id)
+      return entry && entry.actions.includes(action)
+        ? actOnNotice(entry, action)
+        : Promise.resolve()
     },
+    toast: (tone, text, options) => notices.show({
+      kind: 'plain',
+      tone,
+      text,
+    }, options),
     download: downloads.download,
     downloadSongs: (songs, source) => downloads.add(songs, source),
     async downloadPlaylist(playlistId, songs, options) {
@@ -1167,10 +1249,17 @@ export const createApp = (browser: BrowserCapabilities): App => {
     retryDownload(songId) {
       downloads.retry(songId)
     },
+    cancelDownload(songId) {
+      downloads.cancel(songId)
+    },
+    cancelAllDownloads() {
+      // 还没补完的整张歌单也停下，免得同步完又补回来（规则⑫）
+      pendingPlaylists.clear()
+      downloads.cancelAll()
+    },
     resumeDownloads() {
       downloads.resume()
-      if (notices.current()?.kind === 'downloadsPaused')
-        notices.show(null)
+      notices.hideWhere(notice => notice.kind === 'downloadsPaused')
     },
     deleteDownloads: downloads.remove,
     deletePlaylistDownloads(playlistId) {

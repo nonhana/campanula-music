@@ -8,7 +8,7 @@ import { MEDIA_ERR_NETWORK, MEDIA_ERR_SRC_NOT_SUPPORTED } from './harness/browse
 import type { Device, Tab } from './harness/device'
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
-import { checkIns, current, likedPage, likedSong, listener, PLAYLISTS_WITH_POEMS, playUrlRequests, queueIds, storedCheckIns } from './harness/listener'
+import { checkIns, current, likedPage, likedSong, listener, noticeOf, PLAYLISTS_WITH_POEMS, playUrlRequests, queueIds, storedCheckIns } from './harness/listener'
 import { RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -2427,5 +2427,34 @@ describe('听歌打卡', () => {
     ])
     const stored = await device.stored()
     expect([stored.library, stored.player, stored.checkIns]).toEqual([[], [], []])
+  })
+})
+
+describe('播放队列的提示', () => {
+  it('队列空时直接开始放提示“已开始播放”；再排一首合并成首数；正在放的那首不提示', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const first = likedSong(app, FIRST.id)
+    const second = likedSong(app, SECOND.id)
+
+    await world.netease.reply(FIRST.url)
+    app.playNext(LIKED, first)
+    await world.settle()
+    expect(noticeOf(app)).toEqual({ kind: 'queuedNext', count: 1, started: true })
+
+    app.playNext(LIKED, second)
+    expect(noticeOf(app)).toEqual({ kind: 'queuedNext', count: 2, started: true })
+
+    // 排到最后是另一种动作，另起一条
+    app.addToQueue(LIKED, second)
+    expect(noticeOf(app)).toEqual({ kind: 'queuedEnd', count: 1, started: false })
+
+    // 正在放的这首：队列什么都不变，也不提示
+    const count = app.state.notices.length
+    app.playNext(LIKED, first)
+    expect(app.state.notices).toHaveLength(count)
+
+    await world.clock.advance(4000)
+    expect(app.state.notices.filter(entry => entry.notice.kind === 'queuedNext' || entry.notice.kind === 'queuedEnd')).toEqual([])
   })
 })

@@ -5,7 +5,7 @@ import type { App } from '#lib/app/app.js'
 
 import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
-import { JAZZ_DETAIL, listener, SOME_SONGS, storedTrackIds } from './harness/listener'
+import { JAZZ_DETAIL, listener, noticeEntry, noticeOf, SOME_SONGS, storedTrackIds } from './harness/listener'
 import { RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -78,7 +78,9 @@ const twoRemovablePlaylists = async (device: Device): Promise<{ app: App, create
   const createdTracks = await storedTrackIds(device, CREATED.id)
   if (!createdTracks)
     throw new Error('新建歌单没有写进本机副本')
-  await app.noticeAction('dismiss')
+  // 新建、加歌的提示不该影响后面移除的断言
+  while (app.state.notices.length > 0)
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
   return { app, createdTracks }
 }
 
@@ -91,7 +93,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
     expect(totalOf(app, JAZZ.id)).toBe(1)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removed',
       playlist: { id: JAZZ.id },
       count: 1,
@@ -100,9 +102,9 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     await world.clock.advance(4999)
     expect(removeRequests(device)).toHaveLength(0)
 
-    await app.noticeAction('undo')
+    await app.noticeAction(noticeEntry(app)!.id, 'undo')
     expect(totalOf(app, JAZZ.id)).toBe(2)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     await world.clock.advance(1000)
     expect(removeRequests(device)).toHaveLength(0)
 
@@ -128,7 +130,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     })
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([JAZZ_TRACKS[1]!])
     expect(totalOf(app, JAZZ.id)).toBe(1)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('5 秒内连着移除两批：合成一条提示，撤销把两批都放回、什么都不提交', async () => {
@@ -139,13 +141,13 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[1]!])
     expect(totalOf(app, JAZZ.id)).toBe(0)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removed',
       playlist: { id: JAZZ.id },
       count: 2,
     })
 
-    await app.noticeAction('undo')
+    await app.noticeAction(noticeEntry(app)!.id, 'undo')
     expect(totalOf(app, JAZZ.id)).toBe(2)
     await world.clock.advance(6000)
     expect(removeRequests(device)).toHaveLength(0)
@@ -189,7 +191,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     await app.addToPlaylist(JAZZ.id, song!)
     expect(device.requests.length).toBe(sent)
     expect(totalOf(app, JAZZ.id)).toBe(2)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'alreadyAdded',
       playlist: { id: JAZZ.id },
     })
@@ -319,7 +321,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
 
     expect(totalOf(app, JAZZ.id)).toBe(2)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removeFailed',
       playlist: { id: JAZZ.id },
       count: 2,
@@ -327,12 +329,12 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     })
 
     await world.netease.reply(REMOVE)
-    await app.noticeAction('retry')
+    await app.noticeAction(noticeEntry(app)!.id, 'retry')
     await world.settle()
 
     expect(totalOf(app, JAZZ.id)).toBe(0)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     expect(world.netease.calls.filter(call => call.module === 'playlist_tracks' && (call.query as { op?: string }).op === 'del')).toHaveLength(2)
   })
 
@@ -350,7 +352,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     await world.clock.advance(5000)
 
     expect(totalOf(app, JAZZ.id)).toBe(2)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'playlistMissing',
       change: {
         kind: 'remove',
@@ -370,7 +372,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
 
     expect(totalOf(app, JAZZ.id)).toBe(2)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removeFailed',
       failure: { kind: 'offline' },
     })
@@ -378,33 +380,29 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
   })
 
-  // r2 身份：提示被“已加入”替换后，私有的 noticeRemovalId 仍然记着 A；
-  // 另一张歌单的移除开始前，先把 A 立即提交（基线语义）。
-  it('撤销提示被“已加入”替换后再移除另一张歌单：上一批立即提交（和基线一样）', async () => {
+  // r2 身份：提示条能同时显示。撤销提示和“已加入”同时在时，再移除另一张歌单，两批各留各的撤销提示。
+  it('撤销提示和“已加入”同时在、再移除另一张歌单：两批各留各的撤销，都不立即提交', async () => {
     const device = world.device()
     const { app, createdTracks } = await twoRemovablePlaylists(device)
-    await world.netease.reply(REMOVE)
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
     expect(await app.addSongsToPlaylist(JAZZ.id, songsFrom(1, JAZZ_TRACKS[1]))).toEqual({ ok: true, added: 0 })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'alreadyAdded' })
-
     app.removeFromPlaylist(CREATED.id, [createdTracks[0]!])
     await world.settle()
 
-    expect(removeRequests(device)).toEqual([
-      {
-        method: 'POST',
-        path: `/api/playlists/${JAZZ.id}/tracks/remove`,
-        body: {
-          songIds: [JAZZ_TRACKS[0]!],
-        },
-      },
-    ])
-    expect(app.state.library?.notice).toMatchObject({
-      kind: 'removed',
-      playlist: { id: CREATED.id },
-    })
+    expect(app.state.notices.map(entry => entry.notice.kind)).toEqual(['removed', 'alreadyAdded', 'removed'])
+    expect(removeRequests(device)).toEqual([])
+
+    // 先出现的那条不在最新一位，撤销还是按它自己的 removalId 找回原来那一批
+    await app.noticeAction(noticeEntry(app)!.id, 'undo')
+    expect(totalOf(app, CREATED.id)).toBe(2)
+    expect(totalOf(app, JAZZ.id)).toBe(1)
+
+    const jazz = app.state.notices.find(entry => entry.notice.kind === 'removed')
+    await app.noticeAction(jazz!.id, 'undo')
+    expect(totalOf(app, JAZZ.id)).toBe(2)
+    await world.clock.advance(6000)
+    expect(removeRequests(device)).toEqual([])
   })
 
   it('主动关掉撤销提示后再移除另一张歌单：上一批不立即提交（和基线一样）', async () => {
@@ -412,15 +410,49 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     const { app, createdTracks } = await twoRemovablePlaylists(device)
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
-    await app.noticeAction('dismiss')
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
     app.removeFromPlaylist(CREATED.id, [createdTracks[0]!])
     await world.settle()
 
     expect(removeRequests(device)).toEqual([])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removed',
       playlist: { id: CREATED.id },
     })
+  })
+
+  it('两张歌单各移除一批：两条撤销各管各自那一批，先出现的被挤到下面也照样', async () => {
+    const device = world.device()
+    const { app, createdTracks } = await twoRemovablePlaylists(device)
+
+    app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
+    app.removeFromPlaylist(CREATED.id, [createdTracks[0]!])
+    expect(totalOf(app, JAZZ.id)).toBe(1)
+    expect(totalOf(app, CREATED.id)).toBe(1)
+    expect(app.state.notices.map(entry => entry.notice)).toMatchObject([
+      {
+        kind: 'removed',
+        playlist: { id: JAZZ.id },
+      },
+      {
+        kind: 'removed',
+        playlist: { id: CREATED.id },
+      },
+    ])
+
+    // 再来一条别的提示：最早那条不再是“最新一条”
+    app.toast('error', '别的事情')
+
+    const [jazz] = app.state.notices
+    await app.noticeAction(jazz!.id, 'undo')
+    expect(totalOf(app, JAZZ.id)).toBe(2)
+    expect(totalOf(app, CREATED.id)).toBe(1)
+
+    const created = app.state.notices.find(entry => entry.notice.kind === 'removed')
+    await app.noticeAction(created!.id, 'undo')
+    expect(totalOf(app, CREATED.id)).toBe(2)
+    await world.clock.advance(6000)
+    expect(removeRequests(device)).toEqual([])
   })
 
   it('关掉撤销提示后同歌单再移除：撤销只放回后一批，前一批照常计时提交', async () => {
@@ -430,19 +462,19 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     await world.netease.reply(REMOVE)
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
-    await app.noticeAction('dismiss')
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
     await world.clock.advance(1000)
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[1]!])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removed',
       playlist: { id: JAZZ.id },
       count: 1,
     })
 
-    await app.noticeAction('undo')
+    await app.noticeAction(noticeEntry(app)!.id, 'undo')
     expect(totalOf(app, JAZZ.id)).toBe(1)
     expect(app.state.library?.songsOf(JAZZ.id)?.trackIds).toEqual([JAZZ_TRACKS[1]!])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
 
     await world.clock.advance(4000)
     expect(removeRequests(device)).toEqual([
@@ -465,12 +497,12 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     await world.netease.reply(REMOVE)
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
-    await app.noticeAction('dismiss')
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
     await world.clock.advance(1000)
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[1]!])
 
     await world.clock.advance(4000)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removed',
       playlist: { id: JAZZ.id },
       count: 1,
@@ -478,7 +510,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     expect(removeRequests(device)).toHaveLength(1)
 
     await world.clock.advance(1000)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     expect(removeRequests(device)).toHaveLength(2)
   })
 
@@ -489,10 +521,10 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
     await world.netease.reply(REMOVE)
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!])
-    await app.noticeAction('dismiss')
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
     await world.clock.advance(1000)
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[1]!])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removed',
       playlist: { id: JAZZ.id },
       count: 1,
@@ -504,7 +536,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
 
     expect(addRequests(device)).toHaveLength(addsBefore)
     expect(app.state.library?.songsOf(JAZZ.id)?.trackIds).toEqual([JAZZ_TRACKS[0]!])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'alreadyAdded',
       playlist: { id: JAZZ.id },
     })
@@ -573,13 +605,13 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
 
     app.removeFromPlaylist(playlistId, trackIds)
 
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'removeFailed',
       playlist: { id: playlistId },
       count: 9001,
       failure: { kind: 'invalid', problem: 'tooManySongs' },
     })
-    expect(app.state.library?.noticeActions).toEqual(['dismiss'])
+    expect(noticeEntry(app)?.actions).toEqual(['dismiss'])
     expect(device.requests.slice(sent).filter(request => request.path.endsWith('/tracks/remove'))).toEqual([])
     expect(await storedTrackIds(device, playlistId)).toEqual(trackIds)
   })
@@ -613,7 +645,7 @@ describe('没确认的改动下次打开时恢复', () => {
     const second = await device.open()
     await world.settle()
 
-    expect(second.app.state.library?.notice).toEqual({ kind: 'recovered' })
+    expect(noticeOf(second.app)).toEqual({ kind: 'recovered' })
     expect(totalOf(second.app, JAZZ.id)).toBe(2)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
     expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')).toBeUndefined()
@@ -641,7 +673,7 @@ describe('没确认的改动下次打开时恢复', () => {
     const second = await device.open()
     await world.settle()
 
-    expect(second.app.state.library?.notice).toBeNull()
+    expect(noticeOf(second.app)).toBeNull()
     expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')?.[1]).toEqual([JAZZ.id])
     second.close()
 
@@ -657,7 +689,7 @@ describe('没确认的改动下次打开时恢复', () => {
     const third = await device.open()
     await world.settle()
 
-    expect(third.app.state.library?.notice).toEqual({ kind: 'recovered' })
+    expect(noticeOf(third.app)).toEqual({ kind: 'recovered' })
     expect(totalOf(third.app, JAZZ.id)).toBe(2)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
     expect((await device.stored()).library.find(([key]) => key === 'pendingChanges')).toBeUndefined()
@@ -706,7 +738,7 @@ describe('登录失效与换账号', () => {
     await signIn(world, app)
     await world.settle()
 
-    expect(app.state.library?.notice).toEqual({ kind: 'recovered' })
+    expect(noticeOf(app)).toEqual({ kind: 'recovered' })
     expect(totalOf(app, JAZZ.id)).toBe(2)
     expect(await pendingChanges(device)).toBeUndefined()
   })
@@ -741,7 +773,7 @@ describe('登录失效与换账号', () => {
     await signIn(world, app)
     await world.settle()
 
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     expect(await pendingChanges(device)).toBeUndefined()
   })
 })
@@ -790,7 +822,7 @@ describe('批量加入歌单', () => {
       },
     })
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([first!.id, second!.id, ...JAZZ_TRACKS])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'added',
       change: {
         kind: 'addMany',
@@ -801,7 +833,7 @@ describe('批量加入歌单', () => {
     const sent = device.requests.length
     expect(await app.addSongsToPlaylist(JAZZ.id, [first!, second!])).toEqual({ ok: true, added: 0 })
     expect(device.requests.length).toBe(sent)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'alreadyAdded',
       playlist: { id: JAZZ.id },
     })
@@ -820,13 +852,13 @@ describe('批量加入歌单', () => {
     await world.netease.reply(ADD)
 
     expect(await app.addSongsToPlaylist(JAZZ.id, songsFrom(1, 2_000_000_777))).toEqual({ ok: true, added: 1 })
-    expect(app.state.library?.notice).toMatchObject({ kind: 'added' })
+    expect(noticeOf(app)).toMatchObject({ kind: 'added' })
 
     await world.clock.advance(3999)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'added' })
+    expect(noticeOf(app)).toMatchObject({ kind: 'added' })
 
     await world.clock.advance(1)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('一次超过 9,000 首：不发请求，说明原因（服务端上限）', async () => {
@@ -841,7 +873,7 @@ describe('批量加入歌单', () => {
     })
     expect(device.requests.length).toBe(sent)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       failure: { kind: 'invalid', problem: 'tooManySongs' },
     })
@@ -865,7 +897,7 @@ describe('批量加入歌单', () => {
     })
     expect(device.requests.length).toBe(sent)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       failure: { kind: 'offline' },
     })
@@ -877,7 +909,7 @@ describe('批量加入歌单', () => {
       failure: { kind: 'missing' },
     })
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'playlistMissing',
       change: {
         kind: 'addMany',
@@ -921,7 +953,7 @@ describe('批量加入与移除的边界（#66 返工）', () => {
     })
     expect(totalOf(app, JAZZ.id)).toBe(2)
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: {
         kind: 'addMany',
@@ -939,7 +971,7 @@ describe('批量加入与移除的边界（#66 返工）', () => {
 
     app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!, 999_999_999])
     expect(totalOf(app, JAZZ.id)).toBe(1)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'removed', count: 1 })
+    expect(noticeOf(app)).toMatchObject({ kind: 'removed', count: 1 })
 
     await world.clock.advance(5000)
     expect(removeRequests(device).at(-1)?.body).toEqual({
@@ -949,7 +981,7 @@ describe('批量加入与移除的边界（#66 返工）', () => {
     expect(totalOf(app, JAZZ.id)).toBe(1)
   })
 
-  it('5 秒内移除两张歌单：先提交上一张，再计时提交这一张', async () => {
+  it('5 秒内移除两张歌单：各等各的 5 秒，到点两张都提交', async () => {
     const device = world.device()
     const { app } = await signInAtLikedTracks(device)
     await openJazz(app, { songsHeld: false })
@@ -971,24 +1003,19 @@ describe('批量加入与移除的边界（#66 返工）', () => {
     app.removeFromPlaylist(CREATED.id, [createdTracks[0]!])
     await world.settle()
 
-    expect(removeRequests(device)).toEqual([
-      {
-        method: 'POST',
-        path: `/api/playlists/${JAZZ.id}/tracks/remove`,
-        body: {
-          songIds: [JAZZ_TRACKS[0]!],
-        },
-      },
-    ])
-    expect(totalOf(app, JAZZ.id)).toBe(1)
+    expect(removeRequests(device)).toEqual([])
+    expect(app.state.notices.filter(entry => entry.notice.kind === 'removed')).toHaveLength(2)
 
     await world.clock.advance(5000)
-    expect(removeRequests(device).at(-1)).toEqual({
-      method: 'POST',
-      path: `/api/playlists/${CREATED.id}/tracks/remove`,
-      body: {
-        songIds: [createdTracks[0]!],
-      },
+    expect(removeRequests(device).map(request => request.path).sort()).toEqual([
+      `/api/playlists/${JAZZ.id}/tracks/remove`,
+      `/api/playlists/${CREATED.id}/tracks/remove`,
+    ])
+    expect(removeRequests(device).find(request => request.path.includes(String(JAZZ.id)))?.body).toEqual({
+      songIds: [JAZZ_TRACKS[0]!],
+    })
+    expect(removeRequests(device).find(request => request.path.includes(String(CREATED.id)))?.body).toEqual({
+      songIds: [createdTracks[0]!],
     })
     expect(await storedTrackIds(device, CREATED.id)).not.toContain(createdTracks[0])
     expect(totalOf(app, JAZZ.id)).toBe(1)
@@ -1002,12 +1029,12 @@ describe('批量加入与移除的边界（#66 返工）', () => {
 
     app.removeFromPlaylist(JAZZ.id, JAZZ_TRACKS)
     expect(totalOf(app, JAZZ.id)).toBe(0)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'removed', count: 2 })
+    expect(noticeOf(app)).toMatchObject({ kind: 'removed', count: 2 })
 
     await world.clock.advance(5000)
     expect(removeRequests(device).at(-1)?.body).toEqual({ songIds: JAZZ_TRACKS })
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([])
     expect(totalOf(app, JAZZ.id)).toBe(0)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 })

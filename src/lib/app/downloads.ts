@@ -8,6 +8,7 @@ import type { Api, Result } from './api-client'
 import type { BrowserCapabilities, Clock } from './browser'
 import type { DownloadSource, LocalDb, StoredDownload } from './local'
 import { mergeDownloadSources, sameDownloadSource } from './local'
+import type { Notices } from './notice'
 import { plainSong } from './plain'
 import type { BackgroundFailure, BackgroundSessionResult, SessionRound } from './session-round'
 
@@ -46,9 +47,10 @@ export type DownloadTask
     /** 没下成：说明原因，再下一次就是重试 */
     | { status: 'failed', song: Song, sources: readonly DownloadSource[], received: number, total: number | null, failure: DownloadFailure }
 
-/** App 的提示条，和改曲库共用一条 */
+/** App 的提示条，和改曲库共用一摞 */
 export type DownloadNotice
-  = | { kind: 'downloadFailed', song: Song, failure: DownloadFailure }
+  = | { kind: 'downloadQueued', song: Song }
+    | { kind: 'downloadFailed', song: Song, failure: DownloadFailure, count?: number }
     /** 整张歌单、专辑、多选里的下载：加进了多少、跳过了多少（逐项说明）；filling 是歌单还没同步完，后面的会补上（规则⑫） */
     | { kind: 'downloadsAdded', queued: number, downloaded: number, trial: number, noCopyright: number, filling?: true }
     /** 存储空间不够，整队暂停（规则⑪）；腾出空间后点“继续下载” */
@@ -139,7 +141,8 @@ export interface DownloadsContext {
   /** 要下载地址要用这个账号；退出、登录失效时不能下载 */
   signedIn: () => boolean
   write: (downloads: DownloadsState) => void
-  notify: (notice: DownloadNotice) => void
+  /** App 的提示条：下载的通知，以及收起被新状态取代的旧提示 */
+  notices: Pick<Notices, 'show' | 'hideWhere'>
   /** 哪些歌能离线放变了 */
   changed: () => void
 }
@@ -152,12 +155,16 @@ export interface Downloads {
   add: (songs: readonly Song[], source: DownloadSource, options?: { quiet?: boolean, filling?: boolean }) => Promise<DownloadBatchOutcome | DownloadStartBlock>
   /** 重新排队一首失败的；没这首、不是失败时什么都不做，返回有没有排上 */
   retry: (songId: number) => boolean
+  /** 取消一首排队、下载中、失败的：停止传输、丢掉断点；已经下完的不动。返回有没有这一首 */
+  cancel: (songId: number) => boolean
+  /** 全部取消：排队、下载中、失败的都停，解除存储暂停；已经下完的不动 */
+  cancelAll: () => void
   /** 登录、联网之类让队列能动了：再试着走一步（不改变暂停） */
   wake: () => void
   /** 腾出空间后点“继续下载”（规则⑪） */
   resume: () => void
-  /** 没登录时也能删；它们的本机文件地址不再用 */
-  remove: (songIds: readonly number[]) => Promise<void>
+  /** 没登录时也能删；它们的本机文件地址不再用。返回删了几首、腾出多少（提示条用） */
+  remove: (songIds: readonly number[]) => Promise<DownloadRemoval>
   /** 按歌单删除（规则⑦）：别处也下载过的只去掉这张歌单、留着；没登录时也能用（只看下载里记着的来源，#40） */
   removePlaylist: (playlistId: number) => Promise<DownloadRemoval>
   /** 一键清空（#40）：删掉所有下载，排队中和正在下的也停，解除暂停 */
@@ -173,6 +180,10 @@ export interface Downloads {
 
 /** IndexedDB 以 QuotaExceededError 失败；别的错是 Campanula 自己的缺陷 */
 const storageFull = (error: unknown): boolean => error instanceof DOMException && error.name === 'QuotaExceededError'
+
+/** 不知道总大小时（#78）：每多收到这么多字节，或过了这么久，才发布一次进度 */
+const UNKNOWN_PROGRESS_BYTES = 64 * 1024
+const UNKNOWN_PROGRESS_MS = 500
 
 interface Prepared {
   url: string
@@ -208,6 +219,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   let persistAsked = false
   /** 每首下载是第几次尝试：按歌单删除、一键清空时作废在途的那一次，下完了也不会写回来 */
   const attempts = new Map<number, number>()
+  /** 正在传的那一次（音频和封面共用一个）：取消时马上停；下完、失败时收回 */
+  const aborts = new Map<number, AbortController>()
   /** 断点已经收到的字节：只在这次打开期间留着，下完、放弃时删掉 */
   const parts = new Map<number, Uint8Array<ArrayBuffer>[]>()
   const partBytes = new Map<number, number>()
@@ -342,7 +355,9 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     const task = failedTask(song, tasks.get(song.id)?.sources ?? sources, received, tasks.get(song.id)?.total ?? null, failure)
     tasks.set(song.id, task)
     publish()
-    context.notify({
+    // 这一首刚“已加入下载”过：现在是失败，别再留着那句
+    context.notices.hideWhere(notice => notice.kind === 'downloadQueued' && notice.song.id === song.id)
+    context.notices.show({
       kind: 'downloadFailed',
       song,
       failure,
@@ -355,7 +370,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       return
     paused = 'storageFull'
     publish()
-    context.notify({ kind: 'downloadsPaused' })
+    context.notices.show({ kind: 'downloadsPaused' })
   }
 
   /** 开始下第一首时申请持久存储（#40）：浏览器清理空间时不删下载；拒绝也照样下，只申请一次 */
@@ -569,24 +584,34 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     const coverUrl = song.album.coverUrl
     const coverChunks: Uint8Array<ArrayBuffer>[] = []
     let shown = received
+    let shownAt = clock.now()
     let downloadedType = audioTypes.get(songId) ?? ''
 
     const show = (next: number): void => {
-      if (total === null)
+      const live = tasks.get(songId)
+      if (!live)
         return
+      if (total === null) {
+        // 不知道一共多大：按 64 KiB 或 500ms 节流，至少让“已收到 X MB”动起来
+        if (next - shown < UNKNOWN_PROGRESS_BYTES && clock.now() - shownAt < UNKNOWN_PROGRESS_MS)
+          return
+        shown = next
+        shownAt = clock.now()
+        setTask(songId, downloadingTask(song, live.sources, next, null))
+        return
+      }
       const percent = Math.floor(next * 100 / total)
       if (percent === Math.floor(shown * 100 / total) && next !== total)
         return
       shown = next
-      const live = tasks.get(songId)
-      if (!live)
-        return
       setTask(songId, downloadingTask(song, live.sources, next, total))
     }
 
     const live = tasks.get(songId)
     setTask(songId, downloadingTask(song, live?.sources ?? sources, received, total))
 
+    const abort = new AbortController()
+    aborts.set(songId, abort)
     const transferAudio = audioComplete
       ? Promise.resolve()
       : browser.download(url, (chunk) => {
@@ -594,9 +619,11 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           show(receivedOf(songId))
         }, {
           from: received,
+          signal: abort.signal,
           restart: () => {
             clearParts(songId)
             shown = 0
+            shownAt = clock.now()
             const restarted = tasks.get(songId)
             if (restarted)
               setTask(songId, downloadingTask(song, restarted.sources, 0, total))
@@ -608,8 +635,11 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         })
     const transferCover = coverUrl === null
       ? Promise.resolve({ type: '' })
-      : browser.download(thumbnailUrl(coverUrl, DOWNLOAD_COVER_SIZE), chunk => coverChunks.push(chunk))
-    const [audioResult, coverResult] = await Promise.allSettled([transferAudio, transferCover])
+      : browser.download(thumbnailUrl(coverUrl, DOWNLOAD_COVER_SIZE), chunk => coverChunks.push(chunk), { signal: abort.signal })
+    const [audioResult, coverResult] = await Promise.allSettled([transferAudio, transferCover]).finally(() => {
+      if (aborts.get(songId) === abort)
+        aborts.delete(songId)
+    })
 
     // 下完了，但这一首已经被按歌单删除、一键清空删掉了：丢掉刚收到的，不写回来
     if (attemptOf(songId) !== token || !tasks.has(songId)) {
@@ -732,6 +762,49 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     }
   }
 
+  /** 取消一首排队、下载中、失败的：作废在途的那一次、停传输、丢掉断点；已经下完的不动 */
+  const cancel = (songId: number): boolean => {
+    if (!tasks.has(songId))
+      return false
+    forgetAttempt(songId)
+    aborts.get(songId)?.abort()
+    aborts.delete(songId)
+    tasks.delete(songId)
+    clearParts(songId)
+    ready.delete(songId)
+    // 这一首的“已加入下载”“下载失败”都收起：任务已经没了
+    context.notices.hideWhere(notice => (notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed') && notice.song.id === songId)
+    // 存储暂停是为了这些任务：最后一首取消后没有要下的了，解除暂停
+    if (paused && tasks.size === 0) {
+      paused = null
+      context.notices.hideWhere(notice => notice.kind === 'downloadsPaused')
+    }
+    publish()
+    return true
+  }
+
+  /** “全部取消”：排队、下载中、失败的都停，丢掉断点，解除暂停；已经下完的不动。只发布一次 */
+  const cancelAll = (): void => {
+    if (tasks.size === 0 && paused === null)
+      return
+    const wasPaused = paused !== null
+    for (const songId of [
+      ...tasks.keys(),
+    ]) {
+      forgetAttempt(songId)
+      aborts.get(songId)?.abort()
+      aborts.delete(songId)
+      clearParts(songId)
+      ready.delete(songId)
+    }
+    tasks.clear()
+    paused = null
+    context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')
+    if (wasPaused)
+      context.notices.hideWhere(notice => notice.kind === 'downloadsPaused')
+    publish()
+  }
+
   return {
     load: loadRecords,
     download(song) {
@@ -757,6 +830,10 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         ]))
       }
       publish()
+      context.notices.show({
+        kind: 'downloadQueued',
+        song: plain,
+      })
       pump()
       return null
     },
@@ -841,7 +918,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       if (processed)
         publish()
       if (!quiet && processed) {
-        context.notify({
+        context.notices.show({
           kind: 'downloadsAdded',
           ...outcome,
           ...(filling
@@ -860,6 +937,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         return false
       tasks.delete(songId)
       tasks.set(songId, queuedTask(task.song, task.sources, receivedOf(songId), task.total))
+      // 面板、已下载页点“重试”也收起那一条常驻的失败提示
+      context.notices.hideWhere(notice => notice.kind === 'downloadFailed' && notice.song.id === songId)
       publish()
       pump()
       return true
@@ -872,8 +951,11 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       publish()
       pump()
     },
+    cancel,
+    cancelAll,
     async remove(songIds) {
       const removed = songIds.map(recordOf)
+      const freed = removed.reduce((sum, record) => sum + recordBytes(record), 0)
       await local.deleteDownloads(songIds)
       const next = new Map(records)
       for (const songId of songIds)
@@ -882,6 +964,14 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       revokeDownloads(removed)
       publish()
       context.changed()
+      const removal: DownloadRemoval = {
+        removed: removed.length,
+        kept: 0,
+        freed,
+      }
+      if (removal.removed > 0 || removal.kept > 0)
+        context.notices.show({ kind: 'downloadsRemoved', ...removal })
+      return removal
     },
     async removePlaylist(playlistId) {
       const source: DownloadSource = {
@@ -905,10 +995,17 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         else {
           tasks.delete(songId)
           forgetAttempt(songId)
+          aborts.get(songId)?.abort()
+          aborts.delete(songId)
           clearParts(songId)
           ready.delete(songId)
+          context.notices.hideWhere(notice => (notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed') && notice.song.id === songId)
         }
         tasksChanged = true
+      }
+      if (tasksChanged && paused && tasks.size === 0) {
+        paused = null
+        context.notices.hideWhere(notice => notice.kind === 'downloadsPaused')
       }
 
       const keptIds: number[] = []
@@ -961,7 +1058,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         freed,
       }
       if (removedIds.length > 0 || keptIds.length > 0)
-        context.notify({ kind: 'downloadsRemoved', ...removal })
+        context.notices.show({ kind: 'downloadsRemoved', ...removal })
       return removal
     },
     async clear() {
@@ -973,13 +1070,19 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       const taskIds = [
         ...tasks.keys(),
       ]
+      const wasPaused = paused !== null
       for (const songId of taskIds) {
         forgetAttempt(songId)
+        aborts.get(songId)?.abort()
+        aborts.delete(songId)
         clearParts(songId)
         ready.delete(songId)
       }
       tasks.clear()
       paused = null
+      context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')
+      if (wasPaused)
+        context.notices.hideWhere(notice => notice.kind === 'downloadsPaused')
       if (dropped.length > 0)
         await local.deleteDownloads(dropped.map(record => record.song.id))
       setRecords(new Map())
@@ -987,7 +1090,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       publish()
       context.changed()
       if (dropped.length > 0 || taskIds.length > 0) {
-        context.notify({
+        context.notices.show({
           kind: 'downloadsRemoved',
           removed: dropped.length,
           kept: 0,

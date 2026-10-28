@@ -4,7 +4,7 @@ import type { App } from '#lib/app/app.js'
 
 import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
-import { JAZZ_DETAIL, listener, SOME_SONGS, storedLibrary, storedTrackIds } from './harness/listener'
+import { JAZZ_DETAIL, listener, noticeEntry, noticeOf, SOME_SONGS, storedLibrary, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
@@ -75,7 +75,7 @@ describe('红心', () => {
     reply.release()
     await hearting
     expect(hearted(app, song.id)).toBe(true)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     expect(await storedLibrary(device, 'hearts')).toContain(song.id)
   })
 
@@ -113,7 +113,7 @@ describe('红心', () => {
     await app.heart(song, true)
 
     expect(hearted(app, song.id)).toBe(false)
-    expect(app.state.library?.notice).toEqual({
+    expect(noticeOf(app)).toEqual({
       kind: 'notChanged',
       change: { kind: 'heart', song, hearted: true },
       failure: { kind: 'offline' },
@@ -121,8 +121,8 @@ describe('红心', () => {
     expect(device.requests.length).toBe(sent)
     expect(await storedLibrary(device, 'hearts')).not.toContain(song.id)
 
-    await app.noticeAction('dismiss')
-    expect(app.state.library?.notice).toBeNull()
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('连点两下（红心、马上又取消）：等网易云回了第一下才提交第二下，到网易云的先后不会颠倒', async () => {
@@ -227,7 +227,7 @@ describe('加入歌单', () => {
       total: 3,
     })
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([song.id, ...before!])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'added',
       change: {
         kind: 'add',
@@ -247,7 +247,7 @@ describe('加入歌单', () => {
     await app.addToPlaylist(JAZZ.id, song)
 
     expect(app.state.library?.songsOf(JAZZ.id)?.total).toBe(3)
-    expect(app.state.library?.notice).toMatchObject({ kind: 'added' })
+    expect(noticeOf(app)).toMatchObject({ kind: 'added' })
   })
 
   it('加入我喜欢的音乐等于红心：提交的是红心，成了也提示一句', async () => {
@@ -266,7 +266,7 @@ describe('加入歌单', () => {
       body: { songId: song.id, hearted: true },
     })
     expect(await storedLibrary(device, 'hearts')).toContain(song.id)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'added',
       change: {
         playlist: { id: LIKED_ID },
@@ -331,7 +331,7 @@ describe('收藏', () => {
     await app.collect({ kind: 'album', id: KEEP_THE_VILLAGE_ALIVE }, false)
 
     expect(app.state.library?.albums?.map(album => album.id)).not.toContain(KEEP_THE_VILLAGE_ALIVE)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     expect((await storedLibrary(device, 'collectedAlbums') as { id: number }[]).map(album => album.id)).not.toContain(KEEP_THE_VILLAGE_ALIVE)
   })
 
@@ -421,7 +421,7 @@ describe('收藏', () => {
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
 
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: {
         kind: 'collectPlaylist',
@@ -445,7 +445,7 @@ describe('收藏', () => {
     await world.clock.advance(60_000)
 
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       failure: { kind: 'rateLimited' },
     })
@@ -466,7 +466,7 @@ describe('收藏', () => {
 
     expect(device.requests.length).toBe(sent)
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       failure: { kind: 'checkTokenUnavailable' },
     })
@@ -568,5 +568,25 @@ describe('同步拿回来的旧数据', () => {
     await hearting
     expect(hearted(app, song.id)).toBe(true)
     expect(await storedLibrary(device, 'hearts')).toContain(song.id)
+  })
+})
+
+describe('红心的提示', () => {
+  it('“更多”菜单红心有提示，行内心形不提示', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+    const [song] = await dailySongs(app)
+
+    await world.netease.reply(LIKE)
+    await app.heart(song, true)
+    expect(noticeOf(app)).toBeNull()
+
+    await world.netease.reply(UNLIKE)
+    await app.heart(song, false, { notify: true })
+    expect(noticeOf(app)).toEqual({
+      kind: 'hearted',
+      song,
+      hearted: false,
+    })
   })
 })

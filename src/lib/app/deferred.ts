@@ -8,7 +8,7 @@ import type { Change, ConfirmedChange, DeferredChange } from './changes'
 import { targetOf } from './changes'
 import type { ChangeFailure } from './library'
 import type { LocalDb, Replica } from './local'
-import type { OperationNotice } from './notice'
+import type { Notices } from './notice'
 import type { SessionResult, SessionRound } from './session-round'
 
 // 晚一点才提交的修改（Spec #11“客户端：晚一点才提交的修改”，#70）：多选移除（5 秒撤销）、歌单内排序和自建歌单排序（停手 2 秒合并）。
@@ -80,10 +80,8 @@ export interface DeferredContext {
     confirm: (mine: number, entry: PendingChange, change: Change) => Promise<boolean>
   }
   publish: () => void
-  /** App 的提示条负责重新发布 */
-  notify: (notice: OperationNotice | null) => void
-  /** 提交前要看清掉的是不是自己的那一条 */
-  notice: () => OperationNotice | null
+  /** App 的提示条负责重新发布；收起时按自己的载荷精确匹配，不靠“当前那一条” */
+  notices: Pick<Notices, 'show' | 'hideWhere'>
   /** 歌单在网易云里不在了 */
   sync: () => void
   online: () => boolean
@@ -99,7 +97,7 @@ export interface Deferred {
   /** 整批放回原位，什么都不提交 */
   undoRemove: (removalId: number) => void
   /** 关的是“撤销”那一条就忘掉它指向哪一批（计时和提交不受影响） */
-  dismiss: () => void
+  dismissRemoval: (removalId: number) => void
   /** 从待提交的移除里拿掉，返回拿掉的编号 */
   restore: (playlistId: number, songIds: readonly number[]) => Set<number>
   /** 重新从本地拿掉，马上提交 */
@@ -207,9 +205,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     pending = freshPending()
   }
 
-  const show = (notice: OperationNotice | null): void => {
-    context.notify(notice)
-  }
+  const { show, hideWhere } = context.notices
 
   const serialize = <T>(target: string, job: () => Promise<T>): Promise<T> => {
     const before = queues.get(target) ?? Promise.resolve()
@@ -484,12 +480,10 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       sending: null,
       settled: false,
       begin: () => {
-        // 开始提交了：撤销不了了，忘掉这一批，收起这一条的“撤销”提示（换了别的提示条就不动）
+        // 开始提交了：撤销不了了，忘掉这一批，收起这一条的“撤销”提示（别的提示条不动）
         if (pending.noticeRemovalId === item.removalId)
           pending.noticeRemovalId = null
-        const current = context.notice()
-        if (current?.kind === 'removed' && current.removalId === item.removalId)
-          show(null)
+        hideWhere(notice => notice.kind === 'removed' && notice.removalId === item.removalId)
       },
       finish: (mine) => {
         item.settled = true
@@ -525,32 +519,31 @@ export const createDeferred = (context: DeferredContext): Deferred => {
   /** 先从本地拿掉，记下未确认；undo 时提示条留 5 秒撤销，否则马上提交（retry 用） */
   const applyRemoval = (mine: number, playlist: Playlist, songIds: readonly number[], { undo }: { undo: boolean }): PendingRemoval => {
     // 5 秒内又移除了一批：同一张歌单合成一条提示（撤销两批一起放回，计时从头算）；
-    // 不同歌单的先提交上一批，别让它悄悄在后面提交、撤销不到了。
-    // “上一批”看私有的 noticeRemovalId：提示条被 added 等换掉以后它仍然记着，和基线一样会先提交
+    // 不同歌单的各留各的撤销提示、各自计时（一摞提示条能同时显示，都撤销得到）。
+    // “上一批”看私有的 noticeRemovalId：它指向最新一条撤销提示对应的那一批
     if (undo) {
       const previousId = pending.noticeRemovalId
       const previous = previousId === null
         ? undefined
         : pending.removals.find(each => each.removalId === previousId && !each.settled && !each.sending)
-      if (previous) {
-        if (previous.change.playlist.id === playlist.id) {
-          const combined = [
-            ...new Set([
-              ...previous.change.songIds,
-              ...songIds,
-            ]),
-          ]
-          previous.change.songIds = combined
-          schedule(mine, previous, removalPolicy)
-          show({
-            kind: 'removed',
-            playlist,
-            count: combined.length,
-            removalId: previous.removalId,
-          })
-          return previous
-        }
-        void commit(mine, previous, removalPolicy, { keepalive: false })
+      if (previous?.change.playlist.id === playlist.id) {
+        const combined = [
+          ...new Set([
+            ...previous.change.songIds,
+            ...songIds,
+          ]),
+        ]
+        previous.change.songIds = combined
+        schedule(mine, previous, removalPolicy)
+        // 同一张歌单的上一批已经有一条“撤销”提示：换掉它，不另起一行
+        hideWhere(notice => notice.kind === 'removed' && notice.removalId === previous.removalId)
+        show({
+          kind: 'removed',
+          playlist,
+          count: combined.length,
+          removalId: previous.removalId,
+        })
+        return previous
       }
     }
     const item = startRemoval(mine, playlist, songIds)
@@ -564,7 +557,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       schedule(mine, item, removalPolicy)
     }
     else {
-      show(null)
+      hideWhere(notice => notice.kind === 'removeFailed' && notice.playlist.id === playlist.id)
     }
     return item
   }
@@ -616,17 +609,14 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     pending.removals = pending.removals.filter(each => each !== item)
     if (pending.noticeRemovalId === removalId)
       pending.noticeRemovalId = null
-    const current = context.notice()
-    if (current?.kind === 'removed' && current.removalId === removalId)
-      show(null)
+    hideWhere(notice => notice.kind === 'removed' && notice.removalId === removalId)
     context.publish()
     void saveMarkers(session.current)
   }
 
   /** 关的是“撤销”那一条时忘掉它指向哪一批；计时和提交不受影响 */
-  const dismiss = (): void => {
-    const current = context.notice()
-    if (current?.kind === 'removed' && pending.noticeRemovalId === current.removalId)
+  const dismissRemoval = (removalId: number): void => {
+    if (pending.noticeRemovalId === removalId)
       pending.noticeRemovalId = null
   }
 
@@ -658,16 +648,14 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       else {
         item.change.songIds = remaining
       }
-      const current = context.notice()
-      if (current?.kind === 'removed' && current.removalId === item.removalId) {
-        show(remaining.length > 0
-          ? {
-              kind: 'removed',
-              playlist: item.change.playlist,
-              count: remaining.length,
-              removalId: item.removalId,
-            }
-          : null)
+      const hadNotice = hideWhere(notice => notice.kind === 'removed' && notice.removalId === item.removalId)
+      if (hadNotice && remaining.length > 0) {
+        show({
+          kind: 'removed',
+          playlist: item.change.playlist,
+          count: remaining.length,
+          removalId: item.removalId,
+        })
       }
     }
     if (restored.size > 0) {
@@ -714,9 +702,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       sending: null,
       settled: false,
       begin: () => {
-        const current = context.notice()
-        if (current?.kind === 'orderFailed' && current.playlist.id === item.change.playlist.id)
-          show(null)
+        hideWhere(notice => notice.kind === 'orderFailed' && notice.playlist.id === playlist.id)
       },
       finish: (mine) => {
         item.settled = true
@@ -796,9 +782,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       mergePending(item, { kind: 'order', playlist, songIds: next }, mine, orderPolicy)
     else
       startOrder(mine, playlist, next)
-    const currentNotice = context.notice()
-    if (currentNotice?.kind === 'orderFailed' && currentNotice.playlist.id === playlistId)
-      show(null)
+    hideWhere(notice => notice.kind === 'orderFailed' && notice.playlist.id === playlistId)
     context.publish()
     void saveMarkers(mine)
     return true
@@ -831,7 +815,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       if (!item.sending) {
         context.overlay.remove(change => change === item.entry.change)
         item.finish(mine)
-        show(null)
+        hideWhere(notice => notice.kind === 'playlistOrderFailed')
         context.publish()
         return true
       }
@@ -849,8 +833,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       mergePending(item, { kind: 'playlistOrder', playlistIds: next }, mine, playlistOrderPolicy)
     else
       startPlaylistOrder(mine, next)
-    if (context.notice()?.kind === 'playlistOrderFailed')
-      show(null)
+    hideWhere(notice => notice.kind === 'playlistOrderFailed')
     context.publish()
     return true
   }
@@ -869,8 +852,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
       sending: null,
       settled: false,
       begin: () => {
-        if (context.notice()?.kind === 'playlistOrderFailed')
-          show(null)
+        hideWhere(notice => notice.kind === 'playlistOrderFailed')
       },
       finish: (mine) => {
         item.settled = true
@@ -909,7 +891,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     }
     const mine = session.current
     const item = startOrder(mine, found, songIds)
-    show(null)
+    hideWhere(notice => notice.kind === 'orderFailed' && notice.playlist.id === found.id)
     context.publish()
     void saveMarkers(mine)
     await commit(mine, item, orderPolicy, { keepalive: false, immediate: true })
@@ -929,7 +911,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     }
     const mine = session.current
     const item = startPlaylistOrder(mine, normalizedPlaylistOrder(current, playlistIds))
-    show(null)
+    hideWhere(notice => notice.kind === 'playlistOrderFailed')
     context.publish()
     await commit(mine, item, playlistOrderPolicy, { keepalive: false, immediate: true })
   }
@@ -994,7 +976,7 @@ export const createDeferred = (context: DeferredContext): Deferred => {
     settled,
     remove,
     undoRemove,
-    dismiss,
+    dismissRemoval,
     restore,
     retryRemove,
     moveSongs,

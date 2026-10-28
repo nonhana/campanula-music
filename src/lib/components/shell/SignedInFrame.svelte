@@ -1,7 +1,7 @@
 <!--
   登录后的骨架：桌面是顶栏、图标侧栏（设置在最下面）和底部播放条；手机是 logo 行，二级页面换成返回栏（设置页一直写“设置”，其余平时只有 ←，页头 h1 滚下去后淡入页名，见 BackTitle）。
   搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签，搜索结果下面是结果标签。播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
-  浮层从下往上：播放提示、改曲库的提示（两条都在时排在外侧）< “更多”菜单、加入歌单、歌单页的 ••• < 歌单编辑、退出确认 < 换封面的裁剪页；开着时后面的都不能操作。
+  浮层从下往上：提示条（播放提示和最多 3 条操作提示，见 notice/NoticeStack.svelte）< “更多”菜单、加入歌单、歌单页的 ••• < 歌单编辑、退出确认 < 换封面的裁剪页；开着时后面的都不能操作。
 -->
 <script lang='ts'>
   import { afterNavigate, goto } from '$app/navigation'
@@ -17,9 +17,9 @@
   import Brand from '../boot/Brand.svelte'
   import DailyNumber from '../daily/DailyNumber.svelte'
   import { dailyCalendarDay } from '../daily/view'
+  import DownloadPanel from '../downloads/DownloadPanel.svelte'
   import PhoneSelectionActionBar from '../library/PhoneSelectionActionBar.svelte'
   import PhoneSelectionTopBar from '../library/PhoneSelectionTopBar.svelte'
-  import OperationNotice from '../notice/OperationNotice.svelte'
   import { setOverlays } from '../overlay/overlay-context'
   import OverlayHost from '../overlay/OverlayHost.svelte'
   import { createOverlays } from '../overlay/overlays.svelte'
@@ -199,9 +199,8 @@
       {@render children()}
     </PhoneShell>
   {/if}
+  <DownloadPanel />
 </div>
 
-<PlayerLayer>
-  <OperationNotice phone={!desktopLayout.current} />
-</PlayerLayer>
+<PlayerLayer />
 <OverlayHost />

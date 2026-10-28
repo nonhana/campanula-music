@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Device } from './harness/device'
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
-import { ALBUM_MISSING, checkIns, COLLECTED_ALBUMS, COLLECTED_ARTISTS, DOWNLOAD_COVER_BYTES as COVER_BYTES, current, HEARTS, LIKED_TRACK_IDS, likedPage, likedSong, listener, DOWNLOAD_LYRICS as LYRICS, PLAYLISTS_WITH_POEMS, playUrlRequests, serveDownload as serve, storedCheckIns, VILLAGE } from './harness/listener'
+import { ALBUM_MISSING, checkIns, COLLECTED_ALBUMS, COLLECTED_ARTISTS, DOWNLOAD_COVER_BYTES as COVER_BYTES, current, HEARTS, LIKED_TRACK_IDS, likedPage, likedSong, listener, DOWNLOAD_LYRICS as LYRICS, noticeEntry, noticeOf, PLAYLISTS_WITH_POEMS, playUrlRequests, serveDownload as serve, storedCheckIns, VILLAGE } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -111,6 +111,7 @@ describe('下载一首', () => {
     })
     expect(app.state.downloads.songs).toEqual([song])
     expect(app.state.downloads.tasks.size).toBe(0)
+    expect(noticeOf(app)).toEqual({ kind: 'downloadQueued', song })
   })
 
   it('下载中看得到音频收到了多少字节、一共多少', async () => {
@@ -180,7 +181,7 @@ describe('下载一首', () => {
       total: LOSER.bytes,
       failure: { kind: 'interrupted' },
     })
-    expect(app.state.library?.notice).toEqual({
+    expect(noticeOf(app)).toEqual({
       kind: 'downloadFailed',
       song,
       failure: { kind: 'interrupted' },
@@ -217,22 +218,190 @@ describe('下载一首', () => {
 
     app.download(song)
     await world.settle()
-    expect(app.state.library?.notice).toEqual({
+    expect(noticeOf(app)).toEqual({
       kind: 'downloadFailed',
       song,
       failure: { kind: 'interrupted' },
     })
-    expect(app.state.library?.noticeActions).toContain('retry')
+    expect(noticeEntry(app)?.actions).toContain('retry')
 
     await world.netease.reply(LOSER.downloadUrl)
     await world.netease.reply(LYRICS)
     await world.netease.reply(ALBUM_MISSING)
-    await app.noticeAction('retry')
+    await app.noticeAction(noticeEntry(app)!.id, 'retry')
     await world.settle()
 
     expect(device.files.requests.filter(url => url === LOSER.audio)).toHaveLength(2)
     expect(app.state.downloads.songs).toEqual([song])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
+  })
+
+  it('同一窗口里两次下载失败合并成“2 首下载失败”，不再给重试', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const first = likedSong(app, FIRST.id)
+    const second = likedSong(app, SECOND.id)
+    await serve(device, first, FIRST.downloadUrl)
+    await serve(device, second, SECOND.downloadUrl)
+    const firstAudio = await audioOf(FIRST.downloadUrl)
+    const secondAudio = await audioOf(SECOND.downloadUrl)
+    device.files.next(firstAudio.url, { cut: true })
+    device.files.next(secondAudio.url, { cut: true })
+    await world.netease.reply(FIRST.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    await world.netease.reply(SECOND.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(first)
+    app.download(second)
+    await world.settle()
+
+    expect(noticeOf(app)).toMatchObject({
+      kind: 'downloadFailed',
+      count: 2,
+    })
+    expect(noticeEntry(app)?.actions).toEqual(['dismiss'])
+    // 两首的“已加入下载”都被失败取代，不再留着
+    expect(app.state.notices.some(entry => entry.notice.kind === 'downloadQueued')).toBe(false)
+  })
+
+  it('删除下载：说删了几首、腾出多少；2 秒里再删一首合并首数', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const first = await download(device, app, FIRST)
+    const second = await download(device, app, SECOND)
+    while (app.state.notices.length > 0)
+      await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
+
+    const firstRemoval = await app.deleteDownloads([first.id])
+    expect(firstRemoval.removed).toBe(1)
+    expect(firstRemoval.freed).toBeGreaterThan(0)
+    expect(noticeOf(app)).toMatchObject({
+      kind: 'downloadsRemoved',
+      removed: 1,
+    })
+
+    const secondRemoval = await app.deleteDownloads([second.id])
+    expect(secondRemoval.removed).toBe(1)
+    expect(noticeOf(app)).toMatchObject({
+      kind: 'downloadsRemoved',
+      removed: 2,
+    })
+  })
+
+  describe('取消下载', () => {
+    it('取消排队的一首：任务拿掉、解除存储暂停，不去要下载地址', async () => {
+      const device = world.device()
+      const { app } = await signInWithLiked(device)
+      const song = likedSong(app, FIRST.id)
+      device.storage.quota = 0
+      app.download(song)
+      await world.settle()
+      expect(app.state.downloads.paused).toBe('storageFull')
+      expect(app.state.downloads.tasks.get(FIRST.id)).toMatchObject({ status: 'queued' })
+
+      app.cancelDownload(FIRST.id)
+
+      expect(app.state.downloads.tasks.size).toBe(0)
+      expect(app.state.downloads.paused).toBeNull()
+      expect(app.state.notices.some(entry => entry.notice.kind === 'downloadsPaused')).toBe(false)
+      expect(downloadUrlRequests(device)).toEqual([])
+    })
+
+    it('取消正在下的一首：传输马上停，不写回本机，也不报下载失败', async () => {
+      const device = world.device()
+      const { app } = await signInWithLiked(device)
+      const song = likedSong(app, LOSER.id)
+      serveLoser(device)
+      const transfer = held()
+      device.files.next(LOSER.audio, { until: transfer.until })
+      await world.netease.reply(LOSER.downloadUrl)
+      await world.netease.reply(LYRICS)
+      await world.netease.reply(ALBUM_MISSING)
+
+      app.download(song)
+      await world.settle()
+      expect(app.state.downloads.tasks.get(LOSER.id)?.status).toBe('downloading')
+
+      // 压着的传输不会自己结束：取消成立了才会走到这里
+      app.cancelDownload(LOSER.id)
+      await world.settle()
+
+      expect(app.state.downloads.tasks.size).toBe(0)
+      expect(app.state.downloads.has(LOSER.id)).toBe(false)
+      expect(await storedDownloads(device)).toEqual([])
+      expect(noticeOf(app)).not.toMatchObject({ kind: 'downloadFailed' })
+      transfer.release()
+      await world.settle()
+    })
+
+    it('音频收完了、封面还在传时取消：也不写回本机', async () => {
+      const device = world.device()
+      const { app } = await signInWithLiked(device)
+      const song = likedSong(app, LOSER.id)
+      serveLoser(device)
+      const cover = held()
+      device.files.next(LOSER.cover, { until: cover.until })
+      await world.netease.reply(LOSER.downloadUrl)
+      await world.netease.reply(LYRICS)
+      await world.netease.reply(ALBUM_MISSING)
+
+      app.download(song)
+      await world.settle()
+
+      app.cancelDownload(LOSER.id)
+      await world.settle()
+
+      expect(app.state.downloads.tasks.size).toBe(0)
+      expect(await storedDownloads(device)).toEqual([])
+      cover.release()
+      await world.settle()
+    })
+
+    it('一键清空时正在传的也停：传输马上停，不写回本机', async () => {
+      const device = world.device()
+      const { app } = await signInWithLiked(device)
+      const song = likedSong(app, LOSER.id)
+      serveLoser(device)
+      const transfer = held()
+      device.files.next(LOSER.audio, { until: transfer.until })
+      await world.netease.reply(LOSER.downloadUrl)
+      await world.netease.reply(LYRICS)
+      await world.netease.reply(ALBUM_MISSING)
+
+      app.download(song)
+      await world.settle()
+      expect(app.state.downloads.tasks.get(LOSER.id)?.status).toBe('downloading')
+
+      await app.clearDownloads()
+      await world.settle()
+
+      expect(app.state.downloads.tasks.size).toBe(0)
+      expect(await storedDownloads(device)).toEqual([])
+      transfer.release()
+      await world.settle()
+    })
+
+    it('全部取消：排着的、下载中的都停，解除暂停，已经下完的留着', async () => {
+      const device = world.device()
+      const { app } = await signInWithLiked(device)
+      const first = await download(device, app, FIRST)
+      device.storage.quota = 0
+      app.download(likedSong(app, SECOND.id))
+      app.download(likedSong(app, THIRD.id))
+      await world.settle()
+      expect(app.state.downloads.paused).toBe('storageFull')
+      expect(app.state.downloads.tasks.size).toBe(2)
+
+      app.cancelAllDownloads()
+
+      expect(app.state.downloads.tasks.size).toBe(0)
+      expect(app.state.downloads.paused).toBeNull()
+      expect(app.state.downloads.has(first.id)).toBe(true)
+      expect(await storedDownloads(device)).toHaveLength(1)
+    })
   })
 
   it('网易云回得慢、下载地址还没回来时退出登录：回来的“需要登录”不算登录失效，App 是退出了；这首留在队列里等下一次登录', async () => {
@@ -774,7 +943,7 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
       noCopyright: 1,
     })
     await world.settle()
-    expect(app.state.library?.notice).toEqual({
+    expect(noticeOf(app)).toEqual({
       kind: 'downloadsAdded',
       queued: 2,
       downloaded: 1,
@@ -851,8 +1020,8 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
     expect([
       ...app.state.downloads.tasks.values(),
     ].every(task => JSON.stringify(task.sources) === JSON.stringify([album]))).toBe(true)
-    expect(app.state.library?.notice).toEqual({ kind: 'downloadsPaused' })
-    expect(app.state.library?.noticeActions).toContain('resume')
+    expect(noticeOf(app)).toEqual({ kind: 'downloadsPaused' })
+    expect(noticeEntry(app)?.actions).toContain('resume')
     expect(downloadUrlRequests(device)).toEqual([])
   })
 
@@ -962,14 +1131,17 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
       received: Math.floor(LOSER.bytes / 2),
     })
 
+    // 先收起“已加入下载”，后面只看暂停那一条
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
+
     // 联网了，但一点空间都没有：先暂停整队，不要下载地址、不要开始传
     device.storage.quota = 0
     const requested = downloadUrlRequests(device).length
     device.setOnline(true)
     await world.settle()
     expect(app.state.downloads.paused).toBe('storageFull')
-    expect(app.state.library?.notice).toEqual({ kind: 'downloadsPaused' })
-    expect(app.state.library?.noticeActions).toContain('resume')
+    expect(noticeOf(app)).toEqual({ kind: 'downloadsPaused' })
+    expect(noticeEntry(app)?.actions).toContain('resume')
     expect(downloadUrlRequests(device)).toHaveLength(requested)
 
     // 腾出空间，点“继续下载”：用同一条下载地址从断点接着下
@@ -980,7 +1152,7 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
     app.resumeDownloads()
     await world.settle()
     expect(app.state.downloads.paused).toBeNull()
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     expect(audioStarts(device, LOSER.audio)).toEqual([
       0,
       Math.floor(LOSER.bytes / 2),
@@ -1303,7 +1475,7 @@ describe('下载管理（#40）', () => {
     expect(app.state.downloads.songs?.map(song => song.id)).toEqual([first.id, second.id])
     expect(app.state.downloads.sourcesOf(first.id)).toEqual([album])
     expect(app.state.downloads.sourcesOf(second.id)).toEqual([night])
-    expect(app.state.library?.notice).toEqual({
+    expect(noticeOf(app)).toEqual({
       kind: 'downloadsRemoved',
       removed: 1,
       kept: 1,
@@ -1391,7 +1563,7 @@ describe('下载管理（#40）', () => {
     expect(app.state.downloads.bytes).toBe(0)
     expect(app.state.downloads.paused).toBeNull()
     expect(await storedDownloads(device)).toEqual([])
-    expect(app.state.library?.notice).toEqual({
+    expect(noticeOf(app)).toEqual({
       kind: 'downloadsRemoved',
       removed: 1,
       kept: 0,

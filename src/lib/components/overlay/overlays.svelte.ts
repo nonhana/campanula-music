@@ -9,6 +9,7 @@ import DeletePlaylistDownloadsConfirm from '../downloads/DeletePlaylistDownloads
 import DownloadPicker from '../downloads/DownloadPicker.svelte'
 import DownloadsMenu from '../downloads/DownloadsMenu.svelte'
 import ExportDialog from '../downloads/ExportDialog.svelte'
+import { createDownloadPanel } from '../downloads/panel.svelte'
 import PlaylistDownloadsDialog from '../downloads/PlaylistDownloadsDialog.svelte'
 import { MultiSelect } from '../library/multi-select.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
@@ -176,6 +177,8 @@ deleteDownloads: deleteDownloadsConfirm,
   const playerDrawer = createDrawer(() => window.innerHeight)
   /** 播放页层：队列非空 × 播放页开着 × 抽屉可见（两个外框共用这一份推导） */
   const playerLayer = createPlayerLayer(player, playerDrawer)
+  /** 下载面板（#38）：不登记进浮层栈，只记出现、收起；两个外框都会建，面板组件只挂在登录后的外框 */
+  const downloadPanel = createDownloadPanel()
 
   onMount(() => {
     void stack.reconcile()
@@ -205,5 +208,6 @@ selection,
 multiSelect,
 playerDrawer,
 playerLayer,
+downloadPanel,
 }
 }

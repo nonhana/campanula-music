@@ -215,6 +215,13 @@ export interface FakeTransfer {
   cut?: boolean
 }
 
+/** 压着的传输被取消（AbortSignal）：以 AbortError 拒绝；没有 signal 时永远不了结，只有 until 决定 */
+const aborted = (signal?: AbortSignal): Promise<never> => {
+  const { promise, reject } = Promise.withResolvers<never>()
+  signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true })
+  return promise
+}
+
 /** 网易云的音频服务器、图片服务器（浏览器直连下载，#38）：一台设备一份，测试放上文件（地址 → 字节数、类型）。 照 Fetch 标准：断网时请求直接以 TypeError 失败（network error）；没有这个文件回 404，fetch 本身成功、由 App 的下载能力当作失败； 回 200 / 206 按块传，传到一半连接断开（断网、服务器断开）时读响应体以 TypeError 失败。每块数据调一次 onChunk；从 from 字节开始（断点续传，#39），不支持分段时调 restart 再从头交 */
 export class FakeFiles {
   readonly #files = new Map<string, FakeFile>()
@@ -235,7 +242,10 @@ export class FakeFiles {
     this.#next.set(url, transfer)
   }
 
-  async download(url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, { from = 0, restart }: DownloadOptions = {}): Promise<{ type: string }> {
+  /** 照 fetch 的取消语义：开始前已经 abort 直接以 AbortError 失败；压着的传输中途 abort 立即拒绝，不等 release */
+  async download(url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, { from = 0, restart, signal }: DownloadOptions = {}): Promise<{ type: string }> {
+    if (signal?.aborted)
+      throw new DOMException('Aborted', 'AbortError')
     if (!this.network.onLine)
       throw new TypeError('Failed to fetch')
     this.requests.push(url)
@@ -252,7 +262,14 @@ export class FakeFiles {
     const half = from + Math.floor((file.bytes - from) / 2)
     if (transfer.until || transfer.cut) {
       onChunk(new Uint8Array(half - from))
-      await transfer.until
+      if (transfer.until) {
+        await Promise.race([
+          transfer.until,
+          aborted(signal),
+        ])
+      }
+      if (signal?.aborted)
+        throw new DOMException('Aborted', 'AbortError')
       if (transfer.cut || !this.network.onLine)
         throw new TypeError('network error')
       onChunk(new Uint8Array(file.bytes - half))
