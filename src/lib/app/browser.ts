@@ -68,10 +68,11 @@ export interface FolderCapability {
   removeEntry: (name: string) => Promise<void>
 }
 
-/** 从 from 字节开始的下载；服务器不支持分段时 restart 先清掉之前收到的 */
+/** 从 from 字节开始的下载；服务器不支持分段时 restart 先清掉之前收到的。signal 取消这次下载（fetch 以 AbortError 拒绝） */
 export interface DownloadOptions {
   from?: number
   restart?: () => void
+  signal?: AbortSignal
 }
 
 /** 照 StorageEstimate：usage、quota 可能没给 */
@@ -339,12 +340,17 @@ const uploadCoverImage = async (url: string, jpeg: Blob, token: string, signal: 
     throw new Error(`图片存储回了 ${response.status}`)
 }
 
-const download = async (url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, { from = 0, restart }: DownloadOptions = {}): Promise<{ type: string }> => {
-  const response = await window.fetch(url, from > 0
-    ? {
-        headers: { Range: `bytes=${from}-` },
-      }
-    : undefined)
+const download = async (url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, { from = 0, restart, signal }: DownloadOptions = {}): Promise<{ type: string }> => {
+  const response = await window.fetch(url, {
+    ...(from > 0
+      ? {
+          headers: { Range: `bytes=${from}-` },
+        }
+      : {}),
+    ...(signal
+      ? { signal }
+      : {}),
+  })
   if (!response.ok || !response.body)
     throw new Error(`文件服务器回了 ${response.status}`)
   if (from > 0) {

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Device, SentRequest } from './harness/device'
 import { held, never } from './harness/hold'
 import type { RecordedPlaylist } from './harness/listener'
-import { COLLECTED_ALBUMS, COLLECTED_ARTISTS, HEARTS, isSync, LIKED_TRACK_IDS, likedPage, listener, PLAYLISTS_WITH_POEMS, recordedBatch, recordedTrackIds, songPages, syncRequests, trackIdRequests } from './harness/listener'
+import { COLLECTED_ALBUMS, COLLECTED_ARTISTS, HEARTS, isSync, LIKED_TRACK_IDS, likedPage, listener, noticeOf, PLAYLISTS_WITH_POEMS, recordedBatch, recordedTrackIds, songPages, syncRequests, trackIdRequests } from './harness/listener'
 import { ANOTHER_ACCOUNT, LIBRARY_SYNC_MODULES, RECORDED_ACCOUNT, signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -589,7 +589,7 @@ describe('歌单', () => {
     await adding
     await device.idle()
 
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'playlistMissing',
       change: {
         kind: 'add',

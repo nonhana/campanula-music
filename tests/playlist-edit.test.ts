@@ -4,7 +4,7 @@ import type { App } from '#lib/app/app.js'
 
 import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
-import { listener, storedLibrary, storedPlaylistIds, storedTrackIds } from './harness/listener'
+import { listener, noticeOf, storedLibrary, storedPlaylistIds, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
@@ -158,6 +158,7 @@ describe('新建歌单', () => {
 
     creating.release()
     expect(await outcome).toEqual({ ok: true, playlistId: CREATED.id })
+    expect(noticeOf(app)).toEqual({ kind: 'playlistCreated', name: CREATED.name })
     expect(world.netease.calls.at(-1)).toMatchObject({
       module: 'playlist_detail',
       query: { id: CREATED.id },
@@ -209,7 +210,7 @@ describe('新建歌单', () => {
         songIds: [song.id],
       },
     })
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'added',
       change: {
         kind: 'addMany',
@@ -217,6 +218,8 @@ describe('新建歌单', () => {
         songs: [song],
       },
     })
+    // 建好接着加歌只留“已加入”，不再单说“已创建”
+    expect(app.state.notices.some(entry => entry.notice.kind === 'playlistCreated')).toBe(false)
     expect(await storedTrackIds(device, CREATED.id)).toEqual([song.id])
   })
 
@@ -388,7 +391,7 @@ describe('改名称、简介、标签', () => {
       description: '周末下午听。',
       tags: ['华语', '流行', '夜晚'],
     })
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('只提交改了的：名称、简介、标签都和原来一样时什么都不发；清空简介、去掉全部标签也算改', async () => {
@@ -445,7 +448,7 @@ describe('改名称、简介、标签', () => {
       name: JAZZ.name,
       tags: ['华语'],
     })
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: {
         kind: 'rename',
@@ -468,7 +471,7 @@ describe('改名称、简介、标签', () => {
     await app.editPlaylist(JAZZ.id, { description: '周末下午听。' })
 
     expect(playlistOf(app, JAZZ.id)?.description).toBeNull()
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: { kind: 'describe' },
       failure: { kind: 'rateLimited' },
@@ -486,7 +489,7 @@ describe('改名称、简介、标签', () => {
     })
 
     expect(playlistOf(app, JAZZ.id)?.tags).toEqual([])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: { kind: 'tag' },
       failure: { kind: 'rejected', code: 400, message: '标签数据非法' },
@@ -502,7 +505,7 @@ describe('改名称、简介、标签', () => {
       name: '爵士',
       tags: ['华语', '流行', '夜晚', '怀旧'],
     })
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: { kind: 'tag' },
       failure: { kind: 'invalid', problem: 'tooManyTags' },
@@ -510,13 +513,13 @@ describe('改名称、简介、标签', () => {
     await app.editPlaylist(JAZZ.id, {
       name: '夜'.repeat(21),
     })
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: { kind: 'rename' },
       failure: { kind: 'invalid', problem: 'nameTooLong' },
     })
     await app.editPlaylist(JAZZ.id, { name: '' })
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: { kind: 'rename' },
       failure: { kind: 'invalid', problem: 'nameEmpty' },
@@ -524,7 +527,7 @@ describe('改名称、简介、标签', () => {
     await app.editPlaylist(JAZZ.id, {
       description: '夜'.repeat(1001),
     })
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: { kind: 'describe' },
       failure: { kind: 'invalid', problem: 'descriptionTooLong' },
@@ -546,7 +549,7 @@ describe('改名称、简介、标签', () => {
     })
 
     expect(playlistOf(app, JAZZ.id)).toMatchObject({ name: JAZZ.name, tags: [] })
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: { kind: 'rename' },
       failure: { kind: 'offline' },
@@ -595,6 +598,7 @@ describe('隐私歌单改公开', () => {
     reply.release()
     await publishing
     expect(playlistOf(app, CREATED.id)?.private).toBe(false)
+    expect(noticeOf(app)).toEqual({ kind: 'playlistPublished', name: CREATED.name })
     expect(await storedPlaylist(device, CREATED.id)).toMatchObject({ private: false })
 
     const sent = device.requests.length
@@ -611,7 +615,7 @@ describe('隐私歌单改公开', () => {
     await app.publishPlaylist(CREATED.id)
 
     expect(playlistOf(app, CREATED.id)?.private).toBe(true)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: {
         kind: 'publish',
@@ -648,7 +652,7 @@ describe('删除歌单', () => {
     expect(playlistIds(app)).not.toContain(JAZZ.id)
     expect(await storedPlaylistIds(device)).not.toContain(JAZZ.id)
     expect(await storedTrackIds(device, JAZZ.id)).toBeUndefined()
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toEqual({ kind: 'playlistDeleted', name: 'jazz' })
   })
 
   it('网易云说操作频繁：放回原处，曲目照旧，说明原因', async () => {
@@ -662,7 +666,7 @@ describe('删除歌单', () => {
 
     expect(playlistIds(app)).toEqual(before)
     expect(app.state.library?.songsOf(JAZZ.id)?.total).toBe(2)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'notChanged',
       change: {
         kind: 'delete',

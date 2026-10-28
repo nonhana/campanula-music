@@ -122,7 +122,7 @@
         leading: { kind: 'icon', icon: Heart },
         tone: hearted ? 'hearted' : undefined,
         disabled: library.hearts === null,
-        run: () => void view.app.heart(song, !hearted),
+        run: () => void view.app.heart(song, !hearted, { notify: true }),
       },
       ...group(fromDownloads
         ? [

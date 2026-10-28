@@ -4,7 +4,7 @@ import type { App } from '#lib/app/app.js'
 
 import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
-import { listener, storedPlaylistIds } from './harness/listener'
+import { listener, noticeEntry, noticeOf, storedPlaylistIds } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -195,7 +195,7 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
       ...latest,
       ...collectedOf(app),
     ])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('拖回原来的顺序：撤掉这份修改，2 秒后什么都不发', async () => {
@@ -384,7 +384,7 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     await signIn(world, app)
     await world.settle()
 
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
     expect(orderRequests(device)).toHaveLength(0)
     expect(await pendingChanges(device)).toBeUndefined()
   })
@@ -417,13 +417,13 @@ describe('提交失败和回滚', () => {
 
     expect(shownIds(app)).toEqual(before)
     expect(await storedPlaylistIds(device)).toEqual(before)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'playlistOrderFailed',
       failure: { kind: 'rateLimited' },
     })
 
     await world.netease.reply(ORDER_OK)
-    await app.noticeAction('retry')
+    await app.noticeAction(noticeEntry(app)!.id, 'retry')
     await world.settle()
 
     expect(orderRequests(device).at(-1)?.body).toEqual({
@@ -439,7 +439,7 @@ describe('提交失败和回滚', () => {
       ...next,
       ...collectedOf(app),
     ])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('断网时先不改本地（规则⑨）；连上网络后点“重试”把这次拖动排进去、提交', async () => {
@@ -459,14 +459,14 @@ describe('提交失败和回滚', () => {
     expect(app.orderPlaylists(next)).toBe(false)
     expect(shownIds(app)).toEqual(before)
     expect(await storedPlaylistIds(device)).toEqual(before)
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'playlistOrderFailed',
       failure: { kind: 'offline' },
     })
 
     device.setOnline(true)
     await world.netease.reply(ORDER_OK)
-    await app.noticeAction('retry')
+    await app.noticeAction(noticeEntry(app)!.id, 'retry')
     await world.settle()
 
     expect(orderRequests(device).at(-1)?.body).toEqual({
@@ -482,6 +482,6 @@ describe('提交失败和回滚', () => {
       ...next,
       ...collectedOf(app),
     ])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 })

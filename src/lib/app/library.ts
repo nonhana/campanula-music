@@ -12,8 +12,7 @@ import type { Deferred, PendingChange } from './deferred'
 import { createDeferred } from './deferred'
 import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local'
 import { emptyPatch, patched } from './local'
-import type { NoticeAction, Notices, OperationNotice } from './notice'
-import { noticeActions } from './notice'
+import type { Notices } from './notice'
 import type { Waiting } from './pacing'
 import type { BackgroundFailure, BackgroundSessionResult, SessionFailure, SessionResult, SessionRound } from './session-round'
 
@@ -182,10 +181,6 @@ export interface LibraryState {
   sync: SyncStatus
   /** 界面用 syncNoticeFor 按当前页的整块列表失败去重 */
   syncNotice: SyncNoticeState | null
-  /** 关掉或有了新的就换掉 */
-  notice: OperationNotice | null
-  /** 没有提示条时是空的，界面照着画按钮 */
-  noticeActions: readonly NoticeAction[]
 }
 
 export interface PlaylistSearch {
@@ -208,7 +203,7 @@ export interface LibraryContext {
   online: () => boolean
   checkToken: () => Promise<string>
   /** 改曲库和下载共用，自动消失也由它管 */
-  notices: Pick<Notices, 'current' | 'show'>
+  notices: Pick<Notices, 'show' | 'hideWhere'>
 }
 
 export interface Library {
@@ -226,8 +221,8 @@ export interface Library {
   moreArtistAlbums: (artistId: number) => Promise<void>
   /** 这次登录还没取到过就用前台请求取 */
   openPlaylistTags: () => Promise<void>
-  /** 先改显示着的、立即生效，再提交；成了写进本机副本，没成改回原样并说明原因。歌单已经不在了就改回原样并马上同步 */
-  change: (change: ImmediateChange) => Promise<void>
+  /** 先改显示着的、立即生效，再提交；成了写进本机副本，没成改回原样并说明原因。歌单已经不在了就改回原样并马上同步。返回网易云说成了没有（App 发成功提示要用） */
+  change: (change: ImmediateChange) => Promise<ChangeResult>
   /** 一个请求提交；已经在歌单里的不再提交，全都已经在里面时什么都不发 */
   addSongs: (playlist: Playlist, songs: readonly Song[]) => Promise<AddSongsOutcome>
   /** 先从本地拿掉，提示条留 5 秒撤销，没撤销才提交；失败放回原位、可以重试 */
@@ -235,7 +230,7 @@ export interface Library {
   /** 整批放回原位，什么都不提交 */
   undoRemove: (removalId: number) => void
   /** 关的是“撤销”那一条就忘掉它指向哪一批（计时和提交不受影响） */
-  dismissNotice: () => void
+  dismissRemoval: (removalId: number) => void
   /** 重新从本地拿掉，马上提交 */
   retryRemove: (playlist: Playlist, songIds: readonly number[]) => Promise<void>
   /** 挪到 before 前（null 是最后），勾选的几首按列表里的先后一起挪；停手 2 秒才把整张歌单的新顺序一次提交，页面隐藏、离开时由 flush 立即提交（#36） */
@@ -260,6 +255,9 @@ export interface Library {
 
 /** null：这一轮已经作废（退出、登录失效、换账号），什么都不用做 */
 type Outcome<T, F> = { ok: true, value: T } | { ok: false, failure: F } | null
+
+/** 立即修改提交给网易云的结果：done 是改好了，missing / unconfirmed 由 settleChange 自己处理；null 是没提交（这一轮作废、撤销窗口里加回来） */
+type ChangeResult = Outcome<WriteResponse['kind'], ChangeFailure>
 
 type Pulled = Outcome<void, OpenFailure>
 
@@ -542,7 +540,7 @@ export const syncNoticeFor = (library: Pick<LibraryState, 'syncNotice'>, failure
     : notice
 }
 
-const stateOf = (replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number, PlaylistOpening>, pages: Pages, notice: OperationNotice | null): LibraryState => {
+const stateOf = (replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number, PlaylistOpening>, pages: Pages): LibraryState => {
   const playlists = new Map(replica.playlists?.map(playlist => [playlist.id, playlist]))
   // 几十张歌单、上万首：界面看哪张才算哪张
   const computed = new Map<number, PlaylistSongs | null>()
@@ -594,10 +592,6 @@ const stateOf = (replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
     playlistTags: pages.tags,
     sync,
     syncNotice: syncNoticeOf(replica, sync),
-    notice,
-    noticeActions: notice
-      ? noticeActions(notice)
-      : [],
   }
 }
 
@@ -699,8 +693,7 @@ export const createLibrary = (context: LibraryContext): Library => {
       },
     },
     publish: () => publish(),
-    notify: notices.show,
-    notice: notices.current,
+    notices,
     sync: start,
     online: context.online,
   })
@@ -712,8 +705,8 @@ export const createLibrary = (context: LibraryContext): Library => {
     deferred.undoRemove(removalId)
   }
 
-  const dismissNotice = (): void => {
-    deferred.dismiss()
+  const dismissRemoval = (removalId: number): void => {
+    deferred.dismissRemoval(removalId)
   }
 
   const retryRemove = (playlist: Playlist, songIds: readonly number[]): Promise<void> => deferred.retryRemove(playlist, songIds)
@@ -812,7 +805,7 @@ export const createLibrary = (context: LibraryContext): Library => {
   const publish = (next: SyncStatus = status): void => {
     status = next
     if (replica)
-      context.write(stateOf(shown(replica), status, opening, pages, notices.current()))
+      context.write(stateOf(shown(replica), status, opening, pages))
   }
 
   /** 经过后台通道（操作频繁、断网时等着再发）；这一轮结束、giveUp 了都不发 */
@@ -1135,7 +1128,7 @@ export const createLibrary = (context: LibraryContext): Library => {
    * 立即修改的提交结果：做好了；歌单不在了（missing）。
    * unconfirmed 只属于延迟模块的整张歌单排序，立即修改的端点不会回它。
    */
-  type Submitted = { ok: true, value: WriteResponse['kind'] } | { ok: false, failure: ChangeFailure }
+  type Submitted = NonNullable<ChangeResult>
 
   /** 写接口统一回 done / missing / unconfirmed（#lib/api/write），这里只做一次映射 */
   const submitted = (result: SessionResult<WriteResponse>): Submitted | null => {
@@ -1393,7 +1386,7 @@ export const createLibrary = (context: LibraryContext): Library => {
         ? pending
         : [])
       status = { status: 'syncing' }
-      return stateOf(shown, status, opening, pages, notices.current())
+      return stateOf(shown, status, opening, pages)
     },
     sync: start,
     retry() {
@@ -1542,12 +1535,12 @@ export const createLibrary = (context: LibraryContext): Library => {
       publish()
     },
     async change(change) {
-      await applyChange(change)
+      return applyChange(change)
     },
     addSongs,
     removeSongs,
     undoRemove,
-    dismissNotice,
+    dismissRemoval,
     retryRemove,
     moveSongs,
     retryOrder,

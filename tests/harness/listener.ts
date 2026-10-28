@@ -2,6 +2,7 @@ import { readdir } from 'node:fs/promises'
 
 import type { Playlist, Song } from '#lib/api/library.js'
 import type { App } from '#lib/app/app.js'
+import type { NoticeEntry, OperationNotice } from '#lib/app/notice.js'
 
 import type { Device, SentRequest, Tab } from './device'
 import { loadFixture } from './fixtures'
@@ -312,6 +313,11 @@ export const likedSong = (app: App, id: number): Song => {
 }
 
 export const queueIds = (app: App) => app.state.player.queue.map(entry => entry.song.id)
+
+/** 这些场景一次只有一条提示：拿最新那条（没有时是 null）；动作要按它的 id 调 */
+export const noticeEntry = (app: App): NoticeEntry | null => app.state.notices.at(-1) ?? null
+/** 最新一条的载荷；和旧的 LibraryState.notice 用起来一样 */
+export const noticeOf = (app: App): OperationNotice | null => noticeEntry(app)?.notice ?? null
 
 /** 同步请求，不含登录、账号和专辑/歌手页。 */
 export const isSync = (request: SentRequest) => ['/api/albums', '/api/artists'].includes(request.path) || ['/api/hearts', '/api/playlists', '/api/songs'].some(path => request.path.startsWith(path))

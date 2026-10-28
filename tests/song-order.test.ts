@@ -6,7 +6,7 @@ import type { App } from '#lib/app/app.js'
 import type { Device, Tab } from './harness/device'
 import { loadFixture } from './harness/fixtures'
 import { held } from './harness/hold'
-import { listener, storedTrackIds } from './harness/listener'
+import { listener, noticeEntry, noticeOf, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
@@ -56,8 +56,9 @@ const createdWith = async (device: Device, songs: readonly Song[]): Promise<{ ap
   await world.netease.reply(ADD)
   expect(await app.addSongsToPlaylist(CREATED.id, songs)).toEqual({ ok: true, added: songs.length })
   await world.settle()
-  // 加歌的“已加入”提示不该影响后面排序的断言
-  await app.noticeAction('dismiss')
+  // 新建、加歌的提示不该影响后面排序的断言
+  while (app.state.notices.length > 0)
+    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
   return { app, tab }
 }
 
@@ -112,7 +113,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     })
     expect(await storedTrackIds(device, CREATED.id)).toEqual(latest)
     expect(shownTrackIds(app, CREATED.id)).toEqual(latest)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('页面一被隐藏就立即提交，不等 2 秒；请求带 keepalive', async () => {
@@ -257,7 +258,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(device.requests.at(-1)?.path).toBe(`/api/playlists/${CREATED.id}/track-ids`)
     expect(shownTrackIds(app, CREATED.id)).toEqual(recorded)
     expect(await storedTrackIds(device, CREATED.id)).toEqual(recorded)
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('提交的顺序过期（多出来一首还没同步到网易云）时，-1 重读只比两边都有的歌，算成功', async () => {
@@ -283,7 +284,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     })
     expect(shownTrackIds(app, CREATED.id)).toEqual([...recorded, extra])
     expect(await storedTrackIds(device, CREATED.id)).toEqual([...recorded, extra])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('排序时网易云说这张歌单已经不在了：退回原来的顺序、说明原因，马上同步一次', async () => {
@@ -301,7 +302,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
 
     expect(shownTrackIds(app, CREATED.id)).toEqual([a, b, c])
     expect(await storedTrackIds(device, CREATED.id)).toEqual([a, b, c])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'playlistMissing',
       change: {
         kind: 'order',
@@ -320,7 +321,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(app.moveSongs(CREATED.id, [c!], a!)).toBe(false)
     expect(shownTrackIds(app, CREATED.id)).toEqual([a, b, c])
     expect(await storedTrackIds(device, CREATED.id)).toEqual([a, b, c])
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'orderFailed',
       playlist: { id: CREATED.id },
       failure: { kind: 'offline' },
@@ -328,7 +329,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
 
     device.setOnline(true)
     await world.netease.reply(ORDER_OK)
-    await app.noticeAction('retry')
+    await app.noticeAction(noticeEntry(app)!.id, 'retry')
     await world.settle()
 
     expect(orderRequests(device).at(-1)?.body).toEqual({
@@ -336,7 +337,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     })
     expect(shownTrackIds(app, CREATED.id)).toEqual([c, a, b])
     expect(await storedTrackIds(device, CREATED.id)).toEqual([c, a, b])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 
   it('提交失败：退回原来的顺序，提示里可以重试；重试恢复刚才的顺序并提交', async () => {
@@ -359,14 +360,14 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(shownTrackIds(app, CREATED.id)).toEqual(before)
     expect(await storedTrackIds(device, CREATED.id)).toEqual(before)
     // 网易云回 -1、重读也不是新顺序：说不出原因，提示不编一个（#59）
-    expect(app.state.library?.notice).toMatchObject({
+    expect(noticeOf(app)).toMatchObject({
       kind: 'orderFailed',
       playlist: { id: CREATED.id },
       failure: null,
     })
 
     await world.netease.reply(ORDER_OK)
-    await app.noticeAction('retry')
+    await app.noticeAction(noticeEntry(app)!.id, 'retry')
     await world.settle()
 
     expect(orderRequests(device).at(-1)?.body).toEqual({
@@ -374,6 +375,6 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     })
     expect(shownTrackIds(app, CREATED.id)).toEqual([c, a, b])
     expect(await storedTrackIds(device, CREATED.id)).toEqual([c, a, b])
-    expect(app.state.library?.notice).toBeNull()
+    expect(noticeOf(app)).toBeNull()
   })
 })

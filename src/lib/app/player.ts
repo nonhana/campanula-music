@@ -143,10 +143,10 @@ export interface Player {
   previous: () => void
   /** 播放队列不变；正在放的那首、现在放不了的不动 */
   jump: (index: number) => void
-  /** 排在当前这首后面；队列空就直接开始放（规则①） */
-  playNext: (source: PlaySource, song: Song) => void
+  /** 排在当前这首后面；队列空就直接开始放（规则①）。返回开始了、排进去了，还是什么都没变（放不了、就是正在放的这首） */
+  playNext: (source: PlaySource, song: Song) => 'started' | 'queued' | 'ignored'
   /** 排到最后；队列空就直接开始放（规则①） */
-  addToQueue: (source: PlaySource, song: Song) => void
+  addToQueue: (source: PlaySource, song: Song) => 'started' | 'queued' | 'ignored'
   /** 排在当前这首后面并立即播放 */
   interject: (source: PlaySource, song: Song) => void
   /** 正在放的那首移不掉 */
@@ -914,10 +914,10 @@ export const createPlayer = (context: PlayerContext): Player => {
     publish({ queue, current })
   }
 
-  /** 队列空就只放这一首、直接开始（规则①）；本来就在队列里就从原位置挪过来、播放来源改成新的（规则②）。正在放的那首不从头放，放不了的不放进来 */
-  const add = (source: PlaySource, song: Song, how: 'next' | 'end' | 'now'): void => {
+  /** 队列空就只放这一首、直接开始（规则①）；本来就在队列里就从原位置挪过来、播放来源改成新的（规则②）。正在放的那首不从头放，放不了的不放进来。返回是开始了、排进去了，还是什么都没变 */
+  const add = (source: PlaySource, song: Song, how: 'next' | 'end' | 'now'): 'started' | 'queued' | 'ignored' => {
     if (!canPlay(song))
-      return
+      return 'ignored'
     const id = currentId()
     if (id === null) {
       if (order)
@@ -928,12 +928,12 @@ export const createPlayer = (context: PlayerContext): Player => {
         ],
       })
       void start(0, 0, 'pick')
-      return
+      return 'started'
     }
     if (song.id === id) {
       if (how === 'now' && state.status === 'paused')
         resume()
-      return
+      return 'ignored'
     }
     const rest = state.queue.filter(entry => entry.song.id !== song.id)
     const at = how === 'end'
@@ -961,10 +961,12 @@ export const createPlayer = (context: PlayerContext): Player => {
       { song, source },
       ...rest.slice(at),
     ])
-    if (how === 'now')
+    if (how === 'now') {
       void start(at, 0, 'pick')
-    else
-      queueChanged()
+      return 'started'
+    }
+    queueChanged()
+    return 'queued'
   }
 
   /** 下一首可能变了，空闲的播放器重新准备（ADR-0010）；已经开始交接的若不再是下一首就停下它，快放完时重新交接。点的歌还没出声时，等出声后再准备 */

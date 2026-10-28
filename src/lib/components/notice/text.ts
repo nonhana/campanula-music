@@ -8,7 +8,7 @@ import { downloadFailureText } from '../downloads/view'
 import { failureText } from '../shared/failure'
 import { formatCount, formatMegabytes } from '../shared/text'
 
-// 提示条（OperationNotice.svelte，改曲库和下载共用）说什么（#30、#33、#38）：都是一句话、不带句末句号（DESIGN.md 文案）。
+// 提示条（NoticeStack 里的操作提示，改曲库和下载共用）说什么（#30、#33、#38）：都是一句话、不带句末句号（DESIGN.md 文案）。
 // 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写。网易云没给专辑名、歌手名时不写这一项（#78）
 
 const playlistInText = (playlist: Playlist): string => playlist.kind === 'liked'
@@ -108,6 +108,13 @@ const missingAction = (change: Extract<Change, { kind: 'add' | 'addMany' | 'remo
   }
 }
 
+/** 排进队列：空队列时其实直接开始放了；2 秒里连着排了几首时只写首数 */
+const queuedText = (notice: { count: number, started: boolean }, label: string): string => notice.count > 1
+  ? `已加入${label} ${formatCount(notice.count)} 首`
+  : notice.started
+    ? '已开始播放'
+    : `已加入${label}`
+
 export const operationNoticeText = (notice: OperationNotice): string => {
   switch (notice.kind) {
     case 'notChanged':
@@ -139,8 +146,26 @@ export const operationNoticeText = (notice: OperationNotice): string => {
       return `没能保存自建歌单的顺序：${changeFailureText(notice.failure)}`
     case 'recovered':
       return '上次关闭前的修改没保存成功，已恢复原样'
+    case 'queuedNext':
+      return queuedText(notice, '下一首播放')
+    case 'queuedEnd':
+      return queuedText(notice, '播放队列')
+    case 'hearted':
+      return `已${notice.hearted
+        ? ''
+        : '取消'}红心《${songTitle(notice.song)}》`
+    case 'playlistCreated':
+      return `已创建「${notice.name}」`
+    case 'playlistPublished':
+      return `已把「${notice.name}」改为公开`
+    case 'playlistDeleted':
+      return `已删除「${notice.name}」`
+    case 'downloadQueued':
+      return `已加入下载《${songTitle(notice.song)}》`
     case 'downloadFailed':
-      return `没能下载《${songTitle(notice.song)}》：${downloadFailureText(notice.failure)}`
+      return (notice.count ?? 1) > 1
+        ? `${formatCount(notice.count ?? 1)} 首下载失败`
+        : `没能下载《${songTitle(notice.song)}》：${downloadFailureText(notice.failure)}`
     case 'downloadsAdded': {
       const parts: string[] = []
       if (notice.queued > 0)
@@ -167,6 +192,8 @@ export const operationNoticeText = (notice: OperationNotice): string => {
         parts.push(`${formatCount(notice.kept)} 首从别处也下载过，留着`)
       return parts.join('；')
     }
+    case 'plain':
+      return notice.text
     default: {
       const unhandled: never = notice
       throw new Error(`不认识的提示：${JSON.stringify(unhandled)}`)
