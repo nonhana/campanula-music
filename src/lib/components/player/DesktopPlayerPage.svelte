@@ -69,8 +69,8 @@
   </button>
 </header>
 
-<!-- 窄于 1024px 时两栏按比例分，右栏歌词不致挤成一两个字一行；栏间距写在 --gap 上，换碟遮罩按它算 -->
-<div class='columns relative grid grid-cols-[minmax(240px,1fr)_minmax(0,1.15fr)] mx-auto max-w-[1240px] min-h-0 w-full flex-1 px-8 pb-8 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] lg:px-12'>
+<!-- 栏间距写在 --gap 上，换碟遮罩按它算；左右留白写在 --gutter 上，歌词向右借它；封面边长写在 --cover 上，宽屏时左列和它一样宽 -->
+<div class='columns relative grid mx-auto max-w-[1440px] min-h-0 w-full flex-1 pb-8'>
   <section class='min-h-0 flex flex-col justify-center' aria-label='播放控制'>
     <div class='stage'>
       <div class='cover mx-auto'>
@@ -127,20 +127,29 @@
 </div>
 
 <style>
-     /* 换碟只在左列里转：遮罩两边各伸出半个栏间距并淡掉，转出去的封面碰不到歌词。
-     上下多留出地方，转开的封面往下沉、封面的阴影都不被裁掉；它不接点按，盖着下面的歌名、进度条也不碍事 */
+  /* 窄于 1024px 时两栏按比例分，右栏歌词不致挤成一两个字一行。1024px 及以上左列和封面一样宽（至少 320px，放得下控制键）：
+     视口矮、封面被压小时，省下的宽度给歌词，封面本身大小不变 */
   .columns {
     --gap: 40px;
+    --gutter: 32px;
+    --cover: min(420px, calc(100dvh - 440px));
 
+    grid-template-columns: minmax(240px, 1fr) minmax(0, 1.15fr);
     column-gap: var(--gap);
+    padding-inline: var(--gutter);
   }
 
   @media (min-width: 1024px) {
     .columns {
       --gap: 80px;
+      --gutter: 48px;
+
+      grid-template-columns: minmax(320px, var(--cover)) minmax(0, 1fr);
     }
   }
 
+     /* 换碟只在左列里转：遮罩两边各伸出半个栏间距并淡掉，转出去的封面碰不到歌词。
+     上下多留出地方，转开的封面往下沉、封面的阴影都不被裁掉；它不接点按，盖着下面的歌名、进度条也不碍事 */
   .stage {
     --bleed: calc(var(--gap) / 2);
     --rise: 48px;
@@ -155,21 +164,22 @@
   /* 视口矮时封面跟着缩，不把控制键挤出视口 */
   .cover {
     width: 100%;
-    max-width: min(420px, calc(100dvh - 440px));
+    max-width: var(--cover);
   }
 
      /* 右栏轨道：两块叠在一格，各自按离显示那块隔几格横摆（一格是自己的宽度加 --track-gap），和分段条滑块一起滑（面板 360ms）。
-     左右各多留 --bleed 再裁掉，歌词行的焦点环、播放队列面板的阴影不被切掉；两块隔得比两倍 --bleed 宽，看不见的那块不露边。
+     左边多留 --bleed、右边多留整段页面留白（--gutter）再裁掉：播放队列面板的阴影不被切掉，歌词向右借出留白（放胶囊、让长宽更宽）。
+     两块隔开 --gutter 再加两倍 --bleed，看不见的那块（连同歌词借出的那段）不露边。
      看不见的那块是透明的：减少动态效果时轨道不滑（--move-* 是 0），换成原地交叉淡化（最多 150ms）。
      下面两处时长、延迟用 --duration-* 减去 --move-*：正常时是 0，整条轨道不透明地滑；减少动态效果时就是淡入淡出的时长 */
   .track {
     --bleed: 16px;
-    --track-gap: 48px;
+    --track-gap: calc(var(--gutter) + 2 * var(--bleed));
 
     display: grid;
     grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-    margin-inline: calc(-1 * var(--bleed));
-    padding-inline: var(--bleed);
+    margin-inline: calc(-1 * var(--bleed)) calc(-1 * var(--gutter));
+    padding-inline: var(--bleed) var(--gutter);
     overflow-x: clip;
   }
 

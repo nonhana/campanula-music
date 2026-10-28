@@ -51,7 +51,7 @@ export const DURATIONS = {
 export const DELAYS = {
   /** 超过这么久播放键才淡入转圈，不在每次点歌时闪 */
   'spinner': 300,
-  /** 滚动停下、鼠标离开或松开滑块这么久后，滚动条才淡出 */
+  /** 滚动停下、鼠标离开或松开滑块这么久后，滚动条才淡出；歌词的跳转胶囊也按这个收起（DESIGN.md Lyrics） */
   'scrollbar': 1000,
   /** 宽度开始变化这么久后文字才淡入 */
   'rail-label': 60,
