@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto'
 
-import { COOKIE_SECRET } from '$app/env/private'
+import { COOKIE_SECRET, LOGIN_COOKIE_NAME } from '$app/env/private'
 import type { Cookies } from '@sveltejs/kit'
 
 // 登录 Cookie（ADR-0003）：网易云凭据、deviceId、续期时间用站长配置的密钥加密并签名，
@@ -19,7 +19,8 @@ export interface LoginCookie {
   } | null
 }
 
-const COOKIE_NAME = 'campanula_login'
+/** mock 和真 dev 用不同名字（LOGIN_COOKIE_NAME），Cookie 在 localhost 的两个端口之间不会互相覆盖 */
+const COOKIE_NAME = LOGIN_COOKIE_NAME
 /** 浏览器会悄悄丢掉名字加值超过 4096 字节的 Cookie（RFC 6265bis 5.6） */
 const MAX_COOKIE_BYTES = 4096
 /** 同一浏览器多久续期一次（Spec #11“客户端：登录会话”）：凭据有效 180 天、续期重新算，24 小时远短于这些（验证关卡①） */

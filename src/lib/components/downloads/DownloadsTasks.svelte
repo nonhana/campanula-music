@@ -72,7 +72,7 @@
     </div>
     <div role='group' aria-label='正在下载的歌曲' class={phone
       ? ''
-      : 'rounded-2xl bg-white p-2 shadow-ambient'}>
+      : 'rounded-xl bg-white p-2 shadow-ambient'}>
       <VirtualList
         items={tasks}
         itemHeight={phone

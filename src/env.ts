@@ -6,6 +6,11 @@ export const variables = defineEnvVars({
   COOKIE_SECRET: {
     schema: input => input ?? '',
   },
+  // 登录 Cookie 名。mock 的 dev 脚本把它设成 campanula_login_mock：Cookie 只按 host 隔离，不按端口，
+  // 两个名字分开后，同一个浏览器开 5173 和 5174 不会互相顶掉登录态
+  LOGIN_COOKIE_NAME: {
+    schema: input => input?.trim() || 'campanula_login',
+  },
   NETEASE_REAL_IP: {
     schema: input => input ?? '',
   },

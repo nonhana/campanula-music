@@ -1,6 +1,7 @@
 <!--
   提示条的一摞（改曲库、下载、播放提示共用，#30、#33、#38）：最多 3 条操作提示，播放提示排在最后、离播放条最近。
-  桌面底部正中；手机迷你播放条上方，播放页开着时到顶上。位置、错开和换位置的交叉淡化都在这里算，每条只管自己的样子。
+  桌面底部正中；手机迷你播放条上方。手机播放页开着、下载面板展开时到顶上；面板收起时让开那条 48px 横条。
+  桌面面板展开时向左让出半个面板宽，避免压住底部的“全部取消 / 查看已下载”。
   换页时原地不动（view-transition-class still）；刚出现从贴着的边飘进来，走时淡出。
 -->
 <script lang='ts'>
@@ -17,7 +18,7 @@
   const panel = $derived(overlays.downloadPanel)
   const operations = $derived(view.state.notices)
   const playerNotice = $derived(view.state.player.notice)
-  /** 桌面底部正中；手机迷你播放条上方，播放页开着或下载面板展开时到顶上 */
+  /** 手机播放页开着、下载面板展开时到顶上；桌面面板展开时横向让开，靠 transform 处理 */
   const place = $derived<Place>(desktopLayout.current
     ? 'desktop'
     : overlays.playerLayer.open || panel.expanded

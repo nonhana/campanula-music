@@ -388,6 +388,22 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     attempts.set(songId, attemptOf(songId) + 1)
   }
 
+  /** 丢掉这一首的排队 / 在途 / 断点和待存的音频；已经写进本机的记录不动 */
+  const dropTask = (songId: number): void => {
+    forgetAttempt(songId)
+    aborts.get(songId)?.abort()
+    aborts.delete(songId)
+    tasks.delete(songId)
+    clearParts(songId)
+    ready.delete(songId)
+  }
+
+  /** 这一首的“已加入下载”“下载失败”都不算数了（任务取消、重下、重新失败、删除时用）；合并过的“N 首失败”还代表别的歌，留着 */
+  const hideSongNotices = (songId: number): void => {
+    context.notices.hideWhere(notice => (notice.kind === 'downloadQueued' && notice.song.id === songId)
+      || (notice.kind === 'downloadFailed' && notice.song.id === songId && (notice.count ?? 1) === 1))
+  }
+
   /** 断网、操作频繁由后台通道等过、重发过；这一轮结束时回 null */
   const background = <T>(send: () => Promise<Result<T>>): Promise<BackgroundSessionResult<T> | 'gaveUp'> => session.background(send, () => {})
 
@@ -766,14 +782,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   const cancel = (songId: number): boolean => {
     if (!tasks.has(songId))
       return false
-    forgetAttempt(songId)
-    aborts.get(songId)?.abort()
-    aborts.delete(songId)
-    tasks.delete(songId)
-    clearParts(songId)
-    ready.delete(songId)
-    // 这一首的“已加入下载”“下载失败”都收起：任务已经没了
-    context.notices.hideWhere(notice => (notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed') && notice.song.id === songId)
+    dropTask(songId)
+    hideSongNotices(songId)
     // 存储暂停是为了这些任务：最后一首取消后没有要下的了，解除暂停
     if (paused && tasks.size === 0) {
       paused = null
@@ -790,13 +800,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     const wasPaused = paused !== null
     for (const songId of [
       ...tasks.keys(),
-    ]) {
-      forgetAttempt(songId)
-      aborts.get(songId)?.abort()
-      aborts.delete(songId)
-      clearParts(songId)
-      ready.delete(songId)
-    }
+    ])
+      dropTask(songId)
     tasks.clear()
     paused = null
     context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')
@@ -830,6 +835,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         ]))
       }
       publish()
+      hideSongNotices(plain.id)
       context.notices.show({
         kind: 'downloadQueued',
         song: plain,
@@ -864,6 +870,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           if (task.status === 'failed') {
             tasks.delete(song.id)
             tasks.set(song.id, queuedTask(song, sources, receivedOf(song.id), task.total))
+            hideSongNotices(song.id)
           }
           else {
             tasks.set(song.id, {
@@ -993,13 +1000,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           })
         }
         else {
-          tasks.delete(songId)
-          forgetAttempt(songId)
-          aborts.get(songId)?.abort()
-          aborts.delete(songId)
-          clearParts(songId)
-          ready.delete(songId)
-          context.notices.hideWhere(notice => (notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed') && notice.song.id === songId)
+          dropTask(songId)
+          hideSongNotices(songId)
         }
         tasksChanged = true
       }
@@ -1071,13 +1073,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         ...tasks.keys(),
       ]
       const wasPaused = paused !== null
-      for (const songId of taskIds) {
-        forgetAttempt(songId)
-        aborts.get(songId)?.abort()
-        aborts.delete(songId)
-        clearParts(songId)
-        ready.delete(songId)
-      }
+      for (const songId of taskIds)
+        dropTask(songId)
       tasks.clear()
       paused = null
       context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')

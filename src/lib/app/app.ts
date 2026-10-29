@@ -21,7 +21,7 @@ import type { DownloadBatchOutcome, DownloadBlock, DownloadRemoval, DownloadSour
 import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
 import type { ExportState } from './export'
 import { createExports } from './export'
-import type { AddSongsOutcome, AddTarget, AddTargetsRequest, CreateOutcome, Library, LibraryState, PlaylistSearch } from './library'
+import type { AddSongsOutcome, AddTarget, AddTargetsRequest, CreateOutcome, LibraryState, PlaylistSearch } from './library'
 import { createLibrary, filterSongs, searchPlaylist } from './library'
 import { createLocalDatabase, createLocalDb } from './local'
 import type { LoginState } from './login'
@@ -342,19 +342,14 @@ export const createApp = (browser: BrowserCapabilities): App => {
 
   const lane = createBackgroundLane(browser)
   const round = createSessionRound({ api, lane, expired: loginExpired })
-  /** 曲库：提示条换内容时要让它重发一次；下面建好再赋值 */
-  let library: Library
-  /**
-   * 提示条（改曲库和下载共用）：App 拥有它，自动消失走 App 的时钟。
-   * 换了就放进曲库快照：这一条提示和它支持的动作；没登录时没有曲库，不显示
-   */
+  /** 提示条（改曲库、下载、播放共用的那一摞）：App 拥有它，自动消失走 App 的时钟；新的这一摞直接写进快照 */
   const notices = createNotices({
     clock: browser.clock,
     changed: () => {
-      // 新的这一摞是界面的数据源；曲库快照里的旧投影（兼容期）也重发一次
       update({
         notices: notices.list(),
       })
+      // 提示条和曲库的待提交改动（撤销、回滚）来自同一次操作：重发曲库快照，把本地副本上的临时改动带出去
       library.publish()
     },
   })
@@ -529,7 +524,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     })
   }
 
-  library = createLibrary({
+  const library = createLibrary({
     api,
     session: round,
     local,

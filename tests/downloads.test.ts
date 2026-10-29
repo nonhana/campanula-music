@@ -236,6 +236,48 @@ describe('下载一首', () => {
     expect(noticeOf(app)).toBeNull()
   })
 
+  it('失败后再下载同一首：旧的失败提示收起，换成新的“已加入下载”', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    serveLoser(device)
+    device.files.next(LOSER.audio, { cut: true })
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(song)
+    await world.settle()
+    expect(noticeOf(app)).toMatchObject({ kind: 'downloadFailed' })
+
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+    expect(app.download(song)).toBeNull()
+    expect(noticeOf(app)).toEqual({ kind: 'downloadQueued', song })
+    await world.settle()
+    expect(app.state.notices.some(entry => entry.notice.kind === 'downloadFailed')).toBe(false)
+  })
+
+  it('取消一首失败的下载：这一首的失败提示一起收起', async () => {
+    const device = world.device()
+    const { app } = await signInWithLiked(device)
+    const song = likedSong(app, LOSER.id)
+    serveLoser(device)
+    device.files.next(LOSER.audio, { cut: true })
+    await world.netease.reply(LOSER.downloadUrl)
+    await world.netease.reply(LYRICS)
+    await world.netease.reply(ALBUM_MISSING)
+
+    app.download(song)
+    await world.settle()
+    expect(noticeOf(app)).toMatchObject({ kind: 'downloadFailed' })
+
+    app.cancelDownload(song.id)
+    expect(app.state.downloads.tasks.size).toBe(0)
+    expect(noticeOf(app)).toBeNull()
+  })
+
   it('同一窗口里两次下载失败合并成“2 首下载失败”，不再给重试', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)
@@ -265,6 +307,13 @@ describe('下载一首', () => {
     expect(noticeEntry(app)?.actions).toEqual(['dismiss'])
     // 两首的“已加入下载”都被失败取代，不再留着
     expect(app.state.notices.some(entry => entry.notice.kind === 'downloadQueued')).toBe(false)
+
+    // 合并的那一条还代表另一首失败，取消其中一首时先留着
+    app.cancelDownload(first.id)
+    expect(noticeOf(app)).toMatchObject({
+      kind: 'downloadFailed',
+      count: 2,
+    })
   })
 
   it('删除下载：说删了几首、腾出多少；2 秒里再删一首合并首数', async () => {

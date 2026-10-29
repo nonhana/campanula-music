@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite dev",
-    "dev:mock": "CAMPANULA_MOCK=1 COOKIE_SECRET=campanula-mock-development-secret-0123456789abcdef vite dev --port 5174 --strictPort",
+    "dev:mock": "CAMPANULA_MOCK=1 COOKIE_SECRET=campanula-mock-development-secret-0123456789abcdef LOGIN_COOKIE_NAME=campanula_login_mock vite dev --port 5174 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
