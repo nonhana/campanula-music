@@ -190,7 +190,9 @@ export const operationNoticeText = (notice: OperationNotice): string => {
         parts.push(`已删除 ${formatCount(notice.removed)} 首下载，腾出 ${formatMegabytes(notice.freed)} MB`)
       if (notice.kept > 0)
         parts.push(`${formatCount(notice.kept)} 首从别处也下载过，留着`)
-      return parts.join('；')
+      return parts.length > 0
+        ? parts.join('；')
+        : '已停止下载'
     }
     case 'plain':
       return notice.text

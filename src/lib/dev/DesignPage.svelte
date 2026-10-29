@@ -3,9 +3,13 @@
   以及按当前宽度套上的那一种骨架（窄于 768px 是手机骨架，768px 及以上是桌面骨架）。
 -->
 <script lang='ts'>
-  import { ArrowUpDown, CircleArrowDown, CirclePlus, Ellipsis, ListMusic, ListPlus, ListX, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
+  import { ArrowUpDown, Check, CircleArrowDown, CirclePlus, Download, Ellipsis, ListMusic, ListPlus, ListX, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
 
+  import type { DownloadTask } from '#lib/app/downloads.js'
+  import type { NoticeEntry } from '#lib/app/notice.js'
   import Brand from '#lib/components/boot/Brand.svelte'
+  import OperationNotice from '#lib/components/notice/OperationNotice.svelte'
+  import PlayerNotice from '#lib/components/player/PlayerNotice.svelte'
   import { desktopLayout } from '#lib/components/shared/layout.js'
   import DesktopShell from '#lib/components/shell/DesktopShell.svelte'
   import PhoneShell from '#lib/components/shell/PhoneShell.svelte'
@@ -19,7 +23,10 @@
   import TextButton from '#lib/components/ui/TextButton.svelte'
   import TextField from '#lib/components/ui/TextField.svelte'
   import ToolButton from '#lib/components/ui/ToolButton.svelte'
+  import { designSong } from '#lib/dev/design-data.js'
   import { DESIGN_PAGE_MARKER } from '#lib/dev/design-marker.js'
+  import DesignDownloadDemo from '#lib/dev/DesignDownloadDemo.svelte'
+  import DesignPanelCard from '#lib/dev/DesignPanelCard.svelte'
 
   import { colors } from '../../../uno.palette.mts'
 
@@ -313,6 +320,62 @@
     { key: 'exhigh', label: '极高' },
   ] as const
   type FilterKey = typeof filters[number]['key']
+
+  /** 设计页的下载面板示例：不接 App 的下载队列，行和提示条用真组件，按钮不执行 */
+  const designDownloading: DownloadTask = {
+    status: 'downloading',
+    song: designSong(1, '我还以为可以逃离', 'sansssss'),
+    sources: [
+      { kind: 'single' },
+    ],
+    received: 3_200_000,
+    total: 9_200_000,
+  }
+  const designFailed: DownloadTask = {
+    status: 'failed',
+    song: designSong(2, 'School Rooftop', 'the girl next door'),
+    sources: [
+      { kind: 'single' },
+    ],
+    received: 0,
+    total: null,
+    failure: { kind: 'interrupted' },
+  }
+  const designQueued: DownloadTask = {
+    status: 'queued',
+    song: designSong(3, 'WAVBACK', 'sakanaausakana'),
+    sources: [
+      { kind: 'single' },
+    ],
+    received: 0,
+    total: null,
+  }
+  const designTasks = [
+    designDownloading,
+    designFailed,
+    designQueued,
+  ]
+  const designNotices: NoticeEntry[] = [
+    {
+      id: -1,
+      notice: { kind: 'downloadQueued', song: designDownloading.song },
+      actions: ['dismiss'],
+      tone: 'success',
+    },
+    {
+      id: -2,
+      notice: { kind: 'downloadsPaused' },
+      actions: ['resume', 'dismiss'],
+      tone: 'error',
+    },
+    {
+      id: -3,
+      notice: { kind: 'playlistCreated', name: '夜航' },
+      actions: ['dismiss'],
+      tone: 'success',
+    },
+  ]
+
   let filter = $state<FilterKey>('standard')
   let query = $state('ロウワー')
   let playlistName = $state('Campanula 测试 · 可删除')
@@ -434,6 +497,72 @@
         <TextButton tone='neutral' desktop={{ variant: 'outline', icon: ListX }}>清空</TextButton>
       </div>
       <p class='mt-2 text-caption text-neutral-600'>四档（窄于 768px 时看手机的样子）：主操作是实心胶囊；和标题、数量排在一行的次级操作只留图标（ToolButton）；图标说不清、点错有代价的是文字按钮（TextButton），桌面上它们都是胶囊；选项用下面的 chip 和分段条。</p>
+    </section>
+
+    <section>
+      {@render section('提示条和下载面板', '提示条、行和面板用真组件；“试一试”可以走一遍开始下载的时序，下面的静态示例按钮不执行。')}
+      <div class='mt-4 rounded-xl bg-white p-4 shadow-ambient'>
+        <h3 class='text-label text-neutral-900 font-500'>试一试：一次下载 5 首</h3>
+        <p class='mt-1 text-caption text-neutral-600'>会走真实的提示条、0.16 秒后面板飘入、逐首进度和完成收起；每首约 0.4 秒。可以试长标题截断、失败与重试、存储暂停、单首取消和全部取消。</p>
+        <div class='mt-3'>
+          <DesignDownloadDemo />
+        </div>
+      </div>
+      <h3 class='mt-5 text-label text-neutral-700 font-500'>提示条（成功 / 失败 / 播放提示）</h3>
+      <div class='mt-2 flex flex-col items-start gap-2'>
+        {#each designNotices as entry (entry.id)}
+          <OperationNotice {entry} phone={!desktopLayout.current} edge='bottom' moved={false} onaction={() => {}} />
+        {/each}
+        <PlayerNotice
+          playerNotice={{ kind: 'streamFailed' }}
+          phone={!desktopLayout.current}
+          edge='bottom'
+          moved={false}
+          onclose={() => {}}
+        />
+      </div>
+
+      <h3 class='mt-6 text-label text-neutral-700 font-500'>下载面板</h3>
+      <div class='mt-3 flex flex-wrap items-start gap-5'>
+        <div class='flex flex-col gap-2'>
+          <span class='text-caption text-neutral-600'>正在下载</span>
+          <DesignPanelCard tasks={designTasks} speed='1.2 MB/s' />
+        </div>
+        <div class='flex flex-col gap-2'>
+          <span class='text-caption text-neutral-600'>已暂停</span>
+          <DesignPanelCard tasks={[designQueued]} paused />
+        </div>
+        <div class='flex flex-col gap-2'>
+          <span class='text-caption text-neutral-600'>完成</span>
+          <DesignPanelCard tasks={[]} finishing={4} />
+        </div>
+      </div>
+
+      <h3 class='mt-6 text-label text-neutral-700 font-500'>收起态</h3>
+      <div class='mt-3 flex flex-wrap items-end gap-6'>
+        <div class='flex flex-col items-center gap-2'>
+          <div class='w-11 flex flex-col items-center gap-1 rounded-full bg-white py-3 shadow-float'>
+            <Download size={18} class='text-secondary-900' aria-hidden='true' />
+            <span class='text-caption text-neutral-800 tabular-nums'>3</span>
+            <span class='h-10 w-1 overflow-hidden rounded-full bg-secondary-100' aria-hidden='true'>
+              <span class='block h-2/5 w-full bg-secondary-700'></span>
+            </span>
+          </div>
+          <span class='text-caption text-neutral-600'>桌面 44px</span>
+        </div>
+        <div class='flex flex-col gap-2'>
+          <div class='h-12 max-w-full w-[360px] flex items-center gap-2 rounded-xl bg-white px-3 shadow-float'>
+            <Download size={16} class='flex-none text-secondary-900' aria-hidden='true' />
+            <span class='min-w-0 flex-1 truncate text-caption text-neutral-800'>34% · 3 首</span>
+            <span class='flex-none text-caption text-neutral-600 tabular-nums'>1.2 MB/s</span>
+          </div>
+          <div class='h-12 max-w-full w-[360px] flex items-center gap-2 rounded-xl bg-white px-3 shadow-float'>
+            <Check size={16} class='flex-none text-secondary-800' aria-hidden='true' />
+            <span class='min-w-0 flex-1 truncate text-caption text-neutral-800'>已下载 4 首</span>
+          </div>
+          <span class='text-caption text-neutral-600'>手机 48px · 下载中 / 已下载</span>
+        </div>
+      </div>
     </section>
 
     <section>

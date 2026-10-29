@@ -3,7 +3,7 @@ import { page } from '$app/state'
 
 /**
  * 下载面板（#38）的界面状态：什么时候出现、收起。不是浮层栈里的一层：不压历史、不 inert 背景，关掉再打开不做恢复。
- * 面板在 /downloads 不显示（那一页有完整的“正在下载”），这时 expanded 一直是 false，提示条不用让位。
+ * 面板在 /downloads 不显示（那一页有完整的“正在下载”）；提示条按展开 / 收起让位。
  */
 export const createDownloadPanel = () => {
   let open = $state(false)

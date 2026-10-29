@@ -10,7 +10,7 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 ```
 
 - 独立端口 `http://localhost:5174`，和普通的 `pnpm dev`（5173，真账号）同时开着也不冲突。
-- 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser.sh open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的。
+- 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser.sh open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的；mock 的登录 Cookie 叫 `campanula_login_mock`（`dev:mock` 设置 `LOGIN_COOKIE_NAME`），和 5173 的 `campanula_login` 分开，同一个浏览器开两个端口也不会互相顶掉登录态。
 - 页面左下角显示 `Mock · 测试数据`。
 - 退出登录后，UI 的扫码 / 短信登录流程照常可用；mock 的二维码会直接成功。要回到已登录，再访问一次 `/mock/login`。
 - `/design` 在 `pnpm dev` 和 `pnpm dev:mock` 都能打开；设计页主体不进生产包，部署后的路由返回 404（#61）。

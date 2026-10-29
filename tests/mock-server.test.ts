@@ -14,6 +14,7 @@ let cookie = ''
 
 beforeAll(async () => {
   process.env.COOKIE_SECRET = 'campanula-mock-test-secret-0123456789abcdef'
+  process.env.LOGIN_COOKIE_NAME = 'campanula_login_mock'
   const vite = await createServer({
     configFile: false,
     logLevel: 'silent',
@@ -53,7 +54,7 @@ describe('mock 开发服务器', () => {
     expect(login.status).toBe(303)
     const setCookie = login.headers.get('set-cookie') ?? ''
     cookie = setCookie.split(';')[0]!
-    expect(cookie.startsWith('campanula_login=')).toBe(true)
+    expect(cookie.startsWith('campanula_login_mock=')).toBe(true)
 
     const account = await api('/api/account')
     expect((await account.json() as { account: { id: number } }).account.id).toBe(10000001)

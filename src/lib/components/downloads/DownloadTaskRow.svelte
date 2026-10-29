@@ -16,7 +16,7 @@
   import TextButton from '../ui/TextButton.svelte'
   import { downloadFailureText } from './view'
 
-  const { task, variant, paused, online, signedIn, speed = null, oncancel, onretry }: {
+  const { task, variant, paused, online, signedIn, speed = null, readonly = false, oncancel, onretry }: {
     task: DownloadTask
     variant: 'page' | 'panel'
     paused: boolean
@@ -24,6 +24,8 @@
     signedIn: boolean
     /** 面板里当前这首的速率（已经写好单位）；没有、暂停时是 null */
     speed?: string | null
+    /** 完成退场时只保留封面、歌名和进度，不给操作 */
+    readonly?: boolean
     oncancel: () => void
     onretry: () => void
   } = $props()
@@ -61,11 +63,11 @@
       >
         <span class='block h-full rounded-full bg-secondary-700' style:width='{percent ?? 0}%'></span>
       </span>
-      <span class='text-secondary-900 tabular-nums'>{percent === null
+      <span class='whitespace-nowrap text-secondary-900 tabular-nums'>{percent === null
         ? `已收到 ${formatMegabytes(task.received)} MB`
-        : `下载中 ${percent}%`}</span>
+        : `${percent}%`}</span>
       {#if speed}
-        <span class='text-caption text-neutral-600 tabular-nums'>{speed}</span>
+        <span class='whitespace-nowrap text-caption text-neutral-600 tabular-nums'>{speed}</span>
       {/if}
     {/if}
   {:else if task.status === 'queued'}
@@ -92,7 +94,13 @@
       onclick={onretry}
     >重试</TextButton>
   {/if}
-  <IconButton icon={X} label={`取消下载：${songTitle(task.song)}`} onclick={oncancel} />
+  <IconButton
+    icon={X}
+    label={task.status === 'failed'
+      ? `不再下载：${songTitle(task.song)}`
+      : `取消下载：${songTitle(task.song)}`}
+    onclick={oncancel}
+  />
 {/snippet}
 
 {#if variant === 'page'}
@@ -121,7 +129,9 @@
     {#if !phone}
       <span class='min-w-0 flex items-center gap-2.5 text-caption'>{@render status()}</span>
     {/if}
-    <span class='flex items-center justify-end gap-1'>{@render actions()}</span>
+    {#if !readonly}
+      <span class='flex items-center justify-end gap-1'>{@render actions()}</span>
+    {/if}
   </div>
 {:else}
   <div class='grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-2 pl-1 pr-1'>
@@ -130,6 +140,8 @@
       <span class='block truncate text-label text-neutral-900 font-500' lang={langOf(songTitle(task.song))}>{songTitle(task.song)}</span>
       <span class='mt-0.5 min-w-0 flex items-center gap-2 text-caption'>{@render status()}</span>
     </span>
-    <span class='flex items-center gap-1'>{@render actions()}</span>
+    {#if !readonly}
+      <span class='flex items-center gap-1'>{@render actions()}</span>
+    {/if}
   </div>
 {/if}

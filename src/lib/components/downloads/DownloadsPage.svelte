@@ -141,15 +141,15 @@
 {#snippet collage(size: number)}
   <div class='relative flex-none' style:width='{size}px' style:height='{size}px'>
     {#if covers.length === 0}
-      <span class='rounded-2xl grid size-full place-items-center bg-secondary-50 text-secondary-800' aria-hidden='true'>
+      <span class='grid size-full place-items-center rounded-xl bg-secondary-50 text-secondary-800' aria-hidden='true'>
         <CircleArrowDown size={size > 100
           ? 56
           : 34} strokeWidth={1.5} />
       </span>
     {:else if covers.length < 4}
-      <Cover url={covers[0]} {size} eager class='rounded-2xl shadow-ambient' />
+      <Cover url={covers[0]} {size} eager class='rounded-xl shadow-ambient' />
     {:else}
-      <div class='rounded-2xl grid grid-cols-2 size-full overflow-hidden shadow-ambient' aria-hidden='true'>
+      <div class='grid grid-cols-2 size-full overflow-hidden rounded-xl shadow-ambient' aria-hidden='true'>
         {#each covers as url (url)}
           <Cover url={url} size={size / 2} eager />
         {/each}
