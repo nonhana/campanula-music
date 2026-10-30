@@ -4,7 +4,6 @@
   告诉 App 听众在看这一位歌手（viewing）：什么时候拉、没拉成后重试都由 App 决定。滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
-  import { resolve } from '$app/paths'
   import { Disc3, UserRound } from '@lucide/svelte'
   import { tick } from 'svelte'
 
@@ -37,7 +36,6 @@
     : null)
   const artist = $derived(content?.artist ?? null)
   const more = $derived(content?.moreAlbums ?? null)
-  const here = $derived(resolve('/artists/[id=neteaseId]', { id }))
   const phone = $derived(!desktopLayout.current)
   /** “几首歌 · 几张专辑”：网易云没给的那一项连同分隔不写（#78） */
   const counts = $derived(artist
@@ -92,7 +90,6 @@
       ready={!!artist}
       cover={{ url: artist?.avatarUrl ?? null, round: true, fallback: UserRound }}
       title={artist?.name ?? ''}
-      flight={here}
     >
       {#snippet meta()}
         {#if artist}

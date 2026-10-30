@@ -320,7 +320,6 @@
         trackCount={sort.grabbed.trackCount}
         creator={null}
         locked={sort.grabbed.private}
-        flight={false}
       />
       <span class='absolute right-4 top-4 z-10'>
         <DragGrip label={playlistName(sort.grabbed)} size='desktop' overlay ghost />

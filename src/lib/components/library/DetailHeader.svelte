@@ -1,8 +1,8 @@
 <!--
   详情页头（#75）：专辑、歌单、歌手、每日推荐、已下载共用这一份。
   封面图可以是方（专辑、歌单）、圆（歌手）或自定义图（每日推荐、已下载）；标题、信息行、可选标签和动作由调用方给。
-  模块自己负责桌面 / 手机的布局断点、就绪前的骨架、淡入、手机返回栏的页名（pageHeading）和封面飞行终点。
-  尺寸：桌面封面图 200px、手机 168px；封面飞行的缩略图取 FLIGHT_COVER_SIZE（ADR-0011）。
+  模块自己负责桌面 / 手机的布局断点、就绪前的骨架、淡入和手机返回栏的页名（pageHeading）。
+  尺寸：桌面封面图 200px、手机 168px；封面图取格子那一张 TILE_COVER_SIZE，从格子点进来时直接用缓存里的图。
   手机三种排法：居中（专辑、歌单、歌手）、图在左标题在右（已下载）、图独占一行（每日推荐）。
   桌面动作：歌单、专辑、每日推荐、已下载贴底；歌手页头内容居中，动作跟在信息行下面（align='center'）。
   桌面动作行是一条不会换行的工具栏：左边动作、右边搜索；按工具栏自身宽度决定紧凑，动作太多时由调用方把管理动作收进 •••。
@@ -18,11 +18,11 @@
   import { pageHeading } from '../shell/back-title.svelte'
   import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
-  import { FLIGHT_COVER_SIZE } from './flight'
+  import { TILE_COVER_SIZE } from './tile-grid'
 
   interface Props {
-    /** 有 artwork 时不用它 */
-    cover?: { url: string | null, round?: boolean, fallback?: LucideIcon }
+    /** 有 artwork 时不用它；placeholder 是先铺的小缩略图按多大取（Cover 的 placeholder），大图到了再淡上去 */
+    cover?: { url: string | null, round?: boolean, fallback?: LucideIcon, placeholder?: number }
     /** 参数是桌面 / 手机上的参考尺寸、是不是手机布局 */
     artwork?: Snippet<[number, boolean]>
     title: string
@@ -41,8 +41,6 @@
     /** 桌面动作行右端的搜索；手机不渲染，调用方仍把搜索放在页头下方 */
     search?: Snippet<[boolean]>
     note?: Snippet
-    /** 放封面飞行的终点（ADR-0011）；不给就不飞 */
-    flight?: string
   }
 
   const {
@@ -58,7 +56,6 @@
     actions,
     search,
     note,
-    flight,
   }: Props = $props()
 
   const phone = $derived(!desktopLayout.current)
@@ -81,14 +78,14 @@
 
 {#snippet media(onPhone: boolean)}
   {#if artwork}
-    <div class='flex-none'>{@render artwork(onPhone ? 88 : FLIGHT_COVER_SIZE, onPhone)}</div>
+    <div class='flex-none'>{@render artwork(onPhone ? 88 : TILE_COVER_SIZE, onPhone)}</div>
   {:else if onPhone}
     <Cover
       url={cover?.url ?? null}
-      size={FLIGHT_COVER_SIZE}
+      size={TILE_COVER_SIZE}
       fluid
       eager
-      {flight}
+      placeholder={cover?.placeholder}
       fallback={cover?.fallback}
       class={[
         PHONE_COVER_CLASS,
@@ -98,9 +95,9 @@
   {:else}
     <Cover
       url={cover?.url ?? null}
-      size={FLIGHT_COVER_SIZE}
+      size={TILE_COVER_SIZE}
       eager
-      {flight}
+      placeholder={cover?.placeholder}
       fallback={cover?.fallback}
       class={round ? 'rounded-full shadow-ambient' : 'rounded-xl shadow-ambient'}
     />
@@ -223,7 +220,7 @@
     <span class={[
       'bone aspect-square flex-none',
       round ? 'rounded-full' : 'rounded-xl',
-    ]} style:width={`${FLIGHT_COVER_SIZE}px`}></span>
+    ]} style:width={`${TILE_COVER_SIZE}px`}></span>
     <div class={[
       'min-w-0 flex flex-1 flex-col',
       align === 'center'

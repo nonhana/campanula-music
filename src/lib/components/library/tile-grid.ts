@@ -11,6 +11,15 @@ export interface TileGridLook {
   round: boolean
 }
 
+/**
+ * 格子封面按多大取（px，Cover 的 size）：网格、架子都取这一张；详情页头的大封面（桌面 200px，手机 168px 限宽）也取这一张，
+ * 从格子点进去时页头用的就是缓存里那张，直接显示，不从薄荷底淡入。只有 DetailHeader 和格子组件引用它；路由不自己写尺寸。
+ */
+export const TILE_COVER_SIZE = 200
+
+/** 歌单的一行（歌单页左栏、手机排序时的一行）封面按多大取；歌单页头的大封面先铺这一张小图（左栏里多半已经加载过），大图到了再淡上去 */
+export const ROW_COVER_SIZE = 40
+
 /** 歌单、专辑两列，歌手三列（DESIGN.md Layout） */
 const PHONE_COLUMNS: Record<TileKind, string> = {
   playlist: 'grid-cols-2',

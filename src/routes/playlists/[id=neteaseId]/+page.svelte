@@ -1,7 +1,7 @@
 <!--
   歌单页（我喜欢的音乐也是这一页）。桌面曲库里的歌单是两栏（左栏曲库、右栏 200px 大封面头部和虚拟列表，窄于 1024px 收起，
   DESIGN.md Layout），不在曲库里的和专辑页一样是一栏；手机是返回栏 + 居中封面头部 + 简介 + 歌单内搜索 + 歌曲行。
-  头部交给 DetailHeader（#75），左栏用 PlaylistTile 的 nav 画法。页面只读 App 给的答案（state.library.playlistPage）：
+  头部交给 DetailHeader（#75）。左栏是一行一张的目录（PlaylistTile 的 nav 画法）：我喜欢的音乐在最上面，下面自建、收藏两块；页面只读 App 给的答案（state.library.playlistPage）：
   打开时还没同步全就由 App 用前台请求拉，不等后台同步；不在曲库里的不存进本机，每次打开都联网取。
   动作：收藏开关（不在曲库里的和收藏的歌单有）、自建歌单的“添加歌曲”和 •••（#33）、曲库里的歌单和专辑的“下载”（#39）；我喜欢的音乐只有下载。
   操作行分三档：播放（主）、下载 / 收藏（页面级次级）、添加歌曲 / 多选 / •••（管理类，图标簇）。桌面搜索在动作行右端，
@@ -14,7 +14,7 @@
   import type { LucideIcon } from '@lucide/svelte'
   import { CircleArrowDown, Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
 
-  import type { PlaylistUnavailable } from '#lib/api/library.js'
+  import type { Playlist, PlaylistUnavailable } from '#lib/api/library.js'
   import { playlistName } from '#lib/api/library.js'
   import type { LibraryState } from '#lib/app/library.js'
   import Avatar from '#lib/components/account/Avatar.svelte'
@@ -23,6 +23,7 @@
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import PlaylistTile from '#lib/components/library/PlaylistTile.svelte'
+  import { ROW_COVER_SIZE } from '#lib/components/library/tile-grid.js'
   import { playlistHeader } from '#lib/components/library/view.js'
   import { anchorBelow } from '#lib/components/menu/menu-anchor.js'
   import { getOverlays } from '#lib/components/overlay/overlay-context.js'
@@ -32,6 +33,7 @@
   import { atOnce, reveal, scrollBehavior, stagger } from '#lib/components/shared/motion.js'
   import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
   import { langOf } from '#lib/components/shared/text.js'
+  import { playerDockBottom } from '#lib/components/shell/player-dock.js'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
@@ -43,7 +45,7 @@
 
   const { params }: PageProps = $props()
   const view = getAppView()
-  const { addSongsDialog, downloadPicker, multiSelect, playlistMenu } = getOverlays()
+  const { addSongsDialog, downloadPicker, multiSelect, playlistMenu, playerLayer } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const page = $derived(library?.playlistPage(id) ?? null)
@@ -52,7 +54,6 @@
   const outside = $derived(page?.inLibrary === false)
   const header = $derived(page && playlistHeader(page))
   const phone = $derived(!desktopLayout.current)
-  const here = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 
   let query = $state('')
   /** 桌面“多选 · 排序”：进入多选后被工具条换掉，退出时靠它重新找到并接回焦点（#66） */
@@ -108,24 +109,62 @@
     private: { icon: Lock, title: '这是别人的隐私歌单' },
   } satisfies Record<PlaylistUnavailable, { icon: LucideIcon, title: string, body?: string }>
 
-  // 桌面左栏：把当前这张滚进视野（只滚左栏，不动页面，免得打乱返回时恢复的滚动位置）；刚打开直接定位，之后平滑地滚过去
-  let sideNav = $state<HTMLElement>()
-  let sidePlaced = false
-  $effect(() => {
-    void id
-    void (library?.playlists != null)
-    const current = sideNav?.querySelector<HTMLElement>('[aria-current="page"]')
-    if (!sideNav || !current)
-      return
-    if (current.offsetTop < sideNav.scrollTop || current.offsetTop + current.offsetHeight > sideNav.scrollTop + sideNav.clientHeight) {
-      sideNav.scrollTo({
-        top: current.offsetTop - 8,
-        behavior: sidePlaced
-          ? scrollBehavior()
-          : 'auto',
-      })
+  /** 左栏：我喜欢的音乐单独在最上面，下面自建、收藏两块，和曲库的歌单区块一样分（#37） */
+  const side = $derived.by(() => {
+    const playlists = library?.playlists ?? []
+    return {
+      liked: playlists.filter(item => item.kind === 'liked'),
+      own: playlists.filter(item => item.kind === 'own'),
+      collected: playlists.filter(item => item.kind === 'collected'),
     }
-    sidePlaced = true
+  })
+  const sideListed = $derived(library?.playlists != null)
+  /** 播放队列里现在这首是从哪张歌单放的：左栏那一行右边是三根小竖条 */
+  const playingFrom = $derived.by(() => {
+    const { player } = view.state
+    const source = player.current === null
+      ? null
+      : player.queue[player.current].source
+    return source?.kind === 'playlist'
+      ? source.id
+      : null
+  })
+  /** 左栏的下沿：有播放条时到它的上沿 */
+  const sideBottom = $derived(playerDockBottom({ desktop: true, present: playerLayer.hasQueue, withoutBar: '0px' }))
+
+  /** 左栏上下边缘渐隐多高（px）：样式和“当前这张露全了没有”共用 */
+  const SIDE_FADE = 40
+  let sideNav = $state<HTMLElement>()
+  /** 左栏替哪一张摆过位置：同步刷新歌单列表时不再把听众自己滚开的左栏拽回来；左栏拿掉时清掉，下次挂上又算刚打开 */
+  let sidePlacedFor: number | null = null
+  // 只滚左栏，不动页面，免得打乱返回时恢复的滚动位置。刚打开直接把当前这张放在正中；之后换到的那张露全了就不动，
+  // 免得列表从指针底下溜走；没露全（压在渐隐里、滚出了左栏，比如前进后退）才平滑地滚到正中
+  $effect(() => {
+    const nav = sideNav
+    if (!nav) {
+      sidePlacedFor = null
+      return
+    }
+    if (!sideListed || sidePlacedFor === id)
+      return
+    const current = nav.querySelector<HTMLElement>('[aria-current="page"]')
+    if (!current)
+      return
+    const first = sidePlacedFor === null
+    sidePlacedFor = id
+    const box = nav.getBoundingClientRect()
+    const row = current.getBoundingClientRect()
+    // 渐隐只在那一头还有内容时有，离头越近越矮（样式里按滚动位置长出来）
+    const fadeTop = Math.min(nav.scrollTop, SIDE_FADE)
+    const fadeBottom = Math.min(nav.scrollHeight - nav.clientHeight - nav.scrollTop, SIDE_FADE)
+    if (!first && row.top >= box.top + fadeTop && row.bottom <= box.bottom - fadeBottom)
+      return
+    nav.scrollTo({
+      top: nav.scrollTop + row.top - box.top - (nav.clientHeight - row.height) / 2,
+      behavior: first
+        ? 'auto'
+        : scrollBehavior(),
+    })
   })
 </script>
 
@@ -258,9 +297,8 @@
 {#snippet mainColumn(library: LibraryState)}
   <DetailHeader
     ready={!!header}
-    cover={{ url: header?.coverUrl ?? null }}
+    cover={{ url: header?.coverUrl ?? null, placeholder: ROW_COVER_SIZE }}
     title={name}
-    flight={here}
     tags={header?.tags ?? []}
   >
     {#snippet meta()}{@render headerMeta()}{/snippet}
@@ -270,6 +308,33 @@
   <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
   {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} {phone} />{/key}</div>{/if}
   <div class={phone ? '' : 'mt-6'}><PlaylistSongs {library} playlistId={id} bind:query entryFocus={desktopEntryFocus} {phone} /></div>
+{/snippet}
+
+{#snippet sideGroup(items: readonly Playlist[], from: number, title: string | null)}
+  {#if title && items.length > 0}
+    <h2 class='mb-1 mt-5 px-2 text-caption text-neutral-500 font-500' in:stagger={{ order: from }}>{title}</h2>
+  {/if}
+  <ul class='flex flex-col gap-0.5'>
+    {#each items as item, i (item.id)}
+      {@const current = item.id === id}
+      <!-- 首次同步时歌单列表到了，左栏的歌单依次飘入；之后同步来的新歌单也飘进来 -->
+      <li in:stagger={{ order: from + i }}>
+        <PlaylistTile
+          id={item.id}
+          name={playlistName(item)}
+          coverUrl={item.coverUrl}
+          trackCount={current
+            ? listedCount ?? item.trackCount
+            : item.trackCount}
+          creator={null}
+          locked={item.private}
+          look='nav'
+          {current}
+          now={item.id === playingFrom}
+        />
+      </li>
+    {/each}
+  </ul>
 {/snippet}
 
 {#if library && page && page.songs.kind === 'unavailable'}
@@ -313,34 +378,75 @@
 
     <nav
       bind:this={sideNav}
-      class='sticky hidden overflow-y-auto pb-4 lg:col-start-1 lg:row-start-1 -ml-2 lg:block'
-      style:top='calc(5rem + var(--offline-bar-height, 0px))'
-      style:max-height='calc(100dvh - 112px - var(--offline-bar-height, 0px))'
+      class='side sticky hidden overflow-y-auto lg:col-start-1 lg:row-start-1 -ml-3 -mt-4 lg:block'
+      style:top='calc(4rem + var(--offline-bar-height, 0px))'
+      style:max-height={`calc(100dvh - 4rem - var(--offline-bar-height, 0px) - ${sideBottom})`}
+      style:--side-fade={`${SIDE_FADE}px`}
       aria-label='曲库里的歌单'
     >
       <Scrollbar />
-      <ul class='flex flex-col gap-1 px-2'>
-        {#each library.playlists ?? [] as item, i (item.id)}
-          {@const current = item.id === id}
-          <!-- 首次同步时歌单列表到了，左栏的歌单依次飘入；之后同步来的新歌单也飘进来 -->
-          <li in:stagger={{ order: i }}>
-            <PlaylistTile
-              id={item.id}
-              name={playlistName(item)}
-              coverUrl={item.coverUrl}
-              trackCount={current
-                ? listedCount ?? item.trackCount
-                : item.trackCount}
-              creator={null}
-              locked={item.private}
-              look='nav'
-              {current}
-            />
-          </li>
-        {/each}
-      </ul>
+      <!-- 左边留出焦点环，右边留给滚动条；行的底色往左伸出 8px，封面和右栏页头的封面一样从栏的左边起 -->
+      <div class='py-4 pl-1 pr-2'>
+        {@render sideGroup(side.liked, 0, null)}
+        {@render sideGroup(side.own, side.liked.length, '自建歌单')}
+        {@render sideGroup(side.collected, side.liked.length + side.own.length, '收藏的歌单')}
+      </div>
     </nav>
   </div>
 {:else if library}
   {@render mainColumn(library)}
 {/if}
+
+<style>
+  /*
+   * 左栏上下边缘渐隐（和歌词一样）：哪一头还有内容才淡那一头，滚到头的那一边不淡；淡多高按离头多远长出来，
+   * 滚动驱动（animation-timeline），不写 JS。--side-fade 由脚本给。注册的名字是全局的，不要和别处的变量重名
+   */
+  @property --side-fade-top {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @property --side-fade-bottom {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  .side {
+    /* 键盘 Tab 到的那一行不停在渐隐里 */
+    scroll-padding-block: var(--side-fade);
+    mask-image: linear-gradient(180deg, transparent, #000 var(--side-fade-top), #000 calc(100% - var(--side-fade-bottom)), transparent);
+    animation: side-fade-top linear both, side-fade-bottom linear both;
+    animation-timeline: scroll(self), scroll(self);
+    animation-range: 0px var(--side-fade), calc(100% - var(--side-fade)) 100%;
+  }
+
+  /*
+   * 左栏换歌单（同一种页面之间只交叉淡化，page-transition.ts 的 fade）：左栏单独成一块、原地放新的一帧（still，uno.config.ts），
+   * 当前这张换底色、滚到正中都是活的，不和旧的一帧叠出重影
+   */
+  :global(html:active-view-transition-type(fade)) .side {
+    view-transition-name: playlist-side;
+    view-transition-class: still;
+  }
+
+  @keyframes side-fade-top {
+    from {
+      --side-fade-top: 0px;
+    }
+    to {
+      --side-fade-top: var(--side-fade);
+    }
+  }
+
+  @keyframes side-fade-bottom {
+    from {
+      --side-fade-bottom: var(--side-fade);
+    }
+    to {
+      --side-fade-bottom: 0px;
+    }
+  }
+</style>
