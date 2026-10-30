@@ -4,7 +4,7 @@
 
 ## 约定
 
-- **新建 issue**：`gh issue create --title "..." --body "..."`。正文多行时用 heredoc。
+- **新建 issue**：步骤、标题、标签和正文模板见 [issue-template.md](issue-template.md)。命令是 `gh issue create --title "..." --label ready-for-agent --body-file <正文文件>`。
 - **读 issue**：`gh issue view <number> --comments`，用 `jq` 过滤评论，并同时取 label。
 - **列 issue**：`gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'`，按需加 `--label`、`--state` 过滤。
 - **在 issue 下评论**：`gh issue comment <number> --body "..."`
@@ -27,7 +27,7 @@ GitHub 的 issue 和 PR 共用一套编号，所以单独一个 `#42` 可能是�
 
 ## 技能说“把结果发布到 issue 跟踪器”时
 
-新建一个 GitHub issue。
+新建一个 GitHub issue，正文按 [issue-template.md](issue-template.md) 的模板写。
 
 ## 技能说“取出相关票”时
 

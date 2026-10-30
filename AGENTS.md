@@ -4,7 +4,7 @@
 
 ### Issue 跟踪
 
-本仓库的 issue 和 Spec 都存成 GitHub issue，仓库是 `nonhana/campanula-music`，统一用 `gh` CLI 操作。见 `docs/agents/issue-tracker.md`。
+本仓库的 issue 和 Spec 都存成 GitHub issue，仓库是 `nonhana/campanula-music`，统一用 `gh` CLI 操作。见 `docs/agents/issue-tracker.md`。新建 Spec 或票之前，先读 `docs/agents/issue-template.md`（步骤和正文模板）。
 
 ### 分诊标签
 
