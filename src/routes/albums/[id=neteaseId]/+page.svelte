@@ -37,7 +37,6 @@
   const year = $derived(album && yearOf(album.publishedAt))
   const description = $derived(album?.description?.trim() || null)
   const phone = $derived(!desktopLayout.current)
-  const here = $derived(resolve('/albums/[id=neteaseId]', { id }))
 
   scrollSnapshot('/albums/[id=neteaseId]', () => null, () => {})
 
@@ -80,7 +79,6 @@
       ready={!!album}
       cover={{ url: album?.coverUrl ?? null }}
       title={album?.name ?? ''}
-      flight={here}
     >
       {#snippet meta(onPhone: boolean)}
         {#if album && content}

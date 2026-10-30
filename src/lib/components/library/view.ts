@@ -3,7 +3,7 @@ import type { PlaylistPage } from '#lib/app/library.js'
 
 import { formatCount, formatPlays } from '../shared/text'
 
-// 歌单页专属的写法：头部资料按界面排好；哪些歌、失败显示在哪、能做什么都在 App 的答案里（library.playlistPage）。封面飞行尺寸在 flight.ts（#75）。
+// 歌单页专属的写法：头部资料按界面排好；哪些歌、失败显示在哪、能做什么都在 App 的答案里（library.playlistPage）。封面取图尺寸在 tile-grid.ts（#75）。
 
 export interface PlaylistHeader {
   name: string

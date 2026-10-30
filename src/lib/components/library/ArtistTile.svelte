@@ -10,7 +10,7 @@
   import { langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
   import CollectButton from './CollectButton.svelte'
-  import { FLIGHT_COVER_SIZE } from './flight'
+  import { TILE_COVER_SIZE } from './tile-grid'
 
   interface Props {
     id: number
@@ -22,13 +22,11 @@
   }
 
   const { id, name, avatarUrl, detail = '', collectable = false }: Props = $props()
-  /** 链接上照样直接写 resolve()，lint 认不出 $derived 里的 */
-  const page = $derived(resolve('/artists/[id=neteaseId]', { id }))
 </script>
 
 <div class='relative min-w-0'>
   <a href={resolve('/artists/[id=neteaseId]', { id })} class='group block min-w-0 rounded-lg text-center'>
-    <Cover url={avatarUrl} size={FLIGHT_COVER_SIZE} fluid flight={page} fallback={UserRound} class='rounded-full shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
+    <Cover url={avatarUrl} size={TILE_COVER_SIZE} fluid fallback={UserRound} class='rounded-full shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
     {#if name !== null}
       <span class='mt-2.5 block truncate text-label text-neutral-900 font-500' lang={langOf(name)}>{name}</span>
     {/if}

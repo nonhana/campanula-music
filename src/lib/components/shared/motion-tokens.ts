@@ -94,9 +94,6 @@ export const AXES = {
 /** 旧页飘出开始这么久后新页才飘入（ms，DESIGN.md Motion · 飘出）；CSS 变量 --delay-float-in，减少动态效果时 0、只剩交叉淡化 */
 export const FLOAT_IN_DELAY = 60
 
-/** 封面飞到页头（shell/page-transition.ts）最多等这么久（ms）：新挂上的 img 偶尔过几毫秒才标成加载好；等的时候画面停在旧帧上，所以要短 */
-export const LANDING_WAIT = 100
-
 /** 换碟（DESIGN.md Cover Wheel）：轴心在封面正下方、离中心 pivot 倍边长，相邻两张隔 pitch 度；文字晚 textDelay ms 飘，旧出 textOut px、新进 textIn px */
 export const WHEEL = {
   pivot: 1.6,

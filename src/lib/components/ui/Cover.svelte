@@ -2,7 +2,7 @@
   网易云的封面图缩略图：按 size 的 2 倍取（?param=宽y宽，原图不是正方形时网易云裁成正方形），默认懒加载。
   加载完从薄荷底淡入，缓存里有的直接显示（image-reveal.svelte.ts）；加载不出来或没给图（url 是 null）时淡入 fallback 图标，不留破图。
   placeholder 先铺同一张封面的小缩略图；下载里存了它的缩略图（#38）时先铺那个，断网就一直显示它。圆角由调用方的 class 决定。
-  fluid：宽度跟着容器，size 只决定取多大。flight：这张图代表的页面地址，换页时两头一样的从格子飞到页头（shell/page-transition.ts）。
+  fluid：宽度跟着容器，size 只决定取多大。
 -->
 <script lang='ts' module>
   import { thumbnailUrl } from '#lib/api/library.js'
@@ -35,14 +35,13 @@
     class?: ClassValue
     eager?: boolean
     fallback?: LucideIcon
-    flight?: string
     /** 小缩略图按多大取（Cover 的 size，比 size 小才有用）；不给就是薄荷底 */
     placeholder?: number
     /** false：只铺小图，不下载大图（换碟时转盘还没停下的封面） */
     load?: boolean
   }
 
-  const { url, size, fluid = false, class: klass, eager = false, fallback: Fallback = Music, flight, placeholder, load = true }: Props = $props()
+  const { url, size, fluid = false, class: klass, eager = false, fallback: Fallback = Music, placeholder, load = true }: Props = $props()
   const source = $derived(url === null
     ? ''
     : coverSource(url, size))
@@ -64,7 +63,6 @@
   style:height={fluid
     ? undefined
     : `${size}px`}
-  data-flight={flight}
 >
   {#if url === null || (reveal.status === 'broken' && !local)}
     <!-- 图标占显示宽度的 40%：fluid 时 size 只决定取多大的缩略图，不是显示的大小 -->

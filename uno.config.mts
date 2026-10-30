@@ -158,22 +158,6 @@ const pageTransitionCss = (ground: string): string => {
       mix-blend-mode: plus-lighter;
     }
 
-    /*
-     * 从格子飞到页头的封面（page-transition.ts 只给露在屏幕里、图已加载的封面这个名字）：位置、大小一起变（480ms），
-     * 两头是同一张图；圆角跟着变（歌单、专辑 12px ↔ 16px，歌手一直是圆的）
-     */
-    ::view-transition-group(cover) {
-      animation-duration: var(--move-focal-bar);
-      animation-timing-function: var(--ease-out-soft);
-    }
-
-    /* 终点没有封面（页头还是骨架、格子滚出了屏幕、图没到）：起飞的那张不飞，跟着旧页一起飘出 */
-    ::view-transition-old(cover):only-child {
-      animation:
-        page-fade-out var(--duration-panel-out) var(--ease-in-soft) both,
-        page-drift-out var(--move-panel-out) var(--ease-in-soft);
-    }
-
     @keyframes page-fade-out {
       to { opacity: 0; }
     }
