@@ -15,7 +15,7 @@
 
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
-  import { desktopLayout } from '../shared/layout'
+  import { desktopLayout, desktopPanelTop } from '../shared/layout'
   import { float, reducedMotion } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
   import { formatCount } from '../shared/text'
@@ -58,10 +58,7 @@
     : failed > 0 && current === null
     ? '下载失败'
     : '正在下载')
-  /** 桌面：顶栏 64px（断网时下面还有 36px 的提示条）+ 16px */
-  const top = $derived(view.state.online
-    ? 80
-    : 116)
+  const top = $derived(desktopPanelTop(view.state.online))
   const bottom = 'bottom-[calc(80px+env(safe-area-inset-bottom))]'
 
   let panelEl = $state<HTMLElement>()

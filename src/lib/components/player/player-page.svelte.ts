@@ -7,10 +7,13 @@ import { preloadCover } from '../ui/Cover.svelte'
 
 /** 播放条和播放页绑定到所在骨架的浮层会话；抽屉手势不变 */
 export const playerPageActions = () => {
-  const { player, queue, playerDrawer } = getOverlays()
+  const { player, queue, queuePanel, playerDrawer } = getOverlays()
   const openPlayerPage = (from: HTMLElement | null = document.activeElement instanceof HTMLElement
 ? document.activeElement
 : null) => {
+    // 桌面播放队列面板开着：先收起它，播放页不叠在它上面
+    if (queuePanel.request)
+      void queuePanel.close(false)
     void player.open({ from })
   }
   const closePlayerPage = () => {

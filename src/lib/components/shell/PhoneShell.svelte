@@ -1,6 +1,7 @@
 <!--
   手机骨架（窄于 768px，DESIGN.md Layout）：顶上一行（logo、搜索、每日推荐；二级页面是返回栏），下面可以跟文字标签（我喜欢 / 歌单 / 专辑 / 歌手），底部是离屏幕边 8px 浮起的迷你播放条和一层晨光底的渐隐。
   只管区域和尺寸，顶行、标签行里放什么由调用方传；断网时顶行下面多一条提示条（#42），跟着一起吸在顶上。滚动条从顶行（连着标签、提示条）下沿到迷你播放条上沿，顶行下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）；歌曲列表从上下文拿 ScrollLookup。
+  歌曲列表也从上下文拿“定位到正在播放”（shared/now-locate）：正在放的那一行不在顶行和迷你播放条之间时，迷你播放条右上方画定位按钮（PageLocateButton）。
   换页时（uno.config.ts）：顶行、标签行交叉淡化，迷你播放条和渐隐原地不动，只有内容在动；播放条由 PlayerDock 停靠：第一次有歌时浮上来、渐隐跟着淡入，清空时沉下去。
 -->
 <script lang='ts'>
@@ -9,9 +10,11 @@
 
   import OfflineBar from '../notice/OfflineBar.svelte'
   import { getOverlays } from '../overlay/overlay-context'
+  import { createNowLocate, setNowLocate } from '../shared/now-locate.svelte'
   import { setScrollLookup } from '../shared/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
-  import { playerDockBottom } from './player-dock'
+  import PageLocateButton from './PageLocateButton.svelte'
+  import { playerDockBottom, playerDockTop } from './player-dock'
   import PlayerDock from './PlayerDock.svelte'
   import { pageScrollPadding } from './scroll-padding'
 
@@ -38,6 +41,13 @@
 
   /** 吸在顶上的那一块（顶行，曲库里连着文字标签）有多高 */
   let top = $state(0)
+  const nowLocate = setNowLocate(createNowLocate({
+    scroller: () => null,
+    band: () => ({
+      top,
+      bottom: playerDockTop(),
+    }),
+  }))
 
   // Tab 到、定位到的东西不藏在顶行底下，焦点环也露得出来；顶行变高（曲库里连着文字标签）时跟着变
   $effect(() => scrollPadding.set(`${top + 8}px`))
@@ -64,6 +74,7 @@
     {@render children()}
   </main>
   <PlayerDock present={docked} {replace} {preview} />
+  <PageLocateButton locate={nowLocate} desktop={false} />
   <Scrollbar page={{
     top: `${top}px`,
     bottom: playerDockBottom({ desktop: false, present: docked, withoutBar: 'env(safe-area-inset-bottom)' }),

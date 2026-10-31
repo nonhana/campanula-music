@@ -3,6 +3,7 @@
   （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
   左列封面、歌名（右边是红心键和“更多”菜单）、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换
   （ui/Segmented 标签页，←/→ 换标签）：两块并排放在一条轨道上、一直挂着，换标签时轨道和滑块一起横着滑，看不见的那块 Tab 不到、读屏读不到。
+  播放队列和歌词一样直接铺在封面染底上（作者 2026-10-31 定，偏离原型的白卡）；切到它时轨道还没滑过来，当前这首就已经停在第二行。
   整页放进视口，不滚动。换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
   “更多”菜单和歌曲行里的是同一份（#38：能在这里下载当前这首），播放来源是这首歌自己的。放在 PlayerPage 里
 -->
@@ -114,9 +115,7 @@
         {@const selected = choices.panel === panel.key}
         <div id='{uid}-{panel.key}' role='tabpanel' aria-labelledby='{uid}-{panel.key}-tab' class={['slide min-h-0 flex flex-col', !selected && 'away']} style:--slot={index} inert={!selected}>
           {#if panel.key === 'queue'}
-            <div class='min-h-0 flex flex-1 flex-col rounded-xl bg-white shadow-ambient'>
-              <QueueList class='flex-1' />
-            </div>
+            <QueueList class='flex-1' ground shown={selected} />
           {:else}
             <Lyrics {song} {playhead} class='flex-1' />
           {/if}
@@ -168,13 +167,13 @@
   }
 
      /* 右栏轨道：两块叠在一格，各自按离显示那块隔几格横摆（一格是自己的宽度加 --track-gap），和分段条滑块一起滑（面板 360ms）。
-     左边多留 --bleed、右边多留整段页面留白（--gutter）再裁掉：播放队列面板的阴影不被切掉，歌词向右借出留白（放胶囊、让长宽更宽）。
-     两块隔开 --gutter 再加两倍 --bleed，看不见的那块（连同歌词借出的那段）不露边。
+     左边多留 --bleed（歌词滚动区向左伸出 8px，字和开关对齐、焦点环画在它的边内）、右边多留整段页面留白（--gutter）再裁掉：歌词向右借出留白（放胶囊、让长宽更宽）。
+     两块隔开 --gutter 再加 --bleed，看不见的那块（连同歌词向左伸出、向右借出的那段）不露边。
      看不见的那块是透明的：减少动态效果时轨道不滑（--move-* 是 0），换成原地交叉淡化（最多 150ms）。
      下面两处时长、延迟用 --duration-* 减去 --move-*：正常时是 0，整条轨道不透明地滑；减少动态效果时就是淡入淡出的时长 */
   .track {
-    --bleed: 16px;
-    --track-gap: calc(var(--gutter) + 2 * var(--bleed));
+    --bleed: 8px;
+    --track-gap: calc(var(--gutter) + var(--bleed));
 
     display: grid;
     grid-template: minmax(0, 1fr) / minmax(0, 1fr);

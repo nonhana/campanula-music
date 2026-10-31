@@ -6,8 +6,9 @@
   传了 lookup（歌曲列表）时，拖动中滑块左边有气泡写列表最上面那一项（scroll-marks.ts）。只做竖的。
   滑块不进 Tab 顺序、读屏读不到，和系统滚动条一样：键盘照常由浏览器滚。
 
-  两种放法：page（贴窗口右边，上下边避开顶栏、底栏）；或放进滚动区域当第一个子元素（粘在看得见的那一块里），
-  区域自己不要有内边距（放到里面那层），不然它会离开边上。
+  三种放法：page（贴窗口右边，上下边避开顶栏、底栏）；放进滚动区域当第一个子元素（粘在看得见的那一块里），
+  区域自己不要有内边距（放到里面那层），不然它会离开边上；或者传 target，放在滚动区域外面、和它同一个定位盒里
+  （盒子的上沿、右边和区域对齐）：区域自己带渐隐（mask-image）时，滚动条不跟着淡。
 -->
 <script lang='ts'>
   import { untrack } from 'svelte'
@@ -22,11 +23,13 @@
 
   interface Props {
     page?: { top: string, bottom: string }
+    /** 滚的是它，滚动条放在它外面（默认是父元素） */
+    target?: HTMLElement
     axis?: 'x' | 'y'
     lookup?: ScrollLookup
   }
 
-  const { page, axis = 'y', lookup }: Props = $props()
+  const { page, target, axis = 'y', lookup }: Props = $props()
   /** 多选时右边的触屏把手让给歌曲行的拖动把手（#36）：状态由多选模块经 context 提供（#66） */
   const selectionMode = hasSelectionMode()
     ? getSelectionMode()
@@ -93,7 +96,7 @@
 
   const scroller = (): HTMLElement | null => onPage
     ? document.documentElement
-    : host?.parentElement ?? null
+    : target ?? host?.parentElement ?? null
 
   const measure = () => {
     const el = scroller()
@@ -315,7 +318,7 @@
 {#if page}
   {@render bar()}
 {:else}
-  <div bind:this={host} class='sticky left-0 top-0 z-1 h-0' aria-hidden='true'>{@render bar()}</div>
+  <div bind:this={host} class={target ? 'absolute inset-x-0 top-0 z-1 h-0' : 'sticky left-0 top-0 z-1 h-0'} aria-hidden='true'>{@render bar()}</div>
 {/if}
 
 <style>
