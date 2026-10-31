@@ -18,6 +18,12 @@
   - `008`–`010`：专辑页，每张之间隔 4 秒（连着取会回“操作频繁”，nonhana/hana-music-api#60）：收藏的「Keep The Village Alive」（3149073）、收藏的「月に寄りそう乙女の作法2 COMPLETE SOUNDTRACK」（3154337，没有简介，`description` 是 null，nonhana/hana-music-api#59）、没收藏的 YOASOBI「THE BOOK for,」（379547126）。
   - `011`：成对操作（Spec #11 交付方式第 2 条）：用 SDK 收藏「THE BOOK for,」，取收藏的专辑（56 张，它排在最前）录下，马上取消收藏，再取一次确认回到 55 张（没录）。收藏、取消收藏的返回没录（`like-collect/album_sub.*` 已有）。
   - 专辑页的 `album.info.commentThread.resourceInfo.userId` 是 -1（没有这个人）。第一次录制时脱敏把它当成了一个人，`008`–`010` 没写成；修好录制脚本（现在的 `scripts/netease-record.mts`）后几分钟内只读重录了这三张，所以它们的 `recordedAt` 比 `011` 晚。
+- nonhana/campanula-music#83（2026-10-31 北京时间）：`library/album-artist/` 下歌手页的歌曲和简介，序号接着 #23。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@3.2.0`，参数和服务端发的一样（`artist_songs` 的 `limit: 100`），**不截短**（测试要核对分页、总数和“显示更多”）；每两次调用之间隔约 4 秒，全部只读：
+  - `012`–`015`：YOASOBI（33927412）的歌曲，热门、最新各两页：第一页 100 首（`more` 是 true），第二页 49 首（`more` 是 false），`total` 都是 149（两种排法是同一批 149 首）。每首歌带着自己的 `privilege`，大多 `st` 是 0；热门第 2 页有 7 首、最新第 1 页有 5 首、第 2 页有 2 首是 -200（没有版权）。
+  - `016`：YOASOBI 的简介：`briefDesc` 是组合介绍（146 字），`introduction` 只有一段（标题“详细介绍”）。
+  - `017`、`018`：まらしぃ（14786）的歌曲，热门、最新各第一页：各 100 首，`more` 都是 true，`total` 是 1,131。
+  - `019`：まらしぃ的简介：一段简介（55 字）和一段“传记”（正文 1,712 字）。
+  - 网易云一次给得了 100 首（两种排法的第一页都是 100 首）。`artist_top_song`（#23 的 `003`、`005`）留着，只是服务端、测试和 mock 不再用。
 - nonhana/campanula-music#24（2026-10-14 北京时间）：`playback/liked/` 下我喜欢的音乐里 6 首歌的在线播放地址（`song_url_v1`，极高音质 `exhigh`）。一次性脚本用作者本机开发服务器的登录 Cookie 直接调 `hana-music-api@2.8.0`，只读，每首 1 次；文件名前的序号是调用的先后：
   - `001`–`003`：我喜欢的音乐的第 1～3 首（3433267939、2662577181、4208408）。
   - `004`、`005`：无版权的「Sea Of Tired（Slowed）」（2108191414）前后各一首（2092188841、2044505920）。

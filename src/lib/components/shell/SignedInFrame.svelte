@@ -70,11 +70,13 @@
 
   // 从 App 里别的页面进来的，返回就退回去；直接打开二级页面的，返回到曲库
   let cameFromApp = $state(false)
-  afterNavigate(({ from, shallow, type }) => {
+  afterNavigate(({ from, to, shallow, type }) => {
     // 打开播放页、歌曲菜单是浅路由（goto 的 shallow），没有换页
     if (shallow && type === 'goto')
       return
-    cameFromApp = from !== null
+    // 同一页只换了地址参数（搜索、歌手页换标签，替换当前这条记录）不算从别处进来：直接打开再换标签，返回仍回曲库
+    if (from?.url.pathname !== to?.url.pathname)
+      cameFromApp = from !== null
     resetSearchBox(view.app)
   })
   // 骨架在打开 App 问完账号后才挂上，那时第一次换页已经过去了：直接打开（刷新）搜索结果页时，搜索框里也要是这一页搜的词

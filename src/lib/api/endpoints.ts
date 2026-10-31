@@ -5,7 +5,7 @@ import type { CoverTokenResponse, SetCoverRequest, SetCoverResponse } from './co
 import type { DailyResponse } from './discover.js'
 import type { GetEndpoint } from './endpoint.js'
 import { get, post } from './endpoint.js'
-import type { AddTracksRequest, AlbumResponse, ArtistAlbumsResponse, ArtistResponse, CollectedAlbumsResponse, CollectedArtistsResponse, CollectRequest, CreatePlaylistRequest, CreatePlaylistResponse, DescribePlaylistRequest, HeartRequest, HeartsResponse, PlaylistCollectRequest, PlaylistOrderRequest, PlaylistPageResponse, PlaylistsResponse, PlaylistTagsResponse, RemoveTracksRequest, RenamePlaylistRequest, SongOrderRequest, SongsRequest, SongsResponse, TagPlaylistRequest, TrackIdsResponse } from './library.js'
+import type { AddTracksRequest, AlbumResponse, ArtistAlbumsResponse, ArtistIntroResponse, ArtistResponse, ArtistSongOrder, ArtistSongsResponse, CollectedAlbumsResponse, CollectedArtistsResponse, CollectRequest, CreatePlaylistRequest, CreatePlaylistResponse, DescribePlaylistRequest, HeartRequest, HeartsResponse, PlaylistCollectRequest, PlaylistOrderRequest, PlaylistPageResponse, PlaylistsResponse, PlaylistTagsResponse, RemoveTracksRequest, RenamePlaylistRequest, SongOrderRequest, SongsRequest, SongsResponse, TagPlaylistRequest, TrackIdsResponse } from './library.js'
 import type { CaptchaRequest, CaptchaResponse, LogoutResponse, QrCheckRequest, QrCheckResponse, QrResponse, SmsLoginRequest, SmsLoginResponse } from './login.js'
 import type { CheckInRequest, DownloadUrlResponse, LyricsResponse, PlayUrlResponse, Quality } from './playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from './search.js'
@@ -120,13 +120,21 @@ export const endpoints = {
   album: get<AlbumResponse, NeteaseIdParams>(({ id }) =>
     resolve('/api/albums/[id=neteaseId]', { id })),
 
-  /** GET /api/artists/[id]：歌手页的头部、热门歌曲（网易云给 50 首）和第一页专辑（新的在前） */
+  /** GET /api/artists/[id]：歌手页的头部、热门排法的第一页歌曲和第一页专辑（新的在前） */
   artist: get<ArtistResponse, NeteaseIdParams>(({ id }) =>
     resolve('/api/artists/[id=neteaseId]', { id })),
+
+  /** 一种排法里从第 offset 首往后的一页歌曲（ARTIST_SONGS_PER_REQUEST 首） */
+  artistSongs: get<ArtistSongsResponse, { id: number, order: ArtistSongOrder, offset: number }>(({ id, order, offset }) =>
+    `${resolve('/api/artists/[id=neteaseId]/songs', { id })}?order=${order}&offset=${offset}`),
 
   /** 从第 offset 张往后的一页专辑 */
   artistAlbums: get<ArtistAlbumsResponse, { id: number, offset: number }>(({ id, offset }) =>
     `${resolve('/api/artists/[id=neteaseId]/albums', { id })}?offset=${offset}`),
+
+  /** 简介和分段介绍 */
+  artistIntro: get<ArtistIntroResponse, NeteaseIdParams>(({ id }) =>
+    resolve('/api/artists/[id=neteaseId]/intro', { id })),
 
   collectAlbum: post<WriteResponse, CollectRequest, NeteaseIdParams>(({ id }) =>
     resolve('/api/albums/[id=neteaseId]/collect', { id })),

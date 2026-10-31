@@ -141,7 +141,7 @@ const listDetailFiles = (folder: string): Promise<string[]> => readdir(new URL(`
 const songDetailFiles = (folder: string): Promise<string[]> => readdir(new URL(`../../../../tests/fixtures/netease/${folder}/`, import.meta.url))
   .then(names => names.filter(name => name.endsWith('song_detail.json.gz')).sort())
 
-/** 搜索结果、专辑、热门歌曲里的歌带着自己的 privilege：收进歌曲库，加入歌单后刷新还能取到 */
+/** 搜索结果、专辑、歌手的歌曲里的歌带着自己的 privilege：收进歌曲库，加入歌单后刷新还能取到 */
 const collectInlineSongs = (node: unknown, songs: Map<number, SongPart>): void => {
   if (Array.isArray(node)) {
     node.forEach(item => collectInlineSongs(item, songs))
@@ -230,8 +230,12 @@ export const buildSeed = async (seed: SeedName): Promise<SeedData> => {
     addDetailSongs(songs, detail)
 
   for (const path of [
-    'library/album-artist/003-artist_top_song.json.gz',
-    'library/album-artist/005-artist_top_song.json.gz',
+    'library/album-artist/012-artist_songs.json.gz',
+    'library/album-artist/013-artist_songs.json.gz',
+    'library/album-artist/014-artist_songs.json.gz',
+    'library/album-artist/015-artist_songs.json.gz',
+    'library/album-artist/017-artist_songs.json.gz',
+    'library/album-artist/018-artist_songs.json.gz',
     'library/album-artist/008-album.json.gz',
     'library/album-artist/009-album.json.gz',
     'library/album-artist/010-album.json.gz',

@@ -18,7 +18,7 @@
   import PageLocateButton from './PageLocateButton.svelte'
   import { playerDockBottom, playerDockTop } from './player-dock'
   import PlayerDock from './PlayerDock.svelte'
-  import { pageScrollPadding } from './scroll-padding'
+  import { pageScrollPadding, stickyBelowHeader } from './scroll-padding'
 
   interface Props {
     railExpanded: boolean
@@ -48,7 +48,7 @@
   const nowLocate = setNowLocate(createNowLocate({
     scroller: () => null,
     band: () => ({
-      top: top + (Number.parseFloat(document.documentElement.style.getPropertyValue('--sticky-below-header')) || 0),
+      top: top + stickyBelowHeader(),
       bottom: playerDockTop(),
     }),
   }))

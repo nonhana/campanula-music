@@ -11,7 +11,7 @@ export const QUALITIES = [
 
 export type Quality = typeof QUALITIES[number]
 
-/** 带编号的播放来源的种类：歌单（我喜欢的音乐也是一张歌单）、专辑、歌手的热门歌曲 */
+/** 带编号的播放来源的种类：歌单（我喜欢的音乐也是一张歌单）、专辑、歌手的歌曲（当前排法已经显示的） */
 export const NUMBERED_SOURCE_KINDS = ['playlist', 'album', 'artist'] as const
 
 /** 播放来源（GLOSSARY）：这首歌是从哪个列表或哪次搜索放进播放队列的 */
