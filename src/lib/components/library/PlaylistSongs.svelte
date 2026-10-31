@@ -1,11 +1,12 @@
 <!--
-  一张歌单（包括我喜欢的音乐）特有的部分：多选入口和工具条、拖动排序和它的浮起行 / 快速定位窄条；列表本身在 songs/SongList。
+  一张歌单（包括我喜欢的音乐）特有的部分：拖动排序和它的浮起行 / 快速定位窄条、多选里不能排序时的说明；列表本身在 songs/SongList，
+  多选的入口、工具条、勾选和焦点也在那里（#82），这里只挑这张歌单能做的事（加入歌单、下载，自建歌单还有移除）。
   歌单页和手机曲库的“我喜欢”共用；不在曲库里的歌单歌是联网一页页取的，提示说“加载”不说“同步”。
   搜索框桌面在页头的动作行里、手机在列表上方；“找到几首”在面板表头里；搜索在本机副本即时完成，没同步全时标“可能不全”；
   点歌（包括搜索结果）用整张歌单替换队列；其余的没拉成、多选里不能排序都在列表上方说明。
 -->
 <script lang='ts'>
-  import { CircleAlert, Heart, ListChecks, ListMusic } from '@lucide/svelte'
+  import { CircleAlert, Heart, ListMusic } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import { untrack } from 'svelte'
 
@@ -21,13 +22,11 @@
   import { formatCount } from '../shared/text'
   import SongList from '../songs/SongList.svelte'
   import SongRow from '../songs/SongRow.svelte'
-  import type { SongListView, SongSelection } from '../songs/view'
-  import IconButton from '../ui/IconButton.svelte'
+  import type { SongListView } from '../songs/view'
   import SearchField from '../ui/SearchField.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import DragGrip from './DragGrip.svelte'
-  import type { SelectionSource } from './multi-select.svelte'
-  import SelectionToolbar from './SelectionToolbar.svelte'
+  import { selectionActions } from './selection-actions.svelte'
   import { SongDrag } from './song-drag.svelte'
 
   const { addSongsDialog, multiSelect } = getOverlays()
@@ -37,11 +36,9 @@
     playlistId: number
     query: string
     phone?: boolean
-    /** 行被虚拟列表回收后，焦点回到这个稳定按钮（由歌单页给） */
-    entryFocus?: () => HTMLElement | null
   }
 
-  let { library, playlistId, query = $bindable(), phone = false, entryFocus }: Props = $props()
+  let { library, playlistId, query = $bindable(), phone = false }: Props = $props()
   const view = getAppView()
   const page = $derived(library.playlistPage(playlistId))
   const shown = $derived(page.songs)
@@ -76,7 +73,6 @@
 
   /** 只在多选里按每行把手拖；勾选的几首一起拖、保持先后（#36） */
   let listHost = $state<HTMLElement>()
-  let phoneEntry = $state<HTMLElement>()
   const drag = new SongDrag({
     songs: () => songs,
     selection,
@@ -86,34 +82,30 @@
   // 拖动期间虚拟列表的 items 保持原顺序，只改每一行的 placeOf；
   // 不能把被拖的行挪到数组末尾：DOM 节点被移走会丢指针捕获（#36 真实输入验证）
 
-  /** 多选从这里读整张歌单、显示着的歌和种类；换歌单、列表消失、离开页面由模块自己退出 */
-  const selectionSource: SelectionSource = {
-    get key() { return playlistId },
+  const actions = selectionActions()
+  /** 这张歌单能做的事（#82）：加入歌单排除自己，下载记成这张歌单；自建歌单还能移除。能排序的入口写“多选和排序” */
+  const select = $derived({
+    actions: [
+      actions.addToPlaylist(playlistId),
+      actions.download(() => ({
+        kind: 'playlist',
+        id: playlistId,
+        name: playlistName({
+          name: page.info?.name ?? null,
+          kind,
+        }),
+      })),
+      ...(kind === 'own'
+        ? [
+          actions.removeFromPlaylist(playlistId),
+        ]
+        : []),
+    ],
     songs: () => allSongs,
-    visible: () => songs.map(song => song.id),
-    kind: () => kind,
-    downloadSource: () => ({
-      kind: 'playlist',
-      id: playlistId,
-      name: playlistName({
-        name: page.info?.name ?? null,
-        kind,
-      }),
-    }),
-    present: () => shown.kind === 'songs',
-    focusFirst: () => listHost?.querySelector<HTMLElement>('[data-play-target]')?.focus({ preventScroll: true }),
-  }
-  selection.attach(selectionSource)
-  $effect(() => () => selection.detach(selectionSource))
-
-  /** 行还在就回行；被虚拟列表回收就回稳定的多选入口 */
-  const rowEntryFocus = (from: HTMLElement): () => HTMLElement | null => () => {
-    if (from.isConnected)
-      return from
-    return phone
-      ? phoneEntry?.querySelector<HTMLElement>('button') ?? null
-      : entryFocus?.() ?? null
-  }
+    entryLabel: sortableList
+      ? '多选和排序'
+      : '多选',
+  })
 
   // 退出多选、换了列表（搜索、歌单加载完重排）：拖动作废，不提交
   $effect(() => {
@@ -175,30 +167,6 @@
       incompleteBody: outside ? '还没加载完，加载完再搜一次' : '还没同步完，同步完再搜一次',
     }
     : null)
-
-  const selectionProps = $derived<SongSelection>({
-    active: selection.mode,
-    has: songId => selection.has(songId),
-    toggle: song => selection.toggle(song.id),
-    modifiers: (song, event) => {
-      if (!selection.mode) {
-        const from = event.currentTarget as HTMLElement
-        selection.enter({
-          from,
-          focusEntry: rowEntryFocus(from),
-        })
-      }
-      if (event.shiftKey)
-        selection.range(song.id)
-      else
-        selection.toggle(song.id)
-    },
-    longpress: (song, from) => selection.enter({
-      id: song.id,
-      from,
-      focusEntry: rowEntryFocus(from),
-    }),
-  })
 
   const dragHooks = $derived({
     placeOf: drag.placeOf,
@@ -286,28 +254,6 @@
   {/if}
 {/snippet}
 
-{#snippet countAction()}
-  {#if !selection.mode && shown.kind === 'songs' && songs.length > 0}
-    <span class='contents' bind:this={phoneEntry}>
-      <IconButton
-        icon={ListChecks}
-        label={sortableList ? '多选和排序' : '多选'}
-        title={sortableList ? '多选和排序' : '多选'}
-        class='-mr-3'
-        onclick={event => selection.enter({
-          from: event.currentTarget as HTMLElement,
-          focusFirst: true,
-          focusEntry: () => phoneEntry?.querySelector<HTMLElement>('button') ?? null,
-        })}
-      />
-    </span>
-  {/if}
-{/snippet}
-
-{#snippet toolbar()}
-  <SelectionToolbar />
-{/snippet}
-
 {#if phone}
   <div class='px-4 pt-3'>
     <SearchField label='在歌单里搜索' bind:value={query} disabled={shown.kind !== 'songs'} />
@@ -327,12 +273,8 @@
     count={shown.kind === 'songs'
       ? shown.total
       : undefined}
-    countAction={phone ? countAction : undefined}
     {notice}
-    toolbar={!phone && selection.mode
-      ? toolbar
-      : undefined}
-    selection={selectionProps}
+    {select}
     grip={sortable ? rowGrip : undefined}
     drag={sortable && selection.mode
       ? dragHooks

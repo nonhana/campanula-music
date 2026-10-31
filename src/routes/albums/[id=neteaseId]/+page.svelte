@@ -9,6 +9,7 @@
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import Description from '#lib/components/library/Description.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
+  import { selectionActions } from '#lib/components/library/selection-actions.svelte.js'
   import { getOverlays } from '#lib/components/overlay/overlay-context.js'
   import { getAppView } from '#lib/components/shared/app-context.svelte.js'
   import { failureText } from '#lib/components/shared/failure.js'
@@ -49,6 +50,19 @@
     if (content.songs.length === 0)
       return { kind: 'empty', title: '这张专辑暂时没有歌' }
     return { kind: 'songs', songs: content.songs }
+  })
+
+  const actions = selectionActions()
+  /** 专辑页能做的事（#82）：加入歌单（目标是新建和全部自建歌单）、下载记成这张专辑 */
+  const select = $derived({
+    actions: [
+      actions.addToPlaylist(),
+      actions.download(() => ({
+        kind: 'album',
+        id,
+        name: album?.name ?? '',
+      })),
+    ],
   })
 </script>
 
@@ -101,7 +115,7 @@
     </DetailHeader>
     {#if description}<div in:reveal><Description text={description} {phone} /></div>{/if}
     <div class={phone ? 'pt-1' : 'mt-6'}>
-      <SongList list={listView} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' {phone} virtual={false} staggerRows={false} numbered />
+      <SongList list={listView} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' {phone} virtual={false} staggerRows={false} numbered {select} />
     </div>
   {/if}
 {/if}

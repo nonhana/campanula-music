@@ -48,10 +48,10 @@ export interface AddTarget extends Playlist {
   readonly blocked: AddTargetBlock | null
 }
 
-/** 单曲从我喜欢的音乐和自建歌单里选；多选只要当前歌单以外的自建歌单（Spec #11 #98：红心只能一首一首点） */
+/** 单曲从我喜欢的音乐和自建歌单里选；多选只要是自建歌单（Spec #11 #98：红心只能一首一首点），从别的列表打开时排除当前歌单，没有就是 null */
 export type AddTargetsRequest
   = | { readonly mode: 'song', readonly song: Song, readonly currentPlaylistId: number | null }
-    | { readonly mode: 'multi', readonly currentPlaylistId: number }
+    | { readonly mode: 'multi', readonly currentPlaylistId: number | null }
 
 type SyncStatus
   = | { status: 'syncing' }
@@ -731,7 +731,7 @@ export const createLibrary = (context: LibraryContext): Library => {
     const playlists = shownReplica.playlists
     if (!playlists)
       return null
-    // 单曲：我喜欢的音乐在最前，然后是自建歌单；多选按 Spec #98 去掉当前这张
+    // 单曲：我喜欢的音乐在最前，然后是自建歌单；多选按 Spec #98 去掉当前这张（不是从歌单里进来的就没有要去掉的）
     const listed = request.mode === 'song'
       ? [
           ...playlists.filter(playlist => playlist.kind === 'liked'),

@@ -1,9 +1,9 @@
 <!--
-  歌单页头部的 •••（原型 PlaylistActions）：只有自建歌单有，由浮层宿主挂载。紧凑时它先收着添加歌曲和多选，再是编辑歌单信息、改为公开（只有隐私歌单有）、删除歌单（出错红，和上面隔一条线）；选了就关上菜单，打开对应的弹窗 / 多选 / 编辑。
-  我喜欢的音乐不能改名、不能删，没有这个菜单；收藏的歌单用头部的“已收藏”取消收藏（DESIGN.md Layout，#30）。菜单行、行高和键盘在 MenuList（#73）。
+  歌单页头部的 •••（原型 PlaylistActions）：只有自建歌单有，由浮层宿主挂载。紧凑时它先收着添加歌曲，再是编辑歌单信息、改为公开（只有隐私歌单有）、删除歌单（出错红，和上面隔一条线）；选了就关上菜单，打开对应的弹窗 / 编辑。
+  多选不再收进这里：所有歌曲列表的入口都在表头最右（#82）。我喜欢的音乐不能改名、不能删，没有这个菜单；收藏的歌单用头部的“已收藏”取消收藏（DESIGN.md Layout，#30）。菜单行、行高和键盘在 MenuList（#73）。
 -->
 <script lang='ts'>
-  import { Globe, ListChecks, ListPlus, Pencil, Trash2 } from '@lucide/svelte'
+  import { Globe, ListPlus, Pencil, Trash2 } from '@lucide/svelte'
 
   import { playlistName } from '#lib/api/library.js'
 
@@ -17,7 +17,7 @@
   type Edit = 'info' | 'public' | 'delete'
 
   const view = getAppView()
-  const { addSongsDialog, multiSelect, playlistEditor, playlistMenu } = getOverlays()
+  const { addSongsDialog, playlistEditor, playlistMenu } = getOverlays()
 
   const playlistOf = (request: PlaylistMenuRequest) => view.state.library?.playlists?.find(playlist => playlist.id === request.playlistId) ?? null
 
@@ -34,20 +34,6 @@
             leading: { kind: 'icon', icon: ListPlus } as const,
             closeOnChoose: false,
             run: () => void playlistMenu.transfer(addSongsDialog, { playlistId: request.playlistId, from: request.from }),
-          },
-          {
-            key: 'multi',
-            label: '多选和排序',
-            leading: { kind: 'icon', icon: ListChecks } as const,
-            closeOnChoose: false,
-            run: () => {
-              // 先关掉这一层再打开多选：菜单开着时多选是非 modal，会把菜单留在上面
-              void playlistMenu.close().then(() => multiSelect.enter({
-                from: request.from,
-                focusFirst: true,
-                focusEntry: () => request.from,
-              }))
-            },
           },
         ]
         : []),

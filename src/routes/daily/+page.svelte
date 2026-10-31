@@ -7,6 +7,7 @@
   import DailyNumber from '#lib/components/daily/DailyNumber.svelte'
   import { DAILY_SOURCE, dailyCalendarDay, dailyFailure, totalDuration } from '#lib/components/daily/view.js'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
+  import { selectionActions } from '#lib/components/library/selection-actions.svelte.js'
   import { getAppView } from '#lib/components/shared/app-context.svelte.js'
   import { desktopLayout } from '#lib/components/shared/layout.js'
   import { fade, reveal } from '#lib/components/shared/motion.js'
@@ -42,6 +43,15 @@
       return { kind: 'empty', title: '今天没有每日推荐', body: '明天 6:00 以后再来看看' }
     return { kind: 'songs', songs }
   })
+
+  const actions = selectionActions()
+  /** 每日推荐能做的事（#82）：加入歌单、下载；来源记成单独下载（规则⑦） */
+  const select = $derived({
+    actions: [
+      actions.addToPlaylist(),
+      actions.download(() => ({ kind: 'single' })),
+    ],
+  })
 </script>
 
 <svelte:head><title>每日推荐 · Campanula</title></svelte:head>
@@ -73,7 +83,7 @@
       }} />
     </div>
   {:else}
-    <SongList list={listView} source={DAILY_SOURCE} loadingLabel='正在加载每日推荐' phone={onPhone} virtual={false} staggerRows={false} />
+    <SongList list={listView} source={DAILY_SOURCE} loadingLabel='正在加载每日推荐' phone={onPhone} virtual={false} staggerRows={false} {select} />
   {/if}
 {/snippet}
 

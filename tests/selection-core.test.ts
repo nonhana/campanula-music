@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { Song } from '#lib/api/library.js'
 import type { Checked } from '#lib/components/library/selection-core.js'
-import { allOn, capabilitiesOf, extend, NONE, picked, selectAll, toggle } from '#lib/components/library/selection-core.js'
+import { allOn, extend, NONE, picked, selectAll, selectionKeyOf, toggle } from '#lib/components/library/selection-core.js'
 
-// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、搜索时勾选的仍是整张歌单里的歌、能做什么按歌单种类给出。不碰页面、不碰 Svelte，只断言听众看得到的结果：勾了哪些歌、全选按钮亮不亮、加入歌单会带上哪几首、工具条上有哪些操作。
+// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、搜索时勾选的仍是整张歌单里的歌，以及列表的标识（换了列表就退出）。不碰页面、不碰 Svelte，只断言听众看得到的结果：勾了哪些歌、全选按钮亮不亮、加入歌单会带上哪几首、换列表时多选退不退。
 
 const songsFrom = (ids: readonly number[]): Song[] => ids.map((id, index) => ({
   id,
@@ -80,38 +80,18 @@ describe('勾选规则', () => {
   })
 })
 
-describe('列表种类决定能做什么', () => {
-  it('歌单里都能加入歌单、下载；自建歌单能移除和排序，我喜欢的音乐只能排序，收藏的和不在曲库里的都不能；不导出、不删除下载', () => {
-    const playlist = {
-      add: true,
-      download: true,
-      remove: false,
-      sort: false,
-      export: false,
-      delete: false,
-    }
-    expect(capabilitiesOf('own', true)).toEqual({ ...playlist, remove: true, sort: true })
-    expect(capabilitiesOf('liked', true)).toEqual({ ...playlist, sort: true })
-    expect(capabilitiesOf('collected', true)).toEqual(playlist)
-    expect(capabilitiesOf(null, true)).toEqual({ ...playlist, download: false })
-  })
-
-  it('已下载页只有导出和删除（#79）；浏览器不能选文件夹时没有导出（ADR-0014）', () => {
-    expect(capabilitiesOf('downloads', true)).toEqual({
-      add: false,
-      download: false,
-      remove: false,
-      sort: false,
-      export: true,
-      delete: true,
-    })
-    expect(capabilitiesOf('downloads', false)).toEqual({
-      add: false,
-      download: false,
-      remove: false,
-      sort: false,
-      export: false,
-      delete: true,
-    })
+describe('列表的标识', () => {
+  it('不同的歌单、专辑、歌手、搜索词各自算一张列表：换了它多选就退出', () => {
+    const keys = [
+      selectionKeyOf({ kind: 'playlist', id: 1 }),
+      selectionKeyOf({ kind: 'playlist', id: 2 }),
+      selectionKeyOf({ kind: 'album', id: 1 }),
+      selectionKeyOf({ kind: 'artist', id: 1 }),
+      selectionKeyOf({ kind: 'daily' }),
+      selectionKeyOf({ kind: 'downloads' }),
+      selectionKeyOf({ kind: 'search', keyword: '玫瑰' }),
+      selectionKeyOf({ kind: 'search', keyword: '百合' }),
+    ]
+    expect(new Set(keys).size).toBe(keys.length)
   })
 })

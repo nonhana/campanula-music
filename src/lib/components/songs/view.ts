@@ -3,6 +3,7 @@ import type { LucideIcon } from '@lucide/svelte'
 import type { Song } from '#lib/api/library.js'
 import { songTitle } from '#lib/api/library.js'
 
+import type { SelectionAction } from '../library/selection-actions.svelte'
 import type { ScrollMark } from '../shared/scroll-marks'
 import { formatCount, langOf } from '../shared/text'
 
@@ -25,13 +26,14 @@ export interface SongSearch {
   readonly incompleteBody?: string
 }
 
-/** 行前装饰：多选勾选（#66）；拖动把手由 grip 插槽给 */
-export interface SongSelection {
-  readonly active: boolean
-  readonly has: (songId: number) => boolean
-  readonly toggle: (song: Song) => void
-  readonly modifiers: (song: Song, event: MouseEvent) => void
-  readonly longpress?: (song: Song, from: HTMLElement) => void
+/** 多选（#82）：给了才有多选，挂载、勾选、入口、工具条和焦点都在 SongList 里，页面不再自己接线 */
+export interface SongSelect {
+  /** 这张列表能做的事，按这个顺序画进工具条和手机操作条（library/selection-actions） */
+  readonly actions: readonly SelectionAction[]
+  /** 整张列表的歌：歌单、已下载在列表里搜索时，勾选和动作仍按整张，显示的只是搜到的那些；不给时就是列表里的这些 */
+  readonly songs?: () => readonly Song[]
+  /** 入口的读屏名字和悬停提示：默认“多选”，能排序的歌单传“多选和排序” */
+  readonly entryLabel?: string
 }
 
 /** 拖动排序（#36）交给列表的几何：留给 `library/PlaylistSongs` 用 */

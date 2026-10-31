@@ -9,7 +9,7 @@ import { useWorld } from './harness/world'
 const world = useWorld()
 const { signInAtHearts, signInAtLikedTracks, signInSynced, dailySongs, openJazz } = listener(world)
 
-// 加入歌单的目标和不可选理由（#73，GLOSSARY“加入歌单”，Spec #11 多选 · #98）：单曲时我喜欢的音乐在最前，然后是自建歌单，当前歌单、已红心、已在歌单里写明理由；多选时只有当前歌单以外的自建歌单，不含我喜欢的音乐和收藏的歌单（红心只能一首一首点）。规则只在 App 里，界面照着答案画（走 World / Device 的 App 接入点）。
+// 加入歌单的目标和不可选理由（#73，GLOSSARY“加入歌单”，Spec #11 多选 · #98）：单曲时我喜欢的音乐在最前，然后是自建歌单，当前歌单、已红心、已在歌单里写明理由；多选时只有自建歌单，从歌单里打开时去掉当前这张，不含我喜欢的音乐和收藏的歌单（红心只能一首一首点）。规则只在 App 里，界面照着答案画（走 World / Device 的 App 接入点）。
 const LIKED_ID = 900000001
 const JAZZ_ID = 900000002
 /** jazz 的两个曲目编号：录制里没有它们的歌曲信息（列表里只有编号） */
@@ -90,6 +90,17 @@ describe('加入歌单的目标和理由', () => {
     expect(rows!.map(target => target.id)).not.toContain(LIKED_ID)
 
     expect(rows!.every(target => target.total === (app.state.library?.songsOf(target.id)?.total ?? -1))).toBe(true)
+  })
+
+  it('多选不是从歌单里打开的（专辑、歌手、每日推荐、搜索、已下载）：当前歌单为空，目标是全部自建歌单', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+
+    const rows = app.addTargets({ mode: 'multi', currentPlaylistId: null })
+    expect(rows).not.toBeNull()
+    expect(rows!.map(target => target.id)).toEqual(ownIds(app))
+    expect(rows!.every(target => target.kind === 'own' && target.blocked === null)).toBe(true)
+    expect(rows!.map(target => target.id)).not.toContain(LIKED_ID)
   })
 
   it('歌单列表还没同步到：两个模式都不给目标', async () => {
