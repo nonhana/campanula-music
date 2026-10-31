@@ -1,6 +1,7 @@
 <!--
   歌曲列表（深模块）：输入是列表状态（加载 / 失败 + 重试 / 空 / 歌曲）、播放来源和布局，以及可选的搜索、编号、“显示更多”的飘入起点、行前装饰。
   它负责正在播放、点歌（用整个列表替换播放队列，App.play 按播放来源决定；搜索是插播）、白色面板和表头、骨架、空 / 没搜到、虚拟化和唯一的行高（view.ts）。
+  正在放的那首在列表里时登记给外框的“定位到正在播放”（shared/now-locate）：那一行不在屏幕内时外框画定位按钮；多选、拖动排序时不登记位置。
   歌单特有的搜索框、多选工具条、拖动排序留在调用方，通过插槽和钩子给进来（#36、#66）。
 -->
 <script lang='ts'>
@@ -14,6 +15,7 @@
   import { currentSong } from '../player/now'
   import { getAppView } from '../shared/app-context.svelte'
   import { fade, reveal, stagger } from '../shared/motion'
+  import { focusNowRow, getNowLocate, hasNowLocate } from '../shared/now-locate.svelte'
   import { formatCount } from '../shared/text'
   import StateBlock from '../ui/StateBlock.svelte'
   import VirtualList from '../ui/VirtualList.svelte'
@@ -68,6 +70,8 @@
     host?: HTMLElement
     /** 列表上方的东西挪了位置（已下载页的“正在下载”）：变了就重新量一次虚拟列表 */
     remeasure?: unknown
+    /** 登记给“定位到正在播放”；搜索综合的前几首关掉 */
+    locate?: boolean
   }
 
   let {
@@ -96,6 +100,7 @@
     contentClass,
     host = $bindable(),
     remeasure,
+    locate = true,
   }: Props = $props()
 
   const revealContent = $derived(wantedReveal ?? !bare)
@@ -123,6 +128,30 @@
     else
       play(song)
   }
+
+  const nowLocate = hasNowLocate()
+    ? getNowLocate()
+    : null
+  /** 正在放的那首在这张列表（搜索时是搜到的那些）里第几行 */
+  const nowIndex = $derived(nowId === null
+    ? -1
+    : songs.findIndex(song => song.id === nowId))
+
+  $effect(() => {
+    if (!nowLocate || !locate)
+      return
+    return nowLocate.register({
+      // 行高统一 56px，虚拟列表和不虚拟化的列表一样从 host 的上沿往下排
+      row: () => nowIndex < 0 || !host || selection?.active || drag
+        ? null
+        : {
+          top: host.getBoundingClientRect().top + nowIndex * SONG_ROW_HEIGHT,
+          height: SONG_ROW_HEIGHT,
+          first: nowIndex === 0,
+        },
+      focus: () => focusNowRow(host),
+    })
+  })
 </script>
 
 {#snippet found()}

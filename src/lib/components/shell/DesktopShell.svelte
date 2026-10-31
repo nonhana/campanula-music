@@ -1,6 +1,7 @@
 <!--
   桌面骨架（768px 及以上，DESIGN.md Layout）：晨光底上 64px 顶栏、72px 图标侧栏（展开 220px，内容区跟着让位）、内容区（最大宽 1280px）、80px 底部通栏；只管区域和尺寸，里面放什么由调用方传。
   页面的滚动条贴着窗口右边，从顶栏下沿到底栏上沿，顶栏下面留出 scroll-padding-top（DESIGN.md Layout · 滚动）；歌曲列表从上下文拿 ScrollLookup，按住滚动条拖时气泡写它最上面那首。
+  歌曲列表也从上下文拿“定位到正在播放”（shared/now-locate）：正在放的那一行不在顶栏（连着吸在顶栏下的标签）和播放条之间时，右下角画定位按钮（PageLocateButton）。
   换页时只有内容区在动：顶栏、侧栏、底栏各自起了名字，过渡里原地不动（view-transition-class still，见 uno.config.ts）；侧栏收起时先等文字淡出（SignedInFrame），再变窄。
   断网时顶栏下面多一条提示条（#42），内容区和侧栏一起让出它那 36px。
   播放条由 PlayerDock 停靠：第一次有歌时从屏幕底下浮上来，清空（包括退出登录，整个骨架拿掉时）沉下去；侧栏最下面的设置跟着它上下（只动 transform），不跳。
@@ -11,9 +12,11 @@
 
   import OfflineBar, { OFFLINE_BAR_HEIGHT } from '../notice/OfflineBar.svelte'
   import { getOverlays } from '../overlay/overlay-context'
+  import { createNowLocate, setNowLocate } from '../shared/now-locate.svelte'
   import { setScrollLookup } from '../shared/scroll-marks'
   import Scrollbar from '../ui/Scrollbar.svelte'
-  import { playerDockBottom } from './player-dock'
+  import PageLocateButton from './PageLocateButton.svelte'
+  import { playerDockBottom, playerDockTop } from './player-dock'
   import PlayerDock from './PlayerDock.svelte'
   import { pageScrollPadding } from './scroll-padding'
 
@@ -42,6 +45,13 @@
   const top = $derived(64 + (offline
     ? OFFLINE_BAR_HEIGHT
     : 0))
+  const nowLocate = setNowLocate(createNowLocate({
+    scroller: () => null,
+    band: () => ({
+      top: top + (Number.parseFloat(document.documentElement.style.getPropertyValue('--sticky-below-header')) || 0),
+      bottom: playerDockTop(),
+    }),
+  }))
 
   // Tab 到、定位到的东西不藏在顶栏底下，焦点环也露得出来。页面里吸在顶栏下面的一行（搜索结果的标签）把自己的高度写在
   // --sticky-below-header 上，一起让出来
@@ -95,6 +105,7 @@
     </div>
   </main>
   <PlayerDock present={docked} {preview} />
+  <PageLocateButton locate={nowLocate} desktop />
   <Scrollbar page={{
     top: `${top}px`,
     bottom: playerDockBottom({ desktop: true, present: docked, withoutBar: '0px' }),

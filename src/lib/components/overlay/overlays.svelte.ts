@@ -15,6 +15,7 @@ import { MultiSelect } from '../library/multi-select.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
 import { createDrawer } from '../player/drawer.svelte'
 import { createPlayerLayer } from '../player/player-layer.svelte'
+import QueuePanel from '../player/QueuePanel.svelte'
 import { queueEmpty } from '../player/view'
 import AddSongs from '../playlist/AddSongs.svelte'
 import AddToPlaylist from '../playlist/AddToPlaylist.svelte'
@@ -158,6 +159,12 @@ dependsOn: 'player',
 parent: 'player',
 fallback: '[data-queue-entry]',
 })
+  // 桌面播放队列面板：播放条的队列按钮开关它，浮在内容上（不压暗、不 inert 背景、不进浏览记录）；手机播放页里的弹层是上面的 queue
+  const queuePanel = register<DialogRequest>('queue-panel', {
+    history: () => false,
+    modal: false,
+    fallback: '[data-queue-toggle]',
+  }, QueuePanel)
   const selection = register<DialogRequest>('selection', {
     history: () => !desktopLayout.current,
     // 多选只是列表上的一层状态（顶栏 / 底部操作条），不是 modal：不压暗、不 inert 背景；焦点还给打开它的元素，
@@ -204,6 +211,7 @@ deletePlaylistDownloadsConfirm,
 clearDownloadsConfirm,
 player,
 queue,
+queuePanel,
 selection,
 multiSelect,
 playerDrawer,

@@ -16,3 +16,6 @@ export const playerDockBottom = ({ desktop, present, withoutBar }: DockBottom): 
     return withoutBar
   return desktop ? '80px' : 'calc(72px + env(safe-area-inset-bottom))'
 }
+
+/** 播放条（手机多选时是占它位置的操作条）上沿在视口里的位置；没有时是窗口底。定位到正在播放按它算页面看得见的下沿 */
+export const playerDockTop = (): number => document.querySelector('[data-player-bar]')?.getBoundingClientRect().top ?? window.innerHeight

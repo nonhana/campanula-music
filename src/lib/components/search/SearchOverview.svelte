@@ -122,6 +122,7 @@
           bare
           virtual={false}
           label='单曲'
+          locate={false}
         />
       </div>
     </div>
