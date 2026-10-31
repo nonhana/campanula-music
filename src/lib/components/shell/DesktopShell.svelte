@@ -24,7 +24,7 @@
     railExpanded: boolean
     /** 断网：顶栏下面贴一条提示，内容区和侧栏都往下让 */
     offline?: boolean
-    /** 顶栏：菜单键、logo、返回、正中的搜索框、头像 */
+    /** 顶栏：菜单键、logo、返回和前进、正中的搜索框、头像 */
     header: Snippet
     /** 图标侧栏上面的：曲库、每日推荐、已下载 */
     rail: Snippet

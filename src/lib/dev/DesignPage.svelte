@@ -614,7 +614,7 @@
     {#snippet header()}
       <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
       <Brand />
-      {@render region('顶栏 64px：返回、正中的搜索框、头像', 'ml-4 h-11 flex-1')}
+      {@render region('顶栏 64px：返回和前进、正中的搜索框、头像', 'ml-4 h-11 flex-1')}
     {/snippet}
     {#snippet rail()}
       {@render region(railExpanded ? '侧栏 220px' : '侧栏 72px', 'flex-1 [writing-mode:vertical-rl]')}
