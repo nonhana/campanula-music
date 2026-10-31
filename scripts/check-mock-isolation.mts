@@ -1,5 +1,5 @@
 // 生产构建检查（#58、#61）：mock、录制数据、mock 路由和开发设计页都不能进产物。
-// 跑在 pnpm build 之后；CI 和 pre-push 都用它。
+// 跑在 pnpm build 之后；CI 用它，Vercel 的 Deployment Checks 等 CI 通过才上线。
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import process from 'node:process'

@@ -1,8 +1,11 @@
 # 交付一张票
 
-> **完成 = 远端 `rewrite/v1` 有提交 + CI 通过 + Vercel 部署成功 + 票里留言。**
+> **完成 = 远端 `rewrite/v1` 有提交 + 票里留言。**
 > 只停在本地 commit 不算交付：作者的 Vercel 实例由**推送**触发部署，作者在手机上验收的是部署后的版本。
 > 实现者必须自己推送，不能把推送留给作者。
+>
+> 验证分三层：提交时钩子跑 lint-staged（改动文件的 eslint、设计令牌、fixture 身份）；推送时没有钩子；完整的 lint、类型检查、测试、两种构建和生产构建检查交给 CI（`.github/workflows/ci.yml`）。
+> Vercel 开了 Deployment Checks，要求 CI 通过：推送后新版本照常构建，等 CI 通过才切到正式域名；CI 失败时线上留着上一个版本。所以推送后不用等 CI 和 Vercel。
 
 实现 Spec #11 下的票时，按顺序走完每一步。
 
@@ -25,11 +28,10 @@
    - 缺哪种浏览器能力的替身，就在这张票里加进 `src/lib/app/browser.ts` 和 `tests/harness/browser.ts`。
 3. **界面票**：设计从视觉原型的源码读，规则以 `DESIGN.md` 为准，读法见 `campanula-ui-acceptance` skill 第 1 步。实现者的自查走 mock（`pnpm dev:mock`、`scripts/browser.sh`，见 `docs/agents/mock.md`）；验收仍由作者亲手试用（Spec #11「交付方式」），实现者不拍截图、不做成批的浏览器检查。写代码时碰到读代码弄不清的浏览器行为（例如第三方脚本在本机能不能用），先用一句话问作者要不要在专用窗口（`scripts/axi.sh`）里查一次。截图、浏览器检查、动效逐帧只在作者点名时做，用那个 skill 的工具。
 4. **真账号**：作者试用就是真账号验证。日常实现和 reviewer 都走 mock（见 `docs/agents/browser.md`），reviewer 不自己启动 Chrome。实现者只在上游行为还没被证明过时（新接的网易云模块、SDK 修复还没在真账号上成功过），先问作者，同意后用一次性脚本查，遵守 Spec #11「交付方式」里的五条规矩，并记录做了什么。需要作者在场时（扫码、收短信、用真机），停下来叫作者。
-5. **收尾**：用 `/code-review` 审一遍，提交并**推送** `rewrite/v1`（推送前钩子跑 `pnpm check`、`pnpm test`、`pnpm build`）。只提交不推送，CI 和 Vercel 都不会跑，作者没法在手机上验收。
-   - 推送后等 CI 成功：`gh run list --branch rewrite/v1`，确认这次提交的 run 是 `completed / success`。
-   - 再看这次提交的 Vercel 状态：`gh api repos/nonhana/campanula-music/commits/<sha>/status`，`Vercel` 要是 `success`。
-   - 两个都成功才算收尾完成；失败就修，不要先去留言说做完了。
-6. **交付**：在票里留言，写清推送的提交、CI 和 Vercel 部署状态、做了什么、测试覆盖了哪些情况，再写一份试用清单：
+5. **收尾**：推送前自己跑 `pnpm check` 和这次改到、加上的测试文件（`pnpm exec vitest run tests/<文件>`），不跑全量测试和构建（交给 CI）。用 `/code-review` 审一遍，提交并**推送** `rewrite/v1`。只提交不推送，CI 和 Vercel 都不会跑，作者没法在手机上验收。
+   - 推送成功就往下走，不等 CI、不看 Vercel 状态：没通过 CI 的版本不会上线。
+   - 作者转告 CI 失败时再修，修好重新推送。
+6. **交付**：在票里留言，写清推送的提交、做了什么、测试覆盖了哪些情况（新版本要等 CI 通过才上线，作者看到会晚几分钟），再写一份试用清单：
    - 每一项写去哪、点什么、应该看到什么；会改账号的写怎么撤销（歌单编辑只在临时歌单上，真账号第 1 条规矩）。
    - 测试已经覆盖、不用试的情况另列一行（例如断网、网易云拒绝、操作频繁）。
    - 票里有键盘操作、“减少动态效果”、换宽度会变的布局时，各加一行提醒，试不试由作者定。
