@@ -1,7 +1,7 @@
 import type { Account } from '#lib/api/account.js'
 import type { CoverCrop } from '#lib/api/cover.js'
 import { endpoints } from '#lib/api/endpoints.js'
-import type { CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
+import type { ArtistSongOrder, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
 import { playlistName } from '#lib/api/library.js'
 import type { PlaySource, Quality } from '#lib/api/playback.js'
 import type { SearchedItems, SearchKind } from '#lib/api/search.js'
@@ -21,7 +21,7 @@ import type { DownloadBatchOutcome, DownloadBlock, DownloadRemoval, DownloadSour
 import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
 import type { ExportState } from './export'
 import { createExports } from './export'
-import type { AddSongsOutcome, AddTarget, AddTargetsRequest, CreateOutcome, LibraryState, PlaylistSearch } from './library'
+import type { AddSongsOutcome, AddTarget, AddTargetsRequest, ArtistTab, CreateOutcome, LibraryState, PlaylistSearch } from './library'
 import { createLibrary, filterSongs, searchPlaylist } from './library'
 import { createLocalDatabase, createLocalDb } from './local'
 import type { LoginState } from './login'
@@ -61,7 +61,7 @@ export interface CollectTarget {
 type ViewedPage
   = | { kind: 'playlist', id: number }
     | { kind: 'album', id: number }
-    | { kind: 'artist', id: number }
+    | { kind: 'artist', id: number, tab: ArtistTab, order: ArtistSongOrder }
     | { kind: 'daily' }
     | { kind: 'search', keyword: string }
 
@@ -119,9 +119,15 @@ export interface App {
   searchPlaylist: (playlistId: number, query: string) => PlaylistSearch | null
   /** 这次登录还没拉过就用前台请求拉；收藏的专辑打开过就存在本机，再打开先显示存着的、断网也能看 */
   openAlbum: (albumId: number) => Promise<void>
-  /** 这次登录还没拉过就用前台请求拉 */
+  /** 这次登录还没拉过就用前台请求拉头部、热门排法的第一页歌曲和第一页专辑；没拉成时就是重试 */
   openArtist: (artistId: number) => Promise<void>
+  /** 这种排法的第一页还没取过、或者没取成时取（重试） */
+  openArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>
+  /** 这种排法的下一页接在已经显示的后面；没取成时已经显示的不动，再调一次就是重试 */
+  moreArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>
   moreArtistAlbums: (artistId: number) => Promise<void>
+  /** 简介还没取过、或者没取成时取（重试） */
+  openArtistIntro: (artistId: number) => Promise<void>
   /** 今天这份（网易云北京时间 6:00 换）还没拉过就用前台请求拉；只在这次登录期间记着、不存本机 */
   openDaily: () => Promise<void>
   /** 停手一会儿才问网易云，只要最后打的词的建议；空的就收起 */
@@ -315,8 +321,13 @@ export const createApp = (browser: BrowserCapabilities): App => {
       }
       case 'album':
         return `album:${page.id}:${shown !== null}:${(shown?.albumPage(page.id) ?? null) === null}`
-      case 'artist':
-        return `artist:${page.id}:${shown !== null && shown.artistPage(page.id) === null}`
+      case 'artist': {
+        const opened = shown?.artistPage(page.id) ?? null
+        const content = opened?.status === 'shown'
+          ? opened.content
+          : null
+        return `artist:${page.id}:${page.tab}:${page.order}:${shown !== null}:${opened?.status ?? 'none'}:${content?.songs[page.order] === null}:${content?.intro === null}`
+      }
       case 'daily':
         return `daily:${signedIn}`
       case 'search':
@@ -607,10 +618,24 @@ export const createApp = (browser: BrowserCapabilities): App => {
         if (shown)
           void library.openAlbum(page.id)
         return
-      case 'artist':
-        if (shown && shown.artistPage(page.id) === null)
+      case 'artist': {
+        if (!shown)
+          return
+        const opened = shown.artistPage(page.id)
+        if (opened === null) {
           void library.openArtist(page.id)
+          return
+        }
+        if (opened.status !== 'shown')
+          return
+        // 点歌、播放全部从此用这种排法已经显示的歌；最新、简介第一次要看时才取
+        library.chooseArtistOrder(page.id, page.order)
+        if (opened.content.songs[page.order] === null)
+          void library.openArtistSongs(page.id, page.order)
+        if (page.tab === 'intro' && opened.content.intro === null)
+          void library.openArtistIntro(page.id)
         return
+      }
       case 'daily':
         if (state.session.status === 'signedIn')
           void daily.open()
@@ -717,9 +742,13 @@ export const createApp = (browser: BrowserCapabilities): App => {
           : null
       }
       case 'artist': {
+        // 当前排法已经显示的歌：不补后面还没显示的（规则⑫只管歌单）
         const page = shown.artistPage(source.id)
-        return page?.status === 'shown'
-          ? { songs: page.content.hotSongs, complete: true }
+        const songs = page?.status === 'shown'
+          ? page.content.songs[page.content.order]
+          : null
+        return songs?.status === 'shown'
+          ? { songs: songs.content.songs, complete: true }
           : null
       }
       case 'daily':
@@ -988,7 +1017,10 @@ export const createApp = (browser: BrowserCapabilities): App => {
     },
     openAlbum: library.openAlbum,
     openArtist: library.openArtist,
+    openArtistSongs: library.openArtistSongs,
+    moreArtistSongs: library.moreArtistSongs,
     moreArtistAlbums: library.moreArtistAlbums,
+    openArtistIntro: library.openArtistIntro,
     openPlaylistTags: library.openPlaylistTags,
     prepareCover: cover.prepare,
     uploadCover: cover.upload,

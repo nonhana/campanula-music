@@ -6,8 +6,8 @@ import type { Account } from '#lib/api/account.js'
 import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js'
 import type { DailyResponse } from '#lib/api/discover.js'
 import type { NeteaseFailure } from '#lib/api/errors.js'
-import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
-import { ARTIST_ALBUMS_PER_REQUEST, playlistKindOf } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistAlbumsResponse, ArtistIntroResponse, ArtistResponse, ArtistSongOrder, ArtistSongsResponse, Availability, CollectedAlbum, CollectedArtist, Credit, Playlist, PlaylistCollectRequest, PlaylistInfo, PlaylistPageResponse, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import { ARTIST_ALBUMS_PER_REQUEST, ARTIST_SONGS_PER_REQUEST, playlistKindOf } from '#lib/api/library.js'
 import type { QrResponse } from '#lib/api/login.js'
 import type { DownloadUrlResponse, LyricsResponse, PlaySource, PlayUrlResponse, Quality } from '#lib/api/playback.js'
 import type { SearchKind, SearchPageResponse, SuggestionsResponse } from '#lib/api/search.js'
@@ -504,7 +504,7 @@ const songOf = (song: NeteaseSong, privilege: Privilege | null | undefined): Son
   publishedAt: song.publishTime ?? null,
 })
 
-/** 专辑页、热门歌曲、每日推荐、单曲搜索里每首歌带着自己的权限信息 */
+/** 专辑页、歌手的歌曲、每日推荐、单曲搜索里每首歌带着自己的权限信息 */
 const songWithPrivilegeOf = (song: NeteaseSong & { readonly privilege?: Privilege | null }): Song => songOf(song, song.privilege)
 
 /** 歌曲信息，按 ids 的顺序；网易云没给的不在里面 */
@@ -660,10 +660,25 @@ const artistAlbumOf = (album: { id: number, name?: string | null, picUrl?: strin
   publishedAt: album.publishTime ?? null,
 })
 
-/** 歌手页：头部（在专辑那一页的返回里，整个没给时只剩编号）、热门歌曲和第一页专辑，两个调用一起发 */
+/** 歌手的一页歌曲：order 排法里从第 offset 首起，每页 ARTIST_SONGS_PER_REQUEST 首；网易云没说还有当作没有了 */
+export const fetchArtistSongs = async (artistId: number, order: ArtistSongOrder, offset: number, listener: Listener): Promise<ArtistSongsResponse> => {
+  const { body } = await call('artist_songs', {
+    id: artistId,
+    order,
+    limit: ARTIST_SONGS_PER_REQUEST,
+    offset,
+  }, listener)
+  return {
+    songs: body.songs.map(songWithPrivilegeOf),
+    more: body.more ?? false,
+    total: body.total ?? null,
+  }
+}
+
+/** 歌手页：头部（在专辑那一页的返回里，整个没给时只剩编号）、热门排法的第一页歌曲和第一页专辑，两个调用一起发 */
 export const fetchArtist = async (artistId: number, listener: Listener): Promise<ArtistResponse> => {
-  const [top, albums] = await Promise.all([
-    call('artist_top_song', { id: artistId }, listener),
+  const [songs, albums] = await Promise.all([
+    fetchArtistSongs(artistId, 'hot', 0, listener),
     artistAlbums(artistId, 0, listener),
   ])
   const { artist } = albums.body
@@ -675,7 +690,7 @@ export const fetchArtist = async (artistId: number, listener: Listener): Promise
       songCount: artist?.musicSize ?? null,
       albumCount: artist?.albumSize ?? null,
     },
-    hotSongs: top.body.songs.map(songWithPrivilegeOf),
+    songs,
     albums: albums.body.hotAlbums.map(artistAlbumOf),
     moreAlbums: albums.body.more ?? false,
   }
@@ -686,6 +701,22 @@ export const fetchArtistAlbums = async (artistId: number, offset: number, listen
   return {
     albums: body.hotAlbums.map(artistAlbumOf),
     more: body.more ?? false,
+  }
+}
+
+/** 歌手简介：网易云给空字符串的当作没有；分段的标题可以没有，正文是空的段不要 */
+export const fetchArtistIntro = async (artistId: number, listener: Listener): Promise<ArtistIntroResponse> => {
+  const { body } = await call('artist_desc', { id: artistId }, listener)
+  return {
+    brief: body.briefDesc?.trim() || null,
+    sections: body.introduction.flatMap((section) => {
+      const text = section.txt?.trim()
+      return text
+        ? [
+            { title: section.ti?.trim() || null, text },
+          ]
+        : []
+    }),
   }
 }
 

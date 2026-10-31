@@ -327,7 +327,23 @@ export interface ArtistAlbum {
 /** 歌手页的专辑一次取这么多张。专辑最多的歌手有五千多张（#23 留言），一次全取太大 */
 export const ARTIST_ALBUMS_PER_REQUEST = 100
 
-/** 歌手页的头部、热门歌曲（网易云给 50 首）和第一页专辑（新的在前） */
+/** 歌手页的歌曲一次取这么多首（#83 录制时网易云一次给得了 100 首）；后面还有时“显示更多” */
+export const ARTIST_SONGS_PER_REQUEST = 100
+
+/** 歌手的歌怎么排：热门（网易云的热度）、最新（发行时间，新的在前） */
+export const ARTIST_SONG_ORDERS = ['hot', 'time'] as const
+export type ArtistSongOrder = typeof ARTIST_SONG_ORDERS[number]
+
+/** 歌手的一页歌曲（一种排法里从第 offset 首起） */
+export interface ArtistSongsResponse {
+  songs: Song[]
+  /** 后面还有：用 artistSongs 端点接着取 */
+  more: boolean
+  /** 网易云写的这位歌手的歌曲总数；没给时是 null */
+  total: number | null
+}
+
+/** 歌手页的头部、热门排法的第一页歌曲和第一页专辑（新的在前） */
 export interface ArtistResponse {
   artist: {
     id: number
@@ -337,7 +353,7 @@ export interface ArtistResponse {
     songCount: number | null
     albumCount: number | null
   }
-  hotSongs: Song[]
+  songs: ArtistSongsResponse
   albums: ArtistAlbum[]
   /** 后面还有专辑：用 artistAlbums 端点接着取 */
   moreAlbums: boolean
@@ -347,4 +363,17 @@ export interface ArtistAlbumsResponse {
   albums: ArtistAlbum[]
   /** 后面还有 */
   more: boolean
+}
+
+/** 歌手简介里的一段：标题可以没有 */
+export interface ArtistIntroSection {
+  title: string | null
+  text: string
+}
+
+/** 歌手简介：先是一段简介，下面是分段的介绍（按网易云的先后，正文是空的段不在里面） */
+export interface ArtistIntroResponse {
+  /** 网易云给的是空字符串（或只有空白）时是 null */
+  brief: string | null
+  sections: ArtistIntroSection[]
 }

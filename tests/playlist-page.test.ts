@@ -31,8 +31,8 @@ const BEFORE = await recordedBatch('before')
 /** 没收藏的专辑 THE BOOK for,（#23 录制） */
 const THE_BOOK = 379547126
 const ALBUM = 'library/album-artist/010-album.json.gz'
-/** 收藏了的歌手 YOASOBI（#23 录制） */
-const YOASOBI = { id: 33927412, songs: 'library/album-artist/003-artist_top_song.json.gz', albums: 'library/album-artist/004-artist_album.json.gz' }
+/** 收藏了的歌手 YOASOBI（#23 录的专辑、#83 录的热门第一页歌曲） */
+const YOASOBI = { id: 33927412, songs: 'library/album-artist/012-artist_songs.json.gz', albums: 'library/album-artist/004-artist_album.json.gz' }
 /** 搜“真夜中”的歌单、歌手、专辑（#32 录制）：每类结果是网易云 cloudsearch 的哪个 type */
 const SEARCH = {
   songs: { fixture: 'search/results/001-cloudsearch.json.gz', type: 1 },
@@ -361,7 +361,12 @@ describe('听众正在看 X / 离开了 X', () => {
 
     await world.netease.reply(YOASOBI.songs)
     await world.netease.reply(YOASOBI.albums)
-    app.viewing({ kind: 'artist', id: YOASOBI.id })
+    app.viewing({
+      kind: 'artist',
+      id: YOASOBI.id,
+      tab: 'songs',
+      order: 'hot',
+    })
     await world.settle()
     expect(app.state.library!.artistPage(YOASOBI.id)).toMatchObject({ status: 'shown' })
 

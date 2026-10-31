@@ -32,3 +32,6 @@ export const pageScrollPadding = (): PageScrollPadding => {
     },
   }
 }
+
+/** 页面里吸在顶栏（手机是顶行）下面的那一行有多高（px）：页面自己写在 documentElement 的 --sticky-below-header 上（搜索结果、歌手页的标签行），没有就是 0 */
+export const stickyBelowHeader = (): number => Number.parseFloat(document.documentElement.style.getPropertyValue('--sticky-below-header')) || 0

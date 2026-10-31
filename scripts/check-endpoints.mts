@@ -1,5 +1,5 @@
 // 端点目录检查（#68）：目录里的每条 = 一个路由路径，get/post = 路由导出的 GET/POST；
-// 38 个路由文件 / 40 个处理函数 / 40 个端点定义；搜索四类共用一个路由，但要确认 kind 有 4 个。
+// 40 个路由文件 / 42 个处理函数 / 42 个端点定义；搜索四类共用一个路由，但要确认 kind 有 4 个。
 import { readdir, readFile } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import process from 'node:process'
@@ -57,10 +57,10 @@ const searchRoute = '/api/search/[kind]'
 const searchDefined = catalogSource.includes(`resolve('${searchRoute}'`)
 
 const problems: string[] = []
-if (handlerCount !== 40)
-  problems.push(`处理函数应为 40 个，实际 ${handlerCount} 个`)
-if (catalog.length + (searchDefined ? 1 : 0) !== 40)
-  problems.push(`端点定义应为 40 条（39 条目录 + searchPage），实际 ${catalog.length + (searchDefined ? 1 : 0)} 条`)
+if (handlerCount !== 42)
+  problems.push(`处理函数应为 42 个，实际 ${handlerCount} 个`)
+if (catalog.length + (searchDefined ? 1 : 0) !== 42)
+  problems.push(`端点定义应为 42 条（41 条目录 + searchPage），实际 ${catalog.length + (searchDefined ? 1 : 0)} 条`)
 if (searchKinds.length !== 4 || new Set(searchKinds).size !== 4)
   problems.push(`搜索 kind 应为 4 个，实际 ${JSON.stringify(searchKinds)}`)
 if (!routes.get(searchRoute)?.includes('GET'))

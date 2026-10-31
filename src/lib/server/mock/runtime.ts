@@ -537,7 +537,8 @@ export const invokeModule = async (module: string, query: Record<string, unknown
     case 'playlist_track_all':
     case 'album':
     case 'artist_album':
-    case 'artist_top_song':
+    case 'artist_songs':
+    case 'artist_desc':
     case 'artist_detail':
     case 'cloudsearch':
       return { status: 200, body: await fallback(module, query), cookie: [] }

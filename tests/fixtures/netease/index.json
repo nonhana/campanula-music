@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@3.2.0",
-  "recordings": 337,
+  "recordings": 345,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -45,6 +45,18 @@
       "outcomes": {
         "ok": 5,
         "rejected": 1
+      }
+    },
+    "artist_songs": {
+      "count": 6,
+      "outcomes": {
+        "ok": 6
+      }
+    },
+    "artist_desc": {
+      "count": 2,
+      "outcomes": {
+        "ok": 2
       }
     },
     "artist_detail": {
@@ -546,6 +558,152 @@
       "constructed": false,
       "viewer": "vip-qr",
       "sdk": "hana-music-api@2.7.1",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/012-artist_songs.json.gz",
+      "module": "artist_songs",
+      "queryKey": "{\"id\":33927412,\"limit\":100,\"offset\":0,\"order\":\"hot\"}",
+      "query": {
+        "id": 33927412,
+        "limit": 100,
+        "offset": 0,
+        "order": "hot"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/013-artist_songs.json.gz",
+      "module": "artist_songs",
+      "queryKey": "{\"id\":33927412,\"limit\":100,\"offset\":100,\"order\":\"hot\"}",
+      "query": {
+        "id": 33927412,
+        "limit": 100,
+        "offset": 100,
+        "order": "hot"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/014-artist_songs.json.gz",
+      "module": "artist_songs",
+      "queryKey": "{\"id\":33927412,\"limit\":100,\"offset\":0,\"order\":\"time\"}",
+      "query": {
+        "id": 33927412,
+        "limit": 100,
+        "offset": 0,
+        "order": "time"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/015-artist_songs.json.gz",
+      "module": "artist_songs",
+      "queryKey": "{\"id\":33927412,\"limit\":100,\"offset\":100,\"order\":\"time\"}",
+      "query": {
+        "id": 33927412,
+        "limit": 100,
+        "offset": 100,
+        "order": "time"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/016-artist_desc.json.gz",
+      "module": "artist_desc",
+      "queryKey": "{\"id\":33927412}",
+      "query": {
+        "id": 33927412
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/017-artist_songs.json.gz",
+      "module": "artist_songs",
+      "queryKey": "{\"id\":14786,\"limit\":100,\"offset\":0,\"order\":\"hot\"}",
+      "query": {
+        "id": 14786,
+        "limit": 100,
+        "offset": 0,
+        "order": "hot"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/018-artist_songs.json.gz",
+      "module": "artist_songs",
+      "queryKey": "{\"id\":14786,\"limit\":100,\"offset\":0,\"order\":\"time\"}",
+      "query": {
+        "id": 14786,
+        "limit": 100,
+        "offset": 0,
+        "order": "time"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
+      "note": null
+    },
+    {
+      "path": "library/album-artist/019-artist_desc.json.gz",
+      "module": "artist_desc",
+      "queryKey": "{\"id\":14786}",
+      "query": {
+        "id": 14786
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": false,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@3.2.0",
       "note": null
     },
     {

@@ -1,6 +1,6 @@
 import type { Account } from '#lib/api/account.js'
 import { endpoints } from '#lib/api/endpoints.js'
-import type { AlbumResponse, ArtistAlbum, ArtistResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
+import type { AlbumResponse, ArtistAlbum, ArtistIntroResponse, ArtistResponse, ArtistSongOrder, ArtistSongsResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
 import { canSortPlaylist, nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
 
@@ -86,17 +86,35 @@ export type PageState<T>
     | { status: 'failed', failure: OpenFailure }
     | { status: 'shown', content: T }
 
-type MoreAlbums
+/** 后面还有时“显示更多”的状态：歌手的专辑、一种排法的歌曲 */
+type More
   = | { status: 'notLoaded' }
     | { status: 'loading' }
     | { status: 'failed', failure: OpenFailure }
 
-interface ArtistPage {
+/** 歌手页的标签：页面在看哪一个，App 按它决定要不要取简介 */
+export type ArtistTab = 'songs' | 'albums' | 'intro'
+
+/** 一种排法已经显示的歌 */
+export interface ArtistSongs {
+  songs: readonly Song[]
+  /** 网易云写的总数；没给时是 null */
+  total: number | null
+  /** 取完了是 null */
+  more: More | null
+}
+
+export interface ArtistPage {
   artist: ArtistResponse['artist']
-  hotSongs: readonly Song[]
+  /** 现在用哪种排法：点歌、播放全部（播放来源“歌手”）用它已经显示的歌 */
+  order: ArtistSongOrder
+  /** 两种排法各一份：热门随头部一起取到，最新第一次要用时才取；还没取过是 null */
+  songs: Record<ArtistSongOrder, PageState<ArtistSongs> | null>
   /** 新的在前 */
   albums: readonly ArtistAlbum[]
-  moreAlbums: MoreAlbums | null
+  moreAlbums: More | null
+  /** 第一次切到简介标签才取；还没取过是 null */
+  intro: PageState<ArtistIntroResponse> | null
 }
 
 /** 已经取到的歌，和其余的歌取到哪了 */
@@ -216,9 +234,17 @@ export interface Library {
   open: (playlistId: number) => Promise<void>
   /** 收藏的专辑打开过就存在本机：歌曲数和列表里的一样就直接显示存着的、不拉；不一样就先显示存着的，拉到了换成新的 */
   openAlbum: (albumId: number) => Promise<void>
-  /** 这次登录还没拉过就用前台请求拉头部、热门歌曲和第一页专辑 */
+  /** 这次登录还没拉过就用前台请求拉头部、热门排法的第一页歌曲和第一页专辑 */
   openArtist: (artistId: number) => Promise<void>
+  /** 页面换了排法：点歌、播放全部从此用这一份（已经在放的播放队列不变） */
+  chooseArtistOrder: (artistId: number, order: ArtistSongOrder) => void
+  /** 这种排法还没取过、或者第一页没取成时取第一页 */
+  openArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>
+  /** 这种排法的下一页接在后面；没取成时已经显示的不动 */
+  moreArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>
   moreArtistAlbums: (artistId: number) => Promise<void>
+  /** 还没取过、或者没取成时取 */
+  openArtistIntro: (artistId: number) => Promise<void>
   /** 这次登录还没取到过就用前台请求取 */
   openPlaylistTags: () => Promise<void>
   /** 先改显示着的、立即生效，再提交；成了写进本机副本，没成改回原样并说明原因。歌单已经不在了就改回原样并马上同步。返回网易云说成了没有（App 发成功提示要用） */
@@ -264,6 +290,18 @@ type Pulled = Outcome<void, OpenFailure>
 const chunks = <T>(items: readonly T[], size: number): T[][] => Array.from({
   length: Math.ceil(items.length / size),
 }, (_, index) => items.slice(index * size, (index + 1) * size))
+
+/** 网易云给的一页歌曲接在已经显示的后面；后面还有就留着“显示更多” */
+const artistSongsOf = (page: ArtistSongsResponse, before: readonly Song[] = []): ArtistSongs => ({
+  songs: [
+    ...before,
+    ...page.songs,
+  ],
+  total: page.total,
+  more: page.more
+    ? { status: 'notLoaded' }
+    : null,
+})
 
 /** 本机这份曲目编号跟得上歌单列表：更新时间对得上；网易云没给更新时间时沿用本机有的（#78 作者定） */
 const tracksCurrent = (tracks: PlaylistTracks | undefined, playlist: Playlist): tracks is PlaylistTracks =>
@@ -1353,6 +1391,34 @@ export const createLibrary = (context: LibraryContext): Library => {
       leave()
   })
 
+  /** 改显示着的歌手页：按改的那一刻的样子改（歌曲、专辑、简介的请求可能同时在路上，各改各的那一块）；已经不显示了（退出登录清掉了）就不改 */
+  const changeArtist = (artistId: number, change: (page: ArtistPage) => ArtistPage): void => {
+    const shown = pages.artists.get(artistId)
+    if (shown?.status !== 'shown')
+      return
+    pages.artists.set(artistId, {
+      status: 'shown',
+      content: change(shown.content),
+    })
+    publish()
+  }
+
+  const withSongs = (order: ArtistSongOrder, songs: PageState<ArtistSongs>) => (page: ArtistPage): ArtistPage => ({
+    ...page,
+    songs: { ...page.songs, [order]: songs },
+  })
+
+  /** 改一种排法已经显示的歌（显示更多）；这种排法还没显示就不改 */
+  const changeArtistSongs = (artistId: number, order: ArtistSongOrder, change: (songs: ArtistSongs) => ArtistSongs): void => changeArtist(artistId, (page) => {
+    const songs = page.songs[order]
+    return songs?.status === 'shown'
+      ? withSongs(order, {
+          status: 'shown',
+          content: change(songs.content),
+        })(page)
+      : page
+  })
+
   return {
     async enter(account) {
       const mine = session.current
@@ -1467,16 +1533,24 @@ export const createLibrary = (context: LibraryContext): Library => {
       if (!result)
         return
       if (result.ok) {
-        const { artist, hotSongs, albums, moreAlbums } = result.value
+        const { artist, songs, albums, moreAlbums } = result.value
         pages.artists.set(artistId, {
           status: 'shown',
           content: {
             artist,
-            hotSongs,
+            order: 'hot',
+            songs: {
+              hot: {
+                status: 'shown',
+                content: artistSongsOf(songs),
+              },
+              time: null,
+            },
             albums,
             moreAlbums: moreAlbums
               ? { status: 'notLoaded' }
               : null,
+            intro: null,
           },
         })
       }
@@ -1485,40 +1559,97 @@ export const createLibrary = (context: LibraryContext): Library => {
       }
       publish()
     },
+    chooseArtistOrder(artistId, order) {
+      const shown = pages.artists.get(artistId)
+      if (shown?.status === 'shown' && shown.content.order !== order)
+        changeArtist(artistId, page => ({ ...page, order }))
+    },
+    async openArtistSongs(artistId, order) {
+      const shown = pages.artists.get(artistId)
+      if (shown?.status !== 'shown')
+        return
+      const songs = shown.content.songs[order]
+      if (songs?.status === 'loading' || songs?.status === 'shown')
+        return
+      changeArtist(artistId, withSongs(order, { status: 'loading' }))
+      const result = await session.api.get(endpoints.artistSongs, { id: artistId, order, offset: 0 })
+      if (!result)
+        return
+      changeArtist(artistId, withSongs(order, result.ok
+        ? {
+            status: 'shown',
+            content: artistSongsOf(result.value),
+          }
+        : { status: 'failed', failure: result.failure }))
+    },
+    async moreArtistSongs(artistId, order) {
+      const shown = pages.artists.get(artistId)
+      const songs = shown?.status === 'shown'
+        ? shown.content.songs[order]
+        : null
+      if (songs?.status !== 'shown' || !songs.content.more || songs.content.more.status === 'loading')
+        return
+      changeArtistSongs(artistId, order, before => ({
+        ...before,
+        more: { status: 'loading' },
+      }))
+      const result = await session.api.get(endpoints.artistSongs, { id: artistId, order, offset: songs.content.songs.length })
+      if (!result)
+        return
+      changeArtistSongs(artistId, order, before => result.ok
+        ? artistSongsOf(result.value, before.songs)
+        : {
+            ...before,
+            more: { status: 'failed', failure: result.failure },
+          })
+    },
     async moreArtistAlbums(artistId) {
       const shown = pages.artists.get(artistId)
       if (shown?.status !== 'shown' || !shown.content.moreAlbums || shown.content.moreAlbums.status === 'loading')
         return
-      const page = shown.content
-      const show = (content: ArtistPage) => {
-        pages.artists.set(artistId, { status: 'shown', content })
-        publish()
-      }
-      show({
+      changeArtist(artistId, page => ({
         ...page,
         moreAlbums: { status: 'loading' },
-      })
-      const result = await session.api.get(endpoints.artistAlbums, { id: artistId, offset: page.albums.length })
+      }))
+      const result = await session.api.get(endpoints.artistAlbums, { id: artistId, offset: shown.content.albums.length })
       if (!result)
         return
-      if (result.ok) {
-        show({
-          ...page,
-          albums: [
-            ...page.albums,
-            ...result.value.albums,
-          ],
-          moreAlbums: result.value.more
-            ? { status: 'notLoaded' }
-            : null,
-        })
-      }
-      else {
-        show({
-          ...page,
-          moreAlbums: { status: 'failed', failure: result.failure },
-        })
-      }
+      changeArtist(artistId, page => result.ok
+        ? {
+            ...page,
+            albums: [
+              ...page.albums,
+              ...result.value.albums,
+            ],
+            moreAlbums: result.value.more
+              ? { status: 'notLoaded' }
+              : null,
+          }
+        : {
+            ...page,
+            moreAlbums: { status: 'failed', failure: result.failure },
+          })
+    },
+    async openArtistIntro(artistId) {
+      const shown = pages.artists.get(artistId)
+      if (shown?.status !== 'shown')
+        return
+      const { intro } = shown.content
+      if (intro?.status === 'loading' || intro?.status === 'shown')
+        return
+      changeArtist(artistId, page => ({
+        ...page,
+        intro: { status: 'loading' },
+      }))
+      const result = await session.api.get(endpoints.artistIntro, { id: artistId })
+      if (!result)
+        return
+      changeArtist(artistId, page => ({
+        ...page,
+        intro: result.ok
+          ? { status: 'shown', content: result.value }
+          : { status: 'failed', failure: result.failure },
+      }))
     },
     async openPlaylistTags() {
       const shown = pages.tags

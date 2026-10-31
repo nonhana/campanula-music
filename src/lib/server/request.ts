@@ -2,8 +2,8 @@ import { error } from '@sveltejs/kit'
 
 import type { SetCoverRequest } from '#lib/api/cover.js'
 import type { PostEndpoint } from '#lib/api/endpoint.js'
-import type { CollectRequest, CreatePlaylistRequest, DescribePlaylistRequest, HeartRequest, PlaylistCollectRequest, RenamePlaylistRequest, TagPlaylistRequest } from '#lib/api/library.js'
-import { nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
+import type { ArtistSongOrder, CollectRequest, CreatePlaylistRequest, DescribePlaylistRequest, HeartRequest, PlaylistCollectRequest, RenamePlaylistRequest, TagPlaylistRequest } from '#lib/api/library.js'
+import { ARTIST_SONG_ORDERS, nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_NAME_WIDTH, PLAYLIST_TAGS_MAX } from '#lib/api/library.js'
 import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js'
 import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js'
 import type { SearchKind } from '#lib/api/search.js'
@@ -85,6 +85,13 @@ export const readSearchKind = (value: string): SearchKind => {
   if (!kind)
     error(400, 'kind 的格式不对')
   return kind
+}
+
+export const readArtistSongOrder = (value: string | null): ArtistSongOrder => {
+  const order = ARTIST_SONG_ORDERS.find(each => each === value)
+  if (!order)
+    error(400, 'order 的格式不对')
+  return order
 }
 
 /** 读请求里的播放来源：每日推荐、已下载没有编号，一次搜索带着搜的词，其余要带编号 */
