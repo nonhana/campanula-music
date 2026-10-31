@@ -4,8 +4,10 @@
   （桌面是实心胶囊，手机是文字按钮）；排序时不写使用说明，把手自己说话。
   手机保持横版列表、按每行右边的把手拖；桌面保持原来的封面网格，每张自建歌单封面右上角一个小白圆钮，按住它拖，
   卡片浮起、原位置留薄荷封面空位、其余卡片让位。收藏的歌单在下面，没有把手、不参与排序。
-  两块共用 TileGrid 的加载 / 失败 / 空 / 条目状态机；歌单卡本身只有 PlaylistTile 一种画法（#75）。
+  两块共用 TileGrid 的加载 / 失败 / 空状态；歌单卡本身只有 PlaylistTile 一种画法（#75）。桌面的自建格子平时和排序时是同一张网格：
+  排序只让把手淡入，顺序变了（拖动、保存失败退回，包括已经点了“完成”）格子都平移到新位置。
   骨架换成格子时骨架淡出、前几格依次飘入（DESIGN.md Motion）；手机排序时整个格子先淡出再淡入，不让一个个格子各自挪位。
+  松手后浮起的那一张滑回空位，同时收起浮起阴影（桌面连白底一起收），落定时和原位那一张一样，同一帧换回、不淡入。
   heading：歌单页 / 首页歌单区块的区块标题，两块各有自己的分节标题。
 -->
 <script lang='ts'>
@@ -21,7 +23,7 @@
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { failureText } from '../shared/failure'
-  import { fade, fadeThrough, moveMs, reveal } from '../shared/motion'
+  import { fade, fadeThrough, moveMs, reveal, stagger } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
   import { formatCount } from '../shared/text'
   import StateBlock from '../ui/StateBlock.svelte'
@@ -218,17 +220,27 @@
           {/if}
         </div>
       {/key}
-    {:else if sorting}
+    {:else if own.length === 0}
+      <TileGrid kind='playlist' layout='grid' {phone} items={own} label='自建歌单' loadingLabel='正在加载自建歌单' empty={{ icon: ListMusic, title: EMPTY.own }}>
+        {#snippet tile(playlist: Playlist)}{@render ownTile(playlist)}{/snippet}
+      </TileGrid>
+    {:else}
       <ul
         class={['grid', desktopGrid.list]}
-        aria-label='自建歌单，正在排序'
-        data-playlist-sort
+        aria-label={sorting
+          ? '自建歌单，正在排序'
+          : '自建歌单'}
+        data-reveal-group
+        data-playlist-sort={sorting
+          ? ''
+          : undefined}
       >
-        {#each sorted as playlist (playlist.id)}
-          <li data-playlist-id={playlist.id} class='relative min-w-0' animate:flip={{
+        {#each sorted as playlist, i (playlist.id)}
+          <li data-playlist-id={playlist.id} class='relative min-w-0' in:stagger={{ order: i }} animate:flip={{
             duration: moveMs(DURATIONS.state),
           }}>
-            <div class={['transition-opacity', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
+            <!-- 不带淡入：影子落定时和这一张一模一样才拿掉，这里同一帧露出来；淡入的话中间会空一下 -->
+            <div class={[sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}>
               <PlaylistTile
                 id={playlist.id}
                 name={playlistName(playlist)}
@@ -236,25 +248,25 @@
                 trackCount={playlist.trackCount}
                 creator={null}
                 locked={playlist.private}
-                onkeydown={onListKeydown}
+                onkeydown={sorting
+                  ? onListKeydown
+                  : undefined}
               />
             </div>
             {#if sort.lifted(playlist.id)}
               <div class='pointer-events-none absolute inset-x-0 top-0 aspect-square rounded-lg bg-primary-100'></div>
             {/if}
-            <span
-              class={['absolute right-2 top-2 z-10', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}
-              in:fade={{ duration: DURATIONS.feedback }}
-            >
-              <DragGrip label={playlistName(playlist)} size='desktop' overlay attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
-            </span>
+            {#if sorting}
+              <span
+                class={['absolute right-2 top-2 z-10', sort.lifted(playlist.id) && 'pointer-events-none opacity-0']}
+                in:fade={{ duration: DURATIONS.feedback }}
+              >
+                <DragGrip label={playlistName(playlist)} size='desktop' overlay attach={sort.handle(playlist.id)} onkeydown={onListKeydown} />
+              </span>
+            {/if}
           </li>
         {/each}
       </ul>
-    {:else}
-      <TileGrid kind='playlist' layout='grid' {phone} items={own} label='自建歌单' loadingLabel='正在加载自建歌单' empty={{ icon: ListMusic, title: EMPTY.own }}>
-        {#snippet tile(playlist: Playlist)}{@render ownTile(playlist)}{/snippet}
-      </TileGrid>
     {/if}
   </section>
 
@@ -291,7 +303,12 @@
     aria-hidden='true'
     inert={true}
   >
-    <div class='h-14 flex items-center gap-3 rounded-xl bg-white pl-3 pr-2 shadow-float'>
+    <div class={[
+      'h-14 flex items-center gap-3 rounded-xl bg-white pl-3 pr-2 transition-shadow duration-state',
+      sort.settling
+        ? 'shadow-ambient'
+        : 'shadow-float',
+    ]}>
       <PlaylistTile
         id={sort.grabbed.id}
         name={playlistName(sort.grabbed)}
@@ -312,7 +329,7 @@
     aria-hidden='true'
     inert={true}
   >
-    <div class='relative rounded-xl bg-white p-2 shadow-float'>
+    <div class={['relative rounded-xl p-2 transition-[background-color,box-shadow] duration-state', !sort.settling && 'bg-white shadow-float']}>
       <PlaylistTile
         id={sort.grabbed.id}
         name={playlistName(sort.grabbed)}
