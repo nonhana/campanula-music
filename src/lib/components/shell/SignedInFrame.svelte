@@ -1,15 +1,15 @@
 <!--
-  登录后的骨架：桌面是顶栏、图标侧栏（设置在最下面）和底部播放条；手机是 logo 行，二级页面换成返回栏（设置页一直写“设置”，其余平时只有 ←，页头 h1 滚下去后淡入页名，见 BackTitle）。
+  登录后的骨架：桌面是顶栏（返回、前进按页走，见 page-history.ts）、图标侧栏（设置在最下面）和底部播放条；手机是 logo 行，二级页面换成返回栏（设置页一直写“设置”，其余平时只有 ←，页头 h1 滚下去后淡入页名，见 BackTitle）。
   搜索页换成返回加搜索框；曲库（我喜欢、歌单、专辑、歌手）下面有文字标签，搜索结果下面是结果标签。播放条在播放队列里有歌时才有，从它打开播放页（点开或往上拖；盖住整个骨架，开着时骨架不能操作）。
   浮层从下往上：提示条（播放提示和最多 3 条操作提示，见 notice/NoticeStack.svelte）< “更多”菜单、加入歌单、歌单页的 ••• < 歌单编辑、退出确认 < 换封面的裁剪页；开着时后面的都不能操作。
 -->
 <script lang='ts'>
-  import { afterNavigate, goto } from '$app/navigation'
+  import { afterNavigate } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import type { RouteId } from '$app/types'
   import type { LucideIcon } from '@lucide/svelte'
-  import { ArrowLeft, Calendar, CalendarDays, CircleArrowDown, House, Menu, Search, Settings } from '@lucide/svelte'
+  import { ArrowLeft, Calendar, CalendarDays, ChevronLeft, ChevronRight, CircleArrowDown, House, Menu, Search, Settings } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
 
   import type { Account } from '#lib/api/account.js'
@@ -35,6 +35,7 @@
   import AccountMenu from './AccountMenu.svelte'
   import BackTitle from './BackTitle.svelte'
   import DesktopShell from './DesktopShell.svelte'
+  import { backPage, forwardPage, pageHistory } from './page-history'
   import { pageTransitions } from './page-transition'
   import PhoneShell from './PhoneShell.svelte'
 
@@ -68,25 +69,28 @@
 
   let railExpanded = $state(false)
 
-  // 从 App 里别的页面进来的，返回就退回去；直接打开二级页面的，返回到曲库
-  let cameFromApp = $state(false)
-  afterNavigate(({ from, to, shallow, type }) => {
+  afterNavigate(({ shallow, type }) => {
     // 打开播放页、歌曲菜单是浅路由（goto 的 shallow），没有换页
     if (shallow && type === 'goto')
       return
-    // 同一页只换了地址参数（搜索、歌手页换标签，替换当前这条记录）不算从别处进来：直接打开再换标签，返回仍回曲库
-    if (from?.url.pathname !== to?.url.pathname)
-      cameFromApp = from !== null
     resetSearchBox(view.app)
   })
   // 骨架在打开 App 问完账号后才挂上，那时第一次换页已经过去了：直接打开（刷新）搜索结果页时，搜索框里也要是这一页搜的词
   resetSearchBox(view.app)
-  const back = () => {
-    if (cameFromApp)
-      history.back()
-    else
-      void goto(resolve('/'), { replace: true })
-  }
+  /** 顶栏的返回、前进只写浏览器自带的快捷键，不另外接管：和浏览器按钮、鼠标侧键一样一条条走 */
+  const keys = /Mac|iPhone|iPad/.test(navigator.platform)
+    ? {
+      back: '⌘ [',
+      forward: '⌘ ]',
+      backAria: 'Meta+[',
+      forwardAria: 'Meta+]',
+    }
+    : {
+      back: 'Alt ←',
+      forward: 'Alt →',
+      backAria: 'Alt+ArrowLeft',
+      forwardAria: 'Alt+ArrowRight',
+    }
 
   /** 侧栏的一项：当前项是薄荷玻璃底；收起时只有图标，名字给读屏和悬停提示 */
   const railItem = (id: RouteId, label: string, current = route === id) => ({
@@ -148,6 +152,10 @@
       {#snippet header()}
         <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
         <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
+        <div class='flex'>
+          <IconButton icon={ChevronLeft} label='返回' title='返回（{keys.back}）' aria-keyshortcuts={keys.backAria} disabled={route === '/' && !pageHistory.canBack} onclick={backPage} />
+          <IconButton icon={ChevronRight} label='前进' title='前进（{keys.forward}）' aria-keyshortcuts={keys.forwardAria} disabled={!pageHistory.canForward} onclick={forwardPage} />
+        </div>
         <DesktopSearchBox />
         <AccountMenu {account} />
       {/snippet}
@@ -175,9 +183,9 @@
         {#if multiSelect.mode}
           <PhoneSelectionTopBar />
         {:else if searching}
-          <PhoneSearchBar onback={back} />
+          <PhoneSearchBar onback={backPage} />
         {:else if detailPage || settingsPage}
-          <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={back} />
+          <IconButton icon={ArrowLeft} label='返回' class='-ml-3' onclick={backPage} />
           {#if settingsPage}
             <h1 class='min-w-0 flex-1 truncate text-title-sm text-neutral-900 font-500'>设置</h1>
           {:else}
