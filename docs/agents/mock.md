@@ -17,7 +17,7 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 
 ## 生产构建检查
 
-`pnpm build` 后跑 `pnpm check:mock-isolation`：产物里不能出现 mock、录制数据、mock 路由或开发设计页；CI 和 pre-push 都会拦截这些回归。命令名保留，检查范围包含所有仅供开发的代码。
+`pnpm build` 后跑 `pnpm check:mock-isolation`：产物里不能出现 mock、录制数据、mock 路由或开发设计页；CI 会拦截这些回归（Vercel 的 Deployment Checks 要求 CI 通过才上线）。命令名保留，检查范围包含所有仅供开发的代码。
 
 死代码检查按需跑 `pnpm dlx knip`；配置和真实入口的误报原因写在根目录 `knip.json`，不装进项目依赖，也不进钩子。
 
