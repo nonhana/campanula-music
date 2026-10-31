@@ -1,5 +1,6 @@
 <!--
-  列表后面还有时的“显示更多”（DESIGN.md Overlays · 加载更多）：搜索结果的每一类和歌手页的专辑共用。
+  列表后面还有时的“显示更多”（DESIGN.md Overlays · 加载更多）：搜索结果的每一类和歌手页的歌曲、专辑共用。
+  一律居中，放在内容下面另起一行（白色面板、网格外面），和上面的内容居中对齐。
   进行中不换字、再按不重复取（DESIGN.md Copy）；没取成时一句“没能 + 动作：原因”，按钮变成“重试”，取完按钮淡出。
 -->
 <script lang='ts'>
@@ -30,7 +31,7 @@
 </script>
 
 {#if more}
-  <div class={['flex flex-wrap items-center gap-3', klass]} out:fade>
+  <div class={['flex flex-wrap items-center justify-center gap-3', klass]} out:fade>
     {#if more.status === 'failed'}
       <p class='min-w-0 flex items-center gap-2 text-caption text-neutral-700' role='alert' in:fade>
         <CircleAlert size={16} class='flex-none text-error-700' aria-hidden='true' />
