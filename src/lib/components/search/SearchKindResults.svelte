@@ -1,5 +1,5 @@
 <!--
-  结果页的一个标签（单曲、歌单、歌手、专辑，视觉原型 SearchPanel、DesktopSearchResults）：取到的全部，后面还有时“显示更多”。桌面放在白色面板里（带序号的桌面歌曲行、64px 的歌单行、圆头像网格、封面网格），手机放在晨光底上（Auxio 式歌曲行、歌单的行、三列歌手、两列专辑）。
+  结果页的一个标签（单曲、歌单、歌手、专辑，视觉原型 SearchPanel、DesktopSearchResults）：取到的全部，后面还有时“显示更多”（和歌手页一样，在白色面板外面另起一行、和面板居中对齐）。桌面放在白色面板里（带序号的桌面歌曲行、64px 的歌单行、圆头像网格、封面网格），手机放在晨光底上（Auxio 式歌曲行、歌单的行、三列歌手、两列专辑）。
   歌手和专辑的骨架、失败、空和格宽交给 TileGrid（#75）；第一页还在拉时是形状一致的骨架，骨架换成内容时依次飘入；没拉成时说明原因、能重试；一个都没有时只有“没有相关的…”的标题。
 -->
 <script lang='ts'>
@@ -125,9 +125,6 @@
       {appendedAt}
       {select}
     />
-    {#if songs && songs.length > 0}
-      <ShowMore {more} onmore={showMore} class='justify-center px-4 pb-2 pt-4' />
-    {/if}
   {:else if kind === 'playlists'}
     {#if list.status === 'failed' && failed}
       <div in:reveal><StateBlock kind='error' title={failed.title} body={failed.body} action={{
@@ -155,10 +152,7 @@
     {:else if playlists.length === 0}
       <div in:reveal><StateBlock kind='empty' icon={SearchX} title={`没有相关的${words.label}`} /></div>
     {:else}
-      <div in:reveal>
-        <PlaylistResults playlists={playlists} {phone} {appendedAt} />
-        <ShowMore {more} onmore={showMore} class='justify-center px-4 pb-2 pt-4' />
-      </div>
+      <div in:reveal><PlaylistResults playlists={playlists} {phone} {appendedAt} /></div>
     {/if}
   {:else if kind === 'artists'}
     <TileGrid kind='artist' layout='grid' {phone} inset={!phone} items={artists} label='歌手' loadingLabel={`正在搜索${words.label}`} failure={gridFailure} empty={{ icon: SearchX, title: `没有相关的${words.label}` }} staggerFrom={appendedAt}>
@@ -166,17 +160,14 @@
         <ArtistTile id={artist.id} name={artist.name} avatarUrl={artist.avatarUrl} detail={formatSongCount(artist.songCount) ?? undefined} collectable />
       {/snippet}
     </TileGrid>
-    {#if artists && artists.length > 0}
-      <ShowMore {more} onmore={showMore} class='justify-center px-4 pb-2 pt-4' />
-    {/if}
   {:else}
     <TileGrid kind='album' layout='grid' {phone} inset={!phone} items={albums} label='专辑' loadingLabel={`正在搜索${words.label}`} failure={gridFailure} empty={{ icon: SearchX, title: `没有相关的${words.label}` }} staggerFrom={appendedAt}>
       {#snippet tile(album: SearchedItems['albums'])}
         <AlbumTile id={album.id} name={album.name} coverUrl={album.coverUrl} detail={creditLine(album.artists)} year={yearOf(album.publishedAt)} {phone} collectable />
       {/snippet}
     </TileGrid>
-    {#if albums && albums.length > 0}
-      <ShowMore {more} onmore={showMore} class='justify-center px-4 pb-2 pt-4' />
-    {/if}
   {/if}
 </div>
+{#if shown && shown.items.length > 0}
+  <ShowMore {more} onmore={showMore} class={phone ? 'px-4 pt-5' : 'pt-5'} />
+{/if}

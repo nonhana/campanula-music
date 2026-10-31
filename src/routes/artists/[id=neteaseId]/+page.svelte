@@ -174,7 +174,7 @@
     : 'pb-6 pt-5')
   const introCard = $derived([
     'rounded-xl bg-white shadow-ambient',
-    phone ? 'p-4' : 'max-w-[768px] p-6',
+    phone ? 'p-4' : 'mx-auto max-w-[768px] p-6',
   ])
 
   let albumList = $state<HTMLElement>()
@@ -297,8 +297,9 @@
           <SongList list={songList} source={{ kind: 'artist', id }} loadingLabel='正在加载歌曲' phone count={shownSongs?.total ?? null} {select} bind:host={songsHost}>
             {#snippet countExtra()}{@render orderSwitch()}{/snippet}
           </SongList>
-          <ShowMore more={shownSongs?.more ?? null} onmore={() => void showMoreSongs()} failed='没能加载更多歌曲' class='justify-center px-4 pt-5' />
+          <ShowMore more={shownSongs?.more ?? null} onmore={() => void showMoreSongs()} failed='没能加载更多歌曲' class='px-4 pt-5' />
         {:else}
+          <!-- “显示更多”在白色面板外面另起一行，和面板居中对齐（作者 2026-10-31 定） -->
           <div class='pb-6 pt-5'>
             <SongList list={songList} source={{ kind: 'artist', id }} loadingLabel='正在加载歌曲' {select} bind:host={songsHost} />
             <ShowMore more={shownSongs?.more ?? null} onmore={() => void showMoreSongs()} failed='没能加载更多歌曲' class='pt-5' />
@@ -316,7 +317,7 @@
             </TileGrid>
           </div>
           <ShowMore more={content?.moreAlbums ?? null} onmore={() => void showMoreAlbums()} failed='没能加载更多专辑' class={phone
-            ? 'justify-center px-4 pt-5'
+            ? 'px-4 pt-5'
             : 'pt-5'} />
         </div>
       {:else}
