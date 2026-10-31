@@ -11,6 +11,7 @@
 
   import AlbumTile from '../library/AlbumTile.svelte'
   import ArtistTile from '../library/ArtistTile.svelte'
+  import { selectionActions } from '../library/selection-actions.svelte'
   import TileGrid from '../library/TileGrid.svelte'
   import { getAppView } from '../shared/app-context.svelte'
   import { fadeAway, reveal } from '../shared/motion'
@@ -84,6 +85,14 @@
   })
 
   let body = $state<HTMLElement>()
+  const actions = selectionActions()
+  /** 单曲这一标签能做的事（#82）：加入歌单、下载；搜出来的歌来源记成单独下载（规则⑦） */
+  const select = $derived({
+    actions: [
+      actions.addToPlaylist(),
+      actions.download(() => ({ kind: 'single' })),
+    ],
+  })
   /** 上一次“显示更多”之前已经有几项：后加进来的从第几项开始依次飘入 */
   let appendedAt = $state(0)
   const showMore = async () => {
@@ -114,6 +123,7 @@
       virtual={false}
       label='单曲'
       {appendedAt}
+      {select}
     />
     {#if songs && songs.length > 0}
       <ShowMore {more} onmore={showMore} class='justify-center px-4 pb-2 pt-4' />

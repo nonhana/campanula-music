@@ -12,7 +12,7 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import type { LucideIcon } from '@lucide/svelte'
-  import { CircleArrowDown, Ellipsis, ListChecks, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
+  import { CircleArrowDown, Ellipsis, ListMusic, ListPlus, Lock, SearchX } from '@lucide/svelte'
 
   import type { Playlist, PlaylistUnavailable } from '#lib/api/library.js'
   import { playlistName } from '#lib/api/library.js'
@@ -45,7 +45,7 @@
 
   const { params }: PageProps = $props()
   const view = getAppView()
-  const { addSongsDialog, downloadPicker, multiSelect, playlistMenu, playerLayer } = getOverlays()
+  const { addSongsDialog, downloadPicker, playlistMenu, playerLayer } = getOverlays()
   const library = $derived(view.state.library)
   const id = $derived(params.id)
   const page = $derived(library?.playlistPage(id) ?? null)
@@ -56,9 +56,6 @@
   const phone = $derived(!desktopLayout.current)
 
   let query = $state('')
-  /** 桌面“多选 · 排序”：进入多选后被工具条换掉，退出时靠它重新找到并接回焦点（#66） */
-  let desktopEntry = $state<HTMLElement>()
-  const desktopEntryFocus = () => desktopEntry?.querySelector<HTMLElement>('button') ?? null
   scrollSnapshot('/playlists/[id=neteaseId]', () => query, (value) => {
     query = value
   })
@@ -78,12 +75,8 @@
   /** 同步完了是实际有的歌、还在同步时是一共几首；列表还没出来时不写。和列表对得上（DESIGN.md Do's） */
   const listedCount = $derived(page?.count?.total ?? null)
   const own = $derived(page?.can.edit ?? false)
-  /** 能拖动排序的列表（自建歌单、我喜欢的音乐）：桌面的入口写“多选 · 排序”（#36） */
-  const sortableList = $derived(page?.can.sort ?? false)
-  /** 桌面的多选入口：手机在数量行，桌面放在操作行的图标簇里 */
-  const canMulti = $derived(desktopLayout.current && shown?.kind === 'songs' && shown.songs.length > 0)
 
-  /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上。紧凑时它同时收着添加 / 多选 */
+  /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上。紧凑时它收着添加（多选在列表的表头里） */
   const openMenu = (event: MouseEvent, compact = false) => {
     const button = event.currentTarget as HTMLElement
     if (playlistMenu.request?.from === button)
@@ -230,66 +223,20 @@
   {#if page?.can.collect}
     <CollectButton target={{ kind: 'playlist', id }} {name} look={compact ? 'icon' : 'pill'} />
   {/if}
-  {#if own || canMulti}
-    <!-- 管理类操作收进一组安静的工具图标：带字胶囊只留给播放、下载、收藏 -->
+  {#if own}
+    <!-- 管理类操作收进一组安静的工具图标：带字胶囊只留给播放、下载、收藏。多选在歌曲列表的表头里（#82），紧凑时也不收进这里 -->
     <span class='flex items-center gap-1 md:ml-1'>
-      {#if own && !compact}
+      {#if !compact}
         <IconButton icon={ListPlus} label='添加歌曲' title='添加歌曲' data-add-songs-entry onclick={openAddSongs} />
       {/if}
-      {#if canMulti && (!compact || !own)}
-        <span class='contents' bind:this={desktopEntry}>
-          <IconButton
-            icon={ListChecks}
-            label={multiSelect.mode
-              ? '退出多选'
-              : sortableList
-              ? '多选和排序'
-              : '多选'}
-            title={multiSelect.mode
-              ? '退出多选'
-              : sortableList
-              ? '多选和排序'
-              : '多选'}
-            aria-pressed={multiSelect.mode}
-            class={multiSelect.mode ? 'bg-primary-100 text-primary-950' : undefined}
-            onclick={(event: MouseEvent) => multiSelect.mode
-              ? multiSelect.leave()
-              : multiSelect.enter({
-                from: event.currentTarget as HTMLElement,
-                focusFirst: true,
-                focusEntry: desktopEntryFocus,
-              })}
-          />
-        </span>
-      {/if}
-      {#if own}
-        <IconButton
-          icon={multiSelect.mode && compact
-            ? ListChecks
-            : Ellipsis}
-          label={multiSelect.mode && compact
-            ? '退出多选'
-            : `歌单操作：${name}`}
-          title={multiSelect.mode && compact
-            ? '退出多选'
-            : '歌单操作'}
-          aria-pressed={multiSelect.mode && compact
-            ? true
-            : undefined}
-          aria-haspopup={multiSelect.mode && compact
-            ? undefined
-            : 'menu'}
-          aria-expanded={multiSelect.mode && compact
-            ? undefined
-            : playlistMenu.request?.playlistId === id}
-          class={multiSelect.mode && compact
-            ? 'bg-primary-100 text-primary-950'
-            : undefined}
-          onclick={multiSelect.mode && compact
-            ? () => multiSelect.leave()
-            : (event: MouseEvent) => openMenu(event, compact)}
-        />
-      {/if}
+      <IconButton
+        icon={Ellipsis}
+        label={`歌单操作：${name}`}
+        title='歌单操作'
+        aria-haspopup='menu'
+        aria-expanded={playlistMenu.request?.playlistId === id}
+        onclick={(event: MouseEvent) => openMenu(event, compact)}
+      />
     </span>
   {/if}
 {/snippet}
@@ -307,7 +254,7 @@
   </DetailHeader>
   <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
   {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} {phone} />{/key}</div>{/if}
-  <div class={phone ? '' : 'mt-6'}><PlaylistSongs {library} playlistId={id} bind:query entryFocus={desktopEntryFocus} {phone} /></div>
+  <div class={phone ? '' : 'mt-6'}><PlaylistSongs {library} playlistId={id} bind:query {phone} /></div>
 {/snippet}
 
 {#snippet sideGroup(items: readonly Playlist[], from: number, title: string | null)}

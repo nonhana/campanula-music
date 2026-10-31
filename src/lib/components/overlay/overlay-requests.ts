@@ -29,7 +29,7 @@ export interface PlaylistMenuRequest extends MenuRequest {
   readonly compact: boolean
 }
 
-/** 加入歌单的选择器（#73）：song 是歌曲菜单转交的（songs 只有一首），multi 是多选工具条打开的（勾选的几首）；currentPlaylistId 是打开时所在的歌单 */
+/** 加入歌单的选择器（#73）：song 是歌曲菜单转交的（songs 只有一首），multi 是多选工具条打开的（勾选的几首）；currentPlaylistId 是打开时所在的歌单，专辑、歌手、每日推荐、搜索、已下载里没有（null） */
 export type AddToPlaylistRequest
   = | (MenuRequest & {
     readonly mode: 'song'
@@ -40,7 +40,7 @@ export type AddToPlaylistRequest
   | (MenuRequest & {
     readonly mode: 'multi'
     readonly songs: readonly Song[]
-    readonly currentPlaylistId: number
+    readonly currentPlaylistId: number | null
   })
 
 export type EditorRequest

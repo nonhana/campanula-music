@@ -173,12 +173,7 @@ fallback: '[data-queue-entry]',
     focusReturn: () => multiSelect.returnTarget(),
     dismissed: () => multiSelect.clear(),
   })
-  multiSelect = new MultiSelect({
-selection,
-playlistPicker,
-exportDialog,
-deleteDownloads: deleteDownloadsConfirm,
-}, view.app)
+  multiSelect = new MultiSelect(selection, view.app)
   // 滚动条从这里知道“正在多选”，让开右边的触屏把手（#66）
   setSelectionMode(() => multiSelect.mode)
   const playerDrawer = createDrawer(() => window.innerHeight)

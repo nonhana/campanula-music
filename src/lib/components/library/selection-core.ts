@@ -1,8 +1,9 @@
-import type { Playlist, Song } from '#lib/api/library.js'
-import { canSortPlaylist } from '#lib/api/library.js'
+import type { Song } from '#lib/api/library.js'
+import type { PlaySource } from '#lib/api/playback.js'
 
-// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见、能做什么按列表种类给出（歌单的种类，或已下载页，#79）。
-// 不碰页面、不碰 Svelte；多选模块只把列表源和 App 接上来，三个工具条只读结果、调用动作。
+// 多选规则的纯核心（#66）：勾选、Shift 连选、全选可见，以及列表的标识（换了列表就退出）。
+// 能做什么由调用方从动作目录里挑（#82），这里不再按列表种类给一张表。
+// 不碰页面、不碰 Svelte；多选模块只把列表源和 App 接上来，两个工具条只读结果、调用动作。
 
 export interface Checked {
   readonly ids: ReadonlySet<number>
@@ -15,28 +16,17 @@ export const NONE: Checked = {
   anchor: null,
 }
 
-/** 在哪种列表里多选：哪一种歌单，或已下载页 */
-export type SelectionKind = Playlist['kind'] | 'downloads'
-
-/** 对勾选的歌能做什么：加入歌单是歌单里都有；下载是歌单、专辑和多选里都有；移除只有自建；排序是自建和我喜欢的音乐；导出、删除只在已下载页（#79） */
-export interface SelectionCapabilities {
-  readonly add: boolean
-  readonly download: boolean
-  readonly remove: boolean
-  readonly sort: boolean
-  readonly export: boolean
-  readonly delete: boolean
+/** 列表的标识：歌单、专辑、歌手按编号，搜索按词，每日推荐和已下载只有一张。换了它（编号、搜索词）就退出多选 */
+export const selectionKeyOf = (source: PlaySource): string => {
+  switch (source.kind) {
+    case 'playlist': return `playlist:${source.id}`
+    case 'album': return `album:${source.id}`
+    case 'artist': return `artist:${source.id}`
+    case 'search': return `search:${source.keyword}`
+    case 'daily': return 'daily'
+    case 'downloads': return 'downloads'
+  }
 }
-
-/** exportable：浏览器能选文件夹，不能时没有导出（ADR-0014） */
-export const capabilitiesOf = (kind: SelectionKind | null, exportable: boolean): SelectionCapabilities => ({
-  add: kind !== 'downloads',
-  download: kind !== null && kind !== 'downloads',
-  remove: kind === 'own',
-  sort: kind !== null && kind !== 'downloads' && canSortPlaylist(kind),
-  export: kind === 'downloads' && exportable,
-  delete: kind === 'downloads',
-})
 
 /** 点一下：勾上或取消，锚点放在这一首（下次 Shift 连选从这里起） */
 export const toggle = (state: Checked, id: number): Checked => {

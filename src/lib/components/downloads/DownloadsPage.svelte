@@ -1,19 +1,18 @@
 <!--
   “已下载”页（#38，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前；登录与否都能进。
-  头部交给 DetailHeader（#75：拼贴图、标题、首数、登录提示、播放全部、多选都在模块里）；列表本身在 songs/SongList；桌面搜索在页头动作行的右端，手机通栏放在页头下方，几千首排队时也不会沉到最下面。
+  头部交给 DetailHeader（#75：拼贴图、标题、首数、登录提示、播放全部都在模块里）；列表本身在 songs/SongList；桌面搜索在页头动作行的右端，手机通栏放在页头下方，几千首排队时也不会沉到最下面。
   头部下面是 DownloadsTasks（#39）：“正在下载”的排队、进度、失败和重试，空间不够时的整队暂停和“继续下载”。
   点一首就用整个已下载替换播放队列，播放来源是“已下载”；行的“更多”菜单里有导出、删除下载。搜索词和滚动位置随浏览历史恢复。
-  多选（#79）只有导出和删除，登录与否都能用：入口桌面在头部（`ListChecks` 图标，和歌单页的管理类操作同一档），手机在首数那一行，也能 ⌘/Ctrl/Shift 点行、长按行进入。
+  多选（#79、#82）只有导出和删除，登录与否都能用：入口和别的歌曲列表一样在表头最右（手机在首数那一行），也能 ⌘/Ctrl/Shift 点行、长按行进入；在列表里搜索时勾选和动作仍按全部下载。
   头部操作行最后的“下载管理”•••（#40）里是按歌单删除下载，登录与否都有；没有从歌单下载的歌时这一项不可选。
 -->
 <script lang='ts'>
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { CircleArrowDown, Info, ListChecks, MoreHorizontal } from '@lucide/svelte'
+  import { CircleArrowDown, Info, MoreHorizontal } from '@lucide/svelte'
 
   import DetailHeader from '../library/DetailHeader.svelte'
-  import type { SelectionSource } from '../library/multi-select.svelte'
-  import SelectionToolbar from '../library/SelectionToolbar.svelte'
+  import { selectionActions } from '../library/selection-actions.svelte'
   import { anchorBelow } from '../menu/menu-anchor'
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
@@ -21,7 +20,7 @@
   import { formatCount } from '../shared/text'
   import PlayAllButton from '../songs/PlayAllButton.svelte'
   import SongList from '../songs/SongList.svelte'
-  import type { SongListView, SongSelection } from '../songs/view'
+  import type { SongListView } from '../songs/view'
   import Cover from '../ui/Cover.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import SearchField from '../ui/SearchField.svelte'
@@ -32,7 +31,7 @@
   const SOURCE = { kind: 'downloads' } as const
 
   const view = getAppView()
-  const { downloadsMenu, multiSelect: selection } = getOverlays()
+  const { downloadsMenu } = getOverlays()
   const all = $derived(view.state.downloads.songs)
   /** 正在下载那一块每少一首，下面的列表就往上挪一行：让它重新量可见范围 */
   const taskCount = $derived(view.state.downloads.tasks.size)
@@ -71,52 +70,18 @@
     ? { term }
     : null)
 
-  let listHost = $state<HTMLElement>()
-  let desktopEntry = $state<HTMLElement>()
-  let phoneEntry = $state<HTMLElement>()
-  /** 退出多选后焦点回到入口按钮（进入后它被工具条换掉，退出时才重新挂上） */
-  const entryFocus = (): HTMLElement | null => (phone ? phoneEntry : desktopEntry)?.querySelector<HTMLElement>('button') ?? null
-
-  /** 多选从这里读全部下载、显示着的歌；下载还没读出来、一首都没有时退出（#79） */
-  const selectionSource: SelectionSource = {
-    key: 'downloads',
+  const actions = selectionActions()
+  /** 已下载页能做的事（#79）：导出、删除；浏览器不能选文件夹时目录里就没有导出（ADR-0014）。登录与否都能多选 */
+  const select = $derived({
+    actions: [
+      ...(view.state.exportable
+        ? [
+          actions.exportDownloads(),
+        ]
+        : []),
+      actions.removeDownloads(),
+    ],
     songs: () => all ?? [],
-    visible: () => (songs ?? []).map(song => song.id),
-    kind: () => 'downloads',
-    downloadSource: () => null,
-    present: () => all !== null && all.length > 0,
-    focusFirst: () => listHost?.querySelector<HTMLElement>('[data-play-target]')?.focus({ preventScroll: true }),
-  }
-  selection.attach(selectionSource)
-  $effect(() => () => selection.detach(selectionSource))
-
-  /** 行还在就回行；被虚拟列表回收就回入口按钮 */
-  const rowEntryFocus = (from: HTMLElement): () => HTMLElement | null => () => from.isConnected
-    ? from
-    : entryFocus()
-
-  const selectionProps = $derived<SongSelection>({
-    active: selection.mode,
-    has: songId => selection.has(songId),
-    toggle: song => selection.toggle(song.id),
-    modifiers: (song, event) => {
-      if (!selection.mode) {
-        const from = event.currentTarget as HTMLElement
-        selection.enter({
-          from,
-          focusEntry: rowEntryFocus(from),
-        })
-      }
-      if (event.shiftKey)
-        selection.range(song.id)
-      else
-        selection.toggle(song.id)
-    },
-    longpress: (song, from) => selection.enter({
-      id: song.id,
-      from,
-      focusEntry: rowEntryFocus(from),
-    }),
   })
 
   const openMenu = (event: MouseEvent): void => {
@@ -130,12 +95,6 @@
       anchor: anchorBelow(event),
     })
   }
-
-  const enterFrom = (event: MouseEvent): void => selection.enter({
-    from: event.currentTarget as HTMLElement,
-    focusFirst: true,
-    focusEntry: entryFocus,
-  })
 </script>
 
 {#snippet collage(size: number)}
@@ -195,20 +154,6 @@
   {/snippet}
   {#snippet actions()}
     <PlayAllButton songs={all} source={SOURCE} />
-    {#if !phone && all && all.length > 0}
-      <span class='contents' bind:this={desktopEntry}>
-        <IconButton
-          icon={ListChecks}
-          label={selection.mode ? '退出多选' : '多选'}
-          title={selection.mode ? '退出多选' : '多选'}
-          aria-pressed={selection.mode}
-          class={selection.mode ? 'bg-primary-100 text-primary-950' : undefined}
-          onclick={selection.mode
-            ? () => selection.leave()
-            : enterFrom}
-        />
-      </span>
-    {/if}
     {#if all && all.length > 0}
       <IconButton icon={MoreHorizontal} label='下载管理' title='下载管理' onclick={openMenu} />
     {/if}
@@ -223,18 +168,6 @@
 
 <DownloadsTasks />
 
-{#snippet countAction()}
-  {#if !selection.mode && all && all.length > 0}
-    <span class='contents' bind:this={phoneEntry}>
-      <IconButton icon={ListChecks} label='多选' title='多选' class='-mr-3' onclick={enterFrom} />
-    </span>
-  {/if}
-{/snippet}
-
-{#snippet toolbar()}
-  <SelectionToolbar />
-{/snippet}
-
 <div class={phone ? '' : 'mt-6'}>
   <SongList
     list={listView}
@@ -245,12 +178,7 @@
     headerHidden={false}
     label='已下载的歌曲'
     {phone}
-    countAction={phone ? countAction : undefined}
-    toolbar={!phone && selection.mode
-      ? toolbar
-      : undefined}
-    selection={selectionProps}
-    bind:host={listHost}
+    {select}
     remeasure={taskCount}
   />
 </div>

@@ -11,6 +11,7 @@
   import AlbumTile from '#lib/components/library/AlbumTile.svelte'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
+  import { selectionActions } from '#lib/components/library/selection-actions.svelte.js'
   import TileGrid from '#lib/components/library/TileGrid.svelte'
   import { getAppView } from '#lib/components/shared/app-context.svelte.js'
   import { failureText } from '#lib/components/shared/failure.js'
@@ -62,6 +63,15 @@
     return { kind: 'songs', songs: content.hotSongs }
   })
 
+  const actions = selectionActions()
+  /** 热门歌曲能做的事（#82）：加入歌单、下载；从别的列表挑出来的歌，来源记成单独下载（规则⑦） */
+  const select = $derived({
+    actions: [
+      actions.addToPlaylist(),
+      actions.download(() => ({ kind: 'single' })),
+    ],
+  })
+
   let albumList = $state<HTMLElement>()
   /** 上一次“显示更多”之前已经有几张：后加进来的从第几张开始依次飘入 */
   let appendedAt = $state(0)
@@ -107,7 +117,7 @@
     {#if desktopLayout.current}
       <section class='mt-10' aria-labelledby='artist-hot'>
         <h2 id='artist-hot' class='text-title text-neutral-900 font-600'>热门歌曲</h2>
-        <div class='mt-3'><SongList list={hotSongs} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' virtual={false} staggerRows={false} /></div>
+        <div class='mt-3'><SongList list={hotSongs} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' virtual={false} staggerRows={false} {select} /></div>
       </section>
       {#if content}
         <section class='mt-10 pb-6' aria-labelledby='artist-albums'>
@@ -127,7 +137,7 @@
     {:else}
       <section class='pt-6' aria-labelledby='artist-hot'>
         <h2 id='artist-hot' class='px-4 text-title-sm text-neutral-900 font-600'>热门歌曲</h2>
-        <div class='-mt-1'><SongList list={hotSongs} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' phone virtual={false} staggerRows={false} /></div>
+        <div class='-mt-1'><SongList list={hotSongs} source={{ kind: 'artist', id }} loadingLabel='正在加载热门歌曲' phone virtual={false} staggerRows={false} {select} /></div>
       </section>
       {#if content}
         <section class='pt-6' aria-labelledby='artist-albums'>
