@@ -219,8 +219,12 @@ export const playlistName = (playlist: { name: string | null, kind?: Playlist['k
   ? '我喜欢的音乐'
   : playlist.name ?? '未命名歌单'
 
-/** 网易云图片（coverUrl、头像）的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的） */
-export const thumbnailUrl = (url: string, pixels: number): string => `${url.replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
+/**
+ * 网易云图片（coverUrl、头像）的缩略图：地址加 ?param=宽y宽（原图不是正方形时网易云裁成正方形），换成 https（图片服务器支持，页面是 https 的）。
+ * 主机统一成 p1：p1–p4 给的是同一张图，网易云每次回的主机却不一定一样（同一张封面这次 p3、下次 p4）；不统一的话，刷新后同步回来换了主机，
+ * 看得见的封面就当成新图重新下载、从薄荷底再淡入一次（闪一下），浏览器缓存也认不出是同一张
+ */
+export const thumbnailUrl = (url: string, pixels: number): string => `${url.replace(/^https?:\/\/p\d+\.music\.126\.net\//, 'https://p1.music.126.net/').replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`
 
 // 下面这些接口里的 null：网易云没给（hana-music-api 3.x 的宽松字段缺了或类型不对，ADR-0005）。界面上歌名写“未知歌曲”、
 // 歌单名写“未命名歌单”，别的文字和数字不显示这一项，封面用默认的（#78）

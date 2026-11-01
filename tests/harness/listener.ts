@@ -328,9 +328,12 @@ export const trackIdRequests = (device: Device) => syncRequests(device).flatMap(
 /** 下载用的封面缩略图有多大（字节） */
 export const DOWNLOAD_COVER_BYTES = 41_000
 
+/** 图片服务器上下载用的封面缩略图地址：网易云给的 p1–p4 是同一张图，App 统一向 p1 要（https，加 ?param=512y512） */
+export const downloadCoverUrl = (coverUrl: string): string => `${coverUrl.replace(/^https?:\/\/p\d+\.music\.126\.net\//, 'https://p1.music.126.net/').replace(/^http:/, 'https:')}?param=512y512`
+
 /** 音频服务器、图片服务器上放好这首：下载地址的录制里那么大的音频，和 512 的封面缩略图 */
 export const serveDownload = async (device: Device, song: Song, downloadUrl: string): Promise<void> => {
   const { data } = (await loadFixture(downloadUrl)).outcome.response.body as { data: { url: string, size: number } }
   device.files.put(data.url.replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
-  device.files.put(`${song.album.coverUrl!.replace(/^http:/, 'https:')}?param=512y512`, { bytes: DOWNLOAD_COVER_BYTES, type: 'image/jpeg' })
+  device.files.put(downloadCoverUrl(song.album.coverUrl!), { bytes: DOWNLOAD_COVER_BYTES, type: 'image/jpeg' })
 }

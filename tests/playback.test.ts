@@ -1990,7 +1990,7 @@ describe('锁屏和通知栏', () => {
       artist: 'ごめんなさいが言えなくて / 鏡音リン',
       album: '夏に溶ける',
       artwork: [
-        { src: 'https://p4.music.126.net/Lw6wl5jXi7R7Bi5KI0-Tdg==/109951173904017056.jpg?param=512y512', sizes: '512x512' },
+        { src: 'https://p1.music.126.net/Lw6wl5jXi7R7Bi5KI0-Tdg==/109951173904017056.jpg?param=512y512', sizes: '512x512' },
       ],
     })
     expect(mediaSession.playbackState).toBe('playing')

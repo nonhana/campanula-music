@@ -13,13 +13,13 @@ const { signInWithLiked, replyLibrary, reopen, downloadLiked: download } = liste
 // 下载单曲与离线播放（#38，Spec #11“客户端：下载”、ADR-0006）：浏览器向服务端要下载地址，直连网易云的音频服务器、图片服务器把完整音频和封面缩略图下下来，连同歌词、歌曲信息存进这台设备。
 // 下载属于设备，和登录、登录的是哪个账号都无关；服务器那边（有哪些文件、传得快慢、传到一半断开）由测试在设备的文件替身上决定
 
-/** 我喜欢的音乐里的《LOSER》（米津玄師，第 4 页）：验证关卡①录了它极高音质的下载地址（9,757,301 字节的 mp3）。封面缩略图按 512 取（网易云的缩略图地址加 ?param=512y512） */
+/** 我喜欢的音乐里的《LOSER》（米津玄師，第 4 页）：验证关卡①录了它极高音质的下载地址（9,757,301 字节的 mp3）。封面缩略图按 512 取（网易云的缩略图地址加 ?param=512y512；录制里给的是 p3，p1–p4 是同一张图，App 统一向 p1 要） */
 const LOSER = {
   id: 512359195,
   downloadUrl: 'playback/song_download_url_v1.vip-exhigh.json',
   audio: 'https://m801.music.126.net/20261008224945/895f88271a03b13d0a15d19022bee628/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/32069287514/68e9/2e06/8622/0e659917c7eb4e6786a3109a3b804432.mp3?vuutv=8CTY6jdoXzr+FND29mouuWAQAhn+719U7vqUHnf2DMKu5tjuwBhsDU1n3eUSIkzxkpUHJq9HugLMRG3mosrW5fqtz+mJyfM7ibV2W+jw4Zg=',
   bytes: 9_757_301,
-  cover: 'https://p3.music.126.net/IeyCexR3Hg9NnVY9TDCD3w==/109951166530781958.jpg?param=512y512',
+  cover: 'https://p1.music.126.net/IeyCexR3Hg9NnVY9TDCD3w==/109951166530781958.jpg?param=512y512',
 }
 /** 我喜欢的音乐里无版权的一首（Sea Of Tired（Slowed）），和只能放试听片段的一首（第 2 页，会员歌） */
 const NO_COPYRIGHT = 2108191414

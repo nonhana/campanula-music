@@ -4,7 +4,7 @@ import type { Song } from '#lib/api/library.js'
 
 import { loadFixture } from './harness/fixtures'
 import { held, never } from './harness/hold'
-import { listener, PLAYLISTS_WITH_POEMS } from './harness/listener'
+import { downloadCoverUrl, listener, PLAYLISTS_WITH_POEMS } from './harness/listener'
 import { RECORDED_ACCOUNT } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
@@ -198,7 +198,7 @@ describe('本机数据库升级', () => {
     const { outcome } = await loadFixture(fixture)
     const { data } = outcome.response.body as { data: { url: string, size: number } }
     device.files.put(data.url.replace(/^http:/, 'https:'), { bytes: data.size, type: 'audio/mpeg' })
-    device.files.put(`${song.album.coverUrl!.replace(/^http:/, 'https:')}?param=512y512`, { bytes: 100, type: 'image/jpeg' })
+    device.files.put(downloadCoverUrl(song.album.coverUrl!), { bytes: 100, type: 'image/jpeg' })
     await world.netease.reply(fixture)
     await world.netease.reply('playback/lyric_new.all-forms.json')
     await world.netease.reply('playback/export/003-album.json.gz')
