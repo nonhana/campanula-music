@@ -154,7 +154,7 @@
   onpointerleave={phone ? cancelLongPress : undefined}
 >
   {#if now && !ghost}
-    {#if phone}<MorningWash start={selecting ? 104 : 70} onGround />{:else}<MorningWash start={104} />{/if}
+    {#if phone}<MorningWash start={selecting ? 104 : 70} surface='ground' />{:else}<MorningWash start={104} />{/if}
   {/if}
   {#if phone}
     <div class={[

@@ -4,11 +4,11 @@
   封面、歌名歌手、时长、移出键；轻点一行放这首、队列不变；正在放的那行是晨光行、移不掉；现在放不了的整行降到 45%、不能点但能移出。
   每次出现在眼前（挂上时看得见，或 shown 由 false 变 true）都在下一次绘制前把当前这首直接放到第二行，不滚给人看；看得见时换歌不动听众自己滚到的地方。
   它自己是“定位到正在播放”的主人也是列表（shared/now-locate）：当前这首滚出去时右下角淡入定位按钮。
-  ground：放在播放页的封面染底上（桌面播放页），没有白底；晨光行用薄荷玻璃、悬停是半透明白、时长序号移出键用石墨（石墨淡只放在白底或晨光底上），
-  滚动区上下各 24px 渐隐；滚动条和定位按钮在滚动区外面，不跟着淡。手机弹层和桌面面板是白底。
+  ground：放在播放页的封面染底上（桌面播放页），没有白底；当前这首整行垫薄荷玻璃、晨光用薄荷线，悬停是半透明白，时长序号移出键用石墨（石墨淡只放在白底或晨光底上），
+  滚动区上下各 24px 渐隐，只淡还有内容的那一头；滚动条和定位按钮在滚动区外面，不跟着淡。手机弹层和桌面面板是白底。
   歌名、歌手、徽标和歌曲行共用 songs/SongTitle，行高是 songs/view 的 SONG_ROW_HEIGHT。桌面上歌手名能点（#84，链接不进 Tab 顺序），歌手一行画在点歌按钮外面（CreditLine）；
   在播放页里点名字，播放页收起、换到那一页（CreditName 交给浮层栈）。手机弹层里写纯文字。
-  清空后队列空、停下，播放页跟着收起；移出后焦点落在下一首的移出键（最后一首是上一首的，正在放的那首落在“清空”）。
+  清空后队列空、停下；播放页开着时先收起，抽屉缩回去以后才清空（player-layer）。移出后焦点落在下一首的移出键（最后一首是上一首的，正在放的那首落在“清空”）。
 -->
 <script lang='ts'>
   import { ListX, X } from '@lucide/svelte'
@@ -18,6 +18,7 @@
   import { songTitle } from '#lib/api/library.js'
   import type { QueueEntry } from '#lib/app/player.js'
 
+  import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout } from '../shared/layout'
   import { fade } from '../shared/motion'
@@ -36,7 +37,6 @@
   import Scrollbar from '../ui/Scrollbar.svelte'
   import TextButton from '../ui/TextButton.svelte'
   import VirtualList from '../ui/VirtualList.svelte'
-  import { playerPageActions } from './player-page.svelte'
 
   interface Props {
     /** 放在封面染底上（桌面播放页） */
@@ -49,7 +49,7 @@
   }
 
   const { ground = false, shown = true, titled = false, class: klass }: Props = $props()
-  const { closePlayerPage } = playerPageActions()
+  const { playerLayer } = getOverlays()
 
   const ROW = SONG_ROW_HEIGHT
   const uid = $props.id()
@@ -101,11 +101,6 @@
     const target = scroller?.querySelector<HTMLElement>(`[data-remove="${next}"]:not([inert])`) ?? section?.querySelector<HTMLElement>('[data-clear]')
     target?.focus()
   }
-
-  const clear = () => {
-    closePlayerPage()
-    view.app.clearQueue()
-  }
 </script>
 
 <section bind:this={section} class={['flex min-h-0 flex-col', klass]} aria-labelledby='{uid}-title'>
@@ -114,7 +109,7 @@
       <h2 id='{uid}-title' class={['text-title-sm text-neutral-900 font-600', !titled && 'md:sr-only']}>播放队列</h2>
       <p class='truncate text-caption text-neutral-600 tabular-nums'>{formatCount(queue.length)} 首</p>
     </div>
-    <TextButton tone='neutral' desktop={{ variant: 'outline', icon: ListX }} class='max-md:-mr-3 md:h-9! md:pl-3.5! md:pr-4!' data-clear onclick={clear}>清空</TextButton>
+    <TextButton tone='neutral' desktop={{ variant: 'outline', icon: ListX }} class='max-md:-mr-3 md:h-9! md:pl-3.5! md:pr-4!' data-clear onclick={playerLayer.clearQueue}>清空</TextButton>
   </header>
 
   <!-- 底下的 8px 留在滚动区外：滚动条下端不伸进面板圆角。滚动条、定位按钮放在滚动区外面，不跟着渐隐淡掉 -->
@@ -127,7 +122,7 @@
             {@const look = songLook(view, entry.song)}
             {@const off = look.off}
             <div class={['relative h-full rounded-lg', !off && (ground ? 'mouse:hover:bg-white/60' : 'mouse:hover:bg-neutral-50')]}>
-              {#if now}<MorningWash start={92} onGround={ground} />{/if}
+              {#if now}<MorningWash start={92} surface={ground ? 'tint' : 'paper'} />{/if}
               <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto_36px] h-full items-center gap-3 pl-2 pr-1', off && 'opacity-45']}>
                 <NowIndex n={i + 1} {now} onGround={ground} />
                 <Cover url={entry.song.album.coverUrl} size={40} class='rounded-md' />
@@ -173,8 +168,45 @@
 </section>
 
 <style>
-  /* 和歌词一样，滚出去的行是淡掉的 */
+  /*
+   * 和歌词一样，滚出去的行是淡掉的：哪一头还有内容才淡那一头，滚到头的那一边不淡；淡多高按离头多远长出来（和歌单页左栏同一种写法），
+   * 滚动驱动（animation-timeline），不写 JS。注册的名字是全局的，不要和别处的变量重名
+   */
+  @property --queue-fade-top {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @property --queue-fade-bottom {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
   .fade-edges {
-    mask-image: linear-gradient(180deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+    --queue-fade: 24px;
+    mask-image: linear-gradient(180deg, transparent, #000 var(--queue-fade-top), #000 calc(100% - var(--queue-fade-bottom)), transparent);
+    animation: queue-fade-top linear both, queue-fade-bottom linear both;
+    animation-timeline: scroll(self), scroll(self);
+    animation-range: 0px var(--queue-fade), calc(100% - var(--queue-fade)) 100%;
+  }
+
+  @keyframes queue-fade-top {
+    from {
+      --queue-fade-top: 0px;
+    }
+    to {
+      --queue-fade-top: var(--queue-fade);
+    }
+  }
+
+  @keyframes queue-fade-bottom {
+    from {
+      --queue-fade-bottom: var(--queue-fade);
+    }
+    to {
+      --queue-fade-bottom: 0px;
+    }
   }
 </style>

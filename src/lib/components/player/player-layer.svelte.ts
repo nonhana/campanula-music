@@ -13,6 +13,8 @@ export interface PlayerLayerState {
   readonly open: boolean
   /** 开着，或者收起时抽屉还没走完 */
   readonly shown: boolean
+  /** “清空”播放队列：播放页露着时先收起（连同手机播放队列），抽屉缩回去以后再清空，播放页不在半路一下子没了 */
+  clearQueue: () => void
 }
 
 /** 在 createOverlays 里创建一次（外框初始化时）：层请求、抽屉、App 状态只有一份；创建时的组件上下文就是 effect 的主人，跟着外框卸下 */
@@ -30,6 +32,22 @@ export const createPlayerLayer = (player: OverlayLayer<DialogRequest, HTMLElemen
       untrack(() => { void player.invalidate() })
   })
 
+  /** 播放页收起了、等抽屉缩回去再清空 */
+  let clearing = $state(false)
+  $effect(() => {
+    if (!clearing)
+      return
+    // 缩到半路又拉开了：不清空
+    if (open) {
+      clearing = false
+      return
+    }
+    if (drawer.visible)
+      return
+    clearing = false
+    untrack(() => view.app.clearQueue())
+  })
+
   return {
     get hasQueue() {
       return hasQueue
@@ -39,6 +57,22 @@ export const createPlayerLayer = (player: OverlayLayer<DialogRequest, HTMLElemen
     },
     get shown() {
       return shown
+    },
+    clearQueue() {
+      if (!shown) {
+        view.app.clearQueue()
+        return
+      }
+      if (!open) {
+        clearing = true
+        return
+      }
+      void player.closeThrough().then((result) => {
+        if (result === 'committed')
+          clearing = true
+        else
+          view.app.clearQueue()
+      })
     },
   }
 }
