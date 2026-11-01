@@ -17,7 +17,7 @@ const ALBUM_PAGES = 'albumPages'
 const LIBRARY_STORES = [LIBRARY, TRACKS, SONGS, ALBUM_PAGES]
 /** 播放队列和进度（#27）；queue 记着是哪个网易云账号的 */
 export const PLAYER = 'player'
-/** 这台设备上的设置和搜索历史，按名字存：playQuality（在线播放音质）、downloadQuality（下载音质，#40）、searchHistory（#31）。不属于哪个网易云账号，退出、换账号都不删 */
+/** 这台设备上的设置和搜索历史，按名字存：playQuality（在线播放音质）、downloadQuality（下载音质，#40）、volume（音量）、searchHistory（#31）。不属于哪个网易云账号，退出、换账号都不删 */
 const SETTINGS = 'settings'
 /** 要发的听歌打卡（#28），按记下的先后自动编号，记着是哪个网易云账号的 */
 export const CHECK_INS = 'checkIns'
@@ -164,6 +164,9 @@ export interface LocalDb {
   /** 下载音质（#40），和在线播放音质分开；没设过时是 null */
   downloadQuality: () => Promise<Quality | null>
   saveDownloadQuality: (quality: Quality) => Promise<void>
+  /** 0–1；没调过时是 null */
+  volume: () => Promise<number | null>
+  saveVolume: (volume: number) => Promise<void>
   /** 新的在前；没搜过时是空的 */
   searchHistory: () => Promise<string[]>
   /** 一个事务里读、改、存（别的标签页刚记下的不会被盖掉），返回存下的 */
@@ -553,6 +556,12 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
       return quality ?? null
     },
     saveDownloadQuality: quality => write([SETTINGS], transaction => transaction.objectStore(SETTINGS).put(quality, 'downloadQuality')),
+    async volume() {
+      const store = (await db.open()).transaction(SETTINGS).objectStore(SETTINGS)
+      const volume = await settled(store.get('volume')) as number | undefined
+      return volume ?? null
+    },
+    saveVolume: volume => write([SETTINGS], transaction => transaction.objectStore(SETTINGS).put(volume, 'volume')),
     async searchHistory() {
       const store = (await db.open()).transaction(SETTINGS).objectStore(SETTINGS)
       const history = await settled(store.get('searchHistory')) as string[] | undefined

@@ -69,6 +69,9 @@ export interface PlayerState {
 
 const NO_NEIGHBORS: PlayerState['neighbors'] = { previous: null, next: null }
 
+/** 没调过音量时的音量，也是没记下静音前音量时取消静音回到的音量；100% 往往太响（作者 2026-11-01 定）。调过的存在本机（local.ts 的 volume） */
+export const DEFAULT_VOLUME = 0.3
+
 export const INITIAL_PLAYER: PlayerState = {
   queue: [],
   current: null,
@@ -76,7 +79,7 @@ export const INITIAL_PLAYER: PlayerState = {
   position: 0,
   duration: null,
   trial: false,
-  volume: 1,
+  volume: DEFAULT_VOLUME,
   notice: null,
   change: null,
   mode: 'loop',

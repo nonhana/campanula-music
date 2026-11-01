@@ -2093,6 +2093,31 @@ describe('在线播放音质', () => {
   })
 })
 
+describe('音量', () => {
+  it('一开始是 30%；静音后关掉再打开还是静音，两个播放器都是；退出登录再打开也不变', async () => {
+    const device = world.device()
+    const tab = await signInWithLiked(device)
+    expect(tab.app.state.player.volume).toBe(0.3)
+    expect(tab.audio.map(audio => audio.volume)).toEqual([0.3, 0.3])
+
+    tab.app.setVolume(0)
+    const reopened = await reopen(device, tab)
+    await world.settle()
+    expect(reopened.app.state.player.volume).toBe(0)
+    expect(reopened.audio.map(audio => audio.volume)).toEqual([0, 0])
+
+    await world.netease.reply('login/logout.json')
+    await reopened.app.logout()
+    await world.settle()
+    reopened.close()
+    const signedOut = await device.open()
+    await world.settle()
+    expect(signedOut.app.state.session.status).toBe('signedOut')
+    expect(signedOut.app.state.player.volume).toBe(0)
+    expect(signedOut.audio.map(audio => audio.volume)).toEqual([0, 0])
+  })
+})
+
 // 听歌打卡（#28，Spec #11“客户端：听歌打卡”）：每首歌结束（播完或切走）时按实际听的整数秒打卡，带上这首自己的播放来源。
 // 要发的打卡先记在本机（记着是哪个网易云账号的），经后台通道发给同一个账号，发成了再删
 

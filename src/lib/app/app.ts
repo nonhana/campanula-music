@@ -166,6 +166,7 @@ export interface App {
   seek: (position: number) => void
   /** 点歌词的一行：停着的也接着放 */
   playFrom: (position: number) => void
+  /** 存在这台设备上，退出、换账号都不变；下次打开 App 照这个音量 */
   setVolume: (volume: number) => void
   /** 存在这台设备上，退出、换账号都不变；从下一首起生效，正在放的那首照旧放完 */
   setPlayQuality: (quality: Quality) => void
@@ -942,8 +943,14 @@ export const createApp = (browser: BrowserCapabilities): App => {
       update({
         session: { status: 'checking' },
       })
-      // 下载属于这台设备：和问当前账号同时读出来，没登录时也要用
-      const loaded = downloads.load()
+      // 下载和音量属于这台设备：和问当前账号同时读出来，没登录时也要用
+      const loaded = Promise.all([
+        downloads.load(),
+        local.volume().then((volume) => {
+          if (volume !== null)
+            player.setVolume(volume)
+        }),
+      ])
       // 服务端在这一步里续期。同一浏览器的标签页排队问：前一个拿到的新 Cookie，后一个直接带上，不会再续一次
       const asked = round.current
       if (await local.pendingLogout()) {
@@ -1126,7 +1133,10 @@ export const createApp = (browser: BrowserCapabilities): App => {
     setPlayMode: player.setMode,
     seek: player.seek,
     playFrom: player.playFrom,
-    setVolume: player.setVolume,
+    setVolume(volume) {
+      player.setVolume(volume)
+      void local.saveVolume(volume)
+    },
     setPlayQuality(quality) {
       player.setQuality(quality)
       void local.savePlayQuality(quality)
