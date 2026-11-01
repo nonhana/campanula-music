@@ -50,7 +50,7 @@
   }
 </script>
 
-<div class='max-w-[640px] px-4 pt-2 md:px-0 md:pt-6'>
+<div class='mx-auto max-w-[640px] px-4 pt-2 md:px-0 md:pt-6'>
   {#if desktopLayout.current}
     <h1 class='text-headline text-neutral-900 font-600'>设置</h1>
   {/if}
