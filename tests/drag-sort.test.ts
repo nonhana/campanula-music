@@ -287,6 +287,27 @@ describe('目标位置、预览顺序、放下提交、作废撤回', () => {
     expect(broken.results[0]?.cancelled).toBe(true)
   })
 
+  it('鼠标拖着时又按下了右键：作废，不提交；Mac 上快速松手，pointerup 之前先来一次主键已经松开（buttons 为 0）的移动：照常跟手，松手照常提交', () => {
+    const right = setup({ pointerType: 'mouse' })
+    right.pointer.down(200, 150)
+    right.pointer.move(200, 150 + 64)
+    right.pointer.move(200, 150 + 64 * 2, 16, { buttons: 3 })
+    expect(right.session.state).toBeNull()
+    right.pointer.up(200, 150 + 64 * 2)
+    expect(right.commits).toEqual([])
+    expect(right.results[0]?.cancelled).toBe(true)
+
+    const quick = setup({ pointerType: 'mouse' })
+    quick.pointer.down(200, 150)
+    quick.pointer.move(200, 150 + 64)
+    quick.pointer.move(200, 150 + 64 * 4, 16, { buttons: 0 })
+    expect(dragging(quick.session).preview).toEqual([10, 30, 40, 50, 20])
+    quick.pointer.up(200, 150 + 64 * 4)
+    expect(quick.commits).toEqual([
+      [10, 30, 40, 50, 20],
+    ])
+  })
+
   it('勾选的几首一起挪，保持原来的先后', () => {
     const { session, commits } = setup({
       ids: [1, 2, 3, 4, 5, 6],

@@ -318,7 +318,7 @@
 {#if page}
   {@render bar()}
 {:else}
-  <div bind:this={host} class={target ? 'absolute inset-x-0 top-0 z-1 h-0' : 'sticky left-0 top-0 z-1 h-0'} aria-hidden='true'>{@render bar()}</div>
+  <div bind:this={host} class={target ? 'absolute inset-x-0 top-0 z-1 h-0' : 'sticky left-0 top-0 z-1 h-0'} aria-hidden='true' data-scrollbar>{@render bar()}</div>
 {/if}
 
 <style>

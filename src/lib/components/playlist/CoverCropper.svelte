@@ -1,7 +1,7 @@
 <!--
   歌单封面的正方形取景器（#34，原型 Cropper）：图片在固定的正方形框下面移动、缩放。一根手指拖动，两根手指捏合，鼠标滚轮缩放，下面的滑块也能缩放；方向键移动，+ / - 缩放。
   框外盖一层晨光底色的薄纱，框是白色细边（浅色图片上也看得见）；拖动时页面和弹层都不滚（touch-action: none）。crop 是工作位图上的正方形（单位是那张位图的像素），双向绑定，导出时直接用。
-  几何（平移、缩放、夹紧、crop ↔ 视图）在 cover-crop-core.ts 的纯核心里；指针接线用 press.ts 的 attachGrip，按住断了（右键菜单、切走窗口、指针被收回、元素没了）就停止，不会留下悬停也在平移。
+  几何（平移、缩放、夹紧、crop ↔ 视图）在 cover-crop-core.ts 的纯核心里；指针接线用 press.ts 的 attachGrip，松手或者按住断了（右键菜单、切走窗口、pointercancel、元素没了）就停止，不会留下悬停也在平移。
   readonly：上传中、失败后只看取景结果，不再接收手势，也不显示滑块。
 -->
 <script lang='ts'>
@@ -12,7 +12,7 @@
   import type { CoverCrop } from '#lib/api/cover.js'
 
   import type { Grip, PointerSample } from '../shared/press'
-  import { attachGrip, pressBroken } from '../shared/press'
+  import { attachGrip, rightButtonDown } from '../shared/press'
   import IconButton from '../ui/IconButton.svelte'
   import { createCropView, cropOf, maxZoomOf, nudgeCrop, panCrop, pinchCrop, wheelCrop, zoomBy, zoomTo } from './cover-crop-core'
   import type { CropFrame, CropPoint, CropView } from './cover-crop-core.js'
@@ -76,9 +76,9 @@
   // 一指拖动：attachGrip 管指针捕获、按住断了、作废；这里只把移动交给几何核心
   let last: CropPoint | null = null
 
-  /** 按住断了（右键、切走窗口、指针被收回、按钮已经松开）或 readonly 中途翻转：收手，不提交 */
+  /** 按住断了（右键、切走窗口、pointercancel）或 readonly 中途翻转：收手，不提交 */
   const abandonPan = (pointerId?: number) => {
-    // 第二根手指被取消、收回捕获：只收它，正在拖的那一根接着走
+    // 第二根手指被取消：只收它，正在拖的那一根接着走
     if (pointerId !== undefined) {
       pointers.delete(pointerId)
       if (pointers.size > 0) {
@@ -115,7 +115,7 @@
         return abandonPan()
       if (!pointers.has(sample.pointerId))
         return
-      if (pressBroken(sample.buttons))
+      if (rightButtonDown(sample.buttons))
         return abandonPan(sample.pointerId)
       const point = at(sample)
       const previous = last
@@ -159,7 +159,7 @@
     }
     if (!pointers.has(event.pointerId))
       return
-    if (pressBroken(event.buttons)) {
+    if (rightButtonDown(event.buttons)) {
       abandonPan(event.pointerId)
       return
     }

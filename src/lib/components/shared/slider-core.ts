@@ -1,9 +1,9 @@
 import { clamp } from './clamp'
 import type { Grip, PointerSample } from './press'
-import { pressBroken } from './press'
+import { rightButtonDown } from './press'
 
 // 线性拖动核心（进度条、滚动条滑块共用；Spec #11 第二个测试接入点）：不碰页面、不碰 Svelte。按下把指针位置换成 0–1，拖动跟着走、
-// 松手才提交；只认主指针主键，第二根手指不插手；按住断了（右键、切走窗口、指针被收回）作废，不提交。
+// 松手才提交；只认主指针主键，第二根手指不插手；按住断了（右键、切走窗口、页面藏起来、pointercancel）作废，不提交。
 
 export interface SliderCoreOptions {
   /** 返回这一刻的值；null 是这次按下不接（例如点在滑块前后的空白处） */
@@ -54,7 +54,7 @@ export const createSliderCore = ({ begin, track, commit, cancel, onValue }: Slid
     move(sample) {
       if (!press || sample.pointerId !== press.pointerId)
         return
-      if (pressBroken(sample.buttons))
+      if (rightButtonDown(sample.buttons))
         return abandon()
       press.value = clamp(track(sample), 0, 1)
       onValue(press.value)

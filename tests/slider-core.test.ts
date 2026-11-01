@@ -101,7 +101,7 @@ describe('只认主指针的主键', () => {
 })
 
 describe('按住断了就作废', () => {
-  it('右键菜单、切走窗口、指针被收回：作废，不提交', () => {
+  it('右键菜单、切走窗口、页面藏起来、pointercancel：作废，不提交', () => {
     const { pointer, commits, values, cancels } = setup()
     pointer.down(40)
     pointer.move(70)
@@ -111,15 +111,25 @@ describe('按住断了就作废', () => {
     expect(cancels()).toBe(1)
   })
 
-  it('移动时发现主键已经松开：作废，不提交', () => {
+  it('拖着时又按下了右键：作废，不提交', () => {
     const { pointer, commits, cancels } = setup()
     pointer.down(40)
-    pointer.move(60, { buttons: 0 })
+    pointer.move(60, { buttons: 3 })
+    pointer.up(60)
     expect(commits).toEqual([])
     expect(cancels()).toBe(1)
   })
 
-  it('别的指针被收回不影响这次按住', () => {
+  it('在 Mac 上快速松手：pointerup 之前先来一次主键已经松开（buttons 为 0）的移动，照常跟手，松手照常提交', () => {
+    const { pointer, commits, cancels } = setup()
+    pointer.down(40)
+    pointer.move(60, { buttons: 0 })
+    pointer.up(60)
+    expect(commits).toEqual([0.6])
+    expect(cancels()).toBe(0)
+  })
+
+  it('别的指针被取消不影响这次按住', () => {
     const { pointer, commits } = setup()
     pointer.down(40)
     pointer.abandon(2)

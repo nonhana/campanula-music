@@ -1,5 +1,5 @@
 import type { Grip } from '../shared/press'
-import { pressBroken } from '../shared/press'
+import { rightButtonDown } from '../shared/press'
 
 // 手机播放页左右拖封面切歌的手势核心（DESIGN.md Cover Wheel；Spec #11 第二个测试接入点“拖动手势核心”的转盘那一半）：
 // 不碰页面、不碰 Svelte。封面按钮把指针事件交给它，它说转盘跟手转了几格、松手切不切歌、算不算点按；往右为正、切上一首，往左切下一首。
@@ -89,7 +89,7 @@ export const createWheelCore = ({ notch, has, commit, tap, onPose }: WheelCoreOp
     move(sample) {
       if (press?.pointerId !== sample.pointerId)
         return
-      if (pressBroken(sample.buttons))
+      if (rightButtonDown(sample.buttons))
         return abandon()
       const dx = sample.x - press.x
       if (!press.dragging) {

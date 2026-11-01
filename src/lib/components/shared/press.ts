@@ -1,16 +1,21 @@
 import type { Attachment } from 'svelte/attachments'
 
-// 按住拖动（抽屉、封面转盘、进度滑块、滚动条滑块）时，松开可能传不到页面：点右键（菜单吞掉松开）、切走窗口、页面藏起来、
-// 浏览器收回指针捕获。这时拖动要马上作废，不然光标一直抓着、抽屉卡在半路、页面点不动。各手势核心给出统一的 Grip，
+// 所有按住拖动（抽屉、封面转盘、进度滑块、滚动条滑块、拖动排序、横向架子、封面取景框）共用一套规矩：松开才算松手，照常提交；
+// pointercancel 是作废（和 Motion、dnd-kit、react-aria、Embla 一样，都不拿移动时的 buttons 判断松没松手）。点右键（菜单吞掉松开）、切走窗口、
+// 页面藏起来时松开传不到页面，这次拖动作废，不然光标一直抓着、抽屉卡在半路、页面点不动。各手势核心给出统一的 Grip，
 // 由 attachGrip / attachWindowGrip 接浏览器；click 只在 grip.click(detail) 返回 true 时吞掉（guard 认领的 click 也走这一处）。
 
-/** 拖着时按下右键，浏览器先报按住断了，菜单随后才来（Windows 上要等右键松开） */
+/** 拖着时按下右键，移动先报右键按下了，菜单随后才来（Windows 上要等右键松开） */
 const MENU_GRACE_MS = 300
 /** click 紧跟 pointerup，挡太久会吞掉紧接着的下一次点按 */
 const CLICK_GRACE_MS = 80
 
-/** PointerEvent.buttons 说明按住断了：主键（左键、手指、笔尖）没按着，或者又按下了右键 */
-export const pressBroken = (buttons: number): boolean => (buttons & 1) === 0 || (buttons & 2) !== 0
+/**
+ * 按住拖动时又按下了右键（PointerEvent.buttons 的第 2 位；规范里这时发的是 pointermove，不是 pointerdown）：菜单随后就来，这次拖动作废。
+ * 主键那一位不看：Mac 上的 Chrome 用 [NSEvent pressedMouseButtons] 填 buttons（Chromium components/input/web_input_event_builders_mac.mm），
+ * 是事件转换那一刻的真实键位，快速松手时 pointerup 之前会先来一次 buttons 为 0 的移动，那时这次拖动还没结束
+ */
+export const rightButtonDown = (buttons: number): boolean => (buttons & 2) !== 0
 
 /** 右键菜单、窗口失焦、页面藏起来时 abandon；触屏长按的菜单只挡掉、不作废。返回停止函数，停止后再挡 300ms 菜单 */
 const watchPress = (abandon: () => void): () => void => {
@@ -54,7 +59,7 @@ export interface Grip {
   readonly holding: boolean
   /** 只认主指针的主键；上一次没等到松开的先作废 */
   press: (sample: PointerSample) => boolean
-  /** 别的指针不管；按住断了就作废 */
+  /** 别的指针不管；又按下了右键就作废 */
   move: (sample: PointerSample) => void
   release: (sample: PointerSample) => void
   /** 作废，拖着的回到原处，跟着来的 click 不算点按；给了 pointerId 时只管这根指针，不给就是这次按住 */
@@ -76,7 +81,7 @@ export const createPageHold = (): (hold: boolean) => void => {
   }
 }
 
-/** 按下时捕获指针、盯着按住断没断；pointercancel、捕获被收回、元素被拿掉都作废这根指针。元素设 touch-action: none，click 也交给 grip */
+/** 按下时捕获指针、盯着按住断没断；pointercancel、元素被拿掉作废这根指针，浏览器自己收回捕获算松手。元素设 touch-action: none，click 也交给 grip；按住时拦掉浏览器的拖出去 */
 export const attachGrip = (grip: Grip, { touchAction = true }: { touchAction?: boolean } = {}): Attachment<HTMLElement> => (element) => {
   let unwatch: (() => void) | null = null
   const settleWatch = () => {
@@ -116,13 +121,15 @@ export const attachGrip = (grip: Grip, { touchAction = true }: { touchAction?: b
       grip.release(sample(event))
       settleWatch()
     },
-    // 只管这根指针：第二根手指被取消、收回捕获不影响正在拖的这次。正常松开后浏览器也会收回捕获，那时这次按住已经结束
+    // 只管这根指针：第二根手指被取消不影响正在拖的这次
     pointercancel(event: PointerEvent) {
       grip.abandon(event.pointerId)
       settleWatch()
     },
+    // 浏览器自己收回捕获：Chromium 在移动时发现键已经松开就收回（pointer_event_manager.cc：“for when the mouse is released outside of the page”），
+    // Mac 上快速松手时它就在 pointerup 之前这样做。也就是听众已经松手了：在这里松手、照常提交。正常松开以后的那次收回，这次按住早已结束，不再管
     lostpointercapture(event: PointerEvent) {
-      grip.abandon(event.pointerId)
+      grip.release(sample(event))
       settleWatch()
     },
     click: (event: MouseEvent) => {
@@ -130,6 +137,11 @@ export const attachGrip = (grip: Grip, { touchAction = true }: { touchAction?: b
         return
       event.preventDefault()
       event.stopPropagation()
+    },
+    // 按住时浏览器想把链接、图片拖出去：拦掉，不然它发 pointercancel 叫停这次拖动（dnd-kit 同样只在按住期间拦）
+    dragstart(event: DragEvent) {
+      if (grip.holding)
+        event.preventDefault()
     },
   }
   if (touchAction)
@@ -144,14 +156,12 @@ export const attachGrip = (grip: Grip, { touchAction = true }: { touchAction?: b
   }
 }
 
-/** 和 attachGrip 一样，但 move / up / cancel 听在 window 上、不设 pointer capture，给会被虚拟列表重建的把手用；元素被拿掉时不会作废这次按住 */
-export const attachWindowGrip = (grip: Grip): Attachment<HTMLElement> => (element) => {
+/** 和 attachGrip 一样，但 move / up / cancel 听在 window 上、不设 pointer capture，给会被虚拟列表重建的把手、里面还有链接和按钮要点的区域用；元素被拿掉时不会作废这次按住 */
+export const attachWindowGrip = (grip: Grip, { touchAction = true }: { touchAction?: boolean } = {}): Attachment<HTMLElement> => (element) => {
   let stop: (() => void) | null = null
   let activePointer: number | null = null
   let swallowClick = false
   let clickTimer: ReturnType<typeof setTimeout> | undefined
-  /** 只挡这一下跟来的 click，不吞掉别处紧接着的点按 */
-  let clickAt = { x: 0, y: 0 }
   const sample = (event: PointerEvent): PointerSample => ({
     pointerId: event.pointerId,
     pointerType: event.pointerType,
@@ -163,10 +173,10 @@ export const attachWindowGrip = (grip: Grip): Attachment<HTMLElement> => (elemen
     time: event.timeStamp,
     target: event.target,
   })
+  // 松手跟着来的 click 交给 grip：松手的地方可能已经不在这块区域里（虚拟列表重建、拖到别处松开），所以听在 window 上。
+  // 不比位置：快速松手时 click 离最后一次移动可能很远（和 Embla、dnd-kit 一样，只认这次按住之后来的那一下 click）
   const onClick = (event: MouseEvent) => {
     if (!swallowClick || event.detail === 0)
-      return
-    if (Math.abs(event.clientX - clickAt.x) > 6 || Math.abs(event.clientY - clickAt.y) > 6)
       return
     swallowClick = false
     clearTimeout(clickTimer)
@@ -186,8 +196,8 @@ export const attachWindowGrip = (grip: Grip): Attachment<HTMLElement> => (elemen
     const move = (e: PointerEvent) => {
       if (e.pointerId !== activePointer)
         return
-      // 鼠标按住断了（主键松开、又按了右键）或没等到松开：作废，不能提交
-      if (pressBroken(e.buttons)) {
+      // 又按下了右键：作废，不能提交。主键那一位不看（rightButtonDown 的说明）
+      if (rightButtonDown(e.buttons)) {
         grip.abandon(activePointer)
         end()
         return
@@ -202,19 +212,11 @@ export const attachWindowGrip = (grip: Grip): Attachment<HTMLElement> => (elemen
         end()
         return
       }
-      clickAt = { x: e.clientX, y: e.clientY }
       grip.release(sample(e))
       end()
     }
     const cancel = (e: PointerEvent) => {
       if (e.pointerId !== activePointer)
-        return
-      grip.abandon(activePointer)
-      end()
-    }
-    // 鼠标拖出窗口后松开：按住断了，收掉监听；还按着（例如自动滚动拖到窗口外）不动
-    const leave = (e: PointerEvent) => {
-      if (e.pointerId !== activePointer || e.pointerType !== 'mouse' || !pressBroken(e.buttons))
         return
       grip.abandon(activePointer)
       end()
@@ -232,7 +234,6 @@ export const attachWindowGrip = (grip: Grip): Attachment<HTMLElement> => (elemen
       window.removeEventListener('pointermove', move, true)
       window.removeEventListener('pointerup', up, true)
       window.removeEventListener('pointercancel', cancel, true)
-      document.documentElement.removeEventListener('pointerleave', leave, true)
       // 松手后跟着来的 click 不算点按：等它来，或者最多挡一小会儿
       clearTimeout(clickTimer)
       clickTimer = setTimeout(() => {
@@ -246,12 +247,19 @@ export const attachWindowGrip = (grip: Grip): Attachment<HTMLElement> => (elemen
     window.addEventListener('pointermove', move, true)
     window.addEventListener('pointerup', up, true)
     window.addEventListener('pointercancel', cancel, true)
-    document.documentElement.addEventListener('pointerleave', leave, true)
+  }
+  // 按住时浏览器想把链接、图片拖出去：拦掉，不然它发 pointercancel 叫停这次拖动（dnd-kit 同样只在按住期间拦）
+  const ondragstart = (event: DragEvent) => {
+    if (grip.holding)
+      event.preventDefault()
   }
   element.addEventListener('pointerdown', pointerdown)
-  element.style.touchAction = 'none'
+  element.addEventListener('dragstart', ondragstart)
+  if (touchAction)
+    element.style.touchAction = 'none'
   return () => {
     element.removeEventListener('pointerdown', pointerdown)
+    element.removeEventListener('dragstart', ondragstart)
   // 不主动停 window 监听：拖动中元素被重建时，这次按住要接着走
   }
 }

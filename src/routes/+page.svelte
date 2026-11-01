@@ -17,6 +17,7 @@
   import { songMenuActions } from '#lib/components/menu/song-menu.svelte.js'
   import { currentSong } from '#lib/components/player/now.js'
   import { getAppView } from '#lib/components/shared/app-context.svelte.js'
+  import { dragScroll } from '#lib/components/shared/drag-scroll.js'
   import { failureText } from '#lib/components/shared/failure.js'
   import { desktopLayout } from '#lib/components/shared/layout.js'
   import { fade, reveal, scrollBehavior } from '#lib/components/shared/motion.js'
@@ -150,6 +151,7 @@
                   style:--fade-r={atEnd ? '0px' : '48px'}
                   onscroll={measureStrip}
                   data-reveal-group
+                  {@attach dragScroll}
                 >
                   {#each strip as song, i (song.id)}
                     {@const look = songLook(view, song)}

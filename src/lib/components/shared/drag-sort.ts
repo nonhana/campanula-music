@@ -1,6 +1,6 @@
 import { clamp } from './clamp'
 import type { Grip, PointerSample } from './press'
-import { pressBroken } from './press'
+import { rightButtonDown } from './press'
 import { edgeScroll } from './scroll-edge'
 
 // 拖动排序的手势核心（Spec #11 第二个测试接入点；和 drawer-core、wheel-core 同一处）：不碰页面、不碰 Svelte 的纯逻辑。
@@ -246,7 +246,7 @@ export const createDragSortSession = <S>(options: DragSortSessionOptions<S>): Dr
     move(sample) {
       if (!press || press.pointerId !== sample.pointerId)
         return
-      if (pressBroken(sample.buttons))
+      if (rightButtonDown(sample.buttons))
         return abandon()
       const at = { x: sample.x, y: sample.y }
       if (press.pending) {

@@ -1,5 +1,5 @@
 import type { Grip } from '../shared/press'
-import { pressBroken } from '../shared/press'
+import { rightButtonDown } from '../shared/press'
 
 // 抽屉的拖动手势核心（Spec #11 第二个测试接入点“拖动手势核心”的一半，另一半是 wheel-core.ts）：不碰页面、不碰 Svelte。
 // 位置 0 是整个拉开、1 是收在下面看不见；开没开着由层请求说了算（settle）。grip 把指针事件交给它，它说跟手到哪、停在哪头、算不算点按。
@@ -128,7 +128,7 @@ export const createDrawerCore = ({ size, drawnAt, onPose }: DrawerCoreOptions): 
         move(sample) {
           if (press?.pointerId !== sample.pointerId)
             return
-          if (pressBroken(sample.buttons))
+          if (rightButtonDown(sample.buttons))
             return abandon()
           const dy = sample.y - press.y
           if (press.from === null) {

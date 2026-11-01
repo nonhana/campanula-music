@@ -248,19 +248,29 @@ describe('哪些按下才算开始拖', () => {
 })
 
 describe('按住断了、拖着时浅路由变了', () => {
-  it('拖着时移动发现主键已经松开（松开没传到页面），或者又按下了右键：作废，回到原处，之后的移动、松开都不管，跟着的 click 不算点按', () => {
-    for (const buttons of [0, 3]) {
-      const { core, pointer, said } = setup()
-      pointer.down(100)
-      pointer.move(300)
-      pointer.move(320, 16, { buttons })
-      expect(core.pose).toEqual({ dragging: false, end: 0 })
-      pointer.move(600)
-      pointer.up(600)
-      expect(core.pose).toEqual({ dragging: false, end: 0 })
-      pointer.click()
-      expect(said).toEqual([])
-    }
+  it('拖着时又按下了右键：作废，回到原处，之后的移动、松开都不管，跟着的 click 不算点按', () => {
+    const { core, pointer, said } = setup()
+    pointer.down(100)
+    pointer.move(300)
+    pointer.move(320, 16, { buttons: 3 })
+    expect(core.pose).toEqual({ dragging: false, end: 0 })
+    pointer.move(600)
+    pointer.up(600)
+    expect(core.pose).toEqual({ dragging: false, end: 0 })
+    pointer.click()
+    expect(said).toEqual([])
+  })
+
+  it('在 Mac 上快速松手：pointerup 之前先来一次主键已经松开（buttons 为 0）的移动，照常跟手，松手照常去另一头，跟着的 click 不算点按', () => {
+    const { core, pointer, said } = setup()
+    pointer.down(100)
+    pointer.move(300)
+    pointer.move(400, 16, { buttons: 0 })
+    expect(core.pose).toEqual({ dragging: true, position: 0.375 })
+    pointer.up(400)
+    expect(core.pose).toEqual({ dragging: false, end: 1 })
+    pointer.click()
+    expect(said).toEqual(['commit'])
   })
 
   it('拖着时被叫停（右键菜单、切走窗口、pointercancel 这类）：回到浅路由说的那一头，不改浅路由', () => {
@@ -368,7 +378,7 @@ describe('动画中抓住', () => {
 })
 
 describe('按住结束了没有', () => {
-  it('按住期间别的指针（第二根手指）松开、被取消：这次按住照常进行；按住真正结束（松开、作废、按住断了、往横里挪开）时 holding 变成 false', () => {
+  it('按住期间别的指针（第二根手指）松开、被取消：这次按住照常进行；按住真正结束（松开、作废、又按下右键、往横里挪开）时 holding 变成 false', () => {
     const { core, grip, pointer } = setup()
     const other = {
       pointerId: 9,
@@ -399,7 +409,7 @@ describe('按住结束了没有', () => {
 
     pointer.down(0)
     pointer.move(100)
-    pointer.move(120, 16, { buttons: 0 })
+    pointer.move(120, 16, { buttons: 3 })
     expect(grip.holding).toBe(false)
 
     pointer.down(0)

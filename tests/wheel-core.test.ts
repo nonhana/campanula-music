@@ -201,19 +201,28 @@ describe('哪些按下才算开始拖', () => {
 })
 
 describe('按住断了', () => {
-  it('拖着时移动发现主键已经松开（松开没传到页面），或者又按下了右键：作废、转回原位，之后的移动、松开都不管，跟着的 click 不算点按', () => {
-    for (const buttons of [0, 3]) {
-      const { core, pointer, said } = setup()
-      pointer.down(300)
-      pointer.move(200)
-      pointer.move(190, 16, 300, { buttons })
-      expect(core.pose).toEqual({ dragging: false })
-      pointer.move(50)
-      pointer.up(50)
-      expect(core.pose).toEqual({ dragging: false })
-      pointer.click()
-      expect(said).toEqual([])
-    }
+  it('拖着时又按下了右键：作废、转回原位，之后的移动、松开都不管，跟着的 click 不算点按', () => {
+    const { core, pointer, said } = setup()
+    pointer.down(300)
+    pointer.move(200)
+    pointer.move(190, 16, 300, { buttons: 3 })
+    expect(core.pose).toEqual({ dragging: false })
+    pointer.move(50)
+    pointer.up(50)
+    expect(core.pose).toEqual({ dragging: false })
+    pointer.click()
+    expect(said).toEqual([])
+  })
+
+  it('在 Mac 上快速松手：pointerup 之前先来一次主键已经松开（buttons 为 0）的移动，照常跟手，松手照常切歌，跟着的 click 不算点按', () => {
+    const { core, pointer, said } = setup({ pointerType: 'mouse' })
+    pointer.down(300)
+    pointer.move(200)
+    pointer.move(150, 16, 300, { buttons: 0 })
+    expect(core.pose).toEqual({ dragging: true, turned: -0.75 })
+    pointer.up(150)
+    pointer.click()
+    expect(said).toEqual(['next'])
   })
 
   it('拖着时被叫停（右键菜单、切走窗口、页面藏起来）：转回原位，不切歌；pointercancel 只叫停那根指针（系统的返回手势从屏幕边上接走手指也是这样）', () => {
