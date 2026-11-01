@@ -1,0 +1,20 @@
+# 镜像是生产构建，开发用的东西不进构建上下文；.env 里有站长的密钥，绝不能进镜像
+.git
+.github
+.svelte-kit
+.vercel
+.vscode
+.vitest
+build
+node_modules
+_notes
+.env
+.env.*
+!.env.example
+docs
+tests
+scripts
+.agents
+.claude
+.impeccable
+.omp

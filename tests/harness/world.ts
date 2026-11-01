@@ -118,8 +118,13 @@ const captureServerLogs = (serving: AsyncLocalStorage<RequestSpan>) => {
 }
 /* eslint-enable no-console */
 
-const startWorld = async () => {
-  Object.assign(process.env, SITE_ENV)
+interface WorldOptions {
+  /** 盖掉站长配置里的某几项（例如不配密钥），其余照 SITE_ENV */
+  env?: Partial<typeof SITE_ENV>
+}
+
+const startWorld = async (options: WorldOptions = {}) => {
+  Object.assign(process.env, SITE_ENV, options.env)
   const vite = await createServer({
     configFile: false,
     logLevel: 'silent',
@@ -188,7 +193,7 @@ const startWorld = async () => {
 }
 
 /** 在测试文件顶层调用：整个文件共用一个世界，每条测试开始前清空网易云替身、日志和时钟； 每条测试结束时等这条测试的设备停下（网易云替身压着的不等），免得后台同步之类的请求落进下一条测试 */
-export const useWorld = (): World => {
+export const useWorld = (options: WorldOptions = {}): World => {
   let started: Awaited<ReturnType<typeof startWorld>> | undefined
   const current = () => {
     if (!started)
@@ -197,7 +202,7 @@ export const useWorld = (): World => {
   }
 
   beforeAll(async () => {
-    started = await startWorld()
+    started = await startWorld(options)
   }, 30_000)
   afterAll(async () => {
     await started?.close()
