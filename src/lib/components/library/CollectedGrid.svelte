@@ -1,6 +1,6 @@
 <!--
-  曲库里收藏的专辑或歌手：手机的专辑、歌手标签（两列 / 三列网格），桌面的专辑、歌手页（封面网格），桌面首页的一排（overview）。
-  专辑、歌手页上面是页头和筛选框（LibraryPageHead）：只在本机已有的列表里筛，筛的时候一个都没有就写“没有找到”；首页的一排没有筛选，只放这一排放得下的几个。
+  曲库里收藏的专辑或歌手：手机的专辑、歌手标签（两列 / 三列网格），桌面的专辑、歌手页（封面网格），桌面首页的横向架子（放全部，作者 2026-11-02 定）。
+  专辑、歌手页上面是页头和筛选框（LibraryPageHead）：只在本机已有的列表里筛，筛的时候一个都没有就写“没有找到”；首页的架子没有筛选。
   加载 / 失败 / 空 / 条目和格宽都交给 TileGrid（#75）；没拿到列表时是形状一致的骨架，出错能重试，一个都没有时只有标题。
 -->
 <script lang='ts'>
@@ -15,14 +15,13 @@
   import AlbumTile from './AlbumTile.svelte'
   import ArtistTile from './ArtistTile.svelte'
   import LibraryPageHead from './LibraryPageHead.svelte'
-  import { overviewSize } from './tile-grid'
   import TileGrid from './TileGrid.svelte'
 
   interface Props {
     library: LibraryState
     kind: 'albums' | 'artists'
-    layout: 'phone' | 'grid' | 'overview'
-    /** 专辑、歌手页的筛选词（返回这一页时跟着滚动位置一起恢复）；首页的一排不用 */
+    layout: 'phone' | 'grid' | 'shelf'
+    /** 专辑、歌手页的筛选词（返回这一页时跟着滚动位置一起恢复）；首页的架子不用 */
     query?: string
   }
 
@@ -32,17 +31,13 @@
   const words = $derived(kind === 'albums'
     ? { title: '专辑', unit: '张' as const }
     : { title: '歌手', unit: '位' as const })
-  const term = $derived(layout === 'overview'
-    ? ''
-    : query.trim())
+  const term = $derived(query.trim())
   const total = $derived((kind === 'albums'
     ? library.albums
     : library.artists)?.length ?? null)
   const albums = $derived.by(() => {
     if (kind !== 'albums' || !library.albums)
       return null
-    if (layout === 'overview')
-      return library.albums.slice(0, overviewSize('album'))
     return term
       ? view.app.searchAlbums(term)
       : library.albums
@@ -50,8 +45,6 @@
   const artists = $derived.by(() => {
     if (kind !== 'artists' || !library.artists)
       return null
-    if (layout === 'overview')
-      return library.artists.slice(0, overviewSize('artist'))
     return term
       ? view.app.searchArtists(term)
       : library.artists
@@ -66,13 +59,13 @@
       retry: () => view.app.retrySync(),
     }
     : null)
-  const tileLayout = $derived(layout === 'overview'
-    ? 'overview'
+  const tileLayout = $derived(layout === 'shelf'
+    ? 'shelf'
     : 'grid')
   const notFound = $derived({ icon: SearchX, title: `没有找到“${term}”` })
 </script>
 
-{#if layout !== 'overview'}
+{#if layout !== 'shelf'}
   <LibraryPageHead title={words.title} unit={words.unit} {total} {found} bind:query {phone} />
 {/if}
 
