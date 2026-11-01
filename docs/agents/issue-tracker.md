@@ -5,7 +5,7 @@
 ## 约定
 
 - **新建 issue**：步骤、标题、标签和正文模板见 [issue-template.md](issue-template.md)。命令是 `gh issue create --title "..." --label ready-for-agent --body-file <正文文件>`。
-- **读 issue**：`gh issue view <number> --comments`，用 `jq` 过滤评论，并同时取 label。
+- **读 issue**：正文和 label 用 `gh issue view <number> --json title,body,labels --jq '"# \(.title)\nlabels: \([.labels[].name] | join(", "))\n\n\(.body)"'`；评论用 `gh issue view <number> --json comments --jq '.comments[] | "## \(.author.login) \(.createdAt)\n\(.body)\n"'`。非终端里 `gh issue view --comments` 只输出评论、不输出正文。
 - **列 issue**：`gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'`，按需加 `--label`、`--state` 过滤。
 - **在 issue 下评论**：`gh issue comment <number> --body "..."`
 - **加 / 去 label**：`gh issue edit <number> --add-label "..."` / `--remove-label "..."`
@@ -31,7 +31,7 @@ GitHub 的 issue 和 PR 共用一套编号，所以单独一个 `#42` 可能是�
 
 ## 技能说“取出相关票”时
 
-运行 `gh issue view <number> --comments`。
+照上面“读 issue”的两条命令取正文和评论。
 
 ## 探路（wayfinding）操作
 

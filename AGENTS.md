@@ -18,17 +18,16 @@
 
 ### 交付
 
-实现一张票之前，先读 `docs/agents/delivery.md`：分支、测试接入点、真账号规矩，以及把试用清单交给作者的收尾方式（由作者亲手试用验收；截图只在点名时做）。
+实现一张票之前，先读 `docs/agents/delivery.md`：分支、测试、真账号规矩，以及把试用清单交给作者的收尾方式（由作者亲手试用验收；实现者默认不开浏览器）。
 
 ### 代码规范
 
 写代码和审查时对照 `CODING_STANDARDS.md`；能用工具查的规则以 `eslint.config.mts` 为准。
 
-### Mock 与浏览器验证
+### 浏览器验证
 
-- 日常界面、动效和 reviewer 验证走 mock：`pnpm dev:mock`（5174），`scripts/browser.sh`（默认 mock，不需要登录）。见 `docs/agents/mock.md`。
-- 真账号只用于作者最后的交付试用，走专用浏览器 `scripts/axi.sh`；打开前先 `scripts/browser.sh check --real`，不是登录态就停下请作者扫码。见 `docs/agents/browser.md`。
-- reviewer 不自己启动 Chrome；父 agent 用 mock 做视觉验证，把结论和截图路径交给 reviewer。
+- 实现者默认不开浏览器，作者照试用清单亲手试；例外和清单写法见 `docs/agents/delivery.md` 第 3、6 步。reviewer 只看 diff。
+- 作者点名做浏览器检查时：mock 用 `pnpm dev:mock`（5174）和 `scripts/browser.sh`，见 `docs/agents/mock.md`；真账号用专用浏览器 `scripts/axi.sh`，打开前先 `scripts/browser.sh check --real`，不是登录态就停下请作者扫码，见 `docs/agents/browser.md`。
 
 ## 代码地图
 
@@ -39,12 +38,13 @@
 - `src/lib/api/`：服务端接口的契约与端点目录；`src/lib/server/`：服务端适配层与 mock（只有 `netease.ts` 调 `hana-music-api`）。
 - `src/lib/components/`：
   - `account/` 账号与退出；`boot/` 打开 App、部署与根屏（`Brand` 是根屏、登录和外壳共用的品牌字样）；`menu/` 更多菜单（条目、行、壳、歌曲菜单）。
-  - `overlay/` 浮层栈与弹窗外壳（确认、对话框）；`playlist/` 歌单编辑、加入歌单、歌单封面（选图/裁剪/上传）。
+  - `overlay/` 浮层栈与弹窗外壳（确认、对话框；加浮层、从浮层里换页、改返回行为先读 `docs/agents/overlay.md`）；`playlist/` 歌单编辑、加入歌单、歌单封面（选图/裁剪/上传）。
   - `player/` 播放条、播放页、播放队列（含当前这首、换碟、封面飞行、音量、播放器内提示）；`songs/` 歌曲列表与歌曲行。
   - `library/` 曲库、歌单页、格子网格与多选；`downloads/` 已下载；`search/` 搜索；`daily/` 每日推荐。
   - `login/` 登录；`notice/` 全局提示条；`shell/` 桌面/手机骨架、返回栏、播放条停靠、页面过渡；`svg/` 内联图标；`ui/` 基础控件与封面图。
   - `shared/`：界面通用工具（文字与格式化、布局、动效、指针与手势、App 上下文、路由快照）。
 - `src/lib/dev/`：只在开发时打开的设计系统页；`scripts/`：录制、fixtures、门禁、mock smoke；`tests/`：App 接缝与纯逻辑核心。
+- `src/params.ts`：路由参数（`neteaseId` 只认正整数）；`uno.config.mts`：设计令牌、字号阶梯和全局样式（焦点环）。
 
 **规则①–⑫** 定义在 `docs/prototype/logic.md`；产品 Spec #11 在 GitHub issue（`gh issue view 11`）。
 

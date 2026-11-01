@@ -18,6 +18,11 @@ const adapter = process.env.VERCEL
   : adapterNode()
 
 export default defineConfig(({ command }) => ({
+  // mock（pnpm dev:mock）多一个插件，配置和 5173 的 pnpm dev 不同：共用 node_modules/.vite 时谁后启动谁重建依赖，
+  // 另一边开着的页面拿到过期模块，卡在空白首帧。各用各的依赖缓存
+  cacheDir: command === 'serve' && process.env.CAMPANULA_MOCK === '1'
+    ? 'node_modules/.vite-mock'
+    : undefined,
   define: {
     __CAMPANULA_MOCK__: JSON.stringify(command === 'serve' && process.env.CAMPANULA_MOCK === '1'),
   },

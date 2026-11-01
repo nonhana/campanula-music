@@ -1,6 +1,6 @@
 # Mock 开发环境
 
-日常界面、动效和 reviewer 验证走这里，不用登录真实网易云；真账号只留给作者最后的交付试用。
+作者在本机试用、作者点名的浏览器检查走这里，不用登录真实网易云；真账号只留给作者最后的交付试用。实现者默认不开浏览器（`delivery.md` 第 3 步）。
 
 ## 启动
 
@@ -10,6 +10,8 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 ```
 
 - 独立端口 `http://localhost:5174`，和普通的 `pnpm dev`（5173，真账号）同时开着也不冲突。
+- 等它启动好看日志里的 `ready in`。Vite 默认绑 `localhost`，macOS 上落在 IPv6 `::1`，探 `127.0.0.1:5174` 端口会一直超时。
+- mock 的 Vite 依赖缓存在 `node_modules/.vite-mock`，和 5173 的 `node_modules/.vite` 分开：两边配置不同（mock 多一个插件），共用时谁后启动谁重建依赖，另一边打开的页面就拿到过期模块。页面卡在空白首帧时删 `node_modules/.vite-mock` 再重启，不影响 5173。
 - 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser.sh open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的；mock 的登录 Cookie 叫 `campanula_login_mock`（`dev:mock` 设置 `LOGIN_COOKIE_NAME`），和 5173 的 `campanula_login` 分开，同一个浏览器开两个端口也不会互相顶掉登录态。
 - 页面左下角显示 `Mock · 测试数据`。
 - 退出登录后，UI 的扫码 / 短信登录流程照常可用；mock 的二维码会直接成功。要回到已登录，再访问一次 `/mock/login`。

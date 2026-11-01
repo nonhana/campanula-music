@@ -1,6 +1,6 @@
 # 浏览器验证
 
-一个浏览器进程、一个专用上下文；同一时间只允许一个 agent 操作。日常验证默认走 mock，不需要登录；真账号只给作者做最后的交付试用。
+一个浏览器进程、一个专用上下文；同一时间只允许一个 agent 操作。实现者默认不开浏览器（`docs/agents/delivery.md` 第 3 步）；作者点名的浏览器检查默认走 mock，不需要登录；真账号只给作者做最后的交付试用。
 
 ## 命令
 
@@ -37,9 +37,7 @@ scripts/browser.sh port           # 桥接进程端口（sweep.py 用）
 
 ## reviewer
 
-- 静态 review 不碰浏览器。
-- 需要看画面时，由父 agent 用 mock 打开、执行、截图，把结论和截图路径交给 reviewer；reviewer 不再各自启动 Chrome。
-- 截图、动效逐帧只在作者点名时做；日常实现者不做成批的浏览器检查（`docs/agents/delivery.md`）。
+reviewer 只看 diff，不碰浏览器。截图、动效逐帧、浏览器检查只在作者点名时做（`docs/agents/delivery.md` 第 3 步）。
 
 ## 和界面验收 skill 的关系
 
