@@ -613,11 +613,6 @@
         "purpose": "歌手页专辑的“显示更多”、首次同步时桌面歌单页左栏的歌单。"
       },
       {
-        "name": "description-expand",
-        "value": "album description height animates from its current height to the new one (open 360ms, close 200ms, ease-out-soft) and reverses mid-way; clamps to 3 / 4 lines only after closing",
-        "purpose": "专辑简介展开、收起：下面的歌曲跟着平稳地挪。"
-      },
-      {
         "name": "dialog-in",
         "value": "backdrop fade 200ms; dialog from 8px below and scale 0.98 in 360ms ease-out-soft; out: 200ms fade",
         "purpose": "编辑、删除确认这类弹窗。"

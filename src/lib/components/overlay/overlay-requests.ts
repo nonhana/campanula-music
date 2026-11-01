@@ -58,6 +58,12 @@ export interface PlaylistRequest extends DialogRequest {
   readonly playlistId: number
 }
 
+/** 歌单、专辑简介的阅读层：名字写在副标题里，全文在正文里 */
+export interface DescriptionRequest extends DialogRequest {
+  readonly name: string
+  readonly text: string
+}
+
 /** 页头“下载”打开的选歌弹窗（#39）：歌单或专辑，列当前页的歌让人挑 */
 export type DownloadPickerRequest
   = | (DialogRequest & { readonly kind: 'playlist', readonly playlistId: number })

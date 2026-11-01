@@ -1,6 +1,6 @@
 <!--
   歌单页（我喜欢的音乐也是这一页）。桌面曲库里的歌单是两栏（左栏曲库、右栏 200px 大封面头部和虚拟列表，窄于 1024px 收起，
-  DESIGN.md Layout），不在曲库里的和专辑页一样是一栏；手机是返回栏 + 居中封面头部 + 简介 + 歌单内搜索 + 歌曲行。
+  DESIGN.md Layout），不在曲库里的和专辑页一样是一栏；手机是返回栏 + 居中封面头部（最下面两行简介）+ 歌单内搜索 + 歌曲行。
   头部交给 DetailHeader（#75）。左栏是一行一张的目录（PlaylistTile 的 nav 画法）：我喜欢的音乐在最上面，下面自建、收藏两块；页面只读 App 给的答案（state.library.playlistPage）：
   打开时还没同步全就由 App 用前台请求拉，不等后台同步；不在曲库里的不存进本机，每次打开都联网取。
   动作：收藏开关（不在曲库里的和收藏的歌单有）、自建歌单的“添加歌曲”和 •••（#33）、曲库里的歌单和专辑的“下载”（#39）；我喜欢的音乐只有下载。
@@ -19,7 +19,6 @@
   import type { LibraryState } from '#lib/app/library.js'
   import Avatar from '#lib/components/account/Avatar.svelte'
   import CollectButton from '#lib/components/library/CollectButton.svelte'
-  import Description from '#lib/components/library/Description.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
   import PlaylistTile from '#lib/components/library/PlaylistTile.svelte'
@@ -249,13 +248,12 @@
     title={name}
     flight={here}
     tags={header?.tags ?? []}
+    description={header?.description}
   >
     {#snippet meta()}{@render headerMeta()}{/snippet}
     {#snippet actions(compact: boolean)}{@render headerActions(compact)}{/snippet}
     {#snippet search(compact: boolean)}{@render headerSearch(compact)}{/snippet}
   </DetailHeader>
-  <!-- 从左栏换到另一张歌单时简介重新来过：上一张展开过的，这一张还是截断着 -->
-  {#if header?.description}<div in:reveal>{#key id}<Description text={header.description} {phone} />{/key}</div>{/if}
   <div class={phone ? '' : 'mt-6'}><PlaylistSongs {library} playlistId={id} bind:query {phone} /></div>
 {/snippet}
 

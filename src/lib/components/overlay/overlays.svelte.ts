@@ -11,6 +11,7 @@ import DownloadsMenu from '../downloads/DownloadsMenu.svelte'
 import ExportDialog from '../downloads/ExportDialog.svelte'
 import { createDownloadPanel } from '../downloads/panel.svelte'
 import PlaylistDownloadsDialog from '../downloads/PlaylistDownloadsDialog.svelte'
+import DescriptionDialog from '../library/DescriptionDialog.svelte'
 import { MultiSelect } from '../library/multi-select.svelte'
 import ArtistMenu from '../menu/ArtistMenu.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
@@ -27,7 +28,7 @@ import { getAppView } from '../shared/app-context.svelte'
 import { desktopLayout } from '../shared/layout'
 import { setSelectionMode } from '../ui/selection-mode'
 import { createOverlayHistory } from './overlay-history.svelte'
-import type { AddToPlaylistRequest, ArtistMenuRequest, DeleteDownloadsRequest, DeletePlaylistDownloadsRequest, DialogRequest, DownloadPickerRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
+import type { AddToPlaylistRequest, ArtistMenuRequest, DeleteDownloadsRequest, DeletePlaylistDownloadsRequest, DescriptionRequest, DialogRequest, DownloadPickerRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
 import type { LayerOptions } from './overlay-stack'
 import { OverlayStack } from './overlay-stack'
 
@@ -110,6 +111,7 @@ modal: true,
   const playlistEditor = register<EditorRequest>('playlist-editor', dialog, PlaylistEditor)
   const addSongsDialog = register<PlaylistRequest>('add-songs', { ...dialog, fallback: '[data-add-songs-entry]' }, AddSongs)
   const downloadPicker = register<DownloadPickerRequest>('download-picker', dialog, DownloadPicker)
+  const descriptionDialog = register<DescriptionRequest>('description', dialog, DescriptionDialog)
   const coverEditor = register<PlaylistRequest>('cover-editor', {
     ...dialog,
     dependsOn: 'playlist-editor',
@@ -200,6 +202,7 @@ playlistMenu,
 playlistEditor,
 addSongsDialog,
 downloadPicker,
+descriptionDialog,
 coverEditor,
 logoutConfirm,
 exportDialog,

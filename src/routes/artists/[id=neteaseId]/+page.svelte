@@ -33,6 +33,7 @@
   import SongList from '#lib/components/songs/SongList.svelte'
   import type { SongListView } from '#lib/components/songs/view.js'
   import { SONG_ROW_HEIGHT } from '#lib/components/songs/view.js'
+  import LongText from '#lib/components/ui/LongText.svelte'
   import Segmented from '#lib/components/ui/Segmented.svelte'
   import ShowMore from '#lib/components/ui/ShowMore.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
@@ -211,15 +212,13 @@
 
 {#snippet introText(text: ArtistIntroResponse)}
   <div class='space-y-6'>
-    {#if text.brief}
-      <p class='whitespace-pre-line break-words text-body text-neutral-700 leading-7' lang={langOf(text.brief)}>{text.brief}</p>
-    {/if}
+    {#if text.brief}<LongText text={text.brief} />{/if}
     {#each text.sections as section (section)}
       <section>
         {#if section.title}
           <h2 class='break-words text-title-sm text-neutral-900 font-600' lang={langOf(section.title)}>{section.title}</h2>
         {/if}
-        <p class={['whitespace-pre-line break-words text-body text-neutral-700 leading-7', section.title && 'mt-2']} lang={langOf(section.text)}>{section.text}</p>
+        <LongText text={section.text} class={section.title && 'mt-2'} />
       </section>
     {/each}
   </div>

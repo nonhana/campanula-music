@@ -7,6 +7,7 @@
   桌面动作：歌单、专辑、每日推荐、已下载贴底；歌手页头内容居中，动作跟在信息行下面（align='center'）。
   桌面动作行是一条不会换行的工具栏：左边动作、右边搜索；按工具栏自身宽度决定紧凑，动作太多时由调用方把管理动作收进 •••。
   手机不塞搜索：手机页头是居中的，搜索仍在页头下方（歌单在简介后、已下载在“正在下载”前）。
+  简介（歌单、专辑）只在页头里留预览（DescriptionPreview）：桌面在标签下面一行，手机在动作下面一张两行的白色卡片；全文在阅读层里读。
 -->
 <script lang='ts'>
   import type { LucideIcon } from '@lucide/svelte'
@@ -18,6 +19,7 @@
   import { pageHeading } from '../shell/back-title.svelte'
   import Cover from '../ui/Cover.svelte'
   import Tag from '../ui/Tag.svelte'
+  import DescriptionPreview from './DescriptionPreview.svelte'
   import { FLIGHT_COVER_SIZE } from './flight'
 
   interface Props {
@@ -36,6 +38,8 @@
     phoneLayout?: 'center' | 'row' | 'banner'
     meta?: Snippet<[boolean]>
     tags?: readonly string[]
+    /** 歌单、专辑的简介；阅读层的副标题用 title */
+    description?: string | null
     /** 参数是桌面工具栏是否放不下完整动作（手机固定 false） */
     actions?: Snippet<[boolean]>
     /** 桌面动作行右端的搜索；手机不渲染，调用方仍把搜索放在页头下方 */
@@ -55,6 +59,7 @@
     phoneLayout = 'center',
     meta,
     tags = [],
+    description = null,
     actions,
     search,
     note,
@@ -155,8 +160,10 @@
       {#each tags as tag (tag)}<Tag>{tag}</Tag>{/each}
     </p>
   {/if}
+  {#if description && !onPhone}<div class='mt-2'><DescriptionPreview text={description} name={title} /></div>{/if}
   {#if note}<div class={onPhone ? 'mt-4' : 'mt-2'}>{@render note()}</div>{/if}
   {@render actionsBlock(onPhone)}
+  {#if description && onPhone}<div class='mt-4'><DescriptionPreview text={description} name={title} phone /></div>{/if}
 {/snippet}
 
 {#if artwork || ready}

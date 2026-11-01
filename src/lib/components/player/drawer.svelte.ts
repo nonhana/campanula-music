@@ -13,8 +13,11 @@ import { createDrawerCore } from './drawer-core'
 // 这里只接浏览器（panel 的位置、底下垫的一截、动画、整页光标和选字；指针接线交给 press.ts 的 attachGrip）。
 // 动画 380ms（DURATIONS.drawer）先快后慢，中途松手按剩下的距离算；减少动态效果时直接到位（拖动时照样跟手）。
 
-/** 抽屉底下多垫这么多 px（背景和抽屉一样）：拉过头时抽屉会上移一点（有阻尼），垫上这一截不露出后面的页面；拉过头最多也只走这么多 */
-const BLEED = 48
+/** 抽屉底下多垫这么多 px（背景和抽屉一样）：拉过头时抽屉会上移一点（有阻尼），垫上这一截不露出后面的页面；拉过头最多也只走这么多。给抽屉定最高高度时要加上它 */
+export const DRAWER_BLEED = 48
+
+/** 不铺满的底部弹层最高占屏幕高度的这么多：手机的播放队列弹层、简介阅读层（DialogShell 的 reading），上面留出一截页面 */
+export const SHEET_HEIGHT = 0.86
 
 export interface Drawer {
   /** 0 整个拉开，1 收在下面；拉过头时略小于 0（有阻尼） */
@@ -43,7 +46,7 @@ export const createDrawer = (estimate: () => number): Drawer => {
   const holdPage = createPageHold()
 
   const size = () => (panel
-? panel.offsetHeight - BLEED
+? panel.offsetHeight - DRAWER_BLEED
 : estimate())
 
   const core = createDrawerCore({
@@ -52,7 +55,7 @@ export const createDrawer = (estimate: () => number): Drawer => {
     onPose(pose) {
       holdPage(pose.dragging)
       if (pose.dragging)
-        void position.set(Math.max(pose.position, -BLEED / size()), { duration: 0 })
+        void position.set(Math.max(pose.position, -DRAWER_BLEED / size()), { duration: 0 })
       // 不跟着 target 变：调用 settle 的 effect 只该跟着层的请求走
       else if (untrack(() => position.target) !== pose.end)
         void position.set(pose.end)
@@ -69,15 +72,15 @@ export const createDrawer = (estimate: () => number): Drawer => {
     settle: core.settle,
     panel(element) {
       panel = element
-      element.style.bottom = `-${BLEED}px`
-      element.style.paddingBottom = `calc(${BLEED}px + env(safe-area-inset-bottom))`
+      element.style.bottom = `-${DRAWER_BLEED}px`
+      element.style.paddingBottom = `calc(${DRAWER_BLEED}px + env(safe-area-inset-bottom))`
       // 有 transform（还有 will-change）的元素会成为里面 fixed 元素的定位参照，
       // 所以停在整个拉开时不设，动起来才设
       $effect(() => {
         const at = position.current
         element.style.transform = at === 0
 ? ''
-: `translateY(calc(${at} * (100% - ${BLEED}px)))`
+: `translateY(calc(${at} * (100% - ${DRAWER_BLEED}px)))`
         element.style.willChange = at === 0
 ? ''
 : 'transform'

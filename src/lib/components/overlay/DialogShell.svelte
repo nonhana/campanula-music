@@ -1,7 +1,8 @@
 <!--
   弹窗外壳（DESIGN.md Overlays · 弹窗）：只管布局与抽屉呈现，层协议由浮层栈统一拥有。桌面居中弹窗；手机底部弹层和播放页同一套抽屉
-  （拉手、拖标题收起、点遮罩/返回/Esc 收起）。确认（confirm）贴底边、外壳画标题、没有关闭键；表单接近全屏，标题行里的文字按钮由内容排。
-  宽度：确认 440、表单 480、挑歌 560、宽表单 680。忙着时关不掉；Esc 只给最上层，栈在 DOM 更新后归还焦点。
+  （拉手、拖标题收起、点遮罩/返回/Esc 收起）。确认（confirm）贴底边、外壳画标题、没有关闭键；阅读（reading）跟着内容高、最高到屏幕的 86%，
+  上面留出一截页面；表单接近全屏。阅读和表单标题行里的文字按钮由内容排。
+  宽度：确认 440、表单 480、挑歌 560、宽表单和阅读 680。忙着时关不掉；Esc 只给最上层，栈在 DOM 更新后归还焦点。
 -->
 <script lang='ts' module>
   const DIALOG_SIZES = {
@@ -9,6 +10,7 @@
     form: 'max-w-[480px]',
     picker: 'max-w-[560px]',
     wide: 'max-w-[680px]',
+    reading: 'max-w-[680px]',
   } as const
   export type DialogSize = keyof typeof DIALOG_SIZES
 </script>
@@ -18,7 +20,7 @@
   import type { Snippet } from 'svelte'
   import type { Attachment } from 'svelte/attachments'
 
-  import { createDrawer } from '../player/drawer.svelte'
+  import { createDrawer, DRAWER_BLEED, SHEET_HEIGHT } from '../player/drawer.svelte'
   import { dialog, fade } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
   import IconButton from '../ui/IconButton.svelte'
@@ -49,13 +51,17 @@
     if (request)
       shown = request
   })
-  const tall = $derived(shown !== null && size(shown) !== 'confirm')
+  const shownSize = $derived(shown && size(shown))
+  const confirm = $derived(shownSize === 'confirm')
+  const reading = $derived(shownSize === 'reading')
 
   const dialogOpen = $derived(request !== null && !layer.asSheet)
   const sheetOpen = $derived(request !== null && layer.asSheet)
-  const drawer = createDrawer(() => (tall
-    ? window.innerHeight - 24
-    : SHORT_SHEET_ESTIMATE))
+  const drawer = createDrawer(() => (confirm
+    ? SHORT_SHEET_ESTIMATE
+    : reading
+    ? window.innerHeight * SHEET_HEIGHT
+    : window.innerHeight - 24))
   /** 拖过阈值就收起；忙着时弹回去 */
   const commit = () => {
     if (layer.busy)
@@ -115,7 +121,10 @@
 {#if shown && layer.asSheet && (sheetOpen || drawer.visible)}
   <button type='button' class='fixed inset-0 z-70 bg-neutral-900/30' style:opacity={1 - drawer.position} aria-label='关闭' tabindex='-1' onclick={() => layer.close()}></button>
   <div
-    class={['fixed inset-x-0 z-71 flex flex-col rounded-t-sheet bg-white shadow-float', tall && 'top-6']}
+    class={['fixed inset-x-0 z-71 flex flex-col rounded-t-sheet bg-white shadow-float', !confirm && !reading && 'top-6']}
+    style:max-height={reading
+      ? `calc(${SHEET_HEIGHT * 100}dvh + ${DRAWER_BLEED}px)`
+      : undefined}
     {@attach drawer.panel}
     role='dialog'
     tabindex='-1'
@@ -128,7 +137,7 @@
       <span class='h-1 w-9 rounded-full bg-neutral-300'></span>
     </div>
     {#key shown}
-      {#if !tall}
+      {#if confirm}
         {@render heading('px-6 pt-2 text-title-sm text-neutral-900 font-600')}
       {/if}
       {@render children(shown, true, heading)}

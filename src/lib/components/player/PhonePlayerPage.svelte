@@ -18,7 +18,7 @@
   import SongMoreButton from '../songs/SongMoreButton.svelte'
   import { createCoverSwipe } from './cover-swipe.svelte'
   import CoverWheel from './CoverWheel.svelte'
-  import { createDrawer } from './drawer.svelte'
+  import { createDrawer, SHEET_HEIGHT } from './drawer.svelte'
   import Lyrics from './Lyrics.svelte'
   import NowPlayingTitle from './NowPlayingTitle.svelte'
   import PlayButton from './PlayButton.svelte'
@@ -52,9 +52,6 @@
     commit: direction => view.app[direction](),
     tap: () => (choices.phoneLyrics = true),
   })
-
-  /** 播放队列弹层占屏幕高度的这么多 */
-  const SHEET_HEIGHT = 0.86
 
   let sheet = $state<HTMLElement>()
 

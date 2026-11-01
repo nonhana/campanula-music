@@ -25,6 +25,7 @@
   import ToolButton from '#lib/components/ui/ToolButton.svelte'
   import { designSong } from '#lib/dev/design-data.js'
   import { DESIGN_PAGE_MARKER } from '#lib/dev/design-marker.js'
+  import DesignDescriptionDemo from '#lib/dev/DesignDescriptionDemo.svelte'
   import DesignDownloadDemo from '#lib/dev/DesignDownloadDemo.svelte'
   import DesignPanelCard from '#lib/dev/DesignPanelCard.svelte'
 
@@ -562,6 +563,13 @@
           </div>
           <span class='text-caption text-neutral-600'>手机 48px · 下载中 / 已下载</span>
         </div>
+      </div>
+    </section>
+
+    <section>
+      {@render section('歌单和专辑的简介', '页头里只留一行，放不下时整行能点，点开在阅读层里读全文；手机是页头最下面两行的白色卡片，点开是跟着内容高、最高占屏幕 86% 的底部弹层。Esc、点遮罩、返回都能关上。')}
+      <div class='mt-4'>
+        <DesignDescriptionDemo />
       </div>
     </section>
 

@@ -1,5 +1,5 @@
 <!--
-  专辑页：桌面是 200px 封面头部（名字、“歌手 · 年份 · 几首”）、简介、白色面板里带曲序的歌曲行；手机是返回栏 + 居中封面头部 + 简介 + 歌曲行。
+  专辑页：桌面是 200px 封面头部（名字、“歌手 · 年份 · 几首”、一行简介）、白色面板里带曲序的歌曲行；手机是返回栏 + 居中封面头部（最下面两行简介）+ 歌曲行。
   头部交给 DetailHeader（#75）。告诉 App 听众在看这一张专辑（viewing），什么时候拉由 App 决定；播放全部旁边的“下载”把整张专辑排进下载队列（#39）。滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
@@ -8,7 +8,6 @@
   import { CircleArrowDown } from '@lucide/svelte'
 
   import CollectButton from '#lib/components/library/CollectButton.svelte'
-  import Description from '#lib/components/library/Description.svelte'
   import DetailHeader from '#lib/components/library/DetailHeader.svelte'
   import { selectionActions } from '#lib/components/library/selection-actions.svelte.js'
   import { getOverlays } from '#lib/components/overlay/overlay-context.js'
@@ -98,6 +97,7 @@
       cover={{ url: album?.coverUrl ?? null }}
       title={album?.name ?? ''}
       flight={here}
+      {description}
     >
       {#snippet meta(onPhone: boolean)}
         {#if album && content}
@@ -118,7 +118,6 @@
         {/if}
       {/snippet}
     </DetailHeader>
-    {#if description}<div in:reveal><Description text={description} {phone} /></div>{/if}
     <div class={phone ? 'pt-1' : 'mt-6'}>
       <SongList list={listView} source={{ kind: 'album', id }} loadingLabel='正在加载专辑' {phone} virtual={false} staggerRows={false} numbered {select} />
     </div>
