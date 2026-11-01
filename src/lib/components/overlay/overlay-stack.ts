@@ -12,7 +12,8 @@ export interface OverlayPosition {
   readonly stamp?: string
 }
 
-export type OverlayDestination = '/' | '/playlists'
+/** 换去的页面地址由调用方用 resolve() 拼好（含 base）：核心不碰 Kit */
+export type OverlayDestination = string
 export type OverlayResult = 'committed' | 'cancelled' | 'invalidated'
 export type HistoryResult
   = | { readonly status: OverlayResult, readonly position: OverlayPosition }
@@ -23,7 +24,8 @@ export interface OverlayHistory {
   read: () => OverlayPosition
   write: (marker: OverlayMarker | undefined, replace: boolean, from: OverlayPosition) => Promise<HistoryResult>
   go: (target: OverlayPosition, from: OverlayPosition) => Promise<HistoryResult>
-  leave: (path: OverlayDestination, from: OverlayPosition) => Promise<HistoryResult>
+  /** replace：替换掉当前这一条；否则像点链接一样在后面新开一条（丢掉前进记录） */
+  leave: (path: OverlayDestination, replace: boolean, from: OverlayPosition) => Promise<HistoryResult>
 }
 
 export interface OverlayPresentation<F> {
@@ -67,6 +69,7 @@ export interface OverlayLayer<R extends Request<F>, F> {
   close: (restoreFocus?: boolean) => Promise<OverlayResult>
   closeThrough: () => Promise<OverlayResult>
   invalidate: () => Promise<OverlayResult>
+  /** 删除、退出：换去 path 并替换掉打开浮层前的那一页，返回不再回到它 */
   leaveTo: (path: OverlayDestination) => Promise<OverlayResult>
 }
 
@@ -121,6 +124,11 @@ export class OverlayStack<F> {
   get baseInert(): boolean {
     this.presentation.read?.()
     return this.layers.some(entry => entry.modal)
+  }
+
+  /** 有层占着浏览历史（播放页、底部弹层、手机弹窗）：这时点页面里的链接要走 leave，不然身后留一条空记录 */
+  get holdsHistory(): boolean {
+    return this.layers.some(entry => entry.cursor !== null)
   }
 
   register<R extends Request<F>>(name: string, options: LayerOptions<R, F>): OverlayLayer<R, F> {
@@ -415,36 +423,56 @@ export class OverlayStack<F> {
         return 'cancelled'
       if (registration.active?.id !== expected)
         return 'invalidated'
-      if (!this.permitted(this.layers))
-        return 'cancelled'
-      const origin = this.history.read()
-      const hadHistory = this.layers.some(entry => entry.cursor !== null)
-      if (hadHistory) {
-        const status = this.accept(await this.history.go(this.base, origin), current)
-        if (status !== 'committed')
-          return status
-      }
-      const result = await this.history.leave(path, this.history.read())
-      if (!current() || result.status === 'invalidated')
-        return 'invalidated'
-      // 只恢复仍然归自己所有的来源条目，绝不按前进差值盲退
-      if (result.status !== 'committed') {
-        if (hadHistory) {
-          const restored = await this.history.go(origin, result.position)
-          if (this.accept(restored, current) !== 'committed')
-            return 'invalidated'
-        }
-        if (result.status === 'failed')
-          throw result.error
-        return result.status
-      }
-      this.position = result.position
-      this.remove(this.layers)
-      this.remembered.clear()
-      this.slots.clear()
-      this.base = result.position
-      return 'committed'
+      return this.depart(path, true, current)
     })
+  }
+
+  /** 从开着的层里换去别的页（#84：点歌手名、专辑名，菜单里的查看歌手、查看专辑）：返回回到打开这些层之前的那一页 */
+  leave(path: OverlayDestination): Promise<OverlayResult> {
+    return this.run(current => this.depart(path, false, current))
+  }
+
+  /**
+   * 先撤掉层占的历史、回到打开它们之前那一条，再换去 path：replace 替换掉那一条，否则在它后面新开一条。
+   * 没换成时按原条目把层放回去；原条目已经不在了（新开的那条压进去以后才失败，浏览器丢掉了层占的前进记录）时停在原页，层一并撤掉
+   */
+  private async depart(path: OverlayDestination, replace: boolean, current: () => boolean): Promise<OverlayResult> {
+    if (!this.permitted(this.layers))
+      return 'cancelled'
+    const origin = this.history.read()
+    const hadHistory = this.holdsHistory
+    if (hadHistory) {
+      const status = this.accept(await this.history.go(this.base, origin), current)
+      if (status !== 'committed')
+        return status
+    }
+    const result = await this.history.leave(path, replace, this.history.read())
+    if (!current() || result.status === 'invalidated')
+      return 'invalidated'
+    if (result.status === 'committed') {
+      this.settle(result.position)
+      return 'committed'
+    }
+    // 只恢复仍然归自己所有的来源条目，绝不按前进差值盲退
+    if (hadHistory) {
+      const restored = this.accept(await this.history.go(origin, result.position), current)
+      if (restored === 'cancelled')
+        this.settle(this.history.read())
+      else if (restored !== 'committed')
+        return 'invalidated'
+    }
+    if (result.status === 'failed')
+      throw result.error
+    return result.status
+  }
+
+  /** 停在了别的条目上：层、恢复标记和槽位都不再对应任何一条历史 */
+  private settle(position: OverlayPosition): void {
+    this.position = position
+    this.remove(this.layers)
+    this.remembered.clear()
+    this.slots.clear()
+    this.base = position
   }
 
   /** 外部观察会立刻让排队中的命令失效，再按最新条目对账 */

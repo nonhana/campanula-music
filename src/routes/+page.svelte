@@ -1,7 +1,7 @@
 <!--
   曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐三行歌曲格（“查看全部”进歌单页）
   和右侧的每日推荐方块、歌单封面网格、收藏的专辑和歌手横向架子。滚动位置随浏览历史恢复。
-  歌曲格和歌曲行共用 songs/SongTitle；能不能放读 App 的答案（songLook）。
+  歌曲格和歌曲行共用 songs/SongTitle；歌曲格的歌手名能点（#84），歌手一行连同下载标记画在点歌按钮外面（CreditLine）。能不能放读 App 的答案（songLook）。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -23,6 +23,8 @@
   import { fade, reveal, scrollBehavior } from '#lib/components/shared/motion.js'
   import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
   import { formatCount } from '#lib/components/shared/text.js'
+  import CreditLine from '#lib/components/songs/CreditLine.svelte'
+  import DownloadMark from '#lib/components/songs/DownloadMark.svelte'
   import NowChip from '#lib/components/songs/NowChip.svelte'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import PlayTarget from '#lib/components/songs/PlayTarget.svelte'
@@ -164,9 +166,15 @@
                           <Cover url={song.album.coverUrl} size={48} class='rounded-md' />
                           {#if now}<NowChip />{/if}
                         </span>
-                        <PlayTarget class='min-w-0' rounded disabled={off} {now} cover={covers[i]} onplay={() => view.app.play(source, song.id)}>
-                          <SongTitle {song} {now} {look} mark tight />
-                        </PlayTarget>
+                        <span class='min-w-0'>
+                          <PlayTarget class='block w-full' rounded disabled={off} {now} cover={covers[i]} onplay={() => view.app.play(source, song.id)}>
+                            <SongTitle {song} {now} {look} mark tight creditsOutside />
+                          </PlayTarget>
+                          <span class='flex items-center gap-1.5 text-caption text-neutral-600' aria-hidden='true'>
+                            {#if look.mark}<DownloadMark mark={look.mark} variant='inline' />{/if}
+                            <CreditLine artists={song.artists} linked class='min-w-0 truncate' />
+                          </span>
+                        </span>
                         <SongMoreButton {song} {source} size='cell' />
                       </div>
                     </div>

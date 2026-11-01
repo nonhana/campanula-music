@@ -19,6 +19,9 @@ export interface MenuItem {
   readonly lang?: string
   /** 名字下面一行：首数、不能选的理由 */
   readonly detail?: string
+  /** 名字后面同一行的灰字：查看歌手后面写歌手、查看专辑后面写专辑名（#84）。和名字一起截断，行高不变 */
+  readonly note?: string
+  readonly noteLang?: string
   readonly leading?: MenuLeading
   readonly tone?: MenuTone
   readonly disabled?: boolean

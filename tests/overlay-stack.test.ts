@@ -4,6 +4,22 @@ import type { LayerOptions } from '../src/lib/components/overlay/overlay-stack'
 import { OverlayStack } from '../src/lib/components/overlay/overlay-stack'
 import { MemoryOverlayHistory } from './harness/overlay-history'
 
+const scene = () => {
+  const history = new MemoryOverlayHistory('/playlists/1')
+  const stack = new OverlayStack<string>(history, {
+    changed() {},
+    async rendered() {},
+    focus() {},
+  }, 'session')
+  history.listen(phase => stack.reconcile(phase), () => stack.navigate())
+  const register = (name: string, options: Partial<LayerOptions<{ from: string }>> = {}) => stack.register<{ from: string }>(name, {
+    history: () => true,
+    modal: true,
+    ...options,
+  })
+  return { history, stack, register }
+}
+
 describe('返回可收起的层', () => {
   it('菜单转交加入歌单再新建，返回直接收起，不回到旧菜单', async () => {
     const history = new MemoryOverlayHistory('/playlists/1')
@@ -443,22 +459,6 @@ describe('返回可收起的层', () => {
 })
 
 describe('审查反例的历史与来源失效', () => {
-  const scene = () => {
-    const history = new MemoryOverlayHistory('/playlists/1')
-    const stack = new OverlayStack<string>(history, {
-      changed() {},
-      async rendered() {},
-      focus() {},
-    }, 'session')
-    history.listen(phase => stack.reconcile(phase), () => stack.navigate())
-    const register = (name: string, options: Partial<LayerOptions<{ from: string }>> = {}) => stack.register<{ from: string }>(name, {
-      history: () => true,
-      modal: true,
-      ...options,
-    })
-    return { history, stack, register }
-  }
-
   it('goto 被取消但正常 resolve 时不提交层', async () => {
     const { history, stack, register } = scene()
     const editor = register('editor')
@@ -807,5 +807,76 @@ describe('审查反例的历史与来源失效', () => {
     await history.forward()
     expect(stack.top).toBeNull()
     expect(stack.baseInert).toBe(false)
+  })
+})
+
+describe('从浮层里换去别的页（#84）', () => {
+  it('播放页和队列占着历史时换页：先退回打开前那一条再新开一条，返回回到原页、不重开播放页', async () => {
+    const { history, stack, register } = scene()
+    const player = register('player', {
+      restore: () => true,
+    })
+    const queue = register('queue', {
+      restore: () => true,
+      dependsOn: 'player',
+    })
+    await player.open({ from: 'bar' })
+    await queue.open({ from: 'queue-button' })
+    expect(await stack.leave('/artists/5')).toBe('committed')
+    expect(stack.top).toBeNull()
+    expect(history.url).toBe('/artists/5')
+    expect(history.index).toBe(1)
+    expect(history.length).toBe(2)
+    await history.back()
+    expect(history.url).toBe('/playlists/1')
+    expect(stack.top).toBeNull()
+    await history.forward()
+    expect(history.url).toBe('/artists/5')
+    expect(stack.top).toBeNull()
+  })
+
+  it('不占历史的浮动菜单开着时换页：直接在后面新开一条，菜单收起', async () => {
+    const { history, stack, register } = scene()
+    const menu = register('menu', {
+      history: () => false,
+      modal: false,
+    })
+    await menu.open({ from: 'more' })
+    expect(await stack.leave('/albums/7')).toBe('committed')
+    expect(stack.top).toBeNull()
+    expect(history.url).toBe('/albums/7')
+    expect(history.length).toBe(2)
+    await history.back()
+    expect(history.url).toBe('/playlists/1')
+    expect(stack.top).toBeNull()
+  })
+
+  it('换页被取消时按原条目放回底部弹层，之后照常关', async () => {
+    const { history, stack, register } = scene()
+    const menu = register('menu')
+    await menu.open({ from: 'more' })
+    history.cancelNext('leave')
+    expect(await stack.leave('/albums/7')).toBe('cancelled')
+    expect(history.index).toBe(1)
+    expect(stack.top?.name).toBe('menu')
+    expect(await menu.close()).toBe('committed')
+    expect(history.index).toBe(0)
+    expect(history.url).toBe('/playlists/1')
+  })
+
+  it('新开的那条压进去以后才失败：层占的前进记录已经丢了，停在原页、层撤掉，重开不多退', async () => {
+    const { history, stack, register } = scene()
+    const menu = register('menu')
+    await menu.open({ from: 'more' })
+    history.failNext('leave', 'afterCommit')
+    await expect(stack.leave('/albums/7')).rejects.toThrow('afterCommit')
+    expect(stack.top).toBeNull()
+    expect(stack.baseInert).toBe(false)
+    expect(history.index).toBe(0)
+    expect(history.url).toBe('/playlists/1')
+    await menu.open({ from: 'more' })
+    expect(history.index).toBe(1)
+    expect(await menu.close()).toBe('committed')
+    expect(history.index).toBe(0)
   })
 })

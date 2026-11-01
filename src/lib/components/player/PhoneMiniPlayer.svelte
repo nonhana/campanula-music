@@ -25,7 +25,7 @@
     <NowPlaying
       size={44}
       pageCover={PAGE_COVER.phone}
-      buttonClass='h-full active:bg-neutral-50'
+      class='h-full active:bg-neutral-50'
       nameClass='gap-1.5'
     />
     <HeartButton {song} size='phone' />

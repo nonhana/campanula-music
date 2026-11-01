@@ -3,7 +3,7 @@
   头部交给 DetailHeader（#75）。告诉 App 听众在看这一张专辑（viewing），什么时候拉由 App 决定；播放全部旁边的“下载”把整张专辑排进下载队列（#39）。滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
-  import { resolve } from '$app/paths'
+  import { page } from '$app/state'
   import { CircleArrowDown } from '@lucide/svelte'
 
   import CollectButton from '#lib/components/library/CollectButton.svelte'
@@ -17,6 +17,7 @@
   import { reveal } from '#lib/components/shared/motion.js'
   import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
   import { formatCount, langOf, yearOf } from '#lib/components/shared/text.js'
+  import { creditLink } from '#lib/components/songs/credit-link.js'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import SongList from '#lib/components/songs/SongList.svelte'
   import type { SongListView } from '#lib/components/songs/view.js'
@@ -70,12 +71,13 @@
 
 {#snippet artistLink(onPhone: boolean)}
   {#if album}
-    {#if album.artist.id !== null && album.artist.id > 0 && album.artist.name}
-      <a
-        href={resolve('/artists/[id=neteaseId]', { id: album.artist.id })}
-        class={['rounded text-primary-900 font-500 underline-offset-3 mouse:hover:underline', onPhone && 'min-h-8 inline-flex items-center']}
-        lang={langOf(album.artist.name)}
-      >{album.artist.name}</a>
+    {@const link = creditLink('artist', album.artist, page.url.pathname)}
+    {#if link}
+      <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- 地址由 credit-link.ts 用 resolve() 拼好 -->
+      <a href={link.href}
+         class={['rounded text-primary-900 font-500 underline-offset-3 mouse:hover:underline', onPhone && 'min-h-8 inline-flex items-center']}
+         lang={langOf(link.name)}
+      >{link.name}</a>
     {:else}
       <span lang={langOf(album.artist.name ?? '')}>{album.artist.name ?? '未知歌手'}</span>
     {/if}

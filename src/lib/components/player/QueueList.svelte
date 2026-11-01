@@ -6,7 +6,8 @@
   它自己是“定位到正在播放”的主人也是列表（shared/now-locate）：当前这首滚出去时右下角淡入定位按钮。
   ground：放在播放页的封面染底上（桌面播放页），没有白底；晨光行用薄荷玻璃、悬停是半透明白、时长序号移出键用石墨（石墨淡只放在白底或晨光底上），
   滚动区上下各 24px 渐隐；滚动条和定位按钮在滚动区外面，不跟着淡。手机弹层和桌面面板是白底。
-  歌名、歌手、徽标和歌曲行共用 songs/SongTitle，行高是 songs/view 的 SONG_ROW_HEIGHT。
+  歌名、歌手、徽标和歌曲行共用 songs/SongTitle，行高是 songs/view 的 SONG_ROW_HEIGHT。桌面上歌手名能点（#84，链接不进 Tab 顺序），歌手一行画在点歌按钮外面（CreditLine）；
+  在播放页里点名字，播放页收起、换到那一页（CreditName 交给浮层栈）。手机弹层里写纯文字。
   清空后队列空、停下，播放页跟着收起；移出后焦点落在下一首的移出键（最后一首是上一首的，正在放的那首落在“清空”）。
 -->
 <script lang='ts'>
@@ -18,10 +19,12 @@
   import type { QueueEntry } from '#lib/app/player.js'
 
   import { getAppView } from '../shared/app-context.svelte'
+  import { desktopLayout } from '../shared/layout'
   import { fade } from '../shared/motion'
   import { createNowLocate, focusNowRow } from '../shared/now-locate.svelte'
   import { setScrollLookup } from '../shared/scroll-marks'
   import { formatCount, formatDuration } from '../shared/text'
+  import CreditLine from '../songs/CreditLine.svelte'
   import LocateNowButton from '../songs/LocateNowButton.svelte'
   import MorningWash from '../songs/MorningWash.svelte'
   import NowIndex from '../songs/NowIndex.svelte'
@@ -128,9 +131,12 @@
               <div class={['relative grid grid-cols-[28px_40px_minmax(0,1fr)_auto_36px] h-full items-center gap-3 pl-2 pr-1', off && 'opacity-45']}>
                 <NowIndex n={i + 1} {now} onGround={ground} />
                 <Cover url={entry.song.album.coverUrl} size={40} class='rounded-md' />
-                <PlayTarget class='min-w-0' rounded disabled={off} {now} onplay={() => view.app.playFromQueue(i)}>
-                  <SongTitle song={entry.song} {now} {look} />
-                </PlayTarget>
+                <span class='min-w-0'>
+                  <PlayTarget class='block w-full' rounded disabled={off} {now} onplay={() => view.app.playFromQueue(i)}>
+                    <SongTitle song={entry.song} {now} {look} creditsOutside />
+                  </PlayTarget>
+                  <CreditLine artists={entry.song.artists} linked={desktopLayout.current} spoken={false} class='block truncate text-caption text-neutral-600' />
+                </span>
                 <!-- 网易云没给时长（#78）：留着这一格，行里各列对齐 -->
                 <span class={[
                   'text-caption tabular-nums',

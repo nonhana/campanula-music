@@ -1,5 +1,6 @@
 <!--
-  歌曲行里点歌的按钮（DESIGN.md Song Row）：盖住整行，单击（轻点）整行就播放；放在 position: relative 的行里。
+  歌曲行里点歌的按钮（DESIGN.md Song Row）：盖住整行，单击（轻点）整行就播放；放在 position: relative 的行里。按钮里不能放链接：
+  桌面上能点的歌手一行画在按钮外面（CreditLine），链接和红心键、••• 一样用 relative z-1 压在这层上面，点它们不放歌。
   给了 cover（这一行的封面图）的，点了换歌时封面图飞进播放条（cover-flight.svelte.ts）；播放队列里的不给，在播放页里换碟。
   键盘焦点环画在行内、不压到相邻的行（DESIGN.md Buttons · Focus）；无版权的歌不能点。
 -->

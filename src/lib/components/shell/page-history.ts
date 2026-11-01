@@ -8,8 +8,8 @@ const supported = 'navigation' in window
 
 /**
  * 桌面顶栏的返回、前进和手机返回栏的 ←（DESIGN.md Navigation · 返回、前进）按页走：同一个地址上连着的几条浏览记录算一页，直接跳到上一个、下一个地址。
- * 播放页、菜单、弹窗是同一地址上的浅路由：关掉后留下前进记录，从菜单里换页又在身后留下一条；浮层栈从别的地址落到这些记录上只撤层、
- * 不重建（overlay-stack.ts 的 reconcile），一条条走就会白按。只看这个标签页这一次打开以来的记录（Navigation API 的 entries），到头就停。
+ * 播放页、菜单、弹窗是同一地址上的浅路由：关掉后留下前进记录（从层里点链接换页由浮层栈先撤掉这些记录，overlay-stack.ts 的 leave）；
+ * 浮层栈从别的地址落到这些记录上只撤层、不重建（overlay-stack.ts 的 reconcile），一条条走就会白按。只看这个标签页这一次打开以来的记录（Navigation API 的 entries），到头就停。
  */
 const pageStep = (direction: -1 | 1): number | null => {
   if (!supported)

@@ -1,6 +1,8 @@
 import type { Song } from '#lib/api/library.js'
 import type { PlaySource } from '#lib/api/playback.js'
 
+import type { CreditLink } from '../songs/credit-link'
+
 export interface DialogRequest {
   /** 关掉后焦点回到它 */
   readonly from: HTMLElement | null
@@ -27,6 +29,11 @@ export interface PlaylistMenuRequest extends MenuRequest {
   readonly playlistId: number
   /** 桌面动作行放不下添加 / 多选时，由 ••• 一并收着 */
   readonly compact: boolean
+}
+
+/** 歌曲菜单“查看歌手”有几位能点的歌手时转交的歌手列表（#84）：名字和用 resolve() 拼好的地址（songs/credit-link.ts） */
+export interface ArtistMenuRequest extends MenuRequest {
+  readonly artists: readonly CreditLink[]
 }
 
 /** 加入歌单的选择器（#73）：song 是歌曲菜单转交的（songs 只有一首），multi 是多选工具条打开的（勾选的几首）；currentPlaylistId 是打开时所在的歌单，专辑、歌手、每日推荐、搜索、已下载里没有（null） */

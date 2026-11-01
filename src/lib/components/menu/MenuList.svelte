@@ -244,7 +244,7 @@
             item.leading?.kind === 'tile'
               ? 'text-neutral-900 font-500'
               : '',
-          ]} lang={item.lang}>{item.label}</span>
+          ]} lang={item.lang}>{item.label}{#if item.note}<span class='ml-2 text-neutral-500' lang={item.noteLang}>{item.note}</span>{/if}</span>
         {/if}
       </button>
     {/each}

@@ -114,26 +114,15 @@ export class MemoryOverlayHistory implements OverlayHistory {
     }
   }
 
-  write = (marker: OverlayMarker | undefined, replace: boolean, from: OverlayPosition): Promise<HistoryResult> => {
+  /** replace 换掉当前条目；否则和浏览器一样丢掉前进记录、在后面压一条 */
+  private put(kind: Kind, from: OverlayPosition, replace: boolean, entry: () => OverlayPosition): Promise<HistoryResult> {
     const previous = this.entries[this.index]!
-    return this.change('write', from, () => {
-      const stamp = `memory-${++this.stamp}`
-      const entry = {
-        cursor: from.cursor + (replace ? 0 : 1),
-        url: from.url,
-        stamp,
-        marker: marker
-          ? {
-              ...structuredClone(marker),
-              stamp,
-            }
-          : undefined,
-      }
+    return this.change(kind, from, () => {
       if (replace) {
-        this.entries[this.index] = entry
+        this.entries[this.index] = entry()
       }
       else {
-        this.entries.splice(this.index + 1, Infinity, entry)
+        this.entries.splice(this.index + 1, Infinity, entry())
         this.index += 1
       }
     }, () => {
@@ -143,6 +132,21 @@ export class MemoryOverlayHistory implements OverlayHistory {
         this.index -= 1
     })
   }
+
+  write = (marker: OverlayMarker | undefined, replace: boolean, from: OverlayPosition): Promise<HistoryResult> => this.put('write', from, replace, () => {
+    const stamp = `memory-${++this.stamp}`
+    return {
+      cursor: from.cursor + (replace ? 0 : 1),
+      url: from.url,
+      stamp,
+      marker: marker
+        ? {
+            ...structuredClone(marker),
+            stamp,
+          }
+        : undefined,
+    }
+  })
 
   go = (target: OverlayPosition, from: OverlayPosition): Promise<HistoryResult> => {
     const index = this.entries.findIndex(entry => samePosition(entry, target))
@@ -156,12 +160,10 @@ export class MemoryOverlayHistory implements OverlayHistory {
     })
   }
 
-  leave = (path: OverlayDestination, from: OverlayPosition): Promise<HistoryResult> => {
-    const previous = this.entries[this.index]!
-    return this.change('leave', from, () => {
-      this.entries[this.index] = { cursor: from.cursor, url: path }
-    }, () => { this.entries[this.index] = previous })
-  }
+  leave = (path: OverlayDestination, replace: boolean, from: OverlayPosition): Promise<HistoryResult> => this.put('leave', from, replace, () => ({
+    cursor: from.cursor + (replace ? 0 : 1),
+    url: path,
+  }))
 
   /** 真的浏览器后退/前进，不是核心发起的端口命令。 */
   async traverse(delta: number): Promise<void> {

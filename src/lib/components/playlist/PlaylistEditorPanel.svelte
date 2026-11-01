@@ -143,7 +143,9 @@
       return
     const { id } = playlist
     const result = page.url.pathname === resolve('/playlists/[id=neteaseId]', { id })
-      ? await playlistEditor.leaveTo(desktopLayout.current ? '/' : '/playlists')
+      ? await playlistEditor.leaveTo(desktopLayout.current
+        ? resolve('/')
+        : resolve('/playlists'))
       : await playlistEditor.close()
     if (result === 'committed')
       void view.app.deletePlaylist(id)

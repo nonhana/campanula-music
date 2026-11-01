@@ -2,6 +2,7 @@
   歌曲行（56px，DESIGN.md Song Row）：桌面行、手机行同一份。单击（轻点）整行就播放，••• 始终可见、右键（键盘的菜单键）打开同一份“更多”菜单；
   红心键和 ••• 压在整行的点歌按钮上面，点它们不放歌。现在放不了的整行降到 45%、不能点，徽标写明原因；下载了的歌永远能放（ADR-0006）。
   点歌时这一行的封面图飞进播放条（PlayTarget 的 cover）。多选时前面是勾选框（手机长按也能进来），••• 换成拖动把手（#36）。
+  桌面行的歌手名、专辑名能点开歌手页、专辑页（#84）：歌手一行画在点歌按钮外面，链接和红心键一样压在按钮上面；多选（含拖着浮起的那一行）时写纯文字。手机行不做行内链接，走“更多”菜单。
   六列的宽度和每列的对齐写在 SONG_GRID / SONG_COLUMNS 里，表头和骨架行用的是同一份
 -->
 <script module lang='ts'>
@@ -29,6 +30,8 @@
   import { getAppView } from '../shared/app-context.svelte'
   import { formatDuration, langOf } from '../shared/text'
   import Cover from '../ui/Cover.svelte'
+  import CreditLine from './CreditLine.svelte'
+  import CreditName from './CreditName.svelte'
   import DownloadMark from './DownloadMark.svelte'
   import DragCountBadge from './DragCountBadge.svelte'
   import HeartButton from './HeartButton.svelte'
@@ -68,6 +71,8 @@
   const view = getAppView()
   const look = $derived(songLook(view, song))
   const off = $derived(look.off)
+  /** 桌面行的名字能点：多选、拖着浮起的那一行写纯文字 */
+  const linked = $derived(!selecting && !ghost)
   /** 这一行的封面图：点歌时它飞进播放条 */
   let cover = $state<HTMLElement>()
 
@@ -206,11 +211,14 @@
           <Cover url={song.album.coverUrl} size={40} class='rounded-md' />
           <DragCountBadge {count} />
         </span>
-        <PlayTarget class='min-w-0 flex-1' rounded disabled={off && !selecting && !onselect} unplayable={off} {now} {cover} onplay={activate} {selecting} {selected} {onselect} keyshortcuts={grip ? 'Alt+ArrowUp Alt+ArrowDown' : undefined}>
-          <SongTitle {song} {now} {look} />
-        </PlayTarget>
+        <span class='min-w-0 flex-1'>
+          <PlayTarget class='block w-full' rounded disabled={off && !selecting && !onselect} unplayable={off} {now} {cover} onplay={activate} {selecting} {selected} {onselect} keyshortcuts={grip ? 'Alt+ArrowUp Alt+ArrowDown' : undefined}>
+            <SongTitle {song} {now} {look} creditsOutside />
+          </PlayTarget>
+          <CreditLine artists={song.artists} {linked} spoken={false} class='block truncate text-caption text-neutral-600' />
+        </span>
       </span>
-      <span class={['truncate text-caption text-neutral-600', SONG_COLUMNS.album]} lang={langOf(song.album.name ?? '')}>{song.album.name}</span>
+      <span class={['truncate text-caption text-neutral-600', SONG_COLUMNS.album]} lang={langOf(song.album.name ?? '')}><CreditName kind='album' target={song.album} {linked} /></span>
       <span class={['flex items-center gap-2', SONG_COLUMNS.status]}>
         <HeartButton {song} size='row' />
         {#if look.mark}<DownloadMark mark={look.mark} variant='column' />{/if}

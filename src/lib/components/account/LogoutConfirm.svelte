@@ -5,6 +5,8 @@
   退出会清掉这个浏览器里的曲库和播放队列，已下载的歌留着（ADR-0006）。
 -->
 <script lang='ts'>
+  import { resolve } from '$app/paths'
+
   import ConfirmPanel from '../overlay/ConfirmPanel.svelte'
   import DialogShell from '../overlay/DialogShell.svelte'
   import { getOverlays } from '../overlay/overlay-context'
@@ -16,7 +18,7 @@
   const view = getAppView()
 
   const logout = async () => {
-    if (await logoutConfirm.leaveTo('/') === 'committed')
+    if (await logoutConfirm.leaveTo(resolve('/')) === 'committed')
       void view.app.logout().catch(error => console.error('退出失败', error))
   }
 </script>

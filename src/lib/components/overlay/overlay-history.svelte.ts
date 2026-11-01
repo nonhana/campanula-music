@@ -1,6 +1,5 @@
 import type { Navigation } from '$app/navigation'
 import { beforeNavigate, goto, onNavigate } from '$app/navigation'
-import { resolve } from '$app/paths'
 import { navigating, page } from '$app/state'
 import { onDestroy, onMount, tick, untrack } from 'svelte'
 
@@ -367,19 +366,22 @@ state: { overlays: value },
     read,
     write,
     go,
-    leave(path, from) {
+    leave(path, replace, from) {
       const stamp = crypto.randomUUID()
-      const url = `${location.origin}${resolve(path)}`
-      const target = { cursor: from.cursor, url, stamp }
+      const url = `${location.origin}${path}`
+      const cursor = from.cursor + (replace ? 0 : 1)
+      const target = { cursor, url, stamp }
       return operate({
 kind: 'leave',
 from,
 target,
 url,
-cursor: from.cursor,
+cursor,
 stamp,
-}, () => goto(resolve(path), {
-        replace: true,
+}, () =>
+       // eslint-disable-next-line svelte/no-navigation-without-resolve -- 调用方用 resolve() 拼好的地址（OverlayDestination）
+       goto(path, {
+        replace,
         state: {
 overlays: { session: stamp, ids: [], stamp },
 },

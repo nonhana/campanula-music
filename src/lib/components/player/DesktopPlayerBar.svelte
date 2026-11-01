@@ -1,5 +1,5 @@
 <!--
-  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开；播放队列面板开着时先收起它）、
+  桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开；播放队列面板开着时先收起它；歌手名能点开歌手页，#84）、
   靠这一栏右边的红心键（不在打开播放页的按钮里），
   右边播放模式（按一下换一种）、音量、播放队列（开关桌面播放队列面板 QueuePanel，不拉开播放页、不改播放页记着的标签；开着时薄荷玻璃底、森林墨图标，和侧栏当前项一样）；
   顶边一条 2px 的薄荷进度线，也是滑块：点按、拖动跳到那里，拖动时左边的时间跟着走（SeekLine）。
@@ -53,7 +53,8 @@
       <NowPlaying
         size={48}
         pageCover={PAGE_COVER.desktop}
-        buttonClass='py-1 pr-2 transition-colors duration-feedback mouse:hover:bg-primary-50'
+        class='py-1 pr-2 transition-colors duration-feedback mouse:hover:bg-primary-50'
+        links
       />
       <HeartButton {song} size='desktop' />
     </div>

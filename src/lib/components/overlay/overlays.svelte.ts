@@ -12,6 +12,7 @@ import ExportDialog from '../downloads/ExportDialog.svelte'
 import { createDownloadPanel } from '../downloads/panel.svelte'
 import PlaylistDownloadsDialog from '../downloads/PlaylistDownloadsDialog.svelte'
 import { MultiSelect } from '../library/multi-select.svelte'
+import ArtistMenu from '../menu/ArtistMenu.svelte'
 import SongMenu from '../menu/SongMenu.svelte'
 import { createDrawer } from '../player/drawer.svelte'
 import { createPlayerLayer } from '../player/player-layer.svelte'
@@ -26,7 +27,7 @@ import { getAppView } from '../shared/app-context.svelte'
 import { desktopLayout } from '../shared/layout'
 import { setSelectionMode } from '../ui/selection-mode'
 import { createOverlayHistory } from './overlay-history.svelte'
-import type { AddToPlaylistRequest, DeleteDownloadsRequest, DeletePlaylistDownloadsRequest, DialogRequest, DownloadPickerRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
+import type { AddToPlaylistRequest, ArtistMenuRequest, DeleteDownloadsRequest, DeletePlaylistDownloadsRequest, DialogRequest, DownloadPickerRequest, EditorRequest, ExportRequest, MenuRequest, PlaylistMenuRequest, PlaylistRequest, SongMenuRequest } from './overlay-requests'
 import type { LayerOptions } from './overlay-stack'
 import { OverlayStack } from './overlay-stack'
 
@@ -96,6 +97,8 @@ modal: true,
 
   // 每一层只登记一次：历史策略、组件、焦点和业务的关闭钩子
   const songMenu = register<SongMenuRequest>('song-menu', menu, SongMenu)
+  // 歌曲菜单“查看歌手”有几位能点的歌手时转交的歌手列表（#84）
+  const artistMenu = register<ArtistMenuRequest>('artist-menu', menu, ArtistMenu)
   // 单曲和多选共用一个选择器（#73）：多选的请求不能比多选层活得更久，单曲不依赖它
   const playlistPicker = register<AddToPlaylistRequest>('playlist-picker', {
     ...menu,
@@ -191,6 +194,7 @@ fallback: '[data-queue-entry]',
 stack,
 mounted,
 songMenu,
+artistMenu,
 playlistPicker,
 playlistMenu,
 playlistEditor,
