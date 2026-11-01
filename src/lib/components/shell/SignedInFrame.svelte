@@ -62,8 +62,10 @@
     { route: '/artists', label: '歌手' },
   ] as const satisfies readonly { route: RouteId, label: string }[]
   const onLibrary = $derived(LIBRARY_TABS.some(tab => tab.route === route))
-  // 换页用 View Transitions：进入下一层、返回、标签之间各有方向（ADR-0011）
-  pageTransitions(LIBRARY_TABS.map(tab => tab.route))
+  // 换页用 View Transitions：进入下一层、返回、手机曲库标签之间各有方向（ADR-0011）；桌面没有曲库标签，首页进歌单、专辑、歌手页是进入下一层
+  pageTransitions(() => desktopLayout.current
+    ? ['/']
+    : LIBRARY_TABS.map(tab => tab.route))
   /** 桌面侧栏的“曲库”：曲库的各个标签和歌单页、专辑页、歌手页都算 */
   const inLibrary = $derived(onLibrary || libraryPage)
 

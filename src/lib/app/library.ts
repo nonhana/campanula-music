@@ -1,7 +1,7 @@
 import type { Account } from '#lib/api/account.js'
 import { endpoints } from '#lib/api/endpoints.js'
 import type { AlbumResponse, ArtistAlbum, ArtistIntroResponse, ArtistResponse, ArtistSongOrder, ArtistSongsResponse, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, PlaylistCollectRequest, PlaylistEditProblem, PlaylistInfo, PlaylistTagGroup, PlaylistUnavailable, Song } from '#lib/api/library.js'
-import { canSortPlaylist, nameProblem, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
+import { canSortPlaylist, nameProblem, playlistName, SONGS_PER_REQUEST, TRACKS_PER_CHANGE } from '#lib/api/library.js'
 import type { WriteResponse } from '#lib/api/write.js'
 
 import type { Api, RequestFailure, Result } from './api-client'
@@ -206,6 +206,12 @@ export interface PlaylistSearch {
   songs: readonly Song[]
   /** 还没同步到的歌里可能也有 */
   incomplete: boolean
+}
+
+/** 曲库里的歌单分成自建、收藏两块，各按原来的先后（自建的是听众排的）；不含我喜欢的音乐 */
+export interface PlaylistGroups {
+  own: readonly Playlist[]
+  collected: readonly Playlist[]
 }
 
 export interface LibraryContext {
@@ -633,14 +639,43 @@ const stateOf = (replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
   }
 }
 
-/** 搜索时不分大小写和全角半角：“ＤＪ”和“dj”一样 */
+/** 搜索、筛选时不分大小写和全角半角：“ＤＪ”和“dj”一样 */
 const folded = (text: string): string => text.normalize('NFKC').toLowerCase()
+
+/** 名字里有搜索词（不分大小写和全角半角）；搜索词是空白的就都算有 */
+const matcherOf = (query: string): (text: string | null) => boolean => {
+  const term = folded(query.trim())
+  return text => term === '' || (text !== null && folded(text).includes(term))
+}
 
 /** 歌名、歌手、专辑里有搜索词的，按原来的先后；搜索词是空的就是全部 */
 export const filterSongs = (songs: readonly Song[], query: string): Song[] => {
-  const term = folded(query.trim())
-  const matches = (text: string | null) => text !== null && folded(text).includes(term)
+  const matches = matcherOf(query)
   return songs.filter(song => matches(song.name) || matches(song.album.name) || song.artists.some(artist => matches(artist.name)))
+}
+
+/** 曲库的专辑页筛选：专辑名、歌手名里有筛选词的，按原来的先后 */
+export const filterAlbums = (albums: readonly CollectedAlbum[], query: string): CollectedAlbum[] => {
+  const matches = matcherOf(query)
+  return albums.filter(album => matches(album.name) || album.artists.some(artist => matches(artist.name)))
+}
+
+/** 曲库的歌手页筛选：名字里有筛选词的，按原来的先后 */
+export const filterArtists = (artists: readonly CollectedArtist[], query: string): CollectedArtist[] => {
+  const matches = matcherOf(query)
+  return artists.filter(artist => matches(artist.name))
+}
+
+/** 曲库的歌单分成自建、收藏两块（桌面首页的两排、歌单页的两块） */
+export const playlistGroups = (playlists: readonly Playlist[]): PlaylistGroups => ({
+  own: playlists.filter(playlist => playlist.kind === 'own'),
+  collected: playlists.filter(playlist => playlist.kind === 'collected'),
+})
+
+/** 曲库的歌单页筛选：显示的名字里有筛选词的自建、收藏歌单，分组和先后同 playlistGroups */
+export const filterPlaylists = (playlists: readonly Playlist[], query: string): PlaylistGroups => {
+  const matches = matcherOf(query)
+  return playlistGroups(playlists.filter(playlist => playlist.kind !== 'liked' && matches(playlistName(playlist))))
 }
 
 export const searchPlaylist = (playlist: PlaylistSongs<unknown>, query: string): PlaylistSearch => ({

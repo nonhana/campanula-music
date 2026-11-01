@@ -21,8 +21,8 @@ import type { DownloadBatchOutcome, DownloadBlock, DownloadRemoval, DownloadSour
 import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
 import type { ExportState } from './export'
 import { createExports } from './export'
-import type { AddSongsOutcome, AddTarget, AddTargetsRequest, ArtistTab, CreateOutcome, LibraryState, PlaylistSearch } from './library'
-import { createLibrary, filterSongs, searchPlaylist } from './library'
+import type { AddSongsOutcome, AddTarget, AddTargetsRequest, ArtistTab, CreateOutcome, LibraryState, PlaylistGroups, PlaylistSearch } from './library'
+import { createLibrary, filterAlbums, filterArtists, filterPlaylists, filterSongs, searchPlaylist } from './library'
 import { createLocalDatabase, createLocalDb } from './local'
 import type { LoginState } from './login'
 import { createLogin, INITIAL_LOGIN } from './login'
@@ -257,6 +257,12 @@ export interface App {
   closeExport: () => void
   /** 在这台设备上的下载里即时完成；还没从本机读出来时是空的 */
   searchDownloads: (query: string) => readonly Song[]
+  /** 曲库的歌单页筛选：在本机副本里即时完成，不发请求；歌单列表还没同步到时是 null */
+  searchPlaylists: (query: string) => PlaylistGroups | null
+  /** 曲库的专辑页筛选：同上；收藏的专辑还没同步到时是 null */
+  searchAlbums: (query: string) => readonly CollectedAlbum[] | null
+  /** 曲库的歌手页筛选：同上；收藏的歌手还没同步到时是 null */
+  searchArtists: (query: string) => readonly CollectedArtist[] | null
 }
 
 export const createApp = (browser: BrowserCapabilities): App => {
@@ -1313,5 +1319,23 @@ export const createApp = (browser: BrowserCapabilities): App => {
     cancelExport: exports.cancel,
     closeExport: exports.close,
     searchDownloads: query => filterSongs(state.downloads.songs ?? [], query),
+    searchPlaylists: (query) => {
+      const playlists = state.library?.playlists
+      return playlists
+        ? filterPlaylists(playlists, query)
+        : null
+    },
+    searchAlbums: (query) => {
+      const albums = state.library?.albums
+      return albums
+        ? filterAlbums(albums, query)
+        : null
+    },
+    searchArtists: (query) => {
+      const artists = state.library?.artists
+      return artists
+        ? filterArtists(artists, query)
+        : null
+    },
   }
 }

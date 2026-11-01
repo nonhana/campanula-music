@@ -12,7 +12,7 @@ type PageTurn = Toward | 'fade'
 /**
  * 换页的方向（DESIGN.md Navigation · 页面切换），交给 uno.config.ts 的页面过渡：同一层的曲库标签之间按左右顺序横着走，新页从所选标签那一侧进来，
  * 同一种页面之间（桌面歌单页左栏换歌单）只淡入淡出；后退、前进（delta）返回往下沉、前进往上浮；
- * 点进去的回到曲库是返回，其余（曲库 → 歌单、专辑、歌手、设置，专辑 → 歌手）是进入下一层
+ * 点进去的回到曲库标签是返回，其余（曲库 → 歌单、专辑、歌手、设置，专辑 → 歌手；桌面首页 → 歌单、专辑、歌手页）是进入下一层
  */
 const pageTurn = (from: RouteId, to: RouteId, delta: number | undefined, tabs: readonly RouteId[]): PageTurn => {
   const fromTab = tabs.indexOf(from)
@@ -84,13 +84,14 @@ const coversOf = (page: string): HTMLElement[] => [
 ]
 
 /**
- * 换页用浏览器的 View Transitions（ADR-0011），要在组件初始化时调用。tabs 是曲库标签的地址，从左到右。
+ * 换页用浏览器的 View Transitions（ADR-0011），要在组件初始化时调用。libraryTabs 每次换页时取一次，是此刻的曲库标签地址（从左到右）：
+ * 手机是我喜欢 / 歌单 / 专辑 / 歌手四个标签；桌面没有标签，只有首页这一个曲库入口（首页进歌单、专辑、歌手页是进入下一层，作者 2026-11-01 定）。
  * - 浏览器先拍下旧页面，等 SvelteKit 渲染好新页面、返回时恢复好滚动位置（snapshot.ts 同步恢复），再拍新的一帧；
  * - 从格子点开的详情页：被点的封面图飞到页头（两头同名），回到格子所在页时飞回去；直接打开、从别处进来的返回时只整页飘入；桌面歌单页左栏换歌单不飞，只交叉淡化；
  * - 过渡中又换了页：上一个立刻结束、不排队；Android 返回手势自带“预览上一页”（hasUAVisualTransition）时不再叠一层，不支持的浏览器直接换页；
  * - 播放页的开关是浅路由，不经过这里
  */
-export const pageTransitions = (tabs: readonly RouteId[]): void => {
+export const pageTransitions = (libraryTabs: () => readonly RouteId[]): void => {
   let running: ViewTransition | null = null
   /** 最近一次点按到的链接：点的是格子，它的封面图飞到新页的页头 */
   let pressed: HTMLAnchorElement | null = null
@@ -162,7 +163,7 @@ export const pageTransitions = (tabs: readonly RouteId[]): void => {
     const delta = navigation.type === 'popstate'
       ? navigation.delta
       : undefined
-    const turn = pageTurn(from.route.id, to.route.id, delta, tabs)
+    const turn = pageTurn(from.route.id, to.route.id, delta, libraryTabs())
     const flight = takeOff(link, from.url, to.url)
 
     return new Promise<void>((captured) => {

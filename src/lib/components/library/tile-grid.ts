@@ -1,14 +1,23 @@
 // 格子网格的目录（DESIGN.md Layout）：按种类和排法给格宽、列数、骨架数量、圆形头像；状态机在 TileGrid，架子在 Shelf。
 
 export type TileKind = 'playlist' | 'album' | 'artist'
-/** grid：铺满的封面网格；shelf：横向架子；overview：搜索综合里歌单那一排（4 / 5 / 6 张） */
+/** grid：铺满的封面网格；shelf：横向架子；overview：只放一排（桌面首页的每一类、搜索综合里的歌单），放不下的藏起来 */
 export type TileGridLayout = 'grid' | 'shelf' | 'overview'
+
+/** 一排在各宽度下放几个：窄于 1024px、1024px 起、1280px 起 */
+interface OverviewRow {
+  base: number
+  lg: number
+  xl: number
+}
 
 export interface TileGridLook {
   list: string
   width: string
   bones: number
   round: boolean
+  /** overview 的一排；别的排法是 null */
+  row: OverviewRow | null
 }
 
 /** 歌单的一行（歌单页左栏、手机排序时的一行）封面按多大取；歌单页头的大封面先铺这一张小图（左栏里多半已经加载过），大图到了再淡上去 */
@@ -44,6 +53,16 @@ const SHELF_GAP: Record<TileKind, { phone: string, desktop: string }> = {
 
 const ROUND: Record<TileKind, boolean> = { playlist: false, album: false, artist: true }
 
+/** 歌单、专辑 4 / 5 / 6 张，歌手 4 / 6 / 8 位（作者 2026-11-01 定，DESIGN.md Layout · 格子网格） */
+const OVERVIEW_ROW: Record<TileKind, OverviewRow> = {
+  playlist: { base: 4, lg: 5, xl: 6 },
+  album: { base: 4, lg: 5, xl: 6 },
+  artist: { base: 4, lg: 6, xl: 8 },
+}
+
+/** overview 一排最多放几个：调用方只传这么多 */
+export const overviewSize = (kind: TileKind): number => OVERVIEW_ROW[kind].xl
+
 /** 桌面网格 6；手机歌单 / 专辑 4、歌手 6；架子桌面 7 / 9，手机 3 / 4（DESIGN.md） */
 const BONES: Record<TileKind, { grid: { phone: number, desktop: number }, shelf: { phone: number, desktop: number } }> = {
   playlist: {
@@ -63,19 +82,23 @@ const BONES: Record<TileKind, { grid: { phone: number, desktop: number }, shelf:
 export const tileGridLook = (kind: TileKind, layout: TileGridLayout, phone: boolean): TileGridLook => {
   const mode = phone ? 'phone' : 'desktop'
   switch (layout) {
-    case 'overview':
+    case 'overview': {
+      const row = OVERVIEW_ROW[kind]
       return {
-        list: 'grid-cols-4 gap-x-5 lg:grid-cols-5 xl:grid-cols-6',
+        list: `grid-cols-${row.base} gap-x-5 lg:grid-cols-${row.lg} xl:grid-cols-${row.xl}`,
         width: '',
-        bones: 6,
-        round: false,
+        bones: row.xl,
+        round: ROUND[kind],
+        row,
       }
+    }
     case 'shelf':
       return {
         list: SHELF_GAP[kind][mode],
         width: SHELF_WIDTH[kind][mode],
         bones: BONES[kind].shelf[mode],
         round: ROUND[kind],
+        row: null,
       }
     case 'grid':
       return {
@@ -85,6 +108,7 @@ export const tileGridLook = (kind: TileKind, layout: TileGridLayout, phone: bool
         width: '',
         bones: BONES[kind].grid[mode],
         round: ROUND[kind],
+        row: null,
       }
     default: {
       const unhandled: never = layout
@@ -111,12 +135,13 @@ export const tileListClass = (look: TileGridLook, layout: TileGridLayout, phone:
   ]
 }
 
-/** 网格里跟着列宽，架子上固定宽，搜索综合里放不下的藏起来（不进 Tab 顺序） */
+/** 网格里跟着列宽，架子上固定宽，一排里放不下的藏起来（不进 Tab 顺序） */
 export const tileCellClass = (look: TileGridLook, layout: TileGridLayout, index: number): (string | false)[] => {
   if (layout === 'shelf')
     return ['min-w-0 flex-none', look.width]
-  if (layout === 'overview')
-    return ['min-w-0', index === 4 && 'hidden lg:block', index === 5 && 'hidden xl:block']
+  const { row } = look
+  if (row)
+    return ['min-w-0', index >= row.base && index < row.lg && 'hidden lg:block', index >= row.lg && 'hidden xl:block']
   return ['min-w-0']
 }
 
@@ -132,7 +157,9 @@ const everyLookClass = (): string[] => {
     return [
       look.list,
       look.width,
-      ...Array.from({ length: 6 }, (_, index) => tileCellClass(look, layout, index)).flat(),
+      ...Array.from({
+        length: Math.max(...Object.values(OVERVIEW_ROW).map(row => row.xl)),
+      }, (_, index) => tileCellClass(look, layout, index)).flat(),
       ...tileListClass(look, layout, phone, true),
       ...tileListClass(look, layout, phone, false),
     ]

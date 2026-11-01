@@ -1,20 +1,27 @@
 <!--
-  曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面是同步提示、我喜欢的音乐三行歌曲格（“查看全部”进歌单页）
-  和右侧的每日推荐方块、歌单封面网格、收藏的专辑和歌手横向架子。滚动位置随浏览历史恢复。
+  曲库首页：手机是我喜欢的音乐列表（歌单在“歌单”标签）；桌面只当目录（作者 2026-11-01 定）：同步提示、我喜欢的音乐三行歌曲格（“查看全部”进歌单页）
+  和右侧的每日推荐方块，下面自建歌单、收藏的歌单、专辑、歌手各一排，标题写总数，“查看全部”进歌单、专辑、歌手页（这一类空时没有）。
+  每排只放这一排放得下的几个（TileGrid 的 overview），不横着滚；自建歌单的排序在歌单页。滚动位置随浏览历史恢复。
   歌曲格和歌曲行共用 songs/SongTitle；歌曲格的歌手名能点（#84），歌手一行连同下载标记画在点歌按钮外面（CreditLine）。能不能放读 App 的答案（songLook）。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
-  import { ChevronLeft, ChevronRight, Heart } from '@lucide/svelte'
+  import { ChevronLeft, ChevronRight, Heart, ListMusic, Plus } from '@lucide/svelte'
+  import type { Snippet } from 'svelte'
 
-  import { syncNoticeFor } from '#lib/app/library.js'
+  import type { Playlist } from '#lib/api/library.js'
+  import { playlistName } from '#lib/api/library.js'
+  import { playlistGroups, syncNoticeFor } from '#lib/app/library.js'
   import DailyTile from '#lib/components/daily/DailyTile.svelte'
   import CollectedGrid from '#lib/components/library/CollectedGrid.svelte'
   import { likedFailure } from '#lib/components/library/liked-failure.js'
-  import PlaylistGrid from '#lib/components/library/PlaylistGrid.svelte'
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte'
+  import PlaylistTile from '#lib/components/library/PlaylistTile.svelte'
   import SyncNotice from '#lib/components/library/SyncNotice.svelte'
+  import { overviewSize } from '#lib/components/library/tile-grid.js'
+  import TileGrid from '#lib/components/library/TileGrid.svelte'
   import { songMenuActions } from '#lib/components/menu/song-menu.svelte.js'
+  import { getOverlays } from '#lib/components/overlay/overlay-context.js'
   import { currentSong } from '#lib/components/player/now.js'
   import { getAppView } from '#lib/components/shared/app-context.svelte.js'
   import { dragScroll } from '#lib/components/shared/drag-scroll.js'
@@ -35,9 +42,12 @@
   import Cover from '#lib/components/ui/Cover.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import StateBlock from '#lib/components/ui/StateBlock.svelte'
+  import TextButton from '#lib/components/ui/TextButton.svelte'
+  import ToolButton from '#lib/components/ui/ToolButton.svelte'
 
   const view = getAppView()
   const { openSongMenuAt } = songMenuActions()
+  const { playlistEditor } = getOverlays()
   const library = $derived(view.state.library)
   const likedId = $derived(library?.liked?.playlist.id ?? 0)
   const liked = $derived(library?.playlistPage(likedId) ?? null)
@@ -49,6 +59,26 @@
     ? liked.songs.songs.slice(0, 36)
     : [])
   const nowId = $derived(currentSong(view.state.player)?.id ?? null)
+  /** 自建按听众排好的先后（不含我喜欢的音乐），收藏的照网易云给的 */
+  const groups = $derived(library?.playlists
+    ? playlistGroups(library.playlists)
+    : null)
+  const own = $derived(groups?.own ?? null)
+  const collected = $derived(groups?.collected ?? null)
+  const PLAYLIST_ROW = overviewSize('playlist')
+
+  const newPlaylist = (event: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+    playlistEditor.open({ mode: 'new', songs: [], from: event.currentTarget })
+  }
+
+  /** 歌单列表没同步到就停下了：两排各自说明、能重试 */
+  const listFailure = (title: string) => library?.sync.status === 'failed'
+    ? {
+      title,
+      body: failureText(library.sync.failure),
+      retry: () => view.app.retrySync(),
+    }
+    : null
 
   /** 手机“我喜欢”标签里的歌单内搜索 */
   let query = $state('')
@@ -106,6 +136,27 @@
   {/if}
 {/snippet}
 
+{#snippet seeAll(href: string)}
+  <!-- 跟着列表一起淡入，不一下冒出来 -->
+  <span class='ml-1' in:fade><TextButton {href} class='md:h-9 md:px-4'>查看全部</TextButton></span>
+{/snippet}
+
+{#snippet rowHead(id: string, title: string, count: string | null, all: string | null, tools?: Snippet)}
+  <!-- 至少和按钮一样高（40px）：数量、“查看全部”跟着列表一起出现时，下面的东西不被往下推 -->
+  <div class='mb-4 min-h-10 flex items-center gap-3'>
+    <h2 {id} class='text-title text-neutral-900 font-600'>{title}</h2>
+    {#if count !== null}<span class='text-caption text-neutral-500 tabular-nums' in:fade>{count}</span>{/if}
+    <div class='ml-auto flex items-center gap-2'>
+      {@render tools?.()}
+      {#if all !== null}{@render seeAll(all)}{/if}
+    </div>
+  </div>
+{/snippet}
+
+{#snippet newPlaylistButton()}
+  <ToolButton icon={Plus} label='新建歌单' onclick={newPlaylist} />
+{/snippet}
+
 {#if library && liked}
   {#if desktopLayout.current}
     <h1 class='sr-only'>曲库</h1>
@@ -128,7 +179,7 @@
           {/if}
           {#if library.liked}
             {@const likedId = library.liked.playlist.id}
-            <a href={resolve('/playlists/[id=neteaseId]', { id: likedId })} class='ml-1 h-9 inline-flex items-center rounded-full px-4 text-label text-primary-900 font-500 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)' in:fade>查看全部</a>
+            {@render seeAll(resolve('/playlists/[id=neteaseId]', { id: likedId }))}
             <PlayAllButton songs={library.liked.songs} source={{ kind: 'playlist', id: likedId }} />
           {/if}
         </div>
@@ -190,28 +241,41 @@
       </div>
     </section>
 
-    <section class='mt-10' aria-labelledby='playlists-heading'>
-      <PlaylistGrid {library} sectionLevel={3}>
-        {#snippet heading()}
-          <h2 id='playlists-heading' class='text-title text-neutral-900 font-600'>歌单</h2>
+    <section class='mt-10' aria-labelledby='own-heading'>
+      {@render rowHead('own-heading', '自建歌单', own && `${formatCount(own.length)} 张`, own && own.length > 0
+        ? resolve('/playlists')
+        : null, newPlaylistButton)}
+      <TileGrid kind='playlist' layout='overview' items={own?.slice(0, PLAYLIST_ROW) ?? null} label='自建歌单' loadingLabel='正在加载自建歌单' failure={listFailure('自建歌单没能同步')} empty={{ icon: ListMusic, title: '还没有自建歌单' }}>
+        {#snippet tile(playlist: Playlist)}
+          <PlaylistTile id={playlist.id} name={playlistName(playlist)} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={null} locked={playlist.private} />
         {/snippet}
-      </PlaylistGrid>
+      </TileGrid>
+    </section>
+
+    <section class='mt-10' aria-labelledby='collected-heading'>
+      <!-- 收藏的“查看全部”直接停在歌单页的收藏那块 -->
+      {@render rowHead('collected-heading', '收藏的歌单', collected && `${formatCount(collected.length)} 张`, collected && collected.length > 0
+        ? `${resolve('/playlists')}#collected-playlists-heading`
+        : null)}
+      <TileGrid kind='playlist' layout='overview' items={collected?.slice(0, PLAYLIST_ROW) ?? null} label='收藏的歌单' loadingLabel='正在加载收藏的歌单' failure={listFailure('收藏的歌单没能同步')} empty={{ icon: ListMusic, title: '还没有收藏的歌单' }}>
+        {#snippet tile(playlist: Playlist)}
+          <PlaylistTile id={playlist.id} name={playlistName(playlist)} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={playlist.creator} locked={playlist.private} />
+        {/snippet}
+      </TileGrid>
     </section>
 
     <section class='mt-10' aria-labelledby='albums-heading'>
-      <div class='mb-4 flex items-center gap-3'>
-        <h2 id='albums-heading' class='text-title text-neutral-900 font-600'>专辑</h2>
-        {#if library.albums}<span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(library.albums.length)} 张</span>{/if}
-      </div>
-      <CollectedGrid {library} kind='albums' layout='shelf' />
+      {@render rowHead('albums-heading', '专辑', library.albums && `${formatCount(library.albums.length)} 张`, (library.albums?.length ?? 0) > 0
+        ? resolve('/albums')
+        : null)}
+      <CollectedGrid {library} kind='albums' layout='overview' />
     </section>
 
     <section class='mt-10 pb-12' aria-labelledby='artists-heading'>
-      <div class='mb-4 flex items-center gap-3'>
-        <h2 id='artists-heading' class='text-title text-neutral-900 font-600'>歌手</h2>
-        {#if library.artists}<span class='text-caption text-neutral-500 tabular-nums' in:fade>{formatCount(library.artists.length)} 位</span>{/if}
-      </div>
-      <CollectedGrid {library} kind='artists' layout='shelf' />
+      {@render rowHead('artists-heading', '歌手', library.artists && `${formatCount(library.artists.length)} 位`, (library.artists?.length ?? 0) > 0
+        ? resolve('/artists')
+        : null)}
+      <CollectedGrid {library} kind='artists' layout='overview' />
     </section>
   {:else}
     <h1 class='sr-only'>我喜欢的音乐</h1>

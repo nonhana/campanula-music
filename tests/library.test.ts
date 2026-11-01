@@ -8,7 +8,7 @@ import { ANOTHER_ACCOUNT, LIBRARY_SYNC_MODULES, RECORDED_ACCOUNT, signIn } from 
 import { useWorld } from './harness/world'
 
 const world = useWorld()
-const { replyLibrary, replyPlaylists, signInSynced } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
+const { replyLibrary, replyPlaylists, signInAtLikedTracks, signInSynced } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
 // 作者的“我喜欢的音乐”（#21 录制，4,984 首）：每页 1,000 首。第 4 页里有 3 首传到云盘、没匹配上曲库的歌，歌手名、专辑名是 null（hana-music-api 2.4.0 起原样返回，nonhana/hana-music-api#48）
 /** SDK 认不出返回的结构时整页拒掉（502）：2.3.0 对第 4 页的真实返回。2.4.0 起这一页能认出了，但别人看云盘上传的歌（歌名也是 null）时照样这样拒，所以留着当“这一页没取到”用 */
@@ -776,6 +776,60 @@ describe('歌单', () => {
     const full = app.searchPlaylist(LIKED_ID, 'dj okawari')
     expect(full?.incomplete).toBe(false)
     expect(full?.songs).toHaveLength(33)
+  })
+})
+
+describe('筛选曲库', () => {
+  it('收藏的专辑按专辑名、歌手名筛，在本机副本里即时完成、断网也能用：不分大小写和全角半角，先后照网易云给的；空白的词是全部，没有命中是空的', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+    device.setOnline(false)
+
+    expect(app.searchAlbums('ずっと真夜中')?.map(album => album.name)).toEqual(['形藻土', '沈香学', '正しい偽りからの起床'])
+    expect(app.searchAlbums('ＴＨＴ')?.map(album => album.name)).toEqual(['Eden Diary I'])
+    expect(app.searchAlbums('eden DIARY')?.map(album => album.name)).toEqual(['Eden Diary I'])
+    expect(app.searchAlbums(' 　')).toEqual(app.state.library?.albums)
+    expect(app.searchAlbums('不在收藏里的专辑')).toEqual([])
+  })
+
+  it('收藏的歌手按名字筛，名字里有假名的也一样；不分大小写和全角半角，先后照网易云给的', async () => {
+    const device = world.device()
+    const { app } = await signInAtLikedTracks(device)
+
+    expect(app.searchArtists('ずっと')?.map(artist => artist.name)).toEqual(['ずっと真夜中でいいのに。'])
+    expect(app.searchArtists('ＷＯＲＬＤ\'Ｓ　ＥＮＤ')?.map(artist => artist.name)).toEqual(['world\'s end girlfriend'])
+    expect(app.searchArtists('')).toEqual(app.state.library?.artists)
+    expect(app.searchArtists('不在收藏里的歌手')).toEqual([])
+  })
+
+  it('曲库里的歌单按名字筛，分成自建、收藏两组，都不含我喜欢的音乐；自建的先后照听众排的，收藏的照网易云给的；歌单列表还没同步到时是 null', async () => {
+    const device = world.device()
+    const { app } = await device.open()
+    const list = held()
+    await replyLibrary({
+      holds: {
+        playlists: { until: list.until },
+      },
+      until: never(),
+    })
+    await signIn(world, app)
+    await vi.waitFor(() => expect(world.netease.held).toBe(1))
+    expect(app.searchPlaylists('jazz')).toBeNull()
+
+    list.release()
+    await world.settle()
+
+    const jazz = app.searchPlaylists('ＪＡＺＺ')
+    expect(jazz?.own.map(playlist => playlist.name)).toEqual(['jazz', 'jazz hiphop'])
+    expect(jazz?.collected.map(playlist => playlist.name)).toEqual(['Jazz-Hiphop｜混沌武士', 'Jazz HipHop · 驶向落日的航班', '向日葵武士的JazzHipHop'])
+    // 我喜欢的音乐在网易云里叫“测试听众喜欢的音乐”，显示成“我喜欢的音乐”：两种叫法都筛不到它
+    expect(app.searchPlaylists('喜欢的音乐')).toEqual({ own: [], collected: [] })
+    const all = app.searchPlaylists(' ')
+    expect(all?.own).toHaveLength(18)
+    expect(all?.collected).toHaveLength(35)
+
+    app.orderPlaylists(all!.own.map(playlist => playlist.id).reverse())
+    expect(app.searchPlaylists('jazz')?.own.map(playlist => playlist.name)).toEqual(['jazz hiphop', 'jazz'])
   })
 })
 
