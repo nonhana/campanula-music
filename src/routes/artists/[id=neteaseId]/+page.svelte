@@ -52,6 +52,7 @@
     ? opened.content
     : null)
   const artist = $derived(content?.artist ?? null)
+  const here = $derived(resolve('/artists/[id=neteaseId]', { id }))
   const phone = $derived(!desktopLayout.current)
   /** “几首歌 · 几张专辑”：网易云没给的那一项连同分隔不写（#78） */
   const counts = $derived(artist
@@ -261,6 +262,7 @@
       ready={!!artist}
       cover={{ url: artist?.avatarUrl ?? null, round: true, fallback: UserRound }}
       title={artist?.name ?? ''}
+      flight={here}
     >
       {#snippet meta()}
         {#if artist}

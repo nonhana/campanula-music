@@ -54,6 +54,7 @@
   const outside = $derived(page?.inLibrary === false)
   const header = $derived(page && playlistHeader(page))
   const phone = $derived(!desktopLayout.current)
+  const here = $derived(resolve('/playlists/[id=neteaseId]', { id }))
 
   let query = $state('')
   scrollSnapshot('/playlists/[id=neteaseId]', () => query, (value) => {
@@ -246,6 +247,7 @@
     ready={!!header}
     cover={{ url: header?.coverUrl ?? null, placeholder: ROW_COVER_SIZE }}
     title={name}
+    flight={here}
     tags={header?.tags ?? []}
   >
     {#snippet meta()}{@render headerMeta()}{/snippet}

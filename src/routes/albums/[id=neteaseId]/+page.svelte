@@ -3,6 +3,7 @@
   头部交给 DetailHeader（#75）。告诉 App 听众在看这一张专辑（viewing），什么时候拉由 App 决定；播放全部旁边的“下载”把整张专辑排进下载队列（#39）。滚动位置随浏览历史恢复。
 -->
 <script lang='ts'>
+  import { resolve } from '$app/paths'
   import { page } from '$app/state'
   import { CircleArrowDown } from '@lucide/svelte'
 
@@ -39,6 +40,7 @@
   const year = $derived(album && yearOf(album.publishedAt))
   const description = $derived(album?.description?.trim() || null)
   const phone = $derived(!desktopLayout.current)
+  const here = $derived(resolve('/albums/[id=neteaseId]', { id }))
 
   scrollSnapshot('/albums/[id=neteaseId]', () => null, () => {})
 
@@ -95,6 +97,7 @@
       ready={!!album}
       cover={{ url: album?.coverUrl ?? null }}
       title={album?.name ?? ''}
+      flight={here}
     >
       {#snippet meta(onPhone: boolean)}
         {#if album && content}

@@ -1,6 +1,6 @@
 <!--
   歌单格子（#75）：封面、歌单名、首数（隐私加锁，别人的写是谁的）。grid 是封面网格，row 是排序时的一行，
-  nav 是歌单页左栏的一行（和 row 同一种画法，整行是链接：当前这张薄荷玻璃底，播放队列里现在这首从它放的就在右边画三根小竖条）。
+  nav 是歌单页左栏的一行（和 row 同一种画法，整行是链接：当前这张薄荷玻璃底，播放队列里现在这首从它放的就在右边画三根小竖条；封面不起飞）。
   搜索结果综合里（collectable）封面右下角压一个始终可见的小圆：自建和我喜欢的标“自建”，别的是收藏开关（CollectButton 的 corner），
   和链接并排放在同一格、不嵌在链接里；曲库网格和歌手页的专辑没有这个按钮。
 -->
@@ -15,7 +15,8 @@
   import Tag from '../ui/Tag.svelte'
   import { collectState } from './collect'
   import CollectButton from './CollectButton.svelte'
-  import { ROW_COVER_SIZE, TILE_COVER_SIZE } from './tile-grid'
+  import { FLIGHT_COVER_SIZE } from './flight'
+  import { ROW_COVER_SIZE } from './tile-grid'
 
   interface Props {
     id: number
@@ -35,14 +36,17 @@
     current?: boolean
     /** 播放队列里现在这首是从这张歌单放的（只有 nav 画出来） */
     now?: boolean
+    /** grid 的封面是不是封面飞行的起点；拖起来的副本同时出现时关掉（同一时刻一个名字只有一个元素） */
+    flight?: boolean
   }
 
-  const { id, name, coverUrl, trackCount, creator, locked = false, phone = false, onkeydown, collectable = false, look = 'grid', current = false, now = false }: Props = $props()
+  const { id, name, coverUrl, trackCount, creator, locked = false, phone = false, onkeydown, collectable = false, look = 'grid', current = false, now = false, flight = true }: Props = $props()
   const view = getAppView()
   const library = $derived(view.state.library)
   const status = $derived(collectable && library
     ? collectState(library, { kind: 'playlist', id })
     : null)
+  const page = $derived(resolve('/playlists/[id=neteaseId]', { id }))
   const songCount = $derived(formatSongCount(trackCount))
 </script>
 
@@ -89,7 +93,7 @@
 {:else}
   <div class='relative min-w-0'>
     <a href={resolve('/playlists/[id=neteaseId]', { id })} class='group block min-w-0 rounded-lg' {onkeydown}>
-      <Cover url={coverUrl} size={TILE_COVER_SIZE} fluid class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
+      <Cover url={coverUrl} size={FLIGHT_COVER_SIZE} fluid flight={flight ? page : undefined} class='rounded-lg shadow-ambient transition-[filter] duration-feedback mouse:group-hover:brightness-95' />
       <span class={[
         'mt-2.5 block truncate text-neutral-900 font-500',
         phone ? 'text-body' : 'text-label',
