@@ -417,16 +417,32 @@
       }} />
     </div>
   {:else}
-    <div class={[
-      'col-start-1 row-start-1 flex flex-col justify-center',
-      compact ? 'gap-5' : 'gap-7',
-    ]} role='status' aria-busy='true' aria-label='正在加载歌词' transition:fade>
-      {#each [62, 78, 54, 70, 46] as width, i (i)}
-        <span class={[
-          'bone rounded-full',
-          compact ? 'h-4' : 'h-5',
-        ]} style:width='{width}%'></span>
-      {/each}
+    <!-- 和内容同一套排法：上面一行开关（两个 chip），下面的行从滚动区 38% 那条线起排，行高、上下留白和普通行一样 -->
+    <div class='col-start-1 row-start-1 min-h-0 flex flex-col' role='status' aria-busy='true' aria-label='正在加载歌词' transition:fade>
+      <div class={[
+        'flex flex-none items-center gap-2',
+        compact ? 'pb-1' : 'pb-2',
+      ]}>
+        <span class='bone h-9 w-18 rounded-full'></span>
+        <span class='bone h-9 w-18 rounded-full'></span>
+      </div>
+      <div class='scroll min-h-0 flex-1 overflow-hidden'>
+        <div class='anchor'>
+          {#each [62, 78, 54, 70, 46] as width, i (i)}
+            <div class={compact ? 'py-2' : 'py-3'}>
+              <div class={[
+                'flex items-center',
+                compact ? 'h-6' : 'h-7',
+              ]}>
+                <span class={[
+                  'bone rounded-full',
+                  compact ? 'h-4' : 'h-5',
+                ]} style:width='{width}%'></span>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
     </div>
   {/if}
 </div>

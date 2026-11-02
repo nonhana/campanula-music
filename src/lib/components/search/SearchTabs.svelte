@@ -1,5 +1,5 @@
 <!--
-  搜索结果页的标签（视觉原型 SearchPanel）：综合 / 单曲 / 歌单 / 歌手 / 专辑，四类旁边写网易云给的总数（还没拉到时不写，到了淡入）。选中的写进地址的 type：返回、刷新还停在这个标签；换标签不留浏览记录（返回直接离开搜索，和曲库标签一样）。
+  搜索结果页的标签（视觉原型 SearchPanel）：综合 / 单曲 / 歌单 / 歌手 / 专辑，四类旁边写网易云给的总数（还在拉时先占一小段骨架，到了换成数字；没拉成、网易云没给就不写）。选中的写进地址的 type：返回、刷新还停在这个标签；换标签不留浏览记录（返回直接离开搜索，和曲库标签一样）。
   样子、键盘和短线的滑动是 ui/Tabs（和歌手页共用），这里只给搜索特有的：每个标签的地址和四类的总数。
   桌面吸在顶栏下面；手机放在骨架的标签行里，吸在搜索框下面，放不下时能左右滑。
 -->
@@ -24,14 +24,18 @@
     ? view.state.search.results
     : null)
 
-  /** 标签旁边写的总数：综合不写，还没拉到不写 */
-  const totalOf = (key: SearchTab): number | null => {
-    if (key === 'all' || !results)
+  /** 标签旁边写的总数：综合不写；还在拉是 null（Tabs 画一小段骨架），没拉成、网易云没给是 undefined（不写） */
+  const totalOf = (key: SearchTab): number | null | undefined => {
+    if (key === 'all')
+      return undefined
+    if (!results)
       return null
     const list = results[key]
+    if (list.status === 'loading')
+      return null
     return list.status === 'shown'
-      ? list.total
-      : null
+      ? list.total ?? undefined
+      : undefined
   }
 
   const tabs = $derived(SEARCH_TABS.map(item => ({

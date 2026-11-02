@@ -44,8 +44,6 @@
     search?: SongSearch | null
     /** 手机数量行在不搜时写“N 首”（歌单页用总数，不给就是列表里的首数）；null 是总数不知道（网易云没给），不写数字 */
     count?: number | null
-    /** 手机数量行里、“N 首”和多选入口之间的东西（歌手页的排法切换）；给了它数量行一直在，加载中、出错时也能用 */
-    countExtra?: Snippet
     /** 骨架行数；默认手机 8、桌面 9（搜索综合的前几首传 5） */
     skeleton?: number
     /** 列表上方的说明（其余没加载成、多选时不能排序）：调用方给 */
@@ -92,7 +90,6 @@
     skeleton,
     notice,
     select = null,
-    countExtra,
     grip,
     drag = null,
     rowWrap,
@@ -124,8 +121,8 @@
       ? 'none'
       : 'found')
     : 'all')
-  /** 手机数量行：搜索时写找到几首；能给多选、给了总数的不搜时也出现；数量行里另有东西时一直在 */
-  const countRow = $derived(countExtra !== undefined || (list.kind === 'songs' && (search !== null || count !== undefined || select !== null)))
+  /** 手机数量行：搜索时写找到几首；能给多选、给了总数的不搜时也出现。加载中也先占好这一行，骨架换成歌时下面的行不往下跳 */
+  const countRow = $derived((list.kind === 'songs' || list.kind === 'loading') && (search !== null || count !== undefined || select !== null))
 
   const play = (song: Song): void => {
     view.app.play(source, song.id)
@@ -376,13 +373,14 @@
       ? 'min-h-12 flex items-center gap-2 px-4 pt-1'
       : 'flex items-center gap-2 px-4 pt-2'}>
       <p class='min-w-0 flex-1 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
-        {#if search}
+        {#if list.kind === 'loading'}
+          <span class='bone inline-block h-3 w-10 rounded-full align-middle' aria-hidden='true'></span>
+        {:else if search}
           {@render found()}
-        {:else if list.kind === 'songs' && count !== null}
+        {:else if count !== null}
           {formatCount(count ?? songs.length)} 首
         {/if}
       </p>
-      {#if countExtra}{@render countExtra()}{/if}
       {#if select && !selecting && songs.length > 0}
         <span class='contents' bind:this={entry}>
           <IconButton icon={ListChecks} label={entryLabel} title={entryLabel} class='-mr-3' onclick={enterFromEntry} />
@@ -394,7 +392,8 @@
     <div class='pt-2'>{@render notice()}</div>
   {/if}
   {#if list.kind === 'loading'}
-    <SkeletonRows class='pt-2' count={skeleton ?? 8} phone label={loadingLabel} />
+    <!-- 骨架和下面内容的上边距同一个条件：bare 的内容不加 pt-2 -->
+    <SkeletonRows class={bare ? undefined : 'pt-2'} count={skeleton ?? 8} look={numbered ? 'numbered' : 'phone'} label={loadingLabel} />
   {:else if bare}
     {#if revealContent}<div in:reveal>{@render body()}</div>{:else}{@render body()}{/if}
   {:else}

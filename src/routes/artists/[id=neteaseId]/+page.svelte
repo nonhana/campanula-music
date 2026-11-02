@@ -3,7 +3,7 @@
   歌曲是全部歌曲，按热门或最新排（每次 100 首，后面还有时“显示更多”）；专辑是网格（新的在前，同样“显示更多”）；简介是一段简介加分段介绍。
   选中的标签和排法写在地址里（?tab=albums、?tab=intro、?order=time，默认的歌曲、热门不写）：换的时候替换当前记录，内容在同一页的换页过渡里交叉淡化，
   标签行已经吸住时换完滚到它刚好吸住的位置；返回、刷新都停在原来的标签和排法，滚动位置随浏览历史恢复。
-  桌面标签行吸在顶栏下，排法切换在它最右（只在歌曲标签）；手机吸在返回栏下，排法切换在数量行里。头部交给 DetailHeader（#75），网格交给 TileGrid。
+  标签行桌面吸在顶栏下、手机吸在返回栏下；排法切换（文字的“热门 | 最新”）在标签行最右，只在歌曲标签时有。头部交给 DetailHeader（#75），网格交给 TileGrid。
   告诉 App 听众在看这位歌手的哪个标签、哪种排法（viewing）：什么时候取（最新、简介第一次要看时）、没取成后重试都由 App 决定。
 -->
 <script lang='ts'>
@@ -206,7 +206,7 @@
     role='radio'
     id='artist-order'
     label='排序'
-    class='h-9 w-32 flex-none bg-white/70 shadow-ambient'
+    look='text'
   />
 {/snippet}
 
@@ -239,10 +239,14 @@
     </div>
   {:else}
     <div class={introFrame} role='status' aria-busy='true' aria-label='正在加载简介' out:fadeAway>
+      <!-- 照内容的节奏：一段简介（28px 一行，行与行之间不另加空）、隔 24px 一个小标题、隔 8px 接正文 -->
       <div class={introCard}>
-        <span class='h-6 w-1/3 flex items-center'><span class='bone h-4 w-full rounded-full'></span></span>
-        {#each [100, 92, 64] as width (width)}
-          <span class='mt-2 h-7 flex items-center' style:width='{width}%'><span class='bone h-3.5 w-full rounded-full'></span></span>
+        {#each [100, 96, 64] as width (width)}
+          <span class='h-7 flex items-center' style:width='{width}%'><span class='bone h-3.5 w-full rounded-full'></span></span>
+        {/each}
+        <span class='mt-6 h-6 w-1/3 flex items-center'><span class='bone h-4 w-full rounded-full'></span></span>
+        {#each [100, 88] as width, i (width)}
+          <span class={['h-7 flex items-center', i === 0 && 'mt-2']} style:width='{width}%'><span class='bone h-3.5 w-full rounded-full'></span></span>
         {/each}
       </div>
     </div>
@@ -278,16 +282,20 @@
 
     <!-- 标签行本来的位置：这段空白的下沿 -->
     <div bind:this={gap} class={phone ? 'h-4' : 'h-8'}></div>
+    <!-- 排法的字和下面的多选入口、行尾的 ••• 右边对齐（手机离屏幕边 16px，桌面贴着内容区右边） -->
     {#if phone}
-      <div bind:this={tabRow} class='sticky z-10 bg-primary-50' style:top='var(--phone-top, 0px)' bind:clientHeight={tabsHeight}>
-        <Tabs {tabs} selected={tab} onselect={selectTab} idOf={artistTabId} panel={ARTIST_PANEL_ID} label='歌手页' class='px-2' />
+      <div bind:this={tabRow} class='sticky z-10 flex items-center bg-primary-50' style:top='var(--phone-top, 0px)' bind:clientHeight={tabsHeight}>
+        <Tabs {tabs} selected={tab} onselect={selectTab} idOf={artistTabId} panel={ARTIST_PANEL_ID} label='歌手页' class='min-w-0 flex-1 px-2' />
+        {#if tab === 'songs'}
+          <div class='flex-none pr-2' transition:fade>{@render orderSwitch()}</div>
+        {/if}
       </div>
     {:else}
       <!-- 底色比内容区两边各宽 12px（和搜索结果的标签行一样）：网格的阴影滚到它底下时也盖得住 -->
       <div bind:this={tabRow} class='sticky z-10 flex items-center gap-4 bg-primary-50 px-3 -mx-3' style:top='calc(4rem + var(--offline-bar-height, 0px))' bind:clientHeight={tabsHeight}>
         <Tabs {tabs} selected={tab} onselect={selectTab} idOf={artistTabId} panel={ARTIST_PANEL_ID} label='歌手页' class='min-w-0 flex-1 -ml-3' />
         {#if tab === 'songs'}
-          <div class='flex-none' transition:fade>{@render orderSwitch()}</div>
+          <div class='flex-none -mr-2' transition:fade>{@render orderSwitch()}</div>
         {/if}
       </div>
     {/if}
@@ -295,9 +303,7 @@
     <div id={ARTIST_PANEL_ID} role='tabpanel' aria-labelledby={artistTabId(tab)} style:min-height={panelMinHeight}>
       {#if tab === 'songs'}
         {#if phone}
-          <SongList list={songList} source={{ kind: 'artist', id }} loadingLabel='正在加载歌曲' phone count={shownSongs?.total ?? null} {select} bind:host={songsHost}>
-            {#snippet countExtra()}{@render orderSwitch()}{/snippet}
-          </SongList>
+          <SongList list={songList} source={{ kind: 'artist', id }} loadingLabel='正在加载歌曲' phone count={shownSongs?.total ?? null} {select} bind:host={songsHost} />
           <ShowMore more={shownSongs?.more ?? null} onmore={() => void showMoreSongs()} failed='没能加载更多歌曲' class='px-4 pt-5' />
         {:else}
           <!-- “显示更多”在白色面板外面另起一行，和面板居中对齐（作者 2026-10-31 定） -->

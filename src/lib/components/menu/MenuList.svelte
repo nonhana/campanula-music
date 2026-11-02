@@ -172,9 +172,10 @@
               ? 'size-11'
               : 'size-9',
           ]}></span>
+          <!-- 只有加入歌单会等列表：第一行是不带副标题的“新建歌单”，骨架第一行也只有一条 -->
           <span class='flex flex-1 flex-col gap-2'>
-            <span class='bone h-3.5 rounded-full' style:width='{[64, 48, 56][i]}%'></span>
-            <span class='bone h-3 w-1/4 rounded-full'></span>
+            <span class='bone h-3.5 rounded-full' style:width='{[40, 48, 56][i]}%'></span>
+            {#if i > 0}<span class='bone h-3 w-1/4 rounded-full'></span>{/if}
           </span>
         </div>
       {/each}

@@ -77,8 +77,9 @@
       {:else}
         <div class='flex flex-col gap-3' role='status' aria-busy='true' aria-label='正在取标签库'>
           {#each BONES as count, row (row)}
-            <div class='grid grid-cols-[40px_minmax(0,1fr)] items-center gap-2'>
-              <span class='bone h-3 w-8 rounded-full'></span>
+            <!-- 和内容一样顶对齐：组名在第一行 chip 的中线上（pt-2 + 20px），chip 折行时组名不往下沉 -->
+            <div class='grid grid-cols-[40px_minmax(0,1fr)] items-start gap-2'>
+              <span class='mt-2 h-5 flex items-center'><span class='bone h-3 w-8 rounded-full'></span></span>
               <span class='flex flex-wrap gap-1.5'>
                 {#each { length: count }, i (i)}
                   <span class='bone h-9 w-14 rounded-full'></span>

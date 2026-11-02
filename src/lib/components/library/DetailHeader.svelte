@@ -129,10 +129,11 @@
 {#snippet actionsBlock(onPhone: boolean)}
   {#if onPhone}
     {#if actions}
+      <!-- 居中的页头（有骨架的那种）动作行至少 44px（手机图标按钮的高度）：只有 40px 胶囊的动作行（我喜欢的音乐）也和骨架一样高 -->
       <div class={[
         'flex flex-wrap items-center gap-2',
         phoneLayout === 'center'
-          ? 'mt-4 justify-center'
+          ? 'mt-4 min-h-11 justify-center'
           : 'mt-4',
       ]}>{@render actions(false)}</div>
     {/if}
@@ -213,6 +214,7 @@
     </header>
   {/if}
 {:else if phone}
+  <!-- 和内容一样高：封面、标题、信息行，再加动作行（手机图标按钮 44px 高）；标签、简介要等数据到了才知道有没有，不占位 -->
   <header class='px-4 pt-2 text-center' out:fadeAway aria-hidden='true'>
     <span class={[
       'bone block aspect-square w-full',
@@ -221,6 +223,9 @@
     ]}></span>
     <span class='mx-auto mt-4 h-8 w-1/2 flex items-center'><span class='bone h-6 w-full rounded-full'></span></span>
     <span class='mx-auto mt-1.5 h-5 w-1/3 flex items-center'><span class='bone h-3 w-full rounded-full'></span></span>
+    {#if actions}
+      <span class='mt-4 h-11 flex items-center justify-center'><span class='bone h-10 w-30 rounded-full'></span></span>
+    {/if}
   </header>
 {:else}
   <header class={[
@@ -241,6 +246,12 @@
     ]}>
       <span class='h-9 w-2/5 flex items-center'><span class='bone h-7 w-full rounded-full'></span></span>
       <span class='mt-2 h-5 w-1/4 flex items-center'><span class='bone h-3.5 w-full rounded-full'></span></span>
+      <!-- 动作行的位置和内容一样：贴底（离信息行至少 16px），歌手居中时跟在信息行下 24px -->
+      {#if actions || search}
+        <span class={align === 'center'
+          ? 'mt-6'
+          : 'mt-auto pt-4'}><span class='bone h-10 w-30 rounded-full'></span></span>
+      {/if}
     </div>
   </header>
 {/if}

@@ -104,7 +104,7 @@
     <!-- 白色面板就是骨架自己的最外层：整块一起淡出、让出高度（桌面 5 行是综合先列几首） -->
     <SkeletonRows
       count={OVERVIEW_COUNTS.songs}
-      {phone}
+      look={phone ? 'phone' : 'desktop'}
       label='正在搜索单曲'
       class={phone ? '' : 'rounded-xl bg-white p-2 shadow-ambient'}
     />

@@ -173,7 +173,7 @@
 {#snippet results()}
   {#if term}
     {#if search.status === 'loading'}
-      <SkeletonRows count={6} label='正在搜索歌曲' />
+      <SkeletonRows count={6} look='pick' label='正在搜索歌曲' />
     {:else if search.status === 'failed'}
       <StateBlock
         kind='error'
@@ -192,7 +192,7 @@
       </VirtualList>
     {/if}
   {:else if liked === null}
-    <SkeletonRows count={6} label='正在加载我喜欢的音乐' />
+    <SkeletonRows count={6} look='pick' label='正在加载我喜欢的音乐' />
   {:else if liked.songs.length === 0 && liked.complete}
     <StateBlock kind='empty' icon={SearchX} title='我喜欢的音乐里还没有歌' />
   {:else}
@@ -204,7 +204,7 @@
 
 <div class='px-4 pb-3'>
   <SearchField label='搜索歌曲' bind:value={query} data-autofocus />
-  <p class='mt-2 min-h-4 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
+  <p class='mt-2 min-h-5 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
     {#if term && search.status === 'shown'}
       找到 {formatCount(search.songs.length)} 首
     {:else if !term && liked}

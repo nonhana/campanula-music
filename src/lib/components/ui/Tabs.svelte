@@ -13,7 +13,7 @@
   import { formatCount } from '../shared/text'
 
   interface Props {
-    /** href 是 resolve 过的地址（中键、在新标签页打开时用）；count 给了才写在名字旁边，到了淡入 */
+    /** href 是 resolve 过的地址（中键、在新标签页打开时用）；count 给了数字才写在名字旁边（到了淡入），null 是还在拉（先占一小段骨架，数字到了标签不往右挤），不给就不写 */
     tabs: readonly { key: K, label: string, href: ResolvedPathname, count?: number | null }[]
     selected: K
     /** 点了、按了键：调用方换地址；换完焦点落到选中的标签上 */
@@ -96,7 +96,9 @@
        onclick={event => onclick(event, tab.key)}
     >
       {tab.label}
-      {#if tab.count !== undefined && tab.count !== null}
+      {#if tab.count === null}
+        <span class='bone ml-1 inline-block h-3 w-6 rounded-full' aria-hidden='true'></span>
+      {:else if tab.count !== undefined}
         <span class='ml-1 text-caption font-500 tabular-nums' in:fade>{formatCount(tab.count)}</span>
       {/if}
       {#if on}

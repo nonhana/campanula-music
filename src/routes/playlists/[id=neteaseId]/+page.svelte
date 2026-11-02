@@ -194,7 +194,9 @@
   <PlayAllButton songs={shown?.kind === 'songs'
     ? shown.songs
     : null} source={{ kind: 'playlist', id }} />
-  {#if page?.inLibrary === true && shown?.kind === 'songs' && shown.songs.length > 0}
+  {#if page?.inLibrary === true}
+    <!-- 歌还没加载、一首都没有时也在，只是不能按：歌到了不挤动旁边的按钮 -->
+    {@const unloaded = shown?.kind !== 'songs' || shown.songs.length === 0}
     {#if compact && page?.can.collect}
       <!-- 收藏的歌单在紧凑宽度多一个收藏开关：下载收成同色的图标，给搜索留出能打字的宽度 -->
       <Button
@@ -203,7 +205,7 @@
         class='w-10 px-0!'
         title='下载'
         aria-label='下载'
-        disabled={!view.state.online}
+        disabled={!view.state.online || unloaded}
         onclick={(event: MouseEvent) => downloadPicker.open({
           kind: 'playlist',
           playlistId: id,
@@ -211,7 +213,7 @@
         })}
       ></Button>
     {:else}
-      <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online} onclick={(event: MouseEvent) => downloadPicker.open({
+      <Button variant='download' icon={CircleArrowDown} disabled={!view.state.online || unloaded} onclick={(event: MouseEvent) => downloadPicker.open({
         kind: 'playlist',
         playlistId: id,
         from: event.currentTarget as HTMLElement,

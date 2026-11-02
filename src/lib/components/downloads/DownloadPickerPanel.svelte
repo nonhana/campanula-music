@@ -211,7 +211,7 @@
 {/if}
 <div class='px-4 pb-3'>
   <SearchField label='筛选歌曲' bind:value={query} data-autofocus />
-  <p class='mt-2 min-h-4 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
+  <p class='mt-2 min-h-5 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
     {#if term && !loading}
       找到 {formatCount(filtered.length)} 首
     {:else if !loading}
@@ -224,7 +224,7 @@
 <div bind:this={scroller} class='min-h-0 flex-1 overflow-y-auto overscroll-contain'>
   <Scrollbar />
   {#if loading}
-    <SkeletonRows count={6} label='正在加载可下载的歌' />
+    <SkeletonRows count={6} look='pick' trailing label='正在加载可下载的歌' />
   {:else if songs.length === 0}
     <StateBlock kind='empty' icon={ListMusic} title={request.kind === 'playlist'
       ? '这张歌单还没有歌'

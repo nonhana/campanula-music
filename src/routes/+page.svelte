@@ -26,7 +26,7 @@
   import { dragScroll } from '#lib/components/shared/drag-scroll.js'
   import { failureText } from '#lib/components/shared/failure.js'
   import { desktopLayout } from '#lib/components/shared/layout.js'
-  import { fade, reveal, scrollBehavior } from '#lib/components/shared/motion.js'
+  import { fade, fadeAway, reveal, scrollBehavior } from '#lib/components/shared/motion.js'
   import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
   import { formatCount } from '#lib/components/shared/text.js'
   import CreditLine from '#lib/components/songs/CreditLine.svelte'
@@ -34,7 +34,6 @@
   import NowChip from '#lib/components/songs/NowChip.svelte'
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte'
   import PlayTarget from '#lib/components/songs/PlayTarget.svelte'
-  import SkeletonRows from '#lib/components/songs/SkeletonRows.svelte'
   import { songLook } from '#lib/components/songs/song-look.js'
   import SongMoreButton from '#lib/components/songs/SongMoreButton.svelte'
   import SongTitle from '#lib/components/songs/SongTitle.svelte'
@@ -146,7 +145,12 @@
     {#if count !== null}<span class='text-caption text-neutral-500 tabular-nums' in:fade>{count}</span>{/if}
     <div class='ml-auto flex items-center gap-2'>
       {@render tools?.()}
-      {#if all !== null}{@render seeAll(all)}{/if}
+      {#if all !== null}
+        {@render seeAll(all)}
+      {:else if count === null}
+        <!-- 还在加载（数量也还没有）：先占好“查看全部”的宽度，它出现时左边的“新建歌单”不往左挪 -->
+        <span class='invisible ml-1' aria-hidden='true' inert><TextButton href={resolve('/')} class='md:h-9 md:px-4'>查看全部</TextButton></span>
+      {/if}
     </div>
   </div>
 {/snippet}
@@ -187,8 +191,18 @@
       <div class='grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]'>
         <div class='min-w-0 rounded-xl bg-white p-2 shadow-ambient'>
           {#if liked.songs.kind === 'loading' && liked.failure?.where !== 'list'}
-            <!-- 和歌曲格一样排成 3 行、每行 60px（.strip），歌出来时面板不变高 -->
-            <SkeletonRows count={3} label='正在加载我喜欢的音乐' class='grid grid-rows-[repeat(3,60px)] items-center' />
+            <!-- 和歌曲格同一套排法（.strip：3 行 60px、一屏 3.25 列、右边露出的半列淡进面板），歌出来时格子原地换上 -->
+            <div class='strip' style:overflow-x='hidden' style:--fade-l='0px' style:--fade-r='48px' role='status' aria-busy='true' aria-label='正在加载我喜欢的音乐' out:fadeAway>
+              {#each { length: 12 }, i (i)}
+                <div class='grid grid-cols-[48px_minmax(0,1fr)_32px] h-[60px] items-center gap-3 pl-1.5 pr-1'>
+                  <span class='bone size-12 rounded-md'></span>
+                  <span class='flex flex-col gap-2'>
+                    <span class='bone h-3.5 rounded-full' style:width='{[72, 58, 81, 64][i % 4]}%'></span>
+                    <span class='bone h-3 rounded-full' style:width='{[40, 32, 46, 36][i % 4]}%'></span>
+                  </span>
+                </div>
+              {/each}
+            </div>
           {:else}
             <div in:reveal>
               {#if liked.songs.kind === 'songs'}

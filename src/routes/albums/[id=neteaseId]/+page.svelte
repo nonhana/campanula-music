@@ -74,9 +74,10 @@
   {#if album}
     {@const link = creditLink('artist', album.artist, page.url.pathname)}
     {#if link}
+      <!-- 手机上点按范围上下各撑出 6px（32px 高），不撑高信息行：和骨架一样高，换成内容时不跳 -->
       <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- 地址由 credit-link.ts 用 resolve() 拼好 -->
       <a href={link.href}
-         class={['rounded text-primary-900 font-500 underline-offset-3 mouse:hover:underline', onPhone && 'min-h-8 inline-flex items-center']}
+         class={['rounded text-primary-900 font-500 underline-offset-3 mouse:hover:underline', onPhone && 'relative before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-empty']}
          lang={langOf(link.name)}
       >{link.name}</a>
     {:else}

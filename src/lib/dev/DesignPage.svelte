@@ -5,9 +5,11 @@
 <script lang='ts'>
   import { ArrowUpDown, Check, CircleArrowDown, CirclePlus, Download, Ellipsis, ListMusic, ListPlus, ListX, Menu, Play, SkipForward, Trash2 } from '@lucide/svelte'
 
+  import type { ArtistSongOrder } from '#lib/api/library.js'
   import type { DownloadTask } from '#lib/app/downloads.js'
   import type { NoticeEntry } from '#lib/app/notice.js'
   import Brand from '#lib/components/boot/Brand.svelte'
+  import { ARTIST_ORDERS } from '#lib/components/library/artist-view.js'
   import OperationNotice from '#lib/components/notice/OperationNotice.svelte'
   import PlayerNotice from '#lib/components/player/PlayerNotice.svelte'
   import { desktopLayout } from '#lib/components/shared/layout.js'
@@ -378,6 +380,7 @@
   ]
 
   let filter = $state<FilterKey>('standard')
+  let order = $state<ArtistSongOrder>('hot')
   let query = $state('ロウワー')
   let playlistName = $state('Campanula 测试 · 可删除')
   let phoneNumber = $state('1380013')
@@ -574,7 +577,7 @@
     </section>
 
     <section>
-      {@render section('标签、筛选和分段条', '歌单标签只是显示；筛选 chip 选中时是薄荷玻璃底；分段条换选中时滑块横着滑过去。')}
+      {@render section('标签、筛选和分段条', '歌单标签只是显示；筛选 chip 选中时是薄荷玻璃底；分段条换选中时滑块横着滑过去。文字分段（歌手页的“热门 | 最新”）没有轨道，放在标签条那一行的最右。')}
       <div class='mt-4 flex flex-wrap items-center gap-2'>
         <Tag>日语</Tag>
         <Tag>电子</Tag>
@@ -586,6 +589,7 @@
         {/each}
       </div>
       <Segmented options={filters} value={filter} onchange={(key: FilterKey) => (filter = key)} role='radio' id='design-segmented' label='分段条示例' class='mt-3 h-10 max-w-[400px]' />
+      <Segmented options={ARTIST_ORDERS} value={order} onchange={(key: ArtistSongOrder) => (order = key)} role='radio' id='design-segmented-text' label='文字分段示例' look='text' class='mt-3' />
     </section>
 
     <section class='max-w-[560px]'>
