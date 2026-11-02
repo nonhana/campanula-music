@@ -1,11 +1,12 @@
 <!--
   手机播放页（DESIGN.md Layout · 播放页，照 Auxio 结构，原型 PhonePlayer），一屏放下、不滚动：顶上收起键、来源、歌词键；中间封面按歌词键或点按换成歌词，
   按住封面左右拖切歌（cover-swipe.svelte.ts、CoverWheel），读屏和键盘用下面的上一首 / 下一首。下面左对齐歌名、歌手、专辑（右边红心和“更多”），
-  波浪进度条，循环 / 上一首 / 播放 / 下一首 / 随机；最底“播放队列”点开或上拖拉开底部弹层，弹层按自身高度滑进滑出，拉手下拉、点按收起（返回先收它）。
+  波浪进度条，控制行照网易云（#86）：播放模式（一个键轮换）/ 上一首 / 播放 / 下一首 / 播放队列，下面留 24px（安全区由抽屉加）。
+  播放队列键打开底部弹层，弹层按自身高度从屏幕底边滑进滑出，拉手下拉、点按收起（返回先收它）。
   换歌时封面换碟，转出屏幕的部分裁掉；“更多”和歌曲行里同一份（#38 可下载当前这首），播放来源是这首歌自己的。放在 PlayerPage 里。
 -->
 <script lang='ts'>
-  import { ChevronDown, MicVocal } from '@lucide/svelte'
+  import { ChevronDown, ListMusic, MicVocal } from '@lucide/svelte'
 
   import type { Song } from '#lib/api/library.js'
 
@@ -16,6 +17,7 @@
   import { langOf } from '../shared/text'
   import HeartButton from '../songs/HeartButton.svelte'
   import SongMoreButton from '../songs/SongMoreButton.svelte'
+  import IconButton from '../ui/IconButton.svelte'
   import { createCoverSwipe } from './cover-swipe.svelte'
   import CoverWheel from './CoverWheel.svelte'
   import { createDrawer, SHEET_HEIGHT } from './drawer.svelte'
@@ -55,16 +57,15 @@
 
   let sheet = $state<HTMLElement>()
 
-  /** 播放队列弹层：从底下的“播放队列”往上拖的头几帧它还没画出来，按屏幕高度的 86% 算 */
+  /** 播放队列弹层：只从它自己的拉手往下拖，那时已经画出来、量它自己；没画出来时的高度是必填的，按屏幕高度的 86% 给 */
   const sheetDrawer = createDrawer(() => window.innerHeight * SHEET_HEIGHT)
   const gripTitle = playerDrawer.grip({ from: 'open', commit: closePlayerPage })
-  const gripQueueBar = sheetDrawer.grip({ from: 'closed', commit: openQueueSheet, tap: openQueueSheet })
   const gripSheet = sheetDrawer.grip({ from: 'open', commit: closeQueueSheet, tap: closeQueueSheet })
 
   // 队列这一层的请求说拉开着就升起来，说收起就缩回去（返回、Esc、拉手、遮罩都走浮层栈）
   $effect(() => sheetDrawer.settle(queueOpen))
 
-  // 拉开播放队列时焦点进弹层；收起时的焦点由浮层栈按队列入口那条按钮归还
+  // 拉开播放队列时焦点进弹层；收起时的焦点由浮层栈还给控制行最右的播放队列键（data-queue-entry）
   $effect(() => {
     if (!queueOpen)
       return
@@ -97,7 +98,7 @@
     </button>
   </div>
 
-  <div class='relative min-h-0 flex flex-1 flex-col px-6 pb-3'>
+  <div class='relative min-h-0 flex flex-1 flex-col px-6 pb-6'>
     <!-- 封面和歌词轮流占这一块：换成歌词时封面缩到 96% 淡出，歌词从下面浮上来；换回反过来，歌词往下沉，封面放大回来 -->
     <div class='relative min-h-0 flex-1'>
       {#if choices.phoneLyrics}
@@ -136,28 +137,23 @@
       </div>
 
       <div class='mt-3 flex items-center justify-between'>
-        <PlayModeButton kind='repeat' phone />
+        <PlayModeButton kind='cycle' phone />
         <div class='flex items-center gap-4'>
           <SkipButton direction='previous' phone />
           <PlayButton size={72} />
           <SkipButton direction='next' phone />
         </div>
-        <PlayModeButton kind='shuffle' phone />
+        <IconButton
+          icon={ListMusic}
+          label='播放队列'
+          aria-haspopup='dialog'
+          aria-expanded={queueOpen}
+          data-queue-entry
+          onclick={openQueueSheet}
+        />
       </div>
     </div>
   </div>
-
-  <button
-    data-queue-entry
-    type='button'
-    class='relative h-14 flex flex-none flex-col items-center rounded-t-sheet bg-white/90 pt-2 shadow-float'
-    aria-haspopup='dialog'
-    aria-expanded={queueOpen}
-    {@attach gripQueueBar}
-  >
-    <span class='h-1 w-9 rounded-full bg-neutral-300' aria-hidden='true'></span>
-    <span class='mt-2 text-label text-neutral-800 font-500'>播放队列</span>
-  </button>
 </div>
 
 {#if queueOpen || sheetDrawer.visible}
