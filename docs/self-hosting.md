@@ -21,7 +21,7 @@ adapter-node 不看 `ORIGIN` 环境变量：SvelteKit 3 里那是构建时的 `p
 
 ## 用 Docker（GHCR）
 
-镜像在打 `v*` 标签时由 CI 构建并发布（`linux/amd64` 和 `linux/arm64`）：
+镜像在打 `v*` 标签时由 CI 构建并发布（`linux/amd64` 和 `linux/arm64`）。镜像标签就是标签名（例如 `v0.0.1`）和 `latest`：
 
 ```bash
 docker run -d \

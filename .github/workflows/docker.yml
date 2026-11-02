@@ -1,6 +1,6 @@
 name: Docker
 
-# 打 v* 标签时构建镜像并发布到 GHCR（v1.2.3 → 1.2.3、1.2、1、latest）。
+# 打 v* 标签时构建镜像并发布到 GHCR：镜像标签就是标签名（v1.2.3）和 latest。
 # 平时推分支不发布；也可以在 Actions 页面手动跑一次。
 on:
   push:
