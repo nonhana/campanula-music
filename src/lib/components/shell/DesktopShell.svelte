@@ -66,7 +66,7 @@
     ? `${OFFLINE_BAR_HEIGHT}px`
     : '0px'}
 >
-  <header class='fixed inset-x-0 top-0 z-40 h-16 flex items-center gap-3 bg-primary-50 pl-4 pr-6' style:view-transition-name='shell-header' style:view-transition-class='still' data-page-top>
+  <header class='fixed inset-x-0 top-0 z-40 h-16 flex items-center gap-3 bg-primary-50 px-4' style:view-transition-name='shell-header' style:view-transition-class='still' data-page-top>
     {@render header()}
   </header>
   {#if offline}

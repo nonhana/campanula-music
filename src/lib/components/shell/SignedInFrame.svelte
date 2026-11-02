@@ -152,14 +152,22 @@
   {#if desktopLayout.current}
     <DesktopShell {railExpanded} offline={!view.state.online}>
       {#snippet header()}
-        <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
-        <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
-        <div class='flex'>
-          <IconButton icon={ChevronLeft} label='返回' title='返回（{keys.back}）' aria-keyshortcuts={keys.backAria} disabled={route === '/' && !pageHistory.canBack} onclick={backPage} />
-          <IconButton icon={ChevronRight} label='前进' title='前进（{keys.forward}）' aria-keyshortcuts={keys.forwardAria} disabled={!pageHistory.canForward} onclick={forwardPage} />
+        <!-- 左右两栏一样宽，搜索框才在顶栏正中（对着整个窗口）；窗口窄到两边放不下时左边那组不挤，搜索框往右让 -->
+        <div class='grid grid-cols-[1fr_minmax(0,560px)_1fr] flex-1 items-center gap-3'>
+          <div class='flex items-center gap-3'>
+            <IconButton icon={Menu} label={railExpanded ? '收起导航' : '展开导航'} aria-expanded={railExpanded} onclick={() => (railExpanded = !railExpanded)} />
+            <a href={resolve('/')} class='rounded-lg' aria-label='Campanula · 回到曲库'><Brand /></a>
+            <div class='flex'>
+              <IconButton icon={ChevronLeft} label='返回' title='返回（{keys.back}）' aria-keyshortcuts={keys.backAria} disabled={route === '/' && !pageHistory.canBack} onclick={backPage} />
+              <IconButton icon={ChevronRight} label='前进' title='前进（{keys.forward}）' aria-keyshortcuts={keys.forwardAria} disabled={!pageHistory.canForward} onclick={forwardPage} />
+            </div>
+          </div>
+          <DesktopSearchBox />
+          <!-- 顶栏两边各留 16px（左边菜单键和侧栏图标对齐），头像再往里 8px -->
+          <div class='mr-2 justify-self-end'>
+            <AccountMenu {account} />
+          </div>
         </div>
-        <DesktopSearchBox />
-        <AccountMenu {account} />
       {/snippet}
       {#snippet rail()}
         <a href={resolve('/')} {...railItem('/', '曲库', inLibrary)}>{@render railContent('曲库', House)}</a>

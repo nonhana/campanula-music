@@ -91,7 +91,7 @@
 
 <svelte:window onkeydown={onWindowKey} />
 
-<div bind:this={root} class='relative mx-auto max-w-[560px] min-w-0 flex-1' role='search' {@attach closeOnLeave}>
+<div bind:this={root} class='relative min-w-0' role='search' {@attach closeOnLeave}>
   <SearchField
     bind:input
     bind:value={() => searchBox.draft, (value) => {
