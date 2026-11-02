@@ -154,14 +154,14 @@
   onpointerleave={phone ? cancelLongPress : undefined}
 >
   {#if now && !ghost}
-    {#if phone}<MorningWash start={selecting ? 104 : 70} surface='ground' />{:else}<MorningWash start={104} />{/if}
+    {#if phone}<MorningWash start={selecting ? 106 : 70} surface='ground' />{:else}<MorningWash start={104} />{/if}
   {/if}
   {#if phone}
     <div class={[
-      'relative grid h-full items-center',
+      'relative grid h-full items-center gap-3.5 pl-4 pr-1',
       selecting
-        ? (grip ? 'grid-cols-[22px_48px_minmax(0,1fr)_44px] gap-3 pl-3 pr-1' : 'grid-cols-[22px_48px_minmax(0,1fr)] gap-3 pl-3 pr-1')
-        : 'grid-cols-[48px_minmax(0,1fr)_44px] gap-3.5 pl-4 pr-1',
+        ? (grip ? 'grid-cols-[22px_48px_minmax(0,1fr)_44px]' : 'grid-cols-[22px_48px_minmax(0,1fr)]')
+        : 'grid-cols-[48px_minmax(0,1fr)_44px]',
       off && !selected && 'opacity-45',
     ]}>
       {#if selecting}

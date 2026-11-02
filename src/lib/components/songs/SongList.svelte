@@ -371,8 +371,9 @@
 
 {#if phone}
   {#if countRow}
+    <!-- 能多选的数量行一直 48px（入口 44px 加上边 4px）：多选时入口拿掉，下面的列表不往上跳 -->
     <div class={select
-      ? 'min-h-11 flex items-center gap-2 px-4 pt-1'
+      ? 'min-h-12 flex items-center gap-2 px-4 pt-1'
       : 'flex items-center gap-2 px-4 pt-2'}>
       <p class='min-w-0 flex-1 px-1 text-caption text-neutral-600 tabular-nums' role='status'>
         {#if search}
