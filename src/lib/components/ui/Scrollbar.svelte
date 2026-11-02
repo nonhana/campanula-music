@@ -2,7 +2,8 @@
   自绘滚动条（DESIGN.md Components · Scrollbar，ADR-0012）。系统滚动条一律隐藏（uno.config.ts），换成这一条：浮在内容上、不占宽度，
   平时 4px、悬停或拖动时 8px，滚动时淡入、停下 1 秒后淡出，内容不比区域长时没有。只读滚动位置：除了听众拖滑块、点空白处，从不写；
   内容变长变短时只重新量。拖滑块跟着手滚，点滑块前后的空白处往那边翻一屏。
-  触屏：列表超过 4 屏时，按住滑块附近（44px 宽、上下各多 12px 的看不见的一块）能拖，快速定位（照 Android 系统列表）；按轨道空白处不翻页。
+  触屏：列表超过 4 屏时，滑块附近（44px 宽、上下各多 12px 的看不见的一块）能拖，快速定位（照 Android 系统列表）：这一块不拦手指，点按、长按照常落到
+  下面的按钮和行上，在它里面按下、上下拖了才接手（press.ts 的 attachTouchClaim）；按轨道空白处不翻页。
   传了 lookup（歌曲列表）时，拖动中滑块左边有气泡写列表最上面那一项（scroll-marks.ts）。只做竖的。
   滑块不进 Tab 顺序、读屏读不到，和系统滚动条一样：键盘照常由浏览器滚。
 
@@ -10,13 +11,20 @@
   区域自己不要有内边距（放到里面那层），不然它会离开边上；或者传 target，放在滚动区域外面、和它同一个定位盒里
   （盒子的上沿、右边和区域对齐）：区域自己带渐隐（mask-image）时，滚动条不跟着淡。
 -->
+<script module lang='ts'>
+  import { MediaQuery } from 'svelte/reactivity'
+
+  /** 以触屏为主的设备才有触屏那一块：混合输入设备上，手指在右边上下滑仍是滚页面 */
+  const coarsePointer = new MediaQuery('pointer: coarse')
+</script>
+
 <script lang='ts'>
   import { untrack } from 'svelte'
 
   import { clamp } from '../shared/clamp'
   import { scrollBehavior } from '../shared/motion'
   import { DELAYS } from '../shared/motion-tokens'
-  import { attachGrip } from '../shared/press'
+  import { attachGrip, attachTouchClaim } from '../shared/press'
   import type { ScrollLookup, ScrollMark } from '../shared/scroll-marks'
   import { createSliderCore } from '../shared/slider-core'
   import { getSelectionMode, hasSelectionMode } from './selection-mode'
@@ -89,7 +97,7 @@
     : 0)
   const shown = $derived(scrollable && (awake || near || dragging))
   const thick = $derived(near || dragging)
-  const grabbable = $derived(axis === 'y' && scrollable && metrics.content > LONG_PAGES * metrics.viewport && (awake || dragging) && !yielding)
+  const grabbable = $derived(axis === 'y' && scrollable && metrics.content > LONG_PAGES * metrics.viewport && (awake || dragging) && !yielding && coarsePointer.current)
   const gripTop = $derived(Math.max(0, INSET + offset - GRIP_SLOP))
   const gripBottom = $derived(Math.min(length, INSET + offset + thumb + GRIP_SLOP))
   const bubbleCenter = $derived(Math.min(Math.max(INSET + offset + thumb / 2, bubbleHeight / 2), length - bubbleHeight / 2))
@@ -180,12 +188,12 @@
       : { left: position, behavior })
   }
 
-  // 拖滑块：指针怎么接（捕获、按住断了、作废、元素移除）由 attachGrip + 线性核心统一做，这里只把移动换成滚动位置；点空白处翻一屏不算拖动
+  // 拖滑块：指针怎么接（捕获、按住断了、作废、元素移除）由 attachGrip / attachTouchClaim + 线性核心统一做，这里只把移动换成滚动位置；点空白处翻一屏不算拖动
   const core = createSliderCore({
     begin(sample) {
       if (!scrollable || !strip)
         return null
-      // 落在触屏那一块上：任何指针（手指、笔、鼠标）都按快速定位（和基线 target === grip 一致）
+      // 触屏那一块交过来的（attachTouchClaim 把按下的样本的 target 设成它）：按快速定位
       const onGrip = sample.target === grip
       if (!onGrip) {
         // 触屏的手指只认那一块；落在细条上就交给浏览器滚动、点歌
@@ -210,7 +218,7 @@
       starting = true
       quick = onGrip
       if (quick && sample.pointerType === 'touch') {
-        // 抓住了：Android 上手指按住时轻震一下（iOS 的浏览器没有这个接口）
+        // 接手了：Android 上轻震一下（iOS 的浏览器没有这个接口）
         navigator.vibrate?.(10)
       }
       return range > 0
@@ -245,8 +253,9 @@
       }
     },
   })
-  // 这一条本身不写 touch-action：混合输入设备上，手指落在右侧 16px 仍要能滚页面；能按的 .grip 自己有 CSS
+  // 这一条本身不写 touch-action：混合输入设备上，手指落在右侧 16px 仍要能滚页面；触屏那一块只在能拖时挂上，上下拖了才接手
   const gripAttach = attachGrip(core, { touchAction: false })
+  const touchClaim = attachTouchClaim(core)
 </script>
 
 {#snippet bar()}
@@ -301,7 +310,7 @@
         : `translateX(${offset}px)`}
     ></div>
     {#if axis === 'y'}
-      <div bind:this={grip} class={['grip', grabbable && 'grabbable']} style:top='{gripTop}px' style:height='{gripBottom - gripTop}px'></div>
+      <div bind:this={grip} class='grip' style:top='{gripTop}px' style:height='{gripBottom - gripTop}px' {@attach grabbable && touchClaim}></div>
     {/if}
     {#if lookup && axis === 'y'}
       <!-- 一直挂着（透明），第一次按住时也是从 0 淡入，而不是一下子冒出来 -->
@@ -376,21 +385,12 @@
     transition-timing-function: var(--ease-out-soft);
   }
 
-  /* 触屏能按的那一块：贴着右边 44px 宽，只在以触屏为主的设备上、能按的时候接手指；
-     按住时不让浏览器拿去平移页面、下拉刷新，也不弹长按的选字和菜单 */
+  /* 触屏那一块：贴着右边 44px 宽，只给 attachTouchClaim 量范围，自己不接手指（点按、长按落到下面的按钮和行上） */
   .grip {
     position: absolute;
     right: 0;
     width: 44px;
     pointer-events: none;
-    touch-action: none;
-    -webkit-touch-callout: none;
-  }
-
-  @media (pointer: coarse) {
-    .grip.grabbable {
-      pointer-events: auto;
-    }
   }
 
   /* 气泡在滑块左边 56px，不被按着的手指挡住；淡入淡出 120ms */

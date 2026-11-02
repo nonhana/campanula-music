@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { PointerSample } from '#lib/components/shared/press.js'
+import { touchClaim } from '#lib/components/shared/press.js'
 import { createSliderCore } from '#lib/components/shared/slider-core.js'
 
 // 第二个测试接入点“拖动手势核心”的线性那一半（进度条、自绘滚动条）：只认主指针的主键，第二根手指不重新开始、松开不提交，按住断了作废；值始终夹在 0 到 1。
+// 自绘滚动条在触屏上什么时候接手（press.ts 的 touchClaim）：点按、长按穿过去，上下拖了才接手。
 
 const setup = ({ beginValue = (sample: PointerSample) => sample.x / 100 }: { beginValue?: (sample: PointerSample) => number | null } = {}) => {
   const commits: number[] = []
@@ -147,5 +149,28 @@ describe('值', () => {
     pointer.up(160)
     expect(values).toEqual([0, 1, null])
     expect(commits).toEqual([1])
+  })
+})
+
+describe('触屏的快速定位：点按穿过去，上下拖了才接手', () => {
+  const from = { x: 100, y: 200 }
+
+  it('没挪够 6px（轻点、按着不动、手指微抖）：先不接，点按和长按落到下面的按钮和行上', () => {
+    expect(touchClaim(from, from, true)).toBe('wait')
+    expect(touchClaim(from, { x: 103, y: 204 }, true)).toBe('wait')
+  })
+
+  it('上下挪够 6px：接手', () => {
+    expect(touchClaim(from, { x: 100, y: 206 }, true)).toBe('claim')
+    expect(touchClaim(from, { x: 102, y: 194 }, true)).toBe('claim')
+  })
+
+  it('横着挪、斜着刚好一样多：交还浏览器', () => {
+    expect(touchClaim(from, { x: 92, y: 203 }, true)).toBe('pass')
+    expect(touchClaim(from, { x: 105, y: 205 }, true)).toBe('pass')
+  })
+
+  it('浏览器已经在滚、这一下拦不住：不接', () => {
+    expect(touchClaim(from, { x: 100, y: 230 }, false)).toBe('pass')
   })
 })
