@@ -42,7 +42,7 @@ export type AddTargetBlock = 'currentPlaylist' | 'alreadyHearted' | 'alreadyInPl
 
 /** 界面照着画，措辞留给自己 */
 export interface AddTarget extends Playlist {
-  /** 拿到曲目编号后以编号为准（和列表上的首数对得上）；之前用网易云写的歌曲数，没给时是 null */
+  /** 和歌单页、左栏、首页写的首数是同一个数（songCount） */
   readonly total: number | null
   /** 不能选的理由；能选时是 null */
   readonly blocked: AddTargetBlock | null
@@ -184,6 +184,8 @@ export interface LibraryState {
   artists: readonly CollectedArtist[] | null
   /** 不在列表里（还没拿到列表、在网易云里删掉了）时是 null；按调用时的本机副本算 */
   songsOf: (playlistId: number) => PlaylistSongs | null
+  /** 这张歌单写几首：左栏、首页、曲库、删除确认都用它，和歌单页列表上的首数是同一个数（songCount）。不在列表里时是 null */
+  songCountOf: (playlistId: number) => number | null
   /** 拉完了就不在里面 */
   opening: ReadonlyMap<number, PlaylistOpening>
   /** 收藏的专辑打开过就在本机副本里（断网也能看），别的只在这次登录期间记着 */
@@ -361,15 +363,25 @@ const songsOf = (replica: Replica, playlist: Playlist): PlaylistSongs => {
   }
 }
 
+/** 列表上的一共几首：同步完了是实际有的歌（网易云没给信息的不算），还在同步时是编号数 */
+const listedTotal = (playlist: PlaylistSongs<unknown>): number => playlist.complete
+  ? playlist.songs.length
+  : (playlist.total ?? playlist.trackIds.length)
+
+/**
+ * 这张歌单写几首，规则只在这里一份：列表出来了就和列表对得上（DESIGN.md Do's）；列表还没出来时是编号数，
+ * 还没拿到编号是网易云写的歌曲数（我喜欢的音乐会少写几首，#21 留言），没给时是 null（#78）
+ */
+const songCount = (playlist: PlaylistSongs<unknown>): number | null => playlist.songs.length > 0 || playlist.complete
+  ? listedTotal(playlist)
+  : playlist.total
+
 type SongsFailure = Pick<PlaylistPageFailure, 'failure' | 'source' | 'retry'>
 
 /** 这些规则只在这里一份；已经有一部分歌时后台同步的失败交给同步条，前台打开没拉成在列表上方说 */
 const songsViewOf = (playlist: PlaylistSongs<unknown>, opening: PlaylistOpening | null, failure: SongsFailure | null): Pick<PlaylistPage, 'songs' | 'more' | 'failure' | 'count'> => {
   if (playlist.songs.length > 0) {
-    // 有歌时一定已经拿到了曲目编号，total 就是编号数
-    const total = playlist.complete
-      ? playlist.songs.length
-      : (playlist.total ?? playlist.trackIds.length)
+    const total = listedTotal(playlist)
     const failed = opening?.status === 'failed'
       ? {
           where: 'more' as const,
@@ -623,6 +635,12 @@ const stateOf = (replica: Replica, sync: SyncStatus, opening: ReadonlyMap<number
     albums: replica.albums,
     artists: replica.artists,
     songsOf: songsOfPlaylist,
+    songCountOf: (playlistId) => {
+      const listed = songsOfPlaylist(playlistId)
+      return listed
+        ? songCount(listed)
+        : null
+    },
     opening: new Map(opening),
     albumPage: (albumId) => {
       const content = stored.get(albumId)
@@ -816,7 +834,7 @@ export const createLibrary = (context: LibraryContext): Library => {
       : null
     return listed.map((playlist) => {
       const tracks = shownReplica.tracks.get(playlist.id)
-      const total = tracks ? tracks.trackIds.length : playlist.trackCount
+      const total = songCount(songsOf(shownReplica, playlist))
       // 界面“已在歌单里”= trackIds 有这首歌且歌曲信息已经取到（等价于原来的 songs.some）。
       // addSongs 写入去重只看 trackIds；单曲 addToPlaylist 不去重，歌曲信息未到齐时会发一次重复加入，
       // 上游把重复 502 当成功，本地 no-op，提示仍是“已加入”。让界面和写入共用 trackIds 是行为收紧，另开票（#73 不夹带）。

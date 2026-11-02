@@ -145,7 +145,7 @@
     id={playlist.id}
     name={playlistName(playlist)}
     coverUrl={playlist.coverUrl}
-    trackCount={playlist.trackCount}
+    trackCount={library.songCountOf(playlist.id)}
     creator={null}
     locked={playlist.private}
     {phone}
@@ -218,7 +218,7 @@
                           id={playlist.id}
                           name={playlistName(playlist)}
                           coverUrl={playlist.coverUrl}
-                          trackCount={playlist.trackCount}
+                          trackCount={library.songCountOf(playlist.id)}
                           creator={null}
                           locked={playlist.private}
                           look='row'
@@ -262,7 +262,7 @@
                   id={playlist.id}
                   name={playlistName(playlist)}
                   coverUrl={playlist.coverUrl}
-                  trackCount={playlist.trackCount}
+                  trackCount={library.songCountOf(playlist.id)}
                   creator={null}
                   locked={playlist.private}
                   onkeydown={sorting
@@ -305,7 +305,7 @@
             id={playlist.id}
             name={playlistName(playlist)}
             coverUrl={playlist.coverUrl}
-            trackCount={playlist.trackCount}
+            trackCount={library.songCountOf(playlist.id)}
             creator={playlist.creator}
             locked={playlist.private}
             {phone}
@@ -335,7 +335,7 @@
         id={sort.grabbed.id}
         name={playlistName(sort.grabbed)}
         coverUrl={sort.grabbed.coverUrl}
-        trackCount={sort.grabbed.trackCount}
+        trackCount={library.songCountOf(sort.grabbed.id)}
         creator={null}
         locked={sort.grabbed.private}
         look='row'
@@ -356,7 +356,7 @@
         id={sort.grabbed.id}
         name={playlistName(sort.grabbed)}
         coverUrl={sort.grabbed.coverUrl}
-        trackCount={sort.grabbed.trackCount}
+        trackCount={library.songCountOf(sort.grabbed.id)}
         creator={null}
         locked={sort.grabbed.private}
         flight={false}

@@ -8,12 +8,13 @@ import { likedFailure } from '#lib/components/library/liked-failure.js'
 import { playlistHeader } from '#lib/components/library/view.js'
 
 import type { Device } from './harness/device'
+import { held } from './harness/hold'
 import { DAILY, likedPage, listener, PLAYLISTS_WITH_POEMS, recordedBatch } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
-const { signInAtHearts, signInAtLikedTracks, signInSynced, replyLibrary, replyPlaylists } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
+const { signInAtHearts, signInAtLikedTracks, signInSynced, replyLibrary, replyLikedSongs, replyPlaylists } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
 
 // “这一页歌单”的答案（#72）：在不在曲库、加载 / 失败 / 不可用 / 还有更多、首数、哪种失败显示在哪、能做什么，都由 library.playlistPage 给出；页面只报告“听众在看哪一页”（App 的 viewing），什么时候拉由 App 决定。录制沿用已有的 #22、#23、#29、#32、#56、#30 数据，不新录也不连真账号。
 
@@ -112,6 +113,21 @@ describe('这一页歌单的答案', () => {
       count: null,
       can: { edit: false, sort: false, collect: false },
     })
+  })
+
+  it('歌单写几首各处同一个数：拿到曲目编号前是网易云写的，之后和歌单页列表上的一样（网易云给我喜欢的音乐少写几首）', async () => {
+    const likedTracks = held()
+    const { app } = await signInAtLikedTracks(world.device(), { until: likedTracks.until })
+    const likedId = app.state.library!.playlists!.find(playlist => playlist.kind === 'liked')!.id
+    // 编号还在路上：只有歌单列表里网易云写的 4,991
+    expect(app.state.library!.songCountOf(likedId)).toBe(4991)
+
+    await replyLikedSongs()
+    likedTracks.release()
+    await world.settle()
+    const library = app.state.library!
+    expect(library.playlistPage(likedId).count).toEqual({ loaded: 4984, total: 4984 })
+    expect(library.songCountOf(likedId)).toBe(4984)
   })
 
   it('“不在曲库里”只有一种定义：歌单列表里没有它；列表里有就是在曲库里，打开后头部来自联网取到的那一份', async () => {

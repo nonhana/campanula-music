@@ -72,8 +72,6 @@
   $effect(() => view.app.viewing({ kind: 'playlist', id }))
 
   const name = $derived(header?.name ?? '')
-  /** 同步完了是实际有的歌、还在同步时是一共几首；列表还没出来时不写。和列表对得上（DESIGN.md Do's） */
-  const listedCount = $derived(page?.count?.total ?? null)
   const own = $derived(page?.can.edit ?? false)
 
   /** 打开 •••：触屏是底部弹层，鼠标贴着按钮；已经从这个按钮打开着就关上。紧凑时它收着添加（多选在列表的表头里） */
@@ -257,7 +255,7 @@
   <div class={phone ? '' : 'mt-6'}><PlaylistSongs {library} playlistId={id} bind:query {phone} /></div>
 {/snippet}
 
-{#snippet sideGroup(items: readonly Playlist[], from: number, title: string | null)}
+{#snippet sideGroup(library: LibraryState, items: readonly Playlist[], from: number, title: string | null)}
   {#if title && items.length > 0}
     <h2 class='mb-1 mt-5 px-2 text-caption text-neutral-500 font-500' in:stagger={{ order: from }}>{title}</h2>
   {/if}
@@ -270,9 +268,7 @@
           id={item.id}
           name={playlistName(item)}
           coverUrl={item.coverUrl}
-          trackCount={current
-            ? listedCount ?? item.trackCount
-            : item.trackCount}
+          trackCount={library.songCountOf(item.id)}
           creator={null}
           locked={item.private}
           look='nav'
@@ -334,9 +330,9 @@
       <Scrollbar />
       <!-- 左边留出焦点环，右边留给滚动条；行的底色往左伸出 8px，封面和右栏页头的封面一样从栏的左边起 -->
       <div class='py-4 pl-1 pr-2'>
-        {@render sideGroup(side.liked, 0, null)}
-        {@render sideGroup(side.own, side.liked.length, '自建歌单')}
-        {@render sideGroup(side.collected, side.liked.length + side.own.length, '收藏的歌单')}
+        {@render sideGroup(library, side.liked, 0, null)}
+        {@render sideGroup(library, side.own, side.liked.length, '自建歌单')}
+        {@render sideGroup(library, side.collected, side.liked.length + side.own.length, '收藏的歌单')}
       </div>
     </nav>
   </div>

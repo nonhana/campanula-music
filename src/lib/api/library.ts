@@ -64,7 +64,7 @@ export interface Playlist extends PlaylistInfo {
   kind: 'liked' | 'own' | 'collected'
   /** 隐私歌单：只有自己看得到。网易云没给隐私标记时当作公开（#78） */
   private: boolean
-  /** 网易云写的歌曲数。我喜欢的音乐的这个数会比曲目编号少几首（验证关卡①：4,965 对 4,968），拿到编号后以编号为准 */
+  /** 网易云写的歌曲数。我喜欢的音乐的这个数会比曲目编号少几首（验证关卡①：4,965 对 4,968），拿到编号后以编号为准：界面写首数读 LibraryState.songCountOf，不直接读它 */
   trackCount: number | null
   /** 曲目最后一次变动的时间（毫秒）：和本机副本里的比，变了才重拉曲目。网易云没给时是 null，本机有曲目就不重拉（#78） */
   tracksUpdatedAt: number | null

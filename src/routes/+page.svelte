@@ -245,7 +245,7 @@
         : null, newPlaylistButton)}
       <TileGrid kind='playlist' layout='shelf' items={own} label='自建歌单' loadingLabel='正在加载自建歌单' failure={listFailure('自建歌单没能同步')} empty={{ icon: ListMusic, title: '还没有自建歌单' }}>
         {#snippet tile(playlist: Playlist)}
-          <PlaylistTile id={playlist.id} name={playlistName(playlist)} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={null} locked={playlist.private} />
+          <PlaylistTile id={playlist.id} name={playlistName(playlist)} coverUrl={playlist.coverUrl} trackCount={library.songCountOf(playlist.id)} creator={null} locked={playlist.private} />
         {/snippet}
       </TileGrid>
     </section>
@@ -257,20 +257,20 @@
         : null)}
       <TileGrid kind='playlist' layout='shelf' items={collected} label='收藏的歌单' loadingLabel='正在加载收藏的歌单' failure={listFailure('收藏的歌单没能同步')} empty={{ icon: ListMusic, title: '还没有收藏的歌单' }}>
         {#snippet tile(playlist: Playlist)}
-          <PlaylistTile id={playlist.id} name={playlistName(playlist)} coverUrl={playlist.coverUrl} trackCount={playlist.trackCount} creator={playlist.creator} locked={playlist.private} />
+          <PlaylistTile id={playlist.id} name={playlistName(playlist)} coverUrl={playlist.coverUrl} trackCount={library.songCountOf(playlist.id)} creator={playlist.creator} locked={playlist.private} />
         {/snippet}
       </TileGrid>
     </section>
 
     <section class='mt-10' aria-labelledby='albums-heading'>
-      {@render rowHead('albums-heading', '专辑', library.albums && `${formatCount(library.albums.length)} 张`, (library.albums?.length ?? 0) > 0
+      {@render rowHead('albums-heading', '收藏的专辑', library.albums && `${formatCount(library.albums.length)} 张`, (library.albums?.length ?? 0) > 0
         ? resolve('/albums')
         : null)}
       <CollectedGrid {library} kind='albums' layout='shelf' />
     </section>
 
     <section class='mt-10 pb-12' aria-labelledby='artists-heading'>
-      {@render rowHead('artists-heading', '歌手', library.artists && `${formatCount(library.artists.length)} 位`, (library.artists?.length ?? 0) > 0
+      {@render rowHead('artists-heading', '收藏的歌手', library.artists && `${formatCount(library.artists.length)} 位`, (library.artists?.length ?? 0) > 0
         ? resolve('/artists')
         : null)}
       <CollectedGrid {library} kind='artists' layout='shelf' />

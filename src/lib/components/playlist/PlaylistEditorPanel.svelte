@@ -70,8 +70,8 @@
   /** 改过的简介超过了上限（网易云收更长的，原来就超长、没改的照样能保存别的） */
   const descriptionTooLong = $derived(description.trim() !== (start?.description?.trim() ?? '') && description.trim().length > PLAYLIST_DESCRIPTION_LENGTH)
   const blocked = $derived(problem !== null || descriptionTooLong)
-  const songCount = $derived(playlist
-    ? library?.playlistPage(playlist.id).content?.total ?? playlist.trackCount
+  const songCount = $derived(library && playlist
+    ? library.songCountOf(playlist.id)
     : 0)
 
   // 编辑信息时取网易云的标签库（这次登录取到过就不再取）
