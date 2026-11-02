@@ -6,6 +6,7 @@ import { createServer } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { mockPlugin } from '../src/lib/server/mock/vite-plugin.ts'
+import { TEST_OUT_DIR } from './harness/world'
 
 // mock 开发服务器的 HTTP 行为：自动登录走真实加密 Cookie，写操作刷新后还在，reset 回种子。不连网易云，也不启动浏览器；浏览器 smoke 用 pnpm smoke:mock（需要先开 pnpm dev:mock）。
 let origin = ''
@@ -26,7 +27,7 @@ beforeAll(async () => {
     },
     plugins: [
       mockPlugin(),
-      sveltekit(),
+      sveltekit({ outDir: TEST_OUT_DIR }),
     ],
   })
   const http = createHttpServer((req, res) => vite.middlewares(req, res))

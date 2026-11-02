@@ -43,6 +43,11 @@ export default defineConfig(({ command }) => ({
     sveltekit({
       preprocess: vitePreprocess(),
       adapter,
+      // SvelteKit 开发时把环境变量的值（mock 的 COOKIE_SECRET、LOGIN_COOKIE_NAME）写进 <输出目录>/generated/dev/env/config.js：
+      // 和 5173 共用 .svelte-kit 时，mock 一启动 5173 就换成 mock 的密钥，真账号掉登录。各用各的输出目录
+      outDir: command === 'serve' && process.env.CAMPANULA_MOCK === '1'
+        ? '.svelte-kit-mock'
+        : undefined,
     }),
   ],
   test: {

@@ -31,6 +31,12 @@ const SITE_ENV = {
   COOKIE_SECRET: 'campanula-test-secret-0123456789abcdefghijklmnopqrstuv',
   NETEASE_REAL_IP: REAL_IP,
 }
+/**
+ * 测试用的服务端（这里和 tests/mock-server.test.ts）的 SvelteKit 输出目录。SvelteKit 开发时把环境变量的值写进
+ * `<输出目录>/generated/dev/env/config.js`：和 5173 共用 .svelte-kit 时，跑一次测试 5173 就换成测试的 COOKIE_SECRET，
+ * 解不开真账号的登录 Cookie，要重新扫码
+ */
+export const TEST_OUT_DIR = '.svelte-kit-test'
 const LOG_METHODS = [
   'debug',
   'log',
@@ -136,7 +142,7 @@ const startWorld = async (options: WorldOptions = {}) => {
     },
     plugins: [
       replaceSdk(),
-      sveltekit(),
+      sveltekit({ outDir: TEST_OUT_DIR }),
     ],
   })
   // 和服务端路由走同一个模块加载器（SvelteKit 3 起用 SSR 环境的 runner，不再是 ssrLoadModule；两边缓存不通，拿到的就是两份替身）

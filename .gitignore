@@ -3,6 +3,8 @@ node_modules
 .output
 .vercel
 /.svelte-kit
+/.svelte-kit-mock
+/.svelte-kit-test
 /build
 
 .DS_Store
