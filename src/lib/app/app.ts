@@ -916,6 +916,9 @@ export const createApp = (browser: BrowserCapabilities): App => {
             return library.retryOrder(notice.playlist, notice.songIds)
           case 'playlistOrderFailed':
             return library.retryPlaylistOrder(notice.playlistIds)
+          case 'syncFailed':
+            // 接着同步时 Library 自己收起这一条
+            return library.retry()
           case 'downloadFailed':
             // 开始重下了才关掉；断网、没登录时下不了，提示条留着
             if (downloads.retry(notice.song.id))

@@ -22,7 +22,7 @@ import type { BackgroundFailure, BackgroundSessionResult, SessionFailure, Sessio
 // 专辑页、歌手页是打开时用前台请求拉的（#23：连着取会被说操作频繁）；收藏的专辑打开过就存本机，歌手页和不在曲库里的歌单只在这次登录期间记着（#56）。
 // 改曲库先叠在显示的副本上立即生效，再用前台请求提交，确认了才写进副本；同步拿回来的是请求发出那一刻的网易云，比它晚确认的修改要叠回去（规则⑨，#30、#33）。
 
-type SyncFailure = BackgroundFailure
+export type SyncFailure = BackgroundFailure
 
 /** 打开歌单时没拉成的原因：前台请求不等，断网、操作频繁都直接说 */
 type OpenFailure = SessionFailure
@@ -158,7 +158,7 @@ export interface PlaylistPage {
   songs: PlaylistPageSongs
   /** 其余的歌在拉或没拉成；都取到了、或者后台同步还没拉完（那是 songs.complete 和同步条的事）时是 null */
   more: PlaylistOpening | null
-  /** 前台打开失败优先，其次是后台同步失败；已经有一部分歌时后台同步失败交给同步条 */
+  /** 前台打开失败优先，其次是后台同步失败；已经有一部分歌时后台同步失败交给同步条（首次同步）或提示条 */
   failure: PlaylistPageFailure | null
   /** loaded 已经有的、total 已知一共的；列表还没出来是 null */
   count: { loaded: number, total: number } | null
@@ -166,7 +166,7 @@ export interface PlaylistPage {
   can: { edit: boolean, sort: boolean, collect: boolean }
 }
 
-/** 首次同步的进度、暂停、同步停下；不需要时是 null */
+/** 首次同步（这台设备上还没走完一轮）的进度、暂停、停下；不需要时是 null */
 export type SyncNoticeState
   /** 歌单列表还没拿到时 progress 是 null */
   = | { kind: 'syncing', progress: { done: number, total: number } | null }
@@ -378,7 +378,7 @@ const songCount = (playlist: PlaylistSongs<unknown>): number | null => playlist.
 
 type SongsFailure = Pick<PlaylistPageFailure, 'failure' | 'source' | 'retry'>
 
-/** 这些规则只在这里一份；已经有一部分歌时后台同步的失败交给同步条，前台打开没拉成在列表上方说 */
+/** 这些规则只在这里一份；已经有一部分歌时后台同步的失败交给同步条（首次同步）或提示条，前台打开没拉成在列表上方说 */
 const songsViewOf = (playlist: PlaylistSongs<unknown>, opening: PlaylistOpening | null, failure: SongsFailure | null): Pick<PlaylistPage, 'songs' | 'more' | 'failure' | 'count'> => {
   if (playlist.songs.length > 0) {
     const total = listedTotal(playlist)
@@ -541,11 +541,12 @@ const playlistPageOf = (replica: Replica, playlistId: number, songsOfPlaylist: (
   }
 }
 
-/** 首次同步（还有歌单没同步到，或者我喜欢的音乐还没同步全）、暂停或停下时显示；曲库已经在本机、只是在后台比对时不打扰 */
+/**
+ * 首次同步（这台设备上还没走完一轮，而且还有歌单没同步到，或者我喜欢的音乐还没同步全）时显示进度、暂停、停下；
+ * 走完一轮以后的同步都在后台，不推开页面，停下了由提示条说（publish）
+ */
 const syncNoticeOf = (replica: Replica, sync: SyncStatus): SyncNoticeState | null => {
-  if (sync.status === 'failed')
-    return { kind: 'failed', failure: sync.failure }
-  if (sync.status === 'synced')
+  if (sync.status === 'synced' || replica.firstSyncDone)
     return null
   const playlists = replica.playlists
   let firstSync = playlists === null
@@ -581,6 +582,8 @@ const syncNoticeOf = (replica: Replica, sync: SyncStatus): SyncNoticeState | nul
       return { kind: 'rateLimited' }
     case 'offline':
       return { kind: 'offline' }
+    case 'failed':
+      return { kind: 'failed', failure: sync.failure }
     default: {
       const unhandled: never = sync
       throw new Error(`不认识的同步状态：${JSON.stringify(unhandled)}`)
@@ -893,10 +896,18 @@ export const createLibrary = (context: LibraryContext): Library => {
     return { ok: false, failure: result.failure }
   }
 
+  /** 首次同步走完一轮以后，同步停下时没有同步条：发一条能重试的提示条，接着同步时收起 */
   const publish = (next: SyncStatus = status): void => {
+    const previous = status
     status = next
-    if (replica)
-      context.write(stateOf(shown(replica), status, opening, pages))
+    if (!replica)
+      return
+    const state = stateOf(shown(replica), status, opening, pages)
+    if (next.status === 'failed' && previous.status !== 'failed' && !state.syncNotice)
+      notices.show({ kind: 'syncFailed', failure: next.failure })
+    else if (previous.status === 'failed' && next.status !== 'failed')
+      notices.hideWhere(notice => notice.kind === 'syncFailed')
+    context.write(state)
   }
 
   /** 经过后台通道（操作频繁、断网时等着再发）；这一轮结束、giveUp 了都不发 */
@@ -1121,6 +1132,9 @@ export const createLibrary = (context: LibraryContext): Library => {
     }
     // 这一轮的请求都是在它开始以后发的：那之前确认的修改已经在拿回来的数据里了，不用再记着
     changes = changes.filter(entry => entry.confirmedAt === null || entry.confirmedAt > startedAt)
+    // 每张歌单都试过了（跳过的那几张也算）：首次同步走完，以后的同步不再显示同步条
+    if (!current.firstSyncDone && !await save(mine, () => ({ firstSyncDone: true })))
+      return
     publish(skipped
       ? { status: 'failed', failure: skipped }
       : { status: 'synced' })
@@ -1494,6 +1508,7 @@ export const createLibrary = (context: LibraryContext): Library => {
             albums: null,
             artists: null,
             albumPages: new Map(),
+            firstSyncDone: false,
           }
       if (shown !== stored && session.isCurrent(mine))
         await local.resetLibrary(account.id)

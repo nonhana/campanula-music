@@ -7,7 +7,7 @@ import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 const NAME = 'campanula'
 const VERSION = 12
 const SESSION = 'session'
-/** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists */
+/** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists、firstSyncDone */
 const LIBRARY = 'library'
 const TRACKS = 'tracks'
 /** 歌曲信息，按歌曲编号存；几张歌单里都有的歌只存一份 */
@@ -85,6 +85,8 @@ export interface Replica {
   artists: CollectedArtist[] | null
   /** 打开过的收藏的专辑的专辑页；不再收藏时删掉 */
   albumPages: Map<number, AlbumResponse>
+  /** 首次同步在这台设备上走完过一轮（每张歌单都试过）：之后的同步都在后台，不再显示同步条 */
+  firstSyncDone: boolean
 }
 
 /** 给了的部分整个换掉，tracks、songs、albumPages 按编号换掉给了的那几项；换了歌单列表或收藏的专辑时，连带删掉不在里面的曲目和专辑页 */
@@ -96,6 +98,8 @@ export interface LibraryPatch {
   albums?: CollectedAlbum[]
   artists?: CollectedArtist[]
   albumPages?: ReadonlyMap<number, AlbumResponse>
+  /** 只会从没走完变成走完 */
+  firstSyncDone?: true
 }
 
 export const emptyPatch = (patch: LibraryPatch): boolean => Object.values(patch).every(part => part === undefined)
@@ -136,6 +140,7 @@ export const patched = (replica: Replica, patch: LibraryPatch): Replica => {
     albums: patch.albums ?? replica.albums,
     artists: patch.artists ?? replica.artists,
     albumPages,
+    firstSyncDone: patch.firstSyncDone ?? replica.firstSyncDone,
   }
 }
 
@@ -448,12 +453,13 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
     async readLibrary() {
       const transaction = (await db.open()).transaction(LIBRARY_STORES)
       const library = transaction.objectStore(LIBRARY)
-      const [owner, hearts, playlists, collectedAlbums, collectedArtists, trackKeys, trackValues, songs, albumKeys, albumValues] = await Promise.all([
+      const [owner, hearts, playlists, collectedAlbums, collectedArtists, firstSyncDone, trackKeys, trackValues, songs, albumKeys, albumValues] = await Promise.all([
         settled(library.get('owner')) as Promise<number | undefined>,
         settled(library.get('hearts')) as Promise<number[] | undefined>,
         settled(library.get('playlists')) as Promise<Playlist[] | undefined>,
         settled(library.get('collectedAlbums')) as Promise<CollectedAlbum[] | undefined>,
         settled(library.get('collectedArtists')) as Promise<CollectedArtist[] | undefined>,
+        settled(library.get('firstSyncDone')) as Promise<true | undefined>,
         settled(transaction.objectStore(TRACKS).getAllKeys()) as Promise<number[]>,
         settled(transaction.objectStore(TRACKS).getAll()) as Promise<PlaylistTracks[]>,
         settled(transaction.objectStore(SONGS).getAll()) as Promise<Song[]>,
@@ -471,6 +477,7 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
         albums: collectedAlbums ?? null,
         artists: collectedArtists ?? null,
         albumPages: new Map(albumKeys.map((key, index) => [key, albumValues[index]])),
+        firstSyncDone: firstSyncDone === true,
       }
     },
     resetLibrary: owner => write(LIBRARY_STORES, (transaction) => {
@@ -515,6 +522,8 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
         library.put(patch.hearts, 'hearts')
       if (patch.artists)
         library.put(patch.artists, 'collectedArtists')
+      if (patch.firstSyncDone)
+        library.put(true, 'firstSyncDone')
       if (patch.songs) {
         const songs = transaction.objectStore(SONGS)
         for (const song of patch.songs)

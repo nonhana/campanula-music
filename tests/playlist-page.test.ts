@@ -9,12 +9,14 @@ import { playlistHeader } from '#lib/components/library/view.js'
 
 import type { Device } from './harness/device'
 import { held } from './harness/hold'
-import { DAILY, likedPage, listener, PLAYLISTS_WITH_POEMS, recordedBatch } from './harness/listener'
+import { DAILY, likedPage, listener, noticeEntry, noticeOf, PLAYLISTS_WITH_POEMS, recordedBatch } from './harness/listener'
 import { signIn } from './harness/sign-in'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
 const { signInAtHearts, signInAtLikedTracks, signInSynced, replyLibrary, replyLikedSongs, replyPlaylists } = listener(world, { playlists: PLAYLISTS_WITH_POEMS })
+/** 首次同步时的歌单列表里还没有 poems（#22 在官方 App 里删掉它以后录的那一份） */
+const { signInSynced: signInSyncedWithoutPoems } = listener(world)
 
 // “这一页歌单”的答案（#72）：在不在曲库、加载 / 失败 / 不可用 / 还有更多、首数、哪种失败显示在哪、能做什么，都由 library.playlistPage 给出；页面只报告“听众在看哪一页”（App 的 viewing），什么时候拉由 App 决定。录制沿用已有的 #22、#23、#29、#32、#56、#30 数据，不新录也不连真账号。
 
@@ -27,6 +29,8 @@ const UNCOLLECT = 'like-collect/playlist_subscribe.unsubscribe.json'
 /** 网易云回 502、SDK 认不出（“这一页没取到”，tests/library.test.ts 同一条录制） */
 const REJECTED_PAGE = 'library/song_detail.liked-page4.502-null-artist.json.gz'
 const BANG_DREAM_ID = 4943170241
+/** 作者在官方 App 里新建的临时歌单（#22 录制时建的，录完就删了） */
+const POEMS_ID = 900000019
 const BEFORE = await recordedBatch('before')
 
 /** 没收藏的专辑 THE BOOK for,（#23 录制） */
@@ -224,7 +228,7 @@ describe('这一页歌单的答案', () => {
     })
   })
 
-  it('我喜欢的音乐已经有一部分、后台同步又失败：这一页不重复说失败，同步条说并可重试', async () => {
+  it('首次同步时我喜欢的音乐已经有一部分、同步又失败：这一页不重复说失败，同步条说并可重试，不另发提示条', async () => {
     const device = world.device()
     const app = await syncWithPartialLiked(device)
     const library = app.state.library!
@@ -241,6 +245,7 @@ describe('这一页歌单的答案', () => {
       failure: { kind: 'serverError' },
     })
     expect(syncNoticeFor(library, page.failure?.where === 'list')).toMatchObject({ kind: 'failed' })
+    expect(noticeOf(app)).toBeNull()
 
     device.setOnline(false)
     app.retrySync()
@@ -261,6 +266,66 @@ describe('这一页歌单的答案', () => {
 
     const synced = await signInSynced(world.device())
     expect(synced.app.state.library!.syncNotice).toBeNull()
+  })
+
+  it('首次同步走完一轮以后不再显示同步条：再次打开时多了一张歌单、几张歌单变了，也只在后台同步', async () => {
+    const device = world.device()
+    await signInSyncedWithoutPoems(device)
+
+    // 再打开时 poems 刚在官方 App 里建好；另外三张的曲目变动时间和首次同步时的列表不一样，按列表的先后重拉
+    const hearts = held()
+    await world.netease.reply('login/user_account.vip.json')
+    await replyLibrary({
+      through: 'artists',
+      holds: {
+        hearts: { until: hearts.until },
+      },
+    })
+    await replyPlaylists(BEFORE.playlists.filter(playlist => [
+      POEMS_ID,
+      900000012,
+      900000018,
+      3136952023,
+    ].includes(playlist.id)))
+    const { app } = await device.open()
+    const notices = [app.state.library!.syncNotice]
+    app.subscribe(() => notices.push(app.state.library!.syncNotice))
+    hearts.release()
+    await device.idle()
+
+    expect(app.state.library!.songsOf(POEMS_ID)?.complete).toBe(true)
+    expect(app.state.library!.sync).toEqual({ status: 'synced' })
+    expect(notices.filter(notice => notice !== null)).toEqual([])
+  })
+
+  it('首次同步走完一轮以后同步停下：不显示同步条，发一条出错提示条，重试时收起、接着同步', async () => {
+    const device = world.device()
+    await signInSynced(device)
+    // 再打开时红心那一步没有录制：替身回服务端出错，同步停下
+    await world.netease.reply('login/user_account.vip.json')
+    const { app } = await device.open()
+    await device.idle()
+    expect(app.state.library!.sync).toMatchObject({
+      status: 'failed',
+      failure: { kind: 'serverError' },
+    })
+    expect(app.state.library!.syncNotice).toBeNull()
+    const entry = noticeEntry(app)
+    expect(entry).toMatchObject({
+      notice: {
+        kind: 'syncFailed',
+        failure: { kind: 'serverError' },
+      },
+      tone: 'error',
+      actions: ['retry', 'dismiss'],
+    })
+
+    await replyLibrary({ through: 'artists' })
+    await app.noticeAction(entry!.id, 'retry')
+    expect(noticeEntry(app)).toBeNull()
+    await device.idle()
+    expect(app.state.library!.sync).toEqual({ status: 'synced' })
+    expect(noticeEntry(app)).toBeNull()
   })
 
   it('同步条：整块列表已经说明失败时不再重复，同步中 / 暂停 / 断网不受影响', () => {

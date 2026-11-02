@@ -146,6 +146,8 @@ export const operationNoticeText = (notice: OperationNotice): string => {
       return `没能保存自建歌单的顺序：${changeFailureText(notice.failure)}`
     case 'recovered':
       return '上次关闭前的修改没保存成功，已恢复原样'
+    case 'syncFailed':
+      return `曲库没能同步完：${failureText(notice.failure)}`
     case 'queuedNext':
       return queuedText(notice, '下一首播放')
     case 'queuedEnd':

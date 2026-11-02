@@ -50,7 +50,7 @@
   const library = $derived(view.state.library)
   const likedId = $derived(library?.liked?.playlist.id ?? 0)
   const liked = $derived(library?.playlistPage(likedId) ?? null)
-  /** 首页 liked 只有整块列表失败时才算“失败已说明”；部分歌的失败仍由同步条说 */
+  /** 首页 liked 只有整块列表失败时才算“失败已说明”；部分歌的失败仍由同步条（首次同步）或提示条说 */
   const notice = $derived(library && liked
     ? syncNoticeFor(library, liked.failure?.where === 'list')
     : null)

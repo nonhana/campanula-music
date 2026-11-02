@@ -3,7 +3,7 @@ import type { Playlist, Song } from '#lib/api/library.js'
 import type { Clock } from './browser'
 import type { Change } from './changes'
 import type { DownloadNotice } from './downloads'
-import type { ChangeFailure } from './library'
+import type { ChangeFailure, SyncFailure } from './library'
 
 // 提示条（改曲库、下载共用的那一摞，Spec #11“界面”“客户端：晚一点才提交的修改”）：App 拥有它，每条带 id、种类、载荷和它支持的动作，
 // 界面只照着画。重试用的数据就在载荷里；支持哪些动作由 noticeActions 算出来，“不能重试”就是没有重试动作。
@@ -32,6 +32,8 @@ export type OperationNotice
     | { kind: 'playlistOrderFailed', playlistIds: readonly number[], failure: ChangeFailure }
     /** 已经从网易云重拉这张歌单、恢复原样 */
     | { kind: 'recovered' }
+    /** 首次同步走完一轮以后同步停下（之前的停下由同步条说）；重试从停下的地方接着同步 */
+    | { kind: 'syncFailed', failure: SyncFailure }
     /** 空队列时直接开始放（started）还是排进队列；count 是 2 秒里合并的条数 */
     | { kind: 'queuedNext', count: number, started: boolean }
     | { kind: 'queuedEnd', count: number, started: boolean }
@@ -75,6 +77,7 @@ const noticeActions = (notice: OperationNotice): readonly NoticeAction[] => {
         : ['retry', 'dismiss']
     case 'orderFailed':
     case 'playlistOrderFailed':
+    case 'syncFailed':
       return ['retry', 'dismiss']
     case 'downloadFailed':
       // 同一窗口里合并成“N 首下载失败”以后不再给重试：逐首的重试在下载面板和已下载页
@@ -134,6 +137,7 @@ const noticeLifetime = (notice: OperationNotice): number | null => {
     case 'playlistOrderFailed':
     case 'recovered':
     case 'downloadFailed':
+    case 'syncFailed':
     case 'downloadsPaused':
       return null
     default: {
@@ -164,6 +168,7 @@ const noticeTone = (notice: OperationNotice): NoticeTone => {
     case 'orderFailed':
     case 'playlistOrderFailed':
     case 'recovered':
+    case 'syncFailed':
     case 'downloadFailed':
     case 'downloadsPaused':
       return 'error'
