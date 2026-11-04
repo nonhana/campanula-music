@@ -5,7 +5,7 @@ import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 12
+const VERSION = 14
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists、firstSyncDone */
 const LIBRARY = 'library'
@@ -345,6 +345,12 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
   }
   // 11（#39）：下载多了来源。音频很大，升级时不重写，读出来时补上“单独下载”（downloadAddedIn11）
   // 12（#39）：歌单多了创建者头像，歌曲信息多了下载大小；歌单在上面补，歌曲读出来时由 songAddedLater 补
+  // 13 是 #41 第一轮用的（加了 downloadQueue、backgroundDownloads），已回滚、不再用（ADR-0017）；只有当时打开过的设备停在 13。
+  // 14 删掉这两个存储区：里面只有没下完的队列和交给浏览器的任务清单，下完的歌在 DOWNLOADS 里，不动
+  if (from === 13) {
+    database.deleteObjectStore('downloadQueue')
+    database.deleteObjectStore('backgroundDownloads')
+  }
 }
 
 /** 打开本机数据库：同一个设备上的模块共用一个连接，升级只跑一次 */

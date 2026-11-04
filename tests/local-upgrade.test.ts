@@ -49,7 +49,7 @@ const downloadedSong: SongIn9 = {
 }
 
 describe('本机数据库升级', () => {
-  it('v9 → v12：不用重新登录，曲库、播放队列和进度、设置、下载仍在；歌曲信息重新取（带上第几首等），旧的下载和播放队列里的歌补上“网易云没给”和“单独下载”来源', async () => {
+  it('v9 → v14：不用重新登录，曲库、播放队列和进度、设置、下载仍在；歌曲信息重新取（带上第几首等），旧的下载和播放队列里的歌补上“网易云没给”和“单独下载”来源', async () => {
     // 由真服务端签发登录 Cookie，再交给装着旧版数据库的设备；不手造密文。
     const signedIn = world.device()
     const login = await signInAtHearts(signedIn)
@@ -218,7 +218,7 @@ describe('本机数据库升级', () => {
     expect(reopened.app.state.player.position).toBe(42)
   })
 
-  it('v4 → 12：歌单列表补上后加的字段；v5 删掉旧的歌曲信息和专辑页、每张歌单记成歌曲信息还没取全，下次同步重取；播放队列、设置、打卡、下载的存储区建好', async () => {
+  it('v4 → v14：歌单列表补上后加的字段；v5 删掉旧的歌曲信息和专辑页、每张歌单记成歌曲信息还没取全，下次同步重取；播放队列、设置、打卡、下载的存储区建好', async () => {
     // v4 的存储区、键和内容格式取自 b00949d:src/lib/app/local.ts：歌单还没有播放次数、简介、标签（v8），歌曲还没有能不能放（v5），
     // 播放队列和设置（v6）、打卡（v7）、下载（v9）的存储区都还没有。
     const signedIn = world.device()
@@ -333,5 +333,102 @@ describe('本机数据库升级', () => {
     })
     expect(app.state.library?.albumPage(3149073)).toMatchObject({ status: 'shown' })
     expect((await device.stored()).albumPages.map(([id]) => id)).toEqual([3149073])
+  })
+
+  it('v13（#41 第一轮留下的，已回滚）→ v14：照样打开、不用重新登录，曲库、设置和下载都在；那一轮加的两个存储区删掉', async () => {
+    // v13 = v12 的存储区，加上 #41 第一轮的 downloadQueue、backgroundDownloads（取自 2c412cb:src/lib/app/local.ts）；内容按 v12 的格式
+    const signedIn = world.device()
+    const login = await signInAtHearts(signedIn)
+    await world.settle()
+    login.close()
+
+    const device = world.device()
+    for (const cookie of await signedIn.cookies())
+      await device.setCookie(cookie.toString())
+    const song: Song = {
+      ...savedSong,
+      ...NOT_GIVEN,
+    }
+    const downloaded: Song = {
+      ...downloadedSong,
+      ...NOT_GIVEN,
+    }
+    const fromPlaylist = { kind: 'playlist', id: 900000001, name: '我喜欢的音乐' } as const
+    await device.preload(13, (database) => {
+      database.createObjectStore('session')
+      const library = database.createObjectStore('library')
+      library.put(10000001, 'owner')
+      library.put([3433267939], 'hearts')
+      library.put([
+        {
+          id: 900000001,
+          name: '我喜欢的音乐',
+          kind: 'liked',
+          private: false,
+          coverUrl: 'https://p1.music.126.net/placeholder/cover.jpg',
+          creator: '测试听众',
+          creatorAvatarUrl: null,
+          playCount: 0,
+          description: null,
+          tags: [],
+          trackCount: 1,
+          tracksUpdatedAt: 1,
+        },
+      ], 'playlists')
+      library.put([], 'collectedAlbums')
+      library.put([], 'collectedArtists')
+      database.createObjectStore('tracks').put({
+        version: 1,
+        trackIds: [3433267939],
+        complete: true,
+      }, 900000001)
+      database.createObjectStore('songs', { keyPath: 'id' }).put(song)
+      database.createObjectStore('albumPages')
+      database.createObjectStore('player')
+      database.createObjectStore('settings').put(['夜に駆ける'], 'searchHistory')
+      database.createObjectStore('checkIns', { autoIncrement: true })
+      database.createObjectStore('downloads').put({
+        song: downloaded,
+        audio: new Blob([
+          new Uint8Array(1000),
+        ], { type: 'audio/mpeg' }),
+        cover: null,
+        lyrics: { kind: 'none' },
+        album: null,
+        sources: [fromPlaylist],
+        downloadedAt: 1,
+      }, 2662577181)
+      database.createObjectStore('downloadQueue').put([
+        {
+          song,
+          sources: [fromPlaylist],
+        },
+      ], 'queue')
+      database.createObjectStore('backgroundDownloads').put({
+        name: 'downloads-1-1',
+        entries: [],
+      }, 'downloads-1-1')
+    })
+
+    const { app } = await reopen(device)
+    await world.settle()
+    expect(app.state.session).toMatchObject({ status: 'signedIn', account: RECORDED_ACCOUNT })
+    expect(device.requests.some(request => request.path.includes('/login/'))).toBe(false)
+    expect(app.state.library?.playlists?.map(playlist => playlist.id)).toEqual([900000001])
+    expect(app.state.library?.hearts?.has(3433267939)).toBe(true)
+    expect(app.state.search.history).toEqual(['夜に駆ける'])
+    expect(app.state.downloads.songs).toEqual([downloaded])
+    expect(app.state.downloads.sourcesOf(2662577181)).toEqual([fromPlaylist])
+    expect(Object.keys(await device.stored()).sort()).toEqual([
+      'albumPages',
+      'checkIns',
+      'downloads',
+      'library',
+      'player',
+      'session',
+      'settings',
+      'songs',
+      'tracks',
+    ])
   })
 })
