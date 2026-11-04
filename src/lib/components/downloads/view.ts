@@ -47,6 +47,11 @@ export const downloadItem = (view: AppView, song: Song): { label: string, disabl
   }
 }
 
+/** 下载什么时候会停（#41）：下载面板和已下载页共用，手机和桌面各一句 */
+export const downloadStopsText = (phone: boolean): string => phone
+  ? '切到别的 App 一会儿后会暂停（放着歌时不会），回来自动接着下'
+  : '关掉 Campanula 后会暂停，下次打开自动接着下'
+
 /** 原因短语，不带句号和下一步，拼在“没能下载《…》：”后面 */
 export const downloadFailureText = (failure: DownloadFailure): string => {
   switch (failure.kind) {

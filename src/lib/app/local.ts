@@ -5,7 +5,7 @@ import type { LyricsResponse, Quality } from '#lib/api/playback.js'
 // 本机数据库：这台浏览器里 Campanula 自己的数据，标签页共用。结构变化时升版本号，在 upgradeneeded 里迁移。
 
 const NAME = 'campanula'
-const VERSION = 14
+const VERSION = 15
 const SESSION = 'session'
 /** 曲库副本（ADR-0007）的小件，按名字存：owner（哪个网易云账号的）、hearts、playlists、collectedAlbums、collectedArtists、firstSyncDone */
 const LIBRARY = 'library'
@@ -23,6 +23,10 @@ const SETTINGS = 'settings'
 export const CHECK_INS = 'checkIns'
 /** 下载（#38）：歌曲信息、完整音频、封面缩略图、歌词；属于这台设备，退出、换账号都不删（ADR-0006） */
 const DOWNLOADS = 'downloads'
+/** 排队中、下了一半的下载（#41）：关掉 App 后重新打开时接着下；按歌曲编号一首一条，按 order 排先后 */
+const DOWNLOAD_QUEUE = 'downloadQueue'
+/** 已经收到的音频分段（#41）：按 [歌曲编号, 第几段] 一段一条，追加时不用重写前面的 */
+const DOWNLOAD_PARTS = 'downloadParts'
 
 /** 这首下载是从哪儿来的（#39 规则⑦）：单独下载的，或者几张歌单、几张专辑，可以有几处；#40 按歌单删除下载用它，不能靠曲库副本判断 */
 export type DownloadSource
@@ -62,6 +66,27 @@ export interface StoredDownload {
   sources: DownloadSource[]
   /** 已下载页按它排，最近下载完的在前 */
   downloadedAt: number
+}
+
+/** 排队中、下了一半的下载（#41）：关掉 App 后重新打开时接着下。已经收到多少字节从分段算，不另存 */
+export interface QueuedDownload {
+  song: Song
+  sources: DownloadSource[]
+  /** 排队先后：重新打开后按它排回队列 */
+  order: number
+  /** 这次要下的音频有多大（网易云给的）；还没拿到下载地址时是 null */
+  total: number | null
+  /** 音频已经完整收到、只差存进本机：重开时不用再传一遍 */
+  audioComplete: boolean
+  /** 音频的类型（audio/mpeg、audio/flac），拼完整音频时给 Blob 用；还没收完时是 null */
+  audioType: string | null
+}
+
+/** 一首歌的一段音频（#41）：每约 1 MiB 一段，按 [歌曲编号, 第几段] 存；几段拼起来是已经收到的部分 */
+export interface StoredPart {
+  songId: number
+  index: number
+  blob: Blob
 }
 
 export interface PlaylistTracks {
@@ -185,6 +210,15 @@ export interface LocalDb {
   /** 按歌单删除时，别处也下载过的只去掉这张歌单（#40 规则⑦）；返回改好的，没有的不在里面 */
   removeDownloadSource: (songIds: readonly number[], source: DownloadSource) => Promise<ReadonlyMap<number, DownloadSource[]>>
   deleteDownloads: (songIds: readonly number[]) => Promise<void>
+  /** 排队中、下了一半的下载（#41），按排队先后；已经下完、失败的不在里面 */
+  readQueuedDownloads: () => Promise<QueuedDownload[]>
+  /** 换掉这几首以前的；一个事务里写完，按 song.id 存 */
+  saveQueuedDownloads: (entries: readonly QueuedDownload[]) => Promise<void>
+  deleteQueuedDownloads: (songIds: readonly number[]) => Promise<void>
+  /** 已经收到的音频分段（#41），按 [歌曲编号, 第几段] 排 */
+  readDownloadParts: () => Promise<StoredPart[]>
+  appendDownloadPart: (songId: number, index: number, blob: Blob) => Promise<void>
+  deleteDownloadParts: (songIds: readonly number[]) => Promise<void>
 }
 
 /** 打开（含升级）、在一个读写事务里改存储区；播放队列、打卡和别的模块共用这一个连接 */
@@ -350,6 +384,11 @@ const upgrade = (database: IDBDatabase, transaction: IDBTransaction, from: numbe
   if (from === 13) {
     database.deleteObjectStore('downloadQueue')
     database.deleteObjectStore('backgroundDownloads')
+  }
+  // 15（#41）：排队中、下了一半的下载和音频分段，关掉 App 后重新打开时从断点接着下
+  if (from < 15) {
+    database.createObjectStore(DOWNLOAD_QUEUE)
+    database.createObjectStore(DOWNLOAD_PARTS)
   }
 }
 
@@ -604,6 +643,53 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
     deleteDownloads: songIds => write([DOWNLOADS], (transaction) => {
       for (const songId of songIds)
         transaction.objectStore(DOWNLOADS).delete(songId)
+    }),
+    async readQueuedDownloads() {
+      const store = (await db.open()).transaction(DOWNLOAD_QUEUE).objectStore(DOWNLOAD_QUEUE)
+      const queued = await settled(store.getAll()) as QueuedDownload[]
+      return queued.sort((a, b) => a.order - b.order)
+    },
+    saveQueuedDownloads: entries => write([DOWNLOAD_QUEUE], (transaction) => {
+      const store = transaction.objectStore(DOWNLOAD_QUEUE)
+      for (const queued of entries)
+        store.put(queued, queued.song.id)
+    }),
+    deleteQueuedDownloads: songIds => write([DOWNLOAD_QUEUE], (transaction) => {
+      for (const songId of songIds)
+        transaction.objectStore(DOWNLOAD_QUEUE).delete(songId)
+    }),
+    async readDownloadParts() {
+      const store = (await db.open()).transaction(DOWNLOAD_PARTS).objectStore(DOWNLOAD_PARTS)
+      const [keys, blobs] = await Promise.all([
+        settled(store.getAllKeys()) as Promise<[number, number][]>,
+        settled(store.getAll()) as Promise<Blob[]>,
+      ])
+      return keys.map(([songId, index], position) => ({
+        songId,
+        index,
+        blob: blobs[position]!,
+      }))
+    },
+    appendDownloadPart: (songId, index, blob) => write([DOWNLOAD_PARTS], (transaction) => {
+      transaction.objectStore(DOWNLOAD_PARTS).put(blob, [
+        songId,
+        index,
+      ])
+    }),
+    deleteDownloadParts: songIds => write([DOWNLOAD_PARTS], (transaction) => {
+      const store = transaction.objectStore(DOWNLOAD_PARTS)
+      const ids = new Set(songIds)
+      // 用游标挑：App 的这层也会在测试的 Node 里跑，那里没有 IDBKeyRange 这个全局
+      const cursor = store.openCursor()
+      cursor.onsuccess = () => {
+        const current = cursor.result
+        if (!current)
+          return
+        const [songId] = current.key as [number, number]
+        if (ids.has(songId))
+          current.delete()
+        current.continue()
+      }
     }),
   }
 }

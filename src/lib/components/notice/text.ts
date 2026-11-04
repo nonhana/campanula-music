@@ -186,6 +186,10 @@ export const operationNoticeText = (notice: OperationNotice): string => {
     }
     case 'downloadsPaused':
       return '存储空间不够，下载已暂停'
+    case 'downloadsResumed':
+      return `上次没下完的 ${formatCount(notice.count)} 首接着下了`
+    case 'downloadsResumedFromBackground':
+      return '切到后台时下载暂停了，已经接着下'
     case 'downloadsRemoved': {
       const parts: string[] = []
       if (notice.removed > 0)

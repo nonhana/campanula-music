@@ -1,6 +1,6 @@
 # 自己的服务器部署
 
-Campanula 可以跑在自己的服务器上：一个 Node 进程（SvelteKit 的 `adapter-node`），或者用发布在 GHCR 的 Docker 镜像。两种方式都要求前面有一个 HTTPS 反向代理：Service Worker、安装成应用、离线播放和后台下载都只在 HTTPS 下可用（`localhost` 除外）。HTTPS 证书由站长自己的反向代理负责，Campanula 不处理证书。
+Campanula 可以跑在自己的服务器上：一个 Node 进程（SvelteKit 的 `adapter-node`），或者用发布在 GHCR 的 Docker 镜像。两种方式都要求前面有一个 HTTPS 反向代理：Service Worker、安装成应用、离线播放和下载都只在 HTTPS 下可用（`localhost` 除外）。HTTPS 证书由站长自己的反向代理负责，Campanula 不处理证书。
 
 本文以 `https://music.example.com` 为例，换成自己的域名。
 

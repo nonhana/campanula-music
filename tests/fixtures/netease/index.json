@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@3.2.0",
-  "recordings": 345,
+  "recordings": 346,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -221,9 +221,9 @@
       }
     },
     "song_download_url_v1": {
-      "count": 11,
+      "count": 12,
       "outcomes": {
-        "ok": 10,
+        "ok": 11,
         "rejected": 1
       }
     },
@@ -4495,6 +4495,23 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@3.1.0",
       "note": "#39：换了一个账号后这个账号下不了完整音频。复制 #38 无版权那首的真实返回体（2108191414），只把 data.id、query.id 换成 4208408；真遇到时替换成录制"
+    },
+    {
+      "path": "playback/downloads/006-song_download_url_v1.vip-exhigh-other-size.constructed.json",
+      "module": "song_download_url_v1",
+      "queryKey": "{\"id\":512359195,\"level\":\"exhigh\"}",
+      "query": {
+        "id": 512359195,
+        "level": "exhigh"
+      },
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": "vip-qr",
+      "sdk": "hana-music-api@1.4.0",
+      "note": "#41：同一个号码这次下到另一个文件（换了下载音质）。复制 playback/song_download_url_v1.vip-exhigh.json，只把 size 改小（9757301 → 8000000），用来测重新打开时丢掉对不上的断点；真遇到时替换成录制"
     },
     {
       "path": "playback/downloads/song_download_url_v1.301-invalid.constructed.json",

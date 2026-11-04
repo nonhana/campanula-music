@@ -8,7 +8,7 @@ import {
 } from '#lib/api/cover.js'
 import { mock } from '#lib/mock-flag.js'
 
-/** App 只从这里拿浏览器能力，不直接用 window、navigator、document；测试接入点里整个换成替身（Spec #11 Testing Decisions）。Background Fetch（#41）由最早用到它的票加上 */
+/** App 只从这里拿浏览器能力，不直接用 window、navigator、document；测试接入点里整个换成替身（Spec #11 Testing Decisions） */
 export interface BrowserCapabilities {
   /** 同源，浏览器自动带上 Cookie；断网时失败 */
   fetch: (path: string, init?: RequestInit) => Promise<Response>
@@ -161,11 +161,11 @@ export interface NetworkStatus {
   removeEventListener: (type: 'online' | 'offline', listener: () => void) => void
 }
 
-/** 同 document.visibilityState，变化时发 visibilitychange */
+/** 同 document.visibilityState，变化时发 visibilitychange。Page Lifecycle 的 freeze、resume：Android 上切到后台约 1 分钟后页面被冻结、回来时解冻（#41） */
 export interface PageVisibility {
   readonly visibilityState: DocumentVisibilityState
-  addEventListener: (type: 'visibilitychange', listener: () => void) => void
-  removeEventListener: (type: 'visibilitychange', listener: () => void) => void
+  addEventListener: (type: 'visibilitychange' | 'freeze' | 'resume', listener: () => void) => void
+  removeEventListener: (type: 'visibilitychange' | 'freeze' | 'resume', listener: () => void) => void
 }
 
 /** 网易云官方的 Watchman：脚本、产品号，和收藏歌单用的业务编号（官方网页版用的这一组，hana-music-api#77 在真账号上验证过） */

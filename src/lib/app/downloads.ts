@@ -6,7 +6,7 @@ import { DOWNLOAD_QUALITY } from '#lib/api/playback.js'
 
 import type { Api, Result } from './api-client'
 import type { BrowserCapabilities, Clock } from './browser'
-import type { DownloadSource, LocalDb, StoredDownload } from './local'
+import type { DownloadSource, LocalDb, QueuedDownload, StoredDownload, StoredPart } from './local'
 import { mergeDownloadSources, sameDownloadSource } from './local'
 import type { Notices } from './notice'
 import { plainSong } from './plain'
@@ -15,7 +15,8 @@ import type { BackgroundFailure, BackgroundSessionResult, SessionRound } from '.
 // 下载（Spec #11“客户端：下载”、ADR-0006）：向服务端要下载地址、歌词（后台请求），浏览器直连网易云的音频、图片服务器
 // 把完整音频和封面缩略图下下来，连同歌曲信息一次存进本机。下载属于这台设备，和登录的是哪个账号无关；下载完永久可播。
 // #39 起是一支队列：整张歌单、专辑、多选都进同一个队列，排队 / 下载中 / 完成 / 失败各首各自记着；
-// 断网中断先留在内存里，联网后带着 Range 从断点接着下；存储不够时整队暂停（规则⑪）。
+// #41 起队列和断点存进本机：关掉、划掉 App 或刷新后再打开，排队的接着下、下了一半的带着 Range 从断点接着下；
+// 页面在后台被冻结、回来时自动接着下；存储不够时整队暂停（规则⑪）。下载只由开着的页面来下，不用 Background Fetch（ADR-0017）。
 // 退出、换账号时排队中的留着，谁登录就用谁的账号取下载地址（规则⑧）；正在下的那首已经拿到地址，继续下完。
 // 每首记着从哪儿下载的（规则⑦），给 #40 按歌单删除用。
 
@@ -57,6 +58,10 @@ export type DownloadNotice
     | { kind: 'downloadsPaused' }
     /** 删掉了几首下载（按歌单删除、一键清空，#40）；kept 是别处也下载过、只去掉这张歌单的 */
     | { kind: 'downloadsRemoved', removed: number, kept: number, freed: number }
+    /** 重新打开 App，上次没下完的接着下（#41）；count 是接着下的首数 */
+    | { kind: 'downloadsResumed', count: number }
+    /** 页面被冻结过，回来接着下（#41）；一次打开只说一次 */
+    | { kind: 'downloadsResumedFromBackground' }
 
 export interface DownloadsState {
   /** 最近下载完的在前；还没从本机读出来时是 null */
@@ -133,7 +138,7 @@ export interface DownloadsContext {
   session: SessionRound
   local: LocalDb
   clock: Clock
-  browser: Pick<BrowserCapabilities, 'download' | 'objectUrl' | 'revokeObjectUrl'>
+  browser: Pick<BrowserCapabilities, 'download' | 'objectUrl' | 'revokeObjectUrl' | 'locks' | 'page'>
   storage: Pick<BrowserCapabilities['storage'], 'estimate' | 'persist'>
   /** 这台设备上有没有这张专辑的专辑页（曲库副本里的、这次登录打开过的）；没有是 null */
   albumPage: (albumId: number) => AlbumResponse | null
@@ -185,6 +190,12 @@ const storageFull = (error: unknown): boolean => error instanceof DOMException &
 const UNKNOWN_PROGRESS_BYTES = 64 * 1024
 const UNKNOWN_PROGRESS_MS = 500
 
+/** 断点每收到这么多字节写一段进本机（#41）：App 被划掉时最多丢这么多；页面藏起来时把剩下的立刻写下去 */
+const PART_BYTES = 1024 * 1024
+
+/** 几个标签页同时开着时，只有一个接着下本机存着的队列（#41）：拿着这把锁的那个 */
+const DOWNLOAD_QUEUE_LOCK = 'campanula-download-queue'
+
 interface Prepared {
   url: string
   lyrics: LyricsResponse
@@ -221,14 +232,43 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   const attempts = new Map<number, number>()
   /** 正在传的那一次（音频和封面共用一个）：取消时马上停；下完、失败时收回 */
   const aborts = new Map<number, AbortController>()
-  /** 断点已经收到的字节：只在这次打开期间留着，下完、放弃时删掉 */
-  const parts = new Map<number, Uint8Array<ArrayBuffer>[]>()
+  /** 断点已经收到的字节：下完、放弃时删掉 */
+  const parts = new Map<number, BlobPart[]>()
   const partBytes = new Map<number, number>()
   /** 音频已经完整收到（封面、保存还没成）：重试时不再重下音频 */
   const audioDone = new Set<number>()
   const audioTypes = new Map<number, string>()
   /** 已经下完、等着存进本机（存储空间不够时，腾出空间后直接存，不再下） */
   const ready = new Map<number, StoredDownload>()
+  /** 排队的先后：本机存着的按它排回来 */
+  const orders = new Map<number, number>()
+  let nextOrder = 1
+  /** 只有抢到“下载队列”锁的标签页读写本机存着的队列（#41）；拿不到的只下在自己这里点的 */
+  let leader = false
+  let queueLock: Promise<boolean> | undefined
+  /** 还没写进本机的分段；每首写到第几段 */
+  const unsaved = new Map<number, Uint8Array<ArrayBuffer>[]>()
+  const unsavedBytes = new Map<number, number>()
+  const storedIndex = new Map<number, number>()
+  /** 每首分段写入排在一条链上：删除排在之前的写入后面，不会删完又被写回来 */
+  const partChains = new Map<number, Promise<void>>()
+  /** 正在写这一段的是谁：一首同时只写一段 */
+  const partWrites = new Set<number>()
+  /** 这一首的分段写不成了（写本机时出了别的错）：这次打开不再存断点 */
+  const brokenParts = new Set<number>()
+  /** 换文件从头下、丢掉断点时加一：之前排着的写入发现对不上就不写了 */
+  const partEpochs = new Map<number, number>()
+  /** 正在传的时候页面藏起来过（#41）：这一趟断开不算失败 */
+  const hiddenWhileDownloading = new Set<number>()
+  let pageHidden = browser.page.visibilityState === 'hidden'
+  /** 这一页在本机队列里记下了哪几首：没拿到锁的标签页只碰自己记下的（#41） */
+  const owned = new Set<number>()
+  /** 这次打开时从本机恢复了几首、是否已经说过“接着下”（#41） */
+  let restored = 0
+  let resumedNoticeShown = false
+  /** 页面被冻结过；回来时的提示一次打开只说一次 */
+  let frozen = false
+  let backgroundNoticeShown = false
   let running = false
   let again = false
   let loading: Promise<void> | undefined
@@ -298,14 +338,37 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     publish()
   }
 
-  const clearParts = (songId: number): void => {
+  /** 每首的分段按收到的先后一串写：前一段写完再写后一段，删除排在这一串后面 */
+  const chainPartWrite = (songId: number, work: () => Promise<void>): Promise<void> => {
+    const previous = partChains.get(songId) ?? Promise.resolve()
+    const next = previous.then(work).catch((error: unknown) => {
+      console.error('下载的断点没能写进这台设备', error)
+    })
+    partChains.set(songId, next)
+    return next
+  }
+
+  /** 这一首在内存里的断点和进度状态都丢掉；本机存着的分段另外删 */
+  const forgetParts = (songId: number): void => {
     parts.delete(songId)
     partBytes.delete(songId)
     audioTypes.delete(songId)
     audioDone.delete(songId)
+    unsaved.delete(songId)
+    unsavedBytes.delete(songId)
+    storedIndex.delete(songId)
+    brokenParts.delete(songId)
+    partEpochs.set(songId, (partEpochs.get(songId) ?? 0) + 1)
   }
 
-  const chunksOf = (songId: number): Uint8Array<ArrayBuffer>[] => {
+  /** 丢掉这一首在内存和本机的断点；还没写完的分段排在删除前面，写完才删 */
+  const clearParts = (songId: number): void => {
+    forgetParts(songId)
+    if (owns(songId))
+      chainPartWrite(songId, () => local.deleteDownloadParts([songId]))
+  }
+
+  const chunksOf = (songId: number): BlobPart[] => {
     let chunks = parts.get(songId)
     if (!chunks) {
       chunks = []
@@ -316,9 +379,94 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
 
   const receivedOf = (songId: number): number => partBytes.get(songId) ?? 0
 
+  /** 这一页能不能读写这一首的本机记录：拿到锁的都能；没拿到锁的只碰自己记下的 */
+  const owns = (songId: number): boolean => leader || owned.has(songId)
+
+  /** 手上还没写下去的分段立刻写下去：满一段写一段，页面藏起来时把剩下的也写下去 */
+  const flushParts = (songId: number): void => {
+    // 一首同时只写一段：写着的这一段写完再排下一段，段号才不会对调
+    if (!owns(songId) || paused || brokenParts.has(songId) || partWrites.has(songId))
+      return
+    const chunks = unsaved.get(songId)
+    if (!chunks || chunks.length === 0)
+      return
+    unsaved.delete(songId)
+    unsavedBytes.delete(songId)
+    const blob = new Blob(chunks)
+    const index = storedIndex.get(songId) ?? 0
+    const epoch = partEpochs.get(songId) ?? 0
+    /** 这一段没写成：放回最前面，等腾出空间、下次再写 */
+    const keep = (): void => {
+      const rest = unsaved.get(songId) ?? []
+      unsaved.set(songId, [
+        ...chunks,
+        ...rest,
+      ])
+      unsavedBytes.set(songId, (unsavedBytes.get(songId) ?? 0) + blob.size)
+    }
+    partWrites.add(songId)
+    void chainPartWrite(songId, async () => {
+      // 这中间换了文件从头下、取消、删掉了：这一段不能写
+      if (epoch !== (partEpochs.get(songId) ?? 0))
+        return
+      // 分段也要占地方：写之前先看空间够不够，不够就整队暂停（规则⑪）
+      if (!await enoughSpace(blob.size)) {
+        keep()
+        pause()
+        return
+      }
+      try {
+        await local.appendDownloadPart(songId, index, blob)
+      }
+      catch (error) {
+        if (storageFull(error)) {
+          keep()
+          pause()
+          return
+        }
+        // 别的错写不进去：这一首不再存断点，免得后面几段接不上；内存里照常下完
+        console.error('下载的断点没能写进这台设备', error)
+        brokenParts.add(songId)
+        unsaved.delete(songId)
+        unsavedBytes.delete(songId)
+        partEpochs.set(songId, (partEpochs.get(songId) ?? 0) + 1)
+        storedIndex.delete(songId)
+        chainPartWrite(songId, () => local.deleteDownloadParts([songId]))
+        return
+      }
+      // 写的时候这一首被清掉了（取消、换了文件从头下）：段号不再算数
+      if (epoch !== (partEpochs.get(songId) ?? 0))
+        return
+      storedIndex.set(songId, index + 1)
+    }).finally(() => {
+      partWrites.delete(songId)
+      // 写这一段的时候又收到了一些
+      flushParts(songId)
+    })
+  }
+
+  const flushAllParts = (): void => {
+    for (const songId of [
+      ...unsaved.keys(),
+    ])
+      flushParts(songId)
+  }
+
   const append = (songId: number, chunk: Uint8Array<ArrayBuffer>): void => {
+    // 这一首已经取消了：刚收到的丢掉，不写回来
+    if (!tasks.has(songId))
+      return
     chunksOf(songId).push(chunk)
     partBytes.set(songId, receivedOf(songId) + chunk.byteLength)
+    if (!owns(songId) || brokenParts.has(songId))
+      return
+    const buffered = unsaved.get(songId) ?? []
+    buffered.push(chunk)
+    unsaved.set(songId, buffered)
+    const size = (unsavedBytes.get(songId) ?? 0) + chunk.byteLength
+    unsavedBytes.set(songId, size)
+    if (size >= PART_BYTES)
+      flushParts(songId)
   }
 
   const liveSources = (songId: number, fallback: readonly DownloadSource[]): readonly DownloadSource[] => tasks.get(songId)?.sources ?? fallback
@@ -346,6 +494,48 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     failure,
   })
 
+  /** 排队记录写进本机（#41）：一首一条，排队先后、来源、大小和断点信息都在里面；失败的歌不写 */
+  const saveQueued = (songIds: readonly number[]): void => {
+    const entries: QueuedDownload[] = []
+    for (const songId of songIds) {
+      const task = tasks.get(songId)
+      if (!task || task.status === 'failed')
+        continue
+      // 没拿到锁的标签页也记下自己点的：关掉后照样能接着下（#41）；只碰自己这几首
+      owned.add(songId)
+      let order = orders.get(songId)
+      if (order === undefined) {
+        order = nextOrder
+        nextOrder += 1
+        orders.set(songId, order)
+      }
+      entries.push({
+        song: task.song,
+        sources: [...task.sources],
+        order,
+        total: task.total,
+        audioComplete: audioDone.has(songId),
+        audioType: audioTypes.get(songId) ?? null,
+      })
+    }
+    if (entries.length === 0)
+      return
+    void local.saveQueuedDownloads(entries).catch((error: unknown) => console.error('排队中的下载没能写进这台设备', error))
+  }
+
+  const queuedIdsOf = (songIds: readonly number[]): number[] => leader
+    ? [
+        ...songIds,
+      ]
+    : songIds.filter(songId => owned.has(songId))
+
+  const deleteQueued = (songIds: readonly number[]): void => {
+    const ids = queuedIdsOf(songIds)
+    if (ids.length === 0)
+      return
+    void local.deleteQueuedDownloads(ids).catch((error: unknown) => console.error('排队中的下载没能从这台设备删掉', error))
+  }
+
   const fail = (song: Song, sources: readonly DownloadSource[], failure: DownloadFailure, { keepParts = false } = {}): StepResult => {
     const received = keepParts
       ? receivedOf(song.id)
@@ -354,6 +544,9 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       clearParts(song.id)
     const task = failedTask(song, tasks.get(song.id)?.sources ?? sources, received, tasks.get(song.id)?.total ?? null, failure)
     tasks.set(song.id, task)
+    // 失败的歌不留到下次打开（#41）：这次已经提示过了，再打开不该排回来
+    orders.delete(song.id)
+    deleteQueued([song.id])
     publish()
     // 这一首刚“已加入下载”过：现在是失败，别再留着那句
     context.notices.hideWhere(notice => notice.kind === 'downloadQueued' && notice.song.id === song.id)
@@ -388,14 +581,30 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     attempts.set(songId, attemptOf(songId) + 1)
   }
 
-  /** 丢掉这一首的排队 / 在途 / 断点和待存的音频；已经写进本机的记录不动 */
-  const dropTask = (songId: number): void => {
-    forgetAttempt(songId)
-    aborts.get(songId)?.abort()
-    aborts.delete(songId)
-    tasks.delete(songId)
-    clearParts(songId)
-    ready.delete(songId)
+  /** 丢掉这几首的排队 / 在途 / 断点和待存的音频（取消、按歌单删除、一键清空）；已经写进本机的记录不动 */
+  const dropTasks = (songIds: readonly number[]): void => {
+    for (const songId of songIds) {
+      forgetAttempt(songId)
+      aborts.get(songId)?.abort()
+      aborts.delete(songId)
+      tasks.delete(songId)
+      ready.delete(songId)
+      orders.delete(songId)
+      forgetParts(songId)
+    }
+    const storedIds = queuedIdsOf(songIds)
+    deleteQueued(storedIds)
+    for (const songId of storedIds)
+      owned.delete(songId)
+    if (storedIds.length === 0)
+      return
+    // 分段删在这些歌还没写完的后面：写完了才删，不会删完又被写回来
+    const waiting = storedIds.map(songId => partChains.get(songId)).filter((chain): chain is Promise<void> => chain !== undefined)
+    const remove = () => local.deleteDownloadParts(storedIds).catch((error: unknown) => console.error('下载的断点没能从这台设备删掉', error))
+    if (waiting.length === 0)
+      void remove()
+    else
+      void Promise.allSettled(waiting).then(remove)
   }
 
   /** 这一首的“已加入下载”“下载失败”都不算数了（任务取消、重下、重新失败、删除时用）；合并过的“N 首失败”还代表别的歌，留着 */
@@ -483,16 +692,19 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
 
   /** 存进本机。空间不够就整队暂停（规则⑪），音频留在内存里，腾出空间后直接存，不再下 */
   const save = async (songId: number, record: StoredDownload, token: number): Promise<StepResult> => {
+    // 音频已经在内存里：先删掉本机存的分段，存整首时不再占两份地方（#41）
+    clearParts(songId)
+    await partChains.get(songId)
     const space = await enoughSpace(recordBytes(record))
     // 清空、按歌单删除正好落在这段等待里：这一首已经不要了，存也不存、暂停也不暂停
     if (attemptOf(songId) !== token || !tasks.has(songId))
       return 'next'
     if (!space) {
       ready.set(songId, record)
-      clearParts(songId)
       const task = tasks.get(songId)
       if (task)
         setTask(songId, queuedTask(task.song, task.sources, record.audio.size, record.audio.size))
+      saveQueued([songId])
       pause()
       return 'wait'
     }
@@ -505,10 +717,10 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         return 'next'
       if (storageFull(error)) {
         ready.set(songId, record)
-        clearParts(songId)
         const task = tasks.get(songId)
         if (task) {
           setTask(songId, queuedTask(task.song, task.sources, record.audio.size, record.audio.size))
+          saveQueued([songId])
         }
         pause()
         return 'wait'
@@ -532,6 +744,9 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     tasks.delete(songId)
     ready.delete(songId)
     clearParts(songId)
+    orders.delete(songId)
+    deleteQueued([songId])
+    owned.delete(songId)
     publish()
     context.changed()
     return 'next'
@@ -585,9 +800,14 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       received = 0
     }
     tasks.set(songId, queuedTask(song, liveSources(songId, sources), received, total))
+    saveQueued([songId])
     publish()
 
-    const roomForAll = total === null || await enoughSpace(total)
+    // 断点已经占着地方：只算还要下多少（每写一段之前还会再看一次空间）
+    let remaining = 0
+    if (total !== null)
+      remaining = Math.max(total - received, 0)
+    const roomForAll = total === null || await enoughSpace(remaining)
     if (attemptOf(songId) !== token || !tasks.has(songId)) {
       clearParts(songId)
       return 'next'
@@ -625,6 +845,10 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
 
     const live = tasks.get(songId)
     setTask(songId, downloadingTask(song, live?.sources ?? sources, received, total))
+    // 这一趟传输从开始就在后台（重新可见、联网时接着下）：断开时按“后台期间断开”算（#41）
+    hiddenWhileDownloading.delete(songId)
+    if (pageHidden)
+      hiddenWhileDownloading.add(songId)
 
     const abort = new AbortController()
     aborts.set(songId, abort)
@@ -643,15 +867,25 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
             const restarted = tasks.get(songId)
             if (restarted)
               setTask(songId, downloadingTask(song, restarted.sources, 0, total))
+            saveQueued([songId])
           },
         }).then(({ type }) => {
           downloadedType = type
           audioTypes.set(songId, type)
           audioDone.add(songId)
+          // 音频收全了、只差封面和保存：重开时不用再传一遍
+          saveQueued([songId])
         })
     const transferCover = coverUrl === null
       ? Promise.resolve({ type: '' })
       : browser.download(thumbnailUrl(coverUrl, DOWNLOAD_COVER_SIZE), chunk => coverChunks.push(chunk), { signal: abort.signal })
+
+    /** 停下但不算失败：断点留着，等联网、回到前台时接着下 */
+    const requeue = (): StepResult => {
+      setTask(songId, queuedTask(song, liveSources(songId, sources), receivedOf(songId), tasks.get(songId)?.total ?? total))
+      return 'wait'
+    }
+
     const [audioResult, coverResult] = await Promise.allSettled([transferAudio, transferCover]).finally(() => {
       if (aborts.get(songId) === abort)
         aborts.delete(songId)
@@ -664,14 +898,19 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     }
     if (audioResult.status === 'rejected') {
       // 断网、断流：音频留着，联网后从断点接着下
-      if (!context.online()) {
-        setTask(songId, queuedTask(song, liveSources(songId, sources), receivedOf(songId), tasks.get(songId)?.total ?? total))
-        return 'wait'
-      }
+      if (!context.online())
+        return requeue()
+      // 这一趟传输期间页面藏起来过（被冻结、被系统掐断）：不算失败，回到前台时自动接着下（#41）
+      if (hiddenWhileDownloading.delete(songId))
+        return requeue()
       return fail(song, sources, { kind: 'interrupted' }, { keepParts: true })
     }
-    if (coverResult.status === 'rejected')
+    if (coverResult.status === 'rejected') {
+      if (hiddenWhileDownloading.delete(songId))
+        return requeue()
       return fail(song, sources, { kind: 'interrupted' }, { keepParts: true })
+    }
+    hiddenWhileDownloading.delete(songId)
 
     const audio = new Blob(chunksOf(songId), {
       type: downloadedType,
@@ -710,6 +949,15 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           again = false
           if (paused || !context.signedIn() || !context.online())
             break
+          // 重新打开 App、上次没下完的真的开始接着下了，说一次（#41）；期间取消了几首就少说几首
+          const active = activeCount()
+          if (restored > 0 && !resumedNoticeShown && active > 0) {
+            resumedNoticeShown = true
+            context.notices.show({
+              kind: 'downloadsResumed',
+              count: active,
+            })
+          }
           let next: [number, DownloadTask] | undefined
           for (const entry of tasks) {
             if (entry[1].status === 'queued') {
@@ -745,15 +993,134 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     })()
   }
 
+  /** 真要接着下的首数：排队、下载中；失败的不算 */
+  const activeCount = (): number => {
+    let count = 0
+    for (const task of tasks.values()) {
+      if (task.status === 'queued' || task.status === 'downloading')
+        count += 1
+    }
+    return count
+  }
+
+  /** 页面回到前台、从冻结里恢复：走一步（#41）；被冻结过就说一次“接着下” */
+  const resumeFromBackground = (): void => {
+    if (frozen) {
+      frozen = false
+      if (activeCount() > 0 && !backgroundNoticeShown && !paused && context.signedIn() && context.online()) {
+        backgroundNoticeShown = true
+        context.notices.show({ kind: 'downloadsResumedFromBackground' })
+      }
+    }
+    pump()
+  }
+
+  browser.page.addEventListener('visibilitychange', () => {
+    const hidden = browser.page.visibilityState === 'hidden'
+    if (hidden === pageHidden)
+      return
+    pageHidden = hidden
+    if (!hidden) {
+      resumeFromBackground()
+      return
+    }
+    // 划掉 App 之前页面一定先藏起来：正在传的记下来（这时候断开不算失败），手上还没写的分段立刻写下去
+    for (const [songId, task] of tasks) {
+      if (task.status === 'downloading')
+        hiddenWhileDownloading.add(songId)
+    }
+    flushAllParts()
+  })
+  browser.page.addEventListener('freeze', () => {
+    frozen = true
+  })
+  browser.page.addEventListener('resume', resumeFromBackground)
+
+  /** 几个标签页同时开着时只有一个接着下本机存着的队列（#41）：拿到就拿着不放，这个标签页关掉时浏览器才放开 */
+  const queueOwnership = (): Promise<boolean> => {
+    if (!queueLock) {
+      const { promise, resolve } = Promise.withResolvers<boolean>()
+      queueLock = promise
+      void browser.locks.request(DOWNLOAD_QUEUE_LOCK, { ifAvailable: true }, (lock) => {
+        resolve(lock !== null)
+        return lock === null
+          ? undefined
+          : new Promise<void>(() => {})
+      }).catch(() => resolve(false))
+    }
+    return queueLock
+  }
+
+  /** 按本机存着的排队和分段恢复队列（#41）：已经下完的、分段拼不回去的丢掉，其余从断点接着下 */
+  const restoreQueue = (queued: readonly QueuedDownload[], storedParts: readonly StoredPart[]): void => {
+    const bySong = new Map<number, StoredPart[]>()
+    for (const part of storedParts) {
+      const list = bySong.get(part.songId) ?? []
+      list.push(part)
+      bySong.set(part.songId, list)
+    }
+    const droppedQueue: number[] = []
+    /** 分段要删掉的歌：拼不回去的、已经下完的、排队记录已经不在的 */
+    const droppedParts = new Set(bySong.keys())
+    let maxOrder = 0
+    for (const entry of queued) {
+      const songId = entry.song.id
+      if (records?.has(songId)) {
+        droppedQueue.push(songId)
+        continue
+      }
+      const chunks = (bySong.get(songId) ?? []).sort((a, b) => a.index - b.index)
+      const received = chunks.reduce((sum, part) => sum + part.blob.size, 0)
+      const contiguous = chunks.every((part, position) => part.index === position)
+      // 只有大小对得上、类型也知道时才信“音频已经收全”：末段可能还没写下去
+      const complete = entry.audioComplete && entry.total !== null && entry.audioType !== null && received === entry.total
+      const withinTotal = entry.total === null || received <= entry.total
+      // 中间缺一段、多出来：这个断点拼不回去，从头下；收尾标记对不上就按分段走，重传剩下的
+      const usable = contiguous && withinTotal
+      if (usable) {
+        parts.set(songId, chunks.map(part => part.blob))
+        partBytes.set(songId, received)
+        storedIndex.set(songId, chunks.length)
+        if (entry.audioType !== null)
+          audioTypes.set(songId, entry.audioType)
+        if (complete)
+          audioDone.add(songId)
+        droppedParts.delete(songId)
+      }
+      const queuedBytes = usable ? received : 0
+      tasks.set(songId, queuedTask(entry.song, entry.sources, queuedBytes, entry.total))
+      orders.set(songId, entry.order)
+      maxOrder = Math.max(maxOrder, entry.order)
+    }
+    nextOrder = maxOrder + 1
+    restored = tasks.size
+    deleteQueued(droppedQueue)
+    if (droppedParts.size > 0) {
+      void local.deleteDownloadParts([
+        ...droppedParts,
+      ]).catch((error: unknown) => console.error('下载的断点没能从这台设备删掉', error))
+    }
+  }
+
   const loadRecords = (): Promise<void> => {
-    loading ??= Promise.all([
-      local.readDownloads(),
-      local.downloadQuality(),
-    ]).then(([stored, saved]) => {
+    loading ??= (async () => {
+      leader = await queueOwnership()
+      const [stored, saved, queued, storedParts] = await Promise.all([
+        local.readDownloads(),
+        local.downloadQuality(),
+        leader
+          ? local.readQueuedDownloads()
+          : [],
+        leader
+          ? local.readDownloadParts()
+          : [],
+      ])
       quality = saved ?? DOWNLOAD_QUALITY
       setRecords(new Map(stored.map(record => [record.song.id, record])))
+      if (leader)
+        restoreQueue(queued, storedParts)
       publish()
-    }, (error: unknown) => {
+    })().catch((error: unknown) => {
       loading = undefined
       throw error
     })
@@ -782,7 +1149,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   const cancel = (songId: number): boolean => {
     if (!tasks.has(songId))
       return false
-    dropTask(songId)
+    dropTasks([songId])
     hideSongNotices(songId)
     // 存储暂停是为了这些任务：最后一首取消后没有要下的了，解除暂停
     if (paused && tasks.size === 0) {
@@ -798,10 +1165,9 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     if (tasks.size === 0 && paused === null)
       return
     const wasPaused = paused !== null
-    for (const songId of [
+    dropTasks([
       ...tasks.keys(),
     ])
-      dropTask(songId)
     tasks.clear()
     paused = null
     context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')
@@ -834,6 +1200,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           { kind: 'single' },
         ]))
       }
+      saveQueued([plain.id])
       publish()
       hideSongNotices(plain.id)
       context.notices.show({
@@ -855,6 +1222,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         noCopyright: 0,
       }
       const downloadedIds: number[] = []
+      const queuedIds: number[] = []
       for (const song of new Map(batch.map(each => [
         each.id,
         plainSong(each),
@@ -878,6 +1246,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
               sources,
             })
           }
+          queuedIds.push(song.id)
           outcome.queued += 1
           continue
         }
@@ -896,8 +1265,10 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           }
         }
         tasks.set(song.id, queuedTask(song, [source]))
+        queuedIds.push(song.id)
         outcome.queued += 1
       }
+      saveQueued(queuedIds)
       // 已经下载过的：把这次点的歌单 / 专辑补进来源（规则⑦），下载本身不动；一个事务里全部补完
       if (downloadedIds.length > 0) {
         try {
@@ -944,6 +1315,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         return false
       tasks.delete(songId)
       tasks.set(songId, queuedTask(task.song, task.sources, receivedOf(songId), task.total))
+      saveQueued([songId])
       // 面板、已下载页点“重试”也收起那一条常驻的失败提示
       context.notices.hideWhere(notice => notice.kind === 'downloadFailed' && notice.song.id === songId)
       publish()
@@ -956,6 +1328,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     resume() {
       paused = null
       publish()
+      flushAllParts()
       pump()
     },
     cancel,
@@ -988,7 +1361,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       }
       await loadRecords()
       // 先把在途的、排队的任务处理掉：作废的这一次就算下完了也不会写回来
-      let tasksChanged = false
+      const droppedTasks: number[] = []
+      const changedTasks: number[] = []
       for (const [songId, task] of [...tasks]) {
         if (!task.sources.some(each => sameDownloadSource(each, source)))
           continue
@@ -998,13 +1372,16 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
             ...task,
             sources: rest,
           })
+          changedTasks.push(songId)
         }
         else {
-          dropTask(songId)
+          droppedTasks.push(songId)
           hideSongNotices(songId)
         }
-        tasksChanged = true
       }
+      dropTasks(droppedTasks)
+      saveQueued(changedTasks)
+      const tasksChanged = droppedTasks.length > 0 || changedTasks.length > 0
       if (tasksChanged && paused && tasks.size === 0) {
         paused = null
         context.notices.hideWhere(notice => notice.kind === 'downloadsPaused')
@@ -1073,8 +1450,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         ...tasks.keys(),
       ]
       const wasPaused = paused !== null
-      for (const songId of taskIds)
-        dropTask(songId)
+      dropTasks(taskIds)
       tasks.clear()
       paused = null
       context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')

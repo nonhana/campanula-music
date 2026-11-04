@@ -13,7 +13,9 @@
   import { formatCount } from '../shared/text'
   import Button from '../ui/Button.svelte'
   import VirtualList from '../ui/VirtualList.svelte'
+  import { hasActiveTasks } from './download-panel-core'
   import DownloadTaskRow from './DownloadTaskRow.svelte'
+  import { downloadStopsText } from './view'
 
   const view = getAppView()
   const phone = $derived(!desktopLayout.current)
@@ -22,6 +24,7 @@
   const tasks = $derived([
     ...downloads.tasks.values(),
   ])
+  const active = $derived(hasActiveTasks(tasks))
   const paused = $derived(downloads.paused !== null)
   const online = $derived(view.state.online)
   const signedIn = $derived(view.state.session.status === 'signedIn')
@@ -70,6 +73,11 @@
         </span>
       {/if}
     </div>
+    {#if active}
+      <p class={phone
+        ? 'px-4 pb-1 text-caption text-neutral-500'
+        : 'pb-1 text-caption text-neutral-500'}>{downloadStopsText(phone)}</p>
+    {/if}
     <div role='group' aria-label='正在下载的歌曲' class={phone
       ? ''
       : 'rounded-xl bg-white p-2 shadow-ambient'}>

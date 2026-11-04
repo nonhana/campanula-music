@@ -29,9 +29,14 @@ export interface Tab {
   /** 页面被隐藏（切到别的应用、锁屏） */
   hide: () => void
   show: () => void
+  /** 页面被冻结（Page Lifecycle 的 freeze）：Android 上切到后台约 1 分钟后；脚本还能跑，但真实浏览器里接下来就停了 */
+  freeze: () => void
+  /** 从冻结里恢复（Page Lifecycle 的 resume） */
+  resume: () => void
   /**
-   * 关掉这个标签页（关掉标签页、划掉 App）：页面先被隐藏，之后脚本不再运行——播放器停下不出声、不再发事件，定时不再触发，收不到广播和联网状态变化。依据 HTML 标准的 unload a document（先发 visibilitychange 变成 hidden）和 destroy a document（排着的任务丢掉，事件循环不再为它跑任务）。
-   * 替身没做到的：在路上的请求、排着的锁、本机数据库的连接不会跟着断，所以关之前先等设备停下（world.settle）
+   * 关掉这个标签页（关掉标签页、划掉 App）：页面先被隐藏，之后脚本不再运行——播放器停下不出声、不再发事件，定时不再触发，收不到广播和联网状态变化；
+   * 拿着的 Web Locks 跟着放开（浏览器在文档销毁时这么做）。依据 HTML 标准的 unload a document（先发 visibilitychange 变成 hidden）和 destroy a document（排着的任务丢掉，事件循环不再为它跑任务）。
+   * 替身没做到的：在路上的请求、本机数据库的连接不会跟着断，所以关之前先等设备停下（world.settle）
    */
   close: () => void
   mediaSession: FakeMediaSession
@@ -194,6 +199,8 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number, 
     responses,
     async open() {
       const page = new FakePage()
+      /** 这一页的锁：关掉时连它拿着的、排着的一起放开 */
+      const lockScope = {}
       const mediaSession = new FakeMediaSession()
       const audio: FakeAudio[] = []
       const watchman = new FakeWatchman()
@@ -237,7 +244,7 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number, 
         touchPrimary: traits.touchPrimary ?? false,
         mediaSession,
         MediaMetadata: FakeMediaMetadata,
-        locks,
+        locks: locks.scoped(lockScope),
         broadcastChannel: (name) => {
           const channel = broadcast.channel(name)
           channels.push(channel)
@@ -272,9 +279,12 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number, 
         app,
         hide: () => page.set('hidden'),
         show: () => page.set('visible'),
+        freeze: () => page.freeze(),
+        resume: () => page.resume(),
         close: () => {
           page.set('hidden')
           closed = true
+          locks.release(lockScope)
           for (const player of audio)
             player.close()
           for (const channel of channels)

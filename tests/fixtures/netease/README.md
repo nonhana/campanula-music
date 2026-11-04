@@ -175,6 +175,7 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 | `library/song_detail.missing-privilege.constructed.json` | 一首歌在 `privileges` 里对不上（#78）。复制 `library/netease-playlist/002-song_detail.json.gz`，只留上一份的那两首，去掉第二首的那条权限信息，查询换成这两首的编号 |
 | `library/user_playlist.unknown-kind.constructed.json` | 认不出歌单是哪一类（#78，作者定：不猜，当作返回结构变了）。复制 `library/user_playlist.json`，只留前三张，去掉我喜欢的音乐（900000001）的 `specialType` |
 | `library/user_playlist.after-no-track-update-time.constructed.json.gz` | 曲目变动时间缺了（#78，作者定：本机有曲目就不重拉）。复制 `library/sync/after/001-user_playlist.json.gz`，去掉每张歌单的 `trackUpdateTime` |
+| `playback/downloads/006-song_download_url_v1.vip-exhigh-other-size.constructed.json` | 同一首歌重新打开时下载地址给的大小变了（#41 要求覆盖“换了下载音质就丢掉断点”；同一个号码、同一个音质只录到过一份文件）。复制 `playback/song_download_url_v1.vip-exhigh.json`（512359195），只把 `data.size` 从 9757301 改成 8000000；真遇到时替换成录制 |
 
 它们不进下面的清单。
 

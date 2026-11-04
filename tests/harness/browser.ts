@@ -53,7 +53,7 @@ export class FakeStorage {
   }
 }
 
-/** 页面可见性：一个标签页一个 */
+/** 页面可见性：一个标签页一个。照 Page Lifecycle API：freeze 是页面被冻结（Android 切到后台约 1 分钟后），resume 是解冻 */
 export class FakePage extends EventTarget implements PageVisibility {
   #state: DocumentVisibilityState = 'visible'
 
@@ -66,6 +66,14 @@ export class FakePage extends EventTarget implements PageVisibility {
       return
     this.#state = state
     this.dispatchEvent(new Event('visibilitychange'))
+  }
+
+  freeze(): void {
+    this.dispatchEvent(new Event('freeze'))
+  }
+
+  resume(): void {
+    this.dispatchEvent(new Event('resume'))
   }
 }
 
@@ -437,6 +445,8 @@ interface LockRequest {
   signal: AbortSignal | undefined
   /** 已经调了回调：之后 signal 不再理会（§4.4 第 14.1.2 步） */
   invoked: boolean
+  /** 哪个标签页发的；页面关掉时连它一起放开、撤掉 */
+  scope: object | undefined
   /** request() 返回的 promise（标准里的 released promise） */
   settle: { resolve: (value: unknown) => void, reject: (reason: unknown) => void }
 }
@@ -454,6 +464,10 @@ const invoke = (callback: LockGrantedCallback<unknown>, lock: Lock | null): Prom
 export class FakeLocks implements LocksCapability {
   readonly #held: FakeLock[] = []
   readonly #queues = new Map<string, LockRequest[]>()
+  /** 每个拿到的锁是哪个标签页的 */
+  readonly #owners = new Map<FakeLock, object>()
+  /** 已经关掉的标签页 */
+  readonly #closed = new WeakSet<object>()
   /** 已经排下、还没跑的回调任务有几个 */
   pending = 0
 
@@ -468,6 +482,43 @@ export class FakeLocks implements LocksCapability {
   request<T>(name: string, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
   request<T>(name: string, options: LockOptions, callback: LockGrantedCallback<T>): Promise<Awaited<T>>
   request<T>(name: string, ...args: [LockGrantedCallback<T>] | [LockOptions, LockGrantedCallback<T>]): Promise<Awaited<T>> {
+    return this.#request(undefined, name, ...args)
+  }
+
+  /**
+   * 照浏览器在文档销毁时放开这个页面拿着的锁做（Web Locks 没有对应的事件）：页面关掉后，下一个标签页才能拿到。
+   * scope 是这一页独有的东西，别和别的页共用
+   */
+  scoped(scope: object): LocksCapability {
+    return {
+      request: <T>(name: string, ...args: [LockGrantedCallback<T>] | [LockOptions, LockGrantedCallback<T>]) => this.#request(scope, name, ...args),
+    }
+  }
+
+  /** 页面关掉：它拿着、排着的锁跟着放开，之后排下的回调不再调 */
+  release(scope: object): void {
+    this.#closed.add(scope)
+    const names = new Set<string>()
+    for (let at = this.#held.length - 1; at >= 0; at -= 1) {
+      const lock = this.#held[at]!
+      if (this.#owners.get(lock) !== scope)
+        continue
+      this.#owners.delete(lock)
+      this.#held.splice(at, 1)
+      names.add(lock.name)
+    }
+    for (const [name, queue] of this.#queues) {
+      const kept = queue.filter(request => request.scope !== scope)
+      if (kept.length === queue.length)
+        continue
+      this.#queues.set(name, kept)
+      names.add(name)
+    }
+    for (const name of names)
+      this.#process(name)
+  }
+
+  #request<T>(scope: object | undefined, name: string, ...args: [LockGrantedCallback<T>] | [LockOptions, LockGrantedCallback<T>]): Promise<Awaited<T>> {
     const [options, callback] = args.length === 1
       ? [{}, args[0]]
       : args
@@ -494,12 +545,17 @@ export class FakeLocks implements LocksCapability {
         callback: callback as LockGrantedCallback<unknown>,
         signal,
         invoked: false,
+        scope,
         settle: { resolve: resolve as (value: unknown) => void, reject },
       }
       const queue = this.#queue(name)
       // §4.1 第 3.5 步
       if (ifAvailable && !this.#grantable(request)) {
-        this.#task(() => resolve(invoke(request.callback, null) as Promise<Awaited<T>>))
+        this.#task(() => {
+          if (scope && this.#closed.has(scope))
+            return
+          resolve(invoke(request.callback, null) as Promise<Awaited<T>>)
+        })
         return
       }
       // §4.3 signal to abort the request
@@ -543,12 +599,17 @@ export class FakeLocks implements LocksCapability {
       const request = queue.shift()!
       const lock = new FakeLock(request.name, request.mode)
       this.#held.push(lock)
+      if (request.scope)
+        this.#owners.set(lock, request.scope)
       const release = () => {
-        this.#held.splice(this.#held.indexOf(lock), 1)
+        const at = this.#held.indexOf(lock)
+        if (at !== -1)
+          this.#held.splice(at, 1)
+        this.#owners.delete(lock)
         this.#process(name)
       }
       this.#task(() => {
-        if (request.signal?.aborted)
+        if (request.signal?.aborted || (request.scope && this.#closed.has(request.scope)))
           return release()
         request.invoked = true
         const waiting = invoke(request.callback, lock)

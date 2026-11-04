@@ -64,6 +64,9 @@ export const visiblePanelTasks = (tasks: readonly DownloadTask[], limit = PANEL_
 /** 从没有任务变成有任务：面板该出来（先让提示条出来，160ms 后再飘入）；用户收起过的不算 */
 export const panelOpensOn = (previous: number, next: number): boolean => previous === 0 && next > 0
 
+/** 有排队中或下载中的歌：下载还没停，面板和已下载页要说明什么时候会停（#41） */
+export const hasActiveTasks = (tasks: readonly DownloadTask[]): boolean => tasks.some(task => task.status === 'queued' || task.status === 'downloading')
+
 /**
  * 这一帧里从任务表消失、并且已经写进本机的（下完了）：取消掉的、按歌单删掉的 has 是 false，不算完成。
  * previous 是上一帧的任务编号，顺序就是这一帧完成的先后。

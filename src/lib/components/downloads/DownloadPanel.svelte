@@ -22,12 +22,13 @@
   import Button from '../ui/Button.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import TextButton from '../ui/TextButton.svelte'
-  import { completedSince, LEAVING_HOLD_MS, leavingOf, panelOpensOn, panelRows, visiblePanelTasks } from './download-panel-core'
+  import { completedSince, hasActiveTasks, LEAVING_HOLD_MS, leavingOf, panelOpensOn, panelRows, visiblePanelTasks } from './download-panel-core'
   import type { LeavingTask, PanelRow } from './download-panel-core'
   import DownloadLeavingRow from './DownloadLeavingRow.svelte'
   import DownloadTaskRow from './DownloadTaskRow.svelte'
   import { bytesPerSecond, formatSpeed, SPEED_WINDOW_MS } from './speed'
   import type { SpeedSample } from './speed'
+  import { downloadStopsText } from './view'
 
   const view = getAppView()
   const { downloadPanel: panel } = getOverlays()
@@ -36,6 +37,7 @@
   const tasks = $derived([
     ...downloads.tasks.values(),
   ])
+  const active = $derived(hasActiveTasks(tasks))
   const paused = $derived(downloads.paused !== null)
   const online = $derived(view.state.online)
   const signedIn = $derived(view.state.session.status === 'signedIn')
@@ -425,6 +427,9 @@
             <WifiOff size={14} aria-hidden='true' />
             <span>离线时暂停下载</span>
           </div>
+        {/if}
+        {#if finishing === 0 && active}
+          <p class='px-4 pb-2 text-caption text-neutral-500'>{downloadStopsText(!desktop)}</p>
         {/if}
         {#if finishing === 0}
           <div class='min-h-0 flex-1 overflow-y-auto px-2'>

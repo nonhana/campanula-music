@@ -30,7 +30,7 @@
   document.getElementById('first-frame')?.remove()
 
   // 页面关闭了服务端渲染，这里只在浏览器里运行。安全上下文 = HTTPS 或本机 localhost：Service Worker、
-  // Background Fetch、Storage API、带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
+  // Storage API、带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
   const app = window.isSecureContext
     ? createApp(realBrowserCapabilities())
     : undefined

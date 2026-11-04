@@ -88,6 +88,9 @@ const noticeActions = (notice: OperationNotice): readonly NoticeAction[] => {
       return ['resume', 'dismiss']
     case 'downloadsRemoved':
       return ['dismiss']
+    case 'downloadsResumed':
+    case 'downloadsResumedFromBackground':
+      return ['dismiss']
     case 'notChanged':
     case 'playlistMissing':
     case 'added':
@@ -117,6 +120,8 @@ const noticeLifetime = (notice: OperationNotice): number | null => {
     case 'alreadyAdded':
     case 'downloadsAdded':
     case 'downloadsRemoved':
+    case 'downloadsResumed':
+    case 'downloadsResumedFromBackground':
     case 'queuedNext':
     case 'queuedEnd':
     case 'hearted':
@@ -154,6 +159,8 @@ const noticeTone = (notice: OperationNotice): NoticeTone => {
     case 'removed':
     case 'downloadsAdded':
     case 'downloadsRemoved':
+    case 'downloadsResumed':
+    case 'downloadsResumedFromBackground':
     case 'queuedNext':
     case 'queuedEnd':
     case 'hearted':
