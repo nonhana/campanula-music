@@ -119,7 +119,7 @@
       leaving = leaving.map(each => each.songId === item.songId
         ? { ...each, phase: 'exit' }
         : each)
-      timers.push(setTimeout(removeLeaving, DURATIONS['state-out'], item.songId))
+      timers.push(setTimeout(removeLeaving, DURATIONS.state, item.songId))
     }, DURATIONS.state + LEAVING_HOLD_MS))
   }
 

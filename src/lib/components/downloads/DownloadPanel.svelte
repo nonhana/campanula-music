@@ -2,7 +2,7 @@
   下载面板（#38）：桌面右侧浮动卡片、手机迷你播放条上方；逐首进度、速率、取消、重试，可收起成 44px 竖条 / 48px 横条。
   不是浮层栈里的一层（不压历史、不 inert 背景）；/downloads 不显示（那一页有完整的“正在下载”），离开后出现。
   开始下载先让提示条出来，160ms 后（从没有任务变成有任务）才飘入；用户收起过的，新任务不强行展开。
-  一首下完不另起一行：这一行留在原位置，内容向右滑出露出成功层，停一下再整行向右退场，下方只补位一次；全部退完才写“已下载 N 首”，3 秒后收起（焦点在面板里时等焦点离开，最多 8 秒）。
+  一首下完不另起一行：这一行留在原位置，内容向右滑出露出成功层，停一下整行原地淡出、行高收到 0，下方只补位一次；全部退完才写“已下载 N 首”，3 秒后收起（焦点在面板里时等焦点离开，最多 8 秒）。
   “全部取消”要在这条里再确认一次；打开不抢焦点，Esc 只在焦点在面板里时收起。
 -->
 <script lang='ts'>
@@ -16,7 +16,7 @@
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
   import { desktopLayout, desktopPanelTop } from '../shared/layout'
-  import { float, reducedMotion } from '../shared/motion'
+  import { float, moveMs } from '../shared/motion'
   import { DURATIONS } from '../shared/motion-tokens'
   import { formatCount } from '../shared/text'
   import Button from '../ui/Button.svelte'
@@ -155,7 +155,7 @@
       leaving = leaving.map(each => each.songId === item.songId
         ? { ...each, phase: 'exit' }
         : each)
-      leavingTimers.push(setTimeout(removeLeaving, DURATIONS['state-out'], item.songId))
+      leavingTimers.push(setTimeout(removeLeaving, DURATIONS.state, item.songId))
     }, DURATIONS.state + LEAVING_HOLD_MS))
   }
 
@@ -432,9 +432,7 @@
               <div
                 class='border-b border-neutral-100 last:border-0'
                 animate:flip={{
-                  duration: reducedMotion()
-                    ? 0
-                    : 200,
+                  duration: moveMs(DURATIONS.state),
                 }}
                 out:float={{ toward: 'right', distance: 12 }}
               >

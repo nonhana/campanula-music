@@ -11,7 +11,8 @@
   import type { LeavingTask, PanelRow } from '#lib/components/downloads/download-panel-core.js'
   import DownloadLeavingRow from '#lib/components/downloads/DownloadLeavingRow.svelte'
   import DownloadTaskRow from '#lib/components/downloads/DownloadTaskRow.svelte'
-  import { reducedMotion } from '#lib/components/shared/motion.js'
+  import { DURATIONS } from '#lib/components/shared/motion-tokens.js'
+  import { moveMs } from '#lib/components/shared/motion.js'
   import Button from '#lib/components/ui/Button.svelte'
   import IconButton from '#lib/components/ui/IconButton.svelte'
   import TextButton from '#lib/components/ui/TextButton.svelte'
@@ -63,9 +64,7 @@
         <div
           class='border-b border-neutral-100 last:border-0'
           animate:flip={{
-            duration: reducedMotion()
-              ? 0
-              : 200,
+            duration: moveMs(DURATIONS.state),
           }}
         >
           {#if row.kind === 'leaving'}
