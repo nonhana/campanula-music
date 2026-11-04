@@ -5,7 +5,6 @@
 -->
 <script lang='ts'>
   import { page } from '$app/state'
-  import { Search } from '@lucide/svelte'
 
   import type { SuggestionRow } from '#lib/components/search/search-box.svelte.js'
   import { pickSuggestion, showingResults } from '#lib/components/search/search-box.svelte.js'
@@ -18,7 +17,6 @@
   import { desktopLayout } from '#lib/components/shared/layout.js'
   import { scrollSnapshot } from '#lib/components/shared/snapshot.js'
   import { langOf } from '#lib/components/shared/text.js'
-  import StateBlock from '#lib/components/ui/StateBlock.svelte'
 
   const view = getAppView()
   const signedIn = $derived(view.state.library !== null)
@@ -81,7 +79,6 @@
       {@render results(false)}
     {:else}
       <h1 class='sr-only'>搜索</h1>
-      <StateBlock kind='empty' icon={Search} title='在顶栏的搜索框里输入' />
     {/if}
   {:else}
     <h1 class='sr-only'>{keyword

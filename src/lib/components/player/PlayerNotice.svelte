@@ -1,5 +1,5 @@
 <!--
-  播放的提示（一摞里的一条，见 notice/NoticeStack.svelte）：一句话说什么没成、为什么；网络慢是状态，其余是出错，可以关掉。
+  播放的出错提示（一摞里的一条，见 notice/NoticeStack.svelte）：一句话说什么没成、为什么，可以关掉。
   手机播放页开着时整摞挪到顶上，不压控制键；换页时和播放条一样原地不动。位置在 NoticeStack，样子在 NoticeCard。
 -->
 <script lang='ts'>
@@ -21,9 +21,7 @@
 </script>
 
 <NoticeCard
-  tone={playerNotice.kind === 'slow'
-    ? 'progress'
-    : 'error'}
+  tone='error'
   text={noticeText(playerNotice)}
   {phone}
   {edge}

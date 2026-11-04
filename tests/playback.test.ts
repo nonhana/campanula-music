@@ -412,7 +412,7 @@ describe('断流和出错', () => {
     expect(app.state.player).toMatchObject({ status: 'playing', position: 61.2, notice: null })
   })
 
-  it('数据接不上、缓冲了 8 秒还没出声：提示网络慢；接上了提示消失', async () => {
+  it('缓冲期间不推测网络原因或弹提示，数据到达后继续播放', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
@@ -426,7 +426,7 @@ describe('断流和出错', () => {
     await world.clock.advance(1_000)
     expect(app.state.player).toMatchObject({
       status: 'buffering',
-      notice: { kind: 'slow' },
+      notice: null,
     })
 
     player.ready(FIRST.duration)

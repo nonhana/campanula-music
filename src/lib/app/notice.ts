@@ -88,14 +88,11 @@ const noticeActions = (notice: OperationNotice): readonly NoticeAction[] => {
       return ['resume', 'dismiss']
     case 'downloadsRemoved':
       return ['dismiss']
-    case 'downloadsResumed':
-    case 'downloadsResumedFromBackground':
-      return ['dismiss']
     case 'notChanged':
     case 'playlistMissing':
     case 'added':
     case 'alreadyAdded':
-    case 'downloadsAdded':
+    case 'downloadsSkipped':
     case 'recovered':
     case 'queuedNext':
     case 'queuedEnd':
@@ -103,7 +100,6 @@ const noticeActions = (notice: OperationNotice): readonly NoticeAction[] => {
     case 'playlistCreated':
     case 'playlistPublished':
     case 'playlistDeleted':
-    case 'downloadQueued':
     case 'plain':
       return ['dismiss']
     default: {
@@ -118,17 +114,14 @@ const noticeLifetime = (notice: OperationNotice): number | null => {
   switch (notice.kind) {
     case 'added':
     case 'alreadyAdded':
-    case 'downloadsAdded':
+    case 'downloadsSkipped':
     case 'downloadsRemoved':
-    case 'downloadsResumed':
-    case 'downloadsResumedFromBackground':
     case 'queuedNext':
     case 'queuedEnd':
     case 'hearted':
     case 'playlistCreated':
     case 'playlistPublished':
     case 'playlistDeleted':
-    case 'downloadQueued':
       return AUTO_DISMISS_MS
     case 'plain':
       return notice.tone === 'success'
@@ -157,17 +150,14 @@ const noticeTone = (notice: OperationNotice): NoticeTone => {
     case 'added':
     case 'alreadyAdded':
     case 'removed':
-    case 'downloadsAdded':
+    case 'downloadsSkipped':
     case 'downloadsRemoved':
-    case 'downloadsResumed':
-    case 'downloadsResumedFromBackground':
     case 'queuedNext':
     case 'queuedEnd':
     case 'hearted':
     case 'playlistCreated':
     case 'playlistPublished':
     case 'playlistDeleted':
-    case 'downloadQueued':
       return 'success'
     case 'notChanged':
     case 'playlistMissing':
@@ -225,7 +215,6 @@ const mergeNotice = (previous: OperationNotice, next: OperationNotice): Operatio
             kind: 'downloadsRemoved',
             removed: previous.removed + next.removed,
             kept: previous.kept + next.kept,
-            freed: previous.freed + next.freed,
           }
         : next
     default:

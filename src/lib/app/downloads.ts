@@ -50,18 +50,13 @@ export type DownloadTask
 
 /** App 的提示条，和改曲库共用一摞 */
 export type DownloadNotice
-  = | { kind: 'downloadQueued', song: Song }
-    | { kind: 'downloadFailed', song: Song, failure: DownloadFailure, count?: number }
-    /** 整张歌单、专辑、多选里的下载：加进了多少、跳过了多少（逐项说明）；filling 是歌单还没同步完，后面的会补上（规则⑫） */
-    | { kind: 'downloadsAdded', queued: number, downloaded: number, trial: number, noCopyright: number, filling?: true }
+  = | { kind: 'downloadFailed', song: Song, failure: DownloadFailure, count?: number }
+    /** 只报告实际跳过的歌曲；正常加入由下载列表反馈 */
+    | { kind: 'downloadsSkipped', downloaded: number, trial: number, noCopyright: number }
     /** 存储空间不够，整队暂停（规则⑪）；腾出空间后点“继续下载” */
     | { kind: 'downloadsPaused' }
     /** 删掉了几首下载（按歌单删除、一键清空，#40）；kept 是别处也下载过、只去掉这张歌单的 */
-    | { kind: 'downloadsRemoved', removed: number, kept: number, freed: number }
-    /** 重新打开 App，上次没下完的接着下（#41）；count 是接着下的首数 */
-    | { kind: 'downloadsResumed', count: number }
-    /** 页面被冻结过，回来接着下（#41）；一次打开只说一次 */
-    | { kind: 'downloadsResumedFromBackground' }
+    | { kind: 'downloadsRemoved', removed: number, kept: number }
 
 export interface DownloadsState {
   /** 最近下载完的在前；还没从本机读出来时是 null */
@@ -157,7 +152,7 @@ export interface Downloads {
   /** 现在不下时返回原因，开始下了是 null */
   download: (song: Song) => DownloadBlock | null
   /** 整批：跳过已下载、试听、无版权的歌，逐项说明；source 记进每首下载的来源（规则⑦） */
-  add: (songs: readonly Song[], source: DownloadSource, options?: { quiet?: boolean, filling?: boolean }) => Promise<DownloadBatchOutcome | DownloadStartBlock>
+  add: (songs: readonly Song[], source: DownloadSource, options?: { quiet?: boolean }) => Promise<DownloadBatchOutcome | DownloadStartBlock>
   /** 重新排队一首失败的；没这首、不是失败时什么都不做，返回有没有排上 */
   retry: (songId: number) => boolean
   /** 取消一首排队、下载中、失败的：停止传输、丢掉断点；已经下完的不动。返回有没有这一首 */
@@ -263,12 +258,6 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   let pageHidden = browser.page.visibilityState === 'hidden'
   /** 这一页在本机队列里记下了哪几首：没拿到锁的标签页只碰自己记下的（#41） */
   const owned = new Set<number>()
-  /** 这次打开时从本机恢复了几首、是否已经说过“接着下”（#41） */
-  let restored = 0
-  let resumedNoticeShown = false
-  /** 页面被冻结过；回来时的提示一次打开只说一次 */
-  let frozen = false
-  let backgroundNoticeShown = false
   let running = false
   let again = false
   let loading: Promise<void> | undefined
@@ -548,8 +537,6 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     orders.delete(song.id)
     deleteQueued([song.id])
     publish()
-    // 这一首刚“已加入下载”过：现在是失败，别再留着那句
-    context.notices.hideWhere(notice => notice.kind === 'downloadQueued' && notice.song.id === song.id)
     context.notices.show({
       kind: 'downloadFailed',
       song,
@@ -607,10 +594,9 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       void Promise.allSettled(waiting).then(remove)
   }
 
-  /** 这一首的“已加入下载”“下载失败”都不算数了（任务取消、重下、重新失败、删除时用）；合并过的“N 首失败”还代表别的歌，留着 */
+  /** 单首失败在取消、重下、删除时收起；合并提示仍代表别的失败歌曲 */
   const hideSongNotices = (songId: number): void => {
-    context.notices.hideWhere(notice => (notice.kind === 'downloadQueued' && notice.song.id === songId)
-      || (notice.kind === 'downloadFailed' && notice.song.id === songId && (notice.count ?? 1) === 1))
+    context.notices.hideWhere(notice => notice.kind === 'downloadFailed' && notice.song.id === songId && (notice.count ?? 1) === 1)
   }
 
   /** 断网、操作频繁由后台通道等过、重发过；这一轮结束时回 null */
@@ -949,15 +935,6 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           again = false
           if (paused || !context.signedIn() || !context.online())
             break
-          // 重新打开 App、上次没下完的真的开始接着下了，说一次（#41）；期间取消了几首就少说几首
-          const active = activeCount()
-          if (restored > 0 && !resumedNoticeShown && active > 0) {
-            resumedNoticeShown = true
-            context.notices.show({
-              kind: 'downloadsResumed',
-              count: active,
-            })
-          }
           let next: [number, DownloadTask] | undefined
           for (const entry of tasks) {
             if (entry[1].status === 'queued') {
@@ -993,35 +970,13 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     })()
   }
 
-  /** 真要接着下的首数：排队、下载中；失败的不算 */
-  const activeCount = (): number => {
-    let count = 0
-    for (const task of tasks.values()) {
-      if (task.status === 'queued' || task.status === 'downloading')
-        count += 1
-    }
-    return count
-  }
-
-  /** 页面回到前台、从冻结里恢复：走一步（#41）；被冻结过就说一次“接着下” */
-  const resumeFromBackground = (): void => {
-    if (frozen) {
-      frozen = false
-      if (activeCount() > 0 && !backgroundNoticeShown && !paused && context.signedIn() && context.online()) {
-        backgroundNoticeShown = true
-        context.notices.show({ kind: 'downloadsResumedFromBackground' })
-      }
-    }
-    pump()
-  }
-
   browser.page.addEventListener('visibilitychange', () => {
     const hidden = browser.page.visibilityState === 'hidden'
     if (hidden === pageHidden)
       return
     pageHidden = hidden
     if (!hidden) {
-      resumeFromBackground()
+      pump()
       return
     }
     // 划掉 App 之前页面一定先藏起来：正在传的记下来（这时候断开不算失败），手上还没写的分段立刻写下去
@@ -1031,10 +986,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     }
     flushAllParts()
   })
-  browser.page.addEventListener('freeze', () => {
-    frozen = true
-  })
-  browser.page.addEventListener('resume', resumeFromBackground)
+  browser.page.addEventListener('resume', pump)
 
   /** 几个标签页同时开着时只有一个接着下本机存着的队列（#41）：拿到就拿着不放，这个标签页关掉时浏览器才放开 */
   const queueOwnership = (): Promise<boolean> => {
@@ -1093,7 +1045,6 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       maxOrder = Math.max(maxOrder, entry.order)
     }
     nextOrder = maxOrder + 1
-    restored = tasks.size
     deleteQueued(droppedQueue)
     if (droppedParts.size > 0) {
       void local.deleteDownloadParts([
@@ -1170,7 +1121,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     ])
     tasks.clear()
     paused = null
-    context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')
+    context.notices.hideWhere(notice => notice.kind === 'downloadFailed')
     if (wasPaused)
       context.notices.hideWhere(notice => notice.kind === 'downloadsPaused')
     publish()
@@ -1203,14 +1154,10 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       saveQueued([plain.id])
       publish()
       hideSongNotices(plain.id)
-      context.notices.show({
-        kind: 'downloadQueued',
-        song: plain,
-      })
       pump()
       return null
     },
-    async add(batch, source, { quiet = false, filling = false } = {}) {
+    async add(batch, source, { quiet = false } = {}) {
       if (!context.signedIn())
         return 'signedOut'
       if (!context.online())
@@ -1295,13 +1242,12 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       const processed = outcome.queued > 0 || outcome.downloaded > 0 || outcome.trial > 0 || outcome.noCopyright > 0
       if (processed)
         publish()
-      if (!quiet && processed) {
+      if (!quiet && outcome.downloaded + outcome.trial + outcome.noCopyright > 0) {
         context.notices.show({
-          kind: 'downloadsAdded',
-          ...outcome,
-          ...(filling
-            ? { filling: true as const }
-            : {}),
+          kind: 'downloadsSkipped',
+          downloaded: outcome.downloaded,
+          trial: outcome.trial,
+          noCopyright: outcome.noCopyright,
         })
       }
       if (outcome.queued > 0)
@@ -1350,7 +1296,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         freed,
       }
       if (removal.removed > 0 || removal.kept > 0)
-        context.notices.show({ kind: 'downloadsRemoved', ...removal })
+        context.notices.show({ kind: 'downloadsRemoved', removed: removal.removed, kept: removal.kept })
       return removal
     },
     async removePlaylist(playlistId) {
@@ -1437,7 +1383,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         freed,
       }
       if (removedIds.length > 0 || keptIds.length > 0)
-        context.notices.show({ kind: 'downloadsRemoved', ...removal })
+        context.notices.show({ kind: 'downloadsRemoved', removed: removal.removed, kept: removal.kept })
       return removal
     },
     async clear() {
@@ -1453,7 +1399,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       dropTasks(taskIds)
       tasks.clear()
       paused = null
-      context.notices.hideWhere(notice => notice.kind === 'downloadQueued' || notice.kind === 'downloadFailed')
+      context.notices.hideWhere(notice => notice.kind === 'downloadFailed')
       if (wasPaused)
         context.notices.hideWhere(notice => notice.kind === 'downloadsPaused')
       if (dropped.length > 0)
@@ -1467,7 +1413,6 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           kind: 'downloadsRemoved',
           removed: dropped.length,
           kept: 0,
-          freed,
         })
       }
       return {

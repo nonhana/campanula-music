@@ -8,7 +8,6 @@
   import { getOverlays } from '../overlay/overlay-context'
   import type { DeletePlaylistDownloadsRequest } from '../overlay/overlay-requests'
   import { getAppView } from '../shared/app-context.svelte'
-  import { formatCount } from '../shared/text'
   import Button from '../ui/Button.svelte'
 
   const view = getAppView()
@@ -20,7 +19,7 @@
     <ConfirmPanel {sheet} oncancel={() => deletePlaylistDownloadsConfirm.close()}>
       {#snippet body()}
         <p class='text-body text-neutral-700'>
-          会删掉从这张歌单下载的 {formatCount(request.count)} 首；别的歌单、专辑也下载过，或者单独下载过的，会留着。删除后要重新下载才能离线听。
+          仅删除此歌单独有的下载，其他来源的下载保留
         </p>
       {/snippet}
       {#snippet confirm()}

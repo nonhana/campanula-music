@@ -1,10 +1,10 @@
 <!--
   正在下载的一行（#39，已下载页和下载面板共用）：排队、下载中（进度、速率）、失败（原因、重试），右边是取消。
-  存储暂停、没登录、断网时写明为什么不动；不知道总大小时写已收到多少（#78）。
+  全队暂停原因写在标题旁，行内只用状态图标；不知道总大小时写收到的 MB（#78）。
   page 是已下载页 56 / 64px 的网格；panel 是下载面板里的紧凑行。
 -->
 <script lang='ts'>
-  import { CircleAlert, Clock, X } from '@lucide/svelte'
+  import { Check, CircleAlert, Clock, Pause, X } from '@lucide/svelte'
 
   import { songTitle } from '#lib/api/library.js'
   import type { DownloadTask } from '#lib/app/downloads.js'
@@ -16,7 +16,7 @@
   import TextButton from '../ui/TextButton.svelte'
   import { downloadFailureText } from './view'
 
-  const { task, variant, paused, online, signedIn, speed = null, readonly = false, oncancel, onretry }: {
+  const { task, variant, paused, online, signedIn, speed = null, completed = false, oncancel, onretry }: {
     task: DownloadTask
     variant: 'page' | 'panel'
     paused: boolean
@@ -24,58 +24,52 @@
     signedIn: boolean
     /** 面板里当前这首的速率（已经写好单位）；没有、暂停时是 null */
     speed?: string | null
-    /** 完成退场时只保留封面、歌名和进度，不给操作 */
-    readonly?: boolean
-    oncancel: () => void
-    onretry: () => void
-  } = $props()
+  } & (
+    | { completed: true, oncancel?: never, onretry?: never }
+    | { completed?: false, oncancel: () => void, onretry: () => void }
+  ) = $props()
 
   const phone = $derived(!desktopLayout.current)
-  /** 排着的那些为什么不动：存储暂停、还没登录（规则⑧）、断网（规则⑪） */
-  const queuedLabel = $derived(paused
-    ? '已暂停'
-    : !signedIn
-    ? '登录后继续'
-    : !online
-    ? '已暂停'
-    : '排队中')
   const percent = $derived(task.total
     ? Math.floor(task.received * 100 / task.total)
     : null)
 </script>
 
 {#snippet status()}
-  {#if task.status === 'downloading'}
-    {#if paused || !online}
-      <span class='text-neutral-600'>已暂停</span>
-    {:else}
-      <span class={[
-        'h-1.5 flex-none overflow-hidden rounded-full bg-secondary-100',
-        phone
-          ? 'w-24'
-          : 'w-32',
-      ]}
-            role='progressbar'
-            aria-label='下载进度'
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={percent ?? undefined}
-      >
-        <span class='block h-full rounded-full bg-secondary-700' style:width='{percent ?? 0}%'></span>
-      </span>
-      <span class='whitespace-nowrap text-secondary-900 tabular-nums'>{percent === null
-        ? `已收到 ${formatMegabytes(task.received)} MB`
-        : `${percent}%`}</span>
-      {#if speed}
-        <span class='whitespace-nowrap text-caption text-neutral-600 tabular-nums'>{speed}</span>
-      {/if}
-    {/if}
+  {#if completed}
+    <Check size={14} class='flex-none text-secondary-800' aria-hidden='true' />
+    <span class='sr-only'>已下载</span>
+  {:else if task.status === 'failed'}
+    <CircleAlert size={14} class='flex-none text-error-700' aria-hidden='true' />
+    <span class='sr-only'>下载失败：</span>
+    <span class='truncate text-error-700' title={downloadFailureText(task.failure)}>{downloadFailureText(task.failure)}</span>
+  {:else if paused || !online || (task.status === 'queued' && !signedIn)}
+    <Pause size={14} class='flex-none text-neutral-500' aria-hidden='true' />
+    <span class='sr-only'>已暂停</span>
   {:else if task.status === 'queued'}
     <Clock size={14} class='flex-none text-neutral-500' aria-hidden='true' />
-    <span class='text-neutral-600'>{queuedLabel}</span>
+    <span class='sr-only'>排队中</span>
   {:else}
-    <CircleAlert size={14} class='flex-none text-error-700' aria-hidden='true' />
-    <span class='truncate text-error-700' title={downloadFailureText(task.failure)}>下载失败：{downloadFailureText(task.failure)}</span>
+    <span class={[
+      'h-1.5 flex-none overflow-hidden rounded-full bg-secondary-100',
+      phone
+        ? 'w-24'
+        : 'w-32',
+    ]}
+          role='progressbar'
+          aria-label='下载进度'
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent ?? undefined}
+    >
+      <span class='block h-full rounded-full bg-secondary-700' style:width='{percent ?? 0}%'></span>
+    </span>
+    <span class='whitespace-nowrap text-secondary-900 tabular-nums'>{percent === null
+      ? `${formatMegabytes(task.received)} MB`
+      : `${percent}%`}</span>
+    {#if speed}
+      <span class='whitespace-nowrap text-caption text-neutral-600 tabular-nums'>{speed}</span>
+    {/if}
   {/if}
 {/snippet}
 
@@ -129,7 +123,7 @@
     {#if !phone}
       <span class='min-w-0 flex items-center gap-2.5 text-caption'>{@render status()}</span>
     {/if}
-    {#if !readonly}
+    {#if !completed}
       <span class='flex items-center justify-end gap-1'>{@render actions()}</span>
     {/if}
   </div>
@@ -138,10 +132,10 @@
     <Cover url={task.song.album.coverUrl} size={40} class='rounded-lg' />
     <span class='min-w-0'>
       <span class='block truncate text-label text-neutral-900 font-500' lang={langOf(songTitle(task.song))}>{songTitle(task.song)}</span>
-      <span class='mt-0.5 min-w-0 flex items-center gap-2 text-caption'>{@render status()}</span>
+      <span class='mt-0.5 min-h-5 min-w-0 flex items-center gap-2 text-caption'>{@render status()}</span>
     </span>
-    {#if !readonly}
-      <span class='flex items-center gap-1'>{@render actions()}</span>
-    {/if}
+    <span class={['flex items-center gap-1', completed && 'size-11 md:size-10']}>
+      {#if !completed}{@render actions()}{/if}
+    </span>
   </div>
 {/if}

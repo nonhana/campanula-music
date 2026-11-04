@@ -1,7 +1,7 @@
 <!--
   登录页（未登录时看到的页面）：只有登录，没有介绍和示例曲库（作者 2026-10-11 定）。
   登录卡片只有一份，跨过 768px 时不重新挂载：选的登录方式、填了一半的手机号都还在。
-  这台设备上有下载时（#38）卡片下面多一条“不登录，听已下载的 N 首”（ADR-0006：下载属于设备）。
+  这台设备上有下载时（#38），卡片下面显示已下载入口和首数（ADR-0006：下载属于设备）。
 -->
 <script lang='ts'>
   import { resolve } from '$app/paths'
@@ -50,7 +50,8 @@
           class='h-12 flex items-center gap-2.5 rounded-full bg-secondary-100 pl-4 pr-3 text-body text-secondary-900 font-500 transition-colors duration-feedback active:bg-secondary-200 mouse:hover:bg-secondary-200'
         >
           <CircleArrowDown size={18} class='flex-none text-secondary-800' aria-hidden='true' />
-          <span class='min-w-0 flex-1'>不登录，听已下载的 <span class='tabular-nums'>{formatCount(downloaded)}</span> 首</span>
+          <span class='min-w-0 flex-1'>已下载</span>
+          <span class='tabular-nums'>{formatCount(downloaded)} 首</span>
           <ChevronRight size={18} class='flex-none' aria-hidden='true' />
         </a>
       </div>

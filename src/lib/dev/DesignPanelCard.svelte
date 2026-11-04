@@ -69,7 +69,6 @@
         >
           {#if row.kind === 'leaving'}
             <DownloadLeavingRow
-              name={row.leaving.name}
               content={row.leaving.content}
               phase={row.leaving.phase}
               {paused}

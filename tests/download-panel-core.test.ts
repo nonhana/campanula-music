@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { DownloadTask } from '#lib/app/downloads.js'
-import { completedSince, PANEL_TASK_LIMIT, panelOpensOn, visiblePanelTasks } from '#lib/components/downloads/download-panel-core.js'
+import { completedSince, leavingOf, PANEL_TASK_LIMIT, panelOpensOn, panelRows, visiblePanelTasks } from '#lib/components/downloads/download-panel-core.js'
 
 // 下载面板（#38）：先显示哪些行、什么时候出来。
 const song = (id: number): DownloadTask['song'] => ({
@@ -72,6 +72,28 @@ describe('下载面板的排序和上限', () => {
     expect(panelOpensOn(1, 2)).toBe(false)
     expect(panelOpensOn(2, 0)).toBe(false)
     expect(panelOpensOn(0, 0)).toBe(false)
+  })
+
+  it.each([null, 1024])('完成项保留原歌曲和同一行，不与还在任务表里的同一首重复（总大小 %s）', (total) => {
+    const finished: DownloadTask = {
+      ...task(1, 'downloading'),
+      received: 512,
+      total,
+    }
+    const queued = task(2, 'queued')
+    const tasks = [finished, queued]
+    const before = panelRows(tasks, [])
+    const after = panelRows(tasks, [
+      leavingOf(finished),
+    ])
+
+    expect(after.map(row => row.key)).toEqual(before.map(row => row.key))
+    expect(after).toHaveLength(2)
+    expect(after[0]).toMatchObject({
+      kind: 'leaving',
+      leaving: { content: finished },
+    })
+    expect(after[1]).toEqual(before[1])
   })
 
   it('这一帧里消失、又已经写进本机的才算下完：取消的、删掉的不算', () => {

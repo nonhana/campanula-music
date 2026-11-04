@@ -1,8 +1,8 @@
 <!--
   下载面板（#38）：桌面右侧浮动卡片、手机迷你播放条上方；逐首进度、速率、取消、重试，可收起成 44px 竖条 / 48px 横条。
   不是浮层栈里的一层（不压历史、不 inert 背景）；/downloads 不显示（那一页有完整的“正在下载”），离开后出现。
-  开始下载先让提示条出来，160ms 后（从没有任务变成有任务）才飘入；用户收起过的，新任务不强行展开。
-  一首下完不另起一行：这一行留在原位置，内容向右滑出露出成功层，停一下整行原地淡出、行高收到 0，下方只补位一次；全部退完才写“已下载 N 首”，3 秒后收起（焦点在面板里时等焦点离开，最多 8 秒）。
+  从没有任务变成有任务时立即显示；用户收起过的，新任务不强行展开。
+  一首下完不另起一行：保留封面和歌名，状态换成勾，停一下整行原地淡出、行高收到 0，下方只补位一次；全部退完才写“已下载 N 首”，3 秒后收起（焦点在面板里时等焦点离开，最多 8 秒）。
   “全部取消”要在这条里再确认一次；打开不抢焦点，Esc 只在焦点在面板里时收起。
 -->
 <script lang='ts'>
@@ -22,13 +22,12 @@
   import Button from '../ui/Button.svelte'
   import IconButton from '../ui/IconButton.svelte'
   import TextButton from '../ui/TextButton.svelte'
-  import { completedSince, hasActiveTasks, LEAVING_HOLD_MS, leavingOf, panelOpensOn, panelRows, visiblePanelTasks } from './download-panel-core'
+  import { completedSince, LEAVING_HOLD_MS, leavingOf, panelOpensOn, panelRows, visiblePanelTasks } from './download-panel-core'
   import type { LeavingTask, PanelRow } from './download-panel-core'
   import DownloadLeavingRow from './DownloadLeavingRow.svelte'
   import DownloadTaskRow from './DownloadTaskRow.svelte'
   import { bytesPerSecond, formatSpeed, SPEED_WINDOW_MS } from './speed'
   import type { SpeedSample } from './speed'
-  import { downloadStopsText } from './view'
 
   const view = getAppView()
   const { downloadPanel: panel } = getOverlays()
@@ -37,10 +36,10 @@
   const tasks = $derived([
     ...downloads.tasks.values(),
   ])
-  const active = $derived(hasActiveTasks(tasks))
   const paused = $derived(downloads.paused !== null)
   const online = $derived(view.state.online)
   const signedIn = $derived(view.state.session.status === 'signedIn')
+  const needsLogin = $derived(!signedIn && tasks.some(task => task.status === 'queued'))
   /** 面板真的画出来：开着，又不在已下载页 */
   const shown = $derived(panel.open && !panel.onDownloads)
   const rows = $derived(visiblePanelTasks(tasks))
@@ -144,7 +143,7 @@
       panel.hide()
   }
 
-  /** 完成项留在原位置：内容先向右滑出露出成功层，停一下，再整行向右退场；下方只在这之后上移一次 */
+  /** 完成项留在原位置：状态换成勾，沿用原等待时间后淡出、收高；下方只在这之后上移一次 */
   const startLeaving = (captured: DownloadTask): void => {
     const item = leavingOf(captured)
     if (leaving.some(each => each.songId === item.songId))
@@ -177,7 +176,7 @@
       return
     completed += done.length
     for (const task of finished) {
-      // 面板还没飘入就下完了：直接把面板打开，完成行也要看得见；收起态没有可看的行
+      // 同一帧里刚开始就下完也要显示完成行；收起态没有可看的行
       if (!panel.collapsed) {
         if (!panel.open)
           panel.reveal()
@@ -190,7 +189,7 @@
     }
   })
 
-  /** 从没有任务变成有任务：先让提示条出来，160ms 后面板再飘入；收起过的不强行展开 */
+  /** 从没有任务变成有任务时立即显示；收起过的不强行展开 */
   let lastSize = 0
   let lastOnDownloads = panel.onDownloads
   let initialized = false
@@ -236,12 +235,8 @@
       completed = 0
       finishing = 0
       announcement = `开始下载 ${formatCount(size)} 首`
-      if (panel.collapsed) {
-        panel.reveal()
-        return
-      }
-      const timer = setTimeout(() => panel.expand(), 160)
-      return () => clearTimeout(timer)
+      panel.reveal()
+      return
     }
     lastSize = size
   })
@@ -423,14 +418,13 @@
             <span class='text-caption text-neutral-600'>存储空间不够</span>
             <Button variant='download' class='ml-auto h-8 px-3 text-caption!' onclick={resume}>继续下载</Button>
           </div>
+        {:else if finishing === 0 && needsLogin}
+          <p class='px-4 pb-3 text-caption text-neutral-600'>排队歌曲需登录</p>
         {:else if finishing === 0 && !online}
           <div class='flex items-center gap-1.5 px-4 pb-3 text-caption text-neutral-600'>
             <WifiOff size={14} aria-hidden='true' />
             <span>离线时暂停下载</span>
           </div>
-        {/if}
-        {#if finishing === 0 && active}
-          <p class='px-4 pb-2 text-caption text-neutral-500'>{downloadStopsText(!desktop)}</p>
         {/if}
         {#if finishing === 0}
           <div class='min-h-0 flex-1 overflow-y-auto px-2'>
@@ -444,7 +438,6 @@
               >
                 {#if row.kind === 'leaving'}
                   <DownloadLeavingRow
-                    name={row.leaving.name}
                     content={row.leaving.content}
                     phase={row.leaving.phase}
                     {paused}

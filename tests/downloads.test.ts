@@ -120,7 +120,7 @@ describe('下载一首', () => {
     })
     expect(app.state.downloads.songs).toEqual([song])
     expect(app.state.downloads.tasks.size).toBe(0)
-    expect(noticeOf(app)).toEqual({ kind: 'downloadQueued', song })
+    expect(app.state.notices).toEqual([])
   })
 
   it('下载中看得到音频收到了多少字节、一共多少', async () => {
@@ -245,7 +245,7 @@ describe('下载一首', () => {
     expect(noticeOf(app)).toBeNull()
   })
 
-  it('失败后再下载同一首：旧的失败提示收起，换成新的“已加入下载”', async () => {
+  it('失败后再下载同一首：旧的失败提示收起，下载成功不再弹提示', async () => {
     const device = world.device()
     const { app } = await signInWithLiked(device)
     const song = likedSong(app, LOSER.id)
@@ -263,9 +263,10 @@ describe('下载一首', () => {
     await world.netease.reply(LYRICS)
     await world.netease.reply(ALBUM_MISSING)
     expect(app.download(song)).toBeNull()
-    expect(noticeOf(app)).toEqual({ kind: 'downloadQueued', song })
+    expect(app.state.notices).toEqual([])
     await world.settle()
-    expect(app.state.notices.some(entry => entry.notice.kind === 'downloadFailed')).toBe(false)
+    expect(app.state.downloads.songs).toEqual([song])
+    expect(app.state.notices).toEqual([])
   })
 
   it('取消一首失败的下载：这一首的失败提示一起收起', async () => {
@@ -314,8 +315,6 @@ describe('下载一首', () => {
       count: 2,
     })
     expect(noticeEntry(app)?.actions).toEqual(['dismiss'])
-    // 两首的“已加入下载”都被失败取代，不再留着
-    expect(app.state.notices.some(entry => entry.notice.kind === 'downloadQueued')).toBe(false)
 
     // 合并的那一条还代表另一首失败，取消其中一首时先留着
     app.cancelDownload(first.id)
@@ -834,8 +833,13 @@ describe('下载时多存的歌曲信息（#79）', () => {
     }
     await world.netease.reply(VILLAGE.page)
 
-    app.download(likedSong(app, VILLAGE.fightOrFlight.id))
-    app.download(likedSong(app, VILLAGE.sunny.id))
+    const songs = [VILLAGE.fightOrFlight, VILLAGE.sunny].map(recorded => likedSong(app, recorded.id))
+    expect(await app.downloadSongs(songs, { kind: 'single' })).toEqual({
+      queued: 2,
+      downloaded: 0,
+      trial: 0,
+      noCopyright: 0,
+    })
     await world.settle()
 
     expect(world.netease.calls.filter(call => call.module === 'album').map(call => call.query)).toEqual([
@@ -843,6 +847,7 @@ describe('下载时多存的歌曲信息（#79）', () => {
     ])
     expect(app.state.downloads.songs).toHaveLength(2)
     expect((await storedDownloads(device)).map(stored => stored.album?.company)).toEqual(['华纳音乐', '华纳音乐'])
+    expect(app.state.notices).toEqual([])
   })
 
   it('专辑取不到（网易云说没有这张专辑）时照常下载，只是少专辑信息', async () => {
@@ -1002,8 +1007,7 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
     })
     await world.settle()
     expect(noticeOf(app)).toEqual({
-      kind: 'downloadsAdded',
-      queued: 2,
+      kind: 'downloadsSkipped',
       downloaded: 1,
       trial: 1,
       noCopyright: 1,
@@ -1188,9 +1192,6 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
       status: 'queued',
       received: Math.floor(LOSER.bytes / 2),
     })
-
-    // 先收起“已加入下载”，后面只看暂停那一条
-    await app.noticeAction(noticeEntry(app)!.id, 'dismiss')
 
     // 联网了，但一点空间都没有：先暂停整队，不要下载地址、不要开始传
     device.storage.quota = 0
@@ -1537,7 +1538,6 @@ describe('下载管理（#40）', () => {
       kind: 'downloadsRemoved',
       removed: 1,
       kept: 1,
-      freed: thirdBytes,
     })
 
     // 留下的是本机里真的还在，去掉的来源也写回去了
@@ -1625,7 +1625,6 @@ describe('下载管理（#40）', () => {
       kind: 'downloadsRemoved',
       removed: 1,
       kept: 0,
-      freed: firstBytes,
     })
 
     transfer.release()
@@ -1745,10 +1744,7 @@ describe('关掉 App 后接着下（#41）', () => {
     })
     expect(await storedQueue(device)).toEqual([])
     expect(await storedParts(device)).toEqual([])
-    expect(noticeOf(reopened.app)).toEqual({
-      kind: 'downloadsResumed',
-      count: 2,
-    })
+    expect(reopened.app.state.notices).toEqual([])
   })
 
   it('重新打开时下载地址给的大小变了（换了下载音质）：丢掉断点，从头下', async () => {
@@ -1849,7 +1845,7 @@ describe('关掉 App 后接着下（#41）', () => {
     expect(failedNoticeShown(app)).toBe(false)
   })
 
-  it('冻结后恢复：出“切到后台时下载暂停了”，一次打开只出一次', async () => {
+  it('冻结后恢复：下载自动继续，不为恢复另发提示', async () => {
     const device = world.device()
     const tab = await signInWithLiked(device)
     const { app } = tab
@@ -1878,11 +1874,10 @@ describe('关掉 App 后接着下（#41）', () => {
     await world.netease.reply(ALBUM_MISSING)
     tab.resume()
     await world.settle()
-    const resumed = () => app.state.notices.filter(entry => entry.notice.kind === 'downloadsResumedFromBackground')
-    expect(resumed()).toHaveLength(1)
+    expect(app.state.notices).toEqual([])
     expect(app.state.downloads.songs?.map(song => song.id)).toEqual([LOSER.id])
 
-    // 再冻结一次、回来：任务在，但这句一次打开只说一次
+    // 再冻结一次：保留任务，恢复和完成都不另发成功提示
     const again = held()
     const firstAudio = await audioOf(FIRST.downloadUrl)
     await serve(device, first, FIRST.downloadUrl)
@@ -1896,9 +1891,12 @@ describe('关掉 App 后接着下（#41）', () => {
     tab.freeze()
     tab.resume()
     await world.settle()
-    expect(resumed()).toHaveLength(1)
+    expect(app.state.notices).toEqual([])
     again.release()
     await world.settle()
+    expect(new Set(app.state.downloads.songs?.map(song => song.id))).toEqual(new Set([FIRST.id, LOSER.id]))
+    expect(app.state.downloads.tasks.size).toBe(0)
+    expect(app.state.notices).toEqual([])
   })
 
   it('两个标签页：后打开的那个不重复下前一个正在下的', async () => {

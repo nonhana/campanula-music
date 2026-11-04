@@ -404,7 +404,7 @@
         <span class='grid size-12 place-items-center rounded-full bg-white/60 text-primary-950'>
           <Music size={22} aria-hidden='true' />
         </span>
-        <p class='text-body text-neutral-700'>纯音乐，请欣赏</p>
+        <p class='text-body text-neutral-700'>纯音乐</p>
       {:else}
         <p class='text-body text-neutral-700'>暂无歌词</p>
       {/if}

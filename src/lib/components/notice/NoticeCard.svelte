@@ -1,15 +1,15 @@
 <!--
   一条提示的样子（改曲库、下载、播放共用）：一张轻的纸片，白底、一排字、浮起阴影。
-  成功、出错、播放缓冲只在一个 16px 的图标上分色；动作是没有底色的文字，关闭是石墨淡的 ✕。
+  成功、出错只在一个 16px 的图标上分色；动作是没有底色的文字，关闭是石墨淡的 ✕。
   纸片不再填薄荷或红：这张牌只在底下停几秒，不该和封面、面板抢眼；压在纸白、晨光底或播放页的封面雾上，
   靠浮起阴影分得开。位置和换位置的交叉淡化在 NoticeStack。
 -->
 <script lang='ts'>
-  import { Check, CircleAlert, LoaderCircle, X } from '@lucide/svelte'
+  import { Check, CircleAlert, X } from '@lucide/svelte'
 
   import { toast } from '../shared/motion'
 
-  type Tone = 'success' | 'error' | 'progress'
+  type Tone = 'success' | 'error'
 
   const { tone, text, phone, edge, moved, name, action, onclose }: {
     tone: Tone
@@ -43,15 +43,11 @@
       'size-4 grid flex-none place-items-center',
       tone === 'error'
         ? 'text-error-700'
-        : tone === 'progress'
-        ? 'text-neutral-500'
         : 'text-primary-800',
     ]}
     aria-hidden='true'
   >
-    {#if tone === 'progress'}
-      <LoaderCircle size={16} class='animate-spin' />
-    {:else if tone === 'error'}
+    {#if tone === 'error'}
       <CircleAlert size={16} />
     {:else}
       <Check size={16} />

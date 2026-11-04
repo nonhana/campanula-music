@@ -1,18 +1,18 @@
 <!--
   换歌单封面的裁剪页（#34，原型 CoverFlow 方案 A）：手机全屏、桌面居中弹窗，页头一直写“换封面”。
   - 选图后先读（只有转圈，读屏“正在读取图片”）：不是图片、超过 20 MB、HEIC 解不开、读不出来都用标题说清，要换成什么样的图时下面再加一句，给“换一张图片”；裁剪时取景框能一指拖动、两指捏合、滚轮、滑块、方向键调整，拖动时页面和弹层都不滚，怎么操作只写在读屏说明里（CoverCropper）。
-  - 点“使用”后在同一页显示两步进度：上传图片（App 的申请上传凭证、直传网易云图片存储）→ 设为封面，进行中转圈、完成打 ✓，不另写字（读屏照样读得出）。上传图片可以取消、回到裁剪；设为封面已经发出，按钮变成“正在设为封面”，关不掉。哪一步失败都写一句什么没成、为什么；设为封面失败后重试只再设一次，不重新上传。
+  - 点“使用”后保留只读封面预览，主要按钮文字不变、转圈。上传可以取消、回到裁剪；设为封面已经发出时关不掉。失败保留原因和重试，设为封面失败后重试不重新上传。
   成功才收起：歌单封面马上换成设为歌单封面后返回的地址（App 的 prepareCover / uploadCover / retryCover / cancelCover / closeCover）。浮层栈把它叠在歌单编辑上面，统一处理返回、Esc、上传中钉住与关闭后的焦点。
 -->
 <script lang='ts'>
-  import { Check, CircleAlert, ImageOff, LoaderCircle, X } from '@lucide/svelte'
+  import { CircleAlert, ImageOff, LoaderCircle, X } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import { innerHeight, innerWidth } from 'svelte/reactivity/window'
 
   import type { CoverCrop } from '#lib/api/cover.js'
   import { COVER_INPUT_MAX_BYTES } from '#lib/api/cover.js'
   import type { RequestFailure } from '#lib/app/api-client.js'
-  import type { CoverFailure, CoverProblem, CoverStep, CoverUpload } from '#lib/app/cover.js'
+  import type { CoverFailure, CoverProblem, CoverStep } from '#lib/app/cover.js'
 
   import { getOverlays } from '../overlay/overlay-context'
   import { getAppView } from '../shared/app-context.svelte'
@@ -34,17 +34,6 @@
   /** 设为封面已经发给服务器，停不下来 */
   const closable = $derived(!(cover?.status === 'uploading' && cover.upload.step === 'set'))
 
-  /** 界面上只有两步：App 的申请上传凭证（token）、直传（upload）都算“上传图片”，能取消；“设为封面”（set）发出去就停不下来 */
-  type ShownStep = 'upload' | 'set'
-  const STEPS = [
-    { key: 'upload', label: '上传图片' },
-    { key: 'set', label: '设为封面' },
-  ] as const satisfies readonly { key: ShownStep, label: string }[]
-  const shownStep = (step: CoverStep): ShownStep => step === 'set'
-    ? 'set'
-    : 'upload'
-  const orderOf = (step: ShownStep): number => STEPS.findIndex(item => item.key === step)
-
   /** 取景框边长：手机按屏宽，桌面固定；窗口太矮时留出按钮和说明的位置 */
   const box = $derived(sheet
     ? Math.max(220, Math.min((innerWidth.current ?? 390) - 48, (innerHeight.current ?? 844) - 330))
@@ -52,6 +41,7 @@
 
   let root = $state<HTMLElement>()
   let input = $state<HTMLInputElement>()
+  let retrying = $state(false)
   /** 现在裁剪的是哪张预览：换了一张图才重置取景框 */
   const croppedUrl = $derived(cover && 'image' in cover
     ? cover.image.url
@@ -79,10 +69,10 @@
       untrack(() => coverEditor.invalidate())
   })
 
-  /** 焦点跟着状态和上传步骤走：裁剪页落在取景框上，上传/失败落在主要按钮上 */
+  /** 裁剪页落在取景框上；上传能取消时落在取消键，不能取消时落在忙碌按钮，失败后落在重试 */
   const focusKey = $derived(
     cover?.status === 'uploading'
-      ? `uploading:${cover.upload.step}`
+      ? `uploading:${closable}`
       : cover?.status === 'failed'
       ? `failed:${cover.upload.failure.kind}`
       : cover?.status ?? '',
@@ -115,25 +105,12 @@
     void coverEditor.close()
   }
 
-  const STEP_LOOK = {
-    done: 'bg-primary-900 text-white',
-    now: 'bg-primary-100 text-primary-950 ring-2 ring-primary-700',
-    fail: 'bg-error-50 text-error-700 ring-2 ring-error-700',
-    todo: 'bg-neutral-100 text-neutral-500',
-  } as const
-
-  const stepState = (step: ShownStep, upload: CoverUpload): 'done' | 'now' | 'todo' | 'fail' => {
-    const current = upload.step === null
-      ? -1
-      : orderOf(shownStep(upload.step))
-    const at = orderOf(step)
-    if (upload.failure && at === current)
-      return 'fail'
-    if (at < current)
-      return 'done'
-    if (at === current && !upload.failure)
-      return 'now'
-    return 'todo'
+  const useCover = (): void => {
+    retrying = cover?.status === 'failed'
+    if (retrying)
+      void view.app.retryCover()
+    else
+      void view.app.uploadCover(crop)
   }
 
   /** 选到的文件为什么不能用：标题一句话说清；还要说怎么换一张能用的才有正文 */
@@ -238,12 +215,7 @@
         {#if why.body}<p class='mt-1.5 max-w-[36rem] text-body text-neutral-700'>{why.body}</p>{/if}
       </div>
     {:else if cover.status !== 'done'}
-      <div class={[
-        'flex flex-col items-center gap-3',
-        cover.status === 'uploading' && cover.upload.step !== 'set'
-          ? 'opacity-70'
-          : '',
-      ]}>
+      <div class='flex flex-col items-center gap-3'>
         <CoverCropper
           src={cover.image.url}
           width={cover.image.width}
@@ -252,52 +224,18 @@
           readonly={cover.status !== 'cropping'}
           bind:crop
         />
-        {#if cover.status === 'cropping'}
-          {#if cover.small}
-            <p class='w-full flex items-start gap-1.5 text-caption text-neutral-600'>
-              <CircleAlert size={14} class='mt-0.5 flex-none' aria-hidden='true' />
-              图片较小，封面可能会糊
-            </p>
-          {/if}
-        {:else}
-          {#if cover.status !== 'failed' || cover.upload.failure.kind !== 'exportFailed'}
-            <ol class='w-full flex flex-col gap-2' aria-label='上传进度'>
-              {#each STEPS as { key, label }, i (key)}
-                {@const state = stepState(key, cover.upload)}
-                <li class='flex items-center gap-2.5 text-label' aria-current={state === 'now'
-                  ? 'step'
-                  : undefined}>
-                  <span class={['size-5 grid flex-none place-items-center rounded-full text-caption font-600', STEP_LOOK[state]]}>
-                    {#if state === 'done'}
-                      <Check size={13} aria-hidden='true' />
-                    {:else if state === 'fail'}
-                      <CircleAlert size={13} aria-hidden='true' />
-                    {:else if state === 'now'}
-                      <LoaderCircle size={13} class='animate-spin' aria-hidden='true' />
-                    {:else}
-                      {i + 1}
-                    {/if}
-                  </span>
-                  <span class={state === 'todo'
-                    ? 'text-neutral-500'
-                    : state === 'fail'
-                    ? 'text-error-700'
-                    : 'text-neutral-900'}>{label}</span>
-                  {#if state === 'done'}<span class='sr-only'>完成</span>{/if}
-                </li>
-              {/each}
-            </ol>
-          {/if}
-          {#if cover.status === 'uploading'}
-            {#if cover.upload.step === 'set'}
-              <p class='w-full text-caption text-neutral-600' role='status'>这一步不能取消了</p>
-            {/if}
-          {:else}
-            <p class='w-full flex items-start gap-2 rounded-lg bg-error-50 px-3 py-2.5 text-caption text-error-700' role='alert'>
-              <CircleAlert size={16} class='mt-0.5 flex-none' aria-hidden='true' />
-              {uploadFailureText(cover.upload.step, cover.upload.failure)}
-            </p>
-          {/if}
+        {#if cover.status === 'cropping' && cover.small}
+          <p class='w-full flex items-start gap-1.5 text-caption text-neutral-600'>
+            <CircleAlert size={14} class='mt-0.5 flex-none' aria-hidden='true' />
+            图片较小，封面可能会糊
+          </p>
+        {:else if cover.status === 'uploading'}
+          <p class='sr-only' role='status'>正在更换封面</p>
+        {:else if cover.status === 'failed'}
+          <p class='w-full flex items-start gap-2 rounded-lg bg-error-50 px-3 py-2.5 text-caption text-error-700' role='alert'>
+            <CircleAlert size={16} class='mt-0.5 flex-none' aria-hidden='true' />
+            {uploadFailureText(cover.upload.step, cover.upload.failure)}
+          </p>
         {/if}
       </div>
     {/if}
@@ -315,27 +253,25 @@
         <Button variant='outline' onclick={() => close()}>先不换</Button>
         <Button variant='primary' onclick={pick} data-autofocus>换一张图片</Button>
       </div>
-    {:else if cover.status === 'cropping'}
-      <div class={sheet ? 'grid grid-cols-2 gap-2' : 'flex justify-end gap-2'}>
-        <Button variant='outline' onclick={pick}>换一张</Button>
-        <Button variant='primary' onclick={() => void view.app.uploadCover(crop)}>使用</Button>
-      </div>
-    {:else if cover.status === 'uploading'}
-      <div class={sheet ? 'grid gap-2' : 'flex justify-end gap-2'}>
-        {#if cover.upload.step === 'set'}
-          <Button variant='primary' aria-disabled='true' data-autofocus class='pointer-events-none opacity-70'>正在设为封面</Button>
-        {:else}
+    {:else if cover.status !== 'done'}
+      <div class={sheet ? 'grid grid-cols-2 gap-2 [&>*:only-child]:col-span-2' : 'flex justify-end gap-2'}>
+        {#if cover.status === 'cropping' || (cover.status === 'failed' && cover.upload.failure.kind === 'exportFailed')}
+          <Button variant='outline' onclick={pick}>换一张</Button>
+        {:else if cover.status === 'failed'}
+          <Button variant='outline' onclick={() => close()}>先不换</Button>
+        {:else if closable}
           <Button variant='outline' onclick={() => view.app.cancelCover()} data-autofocus>取消上传</Button>
         {/if}
-      </div>
-    {:else if cover.status === 'failed'}
-      <div class={sheet ? 'grid grid-cols-2 gap-2' : 'flex justify-end gap-2'}>
-        {#if cover.upload.failure.kind === 'exportFailed'}
-          <Button variant='outline' onclick={pick}>换一张</Button>
-        {:else}
-          <Button variant='outline' onclick={() => close()}>先不换</Button>
-        {/if}
-        <Button variant='primary' onclick={() => void view.app.retryCover()} data-autofocus>重试</Button>
+        <Button
+          variant='primary'
+          busy={cover.status === 'uploading'}
+          data-autofocus={cover.status === 'failed' || !closable
+            ? true
+            : undefined}
+          onclick={useCover}
+        >{cover.status === 'failed' || (cover.status === 'uploading' && retrying)
+          ? '重试'
+          : '使用'}</Button>
       </div>
     {/if}
   {/if}

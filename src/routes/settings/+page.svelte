@@ -70,7 +70,6 @@
         {#if desktopLayout.current}
           <div class='mt-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-neutral-100 pt-5'>
             <Button variant='outline' icon={LogOut} onclick={confirmLogout}>退出登录</Button>
-            <p class='min-w-0 flex-1 basis-56 text-caption text-neutral-600'>退出后，这个浏览器里不再保存你的网易云登录、曲库和播放队列。</p>
           </div>
         {/if}
       </div>
@@ -104,15 +103,16 @@
         role='radio'
         id='settings-download-quality-options'
         labelledby='settings-download-quality'
-        describedby='settings-download-quality-hint'
         class='mt-3 h-10 md:max-w-[400px]'
       />
-      <p id='settings-download-quality-hint' class='mt-3 text-caption text-neutral-600'>和在线播放音质分开，只影响之后开始下载的歌</p>
       <div class='mt-5 border-t border-neutral-100 pt-4'>
         <div class='min-h-11 flex items-center gap-3'>
           <span class='min-w-0 flex-1 text-body text-neutral-900 font-500'>已用空间</span>
           {#if downloaded === null}
-            <span class='text-caption text-neutral-600'>正在读出下载…</span>
+            <span class='flex-none' role='status'>
+              <span class='bone block h-3 w-16 rounded-full' aria-hidden='true'></span>
+              <span class='sr-only'>正在读出下载</span>
+            </span>
           {:else}
             <span class='flex-none text-caption text-neutral-600 tabular-nums'>{formatStorageSize(view.state.downloads.bytes)}</span>
           {/if}

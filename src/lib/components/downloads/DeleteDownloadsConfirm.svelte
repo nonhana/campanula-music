@@ -16,9 +16,6 @@
 <DialogShell layer={deleteDownloadsConfirm} title={({ songs }) => `删除 ${formatCount(songs.length)} 首下载？`} size={() => 'confirm'}>
   {#snippet children(request: DeleteDownloadsRequest, sheet: boolean)}
     <ConfirmPanel {sheet} oncancel={() => deleteDownloadsConfirm.close()}>
-      {#snippet body()}
-        <p class='text-body text-neutral-700'>删除后要重新下载才能离线听</p>
-      {/snippet}
       {#snippet confirm()}
         <Button variant='destructive' onclick={() => void multiSelect.deleteDownloads(request.songs)}>删除</Button>
       {/snippet}

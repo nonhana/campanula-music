@@ -1271,7 +1271,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
       const selectedIds = new Set(selected.map(song => song.id))
       const allLoaded = content !== null && selected.length === content.songs.length && content.songs.every(song => selectedIds.has(song.id))
       const filling = content !== null && !content.complete && (options?.fill ?? allLoaded)
-      const outcome = await downloads.add(selected, source, { filling })
+      const outcome = await downloads.add(selected, source)
       if (outcome === 'signedOut' || outcome === 'offline')
         return outcome
       if (filling) {
@@ -1279,7 +1279,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
           source,
           seen: new Set(content.songs.map(song => song.id)),
         })
-        // 等下载来源写盘、提示条发布的时候，曲库可能又同步到了下一页：马上再对一次，不用等下一次发布
+        // 等下载来源写盘时，曲库可能又同步到了下一页：马上再对一次，不用等下一次发布
         fillPendingPlaylists()
       }
       else {

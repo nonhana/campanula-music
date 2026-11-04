@@ -1,16 +1,14 @@
-import { songTitle } from '#lib/api/library.js'
 import type { DownloadTask } from '#lib/app/downloads.js'
 
 // 下载面板（#38）：哪些行先显示、什么时候该出来。只算，不碰 DOM 和计时。
 
 /** 面板里最多几行：整张歌单几千首时不把 DOM 拖慢，其余写“还有 N 首 · 查看已下载” */
 export const PANEL_TASK_LIMIT = 50
-/** 完成层完全露出来后停这么久再退场 */
+/** 完成行的停留时间，连同状态切换时长一起等完后退场 */
 export const LEAVING_HOLD_MS = 240
 
 export interface LeavingTask {
   songId: number
-  name: string
   content: DownloadTask
   phase: 'run' | 'exit'
 }
@@ -33,17 +31,10 @@ export const panelRows = (tasks: readonly DownloadTask[], leaving: readonly Leav
   })),
 ]
 
-/** 成功层要显示 100% 的那一行；父级负责 key、行高、FLIP 和移除时机 */
+/** 保留完成任务的原行内容；父级负责 key、行高、FLIP 和移除时机 */
 export const leavingOf = (task: DownloadTask): LeavingTask => ({
   songId: task.song.id,
-  name: songTitle(task.song),
-  content: {
-    status: 'downloading',
-    song: task.song,
-    sources: task.sources,
-    received: task.total ?? task.received,
-    total: task.total,
-  },
+  content: task,
   phase: 'run',
 })
 
@@ -61,11 +52,8 @@ export const visiblePanelTasks = (tasks: readonly DownloadTask[], limit = PANEL_
   .slice(0, limit)
   .map(({ task }) => task)
 
-/** 从没有任务变成有任务：面板该出来（先让提示条出来，160ms 后再飘入）；用户收起过的不算 */
+/** 从没有任务变成有任务：面板立即出现，展开或收起由用户原有状态决定 */
 export const panelOpensOn = (previous: number, next: number): boolean => previous === 0 && next > 0
-
-/** 有排队中或下载中的歌：下载还没停，面板和已下载页要说明什么时候会停（#41） */
-export const hasActiveTasks = (tasks: readonly DownloadTask[]): boolean => tasks.some(task => task.status === 'queued' || task.status === 'downloading')
 
 /**
  * 这一帧里从任务表消失、并且已经写进本机的（下完了）：取消掉的、按歌单删掉的 has 是 false，不算完成。

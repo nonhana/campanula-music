@@ -6,7 +6,7 @@ import type { OperationNotice } from '#lib/app/notice.js'
 
 import { downloadFailureText } from '../downloads/view'
 import { failureText } from '../shared/failure'
-import { formatCount, formatMegabytes } from '../shared/text'
+import { formatCount } from '../shared/text'
 
 // 提示条（NoticeStack 里的操作提示，改曲库和下载共用）说什么（#30、#33、#38）：都是一句话、不带句末句号（DESIGN.md 文案）。
 // 歌名用《》，歌单、专辑、歌手名用「」，我喜欢的音乐直接写。网易云没给专辑名、歌手名时不写这一项（#78）
@@ -82,7 +82,7 @@ export const editProblemText = (problem: PlaylistEditProblem): string => {
 export const changeFailureText = (failure: ChangeFailure): string => {
   switch (failure.kind) {
     case 'checkTokenUnavailable':
-      return '网易云的安全组件没加载出来，可能被拦截插件挡住了'
+      return '安全验证不可用'
     case 'invalid':
       return editProblemText(failure.problem)
     default:
@@ -162,42 +162,30 @@ export const operationNoticeText = (notice: OperationNotice): string => {
       return `已把「${notice.name}」改为公开`
     case 'playlistDeleted':
       return `已删除「${notice.name}」`
-    case 'downloadQueued':
-      return `已加入下载《${songTitle(notice.song)}》`
     case 'downloadFailed':
       return (notice.count ?? 1) > 1
         ? `${formatCount(notice.count ?? 1)} 首下载失败`
         : `没能下载《${songTitle(notice.song)}》：${downloadFailureText(notice.failure)}`
-    case 'downloadsAdded': {
+    case 'downloadsSkipped': {
       const parts: string[] = []
-      if (notice.queued > 0)
-        parts.push(`已加入下载 ${formatCount(notice.queued)} 首`)
       if (notice.downloaded > 0)
-        parts.push(`${formatCount(notice.downloaded)} 首已下载过`)
+        parts.push(`已下载 ${formatCount(notice.downloaded)} 首`)
       if (notice.trial > 0)
-        parts.push(`${formatCount(notice.trial)} 首试听歌曲不能下载`)
+        parts.push(`试听 ${formatCount(notice.trial)} 首`)
       if (notice.noCopyright > 0)
-        parts.push(`${formatCount(notice.noCopyright)} 首无版权`)
-      if (notice.filling)
-        parts.push('还没同步完，同步完把后面的补上')
-      return parts.length > 0
-        ? parts.join('；')
-        : '已停止下载'
+        parts.push(`无版权 ${formatCount(notice.noCopyright)} 首`)
+      return `已跳过 ${formatCount(notice.downloaded + notice.trial + notice.noCopyright)} 首：${parts.join('、')}`
     }
     case 'downloadsPaused':
       return '存储空间不够，下载已暂停'
-    case 'downloadsResumed':
-      return `上次没下完的 ${formatCount(notice.count)} 首接着下了`
-    case 'downloadsResumedFromBackground':
-      return '切到后台时下载暂停了，已经接着下'
     case 'downloadsRemoved': {
       const parts: string[] = []
       if (notice.removed > 0)
-        parts.push(`已删除 ${formatCount(notice.removed)} 首下载，腾出 ${formatMegabytes(notice.freed)} MB`)
+        parts.push(`已删除 ${formatCount(notice.removed)} 首`)
       if (notice.kept > 0)
-        parts.push(`${formatCount(notice.kept)} 首从别处也下载过，留着`)
+        parts.push(`保留 ${formatCount(notice.kept)} 首`)
       return parts.length > 0
-        ? parts.join('；')
+        ? parts.join(' · ')
         : '已停止下载'
     }
     case 'plain':

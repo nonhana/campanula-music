@@ -84,5 +84,4 @@ export interface DeleteDownloadsRequest extends DialogRequest {
 export interface DeletePlaylistDownloadsRequest extends DialogRequest {
   readonly playlistId: number
   readonly name: string
-  readonly count: number
 }

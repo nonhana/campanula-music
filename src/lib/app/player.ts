@@ -17,8 +17,6 @@ const HANDOVER_LEAD = 1
 const UNBUFFERED_HANDOVER_LEAD = 5
 /** 播放地址提前这么久当作过期：快过期的地址放到一半就取不到后面的数据了 */
 const URL_EXPIRY_MARGIN_MS = 60_000
-/** 缓冲这么久还没出声，提示网络慢 */
-const SLOW_BUFFERING_MS = 8_000
 /** 下一首没准备好（没取到地址、没加载出来、地址过期了）时，当前这首剩这么多秒再准备一次，免得放完才去取、中间断掉 */
 const PREPARE_AGAIN_LEAD = 20
 /** 再准备之间至少隔这么久 */
@@ -38,8 +36,6 @@ export type PlayerNotice
   = | { kind: 'urlFailed', failure: SessionFailure }
     /** 音频没加载下来：按播放从原来的位置接着放 */
     | { kind: 'streamFailed' }
-    /** 还在等，接上了就接着放 */
-    | { kind: 'slow' }
     | { kind: 'skipped', song: Song }
     | { kind: 'nothingPlayable' }
 
@@ -314,7 +310,6 @@ export const createPlayer = (context: PlayerContext): Player => {
   let epoch = 0
   /** 没准备好时快放完再准备一次，不要每次 timeupdate 都发请求 */
   let lastPrepare = Number.NEGATIVE_INFINITY
-  let cancelSlow: (() => void) | null = null
   let active: Deck
   let spare: Deck
   /** 各部分原样留着，比引用就知道变没变 */
@@ -538,32 +533,9 @@ export const createPlayer = (context: PlayerContext): Player => {
 
   const pauseAll = (): void => {
     incoming = null
-    stopSlow()
     active.audio.pause()
     spare.audio.pause()
   }
-
-  const startSlow = (): void => {
-    stopSlow()
-    cancelSlow = clock.after(SLOW_BUFFERING_MS, () => {
-      cancelSlow = null
-      if (state.status === 'buffering') {
-        publish({
-          notice: { kind: 'slow' },
-        })
-      }
-    })
-  }
-
-  const stopSlow = (): void => {
-    cancelSlow?.()
-    cancelSlow = null
-  }
-
-  /** 出声了：网络慢的提示不用再显示 */
-  const noticeAfterSounding = (): PlayerNotice | null => state.notice?.kind === 'slow'
-    ? null
-    : state.notice
 
   /** 在空闲的播放器上放，出声了再停旧的；change 是 null 时是同一首接着放（暂停后、地址过期后），原因不变 */
   const start = async (index: number, position: number, change: SongChange | null, notice: PlayerNotice | null = null): Promise<void> => {
@@ -576,7 +548,6 @@ export const createPlayer = (context: PlayerContext): Player => {
     if (incoming && !primed(incoming.deck, song))
       incoming.deck.audio.pause()
     incoming = null
-    stopSlow()
     startAt = position
     if (change !== null)
       endListen()
@@ -700,7 +671,6 @@ export const createPlayer = (context: PlayerContext): Player => {
   /** 停掉旧的，它就是当前的；快放完时交接的，这时才换成下一首 */
   const arrived = ({ deck, handover }: Incoming): void => {
     incoming = null
-    stopSlow()
     if (deck !== active) {
       const old = active
       active = deck
@@ -718,7 +688,6 @@ export const createPlayer = (context: PlayerContext): Player => {
       position: deck.audio.currentTime,
       duration: durationOf(deck),
       trial: deck.url!.trial,
-      notice: noticeAfterSounding(),
       change: handover ? 'continue' : state.change,
     })
     void prepareNext()
@@ -739,7 +708,6 @@ export const createPlayer = (context: PlayerContext): Player => {
         trial: incoming.deck.url!.trial,
         change: 'continue',
       })
-      startSlow()
       return
     }
     if (incoming)
@@ -787,11 +755,7 @@ export const createPlayer = (context: PlayerContext): Player => {
         return arrived(incoming)
       if (incoming || !isCurrent(deck))
         return
-      stopSlow()
-      publish({
-        status: 'playing',
-        notice: noticeAfterSounding(),
-      })
+      publish({ status: 'playing' })
       void prepareNext()
     })
     audio.addEventListener('waiting', () => {
@@ -799,14 +763,11 @@ export const createPlayer = (context: PlayerContext): Player => {
         return
       if (state.status === 'playing')
         publish({ status: 'buffering' })
-      startSlow()
     })
     audio.addEventListener('pause', () => {
       // 不是 App 暂停的（例如系统拿走音频焦点）；事件是排着的，送到时已经又放了就不算
-      if (!incoming && isCurrent(deck) && audio.paused && !audio.ended && (state.status === 'playing' || state.status === 'buffering')) {
-        stopSlow()
+      if (!incoming && isCurrent(deck) && audio.paused && !audio.ended && (state.status === 'playing' || state.status === 'buffering'))
         publish({ status: 'paused' })
-      }
     })
     audio.addEventListener('timeupdate', () => {
       if (!isCurrent(deck))

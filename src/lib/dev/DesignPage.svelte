@@ -361,7 +361,12 @@
   const designNotices: NoticeEntry[] = [
     {
       id: -1,
-      notice: { kind: 'downloadQueued', song: designDownloading.song },
+      notice: {
+        kind: 'downloadsSkipped',
+        downloaded: 1,
+        trial: 0,
+        noCopyright: 0,
+      },
       actions: ['dismiss'],
       tone: 'success',
     },
@@ -507,7 +512,7 @@
       {@render section('提示条和下载面板', '提示条、行和面板用真组件；“试一试”可以走一遍开始下载的时序，下面的静态示例按钮不执行。')}
       <div class='mt-4 rounded-xl bg-white p-4 shadow-ambient'>
         <h3 class='text-label text-neutral-900 font-500'>试一试：一次下载 5 首</h3>
-        <p class='mt-1 text-caption text-neutral-600'>会走真实的提示条、0.16 秒后面板飘入、逐首进度和完成收起；每首约 0.4 秒。可以试长标题截断、失败与重试、存储暂停、单首取消和全部取消。</p>
+        <p class='mt-1 text-caption text-neutral-600'>面板直接展开，逐首显示进度，完成后收起；每首约 0.4 秒。可以试长标题截断、失败与重试、存储暂停、单首取消和全部取消。</p>
         <div class='mt-3'>
           <DesignDownloadDemo />
         </div>

@@ -13,9 +13,7 @@
   import { formatCount } from '../shared/text'
   import Button from '../ui/Button.svelte'
   import VirtualList from '../ui/VirtualList.svelte'
-  import { hasActiveTasks } from './download-panel-core'
   import DownloadTaskRow from './DownloadTaskRow.svelte'
-  import { downloadStopsText } from './view'
 
   const view = getAppView()
   const phone = $derived(!desktopLayout.current)
@@ -24,10 +22,10 @@
   const tasks = $derived([
     ...downloads.tasks.values(),
   ])
-  const active = $derived(hasActiveTasks(tasks))
   const paused = $derived(downloads.paused !== null)
   const online = $derived(view.state.online)
   const signedIn = $derived(view.state.session.status === 'signedIn')
+  const needsLogin = $derived(!signedIn && tasks.some(task => task.status === 'queued'))
 
   const cancel = (task: DownloadTask): void => view.app.cancelDownload(task.song.id)
   const retry = (task: DownloadTask): void => view.app.retryDownload(task.song.id)
@@ -65,19 +63,14 @@
       {#if paused}
         <span class='ml-auto text-caption text-neutral-700'>存储空间不够，已暂停</span>
         <Button variant='download' class='px-4 md:h-9 text-caption!' onclick={() => view.app.resumeDownloads()}>继续下载</Button>
-      {:else if !signedIn}
-        <span class='ml-auto text-caption text-neutral-700'>登录后继续下载</span>
+      {:else if needsLogin}
+        <span class='ml-auto text-caption text-neutral-700'>排队歌曲需登录</span>
       {:else if !online}
         <span class='ml-auto inline-flex items-center gap-1.5 text-caption text-neutral-600'>
           <WifiOff size={14} aria-hidden='true' />离线时暂停下载
         </span>
       {/if}
     </div>
-    {#if active}
-      <p class={phone
-        ? 'px-4 pb-1 text-caption text-neutral-500'
-        : 'pb-1 text-caption text-neutral-500'}>{downloadStopsText(phone)}</p>
-    {/if}
     <div role='group' aria-label='正在下载的歌曲' class={phone
       ? ''
       : 'rounded-xl bg-white p-2 shadow-ambient'}>

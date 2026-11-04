@@ -1,16 +1,14 @@
 <!--
-  设计系统页的“模拟开始下载”：不调 App 的下载、不联网、不写本机，只走真实的提示条、0.16 秒后飘入的面板、进度和完成态。
-  位置、层级、提示条和面板的样子跟真实界面一致；可以试失败、暂停、单首取消和全部取消。
+  设计系统页的“模拟开始下载”：不调 App 的下载、不联网、不写本机，直接展开面板，显示进度和完成态。
+  位置、层级和面板的样子跟真实界面一致；可以试失败、暂停、单首取消和全部取消。
 -->
 <script lang='ts'>
   import { Play } from '@lucide/svelte'
   import { onDestroy } from 'svelte'
 
   import type { DownloadTask } from '#lib/app/downloads.js'
-  import type { NoticeEntry } from '#lib/app/notice.js'
   import { LEAVING_HOLD_MS, leavingOf } from '#lib/components/downloads/download-panel-core.js'
   import type { LeavingTask } from '#lib/components/downloads/download-panel-core.js'
-  import OperationNotice from '#lib/components/notice/OperationNotice.svelte'
   import { desktopLayout } from '#lib/components/shared/layout.js'
   import { DURATIONS } from '#lib/components/shared/motion-tokens.js'
   import { float } from '#lib/components/shared/motion.js'
@@ -53,20 +51,10 @@
   let paused = $state(false)
   let open = $state(false)
   let finishing = $state(0)
-  let notice = $state<NoticeEntry | null>(null)
   let timers: ReturnType<typeof setTimeout>[] = []
   let ticker: ReturnType<typeof setInterval> | null = null
 
   const desktop = $derived(desktopLayout.current)
-  /** 手机上面板占着底部时，提示条到顶上；桌面提示条固定在底部正中 */
-  const place = $derived(desktop
-    ? 'desktop'
-    : open
-    ? 'top'
-    : 'bottom')
-  const edge = $derived<'top' | 'bottom'>(place === 'top'
-    ? 'top'
-    : 'bottom')
   const current = $derived(tasks.find(task => task.status === 'downloading') ?? null)
 
   const clear = (): void => {
@@ -86,7 +74,6 @@
     paused = false
     open = false
     finishing = 0
-    notice = null
   }
 
   const finish = (): void => {
@@ -177,22 +164,8 @@
     completed = 0
     phase = 'running'
     paused = false
-    open = false
+    open = true
     finishing = 0
-    notice = {
-      id: -100,
-      notice: {
-        kind: 'downloadsAdded',
-        queued: BATCH.length,
-        downloaded: 0,
-        trial: 0,
-        noCopyright: 0,
-      },
-      actions: ['dismiss'],
-      tone: 'success',
-    }
-    timers.push(setTimeout(() => notice = null, 4000))
-    timers.push(setTimeout(() => open = true, 160))
     activateNext()
     ticker = setInterval(tick, TICK_MS)
   }
@@ -256,25 +229,6 @@
   {/if}
 </div>
 <p class='mt-2 text-caption text-neutral-600'>不联网、不写本机。每首约 0.4 秒；可以试长标题截断、失败与重试、存储暂停、单首取消和全部取消。</p>
-
-{#if notice}
-  <div class={[
-    'pointer-events-none fixed z-50 flex',
-    place === 'desktop'
-      ? 'bottom-24 left-1/2 max-w-[calc(100vw-48px)] -translate-x-1/2 flex-col items-center'
-      : place === 'top'
-      ? 'inset-x-2 top-16 flex-col'
-      : 'inset-x-2 bottom-[calc(80px+env(safe-area-inset-bottom))] flex-col',
-  ]}>
-    <OperationNotice
-      entry={notice}
-      phone={!desktop}
-      {edge}
-      moved={false}
-      onaction={() => notice = null}
-    />
-  </div>
-{/if}
 
 {#if open}
   <div

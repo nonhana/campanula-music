@@ -1,6 +1,6 @@
 <!--
   “已下载”页（#38，Spec #11 用户故事 117）：这台设备上下载完的全部歌，一个长列表加搜索，不分歌单，最近下载完的在前；登录与否都能进。
-  头部交给 DetailHeader（#75：拼贴图、标题、首数、登录提示、播放全部都在模块里）；列表本身在 songs/SongList；桌面搜索在页头动作行的右端，手机通栏放在页头下方，几千首排队时也不会沉到最下面。
+  头部交给 DetailHeader（#75：拼贴图、标题、首数、播放全部都在模块里）；列表本身在 songs/SongList；桌面搜索在页头动作行的右端，手机通栏放在页头下方，几千首排队时也不会沉到最下面。
   头部下面是 DownloadsTasks（#39）：“正在下载”的排队、进度、失败和重试，空间不够时的整队暂停和“继续下载”。
   点一首就用整个已下载替换播放队列，播放来源是“已下载”；行的“更多”菜单里有导出、删除下载。搜索词和滚动位置随浏览历史恢复。
   多选（#79、#82）只有导出和删除，登录与否都能用：入口和别的歌曲列表一样在表头最右（手机在首数那一行），也能 ⌘/Ctrl/Shift 点行、长按行进入；在列表里搜索时勾选和动作仍按全部下载。
@@ -9,7 +9,7 @@
 <script lang='ts'>
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { CircleArrowDown, Info, MoreHorizontal } from '@lucide/svelte'
+  import { CircleArrowDown, MoreHorizontal } from '@lucide/svelte'
 
   import DetailHeader from '../library/DetailHeader.svelte'
   import { selectionActions } from '../library/selection-actions.svelte'
@@ -55,7 +55,6 @@
         kind: 'empty',
         icon: CircleArrowDown,
         title: '还没有下载的歌',
-        body: `${signedIn ? '' : '登录后，'}在歌曲的“更多”菜单里下载，断网也能听`,
         action: {
           label: signedIn ? '去曲库' : '登录',
           run: () => void goto(resolve('/')),
@@ -122,13 +121,6 @@
   </div>
 {/snippet}
 
-{#snippet signedOutNote(card: boolean)}
-  <p class={['flex items-start gap-1.5 text-caption text-neutral-700', card && 'rounded-xl bg-white px-3.5 py-2.5 shadow-ambient']}>
-    <Info size={15} class='mt-0.5 flex-none text-neutral-500' aria-hidden='true' />
-    <span>登录后可以红心、加入歌单</span>
-  </p>
-{/snippet}
-
 {#snippet headerSearch(compact: boolean)}
   <SearchField
     label='在已下载里搜索'
@@ -148,9 +140,6 @@
     <span class='tabular-nums'>{all === null
       ? '　'
       : `${formatCount(all.length)} 首`}</span>
-  {/snippet}
-  {#snippet note()}
-    {#if !signedIn}{@render signedOutNote(phone)}{/if}
   {/snippet}
   {#snippet actions()}
     <PlayAllButton songs={all} source={SOURCE} />

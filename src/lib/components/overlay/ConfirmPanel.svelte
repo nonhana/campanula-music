@@ -10,7 +10,7 @@
     sheet: boolean
     cancelLabel?: string
     oncancel: () => void
-    body: Snippet
+    body?: Snippet
     /** 实心按钮，由调用方给（主按钮或删除用的出错红） */
     confirm: Snippet
   }

@@ -124,9 +124,7 @@ export const noticeText = (notice: PlayerNotice): string => {
     case 'urlFailed':
       return `没取到播放地址：${failureText(notice.failure)}`
     case 'streamFailed':
-      return '音频没加载下来，按播放键接着放'
-    case 'slow':
-      return '网络有点慢'
+      return '音频没加载下来'
     case 'skipped':
       return `《${songTitle(notice.song)}》放不了，跳过了`
     case 'nothingPlayable':
