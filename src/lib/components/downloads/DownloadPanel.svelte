@@ -328,9 +328,7 @@
         ? panel.collapsed
           ? 'right-4 w-11'
           : 'right-4 bottom-24 w-[360px]'
-        : panel.collapsed
-        ? `inset-x-2 ${bottom}`
-        : `inset-x-2 ${bottom} max-h-[42dvh]`,
+        : `inset-x-2 ${bottom}`,
     ]}
     style:top={desktop
       ? `${top}px`
@@ -401,7 +399,10 @@
         </button>
       {/if}
     {:else}
-      <section class='pointer-events-auto max-h-full flex flex-col overflow-hidden rounded-xl bg-white shadow-float'>
+      <section class={[
+        'pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-white shadow-float',
+        desktop ? 'max-h-full' : 'max-h-[42dvh]',
+      ]}>
         <header class='flex items-center gap-2 px-4 pb-2 pt-4'>
           {#if finishing > 0}
             <Check size={18} class='flex-none text-secondary-800' aria-hidden='true' />
