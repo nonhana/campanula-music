@@ -1,7 +1,8 @@
 <!--
-  一条提示的样子（改曲库、下载、播放共用）：薄荷玻璃或浅红底的浅色小卡片，深色字。
-  成功、出错、播放缓冲只在左边白色圆片里的图标上分；动作是白色小胶囊，关闭是深色的 ✕。
-  这样压在纸白、晨光底或封面上都分得开，不靠阴影单独撑存在感。位置和换位置的交叉淡化在 NoticeStack。
+  一条提示的样子（改曲库、下载、播放共用）：一张轻的纸片，白底、一排字、浮起阴影。
+  成功、出错、播放缓冲只在一个 16px 的图标上分色；动作是没有底色的文字，关闭是石墨淡的 ✕。
+  纸片不再填薄荷或红：这张牌只在底下停几秒，不该和封面、面板抢眼；压在纸白、晨光底或播放页的封面雾上，
+  靠浮起阴影分得开。位置和换位置的交叉淡化在 NoticeStack。
 -->
 <script lang='ts'>
   import { Check, CircleAlert, LoaderCircle, X } from '@lucide/svelte'
@@ -26,13 +27,10 @@
 
 <div
   class={[
-    'notice pointer-events-auto flex items-center gap-3 rounded-xl py-2 pl-2.5 pr-2 shadow-float',
-    tone === 'error'
-      ? 'bg-error-100'
-      : 'bg-primary-200',
+    'notice pointer-events-auto flex min-h-11 items-center gap-2.5 rounded-xl bg-white pl-3.5 pr-1 shadow-float',
     phone
       ? 'w-full'
-      : 'w-max max-w-[min(560px,calc(100vw-48px))]',
+      : 'w-max max-w-[min(480px,calc(100vw-48px))]',
   ]}
   role={tone === 'error'
     ? 'alert'
@@ -42,53 +40,50 @@
 >
   <span
     class={[
-      'size-8 grid flex-none place-items-center rounded-full bg-white',
+      'size-4 grid flex-none place-items-center',
       tone === 'error'
         ? 'text-error-700'
-        : 'text-primary-900',
+        : tone === 'progress'
+        ? 'text-neutral-500'
+        : 'text-primary-800',
     ]}
     aria-hidden='true'
   >
     {#if tone === 'progress'}
-      <LoaderCircle size={18} class='animate-spin' />
+      <LoaderCircle size={16} class='animate-spin' />
     {:else if tone === 'error'}
-      <CircleAlert size={18} />
+      <CircleAlert size={16} />
     {:else}
-      <Check size={18} />
+      <Check size={16} />
     {/if}
   </span>
   <p
     class={[
-      'min-w-0 flex-1 break-words text-balance text-label font-500',
+      'min-w-0 flex-1 break-words py-3 text-balance text-label font-500',
       tone === 'error'
-        ? 'text-error-900'
-        : 'text-primary-950',
+        ? 'text-error-700'
+        : 'text-neutral-900',
     ]}
   >{text}</p>
   {#if action}
     <button
       type='button'
       class={[
-        'pill-hit press h-10 flex-none rounded-full bg-white px-3.5 text-label font-600 transition-[background-color,color,transform] duration-feedback',
+        'h-11 flex-none whitespace-nowrap rounded-full px-3 text-label font-600 transition-[background-color,color,transform] duration-feedback press',
         tone === 'error'
-          ? 'text-error-900 focus-visible:outline-error-900 mouse:hover:bg-error-50'
-          : 'text-primary-950 focus-visible:outline-primary-950 mouse:hover:bg-primary-300',
+          ? 'text-error-700 active:bg-error-100 mouse:hover:(bg-error-50 text-error-900)'
+          : 'text-primary-900 active:bg-primary-100 mouse:hover:(bg-primary-50 text-primary-950)',
       ]}
       onclick={() => action.run()}
     >{action.label}</button>
   {/if}
   <button
     type='button'
-    class={[
-      'size-11 md:size-10 grid flex-none place-items-center rounded-full transition-[background-color,color,transform] duration-feedback press',
-      tone === 'error'
-        ? 'text-error-900/70 focus-visible:outline-error-900 mouse:hover:(bg-white/70 text-error-900)'
-        : 'text-primary-950/70 focus-visible:outline-primary-950 mouse:hover:(bg-white/70 text-primary-950)',
-    ]}
+    class='grid size-11 flex-none press place-items-center rounded-full text-neutral-500 transition-[background-color,color,transform] duration-feedback md:size-10 mouse:hover:(bg-neutral-100 text-neutral-800)'
     aria-label='关闭提示'
     onclick={onclose}
   >
-    <X size={18} aria-hidden='true' />
+    <X size={16} aria-hidden='true' />
   </button>
 </div>
 
