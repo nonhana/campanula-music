@@ -2116,6 +2116,23 @@ describe('音量', () => {
     expect(signedOut.app.state.player.volume).toBe(0)
     expect(signedOut.audio.map(audio => audio.volume)).toEqual([0, 0])
   })
+
+  it('以触屏为主的设备（手机、平板）没有音量入口：始终是 100%，调不动，也不写进这台设备', async () => {
+    const device = world.device({ touchPrimary: true })
+    const tab = await signInWithLiked(device)
+    expect(tab.app.state.touchPrimary).toBe(true)
+    expect(tab.app.state.player.volume).toBe(1)
+    expect(tab.audio.map(audio => audio.volume)).toEqual([1, 1])
+
+    tab.app.setVolume(0.4)
+    expect(tab.app.state.player.volume).toBe(1)
+    expect(tab.audio.map(audio => audio.volume)).toEqual([1, 1])
+
+    const reopened = await reopen(device, tab)
+    await world.settle()
+    expect(reopened.app.state.player.volume).toBe(1)
+    expect(reopened.audio.map(audio => audio.volume)).toEqual([1, 1])
+  })
 })
 
 // 听歌打卡（#28，Spec #11“客户端：听歌打卡”）：每首歌结束（播完或切走）时按实际听的整数秒打卡，带上这首自己的播放来源。

@@ -34,7 +34,7 @@ import { createNotices } from './notice'
 import { createBackgroundLane } from './pacing'
 import { plainSong, plainSource } from './plain'
 import type { Player, PlayerState, PlayMode } from './player'
-import { createPlayer, INITIAL_PLAYER } from './player'
+import { createPlayer, DEFAULT_VOLUME, INITIAL_PLAYER } from './player'
 import { createSavedQueue } from './saved-queue'
 import type { SearchState } from './search'
 import { createSearch, INITIAL_SEARCH } from './search'
@@ -82,6 +82,8 @@ export interface AppState {
   downloads: DownloadsState
   /** 浏览器能选文件夹（ADR-0014）：不能时不显示“导出” */
   readonly exportable: boolean
+  /** 以触屏为主的设备（手机、平板，作者 2026-11-04 定）：没有音量入口，音量恒为 100%，桌面播放条和播放页上也不画音量（DESIGN.md Layout · 播放页） */
+  readonly touchPrimary: boolean
   /** 这一次导出（#79）：选好文件夹以后到听众看完结果；没在导出是 null */
   exporting: ExportState | null
   cover: CoverState | null
@@ -278,18 +280,22 @@ export const createApp = (browser: BrowserCapabilities): App => {
   /** 和 App.download 的判断是同一份输入 */
   const downloadBlockForApp = (song: Song): DownloadBlock | null => downloadBlockFor(song, state.downloads, { signedIn: state.session.status === 'signedIn', online: state.online })
 
+  /** 这台设备的音量：以触屏为主的设备（手机、平板）没有入口，恒为 100%（作者 2026-11-04 定）；桌面没调过时 30%（DEFAULT_VOLUME），调过的由 open 里读回来 */
+  const defaultVolume = browser.touchPrimary ? 1 : DEFAULT_VOLUME
+
   let state: AppState = {
     session: { status: 'checking' },
     login: INITIAL_LOGIN,
     library: null,
     notices: [],
-    player: INITIAL_PLAYER,
+    player: { ...INITIAL_PLAYER, volume: defaultVolume },
     lyrics: null,
     daily: null,
     search: INITIAL_SEARCH,
     cover: null,
     downloads: INITIAL_DOWNLOADS,
     exportable: browser.pickFolder !== null,
+    touchPrimary: browser.touchPrimary,
     exporting: null,
     online: browser.network.onLine,
     playable,
@@ -508,6 +514,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     api: round.api,
     clock: browser.clock,
     audio: browser.audio,
+    defaultVolume,
     write: (next) => {
       update({ player: next })
       showOnLockScreen(next)
@@ -955,8 +962,9 @@ export const createApp = (browser: BrowserCapabilities): App => {
       // 下载和音量属于这台设备：和问当前账号同时读出来，没登录时也要用
       const loaded = Promise.all([
         downloads.load(),
+        // 手机没有音量入口，也调不了：不看本机存的音量，恒为 100%
         local.volume().then((volume) => {
-          if (volume !== null)
+          if (volume !== null && !browser.touchPrimary)
             player.setVolume(volume)
         }),
       ])
@@ -1143,6 +1151,9 @@ export const createApp = (browser: BrowserCapabilities): App => {
     seek: player.seek,
     playFrom: player.playFrom,
     setVolume(volume) {
+      // 手机没有音量入口，也调不了（DESIGN.md Layout · 播放页）：恒为 100%，不写进这台设备
+      if (browser.touchPrimary)
+        return
       player.setVolume(volume)
       void local.saveVolume(volume)
     },

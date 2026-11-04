@@ -1,7 +1,7 @@
 <!--
   桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“来自「…」”（“正在播放”是整页的读屏名字，在 PlayerPage 上），正中一个拖动把手
   （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
-  左列封面、歌名（右边是红心键和“更多”菜单）、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量；右列在 歌词 / 播放队列 之间切换
+  左列封面、歌名（右边是红心键和“更多”菜单）、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量（触屏设备上没有：手机、平板音量恒为 100%）；右列在 歌词 / 播放队列 之间切换
   （ui/Segmented 标签页，←/→ 换标签）：两块并排放在一条轨道上、一直挂着，换标签时轨道和滑块一起横着滑，看不见的那块 Tab 不到、读屏读不到。
   播放队列和歌词一样直接铺在封面染底上（作者 2026-10-31 定，偏离原型的白卡）；切到它时轨道还没滑过来，当前这首就已经停在第二行。
   整页放进视口，不滚动。换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
@@ -101,9 +101,11 @@
       <PlayModeButton kind='shuffle' />
     </div>
 
-    <div class='mt-4 flex items-center gap-2 -ml-2.5'>
-      <VolumeControl class='flex-1' />
-    </div>
+    {#if !view.state.touchPrimary}
+      <div class='mt-4 flex items-center gap-2 -ml-2.5'>
+        <VolumeControl class='flex-1' />
+      </div>
+    {/if}
   </section>
 
   <section class='min-h-0 flex flex-col' aria-label='歌词和播放队列'>

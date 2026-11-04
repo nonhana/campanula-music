@@ -7,6 +7,7 @@ const BROWSER_GLOBALS_BY_CAPABILITY = {
   indexedDB: ['indexedDB'],
   network: ['navigator'],
   page: ['document'],
+  touchPrimary: ['matchMedia'],
   mediaSession: ['navigator'],
   MediaMetadata: ['MediaMetadata'],
   locks: ['navigator'],

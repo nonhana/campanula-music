@@ -17,6 +17,8 @@ export interface BrowserCapabilities {
   indexedDB: IDBFactory
   network: NetworkStatus
   page: PageVisibility
+  /** 以触屏为主的设备（media query `pointer: coarse`，手机、平板），打开 App 时问一次；手机没有音量入口，App 给它 100% 的默认音量 */
+  touchPrimary: boolean
   mediaSession: MediaSessionCapability
   MediaMetadata: typeof MediaMetadata
   /** 同 navigator.locks；同一浏览器里同源的标签页共用 */
@@ -403,6 +405,7 @@ export const realBrowserCapabilities = (): BrowserCapabilities => {
       removeEventListener: (type, listener) => window.removeEventListener(type, listener),
     },
     page: document,
+    touchPrimary: matchMedia('(pointer: coarse)').matches,
     mediaSession: navigator.mediaSession,
     MediaMetadata: window.MediaMetadata,
     locks: navigator.locks,

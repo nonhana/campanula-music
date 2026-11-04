@@ -69,7 +69,10 @@ export interface PlayerState {
 
 const NO_NEIGHBORS: PlayerState['neighbors'] = { previous: null, next: null }
 
-/** 没调过音量时的音量，也是没记下静音前音量时取消静音回到的音量；100% 往往太响（作者 2026-11-01 定）。调过的存在本机（local.ts 的 volume） */
+/**
+ * 桌面没调过音量时的音量，也是没记下静音前音量时取消静音回到的音量；100% 往往太响（作者 2026-11-01 定）。
+ * 手机、平板这些以触屏为主的设备不用它：没有音量入口，音量恒为 100%（createApp 的 defaultVolume）。调过的存在本机（local.ts 的 volume）
+ */
 export const DEFAULT_VOLUME = 0.3
 
 export const INITIAL_PLAYER: PlayerState = {
@@ -124,6 +127,8 @@ export interface PlayerContext {
   api: SessionApi
   clock: Clock
   audio: () => AudioCapability
+  /** 这台设备一开始的音量：App 按设备给，触屏设备恒为 100%、桌面 30%（DEFAULT_VOLUME） */
+  defaultVolume: number
   write: (player: PlayerState) => void
   /** 进度变了（放着时每秒、暂停、跳转、换歌）就存进本机；queue 没变是 undefined，打卡在 checkIns 里。几样要存在同一个事务：重新打开时才对得上，打卡也不会记两次、漏记 */
   save: (progress: SavedProgress, queue: SavedQueue | undefined, checkIns: readonly CheckIn[]) => void
@@ -281,7 +286,7 @@ const fillIn = (queue: readonly QueueEntry[], playlist: PlaylistSongs<{ id: numb
 
 export const createPlayer = (context: PlayerContext): Player => {
   const { api, clock } = context
-  let state: PlayerState = INITIAL_PLAYER
+  let state: PlayerState = { ...INITIAL_PLAYER, volume: context.defaultVolume }
   let incoming: Incoming | null = null
   /** 交接时新的播放器没加载出来：让当前这首放完，再停下提示 */
   let handoverFailed = false

@@ -104,7 +104,13 @@ const bodyOf = (init: RequestInit | undefined): Pick<SentRequest, 'body'> => typ
 /** 请求头：App 发出这个请求时的序号（stamp），服务端按它记请求是什么时候发出的（world.ts，网易云替身查对不上号用） */
 export const SENT_HEADER = 'x-test-sent'
 
-export const createDevice = (origin: string, clock: Clock, stamp: () => number): Device => {
+/** 这台设备本身的特征，同一台设备开出来的标签页都一样；没写的按桌面 */
+export interface DeviceTraits {
+  /** 以触屏为主的设备（手机、平板）：`pointer: coarse`；默认 false，也就是桌面 */
+  touchPrimary?: boolean
+}
+
+export const createDevice = (origin: string, clock: Clock, stamp: () => number, traits: DeviceTraits = {}): Device => {
   const jar = new CookieJar()
   const requests: SentRequest[] = []
   const pending: SentRequest[] = []
@@ -228,6 +234,7 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number):
         indexedDB: deviceIndexedDB,
         network: tabNetwork,
         page,
+        touchPrimary: traits.touchPrimary ?? false,
         mediaSession,
         MediaMetadata: FakeMediaMetadata,
         locks,

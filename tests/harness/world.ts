@@ -12,7 +12,7 @@ import { createServer } from 'vite'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
 import { clockOn } from './browser'
-import type { Device } from './device'
+import type { Device, DeviceTraits } from './device'
 import { createDevice, SENT_HEADER } from './device'
 import { loadFixture } from './fixtures'
 import type { Call, RequestSpan } from './netease-sdk'
@@ -51,7 +51,7 @@ interface ServerLog {
 }
 
 export interface World {
-  device: () => Device
+  device: (traits?: DeviceTraits) => Device
   netease: {
     /** 服务端调过的网易云模块，按先后 */
     readonly calls: readonly Call[]
@@ -238,8 +238,8 @@ export const useWorld = (options: WorldOptions = {}): World => {
   })
 
   return {
-    device: () => {
-      const device = createDevice(current().origin, clockOn(current().timers), () => current().fake.nextOrder())
+    device: (traits) => {
+      const device = createDevice(current().origin, clockOn(current().timers), () => current().fake.nextOrder(), traits)
       devices.push(device)
       return device
     },

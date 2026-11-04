@@ -2,6 +2,7 @@
   桌面底部通栏（80px，DESIGN.md Player Bars）：左边上一首 / 播放 / 下一首和时间，中间封面和歌名（点开播放页，按住往上拖也能拉开；播放队列面板开着时先收起它；歌手名能点开歌手页，#84）、
   靠这一栏右边的红心键（不在打开播放页的按钮里），
   右边播放模式（按一下换一种）、音量、播放队列（开关桌面播放队列面板 QueuePanel，不拉开播放页、不改播放页记着的标签；开着时薄荷玻璃底、森林墨图标，和侧栏当前项一样）；
+  触屏设备上没有音量（手机、平板：音量恒为 100%，DESIGN.md Layout · 播放页）；
   顶边一条 2px 的薄荷进度线，也是滑块：点按、拖动跳到那里，拖动时左边的时间跟着走（SeekLine）。
   封面小窗、歌名 / 试听标 / 歌手、换碟、列表点歌的落点和播放页大图预取都在 NowPlaying（两个播放条共用）。
   放在 PlayerDock 的桌面底栏里（三个外框共用这一层停靠）
@@ -62,7 +63,9 @@
 
   <div class='flex items-center justify-end gap-1.5'>
     <PlayModeButton kind='cycle' />
-    <VolumeControl class='w-24' />
+    {#if !view.state.touchPrimary}
+      <VolumeControl class='w-24' />
+    {/if}
     <IconButton
       icon={ListMusic}
       label='播放队列'
