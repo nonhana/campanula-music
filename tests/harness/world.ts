@@ -88,6 +88,9 @@ const replaceSdk = (): Plugin => ({
   resolveId(id) {
     if (id === 'hana-music-api')
       return FAKE_SDK
+    // 独立浏览器入口导入无副作用；App 的 mock 分支不调用 initializer，其余子路径仍拒绝。
+    if (id === 'hana-music-api/watchman')
+      return null
     if (id.startsWith('hana-music-api/'))
       throw new Error(`网易云替身只替换了 hana-music-api 本身，服务端不能引用 ${id}`)
     if (id === SDK_PROBE)

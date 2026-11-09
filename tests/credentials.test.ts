@@ -32,10 +32,10 @@ describe('网易云凭据只在加密 Cookie 里', () => {
       'user_account',
       'logout',
     ])
-    const deviceId = world.netease.calls[0].config.deviceId
+    const deviceId = world.netease.calls[0].config.state?.deviceId
     expect(deviceId).toMatch(/^[0-9A-F]{52}$/)
     for (const { config } of world.netease.calls) {
-      expect(config.deviceId).toBe(deviceId)
+      expect(config).not.toHaveProperty('deviceId')
       expect(config.state?.deviceId).toBe(deviceId)
       expect(config.realIP).toBe(REAL_IP)
     }

@@ -1,5 +1,5 @@
 import { NETEASE_REAL_IP } from '$app/env/private'
-import type { ModuleCallConfig, ModuleIdentifier, ModuleResponseOf, PlaylistSummary } from 'hana-music-api'
+import type { ModuleCallConfig, ModuleIdentifier, ModuleQueryOf, ModuleResponseOf, PlaylistSummary } from 'hana-music-api'
 import { invokeModule } from 'hana-music-api'
 
 import type { Account } from '#lib/api/account.js'
@@ -15,6 +15,7 @@ import { SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.js'
 import type { WriteResponse } from '#lib/api/write.js'
 
 import { lyricsOf } from './lyrics'
+import { NeteaseError } from './netease-error'
 
 // 网易云适配层（Spec #11“服务端：网易云适配层”）：服务端里只有这里调 hana-music-api；每次调用都带上听众的凭据和 deviceId，
 // 站长配了真实国内 IP 就作为 realIP 传入；结果翻译成 Campanula 的错误约定（#lib/api/errors），返回体映射成界面要用的数据。
@@ -25,19 +26,10 @@ export interface Listener {
   credentials: Record<string, string> | null
 }
 
-/** 调网易云失败：failure 交给客户端；body 是网易云原样的返回，只给这一层自己看 */
-export class NeteaseError extends Error {
-  constructor(readonly failure: NeteaseFailure, readonly body: unknown) {
-    super(`网易云：${failure.kind}`)
-  }
-}
-
-type QueryOf<K extends ModuleIdentifier> = Parameters<typeof invokeModule<K>>[1]
-
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
- * SDK 失败时抛出 { status, body, cookie }（照 SDK 2.7.1 的 normalizeFailure、classifyConsumedRateLimit，见它的 programmatic-api.md）：
+ * SDK 失败时抛出 { status, body, cookie }（照 SDK 4 的标准响应与错误合同，见它的 programmatic-api.md）：
  * 业务拒绝的 status 取返回码（不在 101~599 时是 400）；结构不认识的 status 502、body.upstreamShape 写明哪里不对；
  * 限流的 status 是 429 或 405、body 加 retryAfter（秒，没给 Retry-After 时是 30；nonhana/hana-music-api#60）；SDK 自己生成的失败 body 只有 code 和 msg。
  */
@@ -86,46 +78,23 @@ const translate = (thrown: unknown): { failure: NeteaseFailure, body: unknown } 
   }
 }
 
-/** 日志里只写模块和失败的种类、网易云的返回码和说明，不写请求参数和 Cookie（手机号、验证码、凭据都在里面） */
-const describe = (failure: NeteaseFailure): string => {
-  switch (failure.kind) {
-    case 'needsLogin':
-      return '需要登录'
-    case 'rateLimited':
-      return `操作频繁，${failure.retryAfter} 秒后再试`
-    case 'upstreamChanged':
-      return '返回的结构变了'
-    case 'neteaseUnavailable':
-      return '连不上、超时或网易云出错'
-    case 'rejected':
-      return `网易云拒绝（${failure.code}）${failure.message}`
-    default: {
-      const unhandled: never = failure
-      throw new Error(`不认识的失败：${JSON.stringify(unhandled)}`)
-    }
-  }
-}
-
-/** 只有个别模块要的调用配置：收藏歌单的反作弊令牌（只透传，不记日志，见 describe） */
-type ExtraConfig = Pick<ModuleCallConfig, 'checkToken'>
-
-const call = async <K extends ModuleIdentifier>(module: K, query: QueryOf<K>, listener: Listener, extra: ExtraConfig = {}): Promise<ModuleResponseOf<K>> => {
-  // state 里的 deviceId 用在每次请求的 Cookie 头里；顶层的 deviceId 不在 SDK 类型里，只给实例里第一次隐式匿名注册用
-  // （SDK 2.2.0 ensureAnonymousEffect，之后同一个实例的匿名调用共用 SDK 自己存的匿名身份）。Campanula 自己不存任何状态
-  const config: ModuleCallConfig & { deviceId: string } = {
+const call = async <K extends ModuleIdentifier>(module: K, query: ModuleQueryOf<K>, listener: Listener, checkToken?: string): Promise<ModuleResponseOf<K>> => {
+  const config: ModuleCallConfig = {
     cookie: listener.credentials ?? undefined,
-    deviceId: listener.deviceId,
     state: { deviceId: listener.deviceId },
     realIP: NETEASE_REAL_IP || undefined,
-    ...extra,
+    ...(checkToken === undefined
+      ? {}
+      : { checkToken }),
   }
   try {
     return await invokeModule(module, query, config)
   }
   catch (thrown) {
     const { failure, body } = translate(thrown)
-    console.warn(`网易云 ${module} 失败：${describe(failure)}`)
-    throw new NeteaseError(failure, body)
+    const error = new NeteaseError(failure, body)
+    console.warn(`网易云 ${module} 失败：${error.message}`)
+    throw error
   }
 }
 
@@ -152,9 +121,9 @@ const credentialsFrom = (module: ModuleIdentifier, setCookies: readonly string[]
 
 /** 网易云的返回 SDK 认得、但对不上 Campanula 依赖的约定：当作上游结构变了，和 call() 一样记一条日志 */
 const shapeChanged = (module: ModuleIdentifier, detail: string): NeteaseError => {
-  const failure = { kind: 'upstreamChanged' } as const
-  console.warn(`网易云 ${module} 失败：${describe(failure)}（${detail}）`)
-  return new NeteaseError(failure, null)
+  const error = new NeteaseError({ kind: 'upstreamChanged' }, null)
+  console.warn(`网易云 ${module} 失败：${error.message}（${detail}）`)
+  return error
 }
 
 export const createLoginQr = async (listener: Listener): Promise<QrResponse> => {
@@ -846,9 +815,7 @@ export const collectPlaylist = async (playlistId: number, change: PlaylistCollec
     await call('playlist_subscribe', {
       id: playlistId,
       t: change.collected ? 1 : 0,
-    }, listener, change.collected
-      ? { checkToken: change.checkToken }
-      : {})
+    }, listener, change.collected ? change.checkToken : undefined)
   }
   catch (error) {
     const gone = missing(error)

@@ -2,7 +2,7 @@
 // 读按模块 + 查询从录制和状态化 store 里取，写改 store；没覆盖的明确报错并记进覆盖报告。
 import { readFile } from 'node:fs/promises'
 
-import type { ModuleCallConfig } from 'hana-music-api'
+import type { ModuleCallConfig, NcmApiResponse } from 'hana-music-api'
 
 import { AUDIO_PREFIX, audioWav, clearUploads, localize, UPLOAD_PATH, UPLOAD_PREFIX } from './assets.ts'
 import { fixtureOutcome } from './fixture-format.ts'
@@ -37,12 +37,8 @@ const DEVICE_ID = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const CREDENTIALS = { MUSIC_U: 'mock-music-u', __csrf: 'mock-csrf' }
 const cookieFor = (musicU = 'mock-music-u'): string[] => [`MUSIC_U=${musicU}; Path=/; Max-Age=15552000`, '__csrf=mock-csrf; Path=/']
 
-/** 照 SDK 抛出 { status, body } 的样子：服务端的 translate() 靠这两个属性认网易云的失败 */
-class SdkFailure extends Error {
-  constructor(readonly status: number, readonly body: unknown) {
-    super(`Mock SDK 失败 ${status}`)
-  }
-}
+/** SDK 4 以标准响应对象拒绝 Promise，不抛 Error；mock 同样保留三字段外壳。 */
+const sdkFailure = (status: number, body: unknown): NcmApiResponse<unknown> => ({ status, body, cookie: [] })
 
 interface IndexEntry {
   path: string
@@ -106,7 +102,7 @@ const fixture = async (entry: IndexEntry): Promise<{ rejected: boolean, status: 
 const miss = (module: string, query: unknown): never => {
   state.misses.push({ module, query, scenario: state.config.name })
   console.error(`Mock 未覆盖：模块 ${module}，查询 ${JSON.stringify(query)}，场景 ${state.config.name}。看 GET /api/mock/coverage 补录制`)
-  throw new SdkFailure(500, { code: 500, msg: `Mock 未覆盖：${module}` })
+  throw sdkFailure(500, { code: 500, msg: `Mock 未覆盖：${module}` })
 }
 
 const entryFor = async (module: string, query: unknown): Promise<IndexEntry | null> => {
@@ -153,7 +149,7 @@ const fallback = async (module: string, query: unknown, { generic = false } = {}
     return miss(module, query)
   const loaded = await fixture(entry)
   if (loaded.rejected)
-    throw new SdkFailure(loaded.status, loaded.body)
+    throw sdkFailure(loaded.status, loaded.body)
   return localize(loaded.body)
 }
 
@@ -162,7 +158,7 @@ const clone = <T>(value: T): T => structuredClone(value)
 /** 写操作的结果：成功就本地化返回，失败照 SDK 的样子抛出去 */
 const write = (result: MockResult): { status: number, body: unknown, cookie: string[] } => {
   if (!result.ok)
-    throw new SdkFailure(result.status, result.body)
+    throw sdkFailure(result.status, result.body)
   return {
     status: 200,
     body: localize(result.body),
@@ -251,14 +247,14 @@ const hasCredentials = (callConfig: ModuleCallConfig): boolean => {
     : Boolean(cookie)
 }
 
-export const invokeModule = async (module: string, query: Record<string, unknown> = {}, callConfig: ModuleCallConfig = {}): Promise<{ status: number, body: unknown, cookie: string[] }> => {
+export const invokeModule = async (module: string, query: Record<string, unknown> = {}, callConfig: ModuleCallConfig = {}): Promise<NcmApiResponse<unknown>> => {
   state.calls.push({ module, query })
   if (state.config.latencyMs > 0)
     await sleep(state.config.latencyMs)
   if (state.config.offline)
-    throw new SdkFailure(503, { code: 503, msg: 'Mock 断网' })
+    throw sdkFailure(503, { code: 503, msg: 'Mock 断网' })
   if (state.config.rateLimited && !SESSION_MODULES.has(module))
-    throw new SdkFailure(405, { code: 405, msg: '操作过于频繁，请稍后再试', retryAfter: 30 })
+    throw sdkFailure(405, { code: 405, msg: '操作过于频繁，请稍后再试', retryAfter: 30 })
 
   const data = await state.store.load()
   const templates = data.templates as Record<string, unknown>
@@ -276,7 +272,7 @@ export const invokeModule = async (module: string, query: Record<string, unknown
       }
     case 'login_cellphone':
       if (state.config.loginExpired)
-        throw new SdkFailure(301, { code: 301, msg: '需要登录' })
+        throw sdkFailure(301, { code: 301, msg: '需要登录' })
       return {
         status: 200,
         body: localize(templates.loginCellphone),
@@ -284,7 +280,7 @@ export const invokeModule = async (module: string, query: Record<string, unknown
       }
     case 'login_qr_check':
       if (state.config.loginExpired)
-        throw new SdkFailure(301, { code: 301, msg: '需要登录' })
+        throw sdkFailure(301, { code: 301, msg: '需要登录' })
       return {
         status: 200,
         body: localize(templates.qrSuccess),
@@ -302,7 +298,7 @@ export const invokeModule = async (module: string, query: Record<string, unknown
       }
     case 'login_refresh':
       if (state.config.loginExpired || !hasCredentials(callConfig))
-        throw new SdkFailure(301, { code: 301, msg: '需要登录' })
+        throw sdkFailure(301, { code: 301, msg: '需要登录' })
       return {
         status: 200,
         body: localize(templates.loginRefresh),
@@ -316,7 +312,7 @@ export const invokeModule = async (module: string, query: Record<string, unknown
       }
     case 'likelist':
       if (state.config.loginExpired)
-        throw new SdkFailure(301, { code: 301, msg: '需要登录' })
+        throw sdkFailure(301, { code: 301, msg: '需要登录' })
       return {
         status: 200,
         body: localize(await state.store.likelist()),
@@ -350,7 +346,7 @@ export const invokeModule = async (module: string, query: Record<string, unknown
       state.songDetailCalls += 1
       if (state.config.partialSync && state.songDetailCalls >= 2) {
         const failed = await fixture((await index()).entries.find(entry => entry.path === 'library/song_detail.liked-page4.502-null-artist.json.gz')!)
-        throw new SdkFailure(failed.status, failed.body)
+        throw sdkFailure(failed.status, failed.body)
       }
       const body = await state.store.songDetail(idsOf(query.ids))
       return {

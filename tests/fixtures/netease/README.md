@@ -330,3 +330,13 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 | `playlist-edit/song_order_update.whole-4967-shuffled.json` | `song_order_update` | vip-qr | hkg1 / default | 400 | 是 | 整张歌单 4,967 首打乱后一次提交。约 3.3 秒后回 HTTP 400 / -1，但网易云其实已经按这个顺序改好了 |
 | `playlist-edit/song_order_update.whole-4967-small-change.json` | `song_order_update` | vip-qr | hkg1 / default | 200 | 是 | 整张歌单 4,967 首一次提交，只把第 6 首挪到最前（拖动一次的情形） |
 | `playlist-edit/user_playlist.with-private-temp.json` | `user_playlist` | vip-qr | hkg1 / default | 200 | 是 | 新建一张隐私歌单之后的歌单列表：新歌单排在我喜欢的音乐之后（第 2 位），privacy 是 10 |
+
+## #87 候选包迁移（2026-11-09）
+
+`index.json` 的 `checkedWith` 更新为 `hana-music-api@4.0.0-next.0`，表示用这份 npm 候选的公开 Standard Schema 重新校验。录制文件及其 recordedAt、SDK、viewer、region 和来源不变；尤其 #30 的成功样本只证明历史返回兼容，不证明 #87 的当前请求、真实页面或三轮账号验收。
+
+Campanula 收藏前在浏览器用 `hana-music-api/watchman` 现取 token，自有业务路由校验后只把当次字符串放入 ModuleCallConfig。取消由应用选择不取、不传；SDK 对读取和取消也接受显式字符串/provider，这不是 SDK 的动作限制。HTTP 业务校验仍为 1–1024 位可打印非空格 ASCII，170 只是官方样本观察值。设备与凭据由应用持有，经 `state.deviceId` 和 `cookie` 逐次传入；根 SDK 不进入浏览器，测试/mock 不初始化官方脚本。
+
+## #87 正式版追加（2026-11-09）
+
+按作者要求升级到 npm `hana-music-api@4.0.0`，索引用正式版公开 Schema 重建。上节 4.0.0-next.0 的校验属于历史轮次，原录制及来源继续保留；本次重校验不改写为当前上游或真实页面验证。mock 的失败与 SDK 4 一致，拒绝值是带 status/body/cookie 的响应对象。

@@ -1,6 +1,7 @@
 import { endpoints } from '#lib/api/endpoints.js'
 import { clearLogin, readLogin } from '#lib/server/credentials.js'
-import { logout, NeteaseError } from '#lib/server/netease.js'
+import { NeteaseError } from '#lib/server/netease-error.js'
+import { logout } from '#lib/server/netease.js'
 import { json } from '#lib/server/respond.js'
 
 import type { RequestHandler } from './$types'

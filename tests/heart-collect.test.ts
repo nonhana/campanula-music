@@ -4,7 +4,7 @@ import type { App } from '#lib/app/app.js'
 
 import type { Device } from './harness/device'
 import { held, never } from './harness/hold'
-import { JAZZ_DETAIL, listener, noticeEntry, noticeOf, SOME_SONGS, storedLibrary, storedTrackIds } from './harness/listener'
+import { JAZZ_DETAIL, listener, noticeEntry, noticeOf, SOME_SONGS, storedLibrary, storedPlaylistIds, storedTrackIds } from './harness/listener'
 import { useWorld } from './harness/world'
 
 const world = useWorld()
@@ -470,6 +470,175 @@ describe('收藏', () => {
       kind: 'notChanged',
       failure: { kind: 'checkTokenUnavailable' },
     })
+    await world.clock.advance(60_000)
+    expect(device.requests.length).toBe(sent)
+    tab.watchman.available = true
+    await world.netease.reply(PLAYLIST_COLLECT)
+    await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
+    expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).not.toBeNull()
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_subscribe',
+      config: { checkToken: tab.watchman.issued[0] },
+    })
+  })
+
+  it('同一页连续收藏和取消三轮：收藏各取新令牌，取消不取；令牌不留在 Cookie、日志或本机副本', async () => {
+    const device = world.device()
+    const tab = await signInAtLikedTracks(device)
+    const { app } = tab
+    await world.netease.reply(NETEASE_PLAYLIST.detail)
+    await world.netease.reply(NETEASE_PLAYLIST.songs)
+    await app.openPlaylist(NETEASE_PLAYLIST.id)
+    const since = world.netease.calls.length
+
+    for (let round = 0; round < 3; round += 1) {
+      const confirmation = held()
+      await world.netease.reply(PLAYLIST_COLLECT, { until: confirmation.until })
+      const collecting = app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
+      await world.settle()
+      expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).not.toBeNull()
+      expect(await storedPlaylistIds(device)).not.toContain(NETEASE_PLAYLIST.id)
+      confirmation.release()
+      await collecting
+      expect(await storedPlaylistIds(device)).toContain(NETEASE_PLAYLIST.id)
+      tab.watchman.available = false
+      await world.netease.reply(PLAYLIST_UNCOLLECT)
+      await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, false)
+      expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
+      tab.watchman.available = true
+    }
+
+    const calls = world.netease.calls.slice(since).filter(call => call.module === 'playlist_subscribe')
+    expect(calls.map(call => call.query)).toEqual(Array.from({ length: 3 }, () => [
+      { id: NETEASE_PLAYLIST.id, t: 1 },
+      { id: NETEASE_PLAYLIST.id, t: 0 },
+    ]).flat())
+    expect(tab.watchman.issued).toHaveLength(3)
+    expect(new Set(tab.watchman.issued).size).toBe(3)
+    expect(calls.filter((_, index) => index % 2 === 0).map(call => call.config.checkToken)).toEqual(tab.watchman.issued)
+    for (const call of calls.filter((_, index) => index % 2 === 1))
+      expect(call.config).not.toHaveProperty('checkToken')
+    for (const token of tab.watchman.issued) {
+      for (const value of [
+        calls.map(call => call.query),
+        device.requests.map(request => request.path),
+        await device.cookies(),
+        await device.stored(),
+        world.serverLogs,
+      ])
+        expect(JSON.stringify(value)).not.toContain(token)
+    }
+  })
+
+  it.each([false, true])('收藏还没确认时排队取消：保持顺序，退出后不再提交排队写（退出 %s）', async (logout) => {
+    const device = world.device()
+    const tab = await signInAtLikedTracks(device)
+    const { app } = tab
+    await world.netease.reply(NETEASE_PLAYLIST.detail)
+    await world.netease.reply(NETEASE_PLAYLIST.songs)
+    await app.openPlaylist(NETEASE_PLAYLIST.id)
+    const confirmation = held()
+    await world.netease.reply(PLAYLIST_COLLECT, { until: confirmation.until })
+    const collecting = app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
+    const cancelling = app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, false)
+    await world.settle()
+    expect(world.netease.calls.filter(call => call.module === 'playlist_subscribe').map(call => call.query)).toEqual([
+      { id: NETEASE_PLAYLIST.id, t: 1 },
+    ])
+    if (logout) {
+      await world.netease.reply('login/logout.json')
+      await app.logout()
+    }
+    else {
+      tab.watchman.available = false
+      await world.netease.reply(PLAYLIST_UNCOLLECT)
+    }
+    confirmation.release()
+    await Promise.all([collecting, cancelling])
+    expect(world.netease.calls.filter(call => call.module === 'playlist_subscribe').map(call => call.query)).toEqual(logout
+      ? [
+          { id: NETEASE_PLAYLIST.id, t: 1 },
+        ]
+      : [
+          { id: NETEASE_PLAYLIST.id, t: 1 },
+          { id: NETEASE_PLAYLIST.id, t: 0 },
+        ])
+    expect(tab.watchman.issued).toHaveLength(1)
+    expect((await storedLibrary(device, 'playlists') as { id: number }[] | undefined)?.map(item => item.id) ?? []).not.toContain(NETEASE_PLAYLIST.id)
+  })
+
+  it('取令牌期间退出：迟到的令牌不再发收藏，断网时也不取令牌、不写入', async () => {
+    const device = world.device()
+    const tab = await signInAtLikedTracks(device)
+    const { app } = tab
+    await world.netease.reply(NETEASE_PLAYLIST.detail)
+    await world.netease.reply(NETEASE_PLAYLIST.songs)
+    await app.openPlaylist(NETEASE_PLAYLIST.id)
+    const sent = device.requests.length
+    device.setOnline(false)
+    await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
+    expect(device.requests).toHaveLength(sent)
+    expect(tab.watchman.issued).toHaveLength(0)
+    expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
+    device.setOnline(true)
+
+    const tokenReady = held()
+    tab.watchman.checkToken = async () => {
+      await tokenReady.until
+      return 'late-token'
+    }
+    const collecting = app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
+    await world.settle()
+    await world.netease.reply('login/logout.json')
+    await app.logout()
+    tokenReady.release()
+    await collecting
+    expect(device.requests.filter(request => request.path.endsWith('/collect'))).toHaveLength(0)
+    expect(world.netease.calls.filter(call => call.module === 'playlist_subscribe')).toHaveLength(0)
+    expect(app.state.session.status).toBe('signedOut')
+  })
+
+  it.each([1, 1024])('业务接口接受 %s 字符的可打印令牌，不把官方样本长度当合同', async (length) => {
+    const device = world.device()
+    const tab = await signInAtLikedTracks(device)
+    await world.netease.reply(NETEASE_PLAYLIST.detail)
+    await world.netease.reply(NETEASE_PLAYLIST.songs)
+    await tab.app.openPlaylist(NETEASE_PLAYLIST.id)
+    const token = '!'.repeat(length)
+    tab.watchman.checkToken = async () => token
+    await world.netease.reply(PLAYLIST_COLLECT)
+    await tab.app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_subscribe',
+      query: { id: NETEASE_PLAYLIST.id, t: 1 },
+      config: { checkToken: token },
+    })
+    expect(tab.app.state.library?.songsOf(NETEASE_PLAYLIST.id)).not.toBeNull()
+  })
+
+  it.each([
+    '',
+    ' ',
+    'a b',
+    'token\n',
+    '令牌',
+    'x'.repeat(1025),
+  ])('空或不合法的令牌不调 SDK，收藏回滚（样本 %#）', async (token) => {
+    const device = world.device()
+    const tab = await signInAtLikedTracks(device)
+    await world.netease.reply(NETEASE_PLAYLIST.detail)
+    await world.netease.reply(NETEASE_PLAYLIST.songs)
+    await tab.app.openPlaylist(NETEASE_PLAYLIST.id)
+    tab.watchman.checkToken = async () => token
+    const sent = device.requests.length
+    await tab.app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true)
+    expect(world.netease.calls.filter(call => call.module === 'playlist_subscribe')).toHaveLength(0)
+    expect(tab.app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull()
+    expect(await storedPlaylistIds(device)).not.toContain(NETEASE_PLAYLIST.id)
+    if (token)
+      expect(device.responses.at(-1)?.status).toBe(400)
+    else
+      expect(device.requests).toHaveLength(sent)
   })
 
   it('在搜索结果里收藏歌单、歌手、专辑：进曲库的是结果里有的那些（搜索结果里没有的先空着，下一次同步拿到真的）', async () => {

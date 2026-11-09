@@ -5,7 +5,8 @@ import type { Endpoint } from '#lib/api/endpoint.js'
 import type { LoginCookie } from './credentials'
 import { readLogin, renewalDue, saveLogin } from './credentials'
 import type { Listener, SignedInListener } from './netease'
-import { NeteaseError, renewLogin } from './netease'
+import { renewLogin } from './netease'
+import { NeteaseError } from './netease-error'
 import { errorResponse, withNetease } from './respond'
 
 export type SignedIn = LoginCookie & { session: NonNullable<LoginCookie['session']> }

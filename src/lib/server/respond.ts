@@ -1,7 +1,7 @@
 import type { Endpoint } from '#lib/api/endpoint.js'
 import type { ApiError, ErrorBody } from '#lib/api/errors.js'
 
-import { NeteaseError } from './netease'
+import { NeteaseError } from './netease-error'
 
 const STATUS = {
   needsLogin: 401,

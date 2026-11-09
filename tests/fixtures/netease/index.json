@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "checkedWith": "hana-music-api@3.2.0",
+  "checkedWith": "hana-music-api@4.0.0",
   "recordings": 346,
   "modules": {
     "recommend_songs": {
