@@ -14,7 +14,7 @@ catalogs:
     '@sveltejs/kit': ^3.1.1
     '@sveltejs/vite-plugin-svelte': ^7.3.1
     svelte: ^5.57.3
-    vite: ^8.3.6
+    vite: ^8.3.7
 
   git:
     lint-staged: ^17.6.0
@@ -24,18 +24,18 @@ catalogs:
     '@antfu/eslint-config': ^10.0.0
     '@unocss/eslint-plugin': ^66.12.0
     eslint: ^10.14.0
-    eslint-plugin-svelte: ^3.24.0
-    knip: ^6.44.1
+    eslint-plugin-svelte: ^3.24.1
+    knip: ^6.44.2
 
   music:
     browser-id3-writer: ^6.4.0
     hana-music-api: 4.0.0
     music-metadata: ^12.3.5
-    tough-cookie: ^6.0.2
+    tough-cookie: ^6.1.0
 
   test:
     '@sinonjs/fake-timers': ^15.4.0
-    fake-indexeddb: ^6.2.7
+    fake-indexeddb: ^6.2.8
     vitest: ^5.1.0
 
   typescript:
