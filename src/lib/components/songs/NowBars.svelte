@@ -1,14 +1,11 @@
-<!--
-  正在播放的三根小竖条（森林绿，DESIGN.md Morning Row）：在放时起伏，停着时停在原地；减少动态效果时不动
--->
-<script lang='ts'>
-  import { getAppView } from '../shared/app-context.svelte'
+<script lang="ts">
+  import { getAppView } from '../shared/app-context.svelte';
 
-  const view = getAppView()
-  const playing = $derived(view.state.player.status === 'playing')
+  const view = getAppView();
+  const playing = $derived(view.state.player.status === 'playing');
 </script>
 
-<span class={['bars', !playing && 'paused']} aria-hidden='true'>
+<span class={['bars', !playing && 'paused']} aria-hidden="true">
   <span></span><span></span><span></span>
 </span>
 
@@ -31,7 +28,6 @@
     animation-play-state: var(--loop-state);
   }
 
-  /* 三根快慢、起点各不相同，起伏不齐 */
   .bars span:nth-child(1) {
     transform: scaleY(0.55);
     animation-delay: calc(var(--loop-now-bars) * -0.3);

@@ -2,197 +2,197 @@
 name: Campanula
 description: 纯粹、简单、优雅的第三方网易云音乐播放器；手机和桌面共用一套设计系统
 colors:
-  morning-ground: "#F5FCF9"
-  mint-mist: "#E8F8F1"
-  mint-glass: "#D1F1E3"
-  mint-line: "#B9EAD5"
-  mint: "#A8E6CF"
-  mint-sprout: "#59CFA3"
-  mint-leaf: "#37BE8C"
-  mint-stem: "#2B976F"
-  deep-mint: "#206F52"
-  forest-ink: "#1A5B43"
-  paper: "#FFFFFF"
-  peach-mist: "#FFF8F2"
-  peach-wash: "#FFEEE2"
-  peach-glow: "#FFE1CC"
-  peach-ember: "#E6601F"
-  peach-bark: "#B34719"
-  coral-heart: "#FF3040"
-  ink: "#111827"
-  graphite-deep: "#1F2937"
-  graphite-strong: "#374151"
-  graphite: "#4B5563"
-  graphite-soft: "#6B7280"
-  hairline: "#E5E7EB"
-  hairline-faint: "#F3F4F6"
-  trial-wash: "#FFF8E1"
-  trial-ink: "#BF360C"
-  error-wash: "#FBE9E7"
-  error-ink: "#D32F2F"
+  morning-ground: '#F5FCF9'
+  mint-mist: '#E8F8F1'
+  mint-glass: '#D1F1E3'
+  mint-line: '#B9EAD5'
+  mint: '#A8E6CF'
+  mint-sprout: '#59CFA3'
+  mint-leaf: '#37BE8C'
+  mint-stem: '#2B976F'
+  deep-mint: '#206F52'
+  forest-ink: '#1A5B43'
+  paper: '#FFFFFF'
+  peach-mist: '#FFF8F2'
+  peach-wash: '#FFEEE2'
+  peach-glow: '#FFE1CC'
+  peach-ember: '#E6601F'
+  peach-bark: '#B34719'
+  coral-heart: '#FF3040'
+  ink: '#111827'
+  graphite-deep: '#1F2937'
+  graphite-strong: '#374151'
+  graphite: '#4B5563'
+  graphite-soft: '#6B7280'
+  hairline: '#E5E7EB'
+  hairline-faint: '#F3F4F6'
+  trial-wash: '#FFF8E1'
+  trial-ink: '#BF360C'
+  error-wash: '#FBE9E7'
+  error-ink: '#D32F2F'
 typography:
   headline:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "28px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '28px'
     fontWeight: 600
-    lineHeight: "36px"
-    letterSpacing: "-0.01em"
+    lineHeight: '36px'
+    letterSpacing: '-0.01em'
   headline-sm:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "24px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '24px'
     fontWeight: 600
-    lineHeight: "32px"
-    letterSpacing: "-0.01em"
+    lineHeight: '32px'
+    letterSpacing: '-0.01em'
   title:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "20px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '20px'
     fontWeight: 600
-    lineHeight: "28px"
+    lineHeight: '28px'
   title-sm:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "17px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '17px'
     fontWeight: 600
-    lineHeight: "24px"
+    lineHeight: '24px'
   body:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "15px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '15px'
     fontWeight: 400
-    lineHeight: "22px"
+    lineHeight: '22px'
   label:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "14px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '14px'
     fontWeight: 500
-    lineHeight: "20px"
+    lineHeight: '20px'
   caption:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "13px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '13px'
     fontWeight: 400
-    lineHeight: "20px"
+    lineHeight: '20px'
   micro:
-    fontFamily: "Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif"
-    fontSize: "11px"
+    fontFamily: 'Noto Sans Variable, Noto Sans SC Variable, Noto Sans JP Variable, Noto Sans TC Variable, system-ui, sans-serif'
+    fontSize: '11px'
     fontWeight: 500
-    lineHeight: "18px"
+    lineHeight: '18px'
 rounded:
-  sm: "6px"
-  md: "8px"
-  lg: "12px"
-  xl: "16px"
-  sheet: "24px"
-  full: "9999px"
+  sm: '6px'
+  md: '8px'
+  lg: '12px'
+  xl: '16px'
+  sheet: '24px'
+  full: '9999px'
 spacing:
-  "1": "4px"
-  "2": "8px"
-  "3": "12px"
-  "4": "16px"
-  "5": "20px"
-  "6": "24px"
-  "8": "32px"
-  "10": "40px"
+  '1': '4px'
+  '2': '8px'
+  '3': '12px'
+  '4': '16px'
+  '5': '20px'
+  '6': '24px'
+  '8': '32px'
+  '10': '40px'
 components:
   button-primary:
-    backgroundColor: "{colors.deep-mint}"
-    textColor: "{colors.paper}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "0 20px 0 16px"
-    height: "40px"
+    backgroundColor: '{colors.deep-mint}'
+    textColor: '{colors.paper}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    padding: '0 20px 0 16px'
+    height: '40px'
   button-primary-hover:
-    backgroundColor: "{colors.forest-ink}"
+    backgroundColor: '{colors.forest-ink}'
   button-download:
-    backgroundColor: "{colors.peach-wash}"
-    textColor: "{colors.peach-bark}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "0 20px 0 16px"
-    height: "40px"
+    backgroundColor: '{colors.peach-wash}'
+    textColor: '{colors.peach-bark}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    padding: '0 20px 0 16px'
+    height: '40px'
   button-download-hover:
-    backgroundColor: "{colors.peach-glow}"
+    backgroundColor: '{colors.peach-glow}'
   button-outline:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.graphite-deep}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "0 20px 0 16px"
-    height: "40px"
+    backgroundColor: '{colors.paper}'
+    textColor: '{colors.graphite-deep}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    padding: '0 20px 0 16px'
+    height: '40px'
   button-icon:
-    textColor: "{colors.graphite-strong}"
-    rounded: "{rounded.full}"
-    size: "40px"
+    textColor: '{colors.graphite-strong}'
+    rounded: '{rounded.full}'
+    size: '40px'
   button-icon-hover:
-    backgroundColor: "{colors.mint-mist}"
-    textColor: "{colors.forest-ink}"
+    backgroundColor: '{colors.mint-mist}'
+    textColor: '{colors.forest-ink}'
   button-destructive:
-    backgroundColor: "{colors.error-ink}"
-    textColor: "{colors.paper}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    height: "40px"
+    backgroundColor: '{colors.error-ink}'
+    textColor: '{colors.paper}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    height: '40px'
   button-text:
-    textColor: "{colors.deep-mint}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "0 12px"
-    height: "44px"
+    textColor: '{colors.deep-mint}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    padding: '0 12px'
+    height: '44px'
   chip-tag:
-    backgroundColor: "{colors.mint-mist}"
-    textColor: "{colors.forest-ink}"
-    rounded: "{rounded.full}"
-    padding: "0 10px"
-    height: "24px"
+    backgroundColor: '{colors.mint-mist}'
+    textColor: '{colors.forest-ink}'
+    rounded: '{rounded.full}'
+    padding: '0 10px'
+    height: '24px'
   badge-trial:
-    backgroundColor: "{colors.trial-wash}"
-    textColor: "{colors.trial-ink}"
-    typography: "{typography.micro}"
-    rounded: "{rounded.sm}"
-    padding: "0 6px"
+    backgroundColor: '{colors.trial-wash}'
+    textColor: '{colors.trial-ink}'
+    typography: '{typography.micro}'
+    rounded: '{rounded.sm}'
+    padding: '0 6px'
   badge-unavailable:
-    backgroundColor: "{colors.hairline-faint}"
-    textColor: "{colors.graphite-strong}"
-    typography: "{typography.micro}"
-    rounded: "{rounded.sm}"
-    padding: "0 6px"
+    backgroundColor: '{colors.hairline-faint}'
+    textColor: '{colors.graphite-strong}'
+    typography: '{typography.micro}'
+    rounded: '{rounded.sm}'
+    padding: '0 6px'
   input-search:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.full}"
-    padding: "0 8px 0 16px"
-    height: "44px"
+    backgroundColor: '{colors.paper}'
+    textColor: '{colors.ink}'
+    rounded: '{rounded.full}'
+    padding: '0 8px 0 16px'
+    height: '44px'
   panel:
-    backgroundColor: "{colors.paper}"
-    rounded: "{rounded.xl}"
-    padding: "8px"
+    backgroundColor: '{colors.paper}'
+    rounded: '{rounded.xl}'
+    padding: '8px'
   nav-rail-item-active:
-    backgroundColor: "{colors.mint-glass}"
-    textColor: "{colors.forest-ink}"
-    rounded: "{rounded.lg}"
-    height: "48px"
+    backgroundColor: '{colors.mint-glass}'
+    textColor: '{colors.forest-ink}'
+    rounded: '{rounded.lg}'
+    height: '48px'
   song-row:
-    rounded: "{rounded.lg}"
-    height: "56px"
+    rounded: '{rounded.lg}'
+    height: '56px'
   song-row-now:
-    backgroundColor: "{colors.mint-mist}"
-    textColor: "{colors.forest-ink}"
+    backgroundColor: '{colors.mint-mist}'
+    textColor: '{colors.forest-ink}'
   player-bar-desktop:
-    backgroundColor: "{colors.paper}"
-    height: "80px"
-    padding: "0 20px"
+    backgroundColor: '{colors.paper}'
+    height: '80px'
+    padding: '0 20px'
   mini-player:
-    backgroundColor: "{colors.paper}"
-    rounded: "{rounded.xl}"
-    height: "64px"
+    backgroundColor: '{colors.paper}'
+    rounded: '{rounded.xl}'
+    height: '64px'
   play-button-large:
-    backgroundColor: "{colors.forest-ink}"
-    textColor: "{colors.paper}"
-    rounded: "{rounded.full}"
-    size: "64px"
+    backgroundColor: '{colors.forest-ink}'
+    textColor: '{colors.paper}'
+    rounded: '{rounded.full}'
+    size: '64px'
   bottom-sheet:
-    backgroundColor: "{colors.paper}"
-    rounded: "{rounded.sheet}"
+    backgroundColor: '{colors.paper}'
+    rounded: '{rounded.sheet}'
   dialog:
-    backgroundColor: "{colors.paper}"
-    rounded: "{rounded.xl}"
-    padding: "20px 24px"
+    backgroundColor: '{colors.paper}'
+    rounded: '{rounded.xl}'
+    padding: '20px 24px'
 ---
 
 <!-- 2026-10-07 按视觉原型选定方案（变体 A · 分区首页，并入 B 的波浪进度条、胶囊按钮、封面染底）重写。证据：prototype/visual 分支的 src/lib/prototype/variants/a/、uno.config.ts、static/prototype/shots/final/。 -->
@@ -470,12 +470,12 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 
 **手机上的四档**（#57，作者 2026-10-22 定；只管窄于 768px 的手机布局，桌面照上面的写法）。方向是用图标表达，尽量少用文字：图标本身说得清的，字就是多余的。
 
-| 档 | 手机上的样子 | 用在 |
-| --- | --- | --- |
-| 主操作 | 实心胶囊，看得见 40px 高，点击范围 44px | 每屏一个：播放全部、弹层和弹窗的确认键、空 / 出错状态里的动作 |
-| 工具 | 只有图标（20px，和 Icon 一样），没有底色和边框，点击范围 44×44 | 和标题、数量、别的按钮排在一行的次级操作，并且通过下面的判断 |
-| 文字 | Text，点击范围高 44px | 图标说不清，或点错有代价：完成、重试、撤销、清空、查看全部、取消 / 保存、全选 |
-| 选择 | 分段条或 chip，看得见 36–40px；和标签条排在一行的用文字分段，点击范围 44px | 选项本身就是内容：音质、翻译 / 音译、标签、搜索历史、歌手页的排法 |
+| 档     | 手机上的样子                                                               | 用在                                                                          |
+| ------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 主操作 | 实心胶囊，看得见 40px 高，点击范围 44px                                    | 每屏一个：播放全部、弹层和弹窗的确认键、空 / 出错状态里的动作                 |
+| 工具   | 只有图标（20px，和 Icon 一样），没有底色和边框，点击范围 44×44             | 和标题、数量、别的按钮排在一行的次级操作，并且通过下面的判断                  |
+| 文字   | Text，点击范围高 44px                                                      | 图标说不清，或点错有代价：完成、重试、撤销、清空、查看全部、取消 / 保存、全选 |
+| 选择   | 分段条或 chip，看得见 36–40px；和标签条排在一行的用文字分段，点击范围 44px | 选项本身就是内容：音质、翻译 / 音译、标签、搜索历史、歌手页的排法             |
 
 一个次级操作能不能只留图标：
 
@@ -491,28 +491,28 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 
 **图标词典**（全站，桌面也一样）：一个图标只表示一件事。下表是全站可点的、表示动作或状态的图标；动作没有在表里的，先补进表里再用。
 
-| 图标 | 只表示 |
-| --- | --- |
-| `Plus` | 新建（新建歌单，加入歌单弹层里的“新建歌单”一行） |
-| `ListPlus` | 把歌放进歌单：添加歌曲、加入歌单 |
-| `ListMinus` | 把歌从歌单里移除 |
-| `ListEnd` / `ListStart` | 放到播放队列末尾 / 下一首播放 |
-| `ListMusic` | 歌单本身（空歌单、歌单已被删除、播放队列入口） |
-| `CirclePlus` → `CircleCheck` | 收藏 / 已收藏（歌单、专辑、歌手统一，封面角上的小圆钮也是；已收藏是深薄荷） |
-| `ListChecks` | 多选 |
-| `CheckCheck` / `SquareMinus` | 全选 / 全不选（多选里） |
-| `ListX` | 清空播放队列 |
-| `Check` | 勾上了：勾选框里的勾、开着的开关（歌词的翻译 / 音译）、完成了的一步、成功的提示；不当按钮的图标 |
-| `Clock` | 排队等待 |
-| `Pause` | 暂停（播放或下载） |
-| `ArrowUpDown` | 排序 |
-| `Ellipsis` | 更多 |
-| `Trash2` | 删除（删除歌单、删除下载，出错红） |
-| `FolderDown` | 导出（把下载另存进听众选的文件夹，#79） |
-| `FolderOpen` | 选择文件夹（导出弹窗里的确认键） |
-| `LogOut` | 退出登录 |
-| `X` | 关闭、移出一首、清除搜索词 |
-| `LocateFixed` | 定位到正在播放（滚回列表里正在放的那一行） |
+| 图标                         | 只表示                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| `Plus`                       | 新建（新建歌单，加入歌单弹层里的“新建歌单”一行）                                                |
+| `ListPlus`                   | 把歌放进歌单：添加歌曲、加入歌单                                                                |
+| `ListMinus`                  | 把歌从歌单里移除                                                                                |
+| `ListEnd` / `ListStart`      | 放到播放队列末尾 / 下一首播放                                                                   |
+| `ListMusic`                  | 歌单本身（空歌单、歌单已被删除、播放队列入口）                                                  |
+| `CirclePlus` → `CircleCheck` | 收藏 / 已收藏（歌单、专辑、歌手统一，封面角上的小圆钮也是；已收藏是深薄荷）                     |
+| `ListChecks`                 | 多选                                                                                            |
+| `CheckCheck` / `SquareMinus` | 全选 / 全不选（多选里）                                                                         |
+| `ListX`                      | 清空播放队列                                                                                    |
+| `Check`                      | 勾上了：勾选框里的勾、开着的开关（歌词的翻译 / 音译）、完成了的一步、成功的提示；不当按钮的图标 |
+| `Clock`                      | 排队等待                                                                                        |
+| `Pause`                      | 暂停（播放或下载）                                                                              |
+| `ArrowUpDown`                | 排序                                                                                            |
+| `Ellipsis`                   | 更多                                                                                            |
+| `Trash2`                     | 删除（删除歌单、删除下载，出错红）                                                              |
+| `FolderDown`                 | 导出（把下载另存进听众选的文件夹，#79）                                                         |
+| `FolderOpen`                 | 选择文件夹（导出弹窗里的确认键）                                                                |
+| `LogOut`                     | 退出登录                                                                                        |
+| `X`                          | 关闭、移出一首、清除搜索词                                                                      |
+| `LocateFixed`                | 定位到正在播放（滚回列表里正在放的那一行）                                                      |
 
 ### Chips
 

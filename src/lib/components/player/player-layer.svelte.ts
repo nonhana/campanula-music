@@ -1,78 +1,70 @@
-import { untrack } from 'svelte'
+import { untrack } from 'svelte';
 
-import type { DialogRequest } from '../overlay/overlay-requests'
-import type { OverlayLayer } from '../overlay/overlay-stack'
-import { getAppView } from '../shared/app-context.svelte'
-import type { Drawer } from './drawer.svelte'
-import { queueEmpty } from './view'
+import type { DialogRequest } from '../overlay/overlay-requests';
+import type { OverlayLayer } from '../overlay/overlay-stack';
+import { getAppView } from '../shared/app-context.svelte';
+import type { Drawer } from './drawer.svelte';
+import { queueEmpty } from './view';
 
-/** 播放页层：队列非空 × 栈里播放页开着 × 抽屉可见；两个外框共用这一份推导，播放条也看 hasQueue。播放页、队列经浮层栈开合（#64），抽屉位置由 drawer.svelte.ts 管。 */
 export interface PlayerLayerState {
-  readonly hasQueue: boolean
-  /** 浮层栈登记，浅路由记着它 */
-  readonly open: boolean
-  /** 开着，或者收起时抽屉还没走完 */
-  readonly shown: boolean
-  /** “清空”播放队列：播放页露着时先收起（连同手机播放队列），抽屉缩回去以后再清空，播放页不在半路一下子没了 */
-  clearQueue: () => void
+  readonly hasQueue: boolean;
+  readonly open: boolean;
+  readonly shown: boolean;
+  clearQueue: () => void;
 }
 
-/** 在 createOverlays 里创建一次（外框初始化时）：层请求、抽屉、App 状态只有一份；创建时的组件上下文就是 effect 的主人，跟着外框卸下 */
-export const createPlayerLayer = (player: OverlayLayer<DialogRequest, HTMLElement>, drawer: Drawer): PlayerLayerState => {
-  const view = getAppView()
-  const hasQueue = $derived(!queueEmpty(view.state.player))
-  const open = $derived(hasQueue && player.request !== null)
-  const shown = $derived(hasQueue && (open || drawer.visible))
+export const createPlayerLayer = (
+  player: OverlayLayer<DialogRequest, HTMLElement>,
+  drawer: Drawer,
+): PlayerLayerState => {
+  const view = getAppView();
+  const hasQueue = $derived(!queueEmpty(view.state.player));
+  const open = $derived(hasQueue && player.request !== null);
+  const shown = $derived(hasQueue && (open || drawer.visible));
 
-  // 层请求说开着就拉开、说关了（收起、返回、清空队列）就缩回去
-  $effect(() => drawer.settle(open))
-  // 队列清空时播放页没法再开着：让浮层栈也收掉它（历史条目一起退），不留点不动的空层
+  $effect(() => drawer.settle(open));
   $effect(() => {
     if (!hasQueue && player.request)
-      untrack(() => { void player.invalidate() })
-  })
+      untrack(() => {
+        void player.invalidate();
+      });
+  });
 
-  /** 播放页收起了、等抽屉缩回去再清空 */
-  let clearing = $state(false)
+  let clearing = $state(false);
   $effect(() => {
-    if (!clearing)
-      return
-    // 缩到半路又拉开了：不清空
+    if (!clearing) return;
     if (open) {
-      clearing = false
-      return
+      clearing = false;
+      return;
     }
-    if (drawer.visible)
-      return
-    clearing = false
-    untrack(() => view.app.clearQueue())
-  })
+    if (drawer.visible) return;
+    clearing = false;
+    untrack(() => view.app.clearQueue());
+  });
 
   return {
     get hasQueue() {
-      return hasQueue
+      return hasQueue;
     },
     get open() {
-      return open
+      return open;
     },
     get shown() {
-      return shown
+      return shown;
     },
     clearQueue() {
       if (!shown) {
-        view.app.clearQueue()
-        return
+        view.app.clearQueue();
+        return;
       }
       if (!open) {
-        clearing = true
-        return
+        clearing = true;
+        return;
       }
       void player.closeThrough().then((result) => {
-        if (result === 'committed')
-          clearing = true
-        else
-          view.app.clearQueue()
-      })
+        if (result === 'committed') clearing = true;
+        else view.app.clearQueue();
+      });
     },
-  }
-}
+  };
+};

@@ -1,80 +1,79 @@
-<script lang='ts'>
-  import { page } from '$app/state'
+<script lang="ts">
+  import '@fontsource-variable/noto-sans';
+  import '@fontsource-variable/noto-sans-sc';
+  import '@fontsource-variable/noto-sans-jp';
+  import '@fontsource-variable/noto-sans-tc';
 
-  import { createApp } from '#lib/app/app.js'
-  import { realBrowserCapabilities } from '#lib/app/browser.js'
-  import AppOpenFailed from '#lib/components/boot/AppOpenFailed.svelte'
-  import AppOpening from '#lib/components/boot/AppOpening.svelte'
-  import CookieSecretRequired from '#lib/components/boot/CookieSecretRequired.svelte'
-  import HttpsRequired from '#lib/components/boot/HttpsRequired.svelte'
-  import { arrival } from '#lib/components/boot/opening.js'
-  import LoginPage from '#lib/components/login/LoginPage.svelte'
-  import { setAppView, viewOf } from '#lib/components/shared/app-context.svelte.js'
-  import { DURATIONS } from '#lib/components/shared/motion-tokens.js'
-  import { fade, fadeAway } from '#lib/components/shared/motion.js'
-  import SignedInFrame from '#lib/components/shell/SignedInFrame.svelte'
-  import SignedOutFrame from '#lib/components/shell/SignedOutFrame.svelte'
-  import { mock } from '#lib/mock-flag.js'
-  // 字体随项目打包（Noto Sans 可变字体，拉丁 → SC → JP → TC），不从网络加载
-  import '@fontsource-variable/noto-sans'
-  import '@fontsource-variable/noto-sans-sc'
-  import '@fontsource-variable/noto-sans-jp'
-  import '@fontsource-variable/noto-sans-tc'
+  import { page } from '$app/state';
+
+  import { createApp } from '#lib/app/app.js';
+  import { realBrowserCapabilities } from '#lib/app/browser.js';
+  import AppOpenFailed from '#lib/components/boot/AppOpenFailed.svelte';
+  import AppOpening from '#lib/components/boot/AppOpening.svelte';
+  import CookieSecretRequired from '#lib/components/boot/CookieSecretRequired.svelte';
+  import HttpsRequired from '#lib/components/boot/HttpsRequired.svelte';
+  import { arrival } from '#lib/components/boot/opening.js';
+  import LoginPage from '#lib/components/login/LoginPage.svelte';
+  import {
+    setAppView,
+    viewOf,
+  } from '#lib/components/shared/app-context.svelte.js';
+  import { DURATIONS } from '#lib/components/shared/motion-tokens.js';
+  import { fade, fadeAway } from '#lib/components/shared/motion.js';
+  import SignedInFrame from '#lib/components/shell/SignedInFrame.svelte';
+  import SignedOutFrame from '#lib/components/shell/SignedOutFrame.svelte';
+  import { mock } from '#lib/mock-flag.js';
   // reset 必须先于 UnoCSS 加载，否则带 type="button" 的按钮会丢底色
-  import '@unocss/reset/tailwind.css'
-  import 'uno.css'
+  import '@unocss/reset/tailwind.css';
+  import 'uno.css';
 
-  const { children } = $props()
+  const { children } = $props();
 
-  // app.html 的第一帧（晨光底、正中的花）交给 Svelte：打开中在同一位置画同样的花，挂上前后看不出交接
-  document.getElementById('first-frame')?.remove()
+  document.getElementById('first-frame')?.remove();
 
-  // 页面关闭了服务端渲染，这里只在浏览器里运行。安全上下文 = HTTPS 或本机 localhost：Service Worker、
-  // Storage API、带 Secure 的 Cookie 都只在这里可用（ADR-0009）。
   const app = window.isSecureContext
     ? createApp(realBrowserCapabilities())
-    : undefined
-  const view = app && viewOf(app)
-  if (view)
-    setAppView(view)
-  const session = $derived(view?.state.session)
+    : undefined;
+  const view = app && viewOf(app);
+  if (view) setAppView(view);
+  const session = $derived(view?.state.session);
 
-  /** open() 没想到的错误是 App 自己的缺陷：不能让界面一直停在“正在打开”，说明是 Campanula 出错，能重试 */
-  let failedUnexpectedly = $state(false)
+  let failedUnexpectedly = $state(false);
   const open = () => {
-    failedUnexpectedly = false
+    failedUnexpectedly = false;
     app?.open().catch((error: unknown) => {
-      console.error('打开 App 失败', error)
-      failedUnexpectedly = true
-    })
-  }
+      console.error('打开 App 失败', error);
+      failedUnexpectedly = true;
+    });
+  };
 
-  open()
+  open();
 
-  /** 没登录、登录失效时打开的是已下载页（#38，ADR-0006：下载属于设备）：不换成登录页 */
-  const downloadsPage = $derived(page.route.id === '/downloads')
+  const downloadsPage = $derived(page.route.id === '/downloads');
 
   const screen = $derived(
     !session
       ? 'https'
       : failedUnexpectedly
-      ? 'failed'
-      : session.status === 'checking'
-      ? 'opening'
-      : session.status === 'checkFailed'
-      ? 'checkFailed'
-      : session.status === 'signedIn'
-      ? 'signedIn'
-      : downloadsPage ? 'signedOutDownloads' : 'login',
-  )
+        ? 'failed'
+        : session.status === 'checking'
+          ? 'opening'
+          : session.status === 'checkFailed'
+            ? 'checkFailed'
+            : session.status === 'signedIn'
+              ? 'signedIn'
+              : downloadsPage
+                ? 'signedOutDownloads'
+                : 'login',
+  );
 </script>
 
-<!--
-  换屏时新的一屏淡入（面板 360ms），旧的一屏原地淡出（200ms）、马上不占高度，新的一屏从窗口顶上开始（motion.ts 的 fadeAway）。
-  旧的在下面、新的盖在上面。从打开中换过来时，正中的花再飞到新一屏左上角，内容区从花的落点那边一块块漾开（boot/opening.ts）
--->
 {#key screen}
-  <div in:fade={{ duration: DURATIONS.panel }} out:fadeAway={{ duration: DURATIONS['panel-out'] }} {@attach arrival}>
+  <div
+    in:fade={{ duration: DURATIONS.panel }}
+    out:fadeAway={{ duration: DURATIONS['panel-out'] }}
+    {@attach arrival}
+  >
     {#if !session}
       <HttpsRequired />
     {:else if failedUnexpectedly}
@@ -102,5 +101,10 @@
 {/key}
 
 {#if mock}
-  <div class='fixed bottom-3 left-3 z-50 rounded-full bg-neutral-900 px-3 py-1 text-caption text-white shadow-lg' aria-label='Mock 测试数据'>Mock · 测试数据</div>
+  <div
+    class="fixed bottom-3 left-3 z-50 rounded-full bg-neutral-900 px-3 py-1 text-caption text-white shadow-lg"
+    aria-label="Mock 测试数据"
+  >
+    Mock · 测试数据
+  </div>
 {/if}

@@ -1,197 +1,189 @@
-import type { CoverCrop, CoverTokenResponse } from '#lib/api/cover.js'
-import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.js'
-import { endpoints } from '#lib/api/endpoints.js'
+import type { CoverCrop, CoverTokenResponse } from '#lib/api/cover.js';
+import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.js';
+import { endpoints } from '#lib/api/endpoints.js';
 
-import type { DecodedImage, ImageCapability } from './browser'
-import type { SessionApi, SessionFailure, SessionRound } from './session-round'
+import type { DecodedImage, ImageCapability } from './browser';
+import type { SessionApi, SessionFailure, SessionRound } from './session-round';
 
-// 换歌单封面（#34，Spec #11 用户故事 90–92）：选图、检查、裁剪，然后三步上传：申请上传凭证（image_upload_token）→
-// 浏览器把 800×800 JPEG 直传图片存储（跨域，带凭证）→ 服务端用图片编号设为封面（playlist_cover_update）。
-// 前两步可以取消、回到裁剪；第三步发出后不能取消，失败重试只再设一次。设为封面不检查图片（验证关卡②）：
-// 没直传成功也回 200、封面会坏，所以第三步只在第二步成功之后发。
+export type CoverProblem =
+  | { kind: 'notImage' }
+  | { kind: 'tooBig' }
+  | { kind: 'heic' }
+  | { kind: 'unreadable' };
 
-/** 界面只说是哪一种，不写文件名、大小 */
-export type CoverProblem
-  = | { kind: 'notImage' }
-    | { kind: 'tooBig' }
-    /** HEIC：桌面和 Android 上的 Chrome 都解不开（验证关卡③） */
-    | { kind: 'heic' }
-    | { kind: 'unreadable' }
+export type CoverStep = 'token' | 'upload' | 'set';
 
-export type CoverStep = 'token' | 'upload' | 'set'
-
-/** 请求本身的问题和改曲库一样翻译 */
-export type CoverFailure
-  = | SessionFailure
-    | { kind: 'uploadFailed' }
-    | { kind: 'exportFailed' }
+export type CoverFailure =
+  | SessionFailure
+  | { kind: 'uploadFailed' }
+  | { kind: 'exportFailed' };
 
 export interface CoverUpload {
-  /** 导出 JPEG 就在上传之前失败时还没开始任何一步，是 null */
-  step: CoverStep | null
-  imgId: string | null
-  failure: CoverFailure | null
+  step: CoverStep | null;
+  imgId: string | null;
+  failure: CoverFailure | null;
 }
 
-/** 裁好的正方形：工作位图上的位置，单位和那张位图的像素一样 */
+// 坐标和尺寸是工作位图上的像素
 interface CoverCropped {
-  playlistId: number
-  image: DecodedImage
-  small: boolean
+  playlistId: number;
+  image: DecodedImage;
+  small: boolean;
 }
 
-export type CoverState
-  /** 超大图要一会儿 */
-  = | { status: 'picking', playlistId: number }
-    | { status: 'unusable', playlistId: number, problem: CoverProblem }
-    | ({ status: 'cropping' } & CoverCropped)
-    | ({ status: 'uploading' } & CoverCropped & { upload: CoverUpload & { failure: null } })
-    | ({ status: 'failed' } & CoverCropped & { upload: CoverUpload & { failure: CoverFailure } })
-    /** 用设为封面后返回的 data.url，刚设完读详情有时还是旧的；网易云没给时是 null，先照旧显示原来的封面，下次同步再拿到（#78） */
-    | { status: 'done', playlistId: number, coverUrl: string | null }
+export type CoverState =
+  | { status: 'picking'; playlistId: number }
+  | { status: 'unusable'; playlistId: number; problem: CoverProblem }
+  | ({ status: 'cropping' } & CoverCropped)
+  | ({ status: 'uploading' } & CoverCropped & {
+        upload: CoverUpload & { failure: null };
+      })
+  | ({ status: 'failed' } & CoverCropped & {
+        upload: CoverUpload & { failure: CoverFailure };
+      })
+  // 刚设完读详情有时还是旧的，用设为封面返回的 url；网易云没给时是 null
+  | { status: 'done'; playlistId: number; coverUrl: string | null };
 
-/** 取消时是 null */
-export type CoverOutcome
-  = | { ok: true, coverUrl: string | null }
-    | { ok: false, step: CoverStep | null, failure: CoverFailure }
+export type CoverOutcome =
+  | { ok: true; coverUrl: string | null }
+  | { ok: false; step: CoverStep | null; failure: CoverFailure };
 
 export interface CoverContext {
-  api: SessionApi
-  session: SessionRound
-  images: ImageCapability
-  upload: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
-  write: (state: CoverState | null) => void
-  /** 把新封面地址写进曲库副本，立即显示 */
-  changed: (playlistId: number, coverUrl: string) => Promise<void>
+  api: SessionApi;
+  session: SessionRound;
+  images: ImageCapability;
+  upload: (
+    url: string,
+    jpeg: Blob,
+    token: string,
+    signal: AbortSignal,
+  ) => Promise<void>;
+  write: (state: CoverState | null) => void;
+  changed: (playlistId: number, coverUrl: string) => Promise<void>;
 }
 
 export interface PlaylistCoverEditor {
-  /** 检查大小、读出来；能用就进裁剪，不能用说明原因 */
-  prepare: (playlistId: number, file: File) => Promise<void>
-  /** 取消时回来 null */
-  upload: (crop: CoverCrop) => Promise<CoverOutcome | null>
-  cancel: () => void
-  /** 第三步失败只再设一次；别的从没成的那一步重来 */
-  retry: () => Promise<CoverOutcome | null>
-  /** 正在设为封面时关不掉 */
-  close: () => void
+  prepare: (playlistId: number, file: File) => Promise<void>;
+  upload: (crop: CoverCrop) => Promise<CoverOutcome | null>;
+  cancel: () => void;
+  retry: () => Promise<CoverOutcome | null>;
+  close: () => void;
 }
 
 interface Attempt {
-  playlistId: number
-  image: DecodedImage
-  small: boolean
-  crop: CoverCrop
-  jpeg: Blob | null
-  token: CoverTokenResponse | null
-  imgId: string | null
-  /** 只有这时才能设为封面，第三步失败重试也只再设一次 */
-  uploaded: boolean
-  controller: AbortController
-  canceled: boolean
-  running: boolean
+  playlistId: number;
+  image: DecodedImage;
+  small: boolean;
+  crop: CoverCrop;
+  jpeg: Blob | null;
+  token: CoverTokenResponse | null;
+  imgId: string | null;
+  uploaded: boolean;
+  controller: AbortController;
+  canceled: boolean;
+  running: boolean;
 }
 
-/** HEIC 的判断只能参考文件类型和扩展名：Android 的照片选择器给的是 HEIC 原图，文件名是媒体编号（验证关卡③） */
-const looksHeic = (file: File): boolean => /^image\/hei[cf]/i.test(file.type) || /\.(?:heic|heif)$/i.test(file.name)
+const looksHeic = (file: File): boolean =>
+  /^image\/hei[cf]/i.test(file.type) || /\.(?:heic|heif)$/i.test(file.name);
 
 export const createCover = (context: CoverContext): PlaylistCoverEditor => {
-  const { images } = context
-  let state: CoverState | null = null
-  let attempt: Attempt | null = null
-  /** 换了图、关掉、退出后，之前解码的结果不要 */
-  let decoding: object | null = null
+  const { images } = context;
+  let state: CoverState | null = null;
+  let attempt: Attempt | null = null;
+  let decoding: object | null = null;
 
   const write = (next: CoverState | null): void => {
-    state = next
-    context.write(next)
-  }
+    state = next;
+    context.write(next);
+  };
 
-  const cropped = (work: Attempt): CoverCropped => ({ playlistId: work.playlistId, image: work.image, small: work.small })
+  const cropped = (work: Attempt): CoverCropped => ({
+    playlistId: work.playlistId,
+    image: work.image,
+    small: work.small,
+  });
 
-  const uploading = (step: CoverStep | null, failure: CoverFailure | null = null): void => {
-    const work = attempt
-    if (!work)
-      return
+  const uploading = (
+    step: CoverStep | null,
+    failure: CoverFailure | null = null,
+  ): void => {
+    const work = attempt;
+    if (!work) return;
     const next: CoverUpload = {
       step,
       imgId: work.uploaded ? work.imgId : null,
       failure,
-    }
+    };
     if (failure) {
       write({
         status: 'failed',
         ...cropped(work),
         upload: { ...next, failure },
-      })
-    }
-    else {
+      });
+    } else {
       write({
         status: 'uploading',
         ...cropped(work),
         upload: { ...next, failure: null },
-      })
+      });
     }
-  }
+  };
 
-  /** 取消、换图、关掉、退出后，之前发出去的结果不要 */
-  const stale = (work: Attempt): boolean => work.canceled || attempt !== work
+  const stale = (work: Attempt): boolean => work.canceled || attempt !== work;
 
   const release = (): void => {
-    if (attempt)
-      images.release(attempt.image)
-    attempt = null
-  }
+    if (attempt) images.release(attempt.image);
+    attempt = null;
+  };
 
-  /** 换一张、关上、退出：还在路上的结果都不要，图片放掉 */
   const abandon = (): void => {
-    decoding = null
-    attempt?.controller.abort()
-    release()
-  }
+    decoding = null;
+    attempt?.controller.abort();
+    release();
+  };
 
-  /** 这一轮结束时已经收起（leave），返回 null */
-  const failed = (step: CoverStep | null, failure: CoverFailure): CoverOutcome | null => {
-    if (!attempt)
-      return null
-    uploading(step, failure)
-    return { ok: false, step, failure }
-  }
+  const failed = (
+    step: CoverStep | null,
+    failure: CoverFailure,
+  ): CoverOutcome | null => {
+    if (!attempt) return null;
+    uploading(step, failure);
+    return { ok: false, step, failure };
+  };
 
   const decode = async (playlistId: number, file: File): Promise<void> => {
-    const mine = {}
-    decoding = mine
-    write({ status: 'picking', playlistId })
+    const mine = {};
+    decoding = mine;
+    write({ status: 'picking', playlistId });
     if (file.size > COVER_INPUT_MAX_BYTES) {
       if (decoding === mine) {
         write({
           status: 'unusable',
           playlistId,
           problem: { kind: 'tooBig' },
-        })
+        });
       }
-      return
+      return;
     }
-    let image: DecodedImage
+    let image: DecodedImage;
     try {
-      image = await images.decode(file)
-    }
-    catch {
-      if (decoding !== mine)
-        return
+      image = await images.decode(file);
+    } catch {
+      if (decoding !== mine) return;
       const problem: CoverProblem = looksHeic(file)
         ? { kind: 'heic' }
         : !file.type || !file.type.startsWith('image/')
-            ? { kind: 'notImage' }
-            : { kind: 'unreadable' }
-      write({ status: 'unusable', playlistId, problem })
-      return
+          ? { kind: 'notImage' }
+          : { kind: 'unreadable' };
+      write({ status: 'unusable', playlistId, problem });
+      return;
     }
     if (decoding !== mine) {
-      images.release(image)
-      return
+      images.release(image);
+      return;
     }
-    decoding = null
+    decoding = null;
     attempt = {
       playlistId,
       image,
@@ -204,130 +196,121 @@ export const createCover = (context: CoverContext): PlaylistCoverEditor => {
       controller: new AbortController(),
       canceled: false,
       running: false,
-    }
+    };
     write({
       status: 'cropping',
       ...cropped(attempt),
-    })
-  }
+    });
+  };
 
   const exportJpeg = async (work: Attempt): Promise<boolean> => {
-    if (work.jpeg)
-      return true
+    if (work.jpeg) return true;
     try {
-      const blob = await images.exportJpeg(work.image, work.crop)
-      if (!work.canceled)
-        work.jpeg = blob
-      return true
+      const blob = await images.exportJpeg(work.image, work.crop);
+      if (!work.canceled) work.jpeg = blob;
+      return true;
+    } catch {
+      return false;
     }
-    catch {
-      return false
-    }
-  }
+  };
 
-  /** token → upload → set，只重试没成的部分（第三步失败就只再设一次） */
   const run = async (from: CoverStep): Promise<CoverOutcome | null> => {
-    const work = attempt
-    if (!work || work.running)
-      return null
-    work.running = true
-    work.canceled = false
-    work.controller = new AbortController()
-    let step = from
+    const work = attempt;
+    if (!work || work.running) return null;
+    work.running = true;
+    work.canceled = false;
+    work.controller = new AbortController();
+    let step = from;
     try {
       if (step !== 'set') {
-        if (!work.jpeg && !await exportJpeg(work)) {
-          if (stale(work))
-            return null
-          return failed(null, { kind: 'exportFailed' })
+        if (!work.jpeg && !(await exportJpeg(work))) {
+          if (stale(work)) return null;
+          return failed(null, { kind: 'exportFailed' });
         }
-        if (stale(work))
-          return null
+        if (stale(work)) return null;
       }
       if (step === 'token') {
-        uploading('token')
-        const result = await context.api.post(endpoints.coverToken, { id: work.playlistId })
-        if (!result || stale(work))
-          return null
-        if (!result.ok)
-          return failed('token', result.failure)
-        work.token = result.value
-        work.imgId = result.value.imgId
-        step = 'upload'
+        uploading('token');
+        const result = await context.api.post(endpoints.coverToken, {
+          id: work.playlistId,
+        });
+        if (!result || stale(work)) return null;
+        if (!result.ok) return failed('token', result.failure);
+        work.token = result.value;
+        work.imgId = result.value.imgId;
+        step = 'upload';
       }
       if (step === 'upload') {
-        uploading('upload')
+        uploading('upload');
         try {
-          await context.upload(work.token!.uploadUrl, work.jpeg!, work.token!.token, work.controller.signal)
+          await context.upload(
+            work.token!.uploadUrl,
+            work.jpeg!,
+            work.token!.token,
+            work.controller.signal,
+          );
+        } catch {
+          if (stale(work)) return null;
+          return failed('upload', { kind: 'uploadFailed' });
         }
-        catch {
-          if (stale(work))
-            return null
-          return failed('upload', { kind: 'uploadFailed' })
-        }
-        if (stale(work))
-          return null
-        work.uploaded = true
-        step = 'set'
+        if (stale(work)) return null;
+        work.uploaded = true;
+        step = 'set';
       }
-      uploading('set')
-      const result = await context.api.post(endpoints.setCover, { id: work.playlistId }, { imgId: work.imgId! })
-      if (!result || stale(work))
-        return null
-      if (!result.ok)
-        return failed('set', result.failure)
-      const coverUrl = result.value.url
-      if (coverUrl !== null)
-        await context.changed(work.playlistId, coverUrl)
-      if (stale(work))
-        return null
-      images.release(work.image)
-      attempt = null
-      write({ status: 'done', playlistId: work.playlistId, coverUrl })
-      return { ok: true, coverUrl }
+      uploading('set');
+      // 设为封面不检查图片有没有传上去：网易云照样回 200，封面是坏的，所以必须等直传成功
+      const result = await context.api.post(
+        endpoints.setCover,
+        { id: work.playlistId },
+        { imgId: work.imgId! },
+      );
+      if (!result || stale(work)) return null;
+      if (!result.ok) return failed('set', result.failure);
+      const coverUrl = result.value.url;
+      if (coverUrl !== null) await context.changed(work.playlistId, coverUrl);
+      if (stale(work)) return null;
+      images.release(work.image);
+      attempt = null;
+      write({ status: 'done', playlistId: work.playlistId, coverUrl });
+      return { ok: true, coverUrl };
+    } finally {
+      work.running = false;
     }
-    finally {
-      work.running = false
-    }
-  }
+  };
 
-  /** 不管在做什么都收起来，释放图片 */
   const leave = (): void => {
-    abandon()
-    write(null)
-  }
+    abandon();
+    write(null);
+  };
 
   context.session.onChange((change) => {
-    if (change.kind !== 'signedIn')
-      leave()
-  })
+    if (change.kind !== 'signedIn') leave();
+  });
 
   return {
     async prepare(playlistId, file) {
-      // 正在设为封面时不能换图：那一步停不下来
-      if (state?.status === 'uploading' && state.upload.step === 'set')
-        return
-      abandon()
-      await decode(playlistId, file)
+      if (state?.status === 'uploading' && state.upload.step === 'set') return;
+      abandon();
+      await decode(playlistId, file);
     },
     async upload(crop) {
       if (!attempt || state?.status !== 'cropping' || attempt.running)
-        return null
-      // 取消后回到裁剪、又挪过取景框：不能再用取消前导出的那张
-      if (attempt.crop.x !== crop.x || attempt.crop.y !== crop.y || attempt.crop.size !== crop.size)
-        attempt.jpeg = null
-      attempt.crop = crop
-      return run('token')
+        return null;
+      if (
+        attempt.crop.x !== crop.x ||
+        attempt.crop.y !== crop.y ||
+        attempt.crop.size !== crop.size
+      )
+        attempt.jpeg = null;
+      attempt.crop = crop;
+      return run('token');
     },
     cancel() {
-      if (!attempt || state?.status !== 'uploading')
-        return
-      if (state.upload.step === 'set')
-        return
-      const old = attempt
-      old.canceled = true
-      old.controller.abort()
-      // 图片还留着给裁剪页用：下一次上传另建一份 attempt，旧的结果回来时看到 attempt 换了就不要了
+      if (!attempt || state?.status !== 'uploading') return;
+      if (state.upload.step === 'set') return;
+      const old = attempt;
+      old.canceled = true;
+      old.controller.abort();
       attempt = {
         ...old,
         token: null,
@@ -335,22 +318,20 @@ export const createCover = (context: CoverContext): PlaylistCoverEditor => {
         controller: new AbortController(),
         canceled: false,
         running: false,
-      }
+      };
       write({
         status: 'cropping',
         ...cropped(attempt),
-      })
+      });
     },
     async retry() {
-      if (!attempt || state?.status !== 'failed')
-        return null
-      return run(attempt.uploaded ? 'set' : 'token')
+      if (!attempt || state?.status !== 'failed') return null;
+      return run(attempt.uploaded ? 'set' : 'token');
     },
     close() {
-      if (state?.status === 'uploading' && state.upload.step === 'set')
-        return
-      abandon()
-      write(null)
+      if (state?.status === 'uploading' && state.upload.step === 'set') return;
+      abandon();
+      write(null);
     },
-  }
-}
+  };
+};

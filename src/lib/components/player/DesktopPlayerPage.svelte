@@ -1,125 +1,174 @@
-<!--
-  桌面播放页（DESIGN.md Layout · 播放页，原型 DesktopPlayer）：顶上收起键和“来自「…」”（“正在播放”是整页的读屏名字，在 PlayerPage 上），正中一个拖动把手
-  （按住往下拖，过了阈值松手就收起，不到就弹回；点按也收起）；
-  左列封面、歌名（右边是红心键和“更多”菜单）、波浪进度条、循环 / 上一首 / 播放 / 下一首 / 随机播放、音量（触屏设备上没有：手机、平板音量恒为 100%）；右列在 歌词 / 播放队列 之间切换
-  （ui/Segmented 标签页，←/→ 换标签）：两块并排放在一条轨道上、一直挂着，换标签时轨道和滑块一起横着滑，看不见的那块 Tab 不到、读屏读不到。
-  播放队列和歌词一样直接铺在封面染底上（作者 2026-10-31 定，偏离原型的白卡）；切到它时轨道还没滑过来，当前这首就已经停在第二行。
-  整页放进视口，不滚动。换歌时封面换碟（CoverWheel），转出左列的部分淡掉，不压到歌词。
-  “更多”菜单和歌曲行里的是同一份（#38：能在这里下载当前这首），播放来源是这首歌自己的。放在 PlayerPage 里
--->
-<script lang='ts'>
-  import { ChevronDown } from '@lucide/svelte'
+<script lang="ts">
+  import { ChevronDown } from '@lucide/svelte';
 
-  import type { Song } from '#lib/api/library.js'
+  import type { Song } from '#lib/api/library.js';
 
-  import { getOverlays } from '../overlay/overlay-context'
-  import { getAppView } from '../shared/app-context.svelte'
-  import { fade } from '../shared/motion'
-  import { DURATIONS } from '../shared/motion-tokens'
-  import { langOf } from '../shared/text'
-  import HeartButton from '../songs/HeartButton.svelte'
-  import SongMoreButton from '../songs/SongMoreButton.svelte'
-  import IconButton from '../ui/IconButton.svelte'
-  import Segmented from '../ui/Segmented.svelte'
-  import CoverWheel from './CoverWheel.svelte'
-  import Lyrics from './Lyrics.svelte'
-  import NowPlayingTitle from './NowPlayingTitle.svelte'
-  import PlayButton from './PlayButton.svelte'
-  import { playerPageChoices as choices, playerPageActions } from './player-page.svelte'
-  import type { Playhead } from './playhead.svelte'
-  import PlayModeButton from './PlayModeButton.svelte'
-  import QueueList from './QueueList.svelte'
-  import SkipButton from './SkipButton.svelte'
-  import type { Turn } from './view'
-  import { PAGE_COVER } from './view'
-  import VolumeControl from './VolumeControl.svelte'
-  import WaveProgress from './WaveProgress.svelte'
+  import { getOverlays } from '../overlay/overlay-context';
+  import { getAppView } from '../shared/app-context.svelte';
+  import { fade } from '../shared/motion';
+  import { DURATIONS } from '../shared/motion-tokens';
+  import { langOf } from '../shared/text';
+  import HeartButton from '../songs/HeartButton.svelte';
+  import SongMoreButton from '../songs/SongMoreButton.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import Segmented from '../ui/Segmented.svelte';
+  import CoverWheel from './CoverWheel.svelte';
+  import Lyrics from './Lyrics.svelte';
+  import NowPlayingTitle from './NowPlayingTitle.svelte';
+  import PlayButton from './PlayButton.svelte';
+  import {
+    playerPageChoices as choices,
+    playerPageActions,
+  } from './player-page.svelte';
+  import type { Playhead } from './playhead.svelte';
+  import PlayModeButton from './PlayModeButton.svelte';
+  import QueueList from './QueueList.svelte';
+  import SkipButton from './SkipButton.svelte';
+  import type { Turn } from './view';
+  import { PAGE_COVER } from './view';
+  import VolumeControl from './VolumeControl.svelte';
+  import WaveProgress from './WaveProgress.svelte';
 
-  const { song, source, playhead, turn }: { song: Song, source: string | null, playhead: Playhead, turn: Turn | null } = $props()
-  const view = getAppView()
-  const { closePlayerPage } = playerPageActions()
-  const { playerDrawer } = getOverlays()
-  /** “更多”菜单放进播放队列时用它自己的播放来源 */
-  const entry = $derived(view.state.player.current === null
-    ? null
-    : view.state.player.queue[view.state.player.current])
+  const {
+    song,
+    source,
+    playhead,
+    turn,
+  }: {
+    song: Song;
+    source: string | null;
+    playhead: Playhead;
+    turn: Turn | null;
+  } = $props();
+  const view = getAppView();
+  const { closePlayerPage } = playerPageActions();
+  const { playerDrawer } = getOverlays();
+  const entry = $derived(
+    view.state.player.current === null
+      ? null
+      : view.state.player.queue[view.state.player.current],
+  );
 
   const PANELS = [
     { key: 'lyrics', label: '歌词' },
     { key: 'queue', label: '播放队列' },
-  ] as const
+  ] as const;
 
-  const uid = $props.id()
-  const gripHandle = playerDrawer.grip({ from: 'open', commit: closePlayerPage, tap: closePlayerPage })
+  const uid = $props.id();
+  const gripHandle = playerDrawer.grip({
+    from: 'open',
+    commit: closePlayerPage,
+    tap: closePlayerPage,
+  });
 </script>
 
-<header class='relative h-16 flex flex-none items-center gap-3 px-6'>
-  <IconButton icon={ChevronDown} label='收起播放页' title='收起（Esc）' onclick={closePlayerPage} />
+<header class="relative h-16 flex flex-none items-center gap-3 px-6">
+  <IconButton
+    icon={ChevronDown}
+    label="收起播放页"
+    title="收起（Esc）"
+    onclick={closePlayerPage}
+  />
   {#if source}
-    <p class='min-w-0 truncate text-label text-neutral-700' transition:fade>来自「<span lang={langOf(source)}>{source}</span>」</p>
+    <p class="min-w-0 truncate text-label text-neutral-700" transition:fade>
+      来自「<span lang={langOf(source)}>{source}</span>」
+    </p>
   {/if}
-  <!-- 给鼠标用的把手：键盘用收起键和 Esc，不进 Tab 顺序（和遮罩一样） -->
   <button
-    type='button'
-    class='group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab place-items-center rounded-full -translate-x-1/2'
-    aria-label='拖动把手：往下拖或点按，收起播放页'
-    tabindex='-1'
+    type="button"
+    class="group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab place-items-center rounded-full -translate-x-1/2"
+    aria-label="拖动把手：往下拖或点按，收起播放页"
+    tabindex="-1"
     {@attach gripHandle}
   >
-    <span class='h-1 w-10 rounded-full bg-neutral-400 transition-colors duration-feedback mouse:group-hover:bg-neutral-600' aria-hidden='true'></span>
+    <span
+      class="h-1 w-10 rounded-full bg-neutral-400 transition-colors duration-feedback mouse:group-hover:bg-neutral-600"
+      aria-hidden="true"
+    ></span>
   </button>
 </header>
 
-<!-- 栏间距写在 --gap 上，换碟遮罩按它算；左右留白写在 --gutter 上，歌词向右借它；封面边长写在 --cover 上，宽屏时左列和它一样宽 -->
-<div class='columns relative grid mx-auto max-w-[1440px] min-h-0 w-full flex-1 pb-8'>
-  <section class='min-h-0 flex flex-col justify-center' aria-label='播放控制'>
-    <div class='stage'>
-      <div class='cover mx-auto'>
-        <CoverWheel {song} {turn} duration={DURATIONS.focal} size={PAGE_COVER.desktop} fluid eager class='rounded-xl shadow-float' />
+<!-- --gap 也给换碟遮罩用；--gutter 给歌词向右借出；宽屏时左列与 --cover 等宽 -->
+<div
+  class="columns relative grid mx-auto max-w-[1440px] min-h-0 w-full flex-1 pb-8"
+>
+  <section class="min-h-0 flex flex-col justify-center" aria-label="播放控制">
+    <div class="stage">
+      <div class="cover mx-auto">
+        <CoverWheel
+          {song}
+          {turn}
+          duration={DURATIONS.focal}
+          size={PAGE_COVER.desktop}
+          fluid
+          eager
+          class="rounded-xl shadow-float"
+        />
       </div>
     </div>
 
-    <div class='mt-6 flex items-start gap-1'>
-      <div class='min-w-0 flex-1'>
+    <div class="mt-6 flex items-start gap-1">
+      <div class="min-w-0 flex-1">
         <NowPlayingTitle {song} {turn} />
       </div>
-      <HeartButton {song} size='desktop' />
-      {#if entry}<SongMoreButton song={entry.song} source={entry.source} size='desktop-page' />{/if}
+      <HeartButton {song} size="desktop" />
+      {#if entry}<SongMoreButton
+          song={entry.song}
+          source={entry.source}
+          size="desktop-page"
+        />{/if}
     </div>
 
-    <div class='mt-3'>
+    <div class="mt-3">
       <WaveProgress {playhead} />
     </div>
 
-    <div class='mt-3 flex items-center justify-between'>
-      <PlayModeButton kind='repeat' />
-      <div class='flex items-center gap-2 lg:gap-4'>
-        <SkipButton direction='previous' />
+    <div class="mt-3 flex items-center justify-between">
+      <PlayModeButton kind="repeat" />
+      <div class="flex items-center gap-2 lg:gap-4">
+        <SkipButton direction="previous" />
         <PlayButton size={64} />
-        <SkipButton direction='next' />
+        <SkipButton direction="next" />
       </div>
-      <PlayModeButton kind='shuffle' />
+      <PlayModeButton kind="shuffle" />
     </div>
 
     {#if !view.state.touchPrimary}
-      <div class='mt-4 flex items-center gap-2 -ml-2.5'>
-        <VolumeControl class='flex-1' />
+      <div class="mt-4 flex items-center gap-2 -ml-2.5">
+        <VolumeControl class="flex-1" />
       </div>
     {/if}
   </section>
 
-  <section class='min-h-0 flex flex-col' aria-label='歌词和播放队列'>
-    <Segmented options={PANELS} value={choices.panel} onchange={key => (choices.panel = key)} role='tab' id={uid} label='右栏显示' class='h-11 w-[232px] flex-none self-start bg-white/70 shadow-ambient' />
+  <section class="min-h-0 flex flex-col" aria-label="歌词和播放队列">
+    <Segmented
+      options={PANELS}
+      value={choices.panel}
+      onchange={(key) => (choices.panel = key)}
+      role="tab"
+      id={uid}
+      label="右栏显示"
+      class="h-11 w-[232px] flex-none self-start bg-white/70 shadow-ambient"
+    />
 
-    <!-- 歌词、队列并排一条轨道，两块一直挂着（歌词滚动位置不丢），换标签和分段条滑块一起横滑；看不见的那块 inert -->
-    <div class='track mt-5 min-h-0 flex-1' style:--shown={PANELS.findIndex(panel => panel.key === choices.panel)}>
+    <div
+      class="track mt-5 min-h-0 flex-1"
+      style:--shown={PANELS.findIndex((panel) => panel.key === choices.panel)}
+    >
       {#each PANELS as panel, index (panel.key)}
         {@const selected = choices.panel === panel.key}
-        <div id='{uid}-{panel.key}' role='tabpanel' aria-labelledby='{uid}-{panel.key}-tab' class={['slide min-h-0 flex flex-col', !selected && 'away']} style:--slot={index} inert={!selected}>
+        <div
+          id="{uid}-{panel.key}"
+          role="tabpanel"
+          aria-labelledby="{uid}-{panel.key}-tab"
+          class={['slide min-h-0 flex flex-col', !selected && 'away']}
+          style:--slot={index}
+          inert={!selected}
+        >
           {#if panel.key === 'queue'}
-            <QueueList class='flex-1' ground shown={selected} />
+            <QueueList class="flex-1" ground shown={selected} />
           {:else}
-            <Lyrics {song} {playhead} class='flex-1' />
+            <Lyrics {song} {playhead} class="flex-1" />
           {/if}
         </div>
       {/each}
@@ -128,8 +177,6 @@
 </div>
 
 <style>
-  /* 窄于 1024px 时两栏按比例分，右栏歌词不致挤成一两个字一行。1024px 及以上左列和封面一样宽（至少 320px，放得下控制键）：
-     视口矮、封面被压小时，省下的宽度给歌词，封面本身大小不变 */
   .columns {
     --gap: 40px;
     --gutter: 32px;
@@ -149,30 +196,29 @@
     }
   }
 
-     /* 换碟只在左列里转：遮罩两边各伸出半个栏间距并淡掉，转出去的封面碰不到歌词。
-     上下多留出地方，转开的封面往下沉、封面的阴影都不被裁掉；它不接点按，盖着下面的歌名、进度条也不碍事 */
   .stage {
     --bleed: calc(var(--gap) / 2);
     --rise: 48px;
     --sink: 50%;
 
-    margin: calc(-1 * var(--rise)) calc(-1 * var(--bleed)) calc(-1 * var(--sink));
+    margin: calc(-1 * var(--rise)) calc(-1 * var(--bleed))
+      calc(-1 * var(--sink));
     padding: var(--rise) var(--bleed) var(--sink);
-    mask-image: linear-gradient(to right, transparent, #000 var(--bleed), #000 calc(100% - var(--bleed)), transparent);
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--bleed),
+      #000 calc(100% - var(--bleed)),
+      transparent
+    );
     pointer-events: none;
   }
 
-  /* 视口矮时封面跟着缩，不把控制键挤出视口 */
   .cover {
     width: 100%;
     max-width: var(--cover);
   }
 
-     /* 右栏轨道：两块叠在一格，各自按离显示那块隔几格横摆（一格是自己的宽度加 --track-gap），和分段条滑块一起滑（面板 360ms）。
-     左边多留 --bleed（歌词滚动区向左伸出 8px，字和开关对齐、焦点环画在它的边内）、右边多留整段页面留白（--gutter）再裁掉：歌词向右借出留白（放胶囊、让长宽更宽）。
-     两块隔开 --gutter 再加 --bleed，看不见的那块（连同歌词向左伸出、向右借出的那段）不露边。
-     看不见的那块是透明的：减少动态效果时轨道不滑（--move-* 是 0），换成原地交叉淡化（最多 150ms）。
-     下面两处时长、延迟用 --duration-* 减去 --move-*：正常时是 0，整条轨道不透明地滑；减少动态效果时就是淡入淡出的时长 */
   .track {
     --bleed: 8px;
     --track-gap: calc(var(--gutter) + var(--bleed));
@@ -184,20 +230,20 @@
     overflow-x: clip;
   }
 
-  /* 正常时先变不透明再滑进来；减少动态效果时原地淡入 */
   .slide {
     grid-area: 1 / 1;
     translate: calc((var(--slot) - var(--shown)) * (100% + var(--track-gap)));
     transition:
       translate var(--move-panel) var(--ease-out-soft),
-      opacity calc(var(--duration-panel) - var(--move-panel)) var(--ease-out-soft);
+      opacity calc(var(--duration-panel) - var(--move-panel))
+        var(--ease-out-soft);
   }
 
-  /* 正常时滑出去以后才变透明；减少动态效果时先原地淡出再挪开 */
   .slide.away {
     opacity: 0;
     transition:
-      translate var(--move-panel) var(--ease-out-soft) calc(var(--duration-panel-out) - var(--move-panel-out)),
+      translate var(--move-panel) var(--ease-out-soft)
+        calc(var(--duration-panel-out) - var(--move-panel-out)),
       opacity var(--duration-panel-out) var(--ease-in-soft) var(--move-panel);
   }
 </style>

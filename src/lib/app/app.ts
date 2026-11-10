@@ -1,287 +1,257 @@
-import type { Account } from '#lib/api/account.js'
-import type { CoverCrop } from '#lib/api/cover.js'
-import { endpoints } from '#lib/api/endpoints.js'
-import type { ArtistSongOrder, CollectedAlbum, CollectedArtist, CreatePlaylistRequest, Playlist, Song } from '#lib/api/library.js'
-import { playlistName } from '#lib/api/library.js'
-import type { PlaySource, Quality } from '#lib/api/playback.js'
-import type { SearchedItems, SearchKind } from '#lib/api/search.js'
+import type { Account } from '#lib/api/account.js';
+import type { CoverCrop } from '#lib/api/cover.js';
+import { endpoints } from '#lib/api/endpoints.js';
+import type {
+  ArtistSongOrder,
+  CollectedAlbum,
+  CollectedArtist,
+  CreatePlaylistRequest,
+  Playlist,
+  Song,
+} from '#lib/api/library.js';
+import { playlistName } from '#lib/api/library.js';
+import type { PlaySource, Quality } from '#lib/api/playback.js';
+import type { SearchedItems, SearchKind } from '#lib/api/search.js';
 
-import type { RequestFailure, Result } from './api-client'
-import { createApi } from './api-client'
-import type { BrowserCapabilities } from './browser'
-import type { PlaylistEdit, PlaylistSeed } from './changes'
-import { changeProblem, playlistEdits } from './changes'
-import type { CheckIns } from './check-ins'
-import { createCheckIns } from './check-ins'
-import type { CoverOutcome, CoverState } from './cover'
-import { createCover } from './cover'
-import type { DailyState } from './daily'
-import { createDaily } from './daily'
-import type { DownloadBatchOutcome, DownloadBlock, DownloadRemoval, DownloadSource, DownloadsState, DownloadStartBlock } from './downloads'
-import { createDownloads, downloadBlock as downloadBlockFor, INITIAL_DOWNLOADS } from './downloads'
-import type { ExportState } from './export'
-import { createExports } from './export'
-import type { AddSongsOutcome, AddTarget, AddTargetsRequest, ArtistTab, CreateOutcome, LibraryState, PlaylistGroups, PlaylistSearch } from './library'
-import { createLibrary, filterAlbums, filterArtists, filterPlaylists, filterSongs, searchPlaylist } from './library'
-import { createLocalDatabase, createLocalDb } from './local'
-import type { LoginState } from './login'
-import { createLogin, INITIAL_LOGIN } from './login'
-import type { LyricsState } from './lyrics'
-import { createLyrics } from './lyrics'
-import { connectMediaSession } from './media-session'
-import type { NoticeAction, NoticeEntry, NoticeTone, ShowNoticeOptions } from './notice'
-import { createNotices } from './notice'
-import { createBackgroundLane } from './pacing'
-import { plainSong, plainSource } from './plain'
-import type { Player, PlayerState, PlayMode } from './player'
-import { createPlayer, DEFAULT_VOLUME, INITIAL_PLAYER } from './player'
-import { createSavedQueue } from './saved-queue'
-import type { SearchState } from './search'
-import { createSearch, INITIAL_SEARCH } from './search'
-import type { Session } from './session-round'
-import { createSessionRound } from './session-round'
+import type { RequestFailure, Result } from './api-client';
+import { createApi } from './api-client';
+import type { BrowserCapabilities } from './browser';
+import type { PlaylistEdit, PlaylistSeed } from './changes';
+import { changeProblem, playlistEdits } from './changes';
+import type { CheckIns } from './check-ins';
+import { createCheckIns } from './check-ins';
+import type { CoverOutcome, CoverState } from './cover';
+import { createCover } from './cover';
+import type { DailyState } from './daily';
+import { createDaily } from './daily';
+import type {
+  DownloadBatchOutcome,
+  DownloadBlock,
+  DownloadRemoval,
+  DownloadSource,
+  DownloadsState,
+  DownloadStartBlock,
+} from './downloads';
+import {
+  createDownloads,
+  downloadBlock as downloadBlockFor,
+  INITIAL_DOWNLOADS,
+} from './downloads';
+import type { ExportState } from './export';
+import { createExports } from './export';
+import type {
+  AddSongsOutcome,
+  AddTarget,
+  AddTargetsRequest,
+  ArtistTab,
+  CreateOutcome,
+  LibraryState,
+  PlaylistGroups,
+  PlaylistSearch,
+} from './library';
+import {
+  createLibrary,
+  filterAlbums,
+  filterArtists,
+  filterPlaylists,
+  filterSongs,
+  searchPlaylist,
+} from './library';
+import { createLocalDatabase, createLocalDb } from './local';
+import type { LoginState } from './login';
+import { createLogin, INITIAL_LOGIN } from './login';
+import type { LyricsState } from './lyrics';
+import { createLyrics } from './lyrics';
+import { connectMediaSession } from './media-session';
+import type {
+  NoticeAction,
+  NoticeEntry,
+  NoticeTone,
+  ShowNoticeOptions,
+} from './notice';
+import { createNotices } from './notice';
+import { createBackgroundLane } from './pacing';
+import { plainSong, plainSource } from './plain';
+import type { Player, PlayerState, PlayMode } from './player';
+import { createPlayer, DEFAULT_VOLUME, INITIAL_PLAYER } from './player';
+import { createSavedQueue } from './saved-queue';
+import type { SearchState } from './search';
+import { createSearch, INITIAL_SEARCH } from './search';
+import type { Session } from './session-round';
+import { createSessionRound } from './session-round';
 
-/** 会改登录 Cookie 的请求排队用的跨标签页锁：不排队的话，退出先回、续期后回，续期写回的 Cookie 会把刚退出的登录又带回来 */
-const LOGIN_COOKIE_LOCK = 'campanula:login-cookie'
-const SESSION_CHANNEL = 'campanula:session'
+const LOGIN_COOKIE_LOCK = 'campanula:login-cookie';
+const SESSION_CHANNEL = 'campanula:session';
 
-/** 只有同源的 Campanula 页面能发进这个频道 */
-type SessionMessage
-  = | { type: 'signedOut' }
+interface SessionMessage {
+  type: 'signedOut';
+}
 
-/** 点一首歌时用整个列表替换播放队列；一次搜索不是列表，点歌是插播 */
-type ListSource = Exclude<PlaySource, { kind: 'search' }>
+type ListSource = Exclude<PlaySource, { kind: 'search' }>;
 
 export interface CollectTarget {
-  kind: 'playlist' | 'album' | 'artist'
-  id: number
+  kind: 'playlist' | 'album' | 'artist';
+  id: number;
 }
 
-/** App 自己决定什么时候去拉、副本到了要不要重拉、歌单进出曲库时怎么切换；页面只报告在看什么 */
-type ViewedPage
-  = | { kind: 'playlist', id: number }
-    | { kind: 'album', id: number }
-    | { kind: 'artist', id: number, tab: ArtistTab, order: ArtistSongOrder }
-    | { kind: 'daily' }
-    | { kind: 'search', keyword: string }
+type ViewedPage =
+  | { kind: 'playlist'; id: number }
+  | { kind: 'album'; id: number }
+  | { kind: 'artist'; id: number; tab: ArtistTab; order: ArtistSongOrder }
+  | { kind: 'daily' }
+  | { kind: 'search'; keyword: string };
 
 export interface AppState {
-  session: Session
-  login: LoginState
-  /** 曲库副本（ADR-0007）：登录了才有，先显示本机副本，再在后台同步 */
-  library: LibraryState | null
-  /** 提示条（最多 3 条）：这里是唯一数据源，界面只照着画；登录前后都在 */
-  notices: readonly NoticeEntry[]
-  player: PlayerState
-  lyrics: LyricsState | null
-  /** 只在这次登录期间记着 */
-  daily: DailyState | null
-  /** 搜索历史存在这台设备上，退出、换账号都不删 */
-  search: SearchState
-  /** 属于设备，没登录时也有（#38） */
-  downloads: DownloadsState
-  /** 浏览器能选文件夹（ADR-0014）：不能时不显示“导出” */
-  readonly exportable: boolean
-  /** 以触屏为主的设备（手机、平板，作者 2026-11-04 定）：没有音量入口，音量恒为 100%，桌面播放条和播放页上也不画音量（DESIGN.md Layout · 播放页） */
-  readonly touchPrimary: boolean
-  /** 这一次导出（#79）：选好文件夹以后到听众看完结果；没在导出是 null */
-  exporting: ExportState | null
-  cover: CoverState | null
-  /** 联网着（navigator.onLine）：断网时没下载的歌放不了（#38） */
-  online: boolean
-  /** 这首歌现在能不能放：下载了的永远能放（ADR-0006）；没下载的要能在线放（联网、登录着），无版权不能放 */
-  readonly playable: (song: Song) => boolean
-  /** 这首歌现在能不能下载、为什么不能：和 App.download 用同一份规则，界面照着写“下载”那一项 */
-  readonly downloadBlock: (song: Song) => DownloadBlock | null
+  session: Session;
+  login: LoginState;
+  library: LibraryState | null;
+  notices: readonly NoticeEntry[];
+  player: PlayerState;
+  lyrics: LyricsState | null;
+  daily: DailyState | null;
+  search: SearchState;
+  downloads: DownloadsState;
+  readonly exportable: boolean;
+  readonly touchPrimary: boolean;
+  exporting: ExportState | null;
+  cover: CoverState | null;
+  online: boolean;
+  readonly playable: (song: Song) => boolean;
+  readonly downloadBlock: (song: Song) => DownloadBlock | null;
 }
 
-/** 去掉界面的整个 App：界面读它的状态、把听众的操作交给它 */
 export interface App {
-  readonly state: AppState
-  subscribe: (listener: () => void) => () => void
-  /** 问服务端当前账号是谁；没问到时可以再调一次重试 */
-  open: () => Promise<void>
-  /** 显示一张新的二维码并查询扫码状态直到登录成功、过期或出错；也用来刷新、重试 */
-  startQrLogin: () => Promise<void>
-  /** 换成短信验证码、离开登录页时停止查询 */
-  stopQrLogin: () => void
-  /** 听众在手机上验证完了：再查一次扫码状态 */
-  continueQrLogin: () => Promise<void>
-  sendCaptcha: (phone: string) => Promise<void>
-  loginWithCaptcha: (phone: string, captcha: string) => Promise<void>
-  /** App 马上当作未登录，删除本机的曲库副本和播放队列（设置留着）；断网或服务端出错时 Cookie 删不掉，记下来，联网后、下次打开时再发（ADR-0003） */
-  logout: () => Promise<void>
-  /** 从停下的地方接着同步 */
-  retrySync: () => void
-  /** 返回的函数在离开时调用（页面里写 `$effect(() => view.app.viewing(...))`）；离开歌单时提交还没提交的移除和排序（页面隐藏时 deferred 自己也会提交） */
-  viewing: (page: ViewedPage) => () => void
-  /** 本机还没有它最新、完整的曲目就用前台请求拉，不等后台同步；不在曲库里的歌单每次打开都联网取，不存本机（ADR-0007） */
-  openPlaylist: (playlistId: number) => Promise<void>
-  /** 在本机副本（不在曲库里的歌单是打开时取到的歌）里即时完成；还没同步全时结果标“可能不全”，不认识这张歌单时是 null */
-  searchPlaylist: (playlistId: number, query: string) => PlaylistSearch | null
-  /** 这次登录还没拉过就用前台请求拉；收藏的专辑打开过就存在本机，再打开先显示存着的、断网也能看 */
-  openAlbum: (albumId: number) => Promise<void>
-  /** 这次登录还没拉过就用前台请求拉头部、热门排法的第一页歌曲和第一页专辑；没拉成时就是重试 */
-  openArtist: (artistId: number) => Promise<void>
-  /** 这种排法的第一页还没取过、或者没取成时取（重试） */
-  openArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>
-  /** 这种排法的下一页接在已经显示的后面；没取成时已经显示的不动，再调一次就是重试 */
-  moreArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>
-  moreArtistAlbums: (artistId: number) => Promise<void>
-  /** 简介还没取过、或者没取成时取（重试） */
-  openArtistIntro: (artistId: number) => Promise<void>
-  /** 今天这份（网易云北京时间 6:00 换）还没拉过就用前台请求拉；只在这次登录期间记着、不存本机 */
-  openDaily: () => Promise<void>
-  /** 停手一会儿才问网易云，只要最后打的词的建议；空的就收起 */
-  suggest: (keyword: string) => void
-  /** 把词记进搜索历史（存在这台设备上），打开这个词的结果 */
-  search: (keyword: string) => Promise<void>
-  /** 四类的第一页一起用前台请求拉；只记着最后一次搜的词的，结果记着时只重拉第一页没拉成的那几类 */
-  openSearch: (keyword: string) => Promise<void>
-  moreSearchResults: (keyword: string, kind: SearchKind) => Promise<void>
-  /** 这台设备上存的也删 */
-  clearSearchHistory: () => Promise<void>
-  /**
-   * 点歌规则（Spec #11）：列表里点用整个列表替换播放队列，还没同步全的先放已有的、有全了补上（规则⑫）；
-   * 搜索结果里点是插播，排在当前这首后面并立即播放（规则④）。现在放不了的歌不能点（无版权；断网、没登录时没下载的，#38）
-   */
-  play: (source: PlaySource, songId: number) => void
-  /** 和点列表里第一首现在能放的歌一样；一首能放的都没有就什么都不做。搜索结果没有播放全部 */
-  playAll: (source: PlaySource) => void
-  /** 出了问题停下时就是重试 */
-  togglePlay: () => void
-  next: () => void
-  previous: () => void
-  /** 播放队列不变；正在放的那首、现在放不了的不动 */
-  playFromQueue: (index: number) => void
-  /** 排在当前这首后面，连续几次时后加的先放（规则⑤），随机模式下也是下一首（规则③）；队列空就直接开始放（规则①） */
-  playNext: (source: PlaySource, song: Song) => void
-  /** 排到最后，随机模式下也最后放（规则③）；队列空就直接开始放（规则①） */
-  addToQueue: (source: PlaySource, song: Song) => void
-  /** 正在放的那首移不掉 */
-  removeFromQueue: (index: number) => void
-  /** 停下，播放条收起 */
-  clearQueue: () => void
-  /** 单曲循环放完从头再放这首、按下一首照样换歌；随机播放另排一份顺序、播放队列的先后不变，当前这首和“下一首播放”留在最前 */
-  setPlayMode: (mode: PlayMode) => void
-  /** 在放就从那里接着放，停着就等按播放；超出的算开头、结尾 */
-  seek: (position: number) => void
-  /** 点歌词的一行：停着的也接着放 */
-  playFrom: (position: number) => void
-  /** 存在这台设备上，退出、换账号都不变；下次打开 App 照这个音量 */
-  setVolume: (volume: number) => void
-  /** 存在这台设备上，退出、换账号都不变；从下一首起生效，正在放的那首照旧放完 */
-  setPlayQuality: (quality: Quality) => void
-  dismissPlayerNotice: () => void
-  /** 已经取到、正在取就不再取 */
-  openLyrics: (songId: number) => Promise<void>
-  /** 先改本地、立即生效，再提交；没改成时改回原样。断网时不改，直接说没改成（规则⑨）。notify 只给“更多”菜单：行内心形不提示 */
-  heart: (song: Song, hearted: boolean, options?: { notify?: boolean }) => Promise<void>
-  /** 自建歌单，或我喜欢的音乐（等于红心）；先改本地，成了提示“已加入”，歌单已经不在了就改回原样并马上同步 */
-  addToPlaylist: (playlistId: number, song: Song) => Promise<void>
-  /** 一个请求带上全部编号；已经在歌单里的不再提交，全都已经在里面时什么都不发 */
-  addSongsToPlaylist: (playlistId: number, songs: readonly Song[]) => Promise<AddSongsOutcome>
-  /** 单曲从我喜欢的音乐（在最前）和自建歌单里选；多选只有当前歌单以外的自建歌单（Spec #11 #98）。界面照着画，歌单列表还没拿到时是 null */
-  addTargets: (request: AddTargetsRequest) => AddTarget[] | null
-  /** 先从本地拿掉，提示条留 5 秒撤销，没撤销才提交；失败放回原位、可以重试。不是自建歌单时抛错，断网时不改本地 */
-  removeFromPlaylist: (playlistId: number, songIds: readonly number[]) => void
-  /** 把勾选的几首挪到 before 前（null 是最后），停手 2 秒才把整张歌单的新顺序一次提交，页面隐藏、离开时立即提交；只有自建歌单和我喜欢的音乐能排（#36） */
-  moveSongs: (playlistId: number, songIds: readonly number[], before: number | null) => boolean
-  /** 只收全部自建歌单的新先后，我喜欢的音乐由 App 放在最前、收藏的不传（#37）；停手 2 秒才提交，页面隐藏时立即提交 */
-  orderPlaylists: (playlistIds: readonly number[]) => boolean
-  /** 还没提交的移除和排序立即提交（页面隐藏时 App 自己会做） */
-  flushPlaylist: (playlistId: number) => Promise<void>
-  /** 只要网易云的第一页，不记搜索历史、不动搜索结果页 */
-  searchSongs: (keyword: string) => Promise<Result<readonly Song[]>>
-  /** 曲库里的、打开着的页和搜索结果里的都行；先改本地，收藏歌单时先现取反作弊令牌。收藏了打开着的不在曲库里的歌单，它连同取到的曲目进曲库 */
-  collect: (target: CollectTarget, collected: boolean) => Promise<void>
-  /** 不先改本地：等网易云建好（给了编号）才进曲库，排在我喜欢的音乐后面；带着 songs 时建好接着一次加进去。退出、登录失效时是 null */
-  createPlaylist: (draft: CreatePlaylistRequest, songs?: readonly Song[]) => Promise<CreateOutcome | null>
-  /** 和现在一样的不提交；有一样不合规就整次都不提交。三样各提交各的，哪样没成哪样改回原样；只有自建歌单能编辑 */
-  editPlaylist: (playlistId: number, edit: PlaylistEdit) => Promise<void>
-  /** 改了就改不回去（界面先说清楚）；只有自建歌单能改，已经公开的什么都不做 */
-  publishPlaylist: (playlistId: number) => Promise<void>
-  /** 先从曲库里拿掉、立即生效，没删成就放回原处。我喜欢的音乐不能删；收藏的歌单是取消收藏（collect） */
-  deletePlaylist: (playlistId: number) => Promise<void>
-  /** 这次登录还没取到过就用前台请求取 */
-  openPlaylistTags: () => Promise<void>
-  /** 读选好的图片给裁剪页预览；不是图片、超过 20 MB、HEIC 解不开、读不出来时说明原因。长边超过 3200 的先缩小再裁 */
-  prepareCover: (playlistId: number, file: File) => Promise<void>
-  /** 裁成 800×800 JPEG，三步上传：申请凭证 → 浏览器直传图片存储 → 设为封面；前两步可取消，第三步发出后不能取消 */
-  uploadCover: (crop: CoverCrop) => Promise<CoverOutcome | null>
-  /** 申请凭证、直传：回到裁剪 */
-  cancelCover: () => void
-  /** 第三步失败只再设一次；别的失败从没成的那一步重来 */
-  retryCover: () => Promise<CoverOutcome | null>
-  /** 释放图片；正在设为封面时关不掉 */
-  closeCover: () => void
-  /**
-   * 按这一条的 actions 判断支持不支持，重试和撤销的数据来自提示条自己的载荷；没有这一条、不支持时什么都不做
-   */
-  noticeAction: (id: number, action: NoticeAction) => Promise<void>
-  /** 纯界面事件的一句话（复制、权限这类）走同一摞提示条：成功 4 秒后走，失败一直留着；业务动作不发这个 */
-  toast: (tone: NoticeTone, text: string, options?: ShowNoticeOptions) => number
-  /** 完整音频、封面缩略图、歌词、歌曲信息一起存进这台设备（ADR-0006）；下载地址按下载音质后台请求。现在不下时返回原因（界面事先用 downloadBlock 标出来） */
-  download: (song: Song) => DownloadBlock | null
-  /** 多选里的下载：把勾选的几首按 source 记来源，跳过已下载、试听、无版权的歌并逐项说明（#39） */
-  downloadSongs: (songs: readonly Song[], source: DownloadSource) => Promise<DownloadBatchOutcome | DownloadStartBlock>
-  /**
-   * 整张歌单或弹窗里选的几首：songs 不传时是已经同步的全部；fill 是“已加载的可下载歌全选”，
-   * 为 true 且还没同步完时，同步完把后面的补进队列（规则⑫）
-   */
-  downloadPlaylist: (playlistId: number, songs?: readonly Song[], options?: { fill?: boolean }) => Promise<DownloadBatchOutcome | DownloadStartBlock>
-  /** 整张专辑或弹窗里选的几首：专辑页的曲目一次取全，全部进队列 */
-  downloadAlbum: (albumId: number, songs?: readonly Song[]) => Promise<DownloadBatchOutcome | DownloadStartBlock>
-  /** 重试一首没下成的（保留它原来的来源） */
-  retryDownload: (songId: number) => void
-  /** 取消一首排队、下载中、失败的（已下载页、下载面板）：已经下完的不动 */
-  cancelDownload: (songId: number) => void
-  /** 下载面板的“全部取消”：排队、下载中、失败的都停，连同还没补完的整张歌单下载 */
-  cancelAllDownloads: () => void
-  /** 存储空间不够、整队暂停后，腾出空间点“继续下载”（规则⑪） */
-  resumeDownloads: () => void
-  /** 没登录时也能删 */
-  deleteDownloads: (songIds: readonly number[]) => Promise<DownloadRemoval>
-  /** 按歌单删除下载（规则⑦）：别处也下载过的留着，只去掉这张歌单；没登录时也能用（#40） */
-  deletePlaylistDownloads: (playlistId: number) => Promise<DownloadRemoval>
-  /** 一键清空（#40）：删掉所有下载，排队中和正在下的也停 */
-  clearDownloads: () => Promise<DownloadRemoval>
-  /** 设置页的下载音质（#40）：和在线播放音质分开，只影响之后开始下的歌 */
-  setDownloadQuality: (quality: Quality) => void
-  /**
-   * 把这几首下载另存进听众选的文件夹，连同歌曲信息（#79，ADR-0014）。必须在听众点按的那一下里调用：先弹出文件夹选择器，听众取消就什么都不做；
-   * 返回的 Promise 在写完、取消时了结。浏览器不能选文件夹（exportable 是 false）时不要调用；正在导出时什么都不做
-   */
-  exportDownloads: (songIds: readonly number[]) => Promise<void>
-  /** 正在写的这首丢弃，已经写完的留着 */
-  cancelExport: () => void
-  /** 看完结果收起；正在写时什么都不做 */
-  closeExport: () => void
-  /** 在这台设备上的下载里即时完成；还没从本机读出来时是空的 */
-  searchDownloads: (query: string) => readonly Song[]
-  /** 曲库的歌单页筛选：在本机副本里即时完成，不发请求；歌单列表还没同步到时是 null */
-  searchPlaylists: (query: string) => PlaylistGroups | null
-  /** 曲库的专辑页筛选：同上；收藏的专辑还没同步到时是 null */
-  searchAlbums: (query: string) => readonly CollectedAlbum[] | null
-  /** 曲库的歌手页筛选：同上；收藏的歌手还没同步到时是 null */
-  searchArtists: (query: string) => readonly CollectedArtist[] | null
+  readonly state: AppState;
+  subscribe: (listener: () => void) => () => void;
+  open: () => Promise<void>;
+  startQrLogin: () => Promise<void>;
+  stopQrLogin: () => void;
+  continueQrLogin: () => Promise<void>;
+  sendCaptcha: (phone: string) => Promise<void>;
+  loginWithCaptcha: (phone: string, captcha: string) => Promise<void>;
+  logout: () => Promise<void>;
+  retrySync: () => void;
+  viewing: (page: ViewedPage) => () => void;
+  openPlaylist: (playlistId: number) => Promise<void>;
+  searchPlaylist: (playlistId: number, query: string) => PlaylistSearch | null;
+  openAlbum: (albumId: number) => Promise<void>;
+  openArtist: (artistId: number) => Promise<void>;
+  openArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>;
+  moreArtistSongs: (artistId: number, order: ArtistSongOrder) => Promise<void>;
+  moreArtistAlbums: (artistId: number) => Promise<void>;
+  openArtistIntro: (artistId: number) => Promise<void>;
+  openDaily: () => Promise<void>;
+  suggest: (keyword: string) => void;
+  search: (keyword: string) => Promise<void>;
+  openSearch: (keyword: string) => Promise<void>;
+  moreSearchResults: (keyword: string, kind: SearchKind) => Promise<void>;
+  clearSearchHistory: () => Promise<void>;
+  play: (source: PlaySource, songId: number) => void;
+  playAll: (source: PlaySource) => void;
+  togglePlay: () => void;
+  next: () => void;
+  previous: () => void;
+  playFromQueue: (index: number) => void;
+  playNext: (source: PlaySource, song: Song) => void;
+  addToQueue: (source: PlaySource, song: Song) => void;
+  removeFromQueue: (index: number) => void;
+  clearQueue: () => void;
+  setPlayMode: (mode: PlayMode) => void;
+  seek: (position: number) => void;
+  playFrom: (position: number) => void;
+  setVolume: (volume: number) => void;
+  setPlayQuality: (quality: Quality) => void;
+  dismissPlayerNotice: () => void;
+  openLyrics: (songId: number) => Promise<void>;
+  heart: (
+    song: Song,
+    hearted: boolean,
+    options?: { notify?: boolean },
+  ) => Promise<void>;
+  addToPlaylist: (playlistId: number, song: Song) => Promise<void>;
+  addSongsToPlaylist: (
+    playlistId: number,
+    songs: readonly Song[],
+  ) => Promise<AddSongsOutcome>;
+  addTargets: (request: AddTargetsRequest) => AddTarget[] | null;
+  removeFromPlaylist: (playlistId: number, songIds: readonly number[]) => void;
+  moveSongs: (
+    playlistId: number,
+    songIds: readonly number[],
+    before: number | null,
+  ) => boolean;
+  orderPlaylists: (playlistIds: readonly number[]) => boolean;
+  flushPlaylist: (playlistId: number) => Promise<void>;
+  searchSongs: (keyword: string) => Promise<Result<readonly Song[]>>;
+  collect: (target: CollectTarget, collected: boolean) => Promise<void>;
+  createPlaylist: (
+    draft: CreatePlaylistRequest,
+    songs?: readonly Song[],
+  ) => Promise<CreateOutcome | null>;
+  editPlaylist: (playlistId: number, edit: PlaylistEdit) => Promise<void>;
+  publishPlaylist: (playlistId: number) => Promise<void>;
+  deletePlaylist: (playlistId: number) => Promise<void>;
+  openPlaylistTags: () => Promise<void>;
+  prepareCover: (playlistId: number, file: File) => Promise<void>;
+  uploadCover: (crop: CoverCrop) => Promise<CoverOutcome | null>;
+  cancelCover: () => void;
+  retryCover: () => Promise<CoverOutcome | null>;
+  closeCover: () => void;
+  noticeAction: (id: number, action: NoticeAction) => Promise<void>;
+  toast: (
+    tone: NoticeTone,
+    text: string,
+    options?: ShowNoticeOptions,
+  ) => number;
+  download: (song: Song) => DownloadBlock | null;
+  downloadSongs: (
+    songs: readonly Song[],
+    source: DownloadSource,
+  ) => Promise<DownloadBatchOutcome | DownloadStartBlock>;
+  downloadPlaylist: (
+    playlistId: number,
+    songs?: readonly Song[],
+    options?: { fill?: boolean },
+  ) => Promise<DownloadBatchOutcome | DownloadStartBlock>;
+  downloadAlbum: (
+    albumId: number,
+    songs?: readonly Song[],
+  ) => Promise<DownloadBatchOutcome | DownloadStartBlock>;
+  retryDownload: (songId: number) => void;
+  cancelDownload: (songId: number) => void;
+  cancelAllDownloads: () => void;
+  resumeDownloads: () => void;
+  deleteDownloads: (songIds: readonly number[]) => Promise<DownloadRemoval>;
+  deletePlaylistDownloads: (playlistId: number) => Promise<DownloadRemoval>;
+  clearDownloads: () => Promise<DownloadRemoval>;
+  setDownloadQuality: (quality: Quality) => void;
+  exportDownloads: (songIds: readonly number[]) => Promise<void>;
+  cancelExport: () => void;
+  closeExport: () => void;
+  searchDownloads: (query: string) => readonly Song[];
+  searchPlaylists: (query: string) => PlaylistGroups | null;
+  searchAlbums: (query: string) => readonly CollectedAlbum[] | null;
+  searchArtists: (query: string) => readonly CollectedArtist[] | null;
 }
 
 export const createApp = (browser: BrowserCapabilities): App => {
-  const api = createApi(browser)
-  const db = createLocalDatabase(browser.indexedDB)
-  const local = createLocalDb(db)
-  /** 联网着、登录着；不能时只有下载了的歌能放（#38） */
-  const streamable = (): boolean => state.online && state.session.status === 'signedIn'
+  const api = createApi(browser);
+  const db = createLocalDatabase(browser.indexedDB);
+  const local = createLocalDb(db);
+  const streamable = (): boolean =>
+    state.online && state.session.status === 'signedIn';
 
-  /** 下载了的永远能放；没下载的要能在线放，无版权的不能放（界面只读这一条规则） */
-  const playable = (song: Song): boolean => state.downloads.has(song.id) || (song.availability !== 'noCopyright' && streamable())
+  const playable = (song: Song): boolean =>
+    state.downloads.has(song.id) ||
+    (song.availability !== 'noCopyright' && streamable());
 
-  /** 和 App.download 的判断是同一份输入 */
-  const downloadBlockForApp = (song: Song): DownloadBlock | null => downloadBlockFor(song, state.downloads, { signedIn: state.session.status === 'signedIn', online: state.online })
+  const downloadBlockForApp = (song: Song): DownloadBlock | null =>
+    downloadBlockFor(song, state.downloads, {
+      signedIn: state.session.status === 'signedIn',
+      online: state.online,
+    });
 
-  /** 这台设备的音量：以触屏为主的设备（手机、平板）没有入口，恒为 100%（作者 2026-11-04 定）；桌面没调过时 30%（DEFAULT_VOLUME），调过的由 open 里读回来 */
-  const defaultVolume = browser.touchPrimary ? 1 : DEFAULT_VOLUME
+  const defaultVolume = browser.touchPrimary ? 1 : DEFAULT_VOLUME;
 
   let state: AppState = {
     session: { status: 'checking' },
@@ -300,140 +270,125 @@ export const createApp = (browser: BrowserCapabilities): App => {
     online: browser.network.onLine,
     playable,
     downloadBlock: downloadBlockForApp,
-  }
-  const listeners = new Set<() => void>()
-  let viewing: { page: ViewedPage, token: number, applied: string } | null = null
-  let viewingToken = 0
-  /** 已经排了这一次发布之后的派发：同一轮里连着变只派发一次 */
-  let viewingQueued = false
+  };
+  const listeners = new Set<() => void>();
+  let viewing: { page: ViewedPage; token: number; applied: string } | null =
+    null;
+  let viewingToken = 0;
+  let viewingQueued = false;
 
   const update = (next: Partial<AppState>) => {
     state = {
       ...state,
       ...next,
-    }
-    for (const listener of listeners)
-      listener()
-    // 这一页要不要打开只看曲库和会话；播放进度之类的发布不重新算
+    };
+    for (const listener of listeners) listener();
     if (next.library !== undefined || next.session !== undefined)
-      applyViewing()
-    // 规则⑫：歌单同步到了新的一页，把还没进队列的补上
-    if (next.library !== undefined)
-      fillPendingPlaylists()
-  }
+      applyViewing();
+    if (next.library !== undefined) fillPendingPlaylists();
+  };
 
-  /** 这一页要“打开”的条件：只有它变了才去拉，失败不会因为别的状态发布而自动重试 */
   const viewingKey = (page: ViewedPage): string => {
-    const signedIn = state.session.status === 'signedIn'
-    const shown = state.library
+    const signedIn = state.session.status === 'signedIn';
+    const shown = state.library;
     switch (page.kind) {
       case 'playlist': {
-        const ready = shown?.playlists != null
-        const outside = shown != null && shown.playlists != null && shown.songsOf(page.id) === null
-        return `playlist:${page.id}:${ready}:${outside}`
+        const ready = shown?.playlists != null;
+        const outside =
+          shown != null &&
+          shown.playlists != null &&
+          shown.songsOf(page.id) === null;
+        return `playlist:${page.id}:${ready}:${outside}`;
       }
       case 'album':
-        return `album:${page.id}:${shown !== null}:${(shown?.albumPage(page.id) ?? null) === null}`
+        return `album:${page.id}:${shown !== null}:${(shown?.albumPage(page.id) ?? null) === null}`;
       case 'artist': {
-        const opened = shown?.artistPage(page.id) ?? null
-        const content = opened?.status === 'shown'
-          ? opened.content
-          : null
-        return `artist:${page.id}:${page.tab}:${page.order}:${shown !== null}:${opened?.status ?? 'none'}:${content?.songs[page.order] === null}:${content?.intro === null}`
+        const opened = shown?.artistPage(page.id) ?? null;
+        const content = opened?.status === 'shown' ? opened.content : null;
+        return `artist:${page.id}:${page.tab}:${page.order}:${shown !== null}:${opened?.status ?? 'none'}:${content?.songs[page.order] === null}:${content?.intro === null}`;
       }
       case 'daily':
-        return `daily:${signedIn}`
+        return `daily:${signedIn}`;
       case 'search':
-        return `search:${page.keyword}:${signedIn}`
+        return `search:${page.keyword}:${signedIn}`;
       default: {
-        const unhandled: never = page
-        throw new Error(`不认识的页面：${JSON.stringify(unhandled)}`)
+        const unhandled: never = page;
+        throw new Error(`不认识的页面：${JSON.stringify(unhandled)}`);
       }
     }
-  }
+  };
 
-  /** 会话一轮发现网易云说需要登录、续期也没成功：各模块自己收起，曲库副本留在本机，同一个账号重新登录后接着用 */
   const loginExpired = (): void => {
-    // 服务端已经不认这个登录了：断网时不要再用本机记着的账号冒充登录
-    void local.setCachedAccount(null).catch(() => {})
-    void round.change({ kind: 'loginExpired' })
+    void local.setCachedAccount(null).catch(() => {});
+    void round.change({ kind: 'loginExpired' });
     update({
       session: { status: 'loginExpired' },
       library: null,
-    })
-    player.availabilityChanged()
-  }
+    });
+    player.availabilityChanged();
+  };
 
-  const lane = createBackgroundLane(browser)
-  const round = createSessionRound({ api, lane, expired: loginExpired })
-  /** 提示条（改曲库、下载、播放共用的那一摞）：App 拥有它，自动消失走 App 的时钟；新的这一摞直接写进快照 */
+  const lane = createBackgroundLane(browser);
+  const round = createSessionRound({ api, lane, expired: loginExpired });
   const notices = createNotices({
     clock: browser.clock,
     changed: () => {
       update({
         notices: notices.list(),
-      })
-      // 提示条和曲库的待提交改动（撤销、回滚）来自同一次操作：重发曲库快照，把本地副本上的临时改动带出去
-      library.publish()
+      });
+      library.publish();
     },
-  })
-  // 会话换了（登录、退出、登录失效、换账号）：上一条登录的提示都不算了；还没同步完的整张歌单下载也跟这次登录走
-  const pendingPlaylists = new Map<number, { source: DownloadSource, seen: Set<number> }>()
+  });
+  const pendingPlaylists = new Map<
+    number,
+    { source: DownloadSource; seen: Set<number> }
+  >();
   round.onChange(() => {
-    pendingPlaylists.clear()
-    notices.clear()
-  })
-  // 三个东西互相要用：播放器保存队列、队列发打卡、打卡读队列。先声明，建好以后才用到
-  let player: Player
-  let checkIns: CheckIns
+    pendingPlaylists.clear();
+    notices.clear();
+  });
+  let player: Player;
+  let checkIns: CheckIns;
 
-  /** 保存的播放队列：归属、持久化、打卡归属、规则⑩都在这个模块里；App 只发出“会话换了” */
   const savedQueue = createSavedQueue({
     db,
     session: round,
     player: () => player,
     read: () => state.player,
     send: () => checkIns.send(),
-    sendBeforeLogout: owner => checkIns.sendBeforeLogout(owner),
-  })
+    sendBeforeLogout: (owner) => checkIns.sendBeforeLogout(owner),
+  });
 
   checkIns = createCheckIns({
     api,
     session: round,
     store: savedQueue.pending,
     locks: browser.locks,
-    account: () => (state.session.status === 'signedIn'
-      ? state.session.account.id
-      : null),
-  })
+    account: () =>
+      state.session.status === 'signedIn' ? state.session.account.id : null,
+  });
 
-  /**
-   * 还没发出去的退出：发出去，服务端回了过期的登录 Cookie 才算完。没发成时返回原因：
-   * 这时浏览器里还留着上一个登录 Cookie，不能接着登录，否则之后补发的退出会把新的登录也退掉
-   */
-  let finishingLogout: Promise<RequestFailure | null> | undefined
+  let finishingLogout: Promise<RequestFailure | null> | undefined;
   const finishLogout = (): Promise<RequestFailure | null> => {
-    finishingLogout ??= browser.locks.request(LOGIN_COOKIE_LOCK, async () => {
-      if (!await local.pendingLogout())
-        return null
-      // 退出了：还没发出去的打卡都丢弃，之后同一个账号再登录也不补发
-      await savedQueue.pending.clear()
-      const result = await api.post(endpoints.logout)
-      if (!result.ok)
-        return result.failure
-      await local.setPendingLogout(false)
-      return null
-    }).finally(() => {
-      finishingLogout = undefined
-    })
-    return finishingLogout
-  }
-  browser.network.addEventListener('online', () => void finishLogout())
+    finishingLogout ??= browser.locks
+      .request(LOGIN_COOKIE_LOCK, async () => {
+        if (!(await local.pendingLogout())) return null;
+        await savedQueue.pending.clear();
+        const result = await api.post(endpoints.logout);
+        if (!result.ok) return result.failure;
+        await local.setPendingLogout(false);
+        return null;
+      })
+      .finally(() => {
+        finishingLogout = undefined;
+      });
+    return finishingLogout;
+  };
+  browser.network.addEventListener('online', () => void finishLogout());
 
-  /** 下载完了一首、删了一首（#38）：哪些歌能离线放变了。下载建好时要用到，所以放在它前面 */
   const downloadsChanged = (): void => {
-    player.availabilityChanged()
-  }
+    player.availabilityChanged();
+  };
 
   const downloads = createDownloads({
     api,
@@ -443,72 +398,68 @@ export const createApp = (browser: BrowserCapabilities): App => {
     browser,
     storage: browser.storage,
     albumPage: (albumId) => {
-      const page = state.library?.albumPage(albumId)
-      return page?.status === 'shown'
-        ? page.content
-        : null
+      const page = state.library?.albumPage(albumId);
+      return page?.status === 'shown' ? page.content : null;
     },
     online: () => browser.network.onLine,
     signedIn: () => state.session.status === 'signedIn',
-    write: next => update({ downloads: next }),
+    write: (next) => update({ downloads: next }),
     notices,
     changed: downloadsChanged,
-  })
+  });
 
-  /** 规则⑫：整张歌单点了下载、当时还没同步完，同步来的新歌继续补进队列；不打断已经排着的 */
-  let fillingPlaylists = false
-  let fillAgain = false
+  let fillingPlaylists = false;
+  let fillAgain = false;
   const fillPendingPlaylists = (): void => {
     if (fillingPlaylists) {
-      fillAgain = true
-      return
+      fillAgain = true;
+      return;
     }
-    if (pendingPlaylists.size === 0)
-      return
+    if (pendingPlaylists.size === 0) return;
     if (!state.library) {
-      pendingPlaylists.clear()
-      return
+      pendingPlaylists.clear();
+      return;
     }
-    fillingPlaylists = true
+    fillingPlaylists = true;
     void (async () => {
       for (const [playlistId, pending] of pendingPlaylists) {
-        const content = state.library?.playlistPage(playlistId).content
-        if (!content)
-          continue
-        const songs = content.songs.filter(song => !pending.seen.has(song.id))
+        const content = state.library?.playlistPage(playlistId).content;
+        if (!content) continue;
+        const songs = content.songs.filter(
+          (song) => !pending.seen.has(song.id),
+        );
         if (songs.length > 0) {
-          const added = await downloads.add(songs, pending.source, { quiet: true })
-          if (added === 'signedOut' || added === 'offline')
-            continue
-          for (const song of songs)
-            pending.seen.add(song.id)
+          const added = await downloads.add(songs, pending.source, {
+            quiet: true,
+          });
+          if (added === 'signedOut' || added === 'offline') continue;
+          for (const song of songs) pending.seen.add(song.id);
         }
-        if (content.complete)
-          pendingPlaylists.delete(playlistId)
+        if (content.complete) pendingPlaylists.delete(playlistId);
       }
-    })().catch((error: unknown) => {
-      console.error('补整张歌单的下载时出错', error)
-    }).finally(() => {
-      fillingPlaylists = false
-      if (fillAgain) {
-        fillAgain = false
-        fillPendingPlaylists()
-      }
-    })
-  }
+    })()
+      .catch((error: unknown) => {
+        console.error('补整张歌单的下载时出错', error);
+      })
+      .finally(() => {
+        fillingPlaylists = false;
+        if (fillAgain) {
+          fillAgain = false;
+          fillPendingPlaylists();
+        }
+      });
+  };
 
-  const { pickFolder } = browser
+  const { pickFolder } = browser;
   const exports = createExports({
-    // 浏览器不能选文件夹时界面不显示“导出”（exportable），调到这里是 Campanula 的缺陷
     pickFolder: () => {
-      if (!pickFolder)
-        throw new Error('这个浏览器不能选文件夹，不该导出')
-      return pickFolder()
+      if (!pickFolder) throw new Error('这个浏览器不能选文件夹，不该导出');
+      return pickFolder();
     },
     stored: downloads.stored,
-    sizeOf: songId => state.downloads.sizeOf(songId),
-    write: next => update({ exporting: next }),
-  })
+    sizeOf: (songId) => state.downloads.sizeOf(songId),
+    write: (next) => update({ exporting: next }),
+  });
 
   player = createPlayer({
     api: round.api,
@@ -516,37 +467,34 @@ export const createApp = (browser: BrowserCapabilities): App => {
     audio: browser.audio,
     defaultVolume,
     write: (next) => {
-      update({ player: next })
-      showOnLockScreen(next)
+      update({ player: next });
+      showOnLockScreen(next);
     },
     save: savedQueue.save,
     forget: savedQueue.forget,
-    downloaded: songId => state.downloads.has(songId),
-    localFile: songId => downloads.audioUrl(songId),
+    downloaded: (songId) => state.downloads.has(songId),
+    localFile: (songId) => downloads.audioUrl(songId),
     playable,
-  })
+  });
   const lockScreen = connectMediaSession({
     session: browser.mediaSession,
     MediaMetadata: browser.MediaMetadata,
     clock: browser.clock,
     player,
     read: () => state.player,
-    localCover: coverUrl => state.downloads.coverOf(coverUrl),
-  })
-  /** 锁屏和通知栏上显示的跟着播放状态变。写成函数声明：锁屏的按钮要用播放器，播放器发布时又要用锁屏，两边互相引用 */
+    localCover: (coverUrl) => state.downloads.coverOf(coverUrl),
+  });
   const showOnLockScreen = (next: PlayerState): void => {
-    lockScreen(next)
-  }
+    lockScreen(next);
+  };
 
-  // 断网、联网（#38）：没下载的歌能不能放跟着变
   for (const type of ['online', 'offline'] as const) {
     browser.network.addEventListener(type, () => {
-      update({ online: browser.network.onLine })
-      player.availabilityChanged()
-      // 断网停下的下载，联网后接着走（规则⑪ 之外，断网中断也是这一条）；还没补完的整张歌单也再补一次（规则⑫）
-      downloads.wake()
-      fillPendingPlaylists()
-    })
+      update({ online: browser.network.onLine });
+      player.availabilityChanged();
+      downloads.wake();
+      fillPendingPlaylists();
+    });
   }
 
   const library = createLibrary({
@@ -556,38 +504,40 @@ export const createApp = (browser: BrowserCapabilities): App => {
     clock: browser.clock,
     page: browser.page,
     write: (next) => {
-      update({ library: next })
-      player.libraryChanged(playlistId => next.playlistPage(playlistId).content)
+      update({ library: next });
+      player.libraryChanged(
+        (playlistId) => next.playlistPage(playlistId).content,
+      );
     },
     online: () => browser.network.onLine,
     checkToken: browser.checkToken,
     notices,
-  })
+  });
 
   const cover = createCover({
     api: round.api,
     session: round,
     images: browser.images,
     upload: browser.uploadCoverImage,
-    write: next => update({ cover: next }),
+    write: (next) => update({ cover: next }),
     changed: (playlistId, coverUrl) => library.setCover(playlistId, coverUrl),
-  })
+  });
 
   const lyrics = createLyrics({
     api: round.api,
     session: round,
     read: () => state.lyrics,
-    write: next => update({ lyrics: next }),
-    stored: songId => downloads.lyricsOf(songId),
-  })
+    write: (next) => update({ lyrics: next }),
+    stored: (songId) => downloads.lyricsOf(songId),
+  });
 
   const daily = createDaily({
     api: round.api,
     session: round,
     clock: browser.clock,
     read: () => state.daily,
-    write: next => update({ daily: next }),
-  })
+    write: (next) => update({ daily: next }),
+  });
 
   const search = createSearch({
     api: round.api,
@@ -595,121 +545,101 @@ export const createApp = (browser: BrowserCapabilities): App => {
     clock: browser.clock,
     local,
     read: () => state.search,
-    write: next => update({ search: next }),
-  })
+    write: (next) => update({ search: next }),
+  });
 
-  /** 只在条件真的变了时交给对应的模块；和页面原来的 $effect 一样，等这一次状态发布会话走完再动手（open 会等收藏、取消收藏的排队） */
+  // 等这一次状态发布会话走完再动手：open 要等收藏、取消收藏的排队
   const applyViewing = (): void => {
-    const current = viewing
-    if (!current)
-      return
-    const key = viewingKey(current.page)
-    if (key === current.applied)
-      return
-    current.applied = key
-    if (viewingQueued)
-      return
-    viewingQueued = true
+    const current = viewing;
+    if (!current) return;
+    const key = viewingKey(current.page);
+    if (key === current.applied) return;
+    current.applied = key;
+    if (viewingQueued) return;
+    viewingQueued = true;
     queueMicrotask(() => {
-      viewingQueued = false
-      openViewingPage()
-    })
-  }
+      viewingQueued = false;
+      openViewingPage();
+    });
+  };
 
-  /** 状态在排队期间又变了也照现在的来（open* 自己幂等） */
   const openViewingPage = (): void => {
-    const current = viewing
-    if (!current)
-      return
-    const { page } = current
-    const shown = state.library
+    const current = viewing;
+    if (!current) return;
+    const { page } = current;
+    const shown = state.library;
     switch (page.kind) {
       case 'playlist':
-        if (shown?.playlists)
-          void library.open(page.id)
-        return
+        if (shown?.playlists) void library.open(page.id);
+        return;
       case 'album':
-        if (shown)
-          void library.openAlbum(page.id)
-        return
+        if (shown) void library.openAlbum(page.id);
+        return;
       case 'artist': {
-        if (!shown)
-          return
-        const opened = shown.artistPage(page.id)
+        if (!shown) return;
+        const opened = shown.artistPage(page.id);
         if (opened === null) {
-          void library.openArtist(page.id)
-          return
+          void library.openArtist(page.id);
+          return;
         }
-        if (opened.status !== 'shown')
-          return
-        // 点歌、播放全部从此用这种排法已经显示的歌；最新、简介第一次要看时才取
-        library.chooseArtistOrder(page.id, page.order)
+        if (opened.status !== 'shown') return;
+        library.chooseArtistOrder(page.id, page.order);
         if (opened.content.songs[page.order] === null)
-          void library.openArtistSongs(page.id, page.order)
+          void library.openArtistSongs(page.id, page.order);
         if (page.tab === 'intro' && opened.content.intro === null)
-          void library.openArtistIntro(page.id)
-        return
+          void library.openArtistIntro(page.id);
+        return;
       }
       case 'daily':
-        if (state.session.status === 'signedIn')
-          void daily.open()
-        return
+        if (state.session.status === 'signedIn') void daily.open();
+        return;
       case 'search':
         if (state.session.status === 'signedIn' && page.keyword.trim())
-          void search.open(page.keyword)
-        return
+          void search.open(page.keyword);
+        return;
       default: {
-        const unhandled: never = page
-        throw new Error(`不认识的页面：${JSON.stringify(unhandled)}`)
+        const unhandled: never = page;
+        throw new Error(`不认识的页面：${JSON.stringify(unhandled)}`);
       }
     }
-  }
+  };
 
-  const view = (page: ViewedPage): () => void => {
-    const token = ++viewingToken
-    viewing = { page, token, applied: '' }
-    applyViewing()
-    let left = false
+  const view = (page: ViewedPage): (() => void) => {
+    const token = ++viewingToken;
+    viewing = { page, token, applied: '' };
+    applyViewing();
+    let left = false;
     return () => {
-      if (left)
-        return
-      left = true
-      if (page.kind === 'playlist')
-        void library.flush(page.id)
-      if (viewing?.token === token)
-        viewing = null
-    }
-  }
+      if (left) return;
+      left = true;
+      if (page.kind === 'playlist') void library.flush(page.id);
+      if (viewing?.token === token) viewing = null;
+    };
+  };
 
-  /** 先拿出这个账号的曲库副本，和登录状态一起显示，再在后台同步；播放队列的归属、恢复和规则⑩在 saved-queue 里 */
   const signedIn = async (account: Account): Promise<void> => {
-    const entered = round.change({ kind: 'signedIn', account })
-    const mine = round.current
+    const entered = round.change({ kind: 'signedIn', account });
+    const mine = round.current;
     const [shown, quality, history] = await Promise.all([
       library.enter(account),
       local.playQuality(),
       local.searchHistory(),
-    ])
-    await entered
-    if (!round.isCurrent(mine) || !shown)
-      return
-    // 记不住也不挡着打开：本机账号只是断网时先用一下
-    await local.setCachedAccount(account).catch(() => {})
-    if (quality)
-      player.setQuality(quality)
+    ]);
+    await entered;
+    if (!round.isCurrent(mine) || !shown) return;
+    await local.setCachedAccount(account).catch(() => {});
+    if (quality) player.setQuality(quality);
     update({
       session: { status: 'signedIn', account },
       login: INITIAL_LOGIN,
       library: shown,
       search: { ...state.search, history },
-    })
-    // 排队中的下载等的是“登录以后”：App 的登录状态到这里才更新，队列再试一次（规则⑧）
-    downloads.wake()
-    player.availabilityChanged()
-    library.sync()
-    // 登录失效期间、断网时记下的打卡补发给这个账号；别的账号的丢弃
-    checkIns.send()
-  }
+    });
+    downloads.wake();
+    player.availabilityChanged();
+    library.sync();
+    checkIns.send();
+  };
 
   const login = createLogin({
     api,
@@ -718,89 +648,101 @@ export const createApp = (browser: BrowserCapabilities): App => {
     page: browser.page,
     beforeLogin: finishLogout,
     read: () => state.login,
-    write: next => update({ login: next }),
+    write: (next) => update({ login: next }),
     signedIn,
-  })
+  });
 
-  /** 各模块在会话一轮里登记了自己的清理，播放队列由 saved-queue 停下并删掉 */
   const signedOut = (by: 'this-tab' | 'other-tab'): Promise<void> => {
     const changed = Promise.all([
       round.change({ kind: 'signedOut', by }),
       local.setCachedAccount(null).catch(() => {}),
-    ])
+    ]);
     update({
       session: { status: 'signedOut' },
       login: INITIAL_LOGIN,
       library: null,
-    })
-    player.availabilityChanged()
-    return changed.then(() => {})
-  }
+    });
+    player.availabilityChanged();
+    return changed.then(() => {});
+  };
 
-  /** 还没打开、没显示出来时是 null；已下载属于这台设备，没登录时也有 */
-  const listOf = (source: ListSource): { songs: readonly Song[], complete: boolean } | null => {
+  const listOf = (
+    source: ListSource,
+  ): { songs: readonly Song[]; complete: boolean } | null => {
     if (source.kind === 'downloads')
-      return state.downloads.songs && { songs: state.downloads.songs, complete: true }
-    const shown = state.library
-    if (!shown)
-      return null
+      return (
+        state.downloads.songs && {
+          songs: state.downloads.songs,
+          complete: true,
+        }
+      );
+    const shown = state.library;
+    if (!shown) return null;
     switch (source.kind) {
       case 'playlist': {
-        const page = shown.playlistPage(source.id)
-        return page.content && { songs: page.content.songs, complete: page.content.complete }
+        const page = shown.playlistPage(source.id);
+        return (
+          page.content && {
+            songs: page.content.songs,
+            complete: page.content.complete,
+          }
+        );
       }
       case 'album': {
-        const page = shown.albumPage(source.id)
+        const page = shown.albumPage(source.id);
         return page?.status === 'shown'
           ? { songs: page.content.songs, complete: true }
-          : null
+          : null;
       }
       case 'artist': {
-        // 当前排法已经显示的歌：不补后面还没显示的（规则⑫只管歌单）
-        const page = shown.artistPage(source.id)
-        const songs = page?.status === 'shown'
-          ? page.content.songs[page.content.order]
-          : null
+        const page = shown.artistPage(source.id);
+        const songs =
+          page?.status === 'shown'
+            ? page.content.songs[page.content.order]
+            : null;
         return songs?.status === 'shown'
           ? { songs: songs.content.songs, complete: true }
-          : null
+          : null;
       }
       case 'daily':
         return state.daily?.status === 'shown'
           ? { songs: state.daily.songs, complete: true }
-          : null
+          : null;
       default: {
-        const unhandled: never = source
-        throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`)
+        const unhandled: never = source;
+        throw new Error(`不认识的播放来源：${JSON.stringify(unhandled)}`);
       }
     }
-  }
+  };
 
   const searchedSong = (keyword: string, songId: number): Song | undefined => {
-    const results = state.search.results
-    const songs = results?.keyword === keyword
-      ? results.songs
-      : null
+    const results = state.search.results;
+    const songs = results?.keyword === keyword ? results.songs : null;
     return songs?.status === 'shown'
-      ? songs.items.find(song => song.id === songId)
-      : undefined
-  }
+      ? songs.items.find((song) => song.id === songId)
+      : undefined;
+  };
 
-  const searchedItem = <K extends Exclude<SearchKind, 'songs'>>(kind: K, id: number): SearchedItems[K] | undefined => {
-    const list = state.search.results?.[kind]
+  const searchedItem = <K extends Exclude<SearchKind, 'songs'>>(
+    kind: K,
+    id: number,
+  ): SearchedItems[K] | undefined => {
+    const list = state.search.results?.[kind];
     return list?.status === 'shown'
-      ? (list.items as SearchedItems[K][]).find(item => item.id === id)
-      : undefined
-  }
+      ? (list.items as SearchedItems[K][]).find((item) => item.id === id)
+      : undefined;
+  };
 
-  /** 曲库里的照旧；打开着的不在曲库里的歌单连同取到的曲目；搜索结果里的只有头部。都不是时是 null */
-  const playlistToCollect = (shown: LibraryState, id: number): { playlist: Playlist, seed: PlaylistSeed | null } | null => {
-    const listed = shown.playlists?.find(playlist => playlist.id === id)
-    if (listed)
-      return { playlist: listed, seed: null }
-    const page = shown.neteasePlaylist(id)
+  const playlistToCollect = (
+    shown: LibraryState,
+    id: number,
+  ): { playlist: Playlist; seed: PlaylistSeed | null } | null => {
+    const listed = shown.playlists?.find((playlist) => playlist.id === id);
+    if (listed) return { playlist: listed, seed: null };
+    const page = shown.neteasePlaylist(id);
     if (page?.status === 'shown') {
-      const { playlist, trackIds, tracksUpdatedAt, songs, complete } = page.content
+      const { playlist, trackIds, tracksUpdatedAt, songs, complete } =
+        page.content;
       return {
         playlist: {
           ...playlist,
@@ -817,10 +759,9 @@ export const createApp = (browser: BrowserCapabilities): App => {
           },
           songs,
         },
-      }
+      };
     }
-    const searched = searchedItem('playlists', id)
-    // 搜索结果里没有简介、标签和曲目最后变动的时间（SDK 没声明）：先空着、记成 0，打开它时、下一次同步时拿到真的
+    const searched = searchedItem('playlists', id);
     return searched
       ? {
           playlist: {
@@ -834,26 +775,27 @@ export const createApp = (browser: BrowserCapabilities): App => {
           },
           seed: null,
         }
-      : null
-  }
+      : null;
+  };
 
-  const albumToCollect = (shown: LibraryState, id: number): CollectedAlbum | null => {
-    const listed = shown.albums?.find(album => album.id === id)
-    if (listed)
-      return listed
-    const page = shown.albumPage(id)
+  const albumToCollect = (
+    shown: LibraryState,
+    id: number,
+  ): CollectedAlbum | null => {
+    const listed = shown.albums?.find((album) => album.id === id);
+    if (listed) return listed;
+    const page = shown.albumPage(id);
     if (page?.status === 'shown') {
-      const { name, coverUrl, artist, songCount } = page.content.album
+      const { name, coverUrl, artist, songCount } = page.content.album;
       return {
         id,
         name,
         coverUrl,
         artists: [artist],
         songCount,
-      }
+      };
     }
-    const searched = searchedItem('albums', id)
-    // 搜索结果里没有歌曲数（SDK 没声明）：记成 0，下一次同步收藏的专辑时拿到真的
+    const searched = searchedItem('albums', id);
     return searched
       ? {
           id,
@@ -862,159 +804,149 @@ export const createApp = (browser: BrowserCapabilities): App => {
           artists: searched.artists,
           songCount: 0,
         }
-      : null
-  }
+      : null;
+  };
 
-  const artistToCollect = (shown: LibraryState, id: number): CollectedArtist | null => {
-    const listed = shown.artists?.find(artist => artist.id === id)
-    if (listed)
-      return listed
-    const page = shown.artistPage(id)
+  const artistToCollect = (
+    shown: LibraryState,
+    id: number,
+  ): CollectedArtist | null => {
+    const listed = shown.artists?.find((artist) => artist.id === id);
+    if (listed) return listed;
+    const page = shown.artistPage(id);
     if (page?.status === 'shown')
-      return { id, name: page.content.artist.name, avatarUrl: page.content.artist.avatarUrl }
-    const searched = searchedItem('artists', id)
+      return {
+        id,
+        name: page.content.artist.name,
+        avatarUrl: page.content.artist.avatarUrl,
+      };
+    const searched = searchedItem('artists', id);
     return searched
       ? { id, name: searched.name, avatarUrl: searched.avatarUrl }
-      : null
-  }
+      : null;
+  };
 
-  /** 要改的这张自建歌单；不是自建歌单（我喜欢的音乐、收藏的、不在曲库里的）就是界面接错了 */
   const ownPlaylist = (playlistId: number): Playlist => {
-    const playlist = state.library?.playlists?.find(item => item.id === playlistId)
+    const playlist = state.library?.playlists?.find(
+      (item) => item.id === playlistId,
+    );
     if (playlist?.kind !== 'own')
-      throw new Error(`只有自建歌单能改、能删：${playlistId}`)
-    return playlist
-  }
+      throw new Error(`只有自建歌单能改、能删：${playlistId}`);
+    return playlist;
+  };
 
-  // 一个标签页退出，同一浏览器里开着的其他标签页跟着变成未登录（退出请求由退出的那个标签页发）
-  const sessionChannel = browser.broadcastChannel(SESSION_CHANNEL)
+  const sessionChannel = browser.broadcastChannel(SESSION_CHANNEL);
   sessionChannel.addEventListener('message', (event) => {
-    const message = event.data as SessionMessage
+    const message = event.data as SessionMessage;
     switch (message.type) {
       case 'signedOut':
-        void signedOut('other-tab')
-        return
+        void signedOut('other-tab');
+        return;
       default: {
-        const unhandled: never = message.type
-        throw new Error(`不认识的广播消息：${JSON.stringify(unhandled)}`)
+        const unhandled: never = message.type;
+        throw new Error(`不认识的广播消息：${JSON.stringify(unhandled)}`);
       }
     }
-  })
+  });
 
-  /** 这一条提示上按了按钮：载荷从它自己身上取；界面只在 entry.actions 里有这个动作时才调到这里 */
-  const actOnNotice = async (entry: NoticeEntry, action: NoticeAction): Promise<void> => {
-    const notice = entry.notice
+  const actOnNotice = async (
+    entry: NoticeEntry,
+    action: NoticeAction,
+  ): Promise<void> => {
+    const notice = entry.notice;
     switch (action) {
       case 'undo':
-        if (notice.kind === 'removed')
-          library.undoRemove(notice.removalId)
-        return
+        if (notice.kind === 'removed') library.undoRemove(notice.removalId);
+        return;
       case 'dismiss':
-        // 撤销那一条还要让 deferred 忘掉它指向哪一批（计时和提交不受影响）
-        if (notice.kind === 'removed')
-          library.dismissRemoval(notice.removalId)
-        notices.hide(entry.id)
-        return
+        if (notice.kind === 'removed') library.dismissRemoval(notice.removalId);
+        notices.hide(entry.id);
+        return;
       case 'retry':
         switch (notice.kind) {
           case 'removeFailed':
-            return library.retryRemove(notice.playlist, notice.songIds)
+            return library.retryRemove(notice.playlist, notice.songIds);
           case 'orderFailed':
-            return library.retryOrder(notice.playlist, notice.songIds)
+            return library.retryOrder(notice.playlist, notice.songIds);
           case 'playlistOrderFailed':
-            return library.retryPlaylistOrder(notice.playlistIds)
+            return library.retryPlaylistOrder(notice.playlistIds);
           case 'syncFailed':
-            // 接着同步时 Library 自己收起这一条
-            return library.retry()
+            return library.retry();
           case 'downloadFailed':
-            // 开始重下了才关掉；断网、没登录时下不了，提示条留着
-            if (downloads.retry(notice.song.id))
-              notices.hide(entry.id)
-            return
+            if (downloads.retry(notice.song.id)) notices.hide(entry.id);
+            return;
           default:
-            return
+            return;
         }
       case 'resume':
         if (notice.kind === 'downloadsPaused') {
-          downloads.resume()
-          notices.hide(entry.id)
+          downloads.resume();
+          notices.hide(entry.id);
         }
-        return
+        return;
       default: {
-        const unhandled: never = action
-        throw new Error(`不认识的提示条动作：${JSON.stringify(unhandled)}`)
+        const unhandled: never = action;
+        throw new Error(`不认识的提示条动作：${JSON.stringify(unhandled)}`);
       }
     }
-  }
+  };
 
   return {
     get state() {
-      return state
+      return state;
     },
     subscribe(listener) {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
     async open() {
       update({
         session: { status: 'checking' },
-      })
-      // 下载和音量属于这台设备：和问当前账号同时读出来，没登录时也要用
+      });
       const loaded = Promise.all([
         downloads.load(),
-        // 手机没有音量入口，也调不了：不看本机存的音量，恒为 100%
         local.volume().then((volume) => {
           if (volume !== null && !browser.touchPrimary)
-            player.setVolume(volume)
+            player.setVolume(volume);
         }),
-      ])
-      // 服务端在这一步里续期。同一浏览器的标签页排队问：前一个拿到的新 Cookie，后一个直接带上，不会再续一次
-      const asked = round.current
+      ]);
+      const asked = round.current;
       if (await local.pendingLogout()) {
-        await Promise.all([
-          finishLogout(),
-          loaded,
-        ])
-        if (!round.isCurrent(asked))
-          return
-        await round.change({ kind: 'anonymous' })
+        await Promise.all([finishLogout(), loaded]);
+        if (!round.isCurrent(asked)) return;
+        await round.change({ kind: 'anonymous' });
         update({
           session: { status: 'signedOut' },
-        })
-        return
+        });
+        return;
       }
       const [session] = await Promise.all([
         browser.locks.request(LOGIN_COOKIE_LOCK, round.checkAccount),
         loaded,
-      ])
-      if (!round.isCurrent(asked) || !session)
-        return
-      if (session.status === 'signedIn')
-        return signedIn(session.account)
-      // 断网时问不到当前账号：用本机记着的账号先打开本机副本（ADR-0007），联网后接着同步；没有本机账号才当作未登录（已下载的歌照样能看、能放）
-      if (session.status === 'checkFailed' && session.failure.kind === 'offline') {
-        const account = await local.cachedAccount()
-        // 读本机数据库的时候别的标签页退出了：新一轮说了算，不要再把它拉回来
-        if (!round.isCurrent(asked))
-          return
-        if (account)
-          return signedIn(account)
-        await round.change({ kind: 'anonymous' })
+      ]);
+      if (!round.isCurrent(asked) || !session) return;
+      if (session.status === 'signedIn') return signedIn(session.account);
+      if (
+        session.status === 'checkFailed' &&
+        session.failure.kind === 'offline'
+      ) {
+        const account = await local.cachedAccount();
+        if (!round.isCurrent(asked)) return;
+        if (account) return signedIn(account);
+        await round.change({ kind: 'anonymous' });
         update({
           session: { status: 'signedOut' },
-        })
-        return
+        });
+        return;
       }
-      // 服务端说没有登录、或者登录已经失效：本机记着的账号也跟着作废（断网时不要冒充登录）
       if (session.status === 'signedOut') {
-        await local.setCachedAccount(null).catch(() => {})
-        await round.change({ kind: 'anonymous' })
+        await local.setCachedAccount(null).catch(() => {});
+        await round.change({ kind: 'anonymous' });
+      } else if (session.status === 'loginExpired') {
+        void local.setCachedAccount(null).catch(() => {});
+        void round.change({ kind: 'loginExpired' });
       }
-      else if (session.status === 'loginExpired') {
-        void local.setCachedAccount(null).catch(() => {})
-        void round.change({ kind: 'loginExpired' })
-      }
-      update({ session })
+      update({ session });
     },
     startQrLogin: login.startQr,
     stopQrLogin: login.stopQr,
@@ -1022,22 +954,23 @@ export const createApp = (browser: BrowserCapabilities): App => {
     sendCaptcha: login.sendCaptcha,
     loginWithCaptcha: login.loginWithCaptcha,
     async logout() {
-      await local.setPendingLogout(true)
-      // 先让其他标签页收到退出、停掉后台通道，再等本标签页的最后打卡和清理；反过来会等跨标签页的打卡锁，而对方正等这条广播（断网/限流时卡住）
-      const changed = signedOut('this-tab')
-      sessionChannel.postMessage({ type: 'signedOut' } satisfies SessionMessage)
-      await changed
-      await local.deleteLibrary()
-      await finishLogout()
+      await local.setPendingLogout(true);
+      // 先让其他标签页收到退出、停掉后台通道，再等本标签页的最后打卡和清理；
+      // 反过来会等跨标签页的打卡锁，而对方正等这条广播（断网、限流时卡住）
+      const changed = signedOut('this-tab');
+      sessionChannel.postMessage({
+        type: 'signedOut',
+      } satisfies SessionMessage);
+      await changed;
+      await local.deleteLibrary();
+      await finishLogout();
     },
     retrySync: library.retry,
     viewing: view,
     openPlaylist: library.open,
     searchPlaylist(playlistId, query) {
-      const playlist = state.library?.playlistPage(playlistId).content
-      return playlist
-        ? searchPlaylist(playlist, query)
-        : null
+      const playlist = state.library?.playlistPage(playlistId).content;
+      return playlist ? searchPlaylist(playlist, query) : null;
     },
     openAlbum: library.openAlbum,
     openArtist: library.openArtist,
@@ -1052,46 +985,45 @@ export const createApp = (browser: BrowserCapabilities): App => {
     retryCover: cover.retry,
     closeCover: cover.close,
     editPlaylist: async (playlistId, edit) => {
-      const changes = playlistEdits(ownPlaylist(playlistId), edit)
-      // 有一样不合规、断网时整次都不提交：只说一次原因，不让后一样的提示盖掉前一样的
-      const refused = changes.find(change => changeProblem(change)) ?? (browser.network.onLine ? undefined : changes[0])
+      const changes = playlistEdits(ownPlaylist(playlistId), edit);
+      const refused =
+        changes.find((change) => changeProblem(change)) ??
+        (browser.network.onLine ? undefined : changes[0]);
       if (refused) {
-        await library.change(refused)
-        return
+        await library.change(refused);
+        return;
       }
-      await Promise.all(changes.map(change => library.change(change)))
+      await Promise.all(changes.map((change) => library.change(change)));
     },
     async createPlaylist(draft, songs) {
-      const outcome = await library.create(draft, songs?.map(plainSong))
-      // 有歌时由“已加入”那条负责，不重复
+      const outcome = await library.create(draft, songs?.map(plainSong));
       if (outcome?.ok && (songs?.length ?? 0) === 0) {
         notices.show({
           kind: 'playlistCreated',
           name: draft.name.trim(),
-        })
+        });
       }
-      return outcome
+      return outcome;
     },
     async publishPlaylist(playlistId) {
-      const playlist = ownPlaylist(playlistId)
-      if (!playlist.private)
-        return
-      const result = await library.change({ kind: 'publish', playlist })
+      const playlist = ownPlaylist(playlistId);
+      if (!playlist.private) return;
+      const result = await library.change({ kind: 'publish', playlist });
       if (result?.ok && result.value === 'done') {
         notices.show({
           kind: 'playlistPublished',
           name: playlistName(playlist),
-        })
+        });
       }
     },
     async deletePlaylist(playlistId) {
-      const playlist = ownPlaylist(playlistId)
-      const result = await library.change({ kind: 'delete', playlist })
+      const playlist = ownPlaylist(playlistId);
+      const result = await library.change({ kind: 'delete', playlist });
       if (result?.ok && result.value === 'done') {
         notices.show({
           kind: 'playlistDeleted',
           name: playlistName(playlist),
-        })
+        });
       }
     },
     openDaily: daily.open,
@@ -1101,48 +1033,46 @@ export const createApp = (browser: BrowserCapabilities): App => {
     moreSearchResults: search.more,
     clearSearchHistory: search.clearHistory,
     play(source, songId) {
-      source = plainSource(source)
+      source = plainSource(source);
       if (source.kind === 'search') {
-        const song = searchedSong(source.keyword, songId)
-        if (song)
-          player.interject(source, song)
-        return
+        const song = searchedSong(source.keyword, songId);
+        if (song) player.interject(source, song);
+        return;
       }
-      const list = listOf(source)
-      if (list)
-        player.play(source, list.songs, songId, list.complete)
+      const list = listOf(source);
+      if (list) player.play(source, list.songs, songId, list.complete);
     },
     playAll(source) {
-      source = plainSource(source)
+      source = plainSource(source);
       if (source.kind === 'search')
-        throw new Error('搜索结果没有播放全部：在搜索里点歌是插播')
-      const list = listOf(source)
-      const first = list?.songs.find(song => state.playable(song))
+        throw new Error('搜索结果没有播放全部：在搜索里点歌是插播');
+      const list = listOf(source);
+      const first = list?.songs.find((song) => state.playable(song));
       if (list && first)
-        player.play(source, list.songs, first.id, list.complete)
+        player.play(source, list.songs, first.id, list.complete);
     },
     togglePlay: player.toggle,
     next: player.next,
     previous: player.previous,
     playFromQueue: player.jump,
     playNext(source, song) {
-      const outcome = player.playNext(plainSource(source), plainSong(song))
+      const outcome = player.playNext(plainSource(source), plainSong(song));
       if (outcome !== 'ignored') {
         notices.show({
           kind: 'queuedNext',
           count: 1,
           started: outcome === 'started',
-        })
+        });
       }
     },
     addToQueue(source, song) {
-      const outcome = player.addToQueue(plainSource(source), plainSong(song))
+      const outcome = player.addToQueue(plainSource(source), plainSong(song));
       if (outcome !== 'ignored') {
         notices.show({
           kind: 'queuedEnd',
           count: 1,
           started: outcome === 'started',
-        })
+        });
       }
     },
     removeFromQueue: player.removeFromQueue,
@@ -1151,113 +1081,119 @@ export const createApp = (browser: BrowserCapabilities): App => {
     seek: player.seek,
     playFrom: player.playFrom,
     setVolume(volume) {
-      // 手机没有音量入口，也调不了（DESIGN.md Layout · 播放页）：恒为 100%，不写进这台设备
-      if (browser.touchPrimary)
-        return
-      player.setVolume(volume)
-      void local.saveVolume(volume)
+      if (browser.touchPrimary) return;
+      player.setVolume(volume);
+      void local.saveVolume(volume);
     },
     setPlayQuality(quality) {
-      player.setQuality(quality)
-      void local.savePlayQuality(quality)
+      player.setQuality(quality);
+      void local.savePlayQuality(quality);
     },
     dismissPlayerNotice: player.dismissNotice,
     openLyrics: lyrics.open,
     async heart(song, hearted, options) {
-      const plain = plainSong(song)
+      const plain = plainSong(song);
       const result = await library.change({
         kind: 'heart',
         song: plain,
         hearted,
-      })
+      });
       if (options?.notify && result?.ok && result.value === 'done')
-        notices.show({ kind: 'hearted', song: plain, hearted })
+        notices.show({ kind: 'hearted', song: plain, hearted });
     },
     async addToPlaylist(playlistId, song) {
-      const playlist = state.library?.playlists?.find(item => item.id === playlistId)
+      const playlist = state.library?.playlists?.find(
+        (item) => item.id === playlistId,
+      );
       if (!playlist || playlist.kind === 'collected')
-        throw new Error(`只能加入自建歌单和我喜欢的音乐：${playlistId}`)
+        throw new Error(`只能加入自建歌单和我喜欢的音乐：${playlistId}`);
       await library.change({
         kind: 'add',
         playlist,
         song: plainSong(song),
-      })
+      });
     },
-    addSongsToPlaylist: async (playlistId, songs) => library.addSongs(ownPlaylist(playlistId), songs.map(plainSong)),
+    addSongsToPlaylist: async (playlistId, songs) =>
+      library.addSongs(ownPlaylist(playlistId), songs.map(plainSong)),
     addTargets: library.addTargets,
     removeFromPlaylist(playlistId, songIds) {
-      library.removeSongs(ownPlaylist(playlistId), songIds)
+      library.removeSongs(ownPlaylist(playlistId), songIds);
     },
     moveSongs: library.moveSongs,
     orderPlaylists: library.orderPlaylists,
-    flushPlaylist: playlistId => library.flush(playlistId),
+    flushPlaylist: (playlistId) => library.flush(playlistId),
     async searchSongs(keyword) {
-      const result = await search.searchSongs(keyword)
-      // 这一轮结束了：选择器只需要知道没搜成的原因
-      return result ?? {
-        ok: false,
-        failure: { kind: 'needsLogin' },
-      }
+      const result = await search.searchSongs(keyword);
+      return (
+        result ?? {
+          ok: false,
+          failure: { kind: 'needsLogin' },
+        }
+      );
     },
     async collect(target, collected) {
-      const shown = state.library
-      if (!shown)
-        return
+      const shown = state.library;
+      if (!shown) return;
       switch (target.kind) {
         case 'playlist': {
-          const found = playlistToCollect(shown, target.id)
+          const found = playlistToCollect(shown, target.id);
           if (found?.playlist.kind === 'collected') {
             await library.change({
               kind: 'collectPlaylist',
               playlist: found.playlist,
               collected,
               seed: found.seed,
-            })
-            return
+            });
+            return;
           }
-          break
+          break;
         }
         case 'album': {
-          const album = albumToCollect(shown, target.id)
+          const album = albumToCollect(shown, target.id);
           if (album) {
-            await library.change({ kind: 'collectAlbum', album, collected })
-            return
+            await library.change({ kind: 'collectAlbum', album, collected });
+            return;
           }
-          break
+          break;
         }
         case 'artist': {
-          const artist = artistToCollect(shown, target.id)
+          const artist = artistToCollect(shown, target.id);
           if (artist) {
-            await library.change({ kind: 'collectArtist', artist, collected })
-            return
+            await library.change({ kind: 'collectArtist', artist, collected });
+            return;
           }
-          break
+          break;
         }
         default: {
-          const unhandled: never = target.kind
-          throw new Error(`不认识要收藏的东西：${JSON.stringify(unhandled)}`)
+          const unhandled: never = target.kind;
+          throw new Error(`不认识要收藏的东西：${JSON.stringify(unhandled)}`);
         }
       }
-      throw new Error(`界面上没有这样东西，收藏不了：${JSON.stringify(target)}`)
+      throw new Error(
+        `界面上没有这样东西，收藏不了：${JSON.stringify(target)}`,
+      );
     },
     noticeAction: (id: number, action: NoticeAction): Promise<void> => {
-      const entry = notices.list().find(each => each.id === id)
+      const entry = notices.list().find((each) => each.id === id);
       return entry && entry.actions.includes(action)
         ? actOnNotice(entry, action)
-        : Promise.resolve()
+        : Promise.resolve();
     },
-    toast: (tone, text, options) => notices.show({
-      kind: 'plain',
-      tone,
-      text,
-    }, options),
+    toast: (tone, text, options) =>
+      notices.show(
+        {
+          kind: 'plain',
+          tone,
+          text,
+        },
+        options,
+      ),
     download: downloads.download,
     downloadSongs: (songs, source) => downloads.add(songs, source),
     async downloadPlaylist(playlistId, songs, options) {
-      const shown = state.library
-      if (!shown)
-        return 'signedOut'
-      const page = shown.playlistPage(playlistId)
+      const shown = state.library;
+      if (!shown) return 'signedOut';
+      const page = shown.playlistPage(playlistId);
       const source: DownloadSource = {
         kind: 'playlist',
         id: playlistId,
@@ -1265,91 +1201,84 @@ export const createApp = (browser: BrowserCapabilities): App => {
           name: page.info?.name ?? null,
           kind: page.kind,
         }),
-      }
-      const content = page.content
-      const selected = songs ?? content?.songs ?? []
-      const selectedIds = new Set(selected.map(song => song.id))
-      const allLoaded = content !== null && selected.length === content.songs.length && content.songs.every(song => selectedIds.has(song.id))
-      const filling = content !== null && !content.complete && (options?.fill ?? allLoaded)
-      const outcome = await downloads.add(selected, source)
-      if (outcome === 'signedOut' || outcome === 'offline')
-        return outcome
+      };
+      const content = page.content;
+      const selected = songs ?? content?.songs ?? [];
+      const selectedIds = new Set(selected.map((song) => song.id));
+      const allLoaded =
+        content !== null &&
+        selected.length === content.songs.length &&
+        content.songs.every((song) => selectedIds.has(song.id));
+      const filling =
+        content !== null && !content.complete && (options?.fill ?? allLoaded);
+      const outcome = await downloads.add(selected, source);
+      if (outcome === 'signedOut' || outcome === 'offline') return outcome;
       if (filling) {
         pendingPlaylists.set(playlistId, {
           source,
-          seen: new Set(content.songs.map(song => song.id)),
-        })
-        // 等下载来源写盘时，曲库可能又同步到了下一页：马上再对一次，不用等下一次发布
-        fillPendingPlaylists()
+          seen: new Set(content.songs.map((song) => song.id)),
+        });
+        fillPendingPlaylists();
+      } else {
+        pendingPlaylists.delete(playlistId);
       }
-      else {
-        pendingPlaylists.delete(playlistId)
-      }
-      return outcome
+      return outcome;
     },
     async downloadAlbum(albumId, songs) {
-      const page = state.library?.albumPage(albumId)
+      const page = state.library?.albumPage(albumId);
       if (page?.status !== 'shown') {
         return {
           queued: 0,
           downloaded: 0,
           trial: 0,
           noCopyright: 0,
-        }
+        };
       }
       return downloads.add(songs ?? page.content.songs, {
         kind: 'album',
         id: albumId,
         name: page.content.album.name ?? '未知专辑',
-      })
+      });
     },
     retryDownload(songId) {
-      downloads.retry(songId)
+      downloads.retry(songId);
     },
     cancelDownload(songId) {
-      downloads.cancel(songId)
+      downloads.cancel(songId);
     },
     cancelAllDownloads() {
-      // 还没补完的整张歌单也停下，免得同步完又补回来（规则⑫）
-      pendingPlaylists.clear()
-      downloads.cancelAll()
+      pendingPlaylists.clear();
+      downloads.cancelAll();
     },
     resumeDownloads() {
-      downloads.resume()
-      notices.hideWhere(notice => notice.kind === 'downloadsPaused')
+      downloads.resume();
+      notices.hideWhere((notice) => notice.kind === 'downloadsPaused');
     },
     deleteDownloads: downloads.remove,
     deletePlaylistDownloads(playlistId) {
-      // 还没补完的整张歌单也停下，免得同步完又补回来（规则⑫）
-      pendingPlaylists.delete(playlistId)
-      return downloads.removePlaylist(playlistId)
+      pendingPlaylists.delete(playlistId);
+      return downloads.removePlaylist(playlistId);
     },
     clearDownloads() {
-      pendingPlaylists.clear()
-      return downloads.clear()
+      pendingPlaylists.clear();
+      return downloads.clear();
     },
     setDownloadQuality: downloads.setQuality,
     exportDownloads: exports.start,
     cancelExport: exports.cancel,
     closeExport: exports.close,
-    searchDownloads: query => filterSongs(state.downloads.songs ?? [], query),
+    searchDownloads: (query) => filterSongs(state.downloads.songs ?? [], query),
     searchPlaylists: (query) => {
-      const playlists = state.library?.playlists
-      return playlists
-        ? filterPlaylists(playlists, query)
-        : null
+      const playlists = state.library?.playlists;
+      return playlists ? filterPlaylists(playlists, query) : null;
     },
     searchAlbums: (query) => {
-      const albums = state.library?.albums
-      return albums
-        ? filterAlbums(albums, query)
-        : null
+      const albums = state.library?.albums;
+      return albums ? filterAlbums(albums, query) : null;
     },
     searchArtists: (query) => {
-      const artists = state.library?.artists
-      return artists
-        ? filterArtists(artists, query)
-        : null
+      const artists = state.library?.artists;
+      return artists ? filterArtists(artists, query) : null;
     },
-  }
-}
+  };
+};

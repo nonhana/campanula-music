@@ -1,12 +1,9 @@
-import type { Song } from '#lib/api/library.js'
+import type { Song } from '#lib/api/library.js';
 
-/** 设计页专用的假歌：不联网、不来自曲库，只用来摆下载行和完成态 */
 export const designSong = (id: number, name: string, artist: string): Song => ({
   id,
   name,
-  artists: [
-    { id: null, name: artist },
-  ],
+  artists: [{ id: null, name: artist }],
   album: { id: null, name: null, coverUrl: null },
   duration: 212_000,
   downloadSize: null,
@@ -16,13 +13,12 @@ export const designSong = (id: number, name: string, artist: string): Song => ({
   aliases: [],
   translations: [],
   publishedAt: null,
-})
+});
 
-/** 设计页专用的歌单名和简介：长简介照真实歌单的长度和写法（自己写的小标题、· 列表、混排日文和英文） */
 export const designPlaylistName = {
   short: '夜航｜ヨルシカ 歌曲全收录',
   long: '夜航｜ヨルシカ 歌曲全收录：从《言って。》到《晴る》，n-buna 和 suis 写给每一个夏天的歌',
-} as const
+} as const;
 
 export const designDescription = {
   short: '夏天傍晚听的歌，按发行时间排。',
@@ -49,4 +45,4 @@ export const designDescription = {
 最后
 
 如果你也是在某个夏天第一次听到他们，欢迎收藏。歌单会一直更新，新歌发行后一周内加进来。Thanks for listening, and see you next summer.`,
-} as const
+} as const;

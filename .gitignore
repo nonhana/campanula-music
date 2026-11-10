@@ -20,4 +20,6 @@ vite.config.ts.timestamp-*
 
 .vitest/
 
+.eslintcache
+
 _notes/

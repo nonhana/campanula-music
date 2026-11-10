@@ -1,365 +1,385 @@
-import { initializeWatchman } from 'hana-music-api/watchman'
+import { initializeWatchman } from 'hana-music-api/watchman';
 
-import type { CoverCrop } from '#lib/api/cover.js'
+import type { CoverCrop } from '#lib/api/cover.js';
 import {
   COVER_OUTPUT_MAX_BYTES,
   COVER_OUTPUT_MIN_QUALITY,
   COVER_OUTPUT_QUALITY,
   COVER_OUTPUT_SIZE,
   COVER_WORK_MAX_SIDE,
-} from '#lib/api/cover.js'
-import { mock } from '#lib/mock-flag.js'
+} from '#lib/api/cover.js';
+import { mock } from '#lib/mock-flag.js';
 
-/** App 只从这里拿浏览器能力，不直接用 window、navigator、document；测试接入点里整个换成替身（Spec #11 Testing Decisions） */
 export interface BrowserCapabilities {
-  /** 同源，浏览器自动带上 Cookie；断网时失败 */
-  fetch: (path: string, init?: RequestInit) => Promise<Response>
-  clock: Clock
-  /** 同一个浏览器里的标签页共用 */
-  indexedDB: IDBFactory
-  network: NetworkStatus
-  page: PageVisibility
-  /** 以触屏为主的设备（media query `pointer: coarse`，手机、平板），打开 App 时问一次；手机没有音量入口，App 给它 100% 的默认音量 */
-  touchPrimary: boolean
-  mediaSession: MediaSessionCapability
-  MediaMetadata: typeof MediaMetadata
-  /** 同 navigator.locks；同一浏览器里同源的标签页共用 */
-  locks: LocksCapability
-  /** 同 new BroadcastChannel(name)：同源、同名的频道互相收得到，自己发的自己收不到 */
-  broadcastChannel: (name: string) => ChannelCapability
-  /** 同 new Audio()：浏览器直连网易云的音频服务器放歌 */
-  audio: () => AudioCapability
-  /**
-   * 收藏歌单前现取一枚反作弊令牌（#30 留言）：官方的 Watchman（网易易盾）给的，页面里只初始化一次，每次都重新取、不缓存；
-   * 服务端只透传给 SDK。Watchman 没加载出来（断网、被浏览器插件拦了）、迟迟不给时失败。
-   */
-  checkToken: () => Promise<string>
-  /** 换封面用的图片处理（#34）；App 不直接用 canvas、createImageBitmap */
-  images: ImageCapability
-  /** 把导出的 JPEG 传到 uploadUrl（跨域 POST，带上传凭证，可以中途取消）；只用于换封面的第二步（#34） */
-  uploadCoverImage: (url: string, jpeg: Blob, token: string, signal: AbortSignal) => Promise<void>
-  /**
-   * 跨域 GET 下载一个文件（#38）：音频、图片服务器都允许跨域（验证关卡③），不带 Cookie；每收到一块数据就交给 onChunk。
-   * from > 0 时带 Range 从这一字节开始（断点续传，#39；音频服务器的 CORS 允许 Range 头）；服务器不支持分段、回了整份文件时先调 restart 再从头交。
-   * 断网、传到一半断开时以 TypeError 失败（Fetch 标准的 network error）；不是 2xx 时失败。成功时返回文件类型。
-   */
-  download: (url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, options?: DownloadOptions) => Promise<{ type: string }>
-  /** 同 navigator.storage.estimate()：报告这台设备上这个站点已用、最多能用多少字节（#39 存储不够时暂停下载）；浏览器没给的是 null */
+  fetch: (path: string, init?: RequestInit) => Promise<Response>;
+  clock: Clock;
+  indexedDB: IDBFactory;
+  network: NetworkStatus;
+  page: PageVisibility;
+  touchPrimary: boolean;
+  mediaSession: MediaSessionCapability;
+  MediaMetadata: typeof MediaMetadata;
+  locks: LocksCapability;
+  broadcastChannel: (name: string) => ChannelCapability;
+  audio: () => AudioCapability;
+  checkToken: () => Promise<string>;
+  images: ImageCapability;
+  uploadCoverImage: (
+    url: string,
+    jpeg: Blob,
+    token: string,
+    signal: AbortSignal,
+  ) => Promise<void>;
+  download: (
+    url: string,
+    onChunk: (chunk: Uint8Array<ArrayBuffer>) => void,
+    options?: DownloadOptions,
+  ) => Promise<{ type: string }>;
   storage: {
-    estimate: () => Promise<StorageEstimate>
-    /**
-     * 同 navigator.storage.persist()：申请持久存储，浏览器清理空间时不删下载（#40）。
-     * 浏览器直接给结果（已经持久、这次答应）是 true，不答应是 false；失败时以异常拒绝
-     */
-    persist: () => Promise<boolean>
-  }
-  /** 同 URL.createObjectURL：播放器、图片拿它放本机存着的下载 */
-  objectUrl: (blob: Blob) => string
-  revokeObjectUrl: (url: string) => void
-  /**
-   * 选一个文件夹往里写（#79 导出，ADR-0014）：同 showDirectoryPicker({ mode: 'readwrite', startIn: 'music' })，必须在听众点按的那一下里调用；
-   * 听众取消时以 AbortError 失败，不给写的权限时以 NotAllowedError 失败。浏览器不支持选文件夹时是 null，界面不显示“导出”
-   */
-  pickFolder: (() => Promise<FolderCapability>) | null
+    estimate: () => Promise<StorageEstimate>;
+    persist: () => Promise<boolean>;
+  };
+  objectUrl: (blob: Blob) => string;
+  revokeObjectUrl: (url: string) => void;
+  pickFolder: (() => Promise<FolderCapability>) | null;
 }
 
-/** 照 File System 标准的 FileSystemDirectoryHandle，导出只用这几样 */
 export interface FolderCapability {
-  readonly name: string
-  /** create 为 true 时没有就马上建一个空文件；为 false 且没有时以 NotFoundError 失败。名字不合法时以 TypeError 失败，没有写的权限时 NotAllowedError */
-  getFileHandle: (name: string, options?: { create?: boolean }) => Promise<FileCapability>
-  /** 没有这个文件时以 NotFoundError 失败 */
-  removeEntry: (name: string) => Promise<void>
+  readonly name: string;
+  getFileHandle: (
+    name: string,
+    options?: { create?: boolean },
+  ) => Promise<FileCapability>;
+  removeEntry: (name: string) => Promise<void>;
 }
 
-/** 从 from 字节开始的下载；服务器不支持分段时 restart 先清掉之前收到的。signal 取消这次下载（fetch 以 AbortError 拒绝） */
 export interface DownloadOptions {
-  from?: number
-  restart?: () => void
-  signal?: AbortSignal
+  from?: number;
+  restart?: () => void;
+  signal?: AbortSignal;
 }
 
-/** 照 StorageEstimate：usage、quota 可能没给 */
 export interface StorageEstimate {
-  usage: number | null
-  quota: number | null
+  usage: number | null;
+  quota: number | null;
 }
 
-/** FileSystemFileHandle：写进一份临时副本，close 时才换掉文件内容，abort 丢掉临时副本（File System Access 标准） */
 export interface FileCapability {
-  createWritable: () => Promise<WritableCapability>
+  createWritable: () => Promise<WritableCapability>;
 }
 
-/** FileSystemWritableFileStream */
 export interface WritableCapability {
-  /** 空间不够时以 QuotaExceededError 失败 */
-  write: (data: Blob) => Promise<void>
-  close: () => Promise<void>
-  /** 还没写完的那一次跟着失败（Streams 标准的 abort） */
-  abort: () => Promise<void>
+  write: (data: Blob) => Promise<void>;
+  close: () => Promise<void>;
+  abort: () => Promise<void>;
 }
 
-/** 按 EXIF 摆正过的图片（换封面用） */
 export interface DecodedImage {
-  /** 预览图的地址（blob: URL），关掉裁剪页时释放 */
-  readonly url: string
-  /** 长边已经缩到 COVER_WORK_MAX_SIDE 以内，裁剪坐标按它算 */
-  readonly width: number
-  readonly height: number
-  readonly origWidth: number
-  readonly origHeight: number
+  readonly url: string;
+  // 长边已缩到 COVER_WORK_MAX_SIDE 以内，裁剪坐标按它算
+  readonly width: number;
+  readonly height: number;
+  readonly origWidth: number;
+  readonly origHeight: number;
 }
 
 export interface ImageCapability {
-  /** 按 EXIF 摆正，长边超过 COVER_WORK_MAX_SIDE 的先缩小，另做一张长边最多 1600px 的预览图；解不开时抛错（HEIC 由 App 按类型和扩展名判断） */
-  decode: (file: File) => Promise<DecodedImage>
-  release: (image: DecodedImage) => void
-  /** 导出 COVER_OUTPUT_SIZE 的 JPEG；超过 1 MB 就降质量重压（最低 0.6） */
-  exportJpeg: (image: DecodedImage, crop: CoverCrop) => Promise<Blob>
+  decode: (file: File) => Promise<DecodedImage>;
+  release: (image: DecodedImage) => void;
+  exportJpeg: (image: DecodedImage, crop: CoverCrop) => Promise<Blob>;
 }
 
-type AudioEvent = 'playing' | 'waiting' | 'pause' | 'timeupdate' | 'durationchange' | 'canplaythrough' | 'ended' | 'error'
+type AudioEvent =
+  | 'playing'
+  | 'waiting'
+  | 'pause'
+  | 'timeupdate'
+  | 'durationchange'
+  | 'canplaythrough'
+  | 'ended'
+  | 'error';
 
-/** 照 HTML 标准的 HTMLMediaElement */
 export interface AudioCapability {
-  /** 换地址就重新加载：停下、进度回到 0、还没了结的 play() 以 AbortError 失败 */
-  src: string
-  /** 秒；还没加载出来时设的值，加载出来后从这里开始放 */
-  currentTime: number
-  /** 秒；还不知道时是 NaN */
-  readonly duration: number
-  readonly paused: boolean
-  readonly ended: boolean
-  volume: number
-  preload: '' | 'none' | 'metadata' | 'auto'
-  /** MediaError 的 code：2 是网络出错，4 是地址放不了 */
-  readonly error: { readonly code: number } | null
-  /** 出声了才成功；在那之前暂停、换地址以 AbortError 失败，地址放不了以 NotSupportedError 失败 */
-  play: () => Promise<void>
-  pause: () => void
-  addEventListener: (type: AudioEvent, listener: () => void) => void
+  src: string;
+  currentTime: number;
+  readonly duration: number;
+  readonly paused: boolean;
+  readonly ended: boolean;
+  volume: number;
+  preload: '' | 'none' | 'metadata' | 'auto';
+  readonly error: { readonly code: number } | null;
+  play: () => Promise<void>;
+  pause: () => void;
+  addEventListener: (type: AudioEvent, listener: () => void) => void;
 }
 
-/** Web Locks */
-export type LocksCapability = Pick<LockManager, 'request'>
+export type LocksCapability = Pick<LockManager, 'request'>;
 
-/** 收到消息时发 message 事件（MessageEvent，消息在 data 里） */
-export type ChannelCapability = Pick<BroadcastChannel, 'postMessage' | 'addEventListener' | 'close'>
+export type ChannelCapability = Pick<
+  BroadcastChannel,
+  'postMessage' | 'addEventListener' | 'close'
+>;
 
-/** 同 navigator.mediaSession；歌曲信息用 BrowserCapabilities.MediaMetadata 构造 */
-export type MediaSessionCapability = Pick<MediaSession, 'metadata' | 'playbackState' | 'setActionHandler' | 'setPositionState'>
+export type MediaSessionCapability = Pick<
+  MediaSession,
+  'metadata' | 'playbackState' | 'setActionHandler' | 'setPositionState'
+>;
 
 export interface Clock {
-  /** 毫秒，同 Date.now() */
-  now: () => number
-  /** 返回取消函数 */
-  after: (ms: number, callback: () => void) => () => void
+  now: () => number;
+  after: (ms: number, callback: () => void) => () => void;
 }
 
-/** onLine 同 navigator.onLine，变化时发 online / offline 事件 */
 export interface NetworkStatus {
-  readonly onLine: boolean
-  addEventListener: (type: 'online' | 'offline', listener: () => void) => void
-  removeEventListener: (type: 'online' | 'offline', listener: () => void) => void
+  readonly onLine: boolean;
+  addEventListener: (type: 'online' | 'offline', listener: () => void) => void;
+  removeEventListener: (
+    type: 'online' | 'offline',
+    listener: () => void,
+  ) => void;
 }
 
-/** 同 document.visibilityState，变化时发 visibilitychange。Page Lifecycle 的 freeze、resume：Android 上切到后台约 1 分钟后页面被冻结、回来时解冻（#41） */
+// Android 上切到后台约 1 分钟后页面被冻结、回来时解冻
 export interface PageVisibility {
-  readonly visibilityState: DocumentVisibilityState
-  addEventListener: (type: 'visibilitychange' | 'freeze' | 'resume', listener: () => void) => void
-  removeEventListener: (type: 'visibilitychange' | 'freeze' | 'resume', listener: () => void) => void
+  readonly visibilityState: DocumentVisibilityState;
+  addEventListener: (
+    type: 'visibilitychange' | 'freeze' | 'resume',
+    listener: () => void,
+  ) => void;
+  removeEventListener: (
+    type: 'visibilitychange' | 'freeze' | 'resume',
+    listener: () => void,
+  ) => void;
 }
 
 const watchmanToken = async (): Promise<string> => {
-  // mock 不初始化官方脚本；固定令牌只用于本地 mock 服务端（#58）。
-  if (mock)
-    return 'mock-watchman-token'
-  // SDK 按页面复用实例，初始化和每次取值各限 10 秒；初始化失败会清理，留给下次主动操作重试。
-  const watchman = await initializeWatchman()
-  return watchman.getToken()
-}
+  if (mock) return 'mock-watchman-token';
+  const watchman = await initializeWatchman();
+  return watchman.getToken();
+};
 
-/** 超大照片直接塞进 <img> 会让手机卡一下 */
-const COVER_PREVIEW_MAX = 1600
-/** JPEG 没有透明，透明的地方铺白 */
-const WHITE = '#fff'
+const COVER_PREVIEW_MAX = 1600;
+const WHITE = '#fff';
 
 interface Decoded {
-  bitmap: ImageBitmap
-  url: string
+  bitmap: ImageBitmap;
+  url: string;
 }
 
-/** DecodedImage 只有界面要用的尺寸和地址，位图留在这里给裁切用 */
-const decoded = new WeakMap<DecodedImage, Decoded>()
+const decoded = new WeakMap<DecodedImage, Decoded>();
 
 const drawWhite = (canvas: HTMLCanvasElement): CanvasRenderingContext2D => {
-  const context = canvas.getContext('2d')
-  if (!context)
-    throw new Error('浏览器不给 canvas 的绘图上下文')
-  context.fillStyle = WHITE
-  context.fillRect(0, 0, canvas.width, canvas.height)
-  context.imageSmoothingQuality = 'high'
-  return context
-}
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('浏览器不给 canvas 的绘图上下文');
+  context.fillStyle = WHITE;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingQuality = 'high';
+  return context;
+};
 
-const toJpeg = (canvas: HTMLCanvasElement, quality: number): Promise<Blob> => new Promise((resolve, reject) => canvas.toBlob(blob => blob
-  ? resolve(blob)
-  : reject(new Error('浏览器没能导出 JPEG')), 'image/jpeg', quality))
+const toJpeg = (canvas: HTMLCanvasElement, quality: number): Promise<Blob> =>
+  new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (blob) =>
+        blob ? resolve(blob) : reject(new Error('浏览器没能导出 JPEG')),
+      'image/jpeg',
+      quality,
+    ),
+  );
 
 const decodeImage = async (file: File): Promise<DecodedImage> => {
-  // 让手机竖拍的照片按 EXIF 摆正
-  let bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
-  const origWidth = bitmap.width
-  const origHeight = bitmap.height
-  const longest = Math.max(origWidth, origHeight)
+  let bitmap = await createImageBitmap(file, {
+    imageOrientation: 'from-image',
+  });
+  const origWidth = bitmap.width;
+  const origHeight = bitmap.height;
+  const longest = Math.max(origWidth, origHeight);
   if (longest > COVER_WORK_MAX_SIDE) {
-    const scale = COVER_WORK_MAX_SIDE / longest
+    const scale = COVER_WORK_MAX_SIDE / longest;
     const smaller = await createImageBitmap(bitmap, {
       resizeWidth: Math.round(origWidth * scale),
       resizeHeight: Math.round(origHeight * scale),
       resizeQuality: 'high',
-    })
-    bitmap.close()
-    bitmap = smaller
+    });
+    bitmap.close();
+    bitmap = smaller;
   }
-  const previewScale = Math.min(1, COVER_PREVIEW_MAX / Math.max(bitmap.width, bitmap.height))
-  const preview = document.createElement('canvas')
-  preview.width = Math.round(bitmap.width * previewScale)
-  preview.height = Math.round(bitmap.height * previewScale)
-  drawWhite(preview).drawImage(bitmap, 0, 0, preview.width, preview.height)
-  const blob = await toJpeg(preview, 0.85)
+  const previewScale = Math.min(
+    1,
+    COVER_PREVIEW_MAX / Math.max(bitmap.width, bitmap.height),
+  );
+  const preview = document.createElement('canvas');
+  preview.width = Math.round(bitmap.width * previewScale);
+  preview.height = Math.round(bitmap.height * previewScale);
+  drawWhite(preview).drawImage(bitmap, 0, 0, preview.width, preview.height);
+  const blob = await toJpeg(preview, 0.85);
   const image: DecodedImage = {
     url: URL.createObjectURL(blob),
     width: bitmap.width,
     height: bitmap.height,
     origWidth,
     origHeight,
-  }
-  decoded.set(image, { bitmap, url: image.url })
-  return image
-}
+  };
+  decoded.set(image, { bitmap, url: image.url });
+  return image;
+};
 
 const releaseImage = (image: DecodedImage): void => {
-  const entry = decoded.get(image)
-  if (!entry)
-    return
-  decoded.delete(image)
-  entry.bitmap.close()
-  URL.revokeObjectURL(entry.url)
-}
+  const entry = decoded.get(image);
+  if (!entry) return;
+  decoded.delete(image);
+  entry.bitmap.close();
+  URL.revokeObjectURL(entry.url);
+};
 
-const exportCoverJpeg = async (image: DecodedImage, crop: CoverCrop): Promise<Blob> => {
-  const entry = decoded.get(image)
-  if (!entry)
-    throw new Error('这张图已经释放了，不能再裁')
-  const canvas = document.createElement('canvas')
-  canvas.width = COVER_OUTPUT_SIZE
-  canvas.height = COVER_OUTPUT_SIZE
-  drawWhite(canvas).drawImage(entry.bitmap, crop.x, crop.y, crop.size, crop.size, 0, 0, COVER_OUTPUT_SIZE, COVER_OUTPUT_SIZE)
-  let quality = COVER_OUTPUT_QUALITY
-  let blob = await toJpeg(canvas, quality)
-  while (blob.size > COVER_OUTPUT_MAX_BYTES && quality > COVER_OUTPUT_MIN_QUALITY) {
-    quality = Math.max(COVER_OUTPUT_MIN_QUALITY, Math.round((quality - 0.08) * 100) / 100)
-    blob = await toJpeg(canvas, quality)
+const exportCoverJpeg = async (
+  image: DecodedImage,
+  crop: CoverCrop,
+): Promise<Blob> => {
+  const entry = decoded.get(image);
+  if (!entry) throw new Error('这张图已经释放了，不能再裁');
+  const canvas = document.createElement('canvas');
+  canvas.width = COVER_OUTPUT_SIZE;
+  canvas.height = COVER_OUTPUT_SIZE;
+  drawWhite(canvas).drawImage(
+    entry.bitmap,
+    crop.x,
+    crop.y,
+    crop.size,
+    crop.size,
+    0,
+    0,
+    COVER_OUTPUT_SIZE,
+    COVER_OUTPUT_SIZE,
+  );
+  let quality = COVER_OUTPUT_QUALITY;
+  let blob = await toJpeg(canvas, quality);
+  while (
+    blob.size > COVER_OUTPUT_MAX_BYTES &&
+    quality > COVER_OUTPUT_MIN_QUALITY
+  ) {
+    quality = Math.max(
+      COVER_OUTPUT_MIN_QUALITY,
+      Math.round((quality - 0.08) * 100) / 100,
+    );
+    blob = await toJpeg(canvas, quality);
   }
-  return blob
-}
+  return blob;
+};
 
-const uploadCoverImage = async (url: string, jpeg: Blob, token: string, signal: AbortSignal): Promise<void> => {
+const uploadCoverImage = async (
+  url: string,
+  jpeg: Blob,
+  token: string,
+  signal: AbortSignal,
+): Promise<void> => {
   const response = await window.fetch(url, {
     method: 'POST',
     headers: { 'x-nos-token': token, 'content-type': 'image/jpeg' },
     body: jpeg,
     signal,
-  })
-  if (!response.ok)
-    throw new Error(`图片存储回了 ${response.status}`)
-}
+  });
+  if (!response.ok) throw new Error(`图片存储回了 ${response.status}`);
+};
 
-const download = async (url: string, onChunk: (chunk: Uint8Array<ArrayBuffer>) => void, { from = 0, restart, signal }: DownloadOptions = {}): Promise<{ type: string }> => {
+const download = async (
+  url: string,
+  onChunk: (chunk: Uint8Array<ArrayBuffer>) => void,
+  { from = 0, restart, signal }: DownloadOptions = {},
+): Promise<{ type: string }> => {
   const response = await window.fetch(url, {
     ...(from > 0
       ? {
           headers: { Range: `bytes=${from}-` },
         }
       : {}),
-    ...(signal
-      ? { signal }
-      : {}),
-  })
+    ...(signal ? { signal } : {}),
+  });
   if (!response.ok || !response.body)
-    throw new Error(`文件服务器回了 ${response.status}`)
+    throw new Error(`文件服务器回了 ${response.status}`);
   if (from > 0) {
     if (response.status === 206) {
-      // 回的必须是这一段：对不上号时把之前收到的作废、下次从头来（音频服务器的 CORS 暴露了 Content-Range，一般读得到）
-      const range = response.headers.get('content-range')
+      const range = response.headers.get('content-range');
       if (range !== null) {
-        const start = Number(/^bytes (\d+)-/.exec(range)?.[1])
+        const start = Number(/^bytes (\d+)-/.exec(range)?.[1]);
         if (start !== from) {
-          restart?.()
-          throw new Error(`文件服务器回的第 ${Number.isNaN(start)
-            ? '未知'
-            : start} 段，要的是 ${from}`)
+          restart?.();
+          throw new Error(
+            `文件服务器回的第 ${
+              Number.isNaN(start) ? '未知' : start
+            } 段，要的是 ${from}`,
+          );
         }
       }
-      // 跨域时没暴露 Content-Range：206 本来就是对我们 Range 的回应，按这一段收
-    }
-    else {
-      // 服务器不支持分段，回了整份文件：之前收到的作废，从头来
-      restart?.()
+    } else {
+      restart?.();
     }
   }
-  const type = response.headers.get('content-type') ?? ''
-  const reader = response.body.getReader()
-  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read())
-    onChunk(chunk.value)
-  return { type }
-}
+  const type = response.headers.get('content-type') ?? '';
+  const reader = response.body.getReader();
+  for (
+    let chunk = await reader.read();
+    !chunk.done;
+    chunk = await reader.read()
+  )
+    onChunk(chunk.value);
+  return { type };
+};
 
-/** File System Access 标准的 showDirectoryPicker（TypeScript 自带的 DOM 类型里还没有），Android Chrome、桌面 Chrome 和 Edge 有 */
-type DirectoryPicker = (options: { mode: 'readwrite', startIn: 'music' }) => Promise<FileSystemDirectoryHandle>
+type DirectoryPicker = (options: {
+  mode: 'readwrite';
+  startIn: 'music';
+}) => Promise<FileSystemDirectoryHandle>;
 
 export const realBrowserCapabilities = (): BrowserCapabilities => {
-  const picker = (window as Window & { showDirectoryPicker?: DirectoryPicker }).showDirectoryPicker
+  const picker = (window as Window & { showDirectoryPicker?: DirectoryPicker })
+    .showDirectoryPicker;
   return {
     fetch: (path, init) => window.fetch(path, init),
     clock: {
       now: () => Date.now(),
       after(ms, callback) {
-        const id = window.setTimeout(callback, ms)
-        return () => window.clearTimeout(id)
+        const id = window.setTimeout(callback, ms);
+        return () => window.clearTimeout(id);
       },
     },
     indexedDB: window.indexedDB,
     network: {
       get onLine() {
-        return navigator.onLine
+        return navigator.onLine;
       },
-      addEventListener: (type, listener) => window.addEventListener(type, listener),
-      removeEventListener: (type, listener) => window.removeEventListener(type, listener),
+      addEventListener: (type, listener) =>
+        window.addEventListener(type, listener),
+      removeEventListener: (type, listener) =>
+        window.removeEventListener(type, listener),
     },
     page: document,
     touchPrimary: matchMedia('(pointer: coarse)').matches,
     mediaSession: navigator.mediaSession,
     MediaMetadata: window.MediaMetadata,
     locks: navigator.locks,
-    broadcastChannel: name => new BroadcastChannel(name),
+    broadcastChannel: (name) => new BroadcastChannel(name),
     audio: () => new Audio(),
     checkToken: watchmanToken,
-    images: { decode: decodeImage, release: releaseImage, exportJpeg: exportCoverJpeg },
+    images: {
+      decode: decodeImage,
+      release: releaseImage,
+      exportJpeg: exportCoverJpeg,
+    },
     uploadCoverImage,
     download,
     storage: {
       async estimate() {
-        const { usage = null, quota = null } = await navigator.storage.estimate()
-        return { usage, quota }
+        const { usage = null, quota = null } =
+          await navigator.storage.estimate();
+        return { usage, quota };
       },
       persist: () => navigator.storage.persist(),
     },
-    objectUrl: blob => URL.createObjectURL(blob),
-    revokeObjectUrl: url => URL.revokeObjectURL(url),
+    objectUrl: (blob) => URL.createObjectURL(blob),
+    revokeObjectUrl: (url) => URL.revokeObjectURL(url),
     pickFolder: picker
       ? () => picker.call(window, { mode: 'readwrite', startIn: 'music' })
       : null,
-  }
-}
+  };
+};

@@ -1,8 +1,8 @@
-<script lang='ts'>
-  // Vite 在分析动态导入前替换 DEV；只用 $app/env.dev 会留下已经生成的孤立 chunk（#61）。
+<script lang="ts">
+  // 用 import.meta.env.DEV：换成 $app/env 的 dev 会留下已经生成的孤立 chunk
   const design = import.meta.env.DEV
     ? import('#lib/dev/DesignPage.svelte')
-    : null
+    : null;
 </script>
 
 {#if design}

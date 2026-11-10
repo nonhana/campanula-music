@@ -14,16 +14,19 @@
 
 - **契约穷尽处理**：接口返回、联合类型的每种情况都要处理。还没支持的情况用 `never` 让编译器报出来，不用 `if` 悄悄跳过。
 - **服务端没有状态**：不在内存里保存跨请求的状态，不在启动时读写本地文件（ADR-0009、Spec #11 架构）。
-- **地址由函数用 `resolve()` 拼好时**（例如 `songs/credit-link.ts`）：eslint 的 `svelte/no-navigation-without-resolve` 看不出来，在 `<a` 的上一行写 `<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- 地址由 <函数> 用 resolve() 拼好 -->`，`href` 和 `<a` 写在同一行（注释只管下一行）；`goto` 同理用 `//` 注释。提交照常过钩子。
+- **站内地址由函数用 `resolve()` 拼好时**（例如 `songs/credit-link.ts`）：返回类型标成 `ResolvedPathname`（`$app/types`），不要拓宽成 `string`。lint 不读类型（`parserOptions` 里没有 `projectService`），所以 `svelte/no-navigation-without-resolve` 看不懂包装函数：在 `<a>` 前面写 `<!-- eslint-disable svelte/no-navigation-without-resolve -- 地址由 <函数> 用 resolve() 拼好 -->`，元素结束后补 `<!-- eslint-enable svelte/no-navigation-without-resolve -->`（oxfmt 会把属性拆成多行，`eslint-disable-next-line` 只盖得住 `<a` 那一行，盖不住 `href`）。不是站内页面的链接（`data:` 下载、外链）加 `rel="external"`。`goto()` 用 `// eslint-disable-next-line` 加同样的说明。
 - **在边界校验**：在不可信的边界校验和恢复；已经校验过的契约内部直接写，出错就明确失败，不加多余的防御和静默兜底。
 - **偏函数式**：能用就用纯函数、显式数据流、不可变值，把副作用隔离开。
 - **就地可追踪**：行为在本地就能看懂，沿用周围已有的写法。
 - **能推断的类型不重复标注**：TypeScript 能自动推断出来的类型，不要再手写一遍。
 - **函数写成箭头函数**：写的时候就按表达式写，不等 lint 报错（`func-style: expression` 已强制）。
+- **排版交给 oxfmt**：行宽、分号、引号、断行都由 `oxfmt.config.mts` 决定（ESLint 的 `stylistic` 已关，`style/*` 一条都不跑）。`pnpm fmt` 格式化，`pnpm fmt:check` 只检查（CI 和提交前跑这条）。不要再往 ESLint 里加排版规则，也不手写对齐。
 
 ## 注释
 
-- **只写代码说不出来的事实**：代码是唯一事实来源（SSOT）。一条注释就是一句自足的话，写时机约定、跨模块的策略约定、不变量和坑、fixture 的用意这类东西；需要被检索的约定沿用现成锚点（`规则⑩`、`ADR-0007`、`Spec #11`）。不要复述名字和 props；只有一句话说不完的业务意图才写成多行。
+- **默认不写**：代码和命名能说清的，一律不写注释；已有的这类注释直接删。
+- **只写代码说不出来的事实**：时机约定、跨模块策略、不变量和坑、替身为什么这样写。一条注释一句话，最多两行；写法只有 `//` 和 `/** */`。
+- **不带编号**：不写 ADR、Spec、Issue 编号，也不写「见某文档」。历史和设计理由进 `DESIGN.md` 或 `docs/adr/`，注释只说眼下成立的前提。
 
 ## 测试
 

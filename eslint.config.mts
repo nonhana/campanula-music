@@ -1,9 +1,10 @@
-import antfu from '@antfu/eslint-config'
+import antfu from '@antfu/eslint-config';
 
-import { RESTRICTED_BROWSER_GLOBALS } from './src/lib/app/browser-globals.ts'
+import { RESTRICTED_BROWSER_GLOBALS } from './src/lib/app/browser-globals.ts';
 
 export default antfu(
   {
+    stylistic: false,
     svelte: true,
     unocss: { strict: true },
     pnpm: true,
@@ -18,7 +19,7 @@ export default antfu(
     rules: {
       'no-restricted-globals': [
         'error',
-        ...RESTRICTED_BROWSER_GLOBALS.map(name => ({
+        ...RESTRICTED_BROWSER_GLOBALS.map((name) => ({
           name,
           message: `App 里不直接用 ${name}：从 BrowserCapabilities（src/lib/app/browser.ts）拿，测试里才能换成替身`,
         })),
@@ -30,6 +31,10 @@ export default antfu(
     rules: {
       'antfu/top-level-function': 'off',
       'func-style': ['error', 'expression'],
+      'unicorn/number-literal-case': [
+        'error',
+        { hexadecimalValue: 'lowercase' },
+      ],
       'arrow-body-style': ['error', 'as-needed'],
       'no-use-before-define': [
         'error',
@@ -91,16 +96,24 @@ export default antfu(
   },
   {
     files: ['**/*.{js,ts,svelte}'],
-    ignores: ['src/lib/server/netease.ts', 'src/lib/server/mock/**', 'tests/harness/**'],
+    ignores: [
+      'src/lib/server/netease.ts',
+      'src/lib/server/mock/**',
+      'tests/harness/**',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           paths: [
-            { name: 'hana-music-api', message: '只有网易云适配层（src/lib/server/netease.ts）能用 hana-music-api' },
+            {
+              name: 'hana-music-api',
+              message:
+                '只有网易云适配层（src/lib/server/netease.ts）能用 hana-music-api',
+            },
           ],
         },
       ],
     },
   },
-)
+);

@@ -19,7 +19,7 @@
    - 例外是测试替身证明不了的那一层：改了浮层栈的历史适配（`overlay/overlay-history.svelte.ts`）、手势的按下松手（`shared/press.ts`）或 Service Worker，以及读代码弄不清的浏览器行为（例如第三方脚本在本机能不能用）。碰到例外先用一句话问作者要不要查一次；作者说不用，就在试用清单里写清怎么看、出错时是什么样子。
    - 截图、浏览器检查、动效逐帧只在作者点名时做：mock 见 `docs/agents/mock.md`，真账号见 `docs/agents/browser.md`。
 4. **真账号**：作者试用就是真账号验证；reviewer 只看 diff，不开浏览器。实现者只在上游行为还没被证明过时（新接的网易云模块、SDK 修复还没在真账号上成功过），先问作者，同意后用一次性脚本查，遵守 Spec #11「交付方式」里的五条规矩，并记录做了什么。需要作者在场时（扫码、收短信、用真机），停下来叫作者。
-5. **收尾**：推送前自己跑 `pnpm check` 和这次改到、加上的测试文件（`pnpm exec vitest run tests/<文件>`），不跑全量测试和构建（交给 CI）。用 `/code-review` 审一遍，提交并**推送** `rewrite/v1`。只提交不推送，CI 和 Vercel 都不会跑，作者没法在手机上验收。
+5. **收尾**：推送前自己跑 `pnpm check`、`pnpm fmt:check` 和这次改到、加上的测试文件（`pnpm exec vitest run tests/<文件>`），不跑全量测试和构建（交给 CI）。用 `/code-review` 审一遍，提交并**推送** `rewrite/v1`。只提交不推送，CI 和 Vercel 都不会跑，作者没法在手机上验收。
    - 提交信息统一用 Conventional Commits 的单行格式 `<type>: <message>`：type 用英文（`feat`、`fix`、`docs`、`refactor`、`test`、`chore` 等），message 用中文、一句话说清改了什么，只写一行，不写 scope、正文和脚注（作者 2026-11-04 定）。例：`feat: 手机音量恒为 100%，桌面音量照旧可调并记住`。
    - 推送成功就往下走，不等 CI、不看 Vercel 状态：没通过 CI 的版本不会上线。
    - 作者转告 CI 失败时再修，修好重新推送。

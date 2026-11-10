@@ -26,6 +26,7 @@ catalogs:
     eslint: ^10.14.0
     eslint-plugin-svelte: ^3.24.1
     knip: ^6.44.2
+    oxfmt: ^0.78.0
 
   music:
     browser-id3-writer: ^6.4.0

@@ -1,25 +1,24 @@
-<!-- 音量滑杆：扁平细线，已走过的部分薄荷、滑块森林绿。原生滑杆，键盘 ←/→、Home / End 都能调 -->
-<script lang='ts'>
-  import type { ClassValue } from 'svelte/elements'
+<script lang="ts">
+  import type { ClassValue } from 'svelte/elements';
 
-  import { getAppView } from '../shared/app-context.svelte'
+  import { getAppView } from '../shared/app-context.svelte';
 
-  const { class: klass }: { class?: ClassValue } = $props()
-  const view = getAppView()
-  const volume = $derived(view.state.player.volume)
+  const { class: klass }: { class?: ClassValue } = $props();
+  const view = getAppView();
+  const volume = $derived(view.state.player.volume);
 </script>
 
 <input
-  type='range'
-  min='0'
-  max='1'
-  step='0.01'
+  type="range"
+  min="0"
+  max="1"
+  step="0.01"
   value={volume}
-  aria-label='音量'
-  aria-valuetext='{Math.round(volume * 100)}%'
+  aria-label="音量"
+  aria-valuetext="{Math.round(volume * 100)}%"
   class={['slider', klass]}
-  style:--filled='{volume * 100}%'
-  oninput={event => view.app.setVolume(Number(event.currentTarget.value))}
+  style:--filled="{volume * 100}%"
+  oninput={(event) => view.app.setVolume(Number(event.currentTarget.value))}
 />
 
 <style>
@@ -37,13 +36,21 @@
   .slider::-webkit-slider-runnable-track {
     height: var(--track);
     border-radius: 999px;
-    background: linear-gradient(90deg, theme('colors.primary.800') var(--filled), theme('colors.primary.200') var(--filled));
+    background: linear-gradient(
+      90deg,
+      theme('colors.primary.800') var(--filled),
+      theme('colors.primary.200') var(--filled)
+    );
   }
 
   .slider::-moz-range-track {
     height: var(--track);
     border-radius: 999px;
-    background: linear-gradient(90deg, theme('colors.primary.800') var(--filled), theme('colors.primary.200') var(--filled));
+    background: linear-gradient(
+      90deg,
+      theme('colors.primary.800') var(--filled),
+      theme('colors.primary.200') var(--filled)
+    );
   }
 
   .slider::-webkit-slider-thumb {

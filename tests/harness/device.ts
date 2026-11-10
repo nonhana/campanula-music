@@ -1,196 +1,196 @@
-import { IDBDatabase, IDBFactory } from 'fake-indexeddb'
-import type { Cookie } from 'tough-cookie'
-import { CookieJar } from 'tough-cookie'
+import { IDBDatabase, IDBFactory } from 'fake-indexeddb';
+import type { Cookie } from 'tough-cookie';
+import { CookieJar } from 'tough-cookie';
 
-import type { App } from '#lib/app/app.js'
-import { createApp } from '#lib/app/app.js'
-import type { BrowserCapabilities, ChannelCapability, Clock, NetworkStatus } from '#lib/app/browser.js'
+import type { App } from '#lib/app/app.js';
+import { createApp } from '#lib/app/app.js';
+import type {
+  BrowserCapabilities,
+  ChannelCapability,
+  Clock,
+  NetworkStatus,
+} from '#lib/app/browser.js';
 
-import { FakeAudio, FakeBroadcast, FakeFiles, FakeFolders, FakeImages, FakeLocks, FakeMediaMetadata, FakeMediaSession, FakeNetwork, FakeObjectUrls, FakePage, FakeStorage, FakeWatchman, MediaTasks } from './browser'
+import {
+  FakeAudio,
+  FakeBroadcast,
+  FakeFiles,
+  FakeFolders,
+  FakeImages,
+  FakeLocks,
+  FakeMediaMetadata,
+  FakeMediaSession,
+  FakeNetwork,
+  FakeObjectUrls,
+  FakePage,
+  FakeStorage,
+  FakeWatchman,
+  MediaTasks,
+} from './browser';
 
 export interface SentRequest {
-  method: string
-  path: string
-  body?: unknown
-  /** 页面被隐藏也要发出去的请求（晚一点提交的修改），只记带了的 */
-  keepalive?: true
+  method: string;
+  path: string;
+  body?: unknown;
+  keepalive?: true;
 }
 
-/** 这台设备收到的服务端响应：请求正文、Cookie 之外只看方法、路径和状态码 */
 interface ReceivedResponse {
-  method: string
-  path: string
-  status: number
+  method: string;
+  path: string;
+  status: number;
 }
 
-/** 一个标签页：一个 App，加上只属于这个标签页的页面可见性、Media Session 和播放器 */
 export interface Tab {
-  app: App
-  /** 页面被隐藏（切到别的应用、锁屏） */
-  hide: () => void
-  show: () => void
-  /** 页面被冻结（Page Lifecycle 的 freeze）：Android 上切到后台约 1 分钟后；脚本还能跑，但真实浏览器里接下来就停了 */
-  freeze: () => void
-  /** 从冻结里恢复（Page Lifecycle 的 resume） */
-  resume: () => void
-  /**
-   * 关掉这个标签页（关掉标签页、划掉 App）：页面先被隐藏，之后脚本不再运行——播放器停下不出声、不再发事件，定时不再触发，收不到广播和联网状态变化；
-   * 拿着的 Web Locks 跟着放开（浏览器在文档销毁时这么做）。依据 HTML 标准的 unload a document（先发 visibilitychange 变成 hidden）和 destroy a document（排着的任务丢掉，事件循环不再为它跑任务）。
-   * 替身没做到的：在路上的请求、本机数据库的连接不会跟着断，所以关之前先等设备停下（world.settle）
-   */
-  close: () => void
-  mediaSession: FakeMediaSession
-  watchman: FakeWatchman
-  /** 这个标签页的播放器，按 App 新建的先后 */
-  audio: readonly FakeAudio[]
-  sounding: () => FakeAudio | undefined
+  app: App;
+  hide: () => void;
+  show: () => void;
+  freeze: () => void;
+  resume: () => void;
+  close: () => void;
+  mediaSession: FakeMediaSession;
+  watchman: FakeWatchman;
+  audio: readonly FakeAudio[];
+  sounding: () => FakeAudio | undefined;
 }
 
-/** 一台设备上的浏览器：Cookie、本机数据库、跨标签页的锁和广播、联网状态，开出来的标签页共用 */
 export interface Device {
-  open: () => Promise<Tab>
-  /** 这台设备向 Campanula 服务端发出的请求，按先后；断网时没发出去的不算 */
-  readonly requests: readonly SentRequest[]
-  /** 发出去了、还没收完响应的请求，按发出的先后 */
-  readonly pending: readonly SentRequest[]
-  /** 这台设备收到的服务端响应正文，按先后：页面脚本能读到的就是这些 */
-  readonly responseBodies: readonly string[]
-  readonly responses: readonly ReceivedResponse[]
-  /** 这台设备存着的 Cookie（包括 httpOnly 的） */
-  cookies: () => Promise<Cookie[]>
-  /** 像有人在浏览器里手动改了 Cookie：按 Set-Cookie 的写法存进这台设备 */
-  setCookie: (setCookie: string) => Promise<void>
-  /** 这台设备的本机数据库里 Campanula 存了什么：每个存储区里的 [键, 值]，按键排；还没建库时是空对象 */
-  stored: () => Promise<Record<string, [IDBValidKey, unknown][]>>
-  /** 打开 App 前建立旧版本数据库：prepare 在版本变更事务里直接按旧 schema 建存储区、写数据，不调用 App 的迁移 */
-  preload: (version: number, prepare: (database: IDBDatabase) => void) => Promise<void>
-  /** 断网或联网：navigator.onLine 跟着变、发 offline / online 事件；断网时请求直接失败 */
-  setOnline: (online: boolean) => void
-  /** 换封面用的图片解码、导出和直传替身（#34） */
-  images: FakeImages
-  /** 网易云的音频服务器、图片服务器：测试放上文件，App 下载时直连这里（#38） */
-  files: FakeFiles
-  /** 这台设备给这个站点多少存储空间（#39）：改 usage、quota 模拟空间不够 */
-  storage: FakeStorage
-  /** 本机文件的地址（blob:）：按地址找回是哪个文件 */
-  objectUrls: FakeObjectUrls
-  /** 导出时听众选的文件夹（#79）：测试排好下一次在选择器里选哪个文件夹或取消；打开标签页前把 supported 设成 false，就是不支持选文件夹的浏览器 */
-  folders: FakeFolders
-  /** 等这台设备上正在发的请求都回来、排着的锁回调、标签页之间的广播和播放器的事件都跑完、本机数据库的读写都做完、 App 处理完（处理时又发的也等） */
-  idle: () => Promise<void>
-  /** 除了在路上的请求（pending），还有没做完的事：本机数据库事务、排着的锁回调、没送到的广播、播放器排着的事件 */
-  busy: () => boolean
+  open: () => Promise<Tab>;
+  readonly requests: readonly SentRequest[];
+  readonly pending: readonly SentRequest[];
+  readonly responseBodies: readonly string[];
+  readonly responses: readonly ReceivedResponse[];
+  cookies: () => Promise<Cookie[]>;
+  setCookie: (setCookie: string) => Promise<void>;
+  stored: () => Promise<Record<string, [IDBValidKey, unknown][]>>;
+  preload: (
+    version: number,
+    prepare: (database: IDBDatabase) => void,
+  ) => Promise<void>;
+  setOnline: (online: boolean) => void;
+  images: FakeImages;
+  files: FakeFiles;
+  storage: FakeStorage;
+  objectUrls: FakeObjectUrls;
+  folders: FakeFolders;
+  idle: () => Promise<void>;
+  busy: () => boolean;
 }
 
-/** App 在本机数据库里用的库名（src/lib/app/local.ts），在浏览器的开发者工具里看到的就是它 */
-const LOCAL_DB = 'campanula'
+const LOCAL_DB = 'campanula';
 
-/** 本机数据库正在做的事务：fake-indexeddb 一个请求一个任务（setImmediate）地做，几千首歌要很多轮，只等一轮 idle() 就回来了。所有设备共用一个计数 */
-let activeTransactions = 0
-const transaction = IDBDatabase.prototype.transaction
-IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parameters<IDBDatabase['transaction']>) {
-  const started = transaction.apply(this, args)
-  activeTransactions += 1
+let activeTransactions = 0;
+const transaction = IDBDatabase.prototype.transaction;
+IDBDatabase.prototype.transaction = function (
+  this: IDBDatabase,
+  ...args: Parameters<IDBDatabase['transaction']>
+) {
+  const started = transaction.apply(this, args);
+  activeTransactions += 1;
   const finished = () => {
-    activeTransactions -= 1
-  }
-  // 出错的事务最后也会 abort（IndexedDB 3.0 §5.6 abort a transaction）
-  started.addEventListener('complete', finished)
-  started.addEventListener('abort', finished)
-  return started
-}
+    activeTransactions -= 1;
+  };
+  started.addEventListener('complete', finished);
+  started.addEventListener('abort', finished);
+  return started;
+};
 
-const bodyOf = (init: RequestInit | undefined): Pick<SentRequest, 'body'> => typeof init?.body === 'string'
-  ? {
-      body: JSON.parse(init.body) as unknown,
-    }
-  : {}
+const bodyOf = (init: RequestInit | undefined): Pick<SentRequest, 'body'> =>
+  typeof init?.body === 'string'
+    ? {
+        body: JSON.parse(init.body) as unknown,
+      }
+    : {};
 
-/** 请求头：App 发出这个请求时的序号（stamp），服务端按它记请求是什么时候发出的（world.ts，网易云替身查对不上号用） */
-export const SENT_HEADER = 'x-test-sent'
+export const SENT_HEADER = 'x-test-sent';
 
-/** 这台设备本身的特征，同一台设备开出来的标签页都一样；没写的按桌面 */
 export interface DeviceTraits {
-  /** 以触屏为主的设备（手机、平板）：`pointer: coarse`；默认 false，也就是桌面 */
-  touchPrimary?: boolean
+  touchPrimary?: boolean;
 }
 
-export const createDevice = (origin: string, clock: Clock, stamp: () => number, traits: DeviceTraits = {}): Device => {
-  const jar = new CookieJar()
-  const requests: SentRequest[] = []
-  const pending: SentRequest[] = []
-  const responseBodies: string[] = []
-  const responses: ReceivedResponse[] = []
-  const indexedDB = new IDBFactory()
-  const network = new FakeNetwork()
-  const locks = new FakeLocks()
-  const broadcast = new FakeBroadcast()
-  const mediaTasks = new MediaTasks()
-  const images = new FakeImages()
-  const inFlight = new Set<Promise<unknown>>()
-  const files = new FakeFiles(network)
-  const objectUrls = new FakeObjectUrls()
-  const folders = new FakeFolders()
-  const storage = new FakeStorage()
+export const createDevice = (
+  origin: string,
+  clock: Clock,
+  stamp: () => number,
+  traits: DeviceTraits = {},
+): Device => {
+  const jar = new CookieJar();
+  const requests: SentRequest[] = [];
+  const pending: SentRequest[] = [];
+  const responseBodies: string[] = [];
+  const responses: ReceivedResponse[] = [];
+  const indexedDB = new IDBFactory();
+  const network = new FakeNetwork();
+  const locks = new FakeLocks();
+  const broadcast = new FakeBroadcast();
+  const mediaTasks = new MediaTasks();
+  const images = new FakeImages();
+  const inFlight = new Set<Promise<unknown>>();
+  const files = new FakeFiles(network);
+  const objectUrls = new FakeObjectUrls();
+  const folders = new FakeFolders();
+  const storage = new FakeStorage();
 
   const track = (work: Promise<unknown>): void => {
-    inFlight.add(work)
-    void work.catch(() => {}).finally(() => inFlight.delete(work))
-  }
+    inFlight.add(work);
+    void work.catch(() => {}).finally(() => inFlight.delete(work));
+  };
 
-  // 打开数据库（包括升级）也是在任务里一步步做的，做完之前同样算 App 没处理完
-  const deviceIndexedDB = Object.create(indexedDB) as IDBFactory
+  const deviceIndexedDB = Object.create(indexedDB) as IDBFactory;
   deviceIndexedDB.open = (name, version) => {
-    const request = indexedDB.open(name, version)
-    track(new Promise((resolve) => {
-      request.addEventListener('success', resolve)
-      request.addEventListener('error', resolve)
-    }))
-    return request
-  }
+    const request = indexedDB.open(name, version);
+    track(
+      new Promise((resolve) => {
+        request.addEventListener('success', resolve);
+        request.addEventListener('error', resolve);
+      }),
+    );
+    return request;
+  };
 
-  // 和浏览器的同源请求一样：带上这台设备的 Cookie，存下服务端设的 Cookie
   const send = async (path: string, init?: RequestInit): Promise<Response> => {
-    // App 调 fetch 的这一刻就盖上序号（下面一 await，几个同时发的请求到服务端的先后就不定了）
-    const sentAt = stamp()
-    if (!network.onLine)
-      throw new TypeError('Failed to fetch')
-    const request = new Request(new URL(path, origin), init)
-    request.headers.set(SENT_HEADER, String(sentAt))
-    const url = new URL(request.url)
+    const sentAt = stamp();
+    if (!network.onLine) throw new TypeError('Failed to fetch');
+    const request = new Request(new URL(path, origin), init);
+    request.headers.set(SENT_HEADER, String(sentAt));
+    const url = new URL(request.url);
     const sent: SentRequest = {
       method: request.method,
       path: url.pathname + url.search,
       ...bodyOf(init),
-      ...(request.keepalive
-        ? { keepalive: true as const }
-        : {}),
-    }
-    requests.push(sent)
-    pending.push(sent)
+      ...(request.keepalive ? { keepalive: true as const } : {}),
+    };
+    requests.push(sent);
+    pending.push(sent);
     try {
-      const cookie = await jar.getCookieString(request.url)
-      if (cookie)
-        request.headers.set('cookie', cookie)
-      const response = await fetch(request)
-      responses.push({ method: request.method, path: sent.path, status: response.status })
+      const cookie = await jar.getCookieString(request.url);
+      if (cookie) request.headers.set('cookie', cookie);
+      const response = await fetch(request);
+      responses.push({
+        method: request.method,
+        path: sent.path,
+        status: response.status,
+      });
       for (const setCookie of response.headers.getSetCookie())
-        await jar.setCookie(setCookie, response.url)
-      responseBodies.push(await response.clone().text())
-      return response
+        await jar.setCookie(setCookie, response.url);
+      responseBodies.push(await response.clone().text());
+      return response;
+    } finally {
+      pending.splice(pending.indexOf(sent), 1);
     }
-    finally {
-      pending.splice(pending.indexOf(sent), 1)
-    }
-  }
+  };
 
-  const busy = () => activeTransactions > 0 || locks.pending > 0 || broadcast.pending > 0 || mediaTasks.pending > 0
+  const busy = () =>
+    activeTransactions > 0 ||
+    locks.pending > 0 ||
+    broadcast.pending > 0 ||
+    mediaTasks.pending > 0;
 
   const deviceFetch: BrowserCapabilities['fetch'] = (path, init) => {
-    const sending = send(path, init)
-    track(sending)
-    return sending
-  }
+    const sending = send(path, init);
+    track(sending);
+    return sending;
+  };
 
   return {
     requests,
@@ -198,40 +198,35 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number, 
     responseBodies,
     responses,
     async open() {
-      const page = new FakePage()
-      /** 这一页的锁：关掉时连它拿着的、排着的一起放开 */
-      const lockScope = {}
-      const mediaSession = new FakeMediaSession()
-      const audio: FakeAudio[] = []
-      const watchman = new FakeWatchman()
-      // 关掉以后页面里的脚本不再运行：定时、广播、联网状态的变化都送不到这个标签页
-      let closed = false
+      const page = new FakePage();
+      const lockScope = {};
+      const mediaSession = new FakeMediaSession();
+      const audio: FakeAudio[] = [];
+      const watchman = new FakeWatchman();
+      let closed = false;
       const alive = (callback: () => void) => () => {
-        if (!closed)
-          callback()
-      }
-      const channels: ChannelCapability[] = []
-      /** 按事件类型，App 加的监听 → 实际挂在设备上的那个 */
+        if (!closed) callback();
+      };
+      const channels: ChannelCapability[] = [];
       const networkListeners = {
         online: new Map<() => void, () => void>(),
         offline: new Map<() => void, () => void>(),
-      }
+      };
       const tabNetwork: NetworkStatus = {
         get onLine() {
-          return network.onLine
+          return network.onLine;
         },
         addEventListener(type, listener) {
-          const gated = networkListeners[type].get(listener) ?? alive(listener)
-          networkListeners[type].set(listener, gated)
-          network.addEventListener(type, gated)
+          const gated = networkListeners[type].get(listener) ?? alive(listener);
+          networkListeners[type].set(listener, gated);
+          network.addEventListener(type, gated);
         },
         removeEventListener(type, listener) {
-          const gated = networkListeners[type].get(listener)
-          if (gated)
-            network.removeEventListener(type, gated)
-          networkListeners[type].delete(listener)
+          const gated = networkListeners[type].get(listener);
+          if (gated) network.removeEventListener(type, gated);
+          networkListeners[type].delete(listener);
         },
-      }
+      };
       const app = createApp({
         fetch: deviceFetch,
         clock: {
@@ -246,35 +241,33 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number, 
         MediaMetadata: FakeMediaMetadata,
         locks: locks.scoped(lockScope),
         broadcastChannel: (name) => {
-          const channel = broadcast.channel(name)
-          channels.push(channel)
-          return channel
+          const channel = broadcast.channel(name);
+          channels.push(channel);
+          return channel;
         },
         audio: () => {
-          const player = new FakeAudio(mediaTasks)
-          audio.push(player)
-          return player
+          const player = new FakeAudio(mediaTasks);
+          audio.push(player);
+          return player;
         },
         checkToken: () => watchman.checkToken(),
         images,
         uploadCoverImage(url, jpeg, token, signal) {
-          const work = images.uploadCoverImage(url, jpeg, token, signal)
-          track(work)
-          return work
+          const work = images.uploadCoverImage(url, jpeg, token, signal);
+          track(work);
+          return work;
         },
         download(url, onChunk, options) {
-          const work = files.download(url, onChunk, options)
-          track(work)
-          return work
+          const work = files.download(url, onChunk, options);
+          track(work);
+          return work;
         },
         storage,
-        objectUrl: blob => objectUrls.create(blob),
-        revokeObjectUrl: url => objectUrls.revoke(url),
-        pickFolder: folders.supported
-          ? () => folders.pick()
-          : null,
-      })
-      await app.open()
+        objectUrl: (blob) => objectUrls.create(blob),
+        revokeObjectUrl: (url) => objectUrls.revoke(url),
+        pickFolder: folders.supported ? () => folders.pick() : null,
+      });
+      await app.open();
       return {
         app,
         hide: () => page.set('hidden'),
@@ -282,90 +275,87 @@ export const createDevice = (origin: string, clock: Clock, stamp: () => number, 
         freeze: () => page.freeze(),
         resume: () => page.resume(),
         close: () => {
-          page.set('hidden')
-          closed = true
-          locks.release(lockScope)
-          for (const player of audio)
-            player.close()
-          for (const channel of channels)
-            channel.close()
+          page.set('hidden');
+          closed = true;
+          locks.release(lockScope);
+          for (const player of audio) player.close();
+          for (const channel of channels) channel.close();
         },
         mediaSession,
         watchman,
         audio,
-        sounding: () => audio.find(player => player.sounding),
-      }
+        sounding: () => audio.find((player) => player.sounding),
+      };
     },
     cookies: () => jar.getCookies(origin),
     setCookie: async (setCookie) => {
-      await jar.setCookie(setCookie, origin)
+      await jar.setCookie(setCookie, origin);
     },
     async preload(version, prepare) {
-      if ((await indexedDB.databases()).some(info => info.name === LOCAL_DB))
-        throw new Error('预存旧版数据库要在这台设备第一次打开 App 之前')
-      // IDBFactory.open：upgradeneeded 的事务提交后才发 success；关闭这个连接后 App 才能升版。
-      // https://developer.mozilla.org/en-US/docs/Web/API/IDBFactory/open
+      if ((await indexedDB.databases()).some((info) => info.name === LOCAL_DB))
+        throw new Error('预存旧版数据库要在这台设备第一次打开 App 之前');
       await new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(LOCAL_DB, version)
+        const request = indexedDB.open(LOCAL_DB, version);
         request.onupgradeneeded = () => {
           try {
-            prepare(request.result)
+            prepare(request.result);
+          } catch (error) {
+            request.transaction!.abort();
+            reject(error);
           }
-          catch (error) {
-            request.transaction!.abort()
-            reject(error)
-          }
-        }
+        };
         request.onsuccess = () => {
-          request.result.close()
-          resolve()
-        }
-        request.onerror = () => reject(request.error)
-      })
+          request.result.close();
+          resolve();
+        };
+        request.onerror = () => reject(request.error);
+      });
     },
     async stored() {
-      if (!(await indexedDB.databases()).some(info => info.name === LOCAL_DB))
-        return {}
-      // 再开一个连接来读，和 App 的连接同时开着，就像在开发者工具里看
+      if (!(await indexedDB.databases()).some((info) => info.name === LOCAL_DB))
+        return {};
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open(LOCAL_DB)
-        request.onsuccess = () => resolve(request.result)
-        request.onerror = () => reject(request.error)
-      })
-      const names = [...database.objectStoreNames]
-      const transaction = database.transaction(names)
-      const read = <T>(request: IDBRequest<T>) => new Promise<T>((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result)
-        request.onerror = () => reject(request.error)
-      })
-      const contents = await Promise.all(names.map(async (name) => {
-        const store = transaction.objectStore(name)
-        const [keys, values] = await Promise.all([
-          read(store.getAllKeys()),
-          read(store.getAll()),
-        ])
-        return [
-          name,
-          keys.map((key, index) => [key, values[index]] as [IDBValidKey, unknown]),
-        ] as const
-      }))
-      database.close()
-      return Object.fromEntries(contents)
+        const request = indexedDB.open(LOCAL_DB);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const names = [...database.objectStoreNames];
+      const transaction = database.transaction(names);
+      const read = <T>(request: IDBRequest<T>) =>
+        new Promise<T>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      const contents = await Promise.all(
+        names.map(async (name) => {
+          const store = transaction.objectStore(name);
+          const [keys, values] = await Promise.all([
+            read(store.getAllKeys()),
+            read(store.getAll()),
+          ]);
+          return [
+            name,
+            keys.map(
+              (key, index) => [key, values[index]] as [IDBValidKey, unknown],
+            ),
+          ] as const;
+        }),
+      );
+      database.close();
+      return Object.fromEntries(contents);
     },
-    setOnline: online => network.set(online),
+    setOnline: (online) => network.set(online),
     files,
     storage,
     objectUrls,
     folders,
     images,
     async idle() {
-      // 先让一轮：刚调的 App 操作可能还没来得及发请求、开事务
       do {
-        await Promise.allSettled(inFlight)
-        // 让 App 处理完回来的结果（微任务）、跑完数据库事务、锁回调和广播（任务）；处理时又发了请求、事务、锁或广播就接着等
-        await new Promise(resolve => setImmediate(resolve))
-      } while (inFlight.size > 0 || busy())
+        await Promise.allSettled(inFlight);
+        await new Promise((resolve) => setImmediate(resolve));
+      } while (inFlight.size > 0 || busy());
     },
     busy,
-  }
-}
+  };
+};

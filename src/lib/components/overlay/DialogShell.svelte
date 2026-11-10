@@ -1,117 +1,132 @@
-<!--
-  弹窗外壳（DESIGN.md Overlays · 弹窗）：只管布局与抽屉呈现，层协议由浮层栈统一拥有。桌面居中弹窗；手机底部弹层和播放页同一套抽屉
-  （拉手、拖标题收起、点遮罩/返回/Esc 收起）。确认（confirm）贴底边、外壳画标题、没有关闭键；阅读（reading）跟着内容高、最高到屏幕的 86%，
-  上面留出一截页面；表单接近全屏。阅读和表单标题行里的文字按钮由内容排。
-  宽度：确认 440、表单 480、挑歌 560、宽表单和阅读 680。挑歌（添加歌曲、下载选歌）桌面定高（最高 800px）：骨架换成列表、筛选时弹窗不变高，搜索框不跟着上下挪。
-  忙着时关不掉；Esc 只给最上层，栈在 DOM 更新后归还焦点。
--->
-<script lang='ts' module>
+<script lang="ts" module>
   const DIALOG_SIZES = {
     confirm: 'max-w-[440px]',
     form: 'max-w-[480px]',
     picker: 'max-w-[560px] h-[min(800px,calc(100dvh-48px))]',
     wide: 'max-w-[680px]',
     reading: 'max-w-[680px]',
-  } as const
-  export type DialogSize = keyof typeof DIALOG_SIZES
+  } as const;
+  export type DialogSize = keyof typeof DIALOG_SIZES;
 </script>
 
-<script lang='ts' generics='R extends DialogRequest'>
-  import { X } from '@lucide/svelte'
-  import type { Snippet } from 'svelte'
-  import type { Attachment } from 'svelte/attachments'
+<script lang="ts" generics="R extends DialogRequest">
+  import { X } from '@lucide/svelte';
+  import type { Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
 
-  import { createDrawer, DRAWER_BLEED, SHEET_HEIGHT } from '../player/drawer.svelte'
-  import { dialog, fade } from '../shared/motion'
-  import { DURATIONS } from '../shared/motion-tokens'
-  import IconButton from '../ui/IconButton.svelte'
-  import type { DialogRequest } from './overlay-requests'
-  import type { OverlayLayer } from './overlay-stack'
+  import {
+    createDrawer,
+    DRAWER_BLEED,
+    SHEET_HEIGHT,
+  } from '../player/drawer.svelte';
+  import { dialog, fade } from '../shared/motion';
+  import { DURATIONS } from '../shared/motion-tokens';
+  import IconButton from '../ui/IconButton.svelte';
+  import type { DialogRequest } from './overlay-requests';
+  import type { OverlayLayer } from './overlay-stack';
 
   interface Props {
-    layer: OverlayLayer<R, HTMLElement>
-    title: (request: R) => string
-    size: (request: R) => DialogSize
-    /** 添加歌曲：加入「…」 */
-    subtitle?: Snippet<[request: R]>
-    /** 每次打开都重新建；sheet 是在手机底部弹层里，heading 是手机表单放进自己标题行的标题 */
-    children: Snippet<[request: R, sheet: boolean, heading: Snippet<[classes: string]>]>
+    layer: OverlayLayer<R, HTMLElement>;
+    title: (request: R) => string;
+    size: (request: R) => DialogSize;
+    subtitle?: Snippet<[request: R]>;
+    children: Snippet<
+      [request: R, sheet: boolean, heading: Snippet<[classes: string]>]
+    >;
   }
 
-  const { layer, title, size, subtitle, children }: Props = $props()
+  const { layer, title, size, subtitle, children }: Props = $props();
 
-  const titleId = $derived(`${layer.name}-title`)
+  const titleId = $derived(`${layer.name}-title`);
 
-  /** 打开的头一帧还没画出来时按多高算（px） */
-  const SHORT_SHEET_ESTIMATE = 320
+  const SHORT_SHEET_ESTIMATE = 320;
 
-  const request = $derived(layer.request)
-  /** 关上的动画里还画着刚才那一个 */
-  let shown = $state.raw<R | null>(null)
+  const request = $derived(layer.request);
+  let shown = $state.raw<R | null>(null);
   $effect.pre(() => {
-    if (request)
-      shown = request
-  })
-  const shownSize = $derived(shown && size(shown))
-  const confirm = $derived(shownSize === 'confirm')
-  const reading = $derived(shownSize === 'reading')
+    if (request) shown = request;
+  });
+  const shownSize = $derived(shown && size(shown));
+  const confirm = $derived(shownSize === 'confirm');
+  const reading = $derived(shownSize === 'reading');
 
-  const dialogOpen = $derived(request !== null && !layer.asSheet)
-  const sheetOpen = $derived(request !== null && layer.asSheet)
-  const drawer = createDrawer(() => (confirm
-    ? SHORT_SHEET_ESTIMATE
-    : reading
-    ? window.innerHeight * SHEET_HEIGHT
-    : window.innerHeight - 24))
-  /** 拖过阈值就收起；忙着时弹回去 */
+  const dialogOpen = $derived(request !== null && !layer.asSheet);
+  const sheetOpen = $derived(request !== null && layer.asSheet);
+  const drawer = createDrawer(() =>
+    confirm
+      ? SHORT_SHEET_ESTIMATE
+      : reading
+        ? window.innerHeight * SHEET_HEIGHT
+        : window.innerHeight - 24,
+  );
   const commit = () => {
-    if (layer.busy)
-      drawer.settle(true)
-    else
-      layer.close()
-  }
+    if (layer.busy) drawer.settle(true);
+    else layer.close();
+  };
   const gripHandle = drawer.grip({
     from: 'open',
     commit,
     tap: () => layer.close(),
-  })
-  const gripTitle = drawer.grip({ from: 'open', commit })
+  });
+  const gripTitle = drawer.grip({ from: 'open', commit });
 
-  $effect(() => drawer.settle(sheetOpen))
+  $effect(() => drawer.settle(sheetOpen));
 
-  /** 落在 data-autofocus，没有就是第一个能操作的 */
   const focusFirst: Attachment<HTMLElement> = (node) => {
-    queueMicrotask(() => (node.querySelector<HTMLElement>('[data-autofocus]') ?? node.querySelector<HTMLElement>('input, textarea, button'))?.focus({ preventScroll: true }))
-  }
+    queueMicrotask(() =>
+      (
+        node.querySelector<HTMLElement>('[data-autofocus]') ??
+        node.querySelector<HTMLElement>('input, textarea, button')
+      )?.focus({ preventScroll: true }),
+    );
+  };
 </script>
 
-<!-- 按住往下拖收起 -->
 {#snippet heading(classes: string)}
-  <h2 id={titleId} class={['touch-none', classes]} {@attach gripTitle}>{shown
-    ? title(shown)
-    : ''}</h2>
+  <h2 id={titleId} class={['touch-none', classes]} {@attach gripTitle}>
+    {shown ? title(shown) : ''}
+  </h2>
 {/snippet}
 
 {#if dialogOpen && shown}
-  <button type='button' class='fixed inset-0 z-70 bg-neutral-900/35' aria-label='关闭' tabindex='-1' onclick={() => layer.close()} transition:fade={{ duration: DURATIONS.state }}></button>
-  <div class='pointer-events-none fixed inset-0 z-71 grid place-items-center p-6'>
+  <button
+    type="button"
+    class="fixed inset-0 z-70 bg-neutral-900/35"
+    aria-label="关闭"
+    tabindex="-1"
+    onclick={() => layer.close()}
+    transition:fade={{ duration: DURATIONS.state }}
+  ></button>
+  <div
+    class="pointer-events-none fixed inset-0 z-71 grid place-items-center p-6"
+  >
     <div
-      class={['pointer-events-auto max-h-[calc(100dvh-48px)] w-full flex flex-col rounded-xl bg-white shadow-float', DIALOG_SIZES[size(shown)]]}
-      role='dialog'
-      aria-modal='true'
+      class={[
+        'pointer-events-auto max-h-[calc(100dvh-48px)] w-full flex flex-col rounded-xl bg-white shadow-float',
+        DIALOG_SIZES[size(shown)],
+      ]}
+      role="dialog"
+      aria-modal="true"
       aria-labelledby={titleId}
-      tabindex='-1'
+      tabindex="-1"
       inert={!request || layer.inert}
       {@attach focusFirst}
       transition:dialog
     >
       {#key shown}
-        <div class='flex flex-none items-center gap-3 pb-2 pl-6 pr-4 pt-5'>
-          <div class='min-w-0 flex-1'>
-            <h2 id={titleId} class='text-title-sm text-neutral-900 font-600'>{title(shown)}</h2>
+        <div class="flex flex-none items-center gap-3 pb-2 pl-6 pr-4 pt-5">
+          <div class="min-w-0 flex-1">
+            <h2 id={titleId} class="text-title-sm text-neutral-900 font-600">
+              {title(shown)}
+            </h2>
             {@render subtitle?.(shown)}
           </div>
-          <IconButton icon={X} label='关闭' disabled={layer.busy} onclick={() => layer.close()} />
+          <IconButton
+            icon={X}
+            label="关闭"
+            disabled={layer.busy}
+            onclick={() => layer.close()}
+          />
         </div>
         {@render children(shown, false, heading)}
       {/key}
@@ -120,22 +135,36 @@
 {/if}
 
 {#if shown && layer.asSheet && (sheetOpen || drawer.visible)}
-  <button type='button' class='fixed inset-0 z-70 bg-neutral-900/30' style:opacity={1 - drawer.position} aria-label='关闭' tabindex='-1' onclick={() => layer.close()}></button>
+  <button
+    type="button"
+    class="fixed inset-0 z-70 bg-neutral-900/30"
+    style:opacity={1 - drawer.position}
+    aria-label="关闭"
+    tabindex="-1"
+    onclick={() => layer.close()}
+  ></button>
   <div
-    class={['fixed inset-x-0 z-71 flex flex-col rounded-t-sheet bg-white shadow-float', !confirm && !reading && 'top-6']}
+    class={[
+      'fixed inset-x-0 z-71 flex flex-col rounded-t-sheet bg-white shadow-float',
+      !confirm && !reading && 'top-6',
+    ]}
     style:max-height={reading
       ? `calc(${SHEET_HEIGHT * 100}dvh + ${DRAWER_BLEED}px)`
       : undefined}
     {@attach drawer.panel}
-    role='dialog'
-    tabindex='-1'
-    aria-modal='true'
+    role="dialog"
+    tabindex="-1"
+    aria-modal="true"
     aria-labelledby={titleId}
     inert={!sheetOpen || layer.inert}
     {@attach focusFirst}
   >
-    <div class='grid h-6 flex-none touch-none place-items-center' aria-hidden='true' {@attach gripHandle}>
-      <span class='h-1 w-9 rounded-full bg-neutral-300'></span>
+    <div
+      class="grid h-6 flex-none touch-none place-items-center"
+      aria-hidden="true"
+      {@attach gripHandle}
+    >
+      <span class="h-1 w-9 rounded-full bg-neutral-300"></span>
     </div>
     {#key shown}
       {#if confirm}

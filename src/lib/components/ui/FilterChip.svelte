@@ -1,18 +1,22 @@
-<!--
-  筛选 chip（DESIGN.md Chips · Filter / History）：编辑歌单时的标签库、搜索历史、播放页歌词的翻译 / 音译开关。手机桌面都是 36px 高。
-  纸白底 + 发丝线；选中时薄荷玻璃底 + 森林墨字；禁用时降到 50%（DESIGN.md Buttons · Disabled）。选中状态用 aria-pressed 告诉读屏。
--->
-<script lang='ts'>
-  import type { Snippet } from 'svelte'
-  import type { HTMLButtonAttributes } from 'svelte/elements'
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import type { HTMLButtonAttributes } from 'svelte/elements';
 
-  interface Props extends Omit<HTMLButtonAttributes, 'children' | 'aria-pressed'> {
-    /** 筛选用；搜索历史这类不分选中的 chip 不传 */
-    selected?: boolean
-    children: Snippet
+  interface Props extends Omit<
+    HTMLButtonAttributes,
+    'children' | 'aria-pressed'
+  > {
+    selected?: boolean;
+    children: Snippet;
   }
 
-  const { selected, type = 'button', class: klass, children, ...rest }: Props = $props()
+  const {
+    selected,
+    type = 'button',
+    class: klass,
+    children,
+    ...rest
+  }: Props = $props();
 </script>
 
 <button

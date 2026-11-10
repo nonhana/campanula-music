@@ -9,11 +9,12 @@
     "tests/**/*.test.ts",
     "src/lib/server/mock/runtime.ts"
   ],
-  "project": ["src/**/*.{ts,svelte}", "scripts/*.mts", "tests/**/*.ts", "*.mts"],
-  "ignoreDependencies": [
-    "uno.css"
+  "project": [
+    "src/**/*.{ts,svelte}",
+    "scripts/*.mts",
+    "tests/**/*.ts",
+    "*.mts"
   ],
-  "ignoreBinaries": [
-    "chrome-devtools-axi"
-  ]
+  "ignoreDependencies": ["uno.css"],
+  "ignoreBinaries": ["chrome-devtools-axi"]
 }

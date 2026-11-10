@@ -1,30 +1,15 @@
 {
-  // Disable the default formatter, use eslint instead
+  // 格式化交给 oxfmt（oxfmt.config.mts + oxc 扩展），ESLint 只管非排版类的问题
   "biome.enabled": false,
   "prettier.enable": false,
-  "editor.formatOnSave": false,
-  // 临时排查：抓一次保存时 ESLint 服务器的请求日志
-  "eslint.trace.server": "verbose",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
 
   // Auto fix
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "never"
   },
-
-  // Silent the stylistic rules in you IDE, but still auto fix them
-  "eslint.rules.customizations": [
-    { "rule": "style/*", "severity": "off", "fixable": true },
-    { "rule": "format/*", "severity": "off", "fixable": true },
-    { "rule": "*-indent", "severity": "off", "fixable": true },
-    { "rule": "*-spacing", "severity": "off", "fixable": true },
-    { "rule": "*-spaces", "severity": "off", "fixable": true },
-    { "rule": "*-order", "severity": "off", "fixable": true },
-    { "rule": "*-dangle", "severity": "off", "fixable": true },
-    { "rule": "*-newline", "severity": "off", "fixable": true },
-    { "rule": "*quotes", "severity": "off", "fixable": true },
-    { "rule": "*semi", "severity": "off", "fixable": true }
-  ],
 
   // Enable eslint for all supported languages
   "eslint.validate": [

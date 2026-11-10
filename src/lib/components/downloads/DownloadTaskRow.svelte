@@ -1,74 +1,92 @@
-<!--
-  正在下载的一行（#39，已下载页和下载面板共用）：排队、下载中（进度、速率）、失败（原因、重试），右边是取消。
-  全队暂停原因写在标题旁，行内只用状态图标；不知道总大小时写收到的 MB（#78）。
-  page 是已下载页 56 / 64px 的网格；panel 是下载面板里的紧凑行。
--->
-<script lang='ts'>
-  import { Check, CircleAlert, Clock, Pause, X } from '@lucide/svelte'
+<script lang="ts">
+  import { Check, CircleAlert, Clock, Pause, X } from '@lucide/svelte';
 
-  import { songTitle } from '#lib/api/library.js'
-  import type { DownloadTask } from '#lib/app/downloads.js'
+  import { songTitle } from '#lib/api/library.js';
+  import type { DownloadTask } from '#lib/app/downloads.js';
 
-  import { desktopLayout } from '../shared/layout'
-  import { artistLine, formatMegabytes, langOf } from '../shared/text'
-  import Cover from '../ui/Cover.svelte'
-  import IconButton from '../ui/IconButton.svelte'
-  import TextButton from '../ui/TextButton.svelte'
-  import { downloadFailureText } from './view'
+  import { desktopLayout } from '../shared/layout';
+  import { artistLine, formatMegabytes, langOf } from '../shared/text';
+  import Cover from '../ui/Cover.svelte';
+  import IconButton from '../ui/IconButton.svelte';
+  import TextButton from '../ui/TextButton.svelte';
+  import { downloadFailureText } from './view';
 
-  const { task, variant, paused, online, signedIn, speed = null, completed = false, oncancel, onretry }: {
-    task: DownloadTask
-    variant: 'page' | 'panel'
-    paused: boolean
-    online: boolean
-    signedIn: boolean
-    /** 面板里当前这首的速率（已经写好单位）；没有、暂停时是 null */
-    speed?: string | null
+  const {
+    task,
+    variant,
+    paused,
+    online,
+    signedIn,
+    speed = null,
+    completed = false,
+    oncancel,
+    onretry,
+  }: {
+    task: DownloadTask;
+    variant: 'page' | 'panel';
+    paused: boolean;
+    online: boolean;
+    signedIn: boolean;
+    speed?: string | null;
   } & (
-    | { completed: true, oncancel?: never, onretry?: never }
-    | { completed?: false, oncancel: () => void, onretry: () => void }
-  ) = $props()
+    | { completed: true; oncancel?: never; onretry?: never }
+    | { completed?: false; oncancel: () => void; onretry: () => void }
+  ) = $props();
 
-  const phone = $derived(!desktopLayout.current)
-  const percent = $derived(task.total
-    ? Math.floor(task.received * 100 / task.total)
-    : null)
+  const phone = $derived(!desktopLayout.current);
+  const percent = $derived(
+    task.total ? Math.floor((task.received * 100) / task.total) : null,
+  );
 </script>
 
 {#snippet status()}
   {#if completed}
-    <Check size={14} class='flex-none text-secondary-800' aria-hidden='true' />
-    <span class='sr-only'>已下载</span>
+    <Check size={14} class="flex-none text-secondary-800" aria-hidden="true" />
+    <span class="sr-only">已下载</span>
   {:else if task.status === 'failed'}
-    <CircleAlert size={14} class='flex-none text-error-700' aria-hidden='true' />
-    <span class='sr-only'>下载失败：</span>
-    <span class='truncate text-error-700' title={downloadFailureText(task.failure)}>{downloadFailureText(task.failure)}</span>
-  {:else if paused || !online || (task.status === 'queued' && !signedIn)}
-    <Pause size={14} class='flex-none text-neutral-500' aria-hidden='true' />
-    <span class='sr-only'>已暂停</span>
-  {:else if task.status === 'queued'}
-    <Clock size={14} class='flex-none text-neutral-500' aria-hidden='true' />
-    <span class='sr-only'>排队中</span>
-  {:else}
-    <span class={[
-      'h-1.5 flex-none overflow-hidden rounded-full bg-secondary-100',
-      phone
-        ? 'w-24'
-        : 'w-32',
-    ]}
-          role='progressbar'
-          aria-label='下载进度'
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={percent ?? undefined}
+    <CircleAlert
+      size={14}
+      class="flex-none text-error-700"
+      aria-hidden="true"
+    />
+    <span class="sr-only">下载失败：</span>
+    <span
+      class="truncate text-error-700"
+      title={downloadFailureText(task.failure)}
+      >{downloadFailureText(task.failure)}</span
     >
-      <span class='block h-full rounded-full bg-secondary-700' style:width='{percent ?? 0}%'></span>
+  {:else if paused || !online || (task.status === 'queued' && !signedIn)}
+    <Pause size={14} class="flex-none text-neutral-500" aria-hidden="true" />
+    <span class="sr-only">已暂停</span>
+  {:else if task.status === 'queued'}
+    <Clock size={14} class="flex-none text-neutral-500" aria-hidden="true" />
+    <span class="sr-only">排队中</span>
+  {:else}
+    <span
+      class={[
+        'h-1.5 flex-none overflow-hidden rounded-full bg-secondary-100',
+        phone ? 'w-24' : 'w-32',
+      ]}
+      role="progressbar"
+      aria-label="下载进度"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent ?? undefined}
+    >
+      <span
+        class="block h-full rounded-full bg-secondary-700"
+        style:width="{percent ?? 0}%"
+      ></span>
     </span>
-    <span class='whitespace-nowrap text-secondary-900 tabular-nums'>{percent === null
-      ? `${formatMegabytes(task.received)} MB`
-      : `${percent}%`}</span>
+    <span class="whitespace-nowrap text-secondary-900 tabular-nums"
+      >{percent === null
+        ? `${formatMegabytes(task.received)} MB`
+        : `${percent}%`}</span
+    >
     {#if speed}
-      <span class='whitespace-nowrap text-caption text-neutral-600 tabular-nums'>{speed}</span>
+      <span class="whitespace-nowrap text-caption text-neutral-600 tabular-nums"
+        >{speed}</span
+      >
     {/if}
   {/if}
 {/snippet}
@@ -77,16 +95,16 @@
   {#if task.status === 'failed'}
     <TextButton
       strong
-      class='md:h-8 md:px-3'
+      class="md:h-8 md:px-3"
       disabled={!online || !signedIn}
       title={!online
         ? '离线时不能下载'
         : !signedIn
-        ? '登录后才能下载'
-        : undefined}
+          ? '登录后才能下载'
+          : undefined}
       aria-label={`重试下载《${songTitle(task.song)}》`}
-      onclick={onretry}
-    >重试</TextButton>
+      onclick={onretry}>重试</TextButton
+    >
   {/if}
   <IconButton
     icon={X}
@@ -98,43 +116,66 @@
 {/snippet}
 
 {#if variant === 'page'}
-  <div class={[
-    'grid h-full items-center',
-    phone
-      ? 'grid-cols-[48px_minmax(0,1fr)_auto] gap-3.5 pl-4 pr-3'
-      : 'grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_96px] gap-4 pl-3 pr-2',
-  ]}>
-    <Cover url={task.song.album.coverUrl} size={phone
-      ? 48
-      : 40} class='rounded-lg' />
-    <span class='min-w-0'>
-      <span class={[
-        'block truncate text-neutral-900 font-500',
-        phone
-          ? 'text-body'
-          : 'text-label',
-      ]} lang={langOf(songTitle(task.song))}>{songTitle(task.song)}</span>
+  <div
+    class={[
+      'grid h-full items-center',
+      phone
+        ? 'grid-cols-[48px_minmax(0,1fr)_auto] gap-3.5 pl-4 pr-3'
+        : 'grid-cols-[40px_minmax(0,1fr)_minmax(0,1fr)_96px] gap-4 pl-3 pr-2',
+    ]}
+  >
+    <Cover
+      url={task.song.album.coverUrl}
+      size={phone ? 48 : 40}
+      class="rounded-lg"
+    />
+    <span class="min-w-0">
+      <span
+        class={[
+          'block truncate text-neutral-900 font-500',
+          phone ? 'text-body' : 'text-label',
+        ]}
+        lang={langOf(songTitle(task.song))}>{songTitle(task.song)}</span
+      >
       {#if phone}
-        <span class='mt-1 min-w-0 flex items-center gap-2 text-caption'>{@render status()}</span>
+        <span class="mt-1 min-w-0 flex items-center gap-2 text-caption"
+          >{@render status()}</span
+        >
       {:else}
-        <span class='block truncate text-caption text-neutral-600' lang={langOf(artistLine(task.song))}>{artistLine(task.song)}</span>
+        <span
+          class="block truncate text-caption text-neutral-600"
+          lang={langOf(artistLine(task.song))}>{artistLine(task.song)}</span
+        >
       {/if}
     </span>
     {#if !phone}
-      <span class='min-w-0 flex items-center gap-2.5 text-caption'>{@render status()}</span>
+      <span class="min-w-0 flex items-center gap-2.5 text-caption"
+        >{@render status()}</span
+      >
     {/if}
     {#if !completed}
-      <span class='flex items-center justify-end gap-1'>{@render actions()}</span>
+      <span class="flex items-center justify-end gap-1"
+        >{@render actions()}</span
+      >
     {/if}
   </div>
 {:else}
-  <div class='grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-2 pl-1 pr-1'>
-    <Cover url={task.song.album.coverUrl} size={40} class='rounded-lg' />
-    <span class='min-w-0'>
-      <span class='block truncate text-label text-neutral-900 font-500' lang={langOf(songTitle(task.song))}>{songTitle(task.song)}</span>
-      <span class='mt-0.5 min-h-5 min-w-0 flex items-center gap-2 text-caption'>{@render status()}</span>
+  <div
+    class="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-2 pl-1 pr-1"
+  >
+    <Cover url={task.song.album.coverUrl} size={40} class="rounded-lg" />
+    <span class="min-w-0">
+      <span
+        class="block truncate text-label text-neutral-900 font-500"
+        lang={langOf(songTitle(task.song))}>{songTitle(task.song)}</span
+      >
+      <span class="mt-0.5 min-h-5 min-w-0 flex items-center gap-2 text-caption"
+        >{@render status()}</span
+      >
     </span>
-    <span class={['flex items-center gap-1', completed && 'size-11 md:size-10']}>
+    <span
+      class={['flex items-center gap-1', completed && 'size-11 md:size-10']}
+    >
       {#if !completed}{@render actions()}{/if}
     </span>
   </div>

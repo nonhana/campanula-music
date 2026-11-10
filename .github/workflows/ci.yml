@@ -23,8 +23,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # 结果缓存：没改过的文件直接跳过；配置或版本变了，ESLint 会自己整份失效
+      - uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: eslint-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Lint
         run: pnpm lint
+
+      - name: 格式检查
+        run: pnpm fmt:check
 
       - name: 类型检查
         run: pnpm check

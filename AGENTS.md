@@ -22,7 +22,7 @@
 
 ### 代码规范
 
-写代码和审查时对照 `CODING_STANDARDS.md`；能用工具查的规则以 `eslint.config.mts` 为准。
+写代码和审查时对照 `CODING_STANDARDS.md`；能用工具查的规则以 `eslint.config.mts` 为准，排版（行宽、分号、引号、断行）以 `oxfmt.config.mts` 为准——改完跑 `pnpm fmt` 格式化，`pnpm fmt:check` 只检查不改文件（CI 里跑的就是这条）。
 
 ### 浏览器验证
 

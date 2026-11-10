@@ -1,44 +1,34 @@
-<!--
-  圆形播放键（森林墨底、白图标）：播放条 44px（DESIGN.md Player Bars），桌面播放页 64px，手机 72px。停着是播放、要放是暂停；
-  取地址、缓冲超过 300ms 才淡入转圈（地址取过的歌缓冲一下就好，不在每次点歌时闪），按下去照样停。图标交叉淡化、新的从 85% 放大；
-  出错停下时按它就是重试。
--->
-<script lang='ts'>
-  import { LoaderCircle, Pause, Play } from '@lucide/svelte'
+<script lang="ts">
+  import { LoaderCircle, Pause, Play } from '@lucide/svelte';
 
-  import { getAppView } from '../shared/app-context.svelte'
-  import { iconSwap } from '../shared/motion'
-  import { DELAYS } from '../shared/motion-tokens'
+  import { getAppView } from '../shared/app-context.svelte';
+  import { iconSwap } from '../shared/motion';
+  import { DELAYS } from '../shared/motion-tokens';
 
-  const { size = 44 }: { size?: 44 | 64 | 72 } = $props()
-  const view = getAppView()
-  const status = $derived(view.state.player.status)
-  const busy = $derived(status === 'loading' || status === 'buffering')
+  const { size = 44 }: { size?: 44 | 64 | 72 } = $props();
+  const view = getAppView();
+  const status = $derived(view.state.player.status);
+  const busy = $derived(status === 'loading' || status === 'buffering');
 
-  /** 取地址、缓冲超过 300ms */
-  let slow = $state(false)
+  let slow = $state(false);
   $effect(() => {
-    if (!busy)
-      return
-    const timer = setTimeout(() => (slow = true), DELAYS.spinner)
+    if (!busy) return;
+    const timer = setTimeout(() => (slow = true), DELAYS.spinner);
     return () => {
-      clearTimeout(timer)
-      slow = false
-    }
-  })
-  const icon = $derived(status === 'paused'
-    ? 'play'
-    : busy && slow
-    ? 'spinner'
-    : 'pause')
+      clearTimeout(timer);
+      slow = false;
+    };
+  });
+  const icon = $derived(
+    status === 'paused' ? 'play' : busy && slow ? 'spinner' : 'pause',
+  );
 
-  /** 播放三角往右挪这么多才看起来居中 */
   const LOOKS = {
     44: { button: 'size-11', icon: 20, nudge: 'ml-0.5' },
     64: { button: 'size-16 shadow-ambient', icon: 26, nudge: 'ml-1' },
     72: { button: 'size-18 shadow-ambient', icon: 30, nudge: 'ml-1' },
-  }
-  const look = $derived(LOOKS[size])
+  };
+  const look = $derived(LOOKS[size]);
 </script>
 
 <button
@@ -46,20 +36,26 @@
     'grid flex-none place-items-center rounded-full bg-primary-950 text-white transition-[background-color,transform] duration-feedback press mouse:hover:bg-primary-900',
     look.button,
   ]}
-  aria-label={status === 'paused'
-    ? '播放'
-    : busy ? '暂停（正在加载）' : '暂停'}
+  aria-label={status === 'paused' ? '播放' : busy ? '暂停（正在加载）' : '暂停'}
   onclick={() => view.app.togglePlay()}
 >
   {#key icon}
-    <!-- 新旧图标叠在同一格交叉淡化 -->
-    <span class='grid col-start-1 row-start-1' transition:iconSwap>
+    <span class="grid col-start-1 row-start-1" transition:iconSwap>
       {#if icon === 'spinner'}
-        <LoaderCircle size={look.icon} class='animate-spin' aria-hidden='true' />
+        <LoaderCircle
+          size={look.icon}
+          class="animate-spin"
+          aria-hidden="true"
+        />
       {:else if icon === 'pause'}
-        <Pause size={look.icon} fill='currentColor' aria-hidden='true' />
+        <Pause size={look.icon} fill="currentColor" aria-hidden="true" />
       {:else}
-        <Play size={look.icon} fill='currentColor' class={look.nudge} aria-hidden='true' />
+        <Play
+          size={look.icon}
+          fill="currentColor"
+          class={look.nudge}
+          aria-hidden="true"
+        />
       {/if}
     </span>
   {/key}

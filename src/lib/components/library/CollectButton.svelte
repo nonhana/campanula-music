@@ -1,43 +1,36 @@
-<!--
-  收藏开关：收藏、取消收藏一张歌单、专辑、歌手（App 的 collect：先改本地、立即生效，没成会改回并在提示条说明）。图标照 DESIGN.md：
-  收藏 CirclePlus，已收藏 CircleCheck（深薄荷）。pill 是页面头部播放全部旁（桌面描边胶囊“收藏 / 已收藏”，手机只留图标）；
-  icon 是搜索结果歌单行最右（手机 44px、桌面 40px 圆）；corner 是歌手、专辑格子封面右下角始终可见的 32px 白圆（调用方定位，和链接并排）。
-  自建歌单、我喜欢的音乐、没登录时不显示；列表首次同步还没拿到时不能按。是开关（aria-pressed）。
--->
-<script lang='ts'>
-  import { CircleCheck, CirclePlus } from '@lucide/svelte'
-  import type { ClassValue } from 'svelte/elements'
+<script lang="ts">
+  import { CircleCheck, CirclePlus } from '@lucide/svelte';
+  import type { ClassValue } from 'svelte/elements';
 
-  import type { CollectTarget } from '#lib/app/app.js'
+  import type { CollectTarget } from '#lib/app/app.js';
 
-  import { getAppView } from '../shared/app-context.svelte'
-  import { iconSwap } from '../shared/motion'
-  import ToolButton from '../ui/ToolButton.svelte'
-  import { COLLECT_NOUNS, collectState } from './collect'
+  import { getAppView } from '../shared/app-context.svelte';
+  import { iconSwap } from '../shared/motion';
+  import ToolButton from '../ui/ToolButton.svelte';
+  import { COLLECT_NOUNS, collectState } from './collect';
 
   interface Props {
-    target: CollectTarget
-    /** 读屏读出的名字里要用；网易云没给名字时是 null，只读“收藏专辑”这类（#78） */
-    name: string | null
-    look: 'pill' | 'icon' | 'corner'
-    class?: ClassValue
+    target: CollectTarget;
+    name: string | null;
+    look: 'pill' | 'icon' | 'corner';
+    class?: ClassValue;
   }
 
-  const { target, name, look, class: klass }: Props = $props()
-  const view = getAppView()
-  const library = $derived(view.state.library)
-  const status = $derived(library
-    ? collectState(library, target)
-    : null)
-  const collected = $derived(status === 'collected')
-  const Icon = $derived(collected ? CircleCheck : CirclePlus)
-  const label = $derived(name === null
-    ? `收藏${COLLECT_NOUNS[target.kind]}`
-    : `收藏${COLLECT_NOUNS[target.kind]}「${name}」`)
+  const { target, name, look, class: klass }: Props = $props();
+  const view = getAppView();
+  const library = $derived(view.state.library);
+  const status = $derived(library ? collectState(library, target) : null);
+  const collected = $derived(status === 'collected');
+  const Icon = $derived(collected ? CircleCheck : CirclePlus);
+  const label = $derived(
+    name === null
+      ? `收藏${COLLECT_NOUNS[target.kind]}`
+      : `收藏${COLLECT_NOUNS[target.kind]}「${name}」`,
+  );
 
   const toggle = () => {
-    void view.app.collect(target, !collected)
-  }
+    void view.app.collect(target, !collected);
+  };
 </script>
 
 {#if status && status !== 'own'}
@@ -52,26 +45,21 @@
     />
   {:else}
     <button
-      type='button'
+      type="button"
       aria-label={label}
       aria-pressed={collected}
       disabled={status === 'unknown'}
       class={[
         'grid flex-none place-items-center rounded-full transition-[background-color,color,opacity,transform] duration-feedback enabled:press disabled:(cursor-not-allowed opacity-50) mouse:enabled:hover:(bg-primary-100 text-primary-950)',
-        look === 'icon'
-          ? 'size-11 md:size-10'
-          : 'size-8 bg-white shadow-chip',
+        look === 'icon' ? 'size-11 md:size-10' : 'size-8 bg-white shadow-chip',
         collected ? 'text-primary-900' : 'text-neutral-700',
         klass,
       ]}
       onclick={toggle}
     >
-      <!-- 新旧图标叠在同一格里交叉淡化 -->
       {#key Icon}
-        <span class='grid col-start-1 row-start-1' transition:iconSwap>
-          <Icon size={look === 'icon'
-            ? 20
-            : 18} aria-hidden='true' />
+        <span class="grid col-start-1 row-start-1" transition:iconSwap>
+          <Icon size={look === 'icon' ? 20 : 18} aria-hidden="true" />
         </span>
       {/key}
     </button>

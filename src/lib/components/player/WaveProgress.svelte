@@ -1,96 +1,98 @@
-<!--
-  播放页的波浪进度条（DESIGN.md Wave Progress）：已播放是缓缓起伏的正弦线（茎绿，3px），未播放是平的细线；游标是 4×18px 深薄荷竖条，
-  下面是等宽数字的时间。只在播放时起伏流动；暂停和拖动时 160ms 抹平成直线，再播放时 420ms 起伏回来（线一直 3px）。
-  减少动态效果时不流动、起伏直接切换；换歌时已播放部分 200ms 收回起点，不一下跳回。真正的滑块在 seek-slider.svelte.ts；
-  touch：手机点按区域更高。
--->
-<script lang='ts'>
-  import { untrack } from 'svelte'
-  import { cubicOut } from 'svelte/easing'
-  import { Tween } from 'svelte/motion'
+<script lang="ts">
+  import { untrack } from 'svelte';
+  import { cubicOut } from 'svelte/easing';
+  import { Tween } from 'svelte/motion';
 
-  import { getAppView } from '../shared/app-context.svelte'
-  import { easeOutSoft, moveMs } from '../shared/motion'
-  import { DURATIONS } from '../shared/motion-tokens'
-  import { currentSong } from './now'
-  import type { Playhead } from './playhead.svelte'
-  import { createSeekSlider } from './seek-slider.svelte'
-  import { formatSeconds } from './view'
+  import { getAppView } from '../shared/app-context.svelte';
+  import { easeOutSoft, moveMs } from '../shared/motion';
+  import { DURATIONS } from '../shared/motion-tokens';
+  import { currentSong } from './now';
+  import type { Playhead } from './playhead.svelte';
+  import { createSeekSlider } from './seek-slider.svelte';
+  import { formatSeconds } from './view';
 
-  const { playhead, touch = false }: { playhead: Playhead, touch?: boolean } = $props()
+  const { playhead, touch = false }: { playhead: Playhead; touch?: boolean } =
+    $props();
 
-  /** 一个起伏的长度、线所在的高度、起伏的高度（px） */
-  const WAVELENGTH = 24
-  const MIDDLE = 12
-  const AMPLITUDE = 7
+  const WAVELENGTH = 24;
+  const MIDDLE = 12;
+  const AMPLITUDE = 7;
 
-  const uid = $props.id()
-  const view = getAppView()
-  const slider = createSeekSlider()
-  const live = $derived(view.state.player.status === 'playing')
+  const uid = $props.id();
+  const view = getAppView();
+  const slider = createSeekSlider();
+  const live = $derived(view.state.player.status === 'playing');
 
-  let width = $state(0)
+  let width = $state(0);
 
-  const ratio = $derived(slider.ratio(playhead.now))
-  const shownTime = $derived(ratio * slider.duration)
-  const waving = $derived(live && slider.dragging === null)
+  const ratio = $derived(slider.ratio(playhead.now));
+  const shownTime = $derived(ratio * slider.duration);
+  const waving = $derived(live && slider.dragging === null);
 
-  /** 换歌时已播放部分从原来画到的地方收回起点：游标画在 ratio 和它之间靠后的那个，200ms 收到 0；取靠后的，换歌和进度回 0 先到哪个都不会跳 */
-  const drain = new Tween(0, { easing: easeOutSoft })
-  const shown = $derived(Math.max(ratio, drain.current))
-  const songId = $derived(currentSong(view.state.player)?.id)
-  // 上一帧画的是哪首、画到哪：换歌时从这里收回来
-  let lastSong = untrack(() => songId)
-  let lastShown = untrack(() => shown)
+  const drain = new Tween(0, { easing: easeOutSoft });
+  const shown = $derived(Math.max(ratio, drain.current));
+  const songId = $derived(currentSong(view.state.player)?.id);
+  let lastSong = untrack(() => songId);
+  let lastShown = untrack(() => shown);
   $effect(() => {
     if (songId !== lastSong) {
-      void drain.set(lastShown, { duration: 0 })
+      void drain.set(lastShown, { duration: 0 });
       void drain.set(0, {
         duration: moveMs(DURATIONS.state),
-      })
+      });
     }
-    lastSong = songId
-    lastShown = shown
-  })
-  const x = $derived(shown * width)
+    lastSong = songId;
+    lastShown = shown;
+  });
+  const x = $derived(shown * width);
 
-  /** 暂停马上抹平、播放渐渐起来；一打开就是当前的样子 */
-  const amplitude = Tween.of(() => waving ? AMPLITUDE : 0, {
-    duration: (_, to) => moveMs(to === 0
-      ? DURATIONS['wave-flatten']
-      : DURATIONS['wave-rise']),
+  const amplitude = Tween.of(() => (waving ? AMPLITUDE : 0), {
+    duration: (_, to) =>
+      moveMs(to === 0 ? DURATIONS['wave-flatten'] : DURATIONS['wave-rise']),
     easing: cubicOut,
-  })
+  });
 
-  /** 两头各多一个波长，流动时不露空 */
   const wavePath = $derived.by(() => {
-    const half = WAVELENGTH / 2
-    let path = `M ${-WAVELENGTH} ${MIDDLE} q ${half / 2} ${-amplitude.current} ${half} 0`
+    const half = WAVELENGTH / 2;
+    let path = `M ${-WAVELENGTH} ${MIDDLE} q ${half / 2} ${-amplitude.current} ${half} 0`;
     for (let at = -WAVELENGTH + half; at < width + WAVELENGTH; at += half)
-      path += ` t ${half} 0`
-    return path
-  })
+      path += ` t ${half} 0`;
+    return path;
+  });
 </script>
 
 <div class={['wave', touch && 'touch']}>
-  <div bind:clientWidth={width} class='track' {...slider.attributes(ratio)} {@attach slider.attach}>
+  <div
+    bind:clientWidth={width}
+    class="track"
+    {...slider.attributes(ratio)}
+    {@attach slider.attach}
+  >
     {#if width > 0}
-      <svg {width} height='24' viewBox='0 0 {width} 24' aria-hidden='true'>
+      <svg {width} height="24" viewBox="0 0 {width} 24" aria-hidden="true">
         <defs>
-          <!-- 从线的左端到游标前 6px：流动的波浪不伸出进度条 -->
-          <clipPath id='{uid}-played'>
-            <rect x='0' y='0' width={Math.max(0, x - 6)} height='24' />
+          <clipPath id="{uid}-played">
+            <rect x="0" y="0" width={Math.max(0, x - 6)} height="24" />
           </clipPath>
         </defs>
-        <line class='rest' x1={Math.min(width, x + 6)} y1={MIDDLE} x2={width} y2={MIDDLE} />
-        <g clip-path='url(#{uid}-played)'>
+        <line
+          class="rest"
+          x1={Math.min(width, x + 6)}
+          y1={MIDDLE}
+          x2={width}
+          y2={MIDDLE}
+        />
+        <g clip-path="url(#{uid}-played)">
           <path class={['flow', waving && 'live']} d={wavePath} />
         </g>
-        <rect class='thumb' x={x - 2} y='3' width='4' height='18' rx='2' />
+        <rect class="thumb" x={x - 2} y="3" width="4" height="18" rx="2" />
       </svg>
     {/if}
   </div>
-  <div class='times text-caption text-neutral-700 tabular-nums' aria-hidden='true'>
+  <div
+    class="times text-caption text-neutral-700 tabular-nums"
+    aria-hidden="true"
+  >
     <span>{formatSeconds(shownTime)}</span>
     <span>{formatSeconds(slider.duration)}</span>
   </div>

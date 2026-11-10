@@ -1,12 +1,8 @@
 {
   "extends": "$app/tsconfig",
   "compilerOptions": {
-    // 页面的 ./$types 只认 5173 的 .svelte-kit：测试和 mock 用各自的 SvelteKit 输出目录（tests/harness/world.ts、vite.config.mts），
-    // 它们启动时会把 $app/tsconfig 的 rootDirs 改成自己的目录
-    "rootDirs": [
-      ".",
-      "./.svelte-kit/types"
-    ],
+    // 测试和 mock 用各自的 SvelteKit 输出目录，启动时会把 $app/tsconfig 的 rootDirs 换成自己的：这里只留 5173 的 .svelte-kit
+    "rootDirs": [".", "./.svelte-kit/types"],
     "strict": true,
     "sourceMap": true
   },
@@ -19,7 +15,5 @@
     "uno.palette.mts",
     "vite.config.mts"
   ],
-  "exclude": [
-    "src/service-worker"
-  ]
+  "exclude": ["src/service-worker"]
 }

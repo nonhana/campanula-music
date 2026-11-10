@@ -1,20 +1,26 @@
-<!--
-  图标按钮（DESIGN.md Buttons · Icon）：透明底、石墨重图标，手机 44px、桌面 40px 的圆；label 就是读屏名字。
-  换图标时（播放模式、音量）新旧交叉淡化、新的从 85% 放大到位（motion.ts 的 iconSwap）；禁用时淡到 50%。
--->
-<script lang='ts'>
-  import type { LucideIcon } from '@lucide/svelte'
-  import type { HTMLButtonAttributes } from 'svelte/elements'
+<script lang="ts">
+  import type { LucideIcon } from '@lucide/svelte';
+  import type { HTMLButtonAttributes } from 'svelte/elements';
 
-  import { iconSwap } from '../shared/motion'
+  import { iconSwap } from '../shared/motion';
 
-  interface Props extends Omit<HTMLButtonAttributes, 'children' | 'aria-label'> {
-    icon: LucideIcon
-    label: string
-    filled?: boolean
+  interface Props extends Omit<
+    HTMLButtonAttributes,
+    'children' | 'aria-label'
+  > {
+    icon: LucideIcon;
+    label: string;
+    filled?: boolean;
   }
 
-  const { icon: Icon, label, filled = false, type = 'button', class: klass, ...rest }: Props = $props()
+  const {
+    icon: Icon,
+    label,
+    filled = false,
+    type = 'button',
+    class: klass,
+    ...rest
+  }: Props = $props();
 </script>
 
 <button
@@ -27,8 +33,12 @@
   {...rest}
 >
   {#key Icon}
-    <span class='grid col-start-1 row-start-1' transition:iconSwap>
-      <Icon size={20} fill={filled ? 'currentColor' : 'none'} aria-hidden='true' />
+    <span class="grid col-start-1 row-start-1" transition:iconSwap>
+      <Icon
+        size={20}
+        fill={filled ? 'currentColor' : 'none'}
+        aria-hidden="true"
+      />
     </span>
   {/key}
 </button>

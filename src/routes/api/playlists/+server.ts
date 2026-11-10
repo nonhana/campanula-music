@@ -1,17 +1,24 @@
-import { endpoints } from '#lib/api/endpoints.js'
-import { createPlaylist, fetchPlaylists } from '#lib/server/netease.js'
-import { readId, readPlaylistDraft } from '#lib/server/request.js'
-import { respondSignedIn } from '#lib/server/session.js'
+import { endpoints } from '#lib/api/endpoints.js';
+import { createPlaylist, fetchPlaylists } from '#lib/server/netease.js';
+import { readId, readPlaylistDraft } from '#lib/server/request.js';
+import { respondSignedIn } from '#lib/server/session.js';
 
-import type { RequestHandler } from './$types'
+import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ url, cookies }) => {
-  const uid = readId('uid', url.searchParams.get('uid'))
-  return respondSignedIn(endpoints.playlists, cookies, async listener => ({ playlists: await fetchPlaylists(uid, listener) }))
-}
+  const uid = readId('uid', url.searchParams.get('uid'));
+  return respondSignedIn(endpoints.playlists, cookies, async (listener) => ({
+    playlists: await fetchPlaylists(uid, listener),
+  }));
+};
 
-// 新建自建歌单：建好后读回它的详情，客户端拿到完整的歌单才放进曲库
 export const POST: RequestHandler = async ({ request, cookies }) => {
-  const draft = await readPlaylistDraft(request)
-  return respondSignedIn(endpoints.createPlaylist, cookies, async listener => ({ playlist: await createPlaylist(draft.name, draft.private, listener) }))
-}
+  const draft = await readPlaylistDraft(request);
+  return respondSignedIn(
+    endpoints.createPlaylist,
+    cookies,
+    async (listener) => ({
+      playlist: await createPlaylist(draft.name, draft.private, listener),
+    }),
+  );
+};

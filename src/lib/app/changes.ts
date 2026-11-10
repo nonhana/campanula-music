@@ -1,95 +1,105 @@
-import type { CollectedAlbum, CollectedArtist, Playlist, PlaylistEditProblem, Song } from '#lib/api/library.js'
-import { canSortPlaylist, nameProblem, PLAYLIST_DESCRIPTION_LENGTH, PLAYLIST_TAGS_MAX, reorderSortable } from '#lib/api/library.js'
+import type {
+  CollectedAlbum,
+  CollectedArtist,
+  Playlist,
+  PlaylistEditProblem,
+  Song,
+} from '#lib/api/library.js';
+import {
+  canSortPlaylist,
+  nameProblem,
+  PLAYLIST_DESCRIPTION_LENGTH,
+  PLAYLIST_TAGS_MAX,
+  reorderSortable,
+} from '#lib/api/library.js';
 
-import type { LibraryPatch, PlaylistTracks, Replica } from './local'
+import type { LibraryPatch, PlaylistTracks, Replica } from './local';
 
-// 听众改曲库（红心、加入歌单、收藏，#30；歌单的增删改，#33，Spec #11“客户端：曲库副本”）时每种修改对副本做什么。只算不做：
-// 显示时叠在副本上，确认了写进副本，同步拿回来的旧数据上再叠一次（确认得比它晚的）；同一件事做两遍结果不变，重复叠没关系。
-// 新建歌单不是先改本地的修改（Change）：等网易云建好、给了编号才写进副本（ConfirmedChange 的 create）。
-
-/** 收藏一张不在曲库里的歌单时，打开着它就带上已经取到的曲目：收藏后它进了曲库，不用再拉一遍 */
 export interface PlaylistSeed {
-  tracks: PlaylistTracks
-  songs: readonly Song[]
+  tracks: PlaylistTracks;
+  songs: readonly Song[];
 }
 
-export type Change
-  = | { kind: 'heart', song: Song, hearted: boolean }
-    /** 自建歌单，或我喜欢的音乐（等于红心） */
-    | { kind: 'add', playlist: Playlist, song: Song }
-    /** 一个请求带上全部编号（#35） */
-    | { kind: 'addMany', playlist: Playlist, songs: readonly Song[] }
-    /** 先在本地拿掉，提示条留 5 秒撤销，没撤销才提交（#35） */
-    | { kind: 'remove', playlist: Playlist, songIds: number[] }
-    /** 拖完先改本地，停手 2 秒才一次提交；自建歌单和我喜欢的音乐都能排（#36） */
-    | { kind: 'order', playlist: Playlist, songIds: number[] }
-    /** 我喜欢的音乐在最前；收藏的歌单不参与（#37） */
-    | { kind: 'playlistOrder', playlistIds: number[] }
-    | { kind: 'collectAlbum', album: CollectedAlbum, collected: boolean }
-    | { kind: 'collectArtist', artist: CollectedArtist, collected: boolean }
-    | { kind: 'collectPlaylist', playlist: Playlist, collected: boolean, seed: PlaylistSeed | null }
-    /** 去掉了首尾空白 */
-    | { kind: 'rename', playlist: Playlist, name: string }
-    /** 清空是 null */
-    | { kind: 'describe', playlist: Playlist, description: string | null }
-    /** 从标签库里选的，照选的先后 */
-    | { kind: 'tag', playlist: Playlist, tags: string[] }
-    /** 改不回去（Spec #11 Out of Scope） */
-    | { kind: 'publish', playlist: Playlist }
-    | { kind: 'delete', playlist: Playlist }
+export type Change =
+  | { kind: 'heart'; song: Song; hearted: boolean }
+  | { kind: 'add'; playlist: Playlist; song: Song }
+  | { kind: 'addMany'; playlist: Playlist; songs: readonly Song[] }
+  | { kind: 'remove'; playlist: Playlist; songIds: number[] }
+  | { kind: 'order'; playlist: Playlist; songIds: number[] }
+  | { kind: 'playlistOrder'; playlistIds: number[] }
+  | { kind: 'collectAlbum'; album: CollectedAlbum; collected: boolean }
+  | { kind: 'collectArtist'; artist: CollectedArtist; collected: boolean }
+  | {
+      kind: 'collectPlaylist';
+      playlist: Playlist;
+      collected: boolean;
+      seed: PlaylistSeed | null;
+    }
+  | { kind: 'rename'; playlist: Playlist; name: string }
+  | { kind: 'describe'; playlist: Playlist; description: string | null }
+  | { kind: 'tag'; playlist: Playlist; tags: string[] }
+  | { kind: 'publish'; playlist: Playlist }
+  | { kind: 'delete'; playlist: Playlist };
 
-/** 移除、歌单内排序、自建歌单之间的排序（#70），由 deferred 模块提交；立即修改的提交路径（library.submit）不接它们 */
-export type DeferredChange = Extract<Change, { kind: 'remove' | 'order' | 'playlistOrder' }>
-export type ImmediateChange = Exclude<Change, DeferredChange>
+export type DeferredChange = Extract<
+  Change,
+  { kind: 'remove' | 'order' | 'playlistOrder' }
+>;
+export type ImmediateChange = Exclude<Change, DeferredChange>;
 
-/** 要写进副本的：听众做的修改，网易云建好的自建歌单，和换好的封面（后两者没有先改本地这一步） */
-export type ConfirmedChange
-  = | Change
-    | { kind: 'create', playlist: Playlist }
-    | { kind: 'cover', playlistId: number, coverUrl: string }
+export type ConfirmedChange =
+  | Change
+  | { kind: 'create'; playlist: Playlist }
+  | { kind: 'cover'; playlistId: number; coverUrl: string };
 
-/** 没给的不改 */
 export interface PlaylistEdit {
-  name?: string
-  description?: string
-  tags?: readonly string[]
+  name?: string;
+  description?: string;
+  tags?: readonly string[];
 }
 
-/** 名称、简介去掉首尾空白，和现在一样的不提交（标签照先后比） */
-export const playlistEdits = (playlist: Playlist, edit: PlaylistEdit): ImmediateChange[] => {
-  const changes: ImmediateChange[] = []
-  const name = edit.name?.trim()
+export const playlistEdits = (
+  playlist: Playlist,
+  edit: PlaylistEdit,
+): ImmediateChange[] => {
+  const changes: ImmediateChange[] = [];
+  const name = edit.name?.trim();
   if (name !== undefined && name !== playlist.name)
-    changes.push({ kind: 'rename', playlist, name })
-  const description = edit.description === undefined
-    ? undefined
-    : edit.description.trim() || null
-  if (description !== undefined && description !== (playlist.description?.trim() || null))
-    changes.push({ kind: 'describe', playlist, description })
-  const { tags } = edit
-  if (tags && (tags.length !== playlist.tags.length || tags.some((tag, index) => tag !== playlist.tags[index]))) {
+    changes.push({ kind: 'rename', playlist, name });
+  const description =
+    edit.description === undefined
+      ? undefined
+      : edit.description.trim() || null;
+  if (
+    description !== undefined &&
+    description !== (playlist.description?.trim() || null)
+  )
+    changes.push({ kind: 'describe', playlist, description });
+  const { tags } = edit;
+  if (
+    tags &&
+    (tags.length !== playlist.tags.length ||
+      tags.some((tag, index) => tag !== playlist.tags[index]))
+  ) {
     changes.push({
       kind: 'tag',
       playlist,
       tags: [...tags],
-    })
+    });
   }
-  return changes
-}
+  return changes;
+};
 
-/** 这个修改不合规、不能提交的原因（界面先拦了，这里兜底）；能提交是 null */
 export const changeProblem = (change: Change): PlaylistEditProblem | null => {
   switch (change.kind) {
     case 'rename':
-      return nameProblem(change.name)
+      return nameProblem(change.name);
     case 'describe':
       return (change.description?.length ?? 0) > PLAYLIST_DESCRIPTION_LENGTH
         ? 'descriptionTooLong'
-        : null
+        : null;
     case 'tag':
-      return change.tags.length > PLAYLIST_TAGS_MAX
-        ? 'tooManyTags'
-        : null
+      return change.tags.length > PLAYLIST_TAGS_MAX ? 'tooManyTags' : null;
     case 'heart':
     case 'add':
     case 'addMany':
@@ -101,291 +111,273 @@ export const changeProblem = (change: Change): PlaylistEditProblem | null => {
     case 'collectPlaylist':
     case 'publish':
     case 'delete':
-      return null
+      return null;
     default: {
-      const unhandled: never = change
-      throw new Error(`不认识的修改：${JSON.stringify(unhandled)}`)
+      const unhandled: never = change;
+      throw new Error(`不认识的修改：${JSON.stringify(unhandled)}`);
     }
   }
-}
+};
 
-/** 这个修改是不是红心（加入我喜欢的音乐等于红心）：是的话红心还是取消红心 */
-export const heartOf = (change: ConfirmedChange): { song: Song, hearted: boolean } | null => {
-  if (change.kind === 'heart')
-    return change
+export const heartOf = (
+  change: ConfirmedChange,
+): { song: Song; hearted: boolean } | null => {
+  if (change.kind === 'heart') return change;
   if (change.kind === 'add' && change.playlist.kind === 'liked')
-    return { song: change.song, hearted: true }
-  return null
-}
+    return { song: change.song, hearted: true };
+  return null;
+};
 
-/** 收藏、取消收藏、删除都按它排；打开歌单前等它排完（deferred.settled）也用同一个键 */
-export const playlistTarget = (playlistId: number): string => `playlist:${playlistId}`
+// 打开歌单前等它排完（deferred.settled）也用同一个键
+export const playlistTarget = (playlistId: number): string =>
+  `playlist:${playlistId}`;
 
-/** 同一样东西的几次修改按先后一次一次提交，上一次网易云回了才发下一次，免得连点两下（红心、取消红心）的先后颠倒 */
 export const targetOf = (change: Change): string => {
-  const heart = heartOf(change)
-  if (heart)
-    return `heart:${heart.song.id}`
+  const heart = heartOf(change);
+  if (heart) return `heart:${heart.song.id}`;
   switch (change.kind) {
     case 'add':
-      return `add:${change.playlist.id}:${change.song.id}`
+      return `add:${change.playlist.id}:${change.song.id}`;
     case 'addMany':
     case 'remove':
     case 'order':
-      // 一次加几首、移除、排序都是同一张歌单的曲目：按先后一次一次提交，免得后发的先到
-      return `tracks:${change.playlist.id}`
+      return `tracks:${change.playlist.id}`;
     case 'playlistOrder':
-      // 曲库的整个歌单列表是一样东西：两次拖动的顺序按先后提交
-      return 'playlists'
+      return 'playlists';
     case 'collectAlbum':
-      return `album:${change.album.id}`
+      return `album:${change.album.id}`;
     case 'collectArtist':
-      return `artist:${change.artist.id}`
+      return `artist:${change.artist.id}`;
     case 'collectPlaylist':
     case 'delete':
-      return playlistTarget(change.playlist.id)
+      return playlistTarget(change.playlist.id);
     case 'rename':
-      return `name:${change.playlist.id}`
+      return `name:${change.playlist.id}`;
     case 'describe':
-      return `description:${change.playlist.id}`
+      return `description:${change.playlist.id}`;
     case 'tag':
-      return `tags:${change.playlist.id}`
+      return `tags:${change.playlist.id}`;
     case 'publish':
-      return `privacy:${change.playlist.id}`
+      return `privacy:${change.playlist.id}`;
     default:
-      throw new Error(`不认识的修改：${JSON.stringify(change)}`)
+      throw new Error(`不认识的修改：${JSON.stringify(change)}`);
   }
-}
+};
 
-const prepended = (ids: number[], id: number): number[] => ids.includes(id)
-  ? ids
-  : [id, ...ids]
+const prepended = (ids: number[], id: number): number[] =>
+  ids.includes(id) ? ids : [id, ...ids];
 
-const tracksWith = (replica: Replica, playlistId: number, songId: number): PlaylistTracks | null => {
-  const tracks = replica.tracks.get(playlistId)
+const tracksWith = (
+  replica: Replica,
+  playlistId: number,
+  songId: number,
+): PlaylistTracks | null => {
+  const tracks = replica.tracks.get(playlistId);
   return tracks && !tracks.trackIds.includes(songId)
     ? {
         ...tracks,
         trackIds: [songId, ...tracks.trackIds],
       }
-    : null
-}
+    : null;
+};
 
-const tracksWithMany = (replica: Replica, playlistId: number, songs: readonly Song[]): PlaylistTracks | null => {
-  const tracks = replica.tracks.get(playlistId)
-  if (!tracks)
-    return null
-  const fresh = songs.filter(song => !tracks.trackIds.includes(song.id)).map(song => song.id)
+const tracksWithMany = (
+  replica: Replica,
+  playlistId: number,
+  songs: readonly Song[],
+): PlaylistTracks | null => {
+  const tracks = replica.tracks.get(playlistId);
+  if (!tracks) return null;
+  const fresh = songs
+    .filter((song) => !tracks.trackIds.includes(song.id))
+    .map((song) => song.id);
   return fresh.length > 0
     ? {
         ...tracks,
-        trackIds: [
-          ...fresh,
-          ...tracks.trackIds,
-        ],
+        trackIds: [...fresh, ...tracks.trackIds],
       }
-    : null
-}
+    : null;
+};
 
-const tracksWithout = (replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null => {
-  const tracks = replica.tracks.get(playlistId)
-  if (!tracks)
-    return null
-  const removed = new Set(songIds)
-  const kept = tracks.trackIds.filter(id => !removed.has(id))
+const tracksWithout = (
+  replica: Replica,
+  playlistId: number,
+  songIds: readonly number[],
+): PlaylistTracks | null => {
+  const tracks = replica.tracks.get(playlistId);
+  if (!tracks) return null;
+  const removed = new Set(songIds);
+  const kept = tracks.trackIds.filter((id) => !removed.has(id));
   return kept.length !== tracks.trackIds.length
     ? { ...tracks, trackIds: kept }
-    : null
-}
+    : null;
+};
 
-const missingSongs = (replica: Replica, songs: readonly Song[]): Song[] | undefined => {
-  const missing = songs.filter(song => !replica.songs.has(song.id))
-  return missing.length > 0
-    ? missing
-    : undefined
-}
+const missingSongs = (
+  replica: Replica,
+  songs: readonly Song[],
+): Song[] | undefined => {
+  const missing = songs.filter((song) => !replica.songs.has(song.id));
+  return missing.length > 0 ? missing : undefined;
+};
 
-/** 提交的顺序过期时只排还在歌单里的那几首，没出现在提交里的按原来的先后接在后面；排序不会加歌，也不会把移除的带回来 */
-const orderedTracks = (replica: Replica, playlistId: number, songIds: readonly number[]): PlaylistTracks | null => {
-  const tracks = replica.tracks.get(playlistId)
-  if (!tracks)
-    return null
-  const present = new Set(tracks.trackIds)
-  const ordered = songIds.filter(songId => present.has(songId))
-  const seen = new Set(ordered)
-  const kept = tracks.trackIds.filter(songId => !seen.has(songId))
+const orderedTracks = (
+  replica: Replica,
+  playlistId: number,
+  songIds: readonly number[],
+): PlaylistTracks | null => {
+  const tracks = replica.tracks.get(playlistId);
+  if (!tracks) return null;
+  const present = new Set(tracks.trackIds);
+  const ordered = songIds.filter((songId) => present.has(songId));
+  const seen = new Set(ordered);
+  const kept = tracks.trackIds.filter((songId) => !seen.has(songId));
   return {
     ...tracks,
-    trackIds: [
-      ...ordered,
-      ...kept,
-    ],
-  }
-}
+    trackIds: [...ordered, ...kept],
+  };
+};
 
-const heartPatch = (replica: Replica, song: Song, hearted: boolean): LibraryPatch => {
-  const { hearts } = replica
-  const liked = replica.playlists?.find(playlist => playlist.kind === 'liked')
-  const likedTracks = liked && replica.tracks.get(liked.id)
-  let tracks: ReadonlyMap<number, PlaylistTracks> | undefined
+const heartPatch = (
+  replica: Replica,
+  song: Song,
+  hearted: boolean,
+): LibraryPatch => {
+  const { hearts } = replica;
+  const liked = replica.playlists?.find(
+    (playlist) => playlist.kind === 'liked',
+  );
+  const likedTracks = liked && replica.tracks.get(liked.id);
+  let tracks: ReadonlyMap<number, PlaylistTracks> | undefined;
   if (liked && likedTracks) {
     const trackIds = hearted
       ? prepended(likedTracks.trackIds, song.id)
-      : likedTracks.trackIds.filter(id => id !== song.id)
+      : likedTracks.trackIds.filter((id) => id !== song.id);
     if (trackIds.length !== likedTracks.trackIds.length) {
-      tracks = new Map([
-        [
-          liked.id,
-          { ...likedTracks, trackIds },
-        ],
-      ])
+      tracks = new Map([[liked.id, { ...likedTracks, trackIds }]]);
     }
   }
   return {
     hearts: hearts
-      ? (hearted
-          ? prepended(hearts, song.id)
-          : hearts.filter(id => id !== song.id))
+      ? hearted
+        ? prepended(hearts, song.id)
+        : hearts.filter((id) => id !== song.id)
       : undefined,
     tracks,
-    songs: hearted
-      ? missingSongs(replica, [song])
-      : undefined,
-  }
-}
+    songs: hearted ? missingSongs(replica, [song]) : undefined,
+  };
+};
 
-/** 收藏的歌单排在自建歌单后面、收藏的最前（和刚在网易云里收藏的一样） */
-const withCollected = (playlists: Playlist[], playlist: Playlist): Playlist[] => {
-  if (playlists.some(item => item.id === playlist.id))
-    return playlists
-  const at = playlists.findIndex(item => item.kind === 'collected')
+const withCollected = (
+  playlists: Playlist[],
+  playlist: Playlist,
+): Playlist[] => {
+  if (playlists.some((item) => item.id === playlist.id)) return playlists;
+  const at = playlists.findIndex((item) => item.kind === 'collected');
   return at < 0
     ? [...playlists, playlist]
-    : [
-        ...playlists.slice(0, at),
-        playlist,
-        ...playlists.slice(at),
-      ]
-}
+    : [...playlists.slice(0, at), playlist, ...playlists.slice(at)];
+};
 
-/** 排在我喜欢的音乐后面（和刚在网易云里新建的一样，验证关卡②） */
 const withCreated = (playlists: Playlist[], playlist: Playlist): Playlist[] => {
-  if (playlists.some(item => item.id === playlist.id))
-    return playlists
-  const at = playlists.findIndex(item => item.kind === 'liked') + 1
-  return [
-    ...playlists.slice(0, at),
-    playlist,
-    ...playlists.slice(at),
-  ]
-}
+  if (playlists.some((item) => item.id === playlist.id)) return playlists;
+  const at = playlists.findIndex((item) => item.kind === 'liked') + 1;
+  return [...playlists.slice(0, at), playlist, ...playlists.slice(at)];
+};
 
-const editedPatch = (replica: Replica, playlistId: number, edit: (playlist: Playlist) => Playlist): LibraryPatch => {
-  const { playlists } = replica
-  return playlists?.some(item => item.id === playlistId)
+const editedPatch = (
+  replica: Replica,
+  playlistId: number,
+  edit: (playlist: Playlist) => Playlist,
+): LibraryPatch => {
+  const { playlists } = replica;
+  return playlists?.some((item) => item.id === playlistId)
     ? {
-        playlists: playlists.map(item => (item.id === playlistId
-          ? edit(item)
-          : item)),
+        playlists: playlists.map((item) =>
+          item.id === playlistId ? edit(item) : item,
+        ),
       }
-    : {}
-}
+    : {};
+};
 
-const toggled = <T extends { id: number }>(items: T[] | null, item: T, collected: boolean): T[] | undefined => {
-  if (!items)
-    return undefined
+const toggled = <T extends { id: number }>(
+  items: T[] | null,
+  item: T,
+  collected: boolean,
+): T[] | undefined => {
+  if (!items) return undefined;
   if (collected) {
-    return items.some(each => each.id === item.id)
-      ? items
-      : [item, ...items]
+    return items.some((each) => each.id === item.id) ? items : [item, ...items];
   }
-  return items.filter(each => each.id !== item.id)
-}
+  return items.filter((each) => each.id !== item.id);
+};
 
-/** 副本里还没有的部分（首次同步还没拿到）不动 */
-export const changePatch = (replica: Replica, change: ConfirmedChange): LibraryPatch => {
-  const heart = heartOf(change)
-  if (heart)
-    return heartPatch(replica, heart.song, heart.hearted)
+export const changePatch = (
+  replica: Replica,
+  change: ConfirmedChange,
+): LibraryPatch => {
+  const heart = heartOf(change);
+  if (heart) return heartPatch(replica, heart.song, heart.hearted);
   switch (change.kind) {
     case 'add': {
-      const tracks = tracksWith(replica, change.playlist.id, change.song.id)
+      const tracks = tracksWith(replica, change.playlist.id, change.song.id);
       return {
-        tracks: tracks
-          ? new Map([
-              [change.playlist.id, tracks],
-            ])
-          : undefined,
+        tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined,
         songs: missingSongs(replica, [change.song]),
-      }
+      };
     }
     case 'addMany': {
-      const tracks = tracksWithMany(replica, change.playlist.id, change.songs)
+      const tracks = tracksWithMany(replica, change.playlist.id, change.songs);
       return {
-        tracks: tracks
-          ? new Map([
-              [change.playlist.id, tracks],
-            ])
-          : undefined,
+        tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined,
         songs: missingSongs(replica, change.songs),
-      }
+      };
     }
     case 'remove': {
-      const tracks = tracksWithout(replica, change.playlist.id, change.songIds)
+      const tracks = tracksWithout(replica, change.playlist.id, change.songIds);
       return {
-        tracks: tracks
-          ? new Map([
-              [change.playlist.id, tracks],
-            ])
-          : undefined,
-      }
+        tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined,
+      };
     }
     case 'order': {
-      const tracks = orderedTracks(replica, change.playlist.id, change.songIds)
+      const tracks = orderedTracks(replica, change.playlist.id, change.songIds);
       return {
-        tracks: tracks
-          ? new Map([
-              [change.playlist.id, tracks],
-            ])
-          : undefined,
-      }
+        tracks: tracks ? new Map([[change.playlist.id, tracks]]) : undefined,
+      };
     }
     case 'playlistOrder':
       return {
         playlists: replica.playlists
-          ? reorderSortable(replica.playlists, change.playlistIds, playlist => canSortPlaylist(playlist.kind))
+          ? reorderSortable(replica.playlists, change.playlistIds, (playlist) =>
+              canSortPlaylist(playlist.kind),
+            )
           : undefined,
-      }
+      };
     case 'collectAlbum':
       return {
         albums: toggled(replica.albums, change.album, change.collected),
-      }
+      };
     case 'collectArtist':
       return {
         artists: toggled(replica.artists, change.artist, change.collected),
-      }
+      };
     case 'collectPlaylist': {
-      const { playlist, collected, seed } = change
-      const playlists = replica.playlists && (collected
-        ? withCollected(replica.playlists, playlist)
-        : replica.playlists.filter(item => item.id !== playlist.id))
-      const seeded = collected && seed && !replica.tracks.has(playlist.id)
+      const { playlist, collected, seed } = change;
+      const playlists =
+        replica.playlists &&
+        (collected
+          ? withCollected(replica.playlists, playlist)
+          : replica.playlists.filter((item) => item.id !== playlist.id));
+      const seeded = collected && seed && !replica.tracks.has(playlist.id);
       return {
         playlists: playlists ?? undefined,
-        tracks: seeded
-          ? new Map([
-              [playlist.id, seed.tracks],
-            ])
-          : undefined,
-        songs: seeded
-          ? missingSongs(replica, seed.songs)
-          : undefined,
-      }
+        tracks: seeded ? new Map([[playlist.id, seed.tracks]]) : undefined,
+        songs: seeded ? missingSongs(replica, seed.songs) : undefined,
+      };
     }
     case 'create': {
-      const { playlist } = change
-      // 新建的歌单是空的：曲目已经是全的，打开时不用再拉
-      const seeded = !replica.tracks.has(playlist.id)
+      const { playlist } = change;
+      const seeded = !replica.tracks.has(playlist.id);
       return {
         playlists: replica.playlists
           ? withCreated(replica.playlists, playlist)
@@ -394,31 +386,48 @@ export const changePatch = (replica: Replica, change: ConfirmedChange): LibraryP
           ? new Map([
               [
                 playlist.id,
-                { version: playlist.tracksUpdatedAt, trackIds: [], complete: true },
+                {
+                  version: playlist.tracksUpdatedAt,
+                  trackIds: [],
+                  complete: true,
+                },
               ],
             ])
           : undefined,
-      }
+      };
     }
     case 'rename':
-      return editedPatch(replica, change.playlist.id, playlist => ({ ...playlist, name: change.name }))
+      return editedPatch(replica, change.playlist.id, (playlist) => ({
+        ...playlist,
+        name: change.name,
+      }));
     case 'describe':
-      return editedPatch(replica, change.playlist.id, playlist => ({ ...playlist, description: change.description }))
+      return editedPatch(replica, change.playlist.id, (playlist) => ({
+        ...playlist,
+        description: change.description,
+      }));
     case 'tag':
-      return editedPatch(replica, change.playlist.id, playlist => ({
+      return editedPatch(replica, change.playlist.id, (playlist) => ({
         ...playlist,
         tags: [...change.tags],
-      }))
+      }));
     case 'publish':
-      return editedPatch(replica, change.playlist.id, playlist => ({ ...playlist, private: false }))
+      return editedPatch(replica, change.playlist.id, (playlist) => ({
+        ...playlist,
+        private: false,
+      }));
     case 'delete':
-      // 曲目跟着歌单列表一起删（patched）
       return {
-        playlists: replica.playlists?.filter(item => item.id !== change.playlist.id),
-      }
+        playlists: replica.playlists?.filter(
+          (item) => item.id !== change.playlist.id,
+        ),
+      };
     case 'cover':
-      return editedPatch(replica, change.playlistId, playlist => ({ ...playlist, coverUrl: change.coverUrl }))
+      return editedPatch(replica, change.playlistId, (playlist) => ({
+        ...playlist,
+        coverUrl: change.coverUrl,
+      }));
     default:
-      throw new Error(`不认识的修改：${JSON.stringify(change)}`)
+      throw new Error(`不认识的修改：${JSON.stringify(change)}`);
   }
-}
+};

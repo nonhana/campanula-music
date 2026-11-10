@@ -1,0 +1,30 @@
+import { defineConfig } from 'oxfmt';
+
+export default defineConfig({
+  arrowParens: 'always',
+  bracketSpacing: true,
+  embeddedLanguageFormatting: 'auto',
+  endOfLine: 'lf',
+  experimentalOperatorPosition: 'end',
+  insertFinalNewline: true,
+  objectWrap: 'preserve',
+  printWidth: 80,
+  proseWrap: 'preserve',
+  quoteProps: 'as-needed',
+  semi: true,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: 'all',
+  useTabs: false,
+  svelte: true,
+  sortImports: false,
+  sortPackageJson: false,
+  ignorePatterns: [
+    '.svelte-kit/**',
+    'build/**',
+    'dist/**',
+    'node_modules/**',
+    'tests/fixtures/**',
+    '**/*.gz',
+  ],
+});
