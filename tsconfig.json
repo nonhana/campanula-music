@@ -3,6 +3,9 @@
   "compilerOptions": {
     // 测试和 mock 用各自的 SvelteKit 输出目录，启动时会把 $app/tsconfig 的 rootDirs 换成自己的：这里只留 5173 的 .svelte-kit
     "rootDirs": [".", "./.svelte-kit/types"],
+    "paths": {
+      "#lib/*": ["./src/lib/*"]
+    },
     "strict": true,
     "sourceMap": true
   },

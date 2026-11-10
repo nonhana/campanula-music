@@ -11,7 +11,7 @@
     variant: 'primary' | 'download' | 'outline' | 'destructive';
     icon?: LucideIcon;
     busy?: boolean;
-    children: Snippet;
+    children?: Snippet;
   }
 
   const {
@@ -78,5 +78,5 @@
   {:else if Icon}
     <Icon size={18} aria-hidden="true" />
   {/if}
-  {@render children()}
+  {@render children?.()}
 </button>

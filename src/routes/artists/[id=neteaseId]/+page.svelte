@@ -223,7 +223,10 @@
             {section.title}
           </h2>
         {/if}
-        <LongText text={section.text} class={section.title && 'mt-2'} />
+        <LongText
+          text={section.text}
+          class={section.title ? 'mt-2' : undefined}
+        />
       </section>
     {/each}
   </div>
