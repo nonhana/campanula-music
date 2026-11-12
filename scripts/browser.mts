@@ -3,8 +3,12 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+
+import type { AxeResults } from 'axe-core';
 
 const ROOT = join(import.meta.dirname, '..');
+const AXI = join(ROOT, 'scripts/axi.sh');
 const LOCK = join(homedir(), '.cache/campanula-axi/browser.lock');
 const MOCK_ORIGIN = 'http://localhost:5174';
 const REAL_ORIGIN = 'http://localhost:5173';
@@ -75,22 +79,16 @@ const envOf = (): NodeJS.ProcessEnv => {
     CHROME_DEVTOOLS_AXI_SESSION: session,
     CHROME_DEVTOOLS_AXI_USER_DATA_DIR: MOCK_PROFILE,
     CHROME_DEVTOOLS_AXI_HEADED: '1',
+    CHROME_DEVTOOLS_AXI_CHROME_ARGS: '--remote-debugging-port=0',
   };
 };
 
 const port = (): number => {
-  const env = envOf();
-  execFileSync('chrome-devtools-axi', ['pages'], { env, stdio: 'ignore' });
-  const pidFile = real
-    ? join(homedir(), '.chrome-devtools-axi/sessions/campanula/bridge.pid')
-    : join(
-        homedir(),
-        '.chrome-devtools-axi/sessions/campanula-mock/bridge.pid',
-      );
-  const text = readFileSync(pidFile, 'utf8');
-  const found = /"port":(\d+)/.exec(text)?.[1];
-  if (!found) throw new Error(`没读到 ${session} 桥接进程的端口：${pidFile}`);
-  return Number(found);
+  const output = cli(['port']).trim();
+  const value = Number(output);
+  if (!Number.isInteger(value) || value <= 0 || value > 65535)
+    throw new Error(`没读到 ${session} 桥接进程的端口：${output}`);
+  return value;
 };
 
 const call = async (
@@ -102,7 +100,10 @@ const call = async (
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name, args: callArgs }),
+    signal: AbortSignal.timeout(60_000),
   });
+  if (!response.ok)
+    throw new Error(`DevTools ${name}：HTTP ${response.status}`);
   const reply = (await response.json()) as { result?: string; error?: string };
   if (reply.error !== undefined || reply.result === undefined)
     throw new Error(`DevTools ${name}：${reply.error ?? '没有结果'}`);
@@ -141,10 +142,21 @@ const selectPage = async (pageId: number): Promise<void> => {
 };
 
 const cli = (args: string[]): string =>
-  execFileSync('chrome-devtools-axi', args, {
+  execFileSync(AXI, args, {
     env: envOf(),
     encoding: 'utf8',
   });
+
+const playwright = (args: string[]): string =>
+  execFileSync(
+    'pnpm',
+    ['exec', 'playwright-cli', '-s=campanula-mock', ...args],
+    {
+      cwd: ROOT,
+      env: process.env,
+      encoding: 'utf8',
+    },
+  );
 
 const parseNested = (output: string): unknown => {
   let current: unknown = output;
@@ -233,6 +245,102 @@ const main = async (): Promise<void> => {
       case 'port':
         console.log(port());
         return;
+      case 'stop':
+        console.log(cli(['stop']));
+        return;
+      case 'playwright': {
+        if (real) throw new Error('Playwright 只接 mock：请去掉 --real');
+        const action = rest[0] ?? '--help';
+        if (action === 'attach') {
+          await mockStatus();
+          const pageId = await ensurePage();
+          const target = await evaluate(pageId, 'location.href');
+          const file = join(MOCK_PROFILE, 'DevToolsActivePort');
+          let endpointPort: string;
+          try {
+            endpointPort = readFileSync(file, 'utf8').split('\n')[0]!;
+          } catch {
+            throw new Error(
+              'mock Chrome 还没有 CDP 端口：先 scripts/browser.sh stop，再 scripts/browser.sh open /',
+            );
+          }
+          if (!/^\d+$/.test(endpointPort))
+            throw new Error(`CDP 端口无效：${file}`);
+          console.log(
+            playwright([
+              'attach',
+              `--cdp=http://127.0.0.1:${endpointPort}`,
+              '--config=.playwright/cli.config.json',
+            ]),
+          );
+          const tabs = playwright(['tab-list']);
+          const tab = tabs
+            .split('\n')
+            .find((line) => line.endsWith(`(${target})`))
+            ?.match(/^- (\d+):/)?.[1];
+          if (tab === undefined)
+            throw new Error(`Playwright 没找到当前 mock 页面：${target}`);
+          console.log(playwright(['tab-select', tab]));
+        } else {
+          if (
+            ['open', 'close', 'close-all', 'kill-all', 'delete-data'].includes(
+              action,
+            )
+          )
+            throw new Error(
+              'Playwright 复用 mock Chrome：用 attach 连接、detach 断开，用 scripts/browser.sh stop 关闭',
+            );
+          console.log(playwright(rest));
+        }
+        return;
+      }
+      case 'axe': {
+        if (real) throw new Error('axe 只检查 mock：请去掉 --real');
+        await mockStatus();
+        const pageId = await ensurePage();
+        const file = resolve(
+          ROOT,
+          rest[0] ?? `_notes/accessibility/axe-${Date.now()}.json`,
+        );
+        mkdirSync(dirname(file), { recursive: true });
+        await call('evaluate_script', {
+          pageId,
+          sourcePath: fileURLToPath(import.meta.resolve('axe-core/axe.min.js')),
+          format: 'script',
+        });
+        await call('evaluate_script', {
+          pageId,
+          function: `async () => {
+            if (location.origin !== ${JSON.stringify(MOCK_ORIGIN)} || !document.querySelector('main'))
+              throw new Error('先用 scripts/browser.sh open 打开要检查的 mock 页面，并等页面加载好');
+            return await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] } });
+          }`,
+          filePath: file,
+        });
+        const report = JSON.parse(readFileSync(file, 'utf8')) as AxeResults;
+        console.log(
+          JSON.stringify(
+            {
+              file,
+              url: report.url,
+              violations: report.violations.map(({ id, impact, nodes }) => ({
+                id,
+                impact,
+                nodes: nodes.length,
+              })),
+              incomplete: report.incomplete.map(({ id, nodes }) => ({
+                id,
+                nodes: nodes.length,
+              })),
+              passes: report.passes.length,
+            },
+            null,
+            2,
+          ),
+        );
+        if (report.violations.length > 0) process.exitCode = 1;
+        return;
+      }
       case 'check':
         if (real) {
           try {
@@ -365,7 +473,7 @@ const main = async (): Promise<void> => {
       }
       default:
         throw new Error(
-          `不认识的命令 ${command}：check|open|exec|screenshot|reset|scenario|coverage|offline|port`,
+          `不认识的命令 ${command}：check|open|exec|screenshot|reset|scenario|coverage|offline|port|stop|playwright|axe`,
         );
     }
   } finally {

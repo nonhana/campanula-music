@@ -81,14 +81,6 @@ OVERFLOW_JS = """() => { const w = document.documentElement.clientWidth;
   const out = [...document.querySelectorAll('main *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.right > w + 1 || r.left < -1) && getComputedStyle(e).position !== 'fixed' });
   return { pageWider: document.documentElement.scrollWidth > w, sticking: out.slice(0, 3).map(e => e.tagName.toLowerCase() + '.' + String(e.className?.baseVal ?? e.className).slice(0, 40)) } }"""
 
-# 减少动态效果：DevTools 工具的 emulate 没有这个开关，打开页面前装上这段：matchMedia 报“减少”，
-# 样式表里真正那条 @media (prefers-reduced-motion: reduce) 换成 all。读到的是真的 CSS 变量，但仍是模拟，
-# 作者要在 DevTools 的 Rendering 面板里真开一次
-REDUCED_SCRIPT = r"""(() => { const q = /prefers-reduced-motion:\s*reduce/; const real = window.matchMedia.bind(window);
-  window.matchMedia = s => q.test(s) ? real('all') : real(s);
-  const flip = () => { for (const sheet of document.styleSheets) { let rules; try { rules = sheet.cssRules } catch { continue }
-    for (const r of rules) if (r instanceof CSSMediaRule && q.test(r.media.mediaText)) r.media.mediaText = 'all' } };
-  document.addEventListener('DOMContentLoaded', flip); setInterval(flip, 300) })();"""
 REDUCED_CHECK = "() => getComputedStyle(document.documentElement).getPropertyValue('--move-panel').trim()"
 
 # 页面摆好的样子（motion / slow 的 setup、shoot 的 act）。放歌点的是 main 里第一首能放的（歌曲行里的 .play-target）
@@ -313,7 +305,7 @@ async def shoot(issue, shots, check_overflow=('768', '1024')):
       intercept intercept.js 的规则列表（不写就不拦）：先于重放，命中的按规则回
       fresh     True：先清空本机副本（IndexedDB），让歌单回到“还没同步”（之后整个曲库要真的重新同步，约 100 个请求）
       act       截图前在页面里跑的 () => ... 函数（或 SETUPS 里的名字，例如 'play-open'），它的返回值放进结果
-      reduced   True：模拟“减少动态效果”打开（REDUCED_SCRIPT）
+      reduced   True：让浏览器启用 prefers-reduced-motion；False：关闭
     返回每张的结果：文件、等了多久、act 的返回值、没人操作时挪了位置的块（moves，应为空）、页面里的报错（errors，应为空）、
     视口抽查时的溢出情况
     """
@@ -324,9 +316,10 @@ async def shoot(issue, shots, check_overflow=('768', '1024')):
         await devtools('navigate_page', type='url', url=BASE + '/')
     for shot in shots:
         size_arg, size_name = VIEWPORTS[shot['viewport']]
-        if size_arg != current:
-            await devtools('emulate', viewport=size_arg)
-            current = size_arg
+        reduced = bool(shot.get('reduced'))
+        if (size_arg, reduced) != current:
+            await devtools('emulate', viewport=size_arg, prefersReducedMotion='reduce' if reduced else 'no-preference')
+            current = (size_arg, reduced)
         rules = json.dumps({'rules': shot['intercept']}) if shot.get('intercept') else None
         # 删本机数据库时页面可能还开着它（同步在跑）：先报 blocked，App 让开后才删掉。
         # 一定要等到删完再换页面，换页面会把还没删完的请求一起丢掉
@@ -337,7 +330,7 @@ async def shoot(issue, shots, check_overflow=('768', '1024')):
           setTimeout(() => resolve('timeout'), 5000) }})""")
         if cleared not in ('kept', 'cleared'):
             raise RuntimeError(f"{shot['name']}：本机数据库没清掉（{cleared}），换个时机再拍")
-        await devtools('navigate_page', type='url', url=BASE + shot['path'], initScript=_init(issue, REDUCED_SCRIPT if shot.get('reduced') else ''))
+        await devtools('navigate_page', type='url', url=BASE + shot['path'], initScript=_init(issue))
         ready = shot.get('ready', 'main')
         waited = await run(_wait_js(ready, shot.get('text', ''), 15000))
         if not waited['ready']:
@@ -347,7 +340,7 @@ async def shoot(issue, shots, check_overflow=('768', '1024')):
             if not settled['settled']:
                 raise RuntimeError(f"{shot['name']}：等了 10 秒还有在加载的（aria-busy），截出来的不是加载完的画面")
         if shot.get('reduced') and await run(REDUCED_CHECK) != '0ms':
-            raise RuntimeError(f"{shot['name']}：减少动态效果没模拟上，截出来的不是要的状态")
+            raise RuntimeError(f"{shot['name']}：减少动态效果没生效，截出来的不是要的状态")
         if rules and not await run('() => window.__campanulaIntercept === true'):
             raise RuntimeError(f"{shot['name']}：拦截没装上，截出来的不是要的状态")
         entry = {'name': shot['name'], 'size': size_name, **waited}
@@ -427,22 +420,20 @@ def _named(value, table):
 
 
 async def _prepare(issue, name, viewport, path, reduced, init=''):
-    """换视口；要换地址、要（或要去掉）减少动态效果时重新打开页面（装上 _init），等到页面停下来。返回 (size_arg, size_name)。
-    上一次 reduced=True 装的模拟留在页面里：这次不要它时重新打开、不带它，再确认真的没了"""
+    """设置视口和减少动态效果；按需打开页面、装上 _init，等画面停下来。返回 (size_arg, size_name)。"""
     size_arg, size_name = VIEWPORTS[viewport]
-    await devtools('emulate', viewport=size_arg)
-    stale = not reduced and await run(REDUCED_CHECK, stable=False) == '0ms'
-    if path or reduced or stale:
+    await devtools('emulate', viewport=size_arg, prefersReducedMotion='reduce' if reduced else 'no-preference')
+    if path or reduced:
         url = BASE + path if path else await run('() => location.href')
-        await devtools('navigate_page', type='url', url=url, initScript=_init(issue, init + (REDUCED_SCRIPT if reduced else '')))
+        await devtools('navigate_page', type='url', url=url, initScript=_init(issue, init))
         await run(_wait_js('main', '', 15000))
         # 重放的回答晚 600ms 才到：等骨架都换成内容，setup、trigger 要点的东西才在
         await run(SETTLE_JS)
     moving = await run(REDUCED_CHECK, stable=False)
     if reduced and moving != '0ms':
-        raise RuntimeError(f'{name}：减少动态效果没模拟上')
+        raise RuntimeError(f'{name}：减少动态效果没生效')
     if not reduced and moving == '0ms':
-        raise RuntimeError(f'{name}：页面还在减少动态效果下（上一次的模拟没去掉，或者系统设置里开着），拍出来的不是正常动效')
+        raise RuntimeError(f'{name}：页面仍在减少动态效果下，拍出来的不是正常动效')
     return size_arg, size_name
 
 
@@ -454,9 +445,9 @@ async def motion(issue, name, viewport, times, *, grab=None, trigger=None, when=
                 不写就是换页：trigger 点链接或 history.back()，冻住 View Transition（::view-transition-* 上）的动画，结果里有 types（方向）
       trigger   () => ... 函数（或 TRIGGERS 里的名字，例如 'page-next'），触发变化。等 when 匹配的元素有动画在跑，再把 grab 的动画冻在第 0 毫秒
       when      默认同 grab。例如转圈：grab 是两个图标，when 是 'button > span:has(.lucide-loader-circle)'
-      path      先打开这个地址；不写就留在当前页面（要去掉上一次的减少动态效果时重新打开当前地址）
+      path      先打开这个地址；不写就留在当前页面
       setup     () => ... 函数（或 SETUPS 里的名字，例如 'play-open'），触发前把页面摆好，返回值放进结果
-      reduced   True：模拟“减少动态效果”打开；False 时页面若还在减少动态效果下就重新打开，仍在就报错
+      reduced   True：让浏览器启用 prefers-reduced-motion；False：关闭
       network   'Slow 4G' 这类限速，只在触发时（on_load 时在打开页面时）生效，拍完取消
       on_load   True：重新打开页面（网络图片加随机参数重新下载），冻住 grab 匹配的元素新开始的 CSS 过渡（封面淡入），等冻住 count 个再拍；不用 trigger
     返回：文件名、冻住的动画（时长和动的属性，减少动态效果时应该只剩 opacity、不超过 150ms）、setup 的返回值
@@ -466,18 +457,17 @@ async def motion(issue, name, viewport, times, *, grab=None, trigger=None, when=
     out_dir = ROOT / '_notes/screenshots' / f'issue-{issue}'
     out_dir.mkdir(parents=True, exist_ok=True)
     size_arg, size_name = VIEWPORTS[viewport]
-    extra = REDUCED_SCRIPT if reduced else ''
     try:
         if on_load:
-            await devtools('emulate', viewport=size_arg)
+            await devtools('emulate', viewport=size_arg, prefersReducedMotion='reduce' if reduced else 'no-preference')
             # 先不限速打开，再限速、忽略缓存重新加载，装上“新开始的过渡就冻住”
             if path:
                 await devtools('navigate_page', type='url', url=BASE + path, initScript=_init(issue))
                 await run(_wait_js('main', '', 15000))
             if network:
-                await devtools('emulate', viewport=size_arg, networkConditions=network)
+                await devtools('emulate', viewport=size_arg, prefersReducedMotion='reduce' if reduced else 'no-preference', networkConditions=network)
             await devtools('navigate_page', type='reload', ignoreCache=True, timeout=30000,
-                           initScript=_init(issue, FRESH_IMAGES_SCRIPT + FREEZE_SCRIPT + extra + f'window.__campanulaFreeze.load = {json.dumps(grab)};'))
+                           initScript=_init(issue, FRESH_IMAGES_SCRIPT + FREEZE_SCRIPT + f'window.__campanulaFreeze.load = {json.dumps(grab)};'))
         else:
             await _prepare(issue, name, viewport, path, reduced, FREEZE_SCRIPT)
         await run(f'() => {{ {FREEZE_SCRIPT} return true }}', stable=False)
@@ -495,7 +485,7 @@ async def motion(issue, name, viewport, times, *, grab=None, trigger=None, when=
                     break
         else:
             if network:
-                await devtools('emulate', viewport=size_arg, networkConditions=network)
+                await devtools('emulate', viewport=size_arg, prefersReducedMotion='reduce' if reduced else 'no-preference', networkConditions=network)
             wait = f'F.waitAndGrab({json.dumps(grab)}, {json.dumps(when or grab)}, 15000)' if grab else 'F.waitTurn(15000)'
             caught = await run(f"""async () => {{ const F = window.__campanulaFreeze; F.release(); await ({trigger})();
               return await {wait} }}""", stable=False)
@@ -512,7 +502,7 @@ async def motion(issue, name, viewport, times, *, grab=None, trigger=None, when=
     finally:
         await run('() => window.__campanulaFreeze?.release() ?? true', stable=False)
         if network:
-            await devtools('emulate', viewport=size_arg)
+            await devtools('emulate', viewport=size_arg, prefersReducedMotion='reduce' if reduced else 'no-preference')
 
 
 # 慢放：Element.prototype.animate（Svelte 过渡、Web Animations）的时长、延迟乘上 factor，CSS 过渡和动画按 1 / factor 的速度走。

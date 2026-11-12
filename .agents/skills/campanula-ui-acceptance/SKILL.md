@@ -1,6 +1,6 @@
 ---
 name: campanula-ui-acceptance
-description: Campanula 界面票的设计参照，和作者点名时的截图、浏览器检查工具。Use when 写界面票前读原型源码；作者要求拍截图、对照原型基准、查骨架挪位置、返回恢复位置、键盘焦点、动效逐帧。
+description: Campanula 界面票的设计参照和作者点名的浏览器检查。Use when 写界面票前读原型源码；作者要求截图、骨架位置、返回恢复、键盘焦点、动效逐帧、操作 trace 或 axe 无障碍扫描。
 ---
 
 两种用法：
@@ -40,17 +40,18 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 **默认走 mock**：`pnpm dev:mock`（端口 5174）加 `scripts/browser.sh`（会话 `campanula-mock`，不需要登录；打开页面自动用测试账号登录，左下角显示 `Mock · 测试数据`）。mock 的歌曲、封面、音频都来自本地，写操作只改 mock 内存状态，安全。详见 `docs/agents/mock.md` 和 `docs/agents/browser.md`。
 
 - 开发时看一眼：`scripts/browser.sh open /`、`scripts/browser.sh exec "<js>"`、`scripts/browser.sh screenshot <文件>`、`scripts/browser.sh reset`、`scripts/browser.sh scenario <场景>`。同一时间只允许一个 agent（文件锁）。
+- 操作回放用 `scripts/playwright.sh`，无障碍扫描用 `scripts/browser.sh axe`；接入、trace、报告位置与退出码见 `docs/agents/browser.md` 对应章节。Playwright 复用 mock Chrome；这些诊断不新增 `@playwright/test` 测试，也不加入默认 CI。
 - 反复开页面不会碰网易云：mock 的所有回答都来自录制，想补数据跑 `scripts/browser.sh coverage` 看缺什么。
 - **真账号**只在作者交付前试用时用：`scripts/browser.sh check --real` 先查 `/api/account`，不是登录态就停下请作者在专用窗口（`scripts/axi.sh`）扫码，不继续开新窗口。真账号会真的写进网易云：
   - 点红心、收藏、加入歌单这类按钮会真的写进网易云。检查和截图里不点它们；要拍它们的状态，先装拦截（第 4 步），或者断网（`scripts/browser.sh offline on`，App 断网时不发请求）。
   - 拦截按路径匹配、不分请求方法：`/api/hearts` 的同步读取和红心写入是同一个路径，拦不开，红心只能断网拍。收藏、加歌的路径（`/api/(playlists|albums|artists)/\d+/(collect|tracks)`）只有写入，拦得开（#30）。
 - reviewer 不自己启动 Chrome：静态 review 不碰浏览器；要画面时由父 agent 用 mock 拍好，把结论和截图路径交给 reviewer。
 - 页面里的等待都要有上限：等元素、等文字用轮询，最多几秒；等图片看 `img.complete`，不用 `await img.decode()`（#32 一直不返回，把 DevTools 连接卡死，之后七次调用全失败）。
-- 浏览器卡住、连不上：`scripts/axi.sh stop`（真账号）或 `chrome-devtools-axi` 的会话停止命令；mock 直接重开 `scripts/browser.sh open /`。
+- 浏览器卡住、连不上：先 `scripts/playwright.sh detach`（已连接时），再 `scripts/browser.sh stop`、`scripts/browser.sh open /`；真账号的 stop 加 `--real`，重新打开前先查登录。
 - 手机曲库的“我喜欢 / 歌单”标签用 `replaceState` 切换，不留浏览记录。在标签页上 `history.back()` 会离开 App，测“返回恢复滚动”要从歌单页返回。
 - 手机视口和桌面视口互换（`emulate` 的 `mobile` 变了）会重新加载页面：页面里装的脚本、播放队列都没了。先换视口，再放歌、再装脚本。
-- `emulate` 没有“减少动态效果”。用 `sweep.py` 的 `reduced=True` 模拟：它让样式表里真正那条媒体查询生效，读到的是真的 CSS 变量；但仍是模拟，回给作者时说明这一点，真的效果要他在 DevTools 的 Rendering 面板里开。模拟装在页面里，换回正常动效要重新打开页面（`motion`、`slow` 会自己做，还在就报错）。
-- 页面藏到后台：开新标签页不会让原来的页面变成 `hidden`。用 `sweep.py` 的 `hidden()`（或 `HIDE_JS` / `SHOW_JS`）在页面里改 `visibilityState`。
+- `sweep.py` 的 `reduced=True` 用浏览器的 `emulate.prefersReducedMotion='reduce'`，CSS 媒体查询和 `matchMedia` 都生效；正常动效显式设为 `no-preference`，不改写页面的样式表或 `matchMedia`。同次调用要带全视口、减少动态效果和限速参数，emulate 会替换上次设置。
+- 页面藏到后台：开新标签页不会让原来的页面变成 `hidden`。`sweep.py` 的 `hidden()`（或 `HIDE_JS` / `SHOW_JS`）只在页面里模拟 `visibilityState`，不证明浏览器后台节流或真机锁屏行为。
 - 量帧时间、长任务用 `pnpm build && pnpm preview`：开发服务器上 Svelte 的开发模式检查会把数字放大。
 
 ## 4. 检查和截图：作者点名时交给子代理，用 sweep.py
@@ -115,6 +116,7 @@ r = await motion(51, 'wheel-page-next', 'desktop', [0, 60, 150, 300, 600],
 - `motion` 触发变化，等 `grab`（或 `when`）上的动画开始，把它们停在 `times` 的每个毫秒数各拍一张，存成 `<名字>-f<毫秒>-<宽x高>.png`。带延迟的（歌名晚 80ms 才飘）也拍得到，拍到某一帧时已经走完的会真的走完。转圈、骨架这类循环不冻。各参数见 `sweep.py` 里 `motion` 的注释。
 - `setup`、`trigger`、`grab` 可以写 `sweep.py` 里 `SETUPS`、`TRIGGERS`、`GRABS` 的名字（`'play'`、`'play-open'`、`'page-next'`、`'bar-previous'`、`'pick-other'`、`'page'`、`'bar'`…），也可以写自己的函数、选择器。播放页开着时播放条被盖住：拍播放条的组用 `setup='play'`、`path='/'` 重新打开。
 - 结果里的 `anims` 是冻住的每个动画的时长和动的属性，对照 DESIGN.md 的数字；`reduced=True` 时只能有 `opacity`，不超过 150ms。
+- 冻帧只检查这些时刻的画面；是否掉帧、主线程是否阻塞要看生产构建下实际运行的 performance trace。
 - 打断、连续触发（连按三次下一首、转到一半又切歌）用 `slow(票号, 名字, 视口, [(秒, 触发)…], [截图的秒…])`：动画放慢 10 倍，按墙上的时间触发和截图，文件名里的毫秒是折回的动效时刻。
 - 抽屉（播放页、底部弹层）是 JS 补间，`motion`、`slow` 冻不住，用 `tween(票号, 名字, 视口, [毫秒…], trigger='bar-open', reset='page-close')`：每一帧从头触发一次，把补间停在那一毫秒拍。拖到一半松手弹回：`setup=drag_js(选择器, -200)`（按住往上拖 200px）、`trigger='release'`。先 `await run(SETUPS['play'])` 放好歌。
 - 看不见时不动：先 `await run(SETUPS['play-open'])` 摆好页面，再 `await hidden(['page-next', 'page-next'])`，后台期间和回来以后新开始的动画都应是 0，画面上只剩一张封面、一块歌名。

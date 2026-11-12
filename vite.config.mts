@@ -28,6 +28,12 @@ export default defineConfig(({ command }) => ({
       command === 'serve' && process.env.CAMPANULA_MOCK === '1',
     ),
   },
+  server: {
+    watch: {
+      // trace 会写出 HTML 快照，监听它们会在录制中刷新 App。
+      ignored: ['**/_notes/**'],
+    },
+  },
   plugins: [
     // SvelteKit 没有 index.html，UnoCSS 的 transformIndexHtml 只会让每次读配置都警告一次（kit 3.1.0 关不掉）：摘掉它
     ...((plugins: Plugin[]): Plugin[] => {

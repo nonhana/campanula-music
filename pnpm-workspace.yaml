@@ -35,7 +35,11 @@ catalogs:
     tough-cookie: ^6.1.0
 
   test:
+    '@playwright/cli': 0.1.24
     '@sinonjs/fake-timers': ^15.4.0
+    axe-core: 4.14.0
+    chrome-devtools-axi: 0.1.46
+    chrome-devtools-mcp: 1.13.0
     fake-indexeddb: ^6.2.8
     vitest: ^5.1.0
 

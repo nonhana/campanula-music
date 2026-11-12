@@ -15,6 +15,7 @@ pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同
 - mock 的 SvelteKit 输出目录是 `.svelte-kit-mock`，测试起的服务端是 `.svelte-kit-test`，都和 5173 的 `.svelte-kit` 分开：SvelteKit 开发时把环境变量的值写进 `<输出目录>/generated/dev/env/config.js`，共用时 mock 一启动、测试一跑，5173 就换成别人的 `COOKIE_SECRET`，解不开真账号的登录 Cookie，要重新扫码。它们启动时还会把 `node_modules/$app/tsconfig.json` 的 `rootDirs` 改成自己的目录，所以根目录 `tsconfig.json` 写死了 `.svelte-kit/types`。
 - 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser.sh open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的；mock 的登录 Cookie 叫 `campanula_login_mock`（`dev:mock` 设置 `LOGIN_COOKIE_NAME`），和 5173 的 `campanula_login` 分开，同一个浏览器开两个端口也不会互相顶掉登录态。
 - 页面左下角显示 `Mock · 测试数据`。
+- 操作回放与无障碍扫描走 `scripts/playwright.sh` 和 `scripts/browser.sh axe`，复用同一 mock Chrome；命令和报告约定见 `browser.md`。
 - 退出登录后，UI 的扫码 / 短信登录流程照常可用；mock 的二维码会直接成功。要回到已登录，再访问一次 `/mock/login`。
 - `/design` 在 `pnpm dev` 和 `pnpm dev:mock` 都能打开；设计页主体不进生产包，部署后的路由返回 404（#61）。
 
