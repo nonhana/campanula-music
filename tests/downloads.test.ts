@@ -68,6 +68,8 @@ const THIRD = {
 
 const LIKED = { kind: 'playlist', id: 900000001 } as const;
 const DOWNLOADS = { kind: 'downloads' } as const;
+const COMMUTE = { kind: 'playlist', id: 91001, name: '上班' } as const;
+const WEEKEND = { kind: 'playlist', id: 91002, name: '周末' } as const;
 
 const serveLoser = (device: Device): void => {
   device.files.put(LOSER.audio, { bytes: LOSER.bytes, type: 'audio/mpeg' });
@@ -1666,6 +1668,295 @@ describe('下载管理（#40）', () => {
     expect(app.state.downloads.bytes).toBe(await sumsOf([SECOND.downloadUrl]));
     expect(both).toBeGreaterThan(app.state.downloads.bytes!);
   });
+
+  it('音频传输中加入第二个来源，重开后按第一个歌单删除仍保留文件', async () => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+    const song = likedSong(tab.app, LOSER.id);
+    const first = COMMUTE;
+    const second = WEEKEND;
+    serveLoser(device);
+    const transfer = held();
+    device.files.next(LOSER.audio, { until: transfer.until });
+    await world.netease.reply(LOSER.downloadUrl);
+    await world.netease.reply(LYRICS);
+    await world.netease.reply(ALBUM_MISSING);
+    await tab.app.downloadSongs([song], first);
+    await world.settle();
+    expect(tab.app.state.downloads.tasks.get(song.id)?.status).toBe(
+      'downloading',
+    );
+
+    await tab.app.downloadSongs([song], second);
+    transfer.release();
+    await world.settle();
+    expect(tab.app.state.downloads.sourcesOf(song.id)).toEqual([first, second]);
+
+    const reopened = await reopen(device, tab);
+    const { app } = reopened;
+    expect
+      .soft(app.state.downloads.sourcesOf(song.id))
+      .toEqual([first, second]);
+    expect.soft(await app.deletePlaylistDownloads(first.id)).toEqual({
+      removed: 0,
+      kept: 1,
+      freed: 0,
+    });
+    expect(app.state.downloads.sourcesOf(song.id)).toEqual([second]);
+    expect(await storedDownloads(device)).toMatchObject([
+      { sources: [second], audio: { size: LOSER.bytes, type: 'audio/mpeg' } },
+    ]);
+    expect(audioStarts(device, LOSER.audio)).toEqual([0]);
+
+    device.setOnline(false);
+    app.play(DOWNLOADS, song.id);
+    await world.settle();
+    const player = reopened.audio.find((audio) => !audio.paused)!;
+    expect(device.objectUrls.blobOf(player.src)).toMatchObject({
+      size: LOSER.bytes,
+      type: 'audio/mpeg',
+    });
+    player.ready();
+    await world.settle();
+    expect(reopened.sounding()).toBe(player);
+    expect(playUrlRequests(device)).toEqual([]);
+
+    const bytes = app.state.downloads.bytes;
+    expect(await app.deletePlaylistDownloads(second.id)).toEqual({
+      removed: 1,
+      kept: 0,
+      freed: bytes,
+    });
+    expect(app.state.downloads.songs).toEqual([]);
+    expect(app.state.downloads.bytes).toBe(0);
+    expect(await storedDownloads(device)).toEqual([]);
+    reopened.close();
+    const empty = await device.open();
+    expect(empty.app.state.downloads.songs).toEqual([]);
+  });
+
+  it('成品写入完成通知返回前新增来源，重开后也保留新增来源', async () => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+    const song = likedSong(tab.app, LOSER.id);
+    const first = COMMUTE;
+    const second = WEEKEND;
+    serveLoser(device);
+    await world.netease.reply(LOSER.downloadUrl);
+    await world.netease.reply(LYRICS);
+    await world.netease.reply(ALBUM_MISSING);
+    const writing = device.holdNextWriteCompletion('downloads');
+    await tab.app.downloadSongs([song], first);
+    await writing.reached;
+    expect(tab.app.state.downloads.has(song.id)).toBe(false);
+    expect(await storedDownloads(device)).toMatchObject([
+      { sources: [first], audio: { size: LOSER.bytes } },
+    ]);
+
+    await tab.app.downloadSongs([song], second);
+    writing.release();
+    await world.settle();
+    expect
+      .soft(tab.app.state.downloads.sourcesOf(song.id))
+      .toEqual([first, second]);
+    expect
+      .soft(await storedDownloads(device))
+      .toMatchObject([
+        { sources: [first, second], audio: { size: LOSER.bytes } },
+      ]);
+    const { app } = await reopen(device, tab);
+    expect(app.state.downloads.sourcesOf(song.id)).toEqual([first, second]);
+    expect(audioStarts(device, LOSER.audio)).toEqual([0]);
+  });
+
+  it.each(['传输中', '成品写入中'] as const)(
+    '%s移除第一个来源，重开后不会把它加回来',
+    async (phase) => {
+      const device = world.device();
+      const tab = await signInWithLiked(device);
+      const song = likedSong(tab.app, LOSER.id);
+      serveLoser(device);
+      const transfer = held();
+      device.files.next(LOSER.audio, { until: transfer.until });
+      await world.netease.reply(LOSER.downloadUrl);
+      await world.netease.reply(LYRICS);
+      await world.netease.reply(ALBUM_MISSING);
+      await tab.app.downloadSongs([song], COMMUTE);
+      await world.settle();
+      await tab.app.downloadSongs([song], WEEKEND);
+      const writing =
+        phase === '成品写入中'
+          ? device.holdNextWriteCompletion('downloads')
+          : null;
+      if (writing) {
+        transfer.release();
+        await writing.reached;
+        expect(await storedDownloads(device)).toMatchObject([
+          { sources: [COMMUTE, WEEKEND] },
+        ]);
+      }
+
+      await tab.app.deletePlaylistDownloads(COMMUTE.id);
+      expect(tab.app.state.downloads.tasks.get(song.id)?.sources).toEqual([
+        WEEKEND,
+      ]);
+      transfer.release();
+      writing?.release();
+      await world.settle();
+      expect(tab.app.state.downloads.sourcesOf(song.id)).toEqual([WEEKEND]);
+      expect(await storedDownloads(device)).toMatchObject([
+        { sources: [WEEKEND], audio: { size: LOSER.bytes } },
+      ]);
+      const { app } = await reopen(device, tab);
+      expect(app.state.downloads.sourcesOf(song.id)).toEqual([WEEKEND]);
+      expect(audioStarts(device, LOSER.audio)).toEqual([0]);
+    },
+  );
+
+  it('为新增来源再次保存期间又移除旧来源，最终成品只保留剩余来源', async () => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+    const song = likedSong(tab.app, LOSER.id);
+    serveLoser(device);
+    await world.netease.reply(LOSER.downloadUrl);
+    await world.netease.reply(LYRICS);
+    await world.netease.reply(ALBUM_MISSING);
+    const firstWrite = device.holdNextWriteCompletion('downloads');
+    await tab.app.downloadSongs([song], COMMUTE);
+    await firstWrite.reached;
+    await tab.app.downloadSongs([song], WEEKEND);
+    const secondWrite = device.holdNextWriteCompletion('downloads');
+    firstWrite.release();
+    await secondWrite.reached;
+    expect(await storedDownloads(device)).toMatchObject([
+      { sources: [COMMUTE, WEEKEND] },
+    ]);
+
+    await tab.app.deletePlaylistDownloads(COMMUTE.id);
+    secondWrite.release();
+    await world.settle();
+    expect(tab.app.state.downloads.sourcesOf(song.id)).toEqual([WEEKEND]);
+    expect(await storedDownloads(device)).toMatchObject([
+      { sources: [WEEKEND], audio: { size: LOSER.bytes } },
+    ]);
+    const { app } = await reopen(device, tab);
+    expect(app.state.downloads.sourcesOf(song.id)).toEqual([WEEKEND]);
+  });
+
+  it.each([
+    ['传输中', '取消'],
+    ['传输中', '删除最后一个来源'],
+    ['成品写入中', '取消'],
+    ['成品写入中', '删除最后一个来源'],
+  ] as const)('%s%s，释放停点后成品不会写回来', async (phase, action) => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+    const song = likedSong(tab.app, LOSER.id);
+    serveLoser(device);
+    const transfer = held();
+    device.files.next(LOSER.audio, { until: transfer.until });
+    await world.netease.reply(LOSER.downloadUrl);
+    await world.netease.reply(LYRICS);
+    await world.netease.reply(ALBUM_MISSING);
+    await tab.app.downloadSongs([song], COMMUTE);
+    await world.settle();
+    const writing =
+      phase === '成品写入中'
+        ? device.holdNextWriteCompletion('downloads')
+        : null;
+    if (writing) {
+      transfer.release();
+      await writing.reached;
+      expect(await storedDownloads(device)).toHaveLength(1);
+    }
+
+    if (action === '取消') tab.app.cancelDownload(song.id);
+    else await tab.app.deletePlaylistDownloads(COMMUTE.id);
+    transfer.release();
+    writing?.release();
+    await world.settle();
+    expect(tab.app.state.downloads.tasks.size).toBe(0);
+    expect(tab.app.state.downloads.songs).toEqual([]);
+    expect(tab.app.state.downloads.bytes).toBe(0);
+    expect(await storedDownloads(device)).toEqual([]);
+    expect(failedNoticeShown(tab.app)).toBe(false);
+    const { app } = await reopen(device, tab);
+    expect(app.state.downloads.songs).toEqual([]);
+    expect(app.state.downloads.tasks.size).toBe(0);
+  });
+
+  it.each([
+    { kind: 'single' },
+    { kind: 'album', id: 3149073, name: '专辑' },
+  ] as const)(
+    '已有成品增加歌单来源，重开并删除歌单时保留 $kind 来源',
+    async (source) => {
+      const device = world.device();
+      const tab = await signInWithLiked(device);
+      const song = likedSong(tab.app, LOSER.id);
+      serveLoser(device);
+      await world.netease.reply(LOSER.downloadUrl);
+      await world.netease.reply(LYRICS);
+      await world.netease.reply(ALBUM_MISSING);
+      await tab.app.downloadSongs([song], source);
+      await world.settle();
+      await tab.app.downloadSongs([song], COMMUTE);
+      await tab.app.downloadSongs([song], COMMUTE);
+      const { app } = await reopen(device, tab);
+      expect(app.state.downloads.sourcesOf(song.id)).toEqual([source, COMMUTE]);
+      expect(await app.deletePlaylistDownloads(COMMUTE.id)).toEqual({
+        removed: 0,
+        kept: 1,
+        freed: 0,
+      });
+      expect(app.state.downloads.sourcesOf(song.id)).toEqual([source]);
+      expect(await storedDownloads(device)).toMatchObject([
+        { sources: [source], audio: { size: LOSER.bytes } },
+      ]);
+      expect(audioStarts(device, LOSER.audio)).toEqual([0]);
+    },
+  );
+
+  it.each([false, true])(
+    '补存新来源的事务中止，不留下旧来源的成品（中止期间取消：%s）',
+    async (cancel) => {
+      const device = world.device();
+      const tab = await signInWithLiked(device);
+      const song = likedSong(tab.app, LOSER.id);
+      serveLoser(device);
+      await world.netease.reply(LOSER.downloadUrl);
+      await world.netease.reply(LYRICS);
+      await world.netease.reply(ALBUM_MISSING);
+      const firstWrite = device.holdNextWriteCompletion('downloads');
+      await tab.app.downloadSongs([song], COMMUTE);
+      await firstWrite.reached;
+      await tab.app.downloadSongs([song], WEEKEND);
+      const secondWrite = device.holdNextWriteCompletion('downloads', {
+        abort: true,
+      });
+      firstWrite.release();
+      await secondWrite.reached;
+      if (cancel) tab.app.cancelDownload(song.id);
+      secondWrite.release();
+      await world.settle();
+
+      expect(tab.app.state.downloads.songs).toEqual([]);
+      expect.soft(await storedDownloads(device)).toEqual([]);
+      if (cancel) {
+        expect(tab.app.state.downloads.tasks.size).toBe(0);
+        expect(failedNoticeShown(tab.app)).toBe(false);
+      } else {
+        expect(tab.app.state.downloads.tasks.get(song.id)).toMatchObject({
+          status: 'failed',
+          sources: [COMMUTE, WEEKEND],
+          failure: { kind: 'saveFailed' },
+        });
+      }
+      const { app } = await reopen(device, tab);
+      expect(app.state.downloads.songs).toEqual([]);
+      expect(app.state.downloads.tasks.size).toBe(0);
+    },
+  );
 
   it('按歌单删除下载：只删从这张歌单下的；别的歌单、专辑也下载过或者单独下载过的留着，只去掉这张歌单（规则⑦）', async () => {
     const device = world.device();

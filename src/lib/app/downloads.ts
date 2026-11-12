@@ -686,9 +686,22 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       pause();
       return 'wait';
     }
+    let saved = record;
+    let committed = false;
     try {
-      await local.saveDownload(record);
+      for (;;) {
+        const sources = liveSources(songId, record.sources);
+        saved = { ...record, sources: [...sources] };
+        await local.saveDownload(saved);
+        committed = true;
+        if (attemptOf(songId) !== token || !tasks.has(songId)) {
+          await local.deleteDownloads([songId]).catch(() => {});
+          return 'next';
+        }
+        if (liveSources(songId, record.sources) === sources) break;
+      }
     } catch (error) {
+      if (committed) await local.deleteDownloads([songId]);
       if (attemptOf(songId) !== token || !tasks.has(songId)) return 'next';
       if (storageFull(error)) {
         ready.set(songId, record);
@@ -712,15 +725,6 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       ready.set(songId, record);
       return fail(record.song, record.sources, { kind: 'saveFailed' });
     }
-    if (attemptOf(songId) !== token || !tasks.has(songId)) {
-      await local.deleteDownloads([songId]).catch(() => {});
-      return 'next';
-    }
-    const sources = liveSources(songId, record.sources);
-    const saved = {
-      ...record,
-      sources: [...sources],
-    };
     setRecords(new Map(records).set(songId, saved));
     tasks.delete(songId);
     ready.delete(songId);

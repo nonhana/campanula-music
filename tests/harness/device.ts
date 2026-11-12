@@ -27,6 +27,7 @@ import {
   FakeWatchman,
   MediaTasks,
 } from './browser';
+import { held } from './hold';
 
 export interface SentRequest {
   method: string;
@@ -63,6 +64,13 @@ export interface Device {
   cookies: () => Promise<Cookie[]>;
   setCookie: (setCookie: string) => Promise<void>;
   stored: () => Promise<Record<string, [IDBValidKey, unknown][]>>;
+  holdNextWriteCompletion: (
+    store: string,
+    options?: { abort?: boolean },
+  ) => {
+    reached: Promise<void>;
+    release: () => void;
+  };
   preload: (
     version: number,
     prepare: (database: IDBDatabase) => void,
@@ -130,6 +138,14 @@ export const createDevice = (
   const objectUrls = new FakeObjectUrls();
   const folders = new FakeFolders();
   const storage = new FakeStorage();
+  let heldWrite:
+    | {
+        store: string;
+        reached: ReturnType<typeof held>;
+        completion: ReturnType<typeof held>;
+        abort: boolean;
+      }
+    | undefined;
 
   const track = (work: Promise<unknown>): void => {
     inFlight.add(work);
@@ -139,6 +155,40 @@ export const createDevice = (
   const deviceIndexedDB = Object.create(indexedDB) as IDBFactory;
   deviceIndexedDB.open = (name, version) => {
     const request = indexedDB.open(name, version);
+    request.addEventListener('success', () => {
+      const database = request.result;
+      database.transaction = (...args) => {
+        const started = IDBDatabase.prototype.transaction.apply(database, args);
+        const hold = heldWrite;
+        if (
+          hold &&
+          started.mode === 'readwrite' &&
+          started.objectStoreNames.contains(hold.store)
+        ) {
+          heldWrite = undefined;
+          // IndexedDB 的 complete 通知排在提交之后，只延后通知，不改变事务顺序。
+          // https://w3c.github.io/IndexedDB/#commit-transaction
+          for (const name of hold.abort
+            ? ['onerror', 'onabort']
+            : ['oncomplete']) {
+            let notify: IDBTransaction['oncomplete'] = null;
+            Object.defineProperty(started, name, {
+              get: () => (event: Event) => {
+                hold.reached.release();
+                void hold.completion.until.then(() =>
+                  notify?.call(started, event),
+                );
+              },
+              set: (callback: IDBTransaction['oncomplete']) => {
+                notify = callback;
+              },
+            });
+          }
+          if (hold.abort) queueMicrotask(() => started.abort());
+        }
+        return started;
+      };
+    });
     track(
       new Promise((resolve) => {
         request.addEventListener('success', resolve);
@@ -290,6 +340,13 @@ export const createDevice = (
     cookies: () => jar.getCookies(origin),
     setCookie: async (setCookie) => {
       await jar.setCookie(setCookie, origin);
+    },
+    holdNextWriteCompletion(store, { abort = false } = {}) {
+      if (heldWrite) throw new Error('上一个本机写入停点还没到');
+      const reached = held();
+      const completion = held();
+      heldWrite = { store, reached, completion, abort };
+      return { reached: reached.until, release: completion.release };
     },
     async preload(version, prepare) {
       if ((await indexedDB.databases()).some((info) => info.name === LOCAL_DB))
