@@ -56,8 +56,10 @@ export interface LoginContext {
   session: SessionRound;
   clock: Clock;
   page: PageVisibility;
+  withLoginCookie: (send: () => Promise<void>) => Promise<void>;
   // 先发完还没发出去的退出，否则它会把新的登录 Cookie 清掉；退出没发成，这次登录就不发
   beforeLogin: () => Promise<RequestFailure | null>;
+  discardLogin: () => Promise<void>;
   read: () => LoginState;
   write: (login: LoginState) => void;
   signedIn: (account: Account) => Promise<void>;
@@ -100,6 +102,9 @@ export const createLogin = (context: LoginContext): Login => {
     generation += 1;
     shown = null;
     cancelPoll();
+    const { captcha, submit } = context.read().sms;
+    if (captcha.status === 'sending') setSms({ captcha: { status: 'idle' } });
+    if (submit.status === 'submitting') setSms({ submit: { status: 'idle' } });
   };
 
   const finish = (account: Account): Promise<void> => {
@@ -115,8 +120,12 @@ export const createLogin = (context: LoginContext): Login => {
   const poll = async (mine: number, qr: ShownQr): Promise<void> => {
     if (generation !== mine) return;
     if (page.visibilityState === 'hidden') return schedulePoll(qr);
-    const result = await api.post(endpoints.checkLoginQr, { key: qr.key });
-    if (generation === mine) await handleCheck(qr, result, false);
+    await request(
+      mine,
+      () => api.post(endpoints.checkLoginQr, { key: qr.key }),
+      (result) => handleCheck(qr, result, false),
+      (check) => check.status === 'signedIn',
+    );
   };
 
   const handleCheck = async (
@@ -165,26 +174,43 @@ export const createLogin = (context: LoginContext): Login => {
     if (change.kind !== 'signedIn') stopQr();
   });
 
-  const afterPendingLogout = async <T>(
+  const request = <T>(
+    mine: number,
     send: () => Promise<Result<T>>,
-  ): Promise<Result<T>> => {
-    const blocked = await context.beforeLogin();
-    return blocked ? { ok: false, failure: blocked } : send();
-  };
+    accept: (result: Result<T>) => void | Promise<void>,
+    signedIn: (value: T) => boolean = () => false,
+  ): Promise<void> =>
+    context.withLoginCookie(async () => {
+      if (generation !== mine) return;
+      const blocked = await context.beforeLogin();
+      if (generation !== mine) return;
+      const result: Result<T> = blocked
+        ? { ok: false, failure: blocked }
+        : await send();
+      if (generation !== mine) {
+        // 响应头已经写进 Cookie，清掉本次取消的登录后才能让下一个请求接手。
+        if (result.ok && signedIn(result.value)) await context.discardLogin();
+        return;
+      }
+      await accept(result);
+    });
 
   return {
     async startQr() {
       forget();
       const mine = generation;
       setQr({ step: 'loading' });
-      const result = await afterPendingLogout(() =>
-        api.post(endpoints.loginQr),
+      await request(
+        mine,
+        () => api.post(endpoints.loginQr),
+        (result) => {
+          if (!result.ok)
+            return setQr({ step: 'failed', failure: result.failure });
+          shown = { key: result.value.key, image: result.value.image };
+          setQr({ step: 'waiting', image: shown.image });
+          schedulePoll(shown);
+        },
       );
-      if (generation !== mine) return;
-      if (!result.ok) return setQr({ step: 'failed', failure: result.failure });
-      shown = { key: result.value.key, image: result.value.image };
-      setQr({ step: 'waiting', image: shown.image });
-      schedulePoll(shown);
     },
     stopQr,
     async continueQr() {
@@ -194,36 +220,43 @@ export const createLogin = (context: LoginContext): Login => {
         throw new Error('只有在等行为验证时才能继续扫码登录');
       const mine = generation;
       setQr({ ...step, checking: true });
-      const result = await api.post(endpoints.checkLoginQr, { key: qr.key });
-      if (generation === mine) await handleCheck(qr, result, true);
+      await request(
+        mine,
+        () => api.post(endpoints.checkLoginQr, { key: qr.key }),
+        (result) => handleCheck(qr, result, true),
+        (check) => check.status === 'signedIn',
+      );
     },
     async sendCaptcha(phone) {
       setSms({
         captcha: { status: 'sending' },
       });
-      const result = await afterPendingLogout(() =>
-        api.post(endpoints.sendCaptcha, { phone }),
+      await request(
+        generation,
+        () => api.post(endpoints.sendCaptcha, { phone }),
+        (result) =>
+          setSms({
+            captcha: result.ok
+              ? { status: 'sent', resendAt: clock.now() + CAPTCHA_RESEND_MS }
+              : { status: 'failed', failure: result.failure },
+          }),
       );
-      setSms({
-        captcha: result.ok
-          ? { status: 'sent', resendAt: clock.now() + CAPTCHA_RESEND_MS }
-          : { status: 'failed', failure: result.failure },
-      });
     },
     async loginWithCaptcha(phone, captcha) {
+      forget();
+      const mine = generation;
       setSms({
         submit: { status: 'submitting' },
       });
-      const result = await afterPendingLogout(() =>
-        api.post(endpoints.loginSms, { phone, captcha }),
+      await request(
+        mine,
+        () => api.post(endpoints.loginSms, { phone, captcha }),
+        (result) => {
+          if (result.ok) return finish(result.value.account);
+          setSms({ submit: { status: 'failed', failure: result.failure } });
+        },
+        () => true,
       );
-      if (result.ok) {
-        await finish(result.value.account);
-      } else {
-        setSms({
-          submit: { status: 'failed', failure: result.failure },
-        });
-      }
     },
   };
 };

@@ -369,16 +369,17 @@ export const createApp = (browser: BrowserCapabilities): App => {
   });
 
   let finishingLogout: Promise<RequestFailure | null> | undefined;
+  const finishPendingLogout = async (): Promise<RequestFailure | null> => {
+    if (!(await local.pendingLogout())) return null;
+    await savedQueue.pending.clear();
+    const result = await api.post(endpoints.logout);
+    if (!result.ok) return result.failure;
+    await local.setPendingLogout(false);
+    return null;
+  };
   const finishLogout = (): Promise<RequestFailure | null> => {
     finishingLogout ??= browser.locks
-      .request(LOGIN_COOKIE_LOCK, async () => {
-        if (!(await local.pendingLogout())) return null;
-        await savedQueue.pending.clear();
-        const result = await api.post(endpoints.logout);
-        if (!result.ok) return result.failure;
-        await local.setPendingLogout(false);
-        return null;
-      })
+      .request(LOGIN_COOKIE_LOCK, finishPendingLogout)
       .finally(() => {
         finishingLogout = undefined;
       });
@@ -628,6 +629,7 @@ export const createApp = (browser: BrowserCapabilities): App => {
     await entered;
     if (!round.isCurrent(mine) || !shown) return;
     await local.setCachedAccount(account).catch(() => {});
+    if (!round.isCurrent(mine)) return;
     if (quality) player.setQuality(quality);
     update({
       session: { status: 'signedIn', account },
@@ -646,10 +648,18 @@ export const createApp = (browser: BrowserCapabilities): App => {
     session: round,
     clock: browser.clock,
     page: browser.page,
-    beforeLogin: finishLogout,
+    withLoginCookie: (send) => browser.locks.request(LOGIN_COOKIE_LOCK, send),
+    beforeLogin: finishPendingLogout,
+    discardLogin: async () => {
+      await local.setPendingLogout(true);
+      await finishPendingLogout();
+    },
     read: () => state.login,
     write: (next) => update({ login: next }),
-    signedIn,
+    signedIn: (account) => {
+      update({ session: { status: 'checking' } });
+      return signedIn(account);
+    },
   });
 
   const signedOut = (by: 'this-tab' | 'other-tab'): Promise<void> => {
@@ -921,7 +931,13 @@ export const createApp = (browser: BrowserCapabilities): App => {
         return;
       }
       const [session] = await Promise.all([
-        browser.locks.request(LOGIN_COOKIE_LOCK, round.checkAccount),
+        browser.locks.request(LOGIN_COOKIE_LOCK, async () => {
+          if (await local.pendingLogout()) {
+            await finishPendingLogout();
+            return { status: 'signedOut' } as const;
+          }
+          return round.checkAccount();
+        }),
         loaded,
       ]);
       if (!round.isCurrent(asked) || !session) return;
