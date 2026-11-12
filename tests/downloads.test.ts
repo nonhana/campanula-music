@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 import { describe, expect, it } from 'vitest';
 
 import type { Song } from '#lib/api/library.js';
@@ -2583,4 +2585,317 @@ describe('关掉 App 后接着下（#41）', () => {
       LOSER.id,
     ]);
   });
+});
+
+describe('成品保存失败仍保留断点', () => {
+  it('剩余空间放不下第二份整首音频，但替换已存分段足够时能完成', async () => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+    serveLoser(device);
+    const transfer = held();
+    device.files.next(LOSER.audio, { until: transfer.until });
+    await world.netease.reply(LOSER.downloadUrl);
+    await world.netease.reply(LYRICS);
+    await world.netease.reply(ALBUM_MISSING);
+    const writing = device.holdNextWriteCompletion('downloadParts');
+    tab.app.download(likedSong(tab.app, LOSER.id));
+    await writing.reached;
+    await world.settle();
+    const stored = (await device.stored()).downloadParts!;
+    expect(stored).toHaveLength(1);
+    device.storage.usage = (stored[0]![1] as Blob).size;
+    device.storage.quota = LOSER.bytes + COVER_BYTES;
+    expect(device.storage.quota - device.storage.usage).toBeLessThan(
+      LOSER.bytes,
+    );
+    transfer.release();
+    await world.settle();
+    expect(tab.app.state.downloads.has(LOSER.id)).toBe(false);
+    writing.release();
+    await world.settle();
+    expect(tab.app.state.downloads.paused).toBeNull();
+    expect(tab.app.state.downloads.has(LOSER.id)).toBe(true);
+    expect(await storedParts(device)).toEqual([]);
+    expect(await storedQueue(device)).toEqual([]);
+    const opened = await reopen(device, tab);
+    await world.settle();
+    expect(opened.app.state.downloads.has(LOSER.id)).toBe(true);
+    expect(audioStarts(device, LOSER.audio)).toEqual([0]);
+  });
+
+  it('成品事务提交时同时移除队列和分段，完成通知返回前仍不显示完成', async () => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+    serveLoser(device);
+    const transfer = held();
+    device.files.next(LOSER.audio, { until: transfer.until });
+    await world.netease.reply(LOSER.downloadUrl);
+    await world.netease.reply(LYRICS);
+    await world.netease.reply(ALBUM_MISSING);
+    tab.app.download(likedSong(tab.app, LOSER.id));
+    await world.settle();
+    expect((await storedParts(device)).length).toBeGreaterThan(0);
+    const writing = device.holdNextWriteCompletion('downloads');
+    transfer.release();
+    await writing.reached;
+    expect(tab.app.state.downloads.has(LOSER.id)).toBe(false);
+    expect(await storedDownloads(device)).toMatchObject([
+      { audio: { size: LOSER.bytes } },
+    ]);
+    expect.soft(await storedParts(device)).toEqual([]);
+    expect.soft(await storedQueue(device)).toEqual([]);
+    writing.release();
+    await world.settle();
+    expect(tab.app.state.downloads.has(LOSER.id)).toBe(true);
+    expect(await storedParts(device)).toEqual([]);
+    expect(await storedQueue(device)).toEqual([]);
+  });
+
+  it.each(['重开', '本页继续', '重开后拒绝 Range'] as const)(
+    '预估空间不足后%s，保住本机断点和完整音频',
+    async (retry) => {
+      const device = world.device();
+      const tab = await signInWithLiked(device);
+      serveLoser(device);
+      const content = new Uint8Array(LOSER.bytes).fill(0x17);
+      content.fill(0xb4, Math.floor(LOSER.bytes / 2));
+      device.files.put(LOSER.audio, {
+        bytes: LOSER.bytes,
+        type: 'audio/mpeg',
+        content,
+      });
+      const transfer = held();
+      device.files.next(LOSER.audio, { until: transfer.until });
+      await world.netease.reply(LOSER.downloadUrl);
+      await world.netease.reply(LYRICS);
+      await world.netease.reply(ALBUM_MISSING);
+      tab.app.download(likedSong(tab.app, LOSER.id));
+      await world.settle();
+      const before = (await device.stored()).downloadParts!;
+      expect(before.length).toBeGreaterThan(0);
+      expect(before.map(([key]) => key)).toEqual([[LOSER.id, 0]]);
+      const prefix = (before[0]![1] as Blob).size;
+      expect(prefix).toBe(Math.floor(LOSER.bytes / 2));
+
+      device.storage.quota = 0;
+      transfer.release();
+      await world.settle();
+      expect(tab.app.state.downloads.paused).toBe('storageFull');
+      expect(tab.app.state.downloads.has(LOSER.id)).toBe(false);
+      expect(
+        tab.app.state.notices.filter(
+          (entry) => entry.notice.kind === 'downloadsPaused',
+        ),
+      ).toHaveLength(1);
+      expect(await storedDownloads(device)).toEqual([]);
+      expect(await storedQueue(device)).toHaveLength(1);
+      expect.soft((await device.stored()).downloadParts).toEqual(before);
+
+      device.storage.quota = Number.MAX_SAFE_INTEGER;
+      if (retry === '重开后拒绝 Range')
+        device.files.put(LOSER.audio, {
+          bytes: LOSER.bytes,
+          type: 'audio/mpeg',
+          content,
+          ranges: false,
+        });
+      const requested = downloadUrlRequests(device).length;
+      let app = tab.app;
+      if (retry !== '本页继续') {
+        await world.netease.reply(LOSER.downloadUrl);
+        await world.netease.reply(LYRICS);
+        await world.netease.reply(ALBUM_MISSING);
+        app = (await reopen(device, tab)).app;
+      } else app.resumeDownloads();
+      await world.settle();
+      expect(app.state.downloads.paused).toBeNull();
+      expect(app.state.downloads.has(LOSER.id)).toBe(true);
+      expect(app.state.downloads.tasks.size).toBe(0);
+      expect(audioStarts(device, LOSER.audio)).toEqual(
+        retry !== '本页继续' ? [0, prefix] : [0],
+      );
+      expect(downloadUrlRequests(device)).toHaveLength(
+        requested + (retry !== '本页继续' ? 1 : 0),
+      );
+      const [saved] = await storedDownloads(device);
+      expect(saved).toMatchObject({
+        audio: { size: LOSER.bytes, type: 'audio/mpeg' },
+        cover: { size: COVER_BYTES, type: 'image/jpeg' },
+        lyrics: { kind: 'word' },
+        sources: [{ kind: 'single' }],
+      });
+      expect(
+        Buffer.from(await saved!.audio.arrayBuffer()).equals(content),
+      ).toBe(true);
+      expect(await storedParts(device)).toEqual([]);
+      expect(await storedQueue(device)).toEqual([]);
+    },
+  );
+
+  it.each(['重开', '本页继续'] as const)(
+    '成品事务因配额中止后%s，仍可利用已保存的音频',
+    async (retry) => {
+      const device = world.device();
+      const tab = await signInWithLiked(device);
+      serveLoser(device);
+      const transfer = held();
+      device.files.next(LOSER.audio, { until: transfer.until });
+      await world.netease.reply(LOSER.downloadUrl);
+      await world.netease.reply(LYRICS);
+      await world.netease.reply(ALBUM_MISSING);
+      tab.app.download(likedSong(tab.app, LOSER.id));
+      await world.settle();
+      expect((await storedParts(device)).length).toBeGreaterThan(0);
+      const writing = device.holdNextWriteCompletion('downloads', {
+        abort: 'QuotaExceededError',
+      });
+      transfer.release();
+      await writing.reached;
+      expect(await storedDownloads(device)).toEqual([]);
+      expect(await storedQueue(device)).toHaveLength(1);
+      const stored = (await device.stored()).downloadParts!;
+      const prefix = stored.reduce(
+        (bytes, [, blob]) => bytes + (blob as Blob).size,
+        0,
+      );
+      expect(prefix).toBe(LOSER.bytes);
+      expect(stored.map(([key]) => key)).toEqual([
+        [LOSER.id, 0],
+        [LOSER.id, 1],
+      ]);
+      expect(tab.app.state.downloads.has(LOSER.id)).toBe(false);
+      writing.release();
+      await world.settle();
+      expect(tab.app.state.downloads.paused).toBe('storageFull');
+      expect(noticeOf(tab.app)).toEqual({ kind: 'downloadsPaused' });
+      expect(
+        tab.app.state.notices.filter(
+          (entry) => entry.notice.kind === 'downloadsPaused',
+        ),
+      ).toHaveLength(1);
+      const requested = downloadUrlRequests(device).length;
+      let app = tab.app;
+      if (retry === '重开') {
+        await world.netease.reply(LOSER.downloadUrl);
+        await world.netease.reply(LYRICS);
+        await world.netease.reply(ALBUM_MISSING);
+        app = (await reopen(device, tab)).app;
+      } else app.resumeDownloads();
+      await world.settle();
+      expect(app.state.downloads.paused).toBeNull();
+      expect(app.state.downloads.has(LOSER.id)).toBe(true);
+      expect(app.state.downloads.tasks.size).toBe(0);
+      expect(audioStarts(device, LOSER.audio)).toEqual([0]);
+      expect(downloadUrlRequests(device)).toHaveLength(
+        requested + (retry === '重开' ? 1 : 0),
+      );
+      expect(await storedDownloads(device)).toMatchObject([
+        {
+          audio: { size: LOSER.bytes },
+          cover: { size: COVER_BYTES },
+          lyrics: { kind: 'word' },
+          sources: [{ kind: 'single' }],
+        },
+      ]);
+      expect(await storedParts(device)).toEqual([]);
+      expect(await storedQueue(device)).toEqual([]);
+    },
+  );
+
+  it.each(['配额暂停', '分段写入中'] as const)(
+    '%s取消后再重开，任务和音频都不会写回来',
+    async (phase) => {
+      const device = world.device();
+      const tab = await signInWithLiked(device);
+      serveLoser(device);
+      const transfer = held();
+      device.files.next(LOSER.audio, { until: transfer.until });
+      await world.netease.reply(LOSER.downloadUrl);
+      await world.netease.reply(LYRICS);
+      await world.netease.reply(ALBUM_MISSING);
+      const writing =
+        phase === '分段写入中'
+          ? device.holdNextWriteCompletion('downloadParts')
+          : null;
+      tab.app.download(likedSong(tab.app, LOSER.id));
+      if (writing) await writing.reached;
+      await world.settle();
+      expect((await storedParts(device)).length).toBeGreaterThan(0);
+      if (phase === '配额暂停') device.storage.quota = 0;
+      transfer.release();
+      await world.settle();
+      if (phase === '配额暂停')
+        expect(tab.app.state.downloads.paused).toBe('storageFull');
+      tab.app.cancelDownload(LOSER.id);
+      writing?.release();
+      await world.settle();
+      expect(await storedQueue(device)).toEqual([]);
+      expect(await storedParts(device)).toEqual([]);
+      expect(await storedDownloads(device)).toEqual([]);
+      const requests = audioStarts(device, LOSER.audio);
+      device.storage.quota = Number.MAX_SAFE_INTEGER;
+      const opened = await reopen(device, tab);
+      await world.settle();
+      expect(opened.app.state.downloads.tasks.size).toBe(0);
+      expect(opened.app.state.downloads.songs).toEqual([]);
+      expect(audioStarts(device, LOSER.audio)).toEqual(requests);
+    },
+  );
+  it.each(['重开', '本页继续', '取消'] as const)(
+    '成品已提交但补存来源时配额不足，%s仍保住音频或清除取消任务',
+    async (retry) => {
+      const device = world.device();
+      const tab = await signInWithLiked(device);
+      const song = likedSong(tab.app, LOSER.id);
+      serveLoser(device);
+      await world.netease.reply(LOSER.downloadUrl);
+      await world.netease.reply(LYRICS);
+      await world.netease.reply(ALBUM_MISSING);
+      const writing = device.holdNextWriteCompletion('downloads');
+      await tab.app.downloadSongs([song], COMMUTE);
+      await writing.reached;
+      await tab.app.downloadSongs([song], WEEKEND);
+      const failed = device.holdNextWriteCompletion('downloads', {
+        abort: 'QuotaExceededError',
+      });
+      writing.release();
+      await failed.reached;
+      failed.release();
+      await world.settle();
+      expect(tab.app.state.downloads.paused).toBe('storageFull');
+      expect(tab.app.state.downloads.has(song.id)).toBe(false);
+      expect
+        .soft(await storedDownloads(device))
+        .toMatchObject([{ audio: { size: LOSER.bytes } }]);
+      expect(await storedQueue(device)).toMatchObject([
+        { sources: [COMMUTE, WEEKEND] },
+      ]);
+      if (retry === '取消') tab.app.cancelDownload(song.id);
+      else if (retry === '本页继续') {
+        device.storage.usage = LOSER.bytes + COVER_BYTES;
+        device.storage.quota = device.storage.usage;
+        tab.app.resumeDownloads();
+      }
+      const requested = downloadUrlRequests(device).length;
+      const app =
+        retry === '本页继续' ? tab.app : (await reopen(device, tab)).app;
+      await world.settle();
+      expect(app.state.downloads.tasks.size).toBe(0);
+      expect(app.state.downloads.has(song.id)).toBe(retry !== '取消');
+      if (retry === '取消') expect(await storedDownloads(device)).toEqual([]);
+      else {
+        expect(app.state.downloads.sourcesOf(song.id)).toEqual([
+          COMMUTE,
+          WEEKEND,
+        ]);
+        expect(await storedDownloads(device)).toMatchObject([
+          { sources: [COMMUTE, WEEKEND], audio: { size: LOSER.bytes } },
+        ]);
+      }
+      expect(audioStarts(device, LOSER.audio)).toEqual([0]);
+      expect(downloadUrlRequests(device)).toHaveLength(requested);
+      expect(await storedQueue(device)).toEqual([]);
+      expect(await storedParts(device)).toEqual([]);
+    },
+  );
 });

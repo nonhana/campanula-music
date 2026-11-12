@@ -689,9 +689,19 @@ export const createLocalDb = (db: LocalDatabase): LocalDb => {
       );
     },
     saveDownload: (download) =>
-      write([DOWNLOADS], (transaction) =>
-        transaction.objectStore(DOWNLOADS).put(download, download.song.id),
-      ),
+      write([DOWNLOADS, DOWNLOAD_QUEUE, DOWNLOAD_PARTS], (transaction) => {
+        const songId = download.song.id;
+        transaction.objectStore(DOWNLOADS).put(download, songId);
+        transaction.objectStore(DOWNLOAD_QUEUE).delete(songId);
+        const parts = transaction.objectStore(DOWNLOAD_PARTS);
+        const cursor = parts.openCursor();
+        cursor.onsuccess = () => {
+          const current = cursor.result;
+          if (!current) return;
+          if ((current.key as [number, number])[0] === songId) current.delete();
+          current.continue();
+        };
+      }),
     addDownloadSources: (songIds, sources) =>
       changeDownloadSources(songIds, (existing) =>
         mergeDownloadSources(existing, sources),

@@ -222,6 +222,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   const audioDone = new Set<number>();
   const audioTypes = new Map<number, string>();
   const ready = new Map<number, StoredDownload>();
+  const savedReady = new Map<number, StoredDownload>();
   const orders = new Map<number, number>();
   let nextOrder = 1;
   let leader = false;
@@ -229,6 +230,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   const unsaved = new Map<number, Uint8Array<ArrayBuffer>[]>();
   const unsavedBytes = new Map<number, number>();
   const storedIndex = new Map<number, number>();
+  const storedBytes = new Map<number, number>();
   // 分段写入按每首串成链，一首同时只写一段：删除排在其后，否则删完又被写回来
   const partChains = new Map<number, Promise<void>>();
   const partWrites = new Set<number>();
@@ -323,6 +325,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     unsaved.delete(songId);
     unsavedBytes.delete(songId);
     storedIndex.delete(songId);
+    storedBytes.delete(songId);
     brokenParts.delete(songId);
     partEpochs.set(songId, (partEpochs.get(songId) ?? 0) + 1);
   };
@@ -350,6 +353,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     if (
       !owns(songId) ||
       paused ||
+      ready.has(songId) ||
       brokenParts.has(songId) ||
       partWrites.has(songId)
     )
@@ -388,11 +392,13 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         unsavedBytes.delete(songId);
         partEpochs.set(songId, (partEpochs.get(songId) ?? 0) + 1);
         storedIndex.delete(songId);
+        storedBytes.delete(songId);
         chainPartWrite(songId, () => local.deleteDownloadParts([songId]));
         return;
       }
       if (epoch !== (partEpochs.get(songId) ?? 0)) return;
       storedIndex.set(songId, index + 1);
+      storedBytes.set(songId, (storedBytes.get(songId) ?? 0) + blob.size);
     }).finally(() => {
       partWrites.delete(songId);
       flushParts(songId);
@@ -549,15 +555,23 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
   };
 
   const dropTasks = (songIds: readonly number[]): void => {
+    const savedIds = songIds.filter((songId) => savedReady.has(songId));
     for (const songId of songIds) {
       forgetAttempt(songId);
       aborts.get(songId)?.abort();
       aborts.delete(songId);
       tasks.delete(songId);
       ready.delete(songId);
+      savedReady.delete(songId);
       orders.delete(songId);
       forgetParts(songId);
     }
+    if (savedIds.length > 0)
+      void local
+        .deleteDownloads(savedIds)
+        .catch((error: unknown) =>
+          console.error('下载没能从这台设备删掉', error),
+        );
     const storedIds = queuedIdsOf(songIds);
     deleteQueued(storedIds);
     for (const songId of storedIds) owned.delete(songId);
@@ -665,9 +679,17 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     record: StoredDownload,
     token: number,
   ): Promise<StepResult> => {
-    clearParts(songId);
+    ready.set(songId, record);
     await partChains.get(songId);
-    const space = await enoughSpace(recordBytes(record));
+    const previous = savedReady.get(songId);
+    const space = await enoughSpace(
+      Math.max(
+        0,
+        recordBytes(record) -
+          (storedBytes.get(songId) ?? 0) -
+          (previous ? recordBytes(previous) : 0),
+      ),
+    );
     if (attemptOf(songId) !== token || !tasks.has(songId)) return 'next';
     if (!space) {
       ready.set(songId, record);
@@ -687,7 +709,7 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       return 'wait';
     }
     let saved = record;
-    let committed = false;
+    let committed = previous !== undefined;
     try {
       for (;;) {
         const sources = liveSources(songId, record.sources);
@@ -698,11 +720,15 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
           await local.deleteDownloads([songId]).catch(() => {});
           return 'next';
         }
+        savedReady.set(songId, saved);
+        storedBytes.delete(songId);
         if (liveSources(songId, record.sources) === sources) break;
       }
     } catch (error) {
-      if (committed) await local.deleteDownloads([songId]);
-      if (attemptOf(songId) !== token || !tasks.has(songId)) return 'next';
+      if (attemptOf(songId) !== token || !tasks.has(songId)) {
+        if (committed) await local.deleteDownloads([songId]);
+        return 'next';
+      }
       if (storageFull(error)) {
         ready.set(songId, record);
         const task = tasks.get(songId);
@@ -721,6 +747,8 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         pause();
         return 'wait';
       }
+      if (committed) await local.deleteDownloads([songId]);
+      savedReady.delete(songId);
       console.error('下载没能存进这台设备', error);
       ready.set(songId, record);
       return fail(record.song, record.sources, { kind: 'saveFailed' });
@@ -728,9 +756,9 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
     setRecords(new Map(records).set(songId, saved));
     tasks.delete(songId);
     ready.delete(songId);
-    clearParts(songId);
+    savedReady.delete(songId);
+    forgetParts(songId);
     orders.delete(songId);
-    deleteQueued([songId]);
     owned.delete(songId);
     publish();
     context.changed();
@@ -1022,14 +1050,17 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       list.push(part);
       bySong.set(part.songId, list);
     }
-    const droppedQueue: number[] = [];
     const droppedParts = new Set(bySong.keys());
     let maxOrder = 0;
     for (const entry of queued) {
       const songId = entry.song.id;
-      if (records?.has(songId)) {
-        droppedQueue.push(songId);
-        continue;
+      const saved = records?.get(songId);
+      if (saved) {
+        savedReady.set(songId, saved);
+        ready.set(songId, { ...saved, sources: [...entry.sources] });
+        const next = new Map(records);
+        next.delete(songId);
+        setRecords(next);
       }
       const chunks = (bySong.get(songId) ?? []).sort(
         (a, b) => a.index - b.index,
@@ -1045,18 +1076,19 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
         received === entry.total;
       const withinTotal = entry.total === null || received <= entry.total;
       const usable = contiguous && withinTotal;
-      if (usable) {
+      if (!saved && usable) {
         parts.set(
           songId,
           chunks.map((part) => part.blob),
         );
         partBytes.set(songId, received);
         storedIndex.set(songId, chunks.length);
+        storedBytes.set(songId, received);
         if (entry.audioType !== null) audioTypes.set(songId, entry.audioType);
         if (complete) audioDone.add(songId);
         droppedParts.delete(songId);
       }
-      const queuedBytes = usable ? received : 0;
+      const queuedBytes = saved ? saved.audio.size : usable ? received : 0;
       tasks.set(
         songId,
         queuedTask(entry.song, entry.sources, queuedBytes, entry.total),
@@ -1065,7 +1097,6 @@ export const createDownloads = (context: DownloadsContext): Downloads => {
       maxOrder = Math.max(maxOrder, entry.order);
     }
     nextOrder = maxOrder + 1;
-    deleteQueued(droppedQueue);
     if (droppedParts.size > 0) {
       void local
         .deleteDownloadParts([...droppedParts])

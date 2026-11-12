@@ -66,7 +66,7 @@ export interface Device {
   stored: () => Promise<Record<string, [IDBValidKey, unknown][]>>;
   holdNextWriteCompletion: (
     store: string,
-    options?: { abort?: boolean },
+    options?: { abort?: boolean | 'QuotaExceededError' },
   ) => {
     reached: Promise<void>;
     release: () => void;
@@ -143,7 +143,7 @@ export const createDevice = (
         store: string;
         reached: ReturnType<typeof held>;
         completion: ReturnType<typeof held>;
-        abort: boolean;
+        abort: boolean | 'QuotaExceededError';
       }
     | undefined;
 
@@ -184,7 +184,25 @@ export const createDevice = (
               },
             });
           }
-          if (hold.abort) queueMicrotask(() => started.abort());
+          if (hold.abort === 'QuotaExceededError') {
+            // 用 fake-indexeddb 的请求队列和回滚模拟提交阶段的配额错误。
+            // https://w3c.github.io/IndexedDB/#commit-transaction
+            const failing = started as IDBTransaction & {
+              _start: () => void;
+              _requests: unknown[];
+              _state: string;
+              _abort: (name: string) => void;
+            };
+            const start = failing._start;
+            failing._start = () => {
+              if (
+                failing._state !== 'finished' &&
+                failing._requests.length === 0
+              )
+                failing._abort('QuotaExceededError');
+              else start.call(failing);
+            };
+          } else if (hold.abort) queueMicrotask(() => started.abort());
         }
         return started;
       };

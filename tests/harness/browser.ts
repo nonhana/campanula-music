@@ -209,6 +209,7 @@ export interface FakeFile {
   bytes: number;
   type: string;
   ranges?: boolean;
+  content?: Uint8Array<ArrayBuffer>;
 }
 
 export interface FakeTransfer {
@@ -259,18 +260,20 @@ export class FakeFiles {
     }
     const transfer = this.#next.get(url) ?? {};
     this.#next.delete(url);
+    const chunk = (start: number, end: number) =>
+      file.content?.slice(start, end) ?? new Uint8Array(end - start);
     const half = from + Math.floor((file.bytes - from) / 2);
     if (transfer.until || transfer.cut) {
-      onChunk(new Uint8Array(half - from));
+      onChunk(chunk(from, half));
       if (transfer.until) {
         await Promise.race([transfer.until, aborted(signal)]);
       }
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
       if (transfer.cut || !this.network.onLine)
         throw new TypeError('network error');
-      onChunk(new Uint8Array(file.bytes - half));
+      onChunk(chunk(half, file.bytes));
     } else {
-      onChunk(new Uint8Array(file.bytes - from));
+      onChunk(chunk(from, file.bytes));
     }
     return { type: file.type };
   }
