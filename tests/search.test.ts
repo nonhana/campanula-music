@@ -46,6 +46,26 @@ const TYPES: Record<SearchKind, number> = {
   albums: 10,
 };
 
+const FIRST_PAGES: Record<SearchKind, string> = {
+  songs: SONGS_MAYONAKA,
+  playlists: PLAYLISTS_MAYONAKA,
+  artists: ARTISTS_MIKU,
+  albums: ALBUMS_MAYONAKA,
+};
+
+const NEXT_PAGES: Record<SearchKind, string> = {
+  songs: SONGS_MAYONAKA_2,
+  playlists: PLAYLISTS_MAYONAKA_2,
+  artists: ARTISTS_MIKU_2,
+  albums: ALBUMS_MAYONAKA_2,
+};
+
+// 失败是放行时注入的服务端异常，不是网易云的录制返回。
+const releasedOutcome = (until: Promise<void>, fails: boolean) =>
+  until.then(() => {
+    if (fails) throw new Error('受控 SDK 调用失败');
+  });
+
 // 没给录制的压着不回；四类一起发，到服务端的先后不固定，按 type 对上
 const replySearch = async (
   fixtures: Partial<Record<SearchKind, string>>,
@@ -117,7 +137,194 @@ const suggested = async (
   return app.state.search.suggestions;
 };
 
+it('搜索 A、B、A：第一次 A 晚到也保留第二次 A 的完整专辑顺序', async () => {
+  const { app } = await signInAtHearts(world.device());
+  const slow = held();
+  for (const kind of SEARCH_KINDS) {
+    await world.netease.reply(ALBUMS_MAYONAKA_DAY_BEFORE, {
+      when: { type: TYPES[kind] },
+      until: kind === 'albums' ? slow.until : never(),
+    });
+  }
+  void app.search('真夜中');
+  await world.settle();
+  await searchHeld(app, '別の検索');
+  await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA });
+  const latest = shownList(app, 'albums');
+
+  slow.release();
+  await world.settle();
+
+  expect(shownList(app, 'albums')).toEqual(latest);
+});
+
+it('搜索 A、B、A：旧分页与新分页偏移相同，旧页先到也不结束本轮加载', async () => {
+  const { app } = await signInAtHearts(world.device());
+  await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA_DAY_BEFORE });
+  const oldPage = held();
+  await world.netease.reply(ALBUMS_MAYONAKA_2, { until: oldPage.until });
+  void app.moreSearchResults('真夜中', 'albums');
+  await world.settle();
+
+  await searchHeld(app, '別の検索');
+  await searchFor(app, '真夜中', { albums: ALBUMS_MAYONAKA });
+  const newPage = held();
+  await world.netease.reply(ALBUMS_MAYONAKA_2, { until: newPage.until });
+  void app.moreSearchResults('真夜中', 'albums');
+  await world.settle();
+  const loading = shownList(app, 'albums');
+
+  oldPage.release();
+  await world.settle();
+  expect(shownList(app, 'albums')).toEqual(loading);
+
+  newPage.release();
+  await world.settle();
+  expect(shownList(app, 'albums')).toMatchObject({
+    offset: 60,
+    more: { status: 'notLoaded' },
+  });
+  expect(shownList(app, 'albums').items).toHaveLength(60);
+});
+
+describe.each(SEARCH_KINDS)('%s 的旧响应', (kind) => {
+  it.each([false, true])(
+    '首屏 A、B、A：旧响应失败=%s，不改写第二轮任何分类',
+    async (fails) => {
+      const { app } = await signInAtHearts(world.device());
+      const slow = held();
+      for (const each of SEARCH_KINDS) {
+        await world.netease.reply(NEXT_PAGES[each], {
+          when: { type: TYPES[each] },
+          until: each === kind ? releasedOutcome(slow.until, fails) : never(),
+        });
+      }
+      void app.search('真夜中');
+      await world.settle();
+      await searchHeld(app, '別の検索');
+      await searchFor(app, '真夜中', FIRST_PAGES);
+      const latest = app.state.search.results;
+      expect(SEARCH_KINDS.map((each) => latest?.[each].status)).toEqual([
+        'shown',
+        'shown',
+        'shown',
+        'shown',
+      ]);
+
+      slow.release();
+      await world.settle();
+
+      expect(app.state.search.results).toEqual(latest);
+    },
+  );
+
+  describe.each([false, true])('旧分页失败=%s', (fails) => {
+    it.each([false, true])(
+      '往返 A、B、A：新页先到=%s，只接受当前轮的同偏移页',
+      async (newFirst) => {
+        const { app } = await signInAtHearts(world.device());
+        await searchFor(app, '真夜中', { [kind]: FIRST_PAGES[kind] });
+        const oldPage = held();
+        await world.netease.reply(NEXT_PAGES[kind], {
+          until: releasedOutcome(oldPage.until, fails),
+        });
+        void app.moreSearchResults('真夜中', kind);
+        await world.settle();
+
+        await searchHeld(app, '別の検索');
+        await searchFor(app, '真夜中', { [kind]: FIRST_PAGES[kind] });
+        const newPage = held();
+        await world.netease.reply(FIRST_PAGES[kind], { until: newPage.until });
+        void app.moreSearchResults('真夜中', kind);
+        await world.settle();
+        await app.moreSearchResults('真夜中', kind);
+        expect(searched(kind)).toHaveLength(5);
+        expect(shownList(app, kind).more).toEqual({ status: 'loading' });
+
+        if (newFirst) {
+          newPage.release();
+          await world.settle();
+        }
+        const latest = shownList(app, kind);
+        oldPage.release();
+        await world.settle();
+        expect(shownList(app, kind)).toEqual(latest);
+
+        newPage.release();
+        await world.settle();
+        const appended = shownList(app, kind);
+        expect(appended.offset).toBe(60);
+        expect(appended.items).toEqual(latest.items);
+        expect(appended.more).toEqual(
+          kind === 'artists' ? null : { status: 'notLoaded' },
+        );
+        expect(
+          searched(kind).map((query) => (query as { offset: number }).offset),
+        ).toEqual([0, 30, 0, 0, 30]);
+      },
+    );
+  });
+});
+
 describe('边输入边出建议', () => {
+  it.each([false, true])(
+    '输入 A、B、A：旧建议失败=%s，不覆盖第二次 A',
+    async (fails) => {
+      const { app } = await signInAtHearts(world.device());
+      const slow = held();
+      await world.netease.reply(SUGGEST_YORU_NI, {
+        until: releasedOutcome(slow.until, fails),
+      });
+      app.suggest('夜に');
+      await world.clock.advance(SUGGEST_DELAY);
+      app.suggest('夜');
+      await suggested(app, '夜に', SUGGEST_YORU_NI_KAKERU);
+      const latest = app.state.search.suggestions;
+      expect(latest?.keyword).toBe('夜に');
+
+      slow.release();
+      await world.settle();
+
+      expect(app.state.search.suggestions).toEqual(latest);
+    },
+  );
+
+  it.each([false, true])(
+    '清空后再输入同词：旧建议失败=%s，不覆盖这次输入',
+    async (fails) => {
+      const { app } = await signInAtHearts(world.device());
+      const slow = held();
+      await world.netease.reply(SUGGEST_YORU_NI, {
+        until: releasedOutcome(slow.until, fails),
+      });
+      app.suggest('夜に');
+      await world.clock.advance(SUGGEST_DELAY);
+      app.suggest('');
+      await suggested(app, '夜に', SUGGEST_YORU_NI_KAKERU);
+      const latest = app.state.search.suggestions;
+      expect(latest?.keyword).toBe('夜に');
+
+      slow.release();
+      await world.settle();
+
+      expect(app.state.search.suggestions).toEqual(latest);
+    },
+  );
+
+  it('继续输入、显示和清空建议，不改变已提交的四类结果和搜索历史', async () => {
+    const { app } = await signInAtHearts(world.device());
+    await searchFor(app, '真夜中', FIRST_PAGES);
+    const results = app.state.search.results;
+    const history = app.state.search.history;
+
+    await suggested(app, '夜に', SUGGEST_YORU_NI);
+    app.suggest('');
+
+    expect(app.state.search.suggestions).toBeNull();
+    expect(app.state.search.results).toEqual(results);
+    expect(app.state.search.history).toEqual(history);
+  });
+
   it('停手一会儿才问网易云，只问最后打的词；不跨类别去重，和歌同名的歌手、专辑照样列出来', async () => {
     const { app } = await signInAtHearts(world.device());
 
@@ -457,6 +664,68 @@ describe('结果页：四类一起拉', () => {
     expect(app.state.search.history).toEqual(['真夜中']);
   });
 
+  it('重开同词只重试失败分类，保留成功分类的分页，仍在加载的分类不重发且可正常完成', async () => {
+    const { app } = await signInAtHearts(world.device());
+    const artists = held();
+    const albums = held();
+    for (const kind of SEARCH_KINDS) {
+      await world.netease.reply(FIRST_PAGES[kind], {
+        when: { type: TYPES[kind] },
+        until:
+          kind === 'artists'
+            ? artists.until
+            : kind === 'albums'
+              ? releasedOutcome(albums.until, true)
+              : undefined,
+      });
+    }
+    void app.search('真夜中');
+    await world.settle();
+    albums.release();
+    await world.settle();
+    expect(app.state.search.results?.albums).toEqual({
+      status: 'failed',
+      failure: { kind: 'serverError' },
+    });
+    await world.netease.reply(SONGS_MAYONAKA_2);
+    await app.moreSearchResults('真夜中', 'songs');
+    const songs = shownList(app, 'songs');
+    expect(songs.items).toHaveLength(60);
+    const playlists = shownList(app, 'playlists');
+
+    const retry = held();
+    await world.netease.reply(ALBUMS_MAYONAKA, { until: retry.until });
+    void app.openSearch(' 真夜中 ');
+    await world.settle();
+    await app.openSearch('真夜中');
+    expect(SEARCH_KINDS.map((kind) => searched(kind).length)).toEqual([
+      2, 1, 1, 2,
+    ]);
+    expect(app.state.search.results?.artists).toEqual({ status: 'loading' });
+    expect(app.state.search.results?.albums).toEqual({ status: 'loading' });
+
+    artists.release();
+    retry.release();
+    await world.settle();
+    await app.openSearch('真夜中');
+
+    expect(shownList(app, 'songs')).toEqual(songs);
+    expect(shownList(app, 'playlists')).toEqual(playlists);
+    expect(shownList(app, 'artists').total).toBe(40);
+    expect(shownList(app, 'albums').total).toBe(503);
+    expect(SEARCH_KINDS.map((kind) => searched(kind).length)).toEqual([
+      2, 1, 1, 2,
+    ]);
+    const albumRequest = {
+      keywords: '真夜中',
+      type: 10,
+      limit: 30,
+      offset: 0,
+    };
+    expect(searched('albums')).toEqual([albumRequest, albumRequest]);
+    expect(app.state.search.history).toEqual(['真夜中']);
+  });
+
   it('接着又搜了别的词：先搜的晚回来也不显示', async () => {
     const { app } = await signInAtHearts(world.device());
     const slow = held();
@@ -535,6 +804,39 @@ describe('结果页：四类一起拉', () => {
       results: null,
     });
   });
+
+  it.each([false, true])(
+    '退出后旧首屏、分页和建议晚到（失败=%s），不会恢复搜索内容',
+    async (fails) => {
+      const { app } = await signInAtHearts(world.device());
+      const slow = held();
+      const until = releasedOutcome(slow.until, fails);
+      for (const kind of SEARCH_KINDS) {
+        await world.netease.reply(FIRST_PAGES[kind], {
+          when: { type: TYPES[kind] },
+          until: kind === 'albums' ? undefined : until,
+        });
+      }
+      void app.search('真夜中');
+      await world.settle();
+      await world.netease.reply(ALBUMS_MAYONAKA_2, { until });
+      void app.moreSearchResults('真夜中', 'albums');
+      await world.netease.reply(SUGGEST_YORU_NI, { until });
+      app.suggest('夜に');
+      await world.clock.advance(SUGGEST_DELAY);
+
+      await world.netease.reply('login/logout.json');
+      await app.logout();
+      slow.release();
+      await world.settle();
+
+      expect(app.state.search).toEqual({
+        history: ['真夜中'],
+        suggestions: null,
+        results: null,
+      });
+    },
+  );
 });
 
 describe('歌单、歌手、专辑结果', () => {

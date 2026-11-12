@@ -113,6 +113,8 @@ export const createSearch = (context: SearchContext): Search => {
   const { api, clock, local } = context;
   let typed = '';
   let cancelWait: (() => void) | null = null;
+  let queryRound = 0;
+  let inputRound = 0;
 
   const update = (next: Partial<SearchState>): void => {
     context.write({
@@ -121,9 +123,9 @@ export const createSearch = (context: SearchContext): Search => {
     });
   };
 
-  const ask = async (keyword: string): Promise<void> => {
+  const ask = async (keyword: string, round: number): Promise<void> => {
     const result = await api.get(endpoints.suggestions, { keywords: keyword });
-    if (keyword !== typed) return;
+    if (round !== inputRound) return;
     if (result?.ok) {
       return update({
         suggestions: { keyword, items: result.value.suggestions },
@@ -160,14 +162,17 @@ export const createSearch = (context: SearchContext): Search => {
   };
 
   const first = async (keyword: string, kind: SearchKind): Promise<void> => {
+    const round = queryRound;
     const result = await pageOf(kind, keyword, 0);
-    if (context.read().results?.keyword !== keyword) return;
+    if (round !== queryRound) return;
     if (result?.ok) return show(keyword, kind, appended([], result.value, 0));
     if (result)
       show(keyword, kind, { status: 'failed', failure: result.failure });
   };
 
   const clear = (): void => {
+    queryRound += 1;
+    inputRound += 1;
     typed = '';
     stopWaiting();
     update({ suggestions: null, results: null });
@@ -182,6 +187,7 @@ export const createSearch = (context: SearchContext): Search => {
     if (!searched) return;
     const shown = context.read().results;
     const kept = shown?.keyword === searched ? shown : null;
+    if (!kept) queryRound += 1;
     const kinds = kept
       ? SEARCH_KINDS.filter((kind) => kept[kind].status === 'failed')
       : SEARCH_KINDS;
@@ -204,6 +210,7 @@ export const createSearch = (context: SearchContext): Search => {
   };
 
   const more = async (keyword: string, kind: SearchKind): Promise<void> => {
+    const round = queryRound;
     const results = context.read().results;
     const list = results?.keyword === keyword ? results[kind] : null;
     if (
@@ -212,14 +219,21 @@ export const createSearch = (context: SearchContext): Search => {
       list.more.status === 'loading'
     )
       return;
-    show(keyword, kind, {
+    const loading = {
       ...list,
-      more: { status: 'loading' },
-    });
+      more: { status: 'loading' } as const,
+    };
+    show(keyword, kind, loading);
     const result = await pageOf(kind, keyword, list.offset);
     const current = context.read().results;
     const listed = current?.keyword === keyword ? current[kind] : null;
-    if (listed?.status !== 'shown' || listed.offset !== list.offset) return;
+    if (
+      round !== queryRound ||
+      listed?.status !== 'shown' ||
+      listed.offset !== list.offset ||
+      listed.more !== loading.more
+    )
+      return;
     if (result?.ok)
       return show(
         keyword,
@@ -239,11 +253,12 @@ export const createSearch = (context: SearchContext): Search => {
       const next = keyword.trim();
       if (next === typed) return;
       typed = next;
+      const round = ++inputRound;
       stopWaiting();
       if (!next) return update({ suggestions: null });
       cancelWait = clock.after(SUGGEST_DELAY, () => {
         cancelWait = null;
-        void ask(next);
+        void ask(next, round);
       });
     },
     async search(keyword) {
