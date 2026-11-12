@@ -7,7 +7,10 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ params, url, cookies }) => {
   const { id } = params;
   const quality = readQuality(url.searchParams.get('quality'));
-  return respondSignedIn(endpoints.downloadUrl, cookies, (listener) =>
-    fetchDownloadUrl(id, quality, listener),
+  return respondSignedIn(
+    endpoints.downloadUrl,
+    cookies,
+    (config) => fetchDownloadUrl(id, quality, config),
+    { retryRead: true },
   );
 };

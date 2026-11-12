@@ -8,7 +8,10 @@ export const GET: RequestHandler = ({ params, url, cookies }) => {
   const { id } = params;
   const order = readArtistSongOrder(url.searchParams.get('order'));
   const offset = readOffset(url.searchParams.get('offset'));
-  return respondSignedIn(endpoints.artistSongs, cookies, (listener) =>
-    fetchArtistSongs(id, order, offset, listener),
+  return respondSignedIn(
+    endpoints.artistSongs,
+    cookies,
+    (config) => fetchArtistSongs(id, order, offset, config),
+    { retryRead: true },
   );
 };

@@ -7,7 +7,12 @@ import { respondSignedIn } from '#lib/server/session.js';
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const ids = await readIds(endpoints.songs, request, 'ids', SONGS_PER_REQUEST);
-  return respondSignedIn(endpoints.songs, cookies, async (listener) => ({
-    songs: await fetchSongs(ids, listener),
-  }));
+  return respondSignedIn(
+    endpoints.songs,
+    cookies,
+    async (config) => ({
+      songs: await fetchSongs(ids, config),
+    }),
+    { retryRead: true },
+  );
 };

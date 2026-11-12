@@ -14,6 +14,7 @@ import {
   storedPlaylistIds,
   storedTrackIds,
 } from './harness/listener';
+import { renewCookies } from './harness/sign-in';
 import { useWorld } from './harness/world';
 
 const world = useWorld();
@@ -474,6 +475,34 @@ describe('收藏', () => {
     expect(await storedTrackIds(device, NETEASE_PLAYLIST.id)).toBeUndefined();
   });
 
+  it('带 token 收藏返回 301：只发一次写入，不续期重放，也不存成成功', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    const { app } = tab;
+    await world.netease.reply(NETEASE_PLAYLIST.detail);
+    await world.netease.reply(NETEASE_PLAYLIST.songs);
+    await app.openPlaylist(NETEASE_PLAYLIST.id);
+    const before = world.netease.calls.length;
+    await world.netease.reply(
+      'like-collect/playlist_subscribe.301.constructed.json',
+    );
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    });
+    await world.netease.reply(PLAYLIST_COLLECT);
+
+    await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true);
+    expect(device.responses.at(-1)).toMatchObject({ status: 401 });
+    expect(world.netease.calls.slice(before)).toMatchObject([
+      {
+        module: 'playlist_subscribe',
+        config: { checkToken: tab.watchman.issued[0] },
+      },
+    ]);
+    expect(tab.watchman.issued).toHaveLength(1);
+    expect(await storedPlaylistIds(device)).not.toContain(NETEASE_PLAYLIST.id);
+  });
+
   it('网易云拒绝收藏歌单：改回原样，说明网易云给的原因', async () => {
     const device = world.device();
     const { app } = await signInAtLikedTracks(device);
@@ -501,9 +530,10 @@ describe('收藏', () => {
     ).not.toContain(NETEASE_PLAYLIST.id);
   });
 
-  it('网易云说操作频繁：改回原样，提示稍后再试，不自动重试', async () => {
+  it('网易云说操作频繁：不自动重试，听众再次收藏时取新 token', async () => {
     const device = world.device();
-    const { app } = await signInAtLikedTracks(device);
+    const tab = await signInAtLikedTracks(device);
+    const { app } = tab;
     await world.netease.reply(NETEASE_PLAYLIST.detail);
     await world.netease.reply(NETEASE_PLAYLIST.songs);
     await app.openPlaylist(NETEASE_PLAYLIST.id);
@@ -522,6 +552,16 @@ describe('收藏', () => {
         (call) => call.module === 'playlist_subscribe',
       ),
     ).toHaveLength(1);
+    await world.netease.reply(PLAYLIST_COLLECT);
+    await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true);
+    expect(await storedPlaylistIds(device)).toContain(NETEASE_PLAYLIST.id);
+    expect(tab.watchman.issued).toHaveLength(2);
+    expect(new Set(tab.watchman.issued).size).toBe(2);
+    expect(
+      world.netease.calls
+        .filter((call) => call.module === 'playlist_subscribe')
+        .map((call) => call.config.checkToken),
+    ).toEqual(tab.watchman.issued);
   });
 
   it('收藏歌单前没取到反作弊令牌（Watchman 没加载出来）：不提交，说明原因', async () => {

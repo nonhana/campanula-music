@@ -1,0 +1,21 @@
+{
+  "module": "playlist_detail",
+  "query": {
+    "id": 900000023
+  },
+  "context": {
+    "constructed": true,
+    "sdk": "hana-music-api@5.0.0",
+    "note": "构造的，不是录制：按 SDK 5 的公开 transport 失败合同构造连接中断，用于证明创建后详情失败不能重发创建。不是上游返回体，不证明真实网络发生过该时序。"
+  },
+  "response": {
+    "status": 502,
+    "body": {
+      "code": 502,
+      "msg": "Connection reset"
+    },
+    "failure": {
+      "kind": "transport"
+    }
+  }
+}

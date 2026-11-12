@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
     'songIds',
     SONGS_PER_ORDER,
   );
-  return respondSignedIn(endpoints.songOrder, cookies, (listener) =>
-    updateSongOrder(id, songIds, listener),
+  return respondSignedIn(endpoints.songOrder, cookies, (config) =>
+    updateSongOrder(id, songIds, config),
   );
 };

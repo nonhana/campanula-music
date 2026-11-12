@@ -1,7 +1,7 @@
 {
   "version": 1,
   "checkedWith": "hana-music-api@5.0.0",
-  "recordings": 347,
+  "recordings": 351,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -79,10 +79,10 @@
       }
     },
     "playlist_detail": {
-      "count": 72,
+      "count": 73,
       "outcomes": {
         "ok": 69,
-        "rejected": 3
+        "rejected": 4
       }
     },
     "song_detail": {
@@ -131,10 +131,10 @@
       }
     },
     "playlist_subscribe": {
-      "count": 8,
+      "count": 9,
       "outcomes": {
+        "rejected": 2,
         "rateLimited": 5,
-        "rejected": 1,
         "ok": 2
       }
     },
@@ -191,9 +191,9 @@
       }
     },
     "user_account": {
-      "count": 3,
+      "count": 4,
       "outcomes": {
-        "ok": 3
+        "ok": 4
       }
     },
     "user_detail": {
@@ -241,10 +241,11 @@
       }
     },
     "playlist_create": {
-      "count": 3,
+      "count": 4,
       "outcomes": {
         "ok": 2,
-        "rateLimited": 1
+        "rateLimited": 1,
+        "rejected": 1
       }
     },
     "playlist_desc_update": {
@@ -3830,6 +3831,23 @@
       "note": null
     },
     {
+      "path": "like-collect/playlist_subscribe.301.constructed.json",
+      "module": "playlist_subscribe",
+      "queryKey": "{\"id\":95050200,\"t\":1}",
+      "query": {
+        "id": 95050200,
+        "t": 1
+      },
+      "status": 301,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": null,
+      "sdk": "hana-music-api@5.0.0",
+      "note": "构造的，不是录制：用于写入返回 301 不自动续期重放的回归。返回体来自 library/likelist.301-invalid.json，只变更模块和查询；不证明网易云实际在此操作返回过 301。"
+    },
+    {
       "path": "like-collect/playlist_subscribe.405-weapi.json",
       "module": "playlist_subscribe",
       "queryKey": "{\"crypto\":\"weapi\",\"id\":2889745179,\"t\":1}",
@@ -4278,6 +4296,20 @@
       "viewer": "anonymous",
       "sdk": "hana-music-api@1.4.0",
       "note": null
+    },
+    {
+      "path": "login/user_account.another-account.constructed.json",
+      "module": "user_account",
+      "queryKey": "{}",
+      "query": {},
+      "status": 200,
+      "outcome": "ok",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": null,
+      "sdk": "hana-music-api@5.0.0",
+      "note": "构造的，不是录制：从 login/user_account.vip.json 仅替换账号编号和昵称，用于两台设备持不同凭据并发读取和续期的隔离回归。"
     },
     {
       "path": "login/user_account.invalid.json",
@@ -5378,6 +5410,23 @@
       "note": "申请了上传凭证、没有直传就设为封面：回 200，封面地址打开是 NotAnImage"
     },
     {
+      "path": "playlist-edit/playlist_create.301.constructed.json",
+      "module": "playlist_create",
+      "queryKey": "{\"name\":\"Campanula 测试 · 可删除\",\"privacy\":10}",
+      "query": {
+        "name": "Campanula 测试 · 可删除",
+        "privacy": 10
+      },
+      "status": 301,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": null,
+      "sdk": "hana-music-api@5.0.0",
+      "note": "构造的，不是录制：用于写入返回 301 不自动续期重放的回归。返回体来自 library/likelist.301-invalid.json，只变更模块和查询；不证明网易云实际在此操作返回过 301。"
+    },
+    {
       "path": "playlist-edit/playlist_create.private.json",
       "module": "playlist_create",
       "queryKey": "{\"name\":\"Campanula 测试 · 可删除\",\"privacy\":\"10\"}",
@@ -5537,6 +5586,22 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@1.4.0",
       "note": "歌单已被删除：仍回 200 和完整歌单，playlist.status 是 10（正常歌单是 0）"
+    },
+    {
+      "path": "playlist-edit/playlist_detail.transport-after-create.constructed.json",
+      "module": "playlist_detail",
+      "queryKey": "{\"id\":900000023}",
+      "query": {
+        "id": 900000023
+      },
+      "status": 502,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": null,
+      "sdk": "hana-music-api@5.0.0",
+      "note": "构造的，不是录制：按 SDK 5 的公开 transport 失败合同构造连接中断，用于证明创建后详情失败不能重发创建。不是上游返回体，不证明真实网络发生过该时序。"
     },
     {
       "path": "playlist-edit/playlist_name_update.deleted-playlist.json",

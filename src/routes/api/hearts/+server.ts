@@ -6,13 +6,18 @@ import { respondSignedIn } from '#lib/server/session.js';
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ url, cookies }) => {
   const uid = readId('uid', url.searchParams.get('uid'));
-  return respondSignedIn(endpoints.hearts, cookies, async (listener) => ({
-    songIds: await fetchHearts(uid, listener),
-  }));
+  return respondSignedIn(
+    endpoints.hearts,
+    cookies,
+    async (config) => ({
+      songIds: await fetchHearts(uid, config),
+    }),
+    { retryRead: true },
+  );
 };
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const { songId, hearted } = await readHeart(request);
-  return respondSignedIn(endpoints.heart, cookies, (listener) =>
-    heart(songId, hearted, listener),
+  return respondSignedIn(endpoints.heart, cookies, (config) =>
+    heart(songId, hearted, config),
   );
 };

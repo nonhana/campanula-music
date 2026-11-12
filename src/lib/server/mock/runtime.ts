@@ -15,7 +15,7 @@ import {
   UPLOAD_PATH,
   UPLOAD_PREFIX,
 } from './assets.ts';
-import { field, fixtureOutcome } from './fixture-format.ts';
+import { fixtureFailure, fixtureOutcome } from './fixture-format.ts';
 import { queryKey, recordedQuery } from './query-key.ts';
 import { readFixture } from './read-fixture.ts';
 import type { MockConfig, ScenarioName } from './scenarios.ts';
@@ -57,20 +57,12 @@ const sdkFailure = (
   status: number,
   body: unknown,
   failure?: NcmFailureInfo,
-): NcmApiFailure<unknown> => {
-  const code = field(body, 'code');
-  const message = field(body, 'message') ?? field(body, 'msg');
-  return {
-    status,
-    body,
-    cookie: [],
-    failure: failure ?? {
-      kind: 'business',
-      code: typeof code === 'number' ? code : null,
-      ...(typeof message === 'string' ? { message } : {}),
-    },
-  };
-};
+): NcmApiFailure<unknown> => ({
+  status,
+  body,
+  cookie: [],
+  failure: failure ?? fixtureFailure(body),
+});
 
 interface IndexEntry {
   path: string;

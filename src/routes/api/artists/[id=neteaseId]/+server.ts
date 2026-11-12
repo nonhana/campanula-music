@@ -5,7 +5,10 @@ import { respondSignedIn } from '#lib/server/session.js';
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ params, cookies }) => {
   const { id } = params;
-  return respondSignedIn(endpoints.artist, cookies, (listener) =>
-    fetchArtist(id, listener),
+  return respondSignedIn(
+    endpoints.artist,
+    cookies,
+    (config) => fetchArtist(id, config),
+    { retryRead: true },
   );
 };

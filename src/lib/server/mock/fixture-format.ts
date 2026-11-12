@@ -3,7 +3,7 @@ import type { NcmFailureInfo } from 'hana-music-api';
 export interface RawFixture {
   module: string;
   query?: unknown;
-  response: { status: number; body: unknown };
+  response: { status: number; body: unknown; failure?: NcmFailureInfo };
 }
 
 const SUCCESS_CODES: Record<string, readonly number[]> = {
@@ -42,7 +42,10 @@ const unwrapped = (module: string, body: unknown): unknown => {
   return typeof inner === 'object' && inner !== null ? inner : body;
 };
 
-const recordedFailure = (body: unknown, source?: string): NcmFailureInfo => {
+export const fixtureFailure = (
+  body: unknown,
+  source?: string,
+): NcmFailureInfo => {
   if (source === 'login/captcha_sent.502-anonymous-registration.json')
     return { kind: 'unknown' };
   const shape = field(body, 'upstreamShape');
@@ -78,9 +81,10 @@ export interface FixtureOutcome {
 
 export const fixtureOutcome = (
   module: string,
-  response: { status: number; body: unknown },
+  response: RawFixture['response'],
   source?: string,
 ): FixtureOutcome => {
+  if (response.failure) return { rejected: true, response };
   const body = unwrapped(module, response.body);
   const code = field(body, 'code');
   const failedWith = failureStatus(module, code);
@@ -106,7 +110,7 @@ export const fixtureOutcome = (
     response: {
       status,
       body,
-      ...(rejected ? { failure: recordedFailure(body, source) } : {}),
+      ...(rejected ? { failure: fixtureFailure(body, source) } : {}),
     },
   };
 };

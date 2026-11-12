@@ -347,3 +347,7 @@ Campanula 收藏前在浏览器用 `hana-music-api/watchman` 现取 token，自�
 索引以 npm `hana-music-api@5.0.0` 的公开 Schema 重新校验。历史录制的 SDK、时间、查询和来源保持；替身在匹配时将新的数组业务输入转换成历史表示，并按录制事实补充 SDK 5 的失败元数据。这不代表重新执行过真实上游请求。
 
 `playlist-edit/playlist_detail.301-after-create.constructed.json` 是 #88 要求的创建后详情续期场景：响应来自 `library/likelist.301-invalid.json` 的通用 301，只变更模块和查询，`context.constructed` 为 true。用于证明服务端不会重放已成功的创建，不证明真实上游出现过这个时序。
+
+本票另外增加 `playlist_create.301.constructed.json`、`playlist_detail.transport-after-create.constructed.json` 和 `like-collect/playlist_subscribe.301.constructed.json`。301 正文沿用已录制的登录失效正文，仅变更模块/查询；transport 是按 SDK 5 公开失败合同构造的连接中断，`response.failure` 明确声明来源。它们用于验证写入不重放，不是实际账号故障或协议行为的录制证据。
+
+`login/user_account.another-account.constructed.json` 从既有账号录制仅替换账号编号和昵称，验证不同账号并发读取与续期的身份隔离。旧版加密 Cookie 的测试输入在 `../session/pre-sdk-5-cookie.json`，由基线提交的真实签发函数用测试密钥和假凭据离线生成，不含账号数据。

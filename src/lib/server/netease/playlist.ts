@@ -92,7 +92,7 @@ export const createPlaylist = async (
   name: string,
   isPrivate: boolean,
   config: ModuleCallConfig,
-): Promise<Playlist> => {
+): Promise<number> => {
   const {
     body: { id },
   } = await playlistCreate(
@@ -102,6 +102,13 @@ export const createPlaylist = async (
     },
     config,
   );
+  return id;
+};
+
+export const fetchCreatedPlaylist = async (
+  id: number,
+  config: ModuleCallConfig,
+): Promise<Playlist> => {
   const { body } = await playlistDetail({ id }, config);
   return libraryPlaylist(body.playlist, 'own');
 };

@@ -12,6 +12,7 @@ export const GET: RequestHandler = ({ cookies }) => {
   return withNetease(endpoints.account, async () => ({
     account: await asSignedIn(cookies, signedIn, fetchAccount, {
       renewIfDue: true,
+      retryRead: true,
     }),
   }));
 };

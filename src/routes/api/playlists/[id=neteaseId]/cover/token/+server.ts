@@ -4,6 +4,6 @@ import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = ({ cookies }) =>
-  respondSignedIn(endpoints.coverToken, cookies, async (listener) =>
-    coverUploadToken(listener),
+  respondSignedIn(endpoints.coverToken, cookies, async (config) =>
+    coverUploadToken(config),
   );

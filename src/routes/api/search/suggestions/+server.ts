@@ -6,7 +6,10 @@ import { respondSignedIn } from '#lib/server/session.js';
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ url, cookies }) => {
   const keywords = readKeywords(url.searchParams.get('keywords'));
-  return respondSignedIn(endpoints.suggestions, cookies, (listener) =>
-    fetchSuggestions(keywords, listener),
+  return respondSignedIn(
+    endpoints.suggestions,
+    cookies,
+    (config) => fetchSuggestions(keywords, config),
+    { retryRead: true },
   );
 };

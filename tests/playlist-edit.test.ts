@@ -11,6 +11,7 @@ import {
   storedPlaylistIds,
   storedTrackIds,
 } from './harness/listener';
+import { MUSIC_U, renewCookies, RENEWED_MUSIC_U } from './harness/sign-in';
 import { useWorld } from './harness/world';
 
 const world = useWorld();
@@ -191,6 +192,108 @@ describe('新建歌单', () => {
     const sent = device.requests.length;
     await app.openPlaylist(CREATED.id);
     expect(device.requests.length).toBe(sent);
+  });
+
+  it('创建成功后详情要求续期：只重读原歌单，不能再创建一张', async () => {
+    const device = world.device();
+    const { app } = await signInAtLikedTracks(device);
+    const before = world.netease.calls.length;
+
+    await world.netease.reply(CREATED.create);
+    await world.netease.reply(CREATED.create);
+    await world.netease.reply(
+      'playlist-edit/playlist_detail.301-after-create.constructed.json',
+      { when: { id: CREATED.id } },
+    );
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    });
+    await world.netease.reply(CREATED.detail, {
+      when: { id: CREATED.id },
+    });
+
+    expect(
+      await app.createPlaylist({ name: CREATED.name, private: true }),
+    ).toEqual({ ok: true, playlistId: CREATED.id });
+    const calls = world.netease.calls.slice(before);
+    expect(
+      calls.filter((call) => call.module === 'playlist_create'),
+    ).toHaveLength(1);
+    expect(
+      calls
+        .filter((call) => call.module === 'playlist_detail')
+        .map((call) => call.query),
+    ).toEqual([{ id: CREATED.id }, { id: CREATED.id }]);
+    expect(
+      calls.map((call) => [
+        call.module,
+        typeof call.config.cookie === 'object'
+          ? call.config.cookie?.MUSIC_U
+          : null,
+      ]),
+    ).toEqual([
+      ['playlist_create', MUSIC_U],
+      ['playlist_detail', MUSIC_U],
+      ['login_refresh', MUSIC_U],
+      ['playlist_detail', RENEWED_MUSIC_U],
+    ]);
+    expect(calls.map((call) => call.config.state?.deviceId)).toEqual(
+      Array.from({ length: 4 }, () => calls[0].config.state?.deviceId),
+    );
+    expect(await storedPlaylistIds(device)).toContain(CREATED.id);
+  });
+
+  it('创建成功后详情连接中断：说明失败，不重新创建，也不把未取到的歌单存成本机成功', async () => {
+    const device = world.device();
+    const { app } = await signInAtLikedTracks(device);
+    const before = world.netease.calls.length;
+    const playlists = await storedPlaylistIds(device);
+    await world.netease.reply(CREATED.create);
+    await world.netease.reply(
+      'playlist-edit/playlist_detail.transport-after-create.constructed.json',
+    );
+
+    expect(
+      await app.createPlaylist({ name: CREATED.name, private: true }),
+    ).toEqual({
+      ok: false,
+      failure: { kind: 'neteaseUnavailable' },
+    });
+    expect(
+      world.netease.calls
+        .slice(before)
+        .map((call) => [call.module, call.query]),
+    ).toEqual([
+      ['playlist_create', { name: CREATED.name, privacy: 10 }],
+      ['playlist_detail', { id: CREATED.id }],
+    ]);
+    expect(await storedPlaylistIds(device)).toEqual(playlists);
+    expect(world.serverLogs.filter((log) => log.level === 'warn')).toHaveLength(
+      1,
+    );
+  });
+
+  it('创建本身要求登录：返回失败，不续期重发写入', async () => {
+    const device = world.device();
+    const { app } = await signInAtLikedTracks(device);
+    const before = world.netease.calls.length;
+    await world.netease.reply(
+      'playlist-edit/playlist_create.301.constructed.json',
+    );
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    });
+    await replyCreated();
+
+    expect(
+      await app.createPlaylist({ name: CREATED.name, private: true }),
+    ).toBeNull();
+    expect(app.state.session).toEqual({ status: 'loginExpired' });
+    expect(device.responses.at(-1)).toMatchObject({ status: 401 });
+    expect(
+      world.netease.calls.slice(before).map((call) => call.module),
+    ).toEqual(['playlist_create']);
+    expect(await storedPlaylistIds(device)).not.toContain(CREATED.id);
   });
 
   it('从加入歌单里新建：建好接着把这首加进去，提示已加入', async () => {

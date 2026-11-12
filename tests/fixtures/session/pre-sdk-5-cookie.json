@@ -1,0 +1,10 @@
+{
+  "source": "credentials.ts at 9a524b9ab45a06b142944986fb219198c6d0832c",
+  "note": "旧版真实签发函数在离线环境用测试密钥与假凭据签发；没有账号数据。",
+  "deviceId": "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234",
+  "header": "campanula_login=5-8B3WhleZHoGGO03k0PWNCTM5veSWYlGr2bwUqX_dTBre_hM78ptUz1HPUqIMqEEh_waPZZ3t0ZkkUjMgyOlncukRxQ-BSwYzg-Lr0MC5G0hoPXdhlaWwjzf-Z4ofOaUZYzv42Hryzp9rSGuNx0MgSGmKDjNMPYbaLB6vDSYipP5xjFOoT7ASNnBFzZTg-qX3jWyfNjaq3JL8Z_RGkAmt2X8MM4EYndaenpVbsjA9N5pQfDREww0MiXZLP4lyKAq2YeR-kVmg46fwmnGzXl72g; Path=/; HttpOnly; SameSite=strict; Max-Age=34560000; Secure",
+  "otherDevice": {
+    "deviceId": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "header": "campanula_login=FFubfretwP9WU8xcKUwLGvyYEd7xxYPdumf2yWsO8-h0S5w2aNUZ8L9CQLzzncRRk3I7CcZ_0qdHlPabEhRO4QKs6yMh5ds_SyU2qvTTtYnUZqrJdcyNhkcvwDiRaml2DWSVVEXQMZFe0tvWu9lXgxJ5zlMsjDKFpVC5Tfl_K5ZyMfYqPiVNx1NonXgESMuJhr3w94slnw4QR26_3gaFJNygcUm78ErjaVe9A4fqLo0Q2DlTpSmPnkTf7m5tr8xIQFIVLHQgzlnvi9aNeAu8H-9oDQ; Path=/; HttpOnly; SameSite=strict; Max-Age=34560000; Secure"
+  }
+}

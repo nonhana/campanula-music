@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
+import legacyCookie from './fixtures/session/pre-sdk-5-cookie.json';
+import { held, never } from './harness/hold';
 import { listener } from './harness/listener';
-import { MUSIC_U, signIn, signInCookies } from './harness/sign-in';
+import {
+  MUSIC_U,
+  renewCookies,
+  RENEWED_MUSIC_U,
+  signIn,
+  signInCookies,
+} from './harness/sign-in';
 import { REAL_IP, useWorld } from './harness/world';
 
 const world = useWorld();
@@ -48,6 +56,105 @@ describe('网易云凭据只在加密 Cookie 里', () => {
         __csrf: '6f1d0c9b8a7e6d5c4b3a29180f1e2d3c',
         MUSIC_R_T: '1572000000000',
       });
+  });
+
+  it('升级 SDK 前签发的登录 Cookie 仍有效，沿用原设备和凭据，不要求重新登录', async () => {
+    const device = world.device();
+    await device.setCookie(legacyCookie.header);
+    await world.netease.reply('login/user_account.vip.json');
+
+    const { app } = await device.open();
+    expect(app.state.session).toMatchObject({
+      status: 'signedIn',
+      account: { id: 10000001 },
+    });
+    expect(world.netease.calls).toMatchObject([
+      {
+        module: 'user_account',
+        config: {
+          state: { deviceId: legacyCookie.deviceId },
+          cookie: {
+            MUSIC_U: 'legacy-test-music-u',
+            __csrf: 'legacy-test-csrf',
+          },
+        },
+      },
+    ]);
+  });
+
+  it('两设备不同账号并发：一方读取未回时另一方续期，原请求和之后的读取仍用各自身份', async () => {
+    const first = world.device();
+    const second = world.device();
+    await first.setCookie(legacyCookie.header);
+    await second.setCookie(legacyCookie.otherDevice.header);
+    const syncing = never();
+    for (const uid of [10000001, 10000002, 10000001])
+      await world.netease.reply('library/likelist.json', {
+        when: { uid },
+        until: syncing,
+      });
+    const pending = held();
+    await world.netease.reply('login/user_account.vip.json', {
+      until: pending.until,
+    });
+    const openingFirst = first.open();
+    await world.settle();
+    expect(world.netease.held).toBe(1);
+
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    });
+    await world.netease.reply(
+      'login/user_account.another-account.constructed.json',
+    );
+    const other = await second.open();
+    expect(other.app.state.session).toMatchObject({
+      status: 'signedIn',
+      account: { id: 10000002 },
+    });
+    pending.release();
+    const original = await openingFirst;
+    expect(original.app.state.session).toMatchObject({
+      status: 'signedIn',
+      account: { id: 10000001 },
+    });
+
+    await world.netease.reply('login/user_account.vip.json');
+    await first.open();
+    expect(
+      world.netease.calls.filter((call) =>
+        ['user_account', 'login_refresh'].includes(call.module),
+      ),
+    ).toMatchObject([
+      {
+        module: 'user_account',
+        config: {
+          state: { deviceId: legacyCookie.deviceId },
+          cookie: { MUSIC_U: 'legacy-test-music-u' },
+        },
+      },
+      {
+        module: 'login_refresh',
+        config: {
+          state: { deviceId: legacyCookie.otherDevice.deviceId },
+          cookie: { MUSIC_U: 'another-test-music-u' },
+        },
+      },
+      {
+        module: 'user_account',
+        config: {
+          state: { deviceId: legacyCookie.otherDevice.deviceId },
+          cookie: { MUSIC_U: RENEWED_MUSIC_U },
+        },
+      },
+      {
+        module: 'user_account',
+        config: {
+          state: { deviceId: legacyCookie.deviceId },
+          cookie: { MUSIC_U: 'legacy-test-music-u' },
+        },
+      },
+    ]);
   });
 
   it('页面脚本读不到明文凭据：登录 Cookie 是 httpOnly、Secure 的密文，响应里也没有凭据', async () => {

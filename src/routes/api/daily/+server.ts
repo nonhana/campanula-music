@@ -4,4 +4,6 @@ import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ cookies }) =>
-  respondSignedIn(endpoints.daily, cookies, (listener) => fetchDaily(listener));
+  respondSignedIn(endpoints.daily, cookies, (config) => fetchDaily(config), {
+    retryRead: true,
+  });

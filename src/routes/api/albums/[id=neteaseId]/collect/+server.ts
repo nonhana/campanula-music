@@ -7,7 +7,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params;
   const { collected } = await readCollect(request);
-  return respondSignedIn(endpoints.collectAlbum, cookies, (listener) =>
-    collectAlbum(id, collected, listener),
+  return respondSignedIn(endpoints.collectAlbum, cookies, (config) =>
+    collectAlbum(id, collected, config),
   );
 };

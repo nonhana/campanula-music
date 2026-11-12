@@ -7,7 +7,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params;
   const { imgId } = await readCoverImage(request);
-  return respondSignedIn(endpoints.setCover, cookies, (listener) =>
-    setPlaylistCover(id, imgId, listener),
+  return respondSignedIn(endpoints.setCover, cookies, (config) =>
+    setPlaylistCover(id, imgId, config),
   );
 };

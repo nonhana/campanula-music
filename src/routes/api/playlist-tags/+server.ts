@@ -4,6 +4,11 @@ import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ cookies }) =>
-  respondSignedIn(endpoints.playlistTags, cookies, async (listener) => ({
-    groups: await fetchPlaylistTags(listener),
-  }));
+  respondSignedIn(
+    endpoints.playlistTags,
+    cookies,
+    async (config) => ({
+      groups: await fetchPlaylistTags(config),
+    }),
+    { retryRead: true },
+  );

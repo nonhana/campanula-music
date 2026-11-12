@@ -12,7 +12,10 @@ export const GET: RequestHandler = ({ params, url, cookies }) => {
   const kind = readSearchKind(params.kind);
   const keywords = readKeywords(url.searchParams.get('keywords'));
   const offset = readOffset(url.searchParams.get('offset'));
-  return respondSignedIn(searchPage(kind), cookies, (listener) =>
-    searches[kind](keywords, offset, listener),
+  return respondSignedIn(
+    searchPage(kind),
+    cookies,
+    (config) => searches[kind](keywords, offset, config),
+    { retryRead: true },
   );
 };

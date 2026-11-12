@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
     'songIds',
     TRACKS_PER_CHANGE,
   );
-  return respondSignedIn(endpoints.addTracks, cookies, (listener) =>
-    addTracks(id, songIds, listener),
+  return respondSignedIn(endpoints.addTracks, cookies, (config) =>
+    addTracks(id, songIds, config),
   );
 };
