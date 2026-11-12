@@ -100,30 +100,30 @@ const failureOf = (error: unknown): ExportFailure => {
 export const createExports = (context: ExportContext): Exports => {
   let writing = false;
   let cancelled = false;
-  let current: WritableCapability | null = null;
 
   // 带 create 会先建空文件，没写成时要删掉
   const save = async (
     folder: FolderCapability,
     name: string,
     file: Blob,
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     const handle = await folder.getFileHandle(name, { create: true });
+    let writable: WritableCapability | null = null;
+    let committed = false;
     try {
-      const writable = await handle.createWritable();
-      current = writable;
-      try {
-        await writable.write(file);
-        await writable.close();
-      } catch (error) {
-        await writable.abort();
-        throw error;
-      } finally {
-        current = null;
+      if (cancelled) return false;
+      writable = await handle.createWritable();
+      if (cancelled) return false;
+      await writable.write(file);
+      if (cancelled) return false;
+      await writable.close();
+      committed = true;
+      return true;
+    } finally {
+      if (!committed) {
+        await writable?.abort().catch(() => {});
+        await folder.removeEntry(name).catch(() => {});
       }
-    } catch (error) {
-      await folder.removeEntry(name).catch(() => {});
-      throw error;
     }
   };
 
@@ -172,7 +172,7 @@ export const createExports = (context: ExportContext): Exports => {
               format,
             );
             if (cancelled) break;
-            await save(folder, name, file);
+            if (!(await save(folder, name, file))) break;
             exported.push(record.song);
             written += context.sizeOf(record.song.id);
           } catch (error) {
@@ -200,7 +200,6 @@ export const createExports = (context: ExportContext): Exports => {
     cancel() {
       if (!writing) return;
       cancelled = true;
-      void current?.abort();
     },
     close() {
       if (!writing) context.write(null);
