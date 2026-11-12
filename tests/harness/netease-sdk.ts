@@ -81,13 +81,14 @@ const interchangeable = (a: Outcome, b: Outcome): boolean =>
   a.rejected === b.rejected &&
   JSON.stringify(a.response.cookie) === JSON.stringify(b.response.cookie);
 
-const fits = (module: string, outcome: Outcome, query: unknown): boolean =>
-  !outcome.when ||
-  Object.entries(outcome.when).every(
-    ([key, value]) =>
-      queryKey(recordedQuery(module, query as Record<string, unknown>)[key]) ===
-      queryKey(recordedQuery(module, { [key]: value })[key]),
+const fits = (module: string, outcome: Outcome, query: unknown): boolean => {
+  if (!outcome.when) return true;
+  const actual = recordedQuery(module, query as Record<string, unknown>);
+  const expected = recordedQuery(module, outcome.when);
+  return Object.entries(expected).every(
+    ([key, value]) => queryKey(actual[key]) === queryKey(value),
   );
+};
 
 const checkOrder = (
   module: string,

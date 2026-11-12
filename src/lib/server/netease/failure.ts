@@ -27,7 +27,6 @@ const describe = (failure: NeteaseFailure): string => {
 export class NeteaseError extends Error {
   constructor(
     readonly failure: NeteaseFailure,
-    readonly body: unknown,
     readonly detail?: string,
   ) {
     super(describe(failure));
@@ -78,7 +77,7 @@ export const rejection = (error: unknown) => {
 };
 
 export const shapeChanged = (module: string, detail: string): NeteaseError =>
-  new NeteaseError({ kind: 'upstreamChanged' }, null, `${module}：${detail}`);
+  new NeteaseError({ kind: 'upstreamChanged' }, `${module}：${detail}`);
 
 export const logFailure = (error: unknown, failure: NeteaseFailure): void => {
   const detail =

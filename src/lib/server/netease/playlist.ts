@@ -71,7 +71,7 @@ export const fetchPlaylists = async (
       body.playlist.length > 0 &&
       body.playlist.every((playlist) => playlist.subscribed === null)
     )
-      throw new NeteaseError({ kind: 'needsLogin' }, body);
+      throw new NeteaseError({ kind: 'needsLogin' });
     for (const playlist of body.playlist) {
       const { specialType } = playlist;
       const creator = playlist.creator?.userId;
@@ -181,10 +181,11 @@ export const setPlaylistCover = async (
 ): Promise<SetCoverResponse> => {
   const { body } = await playlistCoverUpdate({ id: playlistId, imgId }, config);
   if (body.code !== 200)
-    throw new NeteaseError(
-      { kind: 'rejected', code: body.code, message: body.msg ?? '' },
-      body,
-    );
+    throw new NeteaseError({
+      kind: 'rejected',
+      code: body.code,
+      message: body.msg ?? '',
+    });
   return { url: body.data.url ?? null };
 };
 

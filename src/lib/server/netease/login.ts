@@ -176,7 +176,7 @@ export const fetchAccount = async (
 ): Promise<Account> => {
   const { body } = await userAccount({}, config);
   if (!body.account || body.account.anonimousUser || !body.profile)
-    throw new NeteaseError({ kind: 'needsLogin' }, body);
+    throw new NeteaseError({ kind: 'needsLogin' });
   return accountOf(body.profile);
 };
 

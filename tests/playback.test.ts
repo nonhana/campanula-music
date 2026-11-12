@@ -143,6 +143,28 @@ const recordedUrl = async (path: string): Promise<string> => {
 };
 
 describe('点歌', () => {
+  it('按 SDK 5 的 ids 匹配播放地址：先准备下一首的返回，仍播放点中的这首', async () => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+
+    await world.netease.reply(SECOND.url, {
+      when: { ids: [SECOND.id], level: 'exhigh' },
+      until: never(),
+    });
+    await world.netease.reply(FIRST.url, {
+      when: { ids: [FIRST.id], level: 'exhigh' },
+    });
+
+    tab.app.play(LIKED, FIRST.id);
+    await world.settle();
+
+    const player = tab.audio.find((audio) => audio.src !== '');
+    expect(player?.src).toBe(await recordedUrl(FIRST.url));
+    expect(player?.paused).toBe(false);
+    expect(current(tab.app)).toBe(FIRST.id);
+    expect(tab.app.state.player.status).toBe('buffering');
+  });
+
   it('在我喜欢的音乐里点一首歌：整个列表替换播放队列，每首记着播放来源；服务端按极高音质取这首的播放地址，浏览器拿 https 地址直连网易云的音频服务器放', async () => {
     const device = world.device();
     const tab = await signInWithLiked(device);
