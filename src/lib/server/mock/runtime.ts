@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises';
 
-import type { ModuleCallConfig, NcmApiResponse } from 'hana-music-api';
+import type {
+  ModuleCallConfig,
+  NcmApiFailure,
+  NcmApiResponse,
+  NcmFailureInfo,
+} from 'hana-music-api';
 
 import {
   AUDIO_PREFIX,
@@ -10,11 +15,12 @@ import {
   UPLOAD_PATH,
   UPLOAD_PREFIX,
 } from './assets.ts';
-import { fixtureOutcome } from './fixture-format.ts';
-import { queryKey } from './query-key.ts';
+import { field, fixtureOutcome } from './fixture-format.ts';
+import { queryKey, recordedQuery } from './query-key.ts';
 import { readFixture } from './read-fixture.ts';
 import type { MockConfig, ScenarioName } from './scenarios.ts';
 import { configOf, isScenarioName } from './scenarios.ts';
+import { sdkModules } from './sdk-modules';
 import type { SeedName } from './seed.ts';
 import { POEMS_PLAYLIST } from './seed.ts';
 import type { MockResult } from './store.ts';
@@ -50,7 +56,21 @@ const cookieFor = (musicU = 'mock-music-u'): string[] => [
 const sdkFailure = (
   status: number,
   body: unknown,
-): NcmApiResponse<unknown> => ({ status, body, cookie: [] });
+  failure?: NcmFailureInfo,
+): NcmApiFailure<unknown> => {
+  const code = field(body, 'code');
+  const message = field(body, 'message') ?? field(body, 'msg');
+  return {
+    status,
+    body,
+    cookie: [],
+    failure: failure ?? {
+      kind: 'business',
+      code: typeof code === 'number' ? code : null,
+      ...(typeof message === 'string' ? { message } : {}),
+    },
+  };
+};
 
 interface IndexEntry {
   path: string;
@@ -75,7 +95,12 @@ interface Index {
 let indexPromise: Promise<Index> | null = null;
 const fixtureCache = new Map<
   string,
-  Promise<{ rejected: boolean; status: number; body: unknown }>
+  Promise<{
+    rejected: boolean;
+    status: number;
+    body: unknown;
+    failure?: NcmFailureInfo;
+  }>
 >();
 interface RuntimeState {
   config: MockConfig;
@@ -108,12 +133,21 @@ const index = async (): Promise<Index> => {
 
 const fixture = async (
   entry: IndexEntry,
-): Promise<{ rejected: boolean; status: number; body: unknown }> => {
+): Promise<{
+  rejected: boolean;
+  status: number;
+  body: unknown;
+  failure?: NcmFailureInfo;
+}> => {
   let loaded = fixtureCache.get(entry.path);
   if (!loaded) {
     loaded = readFixture(entry.path).then((raw) => {
-      const { rejected, response } = fixtureOutcome(raw.module, raw.response);
-      return { rejected, status: response.status, body: response.body };
+      const { rejected, response } = fixtureOutcome(
+        raw.module,
+        raw.response,
+        entry.path,
+      );
+      return { rejected, ...response };
     });
     fixtureCache.set(entry.path, loaded);
   }
@@ -125,7 +159,11 @@ const miss = (module: string, query: unknown): never => {
   console.error(
     `Mock 未覆盖：模块 ${module}，查询 ${JSON.stringify(query)}，场景 ${state.config.name}。看 GET /api/mock/coverage 补录制`,
   );
-  throw sdkFailure(500, { code: 500, msg: `Mock 未覆盖：${module}` });
+  throw sdkFailure(
+    500,
+    { code: 500, msg: `Mock 未覆盖：${module}` },
+    { kind: 'unknown' },
+  );
 };
 
 const entryFor = async (
@@ -133,7 +171,7 @@ const entryFor = async (
   query: unknown,
 ): Promise<IndexEntry | null> => {
   const current = await index();
-  const key = queryKey(query);
+  const key = queryKey(query, module);
   const candidates = current.entries.filter(
     (entry) => entry.module === module && entry.queryKey === key,
   );
@@ -196,7 +234,8 @@ const fallback = async (
       : null);
   if (!entry) return miss(module, query);
   const loaded = await fixture(entry);
-  if (loaded.rejected) throw sdkFailure(loaded.status, loaded.body);
+  if (loaded.rejected)
+    throw sdkFailure(loaded.status, loaded.body, loaded.failure);
   return localize(loaded.body);
 };
 
@@ -304,15 +343,24 @@ export const invokeModule = async (
   callConfig: ModuleCallConfig = {},
 ): Promise<NcmApiResponse<unknown>> => {
   state.calls.push({ module, query });
+  query = recordedQuery(module, query);
   if (state.config.latencyMs > 0) await sleep(state.config.latencyMs);
   if (state.config.offline)
-    throw sdkFailure(503, { code: 503, msg: 'Mock 断网' });
+    throw sdkFailure(
+      503,
+      { code: 503, msg: 'Mock 断网' },
+      { kind: 'transport' },
+    );
   if (state.config.rateLimited && !SESSION_MODULES.has(module))
-    throw sdkFailure(405, {
-      code: 405,
-      msg: '操作过于频繁，请稍后再试',
-      retryAfter: 30,
-    });
+    throw sdkFailure(
+      405,
+      {
+        code: 405,
+        msg: '操作过于频繁，请稍后再试',
+        retryAfter: 30,
+      },
+      { kind: 'rateLimited', code: 405, retryAfter: 30 },
+    );
 
   const data = await state.store.load();
   const templates = data.templates as Record<string, unknown>;
@@ -417,7 +465,7 @@ export const invokeModule = async (
               'library/song_detail.liked-page4.502-null-artist.json.gz',
           )!,
         );
-        throw sdkFailure(failed.status, failed.body);
+        throw sdkFailure(failed.status, failed.body, failed.failure);
       }
       const body = await state.store.songDetail(idsOf(query.ids));
       return {
@@ -668,3 +716,54 @@ export const invokeModule = async (
       return miss(module, query);
   }
 };
+
+export {
+  generateDeviceId,
+  getNcmFailureInfo,
+  isNcmApiResponse,
+} from 'hana-music-api';
+
+export const {
+  album,
+  albumSub,
+  albumSublist,
+  artistAlbum,
+  artistDesc,
+  artistSongs,
+  artistSub,
+  artistSublist,
+  captchaSent,
+  cloudsearch,
+  imageUploadToken,
+  like,
+  likelist,
+  loginCellphone,
+  loginQrCheck,
+  loginQrCreate,
+  loginQrKey,
+  loginRefresh,
+  logout,
+  lyricNew,
+  playlistCatlist,
+  playlistCoverUpdate,
+  playlistCreate,
+  playlistDelete,
+  playlistDescUpdate,
+  playlistDetail,
+  playlistNameUpdate,
+  playlistOrderUpdate,
+  playlistPrivacy,
+  playlistSubscribe,
+  playlistTagsUpdate,
+  playlistTracks,
+  recommendSongs,
+  scrobble,
+  searchSuggest,
+  songDetail,
+  songDownloadUrlV1,
+  songOrderUpdate,
+  songUrlV1,
+  userAccount,
+  userPlaylist,
+  verifyGetQr,
+} = sdkModules(invokeModule);

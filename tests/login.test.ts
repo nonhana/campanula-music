@@ -34,11 +34,11 @@ describe('短信验证码登录', () => {
     ).toEqual([
       {
         module: 'captcha_sent',
-        query: { phone: PHONE, ctcode: '86' },
+        query: { phone: PHONE, ctcode: 86 },
       },
       {
         module: 'login_cellphone',
-        query: { phone: PHONE, captcha: CAPTCHA, countrycode: '86' },
+        query: { phone: PHONE, captcha: CAPTCHA, countrycode: 86 },
       },
     ]);
   });
@@ -246,7 +246,7 @@ describe('扫码登录', () => {
         module: 'verify_getQr',
         query: {
           vid: '61',
-          type: '2',
+          type: 2,
           token: '00.verify-token.placeholder',
           evid: 'risk-event-placeholder',
           sign: 'risk-sign-placeholder',

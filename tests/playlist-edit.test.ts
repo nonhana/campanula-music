@@ -149,7 +149,7 @@ describe('新建歌单', () => {
     });
     expect(world.netease.calls.at(-1)).toMatchObject({
       module: 'playlist_create',
-      query: { name: CREATED.name, privacy: '10' },
+      query: { name: CREATED.name, privacy: 10 },
     });
     expect(playlistIds(app)).toEqual(before);
 
@@ -297,7 +297,7 @@ describe('新建歌单', () => {
     ).toMatchObject({
       query: {
         name: '夜'.repeat(20),
-        privacy: '0',
+        privacy: 0,
       },
     });
     await replyCreated();
@@ -408,7 +408,7 @@ describe('改名称、简介、标签', () => {
     });
     expect(call('playlist_tags_update')).toEqual({
       id: JAZZ.id,
-      tags: '华语;流行;夜晚',
+      tags: ['华语', '流行', '夜晚'],
     });
     expect(await storedPlaylist(device, JAZZ.id)).toMatchObject({
       name: JAZZ.name,

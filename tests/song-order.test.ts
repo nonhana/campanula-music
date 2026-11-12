@@ -137,7 +137,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     expect(orderCalls()[0]).toMatchObject({
       query: {
         pid: CREATED.id,
-        ids: JSON.stringify(latest),
+        ids: latest,
       },
     });
     expect(await storedTrackIds(device, CREATED.id)).toEqual(latest);

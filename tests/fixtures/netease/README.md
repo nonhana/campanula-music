@@ -340,3 +340,10 @@ Campanula 收藏前在浏览器用 `hana-music-api/watchman` 现取 token，自�
 ## #87 正式版追加（2026-11-09）
 
 按作者要求升级到 npm `hana-music-api@4.0.0`，索引用正式版公开 Schema 重建。上节 4.0.0-next.0 的校验属于历史轮次，原录制及来源继续保留；本次重校验不改写为当前上游或真实页面验证。mock 的失败与 SDK 4 一致，拒绝值是带 status/body/cookie 的响应对象。
+
+
+## SDK 5 接入重构（2026-11-12）
+
+索引以 npm `hana-music-api@5.0.0` 的公开 Schema 重新校验。历史录制的 SDK、时间、查询和来源保持；替身在匹配时将新的数组业务输入转换成历史表示，并按录制事实补充 SDK 5 的失败元数据。这不代表重新执行过真实上游请求。
+
+`playlist-edit/playlist_detail.301-after-create.constructed.json` 是 #88 要求的创建后详情续期场景：响应来自 `library/likelist.301-invalid.json` 的通用 301，只变更模块和查询，`context.constructed` 为 true。用于证明服务端不会重放已成功的创建，不证明真实上游出现过这个时序。

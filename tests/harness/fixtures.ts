@@ -38,14 +38,14 @@ interface LoadedFixture {
 const load = async (path: string): Promise<LoadedFixture> => {
   const raw = await readFixture(path);
   const { module } = raw;
-  const { rejected, response } = fixtureOutcome(module, raw.response);
+  const { rejected, response } = fixtureOutcome(module, raw.response, path);
   const code = field(response.body, 'code');
   const outcome = (body: unknown): LoadedFixture => ({
     module,
     query: raw.query as Record<string, unknown>,
     outcome: {
       rejected,
-      response: { status: response.status, body, cookie: [] },
+      response: { ...response, body, cookie: [] },
     },
   });
 

@@ -18,5 +18,6 @@
 - 写新测试前先看 `tests/harness/listener.ts`：从按领域命名的登录、同步停点、本机副本读取和请求过滤场景开始；只有新的听众行为才在测试文件里加准备步骤。
 - 网易云的返回只用验证关卡录下、脱敏过的数据（`tests/fixtures/netease/`），用 `world.netease.reply()` 放进去，不连真实账号。
 - 缺录制数据时用 `scripts/netease-record.mts`（`pnpm tsx` 跑）录，做法和脱敏规则见 `tests/fixtures/netease/README.md`「录制」。录制用的登录 Cookie 用 `pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi.sh`）取；录制开始前会确认登录有效，失效时停下来请作者在专用窗口里扫码。
-- SDK 的成败规矩看 `tests/harness/netease-sdk.ts` 和 `fixtures.ts` 的注释；上游 README 还没写，见 nonhana/hana-music-api#43。
+- SDK 替身在 `tests/harness/netease-sdk.ts`，具名调用由 `src/lib/server/mock/sdk-modules.ts` 绑定到原录制队列；`world.ts` 的隔离探针核对全部导出。只有替身自身能从真实 SDK 根入口复用设备编号和失败读取工具，业务调用仍被替换。
+- `fixtures.ts` 校验录制返回体，`mock/fixture-format.ts` 为历史返回补 SDK 5 的失败元数据；`mock/query-key.ts` 只在匹配时转换历史参数表示，录制文件和来源保留。
 - 缺哪种浏览器能力的替身，就在这张票里加进 `src/lib/app/browser.ts` 和 `tests/harness/browser.ts`。

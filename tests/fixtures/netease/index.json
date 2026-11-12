@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "checkedWith": "hana-music-api@4.0.0",
-  "recordings": 346,
+  "checkedWith": "hana-music-api@5.0.0",
+  "recordings": 347,
   "modules": {
     "recommend_songs": {
       "count": 2,
@@ -79,10 +79,10 @@
       }
     },
     "playlist_detail": {
-      "count": 71,
+      "count": 72,
       "outcomes": {
         "ok": 69,
-        "rejected": 2
+        "rejected": 3
       }
     },
     "song_detail": {
@@ -5492,6 +5492,22 @@
       "viewer": "vip-qr",
       "sdk": "hana-music-api@1.4.0",
       "note": null
+    },
+    {
+      "path": "playlist-edit/playlist_detail.301-after-create.constructed.json",
+      "module": "playlist_detail",
+      "queryKey": "{\"id\":900000023}",
+      "query": {
+        "id": 900000023
+      },
+      "status": 301,
+      "outcome": "rejected",
+      "validated": true,
+      "truncated": null,
+      "constructed": true,
+      "viewer": null,
+      "sdk": "hana-music-api@5.0.0",
+      "note": "构造的，不是录制：用于创建成功后读取详情时凭据失效的回归。返回体来自 library/likelist.301-invalid.json，只变更模块和查询；不证明网易云实际在此阶段返回过 301。"
     },
     {
       "path": "playlist-edit/playlist_detail.deleted.json",

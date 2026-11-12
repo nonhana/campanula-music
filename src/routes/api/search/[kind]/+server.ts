@@ -1,5 +1,5 @@
 import { searchPage } from '#lib/api/endpoints.js';
-import { searches } from '#lib/server/netease.js';
+import { searches } from '#lib/server/netease/search.js';
 import {
   readKeywords,
   readOffset,
@@ -8,7 +8,6 @@ import {
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-
 export const GET: RequestHandler = ({ params, url, cookies }) => {
   const kind = readSearchKind(params.kind);
   const keywords = readKeywords(url.searchParams.get('keywords'));

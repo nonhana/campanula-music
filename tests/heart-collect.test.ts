@@ -241,7 +241,7 @@ describe('加入歌单', () => {
       query: {
         op: 'add',
         pid: JAZZ.id,
-        tracks: String(song.id),
+        tracks: [song.id],
       },
     });
     expect(await storedTrackIds(device, JAZZ.id)).toEqual(before);

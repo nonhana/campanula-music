@@ -48,7 +48,7 @@ describe('mock SDK 边界', () => {
 
     const songs = await invokeModule(
       'song_detail',
-      { ids: '3433267939,2662577181' },
+      { ids: [3433267939, 2662577181] },
       cookie,
     );
     await validateBody('SongDetailBody', songs.body);
@@ -56,7 +56,7 @@ describe('mock SDK 边界', () => {
 
     const captcha = await invokeModule(
       'captcha_sent',
-      { ctcode: '86', phone: '13800000000' },
+      { ctcode: 86, phone: '13800000000' },
       cookie,
     );
     expect((captcha.body as { code: number }).code).toBe(200);
@@ -78,7 +78,7 @@ describe('mock SDK 边界', () => {
 
     const url = await invokeModule(
       'song_url_v1',
-      { id: 3433267939, level: 'exhigh' },
+      { ids: [3433267939], level: 'exhigh' },
       cookie,
     );
     await validateBody('SongUrlV1Body', url.body);
@@ -125,7 +125,7 @@ describe('mock SDK 边界', () => {
 
     const added = await invokeModule(
       'playlist_tracks',
-      { op: 'add', pid: 900000019, tracks: '3433267939' },
+      { op: 'add', pid: 900000019, tracks: [3433267939] },
       cookie,
     );
     await validateBody('PlaylistTracksBody', added.body);
@@ -218,9 +218,9 @@ describe('mock SDK 边界', () => {
     ).toHaveLength(0);
 
     await configure('partial-sync');
-    await invokeModule('song_detail', { ids: '3433267939' }, cookie);
+    await invokeModule('song_detail', { ids: [3433267939] }, cookie);
     await expect(
-      invokeModule('song_detail', { ids: '2662577181' }, cookie),
+      invokeModule('song_detail', { ids: [2662577181] }, cookie),
     ).rejects.toMatchObject({ status: 502 });
 
     await configure('slow');

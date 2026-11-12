@@ -150,7 +150,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
       query: {
         op: 'del',
         pid: JAZZ.id,
-        tracks: String(JAZZ_TRACKS[0]),
+        tracks: [JAZZ_TRACKS[0]],
       },
     });
     expect(await storedTrackIds(device, JAZZ.id)).toEqual([JAZZ_TRACKS[1]!]);

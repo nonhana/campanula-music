@@ -64,7 +64,12 @@ const replaceSdk = (): Plugin => ({
       noExternal: ['hana-music-api'],
     },
   }),
-  resolveId(id) {
+  resolveId(id, importer) {
+    if (id === 'hana-music-api' && importer === FAKE_SDK)
+      return {
+        id: fileURLToPath(import.meta.resolve('hana-music-api')),
+        external: true,
+      };
     if (id === 'hana-music-api') return FAKE_SDK;
     if (id === 'hana-music-api/watchman') return null;
     if (id.startsWith('hana-music-api/'))
@@ -74,8 +79,7 @@ const replaceSdk = (): Plugin => ({
     if (id === SDK_PROBE) return `\0${SDK_PROBE}`;
   },
   load(id) {
-    if (id === `\0${SDK_PROBE}`)
-      return `export { invokeModule } from 'hana-music-api'`;
+    if (id === `\0${SDK_PROBE}`) return `export * from 'hana-music-api'`;
   },
 });
 
@@ -126,11 +130,14 @@ const startWorld = async (options: WorldOptions = {}) => {
   const fake = (await runner.import(
     FAKE_SDK,
   )) as typeof import('./netease-sdk');
-  const probe = (await runner.import(SDK_PROBE)) as Pick<
-    typeof import('./netease-sdk'),
-    'invokeModule'
-  >;
-  if (probe.invokeModule !== fake.invokeModule) {
+  const probe = (await runner.import(
+    SDK_PROBE,
+  )) as typeof import('./netease-sdk');
+  if (
+    Object.entries(fake).some(
+      ([name, value]) => probe[name as keyof typeof probe] !== value,
+    )
+  ) {
     await vite.close();
     throw new Error(
       '服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云',

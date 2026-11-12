@@ -35,7 +35,7 @@
 
 - `src/routes/`：页面；`src/routes/api/**/+server.ts` 是服务端接口（ADR-0013）。
 - `src/lib/app/`：去掉界面的整个 App（测试接入点）；`api-client.ts` 是浏览器发请求的那一层，契约在 `src/lib/api/`。
-- `src/lib/api/`：服务端接口的契约与端点目录；`src/lib/server/`：服务端适配层与 mock（只有 `netease.ts` 调 `hana-music-api`）。
+- `src/lib/api/`：服务端接口的契约与端点目录；`src/lib/server/`：服务端适配层与 mock；`netease/` 按登录、曲库、歌单、播放、搜索调用 SDK，`credentials.ts` 复用 SDK 生成设备编号。
 - `src/lib/components/`：
   - `account/` 账号与退出；`boot/` 打开 App、部署与根屏（`Brand` 是根屏、登录和外壳共用的品牌字样）；`menu/` 更多菜单（条目、行、壳、歌曲菜单）。
   - `overlay/` 浮层栈与弹窗外壳（确认、对话框；加浮层、从浮层里换页、改返回行为先读 `docs/agents/overlay.md`）；`playlist/` 歌单编辑、加入歌单、歌单封面（选图/裁剪/上传）。

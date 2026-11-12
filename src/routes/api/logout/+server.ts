@@ -1,21 +1,20 @@
 import { endpoints } from '#lib/api/endpoints.js';
 import { clearLogin, readLogin } from '#lib/server/credentials.js';
-import { NeteaseError } from '#lib/server/netease-error.js';
-import { logout } from '#lib/server/netease.js';
+import { configFor } from '#lib/server/netease/config.js';
+import { failureOf, logFailure } from '#lib/server/netease/failure.js';
+import { logout } from '#lib/server/netease/login.js';
 import { json } from '#lib/server/respond.js';
 
 import type { RequestHandler } from './$types';
-
 export const POST: RequestHandler = async ({ cookies }) => {
   const login = readLogin(cookies);
   if (login?.session) {
     try {
-      await logout({
-        deviceId: login.deviceId,
-        credentials: login.session.credentials,
-      });
+      await logout(configFor(login.deviceId, login.session.credentials));
     } catch (error) {
-      if (!(error instanceof NeteaseError)) throw error;
+      const failure = failureOf(error);
+      if (!failure) throw error;
+      logFailure(error, failure);
     }
   }
   clearLogin(cookies);

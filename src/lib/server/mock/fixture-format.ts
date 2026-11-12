@@ -1,3 +1,5 @@
+import type { NcmFailureInfo } from 'hana-music-api';
+
 export interface RawFixture {
   module: string;
   query?: unknown;
@@ -40,14 +42,44 @@ const unwrapped = (module: string, body: unknown): unknown => {
   return typeof inner === 'object' && inner !== null ? inner : body;
 };
 
+const recordedFailure = (body: unknown, source?: string): NcmFailureInfo => {
+  if (source === 'login/captcha_sent.502-anonymous-registration.json')
+    return { kind: 'unknown' };
+  const shape = field(body, 'upstreamShape');
+  const module = field(shape, 'module');
+  const path = field(shape, 'path');
+  const expected = field(shape, 'expected');
+  const actual = field(shape, 'actual');
+  if (
+    typeof module === 'string' &&
+    typeof path === 'string' &&
+    typeof expected === 'string' &&
+    typeof actual === 'string'
+  )
+    return { kind: 'upstreamShape', module, path, expected, actual };
+  const code = field(body, 'code');
+  const message = field(body, 'message') ?? field(body, 'msg');
+  return {
+    kind: 'business',
+    code: typeof code === 'number' ? code : null,
+    ...(typeof message === 'string' ? { message } : {}),
+  };
+};
+
 export interface FixtureOutcome {
   rejected: boolean;
-  response: { status: number; body: unknown; retryAfter?: number };
+  response: {
+    status: number;
+    body: unknown;
+    retryAfter?: number;
+    failure?: NcmFailureInfo;
+  };
 }
 
 export const fixtureOutcome = (
   module: string,
   response: { status: number; body: unknown },
+  source?: string,
 ): FixtureOutcome => {
   const body = unwrapped(module, response.body);
   const code = field(body, 'code');
@@ -61,11 +93,20 @@ export const fixtureOutcome = (
         status,
         body: { ...(body as object), retryAfter: DEFAULT_RETRY_AFTER },
         retryAfter: DEFAULT_RETRY_AFTER,
+        failure: {
+          kind: 'rateLimited',
+          code: status,
+          retryAfter: DEFAULT_RETRY_AFTER,
+        },
       },
     };
   }
   return {
     rejected,
-    response: { status, body },
+    response: {
+      status,
+      body,
+      ...(rejected ? { failure: recordedFailure(body, source) } : {}),
+    },
   };
 };

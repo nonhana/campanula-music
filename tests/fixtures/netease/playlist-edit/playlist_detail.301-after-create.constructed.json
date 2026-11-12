@@ -1,0 +1,10 @@
+{
+  "module": "playlist_detail",
+  "query": { "id": 900000023 },
+  "context": {
+    "constructed": true,
+    "sdk": "hana-music-api@5.0.0",
+    "note": "构造的，不是录制：用于创建成功后读取详情时凭据失效的回归。返回体来自 library/likelist.301-invalid.json，只变更模块和查询；不证明网易云实际在此阶段返回过 301。"
+  },
+  "response": { "status": 301, "body": { "msg": null, "code": 301 } }
+}

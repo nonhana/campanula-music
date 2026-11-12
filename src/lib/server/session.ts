@@ -1,12 +1,14 @@
 import type { Cookies } from '@sveltejs/kit';
+import type { ModuleCallConfig } from 'hana-music-api';
 
 import type { Endpoint } from '#lib/api/endpoint.js';
 
 import type { LoginCookie } from './credentials';
 import { readLogin, renewalDue, saveLogin } from './credentials';
-import type { Listener, SignedInListener } from './netease';
-import { renewLogin } from './netease';
-import { NeteaseError } from './netease-error';
+import { configFor } from './netease/config';
+import { credentialsFrom } from './netease/cookies';
+import { failureOf, logFailure } from './netease/failure';
+import { renewLogin } from './netease/login';
 import { errorResponse, withNetease } from './respond';
 
 export type SignedIn = LoginCookie & {
@@ -17,45 +19,52 @@ export type SignedIn = LoginCookie & {
 export const asSignedIn = async <T>(
   cookies: Cookies,
   login: SignedIn,
-  call: (listener: Listener) => Promise<T>,
+  call: (listener: ModuleCallConfig) => Promise<T>,
   { renewIfDue = false } = {},
 ): Promise<T> => {
-  let listener: SignedInListener = {
-    deviceId: login.deviceId,
-    credentials: login.session.credentials,
-  };
+  let credentials = login.session.credentials;
+  let config = configFor(login.deviceId, credentials);
   let renewed = false;
   const renew = async (): Promise<void> => {
-    listener = { ...listener, credentials: await renewLogin(listener) };
-    saveLogin(cookies, listener.deviceId, listener.credentials);
+    credentials = credentialsFrom(
+      'login_refresh',
+      await renewLogin(config),
+      credentials,
+    );
+    config = configFor(login.deviceId, credentials);
+    saveLogin(cookies, login.deviceId, credentials);
     renewed = true;
   };
   const needsLogin = (error: unknown) =>
-    error instanceof NeteaseError && error.failure.kind === 'needsLogin';
+    failureOf(error)?.kind === 'needsLogin';
 
   if (renewIfDue && renewalDue(login.session)) {
     await renew().catch((error: unknown) => {
-      if (!(error instanceof NeteaseError) || needsLogin(error)) throw error;
+      const failure = failureOf(error);
+      if (!failure || needsLogin(error)) throw error;
+      logFailure(error, failure);
     });
   }
   try {
-    return await call(listener);
+    return await call(config);
   } catch (error) {
     if (renewed || !needsLogin(error)) throw error;
     await renew();
-    return call(listener);
+    return call(config);
   }
 };
 
 export const respondSignedIn = async <Value>(
   endpoint: Endpoint<Value>,
   cookies: Cookies,
-  call: (listener: Listener) => NoInfer<Value> | Promise<NoInfer<Value>>,
+  call: (
+    listener: ModuleCallConfig,
+  ) => NoInfer<Value> | Promise<NoInfer<Value>>,
 ): Promise<Response> => {
   const login = readLogin(cookies);
   if (!login?.session) return errorResponse({ kind: 'needsLogin' });
   const signedIn = { ...login, session: login.session };
   return withNetease(endpoint, () =>
-    asSignedIn(cookies, signedIn, async (listener) => call(listener)),
+    asSignedIn(cookies, signedIn, async (config) => call(config)),
   );
 };

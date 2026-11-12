@@ -85,6 +85,12 @@ mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确
 
 录完跑 `pnpm fixtures:index`：每份录制都要通过 SDK 结构定义的校验；没有结构的模块记为 `validated: false`，mock 不拿它回答。最后补上并运行对应测试，界面相关的再跑 `pnpm smoke:mock`。
 
+## SDK 调用接缝
+
+`runtime.ts` 保留状态和录制回放，`sdk-modules.ts` 把应用实际使用的 SDK 具名函数绑定到它。替换插件只允许 runtime 自身从真实 SDK 根入口复用 `generateDeviceId`、`getNcmFailureInfo`、`isNcmApiResponse`；应用的业务调用全部进入替身。
+
+SDK 5 输入使用业务数组和数值。`query-key.ts` 只在匹配旧录制时还原原来的参数表示，原始录制与来源保持。`fixture-format.ts` 按录制中的业务码、限流或结构变化事实补充新版失败元数据；mock 自己产生的断网和限流明确标出来源，不靠 HTTP 状态猜。
+
 ## 限制
 
 - 状态在 mock 进程的内存里：重启 `dev:mock` 回到种子。

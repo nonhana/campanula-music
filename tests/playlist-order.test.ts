@@ -149,7 +149,7 @@ describe('拖完先改本地，停手 2 秒合并提交', () => {
     expect(orderCalls()).toHaveLength(1);
     expect(orderCalls()[0]).toMatchObject({
       query: {
-        ids: JSON.stringify([LIKED, ...latest]),
+        ids: [LIKED, ...latest],
       },
     });
     expect(await storedPlaylistIds(device)).toEqual([

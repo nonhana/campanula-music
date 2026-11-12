@@ -97,7 +97,8 @@ export default antfu(
   {
     files: ['**/*.{js,ts,svelte}'],
     ignores: [
-      'src/lib/server/netease.ts',
+      'src/lib/server/netease/**',
+      'src/lib/server/credentials.ts',
       'src/lib/server/mock/**',
       'tests/harness/**',
     ],
@@ -108,8 +109,8 @@ export default antfu(
           paths: [
             {
               name: 'hana-music-api',
-              message:
-                '只有网易云适配层（src/lib/server/netease.ts）能用 hana-music-api',
+              allowTypeImports: true,
+              message: '只有网易云适配层和凭据模块能用 hana-music-api',
             },
           ],
         },

@@ -1,5 +1,8 @@
 import type { ModuleCallConfig, NcmApiResponse } from 'hana-music-api';
 
+import { queryKey, recordedQuery } from '#lib/server/mock/query-key.js';
+import { sdkModules } from '#lib/server/mock/sdk-modules.js';
+
 export type SdkResponse = NcmApiResponse<unknown>;
 
 export interface Outcome {
@@ -14,10 +17,7 @@ export interface RequestSpan {
   start: number;
 }
 
-export type CallConfig = Pick<
-  ModuleCallConfig,
-  'cookie' | 'realIP' | 'state'
-> & { checkToken?: string };
+export type CallConfig = ModuleCallConfig;
 
 export interface Call {
   module: string;
@@ -81,10 +81,12 @@ const interchangeable = (a: Outcome, b: Outcome): boolean =>
   a.rejected === b.rejected &&
   JSON.stringify(a.response.cookie) === JSON.stringify(b.response.cookie);
 
-const fits = (outcome: Outcome, query: unknown): boolean =>
+const fits = (module: string, outcome: Outcome, query: unknown): boolean =>
   !outcome.when ||
   Object.entries(outcome.when).every(
-    ([key, value]) => (query as Record<string, unknown>)[key] === value,
+    ([key, value]) =>
+      queryKey(recordedQuery(module, query as Record<string, unknown>)[key]) ===
+      queryKey(recordedQuery(module, { [key]: value })[key]),
   );
 
 const checkOrder = (
@@ -101,7 +103,7 @@ const checkOrder = (
     if (
       mine < 0 ||
       theirs > mine ||
-      !fits(other.outcome, query) ||
+      !fits(module, other.outcome, query) ||
       interchangeable(outcome, other.outcome)
     )
       continue;
@@ -123,7 +125,7 @@ export const invokeModule = async (
   });
   const queued = outcomes.get(module) ?? [];
   const queue = [...queued];
-  const at = queued.findIndex((outcome) => fits(outcome, query));
+  const at = queued.findIndex((outcome) => fits(module, outcome, query));
   const outcome = at < 0 ? undefined : queued.splice(at, 1)[0];
   if (!outcome) throw new Error(`网易云替身：没有为 ${module} 准备录制数据`);
   const span = currentRequest();
@@ -148,3 +150,54 @@ export const invokeModule = async (
   if (outcome.rejected) throw response;
   return response;
 };
+
+export {
+  generateDeviceId,
+  getNcmFailureInfo,
+  isNcmApiResponse,
+} from 'hana-music-api';
+
+export const {
+  album,
+  albumSub,
+  albumSublist,
+  artistAlbum,
+  artistDesc,
+  artistSongs,
+  artistSub,
+  artistSublist,
+  captchaSent,
+  cloudsearch,
+  imageUploadToken,
+  like,
+  likelist,
+  loginCellphone,
+  loginQrCheck,
+  loginQrCreate,
+  loginQrKey,
+  loginRefresh,
+  logout,
+  lyricNew,
+  playlistCatlist,
+  playlistCoverUpdate,
+  playlistCreate,
+  playlistDelete,
+  playlistDescUpdate,
+  playlistDetail,
+  playlistNameUpdate,
+  playlistOrderUpdate,
+  playlistPrivacy,
+  playlistSubscribe,
+  playlistTagsUpdate,
+  playlistTracks,
+  recommendSongs,
+  scrobble,
+  searchSuggest,
+  songDetail,
+  songDownloadUrlV1,
+  songOrderUpdate,
+  songUrlV1,
+  userAccount,
+  userPlaylist,
+  verifyGetQr,
+} = sdkModules(invokeModule);

@@ -172,7 +172,7 @@ describe('点歌', () => {
     expect(
       world.netease.calls.find((call) => call.module === 'song_url_v1'),
     ).toMatchObject({
-      query: { id: FIRST.id, level: 'exhigh' },
+      query: { ids: [FIRST.id], level: 'exhigh' },
     });
     const player = tab.audio.find((audio) => audio.src !== '')!;
     expect(player.src).toBe(await recordedUrl(FIRST.url));
@@ -2291,7 +2291,7 @@ describe('在线播放音质', () => {
     ]);
     expect(world.netease.calls.at(-1)).toMatchObject({
       module: 'song_url_v1',
-      query: { id: RECORDED_IN_QUALITIES.id, level: 'lossless' },
+      query: { ids: [RECORDED_IN_QUALITIES.id], level: 'lossless' },
     });
 
     const { app: reopened, ...again } = await reopen(device, tab);

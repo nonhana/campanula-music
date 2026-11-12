@@ -1,7 +1,7 @@
 import type { Endpoint } from '#lib/api/endpoint.js';
 import type { ApiError, ErrorBody } from '#lib/api/errors.js';
 
-import { NeteaseError } from './netease-error';
+import { failureOf, logFailure } from './netease/failure';
 
 const STATUS = {
   needsLogin: 401,
@@ -38,7 +38,11 @@ export const withNetease = async <Value>(
   try {
     return json(endpoint, await handle());
   } catch (error) {
-    if (error instanceof NeteaseError) return errorResponse(error.failure);
+    const failure = failureOf(error);
+    if (failure) {
+      logFailure(error, failure);
+      return errorResponse(failure);
+    }
     throw error;
   }
 };

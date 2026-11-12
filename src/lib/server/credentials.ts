@@ -2,13 +2,13 @@ import { Buffer } from 'node:buffer';
 import {
   createCipheriv,
   createDecipheriv,
-  createHash,
   hkdfSync,
   randomBytes,
 } from 'node:crypto';
 
 import { COOKIE_SECRET, LOGIN_COOKIE_NAME } from '$app/env/private';
 import type { Cookies } from '@sveltejs/kit';
+import { generateDeviceId } from 'hana-music-api';
 
 export interface LoginCookie {
   deviceId: string;
@@ -139,30 +139,10 @@ export const clearLogin = (cookies: Cookies): void => {
   cookies.delete(COOKIE_NAME, OPTIONS);
 };
 
-const ID_XOR_KEY = '3go8&$8*3*3h0k(2)2';
-
-const anonymousDigest = (deviceId: string): string => {
-  let xored = '';
-  for (let index = 0; index < deviceId.length; index += 1)
-    xored += String.fromCharCode(
-      deviceId.charCodeAt(index) ^
-        ID_XOR_KEY.charCodeAt(index % ID_XOR_KEY.length),
-    );
-  return createHash('md5').update(xored, 'utf8').digest('base64');
-};
-
-// 摘要带 + 或 / 的会被网易云匿名注册拒绝，随机约一半中招
-const newDeviceId = (): string => {
-  let deviceId: string;
-  do deviceId = randomBytes(26).toString('hex').toUpperCase();
-  while (/[+/]/.test(anonymousDigest(deviceId)));
-  return deviceId;
-};
-
 export const deviceIdFor = (cookies: Cookies): string => {
   const login = readLogin(cookies);
   if (login) return login.deviceId;
-  const deviceId = newDeviceId();
+  const deviceId = generateDeviceId();
   writeLogin(cookies, { deviceId, session: null });
   return deviceId;
 };
