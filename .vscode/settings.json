@@ -1,42 +1,44 @@
 {
-  // 格式化交给 oxfmt（oxfmt.config.mts + oxc 扩展），ESLint 只管非排版类的问题
-  "biome.enabled": false,
   "prettier.enable": false,
+  "oxc.fmt.configPath": "oxfmt.config.mts",
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.formatOnSave": true,
-
-  // Auto fix
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "never"
   },
-
-  // Enable eslint for all supported languages
   "eslint.validate": [
     "javascript",
-    "javascriptreact",
     "typescript",
-    "typescriptreact",
-    "vue",
     "html",
     "markdown",
     "json",
     "json5",
     "jsonc",
     "yaml",
-    "toml",
-    "xml",
-    "gql",
-    "graphql",
-    "astro",
-    "svelte",
-    "css",
-    "less",
-    "scss",
-    "pcss",
-    "postcss"
+    "svelte"
   ],
-
+  "[svelte]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
   "files.associations": {
     "tsconfig*.json": "jsonc",
     "knip.json": "jsonc"
