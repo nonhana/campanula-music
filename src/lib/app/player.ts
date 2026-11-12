@@ -467,7 +467,24 @@ export const createPlayer = (context: PlayerContext): Player => {
   };
 
   const play = (deck: Deck): void => {
-    void deck.audio.play().catch(() => {});
+    const mine = attempt;
+    const waiting = incoming;
+    const handover = incoming?.handover ?? false;
+    void deck.audio.play().catch(() => {
+      if (mine !== attempt || waiting !== incoming) return;
+      if (incoming?.deck === deck && incoming.handover) {
+        incoming = null;
+        handoverFailed = true;
+        deck.audio.pause();
+        return;
+      }
+      if (state.status !== 'buffering') return;
+      pauseAll();
+      publish({
+        status: 'paused',
+        notice: handover ? { kind: 'streamFailed' } : state.notice,
+      });
+    });
   };
 
   const pauseAll = (): void => {
@@ -627,7 +644,7 @@ export const createPlayer = (context: PlayerContext): Player => {
   const ended = (): void => {
     if (state.current === null) return;
     if (incoming?.handover) {
-      incoming = { ...incoming, handover: false };
+      incoming.handover = false;
       endListen();
       publish({
         current: indexOfSong(incoming.deck.song!.id),

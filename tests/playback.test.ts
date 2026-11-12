@@ -136,6 +136,17 @@ const playUntilSounding = async (
 const other = (tab: Tab, player: FakeAudio) =>
   tab.audio.find((audio) => audio !== player)!;
 
+const delayPlayRejection = (audio: FakeAudio, until: Promise<void>): void => {
+  const play = audio.play.bind(audio);
+  // 保留 HTML pending play 的暂停和 AbortError 任务，只控制拒绝交给 App 的时机。
+  vi.spyOn(audio, 'play').mockImplementationOnce(() =>
+    play().catch(async (error: unknown) => {
+      await until;
+      throw error;
+    }),
+  );
+};
+
 const recordedUrl = async (path: string): Promise<string> => {
   const { outcome } = await loadFixture(path);
   const body = outcome.response.body as { data: { url: string }[] };
@@ -234,6 +245,253 @@ describe('点歌', () => {
     expect(app.state.player).toMatchObject({ status: 'loading', position: 0 });
     expect(playUrlRequests(device)).toHaveLength(3);
   });
+});
+
+describe('浏览器拒绝播放', () => {
+  it('开始播放被拒后回到暂停，再按一次播放就能重试', async () => {
+    const tab = await signInWithLiked(world.device());
+    // HTML play() 在不允许播放时直接拒绝，不改变 paused，也不发 playing。
+    const refused = tab.audio.map((audio) =>
+      vi
+        .spyOn(audio, 'play')
+        .mockRejectedValue(
+          new DOMException('Playback is not allowed', 'NotAllowedError'),
+        ),
+    );
+    await world.netease.reply(FIRST.url);
+    tab.app.play(LIKED, FIRST.id);
+    await world.settle();
+
+    expect(tab.audio.every((audio) => audio.paused)).toBe(true);
+    expect(tab.app.state.player).toMatchObject({
+      status: 'paused',
+      position: 0,
+      notice: null,
+    });
+    expect(current(tab.app)).toBe(FIRST.id);
+    expect(tab.mediaSession.playbackState).toBe('paused');
+    expect(tab.app.state.notices).toEqual([]);
+    const queue = queueIds(tab.app);
+
+    for (const play of refused) play.mockRestore();
+    await world.netease.reply(SECOND.url);
+    tab.app.togglePlay();
+    await world.settle();
+    const retried = tab.audio.find((audio) => !audio.paused)!;
+    retried.ready(FIRST.duration);
+    await world.settle();
+
+    expect(tab.sounding()).toBe(retried);
+    expect(tab.app.state.player.status).toBe('playing');
+    expect(tab.mediaSession.playbackState).toBe('playing');
+    expect(current(tab.app)).toBe(FIRST.id);
+    expect(queueIds(tab.app)).toEqual(queue);
+  });
+
+  it('恢复播放被拒后保留暂停位置，再按播放从那里接着放', async () => {
+    const tab = await signInWithLiked(world.device());
+    const player = await playUntilSounding(tab, FIRST, SECOND);
+    player.progress(42);
+    tab.app.togglePlay();
+    await world.settle();
+    vi.spyOn(player, 'play').mockRejectedValueOnce(
+      new DOMException('Playback is not allowed', 'NotAllowedError'),
+    );
+
+    tab.mediaSession.press('play');
+    await world.settle();
+    expect(tab.audio.every((audio) => audio.paused)).toBe(true);
+    expect(tab.app.state.player).toMatchObject({
+      status: 'paused',
+      position: 42,
+      notice: null,
+    });
+    expect(current(tab.app)).toBe(FIRST.id);
+    expect(tab.mediaSession.playbackState).toBe('paused');
+
+    tab.mediaSession.press('play');
+    await world.settle();
+    expect(tab.sounding()).toBe(player);
+    expect(player.currentTime).toBe(42);
+    expect(tab.app.state.player).toMatchObject({
+      status: 'playing',
+      position: 42,
+    });
+    expect(tab.mediaSession.playbackState).toBe('playing');
+  });
+
+  it('自动交接先被拒时旧歌放完再暂停，按播放可重试下一首', async () => {
+    const tab = await signInWithLiked(world.device());
+    const player = await playUntilSounding(tab, FIRST, SECOND);
+    const spare = other(tab, player);
+    spare.ready(SECOND.duration);
+    vi.spyOn(spare, 'play').mockRejectedValueOnce(
+      new DOMException('Playback is not allowed', 'NotAllowedError'),
+    );
+    player.progress(191.7);
+    await world.settle();
+    expect(tab.sounding()).toBe(player);
+    expect(current(tab.app)).toBe(FIRST.id);
+    expect(tab.app.state.player.status).toBe('playing');
+    expect(tab.mediaSession.playbackState).toBe('playing');
+    expect(tab.mediaSession.metadata?.title).toBe(
+      likedSong(tab.app, FIRST.id).name,
+    );
+
+    player.progress(192);
+    await world.settle();
+    expect(tab.sounding()).toBe(player);
+    expect(spare.paused).toBe(true);
+    player.end();
+    await world.settle();
+    expect(tab.audio.every((audio) => audio.paused)).toBe(true);
+    expect(current(tab.app)).toBe(SECOND.id);
+    expect(tab.app.state.player).toMatchObject({
+      status: 'paused',
+      position: 0,
+      notice: { kind: 'streamFailed' },
+    });
+    expect(tab.mediaSession.playbackState).toBe('paused');
+
+    await world.netease.reply(THIRD.url);
+    tab.app.togglePlay();
+    await world.settle();
+    expect(tab.sounding()).toBe(spare);
+    expect(tab.app.state.player.status).toBe('playing');
+    expect(tab.mediaSession.playbackState).toBe('playing');
+  });
+
+  it('旧歌先结束、交接的拒绝才到，也会暂停并允许重试下一首', async () => {
+    const tab = await signInWithLiked(world.device());
+    const player = await playUntilSounding(tab, FIRST, SECOND);
+    const spare = other(tab, player);
+    const refusal = held();
+    delayPlayRejection(spare, refusal.until);
+    player.progress(188);
+    await world.settle();
+    expect(spare.paused).toBe(false);
+    player.end();
+    await world.settle();
+    expect(current(tab.app)).toBe(SECOND.id);
+    expect(tab.app.state.player.status).toBe('buffering');
+
+    spare.pause();
+    await world.settle();
+    refusal.release();
+    await world.settle();
+    expect(tab.audio.every((audio) => audio.paused)).toBe(true);
+    expect(current(tab.app)).toBe(SECOND.id);
+    expect(tab.app.state.player).toMatchObject({
+      status: 'paused',
+      position: 0,
+      notice: { kind: 'streamFailed' },
+    });
+    expect(tab.mediaSession.playbackState).toBe('paused');
+
+    await world.netease.reply(THIRD.url);
+    tab.app.togglePlay();
+    await world.settle();
+    spare.ready(SECOND.duration);
+    await world.settle();
+    expect(tab.sounding()).toBe(spare);
+    expect(tab.app.state.player.status).toBe('playing');
+    expect(tab.mediaSession.playbackState).toBe('playing');
+  });
+
+  it.each(['暂停', '清空', '换歌', '再次播放'] as const)(
+    '开始播放的拒绝晚于%s，不打断听众的新操作',
+    async (action) => {
+      const tab = await signInWithLiked(world.device());
+      const refusal = held();
+      for (const audio of tab.audio) {
+        delayPlayRejection(audio, refusal.until);
+      }
+      await world.netease.reply(FIRST.url);
+      tab.app.play(LIKED, FIRST.id);
+      await world.settle();
+      const pending = tab.audio.find((audio) => audio.src !== '')!;
+
+      if (action === '清空') tab.app.clearQueue();
+      else if (action === '换歌') {
+        await world.netease.reply(SECOND.url);
+        tab.app.play(LIKED, SECOND.id);
+      } else {
+        tab.app.togglePlay();
+        if (action === '再次播放') tab.app.togglePlay();
+      }
+      await world.settle();
+      refusal.release();
+      await world.settle();
+
+      if (action === '清空') {
+        expect(queueIds(tab.app)).toEqual([]);
+        expect(current(tab.app)).toBeNull();
+        expect(tab.app.state.player.status).toBe('paused');
+        expect(tab.mediaSession.playbackState).toBe('none');
+        expect(tab.audio.every((audio) => audio.paused)).toBe(true);
+      } else if (action === '暂停') {
+        expect(current(tab.app)).toBe(FIRST.id);
+        expect(tab.app.state.player.status).toBe('paused');
+        expect(tab.mediaSession.playbackState).toBe('paused');
+        expect(tab.audio.every((audio) => audio.paused)).toBe(true);
+      } else {
+        const song = action === '换歌' ? SECOND : FIRST;
+        expect(current(tab.app)).toBe(song.id);
+        expect(tab.app.state.player.status).toBe('buffering');
+        expect(pending.paused).toBe(false);
+        await world.netease.reply(action === '换歌' ? THIRD.url : SECOND.url);
+        pending.ready(song.duration);
+        await world.settle();
+        expect(tab.sounding()).toBe(pending);
+        expect(tab.app.state.player.status).toBe('playing');
+        expect(tab.mediaSession.playbackState).toBe('playing');
+        expect(tab.mediaSession.metadata?.title).toBe(
+          likedSong(tab.app, song.id).name,
+        );
+      }
+    },
+  );
+
+  it.each(['出声前', '出声后'] as const)(
+    '取消交接后复用同一音频，旧拒绝在新尝试%s到达也不打断',
+    async (when) => {
+      const tab = await signInWithLiked(world.device());
+      const player = await playUntilSounding(tab, FIRST, SECOND);
+      const spare = other(tab, player);
+      const refusal = held();
+      delayPlayRejection(spare, refusal.until);
+      player.progress(191.7);
+      await world.settle();
+      expect(spare.paused).toBe(false);
+      tab.app.seek(80);
+      expect(tab.sounding()).toBe(player);
+      expect(player.currentTime).toBe(80);
+      await world.settle();
+
+      spare.ready(SECOND.duration);
+      await world.netease.reply(THIRD.url);
+      player.progress(191.7);
+      if (when === '出声后') await world.settle();
+      refusal.release();
+      await world.settle();
+
+      expect(tab.sounding()).toBe(spare);
+      expect(player.paused).toBe(true);
+      expect(current(tab.app)).toBe(SECOND.id);
+      expect(tab.app.state.player).toMatchObject({
+        status: 'playing',
+        position: 0,
+        duration: SECOND.duration,
+        notice: null,
+      });
+      expect(tab.mediaSession.playbackState).toBe('playing');
+      expect(tab.mediaSession.position).toEqual({
+        duration: SECOND.duration,
+        position: 0,
+        playbackRate: 1,
+      });
+    },
+  );
 });
 
 describe('只同步了一部分的歌单', () => {
