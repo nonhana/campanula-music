@@ -8,13 +8,13 @@ import {
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = ({ params, url, cookies }) => {
+export const GET: RequestHandler = ({ params, url, cookies, request }) => {
   const kind = readSearchKind(params.kind);
   const keywords = readKeywords(url.searchParams.get('keywords'));
   const offset = readOffset(url.searchParams.get('offset'));
   return respondSignedIn(
     searchPage(kind),
-    cookies,
+    { cookies, request },
     (config) => searches[kind](keywords, offset, config),
     { retryRead: true },
   );

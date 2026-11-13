@@ -213,8 +213,8 @@ catalogs:
       specifier: ^6.4.0
       version: 6.4.0
     hana-music-api:
-      specifier: 5.0.0
-      version: 5.0.0
+      specifier: 6.0.0
+      version: 6.0.0
     music-metadata:
       specifier: ^12.3.5
       version: 12.3.5
@@ -363,7 +363,7 @@ importers:
         version: 6.2.8
       hana-music-api:
         specifier: catalog:music
-        version: 5.0.0
+        version: 6.0.0
       knip:
         specifier: catalog:lint
         version: 6.44.2
@@ -2916,8 +2916,8 @@ packages:
       ocache:
         optional: true
 
-  hana-music-api@5.0.0:
-    resolution: {integrity: sha512-GtFewVjmZXru1d0vjMbldPDpME4GKWDQLh9g+wNCHIRSQdbkBeLLdQVNmDcavu9hlCkLFNtUme6Ezwk3C0d7Gw==}
+  hana-music-api@6.0.0:
+    resolution: {integrity: sha512-kSlPM1tEpNQ8y8mWqrAUot/75qpITI/qCZbkOdqYu810CiN+55Sfvqj69owIuczIN2452hi8lST6IIZ8Ns+zRg==}
     engines: {node: '>=24'}
 
   has-symbols@1.1.0:
@@ -6481,7 +6481,7 @@ snapshots:
     optionalDependencies:
       crossws: 0.4.17(srvx@1.0.8)
 
-  hana-music-api@5.0.0:
+  hana-music-api@6.0.0:
     dependencies:
       effect: 4.1.2
       hono: 4.13.17

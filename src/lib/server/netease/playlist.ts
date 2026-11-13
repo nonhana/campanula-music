@@ -353,7 +353,7 @@ export const collectPlaylist = async (
         id: playlistId,
         t: change.collected ? 1 : 0,
       },
-      change.collected ? { ...config, checkToken: change.checkToken } : config,
+      config,
     );
   } catch (error) {
     const gone = missing(error);

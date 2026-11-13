@@ -147,6 +147,7 @@ describe('批量移除：5 秒撤销与晚一点提交', () => {
         .filter((call) => call.module === 'playlist_tracks')
         .at(-1),
     ).toMatchObject({
+      config: { checkToken: expect.any(String) },
       query: {
         op: 'del',
         pid: JAZZ.id,

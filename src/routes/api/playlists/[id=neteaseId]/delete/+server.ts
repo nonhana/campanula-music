@@ -3,9 +3,11 @@ import { deletePlaylist } from '#lib/server/netease/playlist.js';
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const POST: RequestHandler = ({ params, cookies }) => {
+export const POST: RequestHandler = ({ params, cookies, request }) => {
   const { id } = params;
-  return respondSignedIn(endpoints.deletePlaylist, cookies, (config) =>
-    deletePlaylist(id, config),
+  return respondSignedIn(
+    endpoints.deletePlaylist,
+    { cookies, request },
+    (config) => deletePlaylist(id, config),
   );
 };

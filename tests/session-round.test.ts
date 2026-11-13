@@ -131,6 +131,32 @@ const controlledApi = (): {
   };
 };
 
+describe('备用续期令牌', () => {
+  it.each([false, true])(
+    '安全验证不可用时普通查询仍可读，确实需要续期时明确失败（需要续期 %s）',
+    async (needsRenewal) => {
+      const device = world.device();
+      const tab = await signInAtLikedTracks(device);
+      tab.watchman.available = false;
+      await world.netease.reply(
+        needsRenewal ? SEARCH_301 : 'search/results/001-cloudsearch.json.gz',
+      );
+      const before = world.netease.calls.length;
+      const result = await tab.app.searchSongs('真夜中');
+      if (needsRenewal)
+        expect(result).toMatchObject({
+          ok: false,
+          failure: { kind: 'checkTokenUnavailable' },
+        });
+      else expect(result).toMatchObject({ ok: true });
+      expect(tab.app.state.session.status).toBe('signedIn');
+      expect(
+        world.netease.calls.slice(before).map((call) => call.module),
+      ).toEqual(['cloudsearch']);
+    },
+  );
+});
+
 describe('旧会话的回复', () => {
   it('退出前发出的选择器搜索，新账号登录后才回 401：不把新会话判成登录失效', async () => {
     const device = world.device();

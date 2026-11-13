@@ -8,11 +8,11 @@ import { readId, readPlaylistDraft } from '#lib/server/request.js';
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = ({ url, cookies }) => {
+export const GET: RequestHandler = ({ url, cookies, request }) => {
   const uid = readId('uid', url.searchParams.get('uid'));
   return respondSignedIn(
     endpoints.playlists,
-    cookies,
+    { cookies, request },
     async (config) => ({
       playlists: await fetchPlaylists(uid, config),
     }),
@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   const draft = await readPlaylistDraft(request);
   return respondSignedIn(
     endpoints.createPlaylist,
-    cookies,
+    { cookies, request },
     async (config, read) => {
       const id = await createPlaylist(draft.name, draft.private, config);
       return {

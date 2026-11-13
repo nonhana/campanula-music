@@ -1,5 +1,7 @@
 import { error } from '@sveltejs/kit';
 
+import type { CheckTokens } from '#lib/api/check-token.js';
+import { CHECK_TOKEN, CHECK_TOKENS_HEADER } from '#lib/api/check-token.js';
 import type { SetCoverRequest } from '#lib/api/cover.js';
 import type { PostEndpoint } from '#lib/api/endpoint.js';
 import type {
@@ -8,7 +10,6 @@ import type {
   CreatePlaylistRequest,
   DescribePlaylistRequest,
   HeartRequest,
-  PlaylistCollectRequest,
   RenamePlaylistRequest,
   TagPlaylistRequest,
 } from '#lib/api/library.js';
@@ -25,7 +26,36 @@ import type { SearchKind } from '#lib/api/search.js';
 import { SEARCH_KINDS } from '#lib/api/search.js';
 
 export const QR_KEY = /^[\w-]{1,64}$/;
-const CHECK_TOKEN = /^[\x21-\x7E]{1,1024}$/;
+export const readCheckTokens = (request: Request): CheckTokens => {
+  const raw = request.headers.get(CHECK_TOKENS_HEADER);
+  if (raw === null) return { requests: [] };
+  // JSON 会把引号和反斜杠转成两字符，需容下四枚最长令牌和字段名。
+  if (raw.length > 4 * 1024 * 2 + 100) error(400, '安全验证令牌太长');
+  let body: unknown;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    error(400, '安全验证令牌的格式不对');
+  }
+  if (
+    typeof body !== 'object' ||
+    body === null ||
+    !('requests' in body) ||
+    !Array.isArray(body.requests) ||
+    body.requests.length > 3 ||
+    !body.requests.every(
+      (token: unknown) => typeof token === 'string' && CHECK_TOKEN.test(token),
+    )
+  )
+    error(400, '安全验证令牌的格式不对');
+  const renewal = 'renewal' in body ? body.renewal : undefined;
+  if (
+    renewal !== undefined &&
+    (typeof renewal !== 'string' || !CHECK_TOKEN.test(renewal))
+  )
+    error(400, '续期令牌的格式不对');
+  return { requests: body.requests, renewal };
+};
 
 export const readFields = async <K extends string>(
   request: Request,
@@ -162,20 +192,6 @@ export const readCollect = async (
   const { collected } = await readObject(request);
   if (typeof collected !== 'boolean') error(400, '要有 collected');
   return { collected };
-};
-
-export const readPlaylistCollect = async (
-  request: Request,
-): Promise<PlaylistCollectRequest> => {
-  const { collected, checkToken } = await readObject(request);
-  if (collected === false) return { collected };
-  if (
-    collected !== true ||
-    typeof checkToken !== 'string' ||
-    !CHECK_TOKEN.test(checkToken)
-  )
-    error(400, '收藏歌单要有 collected 和 checkToken');
-  return { collected, checkToken };
 };
 
 const readPlaylistName = (name: unknown): string => {

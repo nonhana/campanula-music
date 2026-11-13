@@ -346,7 +346,7 @@ describe('续期', () => {
       cookie: renewCookies(),
     });
     await world.netease.reply('login/user_account.vip.json');
-    const { app: renewed } = await device.open();
+    const { app: renewed, watchman } = await device.open();
 
     await world.clock.advance(24 * HOUR - 1);
     await world.netease.reply('login/user_account.vip.json');
@@ -356,6 +356,15 @@ describe('续期', () => {
       status: 'signedIn',
       account: ACCOUNT,
     });
+    const refresh = world.netease.calls.findLast(
+      (call) => call.module === 'login_refresh',
+    );
+    expect(refresh?.config.checkToken).toBe(watchman.issued[0]);
+    expect(refresh?.query).toEqual({});
+    for (const call of world.netease.calls
+      .slice(signedIn)
+      .filter((call) => call.module === 'user_account'))
+      expect(call.config).not.toHaveProperty('checkToken');
     expect(credentialsUsed(signedIn)).toEqual([
       ['user_account', MUSIC_U],
       ['login_refresh', MUSIC_U],

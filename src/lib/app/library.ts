@@ -11,7 +11,6 @@ import type {
   CollectedArtist,
   CreatePlaylistRequest,
   Playlist,
-  PlaylistCollectRequest,
   PlaylistEditProblem,
   PlaylistInfo,
   PlaylistTagGroup,
@@ -57,7 +56,6 @@ type OpenFailure = SessionFailure;
 
 export type ChangeFailure =
   | OpenFailure
-  | { kind: 'checkTokenUnavailable' }
   | { kind: 'invalid'; problem: PlaylistEditProblem };
 
 export type CreateOutcome =
@@ -216,7 +214,6 @@ export interface LibraryContext {
   page: PageVisibility;
   write: (library: LibraryState) => void;
   online: () => boolean;
-  checkToken: () => Promise<string>;
   notices: Pick<Notices, 'show' | 'hideWhere'>;
 }
 
@@ -312,6 +309,7 @@ const skippable = (failure: SyncFailure): boolean => {
     case 'serverError':
     case 'neteaseUnavailable':
     case 'cookieSecretMissing':
+    case 'checkTokenUnavailable':
       return false;
     default: {
       const unhandled: never = failure;
@@ -1414,19 +1412,12 @@ export const createLibrary = (context: LibraryContext): Library => {
         return result && submitted(result);
       }
       case 'collectPlaylist': {
-        let body: PlaylistCollectRequest = { collected: false };
-        if (change.collected) {
-          const checkToken = await context.checkToken().catch(() => null);
-          if (!checkToken) {
-            return {
-              ok: false,
-              failure: { kind: 'checkTokenUnavailable' },
-            };
-          }
-          body = { collected: true, checkToken };
-        }
         const result = await send(() =>
-          api.post(endpoints.collectPlaylist, { id: change.playlist.id }, body),
+          api.post(
+            endpoints.collectPlaylist,
+            { id: change.playlist.id },
+            { collected: change.collected },
+          ),
         );
         return result && submitted(result);
       }

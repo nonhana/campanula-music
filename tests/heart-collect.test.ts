@@ -62,6 +62,31 @@ const hearted = (app: App, songId: number) =>
   app.state.library?.hearts?.has(songId) ?? false;
 
 describe('红心', () => {
+  it('红心和取消分别带本次浏览器新取的令牌，令牌不留在本机和日志', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    const [song] = await dailySongs(tab.app);
+    const before = tab.watchman.issued.length;
+    await world.netease.reply(LIKE);
+    await tab.app.heart(song, true);
+    await world.netease.reply(UNLIKE);
+    await tab.app.heart(song, false);
+    const tokens = tab.watchman.issued.slice(before);
+    expect(tokens).toHaveLength(2);
+    expect(new Set(tokens).size).toBe(2);
+    expect(
+      world.netease.calls
+        .filter((call) => call.module === 'like')
+        .map((call) => call.config.checkToken),
+    ).toEqual(tokens);
+    expect(hearted(tab.app, song.id)).toBe(false);
+    for (const token of tokens) {
+      expect(JSON.stringify(await device.stored())).not.toContain(token);
+      expect(JSON.stringify(await device.cookies())).not.toContain(token);
+      expect(JSON.stringify(world.serverLogs)).not.toContain(token);
+    }
+  });
+
   it('红心一首歌：马上显示成已红心，提交给网易云，网易云说好了才存进本机副本', async () => {
     const device = world.device();
     const { app } = await signInAtLikedTracks(device);
@@ -113,6 +138,31 @@ describe('红心', () => {
     await unhearting;
     expect(hearted(app, song.id)).toBe(false);
     expect(await storedLibrary(device, 'hearts')).not.toContain(song.id);
+  });
+
+  it('红心取不到令牌时回滚且不写，听众再次操作才重新取令牌', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    const [song] = await dailySongs(tab.app);
+    const sent = device.requests.length;
+    tab.watchman.available = false;
+    await tab.app.heart(song, true);
+    expect(hearted(tab.app, song.id)).toBe(false);
+    expect(device.requests).toHaveLength(sent);
+    expect(noticeOf(tab.app)).toMatchObject({
+      kind: 'notChanged',
+      failure: { kind: 'checkTokenUnavailable' },
+    });
+    await world.clock.advance(60_000);
+    expect(device.requests).toHaveLength(sent);
+    tab.watchman.available = true;
+    await world.netease.reply(LIKE);
+    await tab.app.heart(song, true);
+    expect(hearted(tab.app, song.id)).toBe(true);
+    expect(await storedLibrary(device, 'hearts')).toContain(song.id);
+    expect(
+      world.netease.calls.filter((call) => call.module === 'like'),
+    ).toMatchObject([{ config: { checkToken: tab.watchman.issued.at(-1) } }]);
   });
 
   it('断网时红心：不改，直接说没改成（规则⑨），不发请求', async () => {
@@ -214,6 +264,23 @@ describe('红心', () => {
 });
 
 describe('加入歌单', () => {
+  it('sDK 增删曲目进入 512 分支时，两次上游请求消费不同令牌，成功后才存歌曲', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    await openJazz(tab.app, { songsHeld: false });
+    const [song] = await dailySongs(tab.app);
+    const before = tab.watchman.issued.length;
+    await world.netease.reply(ADD, { apiRequests: 2 });
+    await tab.app.addToPlaylist(JAZZ.id, song);
+    const call = world.netease.calls.findLast(
+      (call) => call.module === 'playlist_tracks',
+    );
+    expect(call?.checkTokens).toEqual(tab.watchman.issued.slice(before));
+    expect(call?.checkTokens).toHaveLength(2);
+    expect(new Set(call?.checkTokens).size).toBe(2);
+    expect((await storedTrackIds(device, JAZZ.id))?.[0]).toBe(song.id);
+  });
+
   it('加入自建歌单：马上排在最前，提交给网易云，成了存进本机副本并提示一句', async () => {
     const device = world.device();
     const { app } = await signInAtLikedTracks(device);
@@ -275,6 +342,10 @@ describe('加入歌单', () => {
 
     await world.netease.reply(ADD_DUPLICATE);
     await app.addToPlaylist(JAZZ.id, song);
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'playlist_tracks',
+      config: { checkToken: expect.any(String) },
+    });
 
     expect(app.state.library?.songsOf(JAZZ.id)?.total).toBe(3);
     expect(noticeOf(app)).toMatchObject({ kind: 'added' });
@@ -419,6 +490,7 @@ describe('收藏', () => {
     await world.netease.reply(NETEASE_PLAYLIST.songs);
     const leave = app.viewing({ kind: 'playlist', id: NETEASE_PLAYLIST.id });
     await world.settle();
+    const tokensBefore = tab.watchman.issued.length;
 
     await world.netease.reply(PLAYLIST_COLLECT);
     const sent = device.requests.length;
@@ -433,12 +505,12 @@ describe('收藏', () => {
     });
     await collecting;
     await world.settle();
-    const [token] = tab.watchman.issued;
+    const [token] = tab.watchman.issued.slice(tokensBefore);
     expect(device.requests.slice(sent)).toEqual([
       {
         method: 'POST',
         path: `/api/playlists/${NETEASE_PLAYLIST.id}/collect`,
-        body: { collected: true, checkToken: token },
+        body: { collected: true },
       },
     ]);
     expect(world.netease.calls.at(-1)).toMatchObject({
@@ -482,6 +554,7 @@ describe('收藏', () => {
     await world.netease.reply(NETEASE_PLAYLIST.detail);
     await world.netease.reply(NETEASE_PLAYLIST.songs);
     await app.openPlaylist(NETEASE_PLAYLIST.id);
+    const tokensBefore = tab.watchman.issued.length;
     const before = world.netease.calls.length;
     await world.netease.reply(
       'like-collect/playlist_subscribe.301.constructed.json',
@@ -496,10 +569,10 @@ describe('收藏', () => {
     expect(world.netease.calls.slice(before)).toMatchObject([
       {
         module: 'playlist_subscribe',
-        config: { checkToken: tab.watchman.issued[0] },
+        config: { checkToken: tab.watchman.issued.slice(tokensBefore)[0] },
       },
     ]);
-    expect(tab.watchman.issued).toHaveLength(1);
+    expect(tab.watchman.issued.slice(tokensBefore)).toHaveLength(1);
     expect(await storedPlaylistIds(device)).not.toContain(NETEASE_PLAYLIST.id);
   });
 
@@ -537,6 +610,7 @@ describe('收藏', () => {
     await world.netease.reply(NETEASE_PLAYLIST.detail);
     await world.netease.reply(NETEASE_PLAYLIST.songs);
     await app.openPlaylist(NETEASE_PLAYLIST.id);
+    const tokensBefore = tab.watchman.issued.length;
 
     await world.netease.reply(RATE_LIMITED);
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true);
@@ -555,13 +629,13 @@ describe('收藏', () => {
     await world.netease.reply(PLAYLIST_COLLECT);
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true);
     expect(await storedPlaylistIds(device)).toContain(NETEASE_PLAYLIST.id);
-    expect(tab.watchman.issued).toHaveLength(2);
-    expect(new Set(tab.watchman.issued).size).toBe(2);
+    expect(tab.watchman.issued.slice(tokensBefore)).toHaveLength(2);
+    expect(new Set(tab.watchman.issued.slice(tokensBefore)).size).toBe(2);
     expect(
       world.netease.calls
         .filter((call) => call.module === 'playlist_subscribe')
         .map((call) => call.config.checkToken),
-    ).toEqual(tab.watchman.issued);
+    ).toEqual(tab.watchman.issued.slice(tokensBefore));
   });
 
   it('收藏歌单前没取到反作弊令牌（Watchman 没加载出来）：不提交，说明原因', async () => {
@@ -571,6 +645,7 @@ describe('收藏', () => {
     await world.netease.reply(NETEASE_PLAYLIST.detail);
     await world.netease.reply(NETEASE_PLAYLIST.songs);
     await app.openPlaylist(NETEASE_PLAYLIST.id);
+    const tokensBefore = tab.watchman.issued.length;
     const sent = device.requests.length;
 
     tab.watchman.available = false;
@@ -590,7 +665,7 @@ describe('收藏', () => {
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).not.toBeNull();
     expect(world.netease.calls.at(-1)).toMatchObject({
       module: 'playlist_subscribe',
-      config: { checkToken: tab.watchman.issued[0] },
+      config: { checkToken: tab.watchman.issued.slice(tokensBefore)[0] },
     });
   });
 
@@ -601,6 +676,7 @@ describe('收藏', () => {
     await world.netease.reply(NETEASE_PLAYLIST.detail);
     await world.netease.reply(NETEASE_PLAYLIST.songs);
     await app.openPlaylist(NETEASE_PLAYLIST.id);
+    const tokensBefore = tab.watchman.issued.length;
     const since = world.netease.calls.length;
 
     for (let round = 0; round < 3; round += 1) {
@@ -636,16 +712,16 @@ describe('收藏', () => {
         { id: NETEASE_PLAYLIST.id, t: 0 },
       ]).flat(),
     );
-    expect(tab.watchman.issued).toHaveLength(3);
-    expect(new Set(tab.watchman.issued).size).toBe(3);
+    expect(tab.watchman.issued.slice(tokensBefore)).toHaveLength(3);
+    expect(new Set(tab.watchman.issued.slice(tokensBefore)).size).toBe(3);
     expect(
       calls
         .filter((_, index) => index % 2 === 0)
         .map((call) => call.config.checkToken),
-    ).toEqual(tab.watchman.issued);
+    ).toEqual(tab.watchman.issued.slice(tokensBefore));
     for (const call of calls.filter((_, index) => index % 2 === 1))
       expect(call.config).not.toHaveProperty('checkToken');
-    for (const token of tab.watchman.issued) {
+    for (const token of tab.watchman.issued.slice(tokensBefore)) {
       for (const value of [
         calls.map((call) => call.query),
         device.requests.map((request) => request.path),
@@ -666,6 +742,7 @@ describe('收藏', () => {
       await world.netease.reply(NETEASE_PLAYLIST.detail);
       await world.netease.reply(NETEASE_PLAYLIST.songs);
       await app.openPlaylist(NETEASE_PLAYLIST.id);
+      const tokensBefore = tab.watchman.issued.length;
       const confirmation = held();
       await world.netease.reply(PLAYLIST_COLLECT, {
         until: confirmation.until,
@@ -705,7 +782,7 @@ describe('收藏', () => {
               { id: NETEASE_PLAYLIST.id, t: 0 },
             ],
       );
-      expect(tab.watchman.issued).toHaveLength(1);
+      expect(tab.watchman.issued.slice(tokensBefore)).toHaveLength(1);
       expect(
         (
           (await storedLibrary(device, 'playlists')) as
@@ -723,11 +800,12 @@ describe('收藏', () => {
     await world.netease.reply(NETEASE_PLAYLIST.detail);
     await world.netease.reply(NETEASE_PLAYLIST.songs);
     await app.openPlaylist(NETEASE_PLAYLIST.id);
+    const tokensBefore = tab.watchman.issued.length;
     const sent = device.requests.length;
     device.setOnline(false);
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true);
     expect(device.requests).toHaveLength(sent);
-    expect(tab.watchman.issued).toHaveLength(0);
+    expect(tab.watchman.issued.slice(tokensBefore)).toHaveLength(0);
     expect(app.state.library?.songsOf(NETEASE_PLAYLIST.id)).toBeNull();
     device.setOnline(true);
 
@@ -805,8 +883,7 @@ describe('收藏', () => {
       expect(await storedPlaylistIds(device)).not.toContain(
         NETEASE_PLAYLIST.id,
       );
-      if (token) expect(device.responses.at(-1)?.status).toBe(400);
-      else expect(device.requests).toHaveLength(sent);
+      expect(device.requests).toHaveLength(sent);
     },
   );
 
@@ -820,6 +897,7 @@ describe('收藏', () => {
       });
     }
     await app.openSearch('真夜中');
+    const tokensBefore = tab.watchman.issued.length;
 
     await world.netease.reply(PLAYLIST_COLLECT);
     await app.collect({ kind: 'playlist', id: 8668352551 }, true);
@@ -843,11 +921,15 @@ describe('收藏', () => {
     });
     expect(world.netease.calls.at(-1)).toMatchObject({
       module: 'playlist_subscribe',
-      config: { checkToken: tab.watchman.issued[0] },
+      config: { checkToken: tab.watchman.issued.slice(tokensBefore)[0] },
     });
 
     await world.netease.reply(ARTIST_COLLECT);
     await app.collect({ kind: 'artist', id: 57866432 }, true);
+    expect(world.netease.calls.at(-1)).toMatchObject({
+      module: 'artist_sub',
+      config: { checkToken: tab.watchman.issued.at(-1) },
+    });
     expect(app.state.library?.artists?.[0]).toEqual({
       id: 57866432,
       name: 'ずっと真夜中だと光合成できない',
@@ -856,6 +938,7 @@ describe('收藏', () => {
 
     await world.netease.reply(ALBUM_COLLECT);
     await app.collect({ kind: 'album', id: 82815921 }, true);
+    expect(world.netease.calls.at(-1)?.config).not.toHaveProperty('checkToken');
     expect(app.state.library?.albums?.[0]).toMatchObject({
       id: 82815921,
       name: '潜潜話',

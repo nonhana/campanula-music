@@ -3,10 +3,10 @@ import { fetchPlaylistTags } from '#lib/server/netease/playlist.js';
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = ({ cookies }) =>
+export const GET: RequestHandler = ({ cookies, request }) =>
   respondSignedIn(
     endpoints.playlistTags,
-    cookies,
+    { cookies, request },
     async (config) => ({
       groups: await fetchPlaylistTags(config),
     }),

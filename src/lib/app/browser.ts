@@ -154,7 +154,9 @@ export interface PageVisibility {
 
 const watchmanToken = async (): Promise<string> => {
   if (mock) return 'mock-watchman-token';
-  const watchman = await initializeWatchman();
+  const watchman = await initializeWatchman({
+    businessKey: 'afb1a8e61222dcc4b7a733ca69f089cb',
+  });
   return watchman.getToken();
 };
 

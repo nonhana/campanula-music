@@ -1,4 +1,5 @@
 export type NeteaseFailure =
+  | { kind: 'checkTokenUnavailable' }
   | { kind: 'needsLogin' }
   // retryAfter 单位是秒
   | { kind: 'rateLimited'; retryAfter: number }

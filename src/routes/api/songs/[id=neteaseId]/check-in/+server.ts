@@ -7,7 +7,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params;
   const { source, seconds } = await readCheckIn(request);
-  return respondSignedIn(endpoints.checkIn, cookies, (config) =>
+  return respondSignedIn(endpoints.checkIn, { cookies, request }, (config) =>
     checkIn(id, source, seconds, config),
   );
 };

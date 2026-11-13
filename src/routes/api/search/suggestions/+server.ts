@@ -4,11 +4,11 @@ import { readKeywords } from '#lib/server/request.js';
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = ({ url, cookies }) => {
+export const GET: RequestHandler = ({ url, cookies, request }) => {
   const keywords = readKeywords(url.searchParams.get('keywords'));
   return respondSignedIn(
     endpoints.suggestions,
-    cookies,
+    { cookies, request },
     (config) => fetchSuggestions(keywords, config),
     { retryRead: true },
   );

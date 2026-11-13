@@ -31,6 +31,7 @@
         };
       case 'appError':
         return { title: 'Campanula 出错了', body: '一直这样的话，请告诉站长' };
+      case 'checkTokenUnavailable':
       case 'neteaseUnavailable':
       case 'rateLimited':
       case 'upstreamChanged':

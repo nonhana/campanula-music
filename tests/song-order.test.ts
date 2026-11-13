@@ -135,6 +135,7 @@ describe('拖动排序：本地立即生效，停手 2 秒合并提交', () => {
     ]);
     expect(orderCalls()).toHaveLength(1);
     expect(orderCalls()[0]).toMatchObject({
+      config: { checkToken: expect.any(String) },
       query: {
         pid: CREATED.id,
         ids: latest,

@@ -70,6 +70,7 @@ describe('打开不在曲库里的歌单', () => {
       world.netease.calls.findLast((call) => call.module === 'playlist_detail'),
     ).toMatchObject({
       query: { id: SMALL.id },
+      config: { checkToken: expect.any(String) },
     });
     const page = app.state.library?.neteasePlaylist(SMALL.id);
     expect(page).toMatchObject({

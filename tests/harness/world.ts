@@ -44,6 +44,7 @@ export interface World {
         cookie?: string[];
         until?: Promise<void>;
         when?: Record<string, unknown>;
+        apiRequests?: 2;
       },
     ) => Promise<void>;
     readonly held: number;
@@ -245,7 +246,7 @@ export const useWorld = (options: WorldOptions = {}): World => {
       get calls() {
         return current().fake.calls;
       },
-      async reply(path, { cookie = [], until, when } = {}) {
+      async reply(path, { cookie = [], until, when, apiRequests } = {}) {
         const { module, outcome } = await loadFixture(path);
         current().fake.queueReply(module, {
           ...outcome,
@@ -253,6 +254,7 @@ export const useWorld = (options: WorldOptions = {}): World => {
           until,
           when,
           fixture: path,
+          apiRequests,
         });
       },
       get held() {

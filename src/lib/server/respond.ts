@@ -4,6 +4,7 @@ import type { ApiError, ErrorBody } from '#lib/api/errors.js';
 import { failureOf, logFailure } from './netease/failure';
 
 const STATUS = {
+  checkTokenUnavailable: 503,
   needsLogin: 401,
   rateLimited: 429,
   upstreamChanged: 502,

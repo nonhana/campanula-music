@@ -30,7 +30,7 @@ catalogs:
 
   music:
     browser-id3-writer: ^6.4.0
-    hana-music-api: 5.0.0
+    hana-music-api: 6.0.0
     music-metadata: ^12.3.5
     tough-cookie: ^6.1.0
 

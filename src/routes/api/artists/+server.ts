@@ -3,10 +3,10 @@ import { fetchCollectedArtists } from '#lib/server/netease/library.js';
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = ({ cookies }) =>
+export const GET: RequestHandler = ({ cookies, request }) =>
   respondSignedIn(
     endpoints.artists,
-    cookies,
+    { cookies, request },
     async (config) => ({
       artists: await fetchCollectedArtists(config),
     }),

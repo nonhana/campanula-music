@@ -33,9 +33,7 @@ export interface CollectRequest {
   collected: boolean;
 }
 
-export type PlaylistCollectRequest =
-  | { collected: true; checkToken: string }
-  | { collected: false };
+export type PlaylistCollectRequest = CollectRequest;
 
 export interface PlaylistInfo {
   id: number;

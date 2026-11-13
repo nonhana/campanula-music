@@ -1,3 +1,5 @@
+import type { CheckTokens } from '#lib/api/check-token.js';
+import { CHECK_TOKEN, CHECK_TOKENS_HEADER } from '#lib/api/check-token.js';
 import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js';
 import type { ApiError, ErrorBody } from '#lib/api/errors.js';
 
@@ -54,7 +56,8 @@ const isErrorBody = (body: unknown): body is ErrorBody =>
   'kind' in body.error;
 
 export const createApi = (
-  browser: Pick<BrowserCapabilities, 'fetch' | 'network'>,
+  browser: Pick<BrowserCapabilities, 'fetch' | 'network' | 'checkToken'>,
+  currentRound: () => number,
 ): Api => {
   const networkFailure = (error: unknown): Result<never> => {
     if (!(error instanceof TypeError)) throw error;
@@ -69,7 +72,34 @@ export const createApi = (
   const request = async <Value>(
     path: string,
     init?: RequestInit,
+    tokenCount = 0,
+    renewalToken = false,
   ): Promise<Result<Value>> => {
+    const mine = currentRound();
+    const tokens: CheckTokens = { requests: [] };
+    const takeToken = async (): Promise<string> => {
+      const token = await browser.checkToken();
+      if (!CHECK_TOKEN.test(token)) throw new Error('安全验证没有返回有效令牌');
+      return token;
+    };
+    try {
+      for (let i = 0; i < tokenCount; i += 1)
+        tokens.requests.push(await takeToken());
+    } catch {
+      return { ok: false, failure: { kind: 'checkTokenUnavailable' } };
+    }
+    if (renewalToken) {
+      tokens.renewal = await takeToken().catch(() => undefined);
+      if (tokenCount > 0 && !tokens.renewal)
+        return { ok: false, failure: { kind: 'checkTokenUnavailable' } };
+    }
+    if (mine !== currentRound())
+      return { ok: false, failure: { kind: 'needsLogin' } };
+    if (tokens.requests.length || tokens.renewal) {
+      const headers = new Headers(init?.headers);
+      headers.set(CHECK_TOKENS_HEADER, JSON.stringify(tokens));
+      init = { ...init, headers };
+    }
     let response: Response;
     try {
       response = await browser.fetch(path, init);
@@ -99,9 +129,14 @@ export const createApi = (
     endpoint: GetEndpoint<Params, Response>,
     ...args: ParamsArg<Params>
   ): Promise<Result<Response>> =>
-    request<Response>(endpoint.path(paramsOf<Params>(args)), {
-      method: endpoint.method,
-    });
+    request<Response>(
+      endpoint.path(paramsOf<Params>(args)),
+      {
+        method: endpoint.method,
+      },
+      endpoint.checkTokens,
+      endpoint.renewalToken,
+    );
 
   const post = <Params, Request, Response>(
     endpoint: PostEndpoint<Params, Request, Response>,
@@ -113,12 +148,19 @@ export const createApi = (
     const body = given[offset] as Request | undefined;
     const options = given[offset + 1] as PostOptions | undefined;
     const serialized = JSON.stringify(body ?? {});
-    return request<Response>(endpoint.path(params), {
-      method: endpoint.method,
-      headers: { 'content-type': 'application/json' },
-      body: serialized,
-      keepalive: options?.keepalive === true && fitsKeepalive(serialized),
-    });
+    return request<Response>(
+      endpoint.path(params),
+      {
+        method: endpoint.method,
+        headers: { 'content-type': 'application/json' },
+        body: serialized,
+        keepalive: options?.keepalive === true && fitsKeepalive(serialized),
+      },
+      endpoint.needsCheckToken && !endpoint.needsCheckToken(body as Request)
+        ? 0
+        : endpoint.checkTokens,
+      endpoint.renewalToken,
+    );
   };
 
   return { get, post };

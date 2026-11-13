@@ -8,20 +8,24 @@ const endpoint = post<WriteResponse, { data: string }>(() => '/api/fake');
 
 const setup = () => {
   const inits: RequestInit[] = [];
-  const api = createApi({
-    fetch: async (_path: string, init?: RequestInit) => {
-      inits.push(init ?? {});
-      return new Response(JSON.stringify({ kind: 'done' }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
+  const api = createApi(
+    {
+      checkToken: async () => 'token',
+      fetch: async (_path: string, init?: RequestInit) => {
+        inits.push(init ?? {});
+        return new Response(JSON.stringify({ kind: 'done' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      },
+      network: {
+        onLine: true,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      },
     },
-    network: {
-      onLine: true,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    },
-  });
+    () => 0,
+  );
   return { api, inits };
 };
 

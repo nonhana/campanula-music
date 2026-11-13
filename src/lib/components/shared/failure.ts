@@ -2,6 +2,8 @@ import type { RequestFailure } from '#lib/app/api-client.js';
 
 export const failureText = (failure: RequestFailure): string => {
   switch (failure.kind) {
+    case 'checkTokenUnavailable':
+      return '安全验证不可用';
     case 'offline':
       return '网络已断开';
     case 'unreachable':

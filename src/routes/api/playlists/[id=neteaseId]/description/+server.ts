@@ -7,7 +7,9 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params;
   const { description } = await readPlaylistDescription(request);
-  return respondSignedIn(endpoints.describePlaylist, cookies, (config) =>
-    describePlaylist(id, description, config),
+  return respondSignedIn(
+    endpoints.describePlaylist,
+    { cookies, request },
+    (config) => describePlaylist(id, description, config),
   );
 };

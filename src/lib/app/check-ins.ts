@@ -58,6 +58,7 @@ export const createCheckIns = (context: CheckInsContext): CheckIns => {
         case 'upstreamChanged':
         case 'rejected':
         case 'cookieSecretMissing':
+        case 'checkTokenUnavailable':
           await store.remove(key);
           break;
         default: {

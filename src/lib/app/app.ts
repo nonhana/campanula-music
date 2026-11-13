@@ -235,7 +235,7 @@ export interface App {
 }
 
 export const createApp = (browser: BrowserCapabilities): App => {
-  const api = createApi(browser);
+  const api = createApi(browser, () => round.current);
   const db = createLocalDatabase(browser.indexedDB);
   const local = createLocalDb(db);
   const streamable = (): boolean =>
@@ -511,7 +511,6 @@ export const createApp = (browser: BrowserCapabilities): App => {
       );
     },
     online: () => browser.network.onLine,
-    checkToken: browser.checkToken,
     notices,
   });
 

@@ -9,7 +9,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   const ids = await readIds(endpoints.songs, request, 'ids', SONGS_PER_REQUEST);
   return respondSignedIn(
     endpoints.songs,
-    cookies,
+    { cookies, request },
     async (config) => ({
       songs: await fetchSongs(ids, config),
     }),

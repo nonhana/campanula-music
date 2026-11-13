@@ -131,6 +131,18 @@ describe('标签库', () => {
 });
 
 describe('新建歌单', () => {
+  it('创建需要的四枚令牌都可包含 1024 个可打印的反斜杠', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    tab.watchman.checkToken = async () => String.fromCharCode(92).repeat(1024);
+    await world.netease.reply(CREATED.create);
+    await world.netease.reply(CREATED.detail);
+    expect(
+      await tab.app.createPlaylist({ name: CREATED.name, private: true }),
+    ).toEqual({ ok: true, playlistId: CREATED.id });
+    expect(await storedPlaylistIds(device)).toContain(CREATED.id);
+  });
+
   it('新建隐私歌单：等网易云建好才进曲库，排在我喜欢的音乐后面，是空的；存进本机副本', async () => {
     const device = world.device();
     const { app } = await signInAtLikedTracks(device);
@@ -216,6 +228,18 @@ describe('新建歌单', () => {
       await app.createPlaylist({ name: CREATED.name, private: true }),
     ).toEqual({ ok: true, playlistId: CREATED.id });
     const calls = world.netease.calls.slice(before);
+    const protectedCalls = calls.filter((call) =>
+      ['playlist_create', 'playlist_detail', 'login_refresh'].includes(
+        call.module,
+      ),
+    );
+    const tokenValues = protectedCalls.map((call) => call.config.checkToken);
+    expect(
+      tokenValues.every(
+        (token) => typeof token === 'string' && token.length > 0,
+      ),
+    ).toBe(true);
+    expect(new Set(tokenValues).size).toBe(protectedCalls.length);
     expect(
       calls.filter((call) => call.module === 'playlist_create'),
     ).toHaveLength(1);
@@ -482,25 +506,27 @@ describe('改名称、简介、标签', () => {
       tags: ['华语', '流行', '夜晚'],
     });
     await world.settle();
-    expect(device.requests.slice(-3)).toEqual([
-      {
-        method: 'POST',
-        path: `/api/playlists/${JAZZ.id}/name`,
-        body: { name: '爵士' },
-      },
-      {
-        method: 'POST',
-        path: `/api/playlists/${JAZZ.id}/description`,
-        body: { description: '周末下午听。' },
-      },
-      {
-        method: 'POST',
-        path: `/api/playlists/${JAZZ.id}/tags`,
-        body: {
-          tags: ['华语', '流行', '夜晚'],
+    expect(device.requests.slice(-3)).toEqual(
+      expect.arrayContaining([
+        {
+          method: 'POST',
+          path: `/api/playlists/${JAZZ.id}/name`,
+          body: { name: '爵士' },
         },
-      },
-    ]);
+        {
+          method: 'POST',
+          path: `/api/playlists/${JAZZ.id}/description`,
+          body: { description: '周末下午听。' },
+        },
+        {
+          method: 'POST',
+          path: `/api/playlists/${JAZZ.id}/tags`,
+          body: {
+            tags: ['华语', '流行', '夜晚'],
+          },
+        },
+      ]),
+    );
     // 三个请求一起发，到服务端的先后不固定
     const call = (module: string) =>
       world.netease.calls.find((each) => each.module === module)?.query;
@@ -509,6 +535,14 @@ describe('改名称、简介、标签', () => {
       id: JAZZ.id,
       desc: '周末下午听。',
     });
+    const descriptionCall = world.netease.calls.find(
+      (call) => call.module === 'playlist_desc_update',
+    );
+    expect(descriptionCall?.config.checkToken).toEqual(expect.any(String));
+    for (const call of world.netease.calls.filter((call) =>
+      ['playlist_name_update', 'playlist_tags_update'].includes(call.module),
+    ))
+      expect(call.config).not.toHaveProperty('checkToken');
     expect(call('playlist_tags_update')).toEqual({
       id: JAZZ.id,
       tags: ['华语', '流行', '夜晚'],
@@ -557,18 +591,20 @@ describe('改名称、简介、标签', () => {
       description: '周末下午听。',
       tags: [],
     });
-    expect(device.requests.slice(-2)).toEqual([
-      {
-        method: 'POST',
-        path: `/api/playlists/${JAZZ.id}/description`,
-        body: { description: '周末下午听。' },
-      },
-      {
-        method: 'POST',
-        path: `/api/playlists/${JAZZ.id}/tags`,
-        body: { tags: [] },
-      },
-    ]);
+    expect(device.requests.slice(-2)).toEqual(
+      expect.arrayContaining([
+        {
+          method: 'POST',
+          path: `/api/playlists/${JAZZ.id}/description`,
+          body: { description: '周末下午听。' },
+        },
+        {
+          method: 'POST',
+          path: `/api/playlists/${JAZZ.id}/tags`,
+          body: { tags: [] },
+        },
+      ]),
+    );
     expect(playlistOf(app, JAZZ.id)).toMatchObject({
       description: '周末下午听。',
       tags: [],

@@ -4,13 +4,13 @@ import { readArtistSongOrder, readOffset } from '#lib/server/request.js';
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = ({ params, url, cookies }) => {
+export const GET: RequestHandler = ({ params, url, cookies, request }) => {
   const { id } = params;
   const order = readArtistSongOrder(url.searchParams.get('order'));
   const offset = readOffset(url.searchParams.get('offset'));
   return respondSignedIn(
     endpoints.artistSongs,
-    cookies,
+    { cookies, request },
     (config) => fetchArtistSongs(id, order, offset, config),
     { retryRead: true },
   );

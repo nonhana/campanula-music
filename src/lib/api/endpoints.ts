@@ -97,36 +97,46 @@ export const endpoints = {
     ({ uid }) => `${resolve('/api/hearts')}?uid=${uid}`,
   ),
 
-  heart: post<WriteResponse, HeartRequest>(() => resolve('/api/hearts')),
+  heart: post<WriteResponse, HeartRequest>(() => resolve('/api/hearts'), {
+    checkTokens: 1,
+  }),
 
   playlists: get<PlaylistsResponse, { uid: number }>(
     ({ uid }) => `${resolve('/api/playlists')}?uid=${uid}`,
   ),
 
-  createPlaylist: post<CreatePlaylistResponse, CreatePlaylistRequest>(() =>
-    resolve('/api/playlists'),
+  createPlaylist: post<CreatePlaylistResponse, CreatePlaylistRequest>(
+    () => resolve('/api/playlists'),
+    { checkTokens: 3, renewalToken: true },
   ),
 
-  playlist: get<PlaylistPageResponse, NeteaseIdParams>(({ id }) =>
-    resolve('/api/playlists/[id=neteaseId]', { id }),
+  playlist: get<PlaylistPageResponse, NeteaseIdParams>(
+    ({ id }) => resolve('/api/playlists/[id=neteaseId]', { id }),
+    2,
   ),
 
-  trackIds: get<TrackIdsResponse, NeteaseIdParams>(({ id }) =>
-    resolve('/api/playlists/[id=neteaseId]/track-ids', { id }),
+  trackIds: get<TrackIdsResponse, NeteaseIdParams>(
+    ({ id }) => resolve('/api/playlists/[id=neteaseId]/track-ids', { id }),
+    2,
   ),
 
-  songs: post<SongsResponse, SongsRequest>(() => resolve('/api/songs')),
+  songs: post<SongsResponse, SongsRequest>(() => resolve('/api/songs'), {
+    renewalToken: true,
+  }),
 
-  addTracks: post<WriteResponse, AddTracksRequest, NeteaseIdParams>(({ id }) =>
-    resolve('/api/playlists/[id=neteaseId]/tracks', { id }),
+  addTracks: post<WriteResponse, AddTracksRequest, NeteaseIdParams>(
+    ({ id }) => resolve('/api/playlists/[id=neteaseId]/tracks', { id }),
+    { checkTokens: 2 },
   ),
 
   removeTracks: post<WriteResponse, RemoveTracksRequest, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]/tracks/remove', { id }),
+    { checkTokens: 2 },
   ),
 
-  songOrder: post<WriteResponse, SongOrderRequest, NeteaseIdParams>(({ id }) =>
-    resolve('/api/playlists/[id=neteaseId]/order', { id }),
+  songOrder: post<WriteResponse, SongOrderRequest, NeteaseIdParams>(
+    ({ id }) => resolve('/api/playlists/[id=neteaseId]/order', { id }),
+    { checkTokens: 1 },
   ),
 
   playlistOrder: post<WriteResponse, PlaylistOrderRequest>(() =>
@@ -135,6 +145,7 @@ export const endpoints = {
 
   collectPlaylist: post<WriteResponse, PlaylistCollectRequest, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]/collect', { id }),
+    { checkTokens: 1, needsCheckToken: ({ collected }) => collected },
   ),
 
   coverToken: post<CoverTokenResponse, void, NeteaseIdParams>(({ id }) =>
@@ -153,7 +164,9 @@ export const endpoints = {
     WriteResponse,
     DescribePlaylistRequest,
     NeteaseIdParams
-  >(({ id }) => resolve('/api/playlists/[id=neteaseId]/description', { id })),
+  >(({ id }) => resolve('/api/playlists/[id=neteaseId]/description', { id }), {
+    checkTokens: 1,
+  }),
 
   tagPlaylist: post<WriteResponse, TagPlaylistRequest, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]/tags', { id }),
@@ -204,6 +217,7 @@ export const endpoints = {
 
   collectArtist: post<WriteResponse, CollectRequest, NeteaseIdParams>(
     ({ id }) => resolve('/api/artists/[id=neteaseId]/collect', { id }),
+    { checkTokens: 1, needsCheckToken: ({ collected }) => collected },
   ),
 
   daily: get<DailyResponse>(() => resolve('/api/daily')),

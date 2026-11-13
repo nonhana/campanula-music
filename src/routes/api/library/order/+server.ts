@@ -12,7 +12,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     'playlistIds',
     PLAYLISTS_PER_ORDER,
   );
-  return respondSignedIn(endpoints.playlistOrder, cookies, (config) =>
-    updatePlaylistOrder(playlistIds, config),
+  return respondSignedIn(
+    endpoints.playlistOrder,
+    { cookies, request },
+    (config) => updatePlaylistOrder(playlistIds, config),
   );
 };

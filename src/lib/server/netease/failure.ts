@@ -7,6 +7,8 @@ export const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const describe = (failure: NeteaseFailure): string => {
   switch (failure.kind) {
+    case 'checkTokenUnavailable':
+      return '安全验证不可用';
     case 'needsLogin':
       return '需要登录';
     case 'rateLimited':

@@ -3,10 +3,10 @@ import { fetchCollectedAlbums } from '#lib/server/netease/library.js';
 import { respondSignedIn } from '#lib/server/session.js';
 
 import type { RequestHandler } from './$types';
-export const GET: RequestHandler = ({ cookies }) =>
+export const GET: RequestHandler = ({ cookies, request }) =>
   respondSignedIn(
     endpoints.albums,
-    cookies,
+    { cookies, request },
     async (config) => ({
       albums: await fetchCollectedAlbums(config),
     }),

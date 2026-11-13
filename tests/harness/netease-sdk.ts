@@ -11,6 +11,7 @@ export interface Outcome {
   until?: Promise<void>;
   when?: Record<string, unknown>;
   fixture?: string;
+  apiRequests?: 2;
 }
 
 export interface RequestSpan {
@@ -23,6 +24,7 @@ export interface Call {
   module: string;
   query: unknown;
   config: CallConfig;
+  checkTokens?: readonly string[];
 }
 
 const outcomes = new Map<string, Outcome[]>();
@@ -119,16 +121,30 @@ export const invokeModule = async (
   query: unknown,
   config: CallConfig = {},
 ): Promise<SdkResponse> => {
-  calls.push({
+  const checkToken =
+    typeof config.checkToken === 'function'
+      ? await config.checkToken()
+      : config.checkToken;
+  const call: Call = {
     module,
     query,
-    config: structuredClone(config),
-  });
+    config: structuredClone({
+      ...config,
+      ...(checkToken !== undefined ? { checkToken } : {}),
+    }),
+  };
+  calls.push(call);
   const queued = outcomes.get(module) ?? [];
   const queue = [...queued];
   const at = queued.findIndex((outcome) => fits(module, outcome, query));
   const outcome = at < 0 ? undefined : queued.splice(at, 1)[0];
   if (!outcome) throw new Error(`网易云替身：没有为 ${module} 准备录制数据`);
+  // SDK playlistTracks 的 512 分支在一次模块调用内再次调用 provider。
+  if (outcome.apiRequests === 2 && checkToken !== undefined) {
+    if (typeof config.checkToken !== 'function')
+      throw new TypeError('SDK 多请求不能重复使用字符串令牌');
+    call.checkTokens = [checkToken, await config.checkToken()];
+  }
   const span = currentRequest();
   if (span && !anyOrder) {
     checkOrder(module, query, span, outcome);
