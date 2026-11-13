@@ -10,6 +10,7 @@ import type {
   Song,
 } from '#lib/api/library.js';
 import { playlistName } from '#lib/api/library.js';
+import { LOGIN_COOKIE_LOCK } from '#lib/api/login.js';
 import type { PlaySource, Quality } from '#lib/api/playback.js';
 import type { SearchedItems, SearchKind } from '#lib/api/search.js';
 
@@ -80,7 +81,6 @@ import { createSearch, INITIAL_SEARCH } from './search';
 import type { Session } from './session-round';
 import { createSessionRound } from './session-round';
 
-const LOGIN_COOKIE_LOCK = 'campanula:login-cookie';
 const SESSION_CHANNEL = 'campanula:session';
 
 interface SessionMessage {

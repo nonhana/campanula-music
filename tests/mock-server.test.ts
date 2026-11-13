@@ -6,7 +6,11 @@ import { createServer } from 'vite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { CheckTokens } from '#lib/api/check-token.js';
-import { CHECK_TOKENS_HEADER } from '#lib/api/check-token.js';
+import {
+  CHECK_TOKENS_HEADER,
+  RENEWAL_ATTEMPTED_HEADER,
+  RENEWAL_REQUIRED_HEADER,
+} from '#lib/api/check-token.js';
 
 import { mockPlugin } from '../src/lib/server/mock/vite-plugin.ts';
 import { TEST_OUT_DIR } from './harness/world';
@@ -65,7 +69,9 @@ describe('mock 开发服务器', () => {
     cookie = setCookie.split(';')[0]!;
     expect(cookie.startsWith('campanula_login_mock=')).toBe(true);
 
-    const account = await api('/api/account');
+    const account = await api('/api/account', {
+      headers: { [RENEWAL_ATTEMPTED_HEADER]: '1' },
+    });
     expect(
       ((await account.json()) as { account: { id: number } }).account.id,
     ).toBe(10000001);
@@ -98,8 +104,7 @@ describe('mock 开发服务器', () => {
       '/api/playlists/900000019',
       {},
       {
-        requests: ['mock-detail-first', 'mock-detail-retry'],
-        renewal: 'mock-detail-renewal',
+        requests: ['mock-detail-first'],
       },
     );
     expect(shown.status).toBe(200);
@@ -112,8 +117,7 @@ describe('mock 开发服务器', () => {
       '/api/playlists/900000019',
       {},
       {
-        requests: ['mock-reset-first', 'mock-reset-retry'],
-        renewal: 'mock-reset-renewal',
+        requests: ['mock-reset-first'],
       },
     );
     expect(back.status).toBe(200);
@@ -145,20 +149,25 @@ describe('mock 开发服务器', () => {
       body: JSON.stringify({ name: 'login-expired' }),
     });
     expect(scenario.status).toBe(200);
-    const withoutToken = await api('/api/account');
-    expect(withoutToken.status).toBe(503);
-    expect(await withoutToken.json()).toEqual({
-      error: { kind: 'checkTokenUnavailable' },
+    const account = await api('/api/account');
+    expect(account.status).toBe(428);
+    expect(account.headers.get(RENEWAL_REQUIRED_HEADER)).toBe('expired');
+    expect(account.headers.get('cache-control')).toBe('no-store');
+    expect(await account.json()).toEqual({ renewalRequired: 'expired' });
+    const probe = await api('/api/account', {
+      headers: { [RENEWAL_ATTEMPTED_HEADER]: '1' },
     });
-    const account = await api(
-      '/api/account',
-      {},
-      {
-        requests: [],
-        renewal: 'mock-expired-renewal',
-      },
+    expect(probe.status).toBe(401);
+    expect(await probe.json()).toEqual({ error: { kind: 'needsLogin' } });
+    expect((await api('/api/login/refresh', { method: 'POST' })).status).toBe(
+      400,
     );
-    expect(account.status).toBe(401);
+    const refreshed = await api(
+      '/api/login/refresh',
+      { method: 'POST' },
+      { requests: ['mock-expired-renewal'] },
+    );
+    expect(refreshed.status).toBe(401);
 
     const report = await api('/api/mock/coverage');
     expect(((await report.json()) as { scenario: string }).scenario).toBe(

@@ -1,5 +1,7 @@
 import type { Account } from './account';
 
+export const LOGIN_COOKIE_LOCK = 'campanula:login-cookie';
+
 export interface QrResponse {
   key: string;
   // data: 地址的 PNG
@@ -37,6 +39,10 @@ export interface SmsLoginResponse {
 
 export interface LogoutResponse {
   signedOut: true;
+}
+
+export interface RenewSessionResponse {
+  renewed: true;
 }
 
 export const PHONE = /^1\d{10}$/;

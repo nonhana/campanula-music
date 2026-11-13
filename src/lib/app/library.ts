@@ -1970,7 +1970,13 @@ export const createLibrary = (context: LibraryContext): Library => {
       });
       if (!result) return null;
       if (!result.ok) return result;
-      const { playlist } = result.value;
+      if (!session.isCurrent(mine)) return null;
+      const details = await session.api.get(endpoints.createdPlaylist, {
+        id: result.value.id,
+      });
+      if (!details) return null;
+      if (!details.ok) return details;
+      const { playlist } = details.value;
       if (!(await confirm(mine, { kind: 'create', playlist }))) return null;
       if (songs.length > 0) void addSongs(playlist, songs);
       return { ok: true, playlistId: playlist.id };

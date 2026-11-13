@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 import type { AxeResults } from 'axe-core';
 
+import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.js';
+
 const ROOT = join(import.meta.dirname, '..');
 const AXI = join(ROOT, 'scripts/axi.sh');
 const LOCK = join(homedir(), '.cache/campanula-axi/browser.lock');
@@ -226,7 +228,7 @@ const accountSignedIn = async (
 ): Promise<{ signedIn: boolean; text: string }> => {
   const output = await evaluate(
     pageId,
-    `(async () => { const r = await fetch('/api/account', { cache: 'no-store' }); const b = await r.json(); return JSON.stringify({ status: r.status, account: b.account ? { id: b.account.id, nickname: b.account.nickname } : null }) })()`,
+    `(async () => { const r = await fetch('/api/account', { cache: 'no-store', headers: { '${RENEWAL_ATTEMPTED_HEADER}': '1' } }); const b = await r.json(); return JSON.stringify({ status: r.status, account: r.ok && b.account ? { id: b.account.id, nickname: b.account.nickname } : null }) })()`,
   );
   const state = JSON.parse(output) as {
     status: number;

@@ -120,6 +120,10 @@ export interface CreatePlaylistRequest {
 }
 
 export interface CreatePlaylistResponse {
+  id: number;
+}
+
+export interface CreatedPlaylistResponse {
   playlist: Playlist;
 }
 

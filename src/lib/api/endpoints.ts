@@ -20,6 +20,7 @@ import type {
   CollectedAlbumsResponse,
   CollectedArtistsResponse,
   CollectRequest,
+  CreatedPlaylistResponse,
   CreatePlaylistRequest,
   CreatePlaylistResponse,
   DescribePlaylistRequest,
@@ -45,6 +46,7 @@ import type {
   QrCheckRequest,
   QrCheckResponse,
   QrResponse,
+  RenewSessionResponse,
   SmsLoginRequest,
   SmsLoginResponse,
 } from './login.js';
@@ -93,6 +95,11 @@ export const endpoints = {
 
   logout: post<LogoutResponse>(() => resolve('/api/logout')),
 
+  renewSession: post<RenewSessionResponse>(
+    () => resolve('/api/login/refresh'),
+    { checkTokens: 1 },
+  ),
+
   hearts: get<HeartsResponse, { uid: number }>(
     ({ uid }) => `${resolve('/api/hearts')}?uid=${uid}`,
   ),
@@ -107,22 +114,25 @@ export const endpoints = {
 
   createPlaylist: post<CreatePlaylistResponse, CreatePlaylistRequest>(
     () => resolve('/api/playlists'),
-    { checkTokens: 3, renewalToken: true },
+    { checkTokens: 1 },
+  ),
+
+  createdPlaylist: get<CreatedPlaylistResponse, NeteaseIdParams>(
+    ({ id }) => resolve('/api/playlists/[id=neteaseId]/created', { id }),
+    1,
   ),
 
   playlist: get<PlaylistPageResponse, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]', { id }),
-    2,
+    1,
   ),
 
   trackIds: get<TrackIdsResponse, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]/track-ids', { id }),
-    2,
+    1,
   ),
 
-  songs: post<SongsResponse, SongsRequest>(() => resolve('/api/songs'), {
-    renewalToken: true,
-  }),
+  songs: post<SongsResponse, SongsRequest>(() => resolve('/api/songs')),
 
   addTracks: post<WriteResponse, AddTracksRequest, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]/tracks', { id }),

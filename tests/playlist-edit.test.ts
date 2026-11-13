@@ -131,22 +131,28 @@ describe('标签库', () => {
 });
 
 describe('新建歌单', () => {
-  it('创建需要的四枚令牌都可包含 1024 个可打印的反斜杠', async () => {
+  it('创建和随后读取详情各取一枚令牌，允许 1024 个可打印的反斜杠', async () => {
     const device = world.device();
     const tab = await signInAtLikedTracks(device);
-    tab.watchman.checkToken = async () => String.fromCharCode(92).repeat(1024);
+    let issued = 0;
+    tab.watchman.checkToken = async () => {
+      issued += 1;
+      return String.fromCharCode(92).repeat(1024);
+    };
     await world.netease.reply(CREATED.create);
     await world.netease.reply(CREATED.detail);
     expect(
       await tab.app.createPlaylist({ name: CREATED.name, private: true }),
     ).toEqual({ ok: true, playlistId: CREATED.id });
     expect(await storedPlaylistIds(device)).toContain(CREATED.id);
+    expect(issued).toBe(2);
   });
 
   it('新建隐私歌单：等网易云建好才进曲库，排在我喜欢的音乐后面，是空的；存进本机副本', async () => {
     const device = world.device();
-    const { app } = await signInAtLikedTracks(device);
+    const { app, watchman } = await signInAtLikedTracks(device);
     const before = playlistIds(app)!;
+    const tokensBefore = watchman.issued.length;
 
     const creating = held();
     await world.netease.reply(CREATED.create, { until: creating.until });
@@ -165,9 +171,12 @@ describe('新建歌单', () => {
       query: { name: CREATED.name, privacy: 10 },
     });
     expect(playlistIds(app)).toEqual(before);
+    expect(watchman.issued.slice(tokensBefore)).toHaveLength(1);
 
     creating.release();
     expect(await outcome).toEqual({ ok: true, playlistId: CREATED.id });
+    expect(watchman.issued.slice(tokensBefore)).toHaveLength(2);
+    expect(new Set(watchman.issued.slice(tokensBefore)).size).toBe(2);
     expect(noticeOf(app)).toEqual({
       kind: 'playlistCreated',
       name: CREATED.name,
@@ -204,6 +213,28 @@ describe('新建歌单', () => {
     const sent = device.requests.length;
     await app.openPlaylist(CREATED.id);
     expect(device.requests.length).toBe(sent);
+  });
+
+  it('创建成功后取不到详情令牌：说明失败，不重建、不把未确认详情存成本机成功', async () => {
+    const device = world.device();
+    const { app, watchman } = await signInAtLikedTracks(device);
+    const before = world.netease.calls.length;
+    const storedBefore = await storedPlaylistIds(device);
+    const creating = held();
+    await world.netease.reply(CREATED.create, { until: creating.until });
+    const outcome = app.createPlaylist({ name: CREATED.name, private: true });
+    await world.settle();
+
+    watchman.available = false;
+    creating.release();
+    expect(await outcome).toEqual({
+      ok: false,
+      failure: { kind: 'checkTokenUnavailable' },
+    });
+    expect(
+      world.netease.calls.slice(before).map((call) => call.module),
+    ).toEqual(['playlist_create']);
+    expect(await storedPlaylistIds(device)).toEqual(storedBefore);
   });
 
   it('创建成功后详情要求续期：只重读原歌单，不能再创建一张', async () => {
@@ -411,7 +442,12 @@ describe('新建歌单', () => {
 
     await replyCreated();
     await app.createPlaylist({ name: ` ${'夜'.repeat(20)} `, private: false });
-    expect(device.requests.at(-1)).toEqual({
+    expect(
+      device.requests.findLast(
+        (request) =>
+          request.method === 'POST' && request.path === '/api/playlists',
+      ),
+    ).toEqual({
       method: 'POST',
       path: '/api/playlists',
       body: {
@@ -432,7 +468,12 @@ describe('新建歌单', () => {
       name: 'a'.repeat(40),
       private: false,
     });
-    expect(device.requests.at(-1)).toMatchObject({
+    expect(
+      device.requests.findLast(
+        (request) =>
+          request.method === 'POST' && request.path === '/api/playlists',
+      ),
+    ).toMatchObject({
       path: '/api/playlists',
       body: {
         name: 'a'.repeat(40),

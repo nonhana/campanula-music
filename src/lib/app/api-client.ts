@@ -1,7 +1,14 @@
 import type { CheckTokens } from '#lib/api/check-token.js';
-import { CHECK_TOKEN, CHECK_TOKENS_HEADER } from '#lib/api/check-token.js';
+import {
+  CHECK_TOKEN,
+  CHECK_TOKENS_HEADER,
+  RENEWAL_ATTEMPTED_HEADER,
+  RENEWAL_REQUIRED_HEADER,
+} from '#lib/api/check-token.js';
 import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js';
+import { endpoints } from '#lib/api/endpoints.js';
 import type { ApiError, ErrorBody } from '#lib/api/errors.js';
+import { LOGIN_COOKIE_LOCK } from '#lib/api/login.js';
 
 import type { BrowserCapabilities } from './browser';
 
@@ -56,7 +63,10 @@ const isErrorBody = (body: unknown): body is ErrorBody =>
   'kind' in body.error;
 
 export const createApi = (
-  browser: Pick<BrowserCapabilities, 'fetch' | 'network' | 'checkToken'>,
+  browser: Pick<
+    BrowserCapabilities,
+    'fetch' | 'network' | 'checkToken' | 'locks'
+  >,
   currentRound: () => number,
 ): Api => {
   const networkFailure = (error: unknown): Result<never> => {
@@ -72,8 +82,15 @@ export const createApi = (
   const request = async <Value>(
     path: string,
     init?: RequestInit,
-    tokenCount = 0,
-    renewalToken = false,
+    {
+      tokenCount = 0,
+      renewalAttempted = false,
+      loginCookieLocked = false,
+    }: {
+      tokenCount?: number;
+      renewalAttempted?: boolean;
+      loginCookieLocked?: boolean;
+    } = {},
   ): Promise<Result<Value>> => {
     const mine = currentRound();
     const tokens: CheckTokens = { requests: [] };
@@ -88,23 +105,56 @@ export const createApi = (
     } catch {
       return { ok: false, failure: { kind: 'checkTokenUnavailable' } };
     }
-    if (renewalToken) {
-      tokens.renewal = await takeToken().catch(() => undefined);
-      if (tokenCount > 0 && !tokens.renewal)
-        return { ok: false, failure: { kind: 'checkTokenUnavailable' } };
-    }
     if (mine !== currentRound())
       return { ok: false, failure: { kind: 'needsLogin' } };
-    if (tokens.requests.length || tokens.renewal) {
+    if (tokens.requests.length || renewalAttempted) {
       const headers = new Headers(init?.headers);
-      headers.set(CHECK_TOKENS_HEADER, JSON.stringify(tokens));
+      if (tokens.requests.length)
+        headers.set(CHECK_TOKENS_HEADER, JSON.stringify(tokens));
+      if (renewalAttempted) headers.set(RENEWAL_ATTEMPTED_HEADER, '1');
       init = { ...init, headers };
     }
     let response: Response;
     try {
-      response = await browser.fetch(path, init);
+      const send = () =>
+        mine === currentRound() ? browser.fetch(path, init) : null;
+      const received =
+        path === endpoints.renewSession.path(undefined) && !loginCookieLocked
+          ? await browser.locks.request(LOGIN_COOKIE_LOCK, send)
+          : await send();
+      if (!received) return { ok: false, failure: { kind: 'needsLogin' } };
+      response = received;
     } catch (error) {
       return networkFailure(error);
+    }
+    const renewal = response.headers.get(RENEWAL_REQUIRED_HEADER);
+    if (
+      response.status === 428 &&
+      !renewalAttempted &&
+      (renewal === 'due' || renewal === 'expired')
+    ) {
+      if (mine !== currentRound())
+        return { ok: false, failure: { kind: 'needsLogin' } };
+      const renewed = await request(
+        endpoints.renewSession.path(undefined),
+        { method: endpoints.renewSession.method },
+        {
+          tokenCount: endpoints.renewSession.checkTokens,
+          renewalAttempted: true,
+          // 账号检查由 App 持有同一把锁，不能嵌套申请。
+          loginCookieLocked: path === endpoints.account.path(undefined),
+        },
+      );
+      if (
+        !renewed.ok &&
+        (renewal === 'expired' || renewed.failure.kind === 'needsLogin')
+      )
+        return renewed;
+      if (mine !== currentRound())
+        return { ok: false, failure: { kind: 'needsLogin' } };
+      if (!renewed.ok && renewed.failure.kind === 'checkTokenUnavailable')
+        console.warn('主动续期失败：安全验证不可用');
+      return request<Value>(path, init, { tokenCount, renewalAttempted: true });
     }
     let body: unknown;
     try {
@@ -134,8 +184,7 @@ export const createApi = (
       {
         method: endpoint.method,
       },
-      endpoint.checkTokens,
-      endpoint.renewalToken,
+      { tokenCount: endpoint.checkTokens },
     );
 
   const post = <Params, Request, Response>(
@@ -156,10 +205,12 @@ export const createApi = (
         body: serialized,
         keepalive: options?.keepalive === true && fitsKeepalive(serialized),
       },
-      endpoint.needsCheckToken && !endpoint.needsCheckToken(body as Request)
-        ? 0
-        : endpoint.checkTokens,
-      endpoint.renewalToken,
+      {
+        tokenCount:
+          endpoint.needsCheckToken && !endpoint.needsCheckToken(body as Request)
+            ? 0
+            : endpoint.checkTokens,
+      },
     );
   };
 

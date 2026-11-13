@@ -1,7 +1,6 @@
 import { endpoints } from '#lib/api/endpoints.js';
 import {
   createPlaylist,
-  fetchCreatedPlaylist,
   fetchPlaylists,
 } from '#lib/server/netease/playlist.js';
 import { readId, readPlaylistDraft } from '#lib/server/request.js';
@@ -24,11 +23,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   return respondSignedIn(
     endpoints.createPlaylist,
     { cookies, request },
-    async (config, read) => {
+    async (config) => {
       const id = await createPlaylist(draft.name, draft.private, config);
-      return {
-        playlist: await read((snapshot) => fetchCreatedPlaylist(id, snapshot)),
-      };
+      return { id };
     },
   );
 };

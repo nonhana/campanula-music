@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.js';
+
 const ROOT = join(import.meta.dirname, '..');
 const LOGIN_FILE = join(ROOT, '_notes/campanula-login');
 const BASE = 'http://localhost:5173';
@@ -48,7 +50,7 @@ const pageId = pageIdOf(pages, BASE);
 const probe = `/api/account?take-login=${Date.now()}`;
 const signedIn = await call('evaluate_script', {
   pageId,
-  function: `async () => (await (await fetch('${probe}')).json()).account !== null`,
+  function: `async () => { const response = await fetch('${probe}', { cache: 'no-store', headers: { '${RENEWAL_ATTEMPTED_HEADER}': '1' } }); const body = await response.json(); return response.ok && body.account != null; }`,
 });
 if (!signedIn.includes('true'))
   throw new Error(

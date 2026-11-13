@@ -29,8 +29,8 @@ export const QR_KEY = /^[\w-]{1,64}$/;
 export const readCheckTokens = (request: Request): CheckTokens => {
   const raw = request.headers.get(CHECK_TOKENS_HEADER);
   if (raw === null) return { requests: [] };
-  // JSON 会把引号和反斜杠转成两字符，需容下四枚最长令牌和字段名。
-  if (raw.length > 4 * 1024 * 2 + 100) error(400, '安全验证令牌太长');
+  // JSON 会把引号和反斜杠转成两字符。
+  if (raw.length > 2 * 1024 * 2 + 100) error(400, '安全验证令牌太长');
   let body: unknown;
   try {
     body = JSON.parse(raw);
@@ -42,19 +42,13 @@ export const readCheckTokens = (request: Request): CheckTokens => {
     body === null ||
     !('requests' in body) ||
     !Array.isArray(body.requests) ||
-    body.requests.length > 3 ||
+    body.requests.length > 2 ||
     !body.requests.every(
       (token: unknown) => typeof token === 'string' && CHECK_TOKEN.test(token),
     )
   )
     error(400, '安全验证令牌的格式不对');
-  const renewal = 'renewal' in body ? body.renewal : undefined;
-  if (
-    renewal !== undefined &&
-    (typeof renewal !== 'string' || !CHECK_TOKEN.test(renewal))
-  )
-    error(400, '续期令牌的格式不对');
-  return { requests: body.requests, renewal };
+  return { requests: body.requests };
 };
 
 export const readFields = async <K extends string>(

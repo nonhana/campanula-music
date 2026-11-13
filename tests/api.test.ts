@@ -4,6 +4,8 @@ import { post } from '#lib/api/endpoint.js';
 import type { WriteResponse } from '#lib/api/write.js';
 import { createApi } from '#lib/app/api-client.js';
 
+import { FakeLocks } from './harness/browser';
+
 const endpoint = post<WriteResponse, { data: string }>(() => '/api/fake');
 
 const setup = () => {
@@ -11,6 +13,7 @@ const setup = () => {
   const api = createApi(
     {
       checkToken: async () => 'token',
+      locks: new FakeLocks(),
       fetch: async (_path: string, init?: RequestInit) => {
         inits.push(init ?? {});
         return new Response(JSON.stringify({ kind: 'done' }), {

@@ -331,6 +331,21 @@ describe('退出登录', () => {
 });
 
 describe('续期', () => {
+  it('到期时易盾取值失败：仍用旧凭据查询账号，不发送没有令牌的续期', async () => {
+    const device = world.device();
+    const { app, watchman } = await device.open();
+    await signIn(world, app);
+    const before = world.netease.calls.length;
+    await world.clock.advance(24 * HOUR);
+    watchman.available = false;
+    await world.netease.reply('login/user_account.vip.json');
+
+    await app.open();
+
+    expect(app.state.session).toEqual({ status: 'signedIn', account: ACCOUNT });
+    expect(credentialsUsed(before)).toEqual([['user_account', MUSIC_U]]);
+  });
+
   it('打开 App 时离上次续期满 24 小时就续期一次，之后带着新凭据；不满 24 小时不续期', async () => {
     const device = world.device();
     const { app } = await device.open();

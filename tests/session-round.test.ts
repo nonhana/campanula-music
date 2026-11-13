@@ -24,7 +24,7 @@ import {
   serveDownload,
   storedCheckIns,
 } from './harness/listener';
-import { ANOTHER_ACCOUNT, signIn } from './harness/sign-in';
+import { ANOTHER_ACCOUNT, renewCookies, signIn } from './harness/sign-in';
 import { useWorld } from './harness/world';
 
 const world = useWorld();
@@ -131,9 +131,72 @@ const controlledApi = (): {
   };
 };
 
-describe('备用续期令牌', () => {
+describe('按需续期令牌', () => {
+  it('续期成功后查询仍要求登录：只续期一次，停止重读并提示重新登录', async () => {
+    const device = world.device();
+    const { app, watchman } = await signInAtLikedTracks(device);
+    const before = world.netease.calls.length;
+    const tokensBefore = watchman.issued.length;
+    await world.netease.reply(SEARCH_301);
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+    });
+    await world.netease.reply(SEARCH_301);
+
+    expect(await app.searchSongs('真夜中')).toMatchObject({
+      ok: false,
+      failure: { kind: 'needsLogin' },
+    });
+    expect(app.state.session).toEqual({ status: 'loginExpired' });
+    expect(
+      world.netease.calls.slice(before).map((call) => call.module),
+    ).toEqual(['cloudsearch', 'login_refresh', 'cloudsearch']);
+    expect(watchman.issued.slice(tokensBefore)).toHaveLength(1);
+  });
+
+  it('查询的续期已经发出时退出：迟到的续期 Cookie 不能恢复已退出的登录', async () => {
+    const device = world.device();
+    const { app } = await signInAtLikedTracks(device);
+    const renewal = held();
+    await world.netease.reply(SEARCH_301);
+    await world.netease.reply('login/login_refresh.sms.json', {
+      cookie: renewCookies(),
+      until: renewal.until,
+    });
+    const query = app.searchSongs('真夜中');
+    await world.settle();
+    expect(world.netease.calls.at(-1)?.module).toBe('login_refresh');
+    await world.netease.reply('login/logout.json');
+    const loggingOut = app.logout();
+    await world.settle();
+    expect(app.state.session).toEqual({ status: 'signedOut' });
+
+    renewal.release();
+    await Promise.all([query, loggingOut]);
+    await world.settle();
+    expect(
+      world.netease.calls.filter((call) => call.module === 'login_refresh'),
+    ).toHaveLength(1);
+    expect(
+      world.netease.calls.filter((call) => call.module === 'logout'),
+    ).toHaveLength(1);
+    expect(await device.cookies()).toEqual([]);
+  });
+
+  it('普通查询直接成功时不向易盾申请备用令牌', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    const before = tab.watchman.issued.length;
+    await world.netease.reply('search/results/001-cloudsearch.json.gz');
+
+    expect(await tab.app.searchSongs('真夜中')).toMatchObject({ ok: true });
+    expect(tab.watchman.issued.slice(before)).toEqual([]);
+    expect(world.netease.calls.at(-1)).toMatchObject({ module: 'cloudsearch' });
+    expect(world.netease.calls.at(-1)?.config).not.toHaveProperty('checkToken');
+  });
+
   it.each([false, true])(
-    '安全验证不可用时普通查询仍可读，确实需要续期时明确失败（需要续期 %s）',
+    '安全验证不可用时普通查询仍可读，确实需要续期时才获取并明确失败（需要续期 %s）',
     async (needsRenewal) => {
       const device = world.device();
       const tab = await signInAtLikedTracks(device);
@@ -155,16 +218,44 @@ describe('备用续期令牌', () => {
       ).toEqual(['cloudsearch']);
     },
   );
+
+  it('只读查询要求续期后，取令牌期间退出：不发续期，也不重读旧请求', async () => {
+    const device = world.device();
+    const { app, watchman } = await signInAtLikedTracks(device);
+    const taking = held();
+    watchman.checkToken = async () => {
+      await taking.until;
+      return 'late-renewal-token';
+    };
+    await world.netease.reply(SEARCH_301);
+    const request = app.searchSongs('真夜中');
+    await world.settle();
+    const sent = device.requests.length;
+    expect(device.responses.at(-1)?.status).toBe(428);
+
+    await world.netease.reply('login/logout.json');
+    await app.logout();
+    taking.release();
+    await request;
+    await world.settle();
+
+    expect(app.state.session).toEqual({ status: 'signedOut' });
+    expect(device.requests.slice(sent)).toEqual([
+      { method: 'POST', path: '/api/logout', body: {} },
+    ]);
+    expect(
+      world.netease.calls.filter((call) => call.module === 'login_refresh'),
+    ).toEqual([]);
+    expect(await device.cookies()).toEqual([]);
+  });
 });
 
 describe('旧会话的回复', () => {
-  it('退出前发出的选择器搜索，新账号登录后才回 401：不把新会话判成登录失效', async () => {
+  it('退出前发出的选择器搜索，新账号登录后才要求续期：不把新会话判成登录失效', async () => {
     const device = world.device();
     const { app } = await signInAtLikedTracks(device);
     const slow = held();
     await world.netease.reply(SEARCH_301, { until: slow.until });
-    // 旧请求回 301 后，服务端会拿旧的、已经失效的凭据续期一次
-    await world.netease.reply('login/login_refresh.301-invalid.json');
 
     const stale = app.searchSongs('真夜中');
     await world.settle();
@@ -183,15 +274,18 @@ describe('旧会话的回复', () => {
     expect(device.responses).toContainEqual({
       method: 'GET',
       path: '/api/search/songs?keywords=%E7%9C%9F%E5%A4%9C%E4%B8%AD&offset=0',
-      status: 401,
+      status: 428,
     });
+    expect(
+      world.netease.calls.filter((call) => call.module === 'login_refresh'),
+    ).toEqual([]);
     expect(app.state.session).toEqual({
       status: 'signedIn',
       account: ANOTHER_ACCOUNT,
     });
   });
 
-  it('退出前要的下载地址，新账号登录后才回 401：不把新会话判成登录失效，排队的那首用新账号接着下', async () => {
+  it('退出前要的下载地址，新账号登录后才要求续期：不把新会话判成登录失效，排队的那首用新账号接着下', async () => {
     const device = world.device();
     const { app } = await signInWithLiked(device);
     const song = likedSong(app, FIRST.id);
@@ -200,7 +294,6 @@ describe('旧会话的回复', () => {
     await world.netease.reply(DOWNLOAD_301, { until: slow.until });
     await world.netease.reply(LYRICS);
     await world.netease.reply(ALBUM_MISSING);
-    await world.netease.reply('login/login_refresh.301-invalid.json');
 
     expect(app.download(song)).toBeNull();
     await world.settle();
@@ -219,8 +312,11 @@ describe('旧会话的回复', () => {
     expect(device.responses).toContainEqual({
       method: 'GET',
       path: '/api/songs/3433267939/download-url?quality=exhigh',
-      status: 401,
+      status: 428,
     });
+    expect(
+      world.netease.calls.filter((call) => call.module === 'login_refresh'),
+    ).toEqual([]);
     expect(app.state.session).toEqual({
       status: 'signedIn',
       account: ANOTHER_ACCOUNT,
@@ -230,12 +326,11 @@ describe('旧会话的回复', () => {
     expect((await device.stored()).downloads ?? []).toHaveLength(1);
   });
 
-  it('退出前打开的歌词，新账号登录后才回 401：不把新会话判成登录失效', async () => {
+  it('退出前打开的歌词，新账号登录后才要求续期：不把新会话判成登录失效', async () => {
     const device = world.device();
     const { app } = await signInAtLikedTracks(device);
     const slow = held();
     await world.netease.reply(LYRICS_301, { until: slow.until });
-    await world.netease.reply('login/login_refresh.301-invalid.json');
 
     const stale = app.openLyrics(1466598056);
     await world.settle();
@@ -247,8 +342,11 @@ describe('旧会话的回复', () => {
     expect(device.responses).toContainEqual({
       method: 'GET',
       path: '/api/songs/1466598056/lyrics',
-      status: 401,
+      status: 428,
     });
+    expect(
+      world.netease.calls.filter((call) => call.module === 'login_refresh'),
+    ).toEqual([]);
     expect(app.state.lyrics).toBeNull();
     expect(app.state.session).toEqual({
       status: 'signedIn',

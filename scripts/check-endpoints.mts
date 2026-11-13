@@ -56,11 +56,11 @@ const searchRoute = '/api/search/[kind]';
 const searchDefined = catalogSource.includes(`resolve('${searchRoute}'`);
 
 const problems: string[] = [];
-if (handlerCount !== 42)
-  problems.push(`处理函数应为 42 个，实际 ${handlerCount} 个`);
-if (catalog.length + (searchDefined ? 1 : 0) !== 42)
+if (handlerCount !== 44)
+  problems.push(`处理函数应为 44 个，实际 ${handlerCount} 个`);
+if (catalog.length + (searchDefined ? 1 : 0) !== 44)
   problems.push(
-    `端点定义应为 42 条（41 条目录 + searchPage），实际 ${catalog.length + (searchDefined ? 1 : 0)} 条`,
+    `端点定义应为 44 条（43 条目录 + searchPage），实际 ${catalog.length + (searchDefined ? 1 : 0)} 条`,
   );
 if (searchKinds.length !== 4 || new Set(searchKinds).size !== 4)
   problems.push(`搜索 kind 应为 4 个，实际 ${JSON.stringify(searchKinds)}`);

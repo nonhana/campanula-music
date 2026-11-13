@@ -2,9 +2,7 @@
 export interface Endpoint<Response> {
   readonly method: 'GET' | 'POST';
   readonly takesParams: boolean;
-  // 包含受保护只读步骤的重读、SDK 的多请求分支；续期另留一枚。
   readonly checkTokens: number;
-  readonly renewalToken: boolean;
   readonly path: (params: never) => string;
   readonly response?: Response;
 }
@@ -32,7 +30,6 @@ export const get = <Response, Params = void>(
   method: 'GET',
   takesParams: path.length > 0,
   checkTokens,
-  renewalToken: true,
   path,
 });
 
@@ -40,14 +37,12 @@ export const post = <Response, Request = void, Params = void>(
   path: (params: Params) => string,
   options: {
     checkTokens?: number;
-    renewalToken?: boolean;
     needsCheckToken?: (body: Request) => boolean;
   } = {},
 ): PostEndpoint<Params, Request, Response> => ({
   method: 'POST',
   takesParams: path.length > 0,
   checkTokens: options.checkTokens ?? 0,
-  renewalToken: options.renewalToken ?? false,
   needsCheckToken: options.needsCheckToken,
   path,
 });
