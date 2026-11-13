@@ -5,6 +5,9 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { createServer } from 'vite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import type { CheckTokens } from '#lib/api/check-token.js';
+import { CHECK_TOKENS_HEADER } from '#lib/api/check-token.js';
+
 import { mockPlugin } from '../src/lib/server/mock/vite-plugin.ts';
 import { TEST_OUT_DIR } from './harness/world';
 
@@ -40,11 +43,19 @@ afterAll(async () => {
   await closed?.();
 });
 
-const api = async (path: string, init: RequestInit = {}): Promise<Response> =>
-  fetch(`${origin}${path}`, {
+const api = async (
+  path: string,
+  init: RequestInit = {},
+  tokens?: CheckTokens,
+): Promise<Response> => {
+  const headers = new Headers(init.headers);
+  headers.set('cookie', cookie);
+  if (tokens) headers.set(CHECK_TOKENS_HEADER, JSON.stringify(tokens));
+  return fetch(`${origin}${path}`, {
     ...init,
-    headers: { ...init.headers, cookie },
+    headers,
   });
+};
 
 describe('mock 开发服务器', () => {
   it('自动登录、账号、歌单、红心、播放地址都能用', async () => {
@@ -82,13 +93,30 @@ describe('mock 开发服务器', () => {
       body: JSON.stringify({ name: 'HTTP 改过的名字' }),
     });
     expect(renamed.status).toBe(200);
-    const shown = await api('/api/playlists/900000019');
+    expect((await api('/api/playlists/900000019')).status).toBe(400);
+    const shown = await api(
+      '/api/playlists/900000019',
+      {},
+      {
+        requests: ['mock-detail-first', 'mock-detail-retry'],
+        renewal: 'mock-detail-renewal',
+      },
+    );
+    expect(shown.status).toBe(200);
     expect(
       ((await shown.json()) as { playlist: { name: string } }).playlist.name,
     ).toBe('HTTP 改过的名字');
 
     await fetch(`${origin}/api/mock/reset`, { method: 'POST' });
-    const back = await api('/api/playlists/900000019');
+    const back = await api(
+      '/api/playlists/900000019',
+      {},
+      {
+        requests: ['mock-reset-first', 'mock-reset-retry'],
+        renewal: 'mock-reset-renewal',
+      },
+    );
+    expect(back.status).toBe(200);
     expect(
       ((await back.json()) as { playlist: { name: string } }).playlist.name,
     ).toBe('poems');
@@ -117,7 +145,19 @@ describe('mock 开发服务器', () => {
       body: JSON.stringify({ name: 'login-expired' }),
     });
     expect(scenario.status).toBe(200);
-    const account = await api('/api/account');
+    const withoutToken = await api('/api/account');
+    expect(withoutToken.status).toBe(503);
+    expect(await withoutToken.json()).toEqual({
+      error: { kind: 'checkTokenUnavailable' },
+    });
+    const account = await api(
+      '/api/account',
+      {},
+      {
+        requests: [],
+        renewal: 'mock-expired-renewal',
+      },
+    );
     expect(account.status).toBe(401);
 
     const report = await api('/api/mock/coverage');
