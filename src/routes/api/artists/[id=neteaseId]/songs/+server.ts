@@ -4,6 +4,7 @@ import { readArtistSongOrder, readOffset } from '#lib/server/request.ts';
 import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const GET: RequestHandler = ({ params, url, cookies, request }) => {
   const { id } = params;
   const order = readArtistSongOrder(url.searchParams.get('order'));

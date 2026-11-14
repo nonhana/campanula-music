@@ -5,6 +5,7 @@ import { readIds } from '#lib/server/request.ts';
 import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const playlistIds = await readIds(
     endpoints.playlistOrder,

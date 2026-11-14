@@ -8,6 +8,7 @@ import { readFields } from '#lib/server/request.ts';
 import { withNetease } from '#lib/server/respond.ts';
 
 import type { RequestHandler } from './$types';
+
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const { phone, captcha } = await readFields<keyof SmsLoginRequest>(request, {
     phone: PHONE,

@@ -7,6 +7,7 @@ import { json, withNetease } from '#lib/server/respond.ts';
 import { asSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const GET: RequestHandler = ({ cookies, request }) => {
   const login = readLogin(cookies);
   if (!login?.session) return json(endpoints.account, { account: null });

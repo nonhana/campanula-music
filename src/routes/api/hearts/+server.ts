@@ -4,6 +4,7 @@ import { readHeart, readId } from '#lib/server/request.ts';
 import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const GET: RequestHandler = ({ url, cookies, request }) => {
   const uid = readId('uid', url.searchParams.get('uid'));
   return respondSignedIn(

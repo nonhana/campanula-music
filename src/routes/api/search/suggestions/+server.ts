@@ -4,6 +4,7 @@ import { readKeywords } from '#lib/server/request.ts';
 import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const GET: RequestHandler = ({ url, cookies, request }) => {
   const keywords = readKeywords(url.searchParams.get('keywords'));
   return respondSignedIn(

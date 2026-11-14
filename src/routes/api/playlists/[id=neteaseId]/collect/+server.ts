@@ -4,6 +4,7 @@ import { readCollect } from '#lib/server/request.ts';
 import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
   const { id } = params;
   const change = await readCollect(request);

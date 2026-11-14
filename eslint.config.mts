@@ -31,6 +31,7 @@ export default antfu(
     rules: {
       'antfu/top-level-function': 'off',
       'func-style': ['error', 'expression'],
+      'import/newline-after-import': ['error', { count: 1 }],
       'unicorn/number-literal-case': [
         'error',
         { hexadecimalValue: 'lowercase' },

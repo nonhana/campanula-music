@@ -21,7 +21,7 @@
 - **本地模块写实际后缀**：import、re-export 和动态 import 指向本地 TypeScript 源文件时，写 `.ts`、`.svelte.ts` 或 `.mts` 等实际后缀，不写 `.js`，也不省略；包名和框架提供的虚拟模块沿用它们的公开路径。
 - **能推断的类型不重复标注**：TypeScript 能自动推断出来的类型，不要再手写一遍。
 - **函数写成箭头函数**：写的时候就按表达式写，不等 lint 报错（`func-style: expression` 已强制）。
-- **排版交给 oxfmt**：行宽、分号、引号、断行都由 `oxfmt.config.mts` 决定（ESLint 的 `stylistic` 已关，`style/*` 一条都不跑）。`pnpm fmt` 格式化，`pnpm fmt:check` 只检查（CI 和提交前跑这条）。不要再往 ESLint 里加排版规则，也不手写对齐。
+- **排版交给 oxfmt**：行宽、分号、引号、断行都由 `oxfmt.config.mts` 决定（ESLint 的 `stylistic` 已关，`style/*` 一条都不跑）。import 的排序、分组和最后一条 import 后的空行由 ESLint 管，分别用 `perfectionist/sort-imports` 和 `import/newline-after-import` 检查，`pnpm lint:fix` 自动修复。`pnpm fmt` 格式化，`pnpm fmt:check` 只检查（CI 和提交前跑这条）。除 import 的这几项外，不往 ESLint 里加排版规则，也不手写对齐。
 
 ## 注释
 

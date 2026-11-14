@@ -8,6 +8,7 @@ import {
 import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const GET: RequestHandler = ({ params, url, cookies, request }) => {
   const kind = readSearchKind(params.kind);
   const keywords = readKeywords(url.searchParams.get('keywords'));

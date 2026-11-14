@@ -6,6 +6,7 @@ import { logout } from '#lib/server/netease/login.ts';
 import { json } from '#lib/server/respond.ts';
 
 import type { RequestHandler } from './$types';
+
 export const POST: RequestHandler = async ({ cookies }) => {
   const login = readLogin(cookies);
   if (login?.session) {

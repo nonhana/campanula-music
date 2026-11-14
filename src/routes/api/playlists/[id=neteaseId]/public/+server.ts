@@ -3,6 +3,7 @@ import { publishPlaylist } from '#lib/server/netease/playlist.ts';
 import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
+
 export const POST: RequestHandler = ({ params, cookies, request }) => {
   const { id } = params;
   return respondSignedIn(

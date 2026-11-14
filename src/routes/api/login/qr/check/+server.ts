@@ -7,6 +7,7 @@ import { QR_KEY, readFields } from '#lib/server/request.ts';
 import { withNetease } from '#lib/server/respond.ts';
 
 import type { RequestHandler } from './$types';
+
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const { key } = await readFields<keyof QrCheckRequest>(request, {
     key: QR_KEY,
