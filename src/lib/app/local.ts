@@ -1,12 +1,12 @@
-import type { Account } from '#lib/api/account.js';
+import type { Account } from '#lib/api/account.ts';
 import type {
   AlbumResponse,
   CollectedAlbum,
   CollectedArtist,
   Playlist,
   Song,
-} from '#lib/api/library.js';
-import type { LyricsResponse, Quality } from '#lib/api/playback.js';
+} from '#lib/api/library.ts';
+import type { LyricsResponse, Quality } from '#lib/api/playback.ts';
 
 const NAME = 'campanula';
 const VERSION = 15;

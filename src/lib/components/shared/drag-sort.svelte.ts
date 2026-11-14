@@ -7,9 +7,9 @@ import type {
   DragSortState,
   Point,
   Rect,
-} from './drag-sort';
-import { createDragSortSession } from './drag-sort';
-import { attachWindowGrip, createPageHold } from './press';
+} from './drag-sort.ts';
+import { createDragSortSession } from './drag-sort.ts';
+import { attachWindowGrip, createPageHold } from './press.ts';
 
 export interface DragSortTrack {
   ghost: Rect;

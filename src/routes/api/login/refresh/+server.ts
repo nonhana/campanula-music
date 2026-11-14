@@ -1,8 +1,8 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { saveLogin } from '#lib/server/credentials.js';
-import { credentialsFrom } from '#lib/server/netease/cookies.js';
-import { renewLogin } from '#lib/server/netease/login.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { saveLogin } from '#lib/server/credentials.ts';
+import { credentialsFrom } from '#lib/server/netease/cookies.ts';
+import { renewLogin } from '#lib/server/netease/login.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 

@@ -9,25 +9,25 @@ import DeletePlaylistDownloadsConfirm from '../downloads/DeletePlaylistDownloads
 import DownloadPicker from '../downloads/DownloadPicker.svelte';
 import DownloadsMenu from '../downloads/DownloadsMenu.svelte';
 import ExportDialog from '../downloads/ExportDialog.svelte';
-import { createDownloadPanel } from '../downloads/panel.svelte';
+import { createDownloadPanel } from '../downloads/panel.svelte.ts';
 import PlaylistDownloadsDialog from '../downloads/PlaylistDownloadsDialog.svelte';
 import DescriptionDialog from '../library/DescriptionDialog.svelte';
-import { MultiSelect } from '../library/multi-select.svelte';
+import { MultiSelect } from '../library/multi-select.svelte.ts';
 import ArtistMenu from '../menu/ArtistMenu.svelte';
 import SongMenu from '../menu/SongMenu.svelte';
-import { createDrawer } from '../player/drawer.svelte';
-import { createPlayerLayer } from '../player/player-layer.svelte';
+import { createDrawer } from '../player/drawer.svelte.ts';
+import { createPlayerLayer } from '../player/player-layer.svelte.ts';
 import QueuePanel from '../player/QueuePanel.svelte';
-import { queueEmpty } from '../player/view';
+import { queueEmpty } from '../player/view.ts';
 import AddSongs from '../playlist/AddSongs.svelte';
 import AddToPlaylist from '../playlist/AddToPlaylist.svelte';
 import CoverEditor from '../playlist/CoverEditor.svelte';
 import PlaylistEditor from '../playlist/PlaylistEditor.svelte';
 import PlaylistMenu from '../playlist/PlaylistMenu.svelte';
-import { getAppView } from '../shared/app-context.svelte';
-import { desktopLayout } from '../shared/layout';
-import { setSelectionMode } from '../ui/selection-mode';
-import { createOverlayHistory } from './overlay-history.svelte';
+import { getAppView } from '../shared/app-context.svelte.ts';
+import { desktopLayout } from '../shared/layout.ts';
+import { setSelectionMode } from '../ui/selection-mode.ts';
+import { createOverlayHistory } from './overlay-history.svelte.ts';
 import type {
   AddToPlaylistRequest,
   ArtistMenuRequest,
@@ -42,9 +42,9 @@ import type {
   PlaylistMenuRequest,
   PlaylistRequest,
   SongMenuRequest,
-} from './overlay-requests';
-import type { LayerOptions } from './overlay-stack';
-import { OverlayStack } from './overlay-stack';
+} from './overlay-requests.ts';
+import type { LayerOptions } from './overlay-stack.ts';
+import { OverlayStack } from './overlay-stack.ts';
 
 export const createOverlays = () => {
   const view = getAppView();

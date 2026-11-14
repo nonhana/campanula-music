@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { App } from '#lib/app/app.js';
-import type { NeteasePlaylistSongs } from '#lib/app/library.js';
+import type { App } from '#lib/app/app.ts';
+import type { NeteasePlaylistSongs } from '#lib/app/library.ts';
 
-import { held, never } from './harness/hold';
-import { listener, queueIds } from './harness/listener';
-import { useWorld } from './harness/world';
+import { held, never } from './harness/hold.ts';
+import { listener, queueIds } from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtLikedTracks } = listener(world);

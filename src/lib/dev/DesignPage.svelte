@@ -19,14 +19,14 @@
     Trash2,
   } from '@lucide/svelte';
 
-  import type { ArtistSongOrder } from '#lib/api/library.js';
-  import type { DownloadTask } from '#lib/app/downloads.js';
-  import type { NoticeEntry } from '#lib/app/notice.js';
+  import type { ArtistSongOrder } from '#lib/api/library.ts';
+  import type { DownloadTask } from '#lib/app/downloads.ts';
+  import type { NoticeEntry } from '#lib/app/notice.ts';
   import Brand from '#lib/components/boot/Brand.svelte';
-  import { ARTIST_ORDERS } from '#lib/components/library/artist-view.js';
+  import { ARTIST_ORDERS } from '#lib/components/library/artist-view.ts';
   import OperationNotice from '#lib/components/notice/OperationNotice.svelte';
   import PlayerNotice from '#lib/components/player/PlayerNotice.svelte';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
   import DesktopShell from '#lib/components/shell/DesktopShell.svelte';
   import PhoneShell from '#lib/components/shell/PhoneShell.svelte';
   import Button from '#lib/components/ui/Button.svelte';
@@ -39,8 +39,8 @@
   import TextButton from '#lib/components/ui/TextButton.svelte';
   import TextField from '#lib/components/ui/TextField.svelte';
   import ToolButton from '#lib/components/ui/ToolButton.svelte';
-  import { designSong } from '#lib/dev/design-data.js';
-  import { DESIGN_PAGE_MARKER } from '#lib/dev/design-marker.js';
+  import { designSong } from '#lib/dev/design-data.ts';
+  import { DESIGN_PAGE_MARKER } from '#lib/dev/design-marker.ts';
   import DesignDescriptionDemo from '#lib/dev/DesignDescriptionDemo.svelte';
   import DesignDownloadDemo from '#lib/dev/DesignDownloadDemo.svelte';
   import DesignPanelCard from '#lib/dev/DesignPanelCard.svelte';

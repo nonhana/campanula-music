@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  import type { Song } from '#lib/api/library.js';
+  import type { Song } from '#lib/api/library.ts';
 
-  import type { MotionConfig, TransitionOptions } from '../shared/motion';
-  import { float } from '../shared/motion';
-  import { FLOAT_IN_DELAY, WHEEL } from '../shared/motion-tokens';
-  import type { Place, Turn } from './view';
+  import { FLOAT_IN_DELAY, WHEEL } from '../shared/motion-tokens.ts';
+  import type { MotionConfig, TransitionOptions } from '../shared/motion.ts';
+  import { float } from '../shared/motion.ts';
+  import type { Place, Turn } from './view.ts';
 
   interface Props {
     song: Song | null;

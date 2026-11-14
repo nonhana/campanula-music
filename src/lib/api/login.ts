@@ -1,4 +1,4 @@
-import type { Account } from './account';
+import type { Account } from './account.ts';
 
 export const LOGIN_COOKIE_LOCK = 'campanula:login-cookie';
 

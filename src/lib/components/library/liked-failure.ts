@@ -1,4 +1,4 @@
-import type { PlaylistPageFailure } from '#lib/app/library.js';
+import type { PlaylistPageFailure } from '#lib/app/library.ts';
 
 export interface LikedFailure {
   title: '我喜欢的音乐没能同步' | '我喜欢的音乐没能加载';

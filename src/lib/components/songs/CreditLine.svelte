@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { ClassValue } from 'svelte/elements';
 
-  import type { Credit } from '#lib/api/library.js';
-  import { creditLine } from '#lib/api/library.js';
+  import type { Credit } from '#lib/api/library.ts';
+  import { creditLine } from '#lib/api/library.ts';
 
-  import { langOf } from '../shared/text';
+  import { langOf } from '../shared/text.ts';
   import CreditName from './CreditName.svelte';
 
   interface Props {

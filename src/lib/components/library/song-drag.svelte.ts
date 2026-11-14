@@ -1,22 +1,22 @@
 import type { Attachment } from 'svelte/attachments';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
-import type { Song } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
 
-import { clamp } from '../shared/clamp';
+import { clamp } from '../shared/clamp.ts';
+import { DragSort, pageEdges } from '../shared/drag-sort.svelte.ts';
 import type {
   DragSortEdges,
   DragSortResult,
   DragSortState,
   Point,
   Rect,
-} from '../shared/drag-sort';
-import { movedBefore, rowTrack } from '../shared/drag-sort';
-import { DragSort, pageEdges } from '../shared/drag-sort.svelte';
-import { DURATIONS, STAGGER } from '../shared/motion-tokens';
-import { formatCount } from '../shared/text';
-import { SONG_ROW_HEIGHT } from '../songs/view';
-import type { MultiSelect } from './multi-select.svelte';
+} from '../shared/drag-sort.ts';
+import { movedBefore, rowTrack } from '../shared/drag-sort.ts';
+import { DURATIONS, STAGGER } from '../shared/motion-tokens.ts';
+import { formatCount } from '../shared/text.ts';
+import { SONG_ROW_HEIGHT } from '../songs/view.ts';
+import type { MultiSelect } from './multi-select.svelte.ts';
 
 // 被拖的行必须一直挂载（keep）：Android 上手指底下的元素被卸载后触摸事件会断
 

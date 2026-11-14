@@ -3,24 +3,24 @@
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
 
-  import type { Song } from '#lib/api/library.js';
-  import { playlistName, songTitle } from '#lib/api/library.js';
-  import type { PlaySource } from '#lib/api/playback.js';
-  import type { LibraryState } from '#lib/app/library.js';
+  import type { Song } from '#lib/api/library.ts';
+  import { playlistName, songTitle } from '#lib/api/library.ts';
+  import type { PlaySource } from '#lib/api/playback.ts';
+  import type { LibraryState } from '#lib/app/library.ts';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
-  import { unfold } from '../shared/motion';
-  import { formatCount } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { unfold } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
   import SongList from '../songs/SongList.svelte';
   import SongRow from '../songs/SongRow.svelte';
-  import type { SongListView } from '../songs/view';
+  import type { SongListView } from '../songs/view.ts';
   import SearchField from '../ui/SearchField.svelte';
   import TextButton from '../ui/TextButton.svelte';
   import DragGrip from './DragGrip.svelte';
-  import { selectionActions } from './selection-actions.svelte';
-  import { SongDrag } from './song-drag.svelte';
+  import { selectionActions } from './selection-actions.svelte.ts';
+  import { SongDrag } from './song-drag.svelte.ts';
 
   const { addSongsDialog, multiSelect } = getOverlays();
 

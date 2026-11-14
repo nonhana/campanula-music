@@ -3,11 +3,11 @@
 
   import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte';
   import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte';
-  import { queueEmpty } from '../player/view';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
-  import { dock, fade } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
+  import { queueEmpty } from '../player/view.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { dock, fade } from '../shared/motion.ts';
 
   interface Props {
     present: boolean;

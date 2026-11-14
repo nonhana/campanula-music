@@ -1,5 +1,5 @@
-import type { CollectTarget } from '#lib/app/app.js';
-import type { LibraryState } from '#lib/app/library.js';
+import type { CollectTarget } from '#lib/app/app.ts';
+import type { LibraryState } from '#lib/app/library.ts';
 
 export type CollectState = 'own' | 'collected' | 'not' | 'unknown';
 

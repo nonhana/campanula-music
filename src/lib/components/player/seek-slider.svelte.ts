@@ -1,11 +1,11 @@
 import type { Attachment } from 'svelte/attachments';
 
-import { getAppView } from '../shared/app-context.svelte';
-import { clamp } from '../shared/clamp';
-import { attachGrip } from '../shared/press';
-import { createSliderCore } from '../shared/slider-core';
-import { shownDuration } from './now';
-import { formatSeconds } from './view';
+import { getAppView } from '../shared/app-context.svelte.ts';
+import { clamp } from '../shared/clamp.ts';
+import { attachGrip } from '../shared/press.ts';
+import { createSliderCore } from '../shared/slider-core.ts';
+import { shownDuration } from './now.ts';
+import { formatSeconds } from './view.ts';
 
 const STEP = 5;
 

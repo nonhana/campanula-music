@@ -1,7 +1,7 @@
-import { clamp } from './clamp';
-import type { Grip, PointerSample } from './press';
-import { rightButtonDown } from './press';
-import { edgeScroll } from './scroll-edge';
+import { clamp } from './clamp.ts';
+import type { Grip, PointerSample } from './press.ts';
+import { rightButtonDown } from './press.ts';
+import { edgeScroll } from './scroll-edge.ts';
 
 export interface Point {
   x: number;

@@ -3,13 +3,13 @@
   import { cubicOut } from 'svelte/easing';
   import { Tween } from 'svelte/motion';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { easeOutSoft, moveMs } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
-  import { currentSong } from './now';
-  import type { Playhead } from './playhead.svelte';
-  import { createSeekSlider } from './seek-slider.svelte';
-  import { formatSeconds } from './view';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { easeOutSoft, moveMs } from '../shared/motion.ts';
+  import { currentSong } from './now.ts';
+  import type { Playhead } from './playhead.svelte.ts';
+  import { createSeekSlider } from './seek-slider.svelte.ts';
+  import { formatSeconds } from './view.ts';
 
   const { playhead, touch = false }: { playhead: Playhead; touch?: boolean } =
     $props();

@@ -1,26 +1,26 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { AlbumResponse, Song } from '#lib/api/library.js';
-import { thumbnailUrl } from '#lib/api/library.js';
-import type { LyricsResponse, Quality } from '#lib/api/playback.js';
-import { DOWNLOAD_QUALITY } from '#lib/api/playback.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { AlbumResponse, Song } from '#lib/api/library.ts';
+import { thumbnailUrl } from '#lib/api/library.ts';
+import type { LyricsResponse, Quality } from '#lib/api/playback.ts';
+import { DOWNLOAD_QUALITY } from '#lib/api/playback.ts';
 
-import type { Api, Result } from './api-client';
-import type { BrowserCapabilities, Clock } from './browser';
+import type { Api, Result } from './api-client.ts';
+import type { BrowserCapabilities, Clock } from './browser.ts';
 import type {
   DownloadSource,
   LocalDb,
   QueuedDownload,
   StoredDownload,
   StoredPart,
-} from './local';
-import { mergeDownloadSources, sameDownloadSource } from './local';
-import type { Notices } from './notice';
-import { plainSong } from './plain';
+} from './local.ts';
+import { mergeDownloadSources, sameDownloadSource } from './local.ts';
+import type { Notices } from './notice.ts';
+import { plainSong } from './plain.ts';
 import type {
   BackgroundFailure,
   BackgroundSessionResult,
   SessionRound,
-} from './session-round';
+} from './session-round.ts';
 
 export type { DownloadSource };
 

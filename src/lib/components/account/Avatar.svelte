@@ -2,11 +2,11 @@
   import { User } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import { thumbnailUrl } from '#lib/api/library.js';
+  import { thumbnailUrl } from '#lib/api/library.ts';
 
-  import { createImageReveal } from '../shared/image-reveal.svelte';
-  import { fade } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
+  import { createImageReveal } from '../shared/image-reveal.svelte.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { fade } from '../shared/motion.ts';
 
   interface Props {
     url: string | null;

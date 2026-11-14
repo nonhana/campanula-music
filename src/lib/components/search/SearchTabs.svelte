@@ -1,16 +1,16 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
 
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import Tabs from '../ui/Tabs.svelte';
-  import { selectSearchTab } from './search-box.svelte';
-  import type { SearchTab } from './view';
+  import { selectSearchTab } from './search-box.svelte.ts';
+  import type { SearchTab } from './view.ts';
   import {
     SEARCH_PANEL_ID,
     SEARCH_TABS,
     searchPath,
     searchTabId,
-  } from './view';
+  } from './view.ts';
 
   interface Props {
     keyword: string;

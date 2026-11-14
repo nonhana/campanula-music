@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LayerOptions } from '../src/lib/components/overlay/overlay-stack';
-import { OverlayStack } from '../src/lib/components/overlay/overlay-stack';
-import { MemoryOverlayHistory } from './harness/overlay-history';
+import type { LayerOptions } from '../src/lib/components/overlay/overlay-stack.ts';
+import { OverlayStack } from '../src/lib/components/overlay/overlay-stack.ts';
+import { MemoryOverlayHistory } from './harness/overlay-history.ts';
 
 const scene = () => {
   const history = new MemoryOverlayHistory('/playlists/1');

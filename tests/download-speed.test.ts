@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bytesPerSecond,
   formatSpeed,
-} from '#lib/components/downloads/speed.js';
+} from '#lib/components/downloads/speed.ts';
 
 describe('下载速率', () => {
   it('最近窗口里两个样本才算出速率；样本太老、时间没走、字节没涨都是 0', () => {

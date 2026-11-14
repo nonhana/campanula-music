@@ -2,9 +2,9 @@
   import { LoaderCircle, RotateCw } from '@lucide/svelte';
 
   import Avatar from '../account/Avatar.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
-  import { fade, unfold } from '../shared/motion';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { fade, unfold } from '../shared/motion.ts';
   import Button from '../ui/Button.svelte';
 
   interface Props {

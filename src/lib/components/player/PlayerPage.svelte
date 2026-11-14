@@ -1,15 +1,15 @@
 <script lang="ts">
   import { innerHeight } from 'svelte/reactivity/window';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
   import CoverTint from './CoverTint.svelte';
   import DesktopPlayerPage from './DesktopPlayerPage.svelte';
-  import { currentSong } from './now';
+  import { currentSong } from './now.ts';
   import PhonePlayerPage from './PhonePlayerPage.svelte';
-  import { createPlayhead } from './playhead.svelte';
-  import { sourceName, turnOf } from './view';
+  import { createPlayhead } from './playhead.svelte.ts';
+  import { sourceName, turnOf } from './view.ts';
 
   const { open }: { open: boolean } = $props();
 

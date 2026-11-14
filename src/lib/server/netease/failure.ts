@@ -1,6 +1,6 @@
 import { getNcmFailureInfo, isNcmApiResponse } from 'hana-music-api';
 
-import type { NeteaseFailure } from '#lib/api/errors.js';
+import type { NeteaseFailure } from '#lib/api/errors.ts';
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);

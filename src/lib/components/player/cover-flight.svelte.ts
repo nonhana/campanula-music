@@ -1,15 +1,15 @@
 import { tick, untrack } from 'svelte';
 import type { Attachment } from 'svelte/attachments';
 
-import type { Song } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
 
-import type { AppView } from '../shared/app-context.svelte';
-import { fadeMs, flightArc, reducedMotion, unseen } from '../shared/motion';
-import { cssEasing, DURATIONS } from '../shared/motion-tokens';
+import type { AppView } from '../shared/app-context.svelte.ts';
+import { cssEasing, DURATIONS } from '../shared/motion-tokens.ts';
+import { fadeMs, flightArc, reducedMotion, unseen } from '../shared/motion.ts';
 import { coverLoaded, preloadCover } from '../ui/Cover.svelte';
-import { currentSong } from './now';
-import type { Turn } from './view';
-import { turnOf } from './view';
+import { currentSong } from './now.ts';
+import type { Turn } from './view.ts';
+import { turnOf } from './view.ts';
 
 interface Flight {
   song: Song;

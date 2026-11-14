@@ -1,6 +1,6 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { fetchLyrics } from '#lib/server/netease/player.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { fetchLyrics } from '#lib/server/netease/player.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ params, cookies, request }) => {

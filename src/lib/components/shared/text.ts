@@ -1,5 +1,5 @@
-import type { Song } from '#lib/api/library.js';
-import { creditLine } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
+import { creditLine } from '#lib/api/library.ts';
 
 const KANA = /[\u3040-\u30FF\u31F0-\u31FF\uFF66-\uFF9F]/;
 const TRADITIONAL =

@@ -5,18 +5,18 @@
 
   import CollectButton from '#lib/components/library/CollectButton.svelte';
   import DetailHeader from '#lib/components/library/DetailHeader.svelte';
-  import { selectionActions } from '#lib/components/library/selection-actions.svelte.js';
-  import { getOverlays } from '#lib/components/overlay/overlay-context.js';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { failureText } from '#lib/components/shared/failure.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
-  import { reveal } from '#lib/components/shared/motion.js';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
-  import { formatCount, langOf, yearOf } from '#lib/components/shared/text.js';
-  import { creditLink } from '#lib/components/songs/credit-link.js';
+  import { selectionActions } from '#lib/components/library/selection-actions.svelte.ts';
+  import { getOverlays } from '#lib/components/overlay/overlay-context.ts';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { failureText } from '#lib/components/shared/failure.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
+  import { reveal } from '#lib/components/shared/motion.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import { formatCount, langOf, yearOf } from '#lib/components/shared/text.ts';
+  import { creditLink } from '#lib/components/songs/credit-link.ts';
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte';
   import SongList from '#lib/components/songs/SongList.svelte';
-  import type { SongListView } from '#lib/components/songs/view.js';
+  import type { SongListView } from '#lib/components/songs/view.ts';
   import Button from '#lib/components/ui/Button.svelte';
   import StateBlock from '#lib/components/ui/StateBlock.svelte';
 

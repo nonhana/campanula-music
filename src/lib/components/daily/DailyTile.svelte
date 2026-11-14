@@ -2,13 +2,13 @@
   import { resolve } from '$app/paths';
   import { Play } from '@lucide/svelte';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { fade } from '../shared/motion';
-  import { formatCount } from '../shared/text';
-  import { songLook } from '../songs/song-look';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { fade } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
+  import { songLook } from '../songs/song-look.ts';
   import Cover from '../ui/Cover.svelte';
   import DailyNumber from './DailyNumber.svelte';
-  import { DAILY_SOURCE, dailyCalendarDay, dailyFailure } from './view';
+  import { DAILY_SOURCE, dailyCalendarDay, dailyFailure } from './view.ts';
 
   const view = getAppView();
   const daily = $derived(view.state.daily);

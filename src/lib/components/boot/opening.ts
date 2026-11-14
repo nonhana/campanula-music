@@ -2,17 +2,17 @@ import { tick, untrack } from 'svelte';
 import type { Attachment } from 'svelte/attachments';
 
 import {
-  flightArc,
-  reducedMotion,
-  REVEAL_GROUP,
-  unseen,
-} from '../shared/motion';
-import {
   cssEasing,
   DURATIONS,
   FLOAT_DISTANCE,
   OPENING,
-} from '../shared/motion-tokens';
+} from '../shared/motion-tokens.ts';
+import {
+  flightArc,
+  reducedMotion,
+  REVEAL_GROUP,
+  unseen,
+} from '../shared/motion.ts';
 
 // 盖在顶栏（40）上面，播放提示、播放页（50）之下
 const PLANE_LAYER = '45';

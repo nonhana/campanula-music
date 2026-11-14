@@ -3,12 +3,12 @@
 
   import DialogBody from '../overlay/DialogBody.svelte';
   import DialogShell from '../overlay/DialogShell.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { DialogRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { formatCount, langOf } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { DialogRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { formatCount, langOf } from '../shared/text.ts';
   import TextButton from '../ui/TextButton.svelte';
-  import { playlistDownloadSources } from './view';
+  import { playlistDownloadSources } from './view.ts';
 
   const view = getAppView();
   const { playlistDownloads, deletePlaylistDownloadsConfirm } = getOverlays();

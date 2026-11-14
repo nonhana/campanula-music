@@ -4,16 +4,16 @@ import type {
   Playlist,
   PlaylistEditProblem,
   Song,
-} from '#lib/api/library.js';
+} from '#lib/api/library.ts';
 import {
   canSortPlaylist,
   nameProblem,
   PLAYLIST_DESCRIPTION_LENGTH,
   PLAYLIST_TAGS_MAX,
   reorderSortable,
-} from '#lib/api/library.js';
+} from '#lib/api/library.ts';
 
-import type { LibraryPatch, PlaylistTracks, Replica } from './local';
+import type { LibraryPatch, PlaylistTracks, Replica } from './local.ts';
 
 export interface PlaylistSeed {
   tracks: PlaylistTracks;

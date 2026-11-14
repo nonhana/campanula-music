@@ -1,11 +1,11 @@
 import type { LucideIcon } from '@lucide/svelte';
 
-import type { Song } from '#lib/api/library.js';
-import { songTitle } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
+import { songTitle } from '#lib/api/library.ts';
 
-import type { SelectionAction } from '../library/selection-actions.svelte';
-import type { ScrollMark } from '../shared/scroll-marks';
-import { formatCount, langOf } from '../shared/text';
+import type { SelectionAction } from '../library/selection-actions.svelte.ts';
+import type { ScrollMark } from '../shared/scroll-marks.ts';
+import { formatCount, langOf } from '../shared/text.ts';
 
 export const SONG_ROW_HEIGHT = 56;
 

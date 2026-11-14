@@ -1,11 +1,11 @@
 <script lang="ts">
   import { on } from 'svelte/events';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { pop } from '../shared/motion';
-  import { langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { pop } from '../shared/motion.ts';
+  import { langOf } from '../shared/text.ts';
   import SearchField from '../ui/SearchField.svelte';
-  import type { SuggestionRow } from './search-box.svelte';
+  import type { SuggestionRow } from './search-box.svelte.ts';
   import {
     activeSuggestionId,
     pickSuggestion,
@@ -14,7 +14,7 @@
     searchBoxKey,
     SUGGESTION_LIST_ID,
     typeInSearchBox,
-  } from './search-box.svelte';
+  } from './search-box.svelte.ts';
   import SearchSuggestions from './SearchSuggestions.svelte';
 
   const view = getAppView();

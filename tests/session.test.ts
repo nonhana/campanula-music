@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { never } from './harness/hold';
-import { current, listener } from './harness/listener';
+import { never } from './harness/hold.ts';
+import { current, listener } from './harness/listener.ts';
 import {
   RECORDED_ACCOUNT as ACCOUNT,
   MUSIC_U,
   renewCookies,
   RENEWED_MUSIC_U,
   signIn,
-} from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const {

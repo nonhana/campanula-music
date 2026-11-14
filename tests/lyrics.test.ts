@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Device } from './harness/device';
-import { held } from './harness/hold';
-import { listener } from './harness/listener';
-import { useWorld } from './harness/world';
+import type { Device } from './harness/device.ts';
+import { held } from './harness/hold.ts';
+import { listener } from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtHearts } = listener(world);

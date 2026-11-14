@@ -2,8 +2,8 @@
   import { LocateFixed } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import { fade } from '../shared/motion';
-  import type { NowLocate } from '../shared/now-locate.svelte';
+  import { fade } from '../shared/motion.ts';
+  import type { NowLocate } from '../shared/now-locate.svelte.ts';
 
   interface Props {
     locate: NowLocate;

@@ -1,12 +1,12 @@
 import { tick, untrack } from 'svelte';
 
-import type { Song } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
+import type { Song } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
 
-import type { DialogRequest } from '../overlay/overlay-requests';
-import type { OverlayLayer, OverlayResult } from '../overlay/overlay-stack';
-import type { SelectionAction } from './selection-actions.svelte';
-import type { Checked } from './selection-core';
+import type { DialogRequest } from '../overlay/overlay-requests.ts';
+import type { OverlayLayer, OverlayResult } from '../overlay/overlay-stack.ts';
+import type { SelectionAction } from './selection-actions.svelte.ts';
+import type { Checked } from './selection-core.ts';
 import {
   allOn as allVisibleOn,
   extend,
@@ -14,7 +14,7 @@ import {
   picked as pickedSongs,
   selectAll as selectAllVisible,
   toggle as toggleChecked,
-} from './selection-core';
+} from './selection-core.ts';
 
 export interface SelectionSource {
   readonly key: string;

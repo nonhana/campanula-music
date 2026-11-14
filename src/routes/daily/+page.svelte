@@ -5,17 +5,17 @@
     dailyCalendarDay,
     dailyFailure,
     totalDuration,
-  } from '#lib/components/daily/view.js';
+  } from '#lib/components/daily/view.ts';
   import DetailHeader from '#lib/components/library/DetailHeader.svelte';
-  import { selectionActions } from '#lib/components/library/selection-actions.svelte.js';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
-  import { fade, reveal } from '#lib/components/shared/motion.js';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
-  import { formatCount } from '#lib/components/shared/text.js';
+  import { selectionActions } from '#lib/components/library/selection-actions.svelte.ts';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
+  import { fade, reveal } from '#lib/components/shared/motion.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import { formatCount } from '#lib/components/shared/text.ts';
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte';
   import SongList from '#lib/components/songs/SongList.svelte';
-  import type { SongListView } from '#lib/components/songs/view.js';
+  import type { SongListView } from '#lib/components/songs/view.ts';
   import Cover from '#lib/components/ui/Cover.svelte';
   import StateBlock from '#lib/components/ui/StateBlock.svelte';
 

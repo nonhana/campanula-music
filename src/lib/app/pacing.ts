@@ -1,5 +1,5 @@
-import type { RequestFailure, Result } from './api-client';
-import type { Clock, NetworkStatus } from './browser';
+import type { RequestFailure, Result } from './api-client.ts';
+import type { Clock, NetworkStatus } from './browser.ts';
 
 export type Waiting =
   | { reason: 'rateLimited'; until: number }

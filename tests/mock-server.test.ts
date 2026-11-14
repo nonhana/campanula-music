@@ -5,15 +5,15 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { createServer } from 'vite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { CheckTokens } from '#lib/api/check-token.js';
+import type { CheckTokens } from '#lib/api/check-token.ts';
 import {
   CHECK_TOKENS_HEADER,
   RENEWAL_ATTEMPTED_HEADER,
   RENEWAL_REQUIRED_HEADER,
-} from '#lib/api/check-token.js';
+} from '#lib/api/check-token.ts';
 
 import { mockPlugin } from '../src/lib/server/mock/vite-plugin.ts';
-import { TEST_OUT_DIR } from './harness/world';
+import { TEST_OUT_DIR } from './harness/world.ts';
 
 let origin = '';
 let closed: () => Promise<void>;

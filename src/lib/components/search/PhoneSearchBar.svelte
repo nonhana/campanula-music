@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ArrowLeft } from '@lucide/svelte';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { langOf } from '../shared/text.ts';
   import IconButton from '../ui/IconButton.svelte';
   import SearchField from '../ui/SearchField.svelte';
   import {
@@ -12,7 +12,7 @@
     shownKeyword,
     SUGGESTION_LIST_ID,
     typeInSearchBox,
-  } from './search-box.svelte';
+  } from './search-box.svelte.ts';
 
   const { onback }: { onback: () => void } = $props();
   const view = getAppView();

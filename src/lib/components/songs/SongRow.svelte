@@ -16,12 +16,12 @@
   import { Check } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
-  import type { Song } from '#lib/api/library.js';
-  import type { PlaySource } from '#lib/api/playback.js';
+  import type { Song } from '#lib/api/library.ts';
+  import type { PlaySource } from '#lib/api/playback.ts';
 
-  import { songMenuActions } from '../menu/song-menu.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { formatDuration, langOf } from '../shared/text';
+  import { songMenuActions } from '../menu/song-menu.svelte.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { formatDuration, langOf } from '../shared/text.ts';
   import Cover from '../ui/Cover.svelte';
   import CreditLine from './CreditLine.svelte';
   import CreditName from './CreditName.svelte';
@@ -32,7 +32,7 @@
   import NowChip from './NowChip.svelte';
   import NowIndex from './NowIndex.svelte';
   import PlayTarget from './PlayTarget.svelte';
-  import { songLook } from './song-look';
+  import { songLook } from './song-look.ts';
   import SongMoreButton from './SongMoreButton.svelte';
   import SongTitle from './SongTitle.svelte';
 

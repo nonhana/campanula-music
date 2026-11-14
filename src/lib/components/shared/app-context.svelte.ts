@@ -1,7 +1,7 @@
 import { createContext } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
 
-import type { App, AppState } from '#lib/app/app.js';
+import type { App, AppState } from '#lib/app/app.ts';
 
 export interface AppView {
   readonly app: App;

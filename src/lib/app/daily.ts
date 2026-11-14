@@ -1,8 +1,12 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { Song } from '#lib/api/library.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { Song } from '#lib/api/library.ts';
 
-import type { Clock } from './browser';
-import type { SessionApi, SessionFailure, SessionRound } from './session-round';
+import type { Clock } from './browser.ts';
+import type {
+  SessionApi,
+  SessionFailure,
+  SessionRound,
+} from './session-round.ts';
 
 const BEIJING_OFFSET = 8 * 3600_000;
 const REFRESH_AT = 6 * 3600_000;

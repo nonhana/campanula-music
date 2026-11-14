@@ -1,7 +1,7 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { checkIn } from '#lib/server/netease/player.js';
-import { readCheckIn } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { checkIn } from '#lib/server/netease/player.ts';
+import { readCheckIn } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request, cookies }) => {

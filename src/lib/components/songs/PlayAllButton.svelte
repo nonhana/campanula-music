@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Play } from '@lucide/svelte';
 
-  import type { Song } from '#lib/api/library.js';
-  import type { PlaySource } from '#lib/api/playback.js';
+  import type { Song } from '#lib/api/library.ts';
+  import type { PlaySource } from '#lib/api/playback.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import Button from '../ui/Button.svelte';
-  import { songLook } from './song-look';
+  import { songLook } from './song-look.ts';
 
   const {
     songs,

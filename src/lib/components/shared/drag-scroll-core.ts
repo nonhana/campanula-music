@@ -1,6 +1,6 @@
-import { clamp } from './clamp';
-import type { Grip, PointerSample } from './press';
-import { rightButtonDown } from './press';
+import { clamp } from './clamp.ts';
+import type { Grip, PointerSample } from './press.ts';
+import { rightButtonDown } from './press.ts';
 
 export interface DragScrollSpan {
   position: number;

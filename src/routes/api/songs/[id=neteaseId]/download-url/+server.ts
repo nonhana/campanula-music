@@ -1,7 +1,7 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { fetchDownloadUrl } from '#lib/server/netease/player.js';
-import { readQuality } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { fetchDownloadUrl } from '#lib/server/netease/player.ts';
+import { readQuality } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ params, url, cookies, request }) => {

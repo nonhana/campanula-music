@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import type { App } from '#lib/app/app.js';
+import type { App } from '#lib/app/app.ts';
 
-import type { Device } from './harness/device';
-import { held, never } from './harness/hold';
+import type { Device } from './harness/device.ts';
+import { held, never } from './harness/hold.ts';
 import {
   listener,
   noticeOf,
   storedLibrary,
   storedPlaylistIds,
   storedTrackIds,
-} from './harness/listener';
-import { MUSIC_U, renewCookies, RENEWED_MUSIC_U } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { MUSIC_U, renewCookies, RENEWED_MUSIC_U } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtLikedTracks, dailySongs, openJazz, replyLibrary } =

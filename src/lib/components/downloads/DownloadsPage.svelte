@@ -4,15 +4,15 @@
   import { CircleArrowDown, MoreHorizontal } from '@lucide/svelte';
 
   import DetailHeader from '../library/DetailHeader.svelte';
-  import { selectionActions } from '../library/selection-actions.svelte';
-  import { anchorBelow } from '../menu/menu-anchor';
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
-  import { formatCount } from '../shared/text';
+  import { selectionActions } from '../library/selection-actions.svelte.ts';
+  import { anchorBelow } from '../menu/menu-anchor.ts';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { formatCount } from '../shared/text.ts';
   import PlayAllButton from '../songs/PlayAllButton.svelte';
   import SongList from '../songs/SongList.svelte';
-  import type { SongListView } from '../songs/view';
+  import type { SongListView } from '../songs/view.ts';
   import Cover from '../ui/Cover.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import SearchField from '../ui/SearchField.svelte';

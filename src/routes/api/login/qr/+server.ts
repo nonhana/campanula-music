@@ -1,8 +1,8 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { deviceIdFor } from '#lib/server/credentials.js';
-import { configFor } from '#lib/server/netease/config.js';
-import { createLoginQr } from '#lib/server/netease/login.js';
-import { withNetease } from '#lib/server/respond.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { deviceIdFor } from '#lib/server/credentials.ts';
+import { configFor } from '#lib/server/netease/config.ts';
+import { createLoginQr } from '#lib/server/netease/login.ts';
+import { withNetease } from '#lib/server/respond.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = ({ cookies }) =>

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { FolderOpen, Trash2 } from '@lucide/svelte';
 
-  import { songTitle } from '#lib/api/library.js';
-  import type { ExportState } from '#lib/app/export.js';
+  import { songTitle } from '#lib/api/library.ts';
+  import type { ExportState } from '#lib/app/export.ts';
 
   import DialogBody from '../overlay/DialogBody.svelte';
   import DialogShell from '../overlay/DialogShell.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { ExportRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { formatCount, formatMegabytes, langOf } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { ExportRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { formatCount, formatMegabytes, langOf } from '../shared/text.ts';
   import Button from '../ui/Button.svelte';
-  import { exportFailureText } from './view';
+  import { exportFailureText } from './view.ts';
 
   const { exportDialog, multiSelect } = getOverlays();
   const view = getAppView();

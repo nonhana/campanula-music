@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Song } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
+import type { Song } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
 
-import { listener } from './harness/listener';
-import { useWorld } from './harness/world';
+import { listener } from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const {

@@ -3,8 +3,8 @@
   import type { Snippet } from 'svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import { pick } from '../player/cover-flight.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
+  import { pick } from '../player/cover-flight.svelte.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
 
   interface Props {
     disabled: boolean;

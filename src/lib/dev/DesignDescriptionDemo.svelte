@@ -6,15 +6,15 @@
   import { CircleArrowDown, CircleCheck, Play } from '@lucide/svelte';
 
   import DetailHeader from '#lib/components/library/DetailHeader.svelte';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
   import Button from '#lib/components/ui/Button.svelte';
   import SearchField from '#lib/components/ui/SearchField.svelte';
   import Segmented from '#lib/components/ui/Segmented.svelte';
   import {
     designDescription,
     designPlaylistName,
-  } from '#lib/dev/design-data.js';
-  import { mock } from '#lib/mock-flag.js';
+  } from '#lib/dev/design-data.ts';
+  import { mock } from '#lib/mock-flag.ts';
 
   const LENGTHS = [
     { key: 'long', label: '长简介' },

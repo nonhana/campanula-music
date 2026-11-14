@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import type { AxeResults } from 'axe-core';
 
-import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.js';
+import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.ts';
 
 const ROOT = join(import.meta.dirname, '..');
 const AXI = join(ROOT, 'scripts/axi.sh');

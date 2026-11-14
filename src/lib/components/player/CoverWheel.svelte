@@ -2,13 +2,13 @@
   import { untrack } from 'svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import type { Song } from '#lib/api/library.js';
+  import type { Song } from '#lib/api/library.ts';
 
-  import { fadeMs, moveMs, reducedMotion, unseen } from '../shared/motion';
-  import { cssEasing, DURATIONS, WHEEL } from '../shared/motion-tokens';
+  import { cssEasing, DURATIONS, WHEEL } from '../shared/motion-tokens.ts';
+  import { fadeMs, moveMs, reducedMotion, unseen } from '../shared/motion.ts';
   import Cover, { coverLoaded, preloadCover } from '../ui/Cover.svelte';
-  import type { Turn } from './view';
-  import { SMALL_COVER } from './view';
+  import type { Turn } from './view.ts';
+  import { SMALL_COVER } from './view.ts';
 
   interface Props {
     song: Song;

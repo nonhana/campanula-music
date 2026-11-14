@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { App } from '#lib/app/app.js';
+import type { App } from '#lib/app/app.ts';
 
-import { held, never } from './harness/hold';
-import { current, DAILY, listener } from './harness/listener';
+import { held, never } from './harness/hold.ts';
+import { current, DAILY, listener } from './harness/listener.ts';
 import {
   RECORDED_ACCOUNT as ACCOUNT,
   ANOTHER_ACCOUNT,
@@ -12,8 +12,8 @@ import {
   RENEWED_MUSIC_U,
   signIn,
   signInCookies,
-} from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { sessionCalls, sessionModules } = listener(world);

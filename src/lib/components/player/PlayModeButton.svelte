@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Repeat, Repeat1, Shuffle } from '@lucide/svelte';
 
-  import type { PlayMode } from '#lib/app/player.js';
+  import type { PlayMode } from '#lib/app/player.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { iconSwap } from '../shared/motion';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { iconSwap } from '../shared/motion.ts';
   import IconButton from '../ui/IconButton.svelte';
-  import { NEXT_PLAY_MODE, PLAY_MODE_LABEL } from './view';
+  import { NEXT_PLAY_MODE, PLAY_MODE_LABEL } from './view.ts';
 
   const {
     kind,

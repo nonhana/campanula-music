@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Song } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
+import type { Song } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
 
-import type { Device, Tab } from './harness/device';
-import { loadFixture } from './harness/fixtures';
-import { held } from './harness/hold';
+import type { Device, Tab } from './harness/device.ts';
+import { loadFixture } from './harness/fixtures.ts';
+import { held } from './harness/hold.ts';
 import {
   listener,
   noticeEntry,
   noticeOf,
   storedTrackIds,
-} from './harness/listener';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtLikedTracks } = listener(world);

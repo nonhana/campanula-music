@@ -2,10 +2,10 @@
   import { untrack } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
 
-  import { fadeMs } from '../shared/motion';
-  import { cssEasing, DURATIONS } from '../shared/motion-tokens';
+  import { cssEasing, DURATIONS } from '../shared/motion-tokens.ts';
+  import { fadeMs } from '../shared/motion.ts';
   import { coverSource } from '../ui/Cover.svelte';
-  import { SMALL_COVER } from './view';
+  import { SMALL_COVER } from './view.ts';
 
   const { coverUrl }: { coverUrl: string | null } = $props();
   const wanted = $derived(

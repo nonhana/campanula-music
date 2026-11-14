@@ -1,5 +1,5 @@
-import type { Account } from '#lib/api/account.js';
-import { endpoints } from '#lib/api/endpoints.js';
+import type { Account } from '#lib/api/account.ts';
+import { endpoints } from '#lib/api/endpoints.ts';
 import type {
   AlbumResponse,
   ArtistAlbum,
@@ -16,39 +16,44 @@ import type {
   PlaylistTagGroup,
   PlaylistUnavailable,
   Song,
-} from '#lib/api/library.js';
+} from '#lib/api/library.ts';
 import {
   canSortPlaylist,
   nameProblem,
   playlistName,
   SONGS_PER_REQUEST,
   TRACKS_PER_CHANGE,
-} from '#lib/api/library.js';
-import type { WriteResponse } from '#lib/api/write.js';
+} from '#lib/api/library.ts';
+import type { WriteResponse } from '#lib/api/write.ts';
 
-import type { Api, RequestFailure, Result } from './api-client';
-import type { Clock, PageVisibility } from './browser';
-import type { Change, ConfirmedChange, ImmediateChange } from './changes';
+import type { Api, RequestFailure, Result } from './api-client.ts';
+import type { Clock, PageVisibility } from './browser.ts';
+import type { Change, ConfirmedChange, ImmediateChange } from './changes.ts';
 import {
   changePatch,
   changeProblem,
   heartOf,
   playlistTarget,
   targetOf,
-} from './changes';
-import type { Deferred, PendingChange } from './deferred';
-import { createDeferred } from './deferred';
-import type { LibraryPatch, LocalDb, PlaylistTracks, Replica } from './local';
-import { emptyPatch, patched } from './local';
-import type { Notices } from './notice';
-import type { Waiting } from './pacing';
+} from './changes.ts';
+import type { Deferred, PendingChange } from './deferred.ts';
+import { createDeferred } from './deferred.ts';
+import type {
+  LibraryPatch,
+  LocalDb,
+  PlaylistTracks,
+  Replica,
+} from './local.ts';
+import { emptyPatch, patched } from './local.ts';
+import type { Notices } from './notice.ts';
+import type { Waiting } from './pacing.ts';
 import type {
   BackgroundFailure,
   BackgroundSessionResult,
   SessionFailure,
   SessionResult,
   SessionRound,
-} from './session-round';
+} from './session-round.ts';
 
 export type SyncFailure = BackgroundFailure;
 

@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import type {
   DrawerPose,
   GripSource,
-} from '#lib/components/player/drawer-core.js';
-import { createDrawerCore } from '#lib/components/player/drawer-core.js';
-import type { PointerSample } from '#lib/components/shared/press.js';
+} from '#lib/components/player/drawer-core.ts';
+import { createDrawerCore } from '#lib/components/player/drawer-core.ts';
+import type { PointerSample } from '#lib/components/shared/press.ts';
 
 interface Setup {
   from?: GripSource['from'];

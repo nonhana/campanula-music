@@ -1,10 +1,10 @@
-import type { Song } from '#lib/api/library.js';
-import { songTitle } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
+import { songTitle } from '#lib/api/library.ts';
 
-import type { FolderCapability, WritableCapability } from './browser';
-import type { StoredDownload } from './local';
-import type { AudioFormat } from './song-info-core';
-import { writeSongInfo } from './song-info-core';
+import type { FolderCapability, WritableCapability } from './browser.ts';
+import type { StoredDownload } from './local.ts';
+import type { AudioFormat } from './song-info-core.ts';
+import { writeSongInfo } from './song-info-core.ts';
 
 export type ExportFailure =
   | { kind: 'storageFull' }

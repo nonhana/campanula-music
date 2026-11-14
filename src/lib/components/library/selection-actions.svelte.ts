@@ -7,12 +7,12 @@ import {
   Trash2,
 } from '@lucide/svelte';
 
-import type { Song } from '#lib/api/library.js';
-import type { DownloadSource } from '#lib/app/downloads.js';
+import type { Song } from '#lib/api/library.ts';
+import type { DownloadSource } from '#lib/app/downloads.ts';
 
-import { getOverlays } from '../overlay/overlay-context';
-import type { MenuAnchor } from '../overlay/overlay-requests';
-import { getAppView } from '../shared/app-context.svelte';
+import { getOverlays } from '../overlay/overlay-context.ts';
+import type { MenuAnchor } from '../overlay/overlay-requests.ts';
+import { getAppView } from '../shared/app-context.svelte.ts';
 
 export interface SelectionAction {
   readonly key: string;

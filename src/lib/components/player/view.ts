@@ -1,16 +1,16 @@
-import type { Song } from '#lib/api/library.js';
-import { playlistName, songTitle } from '#lib/api/library.js';
-import type { LyricLine, LyricWord, PlaySource } from '#lib/api/playback.js';
-import type { LibraryState } from '#lib/app/library.js';
+import type { Song } from '#lib/api/library.ts';
+import { playlistName, songTitle } from '#lib/api/library.ts';
+import type { LyricLine, LyricWord, PlaySource } from '#lib/api/playback.ts';
+import type { LibraryState } from '#lib/app/library.ts';
 import type {
   PlayerNotice,
   PlayerState,
   PlayMode,
   SongChange,
-} from '#lib/app/player.js';
+} from '#lib/app/player.ts';
 
-import { failureText } from '../shared/failure';
-import { formatDuration } from '../shared/text';
+import { failureText } from '../shared/failure.ts';
+import { formatDuration } from '../shared/text.ts';
 
 export const queueEmpty = (player: PlayerState): boolean =>
   player.queue.length === 0;

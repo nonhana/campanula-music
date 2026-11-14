@@ -5,8 +5,8 @@
   import type { Snippet } from 'svelte';
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
-  import { busyClick } from '../shared/busy';
-  import { desktopLayout } from '../shared/layout';
+  import { busyClick } from '../shared/busy.ts';
+  import { desktopLayout } from '../shared/layout.ts';
   import Button from './Button.svelte';
 
   interface Props extends Omit<HTMLButtonAttributes, 'children'> {

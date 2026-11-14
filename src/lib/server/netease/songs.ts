@@ -1,6 +1,6 @@
 import type { SongDetailBody } from 'hana-music-api';
 
-import type { Availability, Credit, Song } from '#lib/api/library.js';
+import type { Availability, Credit, Song } from '#lib/api/library.ts';
 
 type NeteaseSong = Pick<
   SongDetailBody['songs'][number],

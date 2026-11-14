@@ -11,7 +11,7 @@ import {
   FLOAT_DISTANCE,
   REDUCED_FADE_MS,
   STAGGER,
-} from './motion-tokens';
+} from './motion-tokens.ts';
 
 export const reducedMotion = (): boolean => prefersReducedMotion.current;
 

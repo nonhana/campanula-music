@@ -1,7 +1,7 @@
 import { untrack } from 'svelte';
 import type { Attachment } from 'svelte/attachments';
 
-import { unseen } from './motion';
+import { unseen } from './motion.ts';
 
 type ImageStatus = 'loading' | 'cached' | 'loaded' | 'broken';
 

@@ -2,16 +2,16 @@ import { error } from '@sveltejs/kit';
 import type { Cookies } from '@sveltejs/kit';
 import type { ModuleCallConfig } from 'hana-music-api';
 
-import type { CheckTokens } from '#lib/api/check-token.js';
-import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.js';
-import type { Endpoint } from '#lib/api/endpoint.js';
+import type { CheckTokens } from '#lib/api/check-token.ts';
+import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.ts';
+import type { Endpoint } from '#lib/api/endpoint.ts';
 
-import type { LoginCookie } from './credentials';
-import { readLogin, renewalDue } from './credentials';
-import { configFor } from './netease/config';
-import { failureOf, NeteaseError } from './netease/failure';
-import { readCheckTokens } from './request';
-import { errorResponse, RenewalRequired, withNetease } from './respond';
+import type { LoginCookie } from './credentials.ts';
+import { readLogin, renewalDue } from './credentials.ts';
+import { configFor } from './netease/config.ts';
+import { failureOf, NeteaseError } from './netease/failure.ts';
+import { readCheckTokens } from './request.ts';
+import { errorResponse, RenewalRequired, withNetease } from './respond.ts';
 
 export type SignedIn = LoginCookie & {
   session: NonNullable<LoginCookie['session']>;

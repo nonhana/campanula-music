@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Disc3, SearchX, UserRound } from '@lucide/svelte';
 
-  import type { CollectedAlbum, CollectedArtist } from '#lib/api/library.js';
-  import { creditLine } from '#lib/api/library.js';
-  import type { LibraryState } from '#lib/app/library.js';
+  import type { CollectedAlbum, CollectedArtist } from '#lib/api/library.ts';
+  import { creditLine } from '#lib/api/library.ts';
+  import type { LibraryState } from '#lib/app/library.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
   import AlbumTile from './AlbumTile.svelte';
   import ArtistTile from './ArtistTile.svelte';
   import LibraryPageHead from './LibraryPageHead.svelte';

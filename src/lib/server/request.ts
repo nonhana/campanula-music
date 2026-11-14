@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
 
-import type { CheckTokens } from '#lib/api/check-token.js';
-import { CHECK_TOKEN, CHECK_TOKENS_HEADER } from '#lib/api/check-token.js';
-import type { SetCoverRequest } from '#lib/api/cover.js';
-import type { PostEndpoint } from '#lib/api/endpoint.js';
+import type { CheckTokens } from '#lib/api/check-token.ts';
+import { CHECK_TOKEN, CHECK_TOKENS_HEADER } from '#lib/api/check-token.ts';
+import type { SetCoverRequest } from '#lib/api/cover.ts';
+import type { PostEndpoint } from '#lib/api/endpoint.ts';
 import type {
   ArtistSongOrder,
   CollectRequest,
@@ -12,18 +12,18 @@ import type {
   HeartRequest,
   RenamePlaylistRequest,
   TagPlaylistRequest,
-} from '#lib/api/library.js';
+} from '#lib/api/library.ts';
 import {
   ARTIST_SONG_ORDERS,
   nameProblem,
   PLAYLIST_DESCRIPTION_LENGTH,
   PLAYLIST_NAME_WIDTH,
   PLAYLIST_TAGS_MAX,
-} from '#lib/api/library.js';
-import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.js';
-import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.js';
-import type { SearchKind } from '#lib/api/search.js';
-import { SEARCH_KINDS } from '#lib/api/search.js';
+} from '#lib/api/library.ts';
+import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.ts';
+import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.ts';
+import type { SearchKind } from '#lib/api/search.ts';
+import { SEARCH_KINDS } from '#lib/api/search.ts';
 
 export const QR_KEY = /^[\w-]{1,64}$/;
 export const readCheckTokens = (request: Request): CheckTokens => {

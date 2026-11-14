@@ -1,8 +1,8 @@
-import type { SearchedItems, SearchKind, Suggestion } from '#lib/api/search.js';
-import { SEARCH_KINDS } from '#lib/api/search.js';
-import type { SearchFailure } from '#lib/app/search.js';
+import type { SearchedItems, SearchKind, Suggestion } from '#lib/api/search.ts';
+import { SEARCH_KINDS } from '#lib/api/search.ts';
+import type { SearchFailure } from '#lib/app/search.ts';
 
-import { failureText } from '../shared/failure';
+import { failureText } from '../shared/failure.ts';
 
 export const SUGGESTION_KINDS: Record<Suggestion['kind'], string> = {
   song: '单曲',

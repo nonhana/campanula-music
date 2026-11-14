@@ -2,8 +2,8 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
 
-  import type { ScrollMark } from '../shared/scroll-marks';
-  import { getScrollLookup, hasScrollLookup } from '../shared/scroll-marks';
+  import type { ScrollMark } from '../shared/scroll-marks.ts';
+  import { getScrollLookup, hasScrollLookup } from '../shared/scroll-marks.ts';
 
   interface Props {
     items: readonly T[];

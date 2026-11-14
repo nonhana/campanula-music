@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CropFrame } from '#lib/components/playlist/cover-crop-core.js';
+import type { CropFrame } from '#lib/components/playlist/cover-crop-core.ts';
 import {
   centerCrop,
   createCropView,
@@ -12,7 +12,7 @@ import {
   wheelCrop,
   zoomBy,
   zoomTo,
-} from '#lib/components/playlist/cover-crop-core.js';
+} from '#lib/components/playlist/cover-crop-core.ts';
 
 const frame: CropFrame = { width: 1000, height: 500, size: 300 };
 

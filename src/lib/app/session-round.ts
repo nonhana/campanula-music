@@ -1,6 +1,6 @@
-import type { Account } from '#lib/api/account.js';
-import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js';
-import { endpoints } from '#lib/api/endpoints.js';
+import type { Account } from '#lib/api/account.ts';
+import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.ts';
+import { endpoints } from '#lib/api/endpoints.ts';
 
 import type {
   Api,
@@ -9,8 +9,8 @@ import type {
   PostOptions,
   RequestFailure,
   Result,
-} from './api-client';
-import type { BackgroundLane, Waiting } from './pacing';
+} from './api-client.ts';
+import type { BackgroundLane, Waiting } from './pacing.ts';
 
 export type SessionFailure = Exclude<RequestFailure, { kind: 'needsLogin' }>;
 export type SessionResult<T> =

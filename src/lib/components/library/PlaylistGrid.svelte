@@ -3,14 +3,15 @@
   import { flushSync, tick } from 'svelte';
   import { flip } from 'svelte/animate';
 
-  import type { Playlist } from '#lib/api/library.js';
-  import { playlistName } from '#lib/api/library.js';
-  import type { LibraryState } from '#lib/app/library.js';
-  import { playlistGroups } from '#lib/app/library.js';
+  import type { Playlist } from '#lib/api/library.ts';
+  import { playlistName } from '#lib/api/library.ts';
+  import type { LibraryState } from '#lib/app/library.ts';
+  import { playlistGroups } from '#lib/app/library.ts';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
   import {
     animateHeight,
     fade,
@@ -18,17 +19,16 @@
     moveMs,
     reveal,
     stagger,
-  } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
-  import { formatCount } from '../shared/text';
+  } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
   import StateBlock from '../ui/StateBlock.svelte';
   import TextButton from '../ui/TextButton.svelte';
   import ToolButton from '../ui/ToolButton.svelte';
   import DragGrip from './DragGrip.svelte';
   import LibraryPageHead from './LibraryPageHead.svelte';
-  import { PlaylistSort } from './playlist-sort.svelte';
+  import { PlaylistSort } from './playlist-sort.svelte.ts';
   import PlaylistTile from './PlaylistTile.svelte';
-  import { tileGridLook } from './tile-grid';
+  import { tileGridLook } from './tile-grid.ts';
   import TileGrid from './TileGrid.svelte';
 
   interface Props {

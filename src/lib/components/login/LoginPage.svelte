@@ -4,11 +4,11 @@
 
   import Brand from '../boot/Brand.svelte';
   import OfflineBar from '../notice/OfflineBar.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
-  import { float } from '../shared/motion';
-  import { FLOAT_IN_DELAY } from '../shared/motion-tokens';
-  import { formatCount } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { FLOAT_IN_DELAY } from '../shared/motion-tokens.ts';
+  import { float } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
   import Scrollbar from '../ui/Scrollbar.svelte';
   import LoginForm from './LoginForm.svelte';
 

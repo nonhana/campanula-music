@@ -1,7 +1,7 @@
-import type { Account } from '#lib/api/account.js';
+import type { Account } from '#lib/api/account.ts';
 
-import type { LocalDatabase } from './local';
-import { CHECK_INS, PLAYER, settled as requestResult } from './local';
+import type { LocalDatabase } from './local.ts';
+import { CHECK_INS, PLAYER, settled as requestResult } from './local.ts';
 import type {
   CheckIn,
   Player,
@@ -9,8 +9,8 @@ import type {
   SavedPlayer,
   SavedProgress,
   SavedQueue,
-} from './player';
-import type { SessionRound } from './session-round';
+} from './player.ts';
+import type { SessionRound } from './session-round.ts';
 
 interface StoredQueue extends SavedQueue {
   owner: number | null;

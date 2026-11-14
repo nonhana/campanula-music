@@ -2,12 +2,12 @@
   import { CircleCheck, CirclePlus } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import type { CollectTarget } from '#lib/app/app.js';
+  import type { CollectTarget } from '#lib/app/app.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { iconSwap } from '../shared/motion';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { iconSwap } from '../shared/motion.ts';
   import ToolButton from '../ui/ToolButton.svelte';
-  import { COLLECT_NOUNS, collectState } from './collect';
+  import { COLLECT_NOUNS, collectState } from './collect.ts';
 
   interface Props {
     target: CollectTarget;

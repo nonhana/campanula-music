@@ -12,19 +12,19 @@
     PLAYLIST_NAME_WIDTH,
     playlistName,
     songTitle,
-  } from '#lib/api/library.js';
-  import type { ChangeFailure } from '#lib/app/library.js';
+  } from '#lib/api/library.ts';
+  import type { ChangeFailure } from '#lib/app/library.ts';
 
   import TagPicker from '../library/TagPicker.svelte';
-  import { changeFailureText, editProblemText } from '../notice/text';
+  import { changeFailureText, editProblemText } from '../notice/text.ts';
   import ConfirmPanel from '../overlay/ConfirmPanel.svelte';
   import DialogBody from '../overlay/DialogBody.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { EditorRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
-  import { unfold } from '../shared/motion';
-  import { formatCount, formatSongCount, langOf } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { EditorRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { unfold } from '../shared/motion.ts';
+  import { formatCount, formatSongCount, langOf } from '../shared/text.ts';
   import Button from '../ui/Button.svelte';
   import Cover from '../ui/Cover.svelte';
   import TextButton from '../ui/TextButton.svelte';

@@ -3,24 +3,24 @@
   import { untrack } from 'svelte';
   import { innerHeight, innerWidth } from 'svelte/reactivity/window';
 
-  import type { CoverCrop } from '#lib/api/cover.js';
-  import { COVER_INPUT_MAX_BYTES } from '#lib/api/cover.js';
-  import type { RequestFailure } from '#lib/app/api-client.js';
+  import type { CoverCrop } from '#lib/api/cover.ts';
+  import { COVER_INPUT_MAX_BYTES } from '#lib/api/cover.ts';
+  import type { RequestFailure } from '#lib/app/api-client.ts';
   import type {
     CoverFailure,
     CoverProblem,
     CoverStep,
-  } from '#lib/app/cover.js';
+  } from '#lib/app/cover.ts';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
-  import { dialog, fade, float } from '../shared/motion';
-  import { PAGE_DISTANCE } from '../shared/motion-tokens';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { PAGE_DISTANCE } from '../shared/motion-tokens.ts';
+  import { dialog, fade, float } from '../shared/motion.ts';
   import Button from '../ui/Button.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import Scrollbar from '../ui/Scrollbar.svelte';
-  import { centerCrop } from './cover-crop-core';
+  import { centerCrop } from './cover-crop-core.ts';
   import CoverCropper from './CoverCropper.svelte';
 
   const view = getAppView();

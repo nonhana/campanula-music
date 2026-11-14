@@ -1,20 +1,20 @@
 <script lang="ts">
   import { Plus } from '@lucide/svelte';
 
-  import { playlistName, songTitle } from '#lib/api/library.js';
-  import type { AddTarget, AddTargetBlock } from '#lib/app/library.js';
+  import { playlistName, songTitle } from '#lib/api/library.ts';
+  import type { AddTarget, AddTargetBlock } from '#lib/app/library.ts';
 
-  import type { MenuHeader, MenuItem } from '../menu/menu';
+  import type { MenuHeader, MenuItem } from '../menu/menu.ts';
   import MenuOverlay from '../menu/MenuOverlay.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { AddToPlaylistRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { AddToPlaylistRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import {
     artistLine,
     formatCount,
     formatSongCount,
     langOf,
-  } from '../shared/text';
+  } from '../shared/text.ts';
 
   const { playlistEditor, playlistPicker, multiSelect } = getOverlays();
 

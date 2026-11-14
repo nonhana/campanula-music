@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { DownloadTask } from '#lib/app/downloads.js';
+import type { DownloadTask } from '#lib/app/downloads.ts';
 import {
   completedSince,
   leavingOf,
@@ -8,7 +8,7 @@ import {
   panelOpensOn,
   panelRows,
   visiblePanelTasks,
-} from '#lib/components/downloads/download-panel-core.js';
+} from '#lib/components/downloads/download-panel-core.ts';
 
 const song = (id: number): DownloadTask['song'] => ({
   id,

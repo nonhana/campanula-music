@@ -1,11 +1,11 @@
-import { searchPage } from '#lib/api/endpoints.js';
-import { searches } from '#lib/server/netease/search.js';
+import { searchPage } from '#lib/api/endpoints.ts';
+import { searches } from '#lib/server/netease/search.ts';
 import {
   readKeywords,
   readOffset,
   readSearchKind,
-} from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+} from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ params, url, cookies, request }) => {

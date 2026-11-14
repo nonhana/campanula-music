@@ -11,11 +11,11 @@ import type { Plugin, RunnableDevEnvironment } from 'vite';
 import { createServer } from 'vite';
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 
-import { clockOn } from './browser';
-import type { Device, DeviceTraits } from './device';
-import { createDevice, SENT_HEADER } from './device';
-import { loadFixture } from './fixtures';
-import type { Call, RequestSpan } from './netease-sdk';
+import { clockOn } from './browser.ts';
+import type { Device, DeviceTraits } from './device.ts';
+import { createDevice, SENT_HEADER } from './device.ts';
+import { loadFixture } from './fixtures.ts';
+import type { Call, RequestSpan } from './netease-sdk.ts';
 
 const FAKE_SDK = fileURLToPath(new URL('./netease-sdk.ts', import.meta.url));
 const START = new Date('2026-10-12T00:00:00Z');
@@ -130,10 +130,10 @@ const startWorld = async (options: WorldOptions = {}) => {
   const { runner } = vite.environments.ssr as RunnableDevEnvironment;
   const fake = (await runner.import(
     FAKE_SDK,
-  )) as typeof import('./netease-sdk');
+  )) as typeof import('./netease-sdk.ts');
   const probe = (await runner.import(
     SDK_PROBE,
-  )) as typeof import('./netease-sdk');
+  )) as typeof import('./netease-sdk.ts');
   if (
     Object.entries(fake).some(
       ([name, value]) => probe[name as keyof typeof probe] !== value,

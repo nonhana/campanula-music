@@ -3,8 +3,8 @@
 
   import ConfirmPanel from '../overlay/ConfirmPanel.svelte';
   import DialogShell from '../overlay/DialogShell.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import Button from '../ui/Button.svelte';
 
   const { logoutConfirm } = getOverlays();

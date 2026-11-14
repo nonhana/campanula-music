@@ -1,7 +1,7 @@
 import { ID3Writer } from 'browser-id3-writer';
 
-import type { AlbumResponse, Song } from '#lib/api/library.js';
-import type { LyricsResponse } from '#lib/api/playback.js';
+import type { AlbumResponse, Song } from '#lib/api/library.ts';
+import type { LyricsResponse } from '#lib/api/playback.ts';
 
 export interface SongInfo {
   song: Song;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { SkipBack, SkipForward } from '@lucide/svelte';
 
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
 
   const {
     direction,

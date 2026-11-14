@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { likedSong, listener, PLAYLISTS_WITH_POEMS } from './harness/listener';
-import { useWorld } from './harness/world';
+import {
+  likedSong,
+  listener,
+  PLAYLISTS_WITH_POEMS,
+} from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInWithLiked, downloadLiked } = listener(world, {

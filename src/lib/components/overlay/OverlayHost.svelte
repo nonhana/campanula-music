@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getOverlays } from './overlay-context';
+  import { getOverlays } from './overlay-context.ts';
 
   const overlays = getOverlays();
 

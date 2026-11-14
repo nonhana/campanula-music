@@ -9,8 +9,8 @@
     ArtistAlbum,
     ArtistIntroResponse,
     ArtistSongOrder,
-  } from '#lib/api/library.js';
-  import type { ArtistTab } from '#lib/app/library.js';
+  } from '#lib/api/library.ts';
+  import type { ArtistTab } from '#lib/app/library.ts';
   import AlbumTile from '#lib/components/library/AlbumTile.svelte';
   import {
     ARTIST_ORDERS,
@@ -20,23 +20,23 @@
     artistSearch,
     artistTabId,
     artistTabOf,
-  } from '#lib/components/library/artist-view.js';
+  } from '#lib/components/library/artist-view.ts';
   import CollectButton from '#lib/components/library/CollectButton.svelte';
   import DetailHeader from '#lib/components/library/DetailHeader.svelte';
-  import { selectionActions } from '#lib/components/library/selection-actions.svelte.js';
+  import { selectionActions } from '#lib/components/library/selection-actions.svelte.ts';
   import TileGrid from '#lib/components/library/TileGrid.svelte';
-  import { getOverlays } from '#lib/components/overlay/overlay-context.js';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { failureText } from '#lib/components/shared/failure.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
-  import { DURATIONS } from '#lib/components/shared/motion-tokens.js';
-  import { fade, fadeAway, reveal } from '#lib/components/shared/motion.js';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
-  import { formatCount, langOf, yearOf } from '#lib/components/shared/text.js';
+  import { getOverlays } from '#lib/components/overlay/overlay-context.ts';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { failureText } from '#lib/components/shared/failure.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
+  import { DURATIONS } from '#lib/components/shared/motion-tokens.ts';
+  import { fade, fadeAway, reveal } from '#lib/components/shared/motion.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import { formatCount, langOf, yearOf } from '#lib/components/shared/text.ts';
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte';
   import SongList from '#lib/components/songs/SongList.svelte';
-  import type { SongListView } from '#lib/components/songs/view.js';
-  import { SONG_ROW_HEIGHT } from '#lib/components/songs/view.js';
+  import type { SongListView } from '#lib/components/songs/view.ts';
+  import { SONG_ROW_HEIGHT } from '#lib/components/songs/view.ts';
   import LongText from '#lib/components/ui/LongText.svelte';
   import Segmented from '#lib/components/ui/Segmented.svelte';
   import ShowMore from '#lib/components/ui/ShowMore.svelte';

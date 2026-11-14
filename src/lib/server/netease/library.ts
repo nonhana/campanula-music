@@ -14,7 +14,7 @@ import {
   songDetail,
 } from 'hana-music-api';
 
-import type { DailyResponse } from '#lib/api/discover.js';
+import type { DailyResponse } from '#lib/api/discover.ts';
 import type {
   AlbumResponse,
   ArtistAlbum,
@@ -26,15 +26,15 @@ import type {
   CollectedAlbum,
   CollectedArtist,
   Song,
-} from '#lib/api/library.js';
+} from '#lib/api/library.ts';
 import {
   ARTIST_ALBUMS_PER_REQUEST,
   ARTIST_SONGS_PER_REQUEST,
-} from '#lib/api/library.js';
-import type { WriteResponse } from '#lib/api/write.js';
+} from '#lib/api/library.ts';
+import type { WriteResponse } from '#lib/api/write.ts';
 
-import { rejection } from './failure';
-import { creditOf, songOf, songWithPrivilegeOf } from './songs';
+import { rejection } from './failure.ts';
+import { creditOf, songOf, songWithPrivilegeOf } from './songs.ts';
 
 export const fetchHearts = async (
   uid: number,

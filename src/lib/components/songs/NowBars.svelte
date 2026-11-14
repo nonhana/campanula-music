@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
 
   const view = getAppView();
   const playing = $derived(view.state.player.status === 'playing');

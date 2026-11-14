@@ -7,7 +7,7 @@ import {
   loginCredentials,
   reset,
 } from '../src/lib/server/mock/runtime.ts';
-import { validateBody } from './harness/schemas';
+import { validateBody } from './harness/schemas.ts';
 
 const { credentials } = loginCredentials();
 const cookie = { cookie: credentials };

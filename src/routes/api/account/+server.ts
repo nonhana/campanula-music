@@ -1,10 +1,10 @@
-import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.js';
-import { endpoints } from '#lib/api/endpoints.js';
-import { readLogin } from '#lib/server/credentials.js';
-import { fetchAccount } from '#lib/server/netease/login.js';
-import { readCheckTokens } from '#lib/server/request.js';
-import { json, withNetease } from '#lib/server/respond.js';
-import { asSignedIn } from '#lib/server/session.js';
+import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.ts';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { readLogin } from '#lib/server/credentials.ts';
+import { fetchAccount } from '#lib/server/netease/login.ts';
+import { readCheckTokens } from '#lib/server/request.ts';
+import { json, withNetease } from '#lib/server/respond.ts';
+import { asSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ cookies, request }) => {

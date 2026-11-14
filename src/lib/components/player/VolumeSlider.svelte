@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ClassValue } from 'svelte/elements';
 
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
 
   const { class: klass }: { class?: ClassValue } = $props();
   const view = getAppView();

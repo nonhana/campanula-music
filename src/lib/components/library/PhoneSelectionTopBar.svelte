@@ -1,8 +1,8 @@
 <script lang="ts">
   import { CheckCheck, ListChecks, SquareMinus, X } from '@lucide/svelte';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { formatCount } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { formatCount } from '../shared/text.ts';
   import TextButton from '../ui/TextButton.svelte';
 
   const { multiSelect } = getOverlays();

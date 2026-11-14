@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import type { App } from '#lib/app/app.js';
+import type { App } from '#lib/app/app.ts';
 
-import type { Device } from './harness/device';
-import { held, never } from './harness/hold';
+import type { Device } from './harness/device.ts';
+import { held, never } from './harness/hold.ts';
 import {
   listener,
   noticeEntry,
   noticeOf,
   storedPlaylistIds,
-} from './harness/listener';
-import { signIn } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { signIn } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtLikedTracks, replyLibrary } = listener(world);

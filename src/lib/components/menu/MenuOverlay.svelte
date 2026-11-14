@@ -1,13 +1,13 @@
 <script lang="ts" generics="R extends MenuRequest">
   import type { Attachment } from 'svelte/attachments';
 
-  import type { MenuRequest } from '../overlay/overlay-requests';
-  import type { OverlayLayer } from '../overlay/overlay-stack';
-  import { createDrawer } from '../player/drawer.svelte';
-  import { pop } from '../shared/motion';
+  import type { MenuRequest } from '../overlay/overlay-requests.ts';
+  import type { OverlayLayer } from '../overlay/overlay-stack.ts';
+  import { createDrawer } from '../player/drawer.svelte.ts';
+  import { pop } from '../shared/motion.ts';
   import Cover from '../ui/Cover.svelte';
   import Scrollbar from '../ui/Scrollbar.svelte';
-  import type { MenuHeader, MenuItem } from './menu';
+  import type { MenuHeader, MenuItem } from './menu.ts';
   import MenuList from './MenuList.svelte';
 
   interface Props {

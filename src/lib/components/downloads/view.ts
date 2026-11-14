@@ -1,11 +1,11 @@
-import type { Song } from '#lib/api/library.js';
-import type { DownloadFailure, DownloadsState } from '#lib/app/downloads.js';
-import type { ExportFailure } from '#lib/app/export.js';
-import type { DownloadSource } from '#lib/app/local.js';
+import type { Song } from '#lib/api/library.ts';
+import type { DownloadFailure, DownloadsState } from '#lib/app/downloads.ts';
+import type { ExportFailure } from '#lib/app/export.ts';
+import type { DownloadSource } from '#lib/app/local.ts';
 
-import type { AppView } from '../shared/app-context.svelte';
-import { failureText } from '../shared/failure';
-import { songLook } from '../songs/song-look';
+import type { AppView } from '../shared/app-context.svelte.ts';
+import { failureText } from '../shared/failure.ts';
+import { songLook } from '../songs/song-look.ts';
 
 export const downloadItem = (
   view: AppView,

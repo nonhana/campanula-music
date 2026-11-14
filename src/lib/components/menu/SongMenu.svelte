@@ -13,17 +13,17 @@
     UserRound,
   } from '@lucide/svelte';
 
-  import { songTitle } from '#lib/api/library.js';
+  import { songTitle } from '#lib/api/library.ts';
 
-  import { downloadItem } from '../downloads/view';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { SongMenuRequest } from '../overlay/overlay-requests';
-  import { currentSong } from '../player/now';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { artistLine, langOf } from '../shared/text';
-  import { creditLink } from '../songs/credit-link';
-  import { songLook } from '../songs/song-look';
-  import type { MenuHeader, MenuItem } from './menu';
+  import { downloadItem } from '../downloads/view.ts';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { SongMenuRequest } from '../overlay/overlay-requests.ts';
+  import { currentSong } from '../player/now.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { artistLine, langOf } from '../shared/text.ts';
+  import { creditLink } from '../songs/credit-link.ts';
+  import { songLook } from '../songs/song-look.ts';
+  import type { MenuHeader, MenuItem } from './menu.ts';
   import MenuOverlay from './MenuOverlay.svelte';
 
   const view = getAppView();

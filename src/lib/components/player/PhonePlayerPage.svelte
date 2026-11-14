@@ -1,36 +1,36 @@
 <script lang="ts">
   import { ChevronDown, ListMusic, MicVocal } from '@lucide/svelte';
 
-  import type { Song } from '#lib/api/library.js';
+  import type { Song } from '#lib/api/library.ts';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { fade, float, recede } from '../shared/motion';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import {
     DURATIONS,
     FLOAT_IN_DELAY,
     PAGE_DISTANCE,
-  } from '../shared/motion-tokens';
-  import { langOf } from '../shared/text';
+  } from '../shared/motion-tokens.ts';
+  import { fade, float, recede } from '../shared/motion.ts';
+  import { langOf } from '../shared/text.ts';
   import HeartButton from '../songs/HeartButton.svelte';
   import SongMoreButton from '../songs/SongMoreButton.svelte';
   import IconButton from '../ui/IconButton.svelte';
-  import { createCoverSwipe } from './cover-swipe.svelte';
+  import { createCoverSwipe } from './cover-swipe.svelte.ts';
   import CoverWheel from './CoverWheel.svelte';
-  import { createDrawer, SHEET_HEIGHT } from './drawer.svelte';
+  import { createDrawer, SHEET_HEIGHT } from './drawer.svelte.ts';
   import Lyrics from './Lyrics.svelte';
   import NowPlayingTitle from './NowPlayingTitle.svelte';
   import PlayButton from './PlayButton.svelte';
   import {
     playerPageChoices as choices,
     playerPageActions,
-  } from './player-page.svelte';
-  import type { Playhead } from './playhead.svelte';
+  } from './player-page.svelte.ts';
+  import type { Playhead } from './playhead.svelte.ts';
   import PlayModeButton from './PlayModeButton.svelte';
   import QueueList from './QueueList.svelte';
   import SkipButton from './SkipButton.svelte';
-  import type { Turn } from './view';
-  import { neighborSong, PAGE_COVER } from './view';
+  import type { Turn } from './view.ts';
+  import { neighborSong, PAGE_COVER } from './view.ts';
   import WaveProgress from './WaveProgress.svelte';
 
   const {

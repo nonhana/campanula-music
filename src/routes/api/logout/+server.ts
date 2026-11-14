@@ -1,9 +1,9 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { clearLogin, readLogin } from '#lib/server/credentials.js';
-import { configFor } from '#lib/server/netease/config.js';
-import { failureOf, logFailure } from '#lib/server/netease/failure.js';
-import { logout } from '#lib/server/netease/login.js';
-import { json } from '#lib/server/respond.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { clearLogin, readLogin } from '#lib/server/credentials.ts';
+import { configFor } from '#lib/server/netease/config.ts';
+import { failureOf, logFailure } from '#lib/server/netease/failure.ts';
+import { logout } from '#lib/server/netease/login.ts';
+import { json } from '#lib/server/respond.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ cookies }) => {

@@ -1,14 +1,14 @@
 import { resolve } from '$app/paths';
 
-import type { AccountResponse } from './account.js';
+import type { AccountResponse } from './account.ts';
 import type {
   CoverTokenResponse,
   SetCoverRequest,
   SetCoverResponse,
-} from './cover.js';
-import type { DailyResponse } from './discover.js';
-import type { GetEndpoint } from './endpoint.js';
-import { get, post } from './endpoint.js';
+} from './cover.ts';
+import type { DailyResponse } from './discover.ts';
+import type { GetEndpoint } from './endpoint.ts';
+import { get, post } from './endpoint.ts';
 import type {
   AddTracksRequest,
   AlbumResponse,
@@ -38,7 +38,7 @@ import type {
   SongsResponse,
   TagPlaylistRequest,
   TrackIdsResponse,
-} from './library.js';
+} from './library.ts';
 import type {
   CaptchaRequest,
   CaptchaResponse,
@@ -49,20 +49,20 @@ import type {
   RenewSessionResponse,
   SmsLoginRequest,
   SmsLoginResponse,
-} from './login.js';
+} from './login.ts';
 import type {
   CheckInRequest,
   DownloadUrlResponse,
   LyricsResponse,
   PlayUrlResponse,
   Quality,
-} from './playback.js';
+} from './playback.ts';
 import type {
   SearchKind,
   SearchPageResponse,
   SuggestionsResponse,
-} from './search.js';
-import type { WriteResponse } from './write.js';
+} from './search.ts';
+import type { WriteResponse } from './write.ts';
 
 interface NeteaseIdParams {
   id: number;

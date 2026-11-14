@@ -1,7 +1,7 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { fetchHearts, heart } from '#lib/server/netease/library.js';
-import { readHeart, readId } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { fetchHearts, heart } from '#lib/server/netease/library.ts';
+import { readHeart, readId } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ url, cookies, request }) => {

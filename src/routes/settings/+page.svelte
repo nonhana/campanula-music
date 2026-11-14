@@ -2,16 +2,16 @@
   import { resolve } from '$app/paths';
   import { ChevronRight, CircleArrowDown, LogOut } from '@lucide/svelte';
 
-  import type { Quality } from '#lib/api/playback.js';
-  import { QUALITIES } from '#lib/api/playback.js';
+  import type { Quality } from '#lib/api/playback.ts';
+  import { QUALITIES } from '#lib/api/playback.ts';
   import Avatar from '#lib/components/account/Avatar.svelte';
-  import { getOverlays } from '#lib/components/overlay/overlay-context.js';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
+  import { getOverlays } from '#lib/components/overlay/overlay-context.ts';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
   import {
     formatCount,
     formatStorageSize,
-  } from '#lib/components/shared/text.js';
+  } from '#lib/components/shared/text.ts';
   import Button from '#lib/components/ui/Button.svelte';
   import IconButton from '#lib/components/ui/IconButton.svelte';
   import Segmented from '#lib/components/ui/Segmented.svelte';

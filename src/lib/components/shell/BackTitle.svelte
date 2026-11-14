@@ -1,9 +1,9 @@
 <script lang="ts">
   import { afterNavigate } from '$app/navigation';
 
-  import { atOnce, fade } from '../shared/motion';
-  import { langOf } from '../shared/text';
-  import { backBar, backTitle } from './back-title.svelte';
+  import { atOnce, fade } from '../shared/motion.ts';
+  import { langOf } from '../shared/text.ts';
+  import { backBar, backTitle } from './back-title.svelte.ts';
 
   afterNavigate(() => atOnce(backTitle.measure));
 </script>

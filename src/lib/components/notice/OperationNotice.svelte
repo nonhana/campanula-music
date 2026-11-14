@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { NoticeAction, NoticeEntry } from '#lib/app/notice.js';
+  import type { NoticeAction, NoticeEntry } from '#lib/app/notice.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import NoticeCard from './NoticeCard.svelte';
-  import { operationNoticeText } from './text';
+  import { operationNoticeText } from './text.ts';
 
   const {
     entry,

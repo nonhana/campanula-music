@@ -2,10 +2,10 @@
   import { CircleAlert } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import type { RequestFailure } from '#lib/app/api-client.js';
+  import type { RequestFailure } from '#lib/app/api-client.ts';
 
-  import { failureText } from '../shared/failure';
-  import { fade } from '../shared/motion';
+  import { failureText } from '../shared/failure.ts';
+  import { fade } from '../shared/motion.ts';
   import Button from './Button.svelte';
 
   interface Props {

@@ -1,8 +1,8 @@
-import type { Song } from '#lib/api/library.js';
-import type { PlaySource } from '#lib/api/playback.js';
+import type { Song } from '#lib/api/library.ts';
+import type { PlaySource } from '#lib/api/playback.ts';
 
-import { getOverlays } from '../overlay/overlay-context';
-import { anchorBelow } from './menu-anchor';
+import { getOverlays } from '../overlay/overlay-context.ts';
+import { anchorBelow } from './menu-anchor.ts';
 
 // 在组件初始化时调用一次：用的是所属外框的层会话
 export const songMenuActions = () => {

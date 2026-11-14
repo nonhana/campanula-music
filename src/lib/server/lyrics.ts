@@ -2,7 +2,7 @@ import type {
   LyricLine,
   LyricsResponse,
   LyricWord,
-} from '#lib/api/playback.js';
+} from '#lib/api/playback.ts';
 
 interface LyricText {
   readonly lyric?: string | null;

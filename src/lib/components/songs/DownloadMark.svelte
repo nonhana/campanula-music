@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CircleAlert, CircleArrowDown, Clock } from '@lucide/svelte';
 
-  import type { DownloadMark } from './song-look';
+  import type { DownloadMark } from './song-look.ts';
 
   const {
     mark,

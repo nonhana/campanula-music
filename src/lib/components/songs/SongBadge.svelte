@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SongBadgeKind } from './song-look';
+  import type { SongBadgeKind } from './song-look.ts';
 
   const { kind }: { kind: SongBadgeKind | null } = $props();
   const LABELS: Record<SongBadgeKind, string> = {

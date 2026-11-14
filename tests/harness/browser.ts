@@ -1,7 +1,7 @@
 import type { Clock as FakeTimers } from '@sinonjs/fake-timers';
 
-import type { CoverCrop } from '#lib/api/cover.js';
-import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.js';
+import type { CoverCrop } from '#lib/api/cover.ts';
+import { COVER_WORK_MAX_SIDE } from '#lib/api/cover.ts';
 import type {
   AudioCapability,
   ChannelCapability,
@@ -16,7 +16,7 @@ import type {
   PageVisibility,
   StorageEstimate,
   WritableCapability,
-} from '#lib/app/browser.js';
+} from '#lib/app/browser.ts';
 
 export const clockOn = (timers: FakeTimers): Clock => ({
   now: () => timers.now,

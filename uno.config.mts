@@ -7,7 +7,7 @@ import {
 } from 'unocss';
 import type { Theme } from 'unocss/preset-mini';
 
-import { TILE_GRID_SAFELIST } from './src/lib/components/library/tile-grid';
+import { TILE_GRID_SAFELIST } from './src/lib/components/library/tile-grid.ts';
 import {
   AXES,
   cssEasing,
@@ -21,7 +21,7 @@ import {
   PRESS_SCALE,
   REDUCED_FADE_MS,
   STAGGER,
-} from './src/lib/components/shared/motion-tokens';
+} from './src/lib/components/shared/motion-tokens.ts';
 import { colors, skeleton } from './uno.palette.mts';
 
 const FONT_SANS = `'Noto Sans Variable', 'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', system-ui, sans-serif`;

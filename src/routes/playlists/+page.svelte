@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { syncNoticeFor } from '#lib/app/library.js';
+  import { syncNoticeFor } from '#lib/app/library.ts';
   import PlaylistGrid from '#lib/components/library/PlaylistGrid.svelte';
   import SyncNotice from '#lib/components/library/SyncNotice.svelte';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
 
   const view = getAppView();
   const library = $derived(view.state.library);

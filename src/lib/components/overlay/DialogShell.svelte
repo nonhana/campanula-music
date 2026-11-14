@@ -18,12 +18,12 @@
     createDrawer,
     DRAWER_BLEED,
     SHEET_HEIGHT,
-  } from '../player/drawer.svelte';
-  import { dialog, fade } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
+  } from '../player/drawer.svelte.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { dialog, fade } from '../shared/motion.ts';
   import IconButton from '../ui/IconButton.svelte';
-  import type { DialogRequest } from './overlay-requests';
-  import type { OverlayLayer } from './overlay-stack';
+  import type { DialogRequest } from './overlay-requests.ts';
+  import type { OverlayLayer } from './overlay-stack.ts';
 
   interface Props {
     layer: OverlayLayer<R, HTMLElement>;

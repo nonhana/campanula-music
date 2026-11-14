@@ -1,9 +1,13 @@
-import type { CoverCrop, CoverTokenResponse } from '#lib/api/cover.js';
-import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.js';
-import { endpoints } from '#lib/api/endpoints.js';
+import type { CoverCrop, CoverTokenResponse } from '#lib/api/cover.ts';
+import { COVER_INPUT_MAX_BYTES, COVER_SMALL_SIDE } from '#lib/api/cover.ts';
+import { endpoints } from '#lib/api/endpoints.ts';
 
-import type { DecodedImage, ImageCapability } from './browser';
-import type { SessionApi, SessionFailure, SessionRound } from './session-round';
+import type { DecodedImage, ImageCapability } from './browser.ts';
+import type {
+  SessionApi,
+  SessionFailure,
+  SessionRound,
+} from './session-round.ts';
 
 export type CoverProblem =
   | { kind: 'notImage' }

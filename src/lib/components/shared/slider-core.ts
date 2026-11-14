@@ -1,6 +1,6 @@
-import { clamp } from './clamp';
-import type { Grip, PointerSample } from './press';
-import { rightButtonDown } from './press';
+import { clamp } from './clamp.ts';
+import type { Grip, PointerSample } from './press.ts';
+import { rightButtonDown } from './press.ts';
 
 export interface SliderCoreOptions {
   // null 是这次按下不接（例如点在滑块前后的空白处）

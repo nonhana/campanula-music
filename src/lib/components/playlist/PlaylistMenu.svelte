@@ -1,14 +1,14 @@
 <script lang="ts">
   import { Globe, ListPlus, Pencil, Trash2 } from '@lucide/svelte';
 
-  import { playlistName } from '#lib/api/library.js';
+  import { playlistName } from '#lib/api/library.ts';
 
-  import type { MenuHeader, MenuItem } from '../menu/menu';
+  import type { MenuHeader, MenuItem } from '../menu/menu.ts';
   import MenuOverlay from '../menu/MenuOverlay.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { PlaylistMenuRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { langOf } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { PlaylistMenuRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { langOf } from '../shared/text.ts';
 
   type Edit = 'info' | 'public' | 'delete';
 

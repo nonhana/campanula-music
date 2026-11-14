@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ClassValue } from 'svelte/elements';
 
-  import { langOf } from '../shared/text';
+  import { langOf } from '../shared/text.ts';
 
   interface Props {
     text: string;

@@ -1,8 +1,8 @@
 import type { Attachment } from 'svelte/attachments';
 
-import type { Song } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
 
-import { getOverlays } from '../overlay/overlay-context';
+import { getOverlays } from '../overlay/overlay-context.ts';
 import { preloadCover } from '../ui/Cover.svelte';
 
 export const playerPageActions = () => {

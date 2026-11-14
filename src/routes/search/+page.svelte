@@ -1,11 +1,11 @@
 <script lang="ts">
   import { page } from '$app/state';
 
-  import type { SuggestionRow } from '#lib/components/search/search-box.svelte.js';
+  import type { SuggestionRow } from '#lib/components/search/search-box.svelte.ts';
   import {
     pickSuggestion,
     showingResults,
-  } from '#lib/components/search/search-box.svelte.js';
+  } from '#lib/components/search/search-box.svelte.ts';
   import SearchKindResults from '#lib/components/search/SearchKindResults.svelte';
   import SearchOverview from '#lib/components/search/SearchOverview.svelte';
   import SearchSuggestions from '#lib/components/search/SearchSuggestions.svelte';
@@ -14,11 +14,11 @@
     SEARCH_PANEL_ID,
     searchTabId,
     searchTabOf,
-  } from '#lib/components/search/view.js';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
-  import { langOf } from '#lib/components/shared/text.js';
+  } from '#lib/components/search/view.ts';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import { langOf } from '#lib/components/shared/text.ts';
 
   const view = getAppView();
   const signedIn = $derived(view.state.library !== null);

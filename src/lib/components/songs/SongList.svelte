@@ -4,22 +4,22 @@
   import { untrack } from 'svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import type { Song } from '#lib/api/library.js';
-  import type { PlaySource } from '#lib/api/playback.js';
+  import type { Song } from '#lib/api/library.ts';
+  import type { PlaySource } from '#lib/api/playback.ts';
 
-  import type { SelectionSource } from '../library/multi-select.svelte';
-  import { selectionKeyOf } from '../library/selection-core';
+  import type { SelectionSource } from '../library/multi-select.svelte.ts';
+  import { selectionKeyOf } from '../library/selection-core.ts';
   import SelectionToolbar from '../library/SelectionToolbar.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import { currentSong } from '../player/now';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { fade, reveal, stagger } from '../shared/motion';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { currentSong } from '../player/now.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { fade, reveal, stagger } from '../shared/motion.ts';
   import {
     focusNowRow,
     getNowLocate,
     hasNowLocate,
-  } from '../shared/now-locate.svelte';
-  import { formatCount } from '../shared/text';
+  } from '../shared/now-locate.svelte.ts';
+  import { formatCount } from '../shared/text.ts';
   import IconButton from '../ui/IconButton.svelte';
   import StateBlock from '../ui/StateBlock.svelte';
   import VirtualList from '../ui/VirtualList.svelte';
@@ -30,8 +30,8 @@
     SongListView,
     SongSearch,
     SongSelect,
-  } from './view';
-  import { SONG_ROW_HEIGHT, songMark } from './view';
+  } from './view.ts';
+  import { SONG_ROW_HEIGHT, songMark } from './view.ts';
 
   // 让开顶栏；断网提示条和页面自己的吸顶行高度由外部写成 CSS 变量
   const HEADER_TOP =

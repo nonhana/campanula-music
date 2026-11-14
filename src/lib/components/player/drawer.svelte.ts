@@ -3,11 +3,11 @@ import type { Attachment } from 'svelte/attachments';
 import { quartOut } from 'svelte/easing';
 import { Tween } from 'svelte/motion';
 
-import { moveMs } from '../shared/motion';
-import { DURATIONS } from '../shared/motion-tokens';
-import { attachGrip, createPageHold } from '../shared/press';
-import type { GripSource } from './drawer-core';
-import { createDrawerCore } from './drawer-core';
+import { DURATIONS } from '../shared/motion-tokens.ts';
+import { moveMs } from '../shared/motion.ts';
+import { attachGrip, createPageHold } from '../shared/press.ts';
+import type { GripSource } from './drawer-core.ts';
+import { createDrawerCore } from './drawer-core.ts';
 
 export const DRAWER_BLEED = 48;
 

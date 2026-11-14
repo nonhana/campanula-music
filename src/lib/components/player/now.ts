@@ -1,5 +1,5 @@
-import type { Song } from '#lib/api/library.js';
-import type { PlayerState } from '#lib/app/player.js';
+import type { Song } from '#lib/api/library.ts';
+import type { PlayerState } from '#lib/app/player.ts';
 
 export const currentSong = (player: PlayerState): Song | null =>
   player.current === null ? null : player.queue[player.current].song;

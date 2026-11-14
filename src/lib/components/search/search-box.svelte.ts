@@ -2,12 +2,12 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 
-import type { Suggestion } from '#lib/api/search.js';
-import type { App } from '#lib/app/app.js';
-import type { Suggestions } from '#lib/app/search.js';
+import type { Suggestion } from '#lib/api/search.ts';
+import type { App } from '#lib/app/app.ts';
+import type { Suggestions } from '#lib/app/search.ts';
 
-import type { SearchTab } from './view';
-import { searchPath, searchTabId } from './view';
+import type { SearchTab } from './view.ts';
+import { searchPath, searchTabId } from './view.ts';
 
 export const SUGGESTION_LIST_ID = 'search-suggestions';
 export const suggestionId = (index: number): string =>

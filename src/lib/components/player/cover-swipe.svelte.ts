@@ -1,10 +1,10 @@
 import { untrack } from 'svelte';
 import type { Attachment } from 'svelte/attachments';
 
-import { WHEEL } from '../shared/motion-tokens';
-import { attachGrip, createPageHold } from '../shared/press';
-import type { WheelDirection } from './wheel-core';
-import { createWheelCore } from './wheel-core';
+import { WHEEL } from '../shared/motion-tokens.ts';
+import { attachGrip, createPageHold } from '../shared/press.ts';
+import type { WheelDirection } from './wheel-core.ts';
+import { createWheelCore } from './wheel-core.ts';
 
 export interface CoverSwipeOptions {
   current: () => number;

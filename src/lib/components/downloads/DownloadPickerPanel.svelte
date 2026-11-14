@@ -2,24 +2,24 @@
   import { Check, CircleArrowDown, ListMusic, SearchX } from '@lucide/svelte';
   import { SvelteMap } from 'svelte/reactivity';
 
-  import type { Song } from '#lib/api/library.js';
-  import { playlistName, songTitle } from '#lib/api/library.js';
+  import type { Song } from '#lib/api/library.ts';
+  import { playlistName, songTitle } from '#lib/api/library.ts';
   import type {
     DownloadBlock,
     DownloadStartBlock,
-  } from '#lib/app/downloads.js';
+  } from '#lib/app/downloads.ts';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { DownloadPickerRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { DownloadPickerRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import {
     artistLine,
     formatCount,
     formatMegabytes,
     langOf,
-  } from '../shared/text';
+  } from '../shared/text.ts';
   import SkeletonRows from '../songs/SkeletonRows.svelte';
-  import { SONG_ROW_HEIGHT } from '../songs/view';
+  import { SONG_ROW_HEIGHT } from '../songs/view.ts';
   import Button from '../ui/Button.svelte';
   import Cover from '../ui/Cover.svelte';
   import Scrollbar from '../ui/Scrollbar.svelte';

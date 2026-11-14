@@ -1,7 +1,7 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { fetchArtistSongs } from '#lib/server/netease/library.js';
-import { readArtistSongOrder, readOffset } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { fetchArtistSongs } from '#lib/server/netease/library.ts';
+import { readArtistSongOrder, readOffset } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ params, url, cookies, request }) => {

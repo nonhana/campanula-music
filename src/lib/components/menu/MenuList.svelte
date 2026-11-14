@@ -3,7 +3,7 @@
   import type { Attachment } from 'svelte/attachments';
 
   import Cover from '../ui/Cover.svelte';
-  import type { MenuItem, MenuTone } from './menu';
+  import type { MenuItem, MenuTone } from './menu.ts';
 
   type Layout = 'menu' | 'sheet' | 'popover';
 

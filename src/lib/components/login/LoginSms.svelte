@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { captchaProblem, phoneProblem } from '#lib/api/login.js';
+  import { captchaProblem, phoneProblem } from '#lib/api/login.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
-  import { unfold } from '../shared/motion';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { unfold } from '../shared/motion.ts';
   import Button from '../ui/Button.svelte';
   import TextField from '../ui/TextField.svelte';
 

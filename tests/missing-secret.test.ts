@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { useWorld } from './harness/world';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld({
   env: {

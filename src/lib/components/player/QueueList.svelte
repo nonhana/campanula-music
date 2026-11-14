@@ -3,24 +3,24 @@
   import { tick, untrack } from 'svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import { songTitle } from '#lib/api/library.js';
-  import type { QueueEntry } from '#lib/app/player.js';
+  import { songTitle } from '#lib/api/library.ts';
+  import type { QueueEntry } from '#lib/app/player.ts';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
-  import { fade } from '../shared/motion';
-  import { createNowLocate, focusNowRow } from '../shared/now-locate.svelte';
-  import { setScrollLookup } from '../shared/scroll-marks';
-  import { formatCount, formatDuration } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { fade } from '../shared/motion.ts';
+  import { createNowLocate, focusNowRow } from '../shared/now-locate.svelte.ts';
+  import { setScrollLookup } from '../shared/scroll-marks.ts';
+  import { formatCount, formatDuration } from '../shared/text.ts';
   import CreditLine from '../songs/CreditLine.svelte';
   import LocateNowButton from '../songs/LocateNowButton.svelte';
   import MorningWash from '../songs/MorningWash.svelte';
   import NowIndex from '../songs/NowIndex.svelte';
   import PlayTarget from '../songs/PlayTarget.svelte';
-  import { songLook } from '../songs/song-look';
+  import { songLook } from '../songs/song-look.ts';
   import SongTitle from '../songs/SongTitle.svelte';
-  import { SONG_ROW_HEIGHT, songMark } from '../songs/view';
+  import { SONG_ROW_HEIGHT, songMark } from '../songs/view.ts';
   import Cover from '../ui/Cover.svelte';
   import Scrollbar from '../ui/Scrollbar.svelte';
   import TextButton from '../ui/TextButton.svelte';

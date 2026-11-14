@@ -1,7 +1,7 @@
-import type { Song } from '#lib/api/library.js';
-import type { PlaySource } from '#lib/api/playback.js';
+import type { Song } from '#lib/api/library.ts';
+import type { PlaySource } from '#lib/api/playback.ts';
 
-import type { CreditLink } from '../songs/credit-link';
+import type { CreditLink } from '../songs/credit-link.ts';
 
 export interface DialogRequest {
   readonly from: HTMLElement | null;

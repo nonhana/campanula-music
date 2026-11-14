@@ -5,8 +5,8 @@ import type {
   OverlayMarker,
   OverlayPosition,
   OverlayResult,
-} from '../../src/lib/components/overlay/overlay-stack';
-import { samePosition } from '../../src/lib/components/overlay/overlay-stack';
+} from '../../src/lib/components/overlay/overlay-stack.ts';
+import { samePosition } from '../../src/lib/components/overlay/overlay-stack.ts';
 
 type Kind = 'write' | 'go' | 'leave' | 'traverse';
 type Phase = 'beforeCommit' | 'afterCommit';

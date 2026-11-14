@@ -2,12 +2,12 @@
   import { CircleAlert, RefreshCw } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import type { SyncNoticeState } from '#lib/app/library.js';
+  import type { SyncNoticeState } from '#lib/app/library.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
-  import { fade, unfold } from '../shared/motion';
-  import { formatCount } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { fade, unfold } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
   import Button from '../ui/Button.svelte';
   import TextButton from '../ui/TextButton.svelte';
 

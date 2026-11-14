@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DownloadTask } from '#lib/app/downloads.js';
+  import type { DownloadTask } from '#lib/app/downloads.ts';
 
   import DownloadTaskRow from './DownloadTaskRow.svelte';
 

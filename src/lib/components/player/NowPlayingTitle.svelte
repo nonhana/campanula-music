@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { Song } from '#lib/api/library.js';
-  import { songTitle } from '#lib/api/library.js';
+  import type { Song } from '#lib/api/library.ts';
+  import { songTitle } from '#lib/api/library.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { fade } from '../shared/motion';
-  import { langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { fade } from '../shared/motion.ts';
+  import { langOf } from '../shared/text.ts';
   import CreditLine from '../songs/CreditLine.svelte';
   import CreditName from '../songs/CreditName.svelte';
   import SongBadge from '../songs/SongBadge.svelte';
   import SongSwap from './SongSwap.svelte';
-  import type { Turn } from './view';
+  import type { Turn } from './view.ts';
 
   const {
     song,

@@ -1,6 +1,6 @@
 import { Cookie } from 'tough-cookie';
 
-import { shapeChanged } from './failure';
+import { shapeChanged } from './failure.ts';
 
 const mergeCookies = (
   base: Record<string, string>,

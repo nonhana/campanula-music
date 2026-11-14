@@ -1,7 +1,7 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { setPlaylistCover } from '#lib/server/netease/playlist.js';
-import { readCoverImage } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { setPlaylistCover } from '#lib/server/netease/playlist.ts';
+import { readCoverImage } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request, cookies }) => {

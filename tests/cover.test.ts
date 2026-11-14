@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Device } from './harness/device';
-import { held } from './harness/hold';
-import { listener } from './harness/listener';
-import { useWorld } from './harness/world';
+import type { Device } from './harness/device.ts';
+import { held } from './harness/hold.ts';
+import { listener } from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtLikedTracks } = listener(world);
@@ -204,7 +204,7 @@ const CROP = { x: 200, y: 60, size: 740 };
 
 const ready = async (
   device: Device,
-  app: import('#lib/app/app.js').App,
+  app: import('#lib/app/app.ts').App,
 ): Promise<void> => {
   await app.prepareCover(
     JAZZ,

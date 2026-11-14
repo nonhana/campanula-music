@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { FakeFolder } from './harness/browser';
-import { held } from './harness/hold';
+import { FakeFolder } from './harness/browser.ts';
+import { held } from './harness/hold.ts';
 import {
   listener,
   PLAYLISTS_WITH_POEMS,
   playUrlRequests,
   VILLAGE,
-} from './harness/listener';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInWithLiked, downloadLiked } = listener(world, {

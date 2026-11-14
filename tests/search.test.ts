@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Song } from '#lib/api/library.js';
-import type { SearchKind } from '#lib/api/search.js';
-import { SEARCH_KINDS } from '#lib/api/search.js';
-import type { App } from '#lib/app/app.js';
-import type { SearchList } from '#lib/app/search.js';
-import { SUGGEST_DELAY } from '#lib/app/search.js';
+import type { Song } from '#lib/api/library.ts';
+import type { SearchKind } from '#lib/api/search.ts';
+import { SEARCH_KINDS } from '#lib/api/search.ts';
+import type { App } from '#lib/app/app.ts';
+import type { SearchList } from '#lib/app/search.ts';
+import { SUGGEST_DELAY } from '#lib/app/search.ts';
 
-import { held, never } from './harness/hold';
-import { DAILY, listener } from './harness/listener';
-import { signIn } from './harness/sign-in';
-import { useWorld } from './harness/world';
+import { held, never } from './harness/hold.ts';
+import { DAILY, listener } from './harness/listener.ts';
+import { signIn } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 

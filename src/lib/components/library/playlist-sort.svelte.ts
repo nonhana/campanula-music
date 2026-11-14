@@ -1,22 +1,22 @@
 import type { Attachment } from 'svelte/attachments';
 
-import type { Playlist } from '#lib/api/library.js';
+import type { Playlist } from '#lib/api/library.ts';
 
+import type {
+  DragSortAdapter,
+  DragSortTrack,
+} from '../shared/drag-sort.svelte.ts';
+import { DragSort } from '../shared/drag-sort.svelte.ts';
 import type {
   DragSortEdges,
   DragSortResult,
   Point,
   Rect,
-} from '../shared/drag-sort';
-import { gridTrack, rowTrack } from '../shared/drag-sort';
-import type {
-  DragSortAdapter,
-  DragSortTrack,
-} from '../shared/drag-sort.svelte';
-import { DragSort } from '../shared/drag-sort.svelte';
-import { moveMs } from '../shared/motion';
-import { DURATIONS } from '../shared/motion-tokens';
-import { SONG_ROW_HEIGHT } from '../songs/view';
+} from '../shared/drag-sort.ts';
+import { gridTrack, rowTrack } from '../shared/drag-sort.ts';
+import { DURATIONS } from '../shared/motion-tokens.ts';
+import { moveMs } from '../shared/motion.ts';
+import { SONG_ROW_HEIGHT } from '../songs/view.ts';
 
 const ROW = SONG_ROW_HEIGHT;
 const GAP = 8;

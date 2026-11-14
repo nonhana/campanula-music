@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Ellipsis } from '@lucide/svelte';
 
-  import type { Song } from '#lib/api/library.js';
-  import { songTitle } from '#lib/api/library.js';
-  import type { PlaySource } from '#lib/api/playback.js';
+  import type { Song } from '#lib/api/library.ts';
+  import { songTitle } from '#lib/api/library.ts';
+  import type { PlaySource } from '#lib/api/playback.ts';
 
-  import { songMenuActions } from '../menu/song-menu.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
+  import { songMenuActions } from '../menu/song-menu.svelte.ts';
+  import { getOverlays } from '../overlay/overlay-context.ts';
 
   const {
     song,

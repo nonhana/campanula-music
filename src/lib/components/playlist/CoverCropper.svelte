@@ -3,10 +3,10 @@
   import { untrack } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
 
-  import type { CoverCrop } from '#lib/api/cover.js';
+  import type { CoverCrop } from '#lib/api/cover.ts';
 
-  import type { Grip, PointerSample } from '../shared/press';
-  import { attachGrip, rightButtonDown } from '../shared/press';
+  import type { Grip, PointerSample } from '../shared/press.ts';
+  import { attachGrip, rightButtonDown } from '../shared/press.ts';
   import IconButton from '../ui/IconButton.svelte';
   import {
     createCropView,
@@ -18,8 +18,8 @@
     wheelCrop,
     zoomBy,
     zoomTo,
-  } from './cover-crop-core';
-  import type { CropFrame, CropPoint, CropView } from './cover-crop-core.js';
+  } from './cover-crop-core.ts';
+  import type { CropFrame, CropPoint, CropView } from './cover-crop-core.ts';
 
   interface Props {
     src: string;

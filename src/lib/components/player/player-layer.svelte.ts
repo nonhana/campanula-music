@@ -1,10 +1,10 @@
 import { untrack } from 'svelte';
 
-import type { DialogRequest } from '../overlay/overlay-requests';
-import type { OverlayLayer } from '../overlay/overlay-stack';
-import { getAppView } from '../shared/app-context.svelte';
-import type { Drawer } from './drawer.svelte';
-import { queueEmpty } from './view';
+import type { DialogRequest } from '../overlay/overlay-requests.ts';
+import type { OverlayLayer } from '../overlay/overlay-stack.ts';
+import { getAppView } from '../shared/app-context.svelte.ts';
+import type { Drawer } from './drawer.svelte.ts';
+import { queueEmpty } from './view.ts';
 
 export interface PlayerLayerState {
   readonly hasQueue: boolean;

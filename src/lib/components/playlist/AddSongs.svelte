@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  import { playlistName } from '#lib/api/library.js';
+  import { playlistName } from '#lib/api/library.ts';
 
   import DialogShell from '../overlay/DialogShell.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { PlaylistRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { langOf } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { PlaylistRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { langOf } from '../shared/text.ts';
   import TextButton from '../ui/TextButton.svelte';
   import AddSongsPanel from './AddSongsPanel.svelte';
 

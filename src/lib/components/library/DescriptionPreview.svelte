@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ChevronRight } from '@lucide/svelte';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { langOf } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { langOf } from '../shared/text.ts';
 
   interface Props {
     text: string;

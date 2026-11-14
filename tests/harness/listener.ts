@@ -1,14 +1,14 @@
 import { readdir } from 'node:fs/promises';
 
-import type { Playlist, Song } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
-import type { NoticeEntry, OperationNotice } from '#lib/app/notice.js';
+import type { Playlist, Song } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
+import type { NoticeEntry, OperationNotice } from '#lib/app/notice.ts';
 
-import type { Device, SentRequest, Tab } from './device';
-import { loadFixture } from './fixtures';
-import { never } from './hold';
-import { LIBRARY_SYNC_MODULES, signIn } from './sign-in';
-import type { World } from './world';
+import type { Device, SentRequest, Tab } from './device.ts';
+import { loadFixture } from './fixtures.ts';
+import { never } from './hold.ts';
+import { LIBRARY_SYNC_MODULES, signIn } from './sign-in.ts';
+import type { World } from './world.ts';
 
 export const HEARTS = 'library/likelist.json';
 export const PLAYLISTS_WITH_POEMS =

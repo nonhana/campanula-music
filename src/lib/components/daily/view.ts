@@ -1,9 +1,9 @@
-import type { Song } from '#lib/api/library.js';
-import type { PlaySource } from '#lib/api/playback.js';
-import type { DailyFailure, DailyState } from '#lib/app/daily.js';
-import { dailyDayAt } from '#lib/app/daily.js';
+import type { Song } from '#lib/api/library.ts';
+import type { PlaySource } from '#lib/api/playback.ts';
+import type { DailyFailure, DailyState } from '#lib/app/daily.ts';
+import { dailyDayAt } from '#lib/app/daily.ts';
 
-import { failureText } from '../shared/failure';
+import { failureText } from '../shared/failure.ts';
 
 export const DAILY_SOURCE: PlaySource = { kind: 'daily' };
 

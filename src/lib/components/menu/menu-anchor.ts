@@ -1,5 +1,5 @@
-import type { MenuAnchor } from '../overlay/overlay-requests';
-import { desktopLayout } from '../shared/layout';
+import type { MenuAnchor } from '../overlay/overlay-requests.ts';
+import { desktopLayout } from '../shared/layout.ts';
 
 const BUTTON_GAP = 4;
 

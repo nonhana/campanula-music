@@ -2,7 +2,7 @@
   import type { LucideIcon } from '@lucide/svelte';
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
-  import { iconSwap } from '../shared/motion';
+  import { iconSwap } from '../shared/motion.ts';
 
   interface Props extends Omit<
     HTMLButtonAttributes,

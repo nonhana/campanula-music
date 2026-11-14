@@ -16,11 +16,11 @@ import {
   verifyGetQr,
 } from 'hana-music-api';
 
-import type { Account } from '#lib/api/account.js';
-import type { QrResponse } from '#lib/api/login.js';
+import type { Account } from '#lib/api/account.ts';
+import type { QrResponse } from '#lib/api/login.ts';
 
-import { credentialsFrom } from './cookies';
-import { isRecord, NeteaseError, rejection } from './failure';
+import { credentialsFrom } from './cookies.ts';
+import { isRecord, NeteaseError, rejection } from './failure.ts';
 
 export const createLoginQr = async (
   config: ModuleCallConfig,

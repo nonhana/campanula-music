@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { fade } from '../shared/motion';
-  import { formatCount } from '../shared/text';
+  import { fade } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
   import SearchField from '../ui/SearchField.svelte';
 
   interface Props {

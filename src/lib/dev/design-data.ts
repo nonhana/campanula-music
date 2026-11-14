@@ -1,4 +1,4 @@
-import type { Song } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
 
 export const designSong = (id: number, name: string, artist: string): Song => ({
   id,

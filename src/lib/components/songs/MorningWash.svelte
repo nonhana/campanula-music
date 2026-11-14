@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { progressOf } from '../player/now';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { fade } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
+  import { progressOf } from '../player/now.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { fade } from '../shared/motion.ts';
 
   interface Props {
     start: number;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { never } from './harness/hold';
-import { listener } from './harness/listener';
-import { useWorld } from './harness/world';
+import { never } from './harness/hold.ts';
+import { listener } from './harness/listener.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtHearts, dailySongs } = listener(world);

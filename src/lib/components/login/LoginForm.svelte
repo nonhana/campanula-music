@@ -1,10 +1,10 @@
 <script lang="ts">
   import { flushSync } from 'svelte';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import type { Toward } from '../shared/motion';
-  import { animateHeight, float } from '../shared/motion';
-  import { DURATIONS, FLOAT_IN_DELAY } from '../shared/motion-tokens';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { DURATIONS, FLOAT_IN_DELAY } from '../shared/motion-tokens.ts';
+  import type { Toward } from '../shared/motion.ts';
+  import { animateHeight, float } from '../shared/motion.ts';
   import Segmented from '../ui/Segmented.svelte';
   import LoginQr from './LoginQr.svelte';
   import LoginSms from './LoginSms.svelte';

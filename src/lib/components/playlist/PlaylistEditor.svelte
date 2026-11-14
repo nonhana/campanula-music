@@ -3,8 +3,8 @@
 
   import type { DialogSize } from '../overlay/DialogShell.svelte';
   import DialogShell from '../overlay/DialogShell.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { EditorRequest } from '../overlay/overlay-requests';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { EditorRequest } from '../overlay/overlay-requests.ts';
   import PlaylistEditorPanel from './PlaylistEditorPanel.svelte';
 
   const { playlistEditor } = getOverlays();

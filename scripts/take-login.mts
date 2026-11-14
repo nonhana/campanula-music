@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.js';
+import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.ts';
 
 const ROOT = join(import.meta.dirname, '..');
 const LOGIN_FILE = join(ROOT, '_notes/campanula-login');

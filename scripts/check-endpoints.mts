@@ -96,7 +96,7 @@ for (const [id, methods] of routes) {
 
 const catalogByName = new Map(catalog.map((entry) => [entry.name, entry]));
 for (const [id, source] of routeSources) {
-  for (const match of source.matchAll(/endpoints\.(?!js\b)(\w+)/g)) {
+  for (const match of source.matchAll(/endpoints\.(?![jt]s\b)(\w+)/g)) {
     const name = match[1]!;
     const endpoint = catalogByName.get(name);
     if (!endpoint) problems.push(`路由 ${id} 用了目录里没有的端点 ${name}`);

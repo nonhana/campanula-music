@@ -1,8 +1,8 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { PLAYLISTS_PER_ORDER } from '#lib/api/library.js';
-import { updatePlaylistOrder } from '#lib/server/netease/playlist.js';
-import { readIds } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { PLAYLISTS_PER_ORDER } from '#lib/api/library.ts';
+import { updatePlaylistOrder } from '#lib/server/netease/playlist.ts';
+import { readIds } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request, cookies }) => {

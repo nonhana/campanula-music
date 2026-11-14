@@ -1,4 +1,4 @@
-import type { DownloadTask } from '#lib/app/downloads.js';
+import type { DownloadTask } from '#lib/app/downloads.ts';
 
 export const PANEL_TASK_LIMIT = 50;
 export const LEAVING_HOLD_MS = 240;

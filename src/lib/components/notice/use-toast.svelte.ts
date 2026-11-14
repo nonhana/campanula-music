@@ -1,4 +1,4 @@
-import { getAppView } from '../shared/app-context.svelte';
+import { getAppView } from '../shared/app-context.svelte.ts';
 
 // 必须在组件初始化时调用：getAppView 读的是组件上下文
 export const useToast = (): {

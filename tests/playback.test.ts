@@ -1,16 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Song } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
+import type { Song } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
 
-import type { FakeAudio } from './harness/browser';
+import type { FakeAudio } from './harness/browser.ts';
 import {
   MEDIA_ERR_NETWORK,
   MEDIA_ERR_SRC_NOT_SUPPORTED,
-} from './harness/browser';
-import type { Device, Tab } from './harness/device';
-import { loadFixture } from './harness/fixtures';
-import { held, never } from './harness/hold';
+} from './harness/browser.ts';
+import type { Device, Tab } from './harness/device.ts';
+import { loadFixture } from './harness/fixtures.ts';
+import { held, never } from './harness/hold.ts';
 import {
   checkIns,
   current,
@@ -22,9 +22,9 @@ import {
   playUrlRequests,
   queueIds,
   storedCheckIns,
-} from './harness/listener';
-import { RECORDED_ACCOUNT, signIn } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { RECORDED_ACCOUNT, signIn } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInWithLiked, signInAtLikedTracks, reopen, replyLibrary } = listener(

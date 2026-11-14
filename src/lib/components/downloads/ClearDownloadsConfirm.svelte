@@ -1,10 +1,10 @@
 <script lang="ts">
   import ConfirmPanel from '../overlay/ConfirmPanel.svelte';
   import DialogShell from '../overlay/DialogShell.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { DialogRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { formatCount, formatStorageSize } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { DialogRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { formatCount, formatStorageSize } from '../shared/text.ts';
   import Button from '../ui/Button.svelte';
 
   const view = getAppView();

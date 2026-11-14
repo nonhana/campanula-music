@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import type {
   WheelDirection,
   WheelPose,
-} from '#lib/components/player/wheel-core.js';
-import { createWheelCore } from '#lib/components/player/wheel-core.js';
-import type { PointerSample } from '#lib/components/shared/press.js';
+} from '#lib/components/player/wheel-core.ts';
+import { createWheelCore } from '#lib/components/player/wheel-core.ts';
+import type { PointerSample } from '#lib/components/shared/press.ts';
 
 interface Setup {
   // 横着挪多少 px 转一格

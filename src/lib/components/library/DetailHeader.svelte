@@ -2,14 +2,14 @@
   import type { LucideIcon } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
-  import { desktopLayout } from '../shared/layout';
-  import { fadeAway, reveal } from '../shared/motion';
-  import { langOf } from '../shared/text';
-  import { pageHeading } from '../shell/back-title.svelte';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { fadeAway, reveal } from '../shared/motion.ts';
+  import { langOf } from '../shared/text.ts';
+  import { pageHeading } from '../shell/back-title.svelte.ts';
   import Cover from '../ui/Cover.svelte';
   import Tag from '../ui/Tag.svelte';
   import DescriptionPreview from './DescriptionPreview.svelte';
-  import { FLIGHT_COVER_SIZE } from './flight';
+  import { FLIGHT_COVER_SIZE } from './flight.ts';
 
   interface Props {
     cover?: {

@@ -1,4 +1,4 @@
-import { clamp } from './clamp';
+import { clamp } from './clamp.ts';
 
 const EDGE = 72;
 const MAX_SPEED = 1600;

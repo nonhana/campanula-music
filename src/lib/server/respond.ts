@@ -1,8 +1,8 @@
-import { RENEWAL_REQUIRED_HEADER } from '#lib/api/check-token.js';
-import type { Endpoint } from '#lib/api/endpoint.js';
-import type { ApiError, ErrorBody } from '#lib/api/errors.js';
+import { RENEWAL_REQUIRED_HEADER } from '#lib/api/check-token.ts';
+import type { Endpoint } from '#lib/api/endpoint.ts';
+import type { ApiError, ErrorBody } from '#lib/api/errors.ts';
 
-import { failureOf, logFailure } from './netease/failure';
+import { failureOf, logFailure } from './netease/failure.ts';
 
 export class RenewalRequired extends Error {
   constructor(readonly reason: 'due' | 'expired') {

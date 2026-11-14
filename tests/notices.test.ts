@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { App } from '#lib/app/app.js';
-import type { OperationNotice } from '#lib/app/notice.js';
+import type { App } from '#lib/app/app.ts';
+import type { OperationNotice } from '#lib/app/notice.ts';
 
-import { useWorld } from './harness/world';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 

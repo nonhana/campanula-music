@@ -1,5 +1,5 @@
-import type { Grip } from '../shared/press';
-import { rightButtonDown } from '../shared/press';
+import type { Grip } from '../shared/press.ts';
+import { rightButtonDown } from '../shared/press.ts';
 
 type DrawerEnd = 0 | 1;
 

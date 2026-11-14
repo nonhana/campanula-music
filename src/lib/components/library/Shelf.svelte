@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import { dragScroll } from '../shared/drag-scroll';
+  import { dragScroll } from '../shared/drag-scroll.ts';
   import Scrollbar from '../ui/Scrollbar.svelte';
 
   interface Props {

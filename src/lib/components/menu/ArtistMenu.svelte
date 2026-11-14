@@ -1,10 +1,10 @@
 <script lang="ts">
   import { UserRound } from '@lucide/svelte';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { ArtistMenuRequest } from '../overlay/overlay-requests';
-  import { langOf } from '../shared/text';
-  import type { MenuHeader, MenuItem } from './menu';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { ArtistMenuRequest } from '../overlay/overlay-requests.ts';
+  import { langOf } from '../shared/text.ts';
+  import type { MenuHeader, MenuItem } from './menu.ts';
   import MenuOverlay from './MenuOverlay.svelte';
 
   const { stack, artistMenu } = getOverlays();

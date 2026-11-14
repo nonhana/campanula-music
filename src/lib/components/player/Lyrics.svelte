@@ -2,19 +2,19 @@
   import { Check, Music, Play } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import type { Song } from '#lib/api/library.js';
-  import type { LyricLine } from '#lib/api/playback.js';
+  import type { Song } from '#lib/api/library.ts';
+  import type { LyricLine } from '#lib/api/playback.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
-  import { fade, scrollBehavior } from '../shared/motion';
-  import { DELAYS, DURATIONS } from '../shared/motion-tokens';
-  import { formatDuration, langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { DELAYS, DURATIONS } from '../shared/motion-tokens.ts';
+  import { fade, scrollBehavior } from '../shared/motion.ts';
+  import { formatDuration, langOf } from '../shared/text.ts';
   import FilterChip from '../ui/FilterChip.svelte';
   import StateBlock from '../ui/StateBlock.svelte';
-  import { playerPageChoices as choices } from './player-page.svelte';
-  import type { Playhead } from './playhead.svelte';
-  import { lineIndexAt, wordProgress } from './view';
+  import { playerPageChoices as choices } from './player-page.svelte.ts';
+  import type { Playhead } from './playhead.svelte.ts';
+  import { lineIndexAt, wordProgress } from './view.ts';
 
   interface Props {
     song: Song;

@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Song } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
 
-import { loadFixture } from './harness/fixtures';
-import { held, never } from './harness/hold';
+import { loadFixture } from './harness/fixtures.ts';
+import { held, never } from './harness/hold.ts';
 import {
   downloadCoverUrl,
   listener,
   PLAYLISTS_WITH_POEMS,
-} from './harness/listener';
-import { RECORDED_ACCOUNT } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { RECORDED_ACCOUNT } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtHearts, reopen, replyLibrary, replyLikedSongs } = listener(

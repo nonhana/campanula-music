@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Song } from '#lib/api/library.js';
-import type { Checked } from '#lib/components/library/selection-core.js';
+import type { Song } from '#lib/api/library.ts';
+import type { Checked } from '#lib/components/library/selection-core.ts';
 import {
   allOn,
   extend,
@@ -10,7 +10,7 @@ import {
   selectAll,
   selectionKeyOf,
   toggle,
-} from '#lib/components/library/selection-core.js';
+} from '#lib/components/library/selection-core.ts';
 
 const songsFrom = (ids: readonly number[]): Song[] =>
   ids.map((id, index) => ({

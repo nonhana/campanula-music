@@ -1,6 +1,6 @@
-import type { App } from '#lib/app/app.js';
+import type { App } from '#lib/app/app.ts';
 
-import type { World } from './world';
+import type { World } from './world.ts';
 
 export const MUSIC_U = `00B4F1${'9C2E7A1D5F'.repeat(32)}`;
 

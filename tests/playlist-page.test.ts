@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Playlist } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
-import type { PlaylistPage } from '#lib/app/library.js';
-import { syncNoticeFor } from '#lib/app/library.js';
-import { likedFailure } from '#lib/components/library/liked-failure.js';
-import { playlistHeader } from '#lib/components/library/view.js';
+import type { Playlist } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
+import type { PlaylistPage } from '#lib/app/library.ts';
+import { syncNoticeFor } from '#lib/app/library.ts';
+import { likedFailure } from '#lib/components/library/liked-failure.ts';
+import { playlistHeader } from '#lib/components/library/view.ts';
 
-import type { Device } from './harness/device';
-import { held } from './harness/hold';
+import type { Device } from './harness/device.ts';
+import { held } from './harness/hold.ts';
 import {
   DAILY,
   likedPage,
@@ -17,9 +17,9 @@ import {
   noticeOf,
   PLAYLISTS_WITH_POEMS,
   recordedBatch,
-} from './harness/listener';
-import { signIn } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { signIn } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const {

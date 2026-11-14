@@ -1,6 +1,6 @@
-import type { Song } from '#lib/api/library.js';
+import type { Song } from '#lib/api/library.ts';
 
-import type { AppView } from '../shared/app-context.svelte';
+import type { AppView } from '../shared/app-context.svelte.ts';
 
 // 能不能放的规则只在 App 里推一次，这里只读 state.playable
 

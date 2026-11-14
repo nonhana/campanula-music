@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { Device, SentRequest } from './harness/device';
-import { held, never } from './harness/hold';
-import type { RecordedPlaylist } from './harness/listener';
+import type { Device, SentRequest } from './harness/device.ts';
+import { held, never } from './harness/hold.ts';
+import type { RecordedPlaylist } from './harness/listener.ts';
 import {
   COLLECTED_ALBUMS,
   COLLECTED_ARTISTS,
@@ -18,14 +18,14 @@ import {
   songPages,
   syncRequests,
   trackIdRequests,
-} from './harness/listener';
+} from './harness/listener.ts';
 import {
   ANOTHER_ACCOUNT,
   LIBRARY_SYNC_MODULES,
   RECORDED_ACCOUNT,
   signIn,
-} from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { replyLibrary, replyPlaylists, signInAtLikedTracks, signInSynced } =

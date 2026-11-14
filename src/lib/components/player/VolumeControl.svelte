@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  import { DEFAULT_VOLUME } from '#lib/app/player.js';
+  import { DEFAULT_VOLUME } from '#lib/app/player.ts';
 
   let unmuted = DEFAULT_VOLUME;
 </script>
@@ -8,7 +8,7 @@
   import { Volume1, Volume2, VolumeX } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import IconButton from '../ui/IconButton.svelte';
   import VolumeSlider from './VolumeSlider.svelte';
 

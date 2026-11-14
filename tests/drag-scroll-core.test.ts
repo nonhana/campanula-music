@@ -4,15 +4,15 @@ import type {
   DragScrollPose,
   DragScrollSpan,
   Glide,
-} from '#lib/components/shared/drag-scroll-core.js';
+} from '#lib/components/shared/drag-scroll-core.ts';
 import {
   createDragScrollCore,
   frictionGlide,
   glideEnd,
   glideTolerance,
   springGlide,
-} from '#lib/components/shared/drag-scroll-core.js';
-import type { PointerSample } from '#lib/components/shared/press.js';
+} from '#lib/components/shared/drag-scroll-core.ts';
+import type { PointerSample } from '#lib/components/shared/press.ts';
 
 const setup = (
   span: DragScrollSpan | null = { position: 200, max: 1000, stopped: false },

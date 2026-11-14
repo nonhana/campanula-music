@@ -1,7 +1,7 @@
-import { playlistName } from '#lib/api/library.js';
-import type { PlaylistPage } from '#lib/app/library.js';
+import { playlistName } from '#lib/api/library.ts';
+import type { PlaylistPage } from '#lib/app/library.ts';
 
-import { formatCount, formatPlays } from '../shared/text';
+import { formatCount, formatPlays } from '../shared/text.ts';
 
 export interface PlaylistHeader {
   name: string;

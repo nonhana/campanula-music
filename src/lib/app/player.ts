@@ -1,10 +1,10 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { Song } from '#lib/api/library.js';
-import type { PlaySource, Quality } from '#lib/api/playback.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { Song } from '#lib/api/library.ts';
+import type { PlaySource, Quality } from '#lib/api/playback.ts';
 
-import type { AudioCapability, Clock } from './browser';
-import type { PlaylistSongs } from './library';
-import type { SessionApi, SessionFailure } from './session-round';
+import type { AudioCapability, Clock } from './browser.ts';
+import type { PlaylistSongs } from './library.ts';
+import type { SessionApi, SessionFailure } from './session-round.ts';
 
 const HANDOVER_LEAD = 1;
 const UNBUFFERED_HANDOVER_LEAD = 5;

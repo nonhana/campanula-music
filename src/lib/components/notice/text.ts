@@ -1,4 +1,4 @@
-import type { Playlist, PlaylistEditProblem } from '#lib/api/library.js';
+import type { Playlist, PlaylistEditProblem } from '#lib/api/library.ts';
 import {
   PLAYLIST_DESCRIPTION_LENGTH,
   PLAYLIST_NAME_WIDTH,
@@ -6,14 +6,14 @@ import {
   playlistName,
   songTitle,
   TRACKS_PER_CHANGE,
-} from '#lib/api/library.js';
-import type { Change } from '#lib/app/changes.js';
-import type { ChangeFailure } from '#lib/app/library.js';
-import type { OperationNotice } from '#lib/app/notice.js';
+} from '#lib/api/library.ts';
+import type { Change } from '#lib/app/changes.ts';
+import type { ChangeFailure } from '#lib/app/library.ts';
+import type { OperationNotice } from '#lib/app/notice.ts';
 
-import { downloadFailureText } from '../downloads/view';
-import { failureText } from '../shared/failure';
-import { formatCount } from '../shared/text';
+import { downloadFailureText } from '../downloads/view.ts';
+import { failureText } from '../shared/failure.ts';
+import { formatCount } from '../shared/text.ts';
 
 const playlistInText = (playlist: Playlist): string =>
   playlist.kind === 'liked'

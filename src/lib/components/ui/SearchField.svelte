@@ -3,8 +3,8 @@
   import type { Snippet } from 'svelte';
   import type { HTMLInputAttributes } from 'svelte/elements';
 
-  import { fade } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { fade } from '../shared/motion.ts';
 
   interface Props extends Omit<
     HTMLInputAttributes,

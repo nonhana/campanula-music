@@ -3,13 +3,13 @@
   import { resolve } from '$app/paths';
   import { LogOut, Settings } from '@lucide/svelte';
 
-  import type { Account } from '#lib/api/account.js';
+  import type { Account } from '#lib/api/account.ts';
 
   import Avatar from '../account/Avatar.svelte';
-  import type { MenuItem } from '../menu/menu';
+  import type { MenuItem } from '../menu/menu.ts';
   import MenuList from '../menu/MenuList.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import { pop } from '../shared/motion';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { pop } from '../shared/motion.ts';
 
   const { account }: { account: Account } = $props();
   const { logoutConfirm } = getOverlays();

@@ -6,17 +6,17 @@
   import { Play } from '@lucide/svelte';
   import { onDestroy } from 'svelte';
 
-  import type { DownloadTask } from '#lib/app/downloads.js';
+  import type { DownloadTask } from '#lib/app/downloads.ts';
   import {
     LEAVING_HOLD_MS,
     leavingOf,
-  } from '#lib/components/downloads/download-panel-core.js';
-  import type { LeavingTask } from '#lib/components/downloads/download-panel-core.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
-  import { DURATIONS } from '#lib/components/shared/motion-tokens.js';
-  import { float } from '#lib/components/shared/motion.js';
+  } from '#lib/components/downloads/download-panel-core.ts';
+  import type { LeavingTask } from '#lib/components/downloads/download-panel-core.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
+  import { DURATIONS } from '#lib/components/shared/motion-tokens.ts';
+  import { float } from '#lib/components/shared/motion.ts';
   import Button from '#lib/components/ui/Button.svelte';
-  import { designSong } from '#lib/dev/design-data.js';
+  import { designSong } from '#lib/dev/design-data.ts';
   import DesignPanelCard from '#lib/dev/DesignPanelCard.svelte';
 
   const BATCH = [

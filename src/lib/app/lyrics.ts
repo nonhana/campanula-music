@@ -1,7 +1,11 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { LyricsResponse } from '#lib/api/playback.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { LyricsResponse } from '#lib/api/playback.ts';
 
-import type { SessionApi, SessionFailure, SessionRound } from './session-round';
+import type {
+  SessionApi,
+  SessionFailure,
+  SessionRound,
+} from './session-round.ts';
 
 type LyricsFailure = SessionFailure;
 

@@ -1,14 +1,14 @@
 import { initializeWatchman } from 'hana-music-api/watchman';
 
-import type { CoverCrop } from '#lib/api/cover.js';
+import type { CoverCrop } from '#lib/api/cover.ts';
 import {
   COVER_OUTPUT_MAX_BYTES,
   COVER_OUTPUT_MIN_QUALITY,
   COVER_OUTPUT_QUALITY,
   COVER_OUTPUT_SIZE,
   COVER_WORK_MAX_SIDE,
-} from '#lib/api/cover.js';
-import { mock } from '#lib/mock-flag.js';
+} from '#lib/api/cover.ts';
+import { mock } from '#lib/mock-flag.ts';
 
 export interface BrowserCapabilities {
   fetch: (path: string, init?: RequestInit) => Promise<Response>;

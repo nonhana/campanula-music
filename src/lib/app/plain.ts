@@ -1,5 +1,5 @@
-import type { Song } from '#lib/api/library.js';
-import type { PlaySource } from '#lib/api/playback.js';
+import type { Song } from '#lib/api/library.ts';
+import type { PlaySource } from '#lib/api/playback.ts';
 
 // 界面传来的 Song 可能是 $state 代理，代理进不了 IndexedDB，先复制成普通对象
 export const plainSong = (song: Song): Song => ({

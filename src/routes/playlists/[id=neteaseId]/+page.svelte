@@ -11,30 +11,30 @@
     SearchX,
   } from '@lucide/svelte';
 
-  import type { Playlist, PlaylistUnavailable } from '#lib/api/library.js';
-  import { playlistName } from '#lib/api/library.js';
-  import type { LibraryState } from '#lib/app/library.js';
+  import type { Playlist, PlaylistUnavailable } from '#lib/api/library.ts';
+  import { playlistName } from '#lib/api/library.ts';
+  import type { LibraryState } from '#lib/app/library.ts';
   import Avatar from '#lib/components/account/Avatar.svelte';
   import CollectButton from '#lib/components/library/CollectButton.svelte';
   import DetailHeader from '#lib/components/library/DetailHeader.svelte';
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte';
   import PlaylistTile from '#lib/components/library/PlaylistTile.svelte';
-  import { ROW_COVER_SIZE } from '#lib/components/library/tile-grid.js';
-  import { playlistHeader } from '#lib/components/library/view.js';
-  import { anchorBelow } from '#lib/components/menu/menu-anchor.js';
-  import { getOverlays } from '#lib/components/overlay/overlay-context.js';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { failureText } from '#lib/components/shared/failure.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
+  import { ROW_COVER_SIZE } from '#lib/components/library/tile-grid.ts';
+  import { playlistHeader } from '#lib/components/library/view.ts';
+  import { anchorBelow } from '#lib/components/menu/menu-anchor.ts';
+  import { getOverlays } from '#lib/components/overlay/overlay-context.ts';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { failureText } from '#lib/components/shared/failure.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
   import {
     atOnce,
     reveal,
     scrollBehavior,
     stagger,
-  } from '#lib/components/shared/motion.js';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
-  import { langOf } from '#lib/components/shared/text.js';
-  import { playerDockBottom } from '#lib/components/shell/player-dock.js';
+  } from '#lib/components/shared/motion.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import { langOf } from '#lib/components/shared/text.ts';
+  import { playerDockBottom } from '#lib/components/shell/player-dock.ts';
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte';
   import Button from '#lib/components/ui/Button.svelte';
   import IconButton from '#lib/components/ui/IconButton.svelte';

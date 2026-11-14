@@ -1,10 +1,10 @@
-import type { Account } from '#lib/api/account.js';
-import { endpoints } from '#lib/api/endpoints.js';
-import type { QrCheckResponse } from '#lib/api/login.js';
+import type { Account } from '#lib/api/account.ts';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { QrCheckResponse } from '#lib/api/login.ts';
 
-import type { Api, RequestFailure, Result } from './api-client';
-import type { Clock, PageVisibility } from './browser';
-import type { SessionRound } from './session-round';
+import type { Api, RequestFailure, Result } from './api-client.ts';
+import type { Clock, PageVisibility } from './browser.ts';
+import type { SessionRound } from './session-round.ts';
 
 type QrLogin =
   | { step: 'loading' }

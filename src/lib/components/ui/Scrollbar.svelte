@@ -10,13 +10,13 @@
 <script lang="ts">
   import { untrack } from 'svelte';
 
-  import { clamp } from '../shared/clamp';
-  import { scrollBehavior } from '../shared/motion';
-  import { DELAYS } from '../shared/motion-tokens';
-  import { attachGrip, attachTouchClaim } from '../shared/press';
-  import type { ScrollLookup, ScrollMark } from '../shared/scroll-marks';
-  import { createSliderCore } from '../shared/slider-core';
-  import { getSelectionMode, hasSelectionMode } from './selection-mode';
+  import { clamp } from '../shared/clamp.ts';
+  import { DELAYS } from '../shared/motion-tokens.ts';
+  import { scrollBehavior } from '../shared/motion.ts';
+  import { attachGrip, attachTouchClaim } from '../shared/press.ts';
+  import type { ScrollLookup, ScrollMark } from '../shared/scroll-marks.ts';
+  import { createSliderCore } from '../shared/slider-core.ts';
+  import { getSelectionMode, hasSelectionMode } from './selection-mode.ts';
 
   interface Props {
     page?: { top: string; bottom: string };

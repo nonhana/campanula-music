@@ -1,14 +1,14 @@
 <script lang="ts">
   import { SkipForward } from '@lucide/svelte';
 
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import HeartButton from '../songs/HeartButton.svelte';
   import IconButton from '../ui/IconButton.svelte';
-  import { currentSong } from './now';
+  import { currentSong } from './now.ts';
   import NowPlaying from './NowPlaying.svelte';
   import PlayButton from './PlayButton.svelte';
   import ProgressLine from './ProgressLine.svelte';
-  import { PAGE_COVER } from './view';
+  import { PAGE_COVER } from './view.ts';
 
   const view = getAppView();
   const player = $derived(view.state.player);

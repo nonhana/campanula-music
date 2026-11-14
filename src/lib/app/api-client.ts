@@ -1,16 +1,16 @@
-import type { CheckTokens } from '#lib/api/check-token.js';
+import type { CheckTokens } from '#lib/api/check-token.ts';
 import {
   CHECK_TOKEN,
   CHECK_TOKENS_HEADER,
   RENEWAL_ATTEMPTED_HEADER,
   RENEWAL_REQUIRED_HEADER,
-} from '#lib/api/check-token.js';
-import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.js';
-import { endpoints } from '#lib/api/endpoints.js';
-import type { ApiError, ErrorBody } from '#lib/api/errors.js';
-import { LOGIN_COOKIE_LOCK } from '#lib/api/login.js';
+} from '#lib/api/check-token.ts';
+import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.ts';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { ApiError, ErrorBody } from '#lib/api/errors.ts';
+import { LOGIN_COOKIE_LOCK } from '#lib/api/login.ts';
 
-import type { BrowserCapabilities } from './browser';
+import type { BrowserCapabilities } from './browser.ts';
 
 export type RequestFailure =
   | { kind: 'offline' }

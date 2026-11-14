@@ -2,19 +2,19 @@
   import { Check, SearchX } from '@lucide/svelte';
   import { SvelteMap } from 'svelte/reactivity';
 
-  import type { Song } from '#lib/api/library.js';
-  import { songTitle } from '#lib/api/library.js';
-  import type { RequestFailure } from '#lib/app/api-client.js';
-  import type { ChangeFailure } from '#lib/app/library.js';
+  import type { Song } from '#lib/api/library.ts';
+  import { songTitle } from '#lib/api/library.ts';
+  import type { RequestFailure } from '#lib/app/api-client.ts';
+  import type { ChangeFailure } from '#lib/app/library.ts';
 
-  import { changeFailureText } from '../notice/text';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { PlaylistRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { failureText } from '../shared/failure';
-  import { artistLine, formatCount, langOf } from '../shared/text';
+  import { changeFailureText } from '../notice/text.ts';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { PlaylistRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { failureText } from '../shared/failure.ts';
+  import { artistLine, formatCount, langOf } from '../shared/text.ts';
   import SkeletonRows from '../songs/SkeletonRows.svelte';
-  import { SONG_ROW_HEIGHT } from '../songs/view';
+  import { SONG_ROW_HEIGHT } from '../songs/view.ts';
   import Button from '../ui/Button.svelte';
   import Cover from '../ui/Cover.svelte';
   import Scrollbar from '../ui/Scrollbar.svelte';

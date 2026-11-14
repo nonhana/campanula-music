@@ -1,4 +1,4 @@
-import type { BrowserCapabilities } from './browser';
+import type { BrowserCapabilities } from './browser.ts';
 
 const BROWSER_GLOBALS_BY_CAPABILITY = {
   fetch: ['fetch'],

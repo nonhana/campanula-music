@@ -9,37 +9,37 @@
   } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
-  import type { Playlist } from '#lib/api/library.js';
-  import { playlistName } from '#lib/api/library.js';
-  import { playlistGroups, syncNoticeFor } from '#lib/app/library.js';
+  import type { Playlist } from '#lib/api/library.ts';
+  import { playlistName } from '#lib/api/library.ts';
+  import { playlistGroups, syncNoticeFor } from '#lib/app/library.ts';
   import DailyTile from '#lib/components/daily/DailyTile.svelte';
   import CollectedGrid from '#lib/components/library/CollectedGrid.svelte';
-  import { likedFailure } from '#lib/components/library/liked-failure.js';
+  import { likedFailure } from '#lib/components/library/liked-failure.ts';
   import PlaylistSongs from '#lib/components/library/PlaylistSongs.svelte';
   import PlaylistTile from '#lib/components/library/PlaylistTile.svelte';
   import SyncNotice from '#lib/components/library/SyncNotice.svelte';
   import TileGrid from '#lib/components/library/TileGrid.svelte';
-  import { songMenuActions } from '#lib/components/menu/song-menu.svelte.js';
-  import { getOverlays } from '#lib/components/overlay/overlay-context.js';
-  import { currentSong } from '#lib/components/player/now.js';
-  import { getAppView } from '#lib/components/shared/app-context.svelte.js';
-  import { dragScroll } from '#lib/components/shared/drag-scroll.js';
-  import { failureText } from '#lib/components/shared/failure.js';
-  import { desktopLayout } from '#lib/components/shared/layout.js';
+  import { songMenuActions } from '#lib/components/menu/song-menu.svelte.ts';
+  import { getOverlays } from '#lib/components/overlay/overlay-context.ts';
+  import { currentSong } from '#lib/components/player/now.ts';
+  import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
+  import { dragScroll } from '#lib/components/shared/drag-scroll.ts';
+  import { failureText } from '#lib/components/shared/failure.ts';
+  import { desktopLayout } from '#lib/components/shared/layout.ts';
   import {
     fade,
     fadeAway,
     reveal,
     scrollBehavior,
-  } from '#lib/components/shared/motion.js';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
-  import { formatCount } from '#lib/components/shared/text.js';
+  } from '#lib/components/shared/motion.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import { formatCount } from '#lib/components/shared/text.ts';
   import CreditLine from '#lib/components/songs/CreditLine.svelte';
   import DownloadMark from '#lib/components/songs/DownloadMark.svelte';
   import NowChip from '#lib/components/songs/NowChip.svelte';
   import PlayAllButton from '#lib/components/songs/PlayAllButton.svelte';
   import PlayTarget from '#lib/components/songs/PlayTarget.svelte';
-  import { songLook } from '#lib/components/songs/song-look.js';
+  import { songLook } from '#lib/components/songs/song-look.ts';
   import SongMoreButton from '#lib/components/songs/SongMoreButton.svelte';
   import SongTitle from '#lib/components/songs/SongTitle.svelte';
   import Cover from '#lib/components/ui/Cover.svelte';

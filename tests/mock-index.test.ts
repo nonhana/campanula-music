@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { queryKey } from '#lib/server/mock/query-key.js';
+import { queryKey } from '#lib/server/mock/query-key.ts';
 
 import { buildIndex } from '../scripts/fixture-index.mts';
 

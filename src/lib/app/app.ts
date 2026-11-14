@@ -1,6 +1,6 @@
-import type { Account } from '#lib/api/account.js';
-import type { CoverCrop } from '#lib/api/cover.js';
-import { endpoints } from '#lib/api/endpoints.js';
+import type { Account } from '#lib/api/account.ts';
+import type { CoverCrop } from '#lib/api/cover.ts';
+import { endpoints } from '#lib/api/endpoints.ts';
 import type {
   ArtistSongOrder,
   CollectedAlbum,
@@ -8,23 +8,23 @@ import type {
   CreatePlaylistRequest,
   Playlist,
   Song,
-} from '#lib/api/library.js';
-import { playlistName } from '#lib/api/library.js';
-import { LOGIN_COOKIE_LOCK } from '#lib/api/login.js';
-import type { PlaySource, Quality } from '#lib/api/playback.js';
-import type { SearchedItems, SearchKind } from '#lib/api/search.js';
+} from '#lib/api/library.ts';
+import { playlistName } from '#lib/api/library.ts';
+import { LOGIN_COOKIE_LOCK } from '#lib/api/login.ts';
+import type { PlaySource, Quality } from '#lib/api/playback.ts';
+import type { SearchedItems, SearchKind } from '#lib/api/search.ts';
 
-import type { RequestFailure, Result } from './api-client';
-import { createApi } from './api-client';
-import type { BrowserCapabilities } from './browser';
-import type { PlaylistEdit, PlaylistSeed } from './changes';
-import { changeProblem, playlistEdits } from './changes';
-import type { CheckIns } from './check-ins';
-import { createCheckIns } from './check-ins';
-import type { CoverOutcome, CoverState } from './cover';
-import { createCover } from './cover';
-import type { DailyState } from './daily';
-import { createDaily } from './daily';
+import type { RequestFailure, Result } from './api-client.ts';
+import { createApi } from './api-client.ts';
+import type { BrowserCapabilities } from './browser.ts';
+import type { PlaylistEdit, PlaylistSeed } from './changes.ts';
+import { changeProblem, playlistEdits } from './changes.ts';
+import type { CheckIns } from './check-ins.ts';
+import { createCheckIns } from './check-ins.ts';
+import type { CoverOutcome, CoverState } from './cover.ts';
+import { createCover } from './cover.ts';
+import type { DailyState } from './daily.ts';
+import { createDaily } from './daily.ts';
 import type {
   DownloadBatchOutcome,
   DownloadBlock,
@@ -32,14 +32,14 @@ import type {
   DownloadSource,
   DownloadsState,
   DownloadStartBlock,
-} from './downloads';
+} from './downloads.ts';
 import {
   createDownloads,
   downloadBlock as downloadBlockFor,
   INITIAL_DOWNLOADS,
-} from './downloads';
-import type { ExportState } from './export';
-import { createExports } from './export';
+} from './downloads.ts';
+import type { ExportState } from './export.ts';
+import { createExports } from './export.ts';
 import type {
   AddSongsOutcome,
   AddTarget,
@@ -49,7 +49,7 @@ import type {
   LibraryState,
   PlaylistGroups,
   PlaylistSearch,
-} from './library';
+} from './library.ts';
 import {
   createLibrary,
   filterAlbums,
@@ -57,29 +57,29 @@ import {
   filterPlaylists,
   filterSongs,
   searchPlaylist,
-} from './library';
-import { createLocalDatabase, createLocalDb } from './local';
-import type { LoginState } from './login';
-import { createLogin, INITIAL_LOGIN } from './login';
-import type { LyricsState } from './lyrics';
-import { createLyrics } from './lyrics';
-import { connectMediaSession } from './media-session';
+} from './library.ts';
+import { createLocalDatabase, createLocalDb } from './local.ts';
+import type { LoginState } from './login.ts';
+import { createLogin, INITIAL_LOGIN } from './login.ts';
+import type { LyricsState } from './lyrics.ts';
+import { createLyrics } from './lyrics.ts';
+import { connectMediaSession } from './media-session.ts';
 import type {
   NoticeAction,
   NoticeEntry,
   NoticeTone,
   ShowNoticeOptions,
-} from './notice';
-import { createNotices } from './notice';
-import { createBackgroundLane } from './pacing';
-import { plainSong, plainSource } from './plain';
-import type { Player, PlayerState, PlayMode } from './player';
-import { createPlayer, DEFAULT_VOLUME, INITIAL_PLAYER } from './player';
-import { createSavedQueue } from './saved-queue';
-import type { SearchState } from './search';
-import { createSearch, INITIAL_SEARCH } from './search';
-import type { Session } from './session-round';
-import { createSessionRound } from './session-round';
+} from './notice.ts';
+import { createNotices } from './notice.ts';
+import { createBackgroundLane } from './pacing.ts';
+import { plainSong, plainSource } from './plain.ts';
+import type { Player, PlayerState, PlayMode } from './player.ts';
+import { createPlayer, DEFAULT_VOLUME, INITIAL_PLAYER } from './player.ts';
+import { createSavedQueue } from './saved-queue.ts';
+import type { SearchState } from './search.ts';
+import { createSearch, INITIAL_SEARCH } from './search.ts';
+import type { Session } from './session-round.ts';
+import { createSessionRound } from './session-round.ts';
 
 const SESSION_CHANNEL = 'campanula:session';
 

@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import legacyCookie from './fixtures/session/pre-sdk-5-cookie.json';
-import { held, never } from './harness/hold';
-import { listener } from './harness/listener';
+import { held, never } from './harness/hold.ts';
+import { listener } from './harness/listener.ts';
 import {
   MUSIC_U,
   renewCookies,
   RENEWED_MUSIC_U,
   signIn,
   signInCookies,
-} from './harness/sign-in';
-import { REAL_IP, useWorld } from './harness/world';
+} from './harness/sign-in.ts';
+import { REAL_IP, useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { sessionModules } = listener(world);

@@ -6,16 +6,16 @@
   import { Check, ChevronDown } from '@lucide/svelte';
   import { flip } from 'svelte/animate';
 
-  import type { DownloadTask } from '#lib/app/downloads.js';
-  import { panelRows } from '#lib/components/downloads/download-panel-core.js';
+  import type { DownloadTask } from '#lib/app/downloads.ts';
+  import { panelRows } from '#lib/components/downloads/download-panel-core.ts';
   import type {
     LeavingTask,
     PanelRow,
-  } from '#lib/components/downloads/download-panel-core.js';
+  } from '#lib/components/downloads/download-panel-core.ts';
   import DownloadLeavingRow from '#lib/components/downloads/DownloadLeavingRow.svelte';
   import DownloadTaskRow from '#lib/components/downloads/DownloadTaskRow.svelte';
-  import { DURATIONS } from '#lib/components/shared/motion-tokens.js';
-  import { moveMs } from '#lib/components/shared/motion.js';
+  import { DURATIONS } from '#lib/components/shared/motion-tokens.ts';
+  import { moveMs } from '#lib/components/shared/motion.ts';
   import Button from '#lib/components/ui/Button.svelte';
   import IconButton from '#lib/components/ui/IconButton.svelte';
   import TextButton from '#lib/components/ui/TextButton.svelte';

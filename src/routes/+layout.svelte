@@ -6,23 +6,23 @@
 
   import { page } from '$app/state';
 
-  import { createApp } from '#lib/app/app.js';
-  import { realBrowserCapabilities } from '#lib/app/browser.js';
+  import { createApp } from '#lib/app/app.ts';
+  import { realBrowserCapabilities } from '#lib/app/browser.ts';
   import AppOpenFailed from '#lib/components/boot/AppOpenFailed.svelte';
   import AppOpening from '#lib/components/boot/AppOpening.svelte';
   import CookieSecretRequired from '#lib/components/boot/CookieSecretRequired.svelte';
   import HttpsRequired from '#lib/components/boot/HttpsRequired.svelte';
-  import { arrival } from '#lib/components/boot/opening.js';
+  import { arrival } from '#lib/components/boot/opening.ts';
   import LoginPage from '#lib/components/login/LoginPage.svelte';
   import {
     setAppView,
     viewOf,
-  } from '#lib/components/shared/app-context.svelte.js';
-  import { DURATIONS } from '#lib/components/shared/motion-tokens.js';
-  import { fade, fadeAway } from '#lib/components/shared/motion.js';
+  } from '#lib/components/shared/app-context.svelte.ts';
+  import { DURATIONS } from '#lib/components/shared/motion-tokens.ts';
+  import { fade, fadeAway } from '#lib/components/shared/motion.ts';
   import SignedInFrame from '#lib/components/shell/SignedInFrame.svelte';
   import SignedOutFrame from '#lib/components/shell/SignedOutFrame.svelte';
-  import { mock } from '#lib/mock-flag.js';
+  import { mock } from '#lib/mock-flag.ts';
   // reset 必须先于 UnoCSS 加载，否则带 type="button" 的按钮会丢底色
   import '@unocss/reset/tailwind.css';
   import 'uno.css';

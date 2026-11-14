@@ -9,8 +9,8 @@ import type {
   OverlayMarker,
   OverlayPosition,
   OverlayResult,
-} from './overlay-stack';
-import { samePosition } from './overlay-stack';
+} from './overlay-stack.ts';
+import { samePosition } from './overlay-stack.ts';
 
 interface Operation {
   kind: 'write' | 'go' | 'leave';

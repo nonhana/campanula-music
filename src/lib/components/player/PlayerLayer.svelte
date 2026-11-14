@@ -3,7 +3,7 @@
   import type { Snippet } from 'svelte';
 
   import NoticeStack from '../notice/NoticeStack.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
+  import { getOverlays } from '../overlay/overlay-context.ts';
   import PlayerPage from './PlayerPage.svelte';
 
   const { children }: { children?: Snippet } = $props();

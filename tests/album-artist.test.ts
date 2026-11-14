@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ArtistSongOrder, Song } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
+import type { ArtistSongOrder, Song } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
 
-import type { Device } from './harness/device';
-import { never } from './harness/hold';
+import type { Device } from './harness/device.ts';
+import { never } from './harness/hold.ts';
 import {
   COLLECTED_ALBUMS,
   listener,
   PLAYLISTS_WITH_POEMS,
-} from './harness/listener';
-import { signIn } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { signIn } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtLikedTracks, reopen, replyLibrary } = listener(world, {

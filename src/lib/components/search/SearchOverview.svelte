@@ -3,32 +3,32 @@
   import { SearchX } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
-  import { creditLine, playlistName } from '#lib/api/library.js';
+  import { creditLine, playlistName } from '#lib/api/library.ts';
   import type {
     SearchedItems,
     SearchedPlaylist,
     SearchKind,
-  } from '#lib/api/search.js';
-  import type { SearchList } from '#lib/app/search.js';
+  } from '#lib/api/search.ts';
+  import type { SearchList } from '#lib/app/search.ts';
 
   import AlbumTile from '../library/AlbumTile.svelte';
   import ArtistTile from '../library/ArtistTile.svelte';
   import PlaylistTile from '../library/PlaylistTile.svelte';
   import TileGrid from '../library/TileGrid.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { reveal } from '../shared/motion';
-  import { formatSongCount, yearOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { reveal } from '../shared/motion.ts';
+  import { formatSongCount, yearOf } from '../shared/text.ts';
   import SkeletonRows from '../songs/SkeletonRows.svelte';
   import SongList from '../songs/SongList.svelte';
   import StateBlock from '../ui/StateBlock.svelte';
   import TextButton from '../ui/TextButton.svelte';
-  import { selectSearchTab } from './search-box.svelte';
+  import { selectSearchTab } from './search-box.svelte.ts';
   import {
     KIND_WORDS,
     OVERVIEW_COUNTS,
     searchFailure,
     searchPath,
-  } from './view';
+  } from './view.ts';
 
   interface Props {
     keyword: string;

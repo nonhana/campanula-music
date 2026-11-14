@@ -7,14 +7,14 @@ import type {
   DragSortState,
   GridTrack,
   RowTrack,
-} from '#lib/components/shared/drag-sort.js';
+} from '#lib/components/shared/drag-sort.ts';
 import {
   createDragSortSession,
   gridTrack,
   movedBefore,
   rowTrack,
-} from '#lib/components/shared/drag-sort.js';
-import type { PointerSample } from '#lib/components/shared/press.js';
+} from '#lib/components/shared/drag-sort.ts';
+import type { PointerSample } from '#lib/components/shared/press.ts';
 
 interface Setup {
   ids?: readonly number[];

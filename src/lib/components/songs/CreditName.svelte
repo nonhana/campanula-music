@@ -1,10 +1,10 @@
 <script lang="ts">
   import { page } from '$app/state';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import type { CreditKind, CreditTarget } from './credit-link';
-  import { creditLink } from './credit-link';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import type { CreditKind, CreditTarget } from './credit-link.ts';
+  import { creditLink } from './credit-link.ts';
 
   interface Props {
     kind: CreditKind;

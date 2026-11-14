@@ -2,7 +2,7 @@ import {
   canSortPlaylist,
   playlistKindOf,
   reorderSortable,
-} from '#lib/api/library.js';
+} from '#lib/api/library.ts';
 
 import type {
   PlaylistDetailBody,

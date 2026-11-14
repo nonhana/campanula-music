@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { fade, grow } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { fade, grow } from '../shared/motion.ts';
   import NowBars from './NowBars.svelte';
 
   const {

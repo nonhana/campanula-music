@@ -1,14 +1,14 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
 
-  import { playlistName } from '#lib/api/library.js';
-  import type { SearchedPlaylist } from '#lib/api/search.js';
+  import { playlistName } from '#lib/api/library.ts';
+  import type { SearchedPlaylist } from '#lib/api/search.ts';
 
-  import { collectState } from '../library/collect';
+  import { collectState } from '../library/collect.ts';
   import CollectButton from '../library/CollectButton.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { stagger } from '../shared/motion';
-  import { formatPlays, formatSongCount, langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { stagger } from '../shared/motion.ts';
+  import { formatPlays, formatSongCount, langOf } from '../shared/text.ts';
   import Cover from '../ui/Cover.svelte';
   import Tag from '../ui/Tag.svelte';
 

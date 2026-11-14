@@ -3,14 +3,17 @@
   import { onDestroy } from 'svelte';
 
   import OfflineBar, { OFFLINE_BAR_HEIGHT } from '../notice/OfflineBar.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import { createNowLocate, setNowLocate } from '../shared/now-locate.svelte';
-  import { setScrollLookup } from '../shared/scroll-marks';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import {
+    createNowLocate,
+    setNowLocate,
+  } from '../shared/now-locate.svelte.ts';
+  import { setScrollLookup } from '../shared/scroll-marks.ts';
   import Scrollbar from '../ui/Scrollbar.svelte';
   import PageLocateButton from './PageLocateButton.svelte';
-  import { playerDockBottom, playerDockTop } from './player-dock';
+  import { playerDockBottom, playerDockTop } from './player-dock.ts';
   import PlayerDock from './PlayerDock.svelte';
-  import { pageScrollPadding, stickyBelowHeader } from './scroll-padding';
+  import { pageScrollPadding, stickyBelowHeader } from './scroll-padding.ts';
 
   interface Props {
     railExpanded: boolean;

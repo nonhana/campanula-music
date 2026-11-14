@@ -1,11 +1,11 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { SmsLoginRequest } from '#lib/api/login.js';
-import { CAPTCHA, PHONE } from '#lib/api/login.js';
-import { deviceIdFor, saveLogin } from '#lib/server/credentials.js';
-import { configFor } from '#lib/server/netease/config.js';
-import { loginWithCaptcha } from '#lib/server/netease/login.js';
-import { readFields } from '#lib/server/request.js';
-import { withNetease } from '#lib/server/respond.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { SmsLoginRequest } from '#lib/api/login.ts';
+import { CAPTCHA, PHONE } from '#lib/api/login.ts';
+import { deviceIdFor, saveLogin } from '#lib/server/credentials.ts';
+import { configFor } from '#lib/server/netease/config.ts';
+import { loginWithCaptcha } from '#lib/server/netease/login.ts';
+import { readFields } from '#lib/server/request.ts';
+import { withNetease } from '#lib/server/respond.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request, cookies }) => {

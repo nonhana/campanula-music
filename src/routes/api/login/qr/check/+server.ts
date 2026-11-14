@@ -1,10 +1,10 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { QrCheckRequest } from '#lib/api/login.js';
-import { deviceIdFor, saveLogin } from '#lib/server/credentials.js';
-import { configFor } from '#lib/server/netease/config.js';
-import { checkLoginQr, fetchAccount } from '#lib/server/netease/login.js';
-import { QR_KEY, readFields } from '#lib/server/request.js';
-import { withNetease } from '#lib/server/respond.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { QrCheckRequest } from '#lib/api/login.ts';
+import { deviceIdFor, saveLogin } from '#lib/server/credentials.ts';
+import { configFor } from '#lib/server/netease/config.ts';
+import { checkLoginQr, fetchAccount } from '#lib/server/netease/login.ts';
+import { QR_KEY, readFields } from '#lib/server/request.ts';
+import { withNetease } from '#lib/server/respond.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request, cookies }) => {

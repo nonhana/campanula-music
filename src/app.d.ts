@@ -3,7 +3,7 @@ declare global {
   const __CAMPANULA_MOCK__: boolean;
   namespace App {
     interface PageState {
-      overlays?: import('./lib/components/overlay/overlay-stack').OverlayMarker;
+      overlays?: import('./lib/components/overlay/overlay-stack.ts').OverlayMarker;
     }
   }
 }

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getOverlays } from '../overlay/overlay-context';
+  import { getOverlays } from '../overlay/overlay-context.ts';
   import PlayerNotice from '../player/PlayerNotice.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
   import OperationNotice from './OperationNotice.svelte';
 
   type Place = 'desktop' | 'top' | 'bottom';

@@ -12,11 +12,11 @@ import type {
   PlaySource,
   PlayUrlResponse,
   Quality,
-} from '#lib/api/playback.js';
-import type { WriteResponse } from '#lib/api/write.js';
+} from '#lib/api/playback.ts';
+import type { WriteResponse } from '#lib/api/write.ts';
 
-import { lyricsOf } from '../lyrics';
-import { shapeChanged } from './failure';
+import { lyricsOf } from '../lyrics.ts';
+import { shapeChanged } from './failure.ts';
 
 const https = (url: string): string => url.replace(/^http:\/\//, 'https://');
 

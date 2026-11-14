@@ -2,8 +2,8 @@
   import type { ResolvedPathname } from '$app/types';
   import type { ClassValue } from 'svelte/elements';
 
-  import { fade } from '../shared/motion';
-  import { formatCount } from '../shared/text';
+  import { fade } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
 
   interface Props {
     tabs: readonly {

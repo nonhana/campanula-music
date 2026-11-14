@@ -4,10 +4,10 @@ import { join } from 'node:path';
 import { parseBuffer } from 'music-metadata';
 import { describe, expect, it } from 'vitest';
 
-import type { AlbumResponse, Song } from '#lib/api/library.js';
-import type { LyricsResponse } from '#lib/api/playback.js';
-import type { SongInfo } from '#lib/app/song-info-core.js';
-import { writeSongInfo } from '#lib/app/song-info-core.js';
+import type { AlbumResponse, Song } from '#lib/api/library.ts';
+import type { LyricsResponse } from '#lib/api/playback.ts';
+import type { SongInfo } from '#lib/app/song-info-core.ts';
+import { writeSongInfo } from '#lib/app/song-info-core.ts';
 
 const AUDIO = join(import.meta.dirname, 'fixtures/audio');
 const bytesOf = (name: string): Uint8Array<ArrayBuffer> =>

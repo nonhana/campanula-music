@@ -1,15 +1,15 @@
 <script lang="ts">
   import { Check, CircleAlert, Clock, Pause, X } from '@lucide/svelte';
 
-  import { songTitle } from '#lib/api/library.js';
-  import type { DownloadTask } from '#lib/app/downloads.js';
+  import { songTitle } from '#lib/api/library.ts';
+  import type { DownloadTask } from '#lib/app/downloads.ts';
 
-  import { desktopLayout } from '../shared/layout';
-  import { artistLine, formatMegabytes, langOf } from '../shared/text';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { artistLine, formatMegabytes, langOf } from '../shared/text.ts';
   import Cover from '../ui/Cover.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import TextButton from '../ui/TextButton.svelte';
-  import { downloadFailureText } from './view';
+  import { downloadFailureText } from './view.ts';
 
   const {
     task,

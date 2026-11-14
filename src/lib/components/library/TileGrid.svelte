@@ -2,11 +2,11 @@
   import type { LucideIcon } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
-  import { fadeAway, reveal, stagger } from '../shared/motion';
+  import { fadeAway, reveal, stagger } from '../shared/motion.ts';
   import StateBlock from '../ui/StateBlock.svelte';
   import Shelf from './Shelf.svelte';
-  import type { TileGridLayout, TileKind } from './tile-grid';
-  import { tileCellClass, tileGridLook, tileListClass } from './tile-grid';
+  import type { TileGridLayout, TileKind } from './tile-grid.ts';
+  import { tileCellClass, tileGridLook, tileListClass } from './tile-grid.ts';
   import TileBone from './TileBone.svelte';
 
   interface Props {

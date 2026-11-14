@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getAppView } from '../shared/app-context.svelte';
-  import type { SeekSlider } from './seek-slider.svelte';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import type { SeekSlider } from './seek-slider.svelte.ts';
 
   const { slider }: { slider: SeekSlider } = $props();
   const view = getAppView();

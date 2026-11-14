@@ -1,6 +1,6 @@
 <script lang="ts">
   import DownloadsPage from '#lib/components/downloads/DownloadsPage.svelte';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.js';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
 
   let query = $state('');
   scrollSnapshot(

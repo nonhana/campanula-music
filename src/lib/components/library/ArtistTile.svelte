@@ -2,10 +2,10 @@
   import { resolve } from '$app/paths';
   import { UserRound } from '@lucide/svelte';
 
-  import { langOf } from '../shared/text';
+  import { langOf } from '../shared/text.ts';
   import Cover from '../ui/Cover.svelte';
   import CollectButton from './CollectButton.svelte';
-  import { FLIGHT_COVER_SIZE } from './flight';
+  import { FLIGHT_COVER_SIZE } from './flight.ts';
 
   interface Props {
     id: number;

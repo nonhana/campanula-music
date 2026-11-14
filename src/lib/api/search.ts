@@ -1,4 +1,4 @@
-import type { Credit, Song } from './library';
+import type { Credit, Song } from './library.ts';
 
 export type Suggestion =
   | { kind: 'song'; name: string }

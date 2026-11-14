@@ -2,14 +2,14 @@ import { IDBDatabase, IDBFactory } from 'fake-indexeddb';
 import type { Cookie } from 'tough-cookie';
 import { CookieJar } from 'tough-cookie';
 
-import type { App } from '#lib/app/app.js';
-import { createApp } from '#lib/app/app.js';
+import type { App } from '#lib/app/app.ts';
+import { createApp } from '#lib/app/app.ts';
 import type {
   BrowserCapabilities,
   ChannelCapability,
   Clock,
   NetworkStatus,
-} from '#lib/app/browser.js';
+} from '#lib/app/browser.ts';
 
 import {
   FakeAudio,
@@ -26,8 +26,8 @@ import {
   FakeStorage,
   FakeWatchman,
   MediaTasks,
-} from './browser';
-import { held } from './hold';
+} from './browser.ts';
+import { held } from './hold.ts';
 
 export interface SentRequest {
   method: string;

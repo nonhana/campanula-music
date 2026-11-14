@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PointerSample } from '#lib/components/shared/press.js';
-import { touchClaim } from '#lib/components/shared/press.js';
-import { createSliderCore } from '#lib/components/shared/slider-core.js';
+import type { PointerSample } from '#lib/components/shared/press.ts';
+import { touchClaim } from '#lib/components/shared/press.ts';
+import { createSliderCore } from '#lib/components/shared/slider-core.ts';
 
 const setup = ({
   beginValue = (sample: PointerSample) => sample.x / 100,

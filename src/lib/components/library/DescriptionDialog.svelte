@@ -3,9 +3,9 @@
 
   import DialogBody from '../overlay/DialogBody.svelte';
   import DialogShell from '../overlay/DialogShell.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { DescriptionRequest } from '../overlay/overlay-requests';
-  import { langOf } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { DescriptionRequest } from '../overlay/overlay-requests.ts';
+  import { langOf } from '../shared/text.ts';
   import LongText from '../ui/LongText.svelte';
   import TextButton from '../ui/TextButton.svelte';
 

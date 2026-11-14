@@ -20,7 +20,7 @@ import { queryKey, recordedQuery } from './query-key.ts';
 import { readFixture } from './read-fixture.ts';
 import type { MockConfig, ScenarioName } from './scenarios.ts';
 import { configOf, isScenarioName } from './scenarios.ts';
-import { sdkModules } from './sdk-modules';
+import { sdkModules } from './sdk-modules.ts';
 import type { SeedName } from './seed.ts';
 import { POEMS_PLAYLIST } from './seed.ts';
 import type { MockResult } from './store.ts';

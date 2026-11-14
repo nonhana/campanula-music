@@ -2,12 +2,12 @@ import { Buffer } from 'node:buffer';
 
 import { describe, expect, it } from 'vitest';
 
-import type { Song } from '#lib/api/library.js';
-import type { App } from '#lib/app/app.js';
+import type { Song } from '#lib/api/library.ts';
+import type { App } from '#lib/app/app.ts';
 
-import type { Device, Tab } from './harness/device';
-import { loadFixture } from './harness/fixtures';
-import { held, never } from './harness/hold';
+import type { Device, Tab } from './harness/device.ts';
+import { loadFixture } from './harness/fixtures.ts';
+import { held, never } from './harness/hold.ts';
 import {
   ALBUM_MISSING,
   checkIns,
@@ -28,9 +28,9 @@ import {
   serveDownload as serve,
   storedCheckIns,
   VILLAGE,
-} from './harness/listener';
-import { signIn } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { signIn } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const {

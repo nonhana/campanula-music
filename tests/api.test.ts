@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { post } from '#lib/api/endpoint.js';
-import type { WriteResponse } from '#lib/api/write.js';
-import { createApi } from '#lib/app/api-client.js';
+import { post } from '#lib/api/endpoint.ts';
+import type { WriteResponse } from '#lib/api/write.ts';
+import { createApi } from '#lib/app/api-client.ts';
 
-import { FakeLocks } from './harness/browser';
+import { FakeLocks } from './harness/browser.ts';
 
 const endpoint = post<WriteResponse, { data: string }>(() => '/api/fake');
 

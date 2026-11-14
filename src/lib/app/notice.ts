@@ -1,9 +1,9 @@
-import type { Playlist, Song } from '#lib/api/library.js';
+import type { Playlist, Song } from '#lib/api/library.ts';
 
-import type { Clock } from './browser';
-import type { Change } from './changes';
-import type { DownloadNotice } from './downloads';
-import type { ChangeFailure, SyncFailure } from './library';
+import type { Clock } from './browser.ts';
+import type { Change } from './changes.ts';
+import type { DownloadNotice } from './downloads.ts';
+import type { ChangeFailure, SyncFailure } from './library.ts';
 
 export type NoticeAction = 'undo' | 'retry' | 'dismiss' | 'resume';
 

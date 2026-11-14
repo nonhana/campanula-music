@@ -1,7 +1,7 @@
 import { createContext } from 'svelte';
 
-import { clamp } from './clamp';
-import { scrollBehavior } from './motion';
+import { clamp } from './clamp.ts';
+import { scrollBehavior } from './motion.ts';
 
 export interface NowRow {
   top: number;

@@ -10,14 +10,14 @@
   import { onDestroy } from 'svelte';
   import { flip } from 'svelte/animate';
 
-  import type { DownloadTask } from '#lib/app/downloads.js';
+  import type { DownloadTask } from '#lib/app/downloads.ts';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout, desktopPanelTop } from '../shared/layout';
-  import { float, moveMs } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
-  import { formatCount } from '../shared/text';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout, desktopPanelTop } from '../shared/layout.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { float, moveMs } from '../shared/motion.ts';
+  import { formatCount } from '../shared/text.ts';
   import Button from '../ui/Button.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import TextButton from '../ui/TextButton.svelte';
@@ -28,12 +28,12 @@
     panelOpensOn,
     panelRows,
     visiblePanelTasks,
-  } from './download-panel-core';
-  import type { LeavingTask, PanelRow } from './download-panel-core';
+  } from './download-panel-core.ts';
+  import type { LeavingTask, PanelRow } from './download-panel-core.ts';
   import DownloadLeavingRow from './DownloadLeavingRow.svelte';
   import DownloadTaskRow from './DownloadTaskRow.svelte';
-  import { bytesPerSecond, formatSpeed, SPEED_WINDOW_MS } from './speed';
-  import type { SpeedSample } from './speed';
+  import { bytesPerSecond, formatSpeed, SPEED_WINDOW_MS } from './speed.ts';
+  import type { SpeedSample } from './speed.ts';
 
   const view = getAppView();
   const { downloadPanel: panel } = getOverlays();

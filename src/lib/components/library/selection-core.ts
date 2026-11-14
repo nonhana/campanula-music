@@ -1,5 +1,5 @@
-import type { Song } from '#lib/api/library.js';
-import type { PlaySource } from '#lib/api/playback.js';
+import type { Song } from '#lib/api/library.ts';
+import type { PlaySource } from '#lib/api/playback.ts';
 
 export interface Checked {
   readonly ids: ReadonlySet<number>;

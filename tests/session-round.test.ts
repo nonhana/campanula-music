@@ -1,20 +1,20 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it, vi } from 'vitest';
 
-import { endpoints } from '#lib/api/endpoints.js';
-import type { Api, Result } from '#lib/app/api-client.js';
-import type { App } from '#lib/app/app.js';
-import { createLocalDatabase } from '#lib/app/local.js';
-import type { BackgroundLane } from '#lib/app/pacing.js';
-import type { Player, PlayerState } from '#lib/app/player.js';
-import { INITIAL_PLAYER } from '#lib/app/player.js';
-import type { SavedPlayerStore } from '#lib/app/saved-queue.js';
-import { createSavedQueue } from '#lib/app/saved-queue.js';
-import { createSessionRound } from '#lib/app/session-round.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { Api, Result } from '#lib/app/api-client.ts';
+import type { App } from '#lib/app/app.ts';
+import { createLocalDatabase } from '#lib/app/local.ts';
+import type { BackgroundLane } from '#lib/app/pacing.ts';
+import type { Player, PlayerState } from '#lib/app/player.ts';
+import { INITIAL_PLAYER } from '#lib/app/player.ts';
+import type { SavedPlayerStore } from '#lib/app/saved-queue.ts';
+import { createSavedQueue } from '#lib/app/saved-queue.ts';
+import { createSessionRound } from '#lib/app/session-round.ts';
 
-import type { FakeAudio } from './harness/browser';
-import type { Device, Tab } from './harness/device';
-import { held, never } from './harness/hold';
+import type { FakeAudio } from './harness/browser.ts';
+import type { Device, Tab } from './harness/device.ts';
+import { held, never } from './harness/hold.ts';
 import {
   ALBUM_MISSING,
   checkIns,
@@ -23,9 +23,9 @@ import {
   listener,
   serveDownload,
   storedCheckIns,
-} from './harness/listener';
-import { ANOTHER_ACCOUNT, renewCookies, signIn } from './harness/sign-in';
-import { useWorld } from './harness/world';
+} from './harness/listener.ts';
+import { ANOTHER_ACCOUNT, renewCookies, signIn } from './harness/sign-in.ts';
+import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
 const { signInAtLikedTracks, signInWithLiked, replyLibrary } = listener(world);

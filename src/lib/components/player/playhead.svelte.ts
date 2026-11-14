@@ -1,6 +1,6 @@
-import type { PlayerState } from '#lib/app/player.js';
+import type { PlayerState } from '#lib/app/player.ts';
 
-import { reducedMotion } from '../shared/motion';
+import { reducedMotion } from '../shared/motion.ts';
 
 export interface Playhead {
   readonly now: number;

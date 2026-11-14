@@ -2,9 +2,9 @@ import { onNavigate } from '$app/navigation';
 import type { RouteId } from '$app/types';
 import { onMount } from 'svelte';
 
-import type { Toward } from '../shared/motion';
-import { reducedMotion } from '../shared/motion';
-import { LANDING_WAIT } from '../shared/motion-tokens';
+import { LANDING_WAIT } from '../shared/motion-tokens.ts';
+import type { Toward } from '../shared/motion.ts';
+import { reducedMotion } from '../shared/motion.ts';
 
 type PageTurn = Toward | 'fade';
 

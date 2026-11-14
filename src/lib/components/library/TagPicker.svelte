@@ -1,11 +1,11 @@
 <script lang="ts">
   import { X } from '@lucide/svelte';
 
-  import type { PlaylistTagGroup } from '#lib/api/library.js';
-  import { PLAYLIST_TAGS_MAX } from '#lib/api/library.js';
-  import type { PageState } from '#lib/app/library.js';
+  import type { PlaylistTagGroup } from '#lib/api/library.ts';
+  import { PLAYLIST_TAGS_MAX } from '#lib/api/library.ts';
+  import type { PageState } from '#lib/app/library.ts';
 
-  import { failureText } from '../shared/failure';
+  import { failureText } from '../shared/failure.ts';
   import Button from '../ui/Button.svelte';
   import FilterChip from '../ui/FilterChip.svelte';
   import Scrollbar from '../ui/Scrollbar.svelte';

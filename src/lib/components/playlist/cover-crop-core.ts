@@ -1,6 +1,6 @@
-import type { CoverCrop } from '#lib/api/cover.js';
+import type { CoverCrop } from '#lib/api/cover.ts';
 
-import { clamp } from '../shared/clamp';
+import { clamp } from '../shared/clamp.ts';
 
 export interface CropFrame {
   width: number;

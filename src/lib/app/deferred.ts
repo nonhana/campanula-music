@@ -1,19 +1,19 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { Playlist } from '#lib/api/library.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { Playlist } from '#lib/api/library.ts';
 import {
   canSortPlaylist,
   reorderSortable,
   TRACKS_PER_CHANGE,
-} from '#lib/api/library.js';
-import type { WriteResponse } from '#lib/api/write.js';
+} from '#lib/api/library.ts';
+import type { WriteResponse } from '#lib/api/write.ts';
 
-import type { Clock, PageVisibility } from './browser';
-import type { Change, ConfirmedChange, DeferredChange } from './changes';
-import { targetOf } from './changes';
-import type { ChangeFailure } from './library';
-import type { LocalDb, Replica } from './local';
-import type { Notices } from './notice';
-import type { SessionResult, SessionRound } from './session-round';
+import type { Clock, PageVisibility } from './browser.ts';
+import type { Change, ConfirmedChange, DeferredChange } from './changes.ts';
+import { targetOf } from './changes.ts';
+import type { ChangeFailure } from './library.ts';
+import type { LocalDb, Replica } from './local.ts';
+import type { Notices } from './notice.ts';
+import type { SessionResult, SessionRound } from './session-round.ts';
 
 const REMOVE_UNDO_MS = 5000;
 const ORDER_MERGE_MS = 2000;

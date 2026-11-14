@@ -2,15 +2,15 @@
   import { resolve } from '$app/paths';
   import { Lock } from '@lucide/svelte';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { formatSongCount, langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { formatSongCount, langOf } from '../shared/text.ts';
   import NowBars from '../songs/NowBars.svelte';
   import Cover from '../ui/Cover.svelte';
   import Tag from '../ui/Tag.svelte';
-  import { collectState } from './collect';
+  import { collectState } from './collect.ts';
   import CollectButton from './CollectButton.svelte';
-  import { FLIGHT_COVER_SIZE } from './flight';
-  import { ROW_COVER_SIZE } from './tile-grid';
+  import { FLIGHT_COVER_SIZE } from './flight.ts';
+  import { ROW_COVER_SIZE } from './tile-grid.ts';
 
   interface Props {
     id: number;

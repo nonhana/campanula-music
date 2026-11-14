@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Check, CircleAlert, X } from '@lucide/svelte';
 
-  import { toast } from '../shared/motion';
+  import { toast } from '../shared/motion.ts';
 
   type Tone = 'success' | 'error';
 

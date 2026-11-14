@@ -1,21 +1,21 @@
-import { endpoints, searchPage } from '#lib/api/endpoints.js';
-import type { Song } from '#lib/api/library.js';
+import { endpoints, searchPage } from '#lib/api/endpoints.ts';
+import type { Song } from '#lib/api/library.ts';
 import type {
   SearchedItems,
   SearchKind,
   SearchPageResponse,
   Suggestion,
-} from '#lib/api/search.js';
-import { SEARCH_KINDS, SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.js';
+} from '#lib/api/search.ts';
+import { SEARCH_KINDS, SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.ts';
 
-import type { Clock } from './browser';
-import type { LocalDb } from './local';
+import type { Clock } from './browser.ts';
+import type { LocalDb } from './local.ts';
 import type {
   SessionApi,
   SessionFailure,
   SessionResult,
   SessionRound,
-} from './session-round';
+} from './session-round.ts';
 
 export const SUGGEST_DELAY = 200;
 const SEARCH_HISTORY_MAX = 20;

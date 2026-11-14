@@ -1,18 +1,18 @@
 <script lang="ts">
   import { ListMusic, SkipBack, SkipForward } from '@lucide/svelte';
 
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
   import HeartButton from '../songs/HeartButton.svelte';
   import IconButton from '../ui/IconButton.svelte';
-  import { currentSong } from './now';
+  import { currentSong } from './now.ts';
   import NowPlaying from './NowPlaying.svelte';
   import PlayButton from './PlayButton.svelte';
   import PlayModeButton from './PlayModeButton.svelte';
   import { QUEUE_PANEL_ID } from './QueuePanel.svelte';
-  import { createSeekSlider } from './seek-slider.svelte';
+  import { createSeekSlider } from './seek-slider.svelte.ts';
   import SeekLine from './SeekLine.svelte';
-  import { formatSeconds, PAGE_COVER } from './view';
+  import { formatSeconds, PAGE_COVER } from './view.ts';
   import VolumeControl from './VolumeControl.svelte';
 
   const view = getAppView();

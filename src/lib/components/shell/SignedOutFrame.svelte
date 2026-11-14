@@ -7,19 +7,22 @@
   import PhoneSelectionActionBar from '../library/PhoneSelectionActionBar.svelte';
   import PhoneSelectionTopBar from '../library/PhoneSelectionTopBar.svelte';
   import OfflineBar, { OFFLINE_BAR_HEIGHT } from '../notice/OfflineBar.svelte';
-  import { setOverlays } from '../overlay/overlay-context';
+  import { setOverlays } from '../overlay/overlay-context.ts';
   import OverlayHost from '../overlay/OverlayHost.svelte';
-  import { createOverlays } from '../overlay/overlays.svelte';
+  import { createOverlays } from '../overlay/overlays.svelte.ts';
   import PlayerLayer from '../player/PlayerLayer.svelte';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
-  import { createNowLocate, setNowLocate } from '../shared/now-locate.svelte';
-  import { setScrollLookup } from '../shared/scroll-marks';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
+  import {
+    createNowLocate,
+    setNowLocate,
+  } from '../shared/now-locate.svelte.ts';
+  import { setScrollLookup } from '../shared/scroll-marks.ts';
   import Scrollbar from '../ui/Scrollbar.svelte';
   import PageLocateButton from './PageLocateButton.svelte';
-  import { playerDockBottom, playerDockTop } from './player-dock';
+  import { playerDockBottom, playerDockTop } from './player-dock.ts';
   import PlayerDock from './PlayerDock.svelte';
-  import { pageScrollPadding } from './scroll-padding';
+  import { pageScrollPadding } from './scroll-padding.ts';
 
   const { children }: { children: Snippet } = $props();
   const view = getAppView();

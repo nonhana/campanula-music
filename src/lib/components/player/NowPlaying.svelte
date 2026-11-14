@@ -1,18 +1,21 @@
 <script lang="ts">
   import type { ClassValue } from 'svelte/elements';
 
-  import { songTitle } from '#lib/api/library.js';
+  import { songTitle } from '#lib/api/library.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { fade } from '../shared/motion';
-  import { DURATIONS } from '../shared/motion-tokens';
-  import { langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { DURATIONS } from '../shared/motion-tokens.ts';
+  import { fade } from '../shared/motion.ts';
+  import { langOf } from '../shared/text.ts';
   import CreditLine from '../songs/CreditLine.svelte';
   import SongBadge from '../songs/SongBadge.svelte';
-  import { landingOf } from './cover-flight.svelte';
+  import { landingOf } from './cover-flight.svelte.ts';
   import CoverWheel from './CoverWheel.svelte';
-  import { currentSong } from './now';
-  import { playerPageActions, prefetchPageCover } from './player-page.svelte';
+  import { currentSong } from './now.ts';
+  import {
+    playerPageActions,
+    prefetchPageCover,
+  } from './player-page.svelte.ts';
   import SongSwap from './SongSwap.svelte';
 
   interface Props {

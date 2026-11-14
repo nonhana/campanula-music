@@ -1,6 +1,6 @@
-import type { ArtistSongOrder } from '#lib/api/library.js';
-import { ARTIST_SONG_ORDERS } from '#lib/api/library.js';
-import type { ArtistTab } from '#lib/app/library.js';
+import type { ArtistSongOrder } from '#lib/api/library.ts';
+import { ARTIST_SONG_ORDERS } from '#lib/api/library.ts';
+import type { ArtistTab } from '#lib/app/library.ts';
 
 export const ARTIST_TABS: readonly { key: ArtistTab; label: string }[] = [
   { key: 'songs', label: '歌曲' },

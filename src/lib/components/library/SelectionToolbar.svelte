@@ -1,9 +1,9 @@
 <script lang="ts">
   import { CheckCheck, ListChecks, SquareMinus, X } from '@lucide/svelte';
 
-  import { anchorBelow } from '../menu/menu-anchor';
-  import { getOverlays } from '../overlay/overlay-context';
-  import { formatCount } from '../shared/text';
+  import { anchorBelow } from '../menu/menu-anchor.ts';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { formatCount } from '../shared/text.ts';
 
   const { multiSelect: selection } = getOverlays();
   const none = $derived(selection.picked.length === 0);

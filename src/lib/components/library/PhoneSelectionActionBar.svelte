@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getOverlays } from '../overlay/overlay-context';
+  import { getOverlays } from '../overlay/overlay-context.ts';
 
   const { multiSelect } = getOverlays();
   const none = $derived(multiSelect.picked.length === 0);

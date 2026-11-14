@@ -1,7 +1,7 @@
-import { creditLine, songTitle, thumbnailUrl } from '#lib/api/library.js';
+import { creditLine, songTitle, thumbnailUrl } from '#lib/api/library.ts';
 
-import type { Clock, MediaSessionCapability } from './browser';
-import type { Player, PlayerState } from './player';
+import type { Clock, MediaSessionCapability } from './browser.ts';
+import type { Player, PlayerState } from './player.ts';
 
 const ARTWORK_SIZE = 512;
 // 浏览器推算的进度和实际差出这么多秒就重新告诉它

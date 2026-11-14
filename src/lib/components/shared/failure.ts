@@ -1,4 +1,4 @@
-import type { RequestFailure } from '#lib/app/api-client.js';
+import type { RequestFailure } from '#lib/app/api-client.ts';
 
 export const failureText = (failure: RequestFailure): string => {
   switch (failure.kind) {

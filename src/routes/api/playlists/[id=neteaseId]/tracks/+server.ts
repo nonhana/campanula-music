@@ -1,8 +1,8 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import { TRACKS_PER_CHANGE } from '#lib/api/library.js';
-import { addTracks } from '#lib/server/netease/playlist.js';
-import { readIds } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import { TRACKS_PER_CHANGE } from '#lib/api/library.ts';
+import { addTracks } from '#lib/server/netease/playlist.ts';
+import { readIds } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request, cookies }) => {

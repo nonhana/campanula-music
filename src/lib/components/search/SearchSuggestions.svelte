@@ -8,18 +8,18 @@
     UserRound,
   } from '@lucide/svelte';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { langOf } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { langOf } from '../shared/text.ts';
   import FilterChip from '../ui/FilterChip.svelte';
   import TextButton from '../ui/TextButton.svelte';
-  import type { SuggestionRow } from './search-box.svelte';
+  import type { SuggestionRow } from './search-box.svelte.ts';
   import {
     searchBox,
     SUGGESTION_LIST_ID,
     suggestionId,
     suggestionRows,
-  } from './search-box.svelte';
-  import { matchedParts, SUGGESTION_KINDS } from './view';
+  } from './search-box.svelte.ts';
+  import { matchedParts, SUGGESTION_KINDS } from './view.ts';
 
   interface Props {
     phone?: boolean;

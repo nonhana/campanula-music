@@ -18,17 +18,17 @@
   } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
-  import type { Account } from '#lib/api/account.js';
+  import type { Account } from '#lib/api/account.ts';
 
   import Brand from '../boot/Brand.svelte';
   import DailyNumber from '../daily/DailyNumber.svelte';
-  import { dailyCalendarDay } from '../daily/view';
+  import { dailyCalendarDay } from '../daily/view.ts';
   import DownloadPanel from '../downloads/DownloadPanel.svelte';
   import PhoneSelectionActionBar from '../library/PhoneSelectionActionBar.svelte';
   import PhoneSelectionTopBar from '../library/PhoneSelectionTopBar.svelte';
-  import { setOverlays } from '../overlay/overlay-context';
+  import { setOverlays } from '../overlay/overlay-context.ts';
   import OverlayHost from '../overlay/OverlayHost.svelte';
-  import { createOverlays } from '../overlay/overlays.svelte';
+  import { createOverlays } from '../overlay/overlays.svelte.ts';
   import PlayerLayer from '../player/PlayerLayer.svelte';
   import DesktopSearchBox from '../search/DesktopSearchBox.svelte';
   import PhoneSearchBar from '../search/PhoneSearchBar.svelte';
@@ -36,17 +36,17 @@
     resetSearchBox,
     showingResults,
     shownKeyword,
-  } from '../search/search-box.svelte';
+  } from '../search/search-box.svelte.ts';
   import SearchTabs from '../search/SearchTabs.svelte';
-  import { searchTabOf } from '../search/view';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
+  import { searchTabOf } from '../search/view.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
   import IconButton from '../ui/IconButton.svelte';
   import AccountMenu from './AccountMenu.svelte';
   import BackTitle from './BackTitle.svelte';
   import DesktopShell from './DesktopShell.svelte';
-  import { backPage, forwardPage, pageHistory } from './page-history';
-  import { pageTransitions } from './page-transition';
+  import { backPage, forwardPage, pageHistory } from './page-history.ts';
+  import { pageTransitions } from './page-transition.ts';
   import PhoneShell from './PhoneShell.svelte';
 
   const { account, children }: { account: Account; children: Snippet } =

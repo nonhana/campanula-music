@@ -1,10 +1,10 @@
-import { endpoints } from '#lib/api/endpoints.js';
+import { endpoints } from '#lib/api/endpoints.ts';
 import {
   createPlaylist,
   fetchPlaylists,
-} from '#lib/server/netease/playlist.js';
-import { readId, readPlaylistDraft } from '#lib/server/request.js';
-import { respondSignedIn } from '#lib/server/session.js';
+} from '#lib/server/netease/playlist.ts';
+import { readId, readPlaylistDraft } from '#lib/server/request.ts';
+import { respondSignedIn } from '#lib/server/session.ts';
 
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ url, cookies, request }) => {

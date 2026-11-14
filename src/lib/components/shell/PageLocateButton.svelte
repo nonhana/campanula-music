@@ -1,7 +1,7 @@
 <!-- 挂在外框这一层：放进会做 transform 的祖先里，fixed 会跟着跑 -->
 <script lang="ts">
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { NowLocate } from '../shared/now-locate.svelte';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { NowLocate } from '../shared/now-locate.svelte.ts';
   import LocateNowButton from '../songs/LocateNowButton.svelte';
 
   const { locate, desktop }: { locate: NowLocate; desktop: boolean } = $props();

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Trash2 } from '@lucide/svelte';
 
-  import type { MenuItem } from '../menu/menu';
+  import type { MenuItem } from '../menu/menu.ts';
   import MenuOverlay from '../menu/MenuOverlay.svelte';
-  import { getOverlays } from '../overlay/overlay-context';
-  import type { MenuRequest } from '../overlay/overlay-requests';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { playlistDownloadSources } from './view';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import type { MenuRequest } from '../overlay/overlay-requests.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { playlistDownloadSources } from './view.ts';
 
   const view = getAppView();
   const { downloadsMenu, playlistDownloads } = getOverlays();

@@ -3,13 +3,13 @@
 </script>
 
 <script lang="ts">
-  import { getOverlays } from '../overlay/overlay-context';
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout, desktopPanelTop } from '../shared/layout';
-  import { float } from '../shared/motion';
-  import { focusNowRow } from '../shared/now-locate.svelte';
+  import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout, desktopPanelTop } from '../shared/layout.ts';
+  import { float } from '../shared/motion.ts';
+  import { focusNowRow } from '../shared/now-locate.svelte.ts';
   import QueueList from './QueueList.svelte';
-  import { queueEmpty } from './view';
+  import { queueEmpty } from './view.ts';
 
   const view = getAppView();
   const { queuePanel: layer } = getOverlays();

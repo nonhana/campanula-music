@@ -1,10 +1,10 @@
-import { endpoints } from '#lib/api/endpoints.js';
-import type { WriteResponse } from '#lib/api/write.js';
+import { endpoints } from '#lib/api/endpoints.ts';
+import type { WriteResponse } from '#lib/api/write.ts';
 
-import type { Api, Result } from './api-client';
-import type { LocksCapability } from './browser';
-import type { PendingCheckIn, PendingCheckIns } from './saved-queue';
-import type { SessionRound } from './session-round';
+import type { Api, Result } from './api-client.ts';
+import type { LocksCapability } from './browser.ts';
+import type { PendingCheckIn, PendingCheckIns } from './saved-queue.ts';
+import type { SessionRound } from './session-round.ts';
 
 // 同一浏览器的标签页共用本机打卡，同时只让一个标签页发，免得一条发两次
 const CHECK_IN_LOCK = 'campanula:check-ins';

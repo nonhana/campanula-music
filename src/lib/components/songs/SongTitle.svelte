@@ -1,11 +1,11 @@
 <!-- 按钮里不能放链接：creditsOutside 时歌手一行画在外面，这里只留读屏用的一份 -->
 <script lang="ts">
-  import type { Song } from '#lib/api/library.js';
-  import { songTitle } from '#lib/api/library.js';
+  import type { Song } from '#lib/api/library.ts';
+  import { songTitle } from '#lib/api/library.ts';
 
-  import { artistLine, langOf } from '../shared/text';
+  import { artistLine, langOf } from '../shared/text.ts';
   import DownloadMark from './DownloadMark.svelte';
-  import type { SongLook } from './song-look';
+  import type { SongLook } from './song-look.ts';
   import SongBadge from './SongBadge.svelte';
 
   interface Props {

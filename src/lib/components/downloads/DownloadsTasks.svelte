@@ -1,11 +1,11 @@
 <script lang="ts">
   import { WifiOff } from '@lucide/svelte';
 
-  import type { DownloadTask } from '#lib/app/downloads.js';
+  import type { DownloadTask } from '#lib/app/downloads.ts';
 
-  import { getAppView } from '../shared/app-context.svelte';
-  import { desktopLayout } from '../shared/layout';
-  import { formatCount } from '../shared/text';
+  import { getAppView } from '../shared/app-context.svelte.ts';
+  import { desktopLayout } from '../shared/layout.ts';
+  import { formatCount } from '../shared/text.ts';
   import Button from '../ui/Button.svelte';
   import VirtualList from '../ui/VirtualList.svelte';
   import DownloadTaskRow from './DownloadTaskRow.svelte';

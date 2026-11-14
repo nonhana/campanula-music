@@ -1,15 +1,15 @@
 import type { Attachment } from 'svelte/attachments';
 
-import type { Glide } from './drag-scroll-core';
+import type { Glide } from './drag-scroll-core.ts';
 import {
   createDragScrollCore,
   frictionGlide,
   glideEnd,
   glideTolerance,
   springGlide,
-} from './drag-scroll-core';
-import { reducedMotion } from './motion';
-import { attachWindowGrip, createPageHold } from './press';
+} from './drag-scroll-core.ts';
+import { reducedMotion } from './motion.ts';
+import { attachWindowGrip, createPageHold } from './press.ts';
 
 export const dragScroll: Attachment<HTMLElement> = (element) => {
   const holdPage = createPageHold();

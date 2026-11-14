@@ -17,7 +17,7 @@ import {
   userPlaylist,
 } from 'hana-music-api';
 
-import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.js';
+import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.ts';
 import type {
   Playlist,
   PlaylistCollectRequest,
@@ -25,11 +25,11 @@ import type {
   PlaylistPageResponse,
   PlaylistTagGroup,
   PlaylistUnavailable,
-} from '#lib/api/library.js';
-import { playlistKindOf } from '#lib/api/library.js';
-import type { WriteResponse } from '#lib/api/write.js';
+} from '#lib/api/library.ts';
+import { playlistKindOf } from '#lib/api/library.ts';
+import type { WriteResponse } from '#lib/api/write.ts';
 
-import { NeteaseError, rejection, shapeChanged } from './failure';
+import { NeteaseError, rejection, shapeChanged } from './failure.ts';
 
 const PLAYLISTS_PER_CALL = 1000;
 

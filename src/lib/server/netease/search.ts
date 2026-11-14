@@ -8,10 +8,10 @@ import type {
   SearchKind,
   SearchPageResponse,
   SuggestionsResponse,
-} from '#lib/api/search.js';
-import { SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.js';
+} from '#lib/api/search.ts';
+import { SEARCH_RESULTS_PER_REQUEST } from '#lib/api/search.ts';
 
-import { creditOf, songWithPrivilegeOf } from './songs';
+import { creditOf, songWithPrivilegeOf } from './songs.ts';
 
 const lookalike = (name: string): string =>
   name.normalize('NFKC').replace(/[\u301C\u223C]/g, '~');
