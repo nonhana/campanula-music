@@ -5,8 +5,8 @@ import {
   FOUR_PLAYABLE_PLAYLIST,
   LIKED_PLAYLIST,
   POEMS_PLAYLIST,
-} from '../../src/lib/server/mock/seed.ts';
-import { MockStore } from '../../src/lib/server/mock/store.ts';
+} from '../_kit/mock/seed.ts';
+import { MockStore } from '../_kit/mock/store.ts';
 
 const store = new MockStore('before');
 

@@ -12,7 +12,7 @@ pnpm test:contract tests/contract/api.test.ts
 pnpm test
 ```
 
-同一条播放用例既在单文件命令中运行，也在默认套件中运行。`-t` 过滤用例全名；Vitest 的其他运行参数也可以追加。文件或全名选不到用例时会失败。受控套件只提供已经存在的入口：`test:unit`、`test:behavior`、`test:contract`；浏览器、a11y 和候选产物的入口由后续票交付。
+同一条播放用例既在单文件命令中运行，也在默认套件中运行。`-t` 过滤用例全名；Vitest 的其他运行参数也可以追加。文件或全名选不到用例时会失败。受控套件提供 `test:unit`、`test:behavior`、`test:contract` 和 `test:environment`；浏览器、a11y 和候选产物的入口由后续票交付。
 
 | 目录                           | 输入与可观察输出                                                | 证据范围                                                                              |
 | ------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -23,13 +23,13 @@ pnpm test
 | `delivery/mock-server.test.ts` | 实际 HTTP 请求 → mock 装配后的响应                              | 既有开发环境自检，随默认套件运行；不证明 Node/Vercel 候选产物                         |
 | `_kit/`、`fixtures/`、`tools/` | 设备、时钟、严格 SDK 替身；有来源的录制；启动和诊断             | 共用测试基础设施，产品覆盖率单独计算                                                  |
 
-`tests/suites.ts` 是 Vitest、runner 和 CI 共用的文件选择。它检查每个必需套件非空、每个发现的文件恰好归属一层、迁移基线中的必需文件都存在。新增测试放进对应目录即可；根目录漏放、目录重叠或删掉必需文件会直接失败。单用例时限为 15 秒，容纳 V8 精准采集下真实 HTTP 和本机保存的开销；业务等待仍用受控时钟验证。World 仍共用 Kit 测试输出，暂时串行跑文件；也请将测试、类型检查和构建顺序运行。
+`tests/suites.ts` 是 Vitest、runner 和 CI 共用的文件选择。它检查每个必需套件非空、每个发现的文件恰好归属一层、迁移基线中的必需文件都存在。新增测试放进对应目录即可；根目录漏放、目录重叠或删掉必需文件会直接失败。单用例时限为 15 秒，容纳 V8 精准采集下真实 HTTP 和本机保存的开销；业务等待仍用受控时钟验证。Vitest 自身及每个 World 都有独占临时工作根，`$app`、env、Kit 和缓存不再写回产品根。文件仍串行运行以保持受控时钟和 V8 采集口径；测试、类型检查和构建也继续顺序运行。
 
 ## 迁移清单与回归结果
 
 [baselines/migration.json](baselines/migration.json) 来自开工提交 `9c2ec71b6cbf025f6f25fdb1a84cbd8584d94cec` 的实际 JSON 测试报告：42 文件、755 用例，全部 passed，跳过 0。每条都保留原路径、全名、原结果及迁入路径。`session-round` 中 3 条纯核心用例迁入 `unit`，其余继续走 `behavior`，用例全名不改。
 
-`pnpm test` 全量成功后逐项核对基线，漏用例、重复执行或从 passed 改为跳过都会失败；新增用例单独列出。产物在 `.reports/all/`：`tests.json` 是 Vitest 真实结果，`suites.json` 按证据层列文件，`migration.json` 列保留与新增。按文件 / 全名运行时只报告所选用例，不冒充全量迁移通过。
+`pnpm test` 全量成功后逐项核对基线，漏用例、重复执行或从 passed 改为跳过都会失败；新增用例单独列出。产物在 `.reports/runs/<本次运行>/all/`：`tests.json` 是 Vitest 真实结果，`suites.json` 按证据层列文件，`migration.json` 列保留与新增。按文件 / 全名运行时只报告所选用例，不冒充全量迁移通过。
 
 ## 覆盖率：先确认采集到了什么
 
@@ -38,7 +38,7 @@ pnpm test:coverage
 pnpm test:coverage:calibrate
 ```
 
-第一个命令运行同一份默认回归并核对迁移，产物在 `.reports/coverage/`；第二个只跑“未登录打开 App”的既有行为，用独立目录 `.reports/calibration/` 校准。它要求账号 `GET` 处理函数实际执行、未请求的歌单改名路由计数为零，任一不符就失败。CI 顺序运行这两个命令并上传本次 SHA 的报告。
+第一个命令运行同一份默认回归并核对迁移，产物在 `.reports/runs/<本次运行>/coverage/`；第二个只跑“未登录打开 App”的既有行为，用独立目录 本次校准运行的 `coverage/` 校准。它要求账号 `GET` 处理函数实际执行、未请求的歌单改名路由计数为零，任一不符就失败。CI 顺序运行这两个命令并上传本次 SHA 的报告。
 
 - `partitions.json`：完整 `src`、扣除 mock / 开发页的产品、App、服务端、API 路由、Svelte UI、测试基建分别列文件数、命中数和分母。
 - `summary.md`：各分区行与分支的命中数、分母和百分比。
@@ -46,8 +46,36 @@ pnpm test:coverage:calibrate
 - `ssr.json`：独立 SSR 的映射结果；`ssr-raw/` 保留 V8 计数和执行时的代码 / 源码映射，便于定位漏采或映射错误。
 - `calibration.json`：账号处理函数命中和未请求路由的零值对照，仅校准命令产生。
 
-采集使用 Vitest / V8 5.1.0，产品分母纳入 `src/**/*.ts` 和 `src/**/*.svelte`、排除声明，保留未运行文件。现有 `src/lib/server/mock/`、`src/lib/dev/` 与 `tests/` 工具归测试基建；`src` 一栏保留完整分母，`product` 扣除前两者后另列，不能拿基建抬高产品覆盖率。独立 Vite module runner 的脚本使用绝对路径 `sourceURL`，标准采集器只收 `file://` 而漏掉它；测试采集器从同一次 V8 快照保留这些脚本，以当次内联源码映射转换后合并，不靠“请求过”人工填命中。
+采集使用 Vitest / V8 5.1.0，产品分母纳入 `src/**/*.ts` 和 `src/**/*.svelte`、排除声明，保留未运行文件。mock 已由 `src/lib/server/mock/` 移入 `tests/_kit/mock/`；`src/lib/dev/` 与 `tests/` 工具归测试基建，`product` 扣除开发页。`src` 的减少来自目录迁移及删除 mock-flag，不能写成新增行为覆盖。保留原始分区基线与阈值，并用相同 App / API 路由分区和 SSR 校准作可比较证据。独立 Vite module runner 的脚本使用绝对路径 `sourceURL`，标准采集器只收 `file://` 而漏掉它；测试采集器从同一次 V8 快照保留这些脚本，以当次内联源码映射转换后合并，不靠“请求过”人工填命中。
 
 157 个 `.svelte` 文件没有浏览器执行记录，报告明确标为未采集。它们仍在全 `src` 分母内，零值不证明界面行为；`.svelte.ts` 中的浏览器适配、Service Worker、安装和系统行为也不能由纯规则或 App 的替身证明。浏览器旅程 / a11y 自动化由 Spec #96 的后续票接入，真实账号、Android 系统与真实读屏仍由作者验收。
 
 基线复测、校准前后分母、风险排序和新增回归的对照见 [baselines/coverage.md](baselines/coverage.md)。覆盖率数值只比较同口径分区；修正 SSR 漏采带来的增加与新增断言带来的增加分别记录。
+
+## 独立开发环境
+
+```sh
+pnpm dev:setup                    # 首次显式准备证书，再自行完成解析与信任
+pnpm dev:proxy                    # 单独保持回环代理运行
+pnpm dev                          # https://local.campanula.test，产品实现
+pnpm dev:mock                     # https://mock.campanula.test，稳定人工 mock
+pnpm dev:http                     # localhost:5173，显式 HTTP
+pnpm dev:mock:http                # 127.0.0.1:5174，显式 HTTP mock
+pnpm test:environment             # delivery 环境回归，默认 pnpm test 也会运行
+pnpm test:environment tests/delivery/environment.test.ts
+pnpm test:environment:https       # 显式专项，需要 Caddy/OpenSSL；独立信任与高位端口
+```
+
+`tests/_kit/environment.ts` 输出 baseURL、internalURL（代理后端地址）、root、PID、reset、close。HTTPS 的 reset 使用外部 origin，调用方提供只信任本次 CA 的 request 客户端。临时环境有自己的子进程和新密钥，不读取作者 `.env`；人工 mock 使用 `.campanula/mock` 稳定根与身份。node_modules 本身不链接，只逐个链接已安装的包；可写缓存和 `$app` 留在自己的根。启动失败、取消或关闭释放自己的端口和锁；临时根删除，稳定根保留密钥，重复启动明确失败。World 的严格队列在所属 Vitest worker 中运行，环境变量经该根的 `.env` 生成，受控时钟/日志保持原断言。
+
+`tests/delivery/environment.test.ts` 验证两种启动顺序、同 Cookie jar 的合成会话、普通生成文件和缓存、并发改名、reset、退出、重启、空 jar、端口冲突和取消后重试。普通环境的合成 Cookie 由产品凭据函数生成，时间固定到需要续期，HTTP 返回续期要求，避免调用真实网易云。mock HTTP 合同保留在 mock-server 回归。结果在 本次运行的 `delivery/`；每个 fixture 结束留下 `.reports/environments/*.json`，含实际地址、根、PID、退出、阶段与日志，不记录密钥或会话。
+
+reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另建 jar/context。HTTPS 的临时源码与证书、正常校验和 WSS/HMR 结果在 `.reports/https/<本次专项>/result.json`，人工配置和迁移见 [双 HTTPS](tools/https/README.md)。环境网络探针不证明页面渲染、IndexedDB、焦点或新路由；这些由 #100 接手。真账号、Android、系统选择器和真实读屏仍由作者试用。
+
+历史加密 Cookie 的兼容回归保留原始 header，并在 `credentials.test.ts` 显式使用样本中声明的合成测试密钥；这份只用于兼容检查的密钥不作为其他 World 或开发环境的默认值。
+
+每个测试命令都打印独占的 `.reports/runs/run-*/`，测试 JSON、迁移、套件和覆盖率报告保存在该目录。`.reports/latest-all.json`、`latest-delivery.json`、`latest-calibration.json` 只是原子更新的导航，含本次目录与状态；并发命令不会清空对方的结果。HTTPS 同样使用独占报告目录，由 `latest-https.json` 指向结果。旧 `.reports/all` / `coverage` 目录不再写入，不能作为本次证据。
+
+覆盖率同时采集 World 所属 worker 和环境子进程的真实 V8 数据，按各自执行时的源码映射合并。`sourceBeforeMove` 按 `baselines/environment-source-map.json` 纳入原来位于 src 的十份 mock 文件，继续执行原 src 的 47% 行 / 39% 分支阈值；当前 src 单列，产品、App、服务端和 API 路由保持原阈值。源码逐文件完整性门禁保留全部未运行文件。这样可以区分目录迁移和实际断言变化，不拿搬目录制造提升。
+
+默认开发命令会检查证书与代理，缺准备时明确退出并指向 `dev:setup` / `dev:proxy`；不会悄悄降为 HTTP。HTTPS 专项以临时目录和端口运行真实命令入口，检查主日志显示 HTTPS、两站响应以及缺代理的失败；普通离线回归只检查缺证书的指引，不依赖 Caddy/OpenSSL。

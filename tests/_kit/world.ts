@@ -1,7 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createHttpServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { format } from 'node:util';
 
@@ -16,6 +15,7 @@ import type { Device, DeviceTraits } from './device.ts';
 import { createDevice, SENT_HEADER } from './device.ts';
 import { loadFixture } from './fixtures.ts';
 import type { Call, RequestSpan } from './netease-sdk.ts';
+import { createWorkspace } from './workspace.ts';
 
 const FAKE_SDK = fileURLToPath(new URL('./netease-sdk.ts', import.meta.url));
 const START = new Date('2026-10-12T00:00:00Z');
@@ -23,10 +23,8 @@ const START = new Date('2026-10-12T00:00:00Z');
 export const REAL_IP = '203.0.113.7';
 
 const SITE_ENV = {
-  COOKIE_SECRET: 'campanula-test-secret-0123456789abcdefghijklmnopqrstuv',
   NETEASE_REAL_IP: REAL_IP,
 };
-export const TEST_OUT_DIR = '.svelte-kit-test';
 const LOG_METHODS = ['debug', 'log', 'info', 'warn', 'error'] as const;
 
 interface ServerLog {
@@ -110,82 +108,94 @@ const captureServerLogs = (serving: AsyncLocalStorage<RequestSpan>) => {
 /* eslint-enable no-console */
 
 interface WorldOptions {
-  env?: Partial<typeof SITE_ENV>;
+  env?: { COOKIE_SECRET?: string; NETEASE_REAL_IP?: string };
 }
 
 const startWorld = async (options: WorldOptions = {}) => {
-  Object.assign(process.env, SITE_ENV, options.env);
-  const vite = await createServer({
-    configFile: false,
-    cacheDir: '.reports/world-cache',
-    logLevel: 'silent',
-    server: {
-      middlewareMode: true,
-      hmr: false,
-      ws: false,
-      watch: null,
-    },
-    plugins: [replaceSdk(), sveltekit({ outDir: TEST_OUT_DIR })],
+  const workspace = await createWorkspace({
+    env: { ...SITE_ENV, ...options.env },
   });
-  const { runner } = vite.environments.ssr as RunnableDevEnvironment;
-  const fake = (await runner.import(
-    FAKE_SDK,
-  )) as typeof import('./netease-sdk.ts');
-  const probe = (await runner.import(
-    SDK_PROBE,
-  )) as typeof import('./netease-sdk.ts');
-  if (
-    Object.entries(fake).some(
-      ([name, value]) => probe[name as keyof typeof probe] !== value,
-    )
-  ) {
-    await vite.close();
-    throw new Error(
-      '服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云',
-    );
-  }
-
-  const serving = new AsyncLocalStorage<RequestSpan>();
-  const http = createHttpServer((req, res) => {
-    const sent = Number(req.headers[SENT_HEADER]);
-    serving.run(
-      {
-        start: Number.isInteger(sent) ? sent : fake.nextOrder(),
+  const cleanup: (() => Promise<unknown>)[] = [workspace.close];
+  try {
+    const vite = await createServer({
+      configFile: false,
+      root: workspace.root,
+      envDir: workspace.root,
+      cacheDir: 'node_modules/.vite',
+      logLevel: 'silent',
+      server: {
+        middlewareMode: true,
+        hmr: false,
+        ws: false,
+        watch: null,
       },
-      () => vite.middlewares(req, res),
-    );
-  });
-  await new Promise<void>((resolve) => http.listen(0, 'localhost', resolve));
-  const { port } = http.address() as AddressInfo;
-  const closeServers = async () => {
-    http.closeAllConnections();
-    await new Promise((resolve) => http.close(resolve));
-    await vite.close();
-  };
-  fake.trackRequests(() => serving.getStore());
+      plugins: [replaceSdk(), sveltekit()],
+    });
+    cleanup.unshift(() => vite.close());
+    const { runner } = vite.environments.ssr as RunnableDevEnvironment;
+    const fake = (await runner.import(
+      FAKE_SDK,
+    )) as typeof import('./netease-sdk.ts');
+    const probe = (await runner.import(
+      SDK_PROBE,
+    )) as typeof import('./netease-sdk.ts');
+    if (
+      Object.entries(fake).some(
+        ([name, value]) => probe[name as keyof typeof probe] !== value,
+      )
+    ) {
+      throw new Error(
+        '服务端代码 import 的 hana-music-api 不是网易云替身，测试可能连到真的网易云',
+      );
+    }
 
-  const serverLogs = captureServerLogs(serving);
-  const timers = withGlobal(globalThis).install({
-    now: START,
-    toFake: ['Date'],
-  });
+    const serving = new AsyncLocalStorage<RequestSpan>();
+    const http = createHttpServer((req, res) => {
+      const sent = Number(req.headers[SENT_HEADER]);
+      serving.run(
+        {
+          start: Number.isInteger(sent) ? sent : fake.nextOrder(),
+        },
+        () => vite.middlewares(req, res),
+      );
+    });
+    cleanup.unshift(async () => {
+      http.closeAllConnections();
+      await new Promise((resolve) => http.close(resolve));
+    });
+    await new Promise<void>((resolve, reject) => {
+      http.once('error', reject);
+      http.listen(0, 'localhost', resolve);
+    });
+    const { port } = http.address() as AddressInfo;
+    fake.trackRequests(() => serving.getStore());
 
-  return {
-    origin: `http://localhost:${port}`,
-    fake,
-    timers,
-    serverLogs: serverLogs.logs,
-    reset() {
-      fake.reset();
-      serverLogs.logs.length = 0;
-      timers.reset();
-    },
-    async close() {
-      timers.uninstall();
-      serverLogs.restore();
-      await closeServers();
-    },
-  };
+    const serverLogs = captureServerLogs(serving);
+    const timers = withGlobal(globalThis).install({
+      now: START,
+      toFake: ['Date'],
+    });
+
+    return {
+      origin: `http://localhost:${port}`,
+      fake,
+      timers,
+      serverLogs: serverLogs.logs,
+      reset() {
+        fake.reset();
+        serverLogs.logs.length = 0;
+        timers.reset();
+      },
+      async close() {
+        timers.uninstall();
+        serverLogs.restore();
+        for (const close of cleanup) await close();
+      },
+    };
+  } catch (error) {
+    for (const close of cleanup) await close();
+    throw error;
+  }
 };
 
 export const useWorld = (options: WorldOptions = {}): World => {

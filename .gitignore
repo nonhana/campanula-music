@@ -26,3 +26,5 @@ _notes/
 
 /.svelte-kit-vitest
 /.reports/
+
+/.campanula/

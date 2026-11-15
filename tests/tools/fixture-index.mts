@@ -4,10 +4,10 @@ import process from 'node:process';
 import { fileURLToPath as toPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-import { fixtureOutcome } from '../../src/lib/server/mock/fixture-format.ts';
-import { queryKey } from '../../src/lib/server/mock/query-key.ts';
-import { readFixture } from '../../src/lib/server/mock/read-fixture.ts';
 import { loadFixture } from '../_kit/fixtures.ts';
+import { fixtureOutcome } from '../_kit/mock/fixture-format.ts';
+import { queryKey } from '../_kit/mock/query-key.ts';
+import { readFixture } from '../_kit/mock/read-fixture.ts';
 
 const ROOT = join(import.meta.dirname, '../..');
 const FIXTURES = join(ROOT, 'tests/fixtures/netease');

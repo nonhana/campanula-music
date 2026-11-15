@@ -36,10 +36,12 @@ Spec #96 增加受控浏览器旅程和 a11y 层，使用自行启动的 Chromiu
 - 写新测试前先看 `tests/_kit/listener.ts`：从按领域命名的登录、同步停点、本机副本读取和请求过滤场景开始；只有新的听众行为才在测试文件里加准备步骤。
 - 网易云的返回只用验证关卡录下、脱敏过的数据（`tests/fixtures/netease/`），用 `world.netease.reply()` 放进去，不连真实账号。
 - 缺录制数据时用 `scripts/netease-record.mts`（`pnpm tsx` 跑）录，做法和脱敏规则见 `tests/fixtures/netease/README.md`「录制」。录制用的登录 Cookie 用 `pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi.sh`）取；录制开始前会确认登录有效，失效时停下来请作者在专用窗口里扫码。
-- SDK 替身在 `tests/_kit/netease-sdk.ts`，具名调用由 `src/lib/server/mock/sdk-modules.ts` 绑定到原录制队列；`world.ts` 的隔离探针核对全部导出。只有替身自身能从真实 SDK 根入口复用设备编号和失败读取工具，业务调用仍被替换。
+- SDK 替身在 `tests/_kit/netease-sdk.ts`，具名调用由 `tests/_kit/mock/sdk-modules.ts` 绑定到原录制队列；`world.ts` 的隔离探针核对全部导出。只有替身自身能从真实 SDK 根入口复用设备编号和失败读取工具，业务调用仍被替换。
 - `fixtures.ts` 校验录制返回体，`mock/fixture-format.ts` 为历史返回补 SDK 5 的失败元数据；`mock/query-key.ts` 只在匹配时转换历史参数表示，录制文件和来源保留。
-- 缺哪种浏览器能力的替身，就在这张票里加进 `src/lib/app/browser.ts` 和 `tests/_kit/browser.ts`。
+- 缺哪种浏览器能力的替身，就在这张票里补产品能力与 `tests/_kit/browser.ts`，交互 mock 从 `tests/_kit/mock` 外部装配。
 
 ## 会话重试的回归
 
 只读请求在业务 301 后最多续期一次，写入默认不自动重放。包含写入和后续查询的流程，通过 App 操作验证已经成功的写入只有一次、重读保持原编号、失败不存成本机成功；创建歌单的 301 和连接中断样本明确标为构造场景。带 token 写入也要断言失败后没有隐式重放，听众再次操作时浏览器取得新 token。不要按 HTTP GET/POST 推断读写。
+
+环境生命周期回归用 `pnpm test:environment`，与默认套件复用 delivery 选择；每份临时环境有独占子进程、工作根和密钥，World 与 Vitest 自身也使用独立根，避免重写普通开发的 `$app` 与 env。HTTPS 用显式专项 `pnpm test:environment:https`，见测试导航和 ADR-0020。

@@ -25,7 +25,7 @@ scripts/browser.sh axe            # 扫描当前 mock 页面，完整报告存�
 ```
 
 - 一次性 smoke：`pnpm dev:mock` 开着时跑 `pnpm smoke:mock`（自动登录、同步、打开歌单、写入、刷新、重置）。
-- 默认是 mock：会话 `campanula-mock`，profile `~/.cache/campanula-axi/mock-profile`，开发服务器 `http://localhost:5174`（先 `pnpm dev:mock`）。mock 的登录 Cookie 是 `campanula_login_mock`，和真账号的 `campanula_login` 分开；同一个浏览器开两个端口也不会互相顶掉。
+- 默认是 mock：会话 `campanula-mock`，profile `~/.cache/campanula-axi/mock-profile`，开发服务器 `https://mock.campanula.test`（先 `pnpm dev:mock`）。mock 与普通开发使用不同主机和独立密钥；自动化另有临时工作根。切换主机需要重新登录，设备数据仍归原 origin。
 - 真账号加 `--real`：复用专用浏览器 `scripts/axi.sh`（会话 `campanula`，profile `~/.cache/campanula-axi/chrome-profile`，开发服务器 5173）。不会另开窗口。
 - 命令之间用 `~/.cache/campanula-axi/browser.lock` 加文件锁。锁被占时先看持锁的进程；确认它已经停了再删锁，不要并发操作。`sweep.py` 会直接调 DevTools，跑它的时候不要再开另一个 agent 操作同一个浏览器。
 
@@ -38,7 +38,7 @@ scripts/browser.sh open /
 scripts/playwright.sh attach
 scripts/playwright.sh snapshot
 scripts/playwright.sh tracing-start
-scripts/playwright.sh goto http://localhost:5174/playlists/900000024
+scripts/playwright.sh goto https://mock.campanula.test/playlists/900000024
 scripts/playwright.sh tracing-stop
 scripts/playwright.sh detach
 scripts/playwright.sh show-trace _notes/playwright/traces
@@ -91,4 +91,6 @@ reviewer 只看 diff，不碰浏览器。截图、动效逐帧、浏览器检查
 
 ## 和界面验收 skill 的关系
 
-`campanula-ui-acceptance` 的 `sweep.py` 默认连 mock：`CAMPANULA_BROWSER_ORIGIN` 默认 `http://localhost:5174`，端口用 `scripts/browser.sh port` 拿；要拍真账号时设 `CAMPANULA_BROWSER=real`，并先 `check --real`。mock 下写入是安全的，但截图前仍要按 skill 的拦截规则看清是在拍什么状态。
+`campanula-ui-acceptance` 的 `sweep.py` 默认连 mock：`CAMPANULA_BROWSER_ORIGIN` 默认 `https://mock.campanula.test`，端口用 `scripts/browser.sh port` 拿；要拍真账号时设 `CAMPANULA_BROWSER=real`，并先 `check --real`。mock 下写入是安全的，但截图前仍要按 skill 的拦截规则看清是在拍什么状态。
+
+常用 dev / dev:mock 默认 HTTPS；先按 `tests/tools/https/README.md` 显式准备证书、解析与信任，再启动 dev:proxy。HTTP 备用命令为 dev:http / dev:mock:http，浏览器工具通过 CAMPANULA_BROWSER_ORIGIN 显式选择对应 HTTP origin。

@@ -1,0 +1,16 @@
+{
+  "baseline": "cfe76d527ae3b6d5408f1747edd0835ed83198b7",
+  "moved": {
+    "src/lib/server/mock/assets.ts": "tests/_kit/mock/assets.ts",
+    "src/lib/server/mock/fixture-format.ts": "tests/_kit/mock/fixture-format.ts",
+    "src/lib/server/mock/query-key.ts": "tests/_kit/mock/query-key.ts",
+    "src/lib/server/mock/read-fixture.ts": "tests/_kit/mock/read-fixture.ts",
+    "src/lib/server/mock/runtime.ts": "tests/_kit/mock/runtime.ts",
+    "src/lib/server/mock/scenarios.ts": "tests/_kit/mock/scenarios.ts",
+    "src/lib/server/mock/sdk-modules.ts": "tests/_kit/mock/sdk-modules.ts",
+    "src/lib/server/mock/seed.ts": "tests/_kit/mock/seed.ts",
+    "src/lib/server/mock/store.ts": "tests/_kit/mock/store.ts",
+    "src/lib/server/mock/vite-plugin.ts": "tests/_kit/mock/vite-plugin.ts"
+  },
+  "removed": ["src/lib/mock-flag.ts"]
+}

@@ -8,7 +8,6 @@ import {
   COVER_OUTPUT_SIZE,
   COVER_WORK_MAX_SIDE,
 } from '#lib/api/cover.ts';
-import { mock } from '#lib/mock-flag.ts';
 
 export interface BrowserCapabilities {
   fetch: (path: string, init?: RequestInit) => Promise<Response>;
@@ -153,7 +152,6 @@ export interface PageVisibility {
 }
 
 const watchmanToken = async (): Promise<string> => {
-  if (mock) return 'mock-watchman-token';
   const watchman = await initializeWatchman({
     businessKey: 'afb1a8e61222dcc4b7a733ca69f089cb',
   });

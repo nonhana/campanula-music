@@ -54,9 +54,9 @@ jobs:
         with:
           name: tests-${{ github.sha }}
           path: |
-            .reports/all/
-            .reports/coverage/
-            .reports/calibration/
+            .reports/runs/
+            .reports/latest-*.json
+            .reports/environments/
           if-no-files-found: error
           include-hidden-files: true
 
@@ -71,3 +71,34 @@ jobs:
       # #58、#61：确认 mock、录制数据、mock 路由和开发设计页没有进生产产物
       - name: 生产构建检查
         run: pnpm check:mock-isolation
+
+  https:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: 准备专项代理（只解包，不安装服务或 CA）
+        run: |
+          sudo apt-get update
+          mkdir -p "$RUNNER_TEMP/caddy"
+          cd "$RUNNER_TEMP/caddy"
+          apt-get download caddy
+          dpkg-deb -x ./*.deb .
+          echo "$RUNNER_TEMP/caddy/usr/bin" >> "$GITHUB_PATH"
+      - name: 双 HTTPS、Cookie 与 WSS/HMR
+        run: pnpm test:environment:https
+      - name: HTTPS 专项报告
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: https-${{ github.sha }}
+          path: |
+            .reports/https/
+            .reports/environments/
+          if-no-files-found: error
+          include-hidden-files: true

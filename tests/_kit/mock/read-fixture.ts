@@ -3,7 +3,7 @@ import { gunzipSync } from 'node:zlib';
 
 import type { RawFixture } from './fixture-format.ts';
 
-const BASE = new URL('../../../../tests/fixtures/netease/', import.meta.url);
+const BASE = new URL('../../fixtures/netease/', import.meta.url);
 
 export const readFixture = async (path: string): Promise<RawFixture> => {
   const bytes = await readFile(new URL(path, BASE));

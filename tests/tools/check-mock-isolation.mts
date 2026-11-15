@@ -3,7 +3,7 @@ import { join, relative } from 'node:path';
 import process from 'node:process';
 
 import { DESIGN_PAGE_MARKER } from '../../src/lib/dev/design-marker.ts';
-import { MOCK_RUNTIME_MARKER } from '../../src/lib/server/mock/runtime.ts';
+import { MOCK_RUNTIME_MARKER } from '../_kit/mock/runtime.ts';
 
 const ROOT = join(import.meta.dirname, '../..');
 const OUTPUTS = [

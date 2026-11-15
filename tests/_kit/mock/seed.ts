@@ -133,17 +133,15 @@ const detailBody = (fixture: RawFixture): PlaylistDetailBody =>
   fixture.response.body as PlaylistDetailBody;
 
 const listDetailFiles = (folder: string): Promise<string[]> =>
-  readdir(
-    new URL(`../../../../tests/fixtures/netease/${folder}/`, import.meta.url),
-  ).then((names) =>
-    names.filter((name) => name.endsWith('playlist_detail.json.gz')).sort(),
+  readdir(new URL(`../../fixtures/netease/${folder}/`, import.meta.url)).then(
+    (names) =>
+      names.filter((name) => name.endsWith('playlist_detail.json.gz')).sort(),
   );
 
 const songDetailFiles = (folder: string): Promise<string[]> =>
-  readdir(
-    new URL(`../../../../tests/fixtures/netease/${folder}/`, import.meta.url),
-  ).then((names) =>
-    names.filter((name) => name.endsWith('song_detail.json.gz')).sort(),
+  readdir(new URL(`../../fixtures/netease/${folder}/`, import.meta.url)).then(
+    (names) =>
+      names.filter((name) => name.endsWith('song_detail.json.gz')).sort(),
   );
 
 const collectInlineSongs = (

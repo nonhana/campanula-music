@@ -1,7 +1,7 @@
 import type { ModuleCallConfig, NcmApiResponse } from 'hana-music-api';
 
-import { queryKey, recordedQuery } from '#lib/server/mock/query-key.ts';
-import { sdkModules } from '#lib/server/mock/sdk-modules.ts';
+import { queryKey, recordedQuery } from './mock/query-key.ts';
+import { sdkModules } from './mock/sdk-modules.ts';
 
 export type SdkResponse = NcmApiResponse<unknown>;
 

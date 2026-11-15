@@ -4,16 +4,18 @@
 
 ## 启动
 
+先按 [双 HTTPS 导航](../../tests/tools/https/README.md) 运行 `pnpm dev:setup`，显式完成解析 / 信任，在一个终端保持 `pnpm dev:proxy`。随后：
+
 ```sh
 pnpm dev:mock
-pnpm smoke:mock   # 另开一个终端，跑一次浏览器 smoke（登录、同步、打开歌单、写入、刷新、重置）
+pnpm smoke:mock
 ```
 
-- 独立端口 `http://localhost:5174`，和普通的 `pnpm dev`（5173，真账号）同时开着也不冲突。
-- 等它启动好看日志里的 `ready in`。Vite 默认绑 `localhost`，macOS 上落在 IPv6 `::1`，探 `127.0.0.1:5174` 端口会一直超时。
-- mock 的 Vite 依赖缓存在 `node_modules/.vite-mock`，和 5173 的 `node_modules/.vite` 分开：两边配置不同（mock 多一个插件），共用时谁后启动谁重建依赖，另一边打开的页面就拿到过期模块。页面卡在空白首帧时删 `node_modules/.vite-mock` 再重启，不影响 5173。
-- mock 的 SvelteKit 输出目录是 `.svelte-kit-mock`，测试起的服务端是 `.svelte-kit-test`，都和 5173 的 `.svelte-kit` 分开：SvelteKit 开发时把环境变量的值写进 `<输出目录>/generated/dev/env/config.js`，共用时 mock 一启动、测试一跑，5173 就换成别人的 `COOKIE_SECRET`，解不开真账号的登录 Cookie，要重新扫码。它们启动时还会把 `node_modules/$app/tsconfig.json` 的 `rootDirs` 改成自己的目录，所以根目录 `tsconfig.json` 写死了 `.svelte-kit/types`。
-- 打开页面时先走一次自动登录：`http://localhost:5174/mock/login`（`scripts/browser.sh open /` 会自动带上）。登录走的是 App 真实的加密 Cookie 流程，只是凭据是 mock 的；mock 的登录 Cookie 叫 `campanula_login_mock`（`dev:mock` 设置 `LOGIN_COOKIE_NAME`），和 5173 的 `campanula_login` 分开，同一个浏览器开两个端口也不会互相顶掉登录态。
+- 默认入口 `https://mock.campanula.test/mock/login`，普通 `pnpm dev` 使用 `https://local.campanula.test/`。日志输出 HTTPS 地址；缺证书 / 代理会明确退出并给准备指引。
+- 临时 HTTP 用 `pnpm dev:mock:http`（127.0.0.1:5174），普通 HTTP 用 `pnpm dev:http`（localhost:5173）。Cookie 按主机隔离，端口不能隔离 Cookie；旧 localhost:5174 会拒绝登录 / 写入并给正确入口。
+- `.campanula/mock` 独占 Kit/env、`node_modules/$app`、Vite 缓存与密钥；只逐包链接依赖，不整体链接可写 node_modules。Ctrl+C 释放自己的锁并关闭子进程；重启沿用密钥和 Cookie，曲库回种子。
+- 作者浏览器工具默认 HTTPS。用 HTTP 时显式设 `CAMPANULA_BROWSER_ORIGIN=http://127.0.0.1:5174`；测试环境始终从 fixture 获取独占地址，不使用作者浏览器和配置。
+- 普通开发与部署的 LOGIN_COOKIE_NAME 约定不变；mock 默认使用产品 Cookie 名称，以不同主机和独立密钥隔离。
 - 页面左下角显示 `Mock · 测试数据`。
 - 操作回放与无障碍扫描走 `scripts/playwright.sh` 和 `scripts/browser.sh axe`，复用同一 mock Chrome；命令和报告约定见 `browser.md`。
 - 退出登录后，UI 的扫码 / 短信登录流程照常可用；mock 的二维码会直接成功。要回到已登录，再访问一次 `/mock/login`。

@@ -12,7 +12,7 @@ import {
 import { REAL_IP, useWorld } from '../_kit/world.ts';
 import legacyCookie from '../fixtures/session/pre-sdk-5-cookie.json';
 
-const world = useWorld();
+const world = useWorld({ env: { COOKIE_SECRET: legacyCookie.secret } });
 const { sessionModules } = listener(world);
 
 describe('网易云凭据只在加密 Cookie 里', () => {

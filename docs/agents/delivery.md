@@ -37,3 +37,9 @@
    作者在部署后的实例上照清单试过、确认后再关票。
 
 **回滚**：作者要回滚一张票的实现时，回滚后在票里留言写 1–3 行：哪里不对、下一轮别怎么做。上一轮在 GitHub 上改过的 Spec、票正文不跟着代码回滚，要手动改回。
+
+## 开发环境变更的验收
+
+改启动器、Cookie 主机或 Kit/Vite 生成目录时，运行 `pnpm test:environment`：输入两种启动顺序、同一合成 Cookie jar、并发写入、reset、关闭、端口冲突、启动取消和重试，检查 HTTP 结果、原环境生成文件及清理；报告在 本次运行的 `delivery/` 与 `.reports/environments/`。双 HTTPS 显式运行 `pnpm test:environment:https`，临时 CA 只传给客户端，不改系统信任或 hosts，报告在 `.reports/https/`。测试/类型/构建仍顺序执行，不能用时限放宽当作隔离证据。Spec #96 串行链的工程验收/关闭授权按该 Spec 执行，真账号和设备边界保留。
+
+作者开发默认用 dev / dev:mock 的 HTTPS 域名，首次显式 dev:setup + 解析 / 信任，并单独运行 dev:proxy；HTTP 备用为 dev:http / dev:mock:http。命令入口变化要由 HTTPS 专项验证真实启动日志、站点响应、缺证书 / 代理失败和清理。

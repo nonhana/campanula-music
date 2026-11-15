@@ -8,8 +8,8 @@
     "#lib/*": "./src/lib/*"
   },
   "scripts": {
-    "dev": "vite dev",
-    "dev:mock": "CAMPANULA_MOCK=1 COOKIE_SECRET=campanula-mock-development-secret-0123456789abcdef LOGIN_COOKIE_NAME=campanula_login_mock vite dev --port 5174 --strictPort",
+    "dev": "tsx tests/tools/dev-product.mts",
+    "dev:mock": "tsx tests/tools/dev-mock.mts",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
@@ -30,7 +30,13 @@
     "test:behavior": "tsx tests/tools/run.mts behavior",
     "test:contract": "tsx tests/tools/run.mts contract",
     "test:coverage": "tsx tests/tools/run.mts all --coverage",
-    "test:coverage:calibrate": "CAMPANULA_COVERAGE_CALIBRATE=1 CAMPANULA_COVERAGE_DIR=.reports/calibration tsx tests/tools/run.mts behavior tests/behavior/session.test.ts -t 未登录：没有当前账号 --coverage"
+    "test:coverage:calibrate": "CAMPANULA_COVERAGE_CALIBRATE=1 tsx tests/tools/run.mts behavior tests/behavior/session.test.ts -t 未登录：没有当前账号 --coverage",
+    "test:environment": "tsx tests/tools/run.mts delivery",
+    "test:environment:https": "tsx tests/tools/https-check.mts && tsx tests/tools/https-check.mts --interrupt-check",
+    "dev:http": "tsx tests/tools/dev-product.mts --http",
+    "dev:mock:http": "tsx tests/tools/dev-mock.mts --http",
+    "dev:setup": "tsx tests/tools/https-prepare.mts",
+    "dev:proxy": "tsx tests/tools/dev-proxy.mts"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:lint",
@@ -46,6 +52,7 @@
     "@sveltejs/kit": "catalog:build",
     "@sveltejs/vite-plugin-svelte": "catalog:build",
     "@types/node": "catalog:typescript",
+    "@types/ws": "catalog:typescript",
     "@typescript/native": "catalog:typescript",
     "@unocss/eslint-plugin": "catalog:lint",
     "@unocss/preset-rem-to-px": "catalog:ui",
@@ -73,7 +80,8 @@
     "typescript": "catalog:typescript",
     "unocss": "catalog:ui",
     "vite": "catalog:build",
-    "vitest": "catalog:test"
+    "vitest": "catalog:test",
+    "ws": "catalog:test"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged"

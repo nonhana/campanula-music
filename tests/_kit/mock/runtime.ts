@@ -29,7 +29,7 @@ import { MockStore } from './store.ts';
 export const MOCK_RUNTIME_MARKER = '__CAMPANULA_MOCK_RUNTIME__';
 
 const INDEX_FILE = new URL(
-  '../../../../tests/fixtures/netease/index.json',
+  '../../fixtures/netease/index.json',
   import.meta.url,
 );
 const SESSION_MODULES = new Set([
@@ -103,18 +103,15 @@ interface RuntimeState {
   lastCoverImgId: string;
 }
 
-// Vite 中间件和 SDK 替身是两份模块实例：状态放 globalThis，才看到同一份
-const STATE_KEY = '__CAMPANULA_MOCK_STATE__';
-const state: RuntimeState = ((globalThis as Record<string, unknown>)[
-  STATE_KEY
-] ??= {
+// 控制接口和 SDK 经同一个 SSR runner 导入，状态只属于这个模块实例。
+const state: RuntimeState = {
   config: configOf('default'),
   store: new MockStore('before'),
   calls: [],
   misses: [],
   songDetailCalls: 0,
   lastCoverImgId: 'mock-cover',
-}) as RuntimeState;
+};
 
 const index = async (): Promise<Index> => {
   indexPromise ??= readFile(INDEX_FILE, 'utf8').then(
@@ -709,11 +706,7 @@ export const invokeModule = async (
   }
 };
 
-export {
-  generateDeviceId,
-  getNcmFailureInfo,
-  isNcmApiResponse,
-} from 'hana-music-api';
+export * as assets from './assets.ts';
 
 export const {
   album,
@@ -759,3 +752,9 @@ export const {
   userPlaylist,
   verifyGetQr,
 } = sdkModules(invokeModule);
+
+export {
+  generateDeviceId,
+  getNcmFailureInfo,
+  isNcmApiResponse,
+} from 'hana-music-api';

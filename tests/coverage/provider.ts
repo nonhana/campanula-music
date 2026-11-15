@@ -1,3 +1,4 @@
+import { globSync } from 'node:fs';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import process from 'node:process';
@@ -13,7 +14,9 @@ import astV8ToIstanbul from 'ast-v8-to-istanbul';
 import type { ReportContext, Vitest } from 'vitest/node';
 import { parseAstAsync } from 'vitest/node';
 
+import { ROOT } from '../suites.ts';
 import baseline from '../baselines/coverage.json' with { type: 'json' };
+import sourceMap from '../baselines/environment-source-map.json' with { type: 'json' };
 import type { SsrScript } from './runtime.ts';
 
 export class SsrCoverageProvider extends V8CoverageProvider {
@@ -41,17 +44,20 @@ export class SsrCoverageProvider extends V8CoverageProvider {
         const sourceMap = JSON.parse(
           Buffer.from(encoded, 'base64').toString('utf8'),
         ) as NonNullable<Parameters<typeof astV8ToIstanbul>[0]['sourceMap']>;
+        const scriptURL = script.url.startsWith('file://')
+          ? script.url
+          : pathToFileURL(script.url).href;
         sourceMap.sources = sourceMap.sources.map((source) => {
           if (source === null)
             throw new Error(`SSR 源码映射没有来源：${script.url}`);
-          return new URL(source, pathToFileURL(script.url)).href;
+          return new URL(source, scriptURL).href;
         });
         ssr.merge(
           await astV8ToIstanbul({
             code: source,
             sourceMap,
             ast: await parseAstAsync(source),
-            coverage: { ...script, url: pathToFileURL(script.url).href },
+            coverage: { ...script, url: scriptURL },
             ignoreNode: (node, type) =>
               type === 'statement' &&
               node.type === 'VariableDeclarator' &&
@@ -70,30 +76,38 @@ export class SsrCoverageProvider extends V8CoverageProvider {
   }
 
   async generateReports(coverage: CoverageMap, allTestsRun?: boolean) {
+    const missing = [
+      ...globSync(['src/**/*.ts', 'src/**/*.svelte'], { cwd: ROOT }),
+      ...Object.values(sourceMap.moved),
+    ]
+      .filter((file) => !file.endsWith('.d.ts'))
+      .filter((file) => !coverage.files().includes(join(ROOT, file)));
+    if (missing.length)
+      throw new Error(
+        `覆盖率遗漏源码或迁移文件（含未运行文件）：${missing.join(', ')}`,
+      );
     await super.generateReports(coverage, allTestsRun);
     const partitions = {
       src: (file: string) => file.startsWith('src/'),
+      sourceBeforeMove: (file: string) =>
+        file.startsWith('src/') ||
+        Object.values(sourceMap.moved).includes(file),
       product: (file: string) =>
-        file.startsWith('src/') &&
-        !file.startsWith('src/lib/server/mock/') &&
-        !file.startsWith('src/lib/dev/'),
+        file.startsWith('src/') && !file.startsWith('src/lib/dev/'),
       app: (file: string) => file.startsWith('src/lib/app/'),
       server: (file: string) =>
-        (file.startsWith('src/lib/server/') &&
-          !file.startsWith('src/lib/server/mock/')) ||
+        file.startsWith('src/lib/server/') ||
         file.startsWith('src/routes/api/'),
       routes: (file: string) => file.startsWith('src/routes/api/'),
       ui: (file: string) => file.endsWith('.svelte'),
       infrastructure: (file: string) =>
-        file.startsWith('tests/') ||
-        file.startsWith('src/lib/server/mock/') ||
-        file.startsWith('src/lib/dev/'),
+        file.startsWith('tests/') || file.startsWith('src/lib/dev/'),
     };
     const summary: Record<string, CoverageSummaryData & { files: number }> = {};
     for (const [name, includes] of Object.entries(partitions)) {
       const map = createCoverageMap({});
       for (const file of coverage.files()) {
-        if (includes(relative(this.ctx.config.root, file)))
+        if (includes(relative(ROOT, file)))
           map.addFileCoverage(coverage.fileCoverageFor(file));
       }
       summary[name] = {
@@ -111,7 +125,9 @@ export class SsrCoverageProvider extends V8CoverageProvider {
       ssr: '独立 Vite module runner 的 V8 执行数据，按当次源码映射合并；原始数据见 ssr-raw，独立映射见 ssr.json',
       ui: '未采集：本套件没有启动浏览器，Svelte 的零值不代表界面已验证',
       infrastructure:
-        '测试工具、替身和现存 src/lib/server/mock、src/lib/dev，不计入 product；src 保留完整分母，contract 内的录制自检不代表听众旅程',
+        '测试工具、替身已归 tests，src/lib/dev 不计入 product；src 的 mock 目录迁移单列，不当作新增行为覆盖，contract 录制自检不代表听众旅程',
+      sourceBeforeMove:
+        '保留 src 原阈值，按 environment-source-map.json 纳入原来在 src 的 mock 文件；当前 src 另列，不把迁移当作覆盖提升。',
       runtime: {
         node: process.version,
         v8: process.versions.v8,
@@ -138,7 +154,7 @@ export class SsrCoverageProvider extends V8CoverageProvider {
     this.ctx.logger.log(table);
     if (process.env.CAMPANULA_TEST_FULL === '1') {
       for (const [name, thresholds] of Object.entries(baseline.thresholds)) {
-        const current = summary[name];
+        const current = summary[name === 'src' ? 'sourceBeforeMove' : name];
         if (!current?.files || !current.lines.total || !current.branches.total)
           throw new Error(`分区覆盖率缺少数据：${name}`);
         for (const metric of ['lines', 'branches'] as const) {
@@ -154,13 +170,10 @@ export class SsrCoverageProvider extends V8CoverageProvider {
     }
     if (process.env.CAMPANULA_COVERAGE_CALIBRATE === '1') {
       const account = coverage.fileCoverageFor(
-        join(this.ctx.config.root, 'src/routes/api/account/+server.ts'),
+        join(ROOT, 'src/routes/api/account/+server.ts'),
       );
       const unused = coverage.fileCoverageFor(
-        join(
-          this.ctx.config.root,
-          'src/routes/api/playlists/[id=neteaseId]/name/+server.ts',
-        ),
+        join(ROOT, 'src/routes/api/playlists/[id=neteaseId]/name/+server.ts'),
       );
       const source = await readFile(account.path, 'utf8');
       const handlerLine =

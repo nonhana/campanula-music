@@ -4,16 +4,16 @@ import { fileURLToPath } from 'node:url';
 
 import type { Plugin, RunnableDevEnvironment, ViteDevServer } from 'vite';
 
-import { audioWav, coverSvg, saveUpload, uploadOf } from './assets.ts';
 import type { MockConfig, ScenarioName } from './scenarios.ts';
 import { isScenarioName } from './scenarios.ts';
 
 const RUNTIME = fileURLToPath(new URL('./runtime.ts', import.meta.url));
 const CREDENTIALS = fileURLToPath(
-  new URL('../credentials.ts', import.meta.url),
+  new URL('../../../src/lib/server/credentials.ts', import.meta.url),
 );
 
 interface Configured {
+  assets: typeof import('./assets.ts');
   status: () => {
     enabled: true;
     scenario: ScenarioName;
@@ -98,6 +98,7 @@ const handle = async (
     return false;
 
   const runtime = await runtimeOf(server);
+  const { audioWav, coverSvg, saveUpload, uploadOf } = runtime.assets;
 
   if (
     path === '/mock' ||
@@ -224,13 +225,18 @@ export const mockPlugin = (): Plugin => ({
         external: true,
       };
     if (id === 'hana-music-api') return RUNTIME;
-    // 浏览器入口导入无副作用；App 的 mock 分支不调 initializer，其余子路径仍拒绝
-    if (id === 'hana-music-api/watchman') return null;
+    // token 的外部能力在测试装配时替换，其余 SDK 子路径仍拒绝
+    if (id === 'hana-music-api/watchman')
+      return fileURLToPath(new URL('./watchman.ts', import.meta.url));
     if (id.startsWith('hana-music-api/'))
       throw new Error(
         `mock 只替换了 hana-music-api 本身，服务端不能引用 ${id}`,
       );
     return null;
+  },
+  transform(code, id) {
+    if (id.endsWith('/src/routes/+layout.svelte'))
+      return `${code}\n<div style="position:fixed;bottom:12px;left:12px;z-index:9999;background:#111;color:white;border-radius:24px;padding:4px 12px;font-size:12px" aria-label="Mock 测试数据">Mock · 测试数据</div>`;
   },
   configureServer(server) {
     server.middlewares.use((req, res, next) => {

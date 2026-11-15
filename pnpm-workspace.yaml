@@ -46,8 +46,10 @@ catalogs:
     fake-indexeddb: ^6.2.8
     vitest: ^5.1.0
 
+    ws: 8.23.0
   typescript:
     '@types/node': ^26.6.6
+    '@types/ws': 8.18.2
     '@typescript/native': npm:typescript@^7.0.2
     svelte-check: ^4.7.8
     tsx: ^4.23.15

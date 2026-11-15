@@ -1,8 +1,7 @@
 import * as sdk from 'hana-music-api';
 
-import { field, fixtureOutcome } from '#lib/server/mock/fixture-format.ts';
-import { readFixture } from '#lib/server/mock/read-fixture.ts';
-
+import { field, fixtureOutcome } from './mock/fixture-format.ts';
+import { readFixture } from './mock/read-fixture.ts';
 import type { Outcome } from './netease-sdk.ts';
 
 interface StandardSchema {

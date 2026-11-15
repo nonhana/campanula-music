@@ -22,7 +22,6 @@
   import { fade, fadeAway } from '#lib/components/shared/motion.ts';
   import SignedInFrame from '#lib/components/shell/SignedInFrame.svelte';
   import SignedOutFrame from '#lib/components/shell/SignedOutFrame.svelte';
-  import { mock } from '#lib/mock-flag.ts';
   // reset 必须先于 UnoCSS 加载，否则带 type="button" 的按钮会丢底色
   import '@unocss/reset/tailwind.css';
   import 'uno.css';
@@ -99,12 +98,3 @@
     {/if}
   </div>
 {/key}
-
-{#if mock}
-  <div
-    class="fixed bottom-3 left-3 z-50 rounded-full bg-neutral-900 px-3 py-1 text-caption text-white shadow-lg"
-    aria-label="Mock 测试数据"
-  >
-    Mock · 测试数据
-  </div>
-{/if}

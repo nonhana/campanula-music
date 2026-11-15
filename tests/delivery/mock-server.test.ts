@@ -1,8 +1,3 @@
-import { createServer as createHttpServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
-
-import { sveltekit } from '@sveltejs/kit/vite';
-import { createServer } from 'vite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { CheckTokens } from '#lib/api/check-token.ts';
@@ -13,35 +8,19 @@ import {
 } from '#lib/api/check-token.ts';
 import { PLAYLIST_TRACKS_STEP_HEADER } from '#lib/api/library.ts';
 
-import { mockPlugin } from '../../src/lib/server/mock/vite-plugin.ts';
-import { TEST_OUT_DIR } from '../_kit/world.ts';
+import { startEnvironment } from '../_kit/environment.ts';
 
 let origin = '';
 let closed: () => Promise<void>;
 let cookie = '';
 
 beforeAll(async () => {
-  process.env.COOKIE_SECRET = 'campanula-mock-test-secret-0123456789abcdef';
-  process.env.LOGIN_COOKIE_NAME = 'campanula_login_mock';
-  const vite = await createServer({
-    configFile: false,
-    logLevel: 'silent',
-    server: {
-      middlewareMode: true,
-      hmr: false,
-      ws: false,
-      watch: null,
-    },
-    plugins: [mockPlugin(), sveltekit({ outDir: TEST_OUT_DIR })],
+  const environment = await startEnvironment({
+    mode: 'mock',
+    env: { LOGIN_COOKIE_NAME: 'campanula_login_mock' },
   });
-  const http = createHttpServer((req, res) => vite.middlewares(req, res));
-  await new Promise<void>((resolve) => http.listen(0, 'localhost', resolve));
-  origin = `http://localhost:${(http.address() as AddressInfo).port}`;
-  closed = async () => {
-    http.closeAllConnections();
-    await new Promise((resolve) => http.close(resolve));
-    await vite.close();
-  };
+  origin = environment.baseURL;
+  closed = environment.close;
 }, 30_000);
 
 afterAll(async () => {
@@ -218,4 +197,17 @@ describe('mock 开发服务器', () => {
     );
     await fetch(`${origin}/api/mock/reset`, { method: 'POST' });
   }, 30_000);
+  it('reset 清掉当前环境的图片直传，已清理的地址不再返回旧图片', async () => {
+    const upload = await api('/api/mock/upload/reset-image', {
+      method: 'PUT',
+      headers: { 'content-type': 'image/png' },
+      body: 'synthetic-image',
+    });
+    expect(upload.status).toBe(200);
+    expect(
+      await api('/mock-assets/uploads/reset-image').then((r) => r.text()),
+    ).toBe('synthetic-image');
+    expect((await api('/api/mock/reset', { method: 'POST' })).status).toBe(200);
+    expect((await api('/mock-assets/uploads/reset-image')).status).toBe(404);
+  });
 });

@@ -6,7 +6,7 @@ import {
   invokeModule,
   loginCredentials,
   reset,
-} from '../../src/lib/server/mock/runtime.ts';
+} from '../_kit/mock/runtime.ts';
 import { validateBody } from '../_kit/schemas.ts';
 
 const { credentials } = loginCredentials();

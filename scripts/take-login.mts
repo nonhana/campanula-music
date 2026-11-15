@@ -2,12 +2,15 @@
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import process from 'node:process';
 
 import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.ts';
 
 const ROOT = join(import.meta.dirname, '..');
 const LOGIN_FILE = join(ROOT, '_notes/campanula-login');
-const BASE = 'http://localhost:5173';
+const BASE = new URL(
+  process.env.CAMPANULA_BROWSER_ORIGIN ?? 'https://local.campanula.test',
+).origin;
 
 const port = execFileSync(join(ROOT, 'scripts/axi.sh'), ['port'], {
   encoding: 'utf8',
@@ -62,7 +65,7 @@ const requests = await call('list_network_requests', {
   resourceTypes: ['fetch'],
 });
 const reqid = new RegExp(
-  `reqid=(\\d+) GET http://localhost:5173${probe.replace('?', '\\?')}`,
+  `reqid=(\\d+) GET ${RegExp.escape(`${BASE}${probe}`)}`,
 ).exec(requests)?.[1];
 if (!reqid) throw new Error('DevTools 里没找到刚才的 /api/account 请求');
 const detail = await call('get_network_request', {

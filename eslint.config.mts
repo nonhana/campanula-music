@@ -107,7 +107,7 @@ export default antfu(
     ignores: [
       'src/lib/server/netease/**',
       'src/lib/server/credentials.ts',
-      'src/lib/server/mock/**',
+      'tests/_kit/mock/**',
       'tests/_kit/**',
     ],
     rules: {

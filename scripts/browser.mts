@@ -9,11 +9,15 @@ import type { AxeResults } from 'axe-core';
 
 import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.ts';
 
+import { requestDevelopment } from '../tests/tools/https/development.mts';
+
 const ROOT = join(import.meta.dirname, '..');
 const AXI = join(ROOT, 'scripts/axi.sh');
 const LOCK = join(homedir(), '.cache/campanula-axi/browser.lock');
-const MOCK_ORIGIN = 'http://localhost:5174';
-const REAL_ORIGIN = 'http://localhost:5173';
+const MOCK_ORIGIN =
+  process.env.CAMPANULA_BROWSER_ORIGIN ?? 'https://mock.campanula.test';
+const REAL_ORIGIN =
+  process.env.CAMPANULA_BROWSER_ORIGIN ?? 'https://local.campanula.test';
 const MOCK_PROFILE = join(homedir(), '.cache/campanula-axi/mock-profile');
 
 const args = process.argv.slice(2);
@@ -195,7 +199,7 @@ const mockStatus = async (): Promise<{
   seed: string;
   offline: boolean;
 }> => {
-  const response = await fetch(`${MOCK_ORIGIN}/api/mock/status`);
+  const response = await requestDevelopment(`${MOCK_ORIGIN}/api/mock/status`);
   if (!response.ok)
     throw new Error(`mock 开发服务器没开：先 pnpm dev:mock（${MOCK_ORIGIN}）`);
   return response.json() as Promise<{
@@ -207,7 +211,7 @@ const mockStatus = async (): Promise<{
 };
 
 const postMock = async (path: string, body?: unknown): Promise<void> => {
-  const response = await fetch(
+  const response = await requestDevelopment(
     `${MOCK_ORIGIN}${path}`,
     body === undefined
       ? { method: 'POST' }
@@ -346,7 +350,7 @@ const main = async (): Promise<void> => {
       case 'check':
         if (real) {
           try {
-            await fetch(`${REAL_ORIGIN}/api/account`);
+            await requestDevelopment(`${REAL_ORIGIN}/api/account`);
           } catch {
             throw new Error(
               `真账号开发服务器没开：先 pnpm dev（${REAL_ORIGIN}）`,
@@ -384,7 +388,7 @@ const main = async (): Promise<void> => {
       case 'open': {
         if (real) {
           try {
-            await fetch(`${REAL_ORIGIN}/api/account`);
+            await requestDevelopment(`${REAL_ORIGIN}/api/account`);
           } catch {
             throw new Error(
               `真账号开发服务器没开：先 pnpm dev（${REAL_ORIGIN}）`,
@@ -459,7 +463,9 @@ const main = async (): Promise<void> => {
           process.exitCode = 1;
           return;
         }
-        const response = await fetch(`${MOCK_ORIGIN}/api/mock/coverage`);
+        const response = await requestDevelopment(
+          `${MOCK_ORIGIN}/api/mock/coverage`,
+        );
         console.log(JSON.stringify(await response.json(), null, 2));
         return;
       }

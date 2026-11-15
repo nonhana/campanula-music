@@ -14,7 +14,6 @@
     designDescription,
     designPlaylistName,
   } from '#lib/dev/design-data.ts';
-  import { mock } from '#lib/mock-flag.ts';
 
   const LENGTHS = [
     { key: 'long', label: '长简介' },
@@ -31,7 +30,7 @@
   let titleLength = $state<TitleLength>('short');
   let query = $state('');
   const phone = $derived(!desktopLayout.current);
-  const coverUrl = mock ? '/mock-assets/cover/design-description.svg' : null;
+  const coverUrl = null;
 </script>
 
 <div class="flex flex-wrap items-center gap-3">
