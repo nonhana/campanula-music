@@ -6,7 +6,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import UnoCSS from 'unocss/vite';
 import type { Plugin } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 
 import { mockPlugin } from './src/lib/server/mock/vite-plugin.ts';
 
@@ -53,9 +53,4 @@ export default defineConfig(({ command }) => ({
           : undefined,
     }),
   ],
-  test: {
-    include: ['tests/**/*.test.ts'],
-    // 各测试文件共用 node_modules/.vite 的依赖缓存，并行时会在临时目录改名上打架（ENOTEMPTY）：一个一个跑
-    fileParallelism: false,
-  },
 }));

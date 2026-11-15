@@ -43,7 +43,22 @@ jobs:
         run: pnpm check:endpoints
 
       - name: 测试
-        run: pnpm test
+        run: pnpm test --coverage
+
+      - name: SSR 覆盖率校准
+        run: pnpm test:coverage:calibrate
+
+      - name: 测试与覆盖率报告
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tests-${{ github.sha }}
+          path: |
+            .reports/all/
+            .reports/coverage/
+            .reports/calibration/
+          if-no-files-found: error
+          include-hidden-files: true
 
       - name: 构建（Vercel 适配器）
         run: pnpm build

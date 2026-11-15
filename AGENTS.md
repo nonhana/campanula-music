@@ -43,7 +43,7 @@
   - `library/` 曲库、歌单页、格子网格与多选；`downloads/` 已下载；`search/` 搜索；`daily/` 每日推荐。
   - `login/` 登录；`notice/` 全局提示条；`shell/` 桌面/手机骨架、返回栏、播放条停靠、页面过渡；`svg/` 内联图标；`ui/` 基础控件与封面图。
   - `shared/`：界面通用工具（文字与格式化、布局、动效、指针与手势、App 上下文、路由快照）。
-- `src/lib/dev/`：只在开发时打开的设计系统页；`scripts/`：录制、fixtures、门禁、mock smoke；`tests/`：App 接缝与纯逻辑核心。
+- `src/lib/dev/`：只在开发时打开的设计系统页；`scripts/`：录制、fixtures、门禁、mock smoke；`tests/`：规则、App 行为、契约与交付自检，共用 `_kit/` 和 `tools/`；套件、单文件命令及覆盖率边界见 `tests/README.md`。
 - `src/params.ts`：路由参数（`neteaseId` 只认正整数）；`uno.config.mts`：设计令牌、字号阶梯和全局样式（焦点环）。
 
 **规则①–⑫** 定义在 `docs/prototype/logic.md`；产品 Spec #11 在 GitHub issue（`gh issue view 11`）。

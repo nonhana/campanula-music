@@ -87,10 +87,10 @@ pnpm fixtures:index:check   # 和文件对不上就失败（CI 可跑）
 - 扫码时要求行为验证的 8821 这次没有出现，没有录到。测试 8821 分支用的是构造的数据，见下面“构造的数据”。
 - `login/login_cellphone.10004-risk.json` 是短信登录被风控拦下的真实返回；`login/captcha_sent.502-anonymous-registration.json` 是 SDK 1.4.0 匿名注册失败时的返回（报错原文里的“MUSIC_A”只是文字，不是凭据）。
 - 首次同步时“我喜欢的音乐”的歌单详情原始返回约 3.1 MB、一次 1,000 首的歌曲信息约 2.1 MB；验证关卡①②的文件只留了前 30 项，原长度见 `context.truncated`。
-- `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/harness/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。#22 的 `library/sync/`、#23 的 `library/album-artist/`、#24 的 `playback/liked/`、#28 的 `playback/check-in/`、#29 的 `discover/daily/`、#31 的 `search/songs/`、`search/check-in/`、`search/kinds/`、#56 的 `library/netease-playlist/`、#32 的 `search/results/` 也是 `.json.gz`。
+- `.json.gz`：#21 的整页录制，**不截短**（作者的我喜欢的音乐 4,984 首、歌单列表 53 张、每页 1,000 首的歌曲信息），用 gzip 压缩，测试替身直接读（`tests/_kit/fixtures.ts`）；要看内容用 `gzip -dc 文件 | jq`。这一批的编号自成一套：本人是 `10000001`，我喜欢的音乐是 `900000001`，和验证关卡①②的假编号不对应。#22 的 `library/sync/`、#23 的 `library/album-artist/`、#24 的 `playback/liked/`、#28 的 `playback/check-in/`、#29 的 `discover/daily/`、#31 的 `search/songs/`、`search/check-in/`、`search/kinds/`、#56 的 `library/netease-playlist/`、#32 的 `search/results/` 也是 `.json.gz`。
 - `library/song_detail.liked-page4.*`：第 4 页里有 3 首传到云盘、没匹配上曲库的歌（1984488794、1959160688、1916897283），网易云回的 `ar[0].name`、`al.name` 是 null。`hana-music-api@2.3.0` 要求它们是字符串，**整页 1,000 首都被拒掉**（502 `UnexpectedUpstreamShape`）；2.4.0 起原样返回（nonhana/hana-music-api#48）。不带后缀的 `song_detail.liked-page4.json.gz` 是网易云原样的返回（SDK 校验之前截下），2.4.0 能通过结构校验；`.502-null-artist` 是 2.3.0 真实的拒绝，2.4.0 下别人看云盘上传的歌（歌名也是 null）时照样这样拒，测试拿它当“这一页没取到”。
 - 凭据无效时（#21，编造的 `MUSIC_U`）：`likelist` 回 301；`user_playlist`、`playlist_detail` 回 200 的匿名视角，每张歌单的 `subscribed` 是 null（已登录时是 true / false）；`song_detail` 照常 200。2.3.0 把匿名视角当结构不符报 502，2.4.0 起原样返回，Campanula 的服务端认出 `subscribed` 是 null 就当作需要登录（`library/user_playlist.anonymous-view.json.gz`）。
-- `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。SDK 2.x 的 `decodeResponse` 遇到这一层就取里面的 `body` 再判断成败、校验结构，测试替身（`tests/harness/fixtures.ts`）照做，录制文件保持原样（#30）。
+- `playlist-edit/playlist_tracks.*`：SDK 1.4.0 的 `playlist_tracks` 在网易云回 HTTP 200 时，把返回多包了一层：`response.body` 是 `{ status, body: { code, count, trackIds }, cookie }`，外层看不出成败，要看里面的 `body.code`（整批都已在歌单里时是 502“歌单内歌曲重复”）。网易云回 HTTP 错误时（比如歌单不存在的 404）`response.body` 是平的 `{ code, message }`。SDK 2.x 的 `decodeResponse` 遇到这一层就取里面的 `body` 再判断成败、校验结构，测试替身（`tests/_kit/fixtures.ts`）照做，录制文件保持原样（#30）。
 - `playlist-edit/song_order_update.whole-4967-reversed.json`、`…whole-4967-shuffled.json`：一次改动几千首位置的排序，网易云约 3.3 秒后回 HTTP 400 / `-1`“请求异常，请稍后重试”，但新顺序其实已经生效（重新读歌单确认过）。只挪动几首时同样大小的请求 0.5 秒回 200（`…whole-4967-small-change.json`）。`…missing-one.json`（少提交一首、其余倒序）同样回 `-1`，2 秒后重读时新顺序还没有完全生效。
 - `playlist-edit/playlist_detail.deleted.json`：已删除的歌单仍回 200 和完整歌单，只有 `playlist.status` 是 10（正常歌单是 0）。对已删除的歌单加歌、移除、排序回 404“歌单不存在”；改名称、简介、标签、封面和再删一次都回 200。
 - `like-collect/playlist_subscribe.*`：验证关卡②里用 SDK 1.4.0 收藏歌单一律回 405“操作过于频繁，请稍后再试”：自己的、别人的歌单，eapi、weapi，默认伪装 IP、真实国内 IP，隔 20 分钟再试，都一样；同一时间作者在官方 App 里收藏、取消都正常，专辑、歌手、红心也都正常。所以这些文件代表的是 SDK 发的请求被拒的样子，不是收藏歌单成功的返回（见 #15 留言），测试拿 `.405.json` 当“网易云说操作频繁”。原因由 nonhana/hana-music-api#32、#77 查明：设备身份和令牌不对都会被拒；SDK 2.12.0 起照官方网页版的写法，收藏时带浏览器里官方 Watchman 现取的反作弊令牌（`checkToken`）。成功、取消的返回见上面 #30 一条（`.subscribe-token.json`、`.unsubscribe.json`）。
@@ -134,8 +134,8 @@ pnpm fixtures:index:check   # 和文件对不上就失败（CI 可跑）
 新的录制用 `scripts/netease-record.mts`，每张票只写一个一次性脚本决定调哪些模块，放在 `_notes/scripts/`（不进仓库），用 `pnpm tsx _notes/scripts/<文件>.mts` 跑：
 
 ```ts
-import { loadIdentity } from '../../scripts/fixture-identity.mts'
 import { createRecorder, openSession } from '../../scripts/netease-record.mts'
+import { loadIdentity } from '../../tests/tools/fixture-identity.mts'
 
 // 登录 Cookie 从 _notes/campanula-login 读，见下面第一条
 const invoke = await openSession()
@@ -147,8 +147,8 @@ const { written, problems } = recorder.save() // problems 不为空：那几个�
 
 - tsx 只跑不查类型。一次性脚本要查类型，就先放进 `scripts/` 跑一次 `pnpm check`（`scripts/**/*.mts` 在类型检查里），再挪回 `_notes/scripts/`。
 - 登录 Cookie：`pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi.sh`，作者在里面扫码登录过）取 `campanula_login`，存进作者本机的 `_notes/campanula-login`。录制脚本只从这个文件读，值不出现在命令行和对话里。`openSession()` 先只读问一次 `user_account`：文件不在、用本机 `.env` 的 `COOKIE_SECRET` 解不开、或者登录已经失效（账号是 null）都直接报错，停下来请作者在专用窗口里扫码，再取一次。
-- `save()` 按上面「脱敏」的规则处理，写之前用 `scripts/fixture-identity.mts` 查残留；对照表在作者本机的 `_notes/fixture-identity.json`（本人的 uid、昵称、歌手编号和名字，本人歌单、作品、其他听众的真假编号对照）。录到新的人、本人新的歌单和作品时补进对照表，之后的录制沿用同一套假编号。
-- 提交时 `lint-staged` 对暂存的录制跑同一个检查，有残留就拦下；没有对照表的机器（CI）跳过。手动查全部：`pnpm tsx scripts/fixture-identity.mts`。
+- `save()` 按上面「脱敏」的规则处理，写之前用 `tests/tools/fixture-identity.mts` 查残留；对照表在作者本机的 `_notes/fixture-identity.json`（本人的 uid、昵称、歌手编号和名字，本人歌单、作品、其他听众的真假编号对照）。录到新的人、本人新的歌单和作品时补进对照表，之后的录制沿用同一套假编号。
+- 提交时 `lint-staged` 对暂存的录制跑同一个检查，有残留就拦下；没有对照表的机器（CI）跳过。手动查全部：`pnpm tsx tests/tools/fixture-identity.mts`。
 - 对照表不在了要重建：本人身份用 `/api/account`，本人歌单的真实编号用浏览器里的 `/api/playlists`，作品的真实编号用本机副本里歌手是本人的歌，按名字和录制里 `99999999` 的歌对上。
 
 ## 构造的数据

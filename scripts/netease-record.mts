@@ -12,8 +12,12 @@ import type {
 import { invokeModule } from 'hana-music-api';
 
 import type { LoginCookie } from '../src/lib/server/credentials.ts';
-import type { FixtureIdentity } from './fixture-identity.mts';
-import { findLeaks, IDENTITY_FILE, loadIdentity } from './fixture-identity.mts';
+import type { FixtureIdentity } from '../tests/tools/fixture-identity.mts';
+import {
+  findLeaks,
+  IDENTITY_FILE,
+  loadIdentity,
+} from '../tests/tools/fixture-identity.mts';
 
 const ROOT = join(import.meta.dirname, '..');
 const SDK_DIR = join(ROOT, 'node_modules/hana-music-api');

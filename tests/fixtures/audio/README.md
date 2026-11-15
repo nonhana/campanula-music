@@ -1,6 +1,6 @@
 # 写歌曲信息核心的样本音频（#79）
 
-`tests/song-info-core.test.ts` 用的样本，都是生成的两秒静音和一张 16×16 的纯色图，不是真歌（真歌不能提交）。2026-10-25 用 ffmpeg 9.0.2、flac 1.5.0 生成：
+`tests/unit/song-info-core.test.ts` 用的样本，都是生成的两秒静音和一张 16×16 的纯色图，不是真歌（真歌不能提交）。2026-10-25 用 ffmpeg 9.0.2、flac 1.5.0 生成：
 
 ```sh
 ffmpeg -f lavfi -i color=c=0x9ad9c0:s=16x16 -frames:v 1 cover.jpg

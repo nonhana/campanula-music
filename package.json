@@ -14,18 +14,23 @@
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo && tsc -p src/service-worker/tsconfig.json --noEmit",
-    "check:endpoints": "tsx scripts/check-endpoints.mts",
-    "check:mock-isolation": "tsx scripts/check-mock-isolation.mts",
+    "check:endpoints": "tsx tests/tools/check-endpoints.mts",
+    "check:mock-isolation": "tsx tests/tools/check-mock-isolation.mts",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo --watch",
-    "fixtures:index": "tsx scripts/fixture-index.mts",
-    "fixtures:index:check": "tsx scripts/fixture-index.mts --check",
+    "fixtures:index": "tsx tests/tools/fixture-index.mts",
+    "fixtures:index:check": "tsx tests/tools/fixture-index.mts --check",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "eslint --cache && tsx scripts/check-design-tokens.mts",
     "lint:fix": "eslint --fix",
     "smoke:mock": "tsx scripts/mock-smoke.mts",
-    "test": "vitest run",
-    "knip": "knip"
+    "test": "tsx tests/tools/run.mts all",
+    "knip": "knip",
+    "test:unit": "tsx tests/tools/run.mts unit",
+    "test:behavior": "tsx tests/tools/run.mts behavior",
+    "test:contract": "tsx tests/tools/run.mts contract",
+    "test:coverage": "tsx tests/tools/run.mts all --coverage",
+    "test:coverage:calibrate": "CAMPANULA_COVERAGE_CALIBRATE=1 CAMPANULA_COVERAGE_DIR=.reports/calibration tsx tests/tools/run.mts behavior tests/behavior/session.test.ts -t 未登录：没有当前账号 --coverage"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:lint",
@@ -45,6 +50,9 @@
     "@unocss/eslint-plugin": "catalog:lint",
     "@unocss/preset-rem-to-px": "catalog:ui",
     "@unocss/reset": "catalog:ui",
+    "@vitest/coverage-v8": "catalog:test",
+    "@vitest/istanbul-lib-coverage": "catalog:test",
+    "ast-v8-to-istanbul": "catalog:test",
     "axe-core": "catalog:test",
     "browser-id3-writer": "catalog:music",
     "chrome-devtools-axi": "catalog:test",
@@ -73,6 +81,6 @@
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored",
     "src/**/*.{svelte,ts}": "tsx scripts/check-design-tokens.mts",
-    "tests/fixtures/**/*.{json,gz}": "tsx scripts/fixture-identity.mts"
+    "tests/fixtures/**/*.{json,gz}": "tsx tests/tools/fixture-identity.mts"
   }
 }

@@ -14,6 +14,13 @@ export default antfu(
     },
   },
   {
+    files: ['tests/tools/**/*.mts'],
+    rules: {
+      'no-console': 'off',
+      'antfu/no-top-level-await': 'off',
+    },
+  },
+  {
     files: ['src/lib/app/**/*.ts'],
     ignores: ['src/lib/app/browser.ts'],
     rules: {
@@ -101,7 +108,7 @@ export default antfu(
       'src/lib/server/netease/**',
       'src/lib/server/credentials.ts',
       'src/lib/server/mock/**',
-      'tests/harness/**',
+      'tests/_kit/**',
     ],
     rules: {
       'no-restricted-imports': [

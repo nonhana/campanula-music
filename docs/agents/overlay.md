@@ -4,7 +4,7 @@
 
 ## 三个文件
 
-- `overlay-stack.ts`：纯核心，不碰 DOM 和 Kit。层的开关、转交、占用的浏览记录、焦点归还、忙时钉住都在这里，行为改动改它，测试在 `tests/overlay-stack.test.ts`。
+- `overlay-stack.ts`：纯核心，不碰 DOM 和 Kit。层的开关、转交、占用的浏览记录、焦点归还、忙时钉住都在这里，行为改动改它，测试在 `tests/unit/overlay-stack.test.ts`。
 - `overlay-history.svelte.ts`：核心的历史端口（`read` / `write` / `go` / `leave`）在 Kit 上的实现。只有端口的签名或语义要变时才读它。
 - `overlays.svelte.ts`：登记表。每一层的历史策略、组件、关闭钩子都在这里登记；组件里用 `getOverlays()`（`overlay-context.ts`）取到层和 `stack`。
 
@@ -41,7 +41,7 @@
 
 ## 测试
 
-`tests/overlay-stack.test.ts` 顶部的 `scene()` 建好栈和内存历史（`tests/harness/overlay-history.ts`），`register` 默认占记录、modal。
+`tests/unit/overlay-stack.test.ts` 顶部的 `scene()` 建好栈和内存历史（`tests/_kit/overlay-history.ts`），`register` 默认占记录、modal。
 
 - 内存历史的 `failNext` / `holdNext` / `cancelNext` 模拟历史操作失败、卡在半路、被取消；`back` / `forward` / `navigate` / `reload` 模拟浏览器。
 - 断言 `stack.top`、`history.url`、`history.index`、`history.length`。
