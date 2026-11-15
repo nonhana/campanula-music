@@ -243,7 +243,6 @@ describe('新建歌单', () => {
     const before = world.netease.calls.length;
 
     await world.netease.reply(CREATED.create);
-    await world.netease.reply(CREATED.create);
     await world.netease.reply(
       'playlist-edit/playlist_detail.301-after-create.constructed.json',
       { when: { id: CREATED.id } },
@@ -335,10 +334,6 @@ describe('新建歌单', () => {
     await world.netease.reply(
       'playlist-edit/playlist_create.301.constructed.json',
     );
-    await world.netease.reply('login/login_refresh.sms.json', {
-      cookie: renewCookies(),
-    });
-    await replyCreated();
 
     expect(
       await app.createPlaylist({ name: CREATED.name, private: true }),

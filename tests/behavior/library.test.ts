@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import type { Device, SentRequest } from '../_kit/device.ts';
 import { held, never } from '../_kit/hold.ts';
@@ -76,9 +76,8 @@ describe('首次同步', () => {
 
     await signIn(world, app);
 
-    await vi.waitFor(() =>
-      expect(app.state.library?.liked?.songs).toHaveLength(1000),
-    );
+    await world.settle();
+    expect(app.state.library?.liked?.songs).toHaveLength(1000);
     const library = app.state.library!;
     expect(library.playlists).toHaveLength(54);
     expect(library.liked?.playlist).toMatchObject({
@@ -230,7 +229,8 @@ describe('首次同步', () => {
     const liked = held();
     await replyLibrary({ until: liked.until });
     await signIn(world, app);
-    await vi.waitFor(() => expect(world.netease.held).toBe(1));
+    await world.settle();
+    expect(world.netease.held).toBe(1);
 
     const { albums, artists } = app.state.library!;
     expect(albums).toHaveLength(55);
@@ -302,7 +302,7 @@ describe('首次同步', () => {
     const { app } = await device.open();
     await replyLibrary({
       playlists: 'library/user_playlist.unknown-kind.constructed.json',
-      through: 'artists',
+      through: 'playlists',
     });
     await signIn(world, app);
     await device.idle();
@@ -395,9 +395,8 @@ describe('本机副本', () => {
     await world.netease.reply(likedPage(1));
     await world.netease.reply(likedPage(2), { until: page2.until });
     await signIn(world, app);
-    await vi.waitFor(() =>
-      expect(app.state.library?.liked?.songs).toHaveLength(1000),
-    );
+    await world.settle();
+    expect(app.state.library?.liked?.songs).toHaveLength(1000);
 
     await world.netease.reply('login/logout.json');
     await app.logout();
@@ -525,7 +524,8 @@ describe('请求节奏', () => {
     await replyLibrary();
     await world.netease.reply(likedPage(1), { until: page1.until });
     await signIn(world, app);
-    await vi.waitFor(() => expect(world.netease.held).toBe(1));
+    await world.settle();
+    expect(world.netease.held).toBe(1);
 
     device.setOnline(false);
     page1.release();
@@ -628,7 +628,6 @@ describe('请求节奏', () => {
     await world.netease.reply('library/likelist.301-invalid.json', {
       until: stale.until,
     });
-    await world.netease.reply('login/login_refresh.301-invalid.json');
     await signIn(world, app);
     await world.settle();
 
@@ -797,7 +796,8 @@ describe('歌单', () => {
       until: poems.until,
     });
     await signIn(world, app);
-    await vi.waitFor(() => expect(world.netease.held).toBe(1));
+    await world.settle();
+    expect(world.netease.held).toBe(1);
     expect(app.state.library?.songsOf(RHYTHM_ID)).toMatchObject({
       songs: [],
       complete: false,
@@ -823,7 +823,8 @@ describe('歌单', () => {
     await world.netease.reply(rhythm.pages[0].fixture);
     const opening = app.openPlaylist(RHYTHM_ID);
 
-    await vi.waitFor(() => expect(world.netease.held).toBe(2));
+    await world.settle();
+    expect(world.netease.held).toBe(2);
     expect(device.pending.map((request) => request.path)).toEqual([
       `/api/playlists/${POEMS_ID}/track-ids`,
       `/api/playlists/${RHYTHM_ID}/track-ids`,
@@ -943,7 +944,8 @@ describe('歌单', () => {
     await world.netease.reply(poems.pages[0].fixture, { until: oldPage.until });
     const { app } = await device.open();
     const opening = app.openPlaylist(POEMS_ID);
-    await vi.waitFor(() => expect(world.netease.held).toBe(2));
+    await world.settle();
+    expect(world.netease.held).toBe(2);
 
     await world.netease.reply(AFTER.list);
     await replyLibrary({ from: 'albums', through: 'artists' });
@@ -968,9 +970,8 @@ describe('歌单', () => {
     await world.netease.reply(likedPage(1));
     await world.netease.reply(likedPage(2), { until: page2.until });
     await signIn(world, app);
-    await vi.waitFor(() =>
-      expect(app.state.library?.liked?.songs).toHaveLength(1000),
-    );
+    await world.settle();
+    expect(app.state.library?.liked?.songs).toHaveLength(1000);
 
     const partial = app.searchPlaylist(LIKED_ID, 'dj okawari');
     expect(partial?.incomplete).toBe(true);
@@ -1050,7 +1051,8 @@ describe('筛选曲库', () => {
       until: never(),
     });
     await signIn(world, app);
-    await vi.waitFor(() => expect(world.netease.held).toBe(1));
+    await world.settle();
+    expect(world.netease.held).toBe(1);
     expect(app.searchPlaylists('jazz')).toBeNull();
 
     list.release();
@@ -1096,6 +1098,14 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     const seed = Math.floor(Math.random() * 100_000);
     const random = seeded(seed);
     world.netease.anyOrder();
+    await world.netease.rejectUnprepared(
+      'song_detail',
+      '随机操作允许未准备的歌曲页明确失败',
+    );
+    await world.netease.rejectUnprepared(
+      'playlist_detail',
+      '随机操作允许未准备的歌单页明确失败',
+    );
     const pick = <T>(items: readonly T[]): T =>
       items[Math.floor(random() * items.length)];
     let holds: (() => void)[] = [];
@@ -1108,14 +1118,19 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
 
     // 退出、续期不压，压着会一直等下去
     const reply = async (module: string, fixture: string): Promise<void> => {
+      const when = module === 'playlist_detail' ? { id: 900000001 } : undefined;
       queued.set(module, (queued.get(module) ?? 0) + 1);
       if (!sometimesHeld.has(module) || random() < 0.5) {
-        await world.netease.reply(fixture);
+        await world.netease.reply(fixture, { required: false, when });
         return;
       }
       const hold = held();
       holds.push(hold.release);
-      await world.netease.reply(fixture, { until: hold.until });
+      await world.netease.reply(fixture, {
+        until: hold.until,
+        required: false,
+        when,
+      });
     };
 
     const topUp = async (): Promise<void> => {

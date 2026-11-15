@@ -129,27 +129,28 @@ pnpm fixtures:index:check   # 和文件对不上就失败（CI 可跑）
 - 上传凭证（`image_upload_token` 返回的 `token`）清空；图片编号和地址是测试时画的图，原样保留。
 - 其余结构和取值原样保留。
 
-## 录制
+## 录制与维护
 
-新的录制用 `scripts/netease-record.mts`，每张票只写一个一次性脚本决定调哪些模块，放在 `_notes/scripts/`（不进仓库），用 `pnpm tsx _notes/scripts/<文件>.mts` 跑：
+常规检查只读这些已提交的样本，不需要账号、`.env`、`_notes`、axi 或已启动的服务。原始脱敏 body 和采集 SDK 版本保持原文，历史参数与失败信封只在 `tests/_kit/mock` 的共用转换处处理。`index.json` 的 validation 标明证据种类，`checkedWith` 是本次测量的版本，条目 sdk 是采集版本。`nos_upload` 是浏览器直传，单独核对 HTTP 成功/失败、offset/requestId 及声明的上传字节数。
 
-```ts
-import { createRecorder, openSession } from '../../scripts/netease-record.mts'
-import { loadIdentity } from '../../tests/tools/fixture-identity.mts'
+真实采集只在操作者明确授权后进行。先指定本次所用 Campanula 实例 origin，并准备最多 30 分钟有效、权限 0600 的一次性 JSON：`instance`、`expiresAt`、SDK 的 `deviceId` / `credentials` 和 `identity`。identity 结构见 `tests/tools/fixture-identity.mts`。它属于本次内存映射，不提交或写回固定文件。可在终端运行 `pnpm tsx tests/tools/take-login.mts <实例 origin> <临时文件>`，用不回显的输入填写 `deviceId`、`credentials`、`identity`，工具补 15 分钟有效期；来源由操作者亲自提供，不从浏览器抓取。凭据与映射只放临时私有目录。
 
-// 登录 Cookie 从 _notes/campanula-login 读，见下面第一条
-const invoke = await openSession()
-const recorder = createRecorder({ invoke, dir: 'tests/fixtures/netease/library/sync/after', viewer: 'vip-qr' })
-const list = await recorder.call('user_playlist', { uid: loadIdentity()!.self.uid, limit: 1000 })
-// list.ok 时 list.body 是 SDK 收窄过的返回，按它决定接着调什么
-const { written, problems } = recorder.save() // problems 不为空：那几个文件有残留，没写
+一次性脚本调用 `withRecording({ instance, authorizationFile, dir, authorizeUpstream: true }, async recorder => { await recorder.call(module, query) })`（从 `tests/tools/netease-record.mts` 导入）。instance 是授权归属及来源，不把生产实例变成通用代理；SDK 直接调用真实上游。先只读确认账号有效，再执行列明的查询。显式模拟 source 只供离线采集回归。成功、拒绝和异常退出都会删除授权文件；不要把进程崩溃或强制断电当作已清理，操作者仍须删除自己准备的临时目录。写入仅用临时歌单并在结束删除，不录真歌音频。
+
+工具只保存去凭据、替换身份后的 body/query/失败事实；源码 `sanitize` 保留截短记录，findLeaks 拒绝身份残留且不打印值。检查失败不能提交输出。重建索引前先将获准样本拷入本目录，运行 `pnpm tsx tests/tools/fixture-identity.mts --identity <临时映射> <样本>` 复核身份，默认身份检查始终检查凭据字段，不依赖私有映射。最终删除授权和映射，只提交脱敏样本。
+
+新增 action 时，从生产值导入核对 SDK 类型和 schema，补具名绑定、`sdk-input.ts` 关键输入、成功及适用失败样本、索引、状态种子和对应断言；同一次功能提交完成。线上修复保留失败原文并标采集版本，构造样本写 constructed/note，真实录到后再替换。SDK 类型或实现缺口回 SDK 仓库，不在产品层另造类型。
+
+升级时先用 `pnpm test:sdk` 检查 lockfile 安装版；升级 PR 的候选目录用 `pnpm test:sdk --candidate /绝对路径/已装好依赖的/hana-music-api`。先暂存本次公开改动；它只按 Git 已跟踪/暂存的文件创建临时副本，不复制未跟踪材料，离线重跑原始样本、两种替身、类型和登录/搜索/512 写入代表行为，保存 `.reports/sdk-upgrade-*/result.json`、各步日志及合同报告后删除副本；不自动查询 latest、不安装包。候选不兼容返回非零。成功后按实际 SDK 更新目录版本和 lockfile，再运行索引与全量交付。
+
+```sh
+pnpm fixtures:index
+pnpm fixtures:index:check
+pnpm sdk:report
+pnpm test:contract
 ```
 
-- tsx 只跑不查类型。一次性脚本要查类型，就先放进 `scripts/` 跑一次 `pnpm check`（`scripts/**/*.mts` 在类型检查里），再挪回 `_notes/scripts/`。
-- 登录 Cookie：`pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi.sh`，作者在里面扫码登录过）取 `campanula_login`，存进作者本机的 `_notes/campanula-login`。录制脚本只从这个文件读，值不出现在命令行和对话里。`openSession()` 先只读问一次 `user_account`：文件不在、用本机 `.env` 的 `COOKIE_SECRET` 解不开、或者登录已经失效（账号是 null）都直接报错，停下来请作者在专用窗口里扫码，再取一次。
-- `save()` 按上面「脱敏」的规则处理，写之前用 `tests/tools/fixture-identity.mts` 查残留；对照表在作者本机的 `_notes/fixture-identity.json`（本人的 uid、昵称、歌手编号和名字，本人歌单、作品、其他听众的真假编号对照）。录到新的人、本人新的歌单和作品时补进对照表，之后的录制沿用同一套假编号。
-- 提交时 `lint-staged` 对暂存的录制跑同一个检查，有残留就拦下；没有对照表的机器（CI）跳过。手动查全部：`pnpm tsx tests/tools/fixture-identity.mts`。
-- 对照表不在了要重建：本人身份用 `/api/account`，本人歌单的真实编号用浏览器里的 `/api/playlists`，作品的真实编号用本机副本里歌手是本人的歌，按名字和录制里 `99999999` 的歌对上。
+索引连续两次重建应字节一致，报告位于 `.reports/sdk/contract.json`。每个 action 列消费者位置、关键输入、成功与失败样本及缺口；failureGap 表示缺少真实失败，anyFailureGap 同时计入构造失败；entries 保留实际来源、构造/截短和两种 SDK 版本。缺少某类真实失败样本会明确报告，不把合成失败或失败归一化写成真实上游成功证据。
 
 ## 构造的数据
 
@@ -358,3 +359,5 @@ Campanula 收藏前在浏览器用 `hana-music-api/watchman` 现取 token，自�
 索引用 npm `hana-music-api@6.1.0` 的公开 Schema 重建，既有录制原文和来源不变。`playlist-edit/playlist_tracks.512.constructed.json` 与 `playlist_tracks.301.constructed.json` 是按 SDK 公开失败合同构造的业务分支，均标为 constructed；代表 query 不是真实请求证据，响应在测试里分别用于增删的首次与后备步骤。512 用于证明应用只在收到通知后才申请下一枚 token，301 用于证明两个写入步骤均不自动续期或重放。
 
 App 测试按两次独立 SDK 调用观察 `step: initial/fallback`、各自 token 与本机提交时机，不再用一次替身调用虚构两次 provider 消费。真实 SDK 的最终请求另用正式安装包和离线 fetcher 核对；这些检查不代表真实账号遇到 512 后已成功。
+
+`library/likelist.500-synthetic.constructed.json` 是显式未知失败模板，替代旧测试里未准备调用导致的隐式失败；它不代表真实上游。`playlist-edit/playlist_detail.order-readback.constructed.json.gz` 由 `library/playlist_detail.own-small.json` 派生，只将 query.id 与 playlist.id 改为临时新建歌单 900000023，歌曲和顺序不变，来源写在 context.note，最终返回仍经过 schema 与实体编号合同。

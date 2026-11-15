@@ -35,9 +35,10 @@ Spec #96 增加受控浏览器旅程和 a11y 层，使用自行启动的 Chromiu
 
 - 写新测试前先看 `tests/_kit/listener.ts`：从按领域命名的登录、同步停点、本机副本读取和请求过滤场景开始；只有新的听众行为才在测试文件里加准备步骤。
 - 网易云的返回只用验证关卡录下、脱敏过的数据（`tests/fixtures/netease/`），用 `world.netease.reply()` 放进去，不连真实账号。
-- 缺录制数据时用 `scripts/netease-record.mts`（`pnpm tsx` 跑）录，做法和脱敏规则见 `tests/fixtures/netease/README.md`「录制」。录制用的登录 Cookie 用 `pnpm tsx scripts/take-login.mts` 从专用浏览器窗口（`scripts/axi.sh`）取；录制开始前会确认登录有效，失效时停下来请作者在专用窗口里扫码。
-- SDK 替身在 `tests/_kit/netease-sdk.ts`，具名调用由 `tests/_kit/mock/sdk-modules.ts` 绑定到原录制队列；`world.ts` 的隔离探针核对全部导出。只有替身自身能从真实 SDK 根入口复用设备编号和失败读取工具，业务调用仍被替换。
-- `fixtures.ts` 校验录制返回体，`mock/fixture-format.ts` 为历史返回补 SDK 5 的失败元数据；`mock/query-key.ts` 只在匹配时转换历史参数表示，录制文件和来源保留。
+- 录制、脱敏、身份检查、索引与 SDK 维护入口归 `tests/tools/`，具体操作见 `tests/fixtures/netease/README.md`「录制与维护」。采集须显式指定实例、短期授权；常规回放不读本机私有文件。
+- World 的 `reply` 默认是必需调用，`when` 声明关键查询；需要跨模块顺序时传 `ordered: true`，合法并发用 `anyOrder()`。取消后本来不应调用的步骤不预装必需回复。仅条件性准备可用 `required: false` 并说明原因；原始录制不保存 Cookie，最终登录回复必须配新 MUSIC_U，专测缺 Cookie 的负例用 `expectedMissingLoginCookie` 声明并先确认合同确实失败；通用服务器异常用具名 exception 声明，不能靠未准备调用制造；会话用例要暂停后台同步时显式调用 `pauseSync()`，它只为合成账号的 likelist 提供具名失败，其他意外调用仍在收尾失败。
+- SDK 两种替身共享 `sdk-input.ts`、`sdk-contract.ts`、历史查询和失败转换。原始录制与运行时最终响应分开校验；索引的 validation 区分成功 schema、专用错误 schema、历史失败归一化与浏览器直传。失败归一化不代表失败 body 通过成功 schema。 成功 schema 证据可按实际 schema 与完整内容摘要有界复用；普通数据首次校验使用独立快照，body 改动后按新内容匹配证据，未命中时重新调用 schema，status、实体、Cookie 和失败元数据仍逐次检查。特殊对象不走内容缓存，不能仅凭对象身份或 JSON 文本相同复用证据。
+- 默认 `small` 种子是合成关系的小曲库，人工 mock 和后继浏览器共用；`large` 场景保留 before 大种子，after/deleted 保留历史差异。场景来源、命令和规模边界见 `tests/README.md`。新增实体须同时保证声明的导航和写后读回。
 - 缺哪种浏览器能力的替身，就在这张票里补产品能力与 `tests/_kit/browser.ts`，交互 mock 从 `tests/_kit/mock` 外部装配。
 
 ## 会话重试的回归

@@ -28,7 +28,8 @@ const ORDER_OK =
 // 网易云回 400/-1，但新顺序可能已生效：要重读确认
 const ORDER_UNCONFIRMED = 'playlist-edit/song_order_update.missing-one.json';
 const ORDER_MISSING = 'playlist-edit/song_order_update.deleted-playlist.json';
-const RE_READ = 'library/playlist_detail.own-small.json';
+const RE_READ =
+  'playlist-edit/playlist_detail.order-readback.constructed.json.gz';
 
 const songsFrom = (ids: readonly number[]): Song[] =>
   ids.map((id, index) => ({

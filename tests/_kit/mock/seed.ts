@@ -4,7 +4,7 @@ import type { RawFixture } from './fixture-format.ts';
 import { fixtureOutcome } from './fixture-format.ts';
 import { readFixture } from './read-fixture.ts';
 
-export type SeedName = 'before' | 'after' | 'deleted';
+export type SeedName = 'small' | 'before' | 'after' | 'deleted';
 
 interface RawSong {
   id: number;
@@ -226,7 +226,89 @@ const patchPlaylist = (
   ...next,
 });
 
-export const buildSeed = async (seed: SeedName): Promise<SeedData> => {
+const loadSeed = async (seed: SeedName): Promise<SeedData> => {
+  if (seed === 'small') {
+    const data = await buildSeed('before');
+    data.seed = 'small';
+    const ids = [
+      3433267939,
+      2662577181,
+      4208408,
+      2092188841,
+      ...data.details
+        .get(POEMS_PLAYLIST)!
+        .playlist.trackIds.map((track) => track.id),
+    ];
+    data.songs = new Map(ids.map((id) => [id, data.songs.get(id)!]));
+    for (const { song } of data.songs.values()) {
+      song.ar = [{ id: 33927412, name: '测试歌手' }];
+      song.al = {
+        id: 3149073,
+        name: '测试专辑',
+        picUrl: '/mock-assets/cover/small.svg',
+      };
+    }
+    data.playlists = data.playlists.filter((item) =>
+      [LIKED_PLAYLIST, POEMS_PLAYLIST, FOUR_PLAYABLE_PLAYLIST].includes(
+        item.id,
+      ),
+    );
+    data.details = new Map(
+      [...data.details].filter(([id]) =>
+        data.playlists.some((item) => item.id === id),
+      ),
+    );
+    data.byId = new Map(data.playlists.map((item) => [item.id, item]));
+    data.liked = new Set(ids.slice(0, 2));
+    for (const playlist of data.playlists) {
+      const trackIds =
+        playlist.id === LIKED_PLAYLIST
+          ? [...data.liked]
+          : playlist.trackIds.map((track) => track.id);
+      Object.assign(playlist, {
+        trackIds: trackIds.map((id) => ({ id })),
+        tracks: trackIds.map((id) => data.songs.get(id)!.song),
+        trackCount: trackIds.length,
+      });
+      data.details.set(
+        playlist.id,
+        patchPlaylistDetail(
+          data.details.get(playlist.id)!,
+          playlist,
+          trackIds.map((id) => data.songs.get(id)!),
+        ),
+      );
+    }
+    data.likedDetail = data.details.get(LIKED_PLAYLIST)!;
+    const artist = {
+      ...data.artists.find((item) => item.id === 33927412)!,
+      id: 33927412,
+      name: '测试歌手',
+      musicSize: data.songs.size,
+      albumSize: 1,
+    };
+    const album = {
+      ...data.albumDetails.get(3149073)!,
+      id: 3149073,
+      name: '测试专辑',
+      size: data.songs.size,
+      artist,
+      artists: [artist],
+    };
+    data.albums = [
+      {
+        ...data.albums.find((item) => item.id === 3149073)!,
+        name: '测试专辑',
+        size: data.songs.size,
+        artists: [artist],
+      },
+    ];
+    data.artists = [artist];
+    data.albumDetails = new Map([[3149073, album]]);
+    data.albumSummaries = new Map([[3149073, data.albums[0]]]);
+    data.artistSummaries = new Map([[33927412, artist]]);
+    return data;
+  }
   const before = 'library/sync/before';
   const chosen = `library/sync/${seed}`;
   const playlists = (
@@ -545,6 +627,18 @@ export const buildSeed = async (seed: SeedName): Promise<SeedData> => {
     artistSummaries,
     templates,
   };
+};
+
+const seeds = new Map<SeedName, Promise<SeedData>>();
+
+// 每个实例只写自己的副本；原始种子只读取和解压一次。
+export const buildSeed = async (seed: SeedName): Promise<SeedData> => {
+  let pending = seeds.get(seed);
+  if (!pending) {
+    pending = loadSeed(seed);
+    seeds.set(seed, pending);
+  }
+  return structuredClone(await pending);
 };
 
 export const patchPlaylistDetail = (

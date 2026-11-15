@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Song } from '#lib/api/library.ts';
 import type { App } from '#lib/app/app.ts';
@@ -27,6 +27,13 @@ import { RECORDED_ACCOUNT, signIn } from '../_kit/sign-in.ts';
 import { useWorld } from '../_kit/world.ts';
 
 const world = useWorld();
+beforeEach(async () => {
+  await world.netease.rejectUnprepared(
+    'song_url_v1',
+    '未指定的播放地址不可用，用于队列和随机操作场景',
+  );
+  await world.netease.rejectUnprepared('scrobble', '未指定的听歌打卡明确失败');
+});
 const { signInWithLiked, signInAtLikedTracks, reopen, replyLibrary } = listener(
   world,
   { playlists: PLAYLISTS_WITH_POEMS },
@@ -123,7 +130,7 @@ const playUntilSounding = async (
   next: Recorded,
 ): Promise<FakeAudio> => {
   await world.netease.reply(song.url);
-  await world.netease.reply(next.url);
+  await world.netease.reply(next.url, { required: false });
   tab.app.play(LIKED, song.id);
   await world.settle();
   const player = tab.audio.find((audio) => !audio.paused)!;
@@ -159,6 +166,7 @@ describe('点歌', () => {
     const tab = await signInWithLiked(device);
 
     await world.netease.reply(SECOND.url, {
+      required: false,
       when: { ids: [SECOND.id], level: 'exhigh' },
       until: never(),
     });
@@ -518,7 +526,7 @@ describe('只同步了一部分的歌单', () => {
     expect(partial.songs).toHaveLength(2000);
 
     await world.netease.reply(FIRST.url);
-    await world.netease.reply(SECOND.url);
+    await world.netease.reply(SECOND.url, { required: false });
     app.play(LIKED, FIRST.id);
     await world.settle();
     expect(queueIds(app)).toEqual(partial.songs.map((song) => song.id));
@@ -1575,7 +1583,7 @@ describe('移出、清空播放队列', () => {
     expect(player.paused).toBe(true);
     expect(app.state.player.queue).toEqual([]);
 
-    await world.netease.reply(SECOND.url);
+    await world.netease.reply(SECOND.url, { required: false });
     app.playNext(ALBUM, likedSong(app, SECOND.id));
     await world.settle();
     expect(queueIds(app)).toEqual([SECOND.id]);
@@ -2008,12 +2016,12 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
         queued += 1;
         const { url } = pick(RECORDED);
         if (random() < 0.5) {
-          await world.netease.reply(url);
+          await world.netease.reply(url, { required: false });
           continue;
         }
         const hold = held();
         holds.push(hold.release);
-        await world.netease.reply(url, { until: hold.until });
+        await world.netease.reply(url, { until: hold.until, required: false });
       }
     };
 

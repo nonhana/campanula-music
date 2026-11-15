@@ -1,89 +1,48 @@
-import * as sdk from 'hana-music-api';
-
-import { field, fixtureOutcome } from './mock/fixture-format.ts';
+import { fixtureOutcome } from './mock/fixture-format.ts';
 import { readFixture } from './mock/read-fixture.ts';
 import type { Outcome } from './netease-sdk.ts';
-
-interface StandardSchema {
-  '~standard': {
-    validate: (value: unknown) => StandardResult | Promise<StandardResult>;
-  };
-}
-
-type StandardResult =
-  | { value: unknown; issues?: undefined }
-  | {
-      issues: readonly {
-        message: string;
-        path?: readonly (PropertyKey | { key: PropertyKey })[];
-      }[];
-    };
-
-const REJECTION_SCHEMAS: Record<string, string> = {
-  'login_cellphone:10004': 'LoginCellphoneRiskBody',
-};
-
-const isStandardSchema = (value: unknown): value is StandardSchema =>
-  (typeof value === 'object' || typeof value === 'function') &&
-  value !== null &&
-  '~standard' in value;
+import { validateResponse } from './sdk-contract.ts';
 
 interface LoadedFixture {
+  evidence: import('./sdk-contract.ts').ValidationKind;
   module: string;
   query: Record<string, unknown>;
   outcome: Outcome;
 }
 
-const load = async (path: string): Promise<LoadedFixture> => {
-  const raw = await readFixture(path);
+const load = async (path: string, base?: URL): Promise<LoadedFixture> => {
+  const raw = await readFixture(path, base);
   const { module } = raw;
   const { rejected, response } = fixtureOutcome(module, raw.response, path);
-  const code = field(response.body, 'code');
-  const outcome = (body: unknown): LoadedFixture => ({
+  const evidence = await validateResponse(
+    module,
+    { ...response, cookie: [] },
+    rejected,
+    path,
+    module === 'nos_upload'
+      ? (raw.query as Record<string, unknown>)
+      : undefined,
+    false,
+  );
+  return {
     module,
     query: raw.query as Record<string, unknown>,
-    outcome: {
-      rejected,
-      response: { ...response, body, cookie: [] },
-    },
-  });
-
-  if (response.retryAfter !== undefined) return outcome(response.body);
-  const name = rejected
-    ? REJECTION_SCHEMAS[`${module}:${String(code)}`]
-    : `${module
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.slice(1))
-        .join('')}Body`;
-  if (!name) return outcome(response.body);
-
-  const schema: unknown = (sdk as Record<string, unknown>)[name];
-  if (!isStandardSchema(schema))
-    throw new Error(
-      `hana-music-api 没有导出 ${name}，录制数据 ${path}（${module}）没法校验`,
-    );
-  const result = await schema['~standard'].validate(response.body);
-  if (result.issues) {
-    const issues = result.issues.map(
-      ({ message, path = [] }) =>
-        `  ${path
-          .map((key) => String(typeof key === 'object' ? key.key : key))
-          .join('.')}: ${message}`,
-    );
-    throw new Error(
-      `录制数据 ${path} 不符合 SDK 的结构定义 ${name}：\n${issues.join('\n')}`,
-    );
-  }
-  return outcome(result.value);
+    evidence,
+    outcome: { rejected, response: { ...response, cookie: [] } },
+  };
 };
 
 const loaded = new Map<string, Promise<LoadedFixture>>();
 
-export const loadFixture = (path: string): Promise<LoadedFixture> => {
-  let fixture = loaded.get(path);
+export const loadFixture = (
+  path: string,
+  base?: URL,
+): Promise<LoadedFixture> => {
+  const key = `${base?.href ?? 'repository'}:${path}`;
+  let fixture = loaded.get(key);
   if (!fixture) {
-    fixture = load(path);
-    loaded.set(path, fixture);
+    fixture = load(path, base);
+    loaded.set(key, fixture);
   }
   return fixture;
 };

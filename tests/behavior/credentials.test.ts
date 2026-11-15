@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { held, never } from '../_kit/hold.ts';
 import { listener } from '../_kit/listener.ts';
@@ -13,6 +13,7 @@ import { REAL_IP, useWorld } from '../_kit/world.ts';
 import legacyCookie from '../fixtures/session/pre-sdk-5-cookie.json';
 
 const world = useWorld({ env: { COOKIE_SECRET: legacyCookie.secret } });
+beforeEach(() => world.netease.pauseSync());
 const { sessionModules } = listener(world);
 
 describe('网易云凭据只在加密 Cookie 里', () => {
@@ -252,6 +253,7 @@ describe('服务器日志', () => {
     await app.loginWithCaptcha(phone, captcha);
     const [login] = await device.cookies();
     await world.netease.reply('login/user_account.anonymous.json');
+    await world.netease.reply('login/login_refresh.301-invalid.json');
     await device.open();
     await world.netease.reply('login/logout.json');
     await app.logout();

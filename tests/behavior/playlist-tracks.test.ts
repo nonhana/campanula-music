@@ -884,9 +884,7 @@ describe('登录失效与换账号', () => {
     await world.settle();
     expect(await pendingChanges(device)).toEqual([JAZZ.id]);
 
-    await replyLibrary({
-      until: never(),
-    });
+    await replyLibrary({ through: 'hearts', until: never() });
     await signIn(world, app, { another: true });
     firstSync.release();
     await world.clock.advance(5000);
@@ -896,9 +894,7 @@ describe('登录失效与换账号', () => {
     expect(orderRequests(device)).toHaveLength(0);
     expect(await pendingChanges(device)).toBeUndefined();
 
-    await replyLibrary({
-      until: never(),
-    });
+    await replyLibrary({ through: 'hearts', until: never() });
     await signIn(world, app);
     await world.settle();
 

@@ -219,7 +219,10 @@ export const mockPlugin = (): Plugin => ({
     },
   }),
   resolveId(id, importer) {
-    if (id === 'hana-music-api' && importer === RUNTIME)
+    if (
+      id === 'hana-music-api' &&
+      (importer === RUNTIME || importer?.endsWith('/sdk-contract.ts'))
+    )
       return {
         id: fileURLToPath(import.meta.resolve('hana-music-api')),
         external: true,

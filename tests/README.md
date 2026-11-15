@@ -82,3 +82,13 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 `tests/delivery/dev-terminal.test.ts` 在真实伪终端运行实际 CLI 和 `pnpm dev`，受控 mkcert 替身按上游方式关闭内层 stdin，再从 `/dev/tty` 读取固定测试标记。授权后主动以 42 停止，避免触及系统信任；另验证拒绝、Ctrl+C、SIGTERM、忽略 SIGINT 的后代被强制终止、工作锁与自有进程清理。会话在断言后才关闭，防止挂断终端替实现收尾。Python 只负责 PTY 转发，不计入 V8 覆盖率；本项不代表已经完成本人系统密码和钥匙串授权。
 
 开发基础设施迁入 `scripts/dev.mts` 与 `scripts/dev/` 后仍显式纳入 infrastructure 覆盖率分区；产品与 sourceBeforeMove 的阈值及文件集合保持原口径。
+
+## SDK 合同与场景
+
+`pnpm sdk:report` 从生产 SDK 值导入生成 `.reports/sdk/contract.json`，列 action、辅助函数、浏览器能力、绑定、关键输入、样本与失败缺口。`pnpm test:sdk [--candidate /本地候选包]` 在公开文件副本离线重跑合同、类型和代表行为；维护步骤见 [录制与维护](fixtures/netease/README.md#录制与维护)。常规 CI 也检查索引并保存合同报告。
+
+默认 `small` 为从现有脱敏样本组合的构造曲库：我喜欢的音乐、自建 poems、4 首可播放歌单，共 6 首歌；统一关联测试专辑 3149073、测试歌手 33927412。歌单形状来自 sync/before，歌曲来自 liked-page 与 album-artist；专辑/歌手形状来自 album-artist 的 008/004/012，关系与数量为构造，媒体由 assets.ts 可再生。歌词复用 playback/lyric_new.all-forms.json，不代表这些歌的真实歌词。运行时写入归当前实例，reset 还原种子。`large`、`after`、`deleted` 保留 4,984 首及历史差异，用于规模、分页，不承诺所有收藏导航完整。
+
+具名诊断用现有 `/api/mock/scenario` 或 `scripts/browser.sh scenario <名称>` 选择：`qr-confirm` 为 801→802→803，`qr-expired` 为 801→800（原始登录样本）；`empty-search` 合法空态、`tracks-512` 明确 initial 拒绝后 fallback（构造）；`missing-relation` 故意移除测试专辑关系。原 login-expired、rate-limited、partial-sync、slow、offline、空/删歌单继续保留。reset 回默认，只重置上游，不删除听众设备存储。
+
+`mock-library.test.ts` 遍历所有声明的收藏和歌单、读媒体/歌词、改名读回、reset 及规模。`sdk-contract.test.ts` 用错误 body、缺失败元数据、错歌单 ID、遗漏和乱序证明门禁；严格队列收尾保留被产品吞掉的意外调用。模板回退的来源见 coverage.templates，World 不回退。扫码 Cookie、空搜索与 512、失败恢复由合同和 HTTP 回归负责；真实控件/焦点由后继浏览器票负责。

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { never } from '../_kit/hold.ts';
 import { current, listener } from '../_kit/listener.ts';
@@ -12,6 +12,7 @@ import {
 import { useWorld } from '../_kit/world.ts';
 
 const world = useWorld();
+beforeEach(() => world.netease.pauseSync());
 const {
   downloadLiked,
   replyLibrary,
@@ -192,6 +193,32 @@ describe('打开 App', () => {
 });
 
 describe('退出登录', () => {
+  it('网易云退出不可用：仍清掉登录 Cookie，重开保持未登录，不重试上游退出', async () => {
+    const device = world.device();
+    const { app } = await device.open();
+    await signIn(world, app);
+    await world.settle();
+    const logged = world.serverLogs.length;
+    await world.netease.rejectUnprepared('logout', '合成上游不可用：退出清理');
+
+    await app.logout();
+
+    expect(app.state.session).toEqual({ status: 'signedOut' });
+    expect(app.state.library).toBeNull();
+    expect(await device.cookies()).toEqual([]);
+    expect(world.serverLogs.slice(logged)).toContainEqual({
+      level: 'warn',
+      text: expect.stringContaining('连不上、超时或网易云出错'),
+    });
+    const { app: reopened } = await device.open();
+    expect(reopened.state.session).toEqual({ status: 'signedOut' });
+    expect(sessionModules()).toEqual([
+      'captcha_sent',
+      'login_cellphone',
+      'logout',
+    ]);
+  });
+
   it('服务端带着这个听众的凭据调网易云退出，回过期的登录 Cookie；重新打开是未登录，不调网易云', async () => {
     const device = world.device();
     const { app } = await device.open();
@@ -288,7 +315,6 @@ describe('退出登录', () => {
       cookie: renewCookies(),
       until: new Promise((resolve) => (renewalArrives = resolve)),
     });
-    await world.netease.reply('login/user_account.vip.json');
     await world.netease.reply('login/logout.json');
     const opening = device.open();
     // 等另一个标签页问出去、服务端开始续期再退出，退出后才放回续期
@@ -455,7 +481,9 @@ describe('续期', () => {
     const signedIn = world.netease.calls.length;
     await world.clock.advance(24 * HOUR);
 
-    await world.netease.reply('login/login_refresh.sms.json');
+    await world.netease.reply('login/login_refresh.sms.json', {
+      expectedMissingLoginCookie: true,
+    });
     await world.netease.reply('login/user_account.vip.json');
     const { app: reopened } = await device.open();
 

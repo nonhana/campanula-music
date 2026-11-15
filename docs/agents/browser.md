@@ -74,7 +74,7 @@ scripts/browser.sh axe _notes/accessibility/library.json
 ## 登录态
 
 - 登录态保存在专用 Chrome profile `~/.cache/campanula-axi/chrome-profile` 里，`scripts/axi.sh` 和 `scripts/browser.sh --real` 用的是同一个会话、同一个 profile。
-- `_notes/campanula-login` **只给录制脚本用**（`scripts/take-login.mts` 从专用窗口取一份 Cookie 快照，`scripts/netease-record.mts` 读它）。`scripts/browser.sh` 和 `scripts/axi.sh` 不读这个文件；它过期或被删，不会把专用浏览器的登录弄丢。
+- 录制授权与作者浏览器分开：工具在 `tests/tools/`，只接收显式实例和短期授权文件；结束删除授权，不读取专用 profile。见 `tests/fixtures/netease/README.md`「录制与维护」。
 - 复用登录态依赖三件事：同一个 profile、`.env` 里同一个 `COOKIE_SECRET`、网易云的 `MUSIC_U` 还没过期。换了 secret 或网易云会话过期，`check --real` 会返回 `account:null`，这时只需在专用窗口扫码一次。
 - 新会话：`scripts/browser.sh check --real` 发现 Chrome 没开时，会用同一个 profile 重新启动，不需要重新扫码；已在浏览器进程重启后验证过。
 

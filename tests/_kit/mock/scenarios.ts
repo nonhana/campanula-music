@@ -2,6 +2,12 @@ import type { SeedName } from './seed.ts';
 
 export type ScenarioName =
   | 'default'
+  | 'large'
+  | 'qr-confirm'
+  | 'qr-expired'
+  | 'empty-search'
+  | 'tracks-512'
+  | 'missing-relation'
   | 'after'
   | 'deleted'
   | 'login-expired'
@@ -25,7 +31,7 @@ export interface MockConfig {
 }
 
 const DEFAULTS = {
-  seed: 'before',
+  seed: 'small',
   latencyMs: 0,
   offline: false,
   loginExpired: false,
@@ -37,6 +43,12 @@ const DEFAULTS = {
 
 const PRESETS: Record<ScenarioName, Partial<Omit<MockConfig, 'name'>>> = {
   default: {},
+  large: { seed: 'before' },
+  'qr-confirm': {},
+  'qr-expired': {},
+  'empty-search': {},
+  'tracks-512': {},
+  'missing-relation': {},
   after: { seed: 'after' },
   deleted: { seed: 'deleted' },
   'login-expired': { loginExpired: true },

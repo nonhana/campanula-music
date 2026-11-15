@@ -1,0 +1,6 @@
+{
+  "module": "likelist",
+  "query": { "uid": 10000001 },
+  "context": { "constructed": true, "sdk": "hana-music-api@6.1.0", "note": "替代历史未准备调用产生的 Error：明确声明的未知失败模板，仅用于指定模块/查询，来源可追踪；不代表真实上游。" },
+  "response": { "status": 500, "body": { "code": 500, "message": "合成未知失败" }, "failure": { "kind": "unknown" } }
+}

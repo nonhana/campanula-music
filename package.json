@@ -35,7 +35,9 @@
     "test:environment:https": "tsx tests/tools/https-check.mts && tsx tests/tools/https-check.mts --interrupt-check",
     "dev:http": "tsx scripts/dev.mts --http",
     "dev:mock:http": "tsx scripts/dev.mts --mock --http",
-    "dev:setup": "tsx scripts/dev.mts --setup"
+    "dev:setup": "tsx scripts/dev.mts --setup",
+    "test:sdk": "tsx tests/tools/sdk-upgrade.mts",
+    "sdk:report": "tsx tests/tools/sdk-report.mts"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:lint",

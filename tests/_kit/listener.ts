@@ -132,12 +132,13 @@ export const listener = (
     const first = steps.findIndex(([step]) => step === from);
     const last = steps.findIndex(([step]) => step === through);
     for (const [step, fixture] of steps.slice(first, last + 1)) {
-      await world.netease.reply(
-        fixture,
-        holds[step] ?? {
-          until: step === through ? until : undefined,
-        },
-      );
+      // 挂起回复是条件性的同步停点，调用次数由对应场景断言。
+      const held = holds[step]?.until ?? (step === through ? until : undefined);
+      await world.netease.reply(fixture, {
+        ...holds[step],
+        until: held,
+        required: held === undefined,
+      });
     }
   };
 
@@ -155,6 +156,7 @@ export const listener = (
       for (const page of playlist.pages) {
         await world.netease.reply(
           page.fixture === rejected ? rejection! : page.fixture,
+          { required: false },
         );
       }
     }
@@ -167,6 +169,7 @@ export const listener = (
       until: never(),
     });
     await signIn(world, tab.app);
+    await world.settle();
     return tab;
   };
 
@@ -269,7 +272,8 @@ export const listener = (
     await serveDownload(device, song, downloadUrl);
     await world.netease.reply(downloadUrl);
     await world.netease.reply(DOWNLOAD_LYRICS);
-    await world.netease.reply(album);
+    // 同专辑的后续下载会复用已存的专辑信息。
+    await world.netease.reply(album, { required: false });
     app.download(song);
     await world.settle();
     if (!app.state.downloads.has(id))

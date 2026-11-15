@@ -2,10 +2,17 @@ import type { ModuleCallConfig, NcmApiResponse } from 'hana-music-api';
 
 import { queryKey, recordedQuery } from './mock/query-key.ts';
 import { sdkModules } from './mock/sdk-modules.ts';
+import { validateResponse } from './sdk-contract.ts';
+import { validateQuery } from './sdk-input.ts';
 
 export type SdkResponse = NcmApiResponse<unknown>;
 
 export interface Outcome {
+  expectedMissingLoginCookie?: boolean;
+  exception?: string;
+  repeat?: boolean;
+  required?: boolean;
+  ordered?: boolean;
   rejected: boolean;
   response: SdkResponse;
   until?: Promise<void>;
@@ -30,6 +37,21 @@ const outcomes = new Map<string, Outcome[]>();
 export const calls: Call[] = [];
 
 let held = 0;
+const violations: string[] = [];
+const sequence: Outcome[] = [];
+
+export const assertComplete = (): void => {
+  const pending = [...outcomes].flatMap(([module, replies]) =>
+    replies
+      .filter((reply) => reply.required)
+      .map(
+        (reply) =>
+          `${module}：遗漏 ${reply.fixture ?? '必需调用'}，期望 ${JSON.stringify(reply.when)}`,
+      ),
+  );
+  if (violations.length || pending.length)
+    throw new Error([...violations, ...pending].join('\n'));
+};
 
 let currentRequest: () => RequestSpan | undefined = () => undefined;
 
@@ -63,11 +85,14 @@ export const trackRequests = (current: () => RequestSpan | undefined): void => {
 export const ambiguities = (): readonly string[] => ambiguous;
 
 export const queueReply = (module: string, outcome: Outcome): void => {
+  if (outcome.ordered ?? outcome.required) sequence.push(outcome);
   outcomes.set(module, [...(outcomes.get(module) ?? []), outcome]);
 };
 
 export const reset = (): void => {
   outcomes.clear();
+  violations.length = 0;
+  sequence.length = 0;
   calls.length = 0;
   held = 0;
   taken.length = 0;
@@ -119,6 +144,12 @@ export const invokeModule = async (
   query: unknown,
   config: CallConfig = {},
 ): Promise<SdkResponse> => {
+  try {
+    validateQuery(module, query, '严格队列');
+  } catch (error) {
+    violations.push(String(error));
+    throw error;
+  }
   const checkToken =
     typeof config.checkToken === 'function'
       ? await config.checkToken()
@@ -134,9 +165,27 @@ export const invokeModule = async (
   calls.push(call);
   const queued = outcomes.get(module) ?? [];
   const queue = [...queued];
-  const at = queued.findIndex((outcome) => fits(module, outcome, query));
-  const outcome = at < 0 ? undefined : queued.splice(at, 1)[0];
-  if (!outcome) throw new Error(`网易云替身：没有为 ${module} 准备录制数据`);
+  let at = queued.findIndex(
+    (outcome) => !outcome.repeat && fits(module, outcome, query),
+  );
+  if (at < 0)
+    at = queued.findIndex(
+      (outcome) => outcome.repeat && fits(module, outcome, query),
+    );
+  const outcome = at < 0 ? undefined : queued[at];
+  if (
+    !outcome ||
+    (!anyOrder &&
+      (outcome.ordered ?? outcome.required) &&
+      sequence[0] !== outcome)
+  ) {
+    const detail = `${module}：${outcome ? '顺序错误' : '意外调用'}，期望 ${JSON.stringify(queued.map((item) => ({ fixture: item.fixture, when: item.when })))}，实际 ${JSON.stringify(query)}`;
+    violations.push(detail);
+    throw new Error(detail);
+  }
+  if (!outcome.repeat) queued.splice(at, 1);
+  const sequenceAt = sequence.indexOf(outcome);
+  if (sequenceAt >= 0) sequence.splice(sequenceAt, 1);
   const span = currentRequest();
   if (span && !anyOrder) {
     checkOrder(module, query, span, outcome);
@@ -155,7 +204,30 @@ export const invokeModule = async (
       held -= 1;
     });
   }
+  if (outcome.exception) throw new Error(outcome.exception);
   const response = structuredClone(outcome.response);
+  let expectedInvalid = false;
+  try {
+    await validateResponse(
+      module,
+      response,
+      outcome.rejected,
+      outcome.fixture ?? '严格队列',
+      query as Record<string, unknown>,
+    );
+  } catch (error) {
+    if (outcome.expectedMissingLoginCookie && String(error).includes('MUSIC_U'))
+      expectedInvalid = true;
+    else {
+      violations.push(String(error));
+      throw error;
+    }
+  }
+  if (outcome.expectedMissingLoginCookie && !expectedInvalid) {
+    const detail = `${module}：期望缺 MUSIC_U 的负例，实际合同通过`;
+    violations.push(detail);
+    throw new Error(detail);
+  }
   if (outcome.rejected) throw response;
   return response;
 };

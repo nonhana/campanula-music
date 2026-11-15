@@ -242,7 +242,7 @@ try {
         r.json(),
       )
     ).seed,
-    'before',
+    'small',
   );
   assert.equal(
     (await request(mock.origin, '/api/account').then((r) => r.json())).account

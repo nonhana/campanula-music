@@ -1458,6 +1458,11 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
   });
 
   it('歌单还没同步完就下载整张：先把已经同步的放进队列，同步完把后面的补上（规则⑫）', async () => {
+    await world.netease.rejectUnprepared(
+      'playlist_detail',
+      '下载规模场景未准备的 poems 后台同步明确失败',
+      { id: 900000019 },
+    );
     const device = world.device();
     await world.netease.reply(HEARTS);
     await world.netease.reply(PLAYLISTS_WITH_POEMS);
@@ -1515,6 +1520,11 @@ describe('整批下载（#39，规则⑦⑧⑪⑫）', () => {
   });
 
   it('弹窗只选一部分：不同步补上剩下的（fill 为 false）', async () => {
+    await world.netease.rejectUnprepared(
+      'playlist_detail',
+      '下载规模场景未准备的 poems 后台同步明确失败',
+      { id: 900000019 },
+    );
     const device = world.device();
     await world.netease.reply(HEARTS);
     await world.netease.reply(PLAYLISTS_WITH_POEMS);

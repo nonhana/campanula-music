@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { Playlist } from '#lib/api/library.ts';
 import type { App } from '#lib/app/app.ts';
@@ -8,6 +8,7 @@ import { likedFailure } from '#lib/components/library/liked-failure.ts';
 import { playlistHeader } from '#lib/components/library/view.ts';
 
 import type { Device } from '../_kit/device.ts';
+import { loadFixture } from '../_kit/fixtures.ts';
 import { held } from '../_kit/hold.ts';
 import {
   DAILY,
@@ -22,6 +23,13 @@ import { signIn } from '../_kit/sign-in.ts';
 import { useWorld } from '../_kit/world.ts';
 
 const world = useWorld();
+beforeEach(() =>
+  world.netease.rejectUnprepared(
+    'playlist_detail',
+    '本组只测已指定歌单的视图，其余后台 poems 同步明确失败',
+    { id: 900000019 },
+  ),
+);
 const {
   signInAtHearts,
   signInAtLikedTracks,
@@ -88,6 +96,15 @@ const syncWithRejectedPage = async (device: Device): Promise<App> => {
 };
 
 const syncWithPartialLiked = async (device: Device): Promise<App> => {
+  const page4 = await loadFixture(likedPage(4));
+  await world.netease.rejectUnprepared(
+    'song_detail',
+    '第4页合成失败',
+    {
+      ids: String(page4.query.ids).split(',').map(Number),
+    },
+    '合成服务器异常',
+  );
   const { app } = await device.open();
   await replyLibrary();
   for (const page of [1, 2, 3] as const)
@@ -337,6 +354,10 @@ describe('这一页歌单的答案', () => {
     const device = world.device();
     await signInSynced(device);
     await world.netease.reply('login/user_account.vip.json');
+    await world.netease.reply(
+      'library/likelist.500-synthetic.constructed.json',
+      { exception: '合成服务器异常' },
+    );
     const { app } = await device.open();
     await device.idle();
     expect(app.state.library!.sync).toMatchObject({

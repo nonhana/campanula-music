@@ -36,9 +36,20 @@ export interface World {
   device: (traits?: DeviceTraits) => Device;
   netease: {
     readonly calls: readonly Call[];
+    pauseSync: () => Promise<void>;
+    rejectUnprepared: (
+      module: string,
+      reason: string,
+      when?: Record<string, unknown>,
+      exception?: string,
+    ) => Promise<void>;
     reply: (
       fixture: string,
       options?: {
+        expectedMissingLoginCookie?: boolean;
+        exception?: string;
+        required?: boolean;
+        ordered?: boolean;
         cookie?: string[];
         until?: Promise<void>;
         when?: Record<string, unknown>;
@@ -63,7 +74,10 @@ const replaceSdk = (): Plugin => ({
     },
   }),
   resolveId(id, importer) {
-    if (id === 'hana-music-api' && importer === FAKE_SDK)
+    if (
+      id === 'hana-music-api' &&
+      (importer === FAKE_SDK || importer?.endsWith('/sdk-contract.ts'))
+    )
       return {
         id: fileURLToPath(import.meta.resolve('hana-music-api')),
         external: true,
@@ -234,6 +248,7 @@ export const useWorld = (options: WorldOptions = {}): World => {
   };
   afterEach(async () => {
     await settle();
+    current().fake.assertComplete();
     const ambiguous = current().fake.ambiguities();
     if (ambiguous.length > 0)
       throw new Error(
@@ -253,17 +268,49 @@ export const useWorld = (options: WorldOptions = {}): World => {
       return device;
     },
     netease: {
+      async rejectUnprepared(module, reason, when, exception) {
+        const { outcome } = await loadFixture(
+          'library/likelist.500-synthetic.constructed.json',
+        );
+        current().fake.queueReply(module, {
+          ...outcome,
+          when,
+          exception,
+          repeat: true,
+          required: false,
+          ordered: false,
+          fixture: reason,
+        });
+      },
+      async pauseSync() {
+        await this.rejectUnprepared('likelist', '暂停后台同步');
+      },
       get calls() {
         return current().fake.calls;
       },
-      async reply(path, { cookie = [], until, when } = {}) {
+      async reply(
+        path,
+        {
+          cookie = [],
+          until,
+          when,
+          required = true,
+          ordered = false,
+          expectedMissingLoginCookie,
+          exception,
+        } = {},
+      ) {
         const { module, outcome } = await loadFixture(path);
         current().fake.queueReply(module, {
           ...outcome,
           response: { ...outcome.response, cookie },
           until,
           when,
+          expectedMissingLoginCookie,
+          exception,
           fixture: path,
+          required,
+          ordered,
         });
       },
       get held() {

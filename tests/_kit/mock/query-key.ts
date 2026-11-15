@@ -29,6 +29,34 @@ export const recordedQuery = (
   return result;
 };
 
+export const sdkQuery = (
+  module: string,
+  query: Record<string, unknown>,
+): Record<string, unknown> => {
+  const current = { ...query };
+  for (const key of module === 'playlist_tracks'
+    ? ['tracks']
+    : ['song_detail', 'song_order_update', 'playlist_order_update'].includes(
+          module,
+        )
+      ? ['ids']
+      : []) {
+    const value = current[key];
+    if (typeof value === 'string')
+      current[key] = value.startsWith('[')
+        ? JSON.parse(value)
+        : value.split(',').filter(Boolean).map(Number);
+  }
+  if (module === 'song_url_v1' && current.ids === undefined) {
+    current.ids = [Number(current.id)];
+    delete current.id;
+  }
+  if (module === 'playlist_create') current.privacy = Number(current.privacy);
+  if (module === 'playlist_tags_update' && typeof current.tags === 'string')
+    current.tags = current.tags.split(';');
+  return current;
+};
+
 const digest = (value: string): string =>
   `#sha256:${createHash('sha256').update(value).digest('hex')}:${value.length}`;
 

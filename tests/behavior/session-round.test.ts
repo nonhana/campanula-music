@@ -357,6 +357,11 @@ describe('两个标签页退出', () => {
     await world.netease.reply(CHECK_IN, {
       when: { id: SECOND.id },
     });
+    await world.netease.reply('login/logout.json');
+    await world.netease.reply(CHECK_IN, {
+      when: { id: FIRST.id },
+      required: false,
+    });
     aPlayer.end();
     await world.settle();
     expect(
@@ -392,6 +397,8 @@ describe('两个标签页退出', () => {
     await playTrack(tabB, SECOND, THIRD);
     await world.clock.advance(30_000);
 
+    await world.netease.reply('login/logout.json', { required: false });
+    await world.netease.reply('login/logout.json', { required: false });
     device.setOnline(false);
     aPlayer.end();
     await world.settle();

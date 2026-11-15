@@ -5,7 +5,6 @@ import {
   coverage,
   invokeModule,
   loginCredentials,
-  reset,
 } from '../_kit/mock/runtime.ts';
 import { validateBody } from '../_kit/schemas.ts';
 
@@ -14,7 +13,7 @@ const cookie = { cookie: credentials };
 
 describe('mock SDK 边界', () => {
   beforeEach(async () => {
-    await reset();
+    await configure('large');
   });
 
   it('账号、歌单、红心、曲目、播放地址都从录制和状态里来', async () => {
@@ -145,7 +144,7 @@ describe('mock SDK 边界', () => {
       ).ids,
     ).toContain(910000101);
 
-    await reset();
+    await configure('large');
     expect(
       (
         (await invokeModule('playlist_detail', { id: 900000019 }, cookie))

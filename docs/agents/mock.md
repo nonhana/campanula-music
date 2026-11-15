@@ -31,11 +31,12 @@ pnpm smoke:mock
 
 种子来自 `tests/fixtures/netease/` 里已经脱敏并通过检查的录制，和测试用同一批文件、同一个 `index.json` 索引（`pnpm fixtures:index` 生成）。
 
-| 场景里的种子          | 内容                                                                              |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `default`（`before`） | 54 张录制歌单 + 1 张 mock 专用的 4 首可播放歌单、4,984 首我喜欢的音乐、poems 2 首 |
-| `after`               | poems 3 首（before 的两首 + after 录制里新加的一首）                              |
-| `deleted`             | poems 不在歌单列表里，直接打开详情 `status` 是 10                                 |
+| 场景里的种子         | 内容                                                             |
+| -------------------- | ---------------------------------------------------------------- |
+| `default`（`small`） | 3 张歌单、6 首歌、1 张专辑和 1 位歌手，声明的收藏可完整导航      |
+| `large`（`before`）  | 54 张录制歌单 + 4 首可播放歌单、4,984 首红心，保留规模和历史差异 |
+| `after`              | poems 3 首（before 的两首 + after 录制里新加的一首）             |
+| `deleted`            | poems 不在歌单列表里，直接打开详情 `status` 是 10                |
 
 - 4 首可播放歌单编号 `900000024`，名字 `Mock · 4 首可播放`，四首歌都在 `playback/liked/` 里录到过完整播放地址。
 - 我喜欢的音乐编号 `900000001`；poems 编号 `900000019`。
@@ -53,16 +54,16 @@ scripts/browser.sh reset          # 回到 default
 scripts/browser.sh coverage       # 看 mock 调过哪些模块、缺哪些录制
 ```
 
-| 场景                            | 看到什么                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| `default` / `after` / `deleted` | 换种子，见上表                                                           |
-| `login-expired`                 | 打开 App 显示“需要重新登录”，红心同步回 401                              |
-| `rate-limited`                  | 曲库同步的第一步回 405“操作过于频繁”，写入也一样                         |
-| `deleted-playlist`              | poems 从歌单列表里消失；直接打开详情是已删除                             |
-| `empty-playlist`                | poems 是 0 首                                                            |
-| `partial-sync`                  | 第二次取歌曲信息失败，曲库停在同步了一半                                 |
-| `slow`                          | 每次网易云调用晚 800ms，看骨架和加载状态                                 |
-| `offline`                       | API 回 503（连不上）；要看真正的断网，用 `scripts/browser.sh offline on` |
+| 场景                                      | 看到什么                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------ |
+| `default` / `large` / `after` / `deleted` | 换种子，见上表                                                           |
+| `login-expired`                           | 打开 App 显示“需要重新登录”，红心同步回 401                              |
+| `rate-limited`                            | 曲库同步的第一步回 405“操作过于频繁”，写入也一样                         |
+| `deleted-playlist`                        | poems 从歌单列表里消失；直接打开详情是已删除                             |
+| `empty-playlist`                          | poems 是 0 首                                                            |
+| `partial-sync`                            | 第二次取歌曲信息失败，曲库停在同步了一半                                 |
+| `slow`                                    | 每次网易云调用晚 800ms，看骨架和加载状态                                 |
+| `offline`                                 | API 回 503（连不上）；要看真正的断网，用 `scripts/browser.sh offline on` |
 
 场景只影响 mock，不改 App 代码。自定义参数可以直接 `POST /api/mock/scenario`，例如 `{"name":"slow","latencyMs":2000}`。
 
@@ -70,7 +71,7 @@ scripts/browser.sh coverage       # 看 mock 调过哪些模块、缺哪些录�
 
 mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确失败，服务端日志写清模块、查询、场景，`GET /api/mock/coverage`（或 `scripts/browser.sh coverage`）的 `misses` 里也有一条；不会静默回退到真账号。
 
-要补：按 `tests/fixtures/netease/README.md`「录制」用 `scripts/netease-record.mts` 录，再跑 `pnpm fixtures:index`。
+要补：按 `tests/fixtures/netease/README.md`「录制」用 `tests/tools/netease-record.mts` 录，再跑 `pnpm fixtures:index`。
 
 ### 缺数据怎么处理
 
@@ -84,7 +85,7 @@ mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确
 | 失败/边界（限流、已删除、8821、二维码成功） | 能录到真实失败就录；录不到（比如限流不一定复现）才构造。构造要作者同意，文件名带 `.constructed`，`context.constructed: true`，写清依据，过 SDK 校验；真遇到时替换成录制。 |
 | 封面、音频、图片直传                        | 不录制，mock 本地生成/保存；保证返回体里的外网地址都被本地化。                                                                                                            |
 
-录制前先 `pnpm tsx scripts/take-login.mts` 刷新 `_notes/campanula-login`。它只是录制用的快照，不影响浏览器登录；`openSession()` 会先只读查一次 `user_account`，登录失效就停下请作者扫码。写操作只在临时新建的隐私歌单上做，做完删掉（Spec #11 交付方式第 1 条）。
+录制使用显式实例与一次性授权，操作见 `tests/fixtures/netease/README.md`「录制与维护」。工具不读取浏览器或固定凭据路径。写操作只在临时自建歌单上做，结束删除。
 
 录完跑 `pnpm fixtures:index`：每份录制都要通过 SDK 结构定义的校验；没有结构的模块记为 `validated: false`，mock 不拿它回答。最后补上并运行对应测试，界面相关的再跑 `pnpm smoke:mock`。
 
@@ -100,3 +101,5 @@ SDK 5 输入使用业务数组和数值。`query-key.ts` 只在匹配旧录制�
 - 只覆盖录制到的曲库内容。专辑页、歌手页只覆盖录到的那几张；歌词只覆盖录到的几首。
 - 二维码成功、短信登录、写操作限流这些 mock 场景的返回是构造的，不写成录制文件；真遇到时替换成录制。
 - 这不替代测试：App 测试仍然走 `tests/_kit/world.ts` 的精确队列；mock 是给开发服务器和浏览器用的消费者。
+
+默认场景使用完整的小曲库：3 张歌单、1 张专辑、1 位歌手、6 首歌曲，关系为明确标记的构造数据。`large` 返回历史 before 的 55 张歌单和 4,984 首红心；它只承担规模和历史差异，不承诺每个收藏实体都有详情。扫码诊断选择 `qr-confirm` / `qr-expired`，空搜索用 `empty-search`，512 写入用 `tracks-512`，缺关系诊断用 `missing-relation`。覆盖报告的 templates 列出模板回退的样本来源；严格 World 不用模板回退。

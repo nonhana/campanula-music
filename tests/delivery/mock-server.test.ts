@@ -59,18 +59,39 @@ describe('mock 开发服务器', () => {
     const list = await api('/api/playlists?uid=10000001');
     const playlists = ((await list.json()) as { playlists: { id: number }[] })
       .playlists;
-    expect(playlists).toHaveLength(55);
+    expect(playlists).toHaveLength(3);
 
     const hearts = await api('/api/hearts?uid=10000001');
     expect(
       ((await hearts.json()) as { songIds: number[] }).songIds,
-    ).toHaveLength(4984);
+    ).toHaveLength(2);
 
     const url = await api('/api/songs/3433267939/play-url?quality=exhigh');
     expect(((await url.json()) as { url: string }).url).toBe(
       '/mock-assets/audio/3433267939.wav',
     );
   }, 30_000);
+
+  it('下载地址对应本地生成音频，忽略 Range 时返回完整文件供重下', async () => {
+    const response = await api(
+      '/api/songs/3433267939/download-url?quality=exhigh',
+    );
+    expect(response.status).toBe(200);
+    const download = (await response.json()) as {
+      downloadable: boolean;
+      url: string;
+      size: number;
+    };
+    expect(download.downloadable).toBe(true);
+    const audio = await api(download.url);
+    expect(audio.headers.get('content-type')).toContain('audio/wav');
+    const bytes = new Uint8Array(await audio.arrayBuffer());
+    expect(bytes.length).toBe(download.size);
+    expect(new TextDecoder().decode(bytes.subarray(0, 4))).toBe('RIFF');
+    const range = await api(download.url, { headers: { range: 'bytes=0-43' } });
+    expect(range.status).toBe(200);
+    expect(new Uint8Array(await range.arrayBuffer())).toEqual(bytes);
+  });
 
   it('写操作刷新后还在，reset 回种子', async () => {
     const renamed = await api('/api/playlists/900000019/name', {
@@ -162,6 +183,40 @@ describe('mock 开发服务器', () => {
       expect(await response.json()).toEqual({ kind: 'done' });
     }
     await fetch(`${origin}/api/mock/reset`, { method: 'POST' });
+  });
+
+  it('512 初次写入只通知后备，后备完成后 HTTP 读回有新增曲目', async () => {
+    await api('/api/mock/scenario', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'tracks-512' }),
+    });
+    const send = (step: string) =>
+      api(
+        '/api/playlists/900000019/tracks',
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            [PLAYLIST_TRACKS_STEP_HEADER]: step,
+          },
+          body: JSON.stringify({ songIds: [3433267939] }),
+        },
+        { requests: [`synthetic-${step}`] },
+      );
+    const initial = await send('initial');
+    expect(initial.status).toBe(428);
+    expect(initial.headers.get(PLAYLIST_TRACKS_STEP_HEADER)).toBe('fallback');
+    expect(await initial.json()).toBeTruthy();
+    const fallback = await send('fallback');
+    expect(fallback.status).toBe(200);
+    const detail = await api(
+      '/api/playlists/900000019',
+      {},
+      { requests: ['read-back'] },
+    );
+    expect(JSON.stringify(await detail.json())).toContain('3433267939');
+    await api('/api/mock/reset', { method: 'POST' });
   });
 
   it('场景和覆盖报告', async () => {

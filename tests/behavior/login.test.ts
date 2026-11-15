@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { App } from '#lib/app/app.ts';
 
@@ -16,6 +16,7 @@ import {
 import { useWorld } from '../_kit/world.ts';
 
 const world = useWorld();
+beforeEach(() => world.netease.pauseSync());
 const { sessionCalls, sessionModules } = listener(world);
 
 const PHONE = '13800138000';
@@ -137,7 +138,9 @@ describe('短信验证码登录', () => {
           ? app.loginWithCaptcha(PHONE, CAPTCHA)
           : app.sendCaptcha(PHONE);
       await world.settle();
-      await world.netease.reply('login/logout.json');
+      await world.netease.reply('login/logout.json', {
+        required: method === '短信提交',
+      });
       await world.netease.reply('login/login_qr_key.json');
       await world.netease.reply('login/login_qr_create.json');
       const starting = app.startQrLogin();
@@ -555,7 +558,7 @@ describe('扫码登录', () => {
     await world.clock.advance(2000);
     await world.netease.reply(
       'login/login_cellphone.200.another-account.constructed.json',
-      { cookie: signInCookies() },
+      { required: false, cookie: signInCookies() },
     );
     const signingIn = other.loginWithCaptcha(PHONE, CAPTCHA);
     await world.settle();
@@ -628,7 +631,9 @@ describe('扫码登录', () => {
       cookie: renewCookies(),
       until: old.until,
     });
-    await world.netease.reply('login/user_account.vip.json');
+    await world.netease.reply('login/user_account.vip.json', {
+      required: false,
+    });
     await world.clock.advance(2000);
     app.stopQrLogin();
     const unsubscribe = other.subscribe(() => {
@@ -641,7 +646,9 @@ describe('扫码登录', () => {
     await world.settle();
     device.setOnline(false);
     await world.netease.reply('login/logout.json');
-    await world.netease.reply('login/user_account.vip.json');
+    await world.netease.reply('login/user_account.vip.json', {
+      required: false,
+    });
     old.release();
     await sending;
     const reopened = await opening;

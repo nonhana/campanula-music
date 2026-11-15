@@ -14,7 +14,7 @@ import {
   storedPlaylistIds,
   storedTrackIds,
 } from '../_kit/listener.ts';
-import { ANOTHER_ACCOUNT, renewCookies, signIn } from '../_kit/sign-in.ts';
+import { ANOTHER_ACCOUNT, signIn } from '../_kit/sign-in.ts';
 import { useWorld } from '../_kit/world.ts';
 
 const world = useWorld();
@@ -764,10 +764,6 @@ describe('收藏', () => {
     await world.netease.reply(
       'like-collect/playlist_subscribe.301.constructed.json',
     );
-    await world.netease.reply('login/login_refresh.sms.json', {
-      cookie: renewCookies(),
-    });
-    await world.netease.reply(PLAYLIST_COLLECT);
 
     await app.collect({ kind: 'playlist', id: NETEASE_PLAYLIST.id }, true);
     expect(device.responses.at(-1)).toMatchObject({ status: 401 });

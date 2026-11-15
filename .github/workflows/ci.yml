@@ -42,6 +42,11 @@ jobs:
       - name: 端点目录检查
         run: pnpm check:endpoints
 
+      - name: SDK 合同与录制索引
+        run: |
+          pnpm fixtures:index:check
+          pnpm sdk:report
+
       - name: 测试
         # 控制终端回归使用系统 Python 标准库，不安装 CA 或修改 hosts。
         run: |
@@ -60,6 +65,7 @@ jobs:
             .reports/runs/
             .reports/latest-*.json
             .reports/environments/
+            .reports/sdk/
           if-no-files-found: error
           include-hidden-files: true
 

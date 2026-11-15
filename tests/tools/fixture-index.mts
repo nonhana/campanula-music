@@ -1,7 +1,7 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import process from 'node:process';
-import { fileURLToPath as toPath } from 'node:url';
+import { pathToFileURL, fileURLToPath as toPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
 import { loadFixture } from '../_kit/fixtures.ts';
@@ -22,6 +22,7 @@ interface IndexEntry {
   outcome: 'ok' | 'rejected' | 'rateLimited';
   // 没有 SDK 结构定义的模块（artist_detail）只能是 false：mock 不拿它当可用录制
   validated: boolean;
+  validation: string;
   truncated: unknown;
   constructed: boolean;
   viewer: string | null;
@@ -80,27 +81,20 @@ const metaOf = async (
   return parsed.context ?? {};
 };
 
-export const buildIndex = async (): Promise<FixtureIndex> => {
-  const files = (await filesIn(FIXTURES))
-    .filter((file) => file !== INDEX)
+export const buildIndex = async (
+  directory = FIXTURES,
+): Promise<FixtureIndex> => {
+  const base = pathToFileURL(`${directory}/`);
+  const files = (await filesIn(directory))
+    .filter((file) => file !== join(directory, 'index.json'))
     .sort();
   const entries: IndexEntry[] = [];
   for (const file of files) {
-    const path = relative(FIXTURES, file).split('\\').join('/');
-    const raw = await readFixture(path);
+    const path = relative(directory, file).split('\\').join('/');
+    const raw = await readFixture(path, base);
     const { rejected, response } = fixtureOutcome(raw.module, raw.response);
-    // loadFixture 抛“没有导出…”是 SDK 还没有这个模块的结构定义：记为未校验，不算校验失败
-    let validated = true;
-    try {
-      await loadFixture(path);
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        !/没有导出 .*，录制数据/.test(error.message)
-      )
-        throw error;
-      validated = false;
-    }
+    const validated = true;
+    const validation = (await loadFixture(path, base)).evidence;
     const meta = await metaOf(file, path);
     entries.push({
       path,
@@ -115,6 +109,7 @@ export const buildIndex = async (): Promise<FixtureIndex> => {
             ? 'rejected'
             : 'ok',
       validated,
+      validation,
       truncated: meta.truncated ?? null,
       constructed: meta.constructed === true,
       viewer: typeof meta.viewer === 'string' ? meta.viewer : null,

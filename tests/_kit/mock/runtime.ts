@@ -7,6 +7,9 @@ import type {
   NcmFailureInfo,
 } from 'hana-music-api';
 
+import { loadFixture } from '../fixtures.ts';
+import { validateResponse } from '../sdk-contract.ts';
+import { inputs, validateQuery } from '../sdk-input.ts';
 import {
   AUDIO_PREFIX,
   audioWav,
@@ -15,7 +18,7 @@ import {
   UPLOAD_PATH,
   UPLOAD_PREFIX,
 } from './assets.ts';
-import { fixtureFailure, fixtureOutcome } from './fixture-format.ts';
+import { fixtureFailure } from './fixture-format.ts';
 import { queryKey, recordedQuery } from './query-key.ts';
 import { readFixture } from './read-fixture.ts';
 import type { MockConfig, ScenarioName } from './scenarios.ts';
@@ -62,6 +65,9 @@ const sdkFailure = (
   body,
   cookie: [],
   failure: failure ?? fixtureFailure(body),
+  ...(failure?.kind === 'rateLimited'
+    ? { retryAfter: failure.retryAfter }
+    : {}),
 });
 
 interface IndexEntry {
@@ -100,16 +106,22 @@ interface RuntimeState {
   calls: { module: string; query: unknown }[];
   misses: { module: string; query: unknown; scenario: string }[];
   songDetailCalls: number;
+  qrChecks: number;
+  tracksInitial: boolean;
+  templates: { module: string; source: string }[];
   lastCoverImgId: string;
 }
 
 // 控制接口和 SDK 经同一个 SSR runner 导入，状态只属于这个模块实例。
 const state: RuntimeState = {
   config: configOf('default'),
-  store: new MockStore('before'),
+  store: new MockStore('small'),
   calls: [],
   misses: [],
   songDetailCalls: 0,
+  qrChecks: 0,
+  tracksInitial: false,
+  templates: [],
   lastCoverImgId: 'mock-cover',
 };
 
@@ -130,14 +142,10 @@ const fixture = async (
 }> => {
   let loaded = fixtureCache.get(entry.path);
   if (!loaded) {
-    loaded = readFixture(entry.path).then((raw) => {
-      const { rejected, response } = fixtureOutcome(
-        raw.module,
-        raw.response,
-        entry.path,
-      );
-      return { rejected, ...response };
-    });
+    loaded = loadFixture(entry.path).then(({ outcome }) => ({
+      rejected: outcome.rejected,
+      ...outcome.response,
+    }));
     fixtureCache.set(entry.path, loaded);
   }
   return loaded;
@@ -222,6 +230,7 @@ const fallback = async (
       ? choose((await index()).entries.filter((item) => item.module === module))
       : null);
   if (!entry) return miss(module, query);
+  state.templates.push({ module, source: entry.path });
   const loaded = await fixture(entry);
   if (loaded.rejected)
     throw sdkFailure(loaded.status, loaded.body, loaded.failure);
@@ -271,6 +280,9 @@ export const configure = async (
   state.calls = [];
   state.misses = [];
   state.songDetailCalls = 0;
+  state.qrChecks = 0;
+  state.tracksInitial = false;
+  state.templates = [];
   clearUploads();
   await state.store.reset(state.config.seed);
   if (state.config.deletedPlaylist)
@@ -312,6 +324,7 @@ export const coverage = async (): Promise<Record<string, unknown>> => {
     calls: state.calls.length,
     usedModules: used,
     misses: state.misses,
+    templates: state.templates,
     index: {
       recordings: current.recordings,
       modules: Object.keys(current.modules).sort(),
@@ -326,7 +339,7 @@ const hasCredentials = (callConfig: ModuleCallConfig): boolean => {
     : Boolean(cookie);
 };
 
-export const invokeModule = async (
+const respond = async (
   module: string,
   query: Record<string, unknown> = {},
   callConfig: ModuleCallConfig = {},
@@ -376,6 +389,26 @@ export const invokeModule = async (
         cookie: cookieFor(),
       };
     case 'login_qr_check':
+      if (
+        state.config.name === 'qr-confirm' ||
+        state.config.name === 'qr-expired'
+      ) {
+        const step = state.qrChecks++;
+        const path =
+          step === 0
+            ? 'login/login_qr_check.801-waiting.json'
+            : step === 1 && state.config.name === 'qr-confirm'
+              ? 'login/login_qr_check.802-scanned.json'
+              : state.config.name === 'qr-expired'
+                ? 'login/login_qr_check.800-expired.json'
+                : 'login/login_qr_check.803-success.json';
+        const raw = await readFixture(path);
+        return {
+          status: 200,
+          body: raw.response.body,
+          cookie: path.includes('803') ? cookieFor() : [],
+        };
+      }
       if (state.config.loginExpired)
         throw sdkFailure(301, { code: 301, msg: '需要登录' });
       return {
@@ -440,7 +473,12 @@ export const invokeModule = async (
       const detail = await state.store.playlistDetail(num(query.id));
       return {
         status: 200,
-        body: localize(detail ?? (await fallback(module, query))),
+        body: localize(
+          detail ??
+            (data.seed === 'small'
+              ? miss(module, query)
+              : await fallback(module, query)),
+        ),
         cookie: [],
       };
     }
@@ -489,6 +527,7 @@ export const invokeModule = async (
       const id = num(query.id);
       const part = await state.store.songPart(id);
       if (!part) {
+        if (data.seed === 'small') return miss(module, query);
         return {
           status: 200,
           body: localize(await fallback(module, query)),
@@ -532,6 +571,7 @@ export const invokeModule = async (
       const id = num(query.id);
       const part = await state.store.songPart(id);
       if (!part) {
+        if (data.seed === 'small') return miss(module, query);
         return {
           status: 200,
           body: localize(await fallback(module, query)),
@@ -624,6 +664,15 @@ export const invokeModule = async (
       );
     }
     case 'playlist_tracks':
+      if (state.config.name === 'tracks-512') {
+        if (query.step === 'initial') {
+          state.tracksInitial = true;
+          throw sdkFailure(512, { code: 512, message: '合成首次拒绝' });
+        }
+        if (query.step !== 'fallback' || !state.tracksInitial)
+          return miss(module, query);
+        state.tracksInitial = false;
+      }
       return write(
         await (str(query.op) === 'add'
           ? state.store.addTracks(num(query.pid), idsOf(query.tracks))
@@ -654,6 +703,7 @@ export const invokeModule = async (
       const id = num(query.id);
       const collected = num(query.t) === 1;
       if (collected && !(await state.store.playlistDetail(id))) {
+        if (data.seed === 'small') return miss(module, query);
         const body = (await fallback('playlist_detail', { id })) as Parameters<
           typeof state.store.adoptPlaylist
         >[0];
@@ -668,6 +718,20 @@ export const invokeModule = async (
         cookie: [],
       };
     case 'recommend_songs':
+      if (data.seed === 'small')
+        return {
+          status: 200,
+          body: localize({
+            ...(templates.recommendSongs as Record<string, unknown>),
+            data: {
+              ...(templates.recommendSongs as { data: object }).data,
+              dailySongs: [...data.songs.values()].map(
+                ({ song, privilege }) => ({ ...song, privilege }),
+              ),
+            },
+          }),
+          cookie: [],
+        };
       return {
         status: 200,
         body: localize(templates.recommendSongs),
@@ -679,17 +743,114 @@ export const invokeModule = async (
         body: localize(templates.playlistCatlist),
         cookie: [],
       };
+    case 'album':
+    case 'artist_album':
+    case 'artist_songs':
+    case 'artist_desc':
+    case 'cloudsearch':
+    case 'search_suggest':
+      if (data.seed === 'small') {
+        const songs = [...data.songs.values()].map(({ song, privilege }) => ({
+          ...song,
+          privilege,
+        }));
+        if (
+          module === 'album' &&
+          num(query.id) === 3149073 &&
+          state.config.name !== 'missing-relation'
+        ) {
+          const body = (
+            await readFixture('library/album-artist/008-album.json.gz')
+          ).response.body as Record<string, unknown>;
+          return {
+            status: 200,
+            body: localize({
+              ...body,
+              album: { ...data.albumDetails.get(3149073), size: songs.length },
+              songs,
+            }),
+            cookie: [],
+          };
+        }
+        if (module === 'artist_songs' && num(query.id) === 33927412)
+          return {
+            status: 200,
+            body: localize({
+              code: 200,
+              songs: songs.slice(
+                num(query.offset ?? 0),
+                num(query.offset ?? 0) + num(query.limit ?? 100),
+              ),
+              more: false,
+              total: songs.length,
+            }),
+            cookie: [],
+          };
+        if (module === 'artist_album' && num(query.id) === 33927412) {
+          const body = (
+            await readFixture('library/album-artist/004-artist_album.json.gz')
+          ).response.body as Record<string, unknown>;
+          return {
+            status: 200,
+            body: localize({
+              ...body,
+              artist: {
+                ...(body.artist as Record<string, unknown>),
+                ...data.artists[0],
+              },
+              hotAlbums: [data.albumDetails.get(3149073)],
+              more: false,
+            }),
+            cookie: [],
+          };
+        }
+        if (module === 'artist_desc' && num(query.id) === 33927412)
+          return {
+            status: 200,
+            body: await fallback(module, query),
+            cookie: [],
+          };
+        if (module === 'cloudsearch') {
+          const matches =
+            state.config.name === 'empty-search'
+              ? []
+              : songs.filter((song) => song.name.includes(str(query.keywords)));
+          const type = num(query.type);
+          const [key, count, found] =
+            type === 1
+              ? (['songs', 'songCount', matches] as const)
+              : type === 10
+                ? (['albums', 'albumCount', data.albums] as const)
+                : type === 100
+                  ? (['artists', 'artistCount', data.artists] as const)
+                  : (['playlists', 'playlistCount', data.playlists] as const);
+          const values = state.config.name === 'empty-search' ? [] : found;
+          return {
+            status: 200,
+            body: localize({
+              code: 200,
+              result: {
+                [key]: values.slice(
+                  num(query.offset ?? 0),
+                  num(query.offset ?? 0) + num(query.limit ?? 30),
+                ),
+                [count]: values.length,
+              },
+            }),
+            cookie: [],
+          };
+        }
+        if (module === 'search_suggest')
+          return { status: 200, body: { code: 200, result: {} }, cookie: [] };
+        return miss(module, query);
+      }
+      return { status: 200, body: await fallback(module, query), cookie: [] };
     case 'user_detail':
     case 'vip_info':
     case 'vip_info_v2':
     case 'user_record':
     case 'playlist_track_all':
-    case 'album':
-    case 'artist_album':
-    case 'artist_songs':
-    case 'artist_desc':
     case 'artist_detail':
-    case 'cloudsearch':
       return { status: 200, body: await fallback(module, query), cookie: [] };
     case 'lyric_new': {
       const entry = await entryFor(module, query);
@@ -699,10 +860,31 @@ export const invokeModule = async (
         cookie: [],
       };
     }
-    case 'search_suggest':
-      return { status: 200, body: await fallback(module, query), cookie: [] };
     default:
       return miss(module, query);
+  }
+};
+
+export const invokeModule = async (
+  module: string,
+  query: Record<string, unknown> = {},
+  config: ModuleCallConfig = {},
+): Promise<NcmApiResponse<unknown>> => {
+  try {
+    if (inputs[module]) validateQuery(module, query, state.config.name);
+    const result = await respond(module, query, config);
+    await validateResponse(module, result, false, state.config.name, query);
+    return result;
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'failure' in error) {
+      await validateResponse(
+        module,
+        error as NcmApiFailure<unknown>,
+        true,
+        state.config.name,
+      );
+    }
+    throw error;
   }
 };
 
