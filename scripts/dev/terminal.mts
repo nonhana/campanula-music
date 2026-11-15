@@ -1,6 +1,7 @@
 import process from 'node:process';
 
 import { execa } from 'execa';
+import pWaitFor from 'p-wait-for';
 import pidtree from 'pidtree';
 
 export const runTerminalCommand = async (
@@ -45,13 +46,32 @@ export const runTerminalCommand = async (
             throw error;
           }
           const failures: unknown[] = [];
-          for (const pid of descendants.reverse()) {
-            try {
-              process.kill(pid, 'SIGINT');
-            } catch (error) {
-              if ((error as NodeJS.ErrnoException).code !== 'ESRCH')
-                failures.push(error);
+          const remaining = new Set(descendants.reverse());
+          const signalRemaining = (signal: NodeJS.Signals | 0) => {
+            for (const pid of remaining) {
+              try {
+                process.kill(pid, signal);
+              } catch (error) {
+                remaining.delete(pid);
+                if ((error as NodeJS.ErrnoException).code !== 'ESRCH')
+                  failures.push(error);
+              }
             }
+            return remaining.size === 0;
+          };
+          signalRemaining('SIGINT');
+          try {
+            await pWaitFor(() => signalRemaining(0), {
+              timeout: {
+                milliseconds: 1000,
+                fallback: async () => {
+                  signalRemaining('SIGKILL');
+                  await pWaitFor(() => signalRemaining(0), { timeout: 1000 });
+                },
+              },
+            });
+          } catch (error) {
+            failures.push(error);
           }
           if (failures.length)
             throw new AggregateError(

@@ -189,6 +189,9 @@ catalogs:
     execa:
       specifier: 10.2.1
       version: 10.2.1
+    p-wait-for:
+      specifier: 7.0.0
+      version: 7.0.0
     pidtree:
       specifier: 1.0.0
       version: 1.0.0
@@ -419,6 +422,9 @@ importers:
       oxfmt:
         specifier: catalog:lint
         version: 0.78.0(svelte@5.57.3(@typescript-eslint/types@8.72.0))
+      p-wait-for:
+        specifier: catalog:dev
+        version: 7.0.0
       pidtree:
         specifier: catalog:dev
         version: 1.0.0
@@ -3665,6 +3671,10 @@ packages:
   p-try@2.2.0:
     resolution: {integrity: sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==}
     engines: {node: '>=6'}
+
+  p-wait-for@7.0.0:
+    resolution: {integrity: sha512-zDQ/3GyUFSwklDAT7jeBu4FQgxw0o0yayyP4qizTl5yDYlAWbk71npDC1zhOqD4iqnEN2/4Ssr8Xc2aUQtvdAg==}
+    engines: {node: '>=22'}
 
   package-manager-detector@1.8.0:
     resolution: {integrity: sha512-yQA4H19AmPEoMUeavPMDIe1higySl/gH/yaQrkT/s07Qp+7pp2hYz30N3z2l5BkjVkF9Ow6o0wjJamm2y7Sn0A==}
@@ -7588,6 +7598,8 @@ snapshots:
       p-limit: 3.1.0
 
   p-try@2.2.0: {}
+
+  p-wait-for@7.0.0: {}
 
   package-manager-detector@1.8.0: {}
 

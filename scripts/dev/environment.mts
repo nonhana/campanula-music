@@ -1,5 +1,4 @@
 import type { Buffer } from 'node:buffer';
-import { fork } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   lstat,
@@ -21,6 +20,8 @@ import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+
+import { execaNode } from 'execa';
 
 export const SOURCE = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -287,11 +288,12 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
   let baseURL = '';
   let internalURL = '';
   let stage = 'starting';
-  const child = fork(options.workerFile, ['--worker'], {
+  const cancellation = new AbortController();
+  const child = execaNode(options.workerFile, ['--worker'], {
     cwd: workspace.root,
-    execArgv: ['--import', fileURLToPath(import.meta.resolve('tsx'))],
+    nodeOptions: ['--import', fileURLToPath(import.meta.resolve('tsx'))],
+    extendEnv: !!options.inheritEnv,
     env: {
-      ...(options.inheritEnv ? process.env : {}),
       PATH: process.env.PATH,
       TSX_DISABLE_CACHE: '1',
       CAMPANULA_SSR_COVERAGE_DIR: process.env.CAMPANULA_SSR_COVERAGE_DIR,
@@ -299,29 +301,31 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
       CAMPANULA_DEV_HOST: options.httpHost,
       CAMPANULA_DEV_ORIGIN: options.origin,
     },
-    stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+    stdin: 'ignore',
+    all: true,
+    buffer: false,
+    reject: false,
+    cancelSignal: cancellation.signal,
+    gracefulCancel: true,
+    killDescendants: true,
+    ipcInput: {
+      mode: options.mode,
+      port: options.port ?? 0,
+      root: workspace.root,
+      tls: options.tls,
+      syntheticSession: options.syntheticSession,
+    },
   });
-  child.stdout?.on('data', (data: Buffer) => {
+  child.all.on('data', (data: Buffer) => {
     logs += data.toString();
     options.onLog?.(data.toString());
   });
-  child.stderr?.on('data', (data: Buffer) => {
-    logs += data.toString();
-    options.onLog?.(data.toString());
-  });
-  const exited = new Promise<void>((resolve) =>
-    child.once('close', () => resolve()),
-  );
   let closing: Promise<void> | undefined;
   const close = () =>
     (closing ??= (async () => {
       options.signal?.removeEventListener('abort', abort);
-      if (child.exitCode === null && child.signalCode === null) {
-        child.kill('SIGTERM');
-        const force = setTimeout(() => child.kill('SIGKILL'), 5000);
-        await exited;
-        clearTimeout(force);
-      }
+      cancellation.abort();
+      await child;
       await workspace.close();
       const dir = join(SOURCE, '.reports/environments');
       await mkdir(dir, { recursive: true });
@@ -335,7 +339,9 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
             internalURL,
             pid: child.pid,
             stage,
-            exit: child.exitCode ?? child.signalCode,
+            exit:
+              child.nodeChildProcess.exitCode ??
+              child.nodeChildProcess.signalCode,
             cleaned: true,
             temporary: !options.root,
             logs,
@@ -345,8 +351,8 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
         ),
       );
     })());
-  const finished = exited.then(() => {
-    if (stage === 'ready' && child.exitCode !== 0)
+  const finished = child.then(() => {
+    if (stage === 'ready' && child.nodeChildProcess.exitCode !== 0)
       stage = 'failed while running';
     return close();
   });
@@ -354,53 +360,22 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
     void close();
   };
   options.signal?.addEventListener('abort', abort, { once: true });
+  const timeout = setTimeout(
+    () => cancellation.abort(new Error('启动超时')),
+    45_000,
+  );
   try {
-    const ready = await new Promise<{ baseURL: string; sessionCookie: string }>(
-      (resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('启动超时')), 45_000);
-        const finish = (
-          error?: Error,
-          address?: { baseURL: string; sessionCookie: string },
-        ) => {
-          clearTimeout(timeout);
-          if (error) reject(error);
-          else resolve(address!);
-        };
-        child.once('error', (error) => finish(error));
-        child.once('exit', (code, signal) =>
-          finish(new Error(`启动进程退出：${code ?? signal}`)),
-        );
-        child.on(
-          'message',
-          (message: {
-            baseURL?: string;
-            sessionCookie?: string;
-            error?: string;
-          }) => {
-            if (message.error) finish(new Error(message.error));
-            if (message.baseURL)
-              finish(undefined, {
-                baseURL: message.baseURL,
-                sessionCookie: message.sessionCookie!,
-              });
-          },
-        );
-        if (options.signal?.aborted) {
-          finish(new Error('启动已取消'));
-          return;
-        }
-        child.send({
-          mode: options.mode,
-          port: options.port ?? 0,
-          root: workspace.root,
-          tls: options.tls,
-          syntheticSession: options.syntheticSession,
-        });
-      },
-    );
+    options.signal?.throwIfAborted();
+    const ready = (await child.getOneMessage()) as {
+      baseURL?: string;
+      sessionCookie?: string;
+      error?: string;
+    };
+    if (ready.error) throw new Error(ready.error);
+    if (!ready.baseURL) throw new Error('开发服务器未返回就绪地址');
     internalURL = ready.baseURL;
     baseURL = options.origin ?? internalURL;
-    const { sessionCookie } = ready;
+    const sessionCookie = ready.sessionCookie ?? '';
     stage = 'ready';
     return {
       baseURL,
@@ -408,7 +383,7 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
       sessionCookie,
       finished,
       get exitCode() {
-        return child.exitCode;
+        return child.nodeChildProcess.exitCode;
       },
       root: workspace.root,
       pid: child.pid!,
@@ -431,8 +406,10 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
     stage = `failed: ${String(cause)}`;
     await close();
     throw new Error(
-      `环境启动失败：root=${workspace.root} pid=${child.pid} exit=${child.exitCode ?? child.signalCode}\n${logs}`,
+      `环境启动失败：root=${workspace.root} pid=${child.pid} exit=${child.nodeChildProcess.exitCode ?? child.nodeChildProcess.signalCode}\n${logs}`,
       { cause },
     );
+  } finally {
+    clearTimeout(timeout);
   }
 };

@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { confirm, intro, isCancel, log, outro } from '@clack/prompts';
-import { execa } from 'execa';
+import { execa, getCancelSignal, getOneMessage, sendMessage } from 'execa';
 import type { RunnableDevEnvironment, ViteDevServer } from 'vite';
 
 import {
@@ -114,116 +114,104 @@ export const startEnvironment = (options: EnvironmentOptions) =>
     syntheticSession: !options.development,
   });
 
-const runWorker = () =>
-  process.once(
-    'message',
-    async ({
-      mode,
-      port,
-      root,
-      tls,
-      syntheticSession,
-    }: {
+const runWorker = async () => {
+  const signal = await getCancelSignal();
+  const { mode, port, root, tls, syntheticSession } =
+    (await getOneMessage()) as {
       mode: string;
       port: number;
       root: string;
       tls?: { cert: string; key: string; ca: string };
       syntheticSession?: boolean;
-    }) => {
-      let server: ViteDevServer | undefined;
-      let coverage: (() => Promise<void>) | undefined;
-      let closing = false;
-      const close = async () => {
-        if (closing) return;
-        closing = true;
-        await server?.close();
-        await coverage?.();
-        process.exit(0);
-      };
-      process.on('SIGTERM', () => {
-        void close();
-      });
-      process.on('SIGINT', () => {
-        void close();
-      });
-      process.once('disconnect', () => {
-        void close();
-      });
-      try {
-        if (mode !== 'product' && mode !== 'mock')
-          throw new Error('无效的开发模式');
-        const { createServer, mergeConfig } = await import('vite');
-        const { default: productConfig } = await import('../vite.config.mts');
-        const plugins =
-          mode === 'mock'
-            ? [(await import('../tests/_kit/mock/vite-plugin.ts')).mockPlugin()]
-            : [];
-        const { startSsrCoverage } = await import('../tests/coverage/ssr.ts');
-        if (process.env.CAMPANULA_SSR_COVERAGE_DIR)
-          coverage = await startSsrCoverage(
-            process.env.CAMPANULA_SSR_COVERAGE_DIR,
-          );
-        server = await createServer(
-          mergeConfig(productConfig, {
-            configFile: false,
-            root,
-            envDir: root,
-            cacheDir: 'node_modules/.vite',
-            server: {
-              host: tls ? '127.0.0.1' : modes[mode].httpHost,
-              ...(tls
-                ? {
-                    https: {
-                      cert: await readFile(tls.cert),
-                      key: await readFile(tls.key),
-                    },
-                  }
-                : {}),
-              port,
-              strictPort: true,
-              watch: { followSymlinks: false },
-              fs: {
-                allow: [root, await realpath(join(root, 'src')), SOURCE],
-              },
-            },
-            plugins,
-          }),
-        );
-        server.watcher.add(await realpath(join(root, 'src')));
-        await server.listen();
-        const address = server.httpServer!.address() as { port: number };
-        const baseURL = tls
-          ? process.env.CAMPANULA_DEV_ORIGIN!
-          : `http://${modes[mode].httpHost}:${address.port}`;
-        let sessionCookie = '';
-        if (syntheticSession) {
-          const runner = (server.environments.ssr as RunnableDevEnvironment)
-            .runner;
-          const credentials = (await runner.import(
-            new URL('../src/lib/server/credentials.ts', import.meta.url)
-              .pathname,
-          )) as typeof import('../src/lib/server/credentials.ts');
-          const now = Date.now;
-
-          try {
-            Date.now = () => 0;
-            sessionCookie = credentials.loginCookieHeader('synthetic-device', {
-              MUSIC_U: 'synthetic-product-session',
-            });
-          } finally {
-            Date.now = now;
-          }
-        }
-        process.send?.({ baseURL, sessionCookie });
-      } catch (error) {
-        console.error(error);
-        process.send?.({ error: String(error) });
-        await server?.close();
-        await coverage?.();
-        process.exit(1);
-      }
+    };
+  let server: ViteDevServer | undefined;
+  let coverage: (() => Promise<void>) | undefined;
+  let closing: Promise<void> | undefined;
+  const close = (code = 0) =>
+    (closing ??= (async () => {
+      await server?.close();
+      await coverage?.();
+      process.exit(code);
+    })());
+  signal.addEventListener(
+    'abort',
+    () => {
+      void close();
     },
+    { once: true },
   );
+  if (signal.aborted) return close();
+  try {
+    if (mode !== 'product' && mode !== 'mock')
+      throw new Error('无效的开发模式');
+    const { createServer, mergeConfig } = await import('vite');
+    const { default: productConfig } = await import('../vite.config.mts');
+    const plugins =
+      mode === 'mock'
+        ? [(await import('../tests/_kit/mock/vite-plugin.ts')).mockPlugin()]
+        : [];
+    const { startSsrCoverage } = await import('../tests/coverage/ssr.ts');
+    if (process.env.CAMPANULA_SSR_COVERAGE_DIR)
+      coverage = await startSsrCoverage(process.env.CAMPANULA_SSR_COVERAGE_DIR);
+    server = await createServer(
+      mergeConfig(productConfig, {
+        configFile: false,
+        root,
+        envDir: root,
+        cacheDir: 'node_modules/.vite',
+        server: {
+          host: tls ? '127.0.0.1' : modes[mode].httpHost,
+          ...(tls
+            ? {
+                https: {
+                  cert: await readFile(tls.cert),
+                  key: await readFile(tls.key),
+                },
+              }
+            : {}),
+          port,
+          strictPort: true,
+          watch: { followSymlinks: false },
+          fs: {
+            allow: [root, await realpath(join(root, 'src')), SOURCE],
+          },
+        },
+        plugins,
+      }),
+    );
+    server.watcher.add(await realpath(join(root, 'src')));
+    await server.listen();
+    const address = server.httpServer!.address() as { port: number };
+    const baseURL = tls
+      ? process.env.CAMPANULA_DEV_ORIGIN!
+      : `http://${modes[mode].httpHost}:${address.port}`;
+    let sessionCookie = '';
+    if (syntheticSession) {
+      const runner = (server.environments.ssr as RunnableDevEnvironment).runner;
+      const credentials = (await runner.import(
+        new URL('../src/lib/server/credentials.ts', import.meta.url).pathname,
+      )) as typeof import('../src/lib/server/credentials.ts');
+      const now = Date.now;
+
+      try {
+        Date.now = () => 0;
+        sessionCookie = credentials.loginCookieHeader('synthetic-device', {
+          MUSIC_U: 'synthetic-product-session',
+        });
+      } finally {
+        Date.now = now;
+      }
+    }
+    await sendMessage({ baseURL, sessionCookie });
+  } catch (error) {
+    console.error(error);
+    try {
+      await sendMessage({ error: String(error) });
+    } finally {
+      await close(1);
+    }
+  }
+};
 
 export { certificateFiles };
 export type { TlsFiles };
@@ -691,7 +679,7 @@ if (
 ) {
   if (process.argv.includes('--worker')) {
     if (!process.send) throw new Error('worker 入口需要由启动器派生');
-    runWorker();
+    await runWorker();
   } else
     await main().catch((error) => {
       log.error(error instanceof Error ? error.message : String(error), {

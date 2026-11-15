@@ -92,7 +92,14 @@ const startTerminal = (args: string[], env: NodeJS.ProcessEnv) => {
   };
 };
 
-it.each(['approve', 'decline', 'interrupt', 'terminate', 'pnpm'] as const)(
+it.each([
+  'approve',
+  'decline',
+  'interrupt',
+  'terminate',
+  'stubborn',
+  'pnpm',
+] as const)(
   '首次交互授权 %s：保留控制终端、清理自有进程且不写系统信任',
   async (action) => {
     const root = await mkdtemp(join(tmpdir(), 'campanula-terminal-'));
@@ -103,12 +110,18 @@ it.each(['approve', 'decline', 'interrupt', 'terminate', 'pnpm'] as const)(
       prompt,
       `
 import { openSync, closeSync, readSync, writeSync } from 'node:fs';
+if (${action === 'stubborn'}) {
+  process.on('SIGINT', () => {});
+  setInterval(() => {}, 1000);
+  console.log('CAMPANULA_PASSWORD: ');
+} else {
 const terminal = openSync('/dev/tty', 'r+');
 writeSync(terminal, 'CAMPANULA_PASSWORD: ');
 let input = ''; const byte = Buffer.alloc(1);
 while (readSync(terminal, byte, 0, 1, null) && byte[0] !== 10) input += byte.toString();
 closeSync(terminal);
 console.log(input.trim() === 'test-approval' ? 'AUTH_ACCEPTED' : 'AUTH_DENIED');
+}
 `,
     );
     // mkcert 的系统命令捕获输出且不传 stdin，sudo 只能从控制终端读取授权。
@@ -159,7 +172,8 @@ child.once('close', (code) => process.exit(code === 0 ? 42 : 1));
         if (action === 'approve' || action === 'pnpm')
           terminal.write('test-approval\n');
         if (action === 'interrupt') terminal.write('\x03');
-        if (action === 'terminate') process.kill(pids.launcher, 'SIGTERM');
+        if (action === 'terminate' || action === 'stubborn')
+          process.kill(pids.launcher, 'SIGTERM');
       }
       await terminal.waitFor('__CLI_EXIT__');
       if (action === 'approve' || action === 'pnpm') {

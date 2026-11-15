@@ -20,7 +20,7 @@ pnpm dev:mock    # https://mock.campanula.test:8444/mock/login
 
 每次系统修改前都有确认，可以选择取消；只有需要这些步骤时才询问。`pnpm dev:setup` 可以单独完成或复核准备，不启动应用。无交互终端遇到首次准备会退出并给出指引。
 
-需要密码的命令保留本终端的控制终端，sudo 会直接读取系统密码；启动器不采集密码，也不用 `sudo -S` 传递密码。取消时先向该命令的自有子进程转发信号，再等待命令退出和释放工作锁。
+需要密码的命令保留本终端的控制终端，sudo 会直接读取系统密码；启动器不采集密码，也不用 `sudo -S` 传递密码。取消时向定位到的自有后代发送 SIGINT，等待一秒后强制终止仍未退出的进程，再等待命令退出和释放工作锁。系统权限阻止终止或强制终止后仍未退出时会显示警告，不会自动再次提权。
 
 mkcert 的部分浏览器信任库还依赖平台工具，例如 Firefox 使用的 NSS。以 mkcert 输出为准；系统授权窗口、浏览器证书信任和首次访问仍需本人确认。曾手动移除系统信任时，重新运行 `pnpm dev:setup`，本地记录不能证明系统信任后来没有改变。
 
@@ -60,6 +60,8 @@ pnpm dev --print-config        # 只输出 JSON 地址配置，不启动或准�
 ## 实现与自动化边界
 
 `scripts/dev.mts` 是 CLI、模式、地址与生命周期策略的唯一入口，私有模块 `scripts/dev/` 实现工作根、证书文件、前台系统命令与 HTTP 操作。`tests/_kit` 只转出共享接口，mock 插件仍在测试装配层；产品配置不装 mock。
+
+Vite 子进程通过 execa 的 IPC 接收启动参数与取消通知，先关闭 Vite 并保存覆盖率，五秒内未退出则由 execa 强制终止其进程组；父进程等待退出后再释放工作根。需要密码的系统命令保留前台，另用 pidtree 定位自有后代、p-wait-for 等待退出。
 
 `pnpm test:environment` 覆盖真实 CLI、隔离、缓存、取消和重试，不需要系统 mkcert/OpenSSL。显式 `pnpm test:environment:https` 需要 mkcert 与 OpenSSL，使用临时 CAROOT、源码和高位端口，验证真实签发、复用续签、HTTP/1.1、HTTP/2、Cookie、域名门禁、WSS/HMR 和退出；不安装 CA 或修改 hosts，也不连接作者浏览器、账号。报告见 [测试导航](../tests/README.md)。
 
