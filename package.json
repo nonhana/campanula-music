@@ -73,6 +73,7 @@
     "lint-staged": "catalog:git",
     "music-metadata": "catalog:music",
     "oxfmt": "catalog:lint",
+    "pidtree": "catalog:dev",
     "simple-git-hooks": "catalog:git",
     "svelte": "catalog:build",
     "svelte-check": "catalog:typescript",

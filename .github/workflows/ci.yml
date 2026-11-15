@@ -43,7 +43,10 @@ jobs:
         run: pnpm check:endpoints
 
       - name: 测试
-        run: pnpm test --coverage
+        # 控制终端回归使用系统 Python 标准库，不安装 CA 或修改 hosts。
+        run: |
+          python3 --version
+          pnpm test --coverage
 
       - name: SSR 覆盖率校准
         run: pnpm test:coverage:calibrate

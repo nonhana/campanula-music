@@ -189,6 +189,9 @@ catalogs:
     execa:
       specifier: 10.2.1
       version: 10.2.1
+    pidtree:
+      specifier: 1.0.0
+      version: 1.0.0
   git:
     lint-staged:
       specifier: ^17.6.0
@@ -416,6 +419,9 @@ importers:
       oxfmt:
         specifier: catalog:lint
         version: 0.78.0(svelte@5.57.3(@typescript-eslint/types@8.72.0))
+      pidtree:
+        specifier: catalog:dev
+        version: 1.0.0
       simple-git-hooks:
         specifier: catalog:git
         version: 2.14.0
@@ -3715,6 +3721,11 @@ packages:
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
+
+  pidtree@1.0.0:
+    resolution: {integrity: sha512-avfAvjB9Dd0wdj3rjJX//yS+G79OO0KrS5pJHFJENjYGX6N4SMgEDBBI/yFy0lloOYSaC6XQxzpOAMPfSYFV/Q==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   pkce-challenge@5.0.1:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
@@ -7616,6 +7627,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
+
+  pidtree@1.0.0: {}
 
   pkce-challenge@5.0.1: {}
 

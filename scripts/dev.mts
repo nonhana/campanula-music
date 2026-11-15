@@ -32,6 +32,7 @@ import {
 } from './dev/environment.mts';
 import type { ProcessEnvironmentOptions } from './dev/environment.mts';
 import { requestURL } from './dev/http.mts';
+import { runTerminalCommand } from './dev/terminal.mts';
 
 const modes = {
   product: {
@@ -139,10 +140,10 @@ const runWorker = () =>
         await coverage?.();
         process.exit(0);
       };
-      process.once('SIGTERM', () => {
+      process.on('SIGTERM', () => {
         void close();
       });
-      process.once('SIGINT', () => {
+      process.on('SIGINT', () => {
         void close();
       });
       process.once('disconnect', () => {
@@ -420,13 +421,7 @@ const prepareCertificate = async (
     );
     binary = await resolveMkcert(signal);
     log.step('安装或复核本机 CA 信任', { output: process.stdout });
-    await execa(binary, ['-install'], {
-      cancelSignal: signal,
-      killDescendants: true,
-      stdin: 'inherit',
-      stdout: 'inherit',
-      stderr: 'inherit',
-    });
+    await runTerminalCommand(binary, ['-install'], { signal });
     const { stdout } = await execa(binary, ['-CAROOT'], {
       cancelSignal: signal,
       killDescendants: true,
@@ -537,12 +532,9 @@ const prepareDevelopmentDns = async (
       `将 ${missing.join('、')} 添加到 /etc/hosts，指向 127.0.0.1？可能需要系统密码。`,
       signal,
     );
-    await execa('sudo', ['tee', '-a', '/etc/hosts'], {
+    await runTerminalCommand('sudo', ['tee', '-a', '/etc/hosts'], {
       input: `\n# Campanula local development\n127.0.0.1 ${missing.join(' ')}\n`,
-      stdout: 'ignore',
-      stderr: 'inherit',
-      cancelSignal: signal,
-      killDescendants: true,
+      signal,
     });
   } else
     await confirmAction(
@@ -550,15 +542,11 @@ const prepareDevelopmentDns = async (
       signal,
     );
   if (process.platform === 'darwin') {
-    await execa('sudo', ['dscacheutil', '-flushcache'], {
-      stdio: 'inherit',
-      cancelSignal: signal,
-      killDescendants: true,
+    await runTerminalCommand('sudo', ['dscacheutil', '-flushcache'], {
+      signal,
     });
-    await execa('sudo', ['killall', '-HUP', 'mDNSResponder'], {
-      stdio: 'inherit',
-      cancelSignal: signal,
-      killDescendants: true,
+    await runTerminalCommand('sudo', ['killall', '-HUP', 'mDNSResponder'], {
+      signal,
     });
   }
   await checkDevelopmentDns(hostname);
@@ -603,8 +591,9 @@ const main = async () => {
   }
   const controller = new AbortController();
   const stop = () => controller.abort();
-  process.once('SIGINT', stop);
-  process.once('SIGTERM', stop);
+  // 异步收尾完成前保留监听，避免子进程库把信号重新发送给启动器。
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
   let environment: Awaited<ReturnType<typeof startEnvironment>> | undefined;
   intro(`Campanula · ${mode === 'mock' ? 'Mock' : 'Dev'}`, {
     output: process.stdout,
@@ -678,6 +667,8 @@ const main = async () => {
       throw new Error('开发服务器异常退出');
   } catch (error) {
     if (controller.signal.aborted || (error as Error).name === 'AbortError') {
+      if (error instanceof AggregateError)
+        log.warn(error.message, { output: process.stdout });
       log.info('已取消启动', { output: process.stdout });
       process.exitCode = 130;
     } else {

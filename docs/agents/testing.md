@@ -45,3 +45,5 @@ Spec #96 增加受控浏览器旅程和 a11y 层，使用自行启动的 Chromiu
 只读请求在业务 301 后最多续期一次，写入默认不自动重放。包含写入和后续查询的流程，通过 App 操作验证已经成功的写入只有一次、重读保持原编号、失败不存成本机成功；创建歌单的 301 和连接中断样本明确标为构造场景。带 token 写入也要断言失败后没有隐式重放，听众再次操作时浏览器取得新 token。不要按 HTTP GET/POST 推断读写。
 
 环境生命周期回归用 `pnpm test:environment`，与默认套件复用 delivery 选择；每份临时环境有独占子进程、工作根和密钥，World 与 Vitest 自身也使用独立根，避免重写普通开发的 `$app` 与 env。统一开发入口与证书策略由 `scripts/dev.mts` 提供，测试只复用接口；默认 delivery 另验证证书复用、并发续签、失败和取消。原生 HTTPS、真实 mkcert、HTTP/2 与 WSS 用显式专项 `pnpm test:environment:https`，见测试导航和 ADR-0020。
+
+交互子进程或首次提权引导变化时，运行 `tests/delivery/dev-terminal.test.ts`：用伪终端验证控制终端读取、拒绝、Ctrl+C / SIGTERM 和自有进程清理。它只向受控替身输入固定标记，测试不安装系统 CA 或修改 hosts；依赖与边界见测试导航。

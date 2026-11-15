@@ -1,6 +1,6 @@
 # 测试导航
 
-新检出仓库先用 `.node-version` 的 Node 和 `package.json` 的 pnpm 版本运行 `pnpm install --frozen-lockfile`。下列命令自己启动本机 HTTP 和 Kit，只用合成设备与脱敏录制，不需要正在运行的 dev、浏览器、全局 CLI 或账号凭据。
+新检出仓库先用 `.node-version` 的 Node 和 `package.json` 的 pnpm 版本运行 `pnpm install --frozen-lockfile`。下列命令自己启动本机 HTTP 和 Kit，只用合成设备与脱敏录制，不需要正在运行的 dev、浏览器、全局浏览器 CLI 或账号凭据。控制终端回归在 macOS/Linux 使用 Python 3.9+ 标准库的 pty；这是测试依赖，`pnpm dev` 本身不依赖 Python。
 
 ## 从一个文件开始
 
@@ -78,5 +78,7 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 覆盖率同时采集 World 所属 worker 和环境子进程的真实 V8 数据，按各自执行时的源码映射合并。`sourceBeforeMove` 按 `baselines/environment-source-map.json` 纳入原来位于 src 的十份 mock 文件，继续执行原 src 的 47% 行 / 39% 分支阈值；当前 src 单列，产品、App、服务端和 API 路由保持原阈值。源码逐文件完整性门禁保留全部未运行文件。这样可以区分目录迁移和实际断言变化，不拿搬目录制造提升。
 
 默认开发命令按需引导首次系统准备，复用同一 mkcert CA，站点证书进入 30 天窗口自动续签，再用 Vite 原生 HTTPS 启动。HTTPS 专项在临时 CAROOT 实际签发并续签，验证 HTTP/1.1、HTTP/2、错误域名、Cookie、WSS/HMR、Ctrl+C 和中断清理；不执行 mkcert -install 或修改 hosts。普通离线回归使用合成证书和受控签发器，检查缓存、并发、无效证书、取消与重试，以及无交互首次引导，不依赖 mkcert/OpenSSL。旧 Caddy 443 权限诊断用例随代理移除；替代验证是统一 CLI 的非特权默认端口与实际 TLS 启动。
+
+`tests/delivery/dev-terminal.test.ts` 在真实伪终端运行实际 CLI 和 `pnpm dev`，受控 mkcert 替身按上游方式关闭内层 stdin，再从 `/dev/tty` 读取固定测试标记。授权后主动以 42 停止，避免触及系统信任；另验证拒绝、Ctrl+C、SIGTERM、工作锁与自有进程清理。会话在断言后才关闭，防止挂断终端替实现收尾。Python 只负责 PTY 转发，不计入 V8 覆盖率；本项不代表已经完成本人系统密码和钥匙串授权。
 
 开发基础设施迁入 `scripts/dev.mts` 与 `scripts/dev/` 后仍显式纳入 infrastructure 覆盖率分区；产品与 sourceBeforeMove 的阈值及文件集合保持原口径。

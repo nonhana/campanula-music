@@ -20,3 +20,5 @@
 2026-11-15 作者试运行后更新：`scripts/dev.mts` 是 dev / dev:mock 的 SSOT，统一模式配置、首次引导、证书策略与 Vite 生命周期；私有模块 `scripts/dev/` 承担工作根、证书文件和 HTTP。`tests/_kit` 只转出接口，mock 仍从外部装配。移除人工 Caddy 代理和分散在 tests/tools 的启动命令。
 
 直接 dev 按需确认 mkcert 下载、系统 CA 安装与 hosts 追加；系统修改必须先在交互终端确认。成功准备后保存 CA 路径与指纹，正常启动复用本机长期 CA，不重新安装信任；叶证书检查有效期、SAN、签名和私钥，剩余不超过 30 天自动用原 CA 续签。并发签发加锁，完整新证书组校验后原子发布；失败或取消不覆盖可用缓存。失效 CA 的更换与重新信任需明确操作，不静默删除。Ctrl+C / SIGTERM 关闭自己派生的 Vite、释放端口与锁，保留 CA、证书和稳定身份；不终止占用端口的其他进程。HTTP 备用保持显式选择。
+
+2026-11-16 作者首次授权复现 sudo 无法读取终端：Unix 上 execa 的 killDescendants 会隐式 detached，继承 stdio 不能保留控制终端。mkcert -install、hosts 追加和 DNS 刷新统一走前台终端执行器，取消时用 pidtree 定位本命令的后代后转发信号；不向启动器所在的整个进程组广播。主信号监听保留到异步收尾完成，避免 signal-exit 在 once 监听移除后重新发送信号。非交互的版本探测、CAROOT 和签发继续使用独立进程组。伪终端回归关闭内层 stdin 验证真实控制终端读取，同时保持会话到断言之后；自动化仍不安装系统 CA 或修改 hosts。
