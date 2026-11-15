@@ -55,22 +55,21 @@ pnpm test:coverage:calibrate
 ## 独立开发环境
 
 ```sh
-pnpm dev:setup                    # 首次显式准备证书，再自行完成解析与信任
-pnpm dev:proxy                    # 单独保持回环代理运行
-pnpm dev                          # https://local.campanula.test，产品实现
-pnpm dev:mock                     # https://mock.campanula.test，稳定人工 mock
+pnpm dev:setup                    # 可选：只复核 CA 信任和解析，不启动应用
+pnpm dev                          # https://local.campanula.test:8443，产品实现
+pnpm dev:mock                     # https://mock.campanula.test:8444，稳定人工 mock
 pnpm dev:http                     # localhost:5173，显式 HTTP
 pnpm dev:mock:http                # 127.0.0.1:5174，显式 HTTP mock
 pnpm test:environment             # delivery 环境回归，默认 pnpm test 也会运行
 pnpm test:environment tests/delivery/environment.test.ts
-pnpm test:environment:https       # 显式专项，需要 Caddy/OpenSSL；独立信任与高位端口
+pnpm test:environment:https       # 显式专项，需要 mkcert/OpenSSL；临时 CA 与高位端口
 ```
 
-`tests/_kit/environment.ts` 输出 baseURL、internalURL（代理后端地址）、root、PID、reset、close。HTTPS 的 reset 使用外部 origin，调用方提供只信任本次 CA 的 request 客户端。临时环境有自己的子进程和新密钥，不读取作者 `.env`；人工 mock 使用 `.campanula/mock` 稳定根与身份。node_modules 本身不链接，只逐个链接已安装的包；可写缓存和 `$app` 留在自己的根。启动失败、取消或关闭释放自己的端口和锁；临时根删除，稳定根保留密钥，重复启动明确失败。World 的严格队列在所属 Vitest worker 中运行，环境变量经该根的 `.env` 生成，受控时钟/日志保持原断言。
+`scripts/dev.mts` 统一管理模式、地址、CLI 与启动策略，`tests/_kit/environment.ts` 仅转出其接口：baseURL、internalURL（实际监听地址）、root、PID、reset、close。HTTPS 的 reset 使用外部 origin，调用方提供只信任本次 CA 的 request 客户端。临时环境有自己的子进程和新密钥，不读取作者 `.env`；人工 mock 使用 `.campanula/mock` 稳定根与身份。node_modules 本身不链接，只逐个链接已安装的包；可写缓存和 `$app` 留在自己的根。启动失败、取消或关闭释放自己的端口和锁；临时根删除，稳定根保留密钥，重复启动明确失败。World 的严格队列在所属 Vitest worker 中运行，环境变量经该根的 `.env` 生成，受控时钟/日志保持原断言。
 
 `tests/delivery/environment.test.ts` 验证两种启动顺序、同 Cookie jar 的合成会话、普通生成文件和缓存、并发改名、reset、退出、重启、空 jar、端口冲突和取消后重试。普通环境的合成 Cookie 由产品凭据函数生成，时间固定到需要续期，HTTP 返回续期要求，避免调用真实网易云。mock HTTP 合同保留在 mock-server 回归。结果在 本次运行的 `delivery/`；每个 fixture 结束留下 `.reports/environments/*.json`，含实际地址、根、PID、退出、阶段与日志，不记录密钥或会话。
 
-reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另建 jar/context。HTTPS 的临时源码与证书、正常校验和 WSS/HMR 结果在 `.reports/https/<本次专项>/result.json`，人工配置和迁移见 [双 HTTPS](tools/https/README.md)。环境网络探针不证明页面渲染、IndexedDB、焦点或新路由；这些由 #100 接手。真账号、Android、系统选择器和真实读屏仍由作者试用。
+reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另建 jar/context。HTTPS 的临时源码与证书、正常校验和 WSS/HMR 结果在 `.reports/https/<本次专项>/result.json`，人工配置和迁移见 [本地开发](../docs/development.md)。环境网络探针不证明页面渲染、IndexedDB、焦点或新路由；这些由 #100 接手。真账号、Android、系统选择器和真实读屏仍由作者试用。
 
 历史加密 Cookie 的兼容回归保留原始 header，并在 `credentials.test.ts` 显式使用样本中声明的合成测试密钥；这份只用于兼容检查的密钥不作为其他 World 或开发环境的默认值。
 
@@ -78,4 +77,6 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 
 覆盖率同时采集 World 所属 worker 和环境子进程的真实 V8 数据，按各自执行时的源码映射合并。`sourceBeforeMove` 按 `baselines/environment-source-map.json` 纳入原来位于 src 的十份 mock 文件，继续执行原 src 的 47% 行 / 39% 分支阈值；当前 src 单列，产品、App、服务端和 API 路由保持原阈值。源码逐文件完整性门禁保留全部未运行文件。这样可以区分目录迁移和实际断言变化，不拿搬目录制造提升。
 
-默认开发命令会检查证书与代理，缺准备时明确退出并指向 `dev:setup` / `dev:proxy`；不会悄悄降为 HTTP。HTTPS 专项以临时目录和端口运行真实命令入口，检查主日志显示 HTTPS、两站响应以及缺代理的失败；普通离线回归只检查缺证书的指引，不依赖 Caddy/OpenSSL。
+默认开发命令按需引导首次系统准备，复用同一 mkcert CA，站点证书进入 30 天窗口自动续签，再用 Vite 原生 HTTPS 启动。HTTPS 专项在临时 CAROOT 实际签发并续签，验证 HTTP/1.1、HTTP/2、错误域名、Cookie、WSS/HMR、Ctrl+C 和中断清理；不执行 mkcert -install 或修改 hosts。普通离线回归使用合成证书和受控签发器，检查缓存、并发、无效证书、取消与重试，以及无交互首次引导，不依赖 mkcert/OpenSSL。旧 Caddy 443 权限诊断用例随代理移除；替代验证是统一 CLI 的非特权默认端口与实际 TLS 启动。
+
+开发基础设施迁入 `scripts/dev.mts` 与 `scripts/dev/` 后仍显式纳入 infrastructure 覆盖率分区；产品与 sourceBeforeMove 的阈值及文件集合保持原口径。

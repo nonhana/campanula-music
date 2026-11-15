@@ -11,141 +11,186 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
+import { connect } from 'node:http2';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import process from 'node:process';
-import { setTimeout as delay } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { CookieJar } from 'tough-cookie';
 import WebSocket from 'ws';
 
 import { startCommand } from '../_kit/command.ts';
-import { startEnvironment } from '../_kit/environment.ts';
 import { requestURL } from '../_kit/http.ts';
 import { createWorkspace, SOURCE } from '../_kit/workspace.ts';
 import { createCertificate } from './https/certificate.mts';
 
-const interrupted = new AbortController();
+const root = await mkdtemp(join(tmpdir(), 'campanula-https-'));
+const reportDir = join(SOURCE, '.reports/https', basename(root));
+await mkdir(reportDir, { recursive: true });
+const commands: ReturnType<typeof startCommand>[] = [];
+const sockets: WebSocket[] = [];
+const sites: {
+  origin: string;
+  port: number;
+  root: string;
+  command: ReturnType<typeof startCommand>;
+}[] = [];
+const messages: { origin: string; event: unknown }[] = [];
+const checks: string[] = [];
+const interruption = new AbortController();
 const interruptCheck = process.argv.includes('--interrupt-check');
 let expectedInterruption = false;
-const root = await mkdtemp(join(tmpdir(), 'campanula-https-'));
-const environments: Awaited<ReturnType<typeof startEnvironment>>[] = [];
-const sockets: WebSocket[] = [];
-const commands: ReturnType<typeof startCommand>[] = [];
-let cliWorkspace: Awaited<ReturnType<typeof createWorkspace>> | undefined;
-let proxyCommand: ReturnType<typeof startCommand> | undefined;
-let logs = '';
-const checks: string[] = [];
-const messages: { origin: string; event: unknown }[] = [];
-let stage = 'certificate';
 let failure: unknown;
-let port = 0;
-const reportDir = join(SOURCE, '.reports/https', basename(root));
+let trustedCa: Buffer | undefined;
+let stage = 'certificate';
 const stop = () => {
-  interrupted.abort(new Error('HTTPS 专项已中断'));
+  interruption.abort(new Error('HTTPS 专项已中断'));
   for (const socket of sockets) socket.terminate();
   for (const command of commands) void command.close();
-  void proxyCommand?.close();
 };
 process.once('SIGINT', stop);
 process.once('SIGTERM', stop);
-await mkdir(reportDir, { recursive: true });
-await rm(join(reportDir, 'result.json'), { force: true });
 try {
-  const files = await createCertificate(join(root, 'tls'));
+  const files = await createCertificate(
+    join(root, 'certificates'),
+    interruption.signal,
+  );
+  checks.push(
+    '真实 mkcert 复用 CA 和有效证书，临期自动续签，不执行系统信任安装',
+  );
   const ca = await readFile(files.ca);
-  interrupted.signal.throwIfAborted();
-  stage = 'source snapshot';
+  trustedCa = ca;
   const source = join(root, 'source');
   await cp(join(SOURCE, 'src'), join(source, 'src'), { recursive: true });
   await symlink(join(SOURCE, 'static'), join(source, 'static'), 'dir');
   const probeFile = join(source, 'src/lib/dev/EnvironmentHmrProbe.svelte');
-  const probeSource = '<p>HMR probe</p><style>p { color: red; }</style>\n';
-  await writeFile(probeFile, probeSource);
+  await writeFile(
+    probeFile,
+    '<p>HMR probe</p><style>p { color: red; }</style>\n',
+  );
   const snapshot = await createWorkspace({ root: source });
   await snapshot.close();
-  const listener = createServer();
-  await new Promise<void>((resolve, reject) => {
-    listener.once('error', reject);
-    listener.listen(0, '127.0.0.1', resolve);
-  });
-  port = (listener.address() as { port: number }).port;
-  await new Promise<void>((resolve) => listener.close(() => resolve()));
-  const productOrigin = `https://local.campanula.test:${port}`;
-  const mockOrigin = `https://mock.campanula.test:${port}`;
-  stage = 'backends';
-  const product = await startEnvironment({
-    mode: 'product',
-    signal: interrupted.signal,
-    source,
-    origin: productOrigin,
-  });
-  environments.push(product);
-  const mock = await startEnvironment({
-    mode: 'mock',
-    signal: interrupted.signal,
-    source,
-    origin: mockOrigin,
-    request: (url, init) => requestURL(url, { ca, method: init?.method }),
-  });
-  environments.push(mock);
-  interrupted.signal.throwIfAborted();
-  stage = 'proxy';
-  proxyCommand = startCommand(
-    process.execPath,
-    [
-      '--import',
-      import.meta.resolve('tsx'),
-      join(SOURCE, 'tests/tools/dev-proxy.mts'),
-    ],
-    {
-      cwd: root,
-      env: {
-        PATH: process.env.PATH,
-        TSX_DISABLE_CACHE: '1',
-        CAMPANULA_DEV_TLS_DIR: join(root, 'tls'),
-        CAMPANULA_DEV_PROXY_ROOT: join(root, 'proxy'),
-        CAMPANULA_HTTPS_PORT: String(port),
-        CAMPANULA_TLS_CERT: files.cert,
-        CAMPANULA_TLS_KEY: files.key,
-        CAMPANULA_PRODUCT_UPSTREAM: new URL(product.internalURL).host,
-        CAMPANULA_MOCK_UPSTREAM: new URL(mock.internalURL).host,
+  stage = 'native HTTPS command startup';
+  for (const mode of ['product', 'mock'] as const) {
+    interruption.signal.throwIfAborted();
+    const listener = createServer();
+    await new Promise<void>((resolve, reject) => {
+      listener.once('error', reject);
+      listener.listen(0, '127.0.0.1', resolve);
+    });
+    const port = (listener.address() as { port: number }).port;
+    await new Promise<void>((resolve) => listener.close(() => resolve()));
+    const origin = `https://${mode === 'product' ? 'local' : 'mock'}.campanula.test:${port}`;
+    const workspace = await createWorkspace({ root: join(root, mode), source });
+    await workspace.close();
+    const command = startCommand(
+      process.execPath,
+      [
+        '--import',
+        import.meta.resolve('tsx'),
+        join(SOURCE, 'scripts/dev.mts'),
+        ...(mode === 'mock' ? ['--mock'] : []),
+        '--port',
+        String(port),
+        '--cert',
+        files.cert,
+        '--key',
+        files.key,
+        '--ca',
+        files.ca,
+        '--skip-dns-check',
+      ],
+      {
+        cwd: workspace.root,
+        env: {
+          PATH: process.env.PATH,
+          TSX_DISABLE_CACHE: '1',
+          NO_COLOR: '1',
+          ...workspace.env,
+          CAMPANULA_DEV_MOCK_ROOT: workspace.root,
+          CAMPANULA_DEV_SOURCE: source,
+        },
       },
-    },
-  );
-  const proxy = proxyCommand.child;
-  proxy.stdout?.on('data', (data: Buffer) => {
-    logs += data.toString();
-  });
-  proxy.stderr?.on('data', (data: Buffer) => {
-    logs += data.toString();
-  });
-  let spawnError: Error | undefined;
-  proxy.once('error', (error) => {
-    spawnError = error;
-  });
-  for (let attempt = 0; ; attempt++) {
-    interrupted.signal.throwIfAborted();
-    if (spawnError) throw spawnError;
-    try {
-      assert.equal((await requestURL(productOrigin, { ca })).status, 200);
-      break;
-    } catch (error) {
-      if (attempt >= 50 || proxy.exitCode !== null) throw error;
-      await delay(100);
-    }
+    );
+    commands.push(command);
+    sites.push({ origin, port, root: workspace.root, command });
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error(command.logs)), 30_000);
+      const capture = () => {
+        if (command.logs.includes(`Ready: ${origin}`)) {
+          clearTimeout(timeout);
+          resolve();
+        }
+      };
+      command.child.stdout.on('data', capture);
+      command.child.stderr.on('data', capture);
+      command.child.once('close', () => {
+        clearTimeout(timeout);
+        reject(new Error(command.logs));
+      });
+      command.child.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
   }
-  stage = 'TLS and HTML';
-  for (const origin of [productOrigin, mockOrigin]) {
-    const response = await requestURL(origin, { ca });
+  const [product, mock] = sites as [
+    (typeof sites)[number],
+    (typeof sites)[number],
+  ];
+  checks.push(
+    '真实统一 CLI 分别启动普通 / mock 原生 HTTPS，无 Caddy 或共享代理',
+  );
+  stage = 'HTML, TLS, Cookie and origin';
+  for (const site of sites) {
+    const response = await requestURL(site.origin, { ca });
     assert.equal(response.status, 200);
     assert.match(await response.text(), /<!doctype html>/i);
-    await assert.rejects(requestURL(origin));
+    await assert.rejects(requestURL(site.origin));
+    const session = connect(site.origin, {
+      ca,
+      servername: new URL(site.origin).hostname,
+      lookup: (_host, options, callback) =>
+        options.all
+          ? callback(null, [{ address: '127.0.0.1', family: 4 }])
+          : callback(null, '127.0.0.1', 4),
+    });
+    try {
+      for (const [authority, expected] of [
+        [new URL(site.origin).host, 200],
+        ['unexpected.campanula.test', 421],
+      ] as const) {
+        const status = await new Promise<number>((resolve, reject) => {
+          const stream = session.request({
+            ':path': '/api/account',
+            ':authority': authority,
+          });
+          const timeout = setTimeout(() => {
+            stream.destroy();
+            reject(new Error('HTTP/2 超时'));
+          }, 10_000);
+          const fail = (error: Error) => {
+            clearTimeout(timeout);
+            reject(error);
+          };
+          session.once('error', fail);
+          stream.once('error', fail);
+          stream.once('response', (headers) => {
+            clearTimeout(timeout);
+            session.removeListener('error', fail);
+            resolve(Number(headers[':status']));
+          });
+          stream.resume();
+          stream.end();
+        });
+        assert.equal(status, expected, 'HTTP/2 使用 :authority 检查域名');
+      }
+    } finally {
+      session.destroy();
+    }
   }
-  checks.push('两站 HTML；指定 CA 正常校验；缺 CA 失败');
-  stage = 'cookies and origins';
   const jar = new CookieJar();
   const request = async (origin: string, path: string, method = 'GET') => {
     const response = await requestURL(origin + path, {
@@ -157,46 +202,62 @@ try {
       await jar.setCookie(cookie, origin);
     return response;
   };
-  const login = await request(mockOrigin, '/mock/login');
+  const login = await request(mock.origin, '/mock/login');
   assert.equal(login.status, 303);
-  const scenario = await requestURL(`${mockOrigin}/api/mock/scenario`, {
-    ca,
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'after' }),
-  });
-  assert.equal(scenario.status, 200);
-  await mock.reset();
-  assert.equal(
-    (
-      await requestURL(`${mockOrigin}/api/mock/status`, { ca }).then((r) =>
-        r.json(),
-      )
-    ).seed,
-    'before',
-  );
   const cookie = login.headers.get('set-cookie')!;
   for (const attribute of ['Secure', 'HttpOnly', 'SameSite=Strict'])
     assert.ok(cookie.toLowerCase().includes(attribute.toLowerCase()));
   assert.ok(!/domain=/i.test(cookie));
   assert.equal(
-    (await request(mockOrigin, '/api/account').then((r) => r.json())).account
+    (await request(mock.origin, '/api/account').then((r) => r.json())).account
       .id,
     10000001,
   );
   assert.deepEqual(
-    await request(productOrigin, '/api/account').then((r) => r.json()),
+    await request(product.origin, '/api/account').then((r) => r.json()),
     { account: null },
   );
-  assert.equal(await jar.getCookieString(productOrigin), '');
-  assert.equal((await request(mockOrigin, '/api/logout', 'POST')).status, 200);
+  assert.equal(await jar.getCookieString(product.origin), '');
+  await requestURL(`${mock.origin}/api/mock/scenario`, {
+    ca,
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'after' }),
+  });
+  assert.equal(
+    (
+      await requestURL(`${mock.origin}/api/mock/status`, { ca }).then((r) =>
+        r.json(),
+      )
+    ).seed,
+    'after',
+  );
+  assert.equal(
+    (await request(mock.origin, '/api/mock/reset', 'POST')).status,
+    200,
+  );
+  assert.equal(
+    (
+      await requestURL(`${mock.origin}/api/mock/status`, { ca }).then((r) =>
+        r.json(),
+      )
+    ).seed,
+    'before',
+  );
+  assert.equal(
+    (await request(mock.origin, '/api/account').then((r) => r.json())).account
+      .id,
+    10000001,
+  );
+  assert.equal((await request(mock.origin, '/api/logout', 'POST')).status, 200);
   assert.deepEqual(
-    await request(mockOrigin, '/api/account').then((r) => r.json()),
+    await request(mock.origin, '/api/account').then((r) => r.json()),
     { account: null },
   );
-  for (const backend of [product, mock]) {
+  for (const site of sites)
     for (const path of ['/mock/login', '/api/playlists/900000019/name']) {
-      const rejected = await requestURL(backend.internalURL + path, {
+      const rejected = await requestURL(site.origin + path, {
+        ca,
         method: 'POST',
         headers: { host: 'localhost:5174' },
       });
@@ -204,22 +265,21 @@ try {
       assert.equal(rejected.headers.get('set-cookie'), null);
       assert.match(await rejected.text(), /https:\/\//);
     }
-  }
-  checks.push(
-    '同 jar host-only Secure Cookie；mock 登录/账号/退出；普通匿名；旧 Host 写入前拒绝',
-  );
-  const unknownHost = await requestURL(`${productOrigin}/api/login/qr/key`, {
+  const wrong = await requestURL(`${product.origin}/api/login/qr/key`, {
     ca,
     headers: { host: 'unknown.campanula.test' },
   });
-  assert.ok(unknownHost.status >= 400);
-  assert.equal(unknownHost.headers.get('set-cookie'), null);
+  assert.equal(wrong.status, 421);
+  assert.equal(wrong.headers.get('set-cookie'), null);
   await assert.rejects(
-    requestURL(`https://unknown.campanula.test:${port}/`, { ca }),
+    requestURL(`https://unknown.campanula.test:${product.port}`, { ca }),
+  );
+  checks.push(
+    '双站 HTML / 缺 CA 拒绝 / 同 jar host-only Secure Cookie / 登录账号 reset 退出 / 错误 Host 写入前拒绝',
   );
   stage = 'WSS and HMR';
   const updates: Promise<unknown>[] = [];
-  for (const origin of [productOrigin, mockOrigin]) {
+  for (const origin of [product.origin, mock.origin]) {
     const client = await requestURL(`${origin}/@vite/client`, { ca }).then(
       (r) => r.text(),
     );
@@ -262,7 +322,7 @@ try {
     await writeFile(
       join(
         reportDir,
-        origin === productOrigin ? 'product-probe.js' : 'mock-probe.js',
+        origin === product.origin ? 'product-probe.js' : 'mock-probe.js',
       ),
       await module.text(),
     );
@@ -302,211 +362,97 @@ try {
   } finally {
     await writeFile(page, original);
   }
-  checks.push('双站点 WSS 经 Caddy，修改同一临时 Svelte 后双端收到 update');
-  stage = 'default development commands';
-  await product.close();
-  await mock.close();
-  cliWorkspace = await createWorkspace({ root: join(root, 'cli-product') });
-  for (const command of [
-    {
-      file: 'dev-product.mts',
-      cwd: cliWorkspace.root,
-      env: cliWorkspace.env,
-      origin: productOrigin,
-      backend: product.internalURL,
-    },
-    {
-      file: 'dev-mock.mts',
-      cwd: SOURCE,
-      env: { CAMPANULA_DEV_MOCK_ROOT: join(root, 'cli-mock') },
-      origin: mockOrigin,
-      backend: mock.internalURL,
-    },
-  ]) {
-    interrupted.signal.throwIfAborted();
-    const started = startCommand(
+
+  checks.push(
+    '双原生 WSS 连接正确站点，修改同一临时 Svelte 后均收到实际 update',
+  );
+  stage = 'tool request';
+  for (const site of sites) {
+    const tool = startCommand(
       process.execPath,
       [
         '--import',
         import.meta.resolve('tsx'),
-        join(SOURCE, 'tests/tools', command.file),
-        '--port',
-        new URL(command.backend).port,
+        '--input-type=module',
+        '-e',
+        `
+    import { requestDevelopment } from ${JSON.stringify(pathToFileURL(join(SOURCE, 'scripts/dev.mts')).href)};
+    const response = await requestDevelopment(${JSON.stringify(`${site.origin}/api/account`)});
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    console.log(await response.text());
+  `,
       ],
       {
-        cwd: command.cwd,
         env: {
           PATH: process.env.PATH,
           TSX_DISABLE_CACHE: '1',
-          ...command.env,
-          CAMPANULA_DEV_TLS_DIR: join(root, 'tls'),
-          CAMPANULA_HTTPS_PORT: String(port),
+          CAMPANULA_DEV_TLS_DIR: join(root, 'certificates/tls'),
+          CAMPANULA_DEV_ORIGIN: site.origin,
         },
       },
     );
-    const child = started.child;
-    commands.push(started);
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(
-        () =>
-          reject(new Error(`默认命令未就绪：${command.file}\n${started.logs}`)),
-        30_000,
-      );
-      const capture = () => {
-        const marker =
-          command.file === 'dev-product.mts' ? 'Local:   ' : 'Mock ready: ';
-        if (started.logs.includes(`${marker}${command.origin}`)) {
-          clearTimeout(timeout);
-          resolve();
-        }
-      };
-      child.stdout.on('data', capture);
-      child.stderr.on('data', capture);
-      child.once('error', (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-      child.once('close', () => {
-        clearTimeout(timeout);
-        reject(new Error(started.logs));
-      });
-    });
-    assert.ok(started.logs.includes(command.origin));
-    assert.ok(!started.logs.includes('Local:   http://'));
+    commands.push(tool);
+    await tool.finished;
+    assert.equal(tool.child.exitCode, 0, tool.logs);
+    assert.deepEqual(JSON.parse(tool.logs), { account: null });
   }
-  assert.deepEqual(
-    await requestURL(`${productOrigin}/api/account`, { ca }).then((r) =>
-      r.json(),
-    ),
-    { account: null },
-  );
-  const commandLogin = await requestURL(`${mockOrigin}/mock/login`, { ca });
-  assert.equal(commandLogin.status, 303);
-  const signedIn = await requestURL(`${mockOrigin}/api/account`, {
-    ca,
-    headers: { cookie: commandLogin.headers.get('set-cookie')!.split(';')[0] },
-  }).then((r) => r.json());
-  assert.equal(signedIn.account.id, 10000001);
-  checks.push(
-    '真实 dev / dev:mock 默认入口显示 HTTPS；普通匿名，mock 可登录；代理由 dev:proxy 实际入口启动',
-  );
-  stage = 'browser tool HTTPS requests';
-  interrupted.signal.throwIfAborted();
-  const toolRequest = startCommand(
-    process.execPath,
-    [
-      '--import',
-      import.meta.resolve('tsx'),
-      '--input-type=module',
-      '-e',
-      `import { requestDevelopment } from ${JSON.stringify(pathToFileURL(join(SOURCE, 'tests/tools/https/development.mts')).href)};
-     const response = await requestDevelopment(${JSON.stringify(`${mockOrigin}/api/mock/status`)});
-     if (!response.ok) throw new Error('HTTP ' + response.status);
-     console.log(await response.text());`,
-    ],
-    {
-      env: {
-        PATH: process.env.PATH,
-        TSX_DISABLE_CACHE: '1',
-        CAMPANULA_DEV_TLS_DIR: join(root, 'tls'),
-      },
-    },
-  );
-  commands.push(toolRequest);
-  await toolRequest.finished;
-  assert.equal(toolRequest.child.exitCode, 0, toolRequest.logs);
-  assert.equal(JSON.parse(toolRequest.logs).enabled, true);
-  checks.push(
-    '浏览器工具的 Node 请求仅为开发域名解析回环并正常信任项目 CA，不依赖系统 DNS / CA',
-  );
+  checks.push('浏览器工具通过 SSOT 的作用域 CA / 解析连接正确 HTTPS 站点');
   if (interruptCheck) {
-    interrupted.signal.throwIfAborted();
+    stage = 'real SIGTERM interruption';
     expectedInterruption = true;
     await new Promise<void>((resolve) => {
       process.once('SIGTERM', resolve);
       process.kill(process.pid, 'SIGTERM');
     });
-    interrupted.signal.throwIfAborted();
-    throw new Error('没有收到专项 SIGTERM');
+    interruption.signal.throwIfAborted();
+    throw new Error('未收到中断信号');
   }
-  interrupted.signal.throwIfAborted();
-  stage = 'missing proxy guidance';
-  await proxyCommand.close();
-  interrupted.signal.throwIfAborted();
-  const missingCommand = startCommand(
-    process.execPath,
-    [
-      '--import',
-      import.meta.resolve('tsx'),
-      join(SOURCE, 'tests/tools/dev-product.mts'),
-      '--port',
-      new URL(product.internalURL).port,
-    ],
-    {
-      cwd: cliWorkspace.root,
-      env: {
-        PATH: process.env.PATH,
-        TSX_DISABLE_CACHE: '1',
-        CAMPANULA_DEV_TLS_DIR: join(root, 'tls'),
-        CAMPANULA_HTTPS_PORT: String(port),
-      },
-    },
+  stage = 'one mode exits';
+  product.command.child.kill('SIGINT');
+  await product.command.finished;
+  assert.ok(product.command.logs.includes('Stopped'));
+  await assert.rejects(requestURL(product.origin, { ca }));
+  assert.equal(
+    (await requestURL(`${mock.origin}/api/mock/status`, { ca })).status,
+    200,
   );
-  const missingProxy = missingCommand.child;
-  let guidance = '';
-  commands.push(missingCommand);
-  missingProxy.stdout.on('data', (chunk: Buffer) => {
-    guidance += chunk.toString();
-  });
-  missingProxy.stderr.on('data', (chunk: Buffer) => {
-    guidance += chunk.toString();
-  });
-  const missingTimeout = setTimeout(() => missingProxy.kill('SIGTERM'), 15_000);
-  const missingCode = await new Promise((resolve, reject) => {
-    missingProxy.once('error', reject);
-    missingProxy.once('close', resolve);
-  });
-  clearTimeout(missingTimeout);
-  assert.equal(missingCode, 1);
-  assert.ok(guidance.includes('pnpm dev:proxy'));
-  checks.push('证书已准备但代理未启动时明确退出并提示 dev:proxy，不退回 HTTP');
+  assert.equal(
+    (await readFile(join(mock.root, 'identity.json'), 'utf8')).length > 0,
+    true,
+  );
+  checks.push(
+    '普通入口 Ctrl+C 释放端口，mock 保持响应与身份；两个模式无共享进程',
+  );
 } catch (error) {
   if (
     expectedInterruption &&
-    interrupted.signal.aborted &&
-    error === interrupted.signal.reason
+    interruption.signal.aborted &&
+    error === interruption.signal.reason
   )
-    checks.push('真实 SIGTERM 中断：退出并清理命令进程组、端口和临时根');
+    checks.push('真实 SIGTERM 后等待统一入口与其子进程清理');
   else failure = error;
 } finally {
   for (const socket of sockets) socket.terminate();
-  for (const command of commands.reverse()) await command.close();
-  await cliWorkspace?.close();
-  await proxyCommand?.close();
-  for (const environment of environments.reverse()) await environment.close();
+  for (const command of [...commands].reverse()) await command.close();
+  for (const site of sites) {
+    await assert.rejects(requestURL(site.origin, { ca: trustedCa }));
+    if (site.command.child.exitCode === 130)
+      assert.ok(site.command.logs.includes('Stopped'));
+  }
   await rm(root, { recursive: true, force: true });
   await assert.rejects(access(root));
-  for (const environment of environments)
-    await assert.rejects(requestURL(environment.internalURL));
   const report = {
     passed: !failure,
     interruptCheck,
     stage,
-    port,
     checks,
     messages,
     cleaned: true,
     root,
-    commands: commands.map(({ child, logs }) => ({ pid: child.pid, logs })),
-    proxyPid: proxyCommand?.child.pid,
     reportDir,
-    ...(failure
-      ? {
-          error: String(failure),
-          logs,
-          backends: environments.map((e) => ({ root: e.root, logs: e.logs })),
-        }
-      : {}),
+    sites: sites.map(({ origin, port }) => ({ origin, port })),
+    commands: commands.map((c) => ({ pid: c.child.pid, logs: c.logs })),
+    ...(failure ? { error: String(failure) } : {}),
   };
   await writeFile(
     join(reportDir, 'result.json'),

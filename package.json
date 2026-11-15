@@ -8,8 +8,8 @@
     "#lib/*": "./src/lib/*"
   },
   "scripts": {
-    "dev": "tsx tests/tools/dev-product.mts",
-    "dev:mock": "tsx tests/tools/dev-mock.mts",
+    "dev": "tsx scripts/dev.mts",
+    "dev:mock": "tsx scripts/dev.mts --mock",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
@@ -33,13 +33,13 @@
     "test:coverage:calibrate": "CAMPANULA_COVERAGE_CALIBRATE=1 tsx tests/tools/run.mts behavior tests/behavior/session.test.ts -t 未登录：没有当前账号 --coverage",
     "test:environment": "tsx tests/tools/run.mts delivery",
     "test:environment:https": "tsx tests/tools/https-check.mts && tsx tests/tools/https-check.mts --interrupt-check",
-    "dev:http": "tsx tests/tools/dev-product.mts --http",
-    "dev:mock:http": "tsx tests/tools/dev-mock.mts --http",
-    "dev:setup": "tsx tests/tools/https-prepare.mts",
-    "dev:proxy": "tsx tests/tools/dev-proxy.mts"
+    "dev:http": "tsx scripts/dev.mts --http",
+    "dev:mock:http": "tsx scripts/dev.mts --mock --http",
+    "dev:setup": "tsx scripts/dev.mts --setup"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:lint",
+    "@clack/prompts": "catalog:dev",
     "@fontsource-variable/noto-sans": "catalog:ui",
     "@fontsource-variable/noto-sans-jp": "catalog:ui",
     "@fontsource-variable/noto-sans-sc": "catalog:ui",
@@ -66,6 +66,7 @@
     "chrome-devtools-mcp": "catalog:test",
     "eslint": "catalog:lint",
     "eslint-plugin-svelte": "catalog:lint",
+    "execa": "catalog:dev",
     "fake-indexeddb": "catalog:test",
     "hana-music-api": "catalog:music",
     "knip": "catalog:lint",

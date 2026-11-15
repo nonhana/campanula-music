@@ -82,14 +82,12 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: 准备专项代理（只解包，不安装服务或 CA）
+      - name: 准备专项 mkcert（仅下载二进制，不安装 CA）
         run: |
-          sudo apt-get update
-          mkdir -p "$RUNNER_TEMP/caddy"
-          cd "$RUNNER_TEMP/caddy"
-          apt-get download caddy
-          dpkg-deb -x ./*.deb .
-          echo "$RUNNER_TEMP/caddy/usr/bin" >> "$GITHUB_PATH"
+          mkdir -p "$RUNNER_TEMP/campanula-tools"
+          curl --fail --location --retry 3 https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 -o "$RUNNER_TEMP/campanula-tools/mkcert"
+          chmod +x "$RUNNER_TEMP/campanula-tools/mkcert"
+          echo "$RUNNER_TEMP/campanula-tools" >> "$GITHUB_PATH"
       - name: 双 HTTPS、Cookie 与 WSS/HMR
         run: pnpm test:environment:https
       - name: HTTPS 专项报告

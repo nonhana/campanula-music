@@ -36,7 +36,11 @@ const developmentOrigin = (): Plugin => ({
       const expected = externalOrigin
         ? new URL(externalOrigin).host
         : undefined;
-      const host = req.headers.host ?? '';
+      const authority =
+        req.httpVersionMajor === 2
+          ? req.headers[':authority']
+          : req.headers.host;
+      const host = typeof authority === 'string' ? authority : '';
       const hostname = host.split(':')[0];
       if (
         expected

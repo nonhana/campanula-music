@@ -20,7 +20,7 @@ it('普通 dev:http 的实际入口遇到已占用端口时退出，不启动另
     [
       '--import',
       import.meta.resolve('tsx'),
-      join(SOURCE, 'tests/tools/dev-product.mts'),
+      join(SOURCE, 'scripts/dev.mts'),
       '--http',
       '--host',
       'localhost',

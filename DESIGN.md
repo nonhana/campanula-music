@@ -686,4 +686,4 @@ Campanula 是风铃草。界面像清晨窗边的一株风铃草：整页是一�
 
 规则核心和去掉界面的 App 回归、消费者合同及 mock 自检分别报告，入口见 `tests/README.md`。App 替身和 SSR 覆盖率不证明组件的 DOM、焦点与动效；Spec #96 新增的受控浏览器旅程和 a11y 层由对应票交付，真实账号、Android 系统与读屏仍按作者试用清单验收。见 ADR-0019。
 
-开发环境按 ADR-0020 隔离工作根、Cookie 主机和测试装配；mock 标记由测试开发壳加入，产品布局不判断 mock。双 HTTPS 的 HTTP/WSS 探针不证明界面渲染，使用方法见 `tests/tools/https/README.md`。
+开发环境按 ADR-0020 隔离工作根、Cookie 主机和测试装配；mock 标记由测试开发壳加入，产品布局不判断 mock。双 HTTPS 的 HTTP/1.1、HTTP/2 与 WSS 探针不证明界面渲染，使用方法见 `docs/development.md`。

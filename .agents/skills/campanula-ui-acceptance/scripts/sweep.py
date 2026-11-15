@@ -25,7 +25,10 @@ import urllib.request
 
 ROOT = pathlib.Path(subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True, check=True).stdout.strip())
 REAL_BROWSER = os.environ.get('CAMPANULA_BROWSER') == 'real'
-BASE = os.environ.get('CAMPANULA_BROWSER_ORIGIN', 'https://local.campanula.test' if REAL_BROWSER else 'https://mock.campanula.test')
+_DEV_ARGS = [] if REAL_BROWSER else ['--mock']
+BASE = os.environ.get('CAMPANULA_BROWSER_ORIGIN') or json.loads(subprocess.run(
+    ['pnpm', 'exec', 'tsx', str(ROOT / 'scripts/dev.mts'), '--print-config', *_DEV_ARGS],
+    cwd=ROOT, capture_output=True, text=True, check=True).stdout)['origin']
 # 专用窗口里打开着 BASE 的那个标签页在 list_pages 里的编号：第一次调 DevTools 前自动找（_page()），没有就开一个；
 # 浏览器重开后编号会变，call() 连不上时会重新找
 PAGE = None

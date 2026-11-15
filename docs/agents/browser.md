@@ -93,4 +93,4 @@ reviewer 只看 diff，不碰浏览器。截图、动效逐帧、浏览器检查
 
 `campanula-ui-acceptance` 的 `sweep.py` 默认连 mock：`CAMPANULA_BROWSER_ORIGIN` 默认 `https://mock.campanula.test`，端口用 `scripts/browser.sh port` 拿；要拍真账号时设 `CAMPANULA_BROWSER=real`，并先 `check --real`。mock 下写入是安全的，但截图前仍要按 skill 的拦截规则看清是在拍什么状态。
 
-常用 dev / dev:mock 默认 HTTPS；先按 `tests/tools/https/README.md` 显式准备证书、解析与信任，再启动 dev:proxy。HTTP 备用命令为 dev:http / dev:mock:http，浏览器工具通过 CAMPANULA_BROWSER_ORIGIN 显式选择对应 HTTP origin。
+常用 dev / dev:mock 默认 HTTPS（8443 / 8444）；直接运行，首次按提示确认准备，见 [本地开发](../development.md)。工具从 `scripts/dev.mts` 读取默认地址。HTTP 备用命令为 dev:http / dev:mock:http，浏览器工具通过 CAMPANULA_BROWSER_ORIGIN 显式选择对应 origin。

@@ -15,14 +15,11 @@ v1 正在 `rewrite/v1` 分支上从零重写，还不能使用。
 ```bash
 pnpm install
 cp .env.example .env   # 填上 COOKIE_SECRET：openssl rand -base64 32
-pnpm dev:setup        # 显式生成本地证书，先安装 Caddy 和 OpenSSL
-# 按 tests/tools/https/README.md 配置域名解析并信任本地 CA
-pnpm dev:proxy        # 在单独终端保持运行
-pnpm dev              # https://local.campanula.test/，真账号
-pnpm dev:mock         # https://mock.campanula.test/mock/login，mock 数据
+pnpm dev              # https://local.campanula.test:8443/，真账号
+pnpm dev:mock         # https://mock.campanula.test:8444/mock/login，mock 数据
 ```
 
-首次准备和信任步骤见 [本地 HTTPS](./tests/tools/https/README.md)。暂时使用 HTTP 可运行 `pnpm dev:http` / `pnpm dev:mock:http`。
+直接运行会按需引导首次 CA 信任与域名解析，之后复用证书、临期自动续签；每个模式只需一个终端，Ctrl+C 自动收尾。步骤和旧版迁移见 [本地开发](./docs/development.md)。暂时使用 HTTP 可运行 `pnpm dev:http` / `pnpm dev:mock:http`。
 
 mock 的账号、歌单、红心、搜索、播放地址都来自 `tests/fixtures/netease/`，写操作只改内存状态，可重置；详见 `docs/agents/mock.md`。
 

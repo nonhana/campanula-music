@@ -37,7 +37,7 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 
 ## 3. 浏览器：日常 mock，真账号只给交付
 
-**默认走 mock**：`pnpm dev:mock`（端口 5174）加 `scripts/browser.sh`（会话 `campanula-mock`，不需要登录；打开页面自动用测试账号登录，左下角显示 `Mock · 测试数据`）。mock 的歌曲、封面、音频都来自本地，写操作只改 mock 内存状态，安全。详见 `docs/agents/mock.md` 和 `docs/agents/browser.md`。
+**默认走 mock**：`pnpm dev:mock`（HTTPS 8444）加 `scripts/browser.sh`（会话 `campanula-mock`，不需要登录；打开页面自动用测试账号登录，左下角显示 `Mock · 测试数据`）。mock 的歌曲、封面、音频都来自本地，写操作只改 mock 内存状态，安全。详见 `docs/agents/mock.md` 和 `docs/agents/browser.md`。
 
 - 开发时看一眼：`scripts/browser.sh open /`、`scripts/browser.sh exec "<js>"`、`scripts/browser.sh screenshot <文件>`、`scripts/browser.sh reset`、`scripts/browser.sh scenario <场景>`。同一时间只允许一个 agent（文件锁）。
 - 操作回放用 `scripts/playwright.sh`，无障碍扫描用 `scripts/browser.sh axe`；接入、trace、报告位置与退出码见 `docs/agents/browser.md` 对应章节。Playwright 复用 mock Chrome；这些诊断不新增 `@playwright/test` 测试，也不加入默认 CI。
@@ -56,7 +56,7 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 
 ## 4. 检查和截图：作者点名时交给子代理，用 sweep.py
 
-只做作者点到的那几项。用 `task` 开一个子代理做，主会话不进这个循环、不看截图。给子代理的内容：这个 skill 的名字、票号、作者要的那几项（画面、视口、状态、要点的链接）、第 2 步的对照要点、mock 开发服务器（`pnpm dev:mock`，5174）已经开着；要拍真账号时另说，并先 `scripts/browser.sh check --real`。页面上有会写账号的按钮时，再给它第 3 步那两条和要装的拦截规则。子代理在 Python eval 里：
+只做作者点到的那几项。用 `task` 开一个子代理做，主会话不进这个循环、不看截图。给子代理的内容：这个 skill 的名字、票号、作者要的那几项（画面、视口、状态、要点的链接）、第 2 步的对照要点、mock 开发服务器（`pnpm dev:mock`，HTTPS 8444）已经开着；要拍真账号时另说，并先 `scripts/browser.sh check --real`。页面上有会写账号的按钮时，再给它第 3 步那两条和要装的拦截规则。子代理在 Python eval 里：
 
 ```python
 %load .agents/skills/campanula-ui-acceptance/scripts/sweep.py

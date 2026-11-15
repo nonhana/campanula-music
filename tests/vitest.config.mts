@@ -39,6 +39,8 @@ export default defineConfig(async () => {
           `${ROOT}src/**/*.ts`,
           `${ROOT}src/**/*.svelte`,
           `${ROOT}tests/_kit/**/*.ts`,
+          `${ROOT}scripts/dev.mts`,
+          `${ROOT}scripts/dev/**/*.mts`,
           `${ROOT}tests/tools/**/*.mts`,
           `${ROOT}tests/suites.ts`,
           `${ROOT}tests/coverage/**/*.ts`,

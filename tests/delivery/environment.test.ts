@@ -199,18 +199,27 @@ it.each(['product-first', 'mock-first'])(
 
 it('两个临时 mock 并发改名，失败、reset 和关闭只影响自己的实例', async () => {
   const stableRoot = await mkdtemp(join(tmpdir(), 'campanula-manual-'));
-  const product = await startEnvironment({ mode: 'product' });
-  const stable = await startEnvironment({ mode: 'mock', root: stableRoot });
-  const left = await startEnvironment({ mode: 'mock' });
-  const right = await startEnvironment({ mode: 'mock' });
-  const login = async (environment: typeof left) => {
-    const response = await fetch(`${environment.baseURL}/mock/login`, {
-      redirect: 'manual',
-    });
-    return response.headers.get('set-cookie')!.split(';')[0];
-  };
+  const launched = await Promise.allSettled([
+    startEnvironment({ mode: 'product' }),
+    startEnvironment({ mode: 'mock', root: stableRoot }),
+    startEnvironment({ mode: 'mock' }),
+    startEnvironment({ mode: 'mock' }),
+  ]);
+  const all = launched.flatMap((result) =>
+    result.status === 'fulfilled' ? [result.value] : [],
+  );
   try {
-    const all = [product, stable, left, right];
+    for (const result of launched)
+      if (result.status === 'rejected') throw result.reason;
+    const product = all[0]!;
+    const left = all[2]!;
+    const right = all[3]!;
+    const login = async (environment: typeof left) => {
+      const response = await fetch(`${environment.baseURL}/mock/login`, {
+        redirect: 'manual',
+      });
+      return response.headers.get('set-cookie')!.split(';')[0];
+    };
     expect(new Set(all.map((e) => e.pid)).size).toBe(4);
     expect(
       new Set(
@@ -282,11 +291,11 @@ it('两个临时 mock 并发改名，失败、reset 和关闭只影响自己的�
       }).then((r) => r.json()),
     ).toEqual({ account: null });
   } finally {
-    await left.close();
-    await right.close();
-    await stable.close();
-    await product.close();
+    const closed = await Promise.allSettled(
+      all.map((environment) => environment.close()),
+    );
     await rm(stableRoot, { recursive: true, force: true });
+    expect(closed.filter((result) => result.status === 'rejected')).toEqual([]);
   }
 }, 60_000);
 

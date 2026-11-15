@@ -9,15 +9,11 @@ import type { AxeResults } from 'axe-core';
 
 import { RENEWAL_ATTEMPTED_HEADER } from '#lib/api/check-token.ts';
 
-import { requestDevelopment } from '../tests/tools/https/development.mts';
+import { developmentSettings, requestDevelopment } from './dev.mts';
 
 const ROOT = join(import.meta.dirname, '..');
 const AXI = join(ROOT, 'scripts/axi.sh');
 const LOCK = join(homedir(), '.cache/campanula-axi/browser.lock');
-const MOCK_ORIGIN =
-  process.env.CAMPANULA_BROWSER_ORIGIN ?? 'https://mock.campanula.test';
-const REAL_ORIGIN =
-  process.env.CAMPANULA_BROWSER_ORIGIN ?? 'https://local.campanula.test';
 const MOCK_PROFILE = join(homedir(), '.cache/campanula-axi/mock-profile');
 
 const args = process.argv.slice(2);
@@ -25,7 +21,9 @@ const real =
   args.includes('--real') || process.env.CAMPANULA_BROWSER === 'real';
 const command = args.find((arg) => !arg.startsWith('--')) ?? 'check';
 const rest = args.filter((arg) => arg !== command && arg !== '--real');
-const origin = real ? REAL_ORIGIN : MOCK_ORIGIN;
+const origin =
+  process.env.CAMPANULA_BROWSER_ORIGIN ??
+  developmentSettings(real ? 'product' : 'mock').origin;
 const session = real ? 'campanula' : 'campanula-mock';
 
 const lock = (): (() => void) => {
@@ -199,9 +197,9 @@ const mockStatus = async (): Promise<{
   seed: string;
   offline: boolean;
 }> => {
-  const response = await requestDevelopment(`${MOCK_ORIGIN}/api/mock/status`);
+  const response = await requestDevelopment(`${origin}/api/mock/status`);
   if (!response.ok)
-    throw new Error(`mock 开发服务器没开：先 pnpm dev:mock（${MOCK_ORIGIN}）`);
+    throw new Error(`mock 开发服务器没开：先 pnpm dev:mock（${origin}）`);
   return response.json() as Promise<{
     enabled: boolean;
     scenario: string;
@@ -212,7 +210,7 @@ const mockStatus = async (): Promise<{
 
 const postMock = async (path: string, body?: unknown): Promise<void> => {
   const response = await requestDevelopment(
-    `${MOCK_ORIGIN}${path}`,
+    `${origin}${path}`,
     body === undefined
       ? { method: 'POST' }
       : {
@@ -317,7 +315,7 @@ const main = async (): Promise<void> => {
         await call('evaluate_script', {
           pageId,
           function: `async () => {
-            if (location.origin !== ${JSON.stringify(MOCK_ORIGIN)} || !document.querySelector('main'))
+            if (location.origin !== ${JSON.stringify(origin)} || !document.querySelector('main'))
               throw new Error('先用 scripts/browser.sh open 打开要检查的 mock 页面，并等页面加载好');
             return await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] } });
           }`,
@@ -350,11 +348,9 @@ const main = async (): Promise<void> => {
       case 'check':
         if (real) {
           try {
-            await requestDevelopment(`${REAL_ORIGIN}/api/account`);
+            await requestDevelopment(`${origin}/api/account`);
           } catch {
-            throw new Error(
-              `真账号开发服务器没开：先 pnpm dev（${REAL_ORIGIN}）`,
-            );
+            throw new Error(`真账号开发服务器没开：先 pnpm dev（${origin}）`);
           }
         }
         if (!real) {
@@ -388,11 +384,9 @@ const main = async (): Promise<void> => {
       case 'open': {
         if (real) {
           try {
-            await requestDevelopment(`${REAL_ORIGIN}/api/account`);
+            await requestDevelopment(`${origin}/api/account`);
           } catch {
-            throw new Error(
-              `真账号开发服务器没开：先 pnpm dev（${REAL_ORIGIN}）`,
-            );
+            throw new Error(`真账号开发服务器没开：先 pnpm dev（${origin}）`);
           }
         }
         if (!real) await mockStatus();
@@ -464,7 +458,7 @@ const main = async (): Promise<void> => {
           return;
         }
         const response = await requestDevelopment(
-          `${MOCK_ORIGIN}/api/mock/coverage`,
+          `${origin}/api/mock/coverage`,
         );
         console.log(JSON.stringify(await response.json(), null, 2));
         return;

@@ -101,7 +101,10 @@ export class SsrCoverageProvider extends V8CoverageProvider {
       routes: (file: string) => file.startsWith('src/routes/api/'),
       ui: (file: string) => file.endsWith('.svelte'),
       infrastructure: (file: string) =>
-        file.startsWith('tests/') || file.startsWith('src/lib/dev/'),
+        file.startsWith('tests/') ||
+        file.startsWith('src/lib/dev/') ||
+        file === 'scripts/dev.mts' ||
+        file.startsWith('scripts/dev/'),
     };
     const summary: Record<string, CoverageSummaryData & { files: number }> = {};
     for (const [name, includes] of Object.entries(partitions)) {
@@ -125,7 +128,7 @@ export class SsrCoverageProvider extends V8CoverageProvider {
       ssr: '独立 Vite module runner 的 V8 执行数据，按当次源码映射合并；原始数据见 ssr-raw，独立映射见 ssr.json',
       ui: '未采集：本套件没有启动浏览器，Svelte 的零值不代表界面已验证',
       infrastructure:
-        '测试工具、替身已归 tests，src/lib/dev 不计入 product；src 的 mock 目录迁移单列，不当作新增行为覆盖，contract 录制自检不代表听众旅程',
+        '测试工具、替身归 tests，开发启动基础设施 scripts/dev.mts 与 scripts/dev/ 同列 infrastructure，src/lib/dev 不计入 product；src 的 mock 目录迁移单列，不当作新增行为覆盖，contract 录制自检不代表听众旅程',
       sourceBeforeMove:
         '保留 src 原阈值，按 environment-source-map.json 纳入原来在 src 的 mock 文件；当前 src 另列，不把迁移当作覆盖提升。',
       runtime: {

@@ -4,14 +4,14 @@
 
 ## 启动
 
-先按 [双 HTTPS 导航](../../tests/tools/https/README.md) 运行 `pnpm dev:setup`，显式完成解析 / 信任，在一个终端保持 `pnpm dev:proxy`。随后：
+直接运行 `pnpm dev:mock`，首次按提示确认 CA 信任和域名解析，见 [本地开发](../development.md)。看到 Ready 后，在另一终端按需运行 smoke：
 
 ```sh
 pnpm dev:mock
 pnpm smoke:mock
 ```
 
-- 默认入口 `https://mock.campanula.test/mock/login`，普通 `pnpm dev` 使用 `https://local.campanula.test/`。日志输出 HTTPS 地址；缺证书 / 代理会明确退出并给准备指引。
+- 默认入口 `https://mock.campanula.test:8444/mock/login`，普通 `pnpm dev` 使用 `https://local.campanula.test:8443/`。日志输出实际 HTTPS 地址；证书复用、续签和 Vite 由同一个启动器管理，Ctrl+C 自动收尾。
 - 临时 HTTP 用 `pnpm dev:mock:http`（127.0.0.1:5174），普通 HTTP 用 `pnpm dev:http`（localhost:5173）。Cookie 按主机隔离，端口不能隔离 Cookie；旧 localhost:5174 会拒绝登录 / 写入并给正确入口。
 - `.campanula/mock` 独占 Kit/env、`node_modules/$app`、Vite 缓存与密钥；只逐包链接依赖，不整体链接可写 node_modules。Ctrl+C 释放自己的锁并关闭子进程；重启沿用密钥和 Cookie，曲库回种子。
 - 作者浏览器工具默认 HTTPS。用 HTTP 时显式设 `CAMPANULA_BROWSER_ORIGIN=http://127.0.0.1:5174`；测试环境始终从 fixture 获取独占地址，不使用作者浏览器和配置。
