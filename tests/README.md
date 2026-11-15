@@ -12,7 +12,7 @@ pnpm test:contract tests/contract/api.test.ts
 pnpm test
 ```
 
-同一条播放用例既在单文件命令中运行，也在默认套件中运行。`-t` 过滤用例全名；Vitest 的其他运行参数也可以追加。文件或全名选不到用例时会失败。受控套件提供 `test:unit`、`test:behavior`、`test:contract` 和 `test:environment`；浏览器、a11y 和候选产物的入口由后续票交付。
+同一条播放用例既在单文件命令中运行，也在默认套件中运行。`-t` 过滤用例全名；Vitest 的其他运行参数也可以追加。文件或全名选不到用例时会失败。受控套件提供 `test:unit`、`test:behavior`、`test:contract` 和 `test:environment`；浏览器与 a11y 见下节；候选生产产物的入口由 #101 交付。
 
 | 目录                           | 输入与可观察输出                                                | 证据范围                                                                              |
 | ------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -48,7 +48,7 @@ pnpm test:coverage:calibrate
 
 采集使用 Vitest / V8 5.1.0，产品分母纳入 `src/**/*.ts` 和 `src/**/*.svelte`、排除声明，保留未运行文件。mock 已由 `src/lib/server/mock/` 移入 `tests/_kit/mock/`；`src/lib/dev/` 与 `tests/` 工具归测试基建，`product` 扣除开发页。`src` 的减少来自目录迁移及删除 mock-flag，不能写成新增行为覆盖。保留原始分区基线与阈值，并用相同 App / API 路由分区和 SSR 校准作可比较证据。独立 Vite module runner 的脚本使用绝对路径 `sourceURL`，标准采集器只收 `file://` 而漏掉它；测试采集器从同一次 V8 快照保留这些脚本，以当次内联源码映射转换后合并，不靠“请求过”人工填命中。
 
-157 个 `.svelte` 文件没有浏览器执行记录，报告明确标为未采集。它们仍在全 `src` 分母内，零值不证明界面行为；`.svelte.ts` 中的浏览器适配、Service Worker、安装和系统行为也不能由纯规则或 App 的替身证明。浏览器旅程 / a11y 自动化由 Spec #96 的后续票接入，真实账号、Android 系统与真实读屏仍由作者验收。
+157 个 `.svelte` 文件没有浏览器执行记录，报告明确标为未采集。它们仍在全 `src` 分母内，零值不证明界面行为；`.svelte.ts` 中的浏览器适配、Service Worker、安装和系统行为也不能由纯规则或 App 的替身证明。浏览器旅程 / a11y 已独立接入默认回归，但没有并入这份 V8 覆盖率；真实账号、Android 系统与真实读屏仍由作者验收。
 
 基线复测、校准前后分母、风险排序和新增回归的对照见 [baselines/coverage.md](baselines/coverage.md)。覆盖率数值只比较同口径分区；修正 SSR 漏采带来的增加与新增断言带来的增加分别记录。
 
@@ -89,6 +89,16 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 
 默认 `small` 为从现有脱敏样本组合的构造曲库：我喜欢的音乐、自建 poems、4 首可播放歌单，共 6 首歌；统一关联测试专辑 3149073、测试歌手 33927412。歌单形状来自 sync/before，歌曲来自 liked-page 与 album-artist；专辑/歌手形状来自 album-artist 的 008/004/012，关系与数量为构造，媒体由 assets.ts 可再生。歌词复用 playback/lyric_new.all-forms.json，不代表这些歌的真实歌词。运行时写入归当前实例，reset 还原种子。`large`、`after`、`deleted` 保留 4,984 首及历史差异，用于规模、分页，不承诺所有收藏导航完整。
 
-具名诊断用现有 `/api/mock/scenario` 或 `scripts/browser.sh scenario <名称>` 选择：`qr-confirm` 为 801→802→803，`qr-expired` 为 801→800（原始登录样本）；`empty-search` 合法空态、`tracks-512` 明确 initial 拒绝后 fallback（构造）；`missing-relation` 故意移除测试专辑关系。原 login-expired、rate-limited、partial-sync、slow、offline、空/删歌单继续保留。reset 回默认，只重置上游，不删除听众设备存储。
+具名诊断用现有 `/api/mock/scenario` 选择 `POST /api/mock/scenario` 的 JSON `{ "name": "场景" }` 选择：`qr-confirm` 为 801→802→803，`qr-expired` 为 801→800（原始登录样本）；`empty-search` 合法空态、`tracks-512` 明确 initial 拒绝后 fallback（构造）；`missing-relation` 故意移除测试专辑关系。原 login-expired、rate-limited、partial-sync、slow、offline、空/删歌单继续保留。reset 回默认，只重置上游，不删除听众设备存储。
 
-`mock-library.test.ts` 遍历所有声明的收藏和歌单、读媒体/歌词、改名读回、reset 及规模。`sdk-contract.test.ts` 用错误 body、缺失败元数据、错歌单 ID、遗漏和乱序证明门禁；严格队列收尾保留被产品吞掉的意外调用。模板回退的来源见 coverage.templates，World 不回退。扫码 Cookie、空搜索与 512、失败恢复由合同和 HTTP 回归负责；真实控件/焦点由后继浏览器票负责。
+`mock-library.test.ts` 遍历所有声明的收藏和歌单、读媒体/歌词、改名读回、reset 及规模。`sdk-contract.test.ts` 用错误 body、缺失败元数据、错歌单 ID、遗漏和乱序证明门禁；严格队列收尾保留被产品吞掉的意外调用。模板回退的来源见 coverage.templates，World 不回退。扫码 Cookie、空搜索与 512、失败恢复由合同和 HTTP 回归负责；真实控件/焦点由本页的 browser/a11y 套件负责。
+
+## 真实页面与无障碍
+
+先 `pnpm test:browser:install`（Linux `pnpm exec playwright install --with-deps chromium`）。`pnpm test` 顺序运行全部 Vitest、journeys 和 accessibility 文件；`pnpm test:browser <文件> --grep <名称> --project=desktop|phone --headed` 单独重跑，`pnpm test:a11y` 跑核心页面全页检查。journeys 在菜单、弹窗、失败状态也扫描相同 page。`pnpm smoke:mock` 复用保存用例，`pnpm test:browser:faults` 依次检出保存/名称/焦点故障再恢复。来源与目录在 tests/suites.ts；Vitest 只运行 .test.ts，Playwright 运行 .spec.ts，缺失套件/空选择失败。
+
+浏览器报告在 `.reports/browser/run-*`，含 JSON/HTML、每例 trace/截图、环境与网络附件、逐状态完整 axe JSON；故障报告在 `.reports/browser-faults/`。截图和逐帧诊断见 docs/agents/browser.md 与 tests/tools/browser/sweep.ts。零 violations 门禁不自动放宽；incomplete 的人工判断及历史首扫见 docs/acceptance/issue-100.md。
+
+fixture 使用真实 App/HTTP 和 #99 小曲库，每例新上游、独立根、空 context、高位端口；数据准备不替代目标按钮。执行期阻止非自有 origin；服务端 mock 不回退真实网易云。reset 只还原上游；另建 context 才是新设备。删除临时根、PID 与端口关闭有附件。真实账号、Android、系统选择器和 TalkBack 仍由作者验收；生产 PWA 断网重开由交付层验证。
+
+Linux CI 先安装配套浏览器和系统库，再用 `sh tests/tools/offline.sh pnpm test --coverage` 在无外网路由的临时网络命名空间运行（需要该 CI 的 sudo/unshare/ip/runuser）。普通 macOS 本地命令仍是同一 runner/fixture，并在 Chromium 请求层拒绝非自有 origin；没有声称在 macOS 修改或切断作者网络。

@@ -27,7 +27,7 @@
 ### 浏览器验证
 
 - 实现者默认不开浏览器，作者照试用清单亲手试；例外和清单写法见 `docs/agents/delivery.md` 第 3、6 步。reviewer 只看 diff。
-- 作者点名做浏览器检查时：mock 用 `pnpm dev:mock`（HTTPS 8444）和 `scripts/browser.sh`，见 `docs/agents/mock.md`；真账号用专用浏览器 `scripts/axi.sh`，打开前先 `scripts/browser.sh check --real`，不是登录态就停下请作者扫码，见 `docs/agents/browser.md`。
+- 作者点名做浏览器检查时，使用 `pnpm test:browser` 的独立服务和 Chromium；截图、逐帧与 axe 见 `docs/agents/browser.md` 和 UI 验收 skill。真实账号由作者用自己的浏览器试用。
 
 ## 代码地图
 

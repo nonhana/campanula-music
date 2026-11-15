@@ -5,7 +5,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import type { TestReport } from '../suites.ts';
-import { compareMigration, discoverTests, ROOT } from '../suites.ts';
+import {
+  compareMigration,
+  comparePrevious,
+  discoverTests,
+  ROOT,
+} from '../suites.ts';
 
 const [suite = 'all', ...args] = process.argv
   .slice(2)
@@ -13,6 +18,23 @@ const [suite = 'all', ...args] = process.argv
 const suites = discoverTests();
 if (suite !== 'all' && !(suite in suites))
   throw new Error(`未知套件：${suite}`);
+if (suite === 'browser' || suite === 'a11y') {
+  const child = spawn(
+    process.execPath,
+    [
+      fileURLToPath(import.meta.resolve('tsx/cli')),
+      'tests/tools/browser.mts',
+      ...(args.some((arg) => arg.endsWith('.ts')) ? [] : suites[suite]),
+      ...args,
+    ],
+    { cwd: ROOT, env: process.env, stdio: 'inherit' },
+  );
+  const code = await new Promise<number>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('exit', (code) => resolve(code ?? 1));
+  });
+  process.exit(code);
+}
 const full = suite === 'all' && args.every((arg) => arg === '--coverage');
 const runs = join(ROOT, '.reports/runs');
 await mkdir(runs, { recursive: true });
@@ -25,7 +47,18 @@ const kind =
   process.env.CAMPANULA_COVERAGE_CALIBRATE === '1' ? 'calibration' : suite;
 const publish = async (status: string) => {
   const manifest = JSON.stringify(
-    { status, suite, args, runRoot, reportDir, coverageDir },
+    {
+      status,
+      suite,
+      args,
+      runRoot,
+      reportDir,
+      coverageDir,
+      browser: await readFile(join(runRoot, 'browser.json'), 'utf8').then(
+        JSON.parse,
+        () => null,
+      ),
+    },
     null,
     2,
   );
@@ -100,16 +133,36 @@ try {
   );
   if (full) {
     const result = compareMigration(report);
+    const previous = comparePrevious(report);
     await writeFile(
       join(reportDir, 'migration.json'),
-      `${JSON.stringify(result, null, 2)}\n`,
+      `${JSON.stringify({ ...result, previous }, null, 2)}\n`,
     );
     console.log(
       `旧用例逐项核对：${result.preserved} 条保留，${result.added.length} 条新增`,
     );
   }
 
-  status = 'passed';
+  status = full ? 'running browser' : 'passed';
 } finally {
   await publish(status);
+}
+
+if (full) {
+  await publish('running browser');
+  const child = spawn(
+    process.execPath,
+    [fileURLToPath(import.meta.resolve('tsx/cli')), 'tests/tools/browser.mts'],
+    {
+      cwd: ROOT,
+      env: { ...process.env, CAMPANULA_PARENT_RUN: runRoot },
+      stdio: 'inherit',
+    },
+  );
+  const code = await new Promise<number>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('exit', (code) => resolve(code ?? 1));
+  });
+  await publish(code === 0 ? 'passed' : 'failed');
+  process.exitCode = code;
 }

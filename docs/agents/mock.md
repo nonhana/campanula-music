@@ -17,7 +17,7 @@ pnpm smoke:mock
 - 作者浏览器工具默认 HTTPS。用 HTTP 时显式设 `CAMPANULA_BROWSER_ORIGIN=http://127.0.0.1:5174`；测试环境始终从 fixture 获取独占地址，不使用作者浏览器和配置。
 - 普通开发与部署的 LOGIN_COOKIE_NAME 约定不变；mock 默认使用产品 Cookie 名称，以不同主机和独立密钥隔离。
 - 页面左下角显示 `Mock · 测试数据`。
-- 操作回放与无障碍扫描走 `scripts/playwright.sh` 和 `scripts/browser.sh axe`，复用同一 mock Chrome；命令和报告约定见 `browser.md`。
+- 自动化操作与无障碍扫描走 `pnpm test:browser` / `pnpm test:a11y`，自行启动服务和空 context；命令和报告约定见 `browser.md`。
 - 退出登录后，UI 的扫码 / 短信登录流程照常可用；mock 的二维码会直接成功。要回到已登录，再访问一次 `/mock/login`。
 - `/design` 在 `pnpm dev` 和 `pnpm dev:mock` 都能打开；设计页主体不进生产包，部署后的路由返回 404（#61）。
 
@@ -48,34 +48,34 @@ pnpm smoke:mock
 ## 场景
 
 ```sh
-scripts/browser.sh scenario login-expired
-scripts/browser.sh scenario rate-limited
-scripts/browser.sh reset          # 回到 default
-scripts/browser.sh coverage       # 看 mock 调过哪些模块、缺哪些录制
+curl -k -X POST https://mock.campanula.test:8444/api/mock/scenario -H 'content-type: application/json' -d '{"name":"login-expired"}'
+# 其他场景替换上面的 name
+curl -k -X POST https://mock.campanula.test:8444/api/mock/reset
+curl -k https://mock.campanula.test:8444/api/mock/coverage
 ```
 
-| 场景                                      | 看到什么                                                                 |
-| ----------------------------------------- | ------------------------------------------------------------------------ |
-| `default` / `large` / `after` / `deleted` | 换种子，见上表                                                           |
-| `login-expired`                           | 打开 App 显示“需要重新登录”，红心同步回 401                              |
-| `rate-limited`                            | 曲库同步的第一步回 405“操作过于频繁”，写入也一样                         |
-| `deleted-playlist`                        | poems 从歌单列表里消失；直接打开详情是已删除                             |
-| `empty-playlist`                          | poems 是 0 首                                                            |
-| `partial-sync`                            | 第二次取歌曲信息失败，曲库停在同步了一半                                 |
-| `slow`                                    | 每次网易云调用晚 800ms，看骨架和加载状态                                 |
-| `offline`                                 | API 回 503（连不上）；要看真正的断网，用 `scripts/browser.sh offline on` |
+| 场景                                      | 看到什么                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------ |
+| `default` / `large` / `after` / `deleted` | 换种子，见上表                                                                 |
+| `login-expired`                           | 打开 App 显示“需要重新登录”，红心同步回 401                                    |
+| `rate-limited`                            | 曲库同步的第一步回 405“操作过于频繁”，写入也一样                               |
+| `deleted-playlist`                        | poems 从歌单列表里消失；直接打开详情是已删除                                   |
+| `empty-playlist`                          | poems 是 0 首                                                                  |
+| `partial-sync`                            | 第二次取歌曲信息失败，曲库停在同步了一半                                       |
+| `slow`                                    | 每次网易云调用晚 800ms，看骨架和加载状态                                       |
+| `offline`                                 | API 回 503（连不上）；要看真正的断网，用 Playwright `context.setOffline(true)` |
 
 场景只影响 mock，不改 App 代码。自定义参数可以直接 `POST /api/mock/scenario`，例如 `{"name":"slow","latencyMs":2000}`。
 
 ## 没覆盖的模块
 
-mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确失败，服务端日志写清模块、查询、场景，`GET /api/mock/coverage`（或 `scripts/browser.sh coverage`）的 `misses` 里也有一条；不会静默回退到真账号。
+mock 只回答录制里有的模块和查询。遇到没覆盖的调用会明确失败，服务端日志写清模块、查询、场景，`GET /api/mock/coverage`的 `misses` 里也有一条；不会静默回退到真账号。
 
 要补：按 `tests/fixtures/netease/README.md`「录制」用 `tests/tools/netease-record.mts` 录，再跑 `pnpm fixtures:index`。
 
 ### 缺数据怎么处理
 
-先跑一遍要做的界面，让 mock 报错，`scripts/browser.sh coverage` 会给出模块、查询、场景。按缺的东西分：
+先跑一遍要做的界面，让 mock 报错，`GET /api/mock/coverage` 会给出模块、查询、场景。按缺的东西分：
 
 | 缺什么                                      | 怎么做                                                                                                                                                                    |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

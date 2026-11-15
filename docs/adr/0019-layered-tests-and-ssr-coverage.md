@@ -15,3 +15,5 @@
 运行入口和证据边界见 `tests/README.md`。目录迁移、修正漏采和新增断言的覆盖率变化分别报告，阈值以校准后的分区基线为据。原“不做界面自动化测试”的决定由 Spec #96 更新，尚未实现的浏览器和产物套件不发布空跑入口。
 
 环境隔离将 mock HTTP 放入独立子进程后，子进程也保存真实 V8 脚本与当次映射，同一轮合并。报告按运行独占目录；迁移前文件集合由路径表继续执行原 src 阈值，当前 src 与产品分区另列，原阈值数值不降低。
+
+2026-11-16：独立 Playwright Test / 配套 Chromium 与同 page axe 已落地，按 tests/suites.ts 选择，默认全量顺序运行 Vitest 与页面用例。临时服务和空 context 不依赖作者浏览器；真实 page 的 Cookie、IndexedDB/Cache Storage、HMR/新增路由和清理分别留证。诊断归 tests/tools/browser，移除旧 attach/profile 桥接。具体范围、首扫和人工边界见 #100 验收文档。

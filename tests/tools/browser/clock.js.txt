@@ -1,0 +1,5 @@
+(() => { if (window.__campanulaClock) return; const real = performance.now.bind(performance);
+  const C = window.__campanulaClock = { rate: 1, base: real(), virt: real(),
+    now() { const r = real(); C.virt += (r - C.base) * C.rate; C.base = r; return C.virt },
+    set(rate) { C.now(); C.rate = rate } };
+  performance.now = () => C.now() })();

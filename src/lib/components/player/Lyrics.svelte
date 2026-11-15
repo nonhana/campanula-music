@@ -290,6 +290,7 @@
           compact ? '-mr-2' : 'bleed',
         ]}
       >
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex (歌词滚动区需要原生键盘滚动) -->
         <div
           {@attach watchListenerScroll}
           {@attach tapLines}
@@ -297,6 +298,7 @@
           bind:clientHeight={height}
           class="scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
           role="group"
+          tabindex="0"
           aria-label="歌词"
         >
           <div class="anchor">

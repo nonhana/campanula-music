@@ -239,7 +239,7 @@ export const mockPlugin = (): Plugin => ({
   },
   transform(code, id) {
     if (id.endsWith('/src/routes/+layout.svelte'))
-      return `${code}\n<div style="position:fixed;bottom:12px;left:12px;z-index:9999;background:#111;color:white;border-radius:24px;padding:4px 12px;font-size:12px" aria-label="Mock 测试数据">Mock · 测试数据</div>`;
+      return `${code}\n<div style="position:fixed;bottom:12px;left:12px;z-index:9999;background:#111;color:white;border-radius:24px;padding:4px 12px;font-size:12px" role="region" aria-label="Mock 测试数据">Mock · 测试数据</div>`;
   },
   configureServer(server) {
     server.middlewares.use((req, res, next) => {

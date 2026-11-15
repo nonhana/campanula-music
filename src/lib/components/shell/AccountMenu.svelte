@@ -15,7 +15,7 @@
   const { logoutConfirm } = getOverlays();
 
   let open = $state(false);
-  let opening = $state<'first' | 'last'>('first');
+  let opening = $state<{ focus: 'first' | 'last' }>({ focus: 'first' });
   let root = $state<HTMLElement>();
   let trigger = $state<HTMLButtonElement>();
 
@@ -45,7 +45,7 @@
   ];
 
   const show = (focus: 'first' | 'last') => {
-    opening = focus;
+    opening = { focus };
     open = true;
   };
 
@@ -99,15 +99,17 @@
         {/if}
       </div>
       <div class="mb-1 h-px bg-neutral-100" role="separator"></div>
-      <MenuList
-        id="account-menu"
-        label="账号"
-        layout="popover"
-        {items}
-        focus={opening}
-        onEscape={() => hide(true)}
-        onTab={() => hide(false)}
-      />
+      {#key opening}
+        <MenuList
+          id="account-menu"
+          label="账号"
+          layout="popover"
+          {items}
+          focus={opening.focus}
+          onEscape={() => hide(true)}
+          onTab={() => hide(false)}
+        />
+      {/key}
     </div>
   {/if}
 </div>

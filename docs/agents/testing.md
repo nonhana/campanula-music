@@ -18,7 +18,7 @@
 
 入口、目录归属、单文件重跑和覆盖率口径以 [tests/README.md](../../tests/README.md) 为准。`tests/suites.ts` 同时供 runner、Vitest 和 CI 选择用例；默认回归逐项核对开工基线。纯核心归 `unit`，World/App 归 `behavior`，消费者合同及既有录制 / mock 自检归 `contract`，现有 mock HTTP 装配自检归 `delivery`。按所证明的行为归类，不能用 mock 自检数量充当产品行为证据。
 
-Spec #96 增加受控浏览器旅程和 a11y 层，使用自行启动的 Chromium 与同一个 page 上的 axe；对应票落地后再公布入口。下面七个接入点继续承担规则和 App 行为断言，不能证明 DOM、真实焦点、指针捕获、安装包、Android 系统和真实读屏。真实账号与设备仍由作者按 `delivery.md` 第 6 步试用；实现者默认不开作者浏览器。
+Spec #96 增加受控浏览器旅程和 a11y 层，使用自行启动的 Chromium 与同一个 page 上的 axe；入口为 `pnpm test:browser`、`pnpm test:a11y`；真实输入/导航/焦点/可访问状态在 tests/browser，报告与重跑见 tests/README。下面七个接入点继续承担规则和 App 行为断言，不能证明 DOM、真实焦点、指针捕获、安装包、Android 系统和真实读屏。真实账号与设备仍由作者按 `delivery.md` 第 6 步试用；实现者默认不开作者浏览器。
 
 ## 七个接入点
 
@@ -38,6 +38,7 @@ Spec #96 增加受控浏览器旅程和 a11y 层，使用自行启动的 Chromiu
 - 录制、脱敏、身份检查、索引与 SDK 维护入口归 `tests/tools/`，具体操作见 `tests/fixtures/netease/README.md`「录制与维护」。采集须显式指定实例、短期授权；常规回放不读本机私有文件。
 - World 的 `reply` 默认是必需调用，`when` 声明关键查询；需要跨模块顺序时传 `ordered: true`，合法并发用 `anyOrder()`。取消后本来不应调用的步骤不预装必需回复。仅条件性准备可用 `required: false` 并说明原因；原始录制不保存 Cookie，最终登录回复必须配新 MUSIC_U，专测缺 Cookie 的负例用 `expectedMissingLoginCookie` 声明并先确认合同确实失败；通用服务器异常用具名 exception 声明，不能靠未准备调用制造；会话用例要暂停后台同步时显式调用 `pauseSync()`，它只为合成账号的 likelist 提供具名失败，其他意外调用仍在收尾失败。
 - SDK 两种替身共享 `sdk-input.ts`、`sdk-contract.ts`、历史查询和失败转换。原始录制与运行时最终响应分开校验；索引的 validation 区分成功 schema、专用错误 schema、历史失败归一化与浏览器直传。失败归一化不代表失败 body 通过成功 schema。 成功 schema 证据可按实际 schema 与完整内容摘要有界复用；普通数据首次校验使用独立快照，body 改动后按新内容匹配证据，未命中时重新调用 schema，status、实体、Cookie 和失败元数据仍逐次检查。特殊对象不走内容缓存，不能仅凭对象身份或 JSON 文本相同复用证据。
+- World 在同一 SSR runner 加载录制与严格队列，让实际 schema 共用完整内容证据；录制 body 先复制为回包使用的表示。listener 只读录制的编号、URL 等场景元数据，实际回包仍由 World 完整校验。种子缓存序列化快照，每个实例解码自己的完整副本，不能共享可变模板或放宽测试时限。
 - 默认 `small` 种子是合成关系的小曲库，人工 mock 和后继浏览器共用；`large` 场景保留 before 大种子，after/deleted 保留历史差异。场景来源、命令和规模边界见 `tests/README.md`。新增实体须同时保证声明的导航和写后读回。
 - 缺哪种浏览器能力的替身，就在这张票里补产品能力与 `tests/_kit/browser.ts`，交互 mock 从 `tests/_kit/mock` 外部装配。
 

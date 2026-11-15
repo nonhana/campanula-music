@@ -51,12 +51,10 @@ export const sdkReport = async () => {
   const helpers: Record<string, string[]> = {};
   const browser: Record<string, string[]> = {};
   for (const path of await sources(join(ROOT, 'src'))) {
-    const file = ts.createSourceFile(
-      path,
-      await readFile(path, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    );
+    const text = await readFile(path, 'utf8');
+    // 转义的模块名仍交给解析器；没有这些字符的文件不可能导入 SDK。
+    if (!text.includes('hana-music-api') && !text.includes('\\')) continue;
+    const file = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
     for (const node of file.statements) {
       if (
         !ts.isImportDeclaration(node) ||

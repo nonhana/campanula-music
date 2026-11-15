@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import process from 'node:process';
 
 import adapterNode from '@sveltejs/adapter-node';
@@ -90,6 +91,12 @@ export default defineConfig({
     })(UnoCSS()),
     sveltekit({
       preprocess: vitePreprocess(),
+      compilerOptions: process.env.CAMPANULA_DEV_ROUTES
+        ? { rootDir: resolve(process.env.CAMPANULA_DEV_ROUTES, '../..') }
+        : undefined,
+      files: process.env.CAMPANULA_DEV_ROUTES
+        ? { routes: process.env.CAMPANULA_DEV_ROUTES }
+        : undefined,
       adapter,
     }),
   ],

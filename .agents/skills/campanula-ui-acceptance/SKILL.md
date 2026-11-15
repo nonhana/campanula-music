@@ -35,99 +35,29 @@ sh .agents/skills/campanula-ui-acceptance/scripts/baselines.sh
 
 完成标准：这张票要的每张基准图，notes.md 里都有一段。
 
-## 3. 浏览器：日常 mock，真账号只给交付
+## 3. 独立浏览器与截图
 
-**默认走 mock**：`pnpm dev:mock`（HTTPS 8444）加 `scripts/browser.sh`（会话 `campanula-mock`，不需要登录；打开页面自动用测试账号登录，左下角显示 `Mock · 测试数据`）。mock 的歌曲、封面、音频都来自本地，写操作只改 mock 内存状态，安全。详见 `docs/agents/mock.md` 和 `docs/agents/browser.md`。
+作者点名检查时，用 `tests/browser/fixture.ts` 的 test/page/environment 写或复用具名用例，`pnpm test:browser <文件> --project=desktop|phone --headed`。fixture 自启本机服务、空 context 和配套 Chromium，收尾销毁，不用作者窗口或账号。真实账号交给作者手动试用；自动化媒体与数据只取自本机受控服务。
 
-- 开发时看一眼：`scripts/browser.sh open /`、`scripts/browser.sh exec "<js>"`、`scripts/browser.sh screenshot <文件>`、`scripts/browser.sh reset`、`scripts/browser.sh scenario <场景>`。同一时间只允许一个 agent（文件锁）。
-- 操作回放用 `scripts/playwright.sh`，无障碍扫描用 `scripts/browser.sh axe`；接入、trace、报告位置与退出码见 `docs/agents/browser.md` 对应章节。Playwright 复用 mock Chrome；这些诊断不新增 `@playwright/test` 测试，也不加入默认 CI。
-- 反复开页面不会碰网易云：mock 的所有回答都来自录制，想补数据跑 `scripts/browser.sh coverage` 看缺什么。
-- **真账号**只在作者交付前试用时用：`scripts/browser.sh check --real` 先查 `/api/account`，不是登录态就停下请作者在专用窗口（`scripts/axi.sh`）扫码，不继续开新窗口。真账号会真的写进网易云：
-  - 点红心、收藏、加入歌单这类按钮会真的写进网易云。检查和截图里不点它们；要拍它们的状态，先装拦截（第 4 步），或者断网（`scripts/browser.sh offline on`，App 断网时不发请求）。
-  - 拦截按路径匹配、不分请求方法：`/api/hearts` 的同步读取和红心写入是同一个路径，拦不开，红心只能断网拍。收藏、加歌的路径（`/api/(playlists|albums|artists)/\d+/(collect|tracks)`）只有写入，拦得开（#30）。
-- reviewer 不自己启动 Chrome：静态 review 不碰浏览器；要画面时由父 agent 用 mock 拍好，把结论和截图路径交给 reviewer。
-- 页面里的等待都要有上限：等元素、等文字用轮询，最多几秒；等图片看 `img.complete`，不用 `await img.decode()`（#32 一直不返回，把 DevTools 连接卡死，之后七次调用全失败）。
-- 浏览器卡住、连不上：先 `scripts/playwright.sh detach`（已连接时），再 `scripts/browser.sh stop`、`scripts/browser.sh open /`；真账号的 stop 加 `--real`，重新打开前先查登录。
-- 手机曲库的“我喜欢 / 歌单”标签用 `replaceState` 切换，不留浏览记录。在标签页上 `history.back()` 会离开 App，测“返回恢复滚动”要从歌单页返回。
-- 手机视口和桌面视口互换（`emulate` 的 `mobile` 变了）会重新加载页面：页面里装的脚本、播放队列都没了。先换视口，再放歌、再装脚本。
-- `sweep.py` 的 `reduced=True` 用浏览器的 `emulate.prefersReducedMotion='reduce'`，CSS 媒体查询和 `matchMedia` 都生效；正常动效显式设为 `no-preference`，不改写页面的样式表或 `matchMedia`。同次调用要带全视口、减少动态效果和限速参数，emulate 会替换上次设置。
-- 页面藏到后台：开新标签页不会让原来的页面变成 `hidden`。`sweep.py` 的 `hidden()`（或 `HIDE_JS` / `SHOW_JS`）只在页面里模拟 `visibilityState`，不证明浏览器后台节流或真机锁屏行为。
-- 量帧时间、长任务用 `pnpm build && pnpm preview`：开发服务器上 Svelte 的开发模式检查会把数字放大。
+截图和动效使用 `tests/tools/browser/sweep.ts`，示例为 `tests/browser/journeys/diagnostics.spec.ts`，细节见 `docs/agents/browser.md`。原 Python sweep 的浏览器记录/冻结/时钟已迁入 tests/tools/browser，运行和报告由 Playwright Test 统一负责。
 
-## 4. 检查和截图：作者点名时交给子代理，用 sweep.py
+| 点名项            | 接入点                                       | 完成标准                                          |
+| ----------------- | -------------------------------------------- | ------------------------------------------------- |
+| 静态画面/骨架位移 | install → shoot，desktop/phone               | 截图对照第 2 步；逐项检查 moves/errors            |
+| 返回恢复          | roundtrip，真实链接/返回                     | 页面与滚动回原处；复杂架子另断言 shelf.scrollLeft |
+| 键盘/焦点         | keys，真实 keyboard                          | 每步名称/角色/焦点/可见环符合预期                 |
+| 768/1024 布局     | setViewportSize → shoot                      | 无页面横向溢出                                    |
+| CSS/WA 动效逐帧   | motion                                       | 指定时刻截图、动画属性和时长对 DESIGN             |
+| JS 抽屉逐帧       | tween                                        | 从头触发每帧；finally 恢复时钟                    |
+| 慢放/连续触发     | slow                                         | 连续操作的中间帧与最后状态                        |
+| 隐藏后恢复        | hidden                                       | visibilityState 模拟边界标明；不冒充系统后台      |
+| 限速/空/错误/重放 | 具名 mock scenario、page.route、intercept.js | 响应来源、等待与恢复结果可查                      |
+| 无障碍            | 同 page scan fixture                         | 全页 WCAG A/AA + best-practice，保留 incomplete   |
 
-只做作者点到的那几项。用 `task` 开一个子代理做，主会话不进这个循环、不看截图。给子代理的内容：这个 skill 的名字、票号、作者要的那几项（画面、视口、状态、要点的链接）、第 2 步的对照要点、mock 开发服务器（`pnpm dev:mock`，HTTPS 8444）已经开着；要拍真账号时另说，并先 `scripts/browser.sh check --real`。页面上有会写账号的按钮时，再给它第 3 步那两条和要装的拦截规则。子代理在 Python eval 里：
+原截图批处理仍可交给子代理，但每个使用自己的 fixture，不共享 page/profile。先换视口和 reducedMotion，再准备播放等状态。所有等待有上限。静态截图用 reduce；普通动效用 no-preference。逐帧不证明掉帧，性能 trace 用候选生产构建。
 
-```python
-%load .agents/skills/campanula-ui-acceptance/scripts/sweep.py
-```
+完成标准：作者点到的每项都有实际操作和报告，截图逐张对照设计要点，问题定位到画面与状态；不能只以数量通过。截图、trace、axe 和布局报告在本次 `.reports/browser/run-*/results/`，对话给出明确运行路径与文件名。
 
-```python
-report = await shoot(22, [...])   # 票号用数字或字符串都行；每张的字段见 sweep.py 里 shoot 的注释
-```
+## 4. 交给作者
 
-调 `shoot`、`roundtrip`、`motion`、`slow` 的 eval 单元格给 `timeout: 300`：一组要调几十次 DevTools，默认 30 秒会超时，超时会清掉 eval 里定义的东西，要重新 `%load`。
-
-### 清单：作者点到哪项做哪项
-
-| 作者要的                                   | 做什么                                                               | 完成标准                                                      |
-| ------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 新的、改过的画面                           | `shoot`：每个画面 390×844（`phone`）和 1440×900（`desktop`）各一张   | 每张 `moves`、`errors` 都是空的；逐张对照过                   |
-| 新的骨架（加载中）                         | 同上：`shoot` 等骨架换成内容再截，这一下里各块挪没挪位置记在 `moves` | `moves` 是空的                                                |
-| 能点进别的页面再返回的列表、网格、横向架子 | `roundtrip(票号, 地址, 链接的选择器, shelf=(架子名, 横向滚多少))`    | `same` 是 True                                                |
-| 新的标签、菜单、键盘操作                   | `keys(['Tab', 'ArrowRight', …], focus=起点的选择器)`                 | 每一步焦点落在该落的地方，`ring` 是 True                      |
-| 换了宽度会变的布局                         | `shoot` 抽查 `768`、`1024`                                           | `overflow.pageWider` 是 False（横向架子里的格子伸出视口不算） |
-
-`name` 用对应基准图的文件名去掉 `-mobile` / `-desktop`，例如 `library-playlists`，对照时一眼能配上。截图存在 `_notes/screenshots/issue-<票号>/<名字>-<宽x高>.png`，`shoot` 只返回每张的结果。等不到画面、拦截没装上、本机数据库没清掉、等了 10 秒还在加载时直接报错，不会存一张错的图。
-
-### 接口重放
-
-每个 `/api/` 的 GET 第一次真去问（默认是 mock，不会碰网易云；只有设了 `CAMPANULA_BROWSER=real` 才是真账号），成功的回答存进 `_notes/replay/issue-<票号>.json`，之后打开页面都从这里回，晚 600ms（骨架照样出现，再换成内容）。mock 下可以随时删掉这个文件拿最新种子。比 300 KB 大的回答（几千首歌的整页）不存。
-
-### 挪位置和报错
-
-`shoot`、`roundtrip` 每次打开页面都装上记录：没人操作（最近 500ms 没有按键、点按）时 main 里的标题、section、标签管的内容区在排版里挪了超过 1px，记进 `moves`（谁、什么时候、`dy`，正数是往下）；飘入、换页这些动画的位移不算。`console.error` 和没接住的异常记进 `errors`。骨架和真内容不一样高、骨架套了两层淡出（开发时 `fadeAway` 会报错），都会出现在这里。不用浏览器自带的布局偏移记录：#32 里骨架换成内容时标题挪了 112px，它一条都没记。
-
-### 拦截：截状态图
-
-拦截规则写在每张的 `intercept` 里，格式是 `{'path': 地址正则, 'after': 前几个放行, 'reply': 'hold' 或 {'status', 'body'}}`（详见 `scripts/intercept.js` 开头）。**规则按先后匹配，第一条命中的生效**：针对某张歌单的规则放在前面，通配的放在后面。规则先于重放。
-
-| 状态             | 怎么拍                                                                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 加载中           | `fresh`，`^/api/playlists/\d+/track-ids$` 回 `'hold'`，`ready: '[aria-busy=true]'`                                                                                        |
-| 出错             | `fresh`，先写这张歌单的 track-ids 回 `{'status': 502, 'body': {'error': {'kind': 'neteaseUnavailable'}}}`，再写通配的 track-ids 回 `'hold'`，`ready: 'main [role=alert]'` |
-| 空               | `fresh`，先写这张歌单的 track-ids 回 `{'body': {'trackIds': []}}`，再写通配的 `'hold'`，`text: '这张歌单还没有歌'`                                                        |
-| 只同步了一部分   | `fresh`，`^/api/songs$` 设 `after: 1`、回 `'hold'`（我喜欢的音乐只同步第一页）                                                                                            |
-| 搜不到、搜索结果 | `act` 里往搜索框填值并派发 `input` 事件                                                                                                                                   |
-
-`fresh: True` 会清空本机副本，让歌单回到“还没同步”，之后整个曲库要真的重新同步（约 100 个请求，比重放的上限大的照样真去问）。所以只给要“还没同步”的那几张加 `fresh`。
-
-子代理做完后逐张看一次截图，和对照要点比。截图是 2 倍屏，基准图是缩小过的，比布局、文案和状态，不比像素。只把结论报回主会话：每项的结果，不一致的写清哪张、哪里、什么样。原型里有、但属于之后的票的东西（例如搜索、每日推荐的入口，专辑、歌手标签）写明“之后的票做”，不算不一致。
-
-### 动效逐帧
-
-作者要看动效（DESIGN.md Motion）时，给他点名的每个动效拍一组逐帧；要看“减少动态效果”时，再在 `reduced=True` 下拍一组。同一个 eval 里：
-
-```python
-r = await motion(51, 'wheel-page-next', 'desktop', [0, 60, 150, 300, 600],
-                 path='/', setup='play-open', trigger='page-next', grab='page')
-```
-
-- `motion` 触发变化，等 `grab`（或 `when`）上的动画开始，把它们停在 `times` 的每个毫秒数各拍一张，存成 `<名字>-f<毫秒>-<宽x高>.png`。带延迟的（歌名晚 80ms 才飘）也拍得到，拍到某一帧时已经走完的会真的走完。转圈、骨架这类循环不冻。各参数见 `sweep.py` 里 `motion` 的注释。
-- `setup`、`trigger`、`grab` 可以写 `sweep.py` 里 `SETUPS`、`TRIGGERS`、`GRABS` 的名字（`'play'`、`'play-open'`、`'page-next'`、`'bar-previous'`、`'pick-other'`、`'page'`、`'bar'`…），也可以写自己的函数、选择器。播放页开着时播放条被盖住：拍播放条的组用 `setup='play'`、`path='/'` 重新打开。
-- 结果里的 `anims` 是冻住的每个动画的时长和动的属性，对照 DESIGN.md 的数字；`reduced=True` 时只能有 `opacity`，不超过 150ms。
-- 冻帧只检查这些时刻的画面；是否掉帧、主线程是否阻塞要看生产构建下实际运行的 performance trace。
-- 打断、连续触发（连按三次下一首、转到一半又切歌）用 `slow(票号, 名字, 视口, [(秒, 触发)…], [截图的秒…])`：动画放慢 10 倍，按墙上的时间触发和截图，文件名里的毫秒是折回的动效时刻。
-- 抽屉（播放页、底部弹层）是 JS 补间，`motion`、`slow` 冻不住，用 `tween(票号, 名字, 视口, [毫秒…], trigger='bar-open', reset='page-close')`：每一帧从头触发一次，把补间停在那一毫秒拍。拖到一半松手弹回：`setup=drag_js(选择器, -200)`（按住往上拖 200px）、`trigger='release'`。先 `await run(SETUPS['play'])` 放好歌。
-- 看不见时不动：先 `await run(SETUPS['play-open'])` 摆好页面，再 `await hidden(['page-next', 'page-next'])`，后台期间和回来以后新开始的动画都应是 0，画面上只剩一张封面、一块歌名。
-- 限速才看得到的（转圈晚 300ms 出现、封面淡入）加 `network='Slow 4G'`，拍完自己取消。封面淡入用 `on_load=True, grab='main img'`：它让网络图片重新下载，冻住新开始的淡入。
-- 换页（View Transitions）不写 `grab`：`trigger` 点链接或 `history.back()`，冻住的是 `::view-transition-*` 上的动画，结果里的 `types` 是方向（up / down / left / right / fade）。冻着的时候新的一帧仍是活的（播放条的进度照常走）；过渡里 Chrome 把点按都交给 `<html>`，要点东西先拍完。
-- 骨架换成内容：`grab='.revealing > *, [aria-busy=true]', when='.revealing > *'`，从别的页面点进去才看得到骨架（重放的回答晚 600ms，骨架一定会出现）。
-- 静态截图要在“减少动态效果”下拍，`shoot` 每张加 `'reduced': True`。
-- 看图用 `sheet(票号, 名字, [glob…], crop=…, height=…)` 把一组拼成一张，`read` 一次看完；每张缩放到 `height` 高，裁得很小也会放大。只看播放条时裁底部，例如桌面底栏 `crop=(0.335, 0.905, 0.5, 0.995), height=200`。
-
-完成标准：作者点到的每一项都做了，表里的完成标准都满足，结果里没有报错；每张截图都对照过，不一致的写清哪张、哪里、什么样。作者要了逐帧时，每组的 `anims` 和 DESIGN.md 对得上。
-
-## 5. 交给作者
-
-截图留在 `_notes/screenshots/issue-<票号>/`。这个目录不进 git，作者在本机看。回复里列出截图的文件名和每张拍的是什么，不贴图、不贴链接。
+留出真实账号、Android 系统返回、系统选择器和 TalkBack 的人工项，写去哪、操作、期望、失败表现和撤销。截图/trace 的自动化结果只陈述实际验证内容。工具不会访问作者浏览器或持久 profile。

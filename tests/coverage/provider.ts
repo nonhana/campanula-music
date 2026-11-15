@@ -126,7 +126,7 @@ export class SsrCoverageProvider extends V8CoverageProvider {
       include: this.options.include,
       exclude: this.options.exclude,
       ssr: '独立 Vite module runner 的 V8 执行数据，按当次源码映射合并；原始数据见 ssr-raw，独立映射见 ssr.json',
-      ui: '未采集：本套件没有启动浏览器，Svelte 的零值不代表界面已验证',
+      ui: '未采集浏览器执行：本覆盖率报告只合并规则、App 与 SSR；页面操作和 axe 证据见本次浏览器报告，Svelte 的零值不代表界面未执行或已经验证',
       infrastructure:
         '测试工具、替身归 tests，开发启动基础设施 scripts/dev.mts 与 scripts/dev/ 同列 infrastructure，src/lib/dev 不计入 product；src 的 mock 目录迁移单列，不当作新增行为覆盖，contract 录制自检不代表听众旅程',
       sourceBeforeMove:

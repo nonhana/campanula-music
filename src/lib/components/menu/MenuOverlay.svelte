@@ -161,6 +161,8 @@
 {#if floating}
   {@const head = header?.(floating, false)}
   <div
+    role="region"
+    aria-label={label(floating)}
     bind:this={menu}
     class={['fixed z-60 rounded-xl bg-white p-1.5 shadow-float', width]}
     inert={layer.inert || !request}
@@ -185,15 +187,17 @@
       class="max-h-[min(360px,calc(100dvh-96px))] overflow-y-auto overscroll-contain"
     >
       <Scrollbar />
-      <MenuList
-        items={items(floating)}
-        layout="menu"
-        focus="first"
-        label={label(floating)}
-        loading={loadingLabel}
-        onChoose={choose}
-        onTab={closeOnTab}
-      />
+      {#key floating}
+        <MenuList
+          items={items(floating)}
+          layout="menu"
+          focus="first"
+          label={label(floating)}
+          loading={loadingLabel}
+          onChoose={choose}
+          onTab={closeOnTab}
+        />
+      {/key}
     </div>
   </div>
 {/if}
@@ -261,15 +265,17 @@
     <div class="pb-3">
       <div class="max-h-[60dvh] overflow-y-auto overscroll-contain">
         <Scrollbar />
-        <MenuList
-          items={items(shown)}
-          layout="sheet"
-          focus="first"
-          label={label(shown)}
-          loading={loadingLabel}
-          onChoose={choose}
-          onTab={closeOnTab}
-        />
+        {#key shown}
+          <MenuList
+            items={items(shown)}
+            layout="sheet"
+            focus="first"
+            label={label(shown)}
+            loading={loadingLabel}
+            onChoose={choose}
+            onTab={closeOnTab}
+          />
+        {/key}
       </div>
     </div>
   </div>

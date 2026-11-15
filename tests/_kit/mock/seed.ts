@@ -1,4 +1,5 @@
 import { readdir } from 'node:fs/promises';
+import { deserialize, serialize } from 'node:v8';
 
 import type { RawFixture } from './fixture-format.ts';
 import { fixtureOutcome } from './fixture-format.ts';
@@ -629,16 +630,16 @@ const loadSeed = async (seed: SeedName): Promise<SeedData> => {
   };
 };
 
-const seeds = new Map<SeedName, Promise<SeedData>>();
+const seeds = new Map<SeedName, Promise<ReturnType<typeof serialize>>>();
 
 // 每个实例只写自己的副本；原始种子只读取和解压一次。
 export const buildSeed = async (seed: SeedName): Promise<SeedData> => {
   let pending = seeds.get(seed);
   if (!pending) {
-    pending = loadSeed(seed);
+    pending = loadSeed(seed).then(serialize);
     seeds.set(seed, pending);
   }
-  return structuredClone(await pending);
+  return deserialize(await pending);
 };
 
 export const patchPlaylistDetail = (

@@ -1,0 +1,3298 @@
+{
+  "observedRun": "run-01V7Hm",
+  "nodes": [
+    {
+      "project": "phone",
+      "scenario": "artist",
+      "rule": "color-contrast",
+      "target": ["#artist-order-time-tab"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "daily",
+      "rule": "color-contrast",
+      "target": [".text-primary-900"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "library",
+      "rule": "color-contrast",
+      "target": [".block"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "playlist-editor",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(1) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "playlist-editor",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(2) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "playlist-editor",
+      "rule": "color-contrast",
+      "target": [
+        ".items-baseline.justify-between > .tabular-nums.text-neutral-600[role=\"status\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-failed",
+      "rule": "color-contrast",
+      "target": [".gap-1\\.5.press[href=\"/search?q=how&type=songs\"]"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "section[aria-labelledby=\"overview-songs\"] > .px-4.gap-3.h-11 > .justify-center.whitespace-nowrap.press"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "section[aria-labelledby=\"overview-playlists\"] > .px-4.gap-3.h-11 > .justify-center.whitespace-nowrap.press"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "a[href=\"/playlists/900000024\"] > .mt-2\\.5.block.text-body"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "a[href=\"/playlists/900000024\"] > .gap-1.mt-0\\.5.text-neutral-600 > .truncate"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "section[aria-labelledby=\"overview-artists\"] > .px-4.gap-3.h-11 > .justify-center.whitespace-nowrap.press"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        "div[aria-label=\"语种\"] > .pt-2.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        "div[aria-label=\"风格\"] > .pt-2.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(1) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(2) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        ".items-baseline.justify-between > .tabular-nums.text-neutral-600[role=\"status\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".px-6 > p"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["p > .svelte-1a6abw0"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-headline-sm"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        ".-mx-1 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        ".font-400 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/albums/3149073\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["#c1-queue-tab"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-headline.text-primary-950.line-text"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-neutral-800.text-title.line-text"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"2\"] > .text-title.line-text.font-600"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(16)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"3\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"4\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"5\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"6\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".px-6 > p"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["p > .svelte-1a6abw0"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".text-headline-sm"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        ".-mx-1 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        ".font-400 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/albums/3149073\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["#c1-queue-tab"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".text-headline.text-primary-950.line-text"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"1\"] > .text-title.line-text.font-600"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"2\"] > .text-title.line-text.font-600"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(16)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"3\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"4\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"5\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"6\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".px-6 > p"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": ["p > .svelte-1a6abw0"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".text-headline-sm"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".-mx-1 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".font-400 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/albums/3149073\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": ["#c1-lyrics-tab"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".flex-1.svelte-qdmfhn.min-w-0 > p"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-qdmfhn.min-w-0 > .play-target.rounded[aria-current=\"true\"] > .gap-2.min-w-0.items-center > .duration-state.font-500.text-label"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.text-caption.place-items-center > .col-start-1.row-start-1"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .play-target.rounded.svelte-14o5vus > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.font-500"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.text-caption.place-items-center > .col-start-1.row-start-1"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .play-target.rounded.svelte-14o5vus > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.font-500"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.text-caption.place-items-center > .col-start-1.row-start-1"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .play-target.rounded.svelte-14o5vus > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.font-500"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-center.svelte-gvenbg.min-w-0 > p:nth-child(1)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2) > .svelte-gvenbg"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-title.text-primary-950.line-text"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"1\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"2\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(16)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"3\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"4\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"5\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"6\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"7\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"8\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"9\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"10\"] > .sub.mt-1.text-label"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["h2"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/artists/33927412\"]"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/albums/3149073\"]"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".text-center.svelte-gvenbg.min-w-0 > p:nth-child(1)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2) > .svelte-gvenbg"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["h2"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/artists/33927412\"]"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/albums/3149073\"]"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".duration-state.text-label[lang=\"ja\"]"],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.absolute.inset-x-0:nth-child(1) > .mouse\\:hover\\:bg-neutral-50.rounded-lg.h-full > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pl-2.gap-3 > .min-w-0.svelte-qdmfhn > .block.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.absolute.inset-x-0:nth-child(1) > .mouse\\:hover\\:bg-neutral-50.rounded-lg.h-full > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pl-2.gap-3 > .text-neutral-500.tabular-nums.text-caption:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "现有逐字歌词/遮挡或染底需人工确认实际对比度；保持 incomplete，按 issue-100 验收清单复测。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        "div[aria-label=\"场景\"] > .pt-2.text-neutral-600.text-caption"
+      ],
+      "impact": "serious",
+      "reason": "run-SNyv4L 逐节点复核：35次Tab让标签内部容器滚到下方，“场景”标题在上沿被裁切；axe报elmPartiallyObscured而非对比度失败。节点aria-hidden，父group仍具名。保持incomplete；headed滚回标题可见处取实际前景/背景验证4.5:1，并用TalkBack核对group名称，不扩大到其他分类/场景/视口。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"0\"] > .text-title.line-text.font-600"],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：封面经CoverTint模糊与80%白色veil染底，axe不能据图片确定背景；headed固定同封面取实际文字/背景颜色，按字号验证4.5:1或3:1。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "CI 43772109171 / run-R3QOm8 的PNG、完整axe与源码已逐节点复核：逐字歌词拆成单字，axe不能据短文本判断对比度；headed核对整行未唱/正唱/唱完与渐隐边缘的实际前景/背景，并用TalkBack核对重复层。 保持incomplete，不标passes，不扩大到其他节点或场景。"
+    }
+  ],
+  "selectorIdentity": "Svelte rootDir固定为实际源码根；CSS scope按源码相对路径生成。旧绝对路径scope逐组件一对一迁移，其余selector、project/scenario/rule保持，保留原始axe。"
+}

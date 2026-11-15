@@ -13,7 +13,12 @@ interface LoadedFixture {
 const load = async (path: string, base?: URL): Promise<LoadedFixture> => {
   const raw = await readFixture(path, base);
   const { module } = raw;
-  const { rejected, response } = fixtureOutcome(module, raw.response, path);
+  const { rejected, response: recorded } = fixtureOutcome(
+    module,
+    raw.response,
+    path,
+  );
+  const response = { ...recorded, body: structuredClone(recorded.body) };
   const evidence = await validateResponse(
     module,
     { ...response, cookie: [] },

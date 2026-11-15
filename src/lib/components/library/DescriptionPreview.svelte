@@ -50,7 +50,7 @@
       type="button"
       class="w-full flex items-center gap-3 rounded-xl bg-white p-4 text-left text-neutral-600 shadow-ambient"
       aria-haspopup="dialog"
-      aria-label="查看简介"
+      aria-label="查看简介：{text}"
       onclick={open}
     >
       {@render line(
@@ -75,7 +75,7 @@
       type="button"
       class="h-7 max-w-full flex items-center gap-1 rounded text-left text-label text-neutral-600 transition-colors duration-feedback mouse:hover:text-neutral-900"
       aria-haspopup="dialog"
-      aria-label="查看简介"
+      aria-label="查看简介：{text}"
       onclick={open}
     >
       {@render line('truncate')}

@@ -145,6 +145,8 @@ const runWorker = async () => {
     if (mode !== 'product' && mode !== 'mock')
       throw new Error('无效的开发模式');
     const { createServer, mergeConfig } = await import('vite');
+    // Kit 按配置路径匹配新增路由，和 watcher 发出的真实路径保持一致。
+    process.env.CAMPANULA_DEV_ROUTES = await realpath(join(root, 'src/routes'));
     const { default: productConfig } = await import('../vite.config.mts');
     const plugins =
       mode === 'mock'

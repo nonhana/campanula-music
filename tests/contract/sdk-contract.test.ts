@@ -6,6 +6,34 @@ import { field, fixtureOutcome } from '../_kit/mock/fixture-format.ts';
 import { sdkSchema, validateResponse } from '../_kit/sdk-contract.ts';
 
 describe('sDK 消费者合同', () => {
+  it('完整内容经结构化复制后复用证据，改值后仍拒绝', async () => {
+    const sample = await loadFixture('library/playlist_detail.own-small.json');
+    const { standard } = sdkSchema('PlaylistDetailBody');
+    const validate = vi.spyOn(standard, 'validate');
+    try {
+      await validateResponse(
+        'playlist_detail',
+        sample.outcome.response,
+        false,
+        '原内容',
+      );
+      validate.mockClear();
+      const copy = structuredClone(sample.outcome.response);
+      await validateResponse('playlist_detail', copy, false, '复制内容');
+      expect(validate).not.toHaveBeenCalled();
+      const playlist = field(copy.body, 'playlist');
+      if (typeof playlist !== 'object' || playlist === null)
+        throw new Error('缺少歌单');
+      Reflect.set(playlist, 'name', Number.NaN);
+      await expect(
+        validateResponse('playlist_detail', copy, false, '改坏复制内容'),
+      ).rejects.toThrow('改坏复制内容');
+      expect(validate).toHaveBeenCalled();
+    } finally {
+      validate.mockRestore();
+    }
+  });
+
   it('异步 schema 校验使用调用时的内容，不把中途修改后的成功记给旧内容', async () => {
     const sample = await loadFixture('library/playlist_detail.own-small.json');
     const response = structuredClone(sample.outcome.response);

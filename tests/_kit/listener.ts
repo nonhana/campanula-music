@@ -5,8 +5,9 @@ import type { App } from '#lib/app/app.ts';
 import type { NoticeEntry, OperationNotice } from '#lib/app/notice.ts';
 
 import type { Device, SentRequest, Tab } from './device.ts';
-import { loadFixture } from './fixtures.ts';
 import { never } from './hold.ts';
+import { field } from './mock/fixture-format.ts';
+import { readFixture } from './mock/read-fixture.ts';
 import { LIBRARY_SYNC_MODULES, signIn } from './sign-in.ts';
 import type { World } from './world.ts';
 
@@ -64,13 +65,13 @@ export const recordedBatch = async (
     .map((file) => `${dir}/${file}`);
   const playlists: RecordedPlaylist[] = [];
   for (const fixture of files.slice(1)) {
-    const { module, query, outcome } = await loadFixture(fixture);
+    const { module, query, response } = await readFixture(fixture);
     if (module === 'playlist_detail') {
-      const body = outcome.response.body as {
+      const body = response.body as {
         playlist: { trackIds: { id: number }[] };
       };
       playlists.push({
-        id: query.id as number,
+        id: field(query, 'id') as number,
         detail: fixture,
         trackIds: body.playlist.trackIds.map((track) => track.id),
         pages: [],
@@ -78,7 +79,7 @@ export const recordedBatch = async (
     } else {
       playlists.at(-1)!.pages.push({
         fixture,
-        ids: (query.ids as string).split(',').map(Number),
+        ids: (field(query, 'ids') as string).split(',').map(Number),
       });
     }
   }
@@ -86,9 +87,9 @@ export const recordedBatch = async (
 };
 
 export const recordedTrackIds = async (): Promise<number[]> => {
-  const { outcome } = await loadFixture(LIKED_TRACK_IDS);
+  const { response } = await readFixture(LIKED_TRACK_IDS);
   return (
-    outcome.response.body as { playlist: { trackIds: { id: number }[] } }
+    response.body as { playlist: { trackIds: { id: number }[] } }
   ).playlist.trackIds.map((track) => track.id);
 };
 
@@ -202,9 +203,8 @@ export const listener = (
     const tab = await device.open();
     await replyLibrary();
     await replyLikedSongs();
-    const { outcome } = await loadFixture(playlists);
-    const list = (outcome.response.body as { playlist: { id: number }[] })
-      .playlist;
+    const { response } = await readFixture(playlists);
+    const list = (response.body as { playlist: { id: number }[] }).playlist;
     const before = await recordedBatch('before');
     await replyPlaylists(
       list.flatMap(
@@ -391,7 +391,7 @@ export const serveDownload = async (
   song: Song,
   downloadUrl: string,
 ): Promise<void> => {
-  const { data } = (await loadFixture(downloadUrl)).outcome.response.body as {
+  const { data } = (await readFixture(downloadUrl)).response.body as {
     data: { url: string; size: number };
   };
   device.files.put(data.url.replace(/^http:/, 'https:'), {

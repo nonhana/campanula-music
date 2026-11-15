@@ -1,0 +1,16 @@
+(() => { if (window.__campanulaWatch) return; const W = window.__campanulaWatch = { moves: [], errors: [] };
+  const name = el => { const label = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || '';
+    return el.tagName.toLowerCase() + (el.id ? `#${  el.id}` : '') + (label ? `[${  label  }]` : '') + (el.tagName.startsWith('H') ? ` ${  el.textContent.trim().slice(0, 12)}` : '') };
+  const layoutTop = el => { let top = 0; for (let n = el; n; n = n.offsetParent) top += n.offsetTop; return top };
+  let input = -Infinity; let last = new Map();
+  for (const type of ['pointerdown', 'keydown', 'wheel']) addEventListener(type, () => { input = performance.now() }, true);
+  const tick = () => { const now = performance.now(); const seen = new Map();
+    for (const el of document.querySelectorAll('main h1, main h2, main section, main [role=tabpanel]')) {
+      if (!el.offsetHeight) continue;
+      const top = layoutTop(el); const before = last.get(el); seen.set(el, top);
+      if (before !== undefined && Math.abs(top - before) > 1 && now - input > 500 && W.moves.length < 50) W.moves.push({ at: Math.round(now), node: name(el), dy: top - before }) }
+    last = seen; requestAnimationFrame(tick) };
+  requestAnimationFrame(tick);
+  const error = console.error; console.error = function (...args) { W.errors.push(args.map(a => a instanceof Error ? a.message : String(a)).join(' ').slice(0, 200)); return error.apply(this, args) };
+  addEventListener('error', e => W.errors.push(String(e.message).slice(0, 200)));
+  addEventListener('unhandledrejection', e => W.errors.push(`unhandledrejection: ${  String(e.reason?.message ?? e.reason).slice(0, 200)}`)) })();

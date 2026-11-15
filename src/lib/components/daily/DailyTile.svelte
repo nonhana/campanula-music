@@ -30,9 +30,6 @@
   <a
     href={resolve('/daily')}
     class="size-full flex items-center gap-6 rounded-xl bg-white py-4 pl-5 pr-20 shadow-ambient transition-shadow duration-feedback xl:(flex-col items-stretch gap-0 p-5) mouse:hover:shadow-float"
-    aria-label="每日推荐，{date.month}月{date.day}日 {date.weekday}{status
-      ? `，${status}`
-      : ''}"
   >
     <span class="contents xl:(flex items-start justify-between gap-3)">
       <span class="flex-none">

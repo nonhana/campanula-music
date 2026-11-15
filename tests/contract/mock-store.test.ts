@@ -40,6 +40,22 @@ describe('mock 曲库', () => {
     expect(seed.byId.get(LIKED_PLAYLIST)?.trackCount).toBe(4984);
   }, 30_000);
 
+  it('每份种子的歌单、歌曲、红心和模板独立，实体的列表与编号索引仍同步', async () => {
+    const original = await buildSeed('small');
+    const copy = await buildSeed('small');
+    const id = copy.playlists[0].id;
+    copy.byId.get(id)!.name = '只改这一份';
+    expect(copy.playlists[0].name).toBe('只改这一份');
+    copy.songs.clear();
+    copy.liked.clear();
+    copy.details.clear();
+    const catalogue = copy.templates.userPlaylist;
+    if (typeof catalogue !== 'object' || catalogue === null)
+      throw new Error('缺少歌单模板');
+    Reflect.set(catalogue, 'code', 503);
+    expect(await buildSeed('small')).toEqual(original);
+  });
+
   it('改名、简介、标签、隐私、封面改完，歌单列表和详情都看得到', async () => {
     const id = 900000019;
     await store.renamePlaylist(id, '改过的名字');

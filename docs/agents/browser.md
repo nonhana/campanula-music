@@ -1,96 +1,36 @@
-# 浏览器验证
+# 独立浏览器验证
 
-每种环境一个专用浏览器上下文；同一时间只允许一个 agent 操作。Playwright 附着到现有 mock Chrome，和 axi 共用页面、Cookie、IndexedDB 及文件锁。实现者默认不开浏览器（`docs/agents/delivery.md` 第 3 步）；作者点名的浏览器检查默认走 mock，不需要登录；真账号只给作者做最后的交付试用。
-
-## 工具依赖
-
-先跑 `pnpm install`。axi、Chrome DevTools、Playwright CLI 和 axe-core 都是项目开发依赖，版本固定在 `pnpm-workspace.yaml` 的 test catalog；脚本使用本地版本，不依赖全局安装。
-
-`scripts/axi.sh` 指定本地 DevTools 入口。`/call` 仍是 axi 的内部接口；升级 axi 或 DevTools 后，先跑 `pnpm smoke:mock`，再验证下面的 Playwright attach、trace 和 axe。旧桥接进程会保留启动时的工具版本和 Chrome 参数，升级后先断开 Playwright，再 `scripts/browser.sh stop`、`scripts/browser.sh open /`。
-
-## 命令
+`pnpm test:browser` 自行启动固定版本 Playwright 的配套 Chromium、本机 mock 服务和空 context。无需先开 dev。执行阶段只访问 fixture 领取的本机 origin；每个用例有独立工作根、上游和浏览器存储。真实账号由作者在自己的浏览器试用。
 
 ```sh
-scripts/browser.sh check          # mock：开发服务器和场景；真账号：先查 /api/account
-scripts/browser.sh open /path     # mock：自动登录后打开；真账号：先查登录，没登录就停下
-scripts/browser.sh exec "location.href"
-scripts/browser.sh screenshot _notes/screenshots/x.png
-scripts/browser.sh reset          # mock 回到种子
-scripts/browser.sh scenario empty-playlist
-scripts/browser.sh coverage       # mock 的覆盖报告
-scripts/browser.sh offline on|off # 浏览器真的离线 / 恢复
-scripts/browser.sh port           # 桥接进程端口（sweep.py 用）
-scripts/browser.sh stop           # 停止当前环境的专用浏览器
-scripts/browser.sh axe            # 扫描当前 mock 页面，完整报告存进 _notes/accessibility/
+pnpm test:browser:install
+pnpm smoke:mock
+pnpm test:browser
+pnpm test:a11y
+pnpm test:browser tests/browser/journeys/keyboard.spec.ts --project=desktop --headed
+pnpm test:browser --grep '加入歌单' --project=phone
+pnpm test:browser:faults
+pnpm browser:trace /绝对路径/trace.zip
 ```
 
-- 一次性 smoke：`pnpm dev:mock` 开着时跑 `pnpm smoke:mock`（自动登录、同步、打开歌单、写入、刷新、重置）。
-- 默认是 mock：会话 `campanula-mock`，profile `~/.cache/campanula-axi/mock-profile`，开发服务器 `https://mock.campanula.test`（先 `pnpm dev:mock`）。mock 与普通开发使用不同主机和独立密钥；自动化另有临时工作根。切换主机需要重新登录，设备数据仍归原 origin。
-- 真账号加 `--real`：复用专用浏览器 `scripts/axi.sh`（会话 `campanula`，profile `~/.cache/campanula-axi/chrome-profile`，开发服务器 5173）。不会另开窗口。
-- 命令之间用 `~/.cache/campanula-axi/browser.lock` 加文件锁。锁被占时先看持锁的进程；确认它已经停了再删锁，不要并发操作。`sweep.py` 会直接调 DevTools，跑它的时候不要再开另一个 agent 操作同一个浏览器。
+Linux 第一次用 `pnpm exec playwright install --with-deps chromium` 安装浏览器及系统库；版本来自 lockfile，浏览器 revision 来自 playwright-core/browsers.json。已有浏览器安装后，用例可在禁止外网的数据环境运行。Linux CI 在 tests/tools/offline.sh 创建的临时网络命名空间中执行 smoke、故障注入和完整回归，保留回环与无出口的本机虚拟链路；Chromium 可判断本机在线，IPv4/IPv6 外网路由必须不可达，地址/路由/出口探针证据在 .reports/offline。不修改宿主网络。没有指定系统 Chrome，也不读取作者 profile、账号或已开窗口。
 
-## Playwright：操作与回放
+`test:browser` 跑 journeys，`test:a11y` 跑 accessibility；领域旅程在打开菜单、弹窗和失败态时也扫描同一个 page。`pnpm test` 顺序跑离线 Vitest 和这两类浏览器文件。文件和 `--grep` 可以组合，选择为空会失败。`smoke:mock` 是同一份保存用例的桌面/手机子集。
 
-只接 mock。先启动 `pnpm dev:mock`，再：
+## 报告
 
-```sh
-scripts/browser.sh open /
-scripts/playwright.sh attach
-scripts/playwright.sh snapshot
-scripts/playwright.sh tracing-start
-scripts/playwright.sh goto https://mock.campanula.test/playlists/900000024
-scripts/playwright.sh tracing-stop
-scripts/playwright.sh detach
-scripts/playwright.sh show-trace _notes/playwright/traces
-```
+终端输出本次 `.reports/browser/run-*/`。其中 tests.json 与 HTML 记录实际步骤、项目和错误，results 下保留所有用例的 trace、截图、环境/网络附件及逐场景 axe JSON。每个 axe 结果保留 violations、incomplete、passes、inapplicable 和规则 tags；best-practice 与 WCAG A/AA 同时运行。没有整页排除，当前已扫描状态要求零 violations；incomplete 逐场景/规则/节点对照 tests/baselines/a11y-manual.json，新增项阻断，清单只由明确人工判断修改。存量和人工判定见 `docs/acceptance/issue-100.md`。latest.json 只是导航，交付引用明确的 run 和最终 SHA 的 CI 附件。
 
-`scripts/playwright.sh` 通过同一个文件锁调用项目里的 `playwright-cli`，固定会话 `campanula-mock`。attach 从 mock profile 的 `DevToolsActivePort` 读取本机随机 CDP 端口；旧 Chrome 没有这个文件时按「工具依赖」重启 mock。配置在 `.playwright/cli.config.json`，快照、日志和 trace 都存在 `_notes/playwright/`，不进 git。
+`test:browser:faults` 在临时源码副本依次断保存、去按钮名称、改焦点归还，检查同一用例在指定原因失败，再恢复通过；报告位于 `.reports/browser-faults/`。不修改共享 src，也不把预期失败混成普通绿灯。
 
-Vite 的文件监听排除了 `_notes/`：trace 会生成 HTML 资源，监听这些文件会在录制中意外刷新 App。新增诊断输出也放在这个目录下。
+## 作者点名的诊断
 
-- 用最新 snapshot 里的引用做 click、fill、drag；换页或界面明显改变后重新取 snapshot。`scripts/playwright.sh <命令> --help` 查看当前版本的参数。
-- attach 不换页、不重新登录；用 `tab-list` 确认当前标签，必要时 `tab-select <编号>` 选择目标页。
-- trace 开始后再执行要记录的导航和操作。结束时 CLI 打印 trace、network 和 resources 的路径；`show-trace` 可打开整个 traces 目录，也可传某一份 `.trace`。查看器用同一份 CLI 依赖里的 Playwright，只读录制文件，不持有 App 浏览器的操作锁。
-- 用 detach 结束 Playwright 操作，Chrome 留给 axi 和 sweep 继续用；关闭浏览器用 `scripts/browser.sh stop`。始终通过仓库脚本串行操作。
+用 tests/browser/fixture.ts 的 test、page 和 environment，在 `tests/browser/journeys/` 写或复用一个具名用例。截图、骨架位移、返回恢复、键盘、动效逐帧、JS 抽屉逐帧、慢放和隐藏状态模拟在 `tests/tools/browser/sweep.ts`；浏览器侧的原记录/冻结/时钟脚本也归 tests/tools/browser。示例为 journeys/diagnostics.spec.ts，使用同一条 headed/grep 命令重跑。
 
-## axe：无障碍扫描
+- `install(page, { freshImages: true })` 在导航前安装位移、错误、请求和逐帧记录，可给本实例的 mock 图片加新请求标记；`shoot(page, info, name)` 保存截图/布局报告。位移与错误逐项检查，不能用总图数代替。
+- `keys` 用真实键盘输入并记录每步焦点；`roundtrip` 从真实链接进入再返回，核对地址、窗口/架子滚动位置和选中标签。
+- `motion` 触发后冻结 Web Animations；省略元素选择器时也捕获 View Transition 的伪元素动画；`tween` 在独立页内放慢 performance 时钟，给 JS 抽屉拍指定时间；`slow` 支持连续操作。每组报告应与 DESIGN 的时长、属性及减少动态效果规则比对。
+- `hidden` 模拟 visibilityState，证明产品接收事件后的反应；不证明操作系统后台节流/锁屏。网络慢响应优先用具名 slow 场景或 page.route 暂停自己的响应；不会改变作者网络。
+- 通过 page.emulateMedia 选择 reduce/no-preference，视口通过 fixture 的项目或 page.setViewportSize 设置。真实触屏行为仍由 Android 试用。
 
-打开目标 mock 页面，等加载结束；菜单、弹窗等要先打开再扫描：
-
-```sh
-scripts/browser.sh axe _notes/accessibility/library.json
-```
-
-引擎从项目里的 `axe-core/axe.min.js` 注入，不通过 CDN 加载，也不进入产品代码或生产包。检查 WCAG 2 A/AA、2.1 A/AA、2.2 AA 和 best-practice。终端只列摘要，完整 JSON 包含规则、受影响元素、原因和帮助链接。
-
-退出码 1 表示发现 violations；扫描执行失败也会明确报错。`incomplete` 表示引擎拿不准、需要人工确认，不能写成通过。一次扫描只覆盖当前可见状态；焦点顺序、键盘能否完成操作、读屏是否好理解还要实际操作验证。
-
-## 性能、动效与 PWA
-
-量帧时间、长任务和检查离线外壳时用生产构建：`pnpm build` 后 `pnpm preview`。开发模式的检查会影响性能，开发服务器也不注册 Service Worker 外壳缓存。mock 用来复现页面和数据状态，不能据此宣称生产 PWA 已通过。
-
-动效逐帧只证明采样时刻的画面；卡顿分析要录实际运行的 performance trace。当前 DevTools 的 `emulate.prefersReducedMotion` 会同时影响浏览器的 CSS 媒体查询和 `matchMedia`，sweep 用它设置减少动态效果；每次 emulate 会替换此前的模拟参数，所以视口、减少动态效果和慢网要一起传。手机视口和 CPU/网络降速仍是桌面模拟；系统返回、软键盘、后台与锁屏播放由 Android 真机确认。
-
-## 登录态
-
-- 登录态保存在专用 Chrome profile `~/.cache/campanula-axi/chrome-profile` 里，`scripts/axi.sh` 和 `scripts/browser.sh --real` 用的是同一个会话、同一个 profile。
-- 录制授权与作者浏览器分开：工具在 `tests/tools/`，只接收显式实例和短期授权文件；结束删除授权，不读取专用 profile。见 `tests/fixtures/netease/README.md`「录制与维护」。
-- 复用登录态依赖三件事：同一个 profile、`.env` 里同一个 `COOKIE_SECRET`、网易云的 `MUSIC_U` 还没过期。换了 secret 或网易云会话过期，`check --real` 会返回 `account:null`，这时只需在专用窗口扫码一次。
-- 新会话：`scripts/browser.sh check --real` 发现 Chrome 没开时，会用同一个 profile 重新启动，不需要重新扫码；已在浏览器进程重启后验证过。
-
-## 真账号
-
-1. 先 `scripts/browser.sh check --real`。
-2. 没登录（`/api/account` 不是账号）就停下，请作者在专用窗口（`scripts/axi.sh`）里扫码一次；**不继续打开新页面、不反复重开**。
-3. 登录了才 `scripts/browser.sh open --real /path`。
-4. 真账号会真的写入网易云。按 Spec #11「交付方式」：只在临时新建、测完即删的歌单上做写操作；不要动作者已有的歌单排序和批量移除。
-
-## reviewer
-
-reviewer 只看 diff，不碰浏览器。截图、动效逐帧、浏览器检查只在作者点名时做（`docs/agents/delivery.md` 第 3 步）。
-
-## 和界面验收 skill 的关系
-
-`campanula-ui-acceptance` 的 `sweep.py` 默认连 mock：`CAMPANULA_BROWSER_ORIGIN` 默认 `https://mock.campanula.test`，端口用 `scripts/browser.sh port` 拿；要拍真账号时设 `CAMPANULA_BROWSER=real`，并先 `check --real`。mock 下写入是安全的，但截图前仍要按 skill 的拦截规则看清是在拍什么状态。
-
-常用 dev / dev:mock 默认 HTTPS（8443 / 8444）；直接运行，首次按提示确认准备，见 [本地开发](../development.md)。工具从 `scripts/dev.mts` 读取默认地址。HTTP 备用命令为 dev:http / dev:mock:http，浏览器工具通过 CAMPANULA_BROWSER_ORIGIN 显式选择对应 origin。
+原 scripts/browser/axi/playwright 和 Python sweep 的 attach/profile/桥接接口已移除；脚本薄入口 scripts/browser.sh 进入相同的独立 runner，参数为 Playwright Test 文件/grep/headed，不再接受 open/exec/port。原截图、逐帧用途的迁移映射和验证结果见 #100 验收文档。录制真实上游请用 tests/tools 的录制入口，见 tests/README。

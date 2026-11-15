@@ -80,6 +80,8 @@
     {#if tabs}
       <div
         class="bg-primary-50"
+        role="region"
+        aria-label="页面分类"
         style:view-transition-name="phone-tabs"
         style:view-transition-class="crossfade"
       >

@@ -24,7 +24,9 @@ export default defineConfig(async () => {
     ],
     test: {
       include: (suite === 'all'
-        ? Object.values(suites).flat()
+        ? Object.entries(suites)
+            .filter(([name]) => name !== 'browser' && name !== 'a11y')
+            .flatMap(([, files]) => files)
         : suites[suite]
       ).map((file) => `${ROOT}${file}`),
       // 精准 V8 采集下，冷启动曲库的 HTTP 和本机保存会超过默认 5 秒；业务时间仍由受控时钟推进。

@@ -405,7 +405,7 @@ const respond = async (
         const raw = await readFixture(path);
         return {
           status: 200,
-          body: raw.response.body,
+          body: localize(raw.response.body),
           cookie: path.includes('803') ? cookieFor() : [],
         };
       }

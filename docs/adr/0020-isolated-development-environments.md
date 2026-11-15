@@ -24,3 +24,7 @@
 2026-11-16 作者首次授权复现 sudo 无法读取终端：Unix 上 execa 的 killDescendants 会隐式 detached，继承 stdio 不能保留控制终端。mkcert -install、hosts 追加和 DNS 刷新统一走前台终端执行器，取消时用 pidtree 定位本命令的后代后转发信号；不向启动器所在的整个进程组广播。主信号监听保留到异步收尾完成，避免 signal-exit 在 once 监听移除后重新发送信号。非交互的版本探测、CAROOT 和签发继续使用独立进程组。伪终端回归关闭内层 stdin 验证真实控制终端读取，同时保持会话到断言之后；自动化仍不安装系统 CA 或修改 hosts。
 
 同日最终收敛：Vite worker 复用 execaNode 的 ipcInput / getOneMessage、gracefulCancel 和五秒 forceKillAfterDelay，替代手写 fork、消息等待和 TERM/KILL 定时器。worker 收到取消后关闭 Vite、保存覆盖率，父进程等待退出后释放工作根。前台授权命令保持原终端，用 pidtree 取得取消时的后代快照，p-wait-for 等待 SIGINT 后的退出；一秒后向仍存活的自有后代发送 SIGKILL，再等待一秒。权限拒绝或超时明确报告，不隐式再次提权；不保证回收已经脱离父子关系或操作系统不允许终止的进程。命令、域名、证书与身份策略不变，完成后继续暂停接力。
+
+2026-11-16：独立 Playwright Test / 配套 Chromium 与同 page axe 已落地，按 tests/suites.ts 选择，默认全量顺序运行 Vitest 与页面用例。临时服务和空 context 不依赖作者浏览器；真实 page 的 Cookie、IndexedDB/Cache Storage、HMR/新增路由和清理分别留证。诊断归 tests/tools/browser，移除旧 attach/profile 桥接。具体范围、首扫和人工边界见 #100 验收文档。
+
+独立根的 Svelte 编译以实际源码根作为 rootDir，让 CSS scope 按源码相对路径生成，与检出目录和临时根的绝对地址无关。axe 人工清单仍逐场景/规则/精确 target 匹配；旧 scope 逐组件映射，原始观测保留，不按机器另增别名或排除组件。

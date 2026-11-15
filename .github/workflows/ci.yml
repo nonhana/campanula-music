@@ -47,11 +47,20 @@ jobs:
           pnpm fixtures:index:check
           pnpm sdk:report
 
+      - name: 安装配套 Chromium 与系统库
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: 真页面 smoke
+        run: sh tests/tools/offline.sh pnpm smoke:mock
+
+      - name: 浏览器故障注入
+        run: sh tests/tools/offline.sh pnpm test:browser:faults
+
       - name: 测试
         # 控制终端回归使用系统 Python 标准库，不安装 CA 或修改 hosts。
         run: |
           python3 --version
-          pnpm test --coverage
+          sh tests/tools/offline.sh pnpm test --coverage
 
       - name: SSR 覆盖率校准
         run: pnpm test:coverage:calibrate
@@ -66,6 +75,10 @@ jobs:
             .reports/latest-*.json
             .reports/environments/
             .reports/sdk/
+            .reports/browser/
+            .reports/browser-faults/
+            .reports/offline/
+            tests/baselines/a11y-first-observations.json.gz
           if-no-files-found: error
           include-hidden-files: true
 

@@ -1,0 +1,37 @@
+(() => { if (window.__campanulaFreeze) return;
+  const next = () => new Promise(r => requestAnimationFrame(r));
+  const loop = a => a.effect?.getComputedTiming().iterations === Infinity;
+  const F = window.__campanulaFreeze = { frozen: [], start: new Map(), born: new WeakMap(), armed: false, at: 0, load: null,
+    hold(a, start = 0) { if (loop(a) || F.frozen.includes(a)) return; a.pause(); F.start.set(a, start); a.currentTime = Math.max(0, F.at - start); F.frozen.push(a) },
+    grab(selector) { for (const el of document.querySelectorAll(selector)) for (const a of el.getAnimations()) F.hold(a); return F.frozen.length },
+    async frame(t) { F.at = t;
+      for (let round = 0; round < 6; round++) { let ended = false;
+        for (const a of [...F.frozen]) { if (!a.effect) { F.frozen.splice(F.frozen.indexOf(a), 1); F.start.delete(a); continue; } const start = F.start.get(a) ?? 0; const end = start + a.effect.getComputedTiming().endTime;
+          if (F.armed && t >= end && end > start) { F.frozen.splice(F.frozen.indexOf(a), 1); if (a.effect.target) F.born.set(a.effect.target, end); a.finish(); ended = true }
+          else a.currentTime = Math.max(0, t - start) }
+        if (!ended) break;
+        await next(); await next() }
+      return F.frozen.length },
+    describe() { return F.frozen.filter(a => a.effect).map(a => `${a.effect.getTiming().duration  }ms ${  [...new Set(a.effect.getKeyframes().flatMap(k => Object.keys(k)).filter(x => !['offset', 'computedOffset', 'easing', 'composite'].includes(x)))].join(',')}`) },
+    release() { F.load = null; F.armed = false; for (const a of F.frozen) { try { a.finish() } catch {} } F.frozen = []; F.start.clear(); F.born = new WeakMap(); F.at = 0; return true },
+    async waitAndGrab(grab, when, timeout) { const t0 = performance.now();
+      const live = () => [...document.querySelectorAll(when)].some(el => el.getAnimations().some(a => !loop(a) && a.playState === 'running'));
+      while (!live()) { if (performance.now() - t0 > timeout) return null; await next() }
+      for (let i = 0; i < 3; i++) { F.grab(grab); await next() }
+      await F.frame(0); F.armed = true; return { afterMs: Math.round(performance.now() - t0), anims: F.describe() } },
+    async waitLoaded(count, timeout) { const t0 = performance.now();
+      while (F.frozen.length < count && performance.now() - t0 < timeout) await new Promise(r => setTimeout(r, 100));
+      if (F.frozen.length < count) return null;
+      await new Promise(r => setTimeout(r, 400)); await F.frame(0); return { frozen: F.frozen.length, anims: [...new Set(F.describe())] } },
+    async waitTurn(timeout) { const t0 = performance.now();
+      const turning = () => document.getAnimations().filter(a => a.effect?.pseudoElement?.startsWith('::view-transition'));
+      while (turning().length === 0) { if (performance.now() - t0 > timeout) return null; await next() }
+      for (const a of turning()) F.hold(a); await F.frame(0);
+      return { afterMs: Math.round(performance.now() - t0), types: [...(document.activeViewTransition?.types ?? [])],
+        anims: F.frozen.filter(a => a.effect).map(a => { const t = a.effect.getComputedTiming(); return `${a.effect.pseudoElement} ${a.animationName} ${t.duration}ms +${t.delay}ms` }) } } };
+  const animate = Element.prototype.animate;
+  Element.prototype.animate = function (keyframes, options) { const a = animate.call(this, keyframes, options);
+    const born = F.armed ? F.born.get(this) : undefined;
+    if (born !== undefined) { F.born.delete(this); F.hold(a, born) }
+    return a };
+  document.addEventListener('transitionrun', e => { if (F.load && e.target.matches?.(F.load)) for (const a of e.target.getAnimations()) F.hold(a) }, true) })();

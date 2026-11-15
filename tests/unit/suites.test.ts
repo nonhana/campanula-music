@@ -5,8 +5,14 @@ import { promisify } from 'node:util';
 
 import { describe, expect, it } from 'vitest';
 
+import previous from '../baselines/issue-99.json' with { type: 'json' };
 import baseline from '../baselines/migration.json' with { type: 'json' };
-import { compareMigration, ROOT, selectTests } from '../suites.ts';
+import {
+  compareMigration,
+  comparePrevious,
+  ROOT,
+  selectTests,
+} from '../suites.ts';
 
 describe('套件选择', () => {
   it('按用例全名过滤到空集时，CLI 明确失败', async () => {
@@ -108,4 +114,45 @@ describe('套件选择', () => {
       { file: baseline.migrations[0].to, name: '新增规则', status: 'passed' },
     ]);
   });
+});
+
+it('前置 824 条用例不能被遗漏、跳过或重复执行', () => {
+  expect(() => comparePrevious({ testResults: [] })).toThrow('前置用例缺失');
+  const testResults = [
+    ...baseline.migrations.map(({ to, cases }) => ({
+      name: `${ROOT}${to}`,
+      assertionResults: cases.map(({ name, status }) => ({
+        fullName: name,
+        status,
+      })),
+    })),
+    ...previous.cases.map(({ file, name, status }) => ({
+      name: `${ROOT}${file}`,
+      assertionResults: [{ fullName: name, status }],
+    })),
+  ];
+  expect(comparePrevious({ testResults }).preserved).toBe(824);
+  const delta = testResults[baseline.migrations.length];
+  delta.assertionResults[0].status = 'pending';
+  expect(() => comparePrevious({ testResults })).toThrow('前置用例缺失');
+  delta.assertionResults[0].status = 'passed';
+  delta.assertionResults.push(delta.assertionResults[0]);
+  expect(() => comparePrevious({ testResults })).toThrow('前置用例缺失');
+  delta.assertionResults.pop();
+  delta.assertionResults.pop();
+  expect(() => comparePrevious({ testResults })).toThrow('前置用例缺失');
+});
+
+it('浏览器 CLI 的空选择明确失败', async () => {
+  await expect(
+    promisify(execFile)(
+      process.execPath,
+      [
+        fileURLToPath(import.meta.resolve('tsx/cli')),
+        'tests/tools/browser.mts',
+        '__missing_browser_case__',
+      ],
+      { cwd: ROOT },
+    ),
+  ).rejects.toMatchObject({ code: 1 });
 });

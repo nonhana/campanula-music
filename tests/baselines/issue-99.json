@@ -1,0 +1,351 @@
+{
+  "commit": "986069b3814570a5e1dfdfc3f428f0d40111faf5",
+  "cases": [
+    {
+      "file": "tests/behavior/playback.test.ts",
+      "name": "锁屏和通知栏 换到还不知道时长的歌：清掉上一首的系统进度，音频就绪后再显示这首的进度",
+      "status": "passed"
+    },
+    {
+      "file": "tests/behavior/session.test.ts",
+      "name": "退出登录 网易云退出不可用：仍清掉登录 Cookie，重开保持未登录，不重试上游退出",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/mock-library.test.ts",
+      "name": "默认小曲库的收藏可完整打开，歌曲可播放下载，写后读回和 reset 保持一致",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/mock-library.test.ts",
+      "name": "扫码确认或过期、合法空搜索、512 写入和缺关系有具名诊断",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/mock-library.test.ts",
+      "name": "全部搜索类别都支持具名合法空态",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "模拟采集源录成功和失败，脱敏后可重放并清理（私有\"测试名）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "模拟采集源录成功和失败，脱敏后可重放并清理（code）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "模拟采集源录成功和失败，脱敏后可重放并清理（null）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "无效临时授权在调用采集源前拒绝并删除文件（invalid-expiry）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "无效临时授权在调用采集源前拒绝并删除文件（string）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "无效临时授权在调用采集源前拒绝并删除文件（boolean）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "无效临时授权在调用采集源前拒绝并删除文件（number）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/recording.test.ts",
+      "name": "无效临时授权在调用采集源前拒绝并删除文件（missing-counter）",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "sDK 消费者合同 异步 schema 校验使用调用时的内容，不把中途修改后的成功记给旧内容",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "sDK 消费者合同 普通 Proxy 交给 SDK 校验，不因内容指纹拒绝合法回复",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "sDK 消费者合同 已通过的内容改变后仍校验，null 和 NaN 不混用证据",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "sDK 消费者合同 最终动态 body 和失败元数据均要符合合同",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "严格队列记住已捕获的意外调用、遗漏和顺序错误，允许声明并发",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "消费者清单从生产源码读取，每个 action 绑定、查询合同和样本均有证据",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "最终实体编号必须与查询相符，查询校验被产品捕获后收尾仍失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "浏览器直传核对 HTTP 结果与上传字节数，失败不伪装成 SDK 成功",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "最终队列拒绝错实体、成功错分和缺少登录 Cookie",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "sDK 允许没有业务 code 的失败，以及各类技术失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/command-cleanup.test.ts",
+      "name": "关闭命令时强制清理不响应 TERM 的孙进程，端口可重新使用",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "有效站点证书保持原文件和同一个 CA，不调用 mkcert 或重新信任",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "两个启动同时遇到临期证书时只签发一次，复用原 CA 并发布完整证书组",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "missing 的站点缓存由同一个 CA 重新签发",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "corrupt 的站点缓存由同一个 CA 重新签发",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "key 的站点缓存由同一个 CA 重新签发",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "expired 的站点缓存由同一个 CA 重新签发",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "签发被取消时保留旧证书，删除未发布文件并释放锁，随后可以重试",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-certificates.test.ts",
+      "name": "签发器返回无效证书时不发布半套缓存，失效 CA 不会被静默替换",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-command.test.ts",
+      "name": "普通 dev:http 的实际入口遇到已占用端口时退出，不启动另一个端口",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-defaults.test.ts",
+      "name": "product 默认 HTTPS 未准备证书时退出并指明准备命令，不退回 HTTP",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-defaults.test.ts",
+      "name": "mock 默认 HTTPS 未准备证书时退出并指明准备命令，不退回 HTTP",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-launcher.test.ts",
+      "name": "product 的统一入口报告 https://local.campanula.test:8443，不依赖代理",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-launcher.test.ts",
+      "name": "mock 的统一入口报告 https://mock.campanula.test:8444，不依赖代理",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-launcher.test.ts",
+      "name": "mock 的统一入口报告 https://mock.campanula.test:9444，不依赖代理",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-launcher.test.ts",
+      "name": "统一入口启动普通 HTTP，SIGINT 后释放端口并保留工作根",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-launcher.test.ts",
+      "name": "非交互首次引导明确退出，不安装系统 CA、不留下信任记录",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-launcher.test.ts",
+      "name": "启动前发现 Fake-IP 时指出实际地址，回环解析正常时允许继续",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-terminal.test.ts",
+      "name": "首次交互授权 approve：保留控制终端、清理自有进程且不写系统信任",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-terminal.test.ts",
+      "name": "首次交互授权 decline：保留控制终端、清理自有进程且不写系统信任",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-terminal.test.ts",
+      "name": "首次交互授权 interrupt：保留控制终端、清理自有进程且不写系统信任",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-terminal.test.ts",
+      "name": "首次交互授权 terminate：保留控制终端、清理自有进程且不写系统信任",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-terminal.test.ts",
+      "name": "首次交互授权 stubborn：保留控制终端、清理自有进程且不写系统信任",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/dev-terminal.test.ts",
+      "name": "首次交互授权 pnpm：保留控制终端、清理自有进程且不写系统信任",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "临时 mock 通过真实 HTTP 登录，关闭后端口与工作根消失",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "稳定根拒绝重复启动，关闭后重启沿用密钥，reset 保留会话",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "product-first：同一 Cookie jar 的会话和普通生成文件不被 mock 覆盖",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "mock-first：同一 Cookie jar 的会话和普通生成文件不被 mock 覆盖",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "两个临时 mock 并发改名，失败、reset 和关闭只影响自己的实例",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "启动 0 ms 取消释放稳定锁并可重试",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "启动 150 ms 取消释放稳定锁并可重试",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "运行中的子进程失败后删除临时根，另一实例仍可用",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "拒绝把可写 node_modules 指向别处，保留外部生成类型",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/environment.test.ts",
+      "name": "两个启动器同时回收死拥有者，只能有一方占用稳定工作根",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/mock-server.test.ts",
+      "name": "mock 开发服务器 下载地址对应本地生成音频，忽略 Range 时返回完整文件供重下",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/mock-server.test.ts",
+      "name": "mock 开发服务器 512 初次写入只通知后备，后备完成后 HTTP 读回有新增曲目",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/mock-server.test.ts",
+      "name": "mock 开发服务器 reset 清掉当前环境的图片直传，已清理的地址不再返回旧图片",
+      "status": "passed"
+    },
+    {
+      "file": "tests/delivery/runner-isolation.test.ts",
+      "name": "两个自动化命令并发完成，各自保留测试和覆盖率报告",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 按用例全名过滤到空集时，CLI 明确失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 漏掉迁移清单中的文件会失败，不会把剩余用例算作完整回归",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 同一文件被两层选择会失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 必需套件空选择会失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 放在分层目录外的文件会失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 旧用例缺失时，迁移核对会失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 目录内仍有别的文件时，删除必需文件仍会失败",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "套件选择 旧用例被跳过、重复执行都会失败，新增用例另列",
+      "status": "passed"
+    }
+  ],
+  "includesMigrationBaseline": "9c2ec71b6cbf025f6f25fdb1a84cbd8584d94cec"
+}

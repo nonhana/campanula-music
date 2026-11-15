@@ -58,13 +58,13 @@ export const coverSvg = (key: string): string => {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/>${art}</svg>`;
 };
 
-const audioCache = new Map<number, Buffer>();
+const audioCache = new Map<string, Buffer>();
 
-export const audioWav = (songId: number): Buffer => {
-  const cached = audioCache.get(songId);
+export const audioWav = (songId: number, seconds = 2): Buffer => {
+  const key = `${songId}:${seconds}`;
+  const cached = audioCache.get(key);
   if (cached) return cached;
   const sampleRate = 8000;
-  const seconds = 2;
   const samples = sampleRate * seconds;
   const buffer = Buffer.alloc(44 + samples * 2);
   buffer.write('RIFF', 0);
@@ -93,7 +93,7 @@ export const audioWav = (songId: number): Buffer => {
       44 + index * 2,
     );
   }
-  audioCache.set(songId, buffer);
+  audioCache.set(key, buffer);
   return buffer;
 };
 

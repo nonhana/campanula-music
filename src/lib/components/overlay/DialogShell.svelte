@@ -79,6 +79,33 @@
         node.querySelector<HTMLElement>('input, textarea, button')
       )?.focus({ preventScroll: true }),
     );
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || node.closest('[inert]')) return;
+      const stops = [
+        ...node.querySelectorAll<HTMLElement>(
+          'a[href], button, input, select, textarea, [tabindex]',
+        ),
+      ].filter(
+        (element) =>
+          element.tabIndex >= 0 &&
+          !element.matches(':disabled') &&
+          !element.closest('[inert]') &&
+          element.checkVisibility(),
+      );
+      const first = stops[0] ?? node;
+      const last = stops.at(-1) ?? node;
+      if (
+        !stops.length ||
+        (event.shiftKey
+          ? document.activeElement === first
+          : document.activeElement === last)
+      ) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+    };
+    node.addEventListener('keydown', trap);
+    return () => node.removeEventListener('keydown', trap);
   };
 </script>
 

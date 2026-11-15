@@ -47,3 +47,9 @@
 - 断言 `stack.top`、`history.url`、`history.index`、`history.length`。
 
 内存历史只证明核心。改了 `overlay-history.svelte.ts` 时，走 `delivery.md` 第 3 步的例外。
+
+## 浏览器焦点
+
+DialogShell 的 Tab / Shift+Tab 在当前非 inert、可见且启用的停点间循环；关闭后仍由浮层栈等待 DOM 解锁再归还。真实键盘路径在 tests/browser/journeys/keyboard.spec.ts，包含从歌曲菜单加入歌单、Escape、刷新读回和编辑弹窗循环。纯核心与真实页面的证据各自保留。
+
+MenuOverlay 每次请求、账号菜单每次打开都重新初始化列表焦点；即使退出动画尚未结束，不能沿用上次的失焦节点。外壳动画仍可逆，列表生命周期跟随本次打开。keyboard/core 的快速关闭再打开回归验证此边界；DialogShell 的同一路径单独保持回归。

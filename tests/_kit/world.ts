@@ -13,7 +13,6 @@ import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 import { clockOn } from './browser.ts';
 import type { Device, DeviceTraits } from './device.ts';
 import { createDevice, SENT_HEADER } from './device.ts';
-import { loadFixture } from './fixtures.ts';
 import type { Call, RequestSpan } from './netease-sdk.ts';
 import { createWorkspace } from './workspace.ts';
 
@@ -150,6 +149,9 @@ const startWorld = async (options: WorldOptions = {}) => {
     const fake = (await runner.import(
       FAKE_SDK,
     )) as typeof import('./netease-sdk.ts');
+    const fixtures = (await runner.import(
+      fileURLToPath(new URL('./fixtures.ts', import.meta.url)),
+    )) as typeof import('./fixtures.ts');
     const probe = (await runner.import(
       SDK_PROBE,
     )) as typeof import('./netease-sdk.ts');
@@ -193,6 +195,7 @@ const startWorld = async (options: WorldOptions = {}) => {
     return {
       origin: `http://localhost:${port}`,
       fake,
+      fixtures,
       timers,
       serverLogs: serverLogs.logs,
       reset() {
@@ -269,7 +272,7 @@ export const useWorld = (options: WorldOptions = {}): World => {
     },
     netease: {
       async rejectUnprepared(module, reason, when, exception) {
-        const { outcome } = await loadFixture(
+        const { outcome } = await current().fixtures.loadFixture(
           'library/likelist.500-synthetic.constructed.json',
         );
         current().fake.queueReply(module, {
@@ -300,7 +303,7 @@ export const useWorld = (options: WorldOptions = {}): World => {
           exception,
         } = {},
       ) {
-        const { module, outcome } = await loadFixture(path);
+        const { module, outcome } = await current().fixtures.loadFixture(path);
         current().fake.queueReply(module, {
           ...outcome,
           response: { ...outcome.response, cookie },

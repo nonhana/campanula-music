@@ -7,7 +7,9 @@
     "src/params.ts",
     "scripts/*.mts",
     "tests/**/*.test.ts",
-    "tests/_kit/mock/runtime.ts"
+    "tests/_kit/mock/runtime.ts",
+    "tests/browser/**/*.spec.ts",
+    "tests/tools/*.mts"
   ],
   "project": [
     "src/**/*.{ts,svelte}",
@@ -15,6 +17,5 @@
     "tests/**/*.{ts,mts}",
     "*.mts"
   ],
-  "ignoreDependencies": ["uno.css"],
-  "ignoreBinaries": ["chrome-devtools-axi"]
+  "ignoreDependencies": ["uno.css"]
 }

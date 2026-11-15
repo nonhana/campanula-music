@@ -1,0 +1,6 @@
+(() => { const tag = `_fresh=${  Date.now()}`;
+  const fresh = v => typeof v === 'string' && (v.startsWith('/mock-assets/') || v.startsWith(location.origin + '/mock-assets/')) && !v.includes('_fresh=') ? v + (v.includes('?') ? '&' : '?') + tag : v;
+  const src = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  Object.defineProperty(HTMLImageElement.prototype, 'src', { ...src, set(v) { src.set.call(this, fresh(v)) } });
+  const setAttribute = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (n, v) { return setAttribute.call(this, n, this instanceof HTMLImageElement && n === 'src' ? fresh(v) : v) } })();
