@@ -11,6 +11,7 @@ import {
   RENEWAL_ATTEMPTED_HEADER,
   RENEWAL_REQUIRED_HEADER,
 } from '#lib/api/check-token.ts';
+import { PLAYLIST_TRACKS_STEP_HEADER } from '#lib/api/library.ts';
 
 import { mockPlugin } from '../src/lib/server/mock/vite-plugin.ts';
 import { TEST_OUT_DIR } from './harness/world.ts';
@@ -132,6 +133,7 @@ describe('mock 开发服务器', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: 'bogus' }),
     });
+
     expect(bad.status).toBe(400);
     const prototype = await fetch(`${origin}/api/mock/scenario`, {
       method: 'POST',
@@ -141,6 +143,47 @@ describe('mock 开发服务器', () => {
     expect(prototype.status).toBe(400);
     expect((await api('/api/account')).status).toBe(200);
   }, 30_000);
+
+  it('曲目分步请求只需一枚令牌，拒绝非法步骤和多枚令牌', async () => {
+    const path = '/api/playlists/900000019/tracks';
+    const request = {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ songIds: [3433267939] }),
+    };
+    expect((await api(path, request)).status).toBe(400);
+    expect(
+      (await api(path, request, { requests: ['first', 'spare'] })).status,
+    ).toBe(400);
+    expect(
+      (
+        await api(
+          path,
+          {
+            ...request,
+            headers: {
+              ...request.headers,
+              [PLAYLIST_TRACKS_STEP_HEADER]: 'unknown',
+            },
+          },
+          { requests: ['one-token'] },
+        )
+      ).status,
+    ).toBe(400);
+    for (const step of ['initial', 'fallback']) {
+      const response = await api(
+        path,
+        {
+          ...request,
+          headers: { ...request.headers, [PLAYLIST_TRACKS_STEP_HEADER]: step },
+        },
+        { requests: [`mock-${step}`] },
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ kind: 'done' });
+    }
+    await fetch(`${origin}/api/mock/reset`, { method: 'POST' });
+  });
 
   it('场景和覆盖报告', async () => {
     const scenario = await fetch(`${origin}/api/mock/scenario`, {

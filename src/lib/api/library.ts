@@ -1,3 +1,10 @@
+import type { ModuleQueryOf } from 'hana-music-api';
+
+export const PLAYLIST_TRACKS_STEP_HEADER = 'x-campanula-playlist-tracks-step';
+export type PlaylistTracksStep = NonNullable<
+  ModuleQueryOf<'playlist_tracks'>['step']
+>;
+
 export interface HeartsResponse {
   songIds: number[];
 }

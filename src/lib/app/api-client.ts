@@ -8,6 +8,8 @@ import {
 import type { GetEndpoint, PostEndpoint } from '#lib/api/endpoint.ts';
 import { endpoints } from '#lib/api/endpoints.ts';
 import type { ApiError, ErrorBody } from '#lib/api/errors.ts';
+import type { PlaylistTracksStep } from '#lib/api/library.ts';
+import { PLAYLIST_TRACKS_STEP_HEADER } from '#lib/api/library.ts';
 import { LOGIN_COOKIE_LOCK } from '#lib/api/login.ts';
 
 import type { BrowserCapabilities } from './browser.ts';
@@ -86,10 +88,12 @@ export const createApi = (
       tokenCount = 0,
       renewalAttempted = false,
       loginCookieLocked = false,
+      playlistTracksStep,
     }: {
       tokenCount?: number;
       renewalAttempted?: boolean;
       loginCookieLocked?: boolean;
+      playlistTracksStep?: PlaylistTracksStep;
     } = {},
   ): Promise<Result<Value>> => {
     const mine = currentRound();
@@ -107,11 +111,13 @@ export const createApi = (
     }
     if (mine !== currentRound())
       return { ok: false, failure: { kind: 'needsLogin' } };
-    if (tokens.requests.length || renewalAttempted) {
+    if (tokens.requests.length || renewalAttempted || playlistTracksStep) {
       const headers = new Headers(init?.headers);
       if (tokens.requests.length)
         headers.set(CHECK_TOKENS_HEADER, JSON.stringify(tokens));
       if (renewalAttempted) headers.set(RENEWAL_ATTEMPTED_HEADER, '1');
+      if (playlistTracksStep)
+        headers.set(PLAYLIST_TRACKS_STEP_HEADER, playlistTracksStep);
       init = { ...init, headers };
     }
     let response: Response;
@@ -126,6 +132,21 @@ export const createApi = (
       response = received;
     } catch (error) {
       return networkFailure(error);
+    }
+    if (
+      response.status === 428 &&
+      playlistTracksStep === 'initial' &&
+      response.headers.get(PLAYLIST_TRACKS_STEP_HEADER) === 'fallback'
+    ) {
+      if (mine !== currentRound())
+        return { ok: false, failure: { kind: 'needsLogin' } };
+      if (!browser.network.onLine)
+        return { ok: false, failure: { kind: 'offline' } };
+      return request<Value>(path, init, {
+        tokenCount,
+        renewalAttempted,
+        playlistTracksStep: 'fallback',
+      });
     }
     const renewal = response.headers.get(RENEWAL_REQUIRED_HEADER);
     if (
@@ -206,6 +227,9 @@ export const createApi = (
         keepalive: options?.keepalive === true && fitsKeepalive(serialized),
       },
       {
+        ...(endpoint.playlistTracksSteps
+          ? { playlistTracksStep: 'initial' as const }
+          : {}),
         tokenCount:
           endpoint.needsCheckToken && !endpoint.needsCheckToken(body as Request)
             ? 0

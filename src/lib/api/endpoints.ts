@@ -136,12 +136,12 @@ export const endpoints = {
 
   addTracks: post<WriteResponse, AddTracksRequest, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]/tracks', { id }),
-    { checkTokens: 2 },
+    { checkTokens: 1, playlistTracksSteps: true },
   ),
 
   removeTracks: post<WriteResponse, RemoveTracksRequest, NeteaseIdParams>(
     ({ id }) => resolve('/api/playlists/[id=neteaseId]/tracks/remove', { id }),
-    { checkTokens: 2 },
+    { checkTokens: 1, playlistTracksSteps: true },
   ),
 
   songOrder: post<WriteResponse, SongOrderRequest, NeteaseIdParams>(

@@ -24,12 +24,18 @@ import type {
   PlaylistInfo,
   PlaylistPageResponse,
   PlaylistTagGroup,
+  PlaylistTracksStep,
   PlaylistUnavailable,
 } from '#lib/api/library.ts';
 import { playlistKindOf } from '#lib/api/library.ts';
 import type { WriteResponse } from '#lib/api/write.ts';
 
-import { NeteaseError, rejection, shapeChanged } from './failure.ts';
+import {
+  NeteaseError,
+  PlaylistTracksFallbackRequired,
+  rejection,
+  shapeChanged,
+} from './failure.ts';
 
 const PLAYLISTS_PER_CALL = 1000;
 
@@ -256,6 +262,7 @@ const missing = (
 export const addTracks = async (
   playlistId: number,
   songIds: readonly number[],
+  step: PlaylistTracksStep,
   config: ModuleCallConfig,
 ): Promise<WriteResponse> => {
   try {
@@ -264,11 +271,14 @@ export const addTracks = async (
         op: 'add',
         pid: playlistId,
         tracks: songIds,
+        step,
       },
       config,
     );
   } catch (error) {
     const refused = rejection(error);
+    if (step === 'initial' && refused?.code === 512)
+      throw new PlaylistTracksFallbackRequired();
     if (
       refused?.code === TRACKS_DUPLICATE &&
       refused.message?.includes('歌单内歌曲重复')
@@ -284,6 +294,7 @@ export const addTracks = async (
 export const removeTracks = async (
   playlistId: number,
   songIds: readonly number[],
+  step: PlaylistTracksStep,
   config: ModuleCallConfig,
 ): Promise<WriteResponse> => {
   try {
@@ -292,10 +303,13 @@ export const removeTracks = async (
         op: 'del',
         pid: playlistId,
         tracks: songIds,
+        step,
       },
       config,
     );
   } catch (error) {
+    if (step === 'initial' && rejection(error)?.code === 512)
+      throw new PlaylistTracksFallbackRequired();
     const gone = missing(error);
     if (gone) return gone;
     throw error;

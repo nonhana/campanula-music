@@ -1,8 +1,13 @@
 import { RENEWAL_REQUIRED_HEADER } from '#lib/api/check-token.ts';
 import type { Endpoint } from '#lib/api/endpoint.ts';
 import type { ApiError, ErrorBody } from '#lib/api/errors.ts';
+import { PLAYLIST_TRACKS_STEP_HEADER } from '#lib/api/library.ts';
 
-import { failureOf, logFailure } from './netease/failure.ts';
+import {
+  failureOf,
+  logFailure,
+  PlaylistTracksFallbackRequired,
+} from './netease/failure.ts';
 
 export class RenewalRequired extends Error {
   constructor(readonly reason: 'due' | 'expired') {
@@ -46,6 +51,17 @@ export const withNetease = async <Value>(
   try {
     return json(endpoint, await handle());
   } catch (error) {
+    if (error instanceof PlaylistTracksFallbackRequired)
+      return Response.json(
+        { playlistTracksStep: 'fallback' },
+        {
+          status: 428,
+          headers: {
+            [PLAYLIST_TRACKS_STEP_HEADER]: 'fallback',
+            'cache-control': 'no-store',
+          },
+        },
+      );
     if (error instanceof RenewalRequired)
       return Response.json(
         { renewalRequired: error.reason },

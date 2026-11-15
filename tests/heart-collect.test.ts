@@ -14,7 +14,7 @@ import {
   storedPlaylistIds,
   storedTrackIds,
 } from './harness/listener.ts';
-import { renewCookies } from './harness/sign-in.ts';
+import { ANOTHER_ACCOUNT, renewCookies, signIn } from './harness/sign-in.ts';
 import { useWorld } from './harness/world.ts';
 
 const world = useWorld();
@@ -24,6 +24,7 @@ const { signInAtLikedTracks, dailySongs, openJazz, replyLibrary } =
 const LIKE = 'like-collect/like.like.json';
 const UNLIKE = 'like-collect/like.unlike.json';
 const ADD = 'playlist-edit/playlist_tracks.add.json';
+const TRACKS_512 = 'playlist-edit/playlist_tracks.512.constructed.json';
 const ADD_DUPLICATE = 'playlist-edit/playlist_tracks.add-duplicate.json';
 const ALBUM_COLLECT = 'like-collect/album_sub.subscribe.json';
 const ALBUM_UNCOLLECT_AGAIN = 'like-collect/album_sub.unsubscribe-again.json';
@@ -264,22 +265,226 @@ describe('红心', () => {
 });
 
 describe('加入歌单', () => {
-  it('sDK 增删曲目进入 512 分支时，两次上游请求消费不同令牌，成功后才存歌曲', async () => {
+  it('首次加入成功只申请一枚令牌，不预取后备令牌', async () => {
     const device = world.device();
     const tab = await signInAtLikedTracks(device);
     await openJazz(tab.app, { songsHeld: false });
     const [song] = await dailySongs(tab.app);
     const before = tab.watchman.issued.length;
-    await world.netease.reply(ADD, { apiRequests: 2 });
+    await world.netease.reply(ADD);
+
     await tab.app.addToPlaylist(JAZZ.id, song);
-    const call = world.netease.calls.findLast(
-      (call) => call.module === 'playlist_tracks',
-    );
-    expect(call?.checkTokens).toEqual(tab.watchman.issued.slice(before));
-    expect(call?.checkTokens).toHaveLength(2);
-    expect(new Set(call?.checkTokens).size).toBe(2);
+
+    expect(tab.watchman.issued.slice(before)).toHaveLength(1);
     expect((await storedTrackIds(device, JAZZ.id))?.[0]).toBe(song.id);
   });
+
+  it('首次返回 512 后才取第二枚令牌，分别执行两步，后备成功后才保存', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    await openJazz(tab.app, { songsHeld: false });
+    const [song] = await dailySongs(tab.app);
+    const before = tab.watchman.issued.length;
+    const callsBefore = world.netease.calls.length;
+    const storedBefore = await storedTrackIds(device, JAZZ.id);
+    const initial = held();
+    const fallback = held();
+    await world.netease.reply(TRACKS_512, { until: initial.until });
+    await world.netease.reply(ADD, { until: fallback.until });
+    const adding = tab.app.addToPlaylist(JAZZ.id, song);
+    await world.settle();
+    expect(tab.watchman.issued.slice(before)).toHaveLength(1);
+
+    initial.release();
+    await world.settle();
+    expect(tab.watchman.issued.slice(before)).toHaveLength(2);
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(storedBefore);
+    const calls = world.netease.calls
+      .slice(callsBefore)
+      .filter((call) => call.module === 'playlist_tracks');
+    expect(calls.map((call) => call.query)).toEqual([
+      { op: 'add', pid: JAZZ.id, tracks: [song.id], step: 'initial' },
+      { op: 'add', pid: JAZZ.id, tracks: [song.id], step: 'fallback' },
+    ]);
+    expect(calls.map((call) => call.config.checkToken)).toEqual(
+      tab.watchman.issued.slice(before),
+    );
+    expect(new Set(tab.watchman.issued.slice(before)).size).toBe(2);
+    fallback.release();
+    await adding;
+    expect((await storedTrackIds(device, JAZZ.id))?.[0]).toBe(song.id);
+    for (const token of tab.watchman.issued.slice(before)) {
+      expect(JSON.stringify(await device.cookies())).not.toContain(token);
+      expect(JSON.stringify(await device.stored())).not.toContain(token);
+      expect(JSON.stringify(world.serverLogs)).not.toContain(token);
+    }
+  });
+
+  it.each([
+    TRACKS_512,
+    'playlist-edit/playlist_tracks.add-rejected.constructed.json',
+  ])('后备步骤被拒（%s）：只发两步，回滚且不自动继续', async (failure) => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    await openJazz(tab.app, { songsHeld: false });
+    const [song] = await dailySongs(tab.app);
+    const before = tab.watchman.issued.length;
+    const callsBefore = world.netease.calls.length;
+    const storedBefore = await storedTrackIds(device, JAZZ.id);
+    await world.netease.reply(TRACKS_512);
+    await world.netease.reply(failure);
+
+    await tab.app.addToPlaylist(JAZZ.id, song);
+    await world.clock.advance(60_000);
+
+    expect(
+      world.netease.calls
+        .slice(callsBefore)
+        .filter((call) => call.module === 'playlist_tracks'),
+    ).toHaveLength(2);
+    expect(tab.watchman.issued.slice(before)).toHaveLength(2);
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(storedBefore);
+    expect(noticeOf(tab.app)).toMatchObject({
+      kind: 'notChanged',
+      failure: { kind: 'rejected' },
+    });
+    expect(world.serverLogs).toHaveLength(1);
+  });
+
+  it('收到 512 后取不到新令牌：不发送后备步骤，保留原本机副本', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    await openJazz(tab.app, { songsHeld: false });
+    const [song] = await dailySongs(tab.app);
+    const storedBefore = await storedTrackIds(device, JAZZ.id);
+    const initial = held();
+    const before = tab.watchman.issued.length;
+    const callsBefore = world.netease.calls.length;
+    await world.netease.reply(TRACKS_512, { until: initial.until });
+    const adding = tab.app.addToPlaylist(JAZZ.id, song);
+    await world.settle();
+    tab.watchman.available = false;
+    initial.release();
+    await adding;
+
+    expect(
+      world.netease.calls
+        .slice(callsBefore)
+        .filter((call) => call.module === 'playlist_tracks'),
+    ).toHaveLength(1);
+    expect(tab.watchman.issued.slice(before)).toHaveLength(1);
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(storedBefore);
+    expect(noticeOf(tab.app)).toMatchObject({
+      kind: 'notChanged',
+      failure: { kind: 'checkTokenUnavailable' },
+    });
+  });
+
+  it('首次请求在途时断网：收到 512 后不申请后备令牌、不发送后备步骤', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    await openJazz(tab.app, { songsHeld: false });
+    const [song] = await dailySongs(tab.app);
+    const storedBefore = await storedTrackIds(device, JAZZ.id);
+    const before = tab.watchman.issued.length;
+    const callsBefore = world.netease.calls.length;
+    const initial = held();
+    await world.netease.reply(TRACKS_512, { until: initial.until });
+    const adding = tab.app.addToPlaylist(JAZZ.id, song);
+    await world.settle();
+    device.setOnline(false);
+    initial.release();
+    await adding;
+
+    expect(tab.watchman.issued.slice(before)).toHaveLength(1);
+    expect(
+      world.netease.calls
+        .slice(callsBefore)
+        .filter((call) => call.module === 'playlist_tracks'),
+    ).toHaveLength(1);
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(storedBefore);
+    expect(noticeOf(tab.app)).toMatchObject({
+      kind: 'notChanged',
+      failure: { kind: 'offline' },
+    });
+  });
+
+  it.each([
+    { another: false, lateResponse: false },
+    { another: true, lateResponse: false },
+    { another: false, lateResponse: true },
+    { another: true, lateResponse: true },
+  ])(
+    '退出或换账号后不再发送后备步骤（$another / 迟到响应 $lateResponse）',
+    async ({ another, lateResponse }) => {
+      const device = world.device();
+      const tab = await signInAtLikedTracks(device);
+      await openJazz(tab.app, { songsHeld: false });
+      const [song] = await dailySongs(tab.app);
+      const initial = held();
+      const taking = held();
+      const callsBefore = world.netease.calls.length;
+      await world.netease.reply(TRACKS_512, { until: initial.until });
+      const adding = tab.app.addToPlaylist(JAZZ.id, song);
+      await world.settle();
+      let fallbackTokenCalls = 0;
+      tab.watchman.checkToken = async () => {
+        fallbackTokenCalls += 1;
+        await taking.until;
+        return 'late-fallback-token';
+      };
+      if (!lateResponse) {
+        initial.release();
+        await world.settle();
+      }
+      await world.netease.reply('login/logout.json');
+      await tab.app.logout();
+      if (another) {
+        await replyLibrary({ through: 'hearts', until: never() });
+        await signIn(world, tab.app, { another: true });
+      }
+      initial.release();
+      taking.release();
+      await adding;
+
+      expect(
+        world.netease.calls
+          .slice(callsBefore)
+          .filter((call) => call.module === 'playlist_tracks'),
+      ).toHaveLength(1);
+      expect(fallbackTokenCalls).toBe(lateResponse ? 0 : 1);
+      expect(tab.app.state.session).toEqual(
+        another
+          ? { status: 'signedIn', account: ANOTHER_ACCOUNT }
+          : { status: 'signedOut' },
+      );
+    },
+  );
+
+  it.each(['initial', 'fallback'] as const)(
+    '曲目 %s 步骤要求登录：不续期、不重放写入',
+    async (step) => {
+      const device = world.device();
+      const tab = await signInAtLikedTracks(device);
+      await openJazz(tab.app, { songsHeld: false });
+      const [song] = await dailySongs(tab.app);
+      const before = world.netease.calls.length;
+      if (step === 'fallback') await world.netease.reply(TRACKS_512);
+      await world.netease.reply(
+        'playlist-edit/playlist_tracks.301.constructed.json',
+      );
+
+      await tab.app.addToPlaylist(JAZZ.id, song);
+
+      const calls = world.netease.calls.slice(before);
+      expect(calls.map((call) => call.module)).toEqual(
+        step === 'initial'
+          ? ['playlist_tracks']
+          : ['playlist_tracks', 'playlist_tracks'],
+      );
+      expect(tab.app.state.session.status).toBe('loginExpired');
+    },
+  );
 
   it('加入自建歌单：马上排在最前，提交给网易云，成了存进本机副本并提示一句', async () => {
     const device = world.device();

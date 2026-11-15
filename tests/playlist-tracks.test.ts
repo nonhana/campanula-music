@@ -106,6 +106,49 @@ const twoRemovablePlaylists = async (
 };
 
 describe('批量移除：5 秒撤销与晚一点提交', () => {
+  it('隐藏页面立即移除时遇到 512：两步分别取新令牌并保留 keepalive，后备确认后才保存', async () => {
+    const device = world.device();
+    const tab = await signInAtLikedTracks(device);
+    await openJazz(tab.app, { songsHeld: false });
+    const before = tab.watchman.issued.length;
+    const callsBefore = world.netease.calls.length;
+    const initial = held();
+    const fallback = held();
+    await world.netease.reply(
+      'playlist-edit/playlist_tracks.512.constructed.json',
+      { until: initial.until },
+    );
+    await world.netease.reply(REMOVE, { until: fallback.until });
+
+    tab.app.removeFromPlaylist(JAZZ.id, [JAZZ_TRACKS[0]!]);
+    tab.hide();
+    await world.settle();
+    expect(tab.watchman.issued.slice(before)).toHaveLength(1);
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS);
+    initial.release();
+    await world.settle();
+    expect(tab.watchman.issued.slice(before)).toHaveLength(2);
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual(JAZZ_TRACKS);
+    const calls = world.netease.calls
+      .slice(callsBefore)
+      .filter((call) => call.module === 'playlist_tracks');
+    expect(calls.map((call) => call.query)).toEqual([
+      { op: 'del', pid: JAZZ.id, tracks: [JAZZ_TRACKS[0]], step: 'initial' },
+      { op: 'del', pid: JAZZ.id, tracks: [JAZZ_TRACKS[0]], step: 'fallback' },
+    ]);
+    expect(calls.map((call) => call.config.checkToken)).toEqual(
+      tab.watchman.issued.slice(before),
+    );
+    expect(removeRequests(device).map((request) => request.keepalive)).toEqual([
+      true,
+      true,
+    ]);
+    fallback.release();
+    await world.settle();
+    expect(await storedTrackIds(device, JAZZ.id)).toEqual([JAZZ_TRACKS[1]]);
+    expect(await pendingChanges(device)).toBeUndefined();
+  });
+
   it('先从本地拿掉；5 秒内撤销就放回原位、什么都不提交；过了 5 秒才提交，成功后写进本机副本', async () => {
     const device = world.device();
     const { app } = await signInAtLikedTracks(device);

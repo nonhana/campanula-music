@@ -21,6 +21,7 @@ export interface PostEndpoint<
   readonly path: (params: Params) => string;
   readonly request?: Request;
   readonly needsCheckToken?: (body: Request) => boolean;
+  readonly playlistTracksSteps?: true;
 }
 
 export const get = <Response, Params = void>(
@@ -38,11 +39,13 @@ export const post = <Response, Request = void, Params = void>(
   options: {
     checkTokens?: number;
     needsCheckToken?: (body: Request) => boolean;
+    playlistTracksSteps?: true;
   } = {},
 ): PostEndpoint<Params, Request, Response> => ({
   method: 'POST',
   takesParams: path.length > 0,
   checkTokens: options.checkTokens ?? 0,
   needsCheckToken: options.needsCheckToken,
+  playlistTracksSteps: options.playlistTracksSteps,
   path,
 });

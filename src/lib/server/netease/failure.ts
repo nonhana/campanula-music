@@ -35,6 +35,12 @@ export class NeteaseError extends Error {
   }
 }
 
+export class PlaylistTracksFallbackRequired extends Error {
+  constructor() {
+    super('增删曲目需要执行后备步骤');
+  }
+}
+
 export const failureOf = (error: unknown): NeteaseFailure | undefined => {
   if (error instanceof NeteaseError) return error.failure;
   const info = getNcmFailureInfo(error);

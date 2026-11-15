@@ -351,3 +351,10 @@ Campanula 收藏前在浏览器用 `hana-music-api/watchman` 现取 token，自�
 本票另外增加 `playlist_create.301.constructed.json`、`playlist_detail.transport-after-create.constructed.json` 和 `like-collect/playlist_subscribe.301.constructed.json`。301 正文沿用已录制的登录失效正文，仅变更模块/查询；transport 是按 SDK 5 公开失败合同构造的连接中断，`response.failure` 明确声明来源。它们用于验证写入不重放，不是实际账号故障或协议行为的录制证据。
 
 `login/user_account.another-account.constructed.json` 从既有账号录制仅替换账号编号和昵称，验证不同账号并发读取与续期的身份隔离。旧版加密 Cookie 的测试输入在 `../session/pre-sdk-5-cookie.json`，由基线提交的真实签发函数用测试密钥和假凭据离线生成，不含账号数据。
+
+
+## SDK 6.1 分步曲目操作（2026-11-15）
+
+索引用 npm `hana-music-api@6.1.0` 的公开 Schema 重建，既有录制原文和来源不变。`playlist-edit/playlist_tracks.512.constructed.json` 与 `playlist_tracks.301.constructed.json` 是按 SDK 公开失败合同构造的业务分支，均标为 constructed；代表 query 不是真实请求证据，响应在测试里分别用于增删的首次与后备步骤。512 用于证明应用只在收到通知后才申请下一枚 token，301 用于证明两个写入步骤均不自动续期或重放。
+
+App 测试按两次独立 SDK 调用观察 `step: initial/fallback`、各自 token 与本机提交时机，不再用一次替身调用虚构两次 provider 消费。真实 SDK 的最终请求另用正式安装包和离线 fetcher 核对；这些检查不代表真实账号遇到 512 后已成功。

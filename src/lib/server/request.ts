@@ -10,6 +10,7 @@ import type {
   CreatePlaylistRequest,
   DescribePlaylistRequest,
   HeartRequest,
+  PlaylistTracksStep,
   RenamePlaylistRequest,
   TagPlaylistRequest,
 } from '#lib/api/library.ts';
@@ -19,6 +20,7 @@ import {
   PLAYLIST_DESCRIPTION_LENGTH,
   PLAYLIST_NAME_WIDTH,
   PLAYLIST_TAGS_MAX,
+  PLAYLIST_TRACKS_STEP_HEADER,
 } from '#lib/api/library.ts';
 import type { CheckInRequest, PlaySource, Quality } from '#lib/api/playback.ts';
 import { NUMBERED_SOURCE_KINDS, QUALITIES } from '#lib/api/playback.ts';
@@ -30,7 +32,7 @@ export const readCheckTokens = (request: Request): CheckTokens => {
   const raw = request.headers.get(CHECK_TOKENS_HEADER);
   if (raw === null) return { requests: [] };
   // JSON 会把引号和反斜杠转成两字符。
-  if (raw.length > 2 * 1024 * 2 + 100) error(400, '安全验证令牌太长');
+  if (raw.length > 1024 * 2 + 100) error(400, '安全验证令牌太长');
   let body: unknown;
   try {
     body = JSON.parse(raw);
@@ -42,13 +44,22 @@ export const readCheckTokens = (request: Request): CheckTokens => {
     body === null ||
     !('requests' in body) ||
     !Array.isArray(body.requests) ||
-    body.requests.length > 2 ||
+    body.requests.length > 1 ||
     !body.requests.every(
       (token: unknown) => typeof token === 'string' && CHECK_TOKEN.test(token),
     )
   )
     error(400, '安全验证令牌的格式不对');
   return { requests: body.requests };
+};
+
+export const readPlaylistTracksStep = (
+  request: Request,
+): PlaylistTracksStep => {
+  const step = request.headers.get(PLAYLIST_TRACKS_STEP_HEADER);
+  if (step === null) return 'initial';
+  if (step === 'initial' || step === 'fallback') return step;
+  error(400, '曲目操作步骤不对');
 };
 
 export const readFields = async <K extends string>(
