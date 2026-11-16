@@ -131,7 +131,7 @@ pnpm sdk:latest
 
 生产 PWA 显式允许 SW，两个视口都测安装/控制、真正离线关闭重开、缓存账号/下载及 Blob 音频、联网恢复、两旧页等待和关完后的激活。产品 Node 在自有回环服务运行；测试代理只在产品进程外拒绝会连接真实网易云的 API，实际匿名 account API 仍经过生产入口。请求拒绝证据与 setOffline 的真实离线分别记录，不把 503 当断网。`.reports/pwa/run-*/` 包含 JSON/HTML、trace、截图、缓存键和进程清理；候选及构建报告在 `.reports/candidates/`，HTTP 检查在 `.reports/delivery/`。测试规则、敏感性和人工边界见 [#101 验收](../docs/acceptance/issue-101.md)。
 
-Vercel production 继续等待日常工作流的 `ci`。完整验收的本地入口是 `pnpm test:ci verify|https|sdk|delivery`。独立完整验收成功后，可用 `pnpm release:check --sha <完整SHA>` 对该运行做只读复核。
+Vercel production 继续等待日常工作流的 `ci`。完整验收同时启动静态检查与 SDK 清单、完整 Vitest／SSR 覆盖率及校准，以及桌面／手机 × `journeys/`／`accessibility/` 的四个浏览器分片。每片使用一个 worker，命令例如 `pnpm exec tsx tests/tools/browser.mts journeys/ --project desktop`。汇总作业从同一提交重新枚举完整 Playwright 清单，逐项检查四个分片、历史基线和双视口对比度，再交给发布门禁。CI 的附件里有每片的原始报告和汇总的 `summary.json`。发布门禁逐项核验同一运行尝试的作业和步骤，重跑完整验收时选择 **Re-run all jobs**。本地也可以用 `pnpm test:ci verify|https|sdk|delivery` 分别运行原有的完整验证命令。独立完整验收成功后，可用 `pnpm release:check --sha <完整SHA>` 对该运行做只读复核。
 
 ## 对比度专项
 
