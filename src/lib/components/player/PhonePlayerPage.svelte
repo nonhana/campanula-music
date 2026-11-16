@@ -208,34 +208,36 @@
 </div>
 
 {#if queueOpen || sheetDrawer.visible}
-  <button
-    type="button"
-    class="fixed inset-0 z-1 bg-neutral-900/30"
-    style:opacity={1 - sheetDrawer.position}
-    aria-label="收起播放队列"
-    tabindex="-1"
-    onclick={closeQueueSheet}
-  ></button>
-  <div
-    bind:this={sheet}
-    class="fixed inset-x-0 z-2 flex flex-col rounded-t-sheet bg-white shadow-float"
-    style:top="{(1 - SHEET_HEIGHT) * 100}dvh"
-    {@attach sheetDrawer.panel}
-    role="dialog"
-    aria-modal="true"
-    aria-label="播放队列"
-    inert={!queueOpen || queue.inert}
-  >
+  <div class="pointer-events-none absolute inset-x-0 top-0 z-1 h-dvh">
     <button
       type="button"
-      class="grid mx-auto h-7 w-16 flex-none place-items-center rounded-full"
+      class="pointer-events-auto absolute inset-0 z-1 bg-neutral-900/30"
+      style:opacity={1 - sheetDrawer.position}
       aria-label="收起播放队列"
-      {@attach gripSheet}
+      tabindex="-1"
+      onclick={closeQueueSheet}
+    ></button>
+    <div
+      bind:this={sheet}
+      class="pointer-events-auto absolute inset-x-0 z-2 flex flex-col rounded-t-sheet bg-white shadow-float"
+      style:top="{(1 - SHEET_HEIGHT) * 100}dvh"
+      {@attach sheetDrawer.panel}
+      role="dialog"
+      aria-modal="true"
+      aria-label="播放队列"
+      inert={!queueOpen || queue.inert}
     >
-      <span class="h-1 w-9 rounded-full bg-neutral-300" aria-hidden="true"
-      ></span>
-    </button>
-    <QueueList class="min-h-0 flex-1" />
+      <button
+        type="button"
+        class="grid mx-auto h-7 w-16 flex-none place-items-center rounded-full"
+        aria-label="收起播放队列"
+        {@attach gripSheet}
+      >
+        <span class="h-1 w-9 rounded-full bg-neutral-300" aria-hidden="true"
+        ></span>
+      </button>
+      <QueueList class="min-h-0 flex-1" />
+    </div>
   </div>
 {/if}
 

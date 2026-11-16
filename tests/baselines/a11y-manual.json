@@ -3503,7 +3503,7 @@
       "scenario": "player-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.absolute.inset-x-0:nth-child(1) > .mouse\\:hover\\:bg-neutral-50.rounded-lg.h-full > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pl-2.gap-3 > .min-w-0 > .block.text-neutral-600.text-caption"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-neutral-50.rounded-lg.h-full > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pl-2.gap-3 > .min-w-0 > .block.text-neutral-600.text-caption"
       ],
       "impact": "serious",
       "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; original axe observation retained.",
