@@ -130,12 +130,16 @@ export const dailyPlan = (changes: string[] | null): Lane[] => {
     const matched = domains
       .filter(([pattern]) => touched(pattern))
       .flatMap(([, names]) => names);
-    for (const file of pageFiles)
-      if (
-        !matched.length ||
-        [...controls, ...matched].includes(basename(file, '.spec.ts'))
-      )
+    const known = new Set([
+      ...controls,
+      ...domains.flatMap(([, names]) => names),
+    ]);
+    const relevant = new Set([...controls, ...matched]);
+    for (const file of pageFiles) {
+      const name = basename(file, '.spec.ts');
+      if (!matched.length || !known.has(name) || relevant.has(name))
         extra.add(file);
+    }
   }
   for (const project of ['desktop', 'phone'] as const) {
     const smoke = project === 'desktop' ? ['save', 'keyboard'] : ['player'];

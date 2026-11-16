@@ -17,49 +17,52 @@ const git = (...args: string[]) =>
 let base: string | undefined = process.argv[2];
 if (event?.pull_request) base = event.pull_request.base.sha;
 else if (event && process.env.GITHUB_EVENT_NAME === 'push') {
-  // A failed or cancelled push may contain a change that still needs its specialist check.
-  const branch = process.env.GITHUB_REF_NAME!;
-  try {
-    const runs = JSON.parse(
-      execFileSync(
-        'gh',
-        [
-          'api',
-          '--method',
-          'GET',
-          `repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs`,
-          '-f',
-          `branch=${branch}`,
-          '-f',
-          'event=push',
-          '-f',
-          'status=success',
-          '-F',
-          'per_page=50',
-        ],
-        { encoding: 'utf8' },
-      ),
-    ).workflow_runs as {
-      id: number;
-      head_sha: string;
-      head_repository: { full_name: string };
-    }[];
-    for (const run of runs) {
-      if (
-        run.id >= Number(process.env.GITHUB_RUN_ID) ||
-        run.head_repository.full_name !== process.env.GITHUB_REPOSITORY
-      )
-        continue;
-      try {
-        git('merge-base', '--is-ancestor', run.head_sha, sha);
-        base = run.head_sha;
-        break;
-      } catch {
-        /* The branch may have been force-pushed. */
+  // A new task branch can fork from a verified integration commit. Failed pushes are never bases.
+  const branches = new Set([process.env.GITHUB_REF_NAME!, 'rewrite/v1']);
+  for (const branch of branches) {
+    try {
+      const runs = JSON.parse(
+        execFileSync(
+          'gh',
+          [
+            'api',
+            '--method',
+            'GET',
+            `repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs`,
+            '-f',
+            `branch=${branch}`,
+            '-f',
+            'event=push',
+            '-f',
+            'status=success',
+            '-F',
+            'per_page=50',
+          ],
+          { encoding: 'utf8' },
+        ),
+      ).workflow_runs as {
+        id: number;
+        head_sha: string;
+        head_repository: { full_name: string };
+      }[];
+      for (const run of runs) {
+        if (
+          run.id >= Number(process.env.GITHUB_RUN_ID) ||
+          run.head_repository.full_name !== process.env.GITHUB_REPOSITORY
+        )
+          continue;
+        try {
+          git('merge-base', '--is-ancestor', run.head_sha, sha);
+          base = run.head_sha;
+          break;
+        } catch {
+          /* The branch may have been force-pushed. */
+        }
       }
+    } catch {
+      console.log(`无法查询 ${branch} 的成功记录`);
     }
-  } catch {
-    console.log('无法查询同分支成功记录，执行全部专项');
+    if (base) break;
   }
 }
 let changes: string[] | null = null;

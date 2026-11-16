@@ -1,6 +1,7 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 
 import { dailyPlan, requireInventory } from '../ci/plan.ts';
+import * as suites from '../suites.ts';
 
 it('普通业务更改完整分摊规则、行为和契约，每份文件只执行一次', () => {
   const plan = dailyPlan(['src/lib/app/search.ts']);
@@ -17,6 +18,20 @@ it('完整清单拒绝漏掉、重复和多跑的项', () => {
   for (const ids of [['a'], ['a', 'a'], ['a', 'b', 'c']])
     expect(() => requireInventory(['a', 'b'], ids)).toThrow();
   expect(() => requireInventory(['a', 'b'], ['b', 'a'])).not.toThrow();
+});
+
+it('新增的浏览器旅程在归入领域前随界面改动执行', () => {
+  const current = suites.discoverTests();
+  const file = 'tests/browser/journeys/new-journey.spec.ts';
+  using inventory = vi.spyOn(suites, 'discoverTests');
+  inventory.mockReturnValue({
+    ...current,
+    browser: [...current.browser, file],
+  });
+  for (const lane of dailyPlan([
+    'src/lib/components/player/Lyrics.svelte',
+  ]).filter((lane) => lane.name.startsWith('browser-')))
+    expect(lane.files).toContain(file);
 });
 
 it('按变更加上离线交接、SDK、开发环境及对比度；无法确定范围时全部验证', () => {
