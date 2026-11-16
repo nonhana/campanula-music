@@ -79,10 +79,31 @@ const setup = ({
     setDrawn(position: number) {
       drawn = position;
     },
+    resize(height: number) {
+      size = height;
+    },
   };
 };
 
 describe('跟手和点按', () => {
+  it('一次拖动沿用开始时的高度：中途尺寸变化不改变跟手比例，下一次拖动再使用新高度', () => {
+    const { core, pointer, resize } = setup({ size: 800 });
+    pointer.down(100);
+    pointer.move(180, 100);
+    expect(core.pose).toEqual({ dragging: true, position: 0.1 });
+    resize(400);
+    pointer.move(220, 100);
+    expect(core.pose).toEqual({ dragging: true, position: 0.15 });
+    pointer.up(220, 500);
+    expect(core.pose).toEqual({ dragging: false, end: 0 });
+
+    pointer.down(100);
+    pointer.move(180, 100);
+    expect(core.pose).toEqual({ dragging: true, position: 0.2 });
+    pointer.up(180, 500);
+    expect(core.pose).toEqual({ dragging: false, end: 0 });
+  });
+
   it('按住拖动时抽屉跟着走：位置是从按下的地方拖过的距离占抽屉高度的比例；没挪够起拖距离就松开的是点按', () => {
     const { core, pointer, said } = setup({ size: 800 });
 
@@ -106,6 +127,23 @@ describe('跟手和点按', () => {
 });
 
 describe('松手时去哪一头', () => {
+  it('拖到原高度的四分之一后，即使面板变高，松手仍收起；新手势按新高度判断', () => {
+    const { core, pointer, said, resize } = setup({ size: 800 });
+    pointer.down(0);
+    pointer.move(200, 1000);
+    resize(1600);
+    pointer.up(200, 1000);
+    expect(core.pose).toEqual({ dragging: false, end: 1 });
+    expect(said).toEqual(['commit']);
+
+    core.settle(true);
+    pointer.down(0);
+    pointer.move(200, 1000);
+    pointer.up(200, 1000);
+    expect(core.pose).toEqual({ dragging: false, end: 0 });
+    expect(said).toEqual(['commit']);
+  });
+
   it('慢慢拖过自身高度的 1/4 就收起（改浅路由）；差一点没到就弹回去', () => {
     const { core, pointer, said } = setup({ size: 800 });
 

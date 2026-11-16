@@ -34,7 +34,7 @@ interface Press {
   x: number;
   y: number;
   time: number;
-  from: number | null;
+  drag: { from: number; size: number } | null;
 }
 
 const dampened = (overdrag: number): number =>
@@ -79,7 +79,7 @@ export const createDrawerCore = ({
           (pointerId !== undefined && pointerId !== press.pointerId)
         )
           return;
-        const wasDragging = press.from !== null;
+        const wasDragging = press.drag !== null;
         press = null;
         swallowClick = true;
         if (wasDragging) setPose({ dragging: false, end: wanted });
@@ -98,7 +98,7 @@ export const createDrawerCore = ({
             x: sample.x,
             y: sample.y,
             time: sample.time,
-            from: null,
+            drag: null,
           };
           return true;
         },
@@ -106,7 +106,7 @@ export const createDrawerCore = ({
           if (press?.pointerId !== sample.pointerId) return;
           if (rightButtonDown(sample.buttons)) return abandon();
           const dy = sample.y - press.y;
-          if (press.from === null) {
+          if (press.drag === null) {
             const dx = sample.x - press.x;
             if (
               Math.hypot(dx, dy) <
@@ -119,25 +119,26 @@ export const createDrawerCore = ({
               swallowClick = true;
               return;
             }
-            press.from = drawnAt();
+            press.drag = { from: drawnAt(), size: size() };
           }
           setPose({
             dragging: true,
-            position: dragged(press.from, dy, size()),
+            position: dragged(press.drag.from, dy, press.drag.size),
           });
         },
         release(sample) {
           if (press?.pointerId !== sample.pointerId) return;
           const ended = press;
           press = null;
-          if (ended.from === null) return;
+          if (ended.drag === null) return;
           swallowClick = true;
           const distance = sample.y - ended.y;
           const velocity =
             Math.abs(distance) / Math.max(1, sample.time - ended.time);
           const far =
             Math.sign(distance) === toward &&
-            (velocity > FLICK || Math.abs(distance) >= size() * THRESHOLD);
+            (velocity > FLICK ||
+              Math.abs(distance) >= ended.drag.size * THRESHOLD);
           if (far && wanted !== target) {
             setPose({ dragging: false, end: target });
             commit();
