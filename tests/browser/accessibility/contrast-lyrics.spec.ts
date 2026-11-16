@@ -43,14 +43,20 @@ for (const cover of ['black', 'white']) {
       'singing',
       'sung',
       'previous',
-      'scrolled',
       'translation-only',
       'words-only',
+      // Manual scrolling schedules a return to the playing line. Measure it last.
+      'scrolled',
     ] as const) {
       if (state === 'translation-only')
         await player.getByRole('button', { name: '音译', exact: true }).click();
       if (state === 'words-only')
         await player.getByRole('button', { name: '翻译', exact: true }).click();
+      if (state === 'scrolled') {
+        await player.getByRole('button', { name: '翻译', exact: true }).click();
+        await player.getByRole('button', { name: '音译', exact: true }).click();
+        await expect(lyrics.locator('[data-line="3"] > .sub')).toHaveCount(2);
+      }
       await progress.focus();
       await page.keyboard.press('Home');
       if (state === 'singing') await page.keyboard.press('ArrowRight');
