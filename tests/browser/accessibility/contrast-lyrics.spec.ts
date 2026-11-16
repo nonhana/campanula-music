@@ -6,6 +6,7 @@ for (const cover of ['black', 'white']) {
   test(`歌词在${cover}封面上未唱、正唱、唱完和滚动边缘仍清晰`, async ({
     page,
   }, info) => {
+    await page.clock.install();
     const audio = audioWav(3433267939, 30);
     await page.route('**/mock-assets/audio/**', (route) =>
       route.fulfill(
@@ -43,20 +44,14 @@ for (const cover of ['black', 'white']) {
       'singing',
       'sung',
       'previous',
+      'scrolled',
       'translation-only',
       'words-only',
-      // Manual scrolling schedules a return to the playing line. Measure it last.
-      'scrolled',
     ] as const) {
       if (state === 'translation-only')
         await player.getByRole('button', { name: '音译', exact: true }).click();
       if (state === 'words-only')
         await player.getByRole('button', { name: '翻译', exact: true }).click();
-      if (state === 'scrolled') {
-        await player.getByRole('button', { name: '翻译', exact: true }).click();
-        await player.getByRole('button', { name: '音译', exact: true }).click();
-        await expect(lyrics.locator('[data-line="3"] > .sub')).toHaveCount(2);
-      }
       await progress.focus();
       await page.keyboard.press('Home');
       if (state === 'singing') await page.keyboard.press('ArrowRight');
@@ -86,38 +81,43 @@ for (const cover of ['black', 'white']) {
         await page.keyboard.press('ArrowDown');
       }
       await page.waitForTimeout(250);
-      const targets = await lyrics.evaluate((root, state) => {
-        const bounds = root.getBoundingClientRect();
-        return [...root.querySelectorAll<HTMLElement>('[data-line]')]
-          .filter((line) => {
-            const rect = line.getBoundingClientRect();
-            return rect.bottom > bounds.top && rect.top < bounds.bottom;
-          })
-          .flatMap((line) => {
-            const prefix = `[role="group"][aria-label="歌词"] [data-line="${line.dataset.line}"]`;
-            return [
-              {
-                id: `lyrics.${line.querySelector('.word') ? 'word' : 'plain'}.line-${line.dataset.line}`,
-                selector: `${prefix} > .line-text`,
-              },
-              ...[...line.querySelectorAll('.sub')].map((_, index) => ({
-                id: `lyrics.${state !== 'translation-only' && index === 0 ? 'romanization' : 'translation'}.line-${line.dataset.line}`,
-                selector: `${prefix} > .sub:nth-of-type(${index + 2})`,
-              })),
-            ];
-          });
-      }, state);
-      expect(targets.length).toBeGreaterThan(0);
-      const measurements = await auditContrast(
-        page,
-        info,
-        `${cover}-${state}`,
-        Object.fromEntries(
-          targets.map(({ id, selector }) => [id, page.locator(selector)]),
-        ),
-        'clipped',
-      );
-      expect(measurements.some((row) => row.painted > 0)).toBe(true);
+      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+      try {
+        const targets = await lyrics.evaluate((root, state) => {
+          const bounds = root.getBoundingClientRect();
+          return [...root.querySelectorAll<HTMLElement>('[data-line]')]
+            .filter((line) => {
+              const rect = line.getBoundingClientRect();
+              return rect.bottom > bounds.top && rect.top < bounds.bottom;
+            })
+            .flatMap((line) => {
+              const prefix = `[role="group"][aria-label="歌词"] [data-line="${line.dataset.line}"]`;
+              return [
+                {
+                  id: `lyrics.${line.querySelector('.word') ? 'word' : 'plain'}.line-${line.dataset.line}`,
+                  selector: `${prefix} > .line-text`,
+                },
+                ...[...line.querySelectorAll('.sub')].map((_, index) => ({
+                  id: `lyrics.${state !== 'translation-only' && index === 0 ? 'romanization' : 'translation'}.line-${line.dataset.line}`,
+                  selector: `${prefix} > .sub:nth-of-type(${index + 2})`,
+                })),
+              ];
+            });
+        }, state);
+        expect(targets.length).toBeGreaterThan(0);
+        const measurements = await auditContrast(
+          page,
+          info,
+          `${cover}-${state}`,
+          Object.fromEntries(
+            targets.map(({ id, selector }) => [id, page.locator(selector)]),
+          ),
+          'clipped',
+        );
+        expect(measurements.some((row) => row.painted > 0)).toBe(true);
+      } finally {
+        await page.clock.resume();
+      }
     }
   });
 }

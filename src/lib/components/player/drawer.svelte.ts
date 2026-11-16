@@ -32,8 +32,6 @@ export const createDrawer = (estimate: () => number): Drawer => {
   let panel: HTMLElement | null = null;
   let measuredSize = 1;
   let dragging = false;
-  let moving = false;
-  let revision = 0;
   const holdPage = createPageHold();
 
   const size = () => {
@@ -43,14 +41,9 @@ export const createDrawer = (estimate: () => number): Drawer => {
 
   const paint = (at: number) => {
     if (!panel) return;
-    // 跨过原点时保持变换，静止后再撤销，让内部 fixed 元素恢复相对视口定位。
-    const transformed = moving || at !== 0;
-    panel.style.transform = transformed
-      ? dragging
-        ? `translateY(${at * measuredSize}px)`
-        : `translateY(calc(${at} * (100% - ${DRAWER_BLEED}px)))`
-      : '';
-    panel.style.willChange = transformed ? 'transform' : '';
+    panel.style.transform = dragging
+      ? `translate3d(0, ${at * measuredSize}px, 0)`
+      : `translate3d(0, calc(${at} * (100% - ${DRAWER_BLEED}px)), 0)`;
   };
 
   const core = createDrawerCore({
@@ -63,8 +56,6 @@ export const createDrawer = (estimate: () => number): Drawer => {
       if (pose.dragging) {
         const at = Math.max(pose.position, -DRAWER_BLEED / measuredSize);
         if (wasDragging && untrack(() => position.current) === at) return;
-        revision += 1;
-        moving = true;
         void position.set(at, { duration: 0 });
         paint(at);
         return;
@@ -77,18 +68,10 @@ export const createDrawer = (estimate: () => number): Drawer => {
         void position.set(current, { duration: 0 });
         paint(current);
       }
-      const version = ++revision;
-      moving = true;
-      const finish = () => {
-        if (revision !== version) return;
-        moving = false;
-        paint(pose.end);
-      };
       if (current === pose.end) {
         void position.set(pose.end, { duration: 0 });
-        finish();
       } else {
-        void position.set(pose.end).then(finish);
+        void position.set(pose.end);
       }
     },
   });
@@ -103,6 +86,8 @@ export const createDrawer = (estimate: () => number): Drawer => {
     settle: core.settle,
     panel(element) {
       panel = element;
+      // 从挂载到卸载保持同一绘制表面，避免起拖时才切换合成策略。
+      element.style.willChange = 'transform';
       element.style.bottom = `-${DRAWER_BLEED}px`;
       element.style.paddingBottom = `calc(${DRAWER_BLEED}px + env(safe-area-inset-bottom))`;
       paint(untrack(() => position.current));

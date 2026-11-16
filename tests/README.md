@@ -135,6 +135,6 @@ Vercel production 继续等待日常工作流的 `ci`。完整验收的本地入
 
 ## 对比度专项
 
-`pnpm test:a11y` 包含 contrast 四个文件，也可用 `pnpm test:browser tests/browser/accessibility/contrast-lyrics.spec.ts` 单独复跑。页面使用真实背景像素、CSS 指定字色及黑白字形探针测量，排除字体抗锯齿但保留遮罩/透明度，文字统一至少4.5:1。校准覆盖已知色对、同色、半透明、图像/渐变、mask、细数字与完全隐藏。
+`pnpm test:a11y` 包含 contrast 四个文件，也可用 `pnpm test:browser tests/browser/accessibility/contrast-lyrics.spec.ts` 单独复跑。页面使用真实背景像素、CSS 指定字色及黑白字形探针测量，排除字体抗锯齿但保留遮罩/透明度，文字统一至少4.5:1。校准覆盖已知色对、同色、半透明、图像/渐变、父层透明度与mask叠加、细数字及完全隐藏；裸对照保留不透明mask，维持相同字形绘制条件。歌词仅在采图期间暂停受控时钟，避免三秒恢复跟随跨过一组对照；通用测量仍拒绝持续移动的文字并检查清理。
 
 完整 `pnpm test` 的页面阶段另外生成本次 `contrast-summary.json`，把原329条观测和13条历史额外项映射至26个原组件组，并补音译，共27组；缺组、缺登记状态、不可测或不达标均失败。单文件只写partial/not-run，不冒充全专项。原始axe仍保留incomplete；a11y-manual.json的contrastGroup指向已测回归，不再表示要作者手工处理342条记录。方法、红绿和组表见 docs/acceptance/issue-103.md。

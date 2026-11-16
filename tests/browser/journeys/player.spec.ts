@@ -19,6 +19,9 @@ test('队列抽屉同步跟手，跨原点、尺寸变化和回弹中再抓住�
   const restingTop = await queue.evaluate(
     (el) => el.getBoundingClientRect().top,
   );
+  expect(
+    await queue.evaluate((el) => el.getBoundingClientRect().bottom),
+  ).toBeCloseTo(892, 1);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const handle = queue.getByRole('button', {
     name: '收起播放队列',
