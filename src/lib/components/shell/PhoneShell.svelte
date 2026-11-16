@@ -60,10 +60,11 @@
   class={[
     'min-h-dvh bg-primary-50',
     docked
-      ? 'pb-[calc(96px+env(safe-area-inset-bottom))]'
+      ? 'pb-[calc(var(--player-dock-height)+32px+env(safe-area-inset-bottom))]'
       : 'pb-[calc(32px+env(safe-area-inset-bottom))]',
   ]}
   style:--phone-top="{top}px"
+  style:--player-dock-height="{playerLayer.dockHeight}px"
 >
   <div
     class="sticky top-0 z-20 bg-primary-50"
@@ -104,6 +105,7 @@
         desktop: false,
         present: docked,
         withoutBar: 'env(safe-area-inset-bottom)',
+        height: playerLayer.dockHeight,
       }),
     }}
     {lookup}

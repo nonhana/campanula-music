@@ -1,6 +1,7 @@
 <script lang="ts">
   import { innerHeight } from 'svelte/reactivity/window';
 
+  import { trapFocus } from '../overlay/modal-focus.ts';
   import { getOverlays } from '../overlay/overlay-context.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
@@ -58,9 +59,11 @@
   {@attach playerDrawer.panel}
   style:border-radius="{radius}px {radius}px 0 0"
   role="dialog"
+  tabindex="-1"
   aria-modal="true"
   aria-label="正在播放"
   inert={!open || layer.containerInert}
+  {@attach trapFocus}
 >
   {#if song}
     <CoverTint coverUrl={song.album.coverUrl} />

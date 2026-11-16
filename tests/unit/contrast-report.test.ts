@@ -1,22 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import inventory from '../baselines/contrast-audit.json' with { type: 'json' };
-import type { ContrastReport } from '../tools/browser/contrast-report.ts';
+import { contrastReports as report } from '../_kit/contrast-reports.ts';
 import { summarizeContrast } from '../tools/browser/contrast-report.ts';
-
-const report = () => {
-  const reports = new Map<string, ContrastReport>();
-  for (const group of inventory.groups)
-    for (const key of group.requiredStates) {
-      const [project, state] = key.split(':');
-      if (!reports.has(key))
-        reports.set(key, { project, state, visibility: 'visible', result: [] });
-      reports
-        .get(key)!
-        .result.push({ id: group.id, samples: 1, painted: 1, minimum: 4.5 });
-    }
-  return [...reports.values()];
-};
 
 describe('对比度审计报告', () => {
   it('所有登记组有真实测量才完整通过，保留原观测与历史额外项', () => {

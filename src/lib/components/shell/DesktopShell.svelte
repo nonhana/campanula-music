@@ -60,6 +60,7 @@
   class="bg-primary-50 min-h-dvh"
   style:--rail-width={railExpanded ? '220px' : '72px'}
   style:--offline-bar-height={offline ? `${OFFLINE_BAR_HEIGHT}px` : '0px'}
+  style:--player-dock-height="{playerLayer.dockHeight}px"
 >
   <header
     class="fixed inset-x-0 top-0 z-40 h-16 flex items-center gap-3 bg-primary-50 px-4"
@@ -90,9 +91,12 @@
         class={[
           'mt-auto transition-transform',
           docked
-            ? 'duration-move-panel -translate-y-20'
+            ? 'duration-move-panel'
             : 'duration-move-panel-out ease-in-soft',
         ]}
+        style:transform={docked
+          ? `translateY(-${playerLayer.dockHeight}px)`
+          : undefined}
       >
         {@render railEnd()}
       </div>
@@ -101,7 +105,7 @@
   <main
     class={[
       'transition-[padding] duration-move-state',
-      docked ? 'pb-28' : 'pb-12',
+      docked ? 'pb-[calc(var(--player-dock-height)+32px)]' : 'pb-12',
     ]}
     style:padding-top={`${top}px`}
   >
@@ -125,6 +129,7 @@
         desktop: true,
         present: docked,
         withoutBar: '0px',
+        height: playerLayer.dockHeight,
       }),
     }}
     {lookup}

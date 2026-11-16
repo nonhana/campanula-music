@@ -14,6 +14,7 @@
   import TextButton from '../ui/TextButton.svelte';
   import type { SuggestionRow } from './search-box.svelte.ts';
   import {
+    SEARCH_HISTORY_ID,
     searchBox,
     SUGGESTION_LIST_ID,
     suggestionId,
@@ -53,6 +54,8 @@
 {#if !typed}
   {#if history.length > 0}
     <section
+      id={phone ? undefined : SEARCH_HISTORY_ID}
+      role={phone ? undefined : 'dialog'}
       class={phone ? 'px-4 pt-4' : 'px-5 pb-5 pt-4'}
       aria-labelledby="search-history-title"
     >

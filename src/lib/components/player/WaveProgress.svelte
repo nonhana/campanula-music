@@ -155,6 +155,18 @@
     margin-top: -4px;
   }
 
+  @media (forced-colors: active) {
+    .rest,
+    .flow {
+      stroke: CanvasText;
+    }
+
+    .thumb {
+      fill: Highlight;
+      stroke: Canvas;
+    }
+  }
+
   @keyframes flow {
     from {
       transform: translateX(0);

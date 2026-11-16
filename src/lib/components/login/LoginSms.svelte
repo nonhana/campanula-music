@@ -133,7 +133,7 @@
     {#snippet action()}
       <Button
         variant="outline"
-        class="w-[124px] tabular-nums h-11!"
+        class="w-[8.857em] tabular-nums h-11!"
         busy={captchaStatus.status === 'sending'}
         disabled={waitSeconds > 0}
         onclick={() => void sendCaptcha()}>{sendLabel}</Button

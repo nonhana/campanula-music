@@ -18,6 +18,7 @@
     formatMegabytes,
     langOf,
   } from '../shared/text.ts';
+  import { measureRows } from '../songs/row-height.ts';
   import SkeletonRows from '../songs/SkeletonRows.svelte';
   import { SONG_ROW_HEIGHT } from '../songs/view.ts';
   import Button from '../ui/Button.svelte';
@@ -74,6 +75,11 @@
 
   let query = $state('');
   let scroller = $state<HTMLElement>();
+  let rowHeight = $state(SONG_ROW_HEIGHT);
+  const measureText = measureRows(
+    () => SONG_ROW_HEIGHT,
+    (height) => (rowHeight = height),
+  );
   let failure = $state<DownloadStartBlock | null>(null);
   const selected = new SvelteMap<number, Song>();
   let initialized = $state(false);
@@ -202,7 +208,7 @@
   >
     {@render checkbox(checked, block !== null)}
     <Cover url={song.album.coverUrl} size={40} class="rounded-md" />
-    <span class="min-w-0 flex-1">
+    <span class="min-w-0 flex-1" {@attach measureText}>
       <span
         class="block truncate text-body text-neutral-900 font-500"
         lang={langOf(song.name)}>{songTitle(song)}</span
@@ -276,7 +282,7 @@
   {:else}
     <VirtualList
       items={filtered}
-      itemHeight={SONG_ROW_HEIGHT}
+      itemHeight={rowHeight}
       getKey={(song: Song) => song.id}
       scrollParent={scroller}
     >

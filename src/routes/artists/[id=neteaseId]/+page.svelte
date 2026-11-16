@@ -158,14 +158,14 @@
   );
 
   let songsHost = $state<HTMLElement>();
+  let songRowHeight = $state(SONG_ROW_HEIGHT);
   const showMoreSongs = async () => {
     const from = order;
     const shown = shownSongs?.songs.length ?? 0;
     await view.app.moreArtistSongs(id, from);
     await tick();
     if (order === from && shownSongs?.more === null && songsHost) {
-      const top =
-        songsHost.getBoundingClientRect().top + shown * SONG_ROW_HEIGHT;
+      const top = songsHost.getBoundingClientRect().top + shown * songRowHeight;
       [...songsHost.querySelectorAll<HTMLElement>('[data-play-target]')]
         .find((target) => target.getBoundingClientRect().top >= top - 1)
         ?.focus();
@@ -390,6 +390,7 @@
             count={shownSongs?.total ?? null}
             {select}
             bind:host={songsHost}
+            bind:rowHeight={songRowHeight}
           />
           <ShowMore
             more={shownSongs?.more ?? null}
@@ -405,6 +406,7 @@
               loadingLabel="正在加载歌曲"
               {select}
               bind:host={songsHost}
+              bind:rowHeight={songRowHeight}
             />
             <ShowMore
               more={shownSongs?.more ?? null}

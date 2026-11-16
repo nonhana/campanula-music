@@ -97,7 +97,7 @@
       tabindex={on ? 0 : -1}
       class={look === 'track'
         ? [
-            'relative min-w-0 flex-1 basis-0 whitespace-nowrap rounded-full text-label font-500 transition-colors duration-state',
+            'relative min-w-0 min-h-[1lh] flex-1 basis-0 rounded-full text-label font-500 transition-colors duration-state',
             on
               ? 'text-primary-950'
               : 'text-neutral-600 mouse:hover:text-neutral-900',

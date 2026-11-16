@@ -31,7 +31,7 @@
 <SeekLine {slider} />
 
 <div
-  class="grid grid-cols-[minmax(max-content,1fr)_minmax(0,440px)_minmax(max-content,1fr)] h-full items-center gap-6"
+  class="grid grid-cols-[minmax(max-content,1fr)_minmax(0,440px)_minmax(max-content,1fr)] min-h-20 items-center gap-6"
 >
   <div class="flex items-center gap-1.5">
     <IconButton

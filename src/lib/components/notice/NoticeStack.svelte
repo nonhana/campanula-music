@@ -43,13 +43,16 @@
       class={[
         'pointer-events-none fixed z-50 flex gap-2',
         place === 'desktop'
-          ? 'bottom-24 left-1/2 max-w-[calc(100vw-48px)] -translate-x-1/2 flex-col items-center'
+          ? 'left-1/2 max-w-[calc(100vw-48px)] -translate-x-1/2 flex-col items-center'
           : place === 'top'
             ? 'inset-x-2 top-16 flex-col-reverse'
-            : lifted
-              ? 'inset-x-2 bottom-[calc(136px+env(safe-area-inset-bottom))] flex-col'
-              : 'inset-x-2 bottom-[calc(80px+env(safe-area-inset-bottom))] flex-col',
+            : 'inset-x-2 flex-col',
       ]}
+      style:bottom={place === 'desktop'
+        ? `${overlays.playerLayer.dockHeight + 16}px`
+        : place === 'bottom'
+          ? `calc(${overlays.playerLayer.dockHeight + (lifted ? 72 : 16)}px + env(safe-area-inset-bottom))`
+          : undefined}
     >
       {#each operations as entry (entry.id)}
         <OperationNotice {entry} {phone} {edge} moved={arrival.moved} />

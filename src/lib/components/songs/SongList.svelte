@@ -23,6 +23,7 @@
   import IconButton from '../ui/IconButton.svelte';
   import StateBlock from '../ui/StateBlock.svelte';
   import VirtualList from '../ui/VirtualList.svelte';
+  import { measureRows } from './row-height.ts';
   import SkeletonRows from './SkeletonRows.svelte';
   import SongRow, { SONG_COLUMNS, SONG_GRID } from './SongRow.svelte';
   import type {
@@ -63,6 +64,7 @@
     /** 换了值就重新量一次虚拟列表 */
     remeasure?: unknown;
     locate?: boolean;
+    rowHeight?: number;
   }
 
   let {
@@ -90,6 +92,7 @@
     host = $bindable(),
     remeasure,
     locate = true,
+    rowHeight = $bindable(SONG_ROW_HEIGHT),
   }: Props = $props();
 
   const revealContent = $derived(wantedReveal ?? !bare);
@@ -98,6 +101,10 @@
   const { multiSelect } = getOverlays();
   const nowId = $derived(currentSong(view.state.player)?.id ?? null);
   const songs = $derived(list.kind === 'songs' ? list.songs : []);
+  const measureText = measureRows(
+    () => SONG_ROW_HEIGHT,
+    (height) => (rowHeight = height),
+  );
   const selecting = $derived(select !== null && multiSelect.mode);
   const entryLabel = $derived(select?.entryLabel ?? '多选');
   const mode = $derived(
@@ -187,9 +194,8 @@
         nowIndex < 0 || !host || selecting || drag
           ? null
           : {
-              top:
-                host.getBoundingClientRect().top + nowIndex * SONG_ROW_HEIGHT,
-              height: SONG_ROW_HEIGHT,
+              top: host.getBoundingClientRect().top + nowIndex * rowHeight,
+              height: rowHeight,
               first: nowIndex === 0,
             },
       focus: () => focusNowRow(host),
@@ -221,6 +227,7 @@
       : undefined}
     grip={selecting ? grip : undefined}
     onplay={() => activate(song)}
+    {measureText}
   />
 {/snippet}
 
@@ -234,7 +241,7 @@
 
 {#snippet listRow(song: Song, i: number)}
   {#if phone && numbered}
-    <div class="h-14 flex items-center">
+    <div class="flex items-center" style:height="{rowHeight}px">
       <span
         class="w-9 flex-none pl-4 text-caption text-neutral-500 tabular-nums"
         aria-hidden="true">{i + 1}</span
@@ -267,7 +274,7 @@
       <SelectionToolbar />
     </div>
   {:else}
-    <div class={[SONG_GRID, 'h-9 text-caption text-neutral-500']}>
+    <div class={[SONG_GRID, 'min-h-9 text-caption text-neutral-500']}>
       <div class="contents" aria-hidden={headerHidden ? 'true' : undefined}>
         <span class={SONG_COLUMNS.index}>#</span>
         <span
@@ -307,7 +314,7 @@
       <div role="group" aria-label={label}>
         <VirtualList
           items={songs}
-          itemHeight={SONG_ROW_HEIGHT}
+          itemHeight={rowHeight}
           getKey={(song: Song) => song.id}
           markOf={drag && !drag.marks ? undefined : songMark}
           placeOf={drag?.placeOf}
@@ -323,7 +330,7 @@
         {#each songs as song, i (song.id)}
           {#if staggerRows}
             <li
-              class="h-14"
+              style:height="{rowHeight}px"
               in:stagger={{
                 order: Math.max(0, i - appendedAt),
               }}
@@ -331,7 +338,7 @@
               {@render listRow(song, i)}
             </li>
           {:else}
-            <li class="h-14">{@render listRow(song, i)}</li>
+            <li style:height="{rowHeight}px">{@render listRow(song, i)}</li>
           {/if}
         {/each}
       </ul>

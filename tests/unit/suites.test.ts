@@ -10,11 +10,24 @@ import baseline from '../baselines/migration.json' with { type: 'json' };
 import {
   compareMigration,
   comparePrevious,
+  discoverTests,
   ROOT,
   selectTests,
 } from '../suites.ts';
 
 describe('套件选择', () => {
+  it('搜索、低视力与完整 a11y 入口的关键回归不能被删除', () => {
+    const files = Object.values(discoverTests()).flat();
+    for (const required of [
+      'tests/browser/accessibility/search.spec.ts',
+      'tests/browser/accessibility/low-vision.spec.ts',
+      'tests/delivery/browser-runner.test.ts',
+    ])
+      expect(() =>
+        selectTests(files.filter((file) => file !== required)),
+      ).toThrow(`缺少必需测试文件：${required}`);
+  });
+
   it('按用例全名过滤到空集时，CLI 明确失败', async () => {
     await expect(
       promisify(execFile)(

@@ -10,6 +10,7 @@
     activeSuggestionId,
     pickSuggestion,
     resetSearchBox,
+    SEARCH_HISTORY_ID,
     searchBox,
     searchBoxKey,
     SUGGESTION_LIST_ID,
@@ -48,6 +49,22 @@
 
   const onkeydown = (event: KeyboardEvent) => {
     if (!open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) show();
+    if (
+      dropped &&
+      !suggesting &&
+      (event.key === 'ArrowDown' || event.key === 'ArrowUp')
+    ) {
+      event.preventDefault();
+      const controls = root?.querySelectorAll<HTMLElement>(
+        `#${SEARCH_HISTORY_ID} ul button`,
+      );
+      const target =
+        event.key === 'ArrowDown'
+          ? controls?.[0]
+          : controls?.[controls.length - 1];
+      target?.focus();
+      return;
+    }
     if (open && searchBoxKey(event, view.app) && event.key === 'Enter') {
       open = false;
       input?.blur();
@@ -106,7 +123,15 @@
     hint={open ? undefined : kbd}
     role="combobox"
     aria-expanded={dropped}
-    aria-controls={suggesting ? SUGGESTION_LIST_ID : undefined}
+    aria-haspopup={searchBox.draft.trim() === '' &&
+    view.state.search.history.length > 0
+      ? 'dialog'
+      : undefined}
+    aria-controls={dropped
+      ? suggesting
+        ? SUGGESTION_LIST_ID
+        : SEARCH_HISTORY_ID
+      : undefined}
     aria-autocomplete="list"
     aria-activedescendant={suggesting
       ? activeSuggestionId(view.app)

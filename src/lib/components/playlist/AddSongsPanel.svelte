@@ -13,6 +13,7 @@
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { failureText } from '../shared/failure.ts';
   import { artistLine, formatCount, langOf } from '../shared/text.ts';
+  import { measureRows } from '../songs/row-height.ts';
   import SkeletonRows from '../songs/SkeletonRows.svelte';
   import { SONG_ROW_HEIGHT } from '../songs/view.ts';
   import Button from '../ui/Button.svelte';
@@ -23,7 +24,11 @@
   import VirtualList from '../ui/VirtualList.svelte';
 
   const SEARCH_DELAY = 300;
-  const ROW = SONG_ROW_HEIGHT;
+  let rowHeight = $state(SONG_ROW_HEIGHT);
+  const measureText = measureRows(
+    () => SONG_ROW_HEIGHT,
+    (height) => (rowHeight = height),
+  );
   type SearchView =
     | { status: 'idle' }
     | { status: 'loading' }
@@ -149,7 +154,7 @@
   >
     {@render checkbox(song)}
     <Cover url={song.album.coverUrl} size={40} class="rounded-md" />
-    <span class="min-w-0 flex-1">
+    <span class="min-w-0 flex-1" {@attach measureText}>
       <span
         class="block truncate text-body text-neutral-900 font-500"
         lang={langOf(song.name)}>{songTitle(song)}</span
@@ -182,7 +187,7 @@
     {:else if search.status === 'shown'}
       <VirtualList
         items={songs}
-        itemHeight={ROW}
+        itemHeight={rowHeight}
         getKey={(song: Song) => song.id}
         scrollParent={scroller}
       >
@@ -196,7 +201,7 @@
   {:else}
     <VirtualList
       items={songs}
-      itemHeight={ROW}
+      itemHeight={rowHeight}
       getKey={(song: Song) => song.id}
       scrollParent={scroller}
     >

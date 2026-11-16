@@ -374,6 +374,18 @@ export default defineConfig<Theme>({
           outline-offset: 2px;
         }
 
+        @media (forced-colors: active) {
+          :where([aria-selected="true"], [aria-checked="true"], [aria-pressed="true"], [aria-current="page"]) {
+            outline: 2px solid Highlight;
+            outline-offset: -2px;
+          }
+
+          :focus-visible {
+            outline: 2px solid Highlight;
+            outline-offset: 2px;
+          }
+        }
+
         .bone {
           display: block;
           background: linear-gradient(90deg, ${skeleton.from} 0%, ${skeleton.to} 40%, ${skeleton.from} 80%);

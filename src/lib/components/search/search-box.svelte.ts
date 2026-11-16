@@ -10,6 +10,7 @@ import type { SearchTab } from './view.ts';
 import { searchPath, searchTabId } from './view.ts';
 
 export const SUGGESTION_LIST_ID = 'search-suggestions';
+export const SEARCH_HISTORY_ID = 'search-history';
 export const suggestionId = (index: number): string =>
   `search-suggestion-${index}`;
 

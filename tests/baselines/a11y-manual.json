@@ -3677,6 +3677,15 @@
       "impact": "serious",
       "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; original axe observation retained.",
       "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "search-history",
+      "rule": "aria-valid-attr-value",
+      "target": [".bg-transparent"],
+      "impact": "critical",
+      "reason": "axe-core 4.14 aria-controls precheck reports controlsWithinPopup whenever aria-haspopup is explicit, even for a valid target. search.spec.ts independently verifies the named visible dialog target, popup type and keyboard entry/exit; original axe observation retained.",
+      "contrastGroup": null
     }
   ],
   "selectorIdentity": "Svelte rootDir固定为实际源码根；CSS scope按源码相对路径生成。旧绝对路径scope逐组件一对一迁移，其余selector、project/scenario/rule保持，保留原始axe。",

@@ -5,7 +5,7 @@
   import LocateNowButton from '../songs/LocateNowButton.svelte';
 
   const { locate, desktop }: { locate: NowLocate; desktop: boolean } = $props();
-  const { downloadPanel, queuePanel } = getOverlays();
+  const { downloadPanel, queuePanel, playerLayer } = getOverlays();
   const lifted = $derived(
     !desktop &&
       downloadPanel.open &&
@@ -14,18 +14,23 @@
   );
 </script>
 
-<LocateNowButton
-  {locate}
-  hidden={desktop && queuePanel.request !== null}
-  class={[
-    'fixed z-30',
-    desktop
-      ? ['bottom-24', downloadPanel.expanded ? 'right-[392px]' : 'right-6']
-      : [
-          'right-4',
-          lifted
-            ? 'bottom-[calc(140px+env(safe-area-inset-bottom))]'
-            : 'bottom-[calc(84px+env(safe-area-inset-bottom))]',
-        ],
-  ]}
-/>
+<div class="contents" style:--player-dock-height="{playerLayer.dockHeight}px">
+  <LocateNowButton
+    {locate}
+    hidden={desktop && queuePanel.request !== null}
+    class={[
+      'fixed z-30',
+      desktop
+        ? [
+            'bottom-[calc(var(--player-dock-height)+16px)]',
+            downloadPanel.expanded ? 'right-[392px]' : 'right-6',
+          ]
+        : [
+            'right-4',
+            lifted
+              ? 'bottom-[calc(var(--player-dock-height)+76px+env(safe-area-inset-bottom))]'
+              : 'bottom-[calc(var(--player-dock-height)+20px+env(safe-area-inset-bottom))]',
+          ],
+    ]}
+  />
+</div>

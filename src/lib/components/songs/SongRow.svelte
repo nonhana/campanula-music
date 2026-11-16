@@ -15,6 +15,7 @@
 <script lang="ts">
   import { Check } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
 
   import type { Song } from '#lib/api/library.ts';
   import type { PlaySource } from '#lib/api/playback.ts';
@@ -52,6 +53,7 @@
     grip?: Snippet<[Song]>;
     ghost?: boolean;
     count?: number;
+    measureText?: Attachment<HTMLElement>;
   }
 
   const {
@@ -68,12 +70,19 @@
     grip,
     ghost = false,
     count = 1,
+    measureText,
   }: Props = $props();
   const view = getAppView();
   const look = $derived(songLook(view, song));
   const off = $derived(look.off);
   const linked = $derived(!selecting && !ghost);
   let cover = $state<HTMLElement>();
+  const measure: Attachment<HTMLElement> = (node) =>
+    measureText?.(
+      node.querySelector<HTMLElement>(
+        phone ? '[data-play-target]' : '[data-song-text]',
+      )!,
+    );
 
   const LONG_PRESS = 400;
   const MOVE_SLOP = 10;
@@ -147,6 +156,7 @@
   ]}
   role="presentation"
   data-song-id={song.id}
+  {@attach measure}
   oncontextmenu={(event) => openSongMenuAt(event, song, source)}
   onclick={rowclick}
   onpointerdown={phone ? down : undefined}
@@ -236,7 +246,7 @@
           <Cover url={song.album.coverUrl} size={40} class="rounded-md" />
           <DragCountBadge {count} />
         </span>
-        <span class="min-w-0 flex-1">
+        <span class="min-w-0 flex-1" data-song-text>
           <PlayTarget
             class="block w-full"
             rounded

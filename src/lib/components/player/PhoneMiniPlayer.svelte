@@ -15,7 +15,7 @@
   const song = $derived(currentSong(player));
 </script>
 
-<div class="h-full flex items-center gap-1 pl-2 pr-1.5">
+<div class="h-full min-h-16 flex items-center gap-1 py-2 pl-2 pr-1.5">
   {#if song}
     <NowPlaying
       size={44}

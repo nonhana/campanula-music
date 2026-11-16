@@ -22,6 +22,7 @@
   import { DURATIONS } from '../shared/motion-tokens.ts';
   import { dialog, fade } from '../shared/motion.ts';
   import IconButton from '../ui/IconButton.svelte';
+  import { trapFocus } from './modal-focus.ts';
   import type { DialogRequest } from './overlay-requests.ts';
   import type { OverlayLayer } from './overlay-stack.ts';
 
@@ -79,33 +80,6 @@
         node.querySelector<HTMLElement>('input, textarea, button')
       )?.focus({ preventScroll: true }),
     );
-    const trap = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab' || node.closest('[inert]')) return;
-      const stops = [
-        ...node.querySelectorAll<HTMLElement>(
-          'a[href], button, input, select, textarea, [tabindex]',
-        ),
-      ].filter(
-        (element) =>
-          element.tabIndex >= 0 &&
-          !element.matches(':disabled') &&
-          !element.closest('[inert]') &&
-          element.checkVisibility(),
-      );
-      const first = stops[0] ?? node;
-      const last = stops.at(-1) ?? node;
-      if (
-        !stops.length ||
-        (event.shiftKey
-          ? document.activeElement === first
-          : document.activeElement === last)
-      ) {
-        event.preventDefault();
-        (event.shiftKey ? last : first).focus();
-      }
-    };
-    node.addEventListener('keydown', trap);
-    return () => node.removeEventListener('keydown', trap);
   };
 </script>
 
@@ -138,6 +112,7 @@
       tabindex="-1"
       inert={!request || layer.inert}
       {@attach focusFirst}
+      {@attach trapFocus}
       transition:dialog
     >
       {#key shown}
@@ -185,6 +160,7 @@
     aria-labelledby={titleId}
     inert={!sheetOpen || layer.inert}
     {@attach focusFirst}
+    {@attach trapFocus}
   >
     <div
       class="grid h-6 flex-none touch-none place-items-center"

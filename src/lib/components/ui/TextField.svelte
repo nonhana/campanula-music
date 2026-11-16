@@ -47,10 +47,10 @@
         ]}>{aside}</span
       >{/if}
   </div>
-  <div class="mt-1.5 flex gap-2">
+  <div class="mt-1.5 flex flex-wrap gap-2">
     <div
       class={[
-        'h-11 min-w-0 flex flex-1 items-center border rounded-lg bg-white transition-[border-color,box-shadow,opacity] duration-feedback',
+        'h-11 min-w-0 flex flex-[1_1_12ch] items-center border rounded-lg bg-white transition-[border-color,box-shadow,opacity] duration-feedback',
         error
           ? 'border-error-700 focus-within:shadow-field-focus-error'
           : 'border-neutral-200 focus-within:(border-primary-800 shadow-field-focus)',

@@ -12,7 +12,7 @@
   import { queueEmpty } from './view.ts';
 
   const view = getAppView();
-  const { queuePanel: layer } = getOverlays();
+  const { queuePanel: layer, playerLayer } = getOverlays();
   const request = $derived(layer.request);
   const top = $derived(desktopPanelTop(view.state.online));
 
@@ -52,8 +52,9 @@
   <div
     bind:this={panel}
     id={QUEUE_PANEL_ID}
-    class="fixed bottom-24 right-4 z-40 w-[400px] flex flex-col overflow-hidden rounded-xl bg-white shadow-float"
+    class="fixed right-4 z-40 w-[400px] flex flex-col overflow-hidden rounded-xl bg-white shadow-float"
     style:top="{top}px"
+    style:bottom="{playerLayer.dockHeight + 16}px"
     inert={layer.inert}
     in:float={{ toward: 'left', distance: 24, panel: true }}
     out:float={{ toward: 'right', distance: 24, panel: true }}

@@ -61,12 +61,13 @@
     class={[
       'bg-primary-50 min-h-dvh',
       docked || selecting
-        ? 'pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-28'
+        ? 'pb-[calc(var(--player-dock-height)+48px+env(safe-area-inset-bottom))] md:pb-[calc(var(--player-dock-height)+32px)]'
         : 'pb-[calc(32px+env(safe-area-inset-bottom))] md:pb-12',
     ]}
     style:--offline-bar-height={view.state.online
       ? '0px'
       : `${OFFLINE_BAR_HEIGHT}px`}
+    style:--player-dock-height="{overlays.playerLayer.dockHeight}px"
   >
     <header
       class="sticky top-0 z-40 h-14 flex items-center gap-3 bg-primary-50 pl-4 pr-3 md:fixed md:inset-x-0 md:h-16 md:pl-6 md:pr-6"
@@ -110,6 +111,7 @@
         desktop: desktopLayout.current,
         present: docked || selecting,
         withoutBar: '0px',
+        height: overlays.playerLayer.dockHeight,
       }),
     }}
     {lookup}

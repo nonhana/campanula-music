@@ -77,4 +77,24 @@
     outline-offset: 4px;
     border-radius: 6px;
   }
+
+  @media (forced-colors: active) {
+    .slider::-webkit-slider-runnable-track {
+      background: CanvasText;
+    }
+
+    .slider::-moz-range-track {
+      background: CanvasText;
+    }
+
+    .slider::-webkit-slider-thumb {
+      border: 1px solid Canvas;
+      background: Highlight;
+    }
+
+    .slider::-moz-range-thumb {
+      border: 1px solid Canvas;
+      background: Highlight;
+    }
+  }
 </style>

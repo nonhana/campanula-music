@@ -15,12 +15,10 @@ import type {
 import { movedBefore, rowTrack } from '../shared/drag-sort.ts';
 import { DURATIONS, STAGGER } from '../shared/motion-tokens.ts';
 import { formatCount } from '../shared/text.ts';
-import { SONG_ROW_HEIGHT } from '../songs/view.ts';
 import type { MultiSelect } from './multi-select.svelte.ts';
 
 // 被拖的行必须一直挂载（keep）：Android 上手指底下的元素被卸载后触摸事件会断
 
-const ROW = SONG_ROW_HEIGHT;
 const RAIL = 44;
 const LABEL_GAP = 14;
 const LIFT_MS = DURATIONS.state;
@@ -34,6 +32,7 @@ interface SongDragOptions {
   /** null 是挪到最后 */
   move: (songIds: readonly number[], before: number | null) => boolean;
   host: () => HTMLElement | undefined;
+  rowHeight: () => number;
 }
 
 interface SongScene {
@@ -95,6 +94,10 @@ export class SongDrag {
     });
   }
 
+  private get rowHeight() {
+    return this.options.rowHeight();
+  }
+
   get moved(): readonly Song[] {
     return this.movingSongs;
   }
@@ -126,9 +129,10 @@ export class SongDrag {
   }
 
   placeOf = (song: Song, index: number): number => {
-    if (!this.dragging || this.movingIds.has(song.id)) return index * ROW;
+    if (!this.dragging || this.movingIds.has(song.id))
+      return index * this.rowHeight;
     const rest = this.restIndex.get(song.id)!;
-    return (rest < this.sort.target ? rest : rest + 1) * ROW;
+    return (rest < this.sort.target ? rest : rest + 1) * this.rowHeight;
   };
 
   keep = (song: Song): boolean => this.sorting && this.movingIds.has(song.id);
@@ -143,13 +147,13 @@ export class SongDrag {
 
   liftShift(index: number): number {
     if (!this.lifting) return 0;
-    return this.sort.ghost.y - (this.listTop() + index * ROW);
+    return this.sort.ghost.y - (this.listTop() + index * this.rowHeight);
   }
 
   landShift(song: Song): number {
     if (!this.expanding) return 0;
     const k = this.moved.findIndex((item) => item.id === song.id);
-    return k < 0 ? 0 : -k * ROW;
+    return k < 0 ? 0 : -k * this.rowHeight;
   }
 
   landDelay(song: Song): number {
@@ -238,7 +242,7 @@ export class SongDrag {
       .slice(0, index)
       .filter((song) => wanted.has(song.id)).length;
     const scrollTop = window.scrollY;
-    if (before) window.scrollBy(0, -before * ROW);
+    if (before) window.scrollBy(0, -before * this.rowHeight);
     this.scrollAdjust = window.scrollY - scrollTop;
     this.startedInRail(at.x);
     const edges = pageEdges();
@@ -248,7 +252,7 @@ export class SongDrag {
       grabY: at.y - rect.top,
       left: hostRect.left,
       width: hostRect.width,
-      height: ROW,
+      height: this.rowHeight,
     };
   }
 
@@ -263,9 +267,9 @@ export class SongDrag {
       return {
         ghost: {
           x: scene.left,
-          y: this.listTop() + target * ROW,
+          y: this.listTop() + target * this.rowHeight,
           width: scene.width,
-          height: ROW,
+          height: this.rowHeight,
         },
         target,
       };
@@ -274,10 +278,10 @@ export class SongDrag {
       {
         grabY: scene.grabY,
         listTop: this.listTop(),
-        pitch: ROW,
-        height: ROW,
+        pitch: this.rowHeight,
+        height: this.rowHeight,
         minTop: edges.top + LABEL_GAP,
-        maxTop: edges.bottom - ROW,
+        maxTop: edges.bottom - this.rowHeight,
       },
       at.y,
       slots,
@@ -287,7 +291,7 @@ export class SongDrag {
         x: scene.left,
         y: row.y,
         width: scene.width,
-        height: ROW,
+        height: this.rowHeight,
       },
       target: row.target,
     };
@@ -296,7 +300,7 @@ export class SongDrag {
   private slot(scene: SongScene, target: number): Rect {
     return {
       x: scene.left,
-      y: this.listTop() + target * ROW,
+      y: this.listTop() + target * this.rowHeight,
       width: scene.width,
       height: scene.height,
     };
@@ -336,7 +340,7 @@ export class SongDrag {
     this.expanding = false;
     this.settleY =
       this.sort.settleAt(result.target)?.y ??
-      this.listTop() + result.target * ROW;
+      this.listTop() + result.target * this.rowHeight;
     this.settleTimer = setTimeout(() => {
       this.settleTimer = undefined;
       this.settling = false;
@@ -384,7 +388,11 @@ export class SongDrag {
     const middle = (edges.top + edges.bottom) / 2;
     const hostTop = this.listTop() + window.scrollY;
     window.scrollTo({
-      top: hostTop + this.scrubTarget * ROW + ROW / 2 - middle,
+      top:
+        hostTop +
+        this.scrubTarget * this.rowHeight +
+        this.rowHeight / 2 -
+        middle,
     });
   }
 

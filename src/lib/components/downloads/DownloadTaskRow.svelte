@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Check, CircleAlert, Clock, Pause, X } from '@lucide/svelte';
+  import type { Attachment } from 'svelte/attachments';
 
   import { songTitle } from '#lib/api/library.ts';
   import type { DownloadTask } from '#lib/app/downloads.ts';
@@ -19,6 +20,7 @@
     signedIn,
     speed = null,
     completed = false,
+    measureText,
     oncancel,
     onretry,
   }: {
@@ -28,6 +30,7 @@
     online: boolean;
     signedIn: boolean;
     speed?: string | null;
+    measureText?: Attachment<HTMLElement>;
   } & (
     | { completed: true; oncancel?: never; onretry?: never }
     | { completed?: false; oncancel: () => void; onretry: () => void }
@@ -95,7 +98,7 @@
   {#if task.status === 'failed'}
     <TextButton
       strong
-      class="md:h-8 md:px-3"
+      class="min-h-[1lh] md:h-8 md:px-3"
       disabled={!online || !signedIn}
       title={!online
         ? '离线时不能下载'
@@ -129,7 +132,7 @@
       size={phone ? 48 : 40}
       class="rounded-lg"
     />
-    <span class="min-w-0">
+    <span class="min-w-0" {@attach measureText}>
       <span
         class={[
           'block truncate text-neutral-900 font-500',

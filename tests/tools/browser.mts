@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 import type AxeBuilder from '@axe-core/playwright';
 
 import baseline from '../baselines/browser-100.json' with { type: 'json' };
-import { ROOT, sourceSha } from '../suites.ts';
+import { browserCases } from '../ci/browser-inventory.ts';
+import { requireInventory } from '../ci/plan.ts';
+import { discoverTests, ROOT, sourceSha } from '../suites.ts';
 import { summarizeContrast } from './browser/contrast-report.ts';
 
 type Scan = Awaited<ReturnType<AxeBuilder['analyze']>> & {
@@ -22,9 +24,11 @@ const root = join(ROOT, '.reports/browser');
 await mkdir(root, { recursive: true });
 const report = await mkdtemp(join(root, 'run-'));
 const verifyRetry = process.argv.includes('--verify-retry');
+const completeA11y = process.argv.includes('--complete-a11y');
 const args = process.argv
   .slice(2)
-  .filter((arg) => arg !== '--' && arg !== '--verify-retry');
+  .filter((arg) => !['--', '--verify-retry', '--complete-a11y'].includes(arg));
+if (completeA11y) requireInventory(discoverTests().a11y, args);
 console.log(`浏览器报告：${report}`);
 const child = spawn(
   process.execPath,
@@ -54,27 +58,27 @@ if (code === 0) {
   const results = JSON.parse(
     await readFile(join(report, 'tests.json'), 'utf8'),
   );
+  const cases = browserCases(results.suites);
+  if (completeA11y) {
+    try {
+      const key = (file: string, project: string) =>
+        JSON.stringify([file, project]);
+      const expected = discoverTests().a11y.flatMap((file) =>
+        ['desktop', 'phone'].map((project) =>
+          key(file.replace('tests/browser/', ''), project),
+        ),
+      );
+      requireInventory(expected, [
+        ...new Set(cases.map(({ file, project }) => key(file, project))),
+      ]);
+      if (cases.some((test) => test.status !== 'expected'))
+        throw new Error('完整 a11y 用例未全部通过');
+    } catch (error) {
+      code = 1;
+      console.error(error);
+    }
+  }
   if (!args.length && !verifyRetry) {
-    const cases: {
-      file: string;
-      name: string;
-      project: string;
-      status: string;
-    }[] = [];
-    const collect = (suites: typeof results.suites) => {
-      for (const suite of suites) {
-        for (const spec of suite.specs ?? [])
-          for (const test of spec.tests)
-            cases.push({
-              file: suite.file,
-              name: spec.title,
-              project: test.projectName,
-              status: test.status,
-            });
-        collect(suite.suites ?? []);
-      }
-    };
-    collect(results.suites);
     for (const expected of baseline.cases) {
       const matches = cases.filter(
         (item) =>
@@ -144,7 +148,7 @@ try {
         sha,
         ...summarizeContrast(
           contrast,
-          code === 0 && !args.length && !verifyRetry,
+          code === 0 && (completeA11y || (!args.length && !verifyRetry)),
         ),
       },
       null,
@@ -172,6 +176,7 @@ await writeFile(
     report,
     source: process.env.CAMPANULA_BROWSER_SOURCE,
     verifyRetry,
+    completeA11y,
   }),
 );
 if (process.env.CAMPANULA_PARENT_RUN)

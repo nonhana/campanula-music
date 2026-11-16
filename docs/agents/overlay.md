@@ -50,6 +50,6 @@
 
 ## 浏览器焦点
 
-DialogShell 的 Tab / Shift+Tab 在当前非 inert、可见且启用的停点间循环；关闭后仍由浮层栈等待 DOM 解锁再归还。真实键盘路径在 tests/browser/journeys/keyboard.spec.ts，包含从歌曲菜单加入歌单、Escape、刷新读回和编辑弹窗循环。纯核心与真实页面的证据各自保留。
+DialogShell、播放页和手机播放队列共用 `modal-focus.ts` 的 attachment，让 Tab / Shift+Tab 在当前非 inert、可见且启用的停点间循环；嵌套时只由最近的模态 dialog 处理，队列关闭后恢复播放页的循环。初始焦点仍由各层指定；关闭后仍由浮层栈等待 DOM 解锁再归还。真实键盘路径在 tests/browser/journeys/keyboard.spec.ts，包含从页首进入歌曲/播放器、加入歌单、Escape、刷新读回，以及编辑弹窗、播放页和队列的具体顺序与双向首尾边界。纯核心与真实页面的证据各自保留。
 
 MenuOverlay 每次请求、账号菜单每次打开都重新初始化列表焦点；即使退出动画尚未结束，不能沿用上次的失焦节点。外壳动画仍可逆，列表生命周期跟随本次打开。keyboard/core 的快速关闭再打开回归验证此边界；DialogShell 的同一路径单独保持回归。

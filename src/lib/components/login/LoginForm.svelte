@@ -74,7 +74,7 @@
     role="tab"
     id="login"
     label="登录方式"
-    class="h-11"
+    class="min-h-11"
   />
 
   <!-- items-start：两块各按各的高度，才量得出新的那块有多高 -->

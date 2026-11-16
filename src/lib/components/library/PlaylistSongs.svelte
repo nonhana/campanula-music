@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CircleAlert, Heart, ListMusic } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
 
   import type { Song } from '#lib/api/library.ts';
   import { playlistName, songTitle } from '#lib/api/library.ts';
@@ -16,6 +16,7 @@
   import SongList from '../songs/SongList.svelte';
   import SongRow from '../songs/SongRow.svelte';
   import type { SongListView } from '../songs/view.ts';
+  import { SONG_ROW_HEIGHT } from '../songs/view.ts';
   import SearchField from '../ui/SearchField.svelte';
   import TextButton from '../ui/TextButton.svelte';
   import DragGrip from './DragGrip.svelte';
@@ -72,11 +73,13 @@
   const allSongs = $derived(shown.kind === 'songs' ? shown.songs : []);
 
   let listHost = $state<HTMLElement>();
+  let rowHeight = $state(SONG_ROW_HEIGHT);
   const drag = new SongDrag({
     songs: () => songs,
     selection,
     move: (songIds, before) => view.app.moveSongs(playlistId, songIds, before),
     host: () => listHost,
+    rowHeight: () => rowHeight,
   });
   // 拖动时不动 items 的顺序，只改 placeOf：行节点被移走会丢指针捕获
 
@@ -122,6 +125,10 @@
     ) {
       event.preventDefault();
       event.stopPropagation();
+      const target = event.target as HTMLElement;
+      void tick().then(() => {
+        if (selection.mode && target.isConnected) target.focus();
+      });
     }
   };
 
@@ -300,6 +307,7 @@
     drag={sortable && selection.mode ? dragHooks : undefined}
     {rowWrap}
     bind:host={listHost}
+    bind:rowHeight
     contentClass={phone && drag.dragging ? 'clear-rail' : undefined}
     label="歌单里的歌曲"
   />
@@ -308,12 +316,13 @@
 {#if drag.sorting}
   <div
     class={[
-      'pointer-events-none fixed left-0 top-0 z-[60] h-14',
+      'pointer-events-none fixed left-0 top-0 z-[60]',
       drag.settling && 'transition-transform duration-move-state',
       drag.expanding && 'transition-opacity duration-state opacity-0',
       (drag.settling || drag.expanding) && 'ease-out-soft',
     ]}
     style:left="{drag.ghostLeft}px"
+    style:height="{rowHeight}px"
     style:width="{drag.ghostWidth}px"
     style:transform="translate3d(0, {drag.settling || drag.expanding
       ? drag.settleY

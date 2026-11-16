@@ -18,6 +18,7 @@
   import MorningWash from '../songs/MorningWash.svelte';
   import NowIndex from '../songs/NowIndex.svelte';
   import PlayTarget from '../songs/PlayTarget.svelte';
+  import { measureRows } from '../songs/row-height.ts';
   import { songLook } from '../songs/song-look.ts';
   import SongTitle from '../songs/SongTitle.svelte';
   import { SONG_ROW_HEIGHT, songMark } from '../songs/view.ts';
@@ -41,7 +42,11 @@
   }: Props = $props();
   const { playerLayer } = getOverlays();
 
-  const ROW = SONG_ROW_HEIGHT;
+  let rowHeight = $state(SONG_ROW_HEIGHT);
+  const measureText = measureRows(
+    () => SONG_ROW_HEIGHT,
+    (height) => (rowHeight = height),
+  );
   const uid = $props.id();
   const view = getAppView();
   const lookup = setScrollLookup({ markAt: null });
@@ -53,7 +58,9 @@
   $effect(() => {
     if (!scroller || !shown) return;
     const el = scroller;
-    const top = Math.max(0, (untrack(() => current) ?? 0) * ROW - ROW);
+    const top = untrack(() =>
+      Math.max(0, (current ?? 0) * rowHeight - rowHeight),
+    );
     void tick().then(() => {
       el.scrollTop = top;
     });
@@ -75,8 +82,8 @@
               top:
                 scroller.getBoundingClientRect().top -
                 scroller.scrollTop +
-                current * ROW,
-              height: ROW,
+                current * rowHeight,
+              height: rowHeight,
               first: current === 0,
             },
       focus: () => focusNowRow(scroller),
@@ -134,7 +141,7 @@
       <div class="px-2">
         <VirtualList
           items={queue}
-          itemHeight={ROW}
+          itemHeight={rowHeight}
           scrollParent={scroller}
           getKey={(entry: QueueEntry) => entry.song.id}
           markOf={(entry: QueueEntry, i: number) => songMark(entry.song, i)}
@@ -168,7 +175,7 @@
                   size={40}
                   class="rounded-md"
                 />
-                <span class="min-w-0">
+                <span class="min-w-0" {@attach measureText}>
                   <PlayTarget
                     class="block w-full"
                     rounded

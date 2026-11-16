@@ -294,7 +294,7 @@
                     >
                       <div
                         class={[
-                          'h-14 flex items-center gap-3 rounded-xl pl-3 pr-2',
+                          'min-h-14 flex items-center gap-3 rounded-xl py-1 pl-3 pr-2',
                           sort.lifted(playlist.id)
                             ? 'bg-primary-100'
                             : 'bg-white shadow-ambient',
@@ -481,7 +481,7 @@
   >
     <div
       class={[
-        'h-14 flex items-center gap-3 rounded-xl bg-white pl-3 pr-2 transition-shadow duration-state',
+        'min-h-14 flex items-center gap-3 rounded-xl bg-white py-1 pl-3 pr-2 transition-shadow duration-state',
         sort.settling ? 'shadow-ambient' : 'shadow-float',
       ]}
     >

@@ -6,12 +6,18 @@
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
   import { formatCount } from '../shared/text.ts';
+  import { measureRows } from '../songs/row-height.ts';
   import Button from '../ui/Button.svelte';
   import VirtualList from '../ui/VirtualList.svelte';
   import DownloadTaskRow from './DownloadTaskRow.svelte';
 
   const view = getAppView();
   const phone = $derived(!desktopLayout.current);
+  let rowHeight = $state(56);
+  const measureText = measureRows(
+    () => (phone ? 64 : 56),
+    (height) => (rowHeight = height),
+  );
   const downloads = $derived(view.state.downloads);
   const tasks = $derived([...downloads.tasks.values()]);
   const paused = $derived(downloads.paused !== null);
@@ -34,6 +40,7 @@
     {paused}
     {online}
     {signedIn}
+    {measureText}
     oncancel={() => cancel(task)}
     onretry={() => retry(task)}
   />
@@ -85,7 +92,7 @@
     >
       <VirtualList
         items={tasks}
-        itemHeight={phone ? 64 : 56}
+        itemHeight={Math.max(rowHeight, phone ? 64 : 56)}
         getKey={(task: DownloadTask) => task.song.id}
         row={taskRow}
       />

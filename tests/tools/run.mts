@@ -29,6 +29,7 @@ if (suite === 'browser' || suite === 'a11y') {
     [
       fileURLToPath(import.meta.resolve('tsx/cli')),
       'tests/tools/browser.mts',
+      ...(suite === 'a11y' && !args.length ? ['--complete-a11y'] : []),
       ...(args.some((arg) => arg.endsWith('.ts')) ? [] : suites[suite]),
       ...args,
     ],

@@ -39,6 +39,25 @@ const cases = [
     grep: '键盘把歌曲加入歌单',
     reason: 'toBeFocused',
   },
+  {
+    name: 'modal-focus',
+    file: 'src/lib/components/overlay/modal-focus.ts',
+    before: "node.addEventListener('keydown', onkeydown);",
+    after: 'void onkeydown;',
+    test: 'journeys/keyboard.spec.ts',
+    grep: '播放页和手机队列的首尾 Tab',
+    reason: 'toBeFocused',
+  },
+  {
+    name: 'queue-focus',
+    file: 'src/lib/components/player/PhonePlayerPage.svelte',
+    before: '{@attach trapFocus}',
+    after: '',
+    test: 'journeys/keyboard.spec.ts',
+    grep: '播放页和手机队列的首尾 Tab',
+    reason: 'toBeFocused',
+    project: 'phone',
+  },
 ];
 const results: {
   name: string;
@@ -52,10 +71,11 @@ const run = async (
   grep: string,
   expected: number,
   reason?: string,
+  project = 'desktop',
 ) => {
   const result = await execaNode(
     'tests/tools/browser.mts',
-    [file, '--project=desktop', '--grep', grep],
+    [file, `--project=${project}`, '--grep', grep],
     { env: { CAMPANULA_BROWSER_SOURCE: source }, reject: false },
   );
   await writeFile(
@@ -97,11 +117,19 @@ try {
         mutation.grep,
         1,
         mutation.reason,
+        mutation.project,
       );
     } finally {
       await writeFile(path, original);
     }
-    await run(`${mutation.name}-restored`, mutation.test, mutation.grep, 0);
+    await run(
+      `${mutation.name}-restored`,
+      mutation.test,
+      mutation.grep,
+      0,
+      undefined,
+      mutation.project,
+    );
   }
   const retry = await execaNode(
     'tests/tools/browser.mts',

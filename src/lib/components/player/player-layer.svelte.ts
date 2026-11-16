@@ -3,6 +3,11 @@ import { untrack } from 'svelte';
 import type { DialogRequest } from '../overlay/overlay-requests.ts';
 import type { OverlayLayer } from '../overlay/overlay-stack.ts';
 import { getAppView } from '../shared/app-context.svelte.ts';
+import { desktopLayout } from '../shared/layout.ts';
+import {
+  DESKTOP_DOCK_HEIGHT,
+  PHONE_DOCK_HEIGHT,
+} from '../shell/player-dock.ts';
 import type { Drawer } from './drawer.svelte.ts';
 import { queueEmpty } from './view.ts';
 
@@ -10,6 +15,7 @@ export interface PlayerLayerState {
   readonly hasQueue: boolean;
   readonly open: boolean;
   readonly shown: boolean;
+  dockHeight: number;
   clearQueue: () => void;
 }
 
@@ -18,6 +24,7 @@ export const createPlayerLayer = (
   drawer: Drawer,
 ): PlayerLayerState => {
   const view = getAppView();
+  let dockHeight = $state(PHONE_DOCK_HEIGHT);
   const hasQueue = $derived(!queueEmpty(view.state.player));
   const open = $derived(hasQueue && player.request !== null);
   const shown = $derived(hasQueue && (open || drawer.visible));
@@ -51,6 +58,15 @@ export const createPlayerLayer = (
     },
     get shown() {
       return shown;
+    },
+    get dockHeight() {
+      return Math.max(
+        desktopLayout.current ? DESKTOP_DOCK_HEIGHT : PHONE_DOCK_HEIGHT,
+        dockHeight,
+      );
+    },
+    set dockHeight(height) {
+      dockHeight = height;
     },
     clearQueue() {
       if (!shown) {

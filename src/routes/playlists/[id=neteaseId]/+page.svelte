@@ -122,6 +122,7 @@
       desktop: true,
       present: playerLayer.hasQueue,
       withoutBar: '0px',
+      height: playerLayer.dockHeight,
     }),
   );
 

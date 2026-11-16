@@ -36,7 +36,7 @@
   import type { SpeedSample } from './speed.ts';
 
   const view = getAppView();
-  const { downloadPanel: panel } = getOverlays();
+  const { downloadPanel: panel, playerLayer } = getOverlays();
   const desktop = $derived(desktopLayout.current);
   const downloads = $derived(view.state.downloads);
   const tasks = $derived([...downloads.tasks.values()]);
@@ -72,7 +72,6 @@
         : '正在下载',
   );
   const top = $derived(desktopPanelTop(view.state.online));
-  const bottom = 'bottom-[calc(80px+env(safe-area-inset-bottom))]';
 
   let panelEl = $state<HTMLElement>();
   let announcement = $state('');
@@ -305,10 +304,15 @@
       desktop
         ? panel.collapsed
           ? 'right-4 w-11'
-          : 'right-4 bottom-24 w-[360px]'
-        : `inset-x-2 ${bottom}`,
+          : 'right-4 w-[360px]'
+        : 'inset-x-2',
     ]}
     style:top={desktop ? `${top}px` : undefined}
+    style:bottom={desktop
+      ? panel.collapsed
+        ? undefined
+        : `${playerLayer.dockHeight + 16}px`
+      : `calc(${playerLayer.dockHeight + 16}px + env(safe-area-inset-bottom))`}
     style:view-transition-name="download-panel"
     style:view-transition-class="still"
     in:float={{ toward: 'left', distance: 24, panel: true }}

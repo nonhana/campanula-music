@@ -3,6 +3,7 @@
 
   import type { Song } from '#lib/api/library.ts';
 
+  import { trapFocus } from '../overlay/modal-focus.ts';
   import { getOverlays } from '../overlay/overlay-context.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import {
@@ -223,9 +224,11 @@
       style:top="{(1 - SHEET_HEIGHT) * 100}dvh"
       {@attach sheetDrawer.panel}
       role="dialog"
+      tabindex="-1"
       aria-modal="true"
       aria-label="播放队列"
       inert={!queueOpen || queue.inert}
+      {@attach trapFocus}
     >
       <button
         type="button"

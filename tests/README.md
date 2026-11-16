@@ -95,9 +95,11 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 
 ## 真实页面与无障碍
 
-先 `pnpm test:browser:install`（Linux `pnpm exec playwright install --with-deps chromium`）。`pnpm test` 顺序运行全部 Vitest、journeys 和 accessibility 文件；`pnpm test:browser <文件> --grep <名称> --project=desktop|phone --headed` 单独重跑，`pnpm test:a11y` 跑核心页面全页检查。journeys 在菜单、弹窗、失败状态也扫描相同 page。`pnpm smoke:mock` 复用保存用例，`pnpm test:browser:faults` 依次检出保存/名称/焦点故障再恢复。来源与目录在 tests/suites.ts；Vitest 只运行 .test.ts，Playwright 运行 .spec.ts，缺失套件/空选择失败。
+先 `pnpm test:browser:install`（Linux `pnpm exec playwright install --with-deps chromium`）。`pnpm test` 顺序运行全部 Vitest、journeys 和 accessibility 文件；`pnpm test:browser <文件> --grep <名称> --project=desktop|phone --headed` 单独重跑。无参数的 `pnpm test:a11y` 跑全部 accessibility 文件，核对每个文件在桌面、手机实际执行且未跳过，并核验全部对比度组和必测状态；完整通过才输出 passed。单文件、grep、project 或其他自定义参数执行仍输出 partial，不代表完整专项。journeys 在菜单、弹窗、失败状态也扫描相同 page。`pnpm smoke:mock` 复用保存用例，`pnpm test:browser:faults` 依次检出保存、名称、焦点归还、播放页和手机队列的焦点循环故障再恢复。来源与目录在 tests/suites.ts；Vitest 只运行 .test.ts，Playwright 运行 .spec.ts，缺失套件/空选择失败。
 
 浏览器报告在 `.reports/browser/run-*`，含 JSON/HTML、每例 trace/截图、环境与网络附件、逐状态完整 axe JSON；故障报告在 `.reports/browser-faults/`。截图和逐帧诊断见 docs/agents/browser.md 与 tests/tools/browser/sweep.ts。零 violations 门禁不自动放宽；incomplete 的人工判断及历史首扫见 docs/acceptance/issue-100.md。
+
+搜索历史与建议的弹层关联、键盘选择/离开在 `accessibility/search.spec.ts`；从页首到歌曲与播放器的真实 Tab 路径、编辑弹窗和播放页/手机队列的具体顺序及双向边界在 `journeys/keyboard.spec.ts`。`accessibility/low-vision.spec.ts` 固定验证 320 CSS px、规范文字间距、200% 文字模拟与强制颜色下的关键操作；200% 模拟放大文字和行高，不冒充系统浏览器缩放。范围、独立复核的 axe incomplete 和作者读屏清单见 [无障碍修复验收](../docs/acceptance/issue-104.md)。
 
 fixture 使用真实 App/HTTP 和 #99 小曲库，每例新上游、独立根、空 context、高位端口；数据准备不替代目标按钮。执行期阻止非自有 origin；服务端 mock 不回退真实网易云。reset 只还原上游；另建 context 才是新设备。删除临时根、PID 与端口关闭有附件。真实账号、Android、系统选择器和 TalkBack 仍由作者验收；生产 PWA 断网重开由交付层验证。
 

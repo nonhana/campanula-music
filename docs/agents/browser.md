@@ -17,11 +17,13 @@ Linux 第一次用 `pnpm exec playwright install --with-deps chromium` 安装浏
 
 `test:browser` 跑 journeys，`test:a11y` 跑 accessibility；领域旅程在打开菜单、弹窗和失败态时也扫描同一个 page。`pnpm test` 顺序跑离线 Vitest 和这两类浏览器文件。文件和 `--grep` 可以组合，选择为空会失败。`smoke:mock` 是同一份保存用例的桌面/手机子集。
 
+无参数 `pnpm test:a11y` 要求每个 accessibility 文件在桌面、手机都有通过的实际用例，再核验全部对比度组和必测状态。带文件、grep、project 或其他自定义参数时，报告保留 partial；定向通过不代表完整专项通过。低视力固定回归与搜索弹层语义的独立复核见 `docs/acceptance/issue-104.md`。
+
 ## 报告
 
 终端输出本次 `.reports/browser/run-*/`。其中 tests.json 与 HTML 记录实际步骤、项目和错误，results 下保留所有用例的 trace、截图、环境/网络附件及逐场景 axe JSON。每个 axe 结果保留 violations、incomplete、passes、inapplicable 和规则 tags；best-practice 与 WCAG A/AA 同时运行。没有整页排除，当前已扫描状态要求零 violations；incomplete 逐场景/规则/节点对照 tests/baselines/a11y-manual.json，新增项阻断，清单只由明确人工判断修改。原始观测见 `docs/acceptance/issue-100.md`；对比度数值核验与已测组见 `docs/acceptance/issue-103.md`，完整运行的 contrast-summary.json 拒绝缺组、缺状态或低于4.5，不把原 incomplete 标成 axe passes。latest.json 只是导航，交付引用明确的 run 和最终 SHA 的 CI 附件。
 
-`test:browser:faults` 在临时源码副本依次断保存、去按钮名称、改焦点归还，检查同一用例在指定原因失败，再恢复通过；报告位于 `.reports/browser-faults/`。不修改共享 src，也不把预期失败混成普通绿灯。
+`test:browser:faults` 在临时源码副本依次断保存、去按钮名称、改焦点归还、撤掉模态循环和手机队列的接入，检查同一用例在指定原因失败，再恢复通过；报告位于 `.reports/browser-faults/`。不修改共享 src，也不把预期失败混成普通绿灯。
 
 ## 作者点名的诊断
 
