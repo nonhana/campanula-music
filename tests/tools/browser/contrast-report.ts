@@ -1,3 +1,7 @@
+import { globSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import manual from '../../baselines/a11y-manual.json' with { type: 'json' };
 import inventory from '../../baselines/contrast-audit.json' with { type: 'json' };
 
@@ -12,6 +16,13 @@ export interface ContrastReport {
     minimum: number | null;
   }[];
 }
+
+export const readContrastReports = (dir: string): Promise<ContrastReport[]> =>
+  Promise.all(
+    globSync('results/**/contrast-*.json', { cwd: dir })
+      .filter((file) => !file.includes('/attachments/'))
+      .map(async (file) => JSON.parse(await readFile(join(dir, file), 'utf8'))),
+  );
 
 export const summarizeContrast = (
   reports: ContrastReport[],

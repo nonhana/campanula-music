@@ -19,43 +19,134 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - &checkout
+        uses: actions/checkout@v7
+      - &pnpm
+        uses: pnpm/action-setup@v6
+      - &node
+        uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - &install
+        run: pnpm install --frozen-lockfile
       - uses: actions/cache@v6
         with:
           path: .eslintcache
           key: eslint-${{ hashFiles('pnpm-lock.yaml') }}
-      - name: 准备配套 Chromium 与系统库
-        run: pnpm exec playwright install --with-deps chromium
-      - name: 本地同份默认与专项清单
-        run: |
-          python3 --version
-          sh tests/tools/offline.sh pnpm test:ci verify
-      - name: 测试与覆盖率报告
+      - name: 静态检查与 SDK 合同清单
+        run: sh tests/tools/offline.sh sh -ec 'pnpm test:ci static && pnpm sdk:report'
+      - uses: actions/upload-artifact@v7
         if: always()
-        uses: actions/upload-artifact@v7
+        with:
+          name: static-${{ github.sha }}
+          path: |
+            .reports/sdk/
+            .reports/offline/
+            .reports/plans/
+          if-no-files-found: error
+          include-hidden-files: true
+          overwrite: true
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - name: 全量 Vitest、SSR 覆盖率与校准
+        run: sh tests/tools/offline.sh pnpm test:ci coverage
+      - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: tests-${{ github.sha }}
           path: |
             .reports/runs/
             .reports/latest-*.json
             .reports/environments/
-            .reports/sdk/
-            .reports/browser/
-            .reports/browser-faults/
             .reports/offline/
             .reports/plans/
+          if-no-files-found: error
+          include-hidden-files: true
+          overwrite: true
+
+  browser:
+    name: browser-${{ matrix.project }}-${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [desktop, phone]
+        suite: [journeys, accessibility]
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: 运行本视口和目录的全部用例
+        run: sh tests/tools/offline.sh pnpm exec tsx tests/tools/browser.mts "${{ matrix.suite }}/" --project "${{ matrix.project }}"
+      - name: 提交用例清单与原始对比度数据
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-${{ matrix.project }}-${{ matrix.suite }}
+          path: |
+            .reports/browser/run-*/run.json
+            .reports/browser/run-*/tests.json
+            .reports/browser/run-*/results/**/contrast-*.json
+            !.reports/browser/run-*/results/**/attachments/**
+          if-no-files-found: error
+          include-hidden-files: true
+          overwrite: true
+      - name: 保存浏览器报告、axe、截图及 trace
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: traces-${{ matrix.project }}-${{ matrix.suite }}
+          path: |
+            .reports/browser/
+            .reports/environments/
+            .reports/offline/
+          if-no-files-found: error
+          include-hidden-files: true
+          overwrite: true
+
+  verify:
+    if: always()
+    needs: [static, coverage, browser]
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-latest
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - name: 核对静态检查、完整覆盖率与四个浏览器作业
+        run: node tests/tools/ci-gate.mts verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CAMPANULA_CI_NEEDS: ${{ toJSON(needs) }}
+      - *install
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: browser-*
+          path: .reports/release-browser
+      - name: 独立枚举全部用例并核对双视口对比度
+        run: sh tests/tools/offline.sh env GITHUB_STEP_SUMMARY="$GITHUB_STEP_SUMMARY" pnpm exec tsx tests/tools/release-browser-gate.mts .reports/release-browser
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-browser-summary-${{ github.sha }}
+          path: |
+            .reports/release-browser/summary.json
             tests/baselines/a11y-first-observations.json.gz
           if-no-files-found: error
           include-hidden-files: true
+          overwrite: true
 
   https:
     runs-on: ubuntu-latest
@@ -86,6 +177,7 @@ jobs:
             .reports/plans/
           if-no-files-found: error
           include-hidden-files: true
+          overwrite: true
 
   sdk:
     runs-on: ubuntu-latest
@@ -111,6 +203,7 @@ jobs:
             .reports/offline/
           if-no-files-found: error
           include-hidden-files: true
+          overwrite: true
 
   delivery:
     outputs:
@@ -151,6 +244,7 @@ jobs:
             .reports/offline/
           if-no-files-found: error
           include-hidden-files: true
+          overwrite: true
 
   acceptance:
     permissions:

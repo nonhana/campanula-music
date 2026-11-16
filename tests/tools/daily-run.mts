@@ -1,4 +1,3 @@
-import { globSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import process from 'node:process';
@@ -6,7 +5,10 @@ import process from 'node:process';
 import { execa } from 'execa';
 
 import baseline from '../baselines/browser-100.json' with { type: 'json' };
-import { browserCases } from '../ci/browser-inventory.ts';
+import {
+  browserCases,
+  missingBrowserBaseline,
+} from '../ci/browser-inventory.ts';
 import { dailyPlan, requireInventory } from '../ci/plan.ts';
 import type { Lane } from '../ci/plan.ts';
 import {
@@ -15,6 +17,7 @@ import {
   ROOT,
   sourceSha,
 } from '../suites.ts';
+import { readContrastReports } from './browser/contrast-report.ts';
 import type { ContrastReport } from './browser/contrast-report.ts';
 
 const input = process.argv[2]?.startsWith('{') ? process.argv[2] : undefined;
@@ -113,26 +116,19 @@ if (lane.files.length && !lane.project) {
     expected.map((t) => t.id),
     actual.map((t) => t.id),
   );
-  for (const t of baseline.cases.filter(
-    (t) =>
-      t.project === lane.project &&
-      lane.files.includes(`tests/browser/${t.file}`),
-  ))
-    if (
-      !actual.some(
-        (a) =>
-          a.name === t.name && a.file === t.file && a.project === t.project,
-      )
-    )
-      throw new Error(`缺少浏览器基线：${t.name}`);
+  const missing = missingBrowserBaseline(
+    actual,
+    baseline.cases.filter(
+      (t) =>
+        t.project === lane.project &&
+        lane.files.includes(`tests/browser/${t.file}`),
+    ),
+  );
+  if (missing) throw new Error(`缺少浏览器基线：${missing.name}`);
   if (actual.some((t) => t.status !== 'expected' || t.project !== lane.project))
     throw new Error('浏览器用例未全部通过');
   if (lane.name.startsWith('contrast-'))
-    contrast = await Promise.all(
-      globSync('results/**/contrast-*.json', { cwd: report })
-        .filter((f) => !f.includes('/attachments/'))
-        .map((f) => json(join(report, f))),
-    );
+    contrast = await readContrastReports(report);
   cases = actual.length;
 } else if (lane.name === 'static') {
   await pnpm('test:ci', 'static');

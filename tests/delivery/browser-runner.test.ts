@@ -216,5 +216,18 @@ describe('浏览器专项 CLI 的完整性', () => {
       'browser.mts',
     );
     expect(missing.code).toBe(1);
+    const duplicate = await run(
+      [],
+      {
+        cases: [...all, { ...all[0], status: 'skipped' }],
+        contrast: contrast(),
+      },
+      'browser.mts',
+    );
+    expect(duplicate.code).toBe(1);
+    const baselineReport = JSON.parse(
+      await readFile(join(duplicate.manifest.report, 'baseline.json'), 'utf8'),
+    );
+    expect(baselineReport.passed).toBe(false);
   });
 });

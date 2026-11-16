@@ -8,10 +8,16 @@ import { fileURLToPath } from 'node:url';
 import type AxeBuilder from '@axe-core/playwright';
 
 import baseline from '../baselines/browser-100.json' with { type: 'json' };
-import { browserCases } from '../ci/browser-inventory.ts';
+import {
+  browserCases,
+  missingBrowserBaseline,
+} from '../ci/browser-inventory.ts';
 import { requireInventory } from '../ci/plan.ts';
 import { discoverTests, ROOT, sourceSha } from '../suites.ts';
-import { summarizeContrast } from './browser/contrast-report.ts';
+import {
+  readContrastReports,
+  summarizeContrast,
+} from './browser/contrast-report.ts';
 
 type Scan = Awaited<ReturnType<AxeBuilder['analyze']>> & {
   scenario: string;
@@ -79,15 +85,7 @@ if (code === 0) {
     }
   }
   if (!args.length && !verifyRetry) {
-    for (const expected of baseline.cases) {
-      const matches = cases.filter(
-        (item) =>
-          item.file === expected.file &&
-          item.name === expected.name &&
-          item.project === expected.project,
-      );
-      if (matches.length !== 1 || matches[0].status !== 'expected') code = 1;
-    }
+    if (missingBrowserBaseline(cases)) code = 1;
     await writeFile(
       join(report, 'baseline.json'),
       JSON.stringify({
@@ -134,13 +132,7 @@ const scans = await Promise.all(
     }),
 );
 try {
-  const contrast = await Promise.all(
-    globSync('results/**/contrast-*.json', { cwd: report })
-      .filter((file) => !file.includes('/attachments/'))
-      .map(async (file) =>
-        JSON.parse(await readFile(join(report, file), 'utf8')),
-      ),
-  );
+  const contrast = await readContrastReports(report);
   await writeFile(
     join(report, 'contrast-summary.json'),
     JSON.stringify(
