@@ -9,6 +9,7 @@ import type AxeBuilder from '@axe-core/playwright';
 
 import baseline from '../baselines/browser-100.json' with { type: 'json' };
 import { ROOT, sourceSha } from '../suites.ts';
+import { summarizeContrast } from './browser/contrast-report.ts';
 
 type Scan = Awaited<ReturnType<AxeBuilder['analyze']>> & {
   scenario: string;
@@ -128,6 +129,36 @@ const scans = await Promise.all(
       };
     }),
 );
+try {
+  const contrast = await Promise.all(
+    globSync('results/**/contrast-*.json', { cwd: report })
+      .filter((file) => !file.includes('/attachments/'))
+      .map(async (file) =>
+        JSON.parse(await readFile(join(report, file), 'utf8')),
+      ),
+  );
+  await writeFile(
+    join(report, 'contrast-summary.json'),
+    JSON.stringify(
+      {
+        sha,
+        ...summarizeContrast(
+          contrast,
+          code === 0 && !args.length && !verifyRetry,
+        ),
+      },
+      null,
+      2,
+    ),
+  );
+} catch (error) {
+  code = 1;
+  await writeFile(
+    join(report, 'contrast-summary.json'),
+    JSON.stringify({ sha, status: 'failed', error: String(error) }, null, 2),
+  );
+  console.error(error);
+}
 await writeFile(
   join(report, 'a11y-summary.json'),
   JSON.stringify({ scans }, null, 2),
