@@ -25,7 +25,10 @@ export default defineConfig(async () => {
     test: {
       include: (suite === 'all'
         ? Object.entries(suites)
-            .filter(([name]) => name !== 'browser' && name !== 'a11y')
+            .filter(
+              ([name]) =>
+                name !== 'browser' && name !== 'a11y' && name !== 'pwa',
+            )
             .flatMap(([, files]) => files)
         : suites[suite]
       ).map((file) => `${ROOT}${file}`),

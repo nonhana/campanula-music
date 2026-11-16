@@ -4,7 +4,7 @@
 > 只停在本地 commit 不算交付：作者的 Vercel 实例由**推送**触发部署，作者在手机上验收的是部署后的版本。
 > 实现者必须自己推送，不能把推送留给作者。
 >
-> 验证分三层：提交时钩子跑 lint-staged（改动文件的 eslint、设计令牌、fixture 身份）；推送时没有钩子；完整的 lint、类型检查、测试、两种构建和生产构建检查交给 CI（`.github/workflows/ci.yml`）。
+> 验证分三层：提交时钩子跑 lint-staged（改动文件的 eslint、设计令牌、fixture 身份）；推送时没有钩子；完整的 lint、类型检查、测试、双候选构建和生产 PWA 检查交给 CI（`.github/workflows/ci.yml`）。
 > Vercel 开了 Deployment Checks，要求 CI 通过：推送后新版本照常构建，等 CI 通过才切到正式域名；CI 失败时线上留着上一个版本。实现者必须主动跟进本次提交的 CI，失败就返工修复，直到最终提交通过；票里要求的部署验收也要核对。
 
 实现 Spec #11 下的票时，按顺序走完每一步。
@@ -43,3 +43,7 @@
 改启动器、Cookie 主机或 Kit/Vite 生成目录时，运行 `pnpm test:environment`：输入两种启动顺序、同一合成 Cookie jar、并发写入、reset、关闭、端口冲突、启动取消和重试，检查 HTTP 结果、原环境生成文件及清理；报告在 本次运行的 `delivery/` 与 `.reports/environments/`。双 HTTPS 显式运行 `pnpm test:environment:https`，临时 CA 只传给客户端，不改系统信任或 hosts，报告在 `.reports/https/`。测试/类型/构建仍顺序执行，不能用时限放宽当作隔离证据。Spec #96 串行链的工程验收/关闭授权按该 Spec 执行，真账号和设备边界保留。
 
 作者开发直接运行 dev / dev:mock（HTTPS 8443 / 8444），`scripts/dev.mts` 统一引导首次信任与解析、复用和续签证书、启动及关闭 Vite；使用方法见 [本地开发](../development.md)。HTTP 备用为 dev:http / dev:mock:http。入口变化由 delivery 回归和 HTTPS 专项验证真实 CLI、证书策略、HTTP/2、WSS 与清理；自动化使用临时 CA，不修改作者系统信任或 hosts。
+
+## 同一候选与发布
+
+本地与 CI 同等命令是 `pnpm test:ci verify|https|sdk|delivery`，选择与专项清单在 tests/suites.ts。最终 ci 聚合 verify、https、sdk、delivery，Vercel production 继续等待已有 ci 检查；必须逐项核对同 SHA 的全部 job 和步骤。独立 Node/Vercel 候选及 PWA/版本交接报告、只读发布判定、作者 Android 试用方法见 [#101 验收](../acceptance/issue-101.md)。`pnpm release:check --sha <SHA>` 不发布；Docker tag/manual 使用其重新核验过的 Node 输出。

@@ -6,16 +6,20 @@ import { fileURLToPath } from 'node:url';
 
 import type { TestReport } from '../suites.ts';
 import {
+  assertRunResult,
+  compareIssue100,
   compareMigration,
   comparePrevious,
   discoverTests,
   ROOT,
+  sourceSha,
 } from '../suites.ts';
 
 const [suite = 'all', ...args] = process.argv
   .slice(2)
   .filter((arg) => arg !== '--');
 const suites = discoverTests();
+const sha = sourceSha();
 if (suite !== 'all' && !(suite in suites))
   throw new Error(`未知套件：${suite}`);
 if (suite === 'browser' || suite === 'a11y') {
@@ -49,6 +53,14 @@ const publish = async (status: string) => {
   const manifest = JSON.stringify(
     {
       status,
+      sha,
+      sdk: JSON.parse(
+        await readFile(
+          join(ROOT, 'node_modules/hana-music-api/package.json'),
+          'utf8',
+        ),
+      ).version,
+      selected: suites,
       suite,
       args,
       runRoot,
@@ -88,6 +100,7 @@ const child = spawn(
     env: {
       PATH: process.env.PATH,
       TSX_DISABLE_CACHE: '1',
+      CAMPANULA_TEST_SHA: sha,
       CAMPANULA_COVERAGE_DIR: coverageDir,
       CAMPANULA_COVERAGE_CALIBRATE: process.env.CAMPANULA_COVERAGE_CALIBRATE,
       CAMPANULA_TEST_SUITE: suite,
@@ -107,14 +120,15 @@ if (code !== 0) {
 let status = 'failed';
 try {
   const report = JSON.parse(await readFile(output, 'utf8')) as TestReport;
-  if (
-    !report.testResults.some((file) =>
-      file.assertionResults.some(
-        (test) => test.status === 'passed' || test.status === 'failed',
-      ),
-    )
-  )
-    throw new Error('所选范围没有执行任何用例：检查文件路径和用例全名过滤条件');
+  assertRunResult(
+    report,
+    !args.some(
+      (arg) =>
+        arg === '-t' ||
+        arg.startsWith('-t=') ||
+        arg.startsWith('--testNamePattern'),
+    ),
+  );
   const bySuite = Object.fromEntries(
     Object.entries(suites).map(([name, files]) => [
       name,
@@ -134,9 +148,10 @@ try {
   if (full) {
     const result = compareMigration(report);
     const previous = comparePrevious(report);
+    const latest = compareIssue100(report);
     await writeFile(
       join(reportDir, 'migration.json'),
-      `${JSON.stringify({ ...result, previous }, null, 2)}\n`,
+      `${JSON.stringify({ ...result, previous, latest }, null, 2)}\n`,
     );
     console.log(
       `旧用例逐项核对：${result.preserved} 条保留，${result.added.length} 条新增`,

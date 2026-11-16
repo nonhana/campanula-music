@@ -12,7 +12,7 @@ pnpm test:contract tests/contract/api.test.ts
 pnpm test
 ```
 
-同一条播放用例既在单文件命令中运行，也在默认套件中运行。`-t` 过滤用例全名；Vitest 的其他运行参数也可以追加。文件或全名选不到用例时会失败。受控套件提供 `test:unit`、`test:behavior`、`test:contract` 和 `test:environment`；浏览器与 a11y 见下节；候选生产产物的入口由 #101 交付。
+同一条播放用例既在单文件命令中运行，也在默认套件中运行。`-t` 过滤用例全名；Vitest 的其他运行参数也可以追加。文件或全名选不到用例时会失败。受控套件提供 `test:unit`、`test:behavior`、`test:contract` 和 `test:environment`；浏览器与 a11y 见下节；候选生产产物使用 test:delivery 的显式 SHA、adapter 和 candidate，见下节。
 
 | 目录                           | 输入与可观察输出                                                | 证据范围                                                                              |
 | ------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 
 ## SDK 合同与场景
 
-`pnpm sdk:report` 从生产 SDK 值导入生成 `.reports/sdk/contract.json`，列 action、辅助函数、浏览器能力、绑定、关键输入、样本与失败缺口。`pnpm test:sdk [--candidate /本地候选包]` 在公开文件副本离线重跑合同、类型和代表行为；维护步骤见 [录制与维护](fixtures/netease/README.md#录制与维护)。常规 CI 也检查索引并保存合同报告。
+`pnpm sdk:report` 从生产 SDK 值导入生成 `.reports/sdk/contract.json`，列 action、辅助函数、浏览器能力、绑定、关键输入、样本与失败缺口。`pnpm test:sdk [--candidate /本地候选包]` 在公开文件副本离线重跑合同、类型、代表行为和真实保存页面跨层操作；维护步骤见 [录制与维护](fixtures/netease/README.md#录制与维护)。常规 CI 也检查索引并保存合同报告。
 
 默认 `small` 为从现有脱敏样本组合的构造曲库：我喜欢的音乐、自建 poems、4 首可播放歌单，共 6 首歌；统一关联测试专辑 3149073、测试歌手 33927412。歌单形状来自 sync/before，歌曲来自 liked-page 与 album-artist；专辑/歌手形状来自 album-artist 的 008/004/012，关系与数量为构造，媒体由 assets.ts 可再生。歌词复用 playback/lyric_new.all-forms.json，不代表这些歌的真实歌词。运行时写入归当前实例，reset 还原种子。`large`、`after`、`deleted` 保留 4,984 首及历史差异，用于规模、分页，不承诺所有收藏导航完整。
 
@@ -102,3 +102,22 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 fixture 使用真实 App/HTTP 和 #99 小曲库，每例新上游、独立根、空 context、高位端口；数据准备不替代目标按钮。执行期阻止非自有 origin；服务端 mock 不回退真实网易云。reset 只还原上游；另建 context 才是新设备。删除临时根、PID 与端口关闭有附件。真实账号、Android、系统选择器和 TalkBack 仍由作者验收；生产 PWA 断网重开由交付层验证。
 
 Linux CI 先安装配套浏览器和系统库，再用 `sh tests/tools/offline.sh pnpm test --coverage` 在无外网路由的临时网络命名空间运行（需要该 CI 的 sudo/unshare/ip/runuser）。普通 macOS 本地命令仍是同一 runner/fixture，并在 Chromium 请求层拒绝非自有 origin；没有声称在 macOS 修改或切断作者网络。
+
+## 候选产物、生产 PWA 与发布
+
+本地和 CI 的完整清单是 tests/suites.ts 的 VALIDATION_PLAN：`pnpm test:ci verify|https|sdk|delivery`。verify 保留 lint、格式、类型、端点、索引/SDK、smoke、故障、默认 coverage 与 SSR 校准，delivery 顺序构建与验证独立 Node/Vercel/下一版本，并运行真实生产 PWA。各阶段报告在 `.reports/plans/`，含 SHA、版本、非空选择和每步退出码。默认回归仍无需生产构建；pwa 是接收明确候选的专项，不混入 dev browser。
+
+```sh
+pnpm delivery:verify --sha "$(git rev-parse HEAD)"
+pnpm build:delivery --sha <完整SHA> --adapter node --out /尚不存在的目录
+pnpm test:delivery --sha <完整SHA> --adapter node --candidate /本次候选
+pnpm test:pwa --sha <完整SHA> --candidate /本次node --next /本次next
+pnpm release:check --sha <完整SHA>
+pnpm sdk:latest
+```
+
+`check:mock-isolation` 保留为 test:delivery 同参数的薄兼容入口，不再猜默认目录。候选必须非空、目标/SHA 正确且文件摘要一致；Vercel 的 v3 路由、函数 handler、静态资源与 Node 实际入口/HTTP 各自核验。内部相对软链可保留，越界链接失败；普通/gzip/Brotli 的 mock、录制、工具与合成媒体均阻断。tar.gz 留住软链，发布重新下载同 run 的包复核。Docker 使用核验后的 Node 输出，发布后不重新构建另一份。
+
+生产 PWA 显式允许 SW，两个视口都测安装/控制、真正离线关闭重开、缓存账号/下载及 Blob 音频、联网恢复、两旧页等待和关完后的激活。产品 Node 在自有回环服务运行；测试代理只在产品进程外拒绝会连接真实网易云的 API，实际匿名 account API 仍经过生产入口。请求拒绝证据与 setOffline 的真实离线分别记录，不把 503 当断网。`.reports/pwa/run-*/` 包含 JSON/HTML、trace、截图、缓存键和进程清理；候选及构建报告在 `.reports/candidates/`，HTTP 检查在 `.reports/delivery/`。测试规则、敏感性和人工边界见 [#101 验收](../docs/acceptance/issue-101.md)。
+
+Vercel 已有 production 的 ci Deployment Check；ci 现在聚合 verify、https、sdk、delivery，必要项失败/取消/缺项/跳过均拒绝。Docker tag/manual 同样等待最新同 SHA 的完整 CI 和产物/PWA 证据，release:check 仅做只读 dry-run。网络查询 latest 的独立 workflow 在默认分支有文件时才会按计划执行；当前 rewrite/v1 只提供可直接运行的入口，不宣称 master 已启用 schedule。

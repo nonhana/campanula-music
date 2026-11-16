@@ -49,3 +49,5 @@ Spec #96 增加受控浏览器旅程和 a11y 层，使用自行启动的 Chromiu
 环境生命周期回归用 `pnpm test:environment`，与默认套件复用 delivery 选择；每份临时环境有独占子进程、工作根和密钥，World 与 Vitest 自身也使用独立根，避免重写普通开发的 `$app` 与 env。统一开发入口与证书策略由 `scripts/dev.mts` 提供，测试只复用接口；默认 delivery 另验证证书复用、并发续签、失败和取消。原生 HTTPS、真实 mkcert、HTTP/2 与 WSS 用显式专项 `pnpm test:environment:https`，见测试导航和 ADR-0020。
 
 交互子进程或首次提权引导变化时，运行 `tests/delivery/dev-terminal.test.ts`：用伪终端验证控制终端读取、拒绝、Ctrl+C / SIGTERM 和自有进程清理。它只向受控替身输入固定标记，测试不安装系统 CA 或修改 hosts；依赖与边界见测试导航。
+
+候选交付不使用开发 SW：`delivery:verify --sha <SHA>` 构建独占 Node/Vercel/next，再用真实生产 Node 与独立 Chromium 检查安装/控制、真正离线重开、下载播放、恢复和延迟激活。pwa 归 tests/delivery 专项，默认 browser/a11y 继续明确 block SW。发布负例与全部入口见 tests/README 和 #101 验收文档；用 503 代替网络离线不构成生产 PWA 证据。

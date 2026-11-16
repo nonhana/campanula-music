@@ -17,6 +17,11 @@ const adapter = process.env.VERCEL
     })
   : adapterNode();
 
+const buildVersion =
+  process.env.CAMPANULA_BUILD_VERSION ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  Date.now().toString();
+
 const externalOrigin = process.env.CAMPANULA_DEV_ORIGIN;
 if (externalOrigin) {
   adapter.vite = {
@@ -64,6 +69,7 @@ const developmentOrigin = (): Plugin => ({
 });
 
 export default defineConfig({
+  define: { __CAMPANULA_BUILD_VERSION__: JSON.stringify(buildVersion) },
   server: {
     host: 'localhost',
     strictPort: true,
@@ -91,6 +97,7 @@ export default defineConfig({
     })(UnoCSS()),
     sveltekit({
       preprocess: vitePreprocess(),
+      version: { name: buildVersion },
       compilerOptions: process.env.CAMPANULA_DEV_ROUTES
         ? { rootDir: resolve(process.env.CAMPANULA_DEV_ROUTES, '../..') }
         : undefined,

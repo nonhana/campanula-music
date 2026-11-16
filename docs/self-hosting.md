@@ -21,7 +21,7 @@ adapter-node 不看 `ORIGIN` 环境变量：SvelteKit 3 里那是构建时的 `p
 
 ## 用 Docker（GHCR）
 
-镜像在打 `v*` 标签时由 CI 构建并发布（`linux/amd64` 和 `linux/arm64`）。镜像标签就是标签名（例如 `v0.0.1`）和 `latest`：
+镜像在打 `v*` 标签或手工触发时，先等待同一提交的完整 CI、Node/Vercel 产物和生产 PWA 验证通过，再用已核验的 Node 产物包装并发布（`linux/amd64` 和 `linux/arm64`）。镜像标签就是标签名（例如 `v0.0.1`）和 `latest`：
 
 ```bash
 docker run -d \
@@ -129,3 +129,5 @@ server {
 - 反向代理回 502：`proxy_pass` 的地址不对，或者容器/进程没起来；先在服务器上 `curl http://127.0.0.1:3000/` 确认 Campanula 自己在响应。
 - 登录收不到短信验证码、报 10004：给 `NETEASE_REAL_IP` 配上服务器的真实国内 IP，再试一次。
 - 升级后所有人都要重新登录：`COOKIE_SECRET` 换了。换回原来的密钥即可恢复；已经换过就只能让听众重新登录。
+
+发布前只读核对用 `pnpm release:check --sha <完整SHA>`；它不创建标签或镜像。缺项、取消、失败、跳过或旧提交的成功结果均不能放行，候选报告见 tests/README。Vercel 继续自行构建，production 域名由已有 ci Deployment Check 等待全部必要回归；preview READY 不能代替正式放行。

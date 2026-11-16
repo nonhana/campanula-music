@@ -8,63 +8,26 @@ permissions:
   contents: read
 
 jobs:
-  ci:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-
-      # Node 25 起不再自带 corepack；pnpm/action-setup 按 package.json 的 packageManager 装同一个版本
       - uses: pnpm/action-setup@v6
-
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
-
       - run: pnpm install --frozen-lockfile
-
-      # 结果缓存：没改过的文件直接跳过；配置或版本变了，ESLint 会自己整份失效
       - uses: actions/cache@v6
         with:
           path: .eslintcache
           key: eslint-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: 格式检查
-        run: pnpm fmt:check
-
-      - name: 类型检查
-        run: pnpm check
-
-      # #68：端点目录、路由路径和 GET/POST 必须一一对应
-      - name: 端点目录检查
-        run: pnpm check:endpoints
-
-      - name: SDK 合同与录制索引
-        run: |
-          pnpm fixtures:index:check
-          pnpm sdk:report
-
-      - name: 安装配套 Chromium 与系统库
+      - name: 准备配套 Chromium 与系统库
         run: pnpm exec playwright install --with-deps chromium
-
-      - name: 真页面 smoke
-        run: sh tests/tools/offline.sh pnpm smoke:mock
-
-      - name: 浏览器故障注入
-        run: sh tests/tools/offline.sh pnpm test:browser:faults
-
-      - name: 测试
-        # 控制终端回归使用系统 Python 标准库，不安装 CA 或修改 hosts。
+      - name: 本地同份默认与专项清单
         run: |
           python3 --version
-          sh tests/tools/offline.sh pnpm test --coverage
-
-      - name: SSR 覆盖率校准
-        run: pnpm test:coverage:calibrate
-
+          sh tests/tools/offline.sh pnpm test:ci verify
       - name: 测试与覆盖率报告
         if: always()
         uses: actions/upload-artifact@v7
@@ -78,21 +41,10 @@ jobs:
             .reports/browser/
             .reports/browser-faults/
             .reports/offline/
+            .reports/plans/
             tests/baselines/a11y-first-observations.json.gz
           if-no-files-found: error
           include-hidden-files: true
-
-      - name: 构建（Vercel 适配器）
-        run: pnpm build
-        env:
-          VERCEL: '1'
-
-      - name: 构建（Node 适配器）
-        run: pnpm build
-
-      # #58、#61：确认 mock、录制数据、mock 路由和开发设计页没有进生产产物
-      - name: 生产构建检查
-        run: pnpm check:mock-isolation
 
   https:
     runs-on: ubuntu-latest
@@ -104,14 +56,14 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: 准备专项 mkcert（仅下载二进制，不安装 CA）
+      - name: 准备专项 mkcert（不安装 CA）
         run: |
           mkdir -p "$RUNNER_TEMP/campanula-tools"
           curl --fail --location --retry 3 https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 -o "$RUNNER_TEMP/campanula-tools/mkcert"
           chmod +x "$RUNNER_TEMP/campanula-tools/mkcert"
           echo "$RUNNER_TEMP/campanula-tools" >> "$GITHUB_PATH"
       - name: 双 HTTPS、Cookie 与 WSS/HMR
-        run: pnpm test:environment:https
+        run: pnpm test:ci https
       - name: HTTPS 专项报告
         if: always()
         uses: actions/upload-artifact@v7
@@ -120,5 +72,75 @@ jobs:
           path: |
             .reports/https/
             .reports/environments/
+            .reports/plans/
           if-no-files-found: error
           include-hidden-files: true
+
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: 候选 SDK 合同、行为和页面跨层
+        run: sh tests/tools/offline.sh pnpm test:ci sdk
+      - name: SDK 候选报告
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk-${{ github.sha }}
+          path: |
+            .reports/sdk-upgrade-*/
+            .reports/plans/
+            .reports/offline/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  delivery:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: 同 SHA 双目标、生产 PWA 与版本交接
+        run: sh tests/tools/offline.sh pnpm test:ci delivery
+      - name: 候选产物与交付报告
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidates-${{ github.sha }}
+          path: |
+            .reports/candidates/*.tar.gz
+            .reports/candidates/run-*/verification.json
+            .reports/delivery/
+            .reports/pwa/
+            .reports/plans/
+            .reports/offline/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  # Vercel 已配置等待 ci；保持名称并聚合全部必要 job。
+  ci:
+    if: always()
+    needs: [verify, https, sdk, delivery]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: 拒绝缺失、失败、取消或跳过
+        run: node tests/tools/ci-gate.mts
+        env:
+          CAMPANULA_CI_NEEDS: ${{ toJSON(needs) }}

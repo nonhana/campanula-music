@@ -1,10 +1,12 @@
-import { dev, version } from '$app/env';
+import { dev } from '$app/env';
 import { assets, immutable } from '$app/manifest';
 import { self } from '$app/service-worker';
 
 // 不加 skipWaiting：等所有标签页关掉再换版本，正在放的歌和正在看的那一页不被打断
+declare const __CAMPANULA_BUILD_VERSION__: string;
+
 const PREFIX = 'campanula-shell-';
-const CACHE = `${PREFIX}${version}`;
+const CACHE = `${PREFIX}${__CAMPANULA_BUILD_VERSION__}`;
 const resolved = (path: string): string =>
   new URL(path, self.location.href).pathname;
 const SHELL = resolved('.');
@@ -30,6 +32,7 @@ const handleFetch = (event: FetchEvent): void => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname === '/api' || url.pathname.startsWith('/api/')) return;
   if (request.mode === 'navigate') event.respondWith(navigate(request));
   else if (ASSETS.includes(url.pathname))
     event.respondWith(cacheFirst(request));

@@ -98,7 +98,8 @@ const handle = async (
     return false;
 
   const runtime = await runtimeOf(server);
-  const { audioWav, coverSvg, saveUpload, uploadOf } = runtime.assets;
+  const { audioResponse, audioWav, coverSvg, saveUpload, uploadOf } =
+    runtime.assets;
 
   if (
     path === '/mock' ||
@@ -181,11 +182,8 @@ const handle = async (
   if (path.startsWith('/mock-assets/audio/') && path.endsWith('.wav')) {
     const id = Number(path.slice('/mock-assets/audio/'.length, -'.wav'.length));
     const bytes = audioWav(Number.isFinite(id) ? id : 0);
-    res.statusCode = 200;
-    res.setHeader('content-type', 'audio/wav');
-    res.setHeader('content-length', String(bytes.length));
-    res.setHeader('cache-control', 'no-store');
-    res.end(bytes);
+    const reply = audioResponse(bytes, req.method!, req.headers.range);
+    res.writeHead(reply.status, reply.headers).end(reply.body);
     return true;
   }
 

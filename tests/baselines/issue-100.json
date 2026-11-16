@@ -1,0 +1,26 @@
+{
+  "commit": "d056bcd0d4395c4fa98a740629a78ecb0a1b3e90",
+  "source": "CI 43777854936 / run-SAGl7Z",
+  "cases": [
+    {
+      "file": "tests/contract/mock-store.test.ts",
+      "name": "mock 曲库 每份种子的歌单、歌曲、红心和模板独立，实体的列表与编号索引仍同步",
+      "status": "passed"
+    },
+    {
+      "file": "tests/contract/sdk-contract.test.ts",
+      "name": "sDK 消费者合同 完整内容经结构化复制后复用证据，改值后仍拒绝",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "前置 824 条用例不能被遗漏、跳过或重复执行",
+      "status": "passed"
+    },
+    {
+      "file": "tests/unit/suites.test.ts",
+      "name": "浏览器 CLI 的空选择明确失败",
+      "status": "passed"
+    }
+  ]
+}

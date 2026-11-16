@@ -1,0 +1,275 @@
+{
+  "commit": "d056bcd0d4395c4fa98a740629a78ecb0a1b3e90",
+  "cases": [
+    {
+      "file": "accessibility/controls.spec.ts",
+      "name": "歌曲菜单按钮都有名称",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/controls.spec.ts",
+      "name": "歌曲菜单按钮都有名称",
+      "project": "phone"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 library",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 library",
+      "project": "phone"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 playlist",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 playlist",
+      "project": "phone"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 album",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 album",
+      "project": "phone"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 artist",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 artist",
+      "project": "phone"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 daily",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 daily",
+      "project": "phone"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 downloads-empty",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描 downloads-empty",
+      "project": "phone"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描歌单菜单与编辑弹窗",
+      "project": "desktop"
+    },
+    {
+      "file": "accessibility/pages.spec.ts",
+      "name": "全页扫描歌单菜单与编辑弹窗",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/core.spec.ts",
+      "name": "通过歌曲菜单导航专辑和歌手，再播放每日推荐",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/core.spec.ts",
+      "name": "通过歌曲菜单导航专辑和歌手，再播放每日推荐",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/core.spec.ts",
+      "name": "搜索正常、空、失败提示和重新搜索恢复",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/core.spec.ts",
+      "name": "搜索正常、空、失败提示和重新搜索恢复",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/core.spec.ts",
+      "name": "退出账号后进入登录画面",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/core.spec.ts",
+      "name": "退出账号后进入登录画面",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/diagnostics.spec.ts",
+      "name": "独立截图、返回恢复、键盘、逐帧、慢放与抽屉诊断",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/diagnostics.spec.ts",
+      "name": "独立截图、返回恢复、键盘、逐帧、慢放与抽屉诊断",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/downloads.spec.ts",
+      "name": "下载可取消，重试完成后刷新仍在，并从页面导出",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/downloads.spec.ts",
+      "name": "下载可取消，重试完成后刷新仍在，并从页面导出",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "两个实例、空设备和 reset 的 Cookie、IndexedDB、Cache Storage 隔离",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "两个实例、空设备和 reset 的 Cookie、IndexedDB、Cache Storage 隔离",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "独立源码上的组件 HMR 和新增路由，不改人工源文件",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "独立源码上的组件 HMR 和新增路由，不改人工源文件",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "人工端口被占用时，独立服务仍用自己的高位端口",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "人工端口被占用时，独立服务仍用自己的高位端口",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "失败重试从空设备与原始歌单开始",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/environment.spec.ts",
+      "name": "失败重试从空设备与原始歌单开始",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/keyboard.spec.ts",
+      "name": "键盘把歌曲加入歌单，关闭浮层返回原歌曲并刷新读回",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/keyboard.spec.ts",
+      "name": "键盘把歌曲加入歌单，关闭浮层返回原歌曲并刷新读回",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/keyboard.spec.ts",
+      "name": "编辑弹窗的 Tab 循环和 Escape 恢复焦点",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/keyboard.spec.ts",
+      "name": "编辑弹窗的 Tab 循环和 Escape 恢复焦点",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/login.spec.ts",
+      "name": "扫码等待、手机确认、成功进入曲库",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/login.spec.ts",
+      "name": "扫码等待、手机确认、成功进入曲库",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/login.spec.ts",
+      "name": "过期二维码可刷新，短信发送失败可重试",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/login.spec.ts",
+      "name": "过期二维码可刷新，短信发送失败可重试",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/player.spec.ts",
+      "name": "播放、切歌、歌词、队列和键盘滑块",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/player.spec.ts",
+      "name": "播放、切歌、歌词、队列和键盘滑块",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/save.spec.ts",
+      "name": "保存歌单名称，刷新后同一歌单保留新名字",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/save.spec.ts",
+      "name": "保存歌单名称，刷新后同一歌单保留新名字",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/save.spec.ts",
+      "name": "保存被拒绝时显示失败并回到原名，恢复后可再保存",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/save.spec.ts",
+      "name": "保存被拒绝时显示失败并回到原名，恢复后可再保存",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/states.spec.ts",
+      "name": "布局断点 768 无页面横向溢出",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/states.spec.ts",
+      "name": "布局断点 768 无页面横向溢出",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/states.spec.ts",
+      "name": "布局断点 1024 无页面横向溢出",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/states.spec.ts",
+      "name": "布局断点 1024 无页面横向溢出",
+      "project": "phone"
+    },
+    {
+      "file": "journeys/states.spec.ts",
+      "name": "慢响应显示加载、空歌单、断连提示与恢复",
+      "project": "desktop"
+    },
+    {
+      "file": "journeys/states.spec.ts",
+      "name": "慢响应显示加载、空歌单、断连提示与恢复",
+      "project": "phone"
+    }
+  ]
+}

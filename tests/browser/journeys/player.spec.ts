@@ -1,10 +1,45 @@
-import { audioWav } from '../../_kit/mock/assets.ts';
+import { audioResponse, audioWav } from '../../_kit/mock/assets.ts';
 import { expect, login, test } from '../fixture.ts';
+
+test('测试音频支持范围请求和原生跳转', async ({ page }) => {
+  await page.goto('/login');
+  const url = '/mock-assets/audio/1.wav';
+  const response = await page.request.get(url, {
+    headers: { range: 'bytes=44-47' },
+  });
+  expect(response.status()).toBe(206);
+  expect(response.headers()['content-range']).toBe('bytes 44-47/32044');
+  expect(await response.body()).toHaveLength(4);
+  const result = await page.evaluate(async (url) => {
+    const audio = new Audio(url);
+    try {
+      await audio.play();
+      audio.pause();
+      const settled = new Promise<void>((resolve) =>
+        audio.addEventListener('seeked', () => resolve(), { once: true }),
+      );
+      audio.currentTime = 1;
+      await settled;
+      return audio.currentTime;
+    } finally {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+  }, url);
+  expect(result).toBe(1);
+});
 
 test('播放、切歌、歌词、队列和键盘滑块', async ({ page, scan }, info) => {
   const audio = audioWav(3433267939, 30);
   await page.route('**/mock-assets/audio/**', (route) =>
-    route.fulfill({ body: audio, contentType: 'audio/wav' }),
+    route.fulfill(
+      audioResponse(
+        audio,
+        route.request().method(),
+        route.request().headers().range,
+      ),
+    ),
   );
   await login(page, '/playlists/900000024');
   const first = page.locator(

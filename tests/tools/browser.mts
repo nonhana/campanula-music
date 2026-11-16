@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 import type AxeBuilder from '@axe-core/playwright';
 
-import { ROOT } from '../suites.ts';
+import baseline from '../baselines/browser-100.json' with { type: 'json' };
+import { ROOT, sourceSha } from '../suites.ts';
 
 type Scan = Awaited<ReturnType<AxeBuilder['analyze']>> & {
   scenario: string;
@@ -15,6 +16,7 @@ type Scan = Awaited<ReturnType<AxeBuilder['analyze']>> & {
   test: string;
 };
 
+const sha = sourceSha();
 const root = join(ROOT, '.reports/browser');
 await mkdir(root, { recursive: true });
 const report = await mkdtemp(join(root, 'run-'));
@@ -51,6 +53,45 @@ if (code === 0) {
   const results = JSON.parse(
     await readFile(join(report, 'tests.json'), 'utf8'),
   );
+  if (!args.length && !verifyRetry) {
+    const cases: {
+      file: string;
+      name: string;
+      project: string;
+      status: string;
+    }[] = [];
+    const collect = (suites: typeof results.suites) => {
+      for (const suite of suites) {
+        for (const spec of suite.specs ?? [])
+          for (const test of spec.tests)
+            cases.push({
+              file: suite.file,
+              name: spec.title,
+              project: test.projectName,
+              status: test.status,
+            });
+        collect(suite.suites ?? []);
+      }
+    };
+    collect(results.suites);
+    for (const expected of baseline.cases) {
+      const matches = cases.filter(
+        (item) =>
+          item.file === expected.file &&
+          item.name === expected.name &&
+          item.project === expected.project,
+      );
+      if (matches.length !== 1 || matches[0].status !== 'expected') code = 1;
+    }
+    await writeFile(
+      join(report, 'baseline.json'),
+      JSON.stringify({
+        commit: baseline.commit,
+        preserved: baseline.cases.length,
+        passed: code === 0,
+      }),
+    );
+  }
   if (
     verifyRetry
       ? results.stats.flaky !== 1 ||
@@ -95,6 +136,7 @@ await writeFile(
   join(report, 'run.json'),
   JSON.stringify({
     status: code === 0 ? 'passed' : 'failed',
+    sha,
     args,
     report,
     source: process.env.CAMPANULA_BROWSER_SOURCE,

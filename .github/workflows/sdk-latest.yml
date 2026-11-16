@@ -1,0 +1,26 @@
+name: SDK registry latest
+on:
+  schedule:
+    - cron: '23 2 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:ci registry
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: registry-${{ github.sha }}
+          path: .reports/registry/
+          if-no-files-found: error
+          include-hidden-files: true

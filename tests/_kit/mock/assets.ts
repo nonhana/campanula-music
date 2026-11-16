@@ -97,6 +97,44 @@ export const audioWav = (songId: number, seconds = 2): Buffer => {
   return buffer;
 };
 
+export const audioResponse = (
+  bytes: Buffer,
+  method: string,
+  range?: string,
+) => {
+  const headers: Record<string, string> = {
+    'content-type': 'audio/wav',
+    'accept-ranges': 'bytes',
+    'cache-control': 'no-store',
+  };
+  const match = method === 'GET' ? range?.match(/^bytes=(\d*)-(\d*)$/) : null;
+  if (!match || (!match[1] && !match[2])) {
+    headers['content-length'] = String(bytes.length);
+    return {
+      status: 200,
+      headers,
+      body: method === 'HEAD' ? Buffer.alloc(0) : bytes,
+    };
+  }
+  // RFC 9110 的单段范围与后缀范围；媒体请求需用 206 才能在尚未播放处跳转。
+  const start = match[1]
+    ? Number(match[1])
+    : Math.max(0, bytes.length - Number(match[2]));
+  const end =
+    match[1] && match[2]
+      ? Math.min(Number(match[2]), bytes.length - 1)
+      : bytes.length - 1;
+  if (!Number.isSafeInteger(start) || start >= bytes.length || end < start) {
+    headers['content-range'] = `bytes */${bytes.length}`;
+    headers['content-length'] = '0';
+    return { status: 416, headers, body: Buffer.alloc(0) };
+  }
+  const body = bytes.subarray(start, end + 1);
+  headers['content-range'] = `bytes ${start}-${end}/${bytes.length}`;
+  headers['content-length'] = String(body.length);
+  return { status: 206, headers, body };
+};
+
 const uploads = new Map<string, { type: string; bytes: Buffer }>();
 
 export const saveUpload = (

@@ -1,8 +1,11 @@
-import { globSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, globSync } from 'node:fs';
 import { matchesGlob, relative } from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import previous from './baselines/issue-99.json' with { type: 'json' };
+import latest from './baselines/issue-100.json' with { type: 'json' };
 import baseline from './baselines/migration.json' with { type: 'json' };
 
 export const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -13,6 +16,7 @@ export const SUITES = {
   delivery: ['tests/delivery/**/*.test.ts'],
   browser: ['tests/browser/journeys/**/*.spec.ts'],
   a11y: ['tests/browser/accessibility/**/*.spec.ts'],
+  pwa: ['tests/delivery/pwa/*.spec.ts'],
 };
 export const selectTests = (
   files: string[],
@@ -32,6 +36,8 @@ export const selectTests = (
     ].map((name) => `tests/browser/journeys/${name}.spec.ts`),
     'tests/browser/accessibility/pages.spec.ts',
     'tests/browser/accessibility/controls.spec.ts',
+    'tests/delivery/pwa/offline.spec.ts',
+    'tests/delivery/pwa/update.spec.ts',
   ],
 ) => {
   const selected: Record<string, string[]> = {};
@@ -122,4 +128,68 @@ export const comparePrevious = (report: TestReport) => {
       throw new Error(`前置用例缺失或结果改变：${test.file} > ${test.name}`);
   }
   return { commit: previous.commit, preserved: expected.length };
+};
+
+export const REQUIRED_JOBS = ['verify', 'https', 'delivery', 'sdk', 'ci'];
+
+export const VALIDATION_PLAN = {
+  default: ['pnpm test --coverage'],
+  verify: [
+    'pnpm lint',
+    'pnpm fmt:check',
+    'pnpm check',
+    'pnpm check:endpoints',
+    'pnpm fixtures:index:check',
+    'pnpm sdk:report',
+    'pnpm smoke:mock',
+    'pnpm test:browser:faults',
+    'pnpm test --coverage',
+    'pnpm test:coverage:calibrate',
+  ],
+  https: ['pnpm test:environment:https'],
+  sdk: ['pnpm test:sdk'],
+  delivery: ['pnpm delivery:verify --sha <SHA>'],
+  registry: ['pnpm sdk:latest'],
+} as const;
+
+export const compareIssue100 = (report: TestReport) => {
+  for (const expected of latest.cases) {
+    const matches = report.testResults
+      .filter((file) => relative(ROOT, file.name) === expected.file)
+      .flatMap((file) =>
+        file.assertionResults.filter((test) => test.fullName === expected.name),
+      );
+    if (matches.length !== 1 || matches[0].status !== expected.status)
+      throw new Error(
+        `前置 #100 用例缺失或改变：${expected.file} > ${expected.name}`,
+      );
+  }
+  return { commit: latest.commit, preserved: latest.cases.length };
+};
+
+export const sourceSha = () => {
+  const supplied = process.env.CAMPANULA_TEST_SHA;
+  const sha = existsSync(`${ROOT}.git`)
+    ? execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      }).trim()
+    : supplied;
+  if (!sha || !/^[a-f\d]{40}$/.test(sha) || (supplied && supplied !== sha))
+    throw new Error('隔离测试副本必须接收宿主的完整 SHA，不能与 checkout 冲突');
+  return sha;
+};
+
+export const assertRunResult = (report: TestReport, complete: boolean) => {
+  const tests = report.testResults.flatMap((file) => file.assertionResults);
+  if (
+    !tests.some((test) => test.status === 'passed' || test.status === 'failed')
+  )
+    throw new Error('所选范围没有执行任何用例：检查文件路径和用例全名过滤条件');
+  const rejected = tests.find(
+    (test) =>
+      test.status === 'failed' || (complete && test.status !== 'passed'),
+  );
+  if (rejected)
+    throw new Error(`用例未通过：${rejected.fullName} (${rejected.status})`);
 };

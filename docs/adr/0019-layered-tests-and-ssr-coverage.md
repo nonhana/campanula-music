@@ -17,3 +17,5 @@
 环境隔离将 mock HTTP 放入独立子进程后，子进程也保存真实 V8 脚本与当次映射，同一轮合并。报告按运行独占目录；迁移前文件集合由路径表继续执行原 src 阈值，当前 src 与产品分区另列，原阈值数值不降低。
 
 2026-11-16：独立 Playwright Test / 配套 Chromium 与同 page axe 已落地，按 tests/suites.ts 选择，默认全量顺序运行 Vitest 与页面用例。临时服务和空 context 不依赖作者浏览器；真实 page 的 Cookie、IndexedDB/Cache Storage、HMR/新增路由和清理分别留证。诊断归 tests/tools/browser，移除旧 attach/profile 桥接。具体范围、首扫和人工边界见 #100 验收文档。
+
+2026-11-16：候选产物与 PWA 专项已落地。tests/suites.ts 的同份计划驱动本地/CI，ci 汇总全部必需 jobs，沿用 Vercel 已有门禁。候选记录 SHA/目标/版本/源码和文件摘要，缺失/空/串目标/泄漏失败；Node 实际入口与 Vercel 函数/路由/静态文件分别留证。Docker 只包装同 run 已验证的 Node 产物。SDK 候选的合同、App/HTTP 与真实页面操作独立于 registry latest 的联网计划。GLOSSARY 无新增概念。

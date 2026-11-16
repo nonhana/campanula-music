@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   packages: write
 
 jobs:
@@ -16,6 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: 等待同 SHA 完整 CI 并只读核验候选产物
+        run: pnpm release:check --sha "${{ github.sha }}" --wait --prepare-image
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       # 国内服务器、Apple Silicon 和普通 x86 服务器都能拉同一个镜像
       - uses: docker/setup-qemu-action@v4
@@ -34,7 +46,8 @@ jobs:
 
       - uses: docker/build-push-action@v7
         with:
-          context: .
+          context: .reports/release-image
+          file: tests/delivery/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

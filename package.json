@@ -21,7 +21,7 @@
     "fixtures:index:check": "tsx tests/tools/fixture-index.mts --check",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "lint": "eslint --cache && tsx scripts/check-design-tokens.mts",
+    "lint": "eslint --cache && tsx tests/tools/check-design-tokens.mts",
     "lint:fix": "eslint --fix",
     "smoke:mock": "tsx tests/tools/browser.mts journeys/save.spec.ts",
     "test": "tsx tests/tools/run.mts all",
@@ -42,7 +42,14 @@
     "test:a11y": "tsx tests/tools/run.mts a11y",
     "test:browser:install": "playwright install chromium",
     "test:browser:faults": "tsx tests/tools/browser-faults.mts",
-    "browser:trace": "playwright show-trace"
+    "browser:trace": "playwright show-trace",
+    "build:delivery": "tsx tests/tools/build-candidate.mts",
+    "test:delivery": "tsx tests/tools/delivery.mts",
+    "test:pwa": "tsx tests/tools/pwa.mts",
+    "delivery:verify": "tsx tests/tools/delivery-verify.mts",
+    "release:check": "tsx tests/tools/release-check.mts",
+    "sdk:latest": "tsx tests/tools/sdk-latest.mts",
+    "test:ci": "tsx tests/tools/ci.mts"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:lint",
@@ -97,7 +104,7 @@
   },
   "lint-staged": {
     "*": "eslint --fix --no-warn-ignored",
-    "src/**/*.{svelte,ts}": "tsx scripts/check-design-tokens.mts",
+    "src/**/*.{svelte,ts}": "tsx tests/tools/check-design-tokens.mts",
     "tests/fixtures/**/*.{json,gz}": "tsx tests/tools/fixture-identity.mts"
   }
 }

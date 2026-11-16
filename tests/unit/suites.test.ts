@@ -156,3 +156,39 @@ it('浏览器 CLI 的空选择明确失败', async () => {
     ),
   ).rejects.toMatchObject({ code: 1 });
 });
+
+it('前置 #100 新增用例也必须按原结果逐项保留', async () => {
+  const { compareIssue100 } = await import('../suites.ts');
+  const baseline = (
+    await import('../baselines/issue-100.json', { with: { type: 'json' } })
+  ).default;
+  const report = {
+    testResults: baseline.cases.map((item) => ({
+      name: `${ROOT}${item.file}`,
+      assertionResults: [{ fullName: item.name, status: item.status }],
+    })),
+  };
+  expect(compareIssue100(report).preserved).toBe(4);
+  expect(() => compareIssue100({ testResults: [] })).toThrow();
+  report.testResults[0].assertionResults[0].status = 'skipped';
+  expect(() => compareIssue100(report)).toThrow();
+});
+
+it('新增用例被跳过也阻断完整回归，单用例过滤仍允许未选中的用例', async () => {
+  const { assertRunResult } = await import('../suites.ts');
+  const report = {
+    testResults: [
+      {
+        name: 'new.test.ts',
+        assertionResults: [
+          { fullName: '已经执行', status: 'passed' },
+          { fullName: '新增的用例', status: 'pending' },
+        ],
+      },
+    ],
+  };
+  expect(() => assertRunResult(report, true)).toThrow(/新增的用例/);
+  expect(() => assertRunResult(report, false)).not.toThrow();
+  report.testResults[0].assertionResults[0].status = 'pending';
+  expect(() => assertRunResult(report, false)).toThrow(/没有执行/);
+});

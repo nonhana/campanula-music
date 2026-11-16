@@ -1,4 +1,4 @@
-import { audioWav } from '../../_kit/mock/assets.ts';
+import { audioResponse, audioWav } from '../../_kit/mock/assets.ts';
 import {
   hidden,
   install,
@@ -16,7 +16,13 @@ test('独立截图、返回恢复、键盘、逐帧、慢放与抽屉诊断', as
   page,
 }, info) => {
   await page.route('**/mock-assets/audio/**', (route) =>
-    route.fulfill({ body: audioWav(3433267939, 30), contentType: 'audio/wav' }),
+    route.fulfill(
+      audioResponse(
+        audioWav(3433267939, 30),
+        route.request().method(),
+        route.request().headers().range,
+      ),
+    ),
   );
   await install(page, { freshImages: true });
   await login(page, '/playlists');

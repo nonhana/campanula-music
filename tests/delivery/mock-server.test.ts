@@ -84,13 +84,47 @@ describe('mock 开发服务器', () => {
     };
     expect(download.downloadable).toBe(true);
     const audio = await api(download.url);
+    expect(audio.status).toBe(200);
     expect(audio.headers.get('content-type')).toContain('audio/wav');
     const bytes = new Uint8Array(await audio.arrayBuffer());
     expect(bytes.length).toBe(download.size);
     expect(new TextDecoder().decode(bytes.subarray(0, 4))).toBe('RIFF');
-    const range = await api(download.url, { headers: { range: 'bytes=0-43' } });
+    const range = await api(download.url, {
+      headers: { range: 'bytes=0-43,44-87' },
+    });
     expect(range.status).toBe(200);
     expect(new Uint8Array(await range.arrayBuffer())).toEqual(bytes);
+    for (const [request, expected, start, end] of [
+      ['bytes=0-43', 206, 0, 43],
+      ['bytes=44-', 206, 44, bytes.length - 1],
+      ['bytes=-4', 206, bytes.length - 4, bytes.length - 1],
+      ['bytes=999999-', 416, 0, -1],
+      ['bytes=44-43', 416, 0, -1],
+      ['bytes=-0', 416, 0, -1],
+    ] as const) {
+      const part = await api(download.url, { headers: { range: request } });
+      expect(part.status).toBe(expected);
+      expect(part.headers.get('content-range')).toBe(
+        expected === 416
+          ? `bytes */${bytes.length}`
+          : `bytes ${start}-${end}/${bytes.length}`,
+      );
+      expect(new Uint8Array(await part.arrayBuffer())).toEqual(
+        bytes.slice(start, end + 1),
+      );
+    }
+    for (const method of ['HEAD', 'POST']) {
+      const head = await api(download.url, {
+        method,
+        headers: { range: 'bytes=0-43' },
+      });
+      expect(head.status).toBe(200);
+      expect(head.headers.get('content-length')).toBe(String(bytes.length));
+      expect(head.headers.get('content-range')).toBeNull();
+      expect(new Uint8Array(await head.arrayBuffer())).toEqual(
+        method === 'HEAD' ? new Uint8Array() : bytes,
+      );
+    }
   });
 
   it('写操作刷新后还在，reset 回种子', async () => {

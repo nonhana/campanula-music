@@ -15,8 +15,10 @@ import process from 'node:process';
 import { execa } from 'execa';
 
 import { createWorkspace } from '../_kit/workspace.ts';
+import { sourceSha } from '../suites.ts';
 
 const ROOT = join(import.meta.dirname, '../..');
+const sha = sourceSha();
 const candidateAt = process.argv.indexOf('--candidate');
 const candidate = await realpath(
   candidateAt < 0
@@ -74,12 +76,19 @@ try {
       'tests/behavior/playlist-tracks.test.ts',
       'tests/behavior/search.test.ts',
     ],
+    [
+      'pnpm',
+      'test:browser',
+      'tests/browser/journeys/save.spec.ts',
+      '--project',
+      'desktop',
+    ],
   ];
   for (const [command, ...args] of commands) {
     const result = await execa(command, args, {
       cwd: workspace,
       reject: false,
-      env: { CI: '1' },
+      env: { CI: '1', CAMPANULA_TEST_SHA: sha },
     });
     results.push({
       command: [command, ...args],
@@ -143,11 +152,11 @@ try {
     if (error.code !== 'ENOENT') throw error;
   });
 } finally {
-  await writeFile(
-    join(output, 'result.json'),
-    `${JSON.stringify({ sdk: pkg.version, candidate, results, differences }, null, 2)}\n`,
-  );
   await close?.();
   await rm(workspace, { recursive: true, force: true });
+  await writeFile(
+    join(output, 'result.json'),
+    `${JSON.stringify({ sdk: pkg.version, candidate, results, differences, sha, status: results.length === 6 && results.every((step) => step.exitCode === 0) ? 'passed' : 'failed', cleaned: true }, null, 2)}\n`,
+  );
   console.log(`离线候选 SDK 报告：${output}`);
 }
