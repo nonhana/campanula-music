@@ -102,7 +102,13 @@ export const measureContrast = async (page: Page, selectors: string[]) => {
           probe.style.textContent = `[data-contrast-text] { color:${color}!important;-webkit-text-fill-color:${color}!important;text-shadow:none!important;text-decoration-color:transparent!important; }`;
           if (bare)
             for (const { node } of probe.ancestors) {
-              node.style.setProperty('mask-image', 'none', 'important');
+              // Keep the mask layer so Chromium rasterizes both reference glyphs alike.
+              if (getComputedStyle(node).maskImage !== 'none')
+                node.style.setProperty(
+                  'mask',
+                  'linear-gradient(white, white)',
+                  'important',
+                );
               node.style.setProperty('opacity', '1', 'important');
             }
         },
