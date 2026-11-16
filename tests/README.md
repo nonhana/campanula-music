@@ -23,7 +23,7 @@ pnpm test
 | `delivery/mock-server.test.ts` | 实际 HTTP 请求 → mock 装配后的响应                              | 既有开发环境自检，随默认套件运行；不证明 Node/Vercel 候选产物                         |
 | `_kit/`、`fixtures/`、`tools/` | 设备、时钟、严格 SDK 替身；有来源的录制；启动和诊断             | 共用测试基础设施，产品覆盖率单独计算                                                  |
 
-`tests/suites.ts` 是 Vitest、runner 和 CI 共用的文件选择。它检查每个必需套件非空、每个发现的文件恰好归属一层、迁移基线中的必需文件都存在。新增测试放进对应目录即可；根目录漏放、目录重叠或删掉必需文件会直接失败。单用例时限为 15 秒，容纳 V8 精准采集下真实 HTTP 和本机保存的开销；业务等待仍用受控时钟验证。Vitest 自身及每个 World 都有独占临时工作根，`$app`、env、Kit 和缓存不再写回产品根。文件仍串行运行以保持受控时钟和 V8 采集口径；测试、类型检查和构建也继续顺序运行。
+`tests/suites.ts` 是 Vitest、runner 和 CI 共用的文件选择。它检查每个必需套件非空、每个发现的文件恰好归属一层、迁移基线中的必需文件都存在。新增测试放进对应目录即可；根目录漏放、目录重叠或删掉必需文件会直接失败。单用例时限为 15 秒，容纳 V8 精准采集下真实 HTTP 和本机保存的开销；业务等待仍用受控时钟验证。Vitest 自身及每个 World 都有独占临时工作根，`$app`、env、Kit 和缓存不再写回产品根。每个 worker 内串行运行文件。日常 CI 的独立 runner 可同时做类型检查、运行不同的测试文件和构建候选。
 
 ## 迁移清单与回归结果
 
@@ -38,7 +38,7 @@ pnpm test:coverage
 pnpm test:coverage:calibrate
 ```
 
-第一个命令运行同一份默认回归并核对迁移，产物在 `.reports/runs/<本次运行>/coverage/`；第二个只跑“未登录打开 App”的既有行为，用独立目录 本次校准运行的 `coverage/` 校准。它要求账号 `GET` 处理函数实际执行、未请求的歌单改名路由计数为零，任一不符就失败。CI 顺序运行这两个命令并上传本次 SHA 的报告。
+第一个命令运行同一份默认回归并核对迁移，产物在 `.reports/runs/<本次运行>/coverage/`；第二个只跑“未登录打开 App”的既有行为，用独立目录 本次校准运行的 `coverage/` 校准。它要求账号 `GET` 处理函数实际执行、未请求的歌单改名路由计数为零，任一不符就失败。完整验收与覆盖率专项保留这两个校验及原阈值。
 
 - `partitions.json`：完整 `src`、扣除 mock / 开发页的产品、App、服务端、API 路由、Svelte UI、测试基建分别列文件数、命中数和分母。
 - `summary.md`：各分区行与分支的命中数、分母和百分比。
@@ -85,7 +85,7 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 
 ## SDK 合同与场景
 
-`pnpm sdk:report` 从生产 SDK 值导入生成 `.reports/sdk/contract.json`，列 action、辅助函数、浏览器能力、绑定、关键输入、样本与失败缺口。`pnpm test:sdk [--candidate /本地候选包]` 在公开文件副本离线重跑合同、类型、代表行为和真实保存页面跨层操作；维护步骤见 [录制与维护](fixtures/netease/README.md#录制与维护)。常规 CI 也检查索引并保存合同报告。
+`pnpm sdk:report` 从生产 SDK 值导入生成 `.reports/sdk/contract.json`，列 action、辅助函数、浏览器能力、绑定、关键输入、样本与失败缺口。`pnpm test:sdk [--candidate /本地候选包]` 在公开文件副本离线重跑合同、类型、代表行为和真实保存页面跨层操作；维护步骤见 [录制与维护](fixtures/netease/README.md#录制与维护)。日常 CI 检查索引，SDK 专项与完整验收保存合同报告。
 
 默认 `small` 为从现有脱敏样本组合的构造曲库：我喜欢的音乐、自建 poems、4 首可播放歌单，共 6 首歌；统一关联测试专辑 3149073、测试歌手 33927412。歌单形状来自 sync/before，歌曲来自 liked-page 与 album-artist；专辑/歌手形状来自 album-artist 的 008/004/012，关系与数量为构造，媒体由 assets.ts 可再生。歌词复用 playback/lyric_new.all-forms.json，不代表这些歌的真实歌词。运行时写入归当前实例，reset 还原种子。`large`、`after`、`deleted` 保留 4,984 首及历史差异，用于规模、分页，不承诺所有收藏导航完整。
 
@@ -105,7 +105,18 @@ Linux CI 先安装配套浏览器和系统库，再用 `sh tests/tools/offline.s
 
 ## 候选产物、生产 PWA 与发布
 
-本地和 CI 的完整清单是 tests/suites.ts 的 VALIDATION_PLAN：`pnpm test:ci verify|https|sdk|delivery`。verify 保留 lint、格式、类型、端点、索引/SDK、smoke、故障、默认 coverage 与 SSR 校准，delivery 顺序构建与验证独立 Node/Vercel/下一版本，并运行真实生产 PWA。各阶段报告在 `.reports/plans/`，含 SHA、版本、非空选择和每步退出码。默认回归仍无需生产构建；pwa 是接收明确候选的专项，不混入 dev browser。
+日常门禁和完整验收分别使用 `.github/workflows/ci.yml` 与 `.github/workflows/acceptance.yml`。本地查看某个基准到 HEAD 的计划可运行 `node tests/tools/daily-plan.mts <完整基准SHA>`。每个分片用 `pnpm exec tsx tests/tools/daily-run.mts '<计划中该项的 JSON>'` 重放。
+
+| 时机           | 执行内容                                                                                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 每次推送或 PR  | static 做 lint、格式、类型、端点、录制索引和同 SHA 的 Vercel 候选构建／扫描。所有 unit、behavior、contract 文件按历史用时分给五个独立 runner。桌面真实保存、键盘操作和手机播放器在另外两台 runner 上验证。 |
+| 改动影响专项   | UI 变更补对应旅程及页面扫描，组件样式和公共令牌补双视口对比度并汇总规定状态。SDK／录制、开发环境、离线和构建改动分别补候选 SDK、环境与双 HTTPS、生产 PWA 及双目标产物。改动 CI 或工具链时全部专项执行。    |
+| 开发和工具验收 | 用 `pnpm test:browser:faults` 验证故意破坏控件能被检出。改诊断工具时执行逐帧、截图、重试与清理专项。改覆盖率采集时执行完整 Vitest／SSR 覆盖率及校准。                                                      |
+| 完整验收与发布 | Full acceptance 执行全量 Vitest、桌面和手机旅程、axe、覆盖率、双 HTTPS、SDK、Node／Vercel 和两版本生产 PWA。Docker 在标签和手动发布时调用这份工作流，按返回的 artifact ID 下载并核对 SHA-256 后准备镜像。  |
+
+推送按当前候选与本分支最近成功且仍是祖先的 CI 提交比较；PR 比较目标基准和受测合并提交。查不到可靠基准时会执行全部专项。`ci` 汇总本次计划的报告，拒绝缺失、重复、失败或错误 SHA。浏览器和 Vitest 分片核对枚举与实际执行的用例。失败的日志与 trace 在对应 job 的附件里。
+
+Full acceptance 支持手动、每日定时及显式推送 `acceptance/**` 的分支。GitHub 从默认分支读取定时配置；工作流只存在于开发分支时，可推送同一 SHA 到验收分支来验证。
 
 ```sh
 pnpm delivery:verify --sha "$(git rev-parse HEAD)"
@@ -120,7 +131,7 @@ pnpm sdk:latest
 
 生产 PWA 显式允许 SW，两个视口都测安装/控制、真正离线关闭重开、缓存账号/下载及 Blob 音频、联网恢复、两旧页等待和关完后的激活。产品 Node 在自有回环服务运行；测试代理只在产品进程外拒绝会连接真实网易云的 API，实际匿名 account API 仍经过生产入口。请求拒绝证据与 setOffline 的真实离线分别记录，不把 503 当断网。`.reports/pwa/run-*/` 包含 JSON/HTML、trace、截图、缓存键和进程清理；候选及构建报告在 `.reports/candidates/`，HTTP 检查在 `.reports/delivery/`。测试规则、敏感性和人工边界见 [#101 验收](../docs/acceptance/issue-101.md)。
 
-Vercel 已有 production 的 ci Deployment Check；ci 现在聚合 verify、https、sdk、delivery，必要项失败/取消/缺项/跳过均拒绝。Docker tag/manual 同样等待最新同 SHA 的完整 CI 和产物/PWA 证据，release:check 仅做只读 dry-run。网络查询 latest 的独立 workflow 在默认分支有文件时才会按计划执行；当前 rewrite/v1 只提供可直接运行的入口，不宣称 master 已启用 schedule。
+Vercel production 继续等待日常工作流的 `ci`。完整验收的本地入口是 `pnpm test:ci verify|https|sdk|delivery`。独立完整验收成功后，可用 `pnpm release:check --sha <完整SHA>` 对该运行做只读复核。
 
 ## 对比度专项
 

@@ -13,7 +13,14 @@ permissions:
   packages: write
 
 jobs:
+  validation:
+    uses: ./.github/workflows/acceptance.yml
+    permissions:
+      contents: read
+      actions: read
+
   image:
+    needs: validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -24,10 +31,14 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: 等待同 SHA 完整 CI 并只读核验候选产物
-        run: pnpm release:check --sha "${{ github.sha }}" --wait --prepare-image
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.validation.outputs.candidate_id }}
+          path: .reports/docker-artifact
+      - name: 重新核验本次完整验收产物
+        run: pnpm release:check --sha "${{ github.sha }}" --artifact .reports/docker-artifact --sha256 "$CANDIDATE_SHA256" --prepare-image
         env:
-          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA256: ${{ needs.validation.outputs.candidate_sha256 }}
 
       # 国内服务器、Apple Silicon 和普通 x86 服务器都能拉同一个镜像
       - uses: docker/setup-qemu-action@v4

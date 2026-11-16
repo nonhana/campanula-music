@@ -19,3 +19,5 @@
 2026-11-16：独立 Playwright Test / 配套 Chromium 与同 page axe 已落地，按 tests/suites.ts 选择，默认全量顺序运行 Vitest 与页面用例。临时服务和空 context 不依赖作者浏览器；真实 page 的 Cookie、IndexedDB/Cache Storage、HMR/新增路由和清理分别留证。诊断归 tests/tools/browser，移除旧 attach/profile 桥接。具体范围、首扫和人工边界见 #100 验收文档。
 
 2026-11-16：候选产物与 PWA 专项已落地。tests/suites.ts 的同份计划驱动本地/CI，ci 汇总全部必需 jobs，沿用 Vercel 已有门禁。候选记录 SHA/目标/版本/源码和文件摘要，缺失/空/串目标/泄漏失败；Node 实际入口与 Vercel 函数/路由/静态文件分别留证。Docker 只包装同 run 已验证的 Node 产物。SDK 候选的合同、App/HTTP 与真实页面操作独立于 registry latest 的联网计划。GLOSSARY 无新增概念。
+
+日常推送用五个独立 runner 分摊完整 unit、behavior、contract，保留关键真实控件和 Vercel 候选检查，专项按改动选择。完整覆盖率、双视口全量浏览器及双目标候选归完整验收；Docker 发布直接依赖其结果和归档摘要。每个 runner 内继续保持既有隔离与时钟。范围、重放和报告见 tests/README.md。

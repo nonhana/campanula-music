@@ -8,7 +8,7 @@ import { discoverTests, ROOT, VALIDATION_PLAN } from '../suites.ts';
 
 const name = process.argv[2];
 if (!(name in VALIDATION_PLAN) || name === 'default')
-  throw new Error('选择 verify、https、sdk 或 delivery');
+  throw new Error(`未知专项：${name}`);
 const plan = VALIDATION_PLAN[name as keyof typeof VALIDATION_PLAN];
 const sha = (await execa('git', ['rev-parse', 'HEAD'], { cwd: ROOT })).stdout;
 await mkdir(join(ROOT, '.reports/plans'), { recursive: true });

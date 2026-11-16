@@ -36,6 +36,7 @@ export default defineConfig(async () => {
       testTimeout: 15_000,
       // 保留串行的受控时钟与覆盖率采集；隔离由独占工作根和 worker 保证。
       fileParallelism: false,
+      allowOnly: false,
       coverage: {
         provider: 'custom',
         allowExternal: true,

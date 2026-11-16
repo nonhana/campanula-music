@@ -13,16 +13,11 @@ export interface ReleaseJob {
   steps: { name: string; status: string; conclusion: string | null }[];
 }
 
-export const acceptRelease = (
-  sha: string,
-  run: ReleaseRun,
+export const requireSuccessfulJobs = (
+  required: string[],
   jobs: ReleaseJob[],
 ) => {
-  if (!/^[a-f\d]{40}$/.test(sha) || run.head_sha !== sha)
-    throw new Error('发布候选 SHA 不符');
-  if (run.status !== 'completed' || run.conclusion !== 'success')
-    throw new Error(`候选 CI 未成功：${run.status}/${run.conclusion}`);
-  for (const name of REQUIRED_JOBS) {
+  for (const name of required) {
     const matches = jobs.filter((job) => job.name === name);
     if (matches.length !== 1) throw new Error(`必要检查 ${name} 缺失或重复`);
     const job = matches[0];
@@ -36,7 +31,23 @@ export const acceptRelease = (
       if (step.status !== 'completed' || step.conclusion !== 'success')
         throw new Error(`${name} / ${step.name} 未成功：${step.conclusion}`);
   }
-  return { sha, jobs: REQUIRED_JOBS, attempt: run.run_attempt };
+};
+
+export const acceptRelease = (
+  sha: string,
+  run: ReleaseRun,
+  jobs: ReleaseJob[],
+  legacy = false,
+) => {
+  if (!/^[a-f\d]{40}$/.test(sha) || run.head_sha !== sha)
+    throw new Error('发布候选 SHA 不符');
+  if (run.status !== 'completed' || run.conclusion !== 'success')
+    throw new Error(`候选 CI 未成功：${run.status}/${run.conclusion}`);
+  const required = REQUIRED_JOBS.map((name) =>
+    legacy && name === 'acceptance' ? 'ci' : name,
+  );
+  requireSuccessfulJobs(required, jobs);
+  return { sha, jobs: required, attempt: run.run_attempt };
 };
 
 export const latestCandidateRun = <T extends ReleaseRun & { id: number }>(

@@ -15,9 +15,10 @@ import {
   sourceSha,
 } from '../suites.ts';
 
+const vitestOnly = process.argv.includes('--vitest-only');
 const [suite = 'all', ...args] = process.argv
   .slice(2)
-  .filter((arg) => arg !== '--');
+  .filter((arg) => arg !== '--' && arg !== '--vitest-only');
 const suites = discoverTests();
 const sha = sourceSha();
 if (suite !== 'all' && !(suite in suites))
@@ -75,6 +76,11 @@ const publish = async (status: string) => {
     2,
   );
   await writeFile(join(runRoot, 'run.json'), manifest);
+  if (process.env.CAMPANULA_PARENT_RUN)
+    await writeFile(
+      join(process.env.CAMPANULA_PARENT_RUN, 'vitest.json'),
+      manifest,
+    );
   const temporary = `${runRoot}.json`;
   await writeFile(temporary, manifest);
   await rename(temporary, join(ROOT, '.reports', `latest-${kind}.json`));
@@ -158,12 +164,12 @@ try {
     );
   }
 
-  status = full ? 'running browser' : 'passed';
+  status = full && !vitestOnly ? 'running browser' : 'passed';
 } finally {
   await publish(status);
 }
 
-if (full) {
+if (full && !vitestOnly) {
   await publish('running browser');
   const child = spawn(
     process.execPath,

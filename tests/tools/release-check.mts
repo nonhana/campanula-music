@@ -1,4 +1,5 @@
-import { globSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { createReadStream, globSync } from 'node:fs';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -15,6 +16,8 @@ const { values } = parseArgs({
   options: {
     sha: { type: 'string' },
     wait: { type: 'boolean', default: false },
+    artifact: { type: 'string' },
+    sha256: { type: 'string' },
     'prepare-image': { type: 'boolean', default: false },
   },
 });
@@ -26,13 +29,17 @@ const workspace = join(report, 'candidate');
 const repo = 'nonhana/campanula-music';
 const api = async (path: string) =>
   JSON.parse((await execa('gh', ['api', path])).stdout);
-let evidence: unknown;
-try {
+const fetchAcceptance = async (sha: string, artifact: string) => {
+  const workflows = (await api(
+    `repos/${repo}/contents/.github/workflows?ref=${sha}`,
+  )) as { name: string }[];
+  const legacy = !workflows.some((file) => file.name === 'acceptance.yml');
+  const workflow = legacy ? 'ci.yml' : 'acceptance.yml';
   const deadline = Date.now() + (values.wait ? 80 * 60_000 : 0);
   let run: ReleaseRun & { id: number; html_url: string };
   while (true) {
     const response = await api(
-      `repos/${repo}/actions/workflows/ci.yml/runs?head_sha=${sha}&per_page=100`,
+      `repos/${repo}/actions/workflows/${workflow}/runs?head_sha=${sha}&per_page=100`,
     );
     const runs = response.workflow_runs as (typeof run)[];
     const newest = latestCandidateRun(sha, runs);
@@ -53,8 +60,7 @@ try {
   const jobs = (JSON.parse(stdout) as { jobs: ReleaseJob[] }[]).flatMap(
     (page) => page.jobs,
   );
-  const accepted = acceptRelease(sha, run, jobs);
-  const artifact = join(report, 'artifact');
+  const accepted = acceptRelease(sha, run, jobs, legacy);
   await execa('gh', [
     'run',
     'download',
@@ -66,9 +72,23 @@ try {
     '--dir',
     artifact,
   ]);
+  return { ...accepted, run: run.html_url };
+};
+let evidence: unknown;
+try {
+  const artifact = values.artifact ?? join(report, 'artifact');
+  const accepted = values.artifact
+    ? { sha, artifact }
+    : await fetchAcceptance(sha, artifact);
   const archives = globSync('**/*.tar.gz', { cwd: artifact });
   if (archives.length !== 1) throw new Error('候选产物包缺失或重复');
   const archive = join(artifact, archives[0]);
+  if (values.artifact) {
+    const hash = createHash('sha256');
+    for await (const chunk of createReadStream(archive)) hash.update(chunk);
+    if (hash.digest('hex') !== values.sha256)
+      throw new Error('候选归档 SHA-256 不符');
+  }
   const entries = (await execa('tar', ['-tzf', archive])).stdout.split('\n');
   if (
     entries.some(
@@ -123,7 +143,7 @@ try {
       JSON.stringify(candidates[0]),
     );
   }
-  evidence = { ...accepted, run: run.html_url, candidates, verification };
+  evidence = { ...accepted, candidates, verification };
   console.log(`只读发布判定通过：${sha}（未发布镜像/标签/域名）`);
 } finally {
   await rm(workspace, { recursive: true, force: true });

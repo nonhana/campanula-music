@@ -1,0 +1,171 @@
+name: Full acceptance
+
+on:
+  workflow_call:
+    outputs:
+      candidate_id:
+        description: Verified candidate artifact from this run
+        value: ${{ jobs.delivery.outputs.candidate_id }}
+      candidate_sha256:
+        description: SHA-256 of the verified candidate archive
+        value: ${{ jobs.delivery.outputs.candidate_sha256 }}
+  workflow_dispatch:
+  schedule:
+    - cron: '43 18 * * *'
+  push:
+    branches: ['acceptance/**']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v6
+        with:
+          path: .eslintcache
+          key: eslint-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: 准备配套 Chromium 与系统库
+        run: pnpm exec playwright install --with-deps chromium
+      - name: 本地同份默认与专项清单
+        run: |
+          python3 --version
+          sh tests/tools/offline.sh pnpm test:ci verify
+      - name: 测试与覆盖率报告
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tests-${{ github.sha }}
+          path: |
+            .reports/runs/
+            .reports/latest-*.json
+            .reports/environments/
+            .reports/sdk/
+            .reports/browser/
+            .reports/browser-faults/
+            .reports/offline/
+            .reports/plans/
+            tests/baselines/a11y-first-observations.json.gz
+          if-no-files-found: error
+          include-hidden-files: true
+
+  https:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: 准备专项 mkcert（不安装 CA）
+        run: |
+          mkdir -p "$RUNNER_TEMP/campanula-tools"
+          curl --fail --location --retry 3 https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 -o "$RUNNER_TEMP/campanula-tools/mkcert"
+          chmod +x "$RUNNER_TEMP/campanula-tools/mkcert"
+          echo "$RUNNER_TEMP/campanula-tools" >> "$GITHUB_PATH"
+      - name: 双 HTTPS、Cookie 与 WSS/HMR
+        run: pnpm test:ci https
+      - name: HTTPS 专项报告
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: https-${{ github.sha }}
+          path: |
+            .reports/https/
+            .reports/environments/
+            .reports/plans/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: 候选 SDK 合同、行为和页面跨层
+        run: sh tests/tools/offline.sh pnpm test:ci sdk
+      - name: SDK 候选报告
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk-${{ github.sha }}
+          path: |
+            .reports/sdk-upgrade-*/
+            .reports/plans/
+            .reports/offline/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  delivery:
+    outputs:
+      candidate_id: ${{ steps.candidates.outputs.artifact-id }}
+      candidate_sha256: ${{ steps.archive.outputs.sha256 }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: 同 SHA 双目标、生产 PWA 与版本交接
+        run: sh tests/tools/offline.sh pnpm test:ci delivery
+      - id: archive
+        name: 核验即将归档的候选并记录摘要
+        run: |
+          set -- .reports/candidates/run-*.tar.gz
+          test "$#" -eq 1
+          sha256=$(sha256sum "$1" | cut -d' ' -f1)
+          pnpm release:check --sha "$GITHUB_SHA" --artifact .reports/candidates --sha256 "$sha256"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+      - name: 候选产物与交付报告
+        id: candidates
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidates-${{ github.sha }}
+          path: |
+            .reports/candidates/*.tar.gz
+            .reports/candidates/run-*/verification.json
+            .reports/delivery/
+            .reports/pwa/
+            .reports/plans/
+            .reports/offline/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  acceptance:
+    permissions:
+      contents: read
+      actions: read
+    if: always()
+    needs: [verify, https, sdk, delivery]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: 拒绝缺失、失败、取消或跳过
+        run: node tests/tools/ci-gate.mts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CAMPANULA_CI_NEEDS: ${{ toJSON(needs) }}

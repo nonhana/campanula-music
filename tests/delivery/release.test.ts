@@ -9,17 +9,19 @@ const run = {
   conclusion: 'success',
   run_attempt: 2,
 };
-const jobs = ['verify', 'https', 'delivery', 'sdk', 'ci'].map((name) => ({
-  name,
-  status: 'completed',
-  conclusion: 'success',
-  steps: [{ name: '实际执行', status: 'completed', conclusion: 'success' }],
-}));
+const jobs = ['verify', 'https', 'delivery', 'sdk', 'acceptance'].map(
+  (name) => ({
+    name,
+    status: 'completed',
+    conclusion: 'success',
+    steps: [{ name: '实际执行', status: 'completed', conclusion: 'success' }],
+  }),
+);
 
 it('发布只接受候选 SHA 的全部必要 job 和步骤', () => {
   expect(acceptRelease(sha, run, jobs)).toEqual({
     sha,
-    jobs: ['verify', 'https', 'delivery', 'sdk', 'ci'],
+    jobs: ['verify', 'https', 'delivery', 'sdk', 'acceptance'],
     attempt: 2,
   });
   expect(() => acceptRelease('b'.repeat(40), run, jobs)).toThrow(/SHA/);
@@ -78,4 +80,12 @@ it('后一次失败、取消或运行中的 CI 不能借同 SHA 的旧绿灯放�
     expect(selected).toEqual(newer);
     expect(() => acceptRelease(sha, selected!, jobs)).toThrow();
   }
+});
+
+it('旧提交只能凭当时的完整 CI 复核，新提交不能用日常 ci 冒充完整验收', () => {
+  const old = jobs.map((job) =>
+    job.name === 'acceptance' ? { ...job, name: 'ci' } : job,
+  );
+  expect(acceptRelease(sha, run, old, true).jobs).toContain('ci');
+  expect(() => acceptRelease(sha, run, old)).toThrow('acceptance');
 });

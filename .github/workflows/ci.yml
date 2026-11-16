@@ -2,14 +2,37 @@ name: CI
 
 on:
   push:
+    branches-ignore: ['acceptance/**']
   pull_request:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  verify:
+  plan:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - id: select
+        run: node tests/tools/daily-plan.mts
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  checks:
+    name: ${{ matrix.name }}
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -18,129 +41,57 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: actions/cache@v6
+      - if: matrix.name == 'static'
+        uses: actions/cache@v6
         with:
           path: .eslintcache
           key: eslint-${{ hashFiles('pnpm-lock.yaml') }}
-      - name: 准备配套 Chromium 与系统库
+      - if: matrix.chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: 本地同份默认与专项清单
-        run: |
-          python3 --version
-          sh tests/tools/offline.sh pnpm test:ci verify
-      - name: 测试与覆盖率报告
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: tests-${{ github.sha }}
-          path: |
-            .reports/runs/
-            .reports/latest-*.json
-            .reports/environments/
-            .reports/sdk/
-            .reports/browser/
-            .reports/browser-faults/
-            .reports/offline/
-            .reports/plans/
-            tests/baselines/a11y-first-observations.json.gz
-          if-no-files-found: error
-          include-hidden-files: true
-
-  https:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: 准备专项 mkcert（不安装 CA）
+      - if: matrix.name == 'environment'
         run: |
           mkdir -p "$RUNNER_TEMP/campanula-tools"
-          curl --fail --location --retry 3 https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 -o "$RUNNER_TEMP/campanula-tools/mkcert"
+          curl -fsSL --retry 3 https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 -o "$RUNNER_TEMP/campanula-tools/mkcert"
           chmod +x "$RUNNER_TEMP/campanula-tools/mkcert"
           echo "$RUNNER_TEMP/campanula-tools" >> "$GITHUB_PATH"
-      - name: 双 HTTPS、Cookie 与 WSS/HMR
-        run: pnpm test:ci https
-      - name: HTTPS 专项报告
-        if: always()
+      - name: 运行本分片
+        run: sh tests/tools/offline.sh pnpm exec tsx tests/tools/daily-run.mts "$CAMPANULA_CI_LANE"
+        env:
+          CAMPANULA_CI_LANE: ${{ toJSON(matrix) }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: receipt-${{ matrix.name }}
+          path: .reports/daily/${{ matrix.name }}.json
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+      - if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: https-${{ github.sha }}
+          name: failure-${{ matrix.name }}-${{ github.run_attempt }}
           path: |
-            .reports/https/
-            .reports/environments/
-            .reports/plans/
-          if-no-files-found: error
+            .reports/
+            !.reports/candidates/
+            !.reports/daily/*/vercel/output/
           include-hidden-files: true
-
-  sdk:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - name: 候选 SDK 合同、行为和页面跨层
-        run: sh tests/tools/offline.sh pnpm test:ci sdk
-      - name: SDK 候选报告
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: sdk-${{ github.sha }}
-          path: |
-            .reports/sdk-upgrade-*/
-            .reports/plans/
-            .reports/offline/
-          if-no-files-found: error
-          include-hidden-files: true
-
-  delivery:
-    needs: verify
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - name: 同 SHA 双目标、生产 PWA 与版本交接
-        run: sh tests/tools/offline.sh pnpm test:ci delivery
-      - name: 候选产物与交付报告
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: candidates-${{ github.sha }}
-          path: |
-            .reports/candidates/*.tar.gz
-            .reports/candidates/run-*/verification.json
-            .reports/delivery/
-            .reports/pwa/
-            .reports/plans/
-            .reports/offline/
-          if-no-files-found: error
-          include-hidden-files: true
-
-  # Vercel 已配置等待 ci；保持名称并聚合全部必要 job。
+          if-no-files-found: warn
   ci:
     if: always()
-    needs: [verify, https, sdk, delivery]
+    needs: [plan, checks]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: 拒绝缺失、失败、取消或跳过
-        run: node tests/tools/ci-gate.mts
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: receipt-*
+          merge-multiple: true
+          path: .reports/receipts
+      - name: 核对本次计划、提交、分片和对比度状态
+        run: node tests/tools/daily-gate.mts .reports/receipts
         env:
-          CAMPANULA_CI_NEEDS: ${{ toJSON(needs) }}
+          PLAN_RESULT: ${{ needs.plan.result }}
+          LANES_RESULT: ${{ needs.checks.result }}
+          DAILY_MATRIX: ${{ needs.plan.outputs.matrix }}

@@ -23,6 +23,8 @@ export const selectTests = (
   suites: Record<string, string[]> = SUITES,
   required = [
     ...baseline.migrations.map(({ to }) => to),
+    ...previous.cases.map(({ file }) => file),
+    ...latest.cases.map(({ file }) => file),
     ...[
       'core',
       'diagnostics',
@@ -106,13 +108,13 @@ export const compareMigration = (report: TestReport) => {
   return { baseline: baseline.commit, preserved: expected.length, added };
 };
 
-export const comparePrevious = (report: TestReport) => {
+export const comparePrevious = (report: TestReport, files?: string[]) => {
   const expected = [
     ...baseline.migrations.flatMap(({ to, cases }) =>
       cases.map((test) => ({ file: to, ...test })),
     ),
     ...previous.cases,
-  ];
+  ].filter((test) => !files || files.includes(test.file));
   const actual = report.testResults.flatMap((file) =>
     file.assertionResults.map((item) => ({
       file: relative(ROOT, file.name),
@@ -130,19 +132,40 @@ export const comparePrevious = (report: TestReport) => {
   return { commit: previous.commit, preserved: expected.length };
 };
 
-export const REQUIRED_JOBS = ['verify', 'https', 'delivery', 'sdk', 'ci'];
+export const REQUIRED_JOBS = [
+  'verify',
+  'https',
+  'delivery',
+  'sdk',
+  'acceptance',
+];
 
+const staticChecks = [
+  'pnpm lint',
+  'pnpm fmt:check',
+  'pnpm check',
+  'pnpm check:endpoints',
+  'pnpm fixtures:index:check',
+];
 export const VALIDATION_PLAN = {
+  static: staticChecks,
+  coverage: [
+    'pnpm exec tsx tests/tools/run.mts all --coverage --vitest-only',
+    'pnpm test:coverage:calibrate',
+  ],
+  environment: [
+    'pnpm test:environment',
+    'pnpm test:environment:https',
+    'pnpm test:browser tests/browser/journeys/environment.spec.ts',
+  ],
+  diagnostics: [
+    'pnpm test:browser tests/browser/journeys/diagnostics.spec.ts',
+    'pnpm test:browser:faults',
+  ],
   default: ['pnpm test --coverage'],
   verify: [
-    'pnpm lint',
-    'pnpm fmt:check',
-    'pnpm check',
-    'pnpm check:endpoints',
-    'pnpm fixtures:index:check',
+    ...staticChecks,
     'pnpm sdk:report',
-    'pnpm smoke:mock',
-    'pnpm test:browser:faults',
     'pnpm test --coverage',
     'pnpm test:coverage:calibrate',
   ],
@@ -152,8 +175,11 @@ export const VALIDATION_PLAN = {
   registry: ['pnpm sdk:latest'],
 } as const;
 
-export const compareIssue100 = (report: TestReport) => {
-  for (const expected of latest.cases) {
+export const compareIssue100 = (report: TestReport, files?: string[]) => {
+  const selected = latest.cases.filter(
+    (test) => !files || files.includes(test.file),
+  );
+  for (const expected of selected) {
     const matches = report.testResults
       .filter((file) => relative(ROOT, file.name) === expected.file)
       .flatMap((file) =>
@@ -164,7 +190,7 @@ export const compareIssue100 = (report: TestReport) => {
         `前置 #100 用例缺失或改变：${expected.file} > ${expected.name}`,
       );
   }
-  return { commit: latest.commit, preserved: latest.cases.length };
+  return { commit: latest.commit, preserved: selected.length };
 };
 
 export const sourceSha = () => {
