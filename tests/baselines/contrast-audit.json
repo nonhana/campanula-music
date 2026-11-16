@@ -1,0 +1,3440 @@
+{
+  "sourceCommit": "4892e0c4f483eaee8bc46b95cfe8b10f60338dab",
+  "mappingBase": "3ec855f43984425cf9be6ebf5b829b39cfa1beae",
+  "sourceRun": "https://github.com/nonhana/campanula-music/actions/runs/43788681321",
+  "groups": [
+    {
+      "id": "daily-number.icon",
+      "currentReportCount": 1,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/daily/DailyNumber.svelte:16; shell/SignedInFrame.svelte:279",
+      "requiredStates": ["phone:daily-icon-default", "phone:daily-icon-focus"]
+    },
+    {
+      "id": "daily-number.page",
+      "currentReportCount": 1,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/daily/DailyNumber.svelte:16; src/routes/daily/+page.svelte:135",
+      "requiredStates": ["desktop:daily-page", "phone:daily-page"]
+    },
+    {
+      "id": "desktop-player-page.source",
+      "currentReportCount": 6,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/DesktopPlayerPage.svelte:73-75",
+      "requiredStates": [
+        "desktop:black-default",
+        "desktop:black-hover-focus",
+        "desktop:white-default",
+        "desktop:white-hover-focus"
+      ]
+    },
+    {
+      "id": "lyrics.plain",
+      "currentReportCount": 9,
+      "historicalBaselineOnlyCount": 1,
+      "source": "src/lib/components/player/Lyrics.svelte:316-352,467-475",
+      "requiredStates": [
+        "desktop:black-previous",
+        "desktop:black-scrolled",
+        "desktop:black-singing",
+        "desktop:black-sung",
+        "desktop:black-translation-only",
+        "desktop:black-unsung",
+        "desktop:black-words-only",
+        "desktop:white-previous",
+        "desktop:white-scrolled",
+        "desktop:white-singing",
+        "desktop:white-sung",
+        "desktop:white-translation-only",
+        "desktop:white-unsung",
+        "desktop:white-words-only",
+        "phone:black-previous",
+        "phone:black-scrolled",
+        "phone:black-singing",
+        "phone:black-sung",
+        "phone:black-translation-only",
+        "phone:black-unsung",
+        "phone:black-words-only",
+        "phone:white-previous",
+        "phone:white-scrolled",
+        "phone:white-singing",
+        "phone:white-sung",
+        "phone:white-translation-only",
+        "phone:white-unsung",
+        "phone:white-words-only"
+      ]
+    },
+    {
+      "id": "lyrics.translation",
+      "currentReportCount": 16,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/Lyrics.svelte:363-370,467-475",
+      "requiredStates": [
+        "desktop:black-previous",
+        "desktop:black-scrolled",
+        "desktop:black-singing",
+        "desktop:black-sung",
+        "desktop:black-translation-only",
+        "desktop:black-unsung",
+        "desktop:white-previous",
+        "desktop:white-scrolled",
+        "desktop:white-singing",
+        "desktop:white-sung",
+        "desktop:white-translation-only",
+        "desktop:white-unsung",
+        "phone:black-previous",
+        "phone:black-scrolled",
+        "phone:black-singing",
+        "phone:black-sung",
+        "phone:black-translation-only",
+        "phone:black-unsung",
+        "phone:white-previous",
+        "phone:white-scrolled",
+        "phone:white-singing",
+        "phone:white-sung",
+        "phone:white-translation-only",
+        "phone:white-unsung"
+      ]
+    },
+    {
+      "id": "lyrics.word",
+      "currentReportCount": 227,
+      "historicalBaselineOnlyCount": 12,
+      "source": "src/lib/components/player/Lyrics.svelte:316-346,467-475",
+      "requiredStates": [
+        "desktop:black-previous",
+        "desktop:black-scrolled",
+        "desktop:black-singing",
+        "desktop:black-sung",
+        "desktop:black-translation-only",
+        "desktop:black-unsung",
+        "desktop:black-words-only",
+        "desktop:white-previous",
+        "desktop:white-scrolled",
+        "desktop:white-singing",
+        "desktop:white-sung",
+        "desktop:white-translation-only",
+        "desktop:white-unsung",
+        "desktop:white-words-only",
+        "phone:black-previous",
+        "phone:black-scrolled",
+        "phone:black-singing",
+        "phone:black-sung",
+        "phone:black-translation-only",
+        "phone:black-unsung",
+        "phone:black-words-only",
+        "phone:white-previous",
+        "phone:white-scrolled",
+        "phone:white-singing",
+        "phone:white-sung",
+        "phone:white-translation-only",
+        "phone:white-unsung",
+        "phone:white-words-only"
+      ]
+    },
+    {
+      "id": "now-index.queue-index",
+      "currentReportCount": 3,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/songs/NowIndex.svelte:13-27; player/QueueList.svelte:168",
+      "requiredStates": [
+        "desktop:black-queue-edge",
+        "desktop:black-queue-end-hover",
+        "desktop:black-queue-middle-hover",
+        "desktop:black-queue-start",
+        "desktop:white-queue-edge",
+        "desktop:white-queue-end-hover",
+        "desktop:white-queue-middle-hover",
+        "desktop:white-queue-start",
+        "phone:black-queue-end-hover",
+        "phone:black-queue-middle-hover",
+        "phone:black-queue-start",
+        "phone:white-queue-end-hover",
+        "phone:white-queue-middle-hover",
+        "phone:white-queue-start"
+      ]
+    },
+    {
+      "id": "now-playing-title.album",
+      "currentReportCount": 5,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/NowPlayingTitle.svelte:48-63; songs/CreditName.svelte:51",
+      "requiredStates": [
+        "desktop:black-default",
+        "desktop:black-hover-focus",
+        "desktop:white-default",
+        "desktop:white-hover-focus",
+        "phone:black-default",
+        "phone:black-hover-focus",
+        "phone:black-lyrics-visible",
+        "phone:white-default",
+        "phone:white-hover-focus",
+        "phone:white-lyrics-visible"
+      ]
+    },
+    {
+      "id": "now-playing-title.artist",
+      "currentReportCount": 5,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/NowPlayingTitle.svelte:38-46; songs/CreditName.svelte:51",
+      "requiredStates": [
+        "desktop:black-default",
+        "desktop:black-hover-focus",
+        "desktop:white-default",
+        "desktop:white-hover-focus",
+        "phone:black-default",
+        "phone:black-hover-focus",
+        "phone:black-lyrics-visible",
+        "phone:white-default",
+        "phone:white-hover-focus",
+        "phone:white-lyrics-visible"
+      ]
+    },
+    {
+      "id": "now-playing-title.name",
+      "currentReportCount": 5,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/NowPlayingTitle.svelte:25-33",
+      "requiredStates": [
+        "desktop:black-default",
+        "desktop:black-hover-focus",
+        "desktop:white-default",
+        "desktop:white-hover-focus",
+        "phone:black-default",
+        "phone:black-hover-focus",
+        "phone:black-lyrics-visible",
+        "phone:white-default",
+        "phone:white-hover-focus",
+        "phone:white-lyrics-visible"
+      ]
+    },
+    {
+      "id": "phone-player-page.source",
+      "currentReportCount": 4,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/PhonePlayerPage.svelte:104-106",
+      "requiredStates": [
+        "phone:black-default",
+        "phone:black-hover-focus",
+        "phone:black-lyrics-visible",
+        "phone:white-default",
+        "phone:white-hover-focus",
+        "phone:white-lyrics-visible"
+      ]
+    },
+    {
+      "id": "phone-player-page.state",
+      "currentReportCount": 2,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/PhonePlayerPage.svelte:102",
+      "requiredStates": [
+        "phone:black-default",
+        "phone:black-hover-focus",
+        "phone:black-lyrics-visible",
+        "phone:white-default",
+        "phone:white-hover-focus",
+        "phone:white-lyrics-visible"
+      ]
+    },
+    {
+      "id": "playlist-editor.description-counter",
+      "currentReportCount": 2,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/playlist/PlaylistEditorPanel.svelte:250-257",
+      "requiredStates": [
+        "desktop:editor-counters-boundary",
+        "desktop:editor-counters-initial",
+        "phone:editor-counters-boundary",
+        "phone:editor-counters-initial"
+      ]
+    },
+    {
+      "id": "playlist-tile.creator",
+      "currentReportCount": 1,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/library/PlaylistTile.svelte:133-146",
+      "requiredStates": [
+        "phone:playlist-tile-clipped",
+        "phone:playlist-tile-visible"
+      ]
+    },
+    {
+      "id": "playlist-tile.name",
+      "currentReportCount": 1,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/library/PlaylistTile.svelte:125-130; search/SearchOverview.svelte:154",
+      "requiredStates": [
+        "desktop:playlist-tile-clipped",
+        "desktop:playlist-tile-visible",
+        "phone:playlist-tile-clipped",
+        "phone:playlist-tile-visible"
+      ]
+    },
+    {
+      "id": "queue-list.artist",
+      "currentReportCount": 5,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/QueueList.svelte:184-189; songs/CreditLine.svelte:32-34",
+      "requiredStates": [
+        "desktop:black-queue-edge",
+        "desktop:black-queue-end-hover",
+        "desktop:black-queue-middle-hover",
+        "desktop:black-queue-start",
+        "desktop:white-queue-edge",
+        "desktop:white-queue-end-hover",
+        "desktop:white-queue-middle-hover",
+        "desktop:white-queue-start",
+        "phone:black-queue-end-hover",
+        "phone:black-queue-middle-hover",
+        "phone:black-queue-start",
+        "phone:white-queue-end-hover",
+        "phone:white-queue-middle-hover",
+        "phone:white-queue-start"
+      ]
+    },
+    {
+      "id": "queue-list.count",
+      "currentReportCount": 1,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/QueueList.svelte:116-118",
+      "requiredStates": [
+        "desktop:black-queue-end-hover",
+        "desktop:black-queue-middle-hover",
+        "desktop:black-queue-start",
+        "desktop:white-queue-end-hover",
+        "desktop:white-queue-middle-hover",
+        "desktop:white-queue-start",
+        "phone:black-queue-end-hover",
+        "phone:black-queue-middle-hover",
+        "phone:black-queue-start",
+        "phone:white-queue-end-hover",
+        "phone:white-queue-middle-hover",
+        "phone:white-queue-start"
+      ]
+    },
+    {
+      "id": "queue-list.duration",
+      "currentReportCount": 5,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/QueueList.svelte:191-198",
+      "requiredStates": [
+        "desktop:black-queue-edge",
+        "desktop:black-queue-end-hover",
+        "desktop:black-queue-middle-hover",
+        "desktop:black-queue-start",
+        "desktop:white-queue-edge",
+        "desktop:white-queue-end-hover",
+        "desktop:white-queue-middle-hover",
+        "desktop:white-queue-start",
+        "phone:black-queue-end-hover",
+        "phone:black-queue-middle-hover",
+        "phone:black-queue-start",
+        "phone:white-queue-end-hover",
+        "phone:white-queue-middle-hover",
+        "phone:white-queue-start"
+      ]
+    },
+    {
+      "id": "segmented.artist-order",
+      "currentReportCount": 1,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/ui/Segmented.svelte:90",
+      "requiredStates": [
+        "desktop:artist-sort-default",
+        "desktop:artist-sort-interaction",
+        "desktop:artist-sort-selected",
+        "phone:artist-sort-default",
+        "phone:artist-sort-interaction",
+        "phone:artist-sort-selected"
+      ]
+    },
+    {
+      "id": "segmented.player-tab",
+      "currentReportCount": 3,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/ui/Segmented.svelte:90-110; player/DesktopPlayerPage.svelte",
+      "requiredStates": [
+        "desktop:black-default",
+        "desktop:black-hover-focus",
+        "desktop:white-default",
+        "desktop:white-hover-focus"
+      ]
+    },
+    {
+      "id": "song-title.queue-name",
+      "currentReportCount": 5,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/songs/SongTitle.svelte:33-40; player/QueueList.svelte:175-183",
+      "requiredStates": [
+        "desktop:black-queue-edge",
+        "desktop:black-queue-end-hover",
+        "desktop:black-queue-middle-hover",
+        "desktop:black-queue-start",
+        "desktop:white-queue-edge",
+        "desktop:white-queue-end-hover",
+        "desktop:white-queue-middle-hover",
+        "desktop:white-queue-start",
+        "phone:black-queue-end-hover",
+        "phone:black-queue-middle-hover",
+        "phone:black-queue-start",
+        "phone:white-queue-end-hover",
+        "phone:white-queue-middle-hover",
+        "phone:white-queue-start"
+      ]
+    },
+    {
+      "id": "tag-picker.counter",
+      "currentReportCount": 2,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/library/TagPicker.svelte:39-40",
+      "requiredStates": [
+        "desktop:editor-counters-boundary",
+        "desktop:editor-counters-initial",
+        "phone:editor-counters-boundary",
+        "phone:editor-counters-initial"
+      ]
+    },
+    {
+      "id": "tag-picker.group-heading",
+      "currentReportCount": 3,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/library/TagPicker.svelte:58-75",
+      "requiredStates": [
+        "desktop:tag-heading-clipped",
+        "desktop:tag-heading-场景",
+        "desktop:tag-heading-语种",
+        "desktop:tag-heading-风格",
+        "phone:tag-heading-场景",
+        "phone:tag-heading-语种",
+        "phone:tag-heading-风格"
+      ]
+    },
+    {
+      "id": "text-button.search-see-all",
+      "currentReportCount": 4,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/search/SearchOverview.svelte:102-105; ui/TextButton.svelte:46-55,74-95",
+      "requiredStates": [
+        "desktop:search-see-all-default",
+        "desktop:search-see-all-failed",
+        "desktop:search-see-all-interaction",
+        "phone:search-see-all-default",
+        "phone:search-see-all-failed",
+        "phone:search-see-all-interaction"
+      ]
+    },
+    {
+      "id": "text-field.name-counter",
+      "currentReportCount": 2,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/ui/TextField.svelte:43-47; playlist/PlaylistEditorPanel.svelte:243",
+      "requiredStates": [
+        "desktop:editor-counters-boundary",
+        "desktop:editor-counters-initial",
+        "desktop:editor-name-error",
+        "phone:editor-counters-boundary",
+        "phone:editor-counters-initial",
+        "phone:editor-name-error"
+      ]
+    },
+    {
+      "id": "wave-progress.times",
+      "currentReportCount": 10,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/WaveProgress.svelte:92-98",
+      "requiredStates": [
+        "desktop:black-default",
+        "desktop:black-hover-focus",
+        "desktop:white-default",
+        "desktop:white-hover-focus",
+        "phone:black-default",
+        "phone:black-hover-focus",
+        "phone:black-lyrics-visible",
+        "phone:white-default",
+        "phone:white-hover-focus",
+        "phone:white-lyrics-visible"
+      ]
+    },
+    {
+      "id": "lyrics.romanization",
+      "currentReportCount": 0,
+      "historicalBaselineOnlyCount": 0,
+      "source": "src/lib/components/player/Lyrics.svelte",
+      "requiredStates": [
+        "desktop:black-previous",
+        "desktop:black-scrolled",
+        "desktop:black-singing",
+        "desktop:black-sung",
+        "desktop:black-unsung",
+        "desktop:white-previous",
+        "desktop:white-scrolled",
+        "desktop:white-singing",
+        "desktop:white-sung",
+        "desktop:white-unsung",
+        "phone:black-previous",
+        "phone:black-scrolled",
+        "phone:black-singing",
+        "phone:black-sung",
+        "phone:black-unsung",
+        "phone:white-previous",
+        "phone:white-scrolled",
+        "phone:white-singing",
+        "phone:white-sung",
+        "phone:white-unsung"
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "project": "phone",
+      "scenario": "artist",
+      "rule": "color-contrast",
+      "target": ["#artist-order-time-tab"],
+      "group": "segmented.artist-order"
+    },
+    {
+      "project": "desktop",
+      "scenario": "daily",
+      "rule": "color-contrast",
+      "target": [".text-primary-900"],
+      "group": "daily-number.page"
+    },
+    {
+      "project": "phone",
+      "scenario": "library",
+      "rule": "color-contrast",
+      "target": [".block"],
+      "group": "daily-number.icon"
+    },
+    {
+      "project": "phone",
+      "scenario": "playlist-editor",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(1) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "group": "text-field.name-counter"
+    },
+    {
+      "project": "phone",
+      "scenario": "playlist-editor",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(2) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "group": "playlist-editor.description-counter"
+    },
+    {
+      "project": "phone",
+      "scenario": "playlist-editor",
+      "rule": "color-contrast",
+      "target": [
+        ".items-baseline.justify-between > .tabular-nums.text-neutral-600[role=\"status\"]"
+      ],
+      "group": "tag-picker.counter"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-failed",
+      "rule": "color-contrast",
+      "target": [".gap-1\\.5.press[href=\"/search?q=how&type=songs\"]"],
+      "group": "text-button.search-see-all"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "section[aria-labelledby=\"overview-songs\"] > .px-4.gap-3.h-11 > .justify-center.whitespace-nowrap.press"
+      ],
+      "group": "text-button.search-see-all"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "section[aria-labelledby=\"overview-playlists\"] > .px-4.gap-3.h-11 > .justify-center.whitespace-nowrap.press"
+      ],
+      "group": "text-button.search-see-all"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "a[href=\"/playlists/900000024\"] > .mt-2\\.5.block.text-body"
+      ],
+      "group": "playlist-tile.name"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "a[href=\"/playlists/900000024\"] > .gap-1.mt-0\\.5.text-neutral-600 > .truncate"
+      ],
+      "group": "playlist-tile.creator"
+    },
+    {
+      "project": "phone",
+      "scenario": "search-results",
+      "rule": "color-contrast",
+      "target": [
+        "section[aria-labelledby=\"overview-artists\"] > .px-4.gap-3.h-11 > .justify-center.whitespace-nowrap.press"
+      ],
+      "group": "text-button.search-see-all"
+    },
+    {
+      "project": "desktop",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        "div[aria-label=\"语种\"] > .pt-2.text-neutral-600.text-caption"
+      ],
+      "group": "tag-picker.group-heading"
+    },
+    {
+      "project": "desktop",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        "div[aria-label=\"风格\"] > .pt-2.text-neutral-600.text-caption"
+      ],
+      "group": "tag-picker.group-heading"
+    },
+    {
+      "project": "desktop",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        "div[aria-label=\"场景\"] > .pt-2.text-neutral-600.text-caption"
+      ],
+      "group": "tag-picker.group-heading"
+    },
+    {
+      "project": "phone",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(1) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "group": "text-field.name-counter"
+    },
+    {
+      "project": "phone",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        ".flex-col.flex:nth-child(2) > .items-baseline.justify-between.gap-3 > .tabular-nums.text-neutral-600.text-caption"
+      ],
+      "group": "playlist-editor.description-counter"
+    },
+    {
+      "project": "phone",
+      "scenario": "dialog-keyboard",
+      "rule": "color-contrast",
+      "target": [
+        ".items-baseline.justify-between > .tabular-nums.text-neutral-600[role=\"status\"]"
+      ],
+      "group": "tag-picker.counter"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".px-6 > p"],
+      "group": "desktop-player-page.source"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["p > .svelte-1a6abw0"],
+      "group": "desktop-player-page.source"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-headline-sm"],
+      "group": "now-playing-title.name"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        ".-mx-1 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "group": "now-playing-title.artist"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        ".font-400 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/albums/3149073\"]"
+      ],
+      "group": "now-playing-title.album"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["#c1-queue-tab"],
+      "group": "segmented.player-tab"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-headline.text-primary-950.line-text"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-neutral-800.text-title.line-text"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"2\"] > .text-title.line-text.font-600"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(16)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"3\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"4\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"5\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"6\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".px-6 > p"],
+      "group": "desktop-player-page.source"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["p > .svelte-1a6abw0"],
+      "group": "desktop-player-page.source"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".text-headline-sm"],
+      "group": "now-playing-title.name"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        ".-mx-1 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "group": "now-playing-title.artist"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        ".font-400 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/albums/3149073\"]"
+      ],
+      "group": "now-playing-title.album"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["#c1-queue-tab"],
+      "group": "segmented.player-tab"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".text-headline.text-primary-950.line-text"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"1\"] > .text-title.line-text.font-600"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"2\"] > .text-title.line-text.font-600"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(16)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"3\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"4\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"5\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"6\"] > .sub.mt-1.text-body"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".px-6 > p"],
+      "group": "desktop-player-page.source"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": ["p > .svelte-1a6abw0"],
+      "group": "desktop-player-page.source"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".text-headline-sm"],
+      "group": "now-playing-title.name"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".-mx-1 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "group": "now-playing-title.artist"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".font-400 > .underline-offset-3.mouse\\:hover\\:underline[href=\"/albums/3149073\"]"
+      ],
+      "group": "now-playing-title.album"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": ["#c1-lyrics-tab"],
+      "group": "segmented.player-tab"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".flex-1.svelte-qdmfhn.min-w-0 > p"],
+      "group": "queue-list.count"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-qdmfhn.min-w-0 > .play-target.rounded[aria-current=\"true\"] > .gap-2.min-w-0.items-center > .duration-state.font-500.text-label"
+      ],
+      "group": "song-title.queue-name"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "group": "queue-list.artist"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "group": "queue-list.duration"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.text-caption.place-items-center > .col-start-1.row-start-1"
+      ],
+      "group": "now-index.queue-index"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .play-target.rounded.svelte-14o5vus > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.font-500"
+      ],
+      "group": "song-title.queue-name"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "group": "queue-list.artist"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "group": "queue-list.duration"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.text-caption.place-items-center > .col-start-1.row-start-1"
+      ],
+      "group": "now-index.queue-index"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .play-target.rounded.svelte-14o5vus > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.font-500"
+      ],
+      "group": "song-title.queue-name"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "group": "queue-list.artist"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "group": "queue-list.duration"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.text-caption.place-items-center > .col-start-1.row-start-1"
+      ],
+      "group": "now-index.queue-index"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .play-target.rounded.svelte-14o5vus > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.font-500"
+      ],
+      "group": "song-title.queue-name"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .svelte-qdmfhn.min-w-0 > .truncate.text-caption[aria-hidden=\"true\"] > .underline-offset-3.mouse\\:hover\\:underline[href=\"/artists/33927412\"]"
+      ],
+      "group": "queue-list.artist"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(4) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.h-full > .tabular-nums.svelte-qdmfhn.text-caption"
+      ],
+      "group": "queue-list.duration"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-center.svelte-gvenbg.min-w-0 > p:nth-child(1)"],
+      "group": "phone-player-page.state"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2)"],
+      "group": "phone-player-page.source"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2) > .svelte-gvenbg"],
+      "group": "phone-player-page.source"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-title.text-primary-950.line-text"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"1\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text"
+      ],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"2\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text"
+      ],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"3\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(16)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"3\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"4\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"4\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"5\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"5\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"6\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"6\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"7\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"8\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"9\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"9\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(14)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"10\"] > .text-title-sm.mouse\\:group-hover\\:text-neutral-800.line-text > .word.svelte-1jeg9e6:nth-child(15)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"10\"] > .sub.mt-1.text-label"],
+      "group": "lyrics.translation"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["h2"],
+      "group": "now-playing-title.name"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/artists/33927412\"]"],
+      "group": "now-playing-title.artist"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/albums/3149073\"]"],
+      "group": "now-playing-title.album"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".text-center.svelte-gvenbg.min-w-0 > p:nth-child(1)"],
+      "group": "phone-player-page.state"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2)"],
+      "group": "phone-player-page.source"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["p:nth-child(2) > .svelte-gvenbg"],
+      "group": "phone-player-page.source"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["h2"],
+      "group": "now-playing-title.name"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/artists/33927412\"]"],
+      "group": "now-playing-title.artist"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["a[href=\"/albums/3149073\"]"],
+      "group": "now-playing-title.album"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(1)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [".times > .svelte-uwdl7c:nth-child(2)"],
+      "group": "wave-progress.times"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [".duration-state.text-label[lang=\"ja\"]"],
+      "group": "song-title.queue-name"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.absolute.inset-x-0:nth-child(1) > .mouse\\:hover\\:bg-neutral-50.rounded-lg.h-full > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pl-2.gap-3 > .min-w-0.svelte-qdmfhn > .block.text-neutral-600.text-caption"
+      ],
+      "group": "queue-list.artist"
+    },
+    {
+      "project": "phone",
+      "scenario": "player-queue",
+      "rule": "color-contrast",
+      "target": [
+        ".svelte-z0bpxa.absolute.inset-x-0:nth-child(1) > .mouse\\:hover\\:bg-neutral-50.rounded-lg.h-full > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pl-2.gap-3 > .text-neutral-500.tabular-nums.text-caption:nth-child(4)"
+      ],
+      "group": "queue-list.duration"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"0\"] > .text-title.line-text.font-600"],
+      "group": "lyrics.plain"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "group": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"7\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "group": "lyrics.word"
+    }
+  ]
+}

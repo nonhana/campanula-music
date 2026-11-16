@@ -1094,6 +1094,60 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
     };
   };
 
+  const finishRound = async (
+    device: Device,
+    close: () => void,
+    releases: readonly (() => void)[],
+  ) => {
+    for (const release of releases) release();
+    device.setOnline(true);
+    await device.idle();
+    close();
+  };
+
+  it('每轮结束关闭旧页，冷却后只有当前轮继续同步，不耗尽后续回复', async () => {
+    world.netease.anyOrder();
+    const coolingRound = async () => {
+      const device = world.device();
+      await world.netease.reply(RATE_LIMITED);
+      const tab = await signInAtLikedTracks(device, {
+        until: Promise.resolve(),
+      });
+      expect(tab.app.state.library?.sync.status).toBe('rateLimited');
+      await world.netease.reply('login/logout.json');
+      await tab.app.logout();
+      await signIn(world, tab.app);
+      await world.settle();
+      expect(tab.app.state.library?.sync.status).toBe('rateLimited');
+      return { device, tab };
+    };
+    const first = await coolingRound();
+    await finishRound(first.device, first.tab.close, []);
+    const second = await coolingRound();
+    await finishRound(second.device, second.tab.close, []);
+    const current = await coolingRound();
+
+    // 旧轮不应继续；有界回复保留未关闭旧页时的耗尽反例。
+    for (let count = 0; count < 3; count++)
+      await world.netease.reply(HEARTS, { required: false });
+    for (let count = 0; count < 2; count++)
+      await world.netease.reply(PLAYLISTS_WITH_POEMS, {
+        until: never(),
+        required: false,
+      });
+    const before = world.netease.calls.filter(
+      (call) => call.module === 'user_playlist',
+    ).length;
+    await world.clock.advance(30_000);
+    expect(
+      world.netease.calls.filter((call) => call.module === 'user_playlist'),
+    ).toHaveLength(before + 1);
+    expect(current.device.pending.map((request) => request.path)).toEqual([
+      '/api/playlists?uid=10000001',
+    ]);
+    expect(world.netease.held).toBe(1);
+  });
+
   it('随便怎么操作，每一步之后：后台同步请求同时最多一个在路上、同一页不会同时请求两次、显示“同步中”时一定有同步请求在路上、打开的歌单和专辑页显示加载中时一定有请求在路上、登录失效或退出后不挂着同步', async () => {
     const seed = Math.floor(Math.random() * 100_000);
     const random = seeded(seed);
@@ -1171,7 +1225,8 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
 
     for (let round = 0; round < 20; round++) {
       const device = world.device();
-      const { app } = await device.open();
+      const tab = await device.open();
+      const { app } = tab;
       const steps: string[] = [];
       const stale = new Set<SentRequest>();
 
@@ -1288,10 +1343,8 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
           ).toBe(true);
       }
 
-      for (const release of holds) release();
+      await finishRound(device, tab.close, holds);
       holds = [];
-      device.setOnline(true);
-      await device.idle();
     }
   }, 120_000);
 });

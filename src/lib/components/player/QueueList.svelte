@@ -129,10 +129,7 @@
   <div class="relative mb-2 min-h-0 flex flex-1 flex-col">
     <div
       bind:this={scroller}
-      class={[
-        'min-h-0 flex-1 overflow-y-auto overscroll-contain',
-        ground && 'fade-edges',
-      ]}
+      class="min-h-0 flex-1 overflow-y-auto overscroll-contain"
     >
       <div class="px-2">
         <VirtualList
@@ -191,7 +188,7 @@
                 <span
                   class={[
                     'text-caption tabular-nums',
-                    ground ? 'text-neutral-600' : 'text-neutral-500',
+                    ground || now ? 'text-neutral-600' : 'text-neutral-500',
                   ]}
                   >{#if entry.song.duration !== null}{formatDuration(
                       entry.song.duration,
@@ -224,54 +221,3 @@
     <LocateNowButton {locate} class="absolute bottom-4 right-6 z-1" />
   </div>
 </section>
-
-<style>
-  /* 哪一头还有内容才淡那一头；注册的名字是全局的，别和别处重名 */
-  @property --queue-fade-top {
-    syntax: '<length>';
-    inherits: false;
-    initial-value: 0px;
-  }
-
-  @property --queue-fade-bottom {
-    syntax: '<length>';
-    inherits: false;
-    initial-value: 0px;
-  }
-
-  .fade-edges {
-    --queue-fade: 24px;
-    mask-image: linear-gradient(
-      180deg,
-      transparent,
-      #000 var(--queue-fade-top),
-      #000 calc(100% - var(--queue-fade-bottom)),
-      transparent
-    );
-    animation:
-      queue-fade-top linear both,
-      queue-fade-bottom linear both;
-    animation-timeline: scroll(self), scroll(self);
-    animation-range:
-      0px var(--queue-fade),
-      calc(100% - var(--queue-fade)) 100%;
-  }
-
-  @keyframes queue-fade-top {
-    from {
-      --queue-fade-top: 0px;
-    }
-    to {
-      --queue-fade-top: var(--queue-fade);
-    }
-  }
-
-  @keyframes queue-fade-bottom {
-    from {
-      --queue-fade-bottom: var(--queue-fade);
-    }
-    to {
-      --queue-fade-bottom: 0px;
-    }
-  }
-</style>

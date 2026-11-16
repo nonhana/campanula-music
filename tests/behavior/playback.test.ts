@@ -2106,6 +2106,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
       holds = [];
       device.setOnline(true);
       await world.settle();
+      tab.close();
     }
   }, 120_000);
 
@@ -2250,6 +2251,7 @@ describe('随机操作检查（借鉴逻辑原型）', () => {
         }
         upNext = upNext.filter((id) => id !== current(app));
       }
+      tab.close();
     }
   }, 120_000);
 });

@@ -121,3 +121,9 @@ pnpm sdk:latest
 生产 PWA 显式允许 SW，两个视口都测安装/控制、真正离线关闭重开、缓存账号/下载及 Blob 音频、联网恢复、两旧页等待和关完后的激活。产品 Node 在自有回环服务运行；测试代理只在产品进程外拒绝会连接真实网易云的 API，实际匿名 account API 仍经过生产入口。请求拒绝证据与 setOffline 的真实离线分别记录，不把 503 当断网。`.reports/pwa/run-*/` 包含 JSON/HTML、trace、截图、缓存键和进程清理；候选及构建报告在 `.reports/candidates/`，HTTP 检查在 `.reports/delivery/`。测试规则、敏感性和人工边界见 [#101 验收](../docs/acceptance/issue-101.md)。
 
 Vercel 已有 production 的 ci Deployment Check；ci 现在聚合 verify、https、sdk、delivery，必要项失败/取消/缺项/跳过均拒绝。Docker tag/manual 同样等待最新同 SHA 的完整 CI 和产物/PWA 证据，release:check 仅做只读 dry-run。网络查询 latest 的独立 workflow 在默认分支有文件时才会按计划执行；当前 rewrite/v1 只提供可直接运行的入口，不宣称 master 已启用 schedule。
+
+## 对比度专项
+
+`pnpm test:a11y` 包含 contrast 四个文件，也可用 `pnpm test:browser tests/browser/accessibility/contrast-lyrics.spec.ts` 单独复跑。页面使用真实背景像素、CSS 指定字色及黑白字形探针测量，排除字体抗锯齿但保留遮罩/透明度，文字统一至少4.5:1。校准覆盖已知色对、同色、半透明、图像/渐变、mask、细数字与完全隐藏。
+
+完整 `pnpm test` 的页面阶段另外生成本次 `contrast-summary.json`，把原329条观测和13条历史额外项映射至26个原组件组，并补音译，共27组；缺组、缺登记状态、不可测或不达标均失败。单文件只写partial/not-run，不冒充全专项。原始axe仍保留incomplete；a11y-manual.json的contrastGroup指向已测回归，不再表示要作者手工处理342条记录。方法、红绿和组表见 docs/acceptance/issue-103.md。

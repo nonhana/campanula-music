@@ -466,13 +466,6 @@
 <style>
   .scroll {
     container-type: size;
-    mask-image: linear-gradient(
-      180deg,
-      transparent 0,
-      #000 12%,
-      #000 82%,
-      transparent 100%
-    );
   }
 
   .scroll:focus-visible {
@@ -480,8 +473,8 @@
   }
 
   .frame:has(> .scroll:focus-visible) {
-    outline: 2px solid theme('colors.primary.800');
-    outline-offset: -2px;
+    outline: 2px solid theme('colors.primary.900');
+    outline-offset: 2px;
   }
 
   .bleed {

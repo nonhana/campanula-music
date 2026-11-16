@@ -19,7 +19,7 @@ Linux 第一次用 `pnpm exec playwright install --with-deps chromium` 安装浏
 
 ## 报告
 
-终端输出本次 `.reports/browser/run-*/`。其中 tests.json 与 HTML 记录实际步骤、项目和错误，results 下保留所有用例的 trace、截图、环境/网络附件及逐场景 axe JSON。每个 axe 结果保留 violations、incomplete、passes、inapplicable 和规则 tags；best-practice 与 WCAG A/AA 同时运行。没有整页排除，当前已扫描状态要求零 violations；incomplete 逐场景/规则/节点对照 tests/baselines/a11y-manual.json，新增项阻断，清单只由明确人工判断修改。存量和人工判定见 `docs/acceptance/issue-100.md`。latest.json 只是导航，交付引用明确的 run 和最终 SHA 的 CI 附件。
+终端输出本次 `.reports/browser/run-*/`。其中 tests.json 与 HTML 记录实际步骤、项目和错误，results 下保留所有用例的 trace、截图、环境/网络附件及逐场景 axe JSON。每个 axe 结果保留 violations、incomplete、passes、inapplicable 和规则 tags；best-practice 与 WCAG A/AA 同时运行。没有整页排除，当前已扫描状态要求零 violations；incomplete 逐场景/规则/节点对照 tests/baselines/a11y-manual.json，新增项阻断，清单只由明确人工判断修改。原始观测见 `docs/acceptance/issue-100.md`；对比度数值核验与已测组见 `docs/acceptance/issue-103.md`，完整运行的 contrast-summary.json 拒绝缺组、缺状态或低于4.5，不把原 incomplete 标成 axe passes。latest.json 只是导航，交付引用明确的 run 和最终 SHA 的 CI 附件。
 
 `test:browser:faults` 在临时源码副本依次断保存、去按钮名称、改焦点归还，检查同一用例在指定原因失败，再恢复通过；报告位于 `.reports/browser-faults/`。不修改共享 src，也不把预期失败混成普通绿灯。
 
