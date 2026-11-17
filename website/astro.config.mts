@@ -7,13 +7,16 @@ import { defineConfig } from 'astro/config';
 import UnoCSS from 'unocss/vite';
 
 import uno from '../uno.config.mts';
+import { contentLinks } from './content-links.mts';
 import { externalLinks } from './external-links.mts';
 
 const site = new URL('https://campanula.caelum.moe');
 
 export default defineConfig({
   site: site.href,
-  markdown: { processor: satteri({ hastPlugins: [externalLinks(site)] }) },
+  markdown: {
+    processor: satteri({ hastPlugins: [contentLinks, externalLinks(site)] }),
+  },
   output: 'static',
   trailingSlash: 'always',
   server: { port: 4322 },

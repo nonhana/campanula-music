@@ -2,36 +2,23 @@
 
 开源的第三方网易云音乐播放器：听众用自己的网易云账号登录，在手机和桌面上听歌、搜歌，把喜欢的音乐收进自己的曲库。可以安装成手机和桌面上的独立 App（PWA），以自部署为主。
 
-v1 正在 `rewrite/v1` 分支上从零重写，还不能使用。
+当前 v1 在 `rewrite/v1` 开发。部署时明确选择这个分支；仓库默认的 `master` 和旧 GHCR 镜像不代表新版。
 
 - 产品与设计：[PRODUCT.md](./PRODUCT.md)、[DESIGN.md](./DESIGN.md)
 - 术语：[GLOSSARY.md](./GLOSSARY.md)
 - 架构决策：[docs/adr/](./docs/adr/)
 
-### 开发
-
-需要 Node.js（版本见 `.node-version`）和 pnpm（版本见 `package.json` 的 `packageManager`）。
-
-```bash
-pnpm install
-cp .env.example .env   # 填上 COOKIE_SECRET：openssl rand -base64 32
-pnpm dev              # https://local.campanula.test:8443/，真账号
-pnpm dev:mock         # https://mock.campanula.test:8444/mock/login，mock 数据
-```
-
-直接运行会按需引导首次 CA 信任与域名解析，之后复用证书、临期自动续签；每个模式只需一个终端，Ctrl+C 自动收尾。步骤和旧版迁移见 [本地开发](./docs/development.md)。暂时使用 HTTP 可运行 `pnpm dev:http` / `pnpm dev:mock:http`。
-
-mock 的账号、歌单、红心、搜索、播放地址都来自 `tests/fixtures/netease/`，写操作只改内存状态，可重置；详见 `docs/agents/mock.md`。
-
-提交前钩子会对暂存的文件跑 `eslint --fix`；`pnpm lint`、`pnpm check` 在 CI 里也会跑。
-
-编码代理按 [Svelte 官方 AI 工具](https://svelte.dev/docs/ai/overview) 配置：提示写在 `AGENTS.md`，omp 用的 Svelte MCP 服务器和 `svelte-file-editor` 子代理在 `.omp/`。
-
 ### 部署
 
-站长要配的环境变量见 `.env.example`：`COOKIE_SECRET`（必填，加密登录 Cookie 的密钥，至少 32 个字符，升级时保留同一个，换了所有听众都要重新登录）、`NETEASE_REAL_IP`（可选，真实的国内 IP）。
+先读[部署指南](./website/src/content/docs/guide/index.md)，选择 [Vercel](./website/src/content/docs/guide/vercel.mdx) 或[自己的服务器](./website/src/content/docs/guide/server.md)。服务器可用 [Docker 源码构建](./website/src/content/docs/guide/docker.md)或[直接跑 Node](./website/src/content/docs/guide/node.md)。
 
-自己的服务器（Node 或 Docker 镜像）怎么跑、怎么配 HTTPS 和反向代理，见 [docs/self-hosting.md](./docs/self-hosting.md)。
+部署后看[安装与离线播放](./website/src/content/docs/guide/listen.md)，已有实例更新看[升级与回退](./website/src/content/docs/guide/upgrade.md)。密钥保留原值，下载留在原设备的浏览器里；具体操作与排错都在对应正文。
+
+### 开发
+
+[本地开发指南](./website/src/content/docs/development/index.md)包含 Node/pnpm 版本、真实和 mock 模式、首次证书授权、官网预览及检查命令。旧的 [docs/development.md](./docs/development.md) 和[自部署路径](./docs/self-hosting.md)保留章节入口。
+
+编码代理从 [AGENTS.md](./AGENTS.md) 读取工作约定。
 
 ### License
 

@@ -1,11 +1,5 @@
 ---
-import {
-  ArrowUpRight,
-  ChevronRight,
-  CircleArrowDown,
-  Cloud,
-  Server,
-} from '@lucide/svelte';
+import { ChevronRight, CircleArrowDown, Cloud, Server } from '@lucide/svelte';
 import { settingsLink } from '../../../../src/lib/components/ui/control-styles.ts';
 ---
 
@@ -31,13 +25,7 @@ import { settingsLink } from '../../../../src/lib/components/ui/control-styles.t
         aria-hidden="true"
       />
     </a>
-    <a
-      id="deploy-server"
-      class={settingsLink}
-      href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/self-hosting.md"
-      target="_blank"
-      rel="external noopener"
-    >
+    <a id="deploy-server" class={settingsLink} href="/guide/server/">
       <Server size={20} class="flex-none text-neutral-700" aria-hidden="true" />
       <span class="min-w-0 flex-1">
         <span class="block text-body text-neutral-900 font-500">
@@ -47,7 +35,7 @@ import { settingsLink } from '../../../../src/lib/components/ui/control-styles.t
           用 Docker 或 Node 运行，再配置 HTTPS
         </span>
       </span>
-      <ArrowUpRight
+      <ChevronRight
         size={18}
         class="flex-none text-neutral-500"
         aria-hidden="true"
@@ -59,15 +47,22 @@ import { settingsLink } from '../../../../src/lib/components/ui/control-styles.t
   <h2 id="listen-heading" class="text-title-sm font-600">
     已经部署好了
   </h2>
-  <a
-    class="listen-link"
-    href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/acceptance/issue-101.md#自动化边界与作者试用"
-    target="_blank"
-    rel="external noopener"
-  >
+  <a class="listen-link" id="listen-guide" href="/guide/listen/">
     <CircleArrowDown size={18} aria-hidden="true" />
     安装与离线播放
-    <span class="external-link-space" aria-hidden="true"></span>
   </a>
-  <p class="text-caption text-neutral-600">暂时查看仓库里的设备试用说明。</p>
+  <p>
+    <a id="upgrade-guide" class="listen-link" href="/guide/upgrade/">
+      升级与回退
+    </a>
+  </p>
+</section>
+
+<section class="choice-section" aria-labelledby="develop-heading">
+  <h2 id="develop-heading" class="text-title-sm font-600">
+    参与开发
+  </h2>
+  <a id="development-guide" class="listen-link" href="/development/">
+    本地开发
+  </a>
 </section>

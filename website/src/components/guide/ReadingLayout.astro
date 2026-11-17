@@ -1,8 +1,8 @@
 ---
-const { toc, entry } = Astro.locals.starlightRoute;
+const { toc } = Astro.locals.starlightRoute;
 const items =
   toc?.items.filter((item) => item.depth === 2 && item.slug !== '_top') ?? [];
-const tutorial = entry.id === 'guide/vercel';
+const tutorial = items.length > 0;
 ---
 
 <div class:list={['reading-layout', { tutorial }]}>

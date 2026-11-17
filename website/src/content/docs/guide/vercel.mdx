@@ -21,7 +21,7 @@ Vercel 会替你运行 Campanula，不用自己维护服务器。部署好以后
 
 ## 生成并保存密钥
 
-先在**自己的电脑**上打开终端，运行下面的命令。它会生成一串随机字符，用来加密登录信息。
+先在**自己的电脑**上打开终端，运行 `openssl rand -base64 32`。它会生成一串随机字符，用来加密登录信息。
 
 <CopyCommand />
 
@@ -43,7 +43,7 @@ Vercel 会替你运行 Campanula，不用自己维护服务器。部署好以后
 4. 检查项目设置：**Root Directory 是仓库根目录 `./`**，Framework Preset 选 **SvelteKit**，Build Command 用 `pnpm build`，Install Command 用 `pnpm install --frozen-lockfile`。不要选 `website/`，也不要用 `pnpm docs:build`；那样部署出来的是说明站。
 5. 点 **Deploy**，等构建结束。成功时，项目的 Deployments 里会出现 **Ready** 的部署记录。
 
-按钮的来源与必填变量遵循 Vercel 的[源仓库参数](https://vercel.com/docs/deploy-button/source)和[环境变量参数](https://vercel.com/docs/deploy-button/environment-variables)。如果按钮无法识别源代码，按下面的手动路径继续。
+按钮的来源与必填变量遵循 Vercel 的[源仓库参数](https://vercel.com/docs/deploy-button/source)和[环境变量参数](https://vercel.com/docs/deploy-button/environment-variables)。也可以直接按下面的[手动导入](#手动导入)操作，仓库里的正文同样能照着完成。
 
 ### 手动导入
 
@@ -65,7 +65,7 @@ Campanula 的 `vite.config.mts` 已给播放器函数配置香港 **Hong Kong (`
 
 打开管理这个域名的服务商控制台，新增或修改对应记录。类型、名称、目标值都照这个项目显示的内容填写：子域名通常用 CNAME，把你的网址指向 Vercel 给的目标；根域名可能要求其他类型。
 
-**CNAME 的目标填 Vercel 当前给出的值，不填 `*.vercel.app`。** 后者在国内可能无法正常解析。若用 Cloudflare 管 DNS，把这条记录设为「仅 DNS」（灰色云朵），先让 Vercel 完成域名和证书验证。
+**CNAME 的目标填 Vercel 当前给出的值，不填 `*.vercel.app`。** 后者在国内可能无法正常解析。若用 Cloudflare 管 DNS，在 **DNS → Records** 添加项目显示的记录，例如项目要求给 `music` 配 CNAME，就把名称填 `music`、目标填项目给的值，并把代理状态设为「仅 DNS」（灰色云朵）。不要照抄某个固定目标，先让 Vercel 完成域名和证书验证。状态含义见 [Cloudflare 的 DNS 说明](https://developers.cloudflare.com/dns/proxy-status/)。
 
 回到 Domains，等页面显示配置有效、HTTPS 证书已就绪。记录还没生效时，先核对名称与目标是否填反，再等 DNS 更新；不要反复改动其他域名的记录。配置细节也可以对照 [Vercel 的域名说明](https://vercel.com/docs/domains/working-with-domains/add-a-domain)。
 
@@ -80,4 +80,4 @@ Campanula 的 `vite.config.mts` 已给播放器函数配置香港 **Hong Kong (`
 
 `NETEASE_REAL_IP` 不是必填项；不确定时先留空。登录需要你自己的网易云账号，这个官网不接收账号，也不替你登录。
 
-到这里，能打开自己域名下的正常登录页，才算完成本篇的配置。接下来可以亲自登录、安装和下载一首歌，再在断网时确认它能播放。
+到这里，能打开自己域名下的正常登录页，才算完成本篇的配置。接下来可以亲自登录、安装和下载一首歌，再照[安装与离线播放](./listen.md)下载一首并断网验证。以后更新代码看[升级与回退](./upgrade.md#vercel-升级与回退)。

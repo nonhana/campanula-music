@@ -1,6 +1,6 @@
 ---
 import { ArrowLeft } from '@lucide/svelte';
-const tutorial = Astro.locals.starlightRoute.entry.id === 'guide/vercel';
+const tutorial = Astro.locals.starlightRoute.entry.id !== 'guide';
 ---
 
 {tutorial && (
