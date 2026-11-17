@@ -93,6 +93,16 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 
 `mock-library.test.ts` 遍历所有声明的收藏和歌单、读媒体/歌词、改名读回、reset 及规模。`sdk-contract.test.ts` 用错误 body、缺失败元数据、错歌单 ID、遗漏和乱序证明门禁；严格队列收尾保留被产品吞掉的意外调用。模板回退的来源见 coverage.templates，World 不回退。扫码 Cookie、空搜索与 512、失败恢复由合同和 HTTP 回归负责；真实控件/焦点由本页的 browser/a11y 套件负责。
 
+## 官网静态候选
+
+官网使用独立的 `tests/website/`，不归播放器 browser/a11y project，也不由 Vitest 执行。运行 `pnpm docs:test`，先构建当前网站和真实 demo，再用自有 `127.0.0.1:4387` 静态服务与空 Chromium context 测试同份 `website/dist`；端口已占用会失败，结束只关闭自己的进程，不使用作者的 4321/4322 或个人 Chrome。仅重跑已有候选时可用 `pnpm exec playwright test --config tests/website/playwright.config.ts <文件> --project=desktop|phone|artifact`，这条命令不会构建。网站不包含在默认播放器 `pnpm test` 内。
+
+网站覆盖所有本地页面、链接、中文锚点、图片、canonical、sitemap、404 和 noindex；桌面/手机的目录、复制、返回位置/焦点、无 JS、正常/减少动态期间的开场与品牌往返、真实 Tab 进出 iframe；真实播放、换歌、歌词翻译、队列、曲库、离页原生音频暂停并清空来源、媒体失败重试、深链、存储/广播/SW/账号隔离。运行阶段发现外部请求、WebSocket、Service Worker 或未处理页面异常即失败。axe 对首页、每篇正式文章与试听状态保留原始结果；零 violations 必须通过，`tests/website/a11y-manual.json` 仅按视口、状态、节点和失败原因保留观察到的 incomplete，新增项失败，原播放器门禁不变。这里的 incomplete 不是通过对比度或读屏验收。
+
+每轮报告是 `.reports/website/run-*/`，含用例结果、trace/截图、axe、网络证据和 `run.json` 中的源 SHA、逐文件 SHA-256 清单及总摘要；测试前后产物变化也会失败。CI `website` 分片随官网、根工具链、Uno、静态资源和 `src/` 变化触发，汇总要求同 SHA 回执与产物摘要；`website-candidate` artifact 保存实际验过的 dist 与报告。播放器原有分片、Vercel/Node 和发布候选验证继续独立执行。
+
+独立 Netlify 站从根按锁安装，构建 `pnpm docs:build`，仅发布 `website/dist`；配置在根 `netlify.toml`，不连接作者播放器项目。手动上传时打包已通过的目录，不另跑构建。上传后运行 `pnpm exec tsx tests/website/verify-preview.mts <本轮run.json绝对路径> <HTTPS预览URL>`，逐文件下载核对摘要，并在独立 Chromium 中验证桌面/手机的首页、试听、指南深链刷新和 404。此命令是显式联网验收，不进入离线 CI；结果在 `.reports/website/preview-*/`。部署与阶段证据见 [官网验收](../docs/acceptance/issue-44.md)。
+
 ## 真实页面与无障碍
 
 先 `pnpm test:browser:install`（Linux `pnpm exec playwright install --with-deps chromium`）。`pnpm test` 顺序运行全部 Vitest、journeys 和 accessibility 文件；`pnpm test:browser <文件> --grep <名称> --project=desktop|phone --headed` 单独重跑。无参数的 `pnpm test:a11y` 跑全部 accessibility 文件，核对每个文件在桌面、手机实际执行且未跳过，并核验全部对比度组和必测状态；完整通过才输出 passed。单文件、grep、project 或其他自定义参数执行仍输出 partial，不代表完整专项。journeys 在菜单、弹窗、失败状态也扫描相同 page。`pnpm smoke:mock` 复用保存用例，`pnpm test:browser:faults` 依次检出保存、名称、焦点归还、播放页和手机队列的焦点循环故障再恢复。来源与目录在 tests/suites.ts；Vitest 只运行 .test.ts，Playwright 运行 .spec.ts，缺失套件/空选择失败。

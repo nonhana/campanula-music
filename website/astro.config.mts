@@ -15,6 +15,7 @@ const site = new URL('https://campanula.caelum.moe');
 export default defineConfig({
   site: site.href,
   markdown: {
+    shikiConfig: { theme: 'github-light' },
     processor: satteri({ hastPlugins: [contentLinks, externalLinks(site)] }),
   },
   output: 'static',

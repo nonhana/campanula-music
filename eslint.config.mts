@@ -15,7 +15,7 @@ export default antfu(
     },
   },
   {
-    files: ['tests/tools/**/*.mts'],
+    files: ['tests/tools/**/*.mts', 'tests/website/*.mts'],
     rules: {
       'no-console': 'off',
       'antfu/no-top-level-await': 'off',

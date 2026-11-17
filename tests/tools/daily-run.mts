@@ -38,7 +38,30 @@ const pnpm = (...args: string[]) =>
   });
 let cases = 0;
 let contrast: ContrastReport[] = [];
-if (lane.files.length && !lane.project) {
+let website: { digest: string; files: number } | undefined;
+if (lane.name === 'website') {
+  await pnpm('docs:test');
+  const manifest = await json(join(work, 'website/run.json'));
+  if (
+    manifest.sha !== sha ||
+    manifest.status !== 'passed' ||
+    !manifest.cases.length
+  )
+    throw new Error('官网报告与候选不符或没有执行用例');
+  const actual = browserCases(
+    (await json(join(work, 'website/tests.json'))).suites,
+  );
+  requireInventory(lane.files, [
+    ...new Set(actual.map((test) => `tests/website/${test.file}`)),
+  ]);
+  if (actual.some((test) => test.status !== 'expected'))
+    throw new Error('官网用例未全部通过');
+  cases = actual.length;
+  website = {
+    digest: manifest.artifact.digest,
+    files: manifest.artifact.files.length,
+  };
+} else if (lane.files.length && !lane.project) {
   const listed = join(work, 'listed.json');
   await pnpm(
     'exec',
@@ -156,5 +179,12 @@ if (lane.files.length && !lane.project) {
 }
 await writeFile(
   join(output, `${lane.name}.json`),
-  JSON.stringify({ sha, name: lane.name, files: lane.files, cases, contrast }),
+  JSON.stringify({
+    sha,
+    name: lane.name,
+    files: lane.files,
+    cases,
+    contrast,
+    website,
+  }),
 );

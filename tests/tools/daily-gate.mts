@@ -24,6 +24,7 @@ const receipts = globSync('*.json', { cwd: dir }).map((file) =>
   files: string[];
   cases: number;
   contrast: ContrastReport[];
+  website?: { digest: string; files: number };
 }[];
 const suites = discoverTests();
 requireInventory(
@@ -44,6 +45,13 @@ for (const lane of plan) {
   if (receipt.sha !== sha || (lane.files.length && !(receipt.cases > 0)))
     throw new Error(`缺少同一 SHA 的用例：${lane.name}`);
   requireInventory(lane.files, receipt.files);
+  if (
+    lane.name === 'website' &&
+    (!receipt.website ||
+      !/^[a-f\d]{64}$/.test(receipt.website.digest) ||
+      receipt.website.files < 1)
+  )
+    throw new Error('官网缺少静态候选摘要');
 }
 if (plan.some((l) => l.name.startsWith('contrast-')))
   summarizeContrast(
@@ -51,7 +59,10 @@ if (plan.some((l) => l.name.startsWith('contrast-')))
     true,
   );
 const summary = receipts
-  .map((r) => `- ${r.name} · 通过${r.cases ? ` · ${r.cases} 条用例` : ''}`)
+  .map(
+    (r) =>
+      `- ${r.name} · 通过${r.cases ? ` · ${r.cases} 条用例` : ''}${r.website ? ` · ${r.website.files} 份文件 · sha256 ${r.website.digest}` : ''}`,
+  )
   .join('\n');
 console.log(summary);
 if (process.env.GITHUB_STEP_SUMMARY)

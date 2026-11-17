@@ -69,3 +69,55 @@ it('修改交付自检时，计划实际包含该文件；修改隔离执行器�
   }
   expect(dailyPlan(['tests/tools/offline.sh'])).toEqual(dailyPlan(null));
 });
+
+it('官网及其真实依赖改动触发独立网站分片，保留播放器候选门禁', () => {
+  for (const file of [
+    'website/content-links.mts',
+    'tests/website/reading.spec.ts',
+    'tests/_kit/browser-network.ts',
+    'netlify.toml',
+    'package.json',
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    '.node-version',
+    'vite.config.mts',
+    'svelte.config.mts',
+    'tsconfig.json',
+    'eslint.config.mts',
+    'oxfmt.config.mts',
+    'uno.config.mts',
+    'src/lib/components/boot/Brand.svelte',
+    'src/lib/components/shared/motion.ts',
+    'src/lib/components/player/Lyrics.svelte',
+    'src/lib/app/player.ts',
+    'src/lib/api/library.ts',
+    'src/routes/+layout.svelte',
+    'src/params.ts',
+    'static/favicon.svg',
+  ]) {
+    expect(
+      dailyPlan([file]).map((lane) => lane.name),
+      file,
+    ).toContain('website');
+  }
+  expect(dailyPlan(null).map((lane) => lane.name)).toEqual(
+    expect.arrayContaining(['website', 'static', 'delivery']),
+  );
+  expect(dailyPlan(['README.md']).map((lane) => lane.name)).not.toContain(
+    'website',
+  );
+});
+
+it('官网 spec 仅归独立套件，不混进 Vitest 或原播放器 browser 项目', () => {
+  const selected = suites.selectTests([
+    ...Object.values(suites.discoverTests()).flat(),
+    'tests/website/new.spec.ts',
+  ]);
+  expect(selected.website).toContain('tests/website/new.spec.ts');
+  for (const [name, files] of Object.entries(selected))
+    if (name !== 'website')
+      expect(files).not.toContain('tests/website/new.spec.ts');
+  expect(
+    dailyPlan(null).find((lane) => lane.name === 'website')?.chromium,
+  ).toBe(true);
+});

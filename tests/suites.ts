@@ -17,6 +17,7 @@ export const SUITES = {
   browser: ['tests/browser/journeys/**/*.spec.ts'],
   a11y: ['tests/browser/accessibility/**/*.spec.ts'],
   pwa: ['tests/delivery/pwa/*.spec.ts'],
+  website: ['tests/website/*.spec.ts'],
 };
 export const selectTests = (
   files: string[],
@@ -43,6 +44,9 @@ export const selectTests = (
     'tests/delivery/browser-runner.test.ts',
     'tests/delivery/pwa/offline.spec.ts',
     'tests/delivery/pwa/update.spec.ts',
+    ...['artifact', 'reading', 'demo', 'motion'].map(
+      (name) => `tests/website/${name}.spec.ts`,
+    ),
   ],
 ) => {
   const selected: Record<string, string[]> = {};

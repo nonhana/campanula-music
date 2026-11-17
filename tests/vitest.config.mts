@@ -26,8 +26,7 @@ export default defineConfig(async () => {
       include: (suite === 'all'
         ? Object.entries(suites)
             .filter(
-              ([name]) =>
-                name !== 'browser' && name !== 'a11y' && name !== 'pwa',
+              ([name]) => !['browser', 'a11y', 'pwa', 'website'].includes(name),
             )
             .flatMap(([, files]) => files)
         : suites[suite]

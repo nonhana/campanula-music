@@ -1,6 +1,7 @@
 node_modules
 
 .output
+.netlify
 .vercel
 /.svelte-kit
 /.svelte-kit-mock

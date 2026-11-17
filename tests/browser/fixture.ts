@@ -3,8 +3,9 @@ import process from 'node:process';
 
 import AxeBuilder from '@axe-core/playwright';
 import { test as base, expect } from '@playwright/test';
-import type { BrowserContext, Page, TestInfo } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 
+import { controlNetwork } from '../_kit/browser-network.ts';
 import { startEnvironment } from '../_kit/environment.ts';
 import manual from '../baselines/a11y-manual.json' with { type: 'json' };
 
@@ -125,25 +126,7 @@ export const login = async (page: Page, next = '/') => {
   await expect(page.locator('main')).toBeAttached();
 };
 
-export const controlNetwork = async (
-  context: BrowserContext,
-  origins: Set<string>,
-) => {
-  const external: string[] = [];
-  await context.route('**/*', async (route) => {
-    const url = new URL(route.request().url());
-    if (
-      ['data:', 'blob:', 'about:'].includes(url.protocol) ||
-      origins.has(url.origin)
-    )
-      await route.continue();
-    else {
-      external.push(url.href);
-      await route.abort('blockedbyclient');
-    }
-  });
-  return external;
-};
+export { controlNetwork } from '../_kit/browser-network.ts';
 
 const scanPage = async (page: Page, info: TestInfo, scenario: string) => {
   await page.evaluate(() => document.fonts.ready.then(() => undefined));

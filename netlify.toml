@@ -1,0 +1,12 @@
+[build]
+command = "pnpm install --frozen-lockfile && pnpm docs:build"
+publish = "website/dist"
+
+[build.environment]
+NODE_VERSION = "26.13.1"
+PNPM_VERSION = "12.18.0"
+
+[[headers]]
+for = "/demo/*"
+[headers.values]
+X-Robots-Tag = "noindex, nofollow"

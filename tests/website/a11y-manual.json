@@ -1,0 +1,1490 @@
+{
+  "observedRun": "run-UD28vI",
+  "scope": "精确保留本轮 axe 无法判定的颜色对比度节点。缩放 iframe、图片/渐变背景、歌词叠层和短时间文本须人工核对；不作为通过对比度验收的证据，不修改产品门禁。",
+  "nodes": [
+    {
+      "project": "phone",
+      "scenario": "media-failed",
+      "rule": "color-contrast",
+      "target": [".text-title-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-song-id=\"102\"] > .grid-cols-\\[36px_minmax\\(0\\,1\\.25fr\\)_minmax\\(0\\,1fr\\)_112px_48px_40px\\].gap-4.pl-2 > .justify-self-center.svelte-r4lw8q:nth-child(1) > .text-neutral-500.tabular-nums.place-items-center > .col-start-1.row-start-1:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "button[aria-current=\"true\"] > .gap-2.min-w-0.flex > .duration-state.transition-colors.text-label"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-song-id=\"103\"] > .grid-cols-\\[36px_minmax\\(0\\,1\\.25fr\\)_minmax\\(0\\,1fr\\)_112px_48px_40px\\].gap-4.pl-2 > .gap-3.min-w-0.flex > .flex-1.min-w-0[data-song-text=\"\"] > .block.text-neutral-600.truncate"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-song-id=\"103\"] > .grid-cols-\\[36px_minmax\\(0\\,1\\.25fr\\)_minmax\\(0\\,1fr\\)_112px_48px_40px\\].gap-4.pl-2 > .text-neutral-600.truncate.text-caption"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-song-id=\"103\"] > .grid-cols-\\[36px_minmax\\(0\\,1\\.25fr\\)_minmax\\(0\\,1fr\\)_112px_48px_40px\\].gap-4.pl-2 > .justify-self-end.text-neutral-500.tabular-nums"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".px-6 > p"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "p > span"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-headline-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".-mx-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".font-400"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(1)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(2)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "#c1-queue-tab"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(1) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(2) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(3) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(4) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(5) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-neutral-800.sub.mt-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"1\"] > .sub.mt-1.text-body"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"2\"] > .sub.mt-1.text-body"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"3\"] > .sub.mt-1.text-body"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".px-6 > p"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "p > span"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-headline-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".-mx-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".font-400"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(1)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(2)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "#c1-lyrics-tab"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".flex-1.min-w-0 > p"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .play-target.text-left[aria-current=\"true\"] > .gap-2.min-w-0.items-center > .duration-state.transition-colors.font-500"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .truncate.block.text-caption"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.place-items-center.text-caption > .col-start-1.row-start-1"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .play-target.text-left.rounded > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.transition-colors"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .truncate.block.text-caption"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.place-items-center.text-caption > .col-start-1.row-start-1"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .play-target.text-left.rounded > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.transition-colors"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .truncate.block.text-caption"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [".text-title-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "button[aria-current=\"true\"] > .gap-1\\.5.flex.items-center:nth-child(1) > .transition-colors.duration-state.text-body"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "button[aria-current=\"true\"] > .mt-0\\.5.gap-1\\.5.text-caption > .truncate.min-w-0"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [".text-title-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "p:nth-child(1)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-center > p:nth-child(2)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "p:nth-child(2) > span"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-title.line-text.font-600 > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(1) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-title.line-text.font-600 > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(2) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-title.line-text.font-600 > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(3) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-title.line-text.font-600 > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(4) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-title.line-text.font-600 > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".word.svelte-1jeg9e6:nth-child(5) > .fill.select-none.pointer-events-none"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-neutral-800.sub.mt-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"1\"] > .sub.mt-1.text-label"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"2\"] > .sub.mt-1.text-label"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .mouse\\:group-hover\\:text-neutral-800.line-text.text-title-sm > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"3\"] > .sub.mt-1.text-label"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "h2"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".-mx-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".font-400"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(1)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-lyrics",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(2)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [".text-title-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".rounded.w-full[aria-current=\"true\"] > .gap-2.min-w-0.flex > .duration-state.transition-colors.text-label"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-neutral-50.rounded-lg.h-full > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].gap-3.pr-1 > .min-w-0 > .block.text-caption.text-neutral-600"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "phone",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].gap-3.pr-1 > .tabular-nums.text-caption.text-neutral-600"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".px-6 > p"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "p > span"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-headline-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".-mx-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".font-400"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(1)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(2)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "#c1-queue-tab"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ".text-headline > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-neutral-800.sub.mt-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"1\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"1\"] > .sub.mt-1.text-body"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"2\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"2\"] > .sub.mt-1.text-body"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        "div[data-line=\"3\"] > .line-text.text-title.font-600 > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "div[data-line=\"3\"] > .sub.mt-1.text-body"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": [".text-title-sm"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "p:nth-child(1)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".text-center > p:nth-child(2)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "p:nth-child(2) > span"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", "h2"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".-mx-1"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".font-400"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(1)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "phone",
+      "scenario": "home",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".times > span:nth-child(2)"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-library",
+      "rule": "color-contrast",
+      "target": [
+        "#demo-frame",
+        ":root > body > #demo-app > .contents:nth-child(2) > .min-h-dvh > .pb-\\[calc\\(var\\(--player-dock-height\\)\\+32px\\)\\] > .pl-\\[var\\(--rail-width\\)\\] > .mx-auto > .grid-cols-\\[minmax\\(0\\,1fr\\)\\] > .min-w-0.col-start-1.row-start-1 > .relative > ul > li:nth-child(2) > div[data-song-id=\"102\"] > .grid-cols-\\[36px_minmax\\(0\\,1\\.25fr\\)_minmax\\(0\\,1fr\\)_112px_48px_40px\\].gap-4.pl-2 > .justify-self-center.svelte-r4lw8q:nth-child(1) > .text-neutral-500.tabular-nums.place-items-center > .col-start-1.row-start-1"
+      ],
+      "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
+    },
+    {
+      "project": "desktop",
+      "scenario": "demo-queue",
+      "rule": "color-contrast",
+      "target": ["#demo-frame", ".flex-1.min-w-0 > p"],
+      "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    }
+  ],
+  "observedRuns": ["run-UD28vI", "run-tH9kvm", "run-uosN6I"]
+}

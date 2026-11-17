@@ -79,10 +79,17 @@ export const dailyPlan = (changes: string[] | null): Lane[] => {
     /^(?:package\.json|pnpm-(?:lock|workspace)\.yaml|\.node-version|vite\.config\.mts|svelte\.config\.|tsconfig\.json)/,
   );
   const broad = infrastructure || toolchain;
+  if (
+    broad ||
+    touched(
+      /^(?:website\/|tests\/(?:website\/|_kit\/browser-network\.ts$)|netlify\.toml$|(?:eslint|oxfmt)\.config\.mts$|uno\.|static\/|src\/)/,
+    )
+  )
+    lanes.push({ name: 'website', files: suites.website, chromium: true });
   const environment =
     broad ||
     touched(
-      /^(?:scripts\/dev|tests\/(?:browser\/journeys\/environment\.spec\.ts|_kit\/(?:environment|workspace|terminal)|delivery\/(?:dev-|environment|runner-isolation|command-cleanup)|tools\/https))/,
+      /^(?:scripts\/dev|tests\/(?:browser\/journeys\/environment\.spec\.ts|_kit\/(?:environment|workspace|terminal|browser-network)|delivery\/(?:dev-|environment|runner-isolation|command-cleanup)|tools\/https))/,
     );
   const sdk =
     broad ||
@@ -97,7 +104,7 @@ export const dailyPlan = (changes: string[] | null): Lane[] => {
   const browserTools =
     broad ||
     touched(
-      /^tests\/(?:browser\/(?:fixture|playwright\.config)|_kit\/mock\/|tools\/browser|baselines\/(?:browser-|a11y-|contrast-))/,
+      /^tests\/(?:browser\/(?:fixture|playwright\.config)|_kit\/(?:mock\/|browser-network\.ts)|tools\/browser|baselines\/(?:browser-|a11y-|contrast-))/,
     );
   const sharedUI =
     browserTools ||

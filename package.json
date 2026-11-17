@@ -15,6 +15,7 @@
     "docs:dev": "pnpm docs:demo && cd website && astro dev",
     "docs:build": "pnpm docs:demo && cd website && astro build",
     "docs:preview": "cd website && astro preview",
+    "docs:test": "pnpm docs:build && playwright test --config tests/website/playwright.config.ts",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo && tsc -p src/service-worker/tsconfig.json --noEmit",
     "check:endpoints": "tsx tests/tools/check-endpoints.mts",
