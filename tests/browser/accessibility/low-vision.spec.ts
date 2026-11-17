@@ -250,7 +250,9 @@ for (const mode of ['320px', 'text-spacing', 'text-200%'] as const) {
       const search = page.getByRole('combobox', { name: '搜索', exact: true });
       await search.fill('夏に');
       await search.press('Enter');
-      await page.getByRole('tab', { name: /^歌单/ }).click();
+      const playlistTab = page.getByRole('tab', { name: /^歌单/ });
+      await playlistTab.click();
+      await expect(playlistTab).toHaveAttribute('aria-selected', 'true');
       const results = page.getByRole('list', { name: '歌单', exact: true });
       await expect(results.getByRole('link').first()).toBeVisible();
       await prepare();

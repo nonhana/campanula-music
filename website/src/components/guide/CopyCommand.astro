@@ -1,0 +1,34 @@
+---
+import { Copy } from '@lucide/svelte';
+import Button from '../../../../src/lib/components/ui/Button.svelte';
+---
+
+<div class="copy-command">
+  <pre><code>openssl rand -base64 32</code></pre>
+  <div class="command-toolbar">
+    <span role="status" aria-live="polite"></span>
+    <Button variant="outline" icon={Copy} disabled data-copy-command>
+      复制命令
+    </Button>
+  </div>
+</div>
+
+<script>
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-copy-command]')
+    .forEach((button) => {
+      button.disabled = false;
+      button.addEventListener('click', async () => {
+        const container = button.closest('.copy-command')!;
+        const status = container.querySelector('[role="status"]')!;
+        try {
+          await navigator.clipboard.writeText(
+            container.querySelector('code')!.textContent!,
+          );
+          status.textContent = '已复制';
+        } catch {
+          status.textContent = '没有复制成功，请选中命令复制';
+        }
+      });
+    });
+</script>

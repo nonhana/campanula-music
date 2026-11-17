@@ -13,6 +13,7 @@
     formatStorageSize,
   } from '#lib/components/shared/text.ts';
   import Button from '#lib/components/ui/Button.svelte';
+  import { settingsLink } from '#lib/components/ui/control-styles.ts';
   import IconButton from '#lib/components/ui/IconButton.svelte';
   import Segmented from '#lib/components/ui/Segmented.svelte';
   import TextButton from '#lib/components/ui/TextButton.svelte';
@@ -170,10 +171,7 @@
         </div>
       </div>
     </div>
-    <a
-      href={resolve('/downloads')}
-      class="mt-3 min-h-14 flex items-center gap-3 rounded-xl bg-white px-5 py-3 shadow-ambient transition-colors duration-feedback active:bg-neutral-50 mouse:hover:bg-neutral-50"
-    >
+    <a href={resolve('/downloads')} class={['mt-3', settingsLink]}>
       <CircleArrowDown
         size={20}
         class="flex-none text-secondary-800"

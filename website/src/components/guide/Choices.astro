@@ -1,0 +1,65 @@
+---
+import { ChevronRight, CircleArrowDown, Cloud, Server } from '@lucide/svelte';
+import { settingsLink } from '../../../../src/lib/components/ui/control-styles.ts';
+---
+
+<p class="page-intro">先把播放器放到自己的网址，再用自己的网易云账号登录。</p>
+<section class="choice-section" aria-labelledby="deploy-heading">
+  <h2 id="deploy-heading" class="text-title-sm font-600">
+    选择部署方式
+  </h2>
+  <div class="choice-list">
+    <a id="deploy-vercel" class={settingsLink} href="/guide/vercel/">
+      <Cloud size={20} class="flex-none text-primary-900" aria-hidden="true" />
+      <span class="min-w-0 flex-1">
+        <span class="block text-body text-neutral-900 font-500">
+          部署到 Vercel
+        </span>
+        <span class="mt-1 block text-caption text-neutral-600">
+          不用准备服务器，按步骤配置密钥和域名
+        </span>
+      </span>
+      <ChevronRight
+        size={18}
+        class="flex-none text-neutral-500"
+        aria-hidden="true"
+      />
+    </a>
+    <a
+      id="deploy-server"
+      class={settingsLink}
+      href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/self-hosting.md"
+      rel="external"
+    >
+      <Server size={20} class="flex-none text-neutral-700" aria-hidden="true" />
+      <span class="min-w-0 flex-1">
+        <span class="block text-body text-neutral-900 font-500">
+          部署到自己的服务器
+        </span>
+        <span class="mt-1 block text-caption text-neutral-600">
+          用 Docker 或 Node 运行，再配置 HTTPS
+        </span>
+      </span>
+      <ChevronRight
+        size={18}
+        class="flex-none text-neutral-500"
+        aria-hidden="true"
+      />
+    </a>
+  </div>
+</section>
+<section class="choice-section" aria-labelledby="listen-heading">
+  <h2 id="listen-heading" class="text-title-sm font-600">
+    已经部署好了
+  </h2>
+  <a
+    class="listen-link"
+    href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/acceptance/issue-101.md#自动化边界与作者试用"
+    rel="external"
+  >
+    <CircleArrowDown size={18} aria-hidden="true" />
+    安装与离线播放
+    <ChevronRight size={16} aria-hidden="true" />
+  </a>
+  <p class="text-caption text-neutral-600">暂时查看仓库里的设备试用说明。</p>
+</section>

@@ -59,6 +59,7 @@
     "@astrojs/compiler-rs": "catalog:website",
     "@astrojs/markdown-remark": "catalog:website",
     "@astrojs/starlight": "catalog:website",
+    "@astrojs/svelte": "catalog:website",
     "@axe-core/playwright": "catalog:test",
     "@clack/prompts": "catalog:dev",
     "@fontsource-variable/noto-sans": "catalog:ui",

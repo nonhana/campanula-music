@@ -1,0 +1,62 @@
+---
+const { toc, entry } = Astro.locals.starlightRoute;
+const items =
+  toc?.items.filter((item) => item.depth === 2 && item.slug !== '_top') ?? [];
+const tutorial = entry.id === 'guide/vercel';
+---
+
+<div class:list={['reading-layout', { tutorial }]}>
+  {tutorial && (
+    <details open class="chapter-menu" id="chapter-menu">
+      <summary id="chapter-toggle">
+        目录<span aria-hidden="true" class="chapter-chevron"></span>
+      </summary>
+      <nav aria-label="本页章节">
+        <ol>
+          {items.map((item) => (
+            <li>
+              <a href={`#${item.slug}`} class="chapter-link">
+                {item.text}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </details>
+  )}
+  <div class="reading-column">
+    <slot />
+  </div>
+</div>
+
+<script>
+  document
+    .querySelectorAll<HTMLElement>('.reading-content h2, .reading-content h3')
+    .forEach((heading) => {
+      heading.tabIndex = -1;
+    });
+  const menu = document.querySelector<HTMLDetailsElement>('#chapter-menu');
+  const desktop = matchMedia('(min-width: 1100px)');
+  if (menu) {
+    const sync = () => {
+      menu.open = desktop.matches;
+    };
+    sync();
+    desktop.addEventListener('change', sync);
+    menu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !desktop.matches && menu.open) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      }
+    });
+    menu.querySelectorAll<HTMLAnchorElement>('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        if (desktop.matches) return;
+        menu.open = false;
+        document
+          .getElementById(decodeURIComponent(link.hash.slice(1)))
+          ?.focus({ preventScroll: true });
+      });
+    });
+  }
+</script>

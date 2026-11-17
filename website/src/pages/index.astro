@@ -1,8 +1,20 @@
+---
+import { ArrowRight } from '@lucide/svelte';
+import {
+  pillBase,
+  pillLooks,
+} from '../../../src/lib/components/ui/control-styles.ts';
+import Header from '../components/guide/Header.astro';
+import Navigation from '../components/guide/Navigation.astro';
+import SkipLink from '../components/guide/SkipLink.astro';
+---
+
 <!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="only light" />
     <title>Campanula Music</title>
     <meta
       name="description"
@@ -10,30 +22,44 @@
     />
     <link rel="canonical" href={Astro.site} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <Navigation />
   </head>
   <body>
-    <main>
-      <h1>Campanula Music</h1>
-      <p>
-        Campanula
-        是开源的第三方网易云音乐播放器。你可以部署自己的实例，再用自己的网易云账号登录，管理曲库和播放音乐。
-      </p>
-      <p>这里是项目介绍和部署指南。要开始听歌，请先部署自己的实例。</p>
-      <nav aria-label="项目入口">
-        <ul>
-          <li>
-            <a href="/guide/">部署 Campanula</a>
-          </li>
-          <li>
-            <a
-              href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
-              rel="external"
-            >
-              查看项目源码
-            </a>
-          </li>
-        </ul>
-      </nav>
+    <SkipLink />
+    <Header />
+    <main class="site-body">
+      <div class="home-content">
+        <h1 id="main" tabindex="-1">
+          在自己的网址里听歌
+        </h1>
+        <p>
+          Campanula
+          是开源的第三方网易云音乐播放器。在手机和电脑上，用自己的网易云账号听歌、管理曲库，把下载好的音乐留在这台设备上。
+        </p>
+        <p>先选一种部署方式，再打开属于自己的 Campanula。</p>
+        <div class="home-actions">
+          <a
+            id="home-deploy"
+            class:list={[
+              pillBase,
+              pillLooks.primary.color,
+              pillLooks.primary.link,
+              'gap-2 pl-4 pr-5',
+            ]}
+            href="/guide/"
+          >
+            部署 Campanula
+            <ArrowRight size={18} aria-hidden="true" />
+          </a>
+          <a
+            href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
+            rel="external"
+            class="source-link"
+          >
+            查看项目源码
+          </a>
+        </div>
+      </div>
     </main>
   </body>
 </html>

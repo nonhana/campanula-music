@@ -1,0 +1,13 @@
+---
+import { ArrowLeft } from '@lucide/svelte';
+const { entry } = Astro.locals.starlightRoute;
+const choice = entry.id === 'guide';
+---
+
+<a class="back-link" href={choice ? '/' : '/guide/'} id="reading-back">
+  <ArrowLeft size={18} aria-hidden="true" />
+  {choice ? '项目首页' : '部署方式'}
+</a>
+<h1 id="main" tabindex="-1" class="page-title">
+  {entry.data.title}
+</h1>

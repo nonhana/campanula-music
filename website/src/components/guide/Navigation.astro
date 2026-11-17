@@ -1,0 +1,69 @@
+<style is:inline>
+  @view-transition {
+    navigation: auto;
+  }
+</style>
+<script is:inline>
+  (() => {
+    const focusKey = () =>
+      `campanula-reading:${window.navigation?.currentEntry?.key ?? location.href}`;
+    const setDirection = (transition, activation) => {
+      if (!transition || !activation?.from?.url || !activation.entry.url)
+        return;
+      const from = new URL(activation.from.url);
+      const to = new URL(activation.entry.url);
+      const depth = (path) => path.split('/').filter(Boolean).length;
+      const type = matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'fade'
+        : depth(to.pathname) < depth(from.pathname)
+          ? 'down'
+          : 'up';
+      transition.types.add(type);
+    };
+    addEventListener('pageswap', (event) =>
+      setDirection(event.viewTransition, event.activation),
+    );
+    addEventListener('pagereveal', (event) =>
+      setDirection(event.viewTransition, window.navigation?.activation),
+    );
+    addEventListener('pagehide', () => {
+      try {
+        sessionStorage.setItem(focusKey(), document.activeElement?.id ?? '');
+      } catch {}
+    });
+    addEventListener('pageshow', (event) => {
+      const back =
+        event.persisted ||
+        performance.getEntriesByType('navigation')[0]?.type === 'back_forward';
+      if (!back) return;
+      try {
+        const id = sessionStorage.getItem(focusKey());
+        if (id) document.getElementById(id)?.focus({ preventScroll: true });
+      } catch {}
+    });
+    document.addEventListener('click', (event) => {
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      const link = event.target.closest('a');
+      if (!link || !['reading-back', 'footer-back'].includes(link.id)) return;
+      const previous = window.navigation
+        ?.entries()
+        .slice(0, window.navigation.currentEntry.index)
+        .findLast(
+          (entry) =>
+            entry.url &&
+            new URL(entry.url).pathname === new URL(link.href).pathname,
+        );
+      if (previous) {
+        event.preventDefault();
+        window.navigation.traverseTo(previous.key);
+      }
+    });
+  })();
+</script>

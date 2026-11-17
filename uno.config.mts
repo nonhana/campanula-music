@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { presetRemToPx } from '@unocss/preset-rem-to-px';
 import {
   defineConfig,
@@ -185,6 +187,13 @@ const pageTransitionCss = (ground: string): string => {
 };
 
 export default defineConfig<Theme>({
+  content: {
+    filesystem: [
+      fileURLToPath(
+        new URL('./src/lib/components/ui/control-styles.ts', import.meta.url),
+      ),
+    ],
+  },
   presets: [presetWind3(), presetRemToPx()],
   transformers: [transformerDirectives(), transformerVariantGroup()],
   // 格子网格的格宽 / 列数 / 骨架排法在 tile-grid.ts 里拼出来，开发时的模块扫描看不到 .ts 字符串，这里显式带上

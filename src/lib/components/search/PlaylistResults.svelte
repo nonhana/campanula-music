@@ -39,7 +39,7 @@
     {@const meta = counts(playlist)}
     <li
       class={[
-        'h-16 flex items-center transition-colors duration-feedback mouse:hover:bg-primary-100',
+        'min-h-16 flex items-center transition-colors duration-feedback mouse:hover:bg-primary-100',
         !phone && 'rounded-lg',
         toggle && 'pr-1',
       ]}
@@ -48,7 +48,7 @@
       <a
         href={resolve('/playlists/[id=neteaseId]', { id: playlist.id })}
         class={[
-          'h-full min-w-0 flex flex-1 items-center gap-3',
+          'min-h-16 min-w-0 flex flex-1 items-center gap-3 py-2',
           phone ? 'pl-4' : 'rounded-lg pl-2',
           toggle ? 'pr-2' : phone ? 'pr-4' : 'pr-2',
         ]}

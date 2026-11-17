@@ -1,0 +1,13 @@
+---
+import { ArrowLeft } from '@lucide/svelte';
+const tutorial = Astro.locals.starlightRoute.entry.id === 'guide/vercel';
+---
+
+{tutorial && (
+  <footer class="reading-footer">
+    <a href="/guide/" id="footer-back" class="back-link">
+      <ArrowLeft size={18} aria-hidden="true" />
+      返回部署方式
+    </a>
+  </footer>
+)}

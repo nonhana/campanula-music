@@ -1,0 +1,12 @@
+---
+import Choices from './Choices.astro';
+const choice = Astro.locals.starlightRoute.entry.id === 'guide';
+---
+
+{choice ? (
+  <Choices />
+) : (
+  <article class="reading-content">
+    <slot />
+  </article>
+)}

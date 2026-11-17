@@ -1,0 +1,37 @@
+---
+import { ArrowUpRight } from '@lucide/svelte';
+import {
+  pillBase,
+  pillLooks,
+} from '../../../../src/lib/components/ui/control-styles.ts';
+const source =
+  'https://github.com/nonhana/campanula-music/tree/4fb955c43a070f093ef45c883d906956a1b2cd3a';
+const deploy = new URL('https://vercel.com/new/clone');
+deploy.searchParams.set('repository-url', source);
+deploy.searchParams.set('env', 'COOKIE_SECRET');
+deploy.searchParams.set(
+  'envDescription',
+  '填入自己生成并保存的 Cookie 加密密钥，至少 32 个字符。升级时保留原值。',
+);
+deploy.searchParams.set(
+  'envLink',
+  'https://github.com/nonhana/campanula-music/blob/4fb955c43a070f093ef45c883d906956a1b2cd3a/.env.example',
+);
+---
+
+<p class="deploy-action">
+  <a
+    id="vercel-create"
+    href={deploy.href}
+    rel="external"
+    class:list={[
+      pillBase,
+      pillLooks.primary.color,
+      pillLooks.primary.link,
+      'gap-2 pl-4 pr-5',
+    ]}
+  >
+    在 Vercel 创建实例
+    <ArrowUpRight size={18} aria-hidden="true" />
+  </a>
+</p>

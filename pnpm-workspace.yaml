@@ -74,6 +74,7 @@ catalogs:
     '@astrojs/compiler-rs': 0.5.3
     '@astrojs/markdown-remark': 7.3.9
     '@astrojs/starlight': 0.43.1
+    '@astrojs/svelte': 9.1.6
     astro: 7.4.12
     astro-eslint-parser: 3.2.0
     eslint-plugin-astro: 3.2.1
