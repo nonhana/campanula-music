@@ -1,14 +1,19 @@
 import { fileURLToPath } from 'node:url';
 
+import { satteri } from '@astrojs/markdown-satteri';
 import starlight from '@astrojs/starlight';
 import svelte from '@astrojs/svelte';
 import { defineConfig } from 'astro/config';
 import UnoCSS from 'unocss/vite';
 
 import uno from '../uno.config.mts';
+import { externalLinks } from './external-links.mts';
+
+const site = new URL('https://campanula.caelum.moe');
 
 export default defineConfig({
-  site: 'https://campanula.caelum.moe',
+  site: site.href,
+  markdown: { processor: satteri({ hastPlugins: [externalLinks(site)] }) },
   output: 'static',
   trailingSlash: 'always',
   server: { port: 4322 },

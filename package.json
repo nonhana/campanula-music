@@ -58,6 +58,7 @@
     "@antfu/eslint-config": "catalog:lint",
     "@astrojs/compiler-rs": "catalog:website",
     "@astrojs/markdown-remark": "catalog:website",
+    "@astrojs/markdown-satteri": "catalog:website",
     "@astrojs/starlight": "catalog:website",
     "@astrojs/svelte": "catalog:website",
     "@axe-core/playwright": "catalog:test",

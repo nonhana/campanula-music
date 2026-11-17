@@ -1,4 +1,5 @@
 ---
+import { Icon } from '@astrojs/starlight/components';
 import Brand from '../../../../src/lib/components/boot/Brand.svelte';
 import Scrollbar from '../../../../src/lib/components/ui/Scrollbar.svelte';
 import '@unocss/reset/tailwind.css';
@@ -14,9 +15,11 @@ import '../../styles/guide.css';
     <a
       href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
       class="source-link"
+      aria-label="在 GitHub 查看 Campanula 源码"
+      title="在 GitHub 查看源码"
       rel="external"
     >
-      源码
+      <Icon name="github" size="20px" />
     </a>
   </nav>
 </header>

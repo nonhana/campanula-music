@@ -1,5 +1,11 @@
 ---
-import { ChevronRight, CircleArrowDown, Cloud, Server } from '@lucide/svelte';
+import {
+  ArrowUpRight,
+  ChevronRight,
+  CircleArrowDown,
+  Cloud,
+  Server,
+} from '@lucide/svelte';
 import { settingsLink } from '../../../../src/lib/components/ui/control-styles.ts';
 ---
 
@@ -40,7 +46,7 @@ import { settingsLink } from '../../../../src/lib/components/ui/control-styles.t
           用 Docker 或 Node 运行，再配置 HTTPS
         </span>
       </span>
-      <ChevronRight
+      <ArrowUpRight
         size={18}
         class="flex-none text-neutral-500"
         aria-hidden="true"
@@ -59,7 +65,7 @@ import { settingsLink } from '../../../../src/lib/components/ui/control-styles.t
   >
     <CircleArrowDown size={18} aria-hidden="true" />
     安装与离线播放
-    <ChevronRight size={16} aria-hidden="true" />
+    <ArrowUpRight size={16} aria-hidden="true" />
   </a>
   <p class="text-caption text-neutral-600">暂时查看仓库里的设备试用说明。</p>
 </section>

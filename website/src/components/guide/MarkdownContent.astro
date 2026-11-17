@@ -1,4 +1,5 @@
 ---
+import { ArrowUpRight } from '@lucide/svelte';
 import Choices from './Choices.astro';
 const choice = Astro.locals.starlightRoute.entry.id === 'guide';
 ---
@@ -7,6 +8,11 @@ const choice = Astro.locals.starlightRoute.entry.id === 'guide';
   <Choices />
 ) : (
   <article class="reading-content">
+    <svg width="0" height="0" aria-hidden="true" class="absolute">
+      <defs>
+        <ArrowUpRight id="guide-external-arrow" size={24} />
+      </defs>
+    </svg>
     <slot />
   </article>
 )}

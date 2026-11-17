@@ -184,6 +184,13 @@ button {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+.external-link-tail svg {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-inline-start: 0.12em;
+  vertical-align: baseline;
+}
 .reading-content strong {
   color: theme('colors.neutral.800');
   font-weight: 600;
