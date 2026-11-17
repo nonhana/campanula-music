@@ -1,60 +1,76 @@
-.homepage {
-  width: min(1540px, calc(100% - clamp(48px, 8vw, 136px)));
+.home-surface {
+  --home-width: min(1320px, calc(100% - clamp(40px, 8vw, 128px)));
+}
+.homepage,
+.home-surface .site-nav {
+  width: var(--home-width);
+  max-width: none;
   margin-inline: auto;
+  padding-inline: 0;
 }
 .overview {
   display: grid;
-  grid-template-columns: minmax(280px, 0.5fr) minmax(0, 1fr);
-  gap: clamp(28px, 4vw, 74px);
+  grid-template-columns: minmax(310px, 0.44fr) minmax(0, 1fr);
   align-items: center;
-  padding-block: clamp(22px, 4vh, 62px) clamp(30px, 5vh, 68px);
-}
-.project-intro {
-  min-width: 0;
-  padding-bottom: 24px;
+  gap: clamp(40px, 5vw, 80px);
+  padding-block: clamp(32px, 6svh, 80px);
 }
 .project-intro h1 {
   margin: 0;
-  @apply text-display font-600;
-  white-space: nowrap;
+  color: theme('colors.primary.950');
+  @apply text-headline font-500;
 }
-.definition {
-  margin: 18px 0 0;
-  font-weight: 500;
-  @apply text-title;
-  line-height: 1.55;
-}
-.description {
-  margin: 14px 0 28px;
-  max-width: 25em;
-  color: theme('colors.neutral.600');
+.description,
+.hosting {
+  color: theme('colors.neutral.700');
   @apply text-body;
-  line-height: 1.9;
+  line-height: 1.85;
   text-wrap: pretty;
 }
-.account-note {
-  max-width: 26em;
+.description {
   margin: 16px 0 0;
-  color: theme('colors.neutral.600');
-  @apply text-caption;
+}
+.hosting {
+  margin: 12px 0 0;
+}
+.hosting a {
+  white-space: nowrap;
+}
+.hosting a,
+.demo-feedback button {
+  color: theme('colors.primary.900');
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.hosting a:hover,
+.demo-feedback button:hover {
+  color: theme('colors.primary.950');
+}
+.home-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
 }
 .demo-preview {
   margin: 0;
   min-width: 0;
+  container-type: inline-size;
 }
 .demo-window {
   position: relative;
   overflow: hidden;
   border-radius: theme('borderRadius.xl');
   background: theme('colors.primary.100');
-  box-shadow: theme('boxShadow.float');
+  box-shadow: theme('boxShadow.ambient');
 }
 .demo-still,
 .demo-still img {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .demo-still {
   position: absolute;
@@ -74,140 +90,82 @@
 .demo-window[data-ready] .demo-still {
   visibility: hidden;
 }
-.demo-window[data-desktop] {
-  aspect-ratio: 1120 / 786;
-}
-.demo-window[data-desktop] iframe {
-  position: absolute;
-  inset: 0;
-  width: 1120px;
-  height: 786px;
-  transform-origin: top left;
-  transform: scale(var(--demo-scale));
-}
-.demo-preview figcaption {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  color: theme('colors.neutral.600');
-  @apply text-caption;
-}
-.demo-preview figcaption a {
-  display: inline-block;
-  padding-block: 12px;
-}
-.demo-description,
-.demo-fallback {
-  margin: 0;
-  color: theme('colors.neutral.600');
-  @apply text-caption;
-}
-.demo-fallback {
-  margin-top: 8px;
-}
-.demo-fallback summary {
-  width: fit-content;
-  min-height: 28px;
-  border-radius: theme('borderRadius.sm');
-}
-.demo-fallback img {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin-top: 12px;
-  border-radius: theme('borderRadius.lg');
-}
-.home-guides {
-  display: flex;
-  align-items: center;
-  gap: 34px;
-  border-top: 1px solid theme('colors.primary.200');
-  padding: 28px 0 40px;
-}
-.home-guides h2 {
-  margin: 0;
-  @apply text-title-sm font-600;
-}
-.home-guides > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-}
-.home-guides a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  color: theme('colors.neutral.600');
-  @apply text-label;
-}
-.home-guides a:hover {
-  color: theme('colors.primary.900');
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-@media (max-width: 900px) and (min-width: 701px) {
-  .overview {
-    grid-template-columns: minmax(240px, 0.77fr) minmax(0, 1fr);
-    gap: 30px;
-  }
-  .project-intro h1 {
-    @apply text-display;
-  }
-}
-@media (max-width: 700px) {
-  .homepage {
-    width: calc(100% - 40px);
-  }
-  .overview {
-    display: block;
-    padding: 21px 0 22px;
-  }
-  .project-intro {
-    padding-bottom: 22px;
-  }
-  .project-intro h1 {
-    @apply text-display;
-  }
-  .definition {
-    margin-top: 8px;
-    @apply text-title-sm;
-  }
-  .description {
-    margin: 8px 0 15px;
-    @apply text-label;
-    line-height: 1.65;
-  }
-  .account-note {
-    margin-top: 12px;
-    max-width: none;
+@container (min-width: 710px) {
+  .demo-window {
+    aspect-ratio: 1120 / 786;
   }
   .demo-window iframe {
-    height: clamp(540px, 68svh, 625px);
-  }
-  .home-guides {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
-    padding-top: 21px;
-  }
-  .home-guides > div {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0;
+    position: absolute;
+    inset: 0;
+    width: 1120px;
+    height: 786px;
+    transform-origin: top left;
+    transform: scale(var(--demo-scale, 1));
   }
 }
-
-.home-actions {
+.demo-feedback:not([hidden]) {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  align-items: baseline;
+  gap: 8px;
 }
+.demo-feedback,
+.demo-note {
+  margin: 6px 0 0;
+  color: theme('colors.neutral.700');
+  @apply text-caption;
+}
+.demo-feedback button {
+  min-height: 44px;
+  padding-inline: 24px 12px;
+}
+.retry-spinner {
+  visibility: hidden;
+}
+.demo-feedback button[aria-busy] {
+  cursor: progress;
+}
+.demo-feedback button[aria-busy] .retry-spinner {
+  visibility: visible;
+}
+@media (min-width: 1100px) {
+  .overview {
+    min-height: calc(100svh - 64px);
+    align-content: center;
+    padding-block: clamp(24px, 4svh, 48px) clamp(48px, 10svh, 110px);
+  }
+}
+@media (max-width: 900px) {
+  .overview {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-block: 24px 36px;
+  }
+  .project-intro {
+    max-width: 36em;
+  }
+}
+@media (max-width: 767px) {
+  .project-intro h1 {
+    @apply text-headline-sm;
+  }
+}
+@media (max-width: 600px) {
+  .overview {
+    gap: 20px;
+    padding-block-start: 16px;
+  }
 
-.home-guides a:has(> .external-link-space) {
-  display: inline;
-  padding-block: 12px;
-  line-height: 44px;
+  .description {
+    margin-top: 8px;
+  }
+  .hosting {
+    margin-top: 4px;
+  }
+  .home-actions {
+    margin-top: 12px;
+  }
+  .demo-window iframe {
+    height: clamp(520px, 67svh, 625px);
+  }
 }

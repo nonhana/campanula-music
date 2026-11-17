@@ -1,5 +1,5 @@
 ---
-import { ArrowRight } from '@lucide/svelte';
+import { ArrowRight, LoaderCircle } from '@lucide/svelte';
 import {
   pillBase,
   pillLooks,
@@ -25,7 +25,7 @@ import '../styles/home.css';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <Navigation />
   </head>
-  <body>
+  <body class="home-surface">
     <SkipLink />
     <Header />
     <main
@@ -36,23 +36,34 @@ import '../styles/home.css';
     >
       <section class="overview" aria-labelledby="project-title">
         <div class="project-intro">
-          <h1 id="project-title">Campanula</h1>
-          <p class="definition">开源的第三方网易云音乐播放器。</p>
+          <h1 id="project-title">第三方网易云音乐播放器</h1>
           <p class="description">
-            用自己的网易云账号听歌、看歌词、整理歌单。下载到本机的歌，没网也能听。
+            用自己的账号听歌、看歌词、整理歌单。下载好的歌，离线也能听。
+          </p>
+          <p class="hosting">
+            项目开源，可部署到 <a href="/guide/vercel/">Vercel</a> 或
+            <a
+              href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/self-hosting.md"
+              target="_blank"
+              rel="external noopener"
+            >
+              自己的服务器
+              <span class="external-link-space" aria-hidden="true"></span>
+            </a>
+            。
           </p>
           <div class="home-actions">
             <a
               id="home-deploy"
               class:list={[
                 pillBase,
-                pillLooks.primary.color,
-                pillLooks.primary.link,
+                pillLooks.outline.color,
+                pillLooks.outline.link,
                 'gap-2 pl-4 pr-5',
               ]}
               href="/guide/"
             >
-              部署 Campanula <ArrowRight size={18} aria-hidden="true" />
+              部署指南 <ArrowRight size={18} aria-hidden="true" />
             </a>
             <a
               href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
@@ -64,9 +75,6 @@ import '../styles/home.css';
               <span class="external-link-space" aria-hidden="true"></span>
             </a>
           </div>
-          <p class="account-note">
-            先部署自己的实例，再登录自己的账号。这个官网不接受账号登录。
-          </p>
         </div>
         <figure class="demo-preview">
           <div class="demo-window">
@@ -91,72 +99,35 @@ import '../styles/home.css';
               tabindex="0"
             ></iframe>
           </div>
-          <figcaption>
-            <span>真实界面 · 三段原创演示音频</span>
-            <a
-              id="open-demo"
-              href="/demo/?screen=player"
-              target="_blank"
-              rel="noopener"
-              class="text-link"
-            >
-              单独打开
-            </a>
+          <figcaption class="demo-feedback" hidden>
+            <span id="demo-status" role="status"></span>
+            <button type="button" id="demo-retry">
+              <span class="relative">
+                <LoaderCircle
+                  size={16}
+                  class="retry-spinner absolute inset-y-0 right-full my-auto mr-1.5 animate-spin"
+                  aria-hidden="true"
+                />
+                重新加载
+              </span>
+            </button>
           </figcaption>
-          <p id="demo-status" class="demo-description" role="status">
-            点播放才会出声。可以切歌、看歌词和翻译，收起播放页回到曲库。
-          </p>
           <noscript>
-            <p class="demo-description">
-              开启 JavaScript 后可以试听；上方保留了同一版界面的截图。
+            <p class="demo-note">
+              当前显示的是播放页截图。开启 JavaScript 后可试听。
             </p>
           </noscript>
-          <details id="demo-fallback" class="demo-fallback">
-            <summary>打不开或没有声音？看界面截图</summary>
-            <img
-              src="/media/player-desktop.webp"
-              width="1120"
-              height="786"
-              alt="示例播放器的真实界面截图"
-              loading="lazy"
-            />
-            <p>
-              试听需要 JavaScript 和浏览器的音频支持。也可以直接
-              <a class="text-link" href="/guide/">
-                部署 Campanula
-              </a>
-              。
-            </p>
-          </details>
         </figure>
-      </section>
-      <section class="home-guides" aria-labelledby="guide-title">
-        <h2 id="guide-title">使用指南</h2>
-        <div>
-          <a href="/guide/vercel/">
-            部署到 Vercel <ArrowRight size={16} aria-hidden="true" />
-          </a>
-          <a
-            class="text-link"
-            href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/self-hosting.md"
-            target="_blank"
-            rel="external noopener"
-          >
-            在自己的服务器上运行
-            <span class="external-link-space" aria-hidden="true"></span>
-          </a>
-        </div>
       </section>
     </main>
     <script>
       const frame = document.querySelector<HTMLIFrameElement>('#demo-frame')!;
       const stage = document.querySelector<HTMLElement>('.demo-window')!;
       const status = document.querySelector<HTMLElement>('#demo-status')!;
-      const fallback =
-        document.querySelector<HTMLDetailsElement>('#demo-fallback')!;
+      const feedback = document.querySelector<HTMLElement>('.demo-feedback')!;
+      const retry = document.querySelector<HTMLButtonElement>('#demo-retry')!;
+      let timer: number;
       const resize = () => {
-        const desktop = stage.clientWidth >= 710;
-        stage.toggleAttribute('data-desktop', desktop);
         stage.style.setProperty(
           '--demo-scale',
           String(stage.clientWidth / 1120),
@@ -164,37 +135,63 @@ import '../styles/home.css';
       };
       resize();
       new ResizeObserver(resize).observe(stage);
+      const stop = () => {
+        clearTimeout(timer);
+        retry.removeAttribute('aria-busy');
+        retry.removeAttribute('aria-disabled');
+        stage.removeAttribute('data-ready');
+        frame.removeAttribute('src');
+      };
+      const fail = (message: string) => {
+        const wasPlayingHere = document.activeElement === frame;
+        stop();
+        feedback.hidden = false;
+        status.textContent = message;
+        if (wasPlayingHere) retry.focus({ preventScroll: true });
+      };
+      const start = () => {
+        frame.src = frame.dataset.src!;
+        timer = window.setTimeout(
+          fail,
+          15000,
+          '播放器没能打开，当前显示的是播放页截图。',
+        );
+      };
       addEventListener('message', (event) => {
         if (
           event.origin !== location.origin ||
-          event.source !== frame.contentWindow
+          event.source !== frame.contentWindow ||
+          !frame.hasAttribute('src')
         )
           return;
-        if (event.data?.type === 'campanula-demo-ready')
+        if (event.data?.type === 'campanula-demo-ready') {
+          clearTimeout(timer);
           stage.setAttribute('data-ready', '');
-        if (event.data?.type === 'campanula-demo-media-error') {
-          status.textContent =
-            '这段音频没能播放。可以换一首再试，或先看截图、阅读部署指南。';
-          fallback.open = true;
+          if (document.activeElement === retry)
+            frame.focus({ preventScroll: true });
+          feedback.hidden = true;
+          status.textContent = '';
+          retry.removeAttribute('aria-busy');
+          retry.removeAttribute('aria-disabled');
+        } else if (event.data?.type === 'campanula-demo-media-error') {
+          fail('音频没能播放，当前显示的是播放页截图。');
         }
       });
-      const start = () => {
-        frame.src = frame.dataset.src!;
-      };
+      retry.addEventListener('click', () => {
+        if (retry.hasAttribute('aria-busy')) return;
+        retry.setAttribute('aria-busy', 'true');
+        retry.setAttribute('aria-disabled', 'true');
+        start();
+      });
       start();
-      // 取走 iframe 的文档也会停掉其 Audio；返回首页重新打开暂停的示例。
       addEventListener('pagehide', () => {
-        frame.src = 'about:blank';
-        stage.removeAttribute('data-ready');
+        feedback.hidden = true;
+        status.textContent = '';
+        stop();
       });
       addEventListener('pageshow', (event) => {
         if (event.persisted) start();
       });
-      setTimeout(() => {
-        if (!stage.hasAttribute('data-ready'))
-          status.textContent =
-            '播放器暂时没能打开。可以先看截图，或照指南部署自己的播放器。';
-      }, 15000);
     </script>
   </body>
 </html>

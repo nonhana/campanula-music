@@ -34,7 +34,7 @@ const lists: Pick<Playlist, 'id' | 'name' | 'kind'>[] = [
 export const playlists: Playlist[] = lists.map((playlist) => ({
   ...playlist,
   private: false,
-  coverUrl: '/media/window.svg',
+  coverUrl: playlist.kind === 'liked' ? '/media/window.svg' : '/media/tide.svg',
   creator: 'Campanula',
   creatorAvatarUrl: null,
   playCount: null,

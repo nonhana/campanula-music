@@ -59,15 +59,7 @@
     aria-label="Campanula · 回到示例曲库"
     class="rounded-lg"><Brand /></a
   >
-  <span class="ml-auto text-caption text-neutral-600"
-    >本地示例 · 不登录账号</span
-  >
-{/snippet}
-{#snippet content()}
-  <p class="py-3 text-caption text-neutral-600">
-    三段演示音频和对应的示意歌词。这里只试播放、歌词与队列，不开放账号、下载和曲库写入。
-  </p>
-  {@render children()}
+  <span class="ml-auto text-caption text-neutral-600">示例音频</span>
 {/snippet}
 <div class="contents" inert={overlays.stack.baseInert}>
   {#if desktopLayout.current}
@@ -80,10 +72,11 @@
           ><House size={22} aria-hidden="true" /></a
         >
       {/snippet}
-      {@render content()}
+      {@render children()}
     </DesktopShell>
   {:else}
-    <PhoneShell {header}><div class="px-4">{@render content()}</div></PhoneShell
+    <PhoneShell {header}
+      ><div class="px-4">{@render children()}</div></PhoneShell
     >
   {/if}
 </div>
