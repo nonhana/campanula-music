@@ -6,6 +6,8 @@ node_modules
 /.svelte-kit-mock
 /.svelte-kit-test
 /build
+/website/dist/
+/website/.astro/
 
 .DS_Store
 Thumbs.db

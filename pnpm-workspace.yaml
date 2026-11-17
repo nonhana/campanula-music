@@ -69,3 +69,11 @@ catalogs:
     '@unocss/preset-rem-to-px': ^66.13.0
     '@unocss/reset': ^66.13.0
     unocss: ^66.13.0
+
+  website:
+    '@astrojs/compiler-rs': 0.5.3
+    '@astrojs/markdown-remark': 7.3.9
+    '@astrojs/starlight': 0.43.1
+    astro: 7.4.12
+    astro-eslint-parser: 3.2.0
+    eslint-plugin-astro: 3.2.1

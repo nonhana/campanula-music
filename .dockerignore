@@ -14,6 +14,7 @@ _notes
 .env.*
 !.env.example
 docs
+website
 tests
 scripts
 .agents

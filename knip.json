@@ -15,7 +15,12 @@
     "src/**/*.{ts,svelte}",
     "scripts/*.mts",
     "tests/**/*.{ts,mts}",
-    "*.mts"
+    "*.mts",
+    "website/**/*.{ts,mts,astro}"
   ],
+  "astro": {
+    "config": ["website/astro.config.mts"],
+    "entry": ["website/src/content.config.ts", "website/src/pages/**/*.astro"]
+  },
   "ignoreDependencies": ["uno.css"]
 }

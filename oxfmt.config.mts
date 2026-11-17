@@ -17,6 +17,7 @@ export default defineConfig({
   trailingComma: 'all',
   useTabs: false,
   svelte: true,
+  astro: true,
   sortImports: false,
   sortPackageJson: false,
   ignorePatterns: [

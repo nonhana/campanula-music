@@ -1,5 +1,26 @@
 # 本地开发
 
+## 官网与部署指南
+
+在仓库根使用 `.node-version` 的 Node 和 `package.json` 的 pnpm 版本，安装一次依赖后，可以独立启动静态站：
+
+```sh
+pnpm install --frozen-lockfile
+pnpm docs:dev                  # http://localhost:4322/
+pnpm docs:build                # website/dist/
+pnpm docs:preview --host 127.0.0.1 --port 4322
+```
+
+先退出开发服务，再在同一端口预览构建产物；已有服务占用时可以用 `--port` 选其他空闲端口。打开 `/` 能看到项目说明，从「部署 Campanula」进入 `/guide/`，目前会链接仓库现有的部署文档。此阶段只提供静态站骨架，阅读界面、试听与完整教程将在后续阶段实现。
+
+这三个命令先进入 `website/`，再运行 `astro dev/build/preview`，使用根安装的同一套依赖。站点配置、页面和产物都在 `website/`，生成类型与缓存位于 `website/.astro/`。网站使用根目录的 catalog、依赖和唯一锁文件，不读取播放器的 `.env`，也不依赖 `_notes/` 或相邻仓库。
+
+人工终端里用 Ctrl+C 关闭服务。Astro 在 Codex 中会自动后台运行；在根执行 `pnpm docs:dev status` / `pnpm docs:preview status` 查看服务，执行 `pnpm docs:dev stop` / `pnpm docs:preview stop` 关闭相应服务。网站默认使用 4322，不占用本地原型的 4321。
+
+格式与 lint 使用根命令 `pnpm fmt`、`pnpm fmt:check`、`pnpm lint`；knip 识别网站的 Astro 配置与内容入口。网站有自己的 `website/tsconfig.json`，根 `pnpm check` 继续检查播放器。播放器仍用 `pnpm build`，Node 产物写入 `build/`；Vercel 配置及 Docker 入口仍构建播放器，Docker 构建上下文排除 `website/`。
+
+## 播放器开发
+
 准备好 Node、pnpm 和产品 `.env` 后，直接运行：
 
 ```sh

@@ -6,6 +6,7 @@ export default antfu(
   {
     stylistic: false,
     svelte: true,
+    astro: true,
     unocss: { strict: true },
     pnpm: true,
     ignores: ['tests/fixtures/**/*.json'],
