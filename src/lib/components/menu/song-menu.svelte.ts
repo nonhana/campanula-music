@@ -2,17 +2,20 @@ import type { Song } from '#lib/api/library.ts';
 import type { PlaySource } from '#lib/api/playback.ts';
 
 import { getOverlays } from '../overlay/overlay-context.ts';
+import { getAppView } from '../shared/app-context.svelte.ts';
 import { anchorBelow } from './menu-anchor.ts';
 
 // 在组件初始化时调用一次：用的是所属外框的层会话
 export const songMenuActions = () => {
   const { songMenu, playlistPicker } = getOverlays();
+  const view = getAppView();
 
   const openSongMenuFrom = (
     event: MouseEvent,
     song: Song,
     source: PlaySource,
   ): void => {
+    if (view.demo) return;
     const button = event.currentTarget as HTMLElement;
     const shown = [songMenu, playlistPicker].find(
       (layer) => layer.request?.from === button,
@@ -34,6 +37,7 @@ export const songMenuActions = () => {
     song: Song,
     source: PlaySource,
   ): void => {
+    if (view.demo) return;
     if (event instanceof PointerEvent && event.pointerType === 'touch') {
       event.preventDefault();
       return;

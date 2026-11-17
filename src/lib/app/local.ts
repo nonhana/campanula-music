@@ -379,12 +379,15 @@ const upgrade = (
   }
 };
 
-export const createLocalDatabase = (indexedDB: IDBFactory): LocalDatabase => {
+export const createLocalDatabase = (
+  indexedDB: IDBFactory,
+  name = NAME,
+): LocalDatabase => {
   let open: IDBDatabase | undefined;
   let opening: Promise<IDBDatabase> | undefined;
   const database = (): Promise<IDBDatabase> => {
     opening ??= new Promise((resolve, reject) => {
-      const request = indexedDB.open(NAME, VERSION);
+      const request = indexedDB.open(name, VERSION);
       request.onupgradeneeded = (event) =>
         upgrade(request.result, request.transaction!, event.oldVersion);
       request.onsuccess = () => {

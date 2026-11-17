@@ -234,9 +234,11 @@ export interface App {
   searchArtists: (query: string) => readonly CollectedArtist[] | null;
 }
 
-export const createApp = (browser: BrowserCapabilities): App => {
+export const createApp = (
+  browser: BrowserCapabilities,
+  db = createLocalDatabase(browser.indexedDB),
+): App => {
   const api = createApi(browser, () => round.current);
-  const db = createLocalDatabase(browser.indexedDB);
   const local = createLocalDb(db);
   const streamable = (): boolean =>
     state.online && state.session.status === 'signedIn';

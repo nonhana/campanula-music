@@ -11,13 +11,13 @@ pnpm docs:build                # website/dist/
 pnpm docs:preview --host 127.0.0.1 --port 4322
 ```
 
-先退出开发服务，再在同一端口预览构建产物；已有服务占用时可以用 `--port` 选其他空闲端口。打开 `/` 能看到项目说明，从「部署 Campanula」进入 `/guide/`，目前会链接仓库现有的部署文档。此阶段只提供静态站骨架，阅读界面、试听与完整教程将在后续阶段实现。
+先退出开发服务，再在同一端口预览构建产物；已有服务占用时可以用 `--port` 选其他空闲端口。打开 `/` 可以阅读项目介绍并操作真实示例播放器；`/demo/?screen=player` 是同一版的独立试听，`/demo/playlists/502/` 可直接打开示例歌单。示例不登录账号，只读取本站素材。进入 `/guide/` 后本页试听停止；想继续听可以先单独打开。指南已有部署选择和 Vercel 教程，其余文章按计划逐步补齐。
 
-这三个命令先进入 `website/`，再运行 `astro dev/build/preview`，使用根安装的同一套依赖。站点配置、页面和产物都在 `website/`，生成类型与缓存位于 `website/.astro/`。网站使用根目录的 catalog、依赖和唯一锁文件，不读取播放器的 `.env`，也不依赖 `_notes/` 或相邻仓库。
+`docs:dev` 和 `docs:build` 先执行 `docs:demo`，在 `website/demo/` 用独立的 SvelteKit 配置构建本地示例，再进入 `website/` 运行 Astro。示例的 Kit 生成目录是 `website/demo/.kit/`，临时静态输出为 `website/public/demo/`；Astro 将它连同正文和媒体一起输出到 `website/dist/`。`docs:preview` 直接预览这份静态产物。修改示例或共用组件后重新运行构建；不会自动更新已经启动的 Astro 开发服务里的示例。生成目录都不提交，不覆盖播放器的 `.svelte-kit/`。站点生成类型与缓存位于 `website/.astro/`。网站使用根目录的 catalog、依赖和唯一锁文件，不读取播放器的 `.env`，也不依赖 `_notes/` 或相邻仓库。
 
 人工终端里用 Ctrl+C 关闭服务。Astro 在 Codex 中会自动后台运行；在根执行 `pnpm docs:dev status` / `pnpm docs:preview status` 查看服务，执行 `pnpm docs:dev stop` / `pnpm docs:preview stop` 关闭相应服务。网站默认使用 4322，不占用本地原型的 4321。
 
-格式与 lint 使用根命令 `pnpm fmt`、`pnpm fmt:check`、`pnpm lint`；knip 识别网站的 Astro 配置与内容入口。网站有自己的 `website/tsconfig.json`，根 `pnpm check` 继续检查播放器。播放器仍用 `pnpm build`，Node 产物写入 `build/`；Vercel 配置及 Docker 入口仍构建播放器，Docker 构建上下文排除 `website/`。
+格式与 lint 使用根命令 `pnpm fmt`、`pnpm fmt:check`、`pnpm lint`；knip 识别网站的 Astro 配置与内容入口。网站有自己的 `website/tsconfig.json`，根 `pnpm check` 检查播放器及示例的 Svelte 源码，网站配置和数据另用 `pnpm exec tsc -p website/tsconfig.json --noEmit` 检查。媒体来源与重建方法见 [素材登记](../website/public/media/README.md)。播放器仍用 `pnpm build`，Node 产物写入 `build/`；Vercel 配置及 Docker 入口仍构建播放器，Docker 构建上下文排除 `website/`。
 
 ## 播放器开发
 

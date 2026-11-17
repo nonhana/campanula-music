@@ -10,7 +10,8 @@
   import { currentSong } from './now.ts';
   import PlayerPage from './PlayerPage.svelte';
 
-  const { children }: { children?: Snippet } = $props();
+  const { children, modal = true }: { children?: Snippet; modal?: boolean } =
+    $props();
   const { player: layer, playerLayer } = getOverlays();
   const view = getAppView();
   const player = $derived(view.state.player);
@@ -25,7 +26,7 @@
 
 <div class="contents" data-overlay="player" inert={layer.containerInert}>
   {#if playerLayer.shown}
-    <PlayerPage open={playerLayer.open} />
+    <PlayerPage open={playerLayer.open} {modal} />
   {/if}
   <span class="sr-only" role="status" aria-label="播放状态" aria-atomic="true"
     >{current

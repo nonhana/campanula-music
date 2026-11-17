@@ -275,6 +275,10 @@ export default defineConfig<Theme>({
     };
     theme.fontSize = {
       micro: ['11px', '18px'],
+      display: [
+        'clamp(40px, 4.8vw, 81px)',
+        { lineHeight: '1.16', letterSpacing: '-0.04em' },
+      ],
       caption: ['13px', '20px'],
       label: ['14px', '20px'],
       body: ['15px', '22px'],

@@ -12,8 +12,8 @@
     "dev:mock": "tsx scripts/dev.mts --mock",
     "build": "vite build",
     "preview": "vite preview",
-    "docs:dev": "cd website && astro dev",
-    "docs:build": "cd website && astro build",
+    "docs:dev": "pnpm docs:demo && cd website && astro dev",
+    "docs:build": "pnpm docs:demo && cd website && astro build",
     "docs:preview": "cd website && astro preview",
     "prepare": "svelte-kit sync || echo '' && simple-git-hooks",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --tsgo && tsc -p src/service-worker/tsconfig.json --noEmit",
@@ -52,7 +52,8 @@
     "delivery:verify": "tsx tests/tools/delivery-verify.mts",
     "release:check": "tsx tests/tools/release-check.mts",
     "sdk:latest": "tsx tests/tools/sdk-latest.mts",
-    "test:ci": "tsx tests/tools/ci.mts"
+    "test:ci": "tsx tests/tools/ci.mts",
+    "docs:demo": "cd website/demo && vite build"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:lint",

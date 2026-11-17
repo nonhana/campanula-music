@@ -7,6 +7,7 @@ import {
 import Header from '../components/guide/Header.astro';
 import Navigation from '../components/guide/Navigation.astro';
 import SkipLink from '../components/guide/SkipLink.astro';
+import '../styles/home.css';
 ---
 
 <!doctype html>
@@ -15,10 +16,10 @@ import SkipLink from '../components/guide/SkipLink.astro';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="only light" />
-    <title>Campanula Music</title>
+    <title>Campanula · 网易云音乐播放器</title>
     <meta
       name="description"
-      content="Campanula 是开源的第三方网易云音乐播放器。部署自己的实例，再用自己的网易云账号登录。"
+      content="Campanula 是开源的第三方网易云音乐播放器。试试真实界面，再部署自己的实例，用自己的网易云账号听歌。"
     />
     <link rel="canonical" href={Astro.site} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -27,41 +28,173 @@ import SkipLink from '../components/guide/SkipLink.astro';
   <body>
     <SkipLink />
     <Header />
-    <main class="site-body">
-      <div class="home-content">
-        <h1 id="main" tabindex="-1">
-          在自己的网址里听歌
-        </h1>
-        <p>
-          Campanula
-          是开源的第三方网易云音乐播放器。在手机和电脑上，用自己的网易云账号听歌、管理曲库，把下载好的音乐留在这台设备上。
-        </p>
-        <p>先选一种部署方式，再打开属于自己的 Campanula。</p>
-        <div class="home-actions">
-          <a
-            id="home-deploy"
-            class:list={[
-              pillBase,
-              pillLooks.primary.color,
-              pillLooks.primary.link,
-              'gap-2 pl-4 pr-5',
-            ]}
-            href="/guide/"
-          >
-            部署 Campanula
-            <ArrowRight size={18} aria-hidden="true" />
+    <main
+      id="main"
+      tabindex="-1"
+      class="homepage"
+      aria-label="Campanula 项目介绍"
+    >
+      <section class="overview" aria-labelledby="project-title">
+        <div class="project-intro">
+          <h1 id="project-title">Campanula</h1>
+          <p class="definition">开源的第三方网易云音乐播放器。</p>
+          <p class="description">
+            用自己的网易云账号听歌、看歌词、整理歌单。下载到本机的歌，没网也能听。
+          </p>
+          <div class="home-actions">
+            <a
+              id="home-deploy"
+              class:list={[
+                pillBase,
+                pillLooks.primary.color,
+                pillLooks.primary.link,
+                'gap-2 pl-4 pr-5',
+              ]}
+              href="/guide/"
+            >
+              部署 Campanula <ArrowRight size={18} aria-hidden="true" />
+            </a>
+            <a
+              href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
+              target="_blank"
+              rel="external noopener"
+              class="source-link"
+            >
+              查看项目源码
+              <span class="external-link-space" aria-hidden="true"></span>
+            </a>
+          </div>
+          <p class="account-note">
+            先部署自己的实例，再登录自己的账号。这个官网不接受账号登录。
+          </p>
+        </div>
+        <figure class="demo-preview">
+          <div class="demo-window">
+            <picture class="demo-still">
+              <source
+                media="(max-width: 700px)"
+                srcset="/media/player-phone.webp"
+              />
+              <img
+                src="/media/player-desktop.webp"
+                width="1120"
+                height="786"
+                alt="Campanula 的真实播放页：封面、播放控制、歌词和翻译"
+                fetchpriority="high"
+              />
+            </picture>
+            <iframe
+              id="demo-frame"
+              title="Campanula 示例播放器"
+              data-src="/demo/?screen=player"
+              loading="eager"
+              tabindex="0"
+            ></iframe>
+          </div>
+          <figcaption>
+            <span>真实界面 · 三段原创演示音频</span>
+            <a
+              id="open-demo"
+              href="/demo/?screen=player"
+              target="_blank"
+              rel="noopener"
+              class="text-link"
+            >
+              单独打开
+            </a>
+          </figcaption>
+          <p id="demo-status" class="demo-description" role="status">
+            点播放才会出声。可以切歌、看歌词和翻译，收起播放页回到曲库。
+          </p>
+          <noscript>
+            <p class="demo-description">
+              开启 JavaScript 后可以试听；上方保留了同一版界面的截图。
+            </p>
+          </noscript>
+          <details id="demo-fallback" class="demo-fallback">
+            <summary>打不开或没有声音？看界面截图</summary>
+            <img
+              src="/media/player-desktop.webp"
+              width="1120"
+              height="786"
+              alt="示例播放器的真实界面截图"
+              loading="lazy"
+            />
+            <p>
+              试听需要 JavaScript 和浏览器的音频支持。也可以直接
+              <a class="text-link" href="/guide/">
+                部署 Campanula
+              </a>
+              。
+            </p>
+          </details>
+        </figure>
+      </section>
+      <section class="home-guides" aria-labelledby="guide-title">
+        <h2 id="guide-title">使用指南</h2>
+        <div>
+          <a href="/guide/vercel/">
+            部署到 Vercel <ArrowRight size={16} aria-hidden="true" />
           </a>
           <a
-            href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
+            class="text-link"
+            href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/self-hosting.md"
             target="_blank"
             rel="external noopener"
-            class="source-link"
           >
-            查看项目源码
+            在自己的服务器上运行
             <span class="external-link-space" aria-hidden="true"></span>
           </a>
         </div>
-      </div>
+      </section>
     </main>
+    <script>
+      const frame = document.querySelector<HTMLIFrameElement>('#demo-frame')!;
+      const stage = document.querySelector<HTMLElement>('.demo-window')!;
+      const status = document.querySelector<HTMLElement>('#demo-status')!;
+      const fallback =
+        document.querySelector<HTMLDetailsElement>('#demo-fallback')!;
+      const resize = () => {
+        const desktop = stage.clientWidth >= 710;
+        stage.toggleAttribute('data-desktop', desktop);
+        stage.style.setProperty(
+          '--demo-scale',
+          String(stage.clientWidth / 1120),
+        );
+      };
+      resize();
+      new ResizeObserver(resize).observe(stage);
+      addEventListener('message', (event) => {
+        if (
+          event.origin !== location.origin ||
+          event.source !== frame.contentWindow
+        )
+          return;
+        if (event.data?.type === 'campanula-demo-ready')
+          stage.setAttribute('data-ready', '');
+        if (event.data?.type === 'campanula-demo-media-error') {
+          status.textContent =
+            '这段音频没能播放。可以换一首再试，或先看截图、阅读部署指南。';
+          fallback.open = true;
+        }
+      });
+      const start = () => {
+        frame.src = frame.dataset.src!;
+      };
+      start();
+      // 取走 iframe 的文档也会停掉其 Audio；返回首页重新打开暂停的示例。
+      addEventListener('pagehide', () => {
+        frame.src = 'about:blank';
+        stage.removeAttribute('data-ready');
+      });
+      addEventListener('pageshow', (event) => {
+        if (event.persisted) start();
+      });
+      setTimeout(() => {
+        if (!stage.hasAttribute('data-ready'))
+          status.textContent =
+            '播放器暂时没能打开。可以先看截图，或照指南部署自己的播放器。';
+      }, 15000);
+    </script>
   </body>
 </html>

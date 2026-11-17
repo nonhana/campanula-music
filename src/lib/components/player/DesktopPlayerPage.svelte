@@ -62,7 +62,10 @@
   });
 </script>
 
-<header class="relative h-16 flex flex-none items-center gap-3 px-6">
+<header
+  role="presentation"
+  class="relative h-16 flex flex-none items-center gap-3 px-6"
+>
   <IconButton
     icon={ChevronDown}
     label="收起播放页"

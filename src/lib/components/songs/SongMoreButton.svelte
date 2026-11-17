@@ -7,6 +7,7 @@
 
   import { songMenuActions } from '../menu/song-menu.svelte.ts';
   import { getOverlays } from '../overlay/overlay-context.ts';
+  import { getAppView } from '../shared/app-context.svelte.ts';
 
   const {
     song,
@@ -19,6 +20,7 @@
   } = $props();
   const { openSongMenuFrom } = songMenuActions();
   const { songMenu } = getOverlays();
+  const view = getAppView();
 
   const LOOKS = {
     phone: { button: 'size-11 rounded-full active:bg-primary-100', icon: 20 },
@@ -41,19 +43,21 @@
   );
 </script>
 
-<button
-  bind:this={button}
-  type="button"
-  data-more
-  class={[
-    'relative z-1 grid flex-none place-items-center text-neutral-600 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)',
-    look.button,
-    open && 'bg-primary-100 text-primary-950',
-  ]}
-  aria-label="更多操作：{songTitle(song)}"
-  aria-haspopup="menu"
-  aria-expanded={open}
-  onclick={(event) => openSongMenuFrom(event, song, source)}
->
-  <Ellipsis size={look.icon} aria-hidden="true" />
-</button>
+{#if !view.demo}
+  <button
+    bind:this={button}
+    type="button"
+    data-more
+    class={[
+      'relative z-1 grid flex-none place-items-center text-neutral-600 transition-colors duration-feedback mouse:hover:(bg-primary-100 text-primary-950)',
+      look.button,
+      open && 'bg-primary-100 text-primary-950',
+    ]}
+    aria-label="更多操作：{songTitle(song)}"
+    aria-haspopup="menu"
+    aria-expanded={open}
+    onclick={(event) => openSongMenuFrom(event, song, source)}
+  >
+    <Ellipsis size={look.icon} aria-hidden="true" />
+  </button>
+{/if}

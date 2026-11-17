@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="only light" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Campanula 示例播放器</title>
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="off">
+    <main
+      id="demo-fallback"
+      aria-label="示例播放器备用说明"
+      style="
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        overflow: auto;
+        padding: 24px;
+        background: Canvas;
+        color: CanvasText;
+        font: 15px/1.6 system-ui;
+      "
+    >
+      <h1>Campanula 示例播放器</h1>
+      <p>
+        这是实际界面的截图。试听需要 JavaScript
+        和浏览器的音频支持；加载失败时，也可以先看截图或部署指南。
+      </p>
+      <picture
+        ><source media="(max-width:700px)" srcset="/media/player-phone.webp" />
+        <img
+          src="/media/player-desktop.webp"
+          alt="Campanula 的真实播放界面，包含封面、播放控制和歌词"
+          width="1120"
+          height="786"
+          style="display: block; max-width: 100%; height: auto"
+      /></picture>
+      <p>
+        <a href="/demo/?screen=player" data-sveltekit-reload>重新打开示例</a> ·
+        <a href="/guide/" target="_top">部署 Campanula</a>
+      </p>
+    </main>
+    <div id="demo-app" style="display: contents">%sveltekit.body%</div>
+    <script>
+      addEventListener('message', (event) => {
+        if (
+          event.source !== window ||
+          event.origin !== location.origin ||
+          event.data?.type !== 'campanula-demo-media-error'
+        )
+          return;
+        document.getElementById('demo-fallback').hidden = false;
+        document.getElementById('demo-app').inert = true;
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "player-desktop.webp",
+    "bytes": 33910,
+    "sha256": "e307a772fa26fc48cd3a5a873f6696fee5f4a5b2cacb1d8c09593fe325994199"
+  },
+  {
+    "file": "player-phone.webp",
+    "bytes": 12118,
+    "sha256": "6372fd378de3f42666af52bdcad86fa0f909e39531e99cdb44eecf6c14408ac0"
+  },
+  {
+    "file": "rain.mp3",
+    "bytes": 288749,
+    "sha256": "6638083cfaf7a69c3fd09598838814e82e8a36a00f45bb9b74129448df711cfa"
+  },
+  {
+    "file": "rain.svg",
+    "bytes": 461,
+    "sha256": "f9b7a5be675d8f543ebc75fd008399774acb90b0ad9e327a9f91ae032aec5398"
+  },
+  {
+    "file": "tide.mp3",
+    "bytes": 288749,
+    "sha256": "96c48749053c75df063dcc3a0ced9e8c6a3db6fe08fe76cf13c5450093ed4cda"
+  },
+  {
+    "file": "tide.svg",
+    "bytes": 437,
+    "sha256": "6b9da9d907b2673a73253a32d74a6118df1848ede6ce343f8b7d024ce8ea1cbd"
+  },
+  {
+    "file": "window.mp3",
+    "bytes": 288749,
+    "sha256": "846c174610c568079729c076acaa9997c1dd605504d928575d208160e377cc76"
+  },
+  {
+    "file": "window.svg",
+    "bytes": 434,
+    "sha256": "4fe4ae31c8c5c754d95414d2368a6463ff9eea743e6f218cf100866b4e200d01"
+  }
+]

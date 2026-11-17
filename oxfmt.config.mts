@@ -22,6 +22,9 @@ export default defineConfig({
   sortPackageJson: false,
   ignorePatterns: [
     '.svelte-kit/**',
+    'website/demo/.kit/**',
+    'website/demo/.svelte-check/**',
+    'website/public/demo/**',
     'build/**',
     'dist/**',
     'node_modules/**',

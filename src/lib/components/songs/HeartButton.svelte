@@ -31,7 +31,7 @@
   const look = $derived(LOOKS[size]);
 </script>
 
-{#if view.state.library}
+{#if view.state.library && !view.demo}
   <button
     type="button"
     class={[

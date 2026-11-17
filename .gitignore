@@ -30,3 +30,7 @@ _notes/
 /.reports/
 
 /.campanula/
+
+/website/demo/.kit/
+/website/public/demo/
+/website/demo/.svelte-check/

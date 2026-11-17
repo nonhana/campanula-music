@@ -368,26 +368,6 @@ a:has(> .external-link-space)::after {
   padding-top: 20px;
   border-top: 1px solid theme('colors.neutral.200');
 }
-.home-content {
-  max-width: 640px;
-  margin: 64px auto 0;
-}
-.home-content h1 {
-  @apply text-headline font-600;
-}
-.home-content p {
-  max-width: 520px;
-  margin: 20px 0;
-  color: theme('colors.neutral.600');
-  line-height: 28px;
-}
-.home-content .home-actions {
-  margin-top: 28px;
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  flex-wrap: wrap;
-}
 @media (min-width: 1100px) {
   .chapter-menu {
     position: fixed;
@@ -424,12 +404,6 @@ a:has(> .external-link-space)::after {
   .choice-list a {
     padding-left: 16px;
     padding-right: 16px;
-  }
-  .home-content {
-    margin-top: 36px;
-  }
-  .home-content h1 {
-    @apply text-headline-sm;
   }
 }
 @media print {

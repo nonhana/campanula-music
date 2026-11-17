@@ -14,7 +14,13 @@
     "eslint.config.mts",
     "uno.config.mts",
     "uno.palette.mts",
-    "vite.config.mts"
+    "vite.config.mts",
+    "website/demo"
   ],
-  "exclude": ["src/service-worker"]
+  "exclude": [
+    "src/service-worker",
+    "website/demo/.kit",
+    "website/demo/node_modules",
+    "website/demo/.svelte-check"
+  ]
 }

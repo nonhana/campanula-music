@@ -12,7 +12,7 @@
   import { createPlayhead } from './playhead.svelte.ts';
   import { sourceName, turnOf } from './view.ts';
 
-  const { open }: { open: boolean } = $props();
+  const { open, modal = true }: { open: boolean; modal?: boolean } = $props();
 
   const RADIUS = 24;
   const DIM = 0.2;
@@ -39,7 +39,7 @@
 
   $effect(() => {
     if (!open) return;
-    root?.querySelector<HTMLElement>('button')?.focus();
+    if (modal) root?.querySelector<HTMLElement>('button')?.focus();
     const { documentElement } = document;
     documentElement.style.overflow = 'hidden';
     return () => {
@@ -58,9 +58,9 @@
   class="fixed inset-x-0 top-0 z-50 flex flex-col overflow-hidden shadow-float"
   {@attach playerDrawer.panel}
   style:border-radius="{radius}px {radius}px 0 0"
-  role="dialog"
+  role={modal ? 'dialog' : 'region'}
   tabindex="-1"
-  aria-modal="true"
+  aria-modal={modal ? 'true' : undefined}
   aria-label="正在播放"
   inert={!open || layer.containerInert}
   {@attach trapFocus}

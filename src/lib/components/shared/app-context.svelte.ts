@@ -6,6 +6,7 @@ import type { App, AppState } from '#lib/app/app.ts';
 export interface AppView {
   readonly app: App;
   readonly state: AppState;
+  readonly demo?: boolean;
 }
 
 export const viewOf = (app: App): AppView => {

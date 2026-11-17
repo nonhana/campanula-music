@@ -24,7 +24,7 @@
   const view = getAppView();
   const { stack } = getOverlays();
   const link = $derived(
-    linked && view.state.library
+    linked && !view.demo && view.state.library
       ? creditLink(kind, target, page.url.pathname)
       : null,
   );
