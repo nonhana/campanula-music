@@ -19,6 +19,7 @@ import {
   FLOAT_DISTANCE,
   FLOAT_IN_DELAY,
   LOOPS,
+  OPENING,
   PAGE_DISTANCE,
   PRESS_SCALE,
   REDUCED_FADE_MS,
@@ -41,6 +42,10 @@ const motionVariables = (reduced: boolean): string => {
     `--loop-state: ${reduced ? 'paused' : 'running'};`,
     `--press-scale: ${reduced ? 1 : PRESS_SCALE};`,
     `--delay-float-in: ${reduced ? 0 : FLOAT_IN_DELAY}ms;`,
+    `--float-in: ${reduced ? 0 : FLOAT_DISTANCE.in}px;`,
+    `--opening-delay: ${reduced ? 0 : OPENING.delay}ms;`,
+    `--opening-spread: ${reduced ? 0 : OPENING.spread}ms;`,
+    `--opening-blur: ${reduced ? 0 : OPENING.blur}px;`,
   ];
   if (!reduced) {
     lines.push(

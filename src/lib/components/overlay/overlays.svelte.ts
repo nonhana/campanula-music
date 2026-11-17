@@ -61,7 +61,7 @@ export const createOverlays = () => {
     changed: (phase) => {
       void stack.reconcile(phase);
     },
-    navigate: () => stack.navigate(),
+    navigate: (willUnload) => (view.demo && willUnload) || stack.navigate(),
   });
   stack = new OverlayStack<HTMLElement>(
     history,

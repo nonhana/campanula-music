@@ -5,13 +5,21 @@ import Scrollbar from '../../../../src/lib/components/ui/Scrollbar.svelte';
 import '@unocss/reset/tailwind.css';
 import 'uno.css';
 import '../../styles/guide.css';
+
+interface Props {
+  home?: boolean;
+}
+
+const { home = false } = Astro.props;
 ---
 
 <header class="site-header" aria-label="Campanula 项目官网">
   <nav aria-label="项目导航" class="site-nav">
-    <a href="/" aria-label="Campanula 首页" class="brand-link">
-      <Brand />
-    </a>
+    {!home && (
+      <a href="/" aria-label="Campanula 首页" class="brand-link">
+        <Brand />
+      </a>
+    )}
     <a
       href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
       class="source-link"

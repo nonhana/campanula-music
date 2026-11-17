@@ -37,7 +37,7 @@ interface NavigationIntent {
 
 export const createOverlayHistory = (callbacks: {
   changed: (phase?: 'intent' | 'settled') => void;
-  navigate: () => boolean;
+  navigate: (willUnload: boolean) => boolean;
 }): OverlayHistory => {
   let active: Operation | null = null;
   let destroyed = false;
@@ -110,7 +110,7 @@ export const createOverlayHistory = (callbacks: {
     const originSignature = signature();
     moving = true;
     invalidate();
-    if (!navigation.shallow && !callbacks.navigate()) {
+    if (!navigation.shallow && !callbacks.navigate(navigation.willUnload)) {
       if (cancel) {
         cancel();
       } else {

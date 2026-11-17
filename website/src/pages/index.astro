@@ -1,5 +1,6 @@
 ---
 import { ArrowRight, LoaderCircle } from '@lucide/svelte';
+import Brand from '../../../src/lib/components/boot/Brand.svelte';
 import {
   pillBase,
   pillLooks,
@@ -24,10 +25,38 @@ import '../styles/home.css';
     <link rel="canonical" href={Astro.site} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <Navigation />
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        const enter = (event) => {
+          const navigation = performance.getEntriesByType('navigation')[0];
+          const fromThisSite =
+            document.referrer &&
+            new URL(document.referrer).origin === location.origin;
+          if (
+            event?.viewTransition ||
+            document.visibilityState === 'hidden' ||
+            navigation?.type === 'back_forward' ||
+            (fromThisSite && navigation?.type !== 'reload')
+          )
+            return;
+          root.setAttribute('data-home-enter', '');
+        };
+        const settle = () => root.removeAttribute('data-home-enter');
+        if ('onpagereveal' in window)
+          addEventListener('pagereveal', enter, { once: true });
+        else enter();
+        addEventListener('pageswap', settle);
+        addEventListener('pagehide', settle);
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') settle();
+        });
+      })();
+    </script>
   </head>
   <body class="home-surface">
     <SkipLink />
-    <Header />
+    <Header home />
     <main
       id="main"
       tabindex="-1"
@@ -36,44 +65,49 @@ import '../styles/home.css';
     >
       <section class="overview" aria-labelledby="project-title">
         <div class="project-intro">
-          <h1 id="project-title">第三方网易云音乐播放器</h1>
-          <p class="description">
-            用自己的账号听歌、看歌词、整理歌单。下载好的歌，离线也能听。
-          </p>
-          <p class="hosting">
-            项目开源，可部署到 <a href="/guide/vercel/">Vercel</a> 或
-            <a
-              href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/self-hosting.md"
-              target="_blank"
-              rel="external noopener"
-            >
-              自己的服务器
-              <span class="external-link-space" aria-hidden="true"></span>
-            </a>
-            。
-          </p>
-          <div class="home-actions">
-            <a
-              id="home-deploy"
-              class:list={[
-                pillBase,
-                pillLooks.outline.color,
-                pillLooks.outline.link,
-                'gap-2 pl-4 pr-5',
-              ]}
-              href="/guide/"
-            >
-              部署指南 <ArrowRight size={18} aria-hidden="true" />
-            </a>
-            <a
-              href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
-              target="_blank"
-              rel="external noopener"
-              class="source-link"
-            >
-              查看项目源码
-              <span class="external-link-space" aria-hidden="true"></span>
-            </a>
+          <div class="home-brand">
+            <Brand />
+          </div>
+          <div id="home-copy" class="home-copy">
+            <h1 id="project-title">第三方网易云音乐播放器</h1>
+            <p class="description">
+              用自己的账号听歌、看歌词、整理歌单。下载好的歌，离线也能听。
+            </p>
+            <p class="hosting">
+              项目开源，可部署到 <a href="/guide/vercel/">Vercel</a> 或
+              <a
+                href="https://github.com/nonhana/campanula-music/blob/rewrite/v1/docs/self-hosting.md"
+                target="_blank"
+                rel="external noopener"
+              >
+                自己的服务器
+                <span class="external-link-space" aria-hidden="true"></span>
+              </a>
+              。
+            </p>
+            <div class="home-actions">
+              <a
+                id="home-deploy"
+                class:list={[
+                  pillBase,
+                  pillLooks.outline.color,
+                  pillLooks.outline.link,
+                  'gap-2 pl-4 pr-5',
+                ]}
+                href="/guide/"
+              >
+                部署指南 <ArrowRight size={18} aria-hidden="true" />
+              </a>
+              <a
+                href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
+                target="_blank"
+                rel="external noopener"
+                class="source-link"
+              >
+                查看项目源码
+                <span class="external-link-space" aria-hidden="true"></span>
+              </a>
+            </div>
           </div>
         </div>
         <figure class="demo-preview">

@@ -4,7 +4,7 @@
   import { page } from '$app/state';
   import { House } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
-  import { onMount, untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
 
   import Brand from '#lib/components/boot/Brand.svelte';
   import { setOverlays } from '#lib/components/overlay/overlay-context.ts';
@@ -40,16 +40,36 @@
     }
   });
   let initial = false;
+  let ready = false;
   $effect(() => {
-    if (initial || view.state.player.current === null) return;
-    initial = true;
-    if (page.url.searchParams.get('screen') === 'player')
+    if (view.state.player.current === null) return;
+    const player = page.url.searchParams.get('screen') === 'player';
+    if (!initial) {
+      initial = true;
       untrack(() => {
-        void overlays.player.open({ from: null });
+        if (player) void overlays.player.open({ from: null });
       });
-  });
-  onMount(() => {
-    parent.postMessage({ type: 'campanula-demo-ready' }, location.origin);
+    }
+    if (
+      ready ||
+      (player &&
+        (!overlays.playerLayer.open || overlays.playerDrawer.position !== 0))
+    )
+      return;
+    ready = true;
+    void document.fonts.ready.then(async () => {
+      await tick();
+      await Promise.allSettled(
+        document
+          .getAnimations()
+          .filter(
+            (animation) =>
+              animation.effect?.getComputedTiming().iterations !== Infinity,
+          )
+          .map((animation) => animation.finished),
+      );
+      parent.postMessage({ type: 'campanula-demo-ready' }, location.origin);
+    });
   });
 </script>
 
