@@ -149,6 +149,16 @@ button {
 .choice-list a {
   min-height: 88px;
 }
+.home-actions .source-link,
+.listen-link {
+  display: inline-block;
+  align-content: center;
+}
+.listen-link > svg {
+  display: inline-block;
+  vertical-align: -0.15em;
+  margin-inline-end: 4px;
+}
 .listen-link {
   margin-top: 8px;
   padding: 0 4px;
@@ -184,12 +194,25 @@ button {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.external-link-tail svg {
+/* 用同宽的箭头盖住末字后的空格；下划线由链接本身连续画到空格末端。 */
+.external-link-space::before {
+  content: '\2060\2003\2060';
+}
+a:has(> .external-link-space)::after {
+  content: '';
   display: inline-block;
-  width: 0.85em;
-  height: 0.85em;
-  margin-inline-start: 0.12em;
-  vertical-align: baseline;
+  width: 1em;
+  height: 1em;
+  margin-inline-start: -1em;
+  vertical-align: -0.125em;
+  background: currentColor;
+  mask: url('/icons/arrow-up-right.svg') center / 1.2em no-repeat;
+}
+@media (forced-colors: active) {
+  a:has(> .external-link-space)::after {
+    forced-color-adjust: none;
+    background-color: LinkText;
+  }
 }
 .reading-content strong {
   color: theme('colors.neutral.800');

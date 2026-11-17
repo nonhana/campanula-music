@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, ArrowUpRight } from '@lucide/svelte';
+import { ArrowRight } from '@lucide/svelte';
 import {
   pillBase,
   pillLooks,
@@ -53,11 +53,12 @@ import SkipLink from '../components/guide/SkipLink.astro';
           </a>
           <a
             href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
-            rel="external"
+            target="_blank"
+            rel="external noopener"
             class="source-link"
           >
             查看项目源码
-            <ArrowUpRight size={16} aria-hidden="true" />
+            <span class="external-link-space" aria-hidden="true"></span>
           </a>
         </div>
       </div>

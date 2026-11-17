@@ -17,33 +17,18 @@ export const externalLinks = (site: URL): MarkdownHook => ({
         url.origin === site.origin
       )
         return;
-      const rel = [node.properties?.rel, 'external']
+      const rel = [node.properties?.rel, 'external', 'noopener']
         .flat()
         .join(' ')
         .trim()
         .split(/\s+/);
       ctx.setProperty(node, 'rel', [...new Set(rel)].join(' '));
-      // 不让行尾的小箭头单独折到下一行。装饰不进入链接的可访问名称。
+      ctx.setProperty(node, 'target', '_blank');
       ctx.appendChild(node, {
         type: 'element',
         tagName: 'span',
-        properties: { class: 'external-link-tail', 'aria-hidden': 'true' },
-        children: [
-          { type: 'text', value: '\u2060' },
-          {
-            type: 'element',
-            tagName: 'svg',
-            properties: { viewBox: '0 0 24 24' },
-            children: [
-              {
-                type: 'element',
-                tagName: 'use',
-                properties: { href: '#guide-external-arrow' },
-                children: [],
-              },
-            ],
-          },
-        ],
+        properties: { class: 'external-link-space', 'aria-hidden': 'true' },
+        children: [],
       });
     },
   },
