@@ -17,6 +17,16 @@ export const test = base.extend<{ scan: (scenario: string) => Promise<void> }>({
       errors.push(`意外注册 Service Worker：${worker.url()}`),
     );
     await context.routeWebSocket('**/*', (socket) => {
+      const url = new URL(socket.url());
+      if (
+        baseURL === 'http://127.0.0.1:4388' &&
+        url.origin === 'ws://127.0.0.1:4388' &&
+        url.pathname === '/website-hmr' &&
+        url.searchParams.has('token')
+      ) {
+        socket.connectToServer();
+        return;
+      }
       external.push(socket.url());
       socket.close();
     });

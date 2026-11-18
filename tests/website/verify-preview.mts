@@ -62,21 +62,8 @@ try {
     );
     const page = await context.newPage();
     await page.goto(url.href);
-    await expect(page.locator('.demo-window')).toHaveAttribute(
-      'data-ready',
-      '',
-      { timeout: 20_000 },
-    );
-    const frame = page.frameLocator('#demo-frame');
-    const player = frame.getByRole('region', { name: '正在播放', exact: true });
-    await player.getByRole('button', { name: '播放', exact: true }).click();
-    await expect(frame.getByRole('status', { name: '播放状态' })).toContainText(
-      '正在播放',
-    );
-    await player.getByRole('button', { name: '下一首', exact: true }).click();
-    await expect(frame.getByRole('status', { name: '播放状态' })).toContainText(
-      'Tidal Steps',
-    );
+    await expect(page.locator('#home-source')).toBeVisible();
+    await expect(page.locator('iframe, audio')).toHaveCount(0);
     await page.screenshot({
       path: join(report, `${name}-home.png`),
       fullPage: true,
@@ -90,6 +77,13 @@ try {
       (await page.goto(new URL('/missing-article/', url).href))?.status(),
     ).toBe(404);
     await expect(page.locator('h1')).toContainText('找不到');
+    await page.goto(new URL('/demo/?screen=player', url).href);
+    const player = page.getByRole('dialog', { name: '正在播放', exact: true });
+    await player.getByRole('button', { name: '播放', exact: true }).click();
+    const status = page.getByRole('status', { name: '播放状态' });
+    await expect(status).toContainText('正在播放');
+    await player.getByRole('button', { name: '下一首', exact: true }).click();
+    await expect(status).toContainText('Tidal Steps');
     await context.close();
     external.push(...contextExternal);
   }

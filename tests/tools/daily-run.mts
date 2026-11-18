@@ -41,6 +41,14 @@ let contrast: ContrastReport[] = [];
 let website: { digest: string; files: number } | undefined;
 if (lane.name === 'website') {
   await pnpm('docs:test');
+  // 静态构建已生成示例，开发模式直接用同一份资源启动自己的服务。
+  await pnpm(
+    'exec',
+    'playwright',
+    'test',
+    '--config',
+    'tests/website/playwright.dev.config.ts',
+  );
   const manifest = await json(join(work, 'website/run.json'));
   if (
     manifest.sha !== sha ||
@@ -48,9 +56,17 @@ if (lane.name === 'website') {
     !manifest.cases.length
   )
     throw new Error('官网报告与候选不符或没有执行用例');
-  const actual = browserCases(
+  const candidate = browserCases(
     (await json(join(work, 'website/tests.json'))).suites,
   );
+  const development = browserCases(
+    (await json(join(work, 'website/dev-tests.json'))).suites,
+  );
+  requireInventory(
+    ['desktop', 'phone'],
+    [...new Set(development.map((test) => test.project))],
+  );
+  const actual = [...candidate, ...development];
   requireInventory(lane.files, [
     ...new Set(actual.map((test) => `tests/website/${test.file}`)),
   ]);

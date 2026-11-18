@@ -80,18 +80,26 @@ button {
   line-height: 1;
   letter-spacing: 0;
 }
+@media (prefers-reduced-motion: no-preference) {
+  .source-link > svg {
+    view-transition-name: website-github;
+  }
+}
 ::view-transition-group(website-logo),
-::view-transition-group(website-name) {
+::view-transition-group(website-name),
+::view-transition-group(website-github) {
   z-index: 2;
   animation-duration: var(--move-focal-bar);
   animation-timing-function: var(--ease-out-soft);
 }
 ::view-transition-old(website-logo),
-::view-transition-old(website-name) {
+::view-transition-old(website-name),
+::view-transition-old(website-github) {
   display: none;
 }
 ::view-transition-new(website-logo),
-::view-transition-new(website-name) {
+::view-transition-new(website-name),
+::view-transition-new(website-github) {
   animation: none;
   width: 100%;
   height: 100%;
@@ -183,7 +191,6 @@ html:active-view-transition-type(fade) .site-header {
 .choice-list a {
   min-height: 88px;
 }
-.home-actions .source-link,
 .listen-link {
   display: inline-block;
   align-content: center;

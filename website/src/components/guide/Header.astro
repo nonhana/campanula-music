@@ -1,48 +1,13 @@
 ---
-import { Icon } from '@astrojs/starlight/components';
 import Brand from '../../../../src/lib/components/boot/Brand.svelte';
-import Scrollbar from '../../../../src/lib/components/ui/Scrollbar.svelte';
-import '@unocss/reset/tailwind.css';
-import 'uno.css';
-import '../../styles/guide.css';
-
-interface Props {
-  home?: boolean;
-}
-
-const { home = false } = Astro.props;
+import SourceLink from './SourceLink.astro';
 ---
 
 <header class="site-header" aria-label="Campanula 项目官网">
   <nav aria-label="项目导航" class="site-nav">
-    {!home && (
-      <a href="/" aria-label="Campanula 首页" class="brand-link">
-        <Brand />
-      </a>
-    )}
-    <a
-      href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
-      class="source-link"
-      aria-label="在 GitHub 查看 Campanula 源码"
-      title="在 GitHub 查看源码"
-      target="_blank"
-      rel="external noopener"
-    >
-      <Icon name="github" size="20px" />
+    <a href="/" aria-label="Campanula 首页" class="brand-link">
+      <Brand />
     </a>
+    <SourceLink />
   </nav>
 </header>
-<div class="site-scrollbar">
-  <Scrollbar page={{ top: '64px', bottom: '0px' }} client:load />
-</div>
-<noscript>
-  <style>
-    html {
-      scrollbar-width: thin;
-    }
-    html::-webkit-scrollbar {
-      display: block;
-      width: 8px;
-    }
-  </style>
-</noscript>

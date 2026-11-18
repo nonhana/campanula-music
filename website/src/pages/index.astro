@@ -1,13 +1,16 @@
 ---
-import { ArrowRight, LoaderCircle } from '@lucide/svelte';
+import { ArrowRight } from '@lucide/svelte';
 import Brand from '../../../src/lib/components/boot/Brand.svelte';
+import Logo from '../../../src/lib/components/svg/Logo.svelte';
 import {
   pillBase,
   pillLooks,
 } from '../../../src/lib/components/ui/control-styles.ts';
-import Header from '../components/guide/Header.astro';
 import Navigation from '../components/guide/Navigation.astro';
+import PageFrame from '../components/guide/PageFrame.astro';
 import SkipLink from '../components/guide/SkipLink.astro';
+import SourceLink from '../components/guide/SourceLink.astro';
+import HomeOpening from '../components/HomeOpening.astro';
 import '../styles/home.css';
 ---
 
@@ -17,207 +20,76 @@ import '../styles/home.css';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="only light" />
-    <title>Campanula · 网易云音乐播放器</title>
+    <title>Campanula · 项目文档</title>
     <meta
       name="description"
-      content="Campanula 是开源的第三方网易云音乐播放器。试试真实界面，再部署自己的实例，用自己的网易云账号听歌。"
+      content="Campanula 项目文档，涵盖部署、安装与离线播放、升级与回退和本地开发。"
     />
     <link rel="canonical" href={Astro.site} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <Navigation />
-    <script is:inline>
-      (() => {
-        const root = document.documentElement;
-        const enter = (event) => {
-          const navigation = performance.getEntriesByType('navigation')[0];
-          const fromThisSite =
-            document.referrer &&
-            new URL(document.referrer).origin === location.origin;
-          if (
-            event?.viewTransition ||
-            document.visibilityState === 'hidden' ||
-            navigation?.type === 'back_forward' ||
-            (fromThisSite && navigation?.type !== 'reload')
-          )
-            return;
-          root.setAttribute('data-home-enter', '');
-        };
-        const settle = () => root.removeAttribute('data-home-enter');
-        if ('onpagereveal' in window)
-          addEventListener('pagereveal', enter, { once: true });
-        else enter();
-        addEventListener('pageswap', settle);
-        addEventListener('pagehide', settle);
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'hidden') settle();
-        });
-      })();
-    </script>
+    <HomeOpening />
   </head>
   <body class="home-surface">
+    <div id="home-opening" aria-hidden="true">
+      <Logo size={40} />
+    </div>
     <SkipLink />
-    <Header home />
-    <main
-      id="main"
-      tabindex="-1"
-      class="homepage"
-      aria-label="Campanula 项目介绍"
-    >
-      <section class="overview" aria-labelledby="project-title">
-        <div class="project-intro">
-          <div class="home-brand">
+    <PageFrame home>
+      <main
+        id="main"
+        tabindex="-1"
+        class="homepage"
+        aria-label="Campanula 项目文档"
+      >
+        <section
+          class="introduction"
+          aria-labelledby="project-title"
+          data-reveal-group
+        >
+          <h1 id="project-title" class="home-brand">
             <Brand />
-          </div>
-          <div id="home-copy" class="home-copy">
-            <h1 id="project-title">第三方网易云音乐播放器</h1>
-            <p class="description">
-              用自己的账号听歌、看歌词、整理歌单。下载好的歌，离线也能听。
+          </h1>
+          <div id="home-copy" class="home-copy" data-reveal-group>
+            <p class="identity">开源的第三方网易云音乐播放器</p>
+            <p class="intro-text">
+              <span>用自己的网易云账号登录，打开就是曲库。</span>
+              <span>可以听歌、整理歌单，下载好的歌断网也能听。</span>
             </p>
-            <p class="hosting">
-              项目开源，可部署到 <a href="/guide/vercel/">Vercel</a> 或
-              <a href="/guide/server/">自己的服务器</a>。
-            </p>
-            <div class="home-actions">
+            <nav class="guide-links" aria-label="使用指南" data-reveal-group>
               <a
                 id="home-deploy"
                 class:list={[
                   pillBase,
-                  pillLooks.outline.color,
-                  pillLooks.outline.link,
-                  'gap-2 pl-4 pr-5',
+                  pillLooks.primary.color,
+                  pillLooks.primary.link,
+                  'gap-2 pl-5 pr-[17px]',
                 ]}
                 href="/guide/"
               >
-                部署指南 <ArrowRight size={18} aria-hidden="true" />
+                部署指南 <ArrowRight size={17} aria-hidden="true" />
               </a>
-              <a
-                href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
-                target="_blank"
-                rel="external noopener"
-                class="source-link"
-              >
-                查看项目源码
-                <span class="external-link-space" aria-hidden="true"></span>
+              <a id="home-listen" class="home-link" href="/guide/listen/">
+                安装与离线播放
               </a>
-            </div>
+              <SourceLink id="home-source" />
+            </nav>
           </div>
-        </div>
-        <figure class="demo-preview">
-          <div class="demo-window">
-            <picture class="demo-still">
-              <source
-                media="(max-width: 700px)"
-                srcset="/media/player-phone.webp"
-              />
-              <img
-                src="/media/player-desktop.webp"
-                width="1120"
-                height="786"
-                alt="Campanula 的真实播放页：封面、播放控制、歌词和翻译"
-                fetchpriority="high"
-              />
-            </picture>
-            <iframe
-              id="demo-frame"
-              title="Campanula 示例播放器"
-              data-src="/demo/?screen=player"
-              loading="eager"
-              tabindex="0"
-            ></iframe>
-          </div>
-          <figcaption class="demo-feedback" hidden>
-            <span id="demo-status" role="status"></span>
-            <button type="button" id="demo-retry">
-              <span class="relative">
-                <LoaderCircle
-                  size={16}
-                  class="retry-spinner absolute inset-y-0 right-full my-auto mr-1.5 animate-spin"
-                  aria-hidden="true"
-                />
-                重新加载
-              </span>
-            </button>
-          </figcaption>
-          <noscript>
-            <p class="demo-note">
-              当前显示的是播放页截图。开启 JavaScript 后可试听。
-            </p>
-          </noscript>
-        </figure>
-      </section>
-    </main>
+        </section>
+        <nav class="more-guides" aria-label="更多文档" data-reveal-group>
+          <a id="home-upgrade" class="home-link" href="/guide/upgrade/">
+            升级与回退 <ArrowRight size={15} aria-hidden="true" />
+          </a>
+          <a id="home-development" class="home-link" href="/development/">
+            本地开发 <ArrowRight size={15} aria-hidden="true" />
+          </a>
+        </nav>
+      </main>
+    </PageFrame>
     <script>
-      const frame = document.querySelector<HTMLIFrameElement>('#demo-frame')!;
-      const stage = document.querySelector<HTMLElement>('.demo-window')!;
-      const status = document.querySelector<HTMLElement>('#demo-status')!;
-      const feedback = document.querySelector<HTMLElement>('.demo-feedback')!;
-      const retry = document.querySelector<HTMLButtonElement>('#demo-retry')!;
-      let timer: number;
-      const resize = () => {
-        stage.style.setProperty(
-          '--demo-scale',
-          String(stage.clientWidth / 1120),
-        );
-      };
-      resize();
-      new ResizeObserver(resize).observe(stage);
-      const stop = () => {
-        clearTimeout(timer);
-        retry.removeAttribute('aria-busy');
-        retry.removeAttribute('aria-disabled');
-        stage.removeAttribute('data-ready');
-        frame.removeAttribute('src');
-      };
-      const fail = (message: string) => {
-        const wasPlayingHere = document.activeElement === frame;
-        stop();
-        feedback.hidden = false;
-        status.textContent = message;
-        if (wasPlayingHere) retry.focus({ preventScroll: true });
-      };
-      const start = () => {
-        frame.src = frame.dataset.src!;
-        timer = window.setTimeout(
-          fail,
-          15000,
-          '播放器没能打开，当前显示的是播放页截图。',
-        );
-      };
-      addEventListener('message', (event) => {
-        if (
-          event.origin !== location.origin ||
-          event.source !== frame.contentWindow ||
-          !frame.hasAttribute('src')
-        )
-          return;
-        if (event.data?.type === 'campanula-demo-ready') {
-          clearTimeout(timer);
-          stage.setAttribute('data-ready', '');
-          if (document.activeElement === retry)
-            frame.focus({ preventScroll: true });
-          feedback.hidden = true;
-          status.textContent = '';
-          retry.removeAttribute('aria-busy');
-          retry.removeAttribute('aria-disabled');
-        } else if (event.data?.type === 'campanula-demo-media-error') {
-          fail('音频没能播放，当前显示的是播放页截图。');
-        }
-      });
-      retry.addEventListener('click', () => {
-        if (retry.hasAttribute('aria-busy')) return;
-        retry.setAttribute('aria-busy', 'true');
-        retry.setAttribute('aria-disabled', 'true');
-        start();
-      });
-      start();
-      addEventListener('pagehide', () => {
-        feedback.hidden = true;
-        status.textContent = '';
-        stop();
-      });
-      addEventListener('pageshow', (event) => {
-        if (event.persisted) start();
-      });
+      import { openHome } from '../home-opening.ts';
+
+      void openHome();
     </script>
   </body>
 </html>

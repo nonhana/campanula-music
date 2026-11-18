@@ -37,10 +37,8 @@ test('同份静态产物的页面、锚点、图片、索引和隔离边界', as
           .locator('[href*=".md"], [href*=".mdx"]')
           .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('href'))),
       ).toEqual([]);
-      if (path !== '/') {
-        await expect(page.locator('iframe')).toHaveCount(0);
-        expect(body).not.toMatch(/(?:src|href)=["'][^"']*(?:\/demo\/|\.mp3)/);
-      }
+      await expect(page.locator('iframe')).toHaveCount(0);
+      expect(body).not.toMatch(/(?:src|href)=["'][^"']*(?:\/demo\/|\.mp3)/);
     }
     const links = await page
       .locator('a[href], link[href], script[src], img[src], source[srcset]')

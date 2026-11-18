@@ -1,8 +1,36 @@
 ---
+import Scrollbar from '../../../../src/lib/components/ui/Scrollbar.svelte';
 import Header from './Header.astro';
+import '@unocss/reset/tailwind.css';
+import 'uno.css';
+import '../../styles/guide.css';
+
+interface Props {
+  home?: boolean;
+}
+
+const { home = false } = Astro.props;
 ---
 
-<Header />
-<div class="site-body">
-  <slot />
+{!home && <Header />}
+<div class="site-scrollbar">
+  <Scrollbar page={{ top: home ? '0px' : '64px', bottom: '0px' }} client:load />
 </div>
+<noscript>
+  <style is:inline>
+    html {
+      scrollbar-width: thin;
+    }
+    html::-webkit-scrollbar {
+      display: block;
+      width: 8px;
+    }
+  </style>
+</noscript>
+{home ? (
+  <slot />
+) : (
+  <div class="site-body">
+    <slot />
+  </div>
+)}

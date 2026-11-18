@@ -12,6 +12,11 @@
       content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <title>Campanula 示例播放器</title>
+    <style>
+      #demo-app:not([hidden]) {
+        display: contents;
+      }
+    </style>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="off">
@@ -48,7 +53,7 @@
         <a href="/guide/" target="_top">部署 Campanula</a>
       </p>
     </main>
-    <div id="demo-app" style="display: contents">%sveltekit.body%</div>
+    <div id="demo-app">%sveltekit.body%</div>
     <script>
       addEventListener('message', (event) => {
         if (
@@ -58,7 +63,7 @@
         )
           return;
         document.getElementById('demo-fallback').hidden = false;
-        document.getElementById('demo-app').inert = true;
+        document.getElementById('demo-app').hidden = true;
       });
     </script>
   </body>

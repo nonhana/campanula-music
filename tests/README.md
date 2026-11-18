@@ -97,7 +97,9 @@ reset 只操作模拟上游，不删 Cookie、IndexedDB 或下载；新设备另
 
 官网使用独立的 `tests/website/`，不归播放器 browser/a11y project，也不由 Vitest 执行。运行 `pnpm docs:test`，先构建当前网站和真实 demo，再用自有 `127.0.0.1:4387` 静态服务与空 Chromium context 测试同份 `website/dist`；端口已占用会失败，结束只关闭自己的进程，不使用作者的 4321/4322 或个人 Chrome。仅重跑已有候选时可用 `pnpm exec playwright test --config tests/website/playwright.config.ts <文件> --project=desktop|phone|artifact`，这条命令不会构建。网站不包含在默认播放器 `pnpm test` 内。
 
-网站覆盖所有本地页面、链接、中文锚点、图片、canonical、sitemap、404 和 noindex；桌面/手机的目录、复制、返回位置/焦点、无 JS、正常/减少动态期间的开场与品牌往返、真实 Tab 进出 iframe；真实播放、换歌、歌词翻译、队列、曲库、离页原生音频暂停并清空来源、媒体失败重试、深链、存储/广播/SW/账号隔离。运行阶段发现外部请求、WebSocket、Service Worker 或未处理页面异常即失败。axe 对首页、每篇正式文章与试听状态保留原始结果；零 violations 必须通过，`tests/website/a11y-manual.json` 仅按视口、状态、节点和失败原因保留观察到的 incomplete，新增项失败，原播放器门禁不变。这里的 incomplete 不是通过对比度或读屏验收。
+开发模式另跑 `pnpm docs:test:dev`，它生成同份静态 demo，将源码和资源复制到自有 `.reports/website/dev-*` 工作根，独立保存 Astro/Vite 缓存与生成文件，再自行启动 `127.0.0.1:4388` 的 Astro dev 和空 Chromium，验证首页入口、独立示例的真实播放与歌单深链刷新；结束或启动中取消时只关闭自有 worker，等待退出后删除工作根，`dev-environment.json` 记录清理结果。dev 与静态预览分别验证，CI 的 `website` 分片复用已构建的示例执行这两项开发回归，将 `dev-tests.json` 和 `dev-results/` 与静态候选报告分开保存。只允许本机开发服务的 HMR WebSocket，其他网络和账号隔离沿用官网 fixture。
+
+网站覆盖所有本地页面、链接、中文锚点、图片、canonical、sitemap、404 和 noindex；桌面/手机的目录、复制、返回位置/焦点、无 JS、正常/减少动态期间的开场、品牌与 GitHub 图标往返、首页链接的键盘顺序。独立示例覆盖真实播放、换歌、歌词翻译、队列、曲库、离页原生音频暂停并清空来源、媒体失败重试、深链、存储/广播/SW/账号隔离。运行阶段发现外部请求、WebSocket、Service Worker 或未处理页面异常即失败。axe 对首页、每篇正式文章与试听状态保留原始结果；零 violations 必须通过，`tests/website/a11y-manual.json` 仅按视口、状态、节点和失败原因保留观察到的 incomplete，新增项失败，原播放器门禁不变。这里的 incomplete 不是通过对比度或读屏验收。
 
 每轮报告是 `.reports/website/run-*/`，含用例结果、trace/截图、axe、网络证据和 `run.json` 中的源 SHA、逐文件 SHA-256 清单及总摘要；测试前后产物变化也会失败。CI `website` 分片随官网、根工具链、Uno、静态资源和 `src/` 变化触发，汇总要求同 SHA 回执与产物摘要；`website-candidate` artifact 保存实际验过的 dist 与报告。播放器原有分片、Vercel/Node 和发布候选验证继续独立执行。
 

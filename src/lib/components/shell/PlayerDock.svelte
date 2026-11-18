@@ -47,6 +47,8 @@
   {#if desktopLayout.current}
     <div
       class="fixed inset-x-0 bottom-0 z-40 grid min-h-20 bg-white px-5 shadow-float"
+      role="region"
+      aria-label="播放条"
       bind:clientHeight={playerLayer.dockHeight}
       {@attach resetHeight}
       style:view-transition-name={chrome.bar}
@@ -78,6 +80,8 @@
     ></div>
     <div
       class="fixed inset-x-2 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 grid min-h-16 overflow-hidden rounded-xl bg-white shadow-float"
+      role="region"
+      aria-label={replace ? '多选操作' : '播放条'}
       bind:clientHeight={playerLayer.dockHeight}
       {@attach resetHeight}
       style:view-transition-name={chrome.bar}

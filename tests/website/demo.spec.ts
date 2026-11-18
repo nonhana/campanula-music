@@ -21,20 +21,15 @@ test('真实试听播放、换歌、歌词翻译、队列、曲库与离页停�
       },
     });
   });
-  await page.goto('/');
-  await expect(page.locator('.demo-window')).toHaveAttribute('data-ready', '');
-  const frame = page.frameLocator('#demo-frame');
-  const player = frame.getByRole('region', { name: '正在播放', exact: true });
+  await page.goto('/demo/?screen=player');
+  const player = page.getByRole('dialog', { name: '正在播放', exact: true });
   await expect(player).toBeVisible();
   await player.getByRole('button', { name: '播放', exact: true }).click();
-  const status = frame.getByRole('status', { name: '播放状态' });
+  const status = page.getByRole('status', { name: '播放状态' });
   await expect(status).toContainText('正在播放：Window Light');
-  const content = page
-    .frames()
-    .find((frame) => frame.url().includes('/demo/'))!;
   await expect
     .poll(() =>
-      content.evaluate(() =>
+      page.evaluate(() =>
         window.__websiteAudios.some(
           (audio) => !audio.paused && audio.currentTime > 0,
         ),
@@ -59,18 +54,21 @@ test('真实试听播放、换歌、歌词翻译、队列、曲库与离页停�
   else
     await player.getByRole('button', { name: '播放队列', exact: true }).click();
   await expect(
-    frame.locator('[data-song-id="102"]').filter({ visible: true }).first(),
+    page.locator('[data-song-id="102"]').filter({ visible: true }).first(),
   ).toContainText('Tidal Steps');
   await scan('demo-queue');
   if (info.project.name === 'phone') await page.keyboard.press('Escape');
   await player.getByRole('button', { name: '下一首', exact: true }).click();
   await expect(status).toContainText('Tidal Steps');
   await player.getByRole('button', { name: '收起播放页', exact: true }).click();
-  await expect(frame.getByRole('heading', { name: '示例曲库' })).toBeVisible();
-  await frame.locator('main [data-song-id="103"] [data-play-target]').click();
+  await expect(page.getByRole('heading', { name: '示例曲库' })).toBeVisible();
+  await page.locator('main [data-song-id="103"] [data-play-target]').click();
   await expect(status).toContainText('正在播放：After the Rain');
+  const dock = page.locator('[data-player-bar]');
+  await expect(dock.getByText('After the Rain', { exact: true })).toBeVisible();
+  await expect(dock.getByText('Tidal Steps', { exact: true })).toHaveCount(0);
   await scan('demo-library');
-  const boundary = await content.evaluate(async () => ({
+  const boundary = await page.evaluate(async () => ({
     databases: (await indexedDB.databases()).map((db) => db.name),
     caches: await caches.keys(),
     workers: (await navigator.serviceWorker.getRegistrations()).map(
@@ -79,19 +77,18 @@ test('真实试听播放、换歌、歌词翻译、队列、曲库与离页停�
     cookies: document.cookie,
     local: Object.keys(localStorage),
   }));
-  expect(boundary.databases).toEqual(['campanula-website-demo-v1:embedded']);
+  expect(boundary.databases).toEqual(['campanula-website-demo-v1:standalone']);
   expect(boundary.caches).toEqual([]);
   expect(boundary.workers).toEqual([]);
   expect(boundary.cookies).toBe('');
   expect(boundary.local).toEqual([]);
   await expect
     .poll(() =>
-      content.evaluate(() =>
+      page.evaluate(() =>
         window.__websiteAudios.some(
           (audio) =>
             !audio.paused &&
             audio.currentSrc.endsWith('/rain.mp3') &&
-            !audio.paused &&
             audio.currentTime > 0,
         ),
       ),
@@ -105,10 +102,7 @@ test('真实试听播放、换歌、歌词翻译、队列、曲库与离页停�
   ]);
   await observer.waitForLoadState();
   await observer.evaluate(() => {
-    const frame = window.opener.document.querySelector(
-      '#demo-frame',
-    ) as HTMLIFrameElement;
-    window.__websiteAudios = [...frame.contentWindow!.__websiteAudios];
+    window.__websiteAudios = [...window.opener.__websiteAudios];
   });
   expect(
     await observer.evaluate(() =>
@@ -117,7 +111,7 @@ test('真实试听播放、换歌、歌词翻译、队列、曲库与离页停�
       ),
     ),
   ).toBe(true);
-  await page.locator('#home-deploy').click();
+  await page.goto('/guide/');
   await expect(page).toHaveURL(/\/guide\/$/);
   expect(
     await observer.evaluate(() => window.__websiteAudios.length),
@@ -133,41 +127,28 @@ test('真实试听播放、换歌、歌词翻译、队列、曲库与离页停�
     .toBe(true);
   await observer.close();
   await expect(page.locator('iframe, audio')).toHaveCount(0);
-  await page.goBack();
-  await expect(page.locator('.demo-window')).toHaveAttribute('data-ready', '');
-  await expect(
-    frame
-      .getByRole('button', { name: '播放', exact: true })
-      .filter({ visible: true })
-      .first(),
-  ).toBeVisible();
 });
 
-test('媒体失败保留截图与部署入口，重试恢复本地试听', async ({ page, scan }) => {
+test('独立示例在媒体失败时提供截图和部署入口，重新打开后可播放', async ({
+  page,
+  scan,
+}) => {
   await page.route('**/media/*.mp3', (route) => route.abort('failed'));
-  await page.goto('/');
-  await expect(page.locator('.demo-window')).toHaveAttribute('data-ready', '');
-  await page
-    .frameLocator('#demo-frame')
-    .getByRole('region', { name: '正在播放', exact: true })
-    .getByRole('button', { name: '播放', exact: true })
-    .click();
-  await expect(page.locator('#demo-status')).toContainText('音频没能播放');
-  await expect(page.locator('#demo-frame')).not.toHaveAttribute('src');
-  await expect(page.locator('.demo-still')).toBeVisible();
-  await expect(page.locator('#home-deploy')).toBeVisible();
+  await page.goto('/demo/?screen=player');
+  const player = page.getByRole('dialog', { name: '正在播放', exact: true });
+  await player.getByRole('button', { name: '播放', exact: true }).click();
+  const fallback = page.locator('#demo-fallback');
+  await expect(fallback.getByRole('img')).toBeVisible();
+  await expect(
+    fallback.getByRole('link', { name: '部署 Campanula' }),
+  ).toHaveAttribute('href', '/guide/');
   await scan('media-failed');
   await page.unroute('**/media/*.mp3');
-  await page.getByRole('button', { name: '重新加载', exact: true }).click();
-  await expect(page.locator('.demo-window')).toHaveAttribute('data-ready', '');
-  await page
-    .frameLocator('#demo-frame')
-    .getByRole('region', { name: '正在播放', exact: true })
-    .getByRole('button', { name: '播放', exact: true })
-    .click();
-  await expect(
-    page.frameLocator('#demo-frame').getByRole('status', { name: '播放状态' }),
-  ).toContainText('正在播放');
+  await fallback.getByRole('link', { name: '重新打开示例' }).click();
+  await player.getByRole('button', { name: '播放', exact: true }).click();
+  await expect(page.getByRole('status', { name: '播放状态' })).toContainText(
+    '正在播放',
+  );
 });
 
 test('允许的示例深链直接打开和刷新，未开放入口不会发业务请求', async ({
@@ -216,11 +197,9 @@ test('试听保留已有实例的本机数据，不接收实例退出广播', as
     document.cookie =
       'website-test-sentinel=synthetic-cookie; Path=/; SameSite=Lax';
   });
-  await page.goto('/');
-  await expect(page.locator('.demo-window')).toHaveAttribute('data-ready', '');
-  const frame = page.frameLocator('#demo-frame');
-  await frame
-    .getByRole('region', { name: '正在播放', exact: true })
+  await page.goto('/demo/?screen=player');
+  await page
+    .getByRole('dialog', { name: '正在播放', exact: true })
     .getByRole('button', { name: '播放', exact: true })
     .click();
   await page.evaluate(() => {
@@ -228,7 +207,7 @@ test('试听保留已有实例的本机数据，不接收实例退出广播', as
     channel.postMessage({ type: 'signedOut' });
     channel.close();
   });
-  await expect(frame.getByRole('status', { name: '播放状态' })).toContainText(
+  await expect(page.getByRole('status', { name: '播放状态' })).toContainText(
     '正在播放',
   );
   const saved = await page.evaluate(async () => {

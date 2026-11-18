@@ -92,7 +92,7 @@ test('首页、部署选择、长文目录、复制命令和返回保留阅读�
   await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(before, 0);
   await page.locator('#reading-back').click();
   await expect(page).toHaveURL(`${baseURL}/`);
-  expect(await page.locator('html').getAttribute('data-home-enter')).toBeNull();
+  await expect(page.locator('html')).not.toHaveAttribute('data-home-opening');
   await expect(page.locator('#home-deploy')).toBeVisible();
   expect(
     await page.evaluate(
@@ -103,17 +103,27 @@ test('首页、部署选择、长文目录、复制命令和返回保留阅读�
 
 test.describe('关闭 JavaScript', () => {
   test.use({ javaScriptEnabled: false });
-  test('仍能从首页截图进入部署、目录、文章和 404 出口', async ({ page }) => {
+  test('首页文档和源码链接可用，读者可以打开部署、目录、文章和 404 出口', async ({
+    page,
+  }) => {
     await page.goto('/');
-    await expect(page.locator('.demo-note')).toContainText('开启 JavaScript');
-    expect(
-      await page
-        .locator('.demo-still img')
-        .evaluate(
-          (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
-        ),
-    ).toBe(true);
-    await expect(page.locator('#demo-frame')).not.toHaveAttribute('src');
+    await expect(
+      page.getByRole('heading', { name: 'Campanula', exact: true }),
+    ).toBeVisible();
+    for (const [label, href] of [
+      ['部署指南', '/guide/'],
+      ['安装与离线播放', '/guide/listen/'],
+      ['升级与回退', '/guide/upgrade/'],
+      ['本地开发', '/development/'],
+    ])
+      await expect(
+        page.getByRole('link', { name: label, exact: true }),
+      ).toHaveAttribute('href', href);
+    await expect(page.getByRole('link', { name: /GitHub/ })).toHaveAttribute(
+      'href',
+      /^https:\/\/github\.com\/nonhana\/campanula-music\b/,
+    );
+    await expect(page.locator('iframe, audio')).toHaveCount(0);
     await page.locator('#home-deploy').click();
     await page.locator('#deploy-vercel').click();
     await expect(page.locator('.chapter-link').first()).toBeVisible();
@@ -140,11 +150,20 @@ test.describe('关闭 JavaScript', () => {
 
 test('首页往返保留品牌、入口焦点与 axe 证据', async ({ page, scan }) => {
   await page.goto('/');
-  await expect(page.locator('.demo-window')).toHaveAttribute('data-ready', '');
+  await expect(page.locator('html')).not.toHaveAttribute('data-home-opening');
+  const brand = (await page.locator('.home-brand [data-brand]').boundingBox())!;
+  const top = (await page.locator('.home-brand').boundingBox())!;
+  const bottom = (await page.locator('.more-guides').boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(brand.x + brand.width / 2).toBeCloseTo(viewport.width / 2, 0);
+  expect((top.y + bottom.y + bottom.height) / 2).toBeCloseTo(
+    viewport.height / 2,
+    0,
+  );
   await expect(page.locator('.home-brand')).toBeVisible();
   await scan('home');
   await page.locator('#home-deploy').click();
   await page.locator('#reading-back').click();
-  expect(await page.locator('html').getAttribute('data-home-enter')).toBeNull();
+  await expect(page.locator('html')).not.toHaveAttribute('data-home-opening');
   await expect(page.locator('#home-deploy')).toBeFocused();
 });

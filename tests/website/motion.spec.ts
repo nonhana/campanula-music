@@ -3,10 +3,13 @@ import { expect, test } from './fixture.ts';
 interface MotionSample {
   path: string;
   opening: boolean;
+  phase: string;
   transition: boolean;
   types: string[];
   logo: string;
   name: string;
+  github: string;
+  githubPath: { x: number; y: number }[];
   animations: { name: string; duration: number; displaced: boolean }[];
 }
 
@@ -33,39 +36,60 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
             const element = document.querySelector(selector);
             return element ? getComputedStyle(element).viewTransitionName : '';
           };
+          const animations = document.getAnimations();
+          const githubGroup = animations.find(
+            ({ effect }) =>
+              effect instanceof KeyframeEffect &&
+              effect.pseudoElement ===
+                '::view-transition-group(website-github)',
+          )?.effect;
           const value = {
             path: location.pathname,
-            opening: document.documentElement.hasAttribute('data-home-enter'),
+            opening: document.documentElement.hasAttribute('data-home-opening'),
+            phase: document.documentElement.dataset.homeOpening ?? '',
             transition: Boolean(transition),
             types: transition ? [...transition.types] : [],
             logo: named('[data-brand] svg'),
             name: named('[data-brand-name]'),
-            animations: document
-              .getAnimations()
-              .filter((animation) => animation instanceof CSSAnimation)
-              .map((animation) => ({
-                name: animation.animationName,
-                duration: Number(
-                  animation.effect?.getComputedTiming().duration,
-                ),
-                displaced:
-                  animation.effect instanceof KeyframeEffect &&
-                  animation.effect
-                    .getKeyframes()
-                    .some(
-                      (frame) =>
-                        (typeof frame.translate === 'string' &&
-                          frame.translate !== 'none' &&
-                          frame.translate
-                            .split(' ')
-                            .some((part) => Number.parseFloat(part) !== 0)) ||
-                        (typeof frame.transform === 'string' &&
-                          !new DOMMatrixReadOnly(frame.transform).isIdentity),
-                    ),
-              })),
+            github: named('.source-link > svg'),
+            githubPath:
+              githubGroup instanceof KeyframeEffect
+                ? githubGroup.getKeyframes().map(({ transform }) => {
+                    const matrix = new DOMMatrixReadOnly(String(transform));
+                    return { x: matrix.e, y: matrix.f };
+                  })
+                : [],
+            animations: animations.map((animation) => ({
+              name:
+                animation instanceof CSSAnimation
+                  ? animation.animationName
+                  : 'arrival',
+              duration: Number(animation.effect?.getComputedTiming().duration),
+              displaced:
+                animation.effect instanceof KeyframeEffect &&
+                animation.effect
+                  .getKeyframes()
+                  .some(
+                    (frame) =>
+                      (typeof frame.translate === 'string' &&
+                        frame.translate !== 'none' &&
+                        frame.translate
+                          .split(' ')
+                          .some((part) => Number.parseFloat(part) !== 0)) ||
+                      (typeof frame.transform === 'string' &&
+                        !new DOMMatrixReadOnly(frame.transform).isIdentity),
+                  ),
+            })),
           };
           void window.websiteMotion(value);
         };
+        new MutationObserver(() =>
+          requestAnimationFrame(() => sample()),
+        ).observe(document, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['data-home-opening'],
+        });
         addEventListener('pagereveal', (event) => {
           const transition = event.viewTransition;
           if (transition) void transition.ready.then(() => sample(transition));
@@ -77,21 +101,18 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
         .poll(() =>
           samples.some(
             (sample) =>
-              sample.opening &&
-              !sample.transition &&
-              sample.animations.some(
-                (animation) => animation.name === 'home-flower-in',
-              ),
+              sample.phase ===
+                (reducedMotion === 'reduce' ? 'reduced' : 'spreading') &&
+              sample.animations.length > 0,
           ),
         )
         .toBe(true);
       const opening = samples.find(
-        (sample) => sample.opening && !sample.transition,
+        (sample) =>
+          sample.phase ===
+          (reducedMotion === 'reduce' ? 'reduced' : 'spreading'),
       )!;
-      const animations = opening.animations.filter((animation) =>
-        animation.name.startsWith('home-'),
-      );
-      expect(animations).toHaveLength(4);
+      const animations = opening.animations;
       expect(animations.some((animation) => animation.displaced)).toBe(
         reducedMotion === 'no-preference',
       );
@@ -99,15 +120,22 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
         expect(animations.every((animation) => animation.duration <= 150)).toBe(
           true,
         );
-      await expect(page.locator('.demo-window')).toHaveAttribute(
-        'data-ready',
-        '',
+      else
+        expect(
+          samples.some(
+            (sample) =>
+              sample.phase === 'flying' &&
+              sample.animations.some(
+                (animation) =>
+                  animation.duration === 600 && animation.displaced,
+              ),
+          ),
+        ).toBe(true);
+      await expect(page.locator('html')).not.toHaveAttribute(
+        'data-home-opening',
       );
-      await expect(page.locator('#demo-frame')).toHaveCSS('opacity', '1');
-      await expect(page.locator('.demo-still')).toHaveCSS(
-        'visibility',
-        'hidden',
-      );
+      const github = page.locator('.source-link > svg');
+      const homeIcon = (await github.boundingBox())!;
       await page.locator('#home-deploy').click();
       await expect
         .poll(() =>
@@ -122,15 +150,11 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
       expect(forward.types).toContain(
         reducedMotion === 'reduce' ? 'fade' : 'up',
       );
-      expect([forward.logo, forward.name]).toEqual(
-        reducedMotion === 'reduce'
-          ? ['none', 'none']
-          : ['website-logo', 'website-name'],
-      );
       if (reducedMotion === 'reduce')
         expect(
           forward.animations.every((animation) => !animation.displaced),
         ).toBe(true);
+      const guideIcon = (await github.boundingBox())!;
       await page.locator('#reading-back').click();
       await expect
         .poll(() =>
@@ -140,6 +164,35 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
       const back = samples.findLast(
         (sample) => sample.path === '/' && sample.transition,
       )!;
+      for (const [sample, start, end] of [
+        [forward, homeIcon, guideIcon],
+        [back, guideIcon, homeIcon],
+      ] as const) {
+        expect([sample.logo, sample.name, sample.github]).toEqual(
+          reducedMotion === 'reduce'
+            ? ['none', 'none', 'none']
+            : ['website-logo', 'website-name', 'website-github'],
+        );
+        expect(
+          sample.animations.some(
+            (animation) =>
+              animation.name.endsWith('website-github') &&
+              animation.duration === 480 &&
+              animation.displaced,
+          ),
+        ).toBe(reducedMotion === 'no-preference');
+        if (reducedMotion === 'reduce') expect(sample.githubPath).toEqual([]);
+        else
+          for (const axis of ['x', 'y'] as const) {
+            // 转场快照取整到像素，布局坐标可以落在半像素处。
+            expect(
+              Math.abs(sample.githubPath[0][axis] - start[axis]),
+            ).toBeLessThanOrEqual(1);
+            expect(
+              Math.abs(sample.githubPath.at(-1)![axis] - end[axis]),
+            ).toBeLessThanOrEqual(1);
+          }
+      }
       expect(back.opening).toBe(false);
       expect(back.types).toContain(
         reducedMotion === 'reduce' ? 'fade' : 'down',
@@ -159,41 +212,23 @@ for (const reducedMotion of ['reduce', 'no-preference'] as const) {
   });
 }
 
-test('Tab 可以从官网进入试听，再正向和反向离开 iframe', async ({ page }) => {
+test('Tab 按从上到下的顺序经过首页链接，反向也能返回', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.demo-window')).toHaveAttribute('data-ready', '');
-  await page.locator('.home-actions .source-link').focus();
+  const links = [
+    'home-deploy',
+    'home-listen',
+    'home-source',
+    'home-upgrade',
+    'home-development',
+  ];
   await page.keyboard.press('Tab');
-  await expect(page.locator('#demo-frame')).toBeFocused();
-  await page.keyboard.press('Tab');
-  expect(
-    await page.evaluate(() => {
-      const frame = document.querySelector<HTMLIFrameElement>('#demo-frame')!;
-      return frame.contentDocument?.activeElement?.tagName;
-    }),
-  ).not.toBe('BODY');
-  let escaped = false;
-  for (let i = 0; i < 45; i++) {
+  await expect(page.getByRole('link', { name: '跳到正文' })).toBeFocused();
+  for (const id of links) {
     await page.keyboard.press('Tab');
-    if (
-      await page.evaluate(() => document.activeElement?.id !== 'demo-frame')
-    ) {
-      escaped = true;
-      break;
-    }
+    await expect(page.locator(`#${id}`)).toBeFocused();
   }
-  expect(escaped, '试听不能把 Tab 困在内部').toBe(true);
-  await page.locator('.home-actions .source-link').focus();
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Tab');
-  for (let i = 0; i < 45; i++) {
+  for (const id of links.slice(0, -1).reverse()) {
     await page.keyboard.press('Shift+Tab');
-    if (
-      await page
-        .locator('.home-actions .source-link')
-        .evaluate((element) => element === document.activeElement)
-    )
-      return;
+    await expect(page.locator(`#${id}`)).toBeFocused();
   }
-  throw new Error('反向 Tab 没能回到官网入口');
 });

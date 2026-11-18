@@ -93,7 +93,7 @@ pnpm docs:preview --host 127.0.0.1 --port 4322
 
 开发站默认 `http://localhost:4322/`；构建产物在 `website/dist/`。开发与静态预览不能同时占 4322，先退出一个再启动另一个，或用 `--port` 指定空闲端口。本地原型使用的 4321 保留。
 
-首页可以操作真实示例界面，它只读本站素材，不能登录真实账号。进入指南会停止本页试听。`/demo/?screen=player` 是独立示例路由，`/demo/playlists/502/` 是允许的歌单深链，正常首页不提供常驻的单开入口。
+首页提供部署、安装与离线播放、升级与回退和本地开发四个文档入口。要检查示例播放器，可以直接打开 `/demo/?screen=player`，或打开 `/demo/playlists/502/` 检查歌单深链。示例只读取本站素材。
 
 `docs:dev` 和 `docs:build` 都会先运行 `docs:demo`，用 `website/demo/` 的独立 Kit 配置生成示例，再构建 Astro。修改示例或共用组件后，需要重新执行构建才能更新已启动的网站中的示例。生成目录是 `website/demo/.kit/`、`website/public/demo/`、`website/.astro/` 和 `website/dist/`，都不提交，也不会覆盖播放器的 `.svelte-kit/`。
 

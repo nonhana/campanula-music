@@ -1,0 +1,93 @@
+---
+import {
+  cssEasing,
+  DURATIONS,
+  LOOPS,
+  OPENING,
+  REDUCED_FADE_MS,
+} from '../../../src/lib/components/shared/motion-tokens.ts';
+import { colors } from '../../../uno.palette.mts';
+import { HOME_READY_WAIT } from '../home-opening.ts';
+
+const deadline =
+  HOME_READY_WAIT +
+  DURATIONS.focal +
+  OPENING.delay +
+  OPENING.spread +
+  DURATIONS.panel;
+---
+
+<style
+  is:inline
+  set:html={`
+  html { background: ${colors.primary[50]}; }
+  #home-opening { display: none; }
+  [data-home-opening="loading"] body > :not(#home-opening),
+  [data-home-opening="flying"] .home-copy,
+  [data-home-opening="flying"] .more-guides { visibility: hidden; }
+  [data-home-opening="loading"] #home-opening {
+    display: grid; position: fixed; inset: 0; place-items: center; pointer-events: none;
+  }
+  #home-opening svg {
+    animation: home-spin ${LOOPS.spin}ms linear infinite,
+      home-appear ${DURATIONS.panel}ms ${cssEasing('out-soft')} backwards;
+  }
+  [data-home-opening="reduced"] .homepage {
+    animation: home-appear ${REDUCED_FADE_MS}ms ${cssEasing('out-soft')} backwards;
+  }
+  @keyframes home-spin { to { rotate: 360deg; } }
+  @keyframes home-appear { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { #home-opening svg { animation: none; } }
+`}
+/>
+<script is:inline define:vars={{ deadline }}>
+  (() => {
+    const root = document.documentElement;
+    const navigation = performance.getEntriesByType('navigation')[0];
+    const fromThisSite =
+      document.referrer &&
+      new URL(document.referrer).origin === location.origin;
+    if (
+      document.visibilityState === 'hidden' ||
+      navigation?.type === 'back_forward' ||
+      (fromThisSite && navigation?.type !== 'reload')
+    )
+      return;
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    root.dataset.homeOpening = motion.matches ? 'reduced' : 'loading';
+    const events = new AbortController();
+    const { signal } = events;
+    const settle = () => {
+      clearTimeout(timer);
+      events.abort();
+      root.removeAttribute('data-home-opening');
+      dispatchEvent(new Event('home-opening-cancel'));
+    };
+    const timer = setTimeout(settle, deadline);
+    addEventListener('home-opening-complete', settle, { signal });
+    addEventListener('pageswap', settle, { signal });
+    addEventListener('pagehide', settle, { signal });
+    motion.addEventListener('change', settle, { signal });
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key === 'Tab') settle();
+      },
+      { signal },
+    );
+    addEventListener(
+      'pagereveal',
+      (event) => {
+        if (event.viewTransition) settle();
+      },
+      { once: true, signal },
+    );
+    document.addEventListener(
+      'visibilitychange',
+      () => {
+        if (document.visibilityState === 'hidden') settle();
+      },
+      { signal },
+    );
+  })();
+</script>

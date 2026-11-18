@@ -58,12 +58,12 @@ export default defineConfig({
     },
     {
       name: 'desktop',
-      testIgnore: 'artifact.spec.ts',
+      testIgnore: ['artifact.spec.ts', 'dev.spec.ts'],
       use: { viewport: { width: 1440, height: 900 } },
     },
     {
       name: 'phone',
-      testIgnore: 'artifact.spec.ts',
+      testIgnore: ['artifact.spec.ts', 'dev.spec.ts'],
       use: {
         viewport: { width: 390, height: 844 },
         isMobile: true,

@@ -1,0 +1,19 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+
+interface Props {
+  id?: string;
+}
+---
+
+<a
+  id={Astro.props.id}
+  href="https://github.com/nonhana/campanula-music/tree/rewrite/v1"
+  class="source-link"
+  aria-label="在 GitHub 查看 Campanula 源码"
+  title="在 GitHub 查看源码"
+  target="_blank"
+  rel="external noopener"
+>
+  <Icon name="github" size="20px" />
+</a>
