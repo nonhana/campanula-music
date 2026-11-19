@@ -32,7 +32,11 @@
     reveal,
     scrollBehavior,
   } from '#lib/components/shared/motion.ts';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import {
+    readShelves,
+    scrollSnapshot,
+    writeShelves,
+  } from '#lib/components/shared/snapshot.ts';
   import { formatCount } from '#lib/components/shared/text.ts';
   import CreditLine from '#lib/components/songs/CreditLine.svelte';
   import DownloadMark from '#lib/components/songs/DownloadMark.svelte';
@@ -85,15 +89,8 @@
       : null;
 
   let query = $state('');
-  scrollSnapshot(
-    '/',
-    () => query,
-    (value) => {
-      query = value;
-    },
-  );
-
   let stripEl = $state<HTMLElement>();
+  let stripWidth = $state(0);
   const covers = $state<HTMLElement[]>([]);
   let atStart = $state(true);
   let atEnd = $state(false);
@@ -104,8 +101,26 @@
     atEnd = stripEl.scrollLeft + stripEl.clientWidth > stripEl.scrollWidth - 4;
   };
 
+  scrollSnapshot(
+    '/',
+    () => ({
+      query,
+      strip: stripEl?.scrollLeft ?? 0,
+      shelves: readShelves(),
+    }),
+    (value) => {
+      query = value.query;
+      writeShelves(value.shelves);
+      if (stripEl) {
+        stripEl.scrollLeft = value.strip;
+        measureStrip();
+      }
+    },
+  );
+
   $effect(() => {
     void strip.length;
+    void stripWidth;
     measureStrip();
   });
 
@@ -156,10 +171,12 @@
   all: string | null,
   tools?: Snippet,
 )}
-  <div class="mb-4 min-h-10 flex items-center gap-3">
-    <h2 {id} class="text-title text-neutral-900 font-600">{title}</h2>
+  <div class="mb-4 min-h-10 flex flex-wrap items-center gap-x-3 gap-y-2">
+    <h2 {id} class="whitespace-nowrap text-title text-neutral-900 font-600">
+      {title}
+    </h2>
     {#if count !== null}<span
-        class="text-caption text-neutral-500 tabular-nums"
+        class="whitespace-nowrap text-caption text-neutral-500 tabular-nums"
         in:fade>{count}</span
       >{/if}
     <div class="ml-auto flex items-center gap-2">
@@ -186,13 +203,17 @@
     <h1 class="sr-only">曲库</h1>
     <SyncNotice {notice} class="pb-10" />
     <section aria-labelledby="liked-heading">
-      <div class="mb-4 min-h-10 flex items-center gap-3">
-        <h2 id="liked-heading" class="text-title text-neutral-900 font-600">
+      <div class="mb-4 min-h-10 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h2
+          id="liked-heading"
+          class="whitespace-nowrap text-title text-neutral-900 font-600"
+        >
           我喜欢的音乐
         </h2>
         {#if liked.songs.kind === 'songs'}
-          <span class="text-caption text-neutral-500 tabular-nums" in:fade
-            >{formatCount(liked.songs.total)} 首</span
+          <span
+            class="whitespace-nowrap text-caption text-neutral-500 tabular-nums"
+            in:fade>{formatCount(liked.songs.total)} 首</span
           >
         {/if}
         <div class="ml-auto flex items-center gap-2">
@@ -226,7 +247,7 @@
       </div>
 
       <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <div class="min-w-0 rounded-xl bg-white p-2 shadow-ambient">
+        <div class="strip-card min-w-0 rounded-xl bg-white p-2 shadow-ambient">
           {#if liked.songs.kind === 'loading' && liked.failure?.where !== 'list'}
             <div
               class="strip"
@@ -261,6 +282,7 @@
               {#if liked.songs.kind === 'songs'}
                 <div
                   bind:this={stripEl}
+                  bind:clientWidth={stripWidth}
                   class="strip"
                   role="list"
                   aria-label="我喜欢的音乐的前 {strip.length} 首"
@@ -432,11 +454,15 @@
   {:else}
     <h1 class="sr-only">我喜欢的音乐</h1>
     <SyncNotice {notice} phone />
-    <PlaylistSongs {library} playlistId={likedId} bind:query phone />
+    <PlaylistSongs {library} playlistId={likedId} liked bind:query phone />
   {/if}
 {/if}
 
 <style>
+  .strip-card {
+    container-type: inline-size;
+  }
+
   .strip {
     display: grid;
     grid-template-rows: repeat(3, 60px);
@@ -452,6 +478,18 @@
       #000 calc(100% - var(--fade-r)),
       transparent 100%
     );
+  }
+
+  @container (max-width: 679px) {
+    .strip {
+      grid-auto-columns: calc((100% - 16px) / 2.25);
+    }
+  }
+
+  @container (max-width: 419px) {
+    .strip {
+      grid-auto-columns: calc((100% - 8px) / 1.25);
+    }
   }
 
   .cell {

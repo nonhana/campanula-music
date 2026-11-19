@@ -24,6 +24,7 @@
     padded = false,
     class: klass,
   }: Props = $props();
+  const SEPARATOR = ' / ';
   const named = $derived(artists.filter((artist) => artist.name !== null));
   const line = $derived(creditLine(artists));
 </script>
@@ -32,9 +33,7 @@
   class={klass}
   lang={langOf(line)}
   aria-hidden={spoken ? undefined : 'true'}
-  >{#each named as artist, i (i)}{#if i > 0}
-      /
-    {/if}<CreditName
+  >{#each named as artist, i (i)}{#if i > 0}{SEPARATOR}{/if}<CreditName
       kind="artist"
       target={artist}
       {linked}

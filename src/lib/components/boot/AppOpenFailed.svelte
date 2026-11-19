@@ -55,6 +55,7 @@
     <Brand />
   </header>
   <main class="pt-[8vh]">
+    <h1 class="sr-only">{message.title}</h1>
     <StateBlock
       kind="error"
       title={message.title}

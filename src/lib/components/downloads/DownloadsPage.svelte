@@ -121,7 +121,11 @@
   />
 {/snippet}
 
-<DetailHeader title="已下载" phoneLayout="row" search={headerSearch}>
+<DetailHeader
+  title="已下载"
+  phoneLayout="row"
+  search={all && all.length > 0 ? headerSearch : undefined}
+>
   {#snippet artwork(size: number)}
     {@render collage(size)}
   {/snippet}

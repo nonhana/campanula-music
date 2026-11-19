@@ -111,6 +111,7 @@
       reveal
       virtual={false}
       label="单曲"
+      count={null}
       {appendedAt}
       {select}
     />

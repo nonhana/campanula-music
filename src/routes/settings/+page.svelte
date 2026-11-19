@@ -8,6 +8,7 @@
   import { getOverlays } from '#lib/components/overlay/overlay-context.ts';
   import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
   import { desktopLayout } from '#lib/components/shared/layout.ts';
+  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
   import {
     formatCount,
     formatStorageSize,
@@ -52,7 +53,15 @@
   const openClear = (event: MouseEvent) => {
     clearDownloadsConfirm.open({ from: event.currentTarget as HTMLElement });
   };
+
+  scrollSnapshot(
+    '/settings',
+    () => null,
+    () => {},
+  );
 </script>
+
+<svelte:head><title>设置 · Campanula</title></svelte:head>
 
 <div class="mx-auto max-w-[640px] px-4 pt-2 md:px-0 md:pt-6">
   {#if desktopLayout.current}

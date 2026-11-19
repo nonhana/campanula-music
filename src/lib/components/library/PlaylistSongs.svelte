@@ -20,6 +20,7 @@
   import SearchField from '../ui/SearchField.svelte';
   import TextButton from '../ui/TextButton.svelte';
   import DragGrip from './DragGrip.svelte';
+  import { likedFailure } from './liked-failure.ts';
   import { selectionActions } from './selection-actions.svelte.ts';
   import { SongDrag } from './song-drag.svelte.ts';
 
@@ -29,6 +30,7 @@
     library: LibraryState;
     playlistId: number;
     query: string;
+    liked?: boolean;
     phone?: boolean;
   }
 
@@ -36,12 +38,13 @@
     library,
     playlistId,
     query = $bindable(),
+    liked: likedPage = false,
     phone = false,
   }: Props = $props();
   const view = getAppView();
   const page = $derived(library.playlistPage(playlistId));
   const shown = $derived(page.songs);
-  const liked = $derived(page.kind === 'liked');
+  const liked = $derived(likedPage || page.kind === 'liked');
   const outside = $derived(page.inLibrary === false);
   const term = $derived(query.trim());
   const result = $derived(
@@ -136,7 +139,7 @@
     if (page.failure && page.failure.where === 'list') {
       return {
         kind: 'failed',
-        title: liked ? '我喜欢的音乐没能同步' : '这张歌单没能加载',
+        title: liked ? likedFailure(page.failure).title : '这张歌单没能加载',
         body: failureText(page.failure.failure),
         retry,
       };

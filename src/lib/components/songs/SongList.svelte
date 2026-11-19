@@ -398,10 +398,12 @@
         role="status"
       >
         {#if list.kind === 'loading'}
-          <span
-            class="bone inline-block h-3 w-10 rounded-full align-middle"
-            aria-hidden="true"
-          ></span>
+          {#if count !== null}
+            <span
+              class="bone inline-block h-3 w-10 rounded-full align-middle"
+              aria-hidden="true"
+            ></span>
+          {/if}
         {:else if search}
           {@render found()}
         {:else if count !== null}

@@ -17,7 +17,11 @@
   } from '#lib/components/search/view.ts';
   import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
   import { desktopLayout } from '#lib/components/shared/layout.ts';
-  import { scrollSnapshot } from '#lib/components/shared/snapshot.ts';
+  import {
+    readShelves,
+    scrollSnapshot,
+    writeShelves,
+  } from '#lib/components/shared/snapshot.ts';
   import { langOf } from '#lib/components/shared/text.ts';
 
   const view = getAppView();
@@ -25,21 +29,7 @@
   const keyword = $derived((page.url.searchParams.get('q') ?? '').trim());
   const tab = $derived(searchTabOf(page.url.searchParams.get('type')));
 
-  scrollSnapshot(
-    '/search',
-    () =>
-      Object.fromEntries(
-        [...document.querySelectorAll<HTMLElement>('[data-shelf]')].map(
-          (shelf) => [shelf.dataset.shelf, shelf.scrollLeft],
-        ),
-      ),
-    (shelves) => {
-      for (const shelf of document.querySelectorAll<HTMLElement>(
-        '[data-shelf]',
-      ))
-        shelf.scrollLeft = shelves[shelf.dataset.shelf ?? ''] ?? 0;
-    },
-  );
+  scrollSnapshot('/search', readShelves, writeShelves);
 
   $effect(() => view.app.viewing({ kind: 'search', keyword }));
 

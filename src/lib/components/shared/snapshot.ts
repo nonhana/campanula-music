@@ -21,3 +21,16 @@ export const scrollSnapshot = <T>(
     },
   });
 };
+
+export const readShelves = (): Record<string, number> =>
+  Object.fromEntries(
+    [...document.querySelectorAll<HTMLElement>('[data-shelf]')].map((shelf) => [
+      shelf.dataset.shelf,
+      shelf.scrollLeft,
+    ]),
+  );
+
+export const writeShelves = (shelves: Record<string, number>): void => {
+  for (const shelf of document.querySelectorAll<HTMLElement>('[data-shelf]'))
+    shelf.scrollLeft = shelves[shelf.dataset.shelf ?? ''] ?? 0;
+};
