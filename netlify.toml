@@ -1,13 +1,30 @@
 "$schema" = "https://open-api.netlify.com/netlify.schema.json"
 
 [build]
-command = "pnpm install --frozen-lockfile && pnpm docs:build"
+command = "pnpm docs:build"
 publish = "website/dist"
 ignore = 'if [ -z "$CACHED_COMMIT_REF" ] || [ "$COMMIT_REF" = "$CACHED_COMMIT_REF" ]; then exit 1; else git diff --quiet "$CACHED_COMMIT_REF" "$COMMIT_REF" -- website/ netlify.toml || exit 1; fi'
 
 [build.environment]
 NODE_VERSION = "26.13.1"
 PNPM_VERSION = "12.18.0"
+PNPM_FLAGS = "--frozen-lockfile"
+
+[[headers]]
+for = "/*"
+[headers.values]
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+for = "/_astro/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/demo/_app/immutable/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
 for = "/demo/*"
