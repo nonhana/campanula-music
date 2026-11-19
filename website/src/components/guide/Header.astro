@@ -3,9 +3,19 @@ import Brand from '../../../../src/lib/components/boot/Brand.svelte';
 import SourceLink from './SourceLink.astro';
 ---
 
-<header class="site-header" aria-label="Campanula 项目官网">
-  <nav aria-label="项目导航" class="site-nav">
-    <a href="/" aria-label="Campanula 首页" class="brand-link">
+<header
+  class="site-header [view-transition-class:still] [view-transition-name:website-header] sticky top-0 z-20 h-16 bg-primary-50 print:hidden"
+  aria-label="Campanula 项目官网"
+>
+  <nav
+    aria-label="项目导航"
+    class="mx-auto h-full max-w-[1200px] flex items-center justify-between px-8 lt-md:px-4"
+  >
+    <a
+      href="/"
+      aria-label="Campanula 首页"
+      class="min-h-11 inline-flex items-center rounded-md"
+    >
       <Brand />
     </a>
     <SourceLink />

@@ -1,6 +1,6 @@
 ---
 title: 部署到 Vercel
-description: 生成密钥，创建播放器项目，再用自己的域名打开 Campanula。
+description: 配置 COOKIE_SECRET，部署播放器并绑定域名。
 tableOfContents:
   minHeadingLevel: 2
   maxHeadingLevel: 2
@@ -8,76 +8,57 @@ sidebar:
   hidden: true
 ---
 
-import CopyCommand from '../../../components/guide/CopyCommand.astro';
 import DeployAction from '../../../components/guide/DeployAction.astro';
 
-Vercel 会替你运行 Campanula，不用自己维护服务器。部署好以后，打开自己的网址，就能用网易云账号登录。可以把这篇教程放在控制台旁边，一步一步照着做。
-
-## 开始前准备什么
-
-准备一个 GitHub 账号、一个能连接 GitHub 的 Vercel 账号，以及一个由你管理的域名，例如 `music.example.com`。域名用来打开播放器，和这个项目介绍站分开。
-
-教程的部署按钮使用 [v1 的固定代码版本 `4fb955c`](https://github.com/nonhana/campanula-music/tree/4fb955c43a070f093ef45c883d906956a1b2cd3a)。
+准备 GitHub 账号、已连接 GitHub 的 Vercel 账号和一个自己的域名。
 
 ## 生成并保存密钥
 
-先在**自己的电脑**上打开终端，运行 `openssl rand -base64 32`。它会生成一串随机字符，用来加密登录信息。
+```bash
+openssl rand -base64 32
+```
 
-<CopyCommand />
-
-把终端输出完整存进密码管理器，稍后贴进 Vercel 的 `COOKIE_SECRET`。这串字符至少要有 32 个字符；不要把命令本身填进去，也不要把输出贴进网址或公开仓库。
-
-**以后升级也保留这把密钥。** 换掉它，原来的登录信息就无法解密，需要重新登录。密钥不用交给 Campanula 作者。
-
-电脑没有这个命令时，可以在本机密码管理器里生成至少 32 个字符的随机密码，再保存和使用。
+在本机运行命令，把**输出**存进密码管理器，部署时填入 `COOKIE_SECRET`。也可以用密码管理器生成至少 32 个字符的随机密码。升级沿用原值。
 
 ## 创建播放器项目
 
-点下面的按钮。Vercel 会先让你登录，再把这份代码复制到你自己的 Git 仓库，并创建项目。
-
 <DeployAction />
 
-1. 确认来源是 `nonhana/campanula-music`，网址里的 `repository-url` 仍指向上面的固定版本。Vercel 的复制表单可能显示原仓库默认分支名 `master`，复制完成后还要按下一节核对实际文件。
-2. 给新仓库和项目起一个自己认得的名字，例如 `my-campanula`。选择存放代码的 Git 账号，按页面提示继续。
-3. 在 `COOKIE_SECRET` 输入框贴进刚保存的密钥。它是必填项；按钮只传变量名，不会替你生成或保存真实密钥。
-4. 一键页面如果只显示环境变量，先在另一个标签打开 Vercel 项目列表，进入刚创建的项目，再打开 **Settings → Build and Deployment**。检查 **Root Directory** 留空或为仓库根目录 `./`，**Framework Preset** 是 **SvelteKit**；打开 **Build Command** 和 **Install Command** 旁的 **Override**，分别填 `pnpm build` 和 `pnpm install --frozen-lockfile`，保存后回到创建页面。不要选 `website/`，也不要用 `pnpm docs:build`；那样部署出来的是说明站。
-5. 点 **Deploy**。若出现 **Verify Your Identity**，按 Vercel 提示用自己的验证器或其他已配置的验证方式完成验证，再继续等待构建。不要把验证码填进环境变量或交给别人。成功时，项目的 Deployments 里会出现 **Ready** 的部署记录。
+1. 选择 GitHub 账号，填写新仓库名。按钮会复制 [v1 固定版本 `4fb955c`](https://github.com/nonhana/campanula-music/tree/4fb955c43a070f093ef45c883d906956a1b2cd3a)。
+2. 在 **Environment Variables** 填入 `COOKIE_SECRET`，应用到 **Production**。
+3. 核对构建设置，点击 **Deploy**。若出现 **Verify Your Identity**，按 Vercel 提示验证后继续。
+4. 到 **Deployments** 找到 **Ready** 的记录，检查 **Source** 是刚复制的 v1 代码，函数地区为 **Hong Kong (`hkg1`)**。修正设置后重新部署。
 
-按钮的来源与必填变量遵循 Vercel 的[源仓库参数](https://vercel.com/docs/deploy-button/source)和[环境变量参数](https://vercel.com/docs/deploy-button/environment-variables)。也可以直接按下面的[手动导入](#手动导入)操作，仓库里的正文同样能照着完成。
+| 构建设置         | 值                               |
+| ---------------- | -------------------------------- |
+| Root Directory   | 留空（仓库根目录）               |
+| Framework Preset | SvelteKit                        |
+| Install Command  | `pnpm install --frozen-lockfile` |
+| Build Command    | `pnpm build`                     |
+
+创建页未显示构建设置时，到项目的 **Settings → Build and Deployment** 核对。修改命令时打开对应的 **Override**，保存后重新部署。 [Vercel 构建设置](https://vercel.com/docs/builds/configure-a-build)
 
 ### 手动导入
 
-在 GitHub 打开 [v1 分支](https://github.com/nonhana/campanula-music/tree/rewrite/v1)，Fork 到自己的账号。若 Fork 页面有只复制默认分支的选项，取消它，保留 `rewrite/v1`。
-
-在 Vercel 的 **Add New → Project** 导入自己的仓库。在部署配置中选 `rewrite/v1`，根目录仍为 `./`；若这个页面没有分支选择，先把自己的 Fork 的默认分支改为 `rewrite/v1`，再导入。确认来源是 v1 后，按上面的构建设置填好 `COOKIE_SECRET`，再部署。以后在项目的 Git 设置里把 Production Branch 设成 `rewrite/v1`，避免后续生产部署回到旧的 `master`。
-
-## 确认代码和香港地区
-
-打开刚才那条部署记录，检查 **Source**。一键路径应来自固定的 v1 源提交；复制到自己仓库后提交编号可能变化，可以打开根目录的 `vite.config.mts` 对照源文件。手动路径应显示 `rewrite/v1`，不能显示原仓库旧的 `master`。
-
-Campanula 的 `vite.config.mts` 已给播放器函数配置香港 **Hong Kong (`hkg1`)**。在项目的 **Settings → Functions** 和这次部署的函数详情中核对地区；若你改过设置，选回香港后重新部署，并在新的部署记录里确认生效。地区是播放器向网易云发请求的位置。
-
-**看到 Ready 只说明构建好了。** 接下来还要绑定自己的域名，打开页面检查密钥和 HTTPS 是否正常。
+1. Fork [Campanula 仓库](https://github.com/nonhana/campanula-music/tree/rewrite/v1)，保留 `rewrite/v1`。
+2. 在 Vercel 通过 **Add New → Project** 导入 Fork，选择 `rewrite/v1`。如果导入页无法选分支，先将 Fork 的默认分支设为 `rewrite/v1`。
+3. 按上表设置构建并填写 `COOKIE_SECRET`，点击 **Deploy**。部署后将项目的 **Production Branch** 设为 `rewrite/v1`。
 
 ## 绑定自己的域名
 
-进入项目的 **Settings → Domains**，添加你要用的网址，例如 `music.example.com`。Vercel 会给出需要填写的 DNS 记录。
-
-打开管理这个域名的服务商控制台，新增或修改对应记录。类型、名称、目标值都照这个项目显示的内容填写：子域名通常用 CNAME，把你的网址指向 Vercel 给的目标；根域名可能要求其他类型。
-
-**CNAME 的目标填 Vercel 当前给出的值，不填 `*.vercel.app`。** 后者在国内可能无法正常解析。若用 Cloudflare 管 DNS，在 **DNS → Records** 添加项目显示的记录，例如项目要求给 `music` 配 CNAME，就把名称填 `music`、目标填项目给的值，并把代理状态设为「仅 DNS」（灰色云朵）。不要照抄某个固定目标，先让 Vercel 完成域名和证书验证。状态含义见 [Cloudflare 的 DNS 说明](https://developers.cloudflare.com/dns/proxy-status/)。
-
-回到 Domains，等页面显示配置有效、HTTPS 证书已就绪。记录还没生效时，先核对名称与目标是否填反，再等 DNS 更新；不要反复改动其他域名的记录。配置细节也可以对照 [Vercel 的域名说明](https://vercel.com/docs/domains/working-with-domains/add-a-domain)。
+1. 在项目的 **Settings → Domains** 添加播放器域名，例如 `music.example.com`。
+2. 在 DNS 服务商处按 Vercel 显示的类型、名称和目标添加记录。CNAME 使用项目提供的目标，避开 `*.vercel.app`。使用 Cloudflare DNS 时选 **仅 DNS**。
+3. 回到 **Domains**，等配置验证通过和 HTTPS 证书就绪。 [Vercel 域名配置](https://vercel.com/docs/domains/working-with-domains/add-a-domain)
 
 ## 打开自己的登录页
 
-在浏览器输入自己的 HTTPS 地址，例如 `https://music.example.com`。应该看到 Campanula 的品牌字样和网易云登录入口。以后就在这个地址听歌。
+打开自己的 HTTPS 地址，确认能看到网易云登录入口。
 
-- 看到「需要配置加密密钥」：回到 **Settings → Environment Variables**，检查 `COOKIE_SECRET` 是否完整、至少 32 个字符，并应用到 Production。修改后重新部署，再打开页面。
-- 看到「需要用 HTTPS 打开」：检查地址以 `https://` 开头，并确认 Vercel 的证书已经生效。
-- 看到项目介绍或部署指南：Root Directory 或构建命令选错了。回到项目设置，使用仓库根目录和 `pnpm build`，重新部署。
-- 短信登录报 10004：这是网易云的风控提示，可以改用扫码登录，或在 Vercel 添加可选的 `NETEASE_REAL_IP`，填自己当前真实的国内公网 IP 后重新部署。此前有配置后成功的记录，但两次尝试间隔了 19 分钟，不能保证改 IP 一定解决。
+| 现象              | 检查                                                                |
+| ----------------- | ------------------------------------------------------------------- |
+| 需要配置加密密钥  | 检查 Production 的 `COOKIE_SECRET` 至少 32 个字符，保存后重新部署。 |
+| 需要用 HTTPS 打开 | 检查网址以 `https://` 开头，且证书已生效。                          |
+| 打开的是文档站    | 使用仓库根目录和 `pnpm build` 重新部署。                            |
+| 短信登录报 10004  | 改用扫码，或试填 `NETEASE_REAL_IP`（自己的国内公网 IP）后重新部署。 |
 
-`NETEASE_REAL_IP` 不是必填项；不确定时先留空。登录需要你自己的网易云账号，这个官网不接收账号，也不替你登录。
-
-到这里，能打开自己域名下的正常登录页，才算完成本篇的配置。接下来可以亲自登录、安装和下载一首歌，再照[安装与离线播放](./listen.md)下载一首并断网验证。以后更新代码看[升级与回退](./upgrade.md#vercel-升级与回退)。
+[安装与离线播放](./listen.md) · [Vercel 升级与回退](./upgrade.md#vercel-升级与回退)

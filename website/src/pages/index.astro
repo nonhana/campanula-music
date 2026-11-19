@@ -11,7 +11,8 @@ import PageFrame from '../components/guide/PageFrame.astro';
 import SkipLink from '../components/guide/SkipLink.astro';
 import SourceLink from '../components/guide/SourceLink.astro';
 import HomeOpening from '../components/HomeOpening.astro';
-import '../styles/home.css';
+const homeLink =
+  'min-h-11 inline-flex items-center gap-2 rounded-sm text-label text-primary-900 font-500 mouse:hover:(underline underline-offset-4)';
 ---
 
 <!doctype html>
@@ -30,7 +31,7 @@ import '../styles/home.css';
     <Navigation />
     <HomeOpening />
   </head>
-  <body class="home-surface">
+  <body>
     <div id="home-opening" aria-hidden="true">
       <Logo size={40} />
     </div>
@@ -39,48 +40,68 @@ import '../styles/home.css';
       <main
         id="main"
         tabindex="-1"
-        class="homepage"
+        class="homepage mx-auto max-w-[736px] w-full flex flex-col items-center justify-center px-5 py-8 text-center max-[360px]:px-4 max-[730px]:py-6"
         aria-label="Campanula 项目文档"
       >
         <section
-          class="introduction"
+          class="w-full"
           aria-labelledby="project-title"
           data-reveal-group
         >
-          <h1 id="project-title" class="home-brand">
+          <h1
+            id="project-title"
+            class="home-brand mb-[22px] min-h-11 flex items-center justify-center max-[730px]:mb-[18px]"
+          >
             <Brand />
           </h1>
           <div id="home-copy" class="home-copy" data-reveal-group>
-            <p class="identity">开源的第三方网易云音乐播放器</p>
-            <p class="intro-text">
-              <span>用自己的网易云账号登录，打开就是曲库。</span>
-              <span>可以听歌、整理歌单，下载好的歌断网也能听。</span>
+            <p
+              id="identity"
+              class="text-balance text-headline-sm font-600 max-[730px]:(text-title tracking-[-0.01em])"
+            >
+              开源的第三方网易云音乐播放器
             </p>
-            <nav class="guide-links" aria-label="使用指南" data-reveal-group>
+            <p class="mx-auto mt-2.5 text-balance text-neutral-600 leading-[26px] max-[730px]:mt-2">
+              <span class="block max-[360px]:inline">
+                用自己的网易云账号登录，打开就是曲库。
+              </span>
+              <span class="block max-[360px]:inline">
+                可以听歌、整理歌单，下载好的歌断网也能听。
+              </span>
+            </p>
+            <nav
+              class="guide-links mt-[21px] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-[730px]:(mt-4 gap-x-3) max-[360px]:gap-x-2!"
+              aria-label="使用指南"
+              data-reveal-group
+            >
               <a
                 id="home-deploy"
                 class:list={[
                   pillBase,
                   pillLooks.primary.color,
                   pillLooks.primary.link,
-                  'gap-2 pl-5 pr-[17px]',
+                  'gap-2 pl-5 pr-[17px] max-[730px]:min-h-11',
                 ]}
                 href="/guide/"
               >
                 部署指南 <ArrowRight size={17} aria-hidden="true" />
               </a>
-              <a id="home-listen" class="home-link" href="/guide/listen/">
+              <a id="home-listen" class={homeLink} href="/guide/listen/">
                 安装与离线播放
               </a>
               <SourceLink id="home-source" />
             </nav>
           </div>
         </section>
-        <nav class="more-guides" aria-label="更多文档" data-reveal-group>
-          <a id="home-upgrade" class="home-link" href="/guide/upgrade/">
+        <nav
+          class="more-guides mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 max-[730px]:mt-5"
+          aria-label="更多文档"
+          data-reveal-group
+        >
+          <a id="home-upgrade" class={homeLink} href="/guide/upgrade/">
             升级与回退 <ArrowRight size={15} aria-hidden="true" />
           </a>
-          <a id="home-development" class="home-link" href="/development/">
+          <a id="home-development" class={homeLink} href="/development/">
             本地开发 <ArrowRight size={15} aria-hidden="true" />
           </a>
         </nav>
@@ -93,3 +114,28 @@ import '../styles/home.css';
     </script>
   </body>
 </html>
+
+<style>
+  .homepage {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .home-brand :global([data-brand]) {
+    @apply gap-[11px];
+  }
+  .home-brand :global(svg) {
+    @apply size-9;
+  }
+  .home-brand :global([data-brand-name]) {
+    @apply text-headline text-primary-950 font-500 tracking-normal;
+  }
+  .homepage :global(a:focus-visible) {
+    outline: 2px solid theme('colors.primary.900');
+    outline-offset: 3px;
+  }
+  @media (forced-colors: active) {
+    .guide-links :global(.pill-hit) {
+      border: 1px solid ButtonText;
+    }
+  }
+</style>

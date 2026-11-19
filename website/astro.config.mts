@@ -4,9 +4,11 @@ import { satteri } from '@astrojs/markdown-satteri';
 import starlight from '@astrojs/starlight';
 import svelte from '@astrojs/svelte';
 import { defineConfig } from 'astro/config';
+import { presetTypography } from 'unocss';
 import UnoCSS from 'unocss/vite';
 
 import uno from '../uno.config.mts';
+import { colors } from '../uno.palette.mts';
 import { contentLinks } from './content-links.mts';
 import { externalLinks } from './external-links.mts';
 
@@ -15,7 +17,6 @@ const site = new URL('https://campanula.caelum.moe');
 export default defineConfig({
   site: site.href,
   markdown: {
-    shikiConfig: { theme: 'github-light' },
     processor: satteri({ hastPlugins: [contentLinks, externalLinks(site)] }),
   },
   output: 'static',
@@ -26,6 +27,21 @@ export default defineConfig({
       UnoCSS({
         ...uno,
         configFile: false,
+        presets: [
+          ...(uno.presets ?? []),
+          presetTypography({
+            // 复用 Starlight 给 Expressive Code 块加的 not-content。
+            selectorName: 'content',
+            colorScheme: {
+              links: [colors.primary[900], colors.primary[200]],
+              bullets: [colors.neutral[600], colors.neutral[400]],
+            },
+            cssExtend: {
+              'code::before': { content: 'none' },
+              'code::after': { content: 'none' },
+            },
+          }),
+        ],
         content: {
           filesystem: [
             fileURLToPath(
@@ -50,8 +66,29 @@ export default defineConfig({
       locales: { root: { label: '简体中文', lang: 'zh-CN' } },
       pagefind: false,
       sidebar: [{ label: '部署 Campanula', slug: 'guide' }],
-      expressiveCode: false,
-      customCss: ['./src/styles/guide.css'],
+      expressiveCode: {
+        themes: ['github-light'],
+        defaultProps: { frame: 'none' },
+        plugins: [
+          {
+            name: 'Keyboard-scrollable code',
+            hooks: {
+              postprocessRenderedBlock: ({ renderData: { blockAst } }) => {
+                for (const node of blockAst.children) {
+                  if (node.type === 'element' && node.tagName === 'pre')
+                    node.properties.tabIndex = 0;
+                }
+              },
+            },
+          },
+        ],
+        styleOverrides: {
+          borderWidth: '0px',
+          codeBackground: colors.white,
+          codeFontSize: '0.875rem',
+          frames: { frameBoxShadowCssValue: 'none' },
+        },
+      },
       components: {
         Head: './src/components/guide/Head.astro',
         ThemeProvider: './src/components/guide/Light.astro',

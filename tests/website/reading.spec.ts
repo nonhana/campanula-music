@@ -17,11 +17,9 @@ test('所有正式文章直接刷新可读，目录与正文没有横向溢出',
     await page.reload();
     await expect(page.locator('h1')).toBeVisible();
     expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
+      await page.evaluate(() => document.documentElement.scrollWidth),
       path,
-    ).toBe(true);
+    ).toBeLessThanOrEqual(page.viewportSize()!.width);
     await scan(path.replaceAll('/', '-') || 'home');
   }
 });
@@ -72,8 +70,12 @@ test('首页、部署选择、长文目录、复制命令和返回保留阅读�
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
     origin: baseURL,
   });
-  await page.getByRole('button', { name: '复制命令' }).click();
-  await expect(page.getByRole('status')).toHaveText('已复制');
+  const copy = page.getByRole('button', { name: '复制到剪贴板' });
+  await copy.press('Enter');
+  await expect(copy).toBeFocused();
+  await expect(
+    page.locator('.expressive-code [aria-live="polite"]'),
+  ).toHaveText('复制成功！');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     'openssl rand -base64 32',
   );
@@ -99,6 +101,111 @@ test('首页、部署选择、长文目录、复制命令和返回保留阅读�
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+
+test('代码块内的复制按钮在横向滚动时留在右上角，窄屏表格留在正文内', async ({
+  page,
+}, info) => {
+  if (info.project.name === 'phone')
+    await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto('/guide/server/');
+  await page.evaluate(() => document.fonts.ready);
+  const code = page.locator('article pre').first();
+  const copy = page.getByRole('button', { name: '复制到剪贴板' }).first();
+  await expect(copy).toBeVisible();
+  await expect(copy).toHaveText('');
+  await expect(copy).toHaveCSS('opacity', '1');
+  await expect(code).toHaveAttribute('tabindex', '0');
+  const card = await code.locator('..').boundingBox();
+  const button = await copy.boundingBox();
+  expect(button!.y - card!.y).toBeLessThan(12);
+  expect(card!.x + card!.width - button!.x - button!.width).toBeLessThan(12);
+  expect(button!.x).toBeGreaterThan(card!.x);
+  const scrolled = await code.evaluate((pre) => {
+    pre.scrollLeft = pre.scrollWidth;
+    return pre.scrollLeft;
+  });
+  expect(scrolled).toBeGreaterThan(0);
+  expect(await copy.boundingBox()).toEqual(button);
+
+  const tables = page.getByRole('table');
+  await expect(tables).toHaveCount(2);
+  for (const table of await tables.all()) {
+    const header = table.getByRole('columnheader').first();
+    const cell = table.getByRole('cell').first();
+    expect(
+      await header.evaluate((th) => getComputedStyle(th).backgroundColor),
+    ).not.toBe(
+      await table.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    );
+    expect(
+      await cell.evaluate((td) =>
+        Number.parseFloat(getComputedStyle(td).paddingInlineStart),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      await table.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test('表格和代码块四角完整，单行代码的复制图标上下等距', async ({
+  page,
+}, info) => {
+  if (info.project.name === 'phone')
+    await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto('/guide/vercel/');
+  await page.evaluate(() => document.fonts.ready);
+  const frame = page.locator('.expressive-code .frame').first();
+  const table = page.getByRole('table').first();
+  for (const [container, label] of [
+    [frame, '代码块'],
+    [table, '表格'],
+  ] as const) {
+    await container.scrollIntoViewIfNeeded();
+    expect
+      .soft(
+        await container.evaluate((element) => {
+          const { left, right, top, bottom } = element.getBoundingClientRect();
+          const center = document.elementFromPoint(
+            (left + right) / 2,
+            (top + bottom) / 2,
+          );
+          const corners = [
+            [left + 3, top + 3],
+            [right - 3, top + 3],
+            [left + 3, bottom - 3],
+            [right - 3, bottom - 3],
+          ] as const;
+          return (
+            element.contains(center) &&
+            corners.every(
+              ([x, y]) => !element.contains(document.elementFromPoint(x, y)),
+            )
+          );
+        }),
+        label,
+      )
+      .toBe(true);
+  }
+  await frame.scrollIntoViewIfNeeded();
+  const copy = frame.getByRole('button', { name: '复制到剪贴板' });
+  const cardBounds = (await frame.boundingBox())!;
+  const buttonBounds = (await copy.boundingBox())!;
+  const top = buttonBounds.y - cardBounds.y;
+  const bottom =
+    cardBounds.y + cardBounds.height - (buttonBounds.y + buttonBounds.height);
+  expect.soft(bottom).toBeGreaterThan(0);
+  expect.soft(top).toBeCloseTo(bottom, 0);
 });
 
 test.describe('关闭 JavaScript', () => {
@@ -129,8 +236,10 @@ test.describe('关闭 JavaScript', () => {
     await expect(page.locator('.chapter-link').first()).toBeVisible();
     await page.locator('.chapter-link').last().click();
     await expect(page).toHaveURL(/#/);
-    await expect(page.locator('[data-copy-command]')).toBeDisabled();
-    await expect(page.locator('.copy-command code')).toHaveText(
+    await expect(
+      page.getByRole('button', { name: '复制到剪贴板' }),
+    ).toHaveCount(0);
+    await expect(page.locator('article pre code')).toHaveText(
       'openssl rand -base64 32',
     );
     await page.locator('#reading-back').click();

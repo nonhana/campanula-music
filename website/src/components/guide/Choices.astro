@@ -1,22 +1,27 @@
 ---
-import { ChevronRight, CircleArrowDown, Cloud, Server } from '@lucide/svelte';
+import { ChevronRight, Cloud, Server } from '@lucide/svelte';
 import { settingsLink } from '../../../../src/lib/components/ui/control-styles.ts';
+const listenLink =
+  'mt-2 min-h-11 inline-block content-center rounded-md px-1 text-label text-primary-900 font-500 hover:(text-primary-950 underline underline-offset-4)';
 ---
 
-<p class="page-intro">先把播放器放到自己的网址，再用自己的网易云账号登录。</p>
-<section class="choice-section" aria-labelledby="deploy-heading">
-  <h2 id="deploy-heading" class="text-title-sm font-600">
+<section class="mt-8" aria-labelledby="deploy-heading">
+  <h2 id="deploy-heading" class="px-1 text-title-sm font-600">
     选择部署方式
   </h2>
-  <div class="choice-list">
-    <a id="deploy-vercel" class={settingsLink} href="/guide/vercel/">
+  <div class="grid mt-3 gap-3">
+    <a
+      id="deploy-vercel"
+      class:list={[settingsLink, 'min-h-22 lt-md:px-4']}
+      href="/guide/vercel/"
+    >
       <Cloud size={20} class="flex-none text-primary-900" aria-hidden="true" />
       <span class="min-w-0 flex-1">
         <span class="block text-body text-neutral-900 font-500">
           部署到 Vercel
         </span>
         <span class="mt-1 block text-caption text-neutral-600">
-          不用准备服务器，按步骤配置密钥和域名
+          准备 GitHub、Vercel 账号和域名
         </span>
       </span>
       <ChevronRight
@@ -25,14 +30,18 @@ import { settingsLink } from '../../../../src/lib/components/ui/control-styles.t
         aria-hidden="true"
       />
     </a>
-    <a id="deploy-server" class={settingsLink} href="/guide/server/">
+    <a
+      id="deploy-server"
+      class:list={[settingsLink, 'min-h-22 lt-md:px-4']}
+      href="/guide/server/"
+    >
       <Server size={20} class="flex-none text-neutral-700" aria-hidden="true" />
       <span class="min-w-0 flex-1">
         <span class="block text-body text-neutral-900 font-500">
           部署到自己的服务器
         </span>
         <span class="mt-1 block text-caption text-neutral-600">
-          用 Docker 或 Node 运行，再配置 HTTPS
+          用 Docker 或 Node 运行，配置 HTTPS
         </span>
       </span>
       <ChevronRight
@@ -43,26 +52,25 @@ import { settingsLink } from '../../../../src/lib/components/ui/control-styles.t
     </a>
   </div>
 </section>
-<section class="choice-section" aria-labelledby="listen-heading">
-  <h2 id="listen-heading" class="text-title-sm font-600">
+<section class="mt-8" aria-labelledby="listen-heading">
+  <h2 id="listen-heading" class="px-1 text-title-sm font-600">
     已经部署好了
   </h2>
-  <a class="listen-link" id="listen-guide" href="/guide/listen/">
-    <CircleArrowDown size={18} aria-hidden="true" />
+  <a class={listenLink} id="listen-guide" href="/guide/listen/">
     安装与离线播放
   </a>
   <p>
-    <a id="upgrade-guide" class="listen-link" href="/guide/upgrade/">
+    <a id="upgrade-guide" class={listenLink} href="/guide/upgrade/">
       升级与回退
     </a>
   </p>
 </section>
 
-<section class="choice-section" aria-labelledby="develop-heading">
-  <h2 id="develop-heading" class="text-title-sm font-600">
+<section class="mt-8" aria-labelledby="develop-heading">
+  <h2 id="develop-heading" class="px-1 text-title-sm font-600">
     参与开发
   </h2>
-  <a id="development-guide" class="listen-link" href="/development/">
+  <a id="development-guide" class={listenLink} href="/development/">
     本地开发
   </a>
 </section>

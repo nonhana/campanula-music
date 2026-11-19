@@ -3,7 +3,10 @@ import Scrollbar from '../../../../src/lib/components/ui/Scrollbar.svelte';
 import Header from './Header.astro';
 import '@unocss/reset/tailwind.css';
 import 'uno.css';
-import '../../styles/guide.css';
+import '@fontsource-variable/noto-sans';
+import '@fontsource-variable/noto-sans-sc';
+import '@fontsource-variable/noto-sans-jp';
+import '@fontsource-variable/noto-sans-tc';
 
 interface Props {
   home?: boolean;
@@ -13,7 +16,12 @@ const { home = false } = Astro.props;
 ---
 
 {!home && <Header />}
-<div class="site-scrollbar">
+<div
+  class:list={[
+    'pointer-events-none fixed bottom-0 right-0 z-35 w-4 [view-transition-name:website-scrollbar] [view-transition-class:still]',
+    home ? 'top-0' : 'top-16',
+  ]}
+>
   <Scrollbar page={{ top: home ? '0px' : '64px', bottom: '0px' }} client:load />
 </div>
 <noscript>
@@ -30,7 +38,28 @@ const { home = false } = Astro.props;
 {home ? (
   <slot />
 ) : (
-  <div class="site-body">
+  <div class="min-h-[calc(100vh-64px)] px-6 pb-20 pt-5 lt-md:(px-5 pb-14 pt-2) print:p-0!">
     <slot />
   </div>
 )}
+
+<style is:global>
+  :root,
+  [data-theme='light'],
+  [data-theme='dark'] {
+    color-scheme: only light;
+    --sl-font: theme('fontFamily.sans');
+    --sl-color-text: theme('colors.neutral.900');
+    --sl-color-bg: theme('colors.primary.50');
+    --sl-color-white: theme('colors.neutral.900');
+    --sl-color-text-accent: theme('colors.primary.900');
+  }
+  html {
+    @apply scroll-pt-22!;
+  }
+  body {
+    @apply m-0 text-body;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+</style>

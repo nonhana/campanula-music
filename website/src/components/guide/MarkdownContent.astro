@@ -1,12 +1,133 @@
 ---
 import Choices from './Choices.astro';
+
 const choice = Astro.locals.starlightRoute.entry.id === 'guide';
 ---
 
 {choice ? (
   <Choices />
 ) : (
-  <article class="reading-content">
+  <article class="reading-content content [overflow-wrap:anywhere] mt-5 max-w-none text-body leading-7">
     <slot />
   </article>
 )}
+
+<style>
+  .reading-content > :global(:first-child) {
+    @apply mt-0;
+  }
+  .reading-content :global(.sl-heading-wrapper) {
+    @apply flex items-center gap-2;
+  }
+  .reading-content :global(.sl-heading-wrapper.level-h2) {
+    @apply mb-4 mt-11;
+  }
+  .reading-content :global(.sl-heading-wrapper.level-h3) {
+    @apply mb-3 mt-7;
+  }
+  .reading-content :global(.sl-heading-wrapper > h2) {
+    @apply m-0 text-title font-600;
+  }
+  .reading-content :global(.sl-heading-wrapper > h3) {
+    @apply m-0 text-title-sm font-600;
+  }
+  .reading-content :global(.sl-anchor-link) {
+    @apply inline-flex flex-none p-1;
+  }
+  .reading-content :global(.sl-anchor-icon) {
+    @apply size-4;
+  }
+  .reading-content :global(:is(h2, h3):focus) {
+    @apply outline-offset-6;
+  }
+  .reading-content :global(a) {
+    @apply underline-offset-4;
+  }
+  /* 用同宽的箭头盖住末字后的空格；链接的下划线画到空格末端。 */
+  .reading-content :global(.external-link-space::before) {
+    content: '\2060\2003\2060';
+  }
+  .reading-content :global(a:has(> .external-link-space)::after) {
+    @apply ml-[-1em] inline-block size-[1em] bg-current align-[-0.125em] content-empty;
+    mask: url('/icons/arrow-up-right.svg') center / 1.2em no-repeat;
+  }
+  @media (forced-colors: active) {
+    .reading-content :global(a:has(> .external-link-space)::after) {
+      forced-color-adjust: none;
+      background-color: LinkText;
+    }
+  }
+  .reading-content :global(table) {
+    @apply border-separate overflow-hidden border border-neutral-200 rounded-xl bg-white text-body leading-6;
+    border-spacing: 0;
+  }
+  .reading-content :global(:is(th, td)) {
+    @apply px-3 py-2 align-top;
+  }
+  .reading-content :global(th) {
+    @apply bg-neutral-100 text-label;
+  }
+  .reading-content :global(:is(tbody, tfoot) > tr > :is(th, td)) {
+    @apply border-t border-neutral-200;
+  }
+  .reading-content :global(:not(pre) > code:not(.expressive-code code)) {
+    @apply rounded-sm bg-primary-100 px-1 py-0.5 text-label text-primary-950;
+    font-weight: inherit;
+    overflow-wrap: anywhere;
+  }
+  .reading-content :global(.expressive-code) {
+    @apply my-5;
+  }
+  .reading-content :global(.expressive-code .frame) {
+    @apply grid grid-cols-[minmax(0,1fr)_auto] overflow-hidden border border-neutral-200 rounded-xl bg-white;
+  }
+  .reading-content :global(.expressive-code .frame > figcaption) {
+    @apply col-span-full;
+  }
+  .reading-content :global(.expressive-code pre) {
+    @apply items-center;
+    scrollbar-width: thin;
+  }
+  .reading-content :global(.expressive-code pre::-webkit-scrollbar) {
+    @apply h-2 block;
+  }
+  .reading-content :global(.expressive-code pre:focus-visible) {
+    outline-offset: -3px;
+  }
+  .reading-content :global(.expressive-code .copy) {
+    @apply static m-1.5 self-start;
+  }
+  .reading-content :global(.expressive-code .copy button) {
+    @apply size-11 rounded-md opacity-100;
+  }
+  .reading-content :global(.expressive-code .copy button::after) {
+    margin: 0;
+    mask-position: center;
+    mask-size: 18px;
+  }
+  .reading-content :global(.expressive-code .copy [aria-live]) {
+    @apply sr-only;
+  }
+  .reading-content
+    :global(.expressive-code .copy:has(.feedback.show) button::after) {
+    @apply border-primary-900 bg-transparent;
+    inset: 12px 18px 15px 18px;
+    border-style: solid;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    mask: none;
+  }
+  @media (max-width: 767px) {
+    .reading-content :global(.sl-heading-wrapper > h2) {
+      @apply text-title-sm;
+    }
+    .reading-content :global(:is(th, td)) {
+      @apply px-2.5;
+    }
+  }
+  @media (scripting: none), print {
+    .reading-content :global(.expressive-code .copy) {
+      @apply hidden;
+    }
+  }
+</style>

@@ -5,17 +5,27 @@ const items =
 const tutorial = items.length > 0;
 ---
 
-<div class:list={['reading-layout', { tutorial }]}>
+<div class="relative mx-auto max-w-[640px] print:max-w-none">
   {tutorial && (
-    <details open class="chapter-menu" id="chapter-menu">
-      <summary id="chapter-toggle">
+    <details
+      open
+      class="chapter-menu mb-6 mt-3 print:hidden!"
+      id="chapter-menu"
+    >
+      <summary
+        id="chapter-toggle"
+        class="min-h-11 flex cursor-pointer list-none items-center justify-between gap-3 rounded-md text-label text-primary-900 font-500"
+      >
         目录<span aria-hidden="true" class="chapter-chevron"></span>
       </summary>
-      <nav aria-label="本页章节">
-        <ol>
+      <nav class="py-2" aria-label="本页章节">
+        <ol class="m-0 list-none p-0">
           {items.map((item) => (
             <li>
-              <a href={`#${item.slug}`} class="chapter-link">
+              <a
+                href={`#${item.slug}`}
+                class="chapter-link block rounded-md px-3 py-2.5 text-caption text-neutral-600 aria-[current=location]:(bg-primary-100 text-primary-950) hover:(bg-primary-100 text-primary-950)"
+              >
                 {item.text}
               </a>
             </li>
@@ -24,7 +34,7 @@ const tutorial = items.length > 0;
       </nav>
     </details>
   )}
-  <div class="reading-column">
+  <div class="min-w-0 [&_main]:!p-0">
     <slot />
   </div>
 </div>
@@ -60,3 +70,32 @@ const tutorial = items.length > 0;
     });
   }
 </script>
+
+<style>
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  .chapter-chevron {
+    @apply mx-1 mb-1 size-2 rotate-45 border-current;
+    border-style: solid;
+    border-width: 0 1.5px 1.5px 0;
+  }
+  details[open] .chapter-chevron {
+    @apply -mb-1 rotate-225;
+  }
+  @media (min-width: 1100px) {
+    .chapter-menu {
+      @apply fixed m-0 overflow-y-auto;
+      top: 156px;
+      left: calc(50% + 360px);
+      width: min(192px, calc(50vw - 384px));
+      max-height: calc(100vh - 188px);
+    }
+    summary {
+      @apply min-h-8 px-3 text-caption text-neutral-900;
+    }
+    summary:focus-visible {
+      outline-offset: -2px;
+    }
+  }
+</style>

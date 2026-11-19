@@ -4,8 +4,12 @@ const tutorial = Astro.locals.starlightRoute.entry.id !== 'guide';
 ---
 
 {tutorial && (
-  <footer class="reading-footer">
-    <a href="/guide/" id="footer-back" class="back-link">
+  <footer class="mt-12 border-t border-neutral-200 pt-5">
+    <a
+      href="/guide/"
+      id="footer-back"
+      class="min-h-11 inline-flex items-center gap-2 rounded-md text-label text-primary-900 font-500 print:hidden hover:(text-primary-950 underline underline-offset-4)"
+    >
       <ArrowLeft size={18} aria-hidden="true" />
       返回部署方式
     </a>

@@ -4,10 +4,18 @@ const { entry } = Astro.locals.starlightRoute;
 const choice = entry.id === 'guide';
 ---
 
-<a class="back-link" href={choice ? '/' : '/guide/'} id="reading-back">
+<a
+  class="min-h-11 inline-flex items-center gap-2 rounded-md text-label text-primary-900 font-500 print:hidden hover:(text-primary-950 underline underline-offset-4)"
+  href={choice ? '/' : '/guide/'}
+  id="reading-back"
+>
   <ArrowLeft size={18} aria-hidden="true" />
   {choice ? '项目首页' : '部署方式'}
 </a>
-<h1 id="main" tabindex="-1" class="page-title">
+<h1
+  id="main"
+  tabindex="-1"
+  class="mt-4 text-headline font-600 lt-md:text-headline-sm focus:outline-none"
+>
   {entry.data.title}
 </h1>
