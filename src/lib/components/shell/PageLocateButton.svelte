@@ -21,10 +21,7 @@
     class={[
       'fixed z-30',
       desktop
-        ? [
-            'bottom-[calc(var(--player-dock-height)+16px)]',
-            downloadPanel.expanded ? 'right-[392px]' : 'right-6',
-          ]
+        ? 'bottom-[calc(var(--player-dock-height)+16px)] right-6'
         : [
             'right-4',
             lifted

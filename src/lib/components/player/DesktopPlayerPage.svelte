@@ -12,6 +12,7 @@
   import SongMoreButton from '../songs/SongMoreButton.svelte';
   import IconButton from '../ui/IconButton.svelte';
   import Segmented from '../ui/Segmented.svelte';
+  import { createCoverSwipe } from './cover-swipe.svelte.ts';
   import CoverWheel from './CoverWheel.svelte';
   import Lyrics from './Lyrics.svelte';
   import NowPlayingTitle from './NowPlayingTitle.svelte';
@@ -25,7 +26,7 @@
   import QueueList from './QueueList.svelte';
   import SkipButton from './SkipButton.svelte';
   import type { Turn } from './view.ts';
-  import { PAGE_COVER } from './view.ts';
+  import { neighborSong, PAGE_COVER } from './view.ts';
   import VolumeControl from './VolumeControl.svelte';
   import WaveProgress from './WaveProgress.svelte';
 
@@ -43,61 +44,104 @@
   const view = getAppView();
   const { closePlayerPage } = playerPageActions();
   const { playerDrawer } = getOverlays();
+  const previous = $derived(neighborSong(view.state.player, 'previous'));
+  const next = $derived(neighborSong(view.state.player, 'next'));
   const entry = $derived(
     view.state.player.current === null
       ? null
       : view.state.player.queue[view.state.player.current],
   );
 
+  const swipe = createCoverSwipe({
+    current: () => song.id,
+    has: (direction) => view.state.player.neighbors[direction] !== null,
+    commit: (direction) => view.app[direction](),
+    tap: () => {},
+  });
+
   const PANELS = [
     { key: 'lyrics', label: '歌词' },
     { key: 'queue', label: '播放队列' },
   ] as const;
 
+  const QUEUE_MAX_WIDTH = 560;
+  let rightWidth = $state(0);
+  let shiftAnimated = $state(false);
+  const shift = $derived(
+    choices.panel === 'queue' && rightWidth > QUEUE_MAX_WIDTH
+      ? Math.round((rightWidth - QUEUE_MAX_WIDTH) / 2)
+      : 0,
+  );
+
+  const measureRight = (element: HTMLElement) => {
+    rightWidth = element.clientWidth;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentBoxSize[0].inlineSize;
+      if (Math.abs(width - rightWidth) < 1) return;
+      shiftAnimated = false;
+      rightWidth = width;
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  };
+
   const uid = $props.id();
-  const gripHandle = playerDrawer.grip({
+  const gripHeader = playerDrawer.grip({
     from: 'open',
     commit: closePlayerPage,
-    tap: closePlayerPage,
   });
 </script>
 
 <header
   role="presentation"
-  class="relative h-16 flex flex-none items-center gap-3 px-6"
+  class="relative grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] h-16 flex-none items-center gap-3 px-6"
 >
-  <IconButton
-    icon={ChevronDown}
-    label="收起播放页"
-    title="收起（Esc）"
-    onclick={closePlayerPage}
+  <div class="absolute inset-0" aria-hidden="true" {@attach gripHeader}></div>
+  <div class="pointer-events-none relative z-1 min-w-0 flex items-center gap-3">
+    <IconButton
+      icon={ChevronDown}
+      label="收起播放页"
+      title="收起（Esc）"
+      class="pointer-events-auto"
+      onclick={closePlayerPage}
+    />
+    {#if source}
+      <p class="min-w-0 truncate text-label text-neutral-700" transition:fade>
+        来自「<span lang={langOf(source)}>{source}</span>」
+      </p>
+    {/if}
+  </div>
+  <Segmented
+    options={PANELS}
+    value={choices.panel}
+    onchange={(key) => {
+      shiftAnimated = true;
+      choices.panel = key;
+    }}
+    role="tab"
+    id={uid}
+    label="右栏显示"
+    class="relative z-1 h-11 w-[232px] bg-white/70 shadow-ambient"
   />
-  {#if source}
-    <p class="min-w-0 truncate text-label text-neutral-700" transition:fade>
-      来自「<span lang={langOf(source)}>{source}</span>」
-    </p>
-  {/if}
-  <button
-    type="button"
-    class="group absolute left-1/2 top-1 grid h-6 w-40 cursor-grab place-items-center rounded-full -translate-x-1/2"
-    aria-label="拖动把手：往下拖或点按，收起播放页"
-    tabindex="-1"
-    {@attach gripHandle}
-  >
-    <span
-      class="h-1 w-10 rounded-full bg-neutral-400 transition-colors duration-feedback mouse:group-hover:bg-neutral-600"
-      aria-hidden="true"
-    ></span>
-  </button>
 </header>
 
 <!-- --gap 也给换碟遮罩用；--gutter 给歌词向右借出；宽屏时左列与 --cover 等宽 -->
 <div
   class="columns relative grid mx-auto max-w-[1440px] min-h-0 w-full flex-1 pb-8"
 >
-  <section class="min-h-0 flex flex-col justify-center" aria-label="播放控制">
+  <section
+    class={[
+      'min-h-0 flex flex-col justify-center',
+      shiftAnimated && 'col-shift',
+    ]}
+    style:translate="{shift}px 0"
+    aria-label="播放控制"
+  >
     <div class="stage">
-      <div class="cover mx-auto">
+      <div
+        class="cover pointer-events-auto mx-auto cursor-grab select-none active:cursor-grabbing"
+        {@attach swipe.grip}
+      >
         <CoverWheel
           {song}
           {turn}
@@ -106,6 +150,9 @@
           fluid
           eager
           class="rounded-xl shadow-float"
+          drag={swipe.turned}
+          {previous}
+          {next}
         />
       </div>
     </div>
@@ -143,19 +190,14 @@
     {/if}
   </section>
 
-  <section class="min-h-0 flex flex-col" aria-label="歌词和播放队列">
-    <Segmented
-      options={PANELS}
-      value={choices.panel}
-      onchange={(key) => (choices.panel = key)}
-      role="tab"
-      id={uid}
-      label="右栏显示"
-      class="h-11 w-[232px] flex-none self-start bg-white/70 shadow-ambient"
-    />
-
+  <section
+    class={['min-h-0 flex flex-col', shiftAnimated && 'col-shift']}
+    style:translate="{shift}px 0"
+    {@attach measureRight}
+    aria-label="歌词和播放队列"
+  >
     <div
-      class="track mt-5 min-h-0 flex-1"
+      class="track min-h-0 flex-1"
       style:--shown={PANELS.findIndex((panel) => panel.key === choices.panel)}
     >
       {#each PANELS as panel, index (panel.key)}
@@ -169,7 +211,11 @@
           inert={!selected}
         >
           {#if panel.key === 'queue'}
-            <QueueList class="flex-1" ground shown={selected} />
+            <QueueList
+              class="max-w-[560px] w-full flex-1"
+              ground
+              shown={selected}
+            />
           {:else}
             <Lyrics {song} {playhead} class="flex-1" />
           {/if}
@@ -197,6 +243,10 @@
 
       grid-template-columns: minmax(320px, var(--cover)) minmax(0, 1fr);
     }
+  }
+
+  .col-shift {
+    transition: translate var(--move-panel) var(--ease-out-soft);
   }
 
   .stage {

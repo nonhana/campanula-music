@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Music, Play } from '@lucide/svelte';
+  import { CaseSensitive, Languages, Music, Play } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
   import type { Song } from '#lib/api/library.ts';
@@ -7,10 +7,9 @@
 
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { failureText } from '../shared/failure.ts';
-  import { DELAYS, DURATIONS } from '../shared/motion-tokens.ts';
+  import { DELAYS } from '../shared/motion-tokens.ts';
   import { fade, scrollBehavior } from '../shared/motion.ts';
   import { formatDuration, langOf } from '../shared/text.ts';
-  import FilterChip from '../ui/FilterChip.svelte';
   import StateBlock from '../ui/StateBlock.svelte';
   import { playerPageChoices as choices } from './player-page.svelte.ts';
   import type { Playhead } from './playhead.svelte.ts';
@@ -49,6 +48,7 @@
   const toggles = $derived([
     {
       label: '翻译',
+      icon: Languages,
       has: translated,
       on: showTranslation,
       reason: '这首歌没有翻译',
@@ -56,6 +56,7 @@
     },
     {
       label: '音译',
+      icon: CaseSensitive,
       has: romanized,
       on: showRomanization,
       reason: '这首歌没有音译',
@@ -262,30 +263,6 @@
     <div class="col-start-1 row-start-1 min-h-0 flex flex-col" transition:fade>
       <div
         class={[
-          'flex flex-none flex-wrap items-center gap-2',
-          compact ? 'pb-1' : 'pb-2',
-        ]}
-      >
-        {#each toggles as toggle (toggle.label)}
-          <FilterChip
-            selected={toggle.on}
-            disabled={!toggle.has}
-            class="gap-1.5"
-            onclick={() => toggle.set(!toggle.on)}
-          >
-            {#if toggle.on}<span
-                class="grid"
-                transition:fade={{ duration: DURATIONS.feedback }}
-                ><Check size={16} strokeWidth={2.4} aria-hidden="true" /></span
-              >{/if}
-            {toggle.has ? toggle.label : `无${toggle.label}`}
-            {#if !toggle.has}<span class="sr-only">：{toggle.reason}</span>{/if}
-          </FilterChip>
-        {/each}
-      </div>
-
-      <div
-        class={[
           'frame relative min-h-0 flex flex-1 flex-col -ml-2',
           compact ? '-mr-2' : 'bleed',
         ]}
@@ -398,6 +375,35 @@
             {at}
           </button>
         {/if}
+        <div
+          class={[
+            'absolute flex flex-col gap-2',
+            compact ? 'bottom-2 right-2' : 'bottom-4 right-4',
+          ]}
+        >
+          {#each toggles as toggle (toggle.label)}
+            {@const Icon = toggle.icon}
+            <button
+              type="button"
+              class={[
+                'relative grid size-10 place-items-center rounded-full border shadow-ambient transition-[background-color,border-color,color,opacity,transform] duration-feedback enabled:press disabled:(cursor-not-allowed opacity-50)',
+                'before:absolute before:-inset-0.5 before:rounded-full before:content-empty',
+                toggle.on
+                  ? 'border-primary-300 bg-primary-200 text-primary-950 mouse:enabled:hover:bg-primary-300'
+                  : 'border-neutral-200 bg-white text-neutral-700 mouse:enabled:hover:(border-primary-300 bg-primary-50 text-primary-950)',
+              ]}
+              aria-label={toggle.has
+                ? toggle.label
+                : `无${toggle.label}：${toggle.reason}`}
+              aria-pressed={toggle.on}
+              title={toggle.has ? toggle.label : toggle.reason}
+              disabled={!toggle.has}
+              onclick={() => toggle.set(!toggle.on)}
+            >
+              <Icon size={18} aria-hidden="true" />
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
   {:else if shown?.status === 'shown'}
@@ -439,12 +445,6 @@
       aria-label="正在加载歌词"
       transition:fade
     >
-      <div
-        class={['flex flex-none items-center gap-2', compact ? 'pb-1' : 'pb-2']}
-      >
-        <span class="bone h-9 w-18 rounded-full"></span>
-        <span class="bone h-9 w-18 rounded-full"></span>
-      </div>
       <div class="scroll min-h-0 flex-1 overflow-hidden">
         <div class="anchor">
           {#each [62, 78, 54, 70, 46] as width, i (i)}

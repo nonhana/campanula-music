@@ -184,10 +184,11 @@
       "project": "desktop",
       "scenario": "player-lyrics",
       "rule": "color-contrast",
-      "target": [".px-6 > p"],
+      "target": [".pointer-events-none.svelte-1a6abw0.gap-3 > p"],
       "impact": "serious",
       "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; original axe observation retained.",
-      "contrastGroup": "desktop-player-page.source"
+      "contrastGroup": "desktop-player-page.source",
+      "sourceTarget": [".px-6 > p"]
     },
     {
       "project": "desktop",
@@ -1047,12 +1048,165 @@
     },
     {
       "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"7\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 7 translation.",
+      "contrastGroup": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(1)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(2)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(3)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(4)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(5)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(6)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(7)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(8)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(9)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(10)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(11)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(12)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
+      "scenario": "player-lyrics",
+      "rule": "color-contrast",
+      "target": [
+        "div[data-line=\"8\"] > .text-title.line-text[lang=\"ja\"] > .word.svelte-1jeg9e6:nth-child(13)"
+      ],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 8 words.",
+      "contrastGroup": "lyrics.word"
+    },
+    {
+      "project": "desktop",
       "scenario": "player-paused",
       "rule": "color-contrast",
-      "target": [".px-6 > p"],
+      "target": [".pointer-events-none.svelte-1a6abw0.gap-3 > p"],
       "impact": "serious",
       "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; original axe observation retained.",
-      "contrastGroup": "desktop-player-page.source"
+      "contrastGroup": "desktop-player-page.source",
+      "sourceTarget": [".px-6 > p"]
     },
     {
       "project": "desktop",
@@ -1780,12 +1934,22 @@
     },
     {
       "project": "desktop",
+      "scenario": "player-paused",
+      "rule": "color-contrast",
+      "target": ["div[data-line=\"7\"] > .sub.mt-1.text-body"],
+      "impact": "serious",
+      "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; taller lyrics viewport exposes line 7 translation.",
+      "contrastGroup": "lyrics.translation"
+    },
+    {
+      "project": "desktop",
       "scenario": "player-queue",
       "rule": "color-contrast",
-      "target": [".px-6 > p"],
+      "target": [".pointer-events-none.svelte-1a6abw0.gap-3 > p"],
       "impact": "serious",
       "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; original axe observation retained.",
-      "contrastGroup": "desktop-player-page.source"
+      "contrastGroup": "desktop-player-page.source",
+      "sourceTarget": [".px-6 > p"]
     },
     {
       "project": "desktop",
@@ -1858,7 +2022,7 @@
       "project": "desktop",
       "scenario": "player-queue",
       "rule": "color-contrast",
-      "target": [".px-5.pb-2.pt-4 > .flex-1.min-w-0 > p"],
+      "target": [".pb-2 > .flex-1.min-w-0 > p"],
       "impact": "serious",
       "reason": "Rendered contrast is checked by the component/state regression in contrast-audit.json; original axe observation retained.",
       "contrastGroup": "queue-list.count",

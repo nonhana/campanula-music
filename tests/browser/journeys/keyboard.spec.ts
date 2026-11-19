@@ -202,12 +202,12 @@ test('播放页和手机队列的首尾 Tab 循环，关闭后回到原入口', 
   await expect(pause).toBeVisible();
   const lyricsTab = player.getByRole('tab', { name: '歌词', exact: true });
   const controls = [
-    ...(!desktop
-      ? [
+    ...(desktop
+      ? [lyricsTab]
+      : [
           player.getByRole('button', { name: '歌词', exact: true }),
           player.getByRole('button', { name: '显示歌词', exact: true }),
-        ]
-      : []),
+        ]),
     player.getByRole('link', { name: '测试歌手', exact: true }).first(),
     player.getByRole('link', { name: '测试专辑', exact: true }).first(),
     player.getByRole('button', { name: /^红心《/ }),
@@ -225,10 +225,10 @@ test('播放页和手机队列的首尾 Tab 循环，关闭后回到原入口', 
           player.getByRole('button', { name: '随机播放', exact: true }),
           player.getByRole('button', { name: '静音', exact: true }),
           player.getByRole('slider', { name: '音量', exact: true }),
-          lyricsTab,
+          player.getByRole('group', { name: '歌词', exact: true }),
+          player.getByRole('button', { name: /^从 .* 开始播放：/ }),
           player.getByRole('button', { name: '翻译', exact: true }),
           player.getByRole('button', { name: '音译', exact: true }),
-          player.getByRole('group', { name: '歌词', exact: true }),
         ]
       : [player.getByRole('button', { name: '播放队列', exact: true })]),
   ];
@@ -242,18 +242,19 @@ test('播放页和手机队列的首尾 Tab 循环，关闭后回到原入口', 
   ).toBeVisible();
   if (info.project.name === 'desktop') {
     for (const control of [
-      player.getByRole('button', { name: '音译', exact: true }),
       player.getByRole('button', { name: '翻译', exact: true }),
-      lyricsTab,
+      player.getByRole('button', { name: /^从 .* 开始播放：/ }),
+      player.getByRole('group', { name: '歌词', exact: true }),
     ]) {
       await page.keyboard.press('Shift+Tab');
       await expect(control).toBeFocused();
     }
+    await tabTo(page, lyricsTab);
     await page.keyboard.press('ArrowRight');
-    await expect(
-      player.getByRole('tab', { name: '播放队列', exact: true }),
-    ).toBeFocused();
-    await tabTo(page, close);
+    const queueTab = player.getByRole('tab', { name: '播放队列', exact: true });
+    await expect(queueTab).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(close).toBeFocused();
     const last = player.getByRole('button', {
       name: '从播放队列移出：SO TIRED ROCK',
       exact: true,
@@ -263,9 +264,7 @@ test('播放页和手机队列的首尾 Tab 循环，关闭后回到原入口', 
     await page.keyboard.press('Tab');
     await expect(close).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(
-      player.getByRole('link', { name: '测试歌手', exact: true }).first(),
-    ).toBeFocused();
+    await expect(queueTab).toBeFocused();
     await page.keyboard.press('Shift+Tab');
     await expect(close).toBeFocused();
     const queue = player.getByRole('tabpanel', {

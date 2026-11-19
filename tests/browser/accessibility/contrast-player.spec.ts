@@ -235,7 +235,7 @@ for (const [name, cover] of [
       Object.fromEntries(targets.map(({ id, locator }) => [id, locator])),
     );
     if (info.project.name === 'desktop') {
-      await page.setViewportSize({ width: 1440, height: 400 });
+      await page.setViewportSize({ width: 1440, height: 330 });
       const scroller = queue.locator('.overflow-y-auto');
       await expect
         .poll(() =>

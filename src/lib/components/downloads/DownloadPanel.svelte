@@ -311,7 +311,7 @@
     style:bottom={desktop
       ? panel.collapsed
         ? undefined
-        : `${playerLayer.dockHeight + 16}px`
+        : `${playerLayer.dockHeight + 72}px`
       : `calc(${playerLayer.dockHeight + 16}px + env(safe-area-inset-bottom))`}
     style:view-transition-name="download-panel"
     style:view-transition-class="still"

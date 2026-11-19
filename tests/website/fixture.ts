@@ -49,16 +49,22 @@ export const test = base.extend<{ scan: (scenario: string) => Promise<void> }>({
         page.frames().map((frame) =>
           frame.evaluate(async () => {
             await document.fonts.ready;
-            await Promise.allSettled(
-              document
+            for (let pass = 0; pass < 5; pass += 1) {
+              const finite = document
                 .getAnimations()
                 .filter(
                   (animation) =>
                     animation.effect?.getComputedTiming().iterations !==
                     Infinity,
-                )
-                .map((animation) => animation.finished),
-            );
+                );
+              if (!finite.length) break;
+              await Promise.allSettled(
+                finite.map((animation) => animation.finished),
+              );
+              await new Promise((resolve) =>
+                requestAnimationFrame(() => requestAnimationFrame(resolve)),
+              );
+            }
           }),
         ),
       );

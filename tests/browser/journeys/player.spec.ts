@@ -304,3 +304,95 @@ test('播放、切歌、歌词、队列和键盘滑块', async ({ page, scan }, 
   await player.getByRole('button', { name: '收起播放页', exact: true }).click();
   await expect(open).not.toHaveAttribute('aria-label', initial!);
 });
+
+test('播放页分段条居中固定、队列收窄平移、封面可拖拽切歌且下载不挤偏定位键', async ({
+  page,
+}, info) => {
+  await page.request.post('/api/mock/scenario', { data: { name: 'large' } });
+  await login(page, '/playlists/900000001');
+  await expect(page.locator('main [data-song-id]').first()).toBeVisible();
+  await page
+    .locator('main [data-song-id]')
+    .first()
+    .locator('[data-play-target]')
+    .click();
+  await expect(page.getByRole('button', { name: /^打开播放页/ })).toBeVisible();
+
+  if (info.project.name === 'desktop') {
+    await page.evaluate(() => window.scrollTo(0, 1200));
+    const locate = page.getByRole('button', {
+      name: '定位到正在播放',
+      exact: true,
+    });
+    await expect(locate).toBeVisible();
+    const rightBefore = await locate.evaluate(
+      (el) => window.innerWidth - el.getBoundingClientRect().right,
+    );
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/mock-assets/audio/**', async (route) => {
+      await held;
+      if (!route.request().failure()) await route.continue().catch(() => {});
+    });
+    try {
+      const visibleRow = page.locator('main [data-song-id]').nth(2);
+      await visibleRow.getByRole('button', { name: /^更多操作/ }).click();
+      await page.getByRole('menuitem', { name: '下载', exact: true }).click();
+      await expect(
+        page.getByRole('region', { name: '下载', exact: true }),
+      ).toBeVisible();
+      const rightAfter = await locate.evaluate(
+        (el) => window.innerWidth - el.getBoundingClientRect().right,
+      );
+      expect(Math.abs(rightAfter - rightBefore)).toBeLessThan(2);
+      expect(rightAfter).toBeLessThan(40);
+    } finally {
+      release();
+      await page.unroute('**/mock-assets/audio/**');
+    }
+
+    await page.getByRole('button', { name: /^打开播放页/ }).click();
+    const player = page.getByRole('dialog', { name: '正在播放', exact: true });
+    const tabs = player.getByRole('tablist', { name: '右栏显示', exact: true });
+    const controls = player.getByRole('region', {
+      name: '播放控制',
+      exact: true,
+    });
+    const tabsBefore = (await tabs.boundingBox())!;
+    const controlsBefore = (await controls.boundingBox())!;
+    expect(Math.abs(tabsBefore.x + tabsBefore.width / 2 - 720)).toBeLessThan(4);
+
+    await player.getByRole('tab', { name: '播放队列', exact: true }).click();
+    const queue = player
+      .getByRole('tabpanel', { name: '播放队列', exact: true })
+      .locator('section')
+      .first();
+    await expect
+      .poll(async () => (await controls.boundingBox())!.x)
+      .toBeGreaterThan(controlsBefore.x + 80);
+    const tabsAfter = (await tabs.boundingBox())!;
+    expect(Math.abs(tabsAfter.x - tabsBefore.x)).toBeLessThan(2);
+    expect((await queue.boundingBox())!.width).toBeLessThanOrEqual(562);
+
+    const status = page.getByRole('status', { name: '播放状态' });
+    const beforeSong = await status.textContent();
+    const coverBox = (await controls.locator('.cover').boundingBox())!;
+    const cx = coverBox.x + coverBox.width / 2;
+    const cy = coverBox.y + coverBox.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx - 180, cy, { steps: 10 });
+    await page.mouse.up();
+    await expect(status).not.toHaveText(beforeSong!);
+    return;
+  }
+
+  await page.getByRole('button', { name: /^打开播放页/ }).click();
+  const player = page.getByRole('dialog', { name: '正在播放', exact: true });
+  await player.getByRole('button', { name: '显示歌词' }).click();
+  await expect(
+    player.getByRole('button', { name: '翻译', exact: true }),
+  ).toBeVisible();
+});

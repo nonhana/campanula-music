@@ -71,3 +71,5 @@
 | `LogOut`                     | 退出登录                                                        |
 | `X`                          | 关闭、移出单首、清除搜索词                                      |
 | `LocateFixed`                | 定位到正在播放                                                  |
+| `Languages`                  | 歌词翻译开关                                                    |
+| `CaseSensitive`              | 歌词音译开关                                                    |

@@ -42,7 +42,7 @@
       "project": "desktop",
       "scenario": "demo-lyrics",
       "rule": "color-contrast",
-      "target": [".px-6 > p"],
+      "target": [".z-1.pointer-events-none.gap-3 > p"],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
     },
     {
@@ -386,7 +386,7 @@
       "project": "desktop",
       "scenario": "demo-queue",
       "rule": "color-contrast",
-      "target": [".px-6 > p"],
+      "target": [".z-1.pointer-events-none.gap-3 > p"],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
     },
     {
@@ -443,7 +443,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .play-target.text-left[aria-current=\"true\"] > .gap-2.min-w-0.items-center > .duration-state.transition-colors.font-500"
+        ".grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .min-w-0 > .play-target.text-left[aria-current=\"true\"] > .gap-2.min-w-0.items-center > .duration-state.transition-colors.font-500"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
     },
@@ -452,7 +452,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .truncate.block.text-caption"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .min-w-0 > .truncate.block.text-caption"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
     },
@@ -461,7 +461,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(1) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
     },
@@ -470,7 +470,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.place-items-center.text-caption > .col-start-1.row-start-1"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .tabular-nums.place-items-center.text-caption > .col-start-1.row-start-1"
       ],
       "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
     },
@@ -479,7 +479,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .play-target.text-left.rounded > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.transition-colors"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .min-w-0 > .play-target.text-left.rounded > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.transition-colors"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
     },
@@ -488,7 +488,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .truncate.block.text-caption"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .min-w-0 > .truncate.block.text-caption"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
     },
@@ -497,7 +497,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(2) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
     },
@@ -506,7 +506,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.place-items-center.text-caption > .col-start-1.row-start-1"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .tabular-nums.place-items-center.text-caption > .col-start-1.row-start-1"
       ],
       "reason": "Fix any of the following:\n  Element content is too short to determine if it is actual text content"
     },
@@ -515,7 +515,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .play-target.text-left.rounded > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.transition-colors"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .min-w-0 > .play-target.text-left.rounded > .gap-2.min-w-0.items-center > .duration-state.text-neutral-900.transition-colors"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
     },
@@ -524,7 +524,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .min-w-0 > .truncate.block.text-caption"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .min-w-0 > .truncate.block.text-caption"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
     },
@@ -533,7 +533,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.gap-3 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
+        ".svelte-z0bpxa.inset-x-0.absolute:nth-child(3) > .mouse\\:hover\\:bg-white\\/60.h-full.rounded-lg > .grid-cols-\\[28px_40px_minmax\\(0\\,1fr\\)_auto_36px\\].pr-1.pl-2 > .tabular-nums.text-caption.text-neutral-600:nth-child(4)"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
     },
@@ -914,7 +914,7 @@
       "scenario": "demo-queue",
       "rule": "color-contrast",
       "target": [
-        ".rounded.w-full[aria-current=\"true\"] > .gap-2.min-w-0.flex > .duration-state.transition-colors.text-label"
+        ".rounded.w-full[aria-current=\"true\"] > .gap-2.min-w-0.items-center > .duration-state.transition-colors.text-label"
       ],
       "reason": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
     },
