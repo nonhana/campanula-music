@@ -1,11 +1,11 @@
 # 交付流程
 
-> **完成 = 远端 `rewrite/v1` 最终提交 CI 全部通过 + issue 留言验收清单。**
+> **完成 = 远端 `master` 最终提交 CI 全部通过 + issue 留言验收清单。**
 > 作者的 Vercel 实例由推送触发部署且开启 Deployment Checks（等待 CI 绿灯才切正式域名）；实现者须自行推送并主动跟进 CI 至最终提交通过，不把推送留给作者。
 
 ## 1. 开工清单
 
-切到 `rewrite/v1` 并 `git pull`，读取目标 issue（命令见 [issues.md](./issues.md)；若有回滚说明一并读）。动手写代码前，在对话交出开工清单：
+切到 `master` 并 `git pull`，读取目标 issue（命令见 [issues.md](./issues.md)；若有回滚说明一并读）。动手写代码前，在对话交出开工清单：
 
 - 涉及的 Spec 章节、ADR、业务规则（[rules.md](../product/rules.md)）与设计文档（[docs/design/](../design/)）；
 - 新读取的网易云字段在 `node_modules/hana-music-api/dist/client.generated-*.d.ts` 中是否已声明（[ADR-0005](../adr/0005-hana-music-api-co-evolution.md)）；缺失则先开 SDK issue 标阻塞并停下告知作者；
@@ -27,12 +27,12 @@
 
 - **提交信息格式**：Conventional Commits 单行格式 `<type>: <中文一句话说明>`（type 用英文 `feat`/`fix`/`docs`/`refactor`/`test`/`chore` 等），**不写 scope、正文和脚注**。
   - 例：`feat: 手机音量恒为 100%，桌面音量照旧可调并记住`
-- **跟进 CI**：推送 `rewrite/v1` 后记录当前 `HEAD` SHA，用 `gh run list --commit <SHA> --workflow CI` 找到对应 run 并用 `gh run watch <run-id> --exit-status` 跟进，确认 `headSha` 与最终 `HEAD` 一致且全部计划项通过；旧提交的绿灯不能代替当前提交。
+- **跟进 CI**：推送 `master` 后记录当前 `HEAD` SHA，用 `gh run list --commit <SHA> --workflow CI` 找到对应 run 并用 `gh run watch <run-id> --exit-status` 跟进，确认 `headSha` 与最终 `HEAD` 一致且全部计划项通过；旧提交的绿灯不能代替当前提交。
 - **CI 失败时的 fixup 与 force push**：
   1. 读失败日志、复现并修复，补齐回归并重跑本地检查。
-  2. 先执行 `git fetch origin rewrite/v1`，核对并整合远端新增提交，确认 `git merge-base --is-ancestor origin/rewrite/v1 HEAD` 后记录待替换的远端 SHA。
+  2. 先执行 `git fetch origin master`，核对并整合远端新增提交，确认 `git merge-base --is-ancestor origin/master HEAD` 后记录待替换的远端 SHA。
   3. 对造成失败的提交执行 `git commit --fixup=<提交>`，再执行 `GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <提交>^` 合回（保持单行提交格式）。
-  4. 用 `git push --force-with-lease=refs/heads/rewrite/v1:<已记录的远端SHA> origin HEAD:refs/heads/rewrite/v1` 推送；若 lease 被拒，基于最新远端重新整合后重做 fixup 与验证，禁止无条件 `--force`。
+  4. 用 `git push --force-with-lease=refs/heads/master:<已记录的远端SHA> origin HEAD:refs/heads/master` 推送；若 lease 被拒，基于最新远端重新整合后重做 fixup 与验证，禁止无条件 `--force`。
   5. 重新跟进新提交的 CI 直到全部通过。
 
 ## 4. 交付留言与作者试用清单

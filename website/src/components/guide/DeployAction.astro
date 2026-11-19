@@ -4,8 +4,7 @@ import {
   pillBase,
   pillLooks,
 } from '../../../../src/lib/components/ui/control-styles.ts';
-const source =
-  'https://github.com/nonhana/campanula-music/tree/4fb955c43a070f093ef45c883d906956a1b2cd3a';
+const source = 'https://github.com/nonhana/campanula-music/tree/master';
 const deploy = new URL('https://vercel.com/new/clone');
 deploy.searchParams.set('repository-url', source);
 deploy.searchParams.set('env', 'COOKIE_SECRET');
@@ -15,7 +14,7 @@ deploy.searchParams.set(
 );
 deploy.searchParams.set(
   'envLink',
-  'https://github.com/nonhana/campanula-music/blob/4fb955c43a070f093ef45c883d906956a1b2cd3a/.env.example',
+  'https://github.com/nonhana/campanula-music/blob/master/.env.example',
 );
 ---
 

@@ -14,13 +14,13 @@ description: 沿用原域名和密钥，按部署方式更新或回退。
 
    ```bash
    CAMPANULA_REPO=https://github.com/YOUR_NAME/YOUR_REPO.git
-   CAMPANULA_BRANCH=rewrite/v1
+   CAMPANULA_BRANCH=master
    git clone --branch "$CAMPANULA_BRANCH" --single-branch "$CAMPANULA_REPO" campanula-upgrade
    cd campanula-upgrade
    git branch "backup-campanula-$(date +%Y%m%d-%H%M%S)"
    git remote add campanula-upstream https://github.com/nonhana/campanula-music.git
-   git fetch campanula-upstream rewrite/v1
-   git restore --source campanula-upstream/rewrite/v1 --staged --worktree -- .
+   git fetch campanula-upstream master
+   git restore --source campanula-upstream/master --staged --worktree -- .
    git diff --cached
    ```
 
@@ -47,7 +47,7 @@ description: 沿用原域名和密钥，按部署方式更新或回退。
    ```bash
    CAMPANULA_OLD_IMAGE=$(docker inspect campanula --format '{{.Image}}') &&
      printf '%s\n' "$CAMPANULA_OLD_IMAGE" > "$HOME/campanula-config/previous-image.txt"
-   git pull --ff-only origin rewrite/v1
+   git pull --ff-only origin master
    ```
 
 2. 按[从 v1 源码构建](./docker.md#从-v1-源码构建)中的 `docker build` 命令构建新版，先用 `CAMPANULA_REV=$(git rev-parse HEAD)` 取新版提交编号。
@@ -74,7 +74,7 @@ docker image inspect "$CAMPANULA_OLD_IMAGE" --format '{{.Id}}'
    cd "$HOME/campanula"
    readlink current > "$HOME/campanula-config/previous-release.txt"
    cd source
-   git pull --ff-only origin rewrite/v1
+   git pull --ff-only origin master
    ```
 
 2. 构建新版，成功后写入独立发布目录。

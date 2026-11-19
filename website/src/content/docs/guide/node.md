@@ -11,7 +11,7 @@ description: 构建播放器、启动 Node，并用 systemd 托管进程。
 ```bash
 mkdir -p "$HOME/campanula/releases"
 cd "$HOME/campanula"
-git clone --branch rewrite/v1 --single-branch https://github.com/nonhana/campanula-music.git source
+git clone --branch master --single-branch https://github.com/nonhana/campanula-music.git source
 cd source
 pnpm install --frozen-lockfile && env -u VERCEL pnpm build
 ```

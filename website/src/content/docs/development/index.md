@@ -11,7 +11,7 @@ description: 启动播放器、mock 或 Astro 文档站。
 已有 Node 时，可用 `npm install -g pnpm@12.18.0` 安装 pnpm。
 
 ```bash
-git clone --branch rewrite/v1 --single-branch https://github.com/nonhana/campanula-music.git
+git clone https://github.com/nonhana/campanula-music.git
 cd campanula-music
 pnpm install --frozen-lockfile
 ```

@@ -24,7 +24,7 @@ openssl rand -base64 32
 
 <DeployAction />
 
-1. 选择 GitHub 账号，填写新仓库名。按钮会复制 [v1 固定版本 `4fb955c`](https://github.com/nonhana/campanula-music/tree/4fb955c43a070f093ef45c883d906956a1b2cd3a)。
+1. 选择 GitHub 账号，填写新仓库名。按钮会复制 [Campanula 主分支 `master`](https://github.com/nonhana/campanula-music/tree/master)。
 2. 在 **Environment Variables** 填入 `COOKIE_SECRET`，应用到 **Production**。
 3. 核对构建设置，点击 **Deploy**。若出现 **Verify Your Identity**，按 Vercel 提示验证后继续。
 4. 到 **Deployments** 找到 **Ready** 的记录，检查 **Source** 是刚复制的 v1 代码，函数地区为 **Hong Kong (`hkg1`)**。修正设置后重新部署。
@@ -40,9 +40,9 @@ openssl rand -base64 32
 
 ### 手动导入
 
-1. Fork [Campanula 仓库](https://github.com/nonhana/campanula-music/tree/rewrite/v1)，保留 `rewrite/v1`。
-2. 在 Vercel 通过 **Add New → Project** 导入 Fork，选择 `rewrite/v1`。如果导入页无法选分支，先将 Fork 的默认分支设为 `rewrite/v1`。
-3. 按上表设置构建并填写 `COOKIE_SECRET`，点击 **Deploy**。部署后将项目的 **Production Branch** 设为 `rewrite/v1`。
+1. Fork [Campanula 仓库](https://github.com/nonhana/campanula-music)。
+2. 在 Vercel 通过 **Add New → Project** 导入 Fork，使用默认分支 `master`。
+3. 按上表设置构建并填写 `COOKIE_SECRET`，点击 **Deploy**。
 
 ## 绑定自己的域名
 

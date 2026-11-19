@@ -1,6 +1,6 @@
 ---
 title: 用 Docker 运行
-description: 从 rewrite/v1 构建镜像并启动播放器。
+description: 从源码构建镜像并启动播放器。
 ---
 
 - 在服务器安装 Git 和 [Docker Engine](https://docs.docker.com/engine/install/)。用 `docker version` 确认能连接 Docker。
@@ -12,7 +12,7 @@ description: 从 rewrite/v1 构建镜像并启动播放器。
 在服务器的 Bash 终端执行。构建需要访问 Docker Hub 和 npm。
 
 ```bash
-git clone --branch rewrite/v1 --single-branch https://github.com/nonhana/campanula-music.git campanula-source
+git clone --branch master --single-branch https://github.com/nonhana/campanula-music.git campanula-source
 cd campanula-source
 CAMPANULA_REV=$(git rev-parse HEAD)
 docker build --pull \

@@ -31,6 +31,6 @@
 
 ## 改文档后的验收
 
-1. 移动、重命名或删除文档后，全仓 `rg` 排查旧路径并更新全部引用（含 `docs/adr/`、代码报错文案、`.agents/` 与 `tests/`），确认所有相对链接有效。
+1. 移动、重命名或删除文档后，全仓 `rg` 排查旧路径并更新全部引用（含 `docs/adr/`、代码报错文案与 `tests/`），确认所有相对链接有效。
 2. 运行 `pnpm fmt:check`（零行尾空格，符合 `oxfmt`）。
 3. 改动 `website/` 时加跑 `pnpm exec tsc -p website/tsconfig.json --noEmit` 与 `pnpm docs:test`（涉及 dev 入口时补跑 `pnpm docs:test:dev`）。
