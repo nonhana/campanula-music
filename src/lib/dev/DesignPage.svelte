@@ -417,7 +417,8 @@
     <section>
       <h1 class="text-headline text-neutral-900 font-600">设计系统</h1>
       <p class="mt-2 max-w-[60ch] text-body text-neutral-600">
-        DESIGN.md 落在 uno.config.ts 里的样子。这一页只在开发时能打开。现在是{desktopLayout.current
+        docs/design/ 落在 uno.config.mts
+        里的样子。这一页只在开发时能打开。现在是{desktopLayout.current
           ? '桌面'
           : '手机'}骨架，把窗口拉到 768px {desktopLayout.current
           ? '以下'

@@ -3,6 +3,8 @@ title: 本地开发
 description: 启动播放器、mock 或 Astro 文档站。
 ---
 
+想先了解项目的整体分层与关键机制，见[架构与实现概览](./architecture.md)。
+
 ## 获取源码和工具
 
 准备 Git、Node **26.13.1** 和 pnpm **12.18.0**。版本以源码的 `.node-version`、`package.json` 为准。

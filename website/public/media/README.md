@@ -17,4 +17,4 @@
 
 音频的 MIDI 音高序列、合成公式、音量包络及封面源码保存在 `website/demo/create-media.mts`；它不参加日常构建，已提交的 MP3/SVG 即可在干净 checkout 使用。需要重制时，安装 FFmpeg 后从仓库根运行 `pnpm exec tsx website/demo/create-media.mts`。公式输出 44.1 kHz 单声道 PCM，再由 FFmpeg 的 libmp3lame 编码为 96 kbps MP3；没有模型服务或远端素材下载。MP3 容器包含编码器补齐的极短尾部，标称时长为 24 秒。
 
-示例账号、歌单、曲目和示意歌词在 `website/demo/sample.ts`，不是从网易云取得的返回。截图先启动自有随机端口的静态候选，在独立空 Chromium 中进入 `/demo/?screen=player`，等封面和字体加载完成后截图并转 WebP；不使用作者的浏览器。对应运行与文件校验清单见 `docs/acceptance/runs/issue-44-step3.md`。
+示例账号、歌单、曲目和示意歌词在 `website/demo/sample.ts`，不是从网易云取得的返回。截图先启动自有随机端口的静态候选，在独立空 Chromium 中进入 `/demo/?screen=player`，等封面和字体加载完成后截图并转 WebP；不使用作者的浏览器。

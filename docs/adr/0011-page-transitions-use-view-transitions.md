@@ -1,6 +1,6 @@
 # 页面切换用浏览器的 View Transitions，不用 Svelte 的过渡或动画库
 
-换页时，在 SvelteKit 的 `onNavigate` 里调用 `document.startViewTransition`：浏览器先拍下旧页面，等 SvelteKit 渲染好新页面，再把新旧两帧交给 CSS 做交接动画。只有内容区参与，顶栏、侧栏、播放条原地不动；从格子点进歌单、专辑、歌手时，被点的那张封面和页头的大封面用同一个名字，飞行路线由浏览器算。方向（进入下一层、返回、同一层之间）用 View Transitions 的 `types` 交给 CSS。动效方向 B「封面是主角」由作者在 2026-10-14 选定，规则写在 DESIGN.md。Campanula 只支持 Chrome 和 Edge（PRODUCT.md），它们早已支持同一文档内的 View Transitions；其他浏览器直接换页，没有动画，功能不受影响。
+换页时，在 SvelteKit 的 `onNavigate` 里调用 `document.startViewTransition`：浏览器先拍下旧页面，等 SvelteKit 渲染好新页面，再把新旧两帧交给 CSS 做交接动画。只有内容区参与，顶栏、侧栏、播放条原地不动；从格子点进歌单、专辑、歌手时，被点的那张封面和页头的大封面用同一个名字，飞行路线由浏览器算。方向（进入下一层、返回、同一层之间）用 View Transitions 的 `types` 交给 CSS。动效方向 B「封面是主角」由作者在 2026-10-14 选定，规则写在 `docs/design/motion.md`。Campanula 只支持 Chrome 和 Edge（`docs/product/overview.md`），它们早已支持同一文档内的 View Transitions；其他浏览器直接换页，没有动画，功能不受影响。
 
 ## Considered Options
 
@@ -23,4 +23,4 @@
 
 ## 2026-10-31：桌面歌单页左栏换歌单不飞
 
-左栏改成一行一张的目录（40px 封面，DESIGN.md Layout）。作者实际使用后觉得从左栏飞到页头的封面别扭；被点的那一格在旧的一帧里留下空洞、页头的封面位置要等飞行落地才有图，看起来整页闪了一下。左栏的行不再写 `flight`，左栏换歌单只剩右栏的交叉淡化；从其他格子点进歌单、专辑、歌手时飞到页头、返回时飞回格子，都不变。
+左栏改成一行一张的目录（40px 封面，`docs/design/layout.md`）。作者实际使用后觉得从左栏飞到页头的封面别扭；被点的那一格在旧的一帧里留下空洞、页头的封面位置要等飞行落地才有图，看起来整页闪了一下。左栏的行不再写 `flight`，左栏换歌单只剩右栏的交叉淡化；从其他格子点进歌单、专辑、歌手时飞到页头、返回时飞回格子，都不变。

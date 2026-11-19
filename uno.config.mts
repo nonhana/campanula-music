@@ -230,25 +230,30 @@ export default defineConfig<Theme>({
     ],
     [
       /^text-\[/,
-      { message: '字号用八档 text-<档名>（DESIGN.md Typography），颜色用色板' },
+      {
+        message:
+          '字号用八档 text-<档名>（docs/design/foundations.md），颜色用色板',
+      },
     ],
     [
       /^rounded(?:-[trblse]{1,2})?-\[/,
       {
         message:
-          '圆角用 rounded-sm / md / lg / xl / sheet / full（DESIGN.md Shapes）',
+          '圆角用 rounded-sm / md / lg / xl / sheet / full（docs/design/foundations.md）',
       },
     ],
     [
       /^shadow-\[/,
       {
         message:
-          '阴影用 shadow-ambient / float / chip / field-focus（DESIGN.md Elevation & Depth）',
+          '阴影用 shadow-ambient / float / chip / field-focus（docs/design/foundations.md）',
       },
     ],
     [
       /^(?:bg|border|ring|outline|fill|stroke)-\[(?:#|rgb|hsl)/,
-      { message: '颜色用 uno.palette.ts 的色板（DESIGN.md Colors）' },
+      {
+        message: '颜色用 uno.palette.mts 的色板（docs/design/foundations.md）',
+      },
     ],
   ],
   variants: [

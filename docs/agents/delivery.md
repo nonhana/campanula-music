@@ -1,49 +1,50 @@
-# 交付一张票
+# 交付流程
 
-> **完成 = 远端 `rewrite/v1` 的最终提交 CI 全部通过 + 票里留言。**
-> 只停在本地 commit 不算交付：作者的 Vercel 实例由**推送**触发部署，作者在手机上验收的是部署后的版本。
-> 实现者必须自己推送，不能把推送留给作者。
->
-> 验证分三层：提交时钩子跑 lint-staged（改动文件的 eslint、设计令牌、fixture 身份）；推送时没有钩子；日常 CI 并行执行静态检查、产品分片、关键浏览器操作与 Vercel 候选验证，再按改动追加专项（`.github/workflows/ci.yml`）。
-> Vercel 开了 Deployment Checks，要求 CI 通过：推送后新版本照常构建，等 CI 通过才切到正式域名；CI 失败时线上留着上一个版本。实现者必须主动跟进本次提交的 CI，失败就返工修复，直到最终提交通过；票里要求的部署验收也要核对。
+> **完成 = 远端 `rewrite/v1` 最终提交 CI 全部通过 + issue 留言验收清单。**
+> 作者的 Vercel 实例由推送触发部署且开启 Deployment Checks（等待 CI 绿灯才切正式域名）；实现者须自行推送并主动跟进 CI 至最终提交通过，不把推送留给作者。
 
-实现 Spec #11 下的票时，按顺序走完每一步。
+## 1. 开工清单
 
-1. **开工**：切到 `rewrite/v1` 并 `git pull`。先读票（命令见 `issue-tracker.md`「读 issue」）；票里有回滚说明的一并读（见文末「回滚」）。父 Spec #11、`DESIGN.md`、`tests/fixtures/netease/README.md` 这几份大文档，只看票里提到的章节和规则：先用 `grep` 定位，再读那几段。完成标准：在对话里交出开工清单，再写代码：
-   - 用到的 Spec 章节、ADR 和规则；
-   - 每个画面和规则要读的网易云字段，各自在 `node_modules/hana-music-api/dist/client.generated-*.d.ts` 里有没有声明（ADR-0005）。确实没有声明的：开 SDK 票，标好阻塞，停下来告诉作者；
-   - 已有的录制和还缺的录制；
-   - 按 `testing.md` 盘点的受影响调用方、行为分支和对应回归测试；
-   - 要改的文件。
-2. **测试**：套件选择、可运行命令与报告见 `tests/README.md`。纯规则输入操作序列或音频样本，输出规则结果；App 行为输入听众操作和环境事件，经过真实本机 HTTP，输出 App 状态、请求和持久化；契约输入请求、SDK 数据和录制，输出合同检查（现有 mock / 录制自检另标）；现有 delivery 自检检查 mock HTTP 装配。`pnpm test:browser` / `pnpm test:a11y` 检查真实输入、导航、焦点和可访问状态，使用独立 fixture，输出 `.reports/browser/run-*` 的 trace/截图/axe/环境附件；故障敏感性用 `pnpm test:browser:faults`。产物交付层接收同一次候选构建。浏览器自动化只使用自行启动的环境，真实账号、Android 系统和读屏仍由作者按第 6 步验收。用 `/tdd`，按 `docs/agents/testing.md` 先确定完整回归范围，再实现和验证。测试必须符合 `CODING_STANDARDS.md` 与该文档的接入点、录制和替身规矩。每条需求及受影响行为都要有可观察的验证依据；自动化覆盖和作者试用的边界写清楚。票里写明不加新测试的，仍须核对并运行已有的受影响测试。
-3. **界面票**：设计从视觉原型的源码读，规则以 `DESIGN.md` 为准，读法见 `campanula-ui-acceptance` skill 第 1 步。效果靠复用已有组件、照 `DESIGN.md` 和现有的交互推出来；验证由作者照试用清单亲手试（Spec #11「交付方式」），实现者默认不开浏览器。
-   - 例外是测试替身证明不了的那一层：改了浮层栈的历史适配（`overlay/overlay-history.svelte.ts`）、手势的按下松手（`shared/press.ts`）或 Service Worker，以及读代码弄不清的浏览器行为（例如第三方脚本在本机能不能用）。碰到例外先用一句话问作者要不要查一次；作者说不用，就在试用清单里写清怎么看、出错时是什么样子。
-   - 截图、浏览器检查、动效逐帧只在作者点名时做：mock 见 `docs/agents/mock.md`，真账号见 `docs/agents/browser.md`。
-4. **真账号**：作者试用就是真账号验证；reviewer 只看 diff，不开浏览器。实现者只在上游行为还没被证明过时（新接的网易云模块、SDK 修复还没在真账号上成功过），先问作者，同意后用一次性脚本查，遵守 Spec #11「交付方式」里的五条规矩，并记录做了什么。需要作者在场时（扫码、收短信、用真机），停下来叫作者。
-5. **收尾**：推送前自己跑 `pnpm check`、`pnpm fmt:check` 和盘点出的全部受影响测试文件（`pnpm test:behavior tests/behavior/<文件>.test.ts`；纯规则用 `test:unit`，契约用 `test:contract`），完整测试和构建交给 CI。用 `/code-review` 审代码和测试覆盖清单，提交并**推送** `rewrite/v1`，主动跟进到最终提交的 CI 全部通过。
-   - 提交信息统一用 Conventional Commits 的单行格式 `<type>: <message>`：type 用英文（`feat`、`fix`、`docs`、`refactor`、`test`、`chore` 等），message 用中文、一句话说清改了什么，只写一行，不写 scope、正文和脚注（作者 2026-11-04 定）。例：`feat: 手机音量恒为 100%，桌面音量照旧可调并记住`。
-   - 推送后记录当前 HEAD，按这个 SHA 查 CI run；可用 `gh run list --commit <SHA> --workflow CI` 找到运行，再用 `gh run watch <run-id> --exit-status` 跟进。核对 run 的 `headSha` 与最终 HEAD 一致，所有应执行的检查全部成功后才进入交付。没有启动、被取消或必要检查被跳过时，先恢复验证；旧提交的绿灯不能代替当前提交。
-   - CI 失败时主动读失败日志、定位原因，按下面的 fixup 流程返工；复现并修复问题，补齐遗漏的回归，重跑适用的本地检查。修复归回造成失败的提交后，跟进改写后提交的新 CI；重复直到通过，不能等作者报错。
-   - **fixup 与 force push**：返工前先执行 `git fetch origin rewrite/v1`，核对并整合远端新增提交；确认 `git merge-base --is-ancestor origin/rewrite/v1 HEAD` 成功后，记录本轮准备替换的远端 SHA，再开始修复和改写。对造成失败的提交执行 `git commit --fixup=<提交>`，再用 `GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <提交>^` 把修复合回该提交。临时 fixup 提交使用 Git 生成的消息，合并后的最终提交仍遵守上面的单行格式。用 `git push --force-with-lease=refs/heads/rewrite/v1:<已记录的远端SHA> origin HEAD:refs/heads/rewrite/v1` 推送；lease 被拒绝时，从最新远端提交重新整合本轮修复，重做 fixup、autosquash 和验证，保留他人工作后再推，不能仅更新 lease 的 SHA 或改用无条件 `--force`。
-6. **交付**：在最终提交的 CI 全部通过后，往票里留言，写清提交 SHA、CI run 链接与结果、做了什么、测试覆盖了哪些情况，以及票里要求的部署验证结果，再写一份试用清单。作者只照这份清单验收：
-   - 每一项写去哪、点什么、应该看到什么、出错时是什么样子；会改账号的写怎么撤销（歌单编辑只在临时歌单上，真账号第 1 条规矩）。
-   - 测试没覆盖、只能靠试出来的几项排在最前面，标出来；第 3 步的例外交给作者时也写在这里。
-   - 眼睛看不到的写怎么看出来：按 Tab 看焦点停在哪、按返回数要按几次、读屏读到什么。
-   - mock 里看不到的（录制里没有的页面、真机才有的手势）写明去真账号或真机上看。
-   - 测试已经覆盖、不用试的情况另列一行（例如断网、网易云拒绝、操作频繁）。
-   - 票里有键盘操作、“减少动态效果”、换宽度会变的布局时，各加一行提醒，试不试由作者定。
-   - 留言里的验证结果只写真的跑出来的；没跑成的写“没验证到”。
+切到 `rewrite/v1` 并 `git pull`，读取目标 issue（命令见 [issues.md](./issues.md)；若有回滚说明一并读）。动手写代码前，在对话交出开工清单：
 
-   作者在部署后的实例上照清单试过、确认后再关票。
+- 涉及的 Spec 章节、ADR、业务规则（[rules.md](../product/rules.md)）与设计文档（[docs/design/](../design/)）；
+- 新读取的网易云字段在 `node_modules/hana-music-api/dist/client.generated-*.d.ts` 中是否已声明（[ADR-0005](../adr/0005-hana-music-api-co-evolution.md)）；缺失则先开 SDK issue 标阻塞并停下告知作者；
+- 已有录制与缺失录制；
+- 按 [testing.md](./testing.md) 盘点的受影响调用方、行为分支与对应回归测试；
+- 计划改动的文件清单。
 
-**回滚**：作者要回滚一张票的实现时，回滚后在票里留言写 1–3 行：哪里不对、下一轮别怎么做。上一轮在 GitHub 上改过的 Spec、票正文不跟着代码回滚，要手动改回。
+## 2. 实现、测试与界面边界
 
-## 开发环境变更的验收
+- **测试驱动与覆盖**：按 [testing.md](./testing.md) 与 [code-style.md](./code-style.md) 编写和运行受影响测试，明确自动化验证与作者人工试用的边界。
+- **界面改动默认不开浏览器**：优先复用现有组件并严格对照 [docs/design/](../design/) 实现；实现者默认不开浏览器，由作者按试用清单在部署实例上验收。
+  - **例外**：改动 `overlay/overlay-history.svelte.ts`、`shared/press.ts`、Service Worker 或读代码无法判定的真实浏览器行为时，先一句话询问作者是否自测，否则写清试用清单项。
+  - 截图、动效逐帧与 axe 诊断仅在作者点名时按 [browser.md](./browser.md) 执行。
+- **真实网易云账号**：仅留给作者试用，reviewer 只看 diff。仅在上游行为从未验证过时先征得作者同意后用一次性脚本探测；需要扫码、短信或真机时停下请作者配合。
 
-改启动器、Cookie 主机或 Kit/Vite 生成目录时，运行 `pnpm test:environment`：输入两种启动顺序、同一合成 Cookie jar、并发写入、reset、关闭、端口冲突、启动取消和重试，检查 HTTP 结果、原环境生成文件及清理；报告在 本次运行的 `delivery/` 与 `.reports/environments/`。双 HTTPS 显式运行 `pnpm test:environment:https`，临时 CA 只传给客户端，不改系统信任或 hosts，报告在 `.reports/https/`。每个环境保持独立工作根，CI 在各自 runner 上并行。Spec #96 串行链的工程验收/关闭授权按该 Spec 执行，真账号和设备边界保留。
+## 3. 提交、推送与 CI 跟进
 
-作者开发直接运行 dev / dev:mock（HTTPS 8443 / 8444），`scripts/dev.mts` 统一引导首次信任与解析、复用和续签证书、启动及关闭 Vite；使用方法见 [本地开发](../development.md)。HTTP 备用为 dev:http / dev:mock:http。入口变化由 delivery 回归和 HTTPS 专项验证真实 CLI、证书策略、HTTP/2、WSS 与清理；自动化使用临时 CA，不修改作者系统信任或 hosts。
+推送前本地跑 `pnpm check`、`pnpm fmt:check`、`pnpm lint` 及开工清单中全部受影响测试（改动官网时补 `pnpm exec tsc -p website/tsconfig.json --noEmit` 与 `pnpm docs:test`）。
 
-## 同一候选与发布
+- **提交信息格式**：Conventional Commits 单行格式 `<type>: <中文一句话说明>`（type 用英文 `feat`/`fix`/`docs`/`refactor`/`test`/`chore` 等），**不写 scope、正文和脚注**。
+  - 例：`feat: 手机音量恒为 100%，桌面音量照旧可调并记住`
+- **跟进 CI**：推送 `rewrite/v1` 后记录当前 `HEAD` SHA，用 `gh run list --commit <SHA> --workflow CI` 找到对应 run 并用 `gh run watch <run-id> --exit-status` 跟进，确认 `headSha` 与最终 `HEAD` 一致且全部计划项通过；旧提交的绿灯不能代替当前提交。
+- **CI 失败时的 fixup 与 force push**：
+  1. 读失败日志、复现并修复，补齐回归并重跑本地检查。
+  2. 先执行 `git fetch origin rewrite/v1`，核对并整合远端新增提交，确认 `git merge-base --is-ancestor origin/rewrite/v1 HEAD` 后记录待替换的远端 SHA。
+  3. 对造成失败的提交执行 `git commit --fixup=<提交>`，再执行 `GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <提交>^` 合回（保持单行提交格式）。
+  4. 用 `git push --force-with-lease=refs/heads/rewrite/v1:<已记录的远端SHA> origin HEAD:refs/heads/rewrite/v1` 推送；若 lease 被拒，基于最新远端重新整合后重做 fixup 与验证，禁止无条件 `--force`。
+  5. 重新跟进新提交的 CI 直到全部通过。
 
-Vercel 等待日常 `ci` 对本次提交的全部计划项放行。分片重放、按改动启动的专项、定时完整验收及 Docker 的候选验证见 [测试导航](../../tests/README.md)。生产 PWA 与作者 Android 试用方法见 [#101 验收](../acceptance/issue-101.md)。
+## 4. 交付留言与作者试用清单
+
+最终提交 CI 全绿后，在对应 issue 下留言：提交 SHA、CI run 链接与结果、改动摘要、测试覆盖范围、部署验证结果（仅写实际跑出的结果，未跑写“没验证到”），并附**作者试用清单**：
+
+- 每项写明：去哪、怎么操作、期望看到什么、异常表现；会改账号数据的写明撤销方式（歌单写操作只在临时自建歌单进行）。
+- 自动化未覆盖、只能靠真机/人工验证的项目排最前（含第 2 步例外项、真账号、Android 系统手势与读屏）。
+- 视觉不可见项写明检验动作（如按 Tab 看焦点落点、按返回数次、读屏播报）。
+- 自动化已覆盖、无需人工重测的场景另列一行说明。
+- 涉及键盘操作、减少动态效果或响应式宽度变化时，各附一行提醒。
+
+## 回滚
+
+若作者要求回滚某张票的实现，回滚后在原 issue 留 1–3 行说明问题与下轮避坑要点；已在 GitHub 上修改过的 Spec 或票正文不会随代码回滚，须人工改回。

@@ -13,7 +13,7 @@
 
 ## Consequences
 
-入口、生命周期证据与迁移方法见 `tests/README.md`、`docs/development.md` 和 mock 指南。切换主机会重新登录；IndexedDB、下载与 Service Worker 仍属于旧 origin，不自动搬迁。真实浏览器和设备存储由后续浏览器票验证，真账号、Android、系统选择器和真实读屏由作者验收。领域语言没有新增概念，GLOSSARY 不变。
+入口、生命周期证据与迁移方法见 `tests/README.md`、`docs/agents/build-and-dev.md` 和 `docs/agents/mock-and-fixtures.md`。切换主机会重新登录；IndexedDB、下载与 Service Worker 仍属于旧 origin，不自动搬迁。真实浏览器和设备存储由后续浏览器票验证，真账号、Android、系统选择器和真实读屏由作者验收。领域语言没有新增概念，`docs/product/glossary.md` 不变。
 
 测试与覆盖率报告也按运行独占目录，latest JSON 仅作导航；原 src 阈值在迁移前文件集合继续执行，产品各分区阈值不变。子进程正常关闭时先保存执行数据，故意杀进程的故障场景不伪造执行次数。
 

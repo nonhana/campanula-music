@@ -10,7 +10,11 @@ test('所有正式文章直接刷新可读，目录与正文没有横向溢出',
     '/guide/node/',
     '/guide/upgrade/',
     '/guide/listen/',
+    '/about/features/',
+    '/about/privacy-and-data/',
+    '/about/design/',
     '/development/',
+    '/development/architecture/',
     '/404.html',
   ]) {
     await page.goto(path);

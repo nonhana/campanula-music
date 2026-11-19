@@ -133,7 +133,7 @@ if (findings.length > 0) {
   for (const f of findings)
     console.error(`${f.file}:${f.line}  ${f.text}  ${f.why}`);
   console.error(
-    `\n${findings.length} 处没用设计系统的档位（DESIGN.md · Motion「写在哪」）`,
+    `\n${findings.length} 处没用设计系统的档位（见 docs/design/motion.md「写在哪」）`,
   );
   process.exit(1);
 }

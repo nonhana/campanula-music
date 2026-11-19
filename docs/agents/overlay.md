@@ -1,25 +1,25 @@
 # 浮层栈
 
-加一种菜单、弹窗或底部弹层，从浮层里换页，改返回、前进、焦点归还时读。代码在 `src/lib/components/overlay/`。
+新增菜单、弹窗或底部弹层，从浮层内换页，或修改返回、前进与焦点归还行为前必读。代码位于 `src/lib/components/overlay/`。
 
-## 三个文件
+## 三个核心文件
 
-- `overlay-stack.ts`：纯核心，不碰 DOM 和 Kit。层的开关、转交、占用的浏览记录、焦点归还、忙时钉住都在这里，行为改动改它，测试在 `tests/unit/overlay-stack.test.ts`。
-- `overlay-history.svelte.ts`：核心的历史端口（`read` / `write` / `go` / `leave`）在 Kit 上的实现。只有端口的签名或语义要变时才读它。
-- `overlays.svelte.ts`：登记表。每一层的历史策略、组件、关闭钩子都在这里登记；组件里用 `getOverlays()`（`overlay-context.ts`）取到层和 `stack`。
+- `overlay-stack.ts`：纯核心，不碰 DOM 与 Kit。层的开关、转交、占用的浏览记录、焦点归还、忙时钉住都在这里；单测在 `tests/unit/overlay-stack.test.ts`。
+- `overlay-history.svelte.ts`：核心历史端口（`read` / `write` / `go` / `leave`）在 Kit 上的实现；仅修改端口签名或语义时改动。
+- `overlays.svelte.ts`：登记表，注册各层历史策略、组件与关闭钩子；组件内通过 `getOverlays()`（`overlay-context.ts`）取层与 `stack`。
 
-## 加一层
+## 新增一层
 
-1. `overlay-requests.ts` 加请求类型：菜单类继承 `MenuRequest`（有锚点是浮动菜单，没锚点是底部弹层），弹窗类继承 `DialogRequest`。
-2. `overlays.svelte.ts` 里 `register<请求>('名字', menu | dialog | 自定义选项, 组件)`，并加进末尾的返回对象。给了组件的层由 `OverlayHost` 统一挂载。
-3. 组件：菜单套 `menu/MenuOverlay.svelte`（条目数据见 `menu/menu.ts`，行和键盘在 `MenuList`），弹窗套 `overlay/DialogShell.svelte`。
-4. 从这一层换到另一层：`当前层.transfer(目标层, 请求)`，同一个位置、焦点交过去。菜单里转交或换页的条目设 `closeOnChoose: false`，这一层由栈撤掉，壳不再关一次。
+1. 在 `overlay-requests.ts` 新增请求类型：菜单继承 `MenuRequest`（有锚点为浮动菜单，无锚点为底部弹层），弹窗继承 `DialogRequest`。
+2. 在 `overlays.svelte.ts` 调用 `register<请求>('名字', menu | dialog | 自定义选项, 组件)` 并纳入返回对象；传入组件的层由 `OverlayHost` 统一挂载。
+3. 菜单套 `menu/MenuOverlay.svelte`（条目数据见 `menu/menu.ts`，列表与键盘在 `MenuList`），弹窗套 `overlay/DialogShell.svelte`。
+4. 原地转交至另一层：`当前层.transfer(目标层, 请求)`（位置与焦点平滑交接）。菜单内触发转交或换页的条目设 `closeOnChoose: false`，避免壳重复关闭。
 
-## 哪些层占浏览记录
+## 浏览记录占用策略
 
-占了记录的层，系统返回先关它。
+占浏览记录的层，系统返回先关闭该层再退页：
 
-| 层                   | 占不占                   |
+| 层                   | 是否占浏览记录           |
 | -------------------- | ------------------------ |
 | `menu` 策略          | 底部弹层占，浮动菜单不占 |
 | `dialog` 策略        | 手机占，桌面不占         |
@@ -27,29 +27,18 @@
 | 多选                 | 手机占，桌面不占         |
 | 桌面播放队列面板     | 不占                     |
 
-## 从浮层里换页
+## 从浮层内换页
 
-| 场景                                                 | 用法                                                                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 没有层占着记录时页面里的链接                         | 普通 `<a>`；换页时栈自动撤掉看得见的层                                                      |
-| 菜单项换页；播放页、底部弹层这类占着记录的层里点链接 | `stack.leave(path)`：先退回打开这些层之前那一条，再新开一条。返回回到原页，不留空记录       |
-| 删除当前页的东西、退出登录                           | `层.leaveTo(path)`：替换掉打开前那一条，返回不再回来。业务写入只在它返回 `'committed'` 后做 |
+| 场景                                           | 用法                                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 无层占历史时的页面链接                         | 普通 `<a>`，换页时栈自动撤掉可见浮层                                                        |
+| 菜单项换页；播放页、底部弹层等占历史的层内链接 | `stack.leave(path)`：先退回打开浮层前的历史条，再新开目标页，返回直接回原页不留空条         |
+| 删除当前页实体、退出登录                       | `层.leaveTo(path)`：替换打开前的历史条，返回不再回来；业务写入仅在返回 `'committed'` 后执行 |
 
-- `path` 用 `resolve()` 拼好再传。
-- `stack.holdsHistory` 表示有没有层占着记录：`songs/CreditName.svelte` 用它决定要不要拦下链接、改走 `stack.leave`。
-- 忙着的层（上传封面中、导出写文件中）拦得住换页：这时 `leave` / `leaveTo` 返回 `'cancelled'`。
+- `path` 须先用 `resolve()` 拼好；`stack.holdsHistory` 决定 `songs/CreditName.svelte` 等链接是否拦截改走 `stack.leave`。
+- 忙态层（上传封面、导出写文件中）拦截换页，使 `leave` / `leaveTo` 返回 `'cancelled'`。
 
-## 测试
+## 测试与浏览器焦点
 
-`tests/unit/overlay-stack.test.ts` 顶部的 `scene()` 建好栈和内存历史（`tests/_kit/overlay-history.ts`），`register` 默认占记录、modal。
-
-- 内存历史的 `failNext` / `holdNext` / `cancelNext` 模拟历史操作失败、卡在半路、被取消；`back` / `forward` / `navigate` / `reload` 模拟浏览器。
-- 断言 `stack.top`、`history.url`、`history.index`、`history.length`。
-
-内存历史只证明核心。改了 `overlay-history.svelte.ts` 时，走 `delivery.md` 第 3 步的例外。
-
-## 浏览器焦点
-
-DialogShell、播放页和手机播放队列共用 `modal-focus.ts` 的 attachment，让 Tab / Shift+Tab 在当前非 inert、可见且启用的停点间循环；嵌套时只由最近的模态 dialog 处理，队列关闭后恢复播放页的循环。初始焦点仍由各层指定；关闭后仍由浮层栈等待 DOM 解锁再归还。真实键盘路径在 tests/browser/journeys/keyboard.spec.ts，包含从页首进入歌曲/播放器、加入歌单、Escape、刷新读回，以及编辑弹窗、播放页和队列的具体顺序与双向首尾边界。纯核心与真实页面的证据各自保留。
-
-MenuOverlay 每次请求、账号菜单每次打开都重新初始化列表焦点；即使退出动画尚未结束，不能沿用上次的失焦节点。外壳动画仍可逆，列表生命周期跟随本次打开。keyboard/core 的快速关闭再打开回归验证此边界；DialogShell 的同一路径单独保持回归。
+- **单测**：`tests/unit/overlay-stack.test.ts` 用 `scene()` 与内存历史适配器 `tests/_kit/overlay-history.ts` 模拟 `failNext` / `holdNext` / `cancelNext` 及 `back` / `forward` / `navigate` / `reload`，断言 `stack.top` 与 `history` 状态。改动 `overlay-history.svelte.ts` 时须走 [delivery.md](./delivery.md) 的浏览器例外。
+- **焦点循环与重置**：`DialogShell`、播放页与手机播放队列共用 `modal-focus.ts` attachment 在当前可见启用控件间循环 `Tab` / `Shift+Tab`（嵌套仅由最顶层模态接管，关闭后等 DOM 解锁 `inert` 再归还焦点）。`MenuOverlay` 每次请求、账号菜单每次打开均重新初始化列表焦点，即便退出动画未完也不沿用上次失焦节点。真实键盘路径回归在 `tests/browser/journeys/keyboard.spec.ts`。

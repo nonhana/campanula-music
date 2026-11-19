@@ -1,53 +1,35 @@
-# Campanula Music — Agent 指令
+# Campanula Music
 
-## Agent 技能
+开源的第三方网易云音乐 SPA/PWA 播放器，基于 Svelte 5 + SvelteKit + UnoCSS，通过 `hana-music-api` 对接网易云。
 
-### Issue 跟踪
+## Agent Docs
 
-本仓库的 issue 和 Spec 都存成 GitHub issue，仓库是 `nonhana/campanula-music`，统一用 `gh` CLI 操作。见 `docs/agents/issue-tracker.md`。新建 Spec 或票之前，先读 `docs/agents/issue-template.md`（步骤和正文模板）。
+### 工程与流程
 
-### 分诊标签
+- [architecture.md](./docs/agents/architecture.md) — 改动模块边界、目录职责、依赖方向或查 Svelte MCP 之前
+- [build-and-dev.md](./docs/agents/build-and-dev.md) — 安装、运行 dev/mock、构建、格式化与静态检查之前
+- [code-style.md](./docs/agents/code-style.md) — 编写代码、注释、测试或代码审查之前
+- [testing.md](./docs/agents/testing.md) — 盘点回归范围、编写或运行自动化测试之前
+- [mock-and-fixtures.md](./docs/agents/mock-and-fixtures.md) — 切换 mock 场景、补脱敏录制或改动 SDK 替身之前
+- [browser.md](./docs/agents/browser.md) — 作者点名做浏览器截图、动效逐帧、焦点或 axe 无障碍诊断时
+- [overlay.md](./docs/agents/overlay.md) — 新增浮层、从浮层换页或修改返回与焦点归还逻辑之前
+- [delivery.md](./docs/agents/delivery.md) — 开工、提交、跟进 CI、fixup 推送或写作者试用清单之前
+- [docs.md](./docs/agents/docs.md) — 新增、拆分、迁移或修改 `docs/`、`website/` 或根目录文档之前
+- [issues.md](./docs/agents/issues.md) — 使用 `gh` 操作 GitHub issue、子票依赖或分诊标签之前
+- [issue-template.md](./docs/agents/issue-template.md) — 新建 Spec 或任务票正文时
 
-默认使用五种角色标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。见 `docs/agents/triage-labels.md`。
+### 产品与设计
 
-### 领域文档
+- [overview.md](./docs/product/overview.md) — 确认功能范围、目标设备与明确不做边界之前
+- [glossary.md](./docs/product/glossary.md) — 命名目录、接口、文案、测试或 issue 术语之前
+- [rules.md](./docs/product/rules.md) — 涉及播放队列、打卡、下载、同步、离线与会话规则①–⑫之前
+- [foundations.md](./docs/design/foundations.md) — 涉及颜色语义、字号阶梯、阴影圆角、焦点环或强制颜色时
+- [layout.md](./docs/design/layout.md) — 涉及桌面/手机骨架、页头网格、筛选多选与骨架防跳动时
+- [motion.md](./docs/design/motion.md) — 涉及动效时长曲线、页面过渡、封面飞行、抽屉手势或滚动条时
+- [copy.md](./docs/design/copy.md) — 编写文案、空态错态、按钮层级或选用 Lucide 图标时
+- [components.md](./docs/design/components.md) — 实现或修改通用控件、歌曲行、弹窗、提示条或下载面板时
+- [player.md](./docs/design/player.md) — 实现或修改播放条、播放页、晨光行、波浪进度、换碟、歌词或队列时
 
-单上下文（single-context）：根目录一份 `GLOSSARY.md`，加上 `docs/adr/`。见 `docs/agents/domain.md`。
+### 架构决策
 
-**决策**：在回复、计划或代码里陈述或依赖某个设计决策之前，先查 `docs/adr/`；每个文件名就写明了它对应的决策。ADR 的效力高于回忆出来的记忆。
-
-### 交付
-
-开发、修复或提交推送前，先读 `docs/agents/delivery.md`：测试范围、分支与提交、推送后的 CI 跟进、失败后的 fixup 和 force push，以及作者试用验收。流程和文档修改同样适用。确定测试范围、编写或修改测试时，读 `docs/agents/testing.md`。
-
-### 代码规范
-
-写代码和审查时对照 `CODING_STANDARDS.md`；能用工具查的规则以 `eslint.config.mts` 为准，排版（行宽、分号、引号、断行）以 `oxfmt.config.mts` 为准——改完跑 `pnpm fmt` 格式化，`pnpm fmt:check` 只检查不改文件（CI 里跑的就是这条）。
-
-### 浏览器验证
-
-- 实现者默认不开浏览器，作者照试用清单亲手试；例外和清单写法见 `docs/agents/delivery.md` 第 3、6 步。reviewer 只看 diff。
-- 作者点名做浏览器检查时，使用 `pnpm test:browser` 的独立服务和 Chromium；截图、逐帧与 axe 见 `docs/agents/browser.md` 和 UI 验收 skill。真实账号由作者用自己的浏览器试用。
-
-## 代码地图
-
-领域目录名优先用 `GLOSSARY.md` 的概念（例如 `library/` 曲库、`playlist/` 歌单、`player/` 播放、`downloads/` 下载）；`ui/`、`svg/`、`shell/`、`shared/` 是实现结构，不要求有术语。不确定某个概念该放在哪时先查 GLOSSARY。
-
-- `src/routes/`：页面；`src/routes/api/**/+server.ts` 是服务端接口（ADR-0013）。
-- `src/lib/app/`：去掉界面的整个 App（测试接入点）；`api-client.ts` 是浏览器发请求的那一层，契约在 `src/lib/api/`。
-- `src/lib/api/`：服务端接口的契约与端点目录；`src/lib/server/`：服务端适配层与 mock；`netease/` 按登录、曲库、歌单、播放、搜索调用 SDK，`credentials.ts` 复用 SDK 生成设备编号。
-- `src/lib/components/`：
-  - `account/` 账号与退出；`boot/` 打开 App、部署与根屏（`Brand` 是根屏、登录和外壳共用的品牌字样）；`menu/` 更多菜单（条目、行、壳、歌曲菜单）。
-  - `overlay/` 浮层栈与弹窗外壳（确认、对话框；加浮层、从浮层里换页、改返回行为先读 `docs/agents/overlay.md`）；`playlist/` 歌单编辑、加入歌单、歌单封面（选图/裁剪/上传）。
-  - `player/` 播放条、播放页、播放队列（含当前这首、换碟、封面飞行、音量、播放器内提示）；`songs/` 歌曲列表与歌曲行。
-  - `library/` 曲库、歌单页、格子网格与多选；`downloads/` 已下载；`search/` 搜索；`daily/` 每日推荐。
-  - `login/` 登录；`notice/` 全局提示条；`shell/` 桌面/手机骨架、返回栏、播放条停靠、页面过渡；`svg/` 内联图标；`ui/` 基础控件与封面图。
-  - `shared/`：界面通用工具（文字与格式化、布局、动效、指针与手势、App 上下文、路由快照）。
-- `src/lib/dev/`：只在开发时打开的设计系统页；`scripts/`：统一开发入口（`dev.mts`，见 `docs/development.md`）、门禁、mock smoke；`tests/`：规则、App 行为、契约与交付自检，共用 `_kit/` 和 `tools/`；套件、单文件命令及覆盖率边界见 `tests/README.md`。
-- `src/params.ts`：路由参数（`neteaseId` 只认正整数）；`uno.config.mts`：设计令牌、字号阶梯和全局样式（焦点环）。
-
-**规则①–⑫** 定义在 `docs/prototype/logic.md`；产品 Spec #11 在 GitHub issue（`gh issue view 11`）。
-
-## Svelte
-
-拿不准 Svelte 5 / SvelteKit 的 API 时，用 Svelte MCP（`.omp/mcp.json`）查：先 `list-sections`，再用 `get-documentation` 取对应章节。`svelte-file-editor` subagent 的定义在 `.omp/agents/`。
+- [docs/adr/](./docs/adr/) — 陈述或依赖任何架构与交互决策之前先按文件名查阅；ADR 效力高于记忆
