@@ -12,7 +12,7 @@ description: 从源码构建镜像并启动播放器。
 在服务器的 Bash 终端执行。构建需要访问 Docker Hub 和 npm。
 
 ```bash
-git clone --branch master --single-branch https://github.com/nonhana/campanula-music.git campanula-source
+git clone --branch main --single-branch https://github.com/nonhana/campanula-music.git campanula-source
 cd campanula-source
 CAMPANULA_REV=$(git rev-parse HEAD)
 docker build --pull \

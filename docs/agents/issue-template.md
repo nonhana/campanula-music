@@ -86,11 +86,11 @@
 - [ ] 受影响的 `docs/design/`、`docs/product/`、`docs/adr/` 与 Spec 已同步更新
 - [ ] 需求、调用方与行为分支测试覆盖清单已核对；自动化边界外项已列进作者试用清单
 - [ ] `pnpm check`、`pnpm fmt:check`、`pnpm lint`、`pnpm test`、`pnpm build` 通过
-- [ ] 推送 `master`，最终提交 CI 与 Vercel 通过；票内留言含 SHA、摘要、测试覆盖与试用清单
+- [ ] 推送 `main`，最终提交 CI 与 Vercel 通过；票内留言含 SHA、摘要、测试覆盖与试用清单
 
 ## 实现约定
 
-先读 `docs/agents/delivery.md` 和 `docs/agents/testing.md`。分支 `master`，主动跟进最终提交 CI 与部署结果；CI 失败按 `delivery.md` 的 fixup、autosquash 和 force-with-lease 流程修复，通过后在票内留试用清单。实现者默认不开浏览器，真账号仅留给作者交付试用。文中行号以开工时代码为准。
+先读 `docs/agents/delivery.md` 和 `docs/agents/testing.md`。分支 `main`，主动跟进最终提交 CI 与部署结果；CI 失败按 `delivery.md` 的 fixup、autosquash 和 force-with-lease 流程修复，通过后在票内留试用清单。实现者默认不开浏览器，真账号仅留给作者交付试用。文中行号以开工时代码为准。
 ```
 
 ### 按票类补充要点

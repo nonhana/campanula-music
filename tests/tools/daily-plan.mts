@@ -18,7 +18,7 @@ let base: string | undefined = process.argv[2];
 if (event?.pull_request) base = event.pull_request.base.sha;
 else if (event && process.env.GITHUB_EVENT_NAME === 'push') {
   // A new task branch can fork from a verified integration commit. Failed pushes are never bases.
-  const branches = new Set([process.env.GITHUB_REF_NAME!, 'master']);
+  const branches = new Set([process.env.GITHUB_REF_NAME!, 'main']);
   for (const branch of branches) {
     try {
       const runs = JSON.parse(

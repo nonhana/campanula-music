@@ -27,4 +27,4 @@ Campanula 是单个 Svelte 5 + SvelteKit 项目：页面关闭服务端渲染（
 
 ## 深入仓库文档
 
-参与改动或使用编码代理时，从仓库根目录的 `AGENTS.md` 入口按需阅读 [仓库 `docs/` 目录](https://github.com/nonhana/campanula-music/tree/master/docs)（含 `agents/`、`product/`、`design/` 与 `adr/`）。
+参与改动或使用编码代理时，从仓库根目录的 `AGENTS.md` 入口按需阅读 [仓库 `docs/` 目录](https://github.com/nonhana/campanula-music/tree/main/docs)（含 `agents/`、`product/`、`design/` 与 `adr/`）。
