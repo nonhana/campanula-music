@@ -38,6 +38,8 @@ it('按变更加上离线交接、SDK、开发环境及对比度；无法确定�
   const names = (paths: string[] | null) =>
     dailyPlan(paths).map((lane) => lane.name);
   expect(names(['src/service-worker/index.ts'])).toContain('delivery');
+  expect(names(['vercel.json'])).toContain('delivery');
+  expect(names(['scripts/vercel-ignore.sh'])).toContain('delivery');
   expect(names(['src/lib/app/browser.ts'])).toEqual(
     expect.arrayContaining(['sdk', 'delivery']),
   );

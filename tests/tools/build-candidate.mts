@@ -66,6 +66,8 @@ try {
     join(ROOT, 'vite.config.mts'),
     join(workspace.root, 'vite.config.mts'),
   );
+  if (adapter === 'vercel')
+    await cp(join(ROOT, 'vercel.json'), join(workspace.root, 'vercel.json'));
   const result = await execa(
     process.execPath,
     [join(ROOT, 'node_modules/vite/bin/vite.js'), 'build'],
