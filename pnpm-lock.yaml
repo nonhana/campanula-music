@@ -231,9 +231,6 @@ catalogs:
     music-metadata:
       specifier: ^12.5.0
       version: 12.5.0
-    tough-cookie:
-      specifier: ^6.1.0
-      version: 6.1.0
   test:
     '@axe-core/playwright':
       specifier: 4.14.0
@@ -259,6 +256,9 @@ catalogs:
     playwright-core:
       specifier: 1.65.1
       version: 1.65.1
+    tough-cookie:
+      specifier: ^6.1.0
+      version: 6.1.0
     vitest:
       specifier: ^5.1.0
       version: 5.1.0
@@ -481,7 +481,7 @@ importers:
         specifier: catalog:typescript
         version: 4.7.8(picomatch@4.0.7)(svelte@5.57.3(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
       tough-cookie:
-        specifier: catalog:music
+        specifier: catalog:test
         version: 6.1.0
       tsx:
         specifier: catalog:typescript

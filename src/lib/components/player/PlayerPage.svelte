@@ -1,16 +1,26 @@
 <script lang="ts">
+  import type { Component } from 'svelte';
   import { innerHeight } from 'svelte/reactivity/window';
+
+  import type { Song } from '#lib/api/library.ts';
 
   import { trapFocus } from '../overlay/modal-focus.ts';
   import { getOverlays } from '../overlay/overlay-context.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
   import CoverTint from './CoverTint.svelte';
-  import DesktopPlayerPage from './DesktopPlayerPage.svelte';
   import { currentSong } from './now.ts';
-  import PhonePlayerPage from './PhonePlayerPage.svelte';
+  import type { Playhead } from './playhead.svelte.ts';
   import { createPlayhead } from './playhead.svelte.ts';
+  import type { Turn } from './view.ts';
   import { sourceName, turnOf } from './view.ts';
+
+  type PageProps = {
+    song: Song;
+    source: string | null;
+    playhead: Playhead;
+    turn: Turn | null;
+  };
 
   const { open, modal = true }: { open: boolean; modal?: boolean } = $props();
 
@@ -35,10 +45,43 @@
     ),
   );
 
+  let DesktopPage = $state.raw<Component<PageProps>>();
+  let PhonePage = $state.raw<Component<PageProps>>();
+  let loadingDesktop = false;
+  let loadingPhone = false;
+
+  $effect(() => {
+    if (desktopLayout.current) {
+      if (DesktopPage || loadingDesktop) return;
+      loadingDesktop = true;
+      void import('./DesktopPlayerPage.svelte')
+        .then((module) => {
+          DesktopPage = module.default;
+        })
+        .catch((error: unknown) => {
+          loadingDesktop = false;
+          console.error('加载桌面播放页失败', error);
+        });
+    } else {
+      if (PhonePage || loadingPhone) return;
+      loadingPhone = true;
+      void import('./PhonePlayerPage.svelte')
+        .then((module) => {
+          PhonePage = module.default;
+        })
+        .catch((error: unknown) => {
+          loadingPhone = false;
+          console.error('加载手机播放页失败', error);
+        });
+    }
+  });
+
+  const Page = $derived(desktopLayout.current ? DesktopPage : PhonePage);
+
   let root = $state<HTMLElement>();
 
   $effect(() => {
-    if (!open) return;
+    if (!open || !Page) return;
     if (modal) root?.querySelector<HTMLElement>('button')?.focus();
     const { documentElement } = document;
     documentElement.style.overflow = 'hidden';
@@ -67,10 +110,8 @@
 >
   {#if song}
     <CoverTint coverUrl={song.album.coverUrl} />
-    {#if desktopLayout.current}
-      <DesktopPlayerPage {song} {source} {playhead} {turn} />
-    {:else}
-      <PhonePlayerPage {song} {source} {playhead} {turn} />
+    {#if Page}
+      <Page {song} {source} {playhead} {turn} />
     {/if}
   {/if}
 </div>

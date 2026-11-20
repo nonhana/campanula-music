@@ -143,7 +143,15 @@ const measure = async (input: CandidateInput) => {
     ) as {
       version: number;
       routes: { src?: string; dest?: string; handle?: string }[];
+      overrides?: Record<string, { path?: string }>;
     };
+    const overrideAssets = new Map<string, string>();
+    for (const [file, override] of Object.entries(config.overrides ?? {})) {
+      if (typeof override.path === 'string') {
+        const normalized = override.path.replace(/^\/|\/$/g, '');
+        overrideAssets.set(normalized, `static/${file}`);
+      }
+    }
     if (
       config.version !== 3 ||
       !Array.isArray(config.routes) ||
@@ -190,7 +198,12 @@ const measure = async (input: CandidateInput) => {
       ).catch(() => null);
       if (fn && functions.includes(relative(output, fn))) continue;
       const asset = `static${destination}`;
+      const overrideAsset = overrideAssets.get(
+        destination.replace(/^\/|\/$/g, ''),
+      );
       if (hashes[asset]) await nonempty(asset);
+      else if (overrideAsset && hashes[overrideAsset])
+        await nonempty(overrideAsset);
       else fail(`路由没有函数或静态目标：${destination}`);
     }
   }

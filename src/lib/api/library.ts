@@ -190,10 +190,19 @@ export const playlistName = (playlist: {
 }): string =>
   playlist.kind === 'liked' ? '我喜欢的音乐' : (playlist.name ?? '未命名歌单');
 
-// 加 ?param=宽y宽，换成 https；主机统一成 p1：p1–p4 是同一张图，
-// 不统一时刷新后换来换去会被当成新图重新淡入（闪一下），缓存也认不出
+const NETEASE_IMAGE_HOST = /^https?:\/\/p\d+\.music\.126\.net\//;
+
+export const isNeteaseImageUrl = (url: string): boolean =>
+  NETEASE_IMAGE_HOST.test(url);
+
 export const thumbnailUrl = (url: string, pixels: number): string =>
-  `${url.replace(/^https?:\/\/p\d+\.music\.126\.net\//, 'https://p1.music.126.net/').replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`;
+  `${url.replace(NETEASE_IMAGE_HOST, 'https://p1.music.126.net/').replace(/^http:/, 'https:')}?param=${pixels}y${pixels}`;
+
+// 展示用封面/头像在网易云图床上走 WebP 缩略图
+export const displayImageUrl = (url: string, pixels: number): string =>
+  NETEASE_IMAGE_HOST.test(url)
+    ? `${url.replace(NETEASE_IMAGE_HOST, 'https://p1.music.126.net/')}?imageView=1&thumbnail=${pixels}y${pixels}&type=webp`
+    : thumbnailUrl(url, pixels);
 
 export interface Song {
   id: number;

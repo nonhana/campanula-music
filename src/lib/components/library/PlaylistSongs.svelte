@@ -22,7 +22,7 @@
   import DragGrip from './DragGrip.svelte';
   import { likedFailure } from './liked-failure.ts';
   import { selectionActions } from './selection-actions.svelte.ts';
-  import { SongDrag } from './song-drag.svelte.ts';
+  import type { SongDrag } from './song-drag.svelte.ts';
 
   const { addSongsDialog, multiSelect } = getOverlays();
 
@@ -77,13 +77,30 @@
 
   let listHost = $state<HTMLElement>();
   let rowHeight = $state(SONG_ROW_HEIGHT);
-  const drag = new SongDrag({
-    songs: () => songs,
-    selection,
-    move: (songIds, before) => view.app.moveSongs(playlistId, songIds, before),
-    host: () => listHost,
-    rowHeight: () => rowHeight,
-  });
+  let drag = $state.raw<SongDrag | null>(null);
+  let loadingDrag: Promise<SongDrag | null> | null = null;
+
+  const ensureDrag = (): Promise<SongDrag | null> => {
+    if (drag) return Promise.resolve(drag);
+    loadingDrag ??= import('./song-drag.svelte.ts')
+      .then(({ SongDrag: SongDragCtor }) => {
+        drag = new SongDragCtor({
+          songs: () => songs,
+          selection,
+          move: (songIds, before) =>
+            view.app.moveSongs(playlistId, songIds, before),
+          host: () => listHost,
+          rowHeight: () => rowHeight,
+        });
+        return drag;
+      })
+      .catch((error: unknown) => {
+        loadingDrag = null;
+        console.error('加载排序交互失败', error);
+        return null;
+      });
+    return loadingDrag;
+  };
   // 拖动时不动 items 的顺序，只改 placeOf：行节点被移走会丢指针捕获
 
   const actions = selectionActions();
@@ -105,8 +122,9 @@
   });
 
   $effect(() => {
-    if (!selection.mode || !sortable) untrack(() => drag.cancel());
-    return () => drag.cancel();
+    if (selection.mode && sortable) void ensureDrag();
+    else untrack(() => drag?.cancel());
+    return () => drag?.cancel();
   });
 
   const onListKeydown = (event: KeyboardEvent): void => {
@@ -120,19 +138,28 @@
       '[data-song-id]',
     );
     if (!row) return;
-    if (
-      drag.moveByKeyboard(
-        Number(row.dataset.songId),
-        event.key === 'ArrowUp' ? -1 : 1,
-      )
-    ) {
-      event.preventDefault();
-      event.stopPropagation();
-      const target = event.target as HTMLElement;
+    const songId = Number(row.dataset.songId);
+    const delta = event.key === 'ArrowUp' ? -1 : 1;
+    const target = event.target as HTMLElement;
+    const apply = (instance: SongDrag) => {
+      if (!instance.moveByKeyboard(songId, delta)) return false;
       void tick().then(() => {
         if (selection.mode && target.isConnected) target.focus();
       });
+      return true;
+    };
+    if (drag) {
+      if (apply(drag)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      return;
     }
+    event.preventDefault();
+    event.stopPropagation();
+    void ensureDrag().then((instance) => {
+      if (instance) apply(instance);
+    });
   };
 
   const listView = $derived.by((): SongListView => {
@@ -175,13 +202,17 @@
       : null,
   );
 
-  const dragHooks = $derived({
-    placeOf: drag.placeOf,
-    keep: drag.keep,
-    animatePlace: drag.sorting,
-    hidden: drag.hideMoved,
-    marks: !drag.dragging,
-  });
+  const dragHooks = $derived(
+    drag
+      ? {
+          placeOf: drag.placeOf,
+          keep: drag.keep,
+          animatePlace: drag.sorting,
+          hidden: drag.hideMoved,
+          marks: !drag.dragging,
+        }
+      : undefined,
+  );
 
   const retry = () => {
     if (page.failure?.retry === 'sync') view.app.retrySync();
@@ -200,7 +231,7 @@
   <DragGrip
     label={songTitle(song)}
     size={phone ? 'phone' : 'desktop'}
-    attach={drag.handle(song)}
+    attach={drag?.handle(song)}
   />
 {/snippet}
 
@@ -209,7 +240,7 @@
 {/snippet}
 
 {#snippet ghostRow()}
-  {#if drag.ghostSong}
+  {#if drag?.ghostSong}
     <SongRow
       song={drag.ghostSong}
       {source}
@@ -227,7 +258,7 @@
 {/snippet}
 
 {#snippet rowWrap(song: Song, i: number, row: Snippet<[Song, number]>)}
-  {@const motion = drag.motionOf(song)}
+  {@const motion = drag?.motionOf(song) ?? null}
   <div
     class={[
       'h-full origin-center',
@@ -235,12 +266,14 @@
       motion === 'pick' && 'drag-row-pick',
       motion === 'land' && 'drag-row-land',
     ]}
-    style:--drag-shift="{motion === 'pick'
+    style:--drag-shift="{motion === 'pick' && drag
       ? drag.liftShift(i)
-      : motion === 'land'
+      : motion === 'land' && drag
         ? drag.landShift(song)
         : 0}px"
-    style:--drag-delay="{motion === 'land' ? drag.landDelay(song) : 0}ms"
+    style:--drag-delay="{motion === 'land' && drag
+      ? drag.landDelay(song)
+      : 0}ms"
   >
     {@render row(song, i)}
   </div>
@@ -311,12 +344,12 @@
     {rowWrap}
     bind:host={listHost}
     bind:rowHeight
-    contentClass={phone && drag.dragging ? 'clear-rail' : undefined}
+    contentClass={phone && drag?.dragging ? 'clear-rail' : undefined}
     label="歌单里的歌曲"
   />
 </div>
 
-{#if drag.sorting}
+{#if drag?.sorting}
   <div
     class={[
       'pointer-events-none fixed left-0 top-0 z-[60]',
@@ -352,7 +385,7 @@
   </div>
 {/if}
 
-{#if drag.dragging && !drag.settling}
+{#if drag?.dragging && !drag.settling}
   <div
     class="pointer-events-none fixed right-0 z-[65] w-11 select-none"
     style:top="{drag.railTop}px"

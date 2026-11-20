@@ -35,6 +35,8 @@
   import { bytesPerSecond, formatSpeed, SPEED_WINDOW_MS } from './speed.ts';
   import type { SpeedSample } from './speed.ts';
 
+  const { autoExpand = false }: { autoExpand?: boolean } = $props();
+
   const view = getAppView();
   const { downloadPanel: panel, playerLayer } = getOverlays();
   const desktop = $derived(desktopLayout.current);
@@ -189,8 +191,13 @@
       lastSize = size;
       lastOnDownloads = onDownloads;
       if (size > 0 && !onDownloads) {
-        panel.reveal();
-        panel.collapse();
+        if (autoExpand) {
+          announcement = `开始下载 ${formatCount(size)} 首`;
+          panel.reveal();
+        } else {
+          panel.reveal();
+          panel.collapse();
+        }
       }
       return;
     }

@@ -1,6 +1,8 @@
 import type { Song } from '#lib/api/library.ts';
 import { creditLine } from '#lib/api/library.ts';
 
+import { ensureScriptFont } from './fonts.ts';
+
 const KANA = /[\u3040-\u30FF\u31F0-\u31FF\uFF66-\uFF9F]/;
 const TRADITIONAL =
   /[們個說這樣對時會從來發現與機關點經國長開門問間聽見東車為讓過還進遠運達選隨實寫學愛戲遊類歲鄧紫倫傑煉幸倔強偷頭風雲夢裡麼妳嗎號鐘覺緣戀憶漸靈雙聲歡]/;
@@ -9,8 +11,14 @@ export const langOf = (
   ...texts: (string | null)[]
 ): 'ja' | 'zh-TW' | undefined => {
   const all = texts.filter((text) => text !== null).join(' ');
-  if (KANA.test(all)) return 'ja';
-  if (TRADITIONAL.test(all)) return 'zh-TW';
+  if (KANA.test(all)) {
+    ensureScriptFont('ja');
+    return 'ja';
+  }
+  if (TRADITIONAL.test(all)) {
+    ensureScriptFont('zh-TW');
+    return 'zh-TW';
+  }
   return undefined;
 };
 

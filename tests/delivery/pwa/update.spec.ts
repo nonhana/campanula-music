@@ -59,12 +59,31 @@ test('新外壳等待全部旧页关闭才激活，API 和外部媒体不进外�
     ),
   ).toBe('still-here');
   const waiting = await controlled(page);
-  expect(waiting.caches.map((cache) => cache.name).sort()).toEqual(
+  const shellCaches = (
+    caches: Awaited<ReturnType<typeof controlled>>['caches'],
+  ) =>
+    caches
+      .map((cache) => cache.name)
+      .filter((name) => name.startsWith('campanula-shell-'))
+      .sort();
+  expect(shellCaches(waiting.caches)).toEqual(
     [
       `campanula-shell-${production.version}`,
       `campanula-shell-${production.nextVersion}`,
     ].sort(),
   );
+  expect(
+    waiting.caches
+      .filter((cache) => cache.name.startsWith('campanula-shell-'))
+      .flatMap((cache) => cache.keys)
+      .every((url) => !url.endsWith('.woff2')),
+  ).toBe(true);
+  expect(
+    waiting.caches
+      .filter((cache) => cache.name === 'campanula-fonts')
+      .flatMap((cache) => cache.keys)
+      .every((url) => url.endsWith('.woff2')),
+  ).toBe(true);
   expect(
     waiting.caches
       .flatMap((cache) => cache.keys)
@@ -83,9 +102,7 @@ test('新外壳等待全部旧页关闭才激活，API 和外部媒体不进外�
   await next.goto(production.baseURL);
   await controlled(next);
   await expect
-    .poll(async () =>
-      (await controlled(next)).caches.map((cache) => cache.name),
-    )
+    .poll(async () => shellCaches((await controlled(next)).caches))
     .toEqual([`campanula-shell-${production.nextVersion}`]);
   expect(
     await next.evaluate(() => localStorage.getItem('delivery-local')),

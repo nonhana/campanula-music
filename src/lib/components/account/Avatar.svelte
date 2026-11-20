@@ -2,9 +2,8 @@
   import { User } from '@lucide/svelte';
   import type { ClassValue } from 'svelte/elements';
 
-  import { thumbnailUrl } from '#lib/api/library.ts';
-
   import { createImageReveal } from '../shared/image-reveal.svelte.ts';
+  import { displayCoverSource } from '../shared/image-url.ts';
   import { DURATIONS } from '../shared/motion-tokens.ts';
   import { fade } from '../shared/motion.ts';
 
@@ -15,7 +14,7 @@
   }
 
   const { url, size, class: klass }: Props = $props();
-  const source = $derived(url === null ? '' : thumbnailUrl(url, size * 2));
+  const source = $derived(url === null ? '' : displayCoverSource(url, size));
   const reveal = createImageReveal(() => source);
 </script>
 

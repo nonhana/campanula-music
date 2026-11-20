@@ -96,7 +96,7 @@
     aria-label="关闭"
     tabindex="-1"
     onclick={() => layer.close()}
-    transition:fade={{ duration: DURATIONS.state }}
+    transition:fade|global={{ duration: DURATIONS.state }}
   ></button>
   <div
     class="pointer-events-none fixed inset-0 z-71 grid place-items-center p-6"
@@ -113,7 +113,7 @@
       inert={!request || layer.inert}
       {@attach focusFirst}
       {@attach trapFocus}
-      transition:dialog
+      transition:dialog|global
     >
       {#key shown}
         <div class="flex flex-none items-center gap-3 pb-2 pl-6 pr-4 pt-5">

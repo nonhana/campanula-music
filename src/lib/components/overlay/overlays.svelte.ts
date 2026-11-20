@@ -2,28 +2,11 @@ import type { Component } from 'svelte';
 import { onDestroy, onMount, tick } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
 
-import LogoutConfirm from '../account/LogoutConfirm.svelte';
-import ClearDownloadsConfirm from '../downloads/ClearDownloadsConfirm.svelte';
-import DeleteDownloadsConfirm from '../downloads/DeleteDownloadsConfirm.svelte';
-import DeletePlaylistDownloadsConfirm from '../downloads/DeletePlaylistDownloadsConfirm.svelte';
-import DownloadPicker from '../downloads/DownloadPicker.svelte';
-import DownloadsMenu from '../downloads/DownloadsMenu.svelte';
-import ExportDialog from '../downloads/ExportDialog.svelte';
 import { createDownloadPanel } from '../downloads/panel.svelte.ts';
-import PlaylistDownloadsDialog from '../downloads/PlaylistDownloadsDialog.svelte';
-import DescriptionDialog from '../library/DescriptionDialog.svelte';
 import { MultiSelect } from '../library/multi-select.svelte.ts';
-import ArtistMenu from '../menu/ArtistMenu.svelte';
-import SongMenu from '../menu/SongMenu.svelte';
 import { createDrawer } from '../player/drawer.svelte.ts';
 import { createPlayerLayer } from '../player/player-layer.svelte.ts';
-import QueuePanel from '../player/QueuePanel.svelte';
 import { queueEmpty } from '../player/view.ts';
-import AddSongs from '../playlist/AddSongs.svelte';
-import AddToPlaylist from '../playlist/AddToPlaylist.svelte';
-import CoverEditor from '../playlist/CoverEditor.svelte';
-import PlaylistEditor from '../playlist/PlaylistEditor.svelte';
-import PlaylistMenu from '../playlist/PlaylistMenu.svelte';
 import { getAppView } from '../shared/app-context.svelte.ts';
 import { desktopLayout } from '../shared/layout.ts';
 import { setSelectionMode } from '../ui/selection-mode.ts';
@@ -45,6 +28,15 @@ import type {
 } from './overlay-requests.ts';
 import type { LayerOptions } from './overlay-stack.ts';
 import { OverlayStack } from './overlay-stack.ts';
+
+type OverlayLoader = () => Promise<{ default: Component }>;
+
+interface MountedOverlay {
+  readonly name: string;
+  readonly active: () => boolean;
+  readonly inert: () => boolean;
+  readonly load: OverlayLoader;
+}
 
 export const createOverlays = () => {
   const view = getAppView();
@@ -96,22 +88,19 @@ export const createOverlays = () => {
     },
     crypto.randomUUID(),
   );
-  const mounted: {
-    name: string;
-    component: Component;
-    inert: () => boolean;
-  }[] = [];
+  const mounted: MountedOverlay[] = [];
   const register = <R extends DialogRequest>(
     name: string,
     options: LayerOptions<R, HTMLElement>,
-    component?: Component,
+    load?: OverlayLoader,
   ) => {
     const layer = stack.register<R>(name, options);
-    if (component) {
+    if (load) {
       mounted.push({
         name,
-        component,
+        active: () => layer.request !== null,
         inert: () => layer.containerInert,
+        load,
       });
     }
     return layer;
@@ -125,11 +114,15 @@ export const createOverlays = () => {
     modal: true,
   };
 
-  const songMenu = register<SongMenuRequest>('song-menu', menu, SongMenu);
+  const songMenu = register<SongMenuRequest>(
+    'song-menu',
+    menu,
+    () => import('../menu/SongMenu.svelte'),
+  );
   const artistMenu = register<ArtistMenuRequest>(
     'artist-menu',
     menu,
-    ArtistMenu,
+    () => import('../menu/ArtistMenu.svelte'),
   );
   const playlistPicker = register<AddToPlaylistRequest>(
     'playlist-picker',
@@ -137,32 +130,32 @@ export const createOverlays = () => {
       ...menu,
       dependsOn: (request) => (request.mode === 'multi' ? 'selection' : null),
     },
-    AddToPlaylist,
+    () => import('../playlist/AddToPlaylist.svelte'),
   );
   const playlistMenu = register<PlaylistMenuRequest>(
     'playlist-menu',
     menu,
-    PlaylistMenu,
+    () => import('../playlist/PlaylistMenu.svelte'),
   );
   const playlistEditor = register<EditorRequest>(
     'playlist-editor',
     dialog,
-    PlaylistEditor,
+    () => import('../playlist/PlaylistEditor.svelte'),
   );
   const addSongsDialog = register<PlaylistRequest>(
     'add-songs',
     { ...dialog, fallback: '[data-add-songs-entry]' },
-    AddSongs,
+    () => import('../playlist/AddSongs.svelte'),
   );
   const downloadPicker = register<DownloadPickerRequest>(
     'download-picker',
     dialog,
-    DownloadPicker,
+    () => import('../downloads/DownloadPicker.svelte'),
   );
   const descriptionDialog = register<DescriptionRequest>(
     'description',
     dialog,
-    DescriptionDialog,
+    () => import('../library/DescriptionDialog.svelte'),
   );
   const coverEditor = register<PlaylistRequest>(
     'cover-editor',
@@ -177,12 +170,12 @@ export const createOverlays = () => {
       },
       dismissed: () => view.app.closeCover(),
     },
-    CoverEditor,
+    () => import('../playlist/CoverEditor.svelte'),
   );
   const logoutConfirm = register<DialogRequest>(
     'logout',
     dialog,
-    LogoutConfirm,
+    () => import('../account/LogoutConfirm.svelte'),
   );
   const exportDialog = register<ExportRequest>(
     'export',
@@ -196,33 +189,33 @@ export const createOverlays = () => {
       },
       dismissed: () => view.app.closeExport(),
     },
-    ExportDialog,
+    () => import('../downloads/ExportDialog.svelte'),
   );
   const deleteDownloadsConfirm = register<DeleteDownloadsRequest>(
     'delete-downloads',
     { ...dialog, dependsOn: 'selection' },
-    DeleteDownloadsConfirm,
+    () => import('../downloads/DeleteDownloadsConfirm.svelte'),
   );
   const downloadsMenu = register<MenuRequest>(
     'downloads-menu',
     menu,
-    DownloadsMenu,
+    () => import('../downloads/DownloadsMenu.svelte'),
   );
   const playlistDownloads = register<DialogRequest>(
     'playlist-downloads',
     dialog,
-    PlaylistDownloadsDialog,
+    () => import('../downloads/PlaylistDownloadsDialog.svelte'),
   );
   const deletePlaylistDownloadsConfirm =
     register<DeletePlaylistDownloadsRequest>(
       'delete-playlist-downloads',
       { ...dialog, dependsOn: 'playlist-downloads' },
-      DeletePlaylistDownloadsConfirm,
+      () => import('../downloads/DeletePlaylistDownloadsConfirm.svelte'),
     );
   const clearDownloadsConfirm = register<DialogRequest>(
     'clear-downloads',
     dialog,
-    ClearDownloadsConfirm,
+    () => import('../downloads/ClearDownloadsConfirm.svelte'),
   );
   const canRestorePlayer = () => !queueEmpty(view.state.player);
   const player = register<DialogRequest>('player', {
@@ -246,7 +239,7 @@ export const createOverlays = () => {
       modal: false,
       fallback: '[data-queue-toggle]',
     },
-    QueuePanel,
+    () => import('../player/QueuePanel.svelte'),
   );
   const selection = register<DialogRequest>('selection', {
     history: () => !desktopLayout.current,

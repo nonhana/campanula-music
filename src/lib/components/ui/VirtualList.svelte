@@ -98,16 +98,20 @@
   });
 
   const visible = $derived.by(() => {
+    const end = Math.min(range.end, items.length);
+    if (!placeOf && !keep) {
+      const out: { item: T; index: number }[] = [];
+      for (let i = range.start; i < end; i += 1)
+        out.push({ item: items[i]!, index: i });
+      return out;
+    }
     const out: { item: T; index: number }[] = [];
     for (let i = 0; i < items.length; i += 1) {
       // 拖动时 items 是原顺序，挂不挂载看 placeOf 的视觉位置；只按 index 会卸掉正需要的行
       const slot = Math.floor(
         (placeOf?.(items[i]!, i) ?? i * itemHeight) / itemHeight,
       );
-      if (
-        (slot >= range.start && slot < Math.min(range.end, items.length)) ||
-        keep?.(items[i]!, i)
-      )
+      if ((slot >= range.start && slot < end) || keep?.(items[i]!, i))
         out.push({ item: items[i]!, index: i });
     }
     return out;

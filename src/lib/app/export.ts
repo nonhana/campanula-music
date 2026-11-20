@@ -4,7 +4,6 @@ import { songTitle } from '#lib/api/library.ts';
 import type { FolderCapability, WritableCapability } from './browser.ts';
 import type { StoredDownload } from './local.ts';
 import type { AudioFormat } from './song-info-core.ts';
-import { writeSongInfo } from './song-info-core.ts';
 
 export type ExportFailure =
   | { kind: 'storageFull' }
@@ -165,6 +164,7 @@ export const createExports = (context: ExportContext): Exports => {
             bytes,
           });
           try {
+            const { writeSongInfo } = await import('./song-info-core.ts');
             const { format, file } = await writeSongInfo(record.audio, record);
             const name = await freeName(
               folder,

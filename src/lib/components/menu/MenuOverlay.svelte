@@ -167,7 +167,7 @@
     class={['fixed z-60 rounded-xl bg-white p-1.5 shadow-float', width]}
     inert={layer.inert || !request}
     {@attach place}
-    transition:pop={{
+    transition:pop|global={{
       below: floating ? fitsBelow(floating) : true,
     }}
   >

@@ -11,6 +11,26 @@
     <meta name="color-scheme" content="only light" />
     <title>Campanula</title>
     <meta name="referrer" content="no-referrer" />
+    <script>
+      if (window.isSecureContext && navigator.onLine !== false) {
+        const start = () => {
+          const p = fetch('/api/account', { credentials: 'same-origin' });
+          p.catch(() => {});
+          window.__campanulaEarlyAccount = p;
+        };
+        if (navigator.locks) {
+          void navigator.locks.request(
+            'campanula:login-cookie',
+            { ifAvailable: true },
+            (lock) => {
+              if (lock) start();
+            },
+          );
+        } else {
+          start();
+        }
+      }
+    </script>
     %sveltekit.head%
     <!-- 第一帧（脚本还没跑完）就是晨光底和正中的花；Svelte 挂上时 +layout.svelte 拿掉它，换成同一位置、同样大小的打开中（boot/AppOpening.svelte） -->
     <style>

@@ -166,24 +166,28 @@ test('独立源码上的组件 HMR 和新增路由，不改人工源文件', asy
     await expect
       .poll(async () => (await page.request.get(routeURL)).status())
       .toBe(200);
-    // 路由重建的 HMR 刷新可能中止同时发出的导航，仍须等真实页面显示新路由。
+    // 路由重建的 HMR 刷新可能中止或吞掉同时发出的导航，单次限时重试直到真实落在目标路由。
     await expect
-      .poll(async () => {
-        try {
-          await page.goto(routeURL);
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            (error.message.includes('net::ERR_ABORTED') ||
-              error.message.includes(
-                `is interrupted by another navigation to "${routeURL}"`,
-              ))
-          )
-            return false;
-          throw error;
-        }
-        return true;
-      })
+      .poll(
+        async () => {
+          try {
+            await page.goto(routeURL, { timeout: 4_000 });
+          } catch (error) {
+            if (
+              error instanceof Error &&
+              (error.name === 'TimeoutError' ||
+                error.message.includes('net::ERR_ABORTED') ||
+                error.message.includes(
+                  `is interrupted by another navigation to "${routeURL}"`,
+                ))
+            )
+              return false;
+            throw error;
+          }
+          return new URL(page.url()).pathname === '/browser-new-route';
+        },
+        { timeout: 15_000 },
+      )
       .toBe(true);
     await expect(
       page.getByRole('heading', { name: '新增路由已生效' }),

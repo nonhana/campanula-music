@@ -1,10 +1,8 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
 
   import { getOverlays } from '../overlay/overlay-context.ts';
-  import DesktopPlayerBar from '../player/DesktopPlayerBar.svelte';
-  import PhoneMiniPlayer from '../player/PhoneMiniPlayer.svelte';
   import { queueEmpty } from '../player/view.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
@@ -21,6 +19,37 @@
   const { present, replace, preview }: Props = $props();
   const view = getAppView();
   const { playerLayer } = getOverlays();
+  let DesktopPlayerBar = $state.raw<Component>();
+  let PhoneMiniPlayer = $state.raw<Component>();
+  let loadingDesktop = false;
+  let loadingPhone = false;
+
+  $effect(() => {
+    if (!present || preview) return;
+    if (desktopLayout.current) {
+      if (DesktopPlayerBar || loadingDesktop) return;
+      loadingDesktop = true;
+      void import('../player/DesktopPlayerBar.svelte')
+        .then((module) => {
+          DesktopPlayerBar = module.default;
+        })
+        .catch((error: unknown) => {
+          loadingDesktop = false;
+          console.error('加载桌面播放条失败', error);
+        });
+    } else if (!replace) {
+      if (PhoneMiniPlayer || loadingPhone) return;
+      loadingPhone = true;
+      void import('../player/PhoneMiniPlayer.svelte')
+        .then((module) => {
+          PhoneMiniPlayer = module.default;
+        })
+        .catch((error: unknown) => {
+          loadingPhone = false;
+          console.error('加载手机播放条失败', error);
+        });
+    }
+  });
   const resetHeight: Attachment<HTMLElement> = () => () => {
     playerLayer.dockHeight = PHONE_DOCK_HEIGHT;
   };
@@ -61,7 +90,7 @@
     >
       {#if preview}
         {@render preview()}
-      {:else}
+      {:else if DesktopPlayerBar}
         <DesktopPlayerBar />
       {/if}
     </div>
@@ -96,7 +125,7 @@
         {@render preview()}
       {:else if replace}
         {@render replace()}
-      {:else}
+      {:else if PhoneMiniPlayer}
         <PhoneMiniPlayer />
       {/if}
     </div>

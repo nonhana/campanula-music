@@ -1,11 +1,10 @@
 <!-- flight 是这张图代表的页面地址，换页时两头一样的从格子飞到页头 -->
 <script lang="ts" module>
-  import { thumbnailUrl } from '#lib/api/library.ts';
-
   import { imageLoaded, preloadImage } from '../shared/image-reveal.svelte.ts';
+  import { displayCoverSource } from '../shared/image-url.ts';
 
   export const coverSource = (url: string, size: number): string =>
-    thumbnailUrl(url, size * 2);
+    displayCoverSource(url, size);
 
   /** 参数要和之后挂上的 Cover 一样，挂上时才直接显示、不淡入 */
   export const preloadCover = (url: string, size: number): Promise<void> =>
@@ -101,6 +100,7 @@
             reveal.status === 'loaded' && 'transition-opacity duration-reveal',
           ]}
           loading={eager ? 'eager' : 'lazy'}
+          fetchpriority={eager ? 'high' : undefined}
           decoding="async"
           draggable="false"
           {@attach reveal.image}

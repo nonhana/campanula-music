@@ -105,7 +105,7 @@
     "simple-git-hooks": "catalog:git",
     "svelte": "catalog:build",
     "svelte-check": "catalog:typescript",
-    "tough-cookie": "catalog:music",
+    "tough-cookie": "catalog:test",
     "tsx": "catalog:typescript",
     "typescript": "catalog:typescript",
     "unocss": "catalog:ui",

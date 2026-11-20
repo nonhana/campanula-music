@@ -33,3 +33,5 @@ Service Worker 只保证外壳能加载；打开后还要先问服务端当前�
 - 本机账号只是“上次登录的是谁”，不是凭据；真正的 Cookie 仍只在服务端的加密 Cookie 里（ADR-0003）。退出登录、服务端说未登录时都删掉本机账号。
 
 2026-11-16：生产交付用独占 Node 候选及真实 Chromium 验证，开发浏览器仍禁止 SW。当前 Kit 的 worker 中 `$app/env.version` 实测未定义，因此 Vite 在构建时向 worker 注入与 config.version.name 相同的固定字符串；同 SHA 的两个可识别构建验证 waiting/激活。`/api` 和 `/api/**` 连页面导航也明确排除，避免离线时错误回成 HTML 外壳。产品的缓存与换版决定不变。
+
+2026-11-21：`.woff2` 字体分片不再随 `install` 阶段预缓存进版本外壳，改为跨版本按需持久缓存 `campanula-fonts`（详见 ADR-0021）；外壳预缓存、waiting 激活、断网本机副本以及 `/api/**` 与外部媒体排除规则保持不变。

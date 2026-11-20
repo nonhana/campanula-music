@@ -1,6 +1,6 @@
 <!-- 先画播放页、后画提示：别调换，反了提示会被盖住却仍能 Tab 聚焦 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
 
   import { songTitle } from '#lib/api/library.ts';
 
@@ -8,7 +8,6 @@
   import { getOverlays } from '../overlay/overlay-context.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { currentSong } from './now.ts';
-  import PlayerPage from './PlayerPage.svelte';
 
   const { children, modal = true }: { children?: Snippet; modal?: boolean } =
     $props();
@@ -16,6 +15,27 @@
   const view = getAppView();
   const player = $derived(view.state.player);
   const current = $derived(currentSong(player));
+  let PlayerPage = $state.raw<Component<{ open: boolean; modal?: boolean }>>();
+  let loadingPage = false;
+
+  $effect(() => {
+    if (
+      (!playerLayer.hasQueue && !playerLayer.shown) ||
+      PlayerPage ||
+      loadingPage
+    )
+      return;
+    loadingPage = true;
+    void import('./PlayerPage.svelte')
+      .then((module) => {
+        PlayerPage = module.default;
+      })
+      .catch((error: unknown) => {
+        loadingPage = false;
+        console.error('加载播放页失败', error);
+      });
+  });
+
   const playbackStatus = {
     loading: '正在加载',
     buffering: '正在缓冲',
@@ -25,7 +45,7 @@
 </script>
 
 <div class="contents" data-overlay="player" inert={layer.containerInert}>
-  {#if playerLayer.shown}
+  {#if playerLayer.shown && PlayerPage}
     <PlayerPage open={playerLayer.open} {modal} />
   {/if}
   <span class="sr-only" role="status" aria-label="播放状态" aria-atomic="true"

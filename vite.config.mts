@@ -68,8 +68,104 @@ const developmentOrigin = (): Plugin => ({
   },
 });
 
+const NOTO_BASE_PRUNED =
+  /\/\*\s*noto-sans-(?:devanagari|cyrillic-ext|greek-ext|vietnamese)-wght-normal\s*\*\/\s*@font-face\s*\{[^}]*\}\s*/g;
+const NOTO_CJK_SHADOWED =
+  /\/\*\s*noto-sans-(?:sc|jp|tc)-(?:latin|latin-ext|cyrillic|vietnamese)-wght-normal\s*\*\/\s*@font-face\s*\{[^}]*\}\s*/g;
+
+const pruneFonts = (): Plugin => ({
+  name: 'campanula:prune-fonts',
+  enforce: 'pre',
+  transform(code, id) {
+    const cleanId = id.split('?')[0]!;
+    if (!cleanId.includes('@fontsource-variable/noto-sans')) return null;
+    if (!cleanId.endsWith('.css')) return null;
+    // 服务端不渲染页面（ssr = false），省略字体 CSS 避免向 build/server 重复输出 300+ woff2
+    if (this.environment?.name === 'ssr') return { code: '', map: null };
+    const next = /noto-sans-(?:sc|jp|tc)\//.test(cleanId)
+      ? code.replace(NOTO_CJK_SHADOWED, '')
+      : code.replace(NOTO_BASE_PRUNED, '');
+    return next === code ? null : { code: next, map: null };
+  },
+});
+
 export default defineConfig({
   define: { __CAMPANULA_BUILD_VERSION__: JSON.stringify(buildVersion) },
+  environments: {
+    client: {
+      build: {
+        rolldownOptions: {
+          output: {
+            codeSplitting: {
+              groups: [
+                {
+                  name: 'kit-preload',
+                  test: /(?:@sveltejs\/kit\/src\/runtime\/client\/payload\.js|vite\/preload-helper(?:\.js)?)$/,
+                  priority: 40,
+                },
+                {
+                  name: 'svelte',
+                  test: /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?svelte\//,
+                  priority: 35,
+                },
+                {
+                  name: 'kit-runtime',
+                  test: /@sveltejs\/kit\/src\/runtime\/(?!client\/(?:entry|payload)\.js$)/,
+                  priority: 30,
+                },
+                {
+                  name: 'icons',
+                  test: /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?@lucide\/svelte\//,
+                  priority: 25,
+                },
+                {
+                  name: 'boot-shared',
+                  test: /src\/lib\/components\/(?:shared\/(?!drag-sort|drag-scroll)|boot\/|svg\/|ui\/(?:Button|IconButton|StateBlock|control-styles)\.)/,
+                  priority: 22,
+                },
+                {
+                  name: 'app-core',
+                  test: /src\/lib\/(?:api\/|app\/(?!song-info-core\.ts))/,
+                  priority: 20,
+                },
+                {
+                  name: 'ui-shared',
+                  test: /src\/lib\/components\/(?:ui\/(?:Cover|Scrollbar|SearchField|Segmented|LongText|FilterChip|ToolButton|TextButton)\.|songs\/(?:SongTitle|CreditLine|DownloadMark|NowChip|PlayTarget|PlayAllButton|SongMoreButton|song-look)\.|library\/(?:SyncNotice|liked-failure|multi-select\.svelte|selection-core)\.|daily\/(?:DailyNumber|view)\.|overlay\/(?:overlays\.svelte|OverlayHost|overlay-context|overlay-stack|overlay-history\.svelte)\.|downloads\/panel\.svelte\.|player\/(?:PlayerLayer|player-layer\.svelte|drawer|now|view)\.|shell\/(?:scroll-padding|player-dock|page-history|PageLocateButton|page-transition)\.|notice\/OfflineBar\.)/,
+                  priority: 18,
+                },
+                {
+                  name: 'shelf-ui',
+                  test: /src\/lib\/components\/(?:library\/(?:TileGrid|CollectedGrid|PlaylistTile|PlaylistGrid|LibraryPageHead|tile-grid)\.|daily\/DailyTile\.|shared\/drag-scroll)/,
+                  priority: 15,
+                },
+                {
+                  name: 'song-list-ui',
+                  test: /src\/lib\/components\/(?:songs\/(?:SongList|SongRow|SkeletonRows|view)\.|ui\/VirtualList\.|library\/(?:PlaylistSongs|selection-actions|DragGrip)\.)/,
+                  priority: 15,
+                },
+                {
+                  name: 'overlay-ui',
+                  test: /src\/lib\/components\/(?:overlay\/(?:Dialog|Confirm|modal-focus)|menu\/(?:Menu|menu))/,
+                  priority: 15,
+                },
+                {
+                  name: 'player-ui',
+                  test: /src\/lib\/components\/player\/(?:Cover|Lyrics|NowPlaying|PlayButton|PlayModeButton|QueueList|Skip|Volume|Wave|cover-|playhead|player-page)/,
+                  priority: 15,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+    ssr: {
+      build: {
+        sourcemap: false,
+        minify: true,
+      },
+    },
+  },
   server: {
     host: 'localhost',
     strictPort: true,
@@ -90,6 +186,7 @@ export default defineConfig({
   },
   plugins: [
     developmentOrigin(),
+    pruneFonts(),
     // SvelteKit 没有 index.html，UnoCSS 的 transformIndexHtml 只会让每次读配置都警告一次（kit 3.1.0 关不掉）：摘掉它
     ...((plugins: Plugin[]): Plugin[] => {
       for (const plugin of plugins) delete plugin.transformIndexHtml;
@@ -97,6 +194,7 @@ export default defineConfig({
     })(UnoCSS()),
     sveltekit({
       preprocess: vitePreprocess(),
+      inlineStyleThreshold: 4096,
       version: { name: buildVersion },
       compilerOptions: process.env.CAMPANULA_DEV_ROUTES
         ? { rootDir: resolve(process.env.CAMPANULA_DEV_ROUTES, '../..') }

@@ -1,5 +1,3 @@
-import { initializeWatchman } from 'hana-music-api/watchman';
-
 import type { CoverCrop } from '#lib/api/cover.ts';
 import {
   COVER_OUTPUT_MAX_BYTES,
@@ -152,6 +150,7 @@ export interface PageVisibility {
 }
 
 const watchmanToken = async (): Promise<string> => {
+  const { initializeWatchman } = await import('hana-music-api/watchman');
   const watchman = await initializeWatchman({
     businessKey: 'afb1a8e61222dcc4b7a733ca69f089cb',
   });
@@ -331,11 +330,37 @@ type DirectoryPicker = (options: {
   startIn: 'music';
 }) => Promise<FileSystemDirectoryHandle>;
 
+type EarlyAccountWindow = Window & {
+  __campanulaEarlyAccount?: Promise<Response>;
+};
+
+export const consumeEarlyAccount = (
+  path: string,
+  init?: RequestInit,
+): Promise<Response> | null => {
+  const win = window as EarlyAccountWindow;
+  if (path === '/api/logout') {
+    delete win.__campanulaEarlyAccount;
+    return null;
+  }
+  const early = win.__campanulaEarlyAccount;
+  if (
+    !early ||
+    path !== '/api/account' ||
+    (init?.method ?? 'GET').toUpperCase() !== 'GET' ||
+    init?.headers
+  )
+    return null;
+  delete win.__campanulaEarlyAccount;
+  return early;
+};
+
 export const realBrowserCapabilities = (): BrowserCapabilities => {
   const picker = (window as Window & { showDirectoryPicker?: DirectoryPicker })
     .showDirectoryPicker;
   return {
-    fetch: (path, init) => window.fetch(path, init),
+    fetch: (path, init) =>
+      consumeEarlyAccount(path, init) ?? window.fetch(path, init),
     clock: {
       now: () => Date.now(),
       after(ms, callback) {
