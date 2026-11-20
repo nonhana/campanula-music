@@ -102,18 +102,27 @@
   const measure = () => {
     const el = scroller();
     if (!el) return;
+    let content: number;
+    if (!onPage && !target && host) {
+      const prevDisplay = host.style.display;
+      host.style.display = 'none';
+      content = axis === 'y' ? el.scrollHeight : el.scrollWidth;
+      host.style.display = prevDisplay;
+    } else {
+      content = axis === 'y' ? el.scrollHeight : el.scrollWidth;
+    }
     metrics =
       axis === 'y'
         ? {
             position: el.scrollTop,
             viewport: onPage ? window.innerHeight : el.clientHeight,
-            content: el.scrollHeight,
+            content,
             cross: el.clientWidth,
           }
         : {
             position: el.scrollLeft,
             viewport: el.clientWidth,
-            content: el.scrollWidth,
+            content,
             cross: el.clientHeight,
           };
     readMark();
