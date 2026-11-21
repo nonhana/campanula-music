@@ -34,6 +34,14 @@ test('本体从打开中飞到品牌，起点 40px 与落点 28px 的位置和�
   expect(start.width).toBeCloseTo(40, 0);
   const end = (await page.locator('[data-brand] svg').boundingBox())!;
   expect(end.width).toBeCloseTo(28, 0);
+  // 首页开场切入那一帧内容必须已同步挂载并起跑波纹动画，不能留空等懒加载
+  const rippleDelays = await page.locator('main').evaluate((main) =>
+    main
+      .getAnimations({ subtree: true })
+      .map((animation) => Number(animation.effect?.getTiming().delay ?? 0))
+      .filter((delay) => delay > 0),
+  );
+  expect(rippleDelays.length).toBeGreaterThan(0);
   await flight.evaluate((element) => {
     for (const animation of element.getAnimations())
       animation.currentTime = 600;

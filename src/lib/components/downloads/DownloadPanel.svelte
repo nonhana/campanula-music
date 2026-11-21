@@ -322,7 +322,7 @@
       : `calc(${playerLayer.dockHeight + 16}px + env(safe-area-inset-bottom))`}
     style:view-transition-name="download-panel"
     style:view-transition-class="still"
-    in:float={{ toward: 'left', distance: 24, panel: true }}
+    in:float|global={{ toward: 'left', distance: 24, panel: true }}
     out:float={{ toward: 'right', distance: 24, panel: true }}
   >
     <span class="sr-only" aria-live="polite">{announcement}</span>

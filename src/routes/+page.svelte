@@ -1,29 +1,9 @@
-<script lang="ts" module>
-  import type { Component } from 'svelte';
-
-  import type { LibraryState, PlaylistPage } from '#lib/app/library.ts';
-  import { syncNoticeFor } from '#lib/app/library.ts';
-
-  type HomeNotice = ReturnType<typeof syncNoticeFor>;
-  type DesktopHomeComponent = Component<{
-    library: LibraryState;
-    liked: PlaylistPage;
-    notice: HomeNotice;
-    stripEl?: HTMLElement;
-    onReady?: () => void;
-  }>;
-  type PhoneHomeComponent = Component<{
-    library: LibraryState;
-    likedId: number;
-    notice: HomeNotice;
-    query: string;
-  }>;
-
-  let cachedDesktop: DesktopHomeComponent | undefined;
-  let cachedPhone: PhoneHomeComponent | undefined;
-</script>
-
 <script lang="ts">
+  import { syncNoticeFor } from '#lib/app/library.ts';
+  import {
+    homeView,
+    preloadHomeView,
+  } from '#lib/components/library/home-view.svelte.ts';
   import { getAppView } from '#lib/components/shared/app-context.svelte.ts';
   import { desktopLayout } from '#lib/components/shared/layout.ts';
   import {
@@ -42,37 +22,11 @@
       : null,
   );
 
-  let DesktopHome = $state.raw<DesktopHomeComponent | undefined>(cachedDesktop);
-  let PhoneHome = $state.raw<PhoneHomeComponent | undefined>(cachedPhone);
-  let loadingDesktop = false;
-  let loadingPhone = false;
+  const DesktopHome = $derived(homeView.desktop);
+  const PhoneHome = $derived(homeView.phone);
 
   $effect(() => {
-    if (desktopLayout.current) {
-      if (DesktopHome || loadingDesktop) return;
-      loadingDesktop = true;
-      void import('#lib/components/library/DesktopLibraryHome.svelte')
-        .then((module) => {
-          cachedDesktop = module.default;
-          DesktopHome = module.default;
-        })
-        .catch((error: unknown) => {
-          loadingDesktop = false;
-          console.error('加载桌面曲库失败', error);
-        });
-    } else {
-      if (PhoneHome || loadingPhone) return;
-      loadingPhone = true;
-      void import('#lib/components/library/PhoneLibraryHome.svelte')
-        .then((module) => {
-          cachedPhone = module.default;
-          PhoneHome = module.default;
-        })
-        .catch((error: unknown) => {
-          loadingPhone = false;
-          console.error('加载手机曲库失败', error);
-        });
-    }
+    void preloadHomeView(desktopLayout.current);
   });
 
   let query = $state('');

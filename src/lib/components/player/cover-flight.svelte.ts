@@ -4,8 +4,10 @@ import type { Attachment } from 'svelte/attachments';
 import type { Song } from '#lib/api/library.ts';
 
 import type { AppView } from '../shared/app-context.svelte.ts';
+import { desktopLayout } from '../shared/layout.ts';
 import { cssEasing, DURATIONS } from '../shared/motion-tokens.ts';
 import { fadeMs, flightArc, reducedMotion, unseen } from '../shared/motion.ts';
+import { preloadPlayerBar } from '../shell/player-bar.svelte.ts';
 import { coverLoaded, preloadCover } from '../ui/Cover.svelte';
 import { currentSong } from './now.ts';
 import type { Turn } from './view.ts';
@@ -56,6 +58,11 @@ const takeOff = async (
   flight = { song, from };
   await tick();
   if (mine !== launches) return;
+  if (!landingSlot) {
+    await preloadPlayerBar(desktopLayout.current);
+    await tick();
+    if (mine !== launches) return;
+  }
   if (!landingSlot) {
     flight = null;
     return;

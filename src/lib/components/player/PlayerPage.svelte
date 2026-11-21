@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Component } from 'svelte';
+  import { untrack } from 'svelte';
   import { innerHeight } from 'svelte/reactivity/window';
 
   import type { Song } from '#lib/api/library.ts';
@@ -22,7 +23,17 @@
     turn: Turn | null;
   };
 
-  const { open, modal = true }: { open: boolean; modal?: boolean } = $props();
+  const {
+    open,
+    modal = true,
+    initialDesktop,
+    initialPhone,
+  }: {
+    open: boolean;
+    modal?: boolean;
+    initialDesktop?: Component<PageProps>;
+    initialPhone?: Component<PageProps>;
+  } = $props();
 
   const RADIUS = 24;
   const DIM = 0.2;
@@ -45,8 +56,12 @@
     ),
   );
 
-  let DesktopPage = $state.raw<Component<PageProps>>();
-  let PhonePage = $state.raw<Component<PageProps>>();
+  let DesktopPage = $state.raw<Component<PageProps> | undefined>(
+    untrack(() => initialDesktop),
+  );
+  let PhonePage = $state.raw<Component<PageProps> | undefined>(
+    untrack(() => initialPhone),
+  );
   let loadingDesktop = false;
   let loadingPhone = false;
 

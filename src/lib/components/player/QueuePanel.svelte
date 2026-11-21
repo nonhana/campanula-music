@@ -1,7 +1,3 @@
-<script module lang="ts">
-  export const QUEUE_PANEL_ID = 'queue-panel';
-</script>
-
 <script lang="ts">
   import { getOverlays } from '../overlay/overlay-context.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
@@ -9,7 +5,7 @@
   import { float } from '../shared/motion.ts';
   import { focusNowRow } from '../shared/now-locate.svelte.ts';
   import QueueList from './QueueList.svelte';
-  import { queueEmpty } from './view.ts';
+  import { QUEUE_PANEL_ID, queueEmpty } from './view.ts';
 
   const view = getAppView();
   const { queuePanel: layer, playerLayer } = getOverlays();
@@ -56,7 +52,7 @@
     style:top="{top}px"
     style:bottom="{playerLayer.dockHeight + 16}px"
     inert={layer.inert}
-    in:float={{ toward: 'left', distance: 24, panel: true }}
+    in:float|global={{ toward: 'left', distance: 24, panel: true }}
     out:float={{ toward: 'right', distance: 24, panel: true }}
   >
     <QueueList titled class="min-h-0 flex-1" />

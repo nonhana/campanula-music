@@ -9,10 +9,9 @@
   import NowPlaying from './NowPlaying.svelte';
   import PlayButton from './PlayButton.svelte';
   import PlayModeButton from './PlayModeButton.svelte';
-  import { QUEUE_PANEL_ID } from './QueuePanel.svelte';
   import { createSeekSlider } from './seek-slider.svelte.ts';
   import SeekLine from './SeekLine.svelte';
-  import { formatSeconds, PAGE_COVER } from './view.ts';
+  import { formatSeconds, PAGE_COVER, QUEUE_PANEL_ID } from './view.ts';
   import VolumeControl from './VolumeControl.svelte';
 
   const view = getAppView();

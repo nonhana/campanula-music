@@ -12,6 +12,7 @@
   import CookieSecretRequired from '#lib/components/boot/CookieSecretRequired.svelte';
   import HttpsRequired from '#lib/components/boot/HttpsRequired.svelte';
   import { arrival } from '#lib/components/boot/opening.ts';
+  import { preloadHomeView } from '#lib/components/library/home-view.svelte.ts';
   import {
     setAppView,
     viewOf,
@@ -21,6 +22,7 @@
   import { desktopLayout } from '#lib/components/shared/layout.ts';
   import { DURATIONS } from '#lib/components/shared/motion-tokens.ts';
   import { fade, fadeAway } from '#lib/components/shared/motion.ts';
+  import { preloadPlayerBar } from '#lib/components/shell/player-bar.svelte.ts';
   // reset 必须先于 UnoCSS 加载，否则带 type="button" 的按钮会丢底色
   import '@unocss/reset/tailwind.css';
   import 'uno.css';
@@ -97,16 +99,33 @@
     if (targetScreen === 'signedIn' && !SignedInFrame && !loadingSignedIn) {
       loadingSignedIn = true;
       const isDesktop = desktopLayout.current;
+      const onHome = page.route.id === '/';
+      const hasQueue = (view?.state.player.queue.length ?? 0) > 0;
+      // 分别写入独立变量，防止压缩器将两分支的 preload 调用合并成一个而丢掉桌面端清单
+      let desktopShell: Promise<void> | undefined;
+      let phoneShell: Promise<void> | undefined;
+      if (isDesktop) {
+        desktopShell =
+          import('#lib/components/shell/SignedInDesktop.svelte').then(
+            (module) => {
+              initialDesktop = module.default;
+            },
+          );
+      } else {
+        phoneShell = import('#lib/components/shell/SignedInPhone.svelte').then(
+          (module) => {
+            initialPhone = module.default;
+          },
+        );
+      }
       void Promise.all([
         import('#lib/components/shell/SignedInFrame.svelte'),
-        isDesktop
-          ? import('#lib/components/shell/SignedInDesktop.svelte')
-          : import('#lib/components/shell/SignedInPhone.svelte'),
+        desktopShell,
+        phoneShell,
+        onHome ? preloadHomeView(isDesktop) : undefined,
+        hasQueue ? preloadPlayerBar(isDesktop) : undefined,
       ])
-        .then(([frame, shell]) => {
-          if (isDesktop)
-            initialDesktop = shell.default as DesktopShellComponent;
-          else initialPhone = shell.default as PhoneShellComponent;
+        .then(([frame]) => {
           SignedInFrame = frame.default;
         })
         .catch((error: unknown) => {
@@ -120,8 +139,13 @@
       !loadingSignedOut
     ) {
       loadingSignedOut = true;
-      void import('#lib/components/shell/SignedOutFrame.svelte')
-        .then((module) => {
+      const isDesktop = desktopLayout.current;
+      const hasQueue = (view?.state.player.queue.length ?? 0) > 0;
+      void Promise.all([
+        import('#lib/components/shell/SignedOutFrame.svelte'),
+        hasQueue ? preloadPlayerBar(isDesktop) : undefined,
+      ])
+        .then(([module]) => {
           SignedOutFrame = module.default;
         })
         .catch((error: unknown) => {

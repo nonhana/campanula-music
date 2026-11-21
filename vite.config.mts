@@ -120,7 +120,7 @@ export default defineConfig({
                 },
                 {
                   name: 'boot-shared',
-                  test: /src\/lib\/components\/(?:shared\/(?!drag-sort|drag-scroll)|boot\/|svg\/|ui\/(?:Button|IconButton|StateBlock|control-styles)\.)/,
+                  test: /src\/lib\/components\/(?:shared\/(?!drag-sort|drag-scroll)|boot\/|svg\/|library\/home-view\.svelte\.|shell\/player-bar\.svelte\.|ui\/(?:Button|IconButton|StateBlock|control-styles)\.)/,
                   priority: 22,
                 },
                 {
@@ -130,7 +130,7 @@ export default defineConfig({
                 },
                 {
                   name: 'ui-shared',
-                  test: /src\/lib\/components\/(?:ui\/(?:Cover|Scrollbar|SearchField|Segmented|LongText|FilterChip|ToolButton|TextButton)\.|songs\/(?:SongTitle|CreditLine|DownloadMark|NowChip|PlayTarget|PlayAllButton|SongMoreButton|song-look)\.|library\/(?:SyncNotice|liked-failure|multi-select\.svelte|selection-core)\.|daily\/(?:DailyNumber|view)\.|overlay\/(?:overlays\.svelte|OverlayHost|overlay-context|overlay-stack|overlay-history\.svelte)\.|downloads\/panel\.svelte\.|player\/(?:PlayerLayer|player-layer\.svelte|drawer|now|view)\.|shell\/(?:scroll-padding|player-dock|page-history|PageLocateButton|page-transition)\.|notice\/OfflineBar\.)/,
+                  test: /src\/lib\/components\/(?:ui\/(?:Cover|Scrollbar|SearchField|Segmented|LongText|FilterChip|ToolButton|TextButton)\.|songs\/(?:SongTitle|CreditLine|DownloadMark|NowChip|PlayTarget|PlayAllButton|SongMoreButton|song-look)\.|library\/(?:SyncNotice|liked-failure|multi-select\.svelte|selection-core)\.|daily\/(?:DailyNumber|view)\.|overlay\/(?:overlays\.svelte|OverlayHost|overlay-context|overlay-stack|overlay-history\.svelte)\.|downloads\/panel\.svelte\.|player\/(?:PlayerLayer|player-layer\.svelte|cover-flight\.svelte|drawer|now|view)\.|shell\/(?:scroll-padding|player-dock|page-history|PageLocateButton|page-transition)\.|notice\/OfflineBar\.)/,
                   priority: 18,
                 },
                 {
@@ -149,8 +149,13 @@ export default defineConfig({
                   priority: 15,
                 },
                 {
-                  name: 'player-ui',
-                  test: /src\/lib\/components\/player\/(?:Cover|Lyrics|NowPlaying|PlayButton|PlayModeButton|QueueList|Skip|Volume|Wave|cover-|playhead|player-page)/,
+                  name: 'player-bar-ui',
+                  test: /src\/lib\/components\/player\/(?:CoverWheel|NowPlaying|PlayButton|PlayModeButton|ProgressLine|SeekLine|SongSwap|Volume|playhead|player-page|seek-slider|wheel-core)/,
+                  priority: 15,
+                },
+                {
+                  name: 'player-page-ui',
+                  test: /src\/lib\/components\/player\/(?:CoverTint|Lyrics|QueueList|Skip|Wave|cover-swipe)/,
                   priority: 15,
                 },
               ],

@@ -1,6 +1,6 @@
 import { onNavigate } from '$app/navigation';
 import type { RouteId } from '$app/types';
-import { onMount } from 'svelte';
+import { onMount, tick } from 'svelte';
 
 import { LANDING_WAIT } from '../shared/motion-tokens.ts';
 import type { Toward } from '../shared/motion.ts';
@@ -83,6 +83,7 @@ const coversOf = (page: string): HTMLElement[] => [
 
 export const pageTransitions = (
   libraryTabs: () => readonly RouteId[],
+  prepare?: (route: RouteId) => Promise<unknown> | void,
 ): void => {
   let running: ViewTransition | null = null;
   let pressed: HTMLAnchorElement | null = null;
@@ -139,6 +140,7 @@ export const pageTransitions = (
     const link = navigation.type === 'link' ? pressed : null;
     pressed = null;
     const { from, to } = navigation;
+    const prepared = to?.route.id ? prepare?.(to.route.id) : undefined;
     if (
       !document.startViewTransition ||
       !from?.route.id ||
@@ -165,6 +167,10 @@ export const pageTransitions = (
             () => true,
             () => false,
           );
+          if (done && prepared) {
+            await Promise.resolve(prepared).catch(() => {});
+            await tick();
+          }
           if (flight && done) await land(flight, () => running === transition);
         },
       });

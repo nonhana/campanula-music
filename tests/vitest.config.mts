@@ -31,8 +31,8 @@ export default defineConfig(async () => {
             .flatMap(([, files]) => files)
         : suites[suite]
       ).map((file) => `${ROOT}${file}`),
-      // 精准 V8 采集下，冷启动曲库的 HTTP 和本机保存会超过默认 5 秒；业务时间仍由受控时钟推进。
-      testTimeout: 15_000,
+      // 精准 V8 采集下，首个行为测试冷启动曲库的 HTTP 和本机保存会超过 15 秒；业务时间仍由受控时钟推进。
+      testTimeout: 30_000,
       // 保留串行的受控时钟与覆盖率采集；隔离由独占工作根和 worker 保证。
       fileParallelism: false,
       allowOnly: false,

@@ -2,10 +2,11 @@
   import { afterNavigate } from '$app/navigation';
   import type { RouteId } from '$app/types';
   import type { Component, Snippet } from 'svelte';
-  import { untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
 
   import type { Account } from '#lib/api/account.ts';
 
+  import { preloadHomeView } from '../library/home-view.svelte.ts';
   import { setOverlays } from '../overlay/overlay-context.ts';
   import OverlayHost from '../overlay/OverlayHost.svelte';
   import { createOverlays } from '../overlay/overlays.svelte.ts';
@@ -14,6 +15,7 @@
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
   import { pageTransitions } from './page-transition.ts';
+  import { warmPlayerBar } from './player-bar.svelte.ts';
 
   type DesktopShellComponent = Component<{
     account: Account;
@@ -38,7 +40,13 @@
     '/albums',
     '/artists',
   ];
-  pageTransitions(() => (desktopLayout.current ? ['/'] : PHONE_LIBRARY_ROUTES));
+  pageTransitions(
+    () => (desktopLayout.current ? ['/'] : PHONE_LIBRARY_ROUTES),
+    (route) =>
+      route === '/' ? preloadHomeView(desktopLayout.current) : undefined,
+  );
+
+  onMount(() => warmPlayerBar(() => desktopLayout.current));
 
   let DesktopShellView = $state.raw<DesktopShellComponent | undefined>(
     untrack(() => initialDesktop),

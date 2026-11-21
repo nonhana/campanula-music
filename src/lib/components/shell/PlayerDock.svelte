@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Component, Snippet } from 'svelte';
+  import type { Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
 
   import { getOverlays } from '../overlay/overlay-context.ts';
@@ -8,6 +8,7 @@
   import { desktopLayout } from '../shared/layout.ts';
   import { DURATIONS } from '../shared/motion-tokens.ts';
   import { dock, fade } from '../shared/motion.ts';
+  import { playerBar, preloadPlayerBar } from './player-bar.svelte.ts';
   import { PHONE_DOCK_HEIGHT } from './player-dock.ts';
 
   interface Props {
@@ -19,36 +20,19 @@
   const { present, replace, preview }: Props = $props();
   const view = getAppView();
   const { playerLayer } = getOverlays();
-  let DesktopPlayerBar = $state.raw<Component>();
-  let PhoneMiniPlayer = $state.raw<Component>();
-  let loadingDesktop = false;
-  let loadingPhone = false;
+  const DesktopPlayerBar = $derived(playerBar.desktop);
+  const PhoneMiniPlayer = $derived(playerBar.phone);
+  const ready = $derived(
+    Boolean(preview) ||
+      (desktopLayout.current
+        ? Boolean(DesktopPlayerBar)
+        : Boolean(replace) || Boolean(PhoneMiniPlayer)),
+  );
 
   $effect(() => {
     if (!present || preview) return;
-    if (desktopLayout.current) {
-      if (DesktopPlayerBar || loadingDesktop) return;
-      loadingDesktop = true;
-      void import('../player/DesktopPlayerBar.svelte')
-        .then((module) => {
-          DesktopPlayerBar = module.default;
-        })
-        .catch((error: unknown) => {
-          loadingDesktop = false;
-          console.error('加载桌面播放条失败', error);
-        });
-    } else if (!replace) {
-      if (PhoneMiniPlayer || loadingPhone) return;
-      loadingPhone = true;
-      void import('../player/PhoneMiniPlayer.svelte')
-        .then((module) => {
-          PhoneMiniPlayer = module.default;
-        })
-        .catch((error: unknown) => {
-          loadingPhone = false;
-          console.error('加载手机播放条失败', error);
-        });
-    }
+    if (desktopLayout.current) void preloadPlayerBar(true);
+    else if (!replace) void preloadPlayerBar(false);
   });
   const resetHeight: Attachment<HTMLElement> = () => () => {
     playerLayer.dockHeight = PHONE_DOCK_HEIGHT;
@@ -72,7 +56,7 @@
   );
 </script>
 
-{#if present}
+{#if present && ready}
   {#if desktopLayout.current}
     <div
       class="fixed inset-x-0 bottom-0 z-40 grid min-h-20 bg-white px-5 shadow-float"

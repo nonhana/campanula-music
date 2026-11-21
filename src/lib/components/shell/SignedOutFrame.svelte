@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import type { Snippet } from 'svelte';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
 
   import Brand from '../boot/Brand.svelte';
   import PhoneSelectionActionBar from '../library/PhoneSelectionActionBar.svelte';
@@ -20,6 +20,7 @@
   import { setScrollLookup } from '../shared/scroll-marks.ts';
   import Scrollbar from '../ui/Scrollbar.svelte';
   import PageLocateButton from './PageLocateButton.svelte';
+  import { warmPlayerBar } from './player-bar.svelte.ts';
   import { playerDockBottom, playerDockTop } from './player-dock.ts';
   import PlayerDock from './PlayerDock.svelte';
   import { pageScrollPadding } from './scroll-padding.ts';
@@ -49,6 +50,7 @@
 
   // 再加 8px 写进 scroll-padding-top：page-transition.ts 判断封面露没露也按它算
   $effect(() => scrollPadding.set(`${top + 8}px`));
+  onMount(() => warmPlayerBar(() => desktopLayout.current));
   onDestroy(scrollPadding.release);
 </script>
 

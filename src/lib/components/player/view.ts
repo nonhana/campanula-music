@@ -25,6 +25,8 @@ export const neighborSong = (
 
 export const SMALL_COVER = 48;
 
+export const QUEUE_PANEL_ID = 'queue-panel';
+
 export const PAGE_COVER = { desktop: 420, phone: 360 } as const;
 
 export type Turn = 'left' | 'right' | 'land';
