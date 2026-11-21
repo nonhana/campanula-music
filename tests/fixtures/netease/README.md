@@ -160,7 +160,7 @@ pnpm test:contract
 |---|---|
 | `login/login_qr_check.8821-verify.constructed.json` | 扫码确认后网易云要求行为验证。`message` 照真实报错的原文（chaunsin/netease-cloud-music#26 里贴的 `8821 需要行为验证码验证`）；`data` 里的 `verifyId`、`verifyType`、`verifyToken`、`params.event_id`、`params.sign` 照开源实现 saltbo/zme 的 `NeteaseRiskData`（它把这几项交给 `/frontrisk/verify/getqrcode`，和 SDK `verify_getQr` 的参数一一对应），取值是假的 |
 | `login/login_qr_check.8821-no-params.constructed.json` | 同一个 8821，但 `data` 是 null：上面那个 issue 里贴的返回只有 `code`、`message`，没有验证参数 |
-| `login/verify_getQr.constructed.json` | 照 SDK 2.2.0 的 `verify_getQr`：网易云只给 `data.qrCode`，`qrurl` 是 SDK 用 `qrCode` 和查询参数拼的，`qrimg` 是 `qrurl` 的二维码（用 SDK 依赖的 `qrcode` 生成）。过 SDK 的 `VerifyGetQrBody` 校验 |
+| `login/verify_getQr.constructed.json` | 照 SDK 8.0.0 的 `verify_getQr`：网易云只给 `data.qrCode`，`qrurl` 是 SDK 用 `qrCode` 和查询参数拼的（不再生成 `qrimg`，二维码 PNG 由 Campanula 服务端调用 `qrcode` 生成）。过 SDK 的 `VerifyGetQrBody` 校验 |
 | `login/login_cellphone.200.another-account.constructed.json` | 同一台设备上换另一个网易云账号登录。作者只有一个账号：复制 `login/login_cellphone.200.json`，只把账号的 uid（10000001 → 10000002）和昵称（“另一位听众”）换掉 |
 | `library/song_detail.405-rate-limited.constructed.json` | 网易云对接口限流的返回没有录到过（验证关卡①首次同步没遇到）。复制 `like-collect/playlist_subscribe.405.json` 的返回体（405“操作过于频繁，请稍后再试”，`hana-music-api@2.3.0` 认作限流，抛出时加上 `retryAfter`），只把模块换成 `song_detail`。注意那份 405 本身是请求写法被拒，不一定是真的限流（见上面 `like-collect/playlist_subscribe.*`） |
 | `playlist-edit/playlist_delete.405-rate-limited.constructed.json`、`playlist-edit/playlist_privacy.405-rate-limited.constructed.json`、`playlist-edit/playlist_desc_update.405-rate-limited.constructed.json` | 删除、改公开、改简介被网易云拒绝。复制 `playlist-edit/create/003-playlist_create.json.gz` 的返回体（#33 连着新建两张歌单时网易云回的 405“操作过于频繁，请稍后再试”，SDK 2.12.0 认作“操作频繁”，抛出时加上 `retryAfter`），只把模块换成对应的那个 |
@@ -361,3 +361,7 @@ Campanula 收藏前在浏览器用 `hana-music-api/watchman` 现取 token，自�
 App 测试按两次独立 SDK 调用观察 `step: initial/fallback`、各自 token 与本机提交时机，不再用一次替身调用虚构两次 provider 消费。真实 SDK 的最终请求另用正式安装包和离线 fetcher 核对；这些检查不代表真实账号遇到 512 后已成功。
 
 `library/likelist.500-synthetic.constructed.json` 是显式未知失败模板，替代旧测试里未准备调用导致的隐式失败；它不代表真实上游。`playlist-edit/playlist_detail.order-readback.constructed.json.gz` 由 `library/playlist_detail.own-small.json` 派生，只将 query.id 与 playlist.id 改为临时新建歌单 900000023，歌曲和顺序不变，来源写在 context.note，最终返回仍经过 schema 与实体编号合同。
+
+## SDK 8.0.0 去可选 peer 与按需子路径接入（2026-11-21）
+
+索引用 npm `hana-music-api@8.0.0` 的公开 Schema 重建，既有历史录制原文和来源继续保留；服务端接口按需迁至 `hana-music-api/api/<module>`，工具函数迁至 `hana-music-api/utils`，契约 `schemas` 迁至 `hana-music-api/schemas`。`sdkQuery` 在转换 `login_qr_create` 时剥离历史录制的 `qrimg` 入参，`verify_getQr.constructed.json` 同步去掉 `data.qrimg` 以对齐 SDK 8.0.0 仅返回链接的契约，二维码 PNG 改由 `campanula-music` 服务端直接用 `qrcode` 渲染。

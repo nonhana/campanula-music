@@ -1,10 +1,8 @@
 import type { ModuleCallConfig } from 'hana-music-api';
-import {
-  lyricNew,
-  scrobble,
-  songDownloadUrlV1,
-  songUrlV1,
-} from 'hana-music-api';
+import { lyricNew } from 'hana-music-api/api/lyric_new';
+import { scrobble } from 'hana-music-api/api/scrobble';
+import { songDownloadUrlV1 } from 'hana-music-api/api/song_download_url_v1';
+import { songUrlV1 } from 'hana-music-api/api/song_url_v1';
 
 import type {
   DownloadUrlResponse,

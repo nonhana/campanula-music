@@ -2,8 +2,9 @@ import { createHash } from 'node:crypto';
 import { inspect, types } from 'node:util';
 import { deserialize, serialize } from 'node:v8';
 
-import * as sdk from 'hana-music-api';
 import type { NcmApiFailure, NcmApiResponse } from 'hana-music-api';
+import * as schemas from 'hana-music-api/schemas';
+import { getNcmFailureInfo } from 'hana-music-api/utils';
 
 import { field, fixtureOutcome } from './mock/fixture-format.ts';
 
@@ -53,7 +54,7 @@ export const schemaName = (module: string): string =>
     .join('')}Body`;
 
 export const sdkSchema = (name: string, context = name) => {
-  const schema = (sdk as Record<string, unknown>)[name] as
+  const schema = (schemas as Record<string, unknown>)[name] as
     | {
         '~standard'?: {
           validate: (
@@ -145,7 +146,7 @@ export const validateResponse = async (
   if (rejected) {
     if (response.status < 300) fail('失败 HTTP status');
     const failure = 'failure' in response ? response.failure : undefined;
-    if (!failure || !sdk.getNcmFailureInfo(response)) fail('failure 元数据');
+    if (!failure || !getNcmFailureInfo(response)) fail('failure 元数据');
     switch (failure!.kind) {
       case 'business':
         if (

@@ -13,6 +13,10 @@ import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 import { clockOn } from './browser.ts';
 import type { Device, DeviceTraits } from './device.ts';
 import { createDevice, SENT_HEADER } from './device.ts';
+import {
+  REGISTERED_SDK_MODULES,
+  SDK_ACTION_MODULES,
+} from './mock/sdk-modules.ts';
 import type { Call, RequestSpan } from './netease-sdk.ts';
 import { createWorkspace } from './workspace.ts';
 
@@ -64,33 +68,56 @@ export interface World {
 
 const SDK_PROBE = 'virtual:campanula-sdk-probe';
 
-const replaceSdk = (): Plugin => ({
+export const replaceSdk = (): Plugin => ({
   name: 'campanula:netease-fake',
   enforce: 'pre',
   config: () => ({
     ssr: {
-      noExternal: ['hana-music-api'],
+      noExternal: [/^hana-music-api(?:\/|$)/],
     },
   }),
   resolveId(id, importer) {
     if (
-      id === 'hana-music-api' &&
-      (importer === FAKE_SDK || importer?.endsWith('/sdk-contract.ts'))
+      importer === FAKE_SDK &&
+      (id === 'hana-music-api' || id === 'hana-music-api/utils')
     )
       return {
-        id: fileURLToPath(import.meta.resolve('hana-music-api')),
+        id: fileURLToPath(import.meta.resolve(id)),
         external: true,
       };
-    if (id === 'hana-music-api') return FAKE_SDK;
+    if (
+      importer?.endsWith('/sdk-contract.ts') &&
+      (id === 'hana-music-api' ||
+        id === 'hana-music-api/schemas' ||
+        id === 'hana-music-api/utils')
+    )
+      return {
+        id: fileURLToPath(import.meta.resolve(id)),
+        external: true,
+      };
+    if (id === 'hana-music-api' || id === 'hana-music-api/utils')
+      return FAKE_SDK;
     if (id === 'hana-music-api/watchman') return null;
+    if (
+      id.startsWith('hana-music-api/api/') &&
+      REGISTERED_SDK_MODULES.has(id.slice('hana-music-api/api/'.length))
+    )
+      return FAKE_SDK;
     if (id.startsWith('hana-music-api/'))
-      throw new Error(
-        `网易云替身只替换了 hana-music-api 本身，服务端不能引用 ${id}`,
-      );
+      throw new Error(`网易云替身未放行子路径，服务端不能引用 ${id}`);
     if (id === SDK_PROBE) return `\0${SDK_PROBE}`;
   },
   load(id) {
-    if (id === `\0${SDK_PROBE}`) return `export * from 'hana-music-api'`;
+    if (id !== `\0${SDK_PROBE}`) return;
+    return [
+      "import * as utilsModule from 'hana-music-api/utils';",
+      ...SDK_ACTION_MODULES.map(
+        ([action, module], index) =>
+          `import { ${action} as api_${index} } from 'hana-music-api/api/${module}';`,
+      ),
+      'export { utilsModule };',
+      `export const apiModules = { ${SDK_ACTION_MODULES.map(([action], index) => `${action}: api_${index}`).join(', ')} };`,
+    ].join('\n');
   },
 });
 
@@ -152,12 +179,17 @@ const startWorld = async (options: WorldOptions = {}) => {
     const fixtures = (await runner.import(
       fileURLToPath(new URL('./fixtures.ts', import.meta.url)),
     )) as typeof import('./fixtures.ts');
-    const probe = (await runner.import(
-      SDK_PROBE,
-    )) as typeof import('./netease-sdk.ts');
+    const probe = (await runner.import(SDK_PROBE)) as {
+      utilsModule: Record<string, unknown>;
+      apiModules: Record<string, unknown>;
+    };
     if (
       Object.entries(fake).some(
-        ([name, value]) => probe[name as keyof typeof probe] !== value,
+        ([name, value]) => probe.utilsModule[name] !== value,
+      ) ||
+      SDK_ACTION_MODULES.some(
+        ([action]) =>
+          probe.apiModules[action] !== fake[action as keyof typeof fake],
       )
     ) {
       throw new Error(

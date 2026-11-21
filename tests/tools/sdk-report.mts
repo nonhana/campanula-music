@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
-import { isNcmApiResponse } from 'hana-music-api';
+import { isNcmApiResponse } from 'hana-music-api/utils';
 import ts from 'typescript';
 
 import { loadFixture } from '../_kit/fixtures.ts';
@@ -63,23 +63,37 @@ export const sdkReport = async () => {
         node.importClause?.isTypeOnly
       )
         continue;
+      const specifier = node.moduleSpecifier.text;
       const named = node.importClause?.namedBindings;
       if (!named || !ts.isNamedImports(named))
         throw new Error(`${path}：SDK 值导入必须具名，更新消费者合同`);
       for (const element of named.elements) {
         if (element.isTypeOnly) continue;
         const action = (element.propertyName ?? element.name).text;
-        const at = `${relative(ROOT, path)}:${file.getLineAndCharacterOfPosition(element.getStart(file)).line + 1}`;
-        const table = [
+        const isHelper = [
           'generateDeviceId',
           'getNcmFailureInfo',
           'isNcmApiResponse',
-          'initializeWatchman',
-        ].includes(action)
-          ? action === 'initializeWatchman'
+        ].includes(action);
+        if (action !== 'initializeWatchman' && !isHelper && !bindings[action])
+          throw new Error(`${path}：未知 SDK 导出 ${action}`);
+        const expected =
+          action === 'initializeWatchman'
+            ? 'hana-music-api/watchman'
+            : isHelper
+              ? 'hana-music-api/utils'
+              : `hana-music-api/api/${bindings[action]}`;
+        if (specifier !== expected)
+          throw new Error(
+            `${path}：${action} 必须从 ${expected} 导入，实际为 ${specifier}`,
+          );
+        const at = `${relative(ROOT, path)}:${file.getLineAndCharacterOfPosition(element.getStart(file)).line + 1}`;
+        const table =
+          action === 'initializeWatchman'
             ? browser
-            : helpers
-          : consumers;
+            : isHelper
+              ? helpers
+              : consumers;
         (table[action] ??= []).push(at);
       }
     }

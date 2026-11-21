@@ -51,6 +51,7 @@ export const sdkQuery = (
     current.ids = [Number(current.id)];
     delete current.id;
   }
+  if (module === 'login_qr_create') delete current.qrimg;
   if (module === 'playlist_create') current.privacy = Number(current.privacy);
   if (module === 'playlist_tags_update' && typeof current.tags === 'string')
     current.tags = current.tags.split(';');

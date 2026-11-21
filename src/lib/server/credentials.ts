@@ -8,7 +8,7 @@ import {
 
 import { COOKIE_SECRET, LOGIN_COOKIE_NAME } from '$app/env/private';
 import type { Cookies } from '@sveltejs/kit';
-import { generateDeviceId } from 'hana-music-api';
+import { generateDeviceId } from 'hana-music-api/utils';
 
 export interface LoginCookie {
   deviceId: string;

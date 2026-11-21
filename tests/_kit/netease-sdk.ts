@@ -236,7 +236,7 @@ export {
   generateDeviceId,
   getNcmFailureInfo,
   isNcmApiResponse,
-} from 'hana-music-api';
+} from 'hana-music-api/utils';
 
 export const {
   album,

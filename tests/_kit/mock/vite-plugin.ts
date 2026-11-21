@@ -6,6 +6,7 @@ import type { Plugin, RunnableDevEnvironment, ViteDevServer } from 'vite';
 
 import type { MockConfig, ScenarioName } from './scenarios.ts';
 import { isScenarioName } from './scenarios.ts';
+import { REGISTERED_SDK_MODULES } from './sdk-modules.ts';
 
 const RUNTIME = fileURLToPath(new URL('./runtime.ts', import.meta.url));
 const CREDENTIALS = fileURLToPath(
@@ -213,26 +214,40 @@ export const mockPlugin = (): Plugin => ({
   enforce: 'pre',
   config: () => ({
     ssr: {
-      noExternal: ['hana-music-api'],
+      noExternal: [/^hana-music-api(?:\/|$)/],
     },
   }),
   resolveId(id, importer) {
     if (
-      id === 'hana-music-api' &&
-      (importer === RUNTIME || importer?.endsWith('/sdk-contract.ts'))
+      importer === RUNTIME &&
+      (id === 'hana-music-api' || id === 'hana-music-api/utils')
     )
       return {
-        id: fileURLToPath(import.meta.resolve('hana-music-api')),
+        id: fileURLToPath(import.meta.resolve(id)),
         external: true,
       };
-    if (id === 'hana-music-api') return RUNTIME;
-    // token 的外部能力在测试装配时替换，其余 SDK 子路径仍拒绝
+    if (
+      importer?.endsWith('/sdk-contract.ts') &&
+      (id === 'hana-music-api' ||
+        id === 'hana-music-api/schemas' ||
+        id === 'hana-music-api/utils')
+    )
+      return {
+        id: fileURLToPath(import.meta.resolve(id)),
+        external: true,
+      };
+    if (id === 'hana-music-api' || id === 'hana-music-api/utils')
+      return RUNTIME;
+    // token 的外部能力在测试装配时替换，其余未登记或非法 SDK 子路径仍拒绝
     if (id === 'hana-music-api/watchman')
       return fileURLToPath(new URL('./watchman.ts', import.meta.url));
+    if (
+      id.startsWith('hana-music-api/api/') &&
+      REGISTERED_SDK_MODULES.has(id.slice('hana-music-api/api/'.length))
+    )
+      return RUNTIME;
     if (id.startsWith('hana-music-api/'))
-      throw new Error(
-        `mock 只替换了 hana-music-api 本身，服务端不能引用 ${id}`,
-      );
+      throw new Error(`mock 未放行子路径，服务端不能引用 ${id}`);
     return null;
   },
   transform(code, id) {

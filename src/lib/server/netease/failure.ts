@@ -1,4 +1,4 @@
-import { getNcmFailureInfo, isNcmApiResponse } from 'hana-music-api';
+import { getNcmFailureInfo, isNcmApiResponse } from 'hana-music-api/utils';
 
 import type { NeteaseFailure } from '#lib/api/errors.ts';
 

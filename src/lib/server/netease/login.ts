@@ -3,18 +3,17 @@ import type {
   ModuleResponseOf,
   UserAccountBody,
 } from 'hana-music-api';
-import {
-  captchaSent,
-  isNcmApiResponse,
-  loginCellphone,
-  loginQrCheck,
-  loginQrCreate,
-  loginQrKey,
-  loginRefresh,
-  logout as neteaseLogout,
-  userAccount,
-  verifyGetQr,
-} from 'hana-music-api';
+import { captchaSent } from 'hana-music-api/api/captcha_sent';
+import { loginCellphone } from 'hana-music-api/api/login_cellphone';
+import { loginQrCheck } from 'hana-music-api/api/login_qr_check';
+import { loginQrCreate } from 'hana-music-api/api/login_qr_create';
+import { loginQrKey } from 'hana-music-api/api/login_qr_key';
+import { loginRefresh } from 'hana-music-api/api/login_refresh';
+import { logout as neteaseLogout } from 'hana-music-api/api/logout';
+import { userAccount } from 'hana-music-api/api/user_account';
+import { verifyGetQr } from 'hana-music-api/api/verify_getQr';
+import { isNcmApiResponse } from 'hana-music-api/utils';
+import { toDataURL } from 'qrcode';
 
 import type { Account } from '#lib/api/account.ts';
 import type { QrResponse } from '#lib/api/login.ts';
@@ -30,8 +29,9 @@ export const createLoginQr = async (
       data: { unikey: key },
     },
   } = await loginQrKey({}, config);
-  const { body } = await loginQrCreate({ key, qrimg: true }, config);
-  return { key, image: body.data.qrimg };
+  const { body } = await loginQrCreate({ key }, config);
+  const image = await toDataURL(body.data.qrurl);
+  return { key, image };
 };
 
 export type QrCheck =
@@ -112,7 +112,8 @@ export const checkLoginQr = async (
     );
     if (!verification) throw error;
     const { body } = await verifyGetQr(verification, config);
-    return { status: 'needsVerification', image: body.data.qrimg };
+    const image = await toDataURL(body.data.qrurl);
+    return { status: 'needsVerification', image };
   }
   const { body, cookie } = response;
   switch (body.code) {

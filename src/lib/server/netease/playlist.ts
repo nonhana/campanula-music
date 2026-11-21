@@ -1,21 +1,19 @@
 import type { ModuleCallConfig, PlaylistSummary } from 'hana-music-api';
-import {
-  imageUploadToken,
-  playlistCatlist,
-  playlistCoverUpdate,
-  playlistCreate,
-  playlistDelete,
-  playlistDescUpdate,
-  playlistDetail,
-  playlistNameUpdate,
-  playlistOrderUpdate,
-  playlistPrivacy,
-  playlistSubscribe,
-  playlistTagsUpdate,
-  playlistTracks,
-  songOrderUpdate,
-  userPlaylist,
-} from 'hana-music-api';
+import { imageUploadToken } from 'hana-music-api/api/image_upload_token';
+import { playlistCatlist } from 'hana-music-api/api/playlist_catlist';
+import { playlistCoverUpdate } from 'hana-music-api/api/playlist_cover_update';
+import { playlistCreate } from 'hana-music-api/api/playlist_create';
+import { playlistDelete } from 'hana-music-api/api/playlist_delete';
+import { playlistDescUpdate } from 'hana-music-api/api/playlist_desc_update';
+import { playlistDetail } from 'hana-music-api/api/playlist_detail';
+import { playlistNameUpdate } from 'hana-music-api/api/playlist_name_update';
+import { playlistOrderUpdate } from 'hana-music-api/api/playlist_order_update';
+import { playlistPrivacy } from 'hana-music-api/api/playlist_privacy';
+import { playlistSubscribe } from 'hana-music-api/api/playlist_subscribe';
+import { playlistTagsUpdate } from 'hana-music-api/api/playlist_tags_update';
+import { playlistTracks } from 'hana-music-api/api/playlist_tracks';
+import { songOrderUpdate } from 'hana-music-api/api/song_order_update';
+import { userPlaylist } from 'hana-music-api/api/user_playlist';
 
 import type { CoverTokenResponse, SetCoverResponse } from '#lib/api/cover.ts';
 import type {

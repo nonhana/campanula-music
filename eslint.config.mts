@@ -122,6 +122,13 @@ export default antfu(
               message: '只有网易云适配层和凭据模块能用 hana-music-api',
             },
           ],
+          patterns: [
+            {
+              group: ['hana-music-api/*', '!hana-music-api/watchman'],
+              allowTypeImports: true,
+              message: '只有网易云适配层和凭据模块能用 hana-music-api 子路径',
+            },
+          ],
         },
       ],
     },

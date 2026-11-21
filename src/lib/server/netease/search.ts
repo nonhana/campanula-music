@@ -1,8 +1,6 @@
 import type { ModuleCallConfig } from 'hana-music-api';
-import {
-  cloudsearch as neteaseCloudsearch,
-  searchSuggest,
-} from 'hana-music-api';
+import { cloudsearch as neteaseCloudsearch } from 'hana-music-api/api/cloudsearch';
+import { searchSuggest } from 'hana-music-api/api/search_suggest';
 
 import type {
   SearchKind,

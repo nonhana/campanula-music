@@ -1,3 +1,4 @@
+import { toDataURL } from 'qrcode';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { App } from '#lib/app/app.ts';
@@ -266,6 +267,13 @@ describe('扫码登录', () => {
     const { app, image } = await showQr();
 
     expect(image).toMatch(/^data:image\/png;base64,/);
+    expect(image).toBe(
+      await toDataURL(`https://music.163.com/login?codekey=${KEY}`),
+    );
+    expect(
+      world.netease.calls.find((call) => call.module === 'login_qr_create')
+        ?.query,
+    ).toEqual({ key: KEY });
 
     await world.netease.reply('login/login_qr_check.801-waiting.json');
     await world.clock.advance(2000);
@@ -711,6 +719,13 @@ describe('扫码登录', () => {
         checking: false,
         unverified: false,
       });
+      if (verifying?.step !== 'verifying')
+        throw new Error('期望进入行为验证状态');
+      expect(verifying.image).toBe(
+        await toDataURL(
+          'https://st.music.163.com/encrypt-pages?qrCode=qr-code-placeholder-0123456789&verifyToken=00.verify-token.placeholder&verifyId=61&verifyType=2&params={"event_id":"risk-event-placeholder","sign":"risk-sign-placeholder"}',
+        ),
+      );
       expect(sessionCalls().at(-1)).toMatchObject({
         module: 'verify_getQr',
         query: {

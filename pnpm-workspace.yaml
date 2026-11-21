@@ -36,8 +36,9 @@ catalogs:
 
   music:
     browser-id3-writer: ^6.4.0
-    hana-music-api: 6.1.0
+    hana-music-api: 8.0.0
     music-metadata: ^12.5.0
+    qrcode: ^1.5.4
 
   test:
     '@axe-core/playwright': 4.14.0
@@ -54,6 +55,7 @@ catalogs:
 
   typescript:
     '@types/node': ^26.6.6
+    '@types/qrcode': ^1.5.6
     '@types/ws': 8.18.2
     '@typescript/native': npm:typescript@^7.0.2
     svelte-check: ^4.7.8

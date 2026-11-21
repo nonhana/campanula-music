@@ -12,14 +12,18 @@ type Invoke = (
   config?: ModuleCallConfig,
 ) => Promise<NcmApiResponse<unknown>>;
 
+const moduleNames = new WeakMap<object, ModuleIdentifier>();
+
 export const sdkModules = (invoke: Invoke) => {
-  const bind =
-    <K extends ModuleIdentifier>(module: K) =>
-    (
+  const bind = <K extends ModuleIdentifier>(module: K) => {
+    const call = (
       query: ModuleQueryOf<K>,
       config?: ModuleCallConfig,
     ): Promise<ModuleResponseOf<K>> =>
       invoke(module, query, config) as Promise<ModuleResponseOf<K>>;
+    moduleNames.set(call, module);
+    return call;
+  };
   return {
     album: bind('album'),
     albumSub: bind('album_sub'),
@@ -65,3 +69,16 @@ export const sdkModules = (invoke: Invoke) => {
     verifyGetQr: bind('verify_getQr'),
   };
 };
+
+export const SDK_ACTION_MODULES: readonly (readonly [
+  action: string,
+  module: ModuleIdentifier,
+])[] = Object.entries(
+  sdkModules(() => {
+    throw new Error('仅用于读取已登记模块清单');
+  }),
+).map(([action, fn]) => [action, moduleNames.get(fn)!]);
+
+export const REGISTERED_SDK_MODULES: ReadonlySet<string> = new Set(
+  SDK_ACTION_MODULES.map(([, module]) => module),
+);

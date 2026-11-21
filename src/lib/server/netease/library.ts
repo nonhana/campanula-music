@@ -1,18 +1,16 @@
 import type { ArtistAlbumBody, ModuleCallConfig } from 'hana-music-api';
-import {
-  albumSub,
-  albumSublist,
-  artistAlbum,
-  artistDesc,
-  artistSongs,
-  artistSub,
-  artistSublist,
-  like,
-  likelist,
-  album as neteaseAlbum,
-  recommendSongs,
-  songDetail,
-} from 'hana-music-api';
+import { album as neteaseAlbum } from 'hana-music-api/api/album';
+import { albumSub } from 'hana-music-api/api/album_sub';
+import { albumSublist } from 'hana-music-api/api/album_sublist';
+import { artistAlbum } from 'hana-music-api/api/artist_album';
+import { artistDesc } from 'hana-music-api/api/artist_desc';
+import { artistSongs } from 'hana-music-api/api/artist_songs';
+import { artistSub } from 'hana-music-api/api/artist_sub';
+import { artistSublist } from 'hana-music-api/api/artist_sublist';
+import { like } from 'hana-music-api/api/like';
+import { likelist } from 'hana-music-api/api/likelist';
+import { recommendSongs } from 'hana-music-api/api/recommend_songs';
+import { songDetail } from 'hana-music-api/api/song_detail';
 
 import type { DailyResponse } from '#lib/api/discover.ts';
 import type {
@@ -48,12 +46,7 @@ export const fetchSongs = async (
   ids: readonly number[],
   config: ModuleCallConfig,
 ): Promise<Song[]> => {
-  const { body } = await songDetail(
-    {
-      ids,
-    },
-    config,
-  );
+  const { body } = await songDetail({ ids }, config);
   const byId = new Map(body.songs.map((song) => [song.id, song]));
   const privileges = new Map(
     body.privileges.map((privilege) => [privilege.id, privilege]),

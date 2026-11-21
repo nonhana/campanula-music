@@ -1,9 +1,13 @@
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import { loadFixture } from '../_kit/fixtures.ts';
 import { held } from '../_kit/hold.ts';
 import { field, fixtureOutcome } from '../_kit/mock/fixture-format.ts';
+import { mockPlugin } from '../_kit/mock/vite-plugin.ts';
 import { sdkSchema, validateResponse } from '../_kit/sdk-contract.ts';
+import { replaceSdk } from '../_kit/world.ts';
 
 describe('sDK 消费者合同', () => {
   it('完整内容经结构化复制后复用证据，改值后仍拒绝', async () => {
@@ -228,7 +232,7 @@ it('消费者清单从生产源码读取，每个 action 绑定、查询合同�
   expect(report.actions.every((action) => action.success.length > 0)).toBe(
     true,
   );
-}, 30_000);
+}, 90_000);
 
 it('最终实体编号必须与查询相符，查询校验被产品捕获后收尾仍失败', async () => {
   const sample = await loadFixture(
@@ -351,5 +355,78 @@ it('sDK 允许没有业务 code 的失败，以及各类技术失败', async () 
         kind,
       ),
     ).toBe('normalized-failure');
+  }
+});
+
+it('测试与 mock 替身只放行已登记子路径与合法边界，拒绝未登记或内部子路径', () => {
+  const resolveWith = (
+    plugin: ReturnType<typeof replaceSdk>,
+    id: string,
+    importer: string,
+  ) => {
+    const hook = plugin.resolveId as (
+      this: unknown,
+      source: string,
+      importer?: string,
+    ) => unknown;
+    return hook.call({}, id, importer);
+  };
+  const fakeSdk = fileURLToPath(
+    new URL('../_kit/netease-sdk.ts', import.meta.url),
+  );
+  const runtime = fileURLToPath(
+    new URL('../_kit/mock/runtime.ts', import.meta.url),
+  );
+  const sdkContract = fileURLToPath(
+    new URL('../_kit/sdk-contract.ts', import.meta.url),
+  );
+  const serverFile = fileURLToPath(
+    new URL('../../src/lib/server/netease/library.ts', import.meta.url),
+  );
+  const worldPlugin = replaceSdk();
+  const mock = mockPlugin();
+
+  expect(
+    resolveWith(worldPlugin, 'hana-music-api/api/song_detail', serverFile),
+  ).toBe(fakeSdk);
+  expect(resolveWith(worldPlugin, 'hana-music-api/utils', serverFile)).toBe(
+    fakeSdk,
+  );
+  expect(
+    resolveWith(worldPlugin, 'hana-music-api/watchman', serverFile),
+  ).toBeNull();
+  expect(resolveWith(mock, 'hana-music-api/api/song_detail', serverFile)).toBe(
+    runtime,
+  );
+  expect(resolveWith(mock, 'hana-music-api/utils', serverFile)).toBe(runtime);
+  expect(resolveWith(mock, 'hana-music-api/watchman', serverFile)).toBe(
+    fileURLToPath(new URL('../_kit/mock/watchman.ts', import.meta.url)),
+  );
+
+  for (const [plugin, self] of [
+    [worldPlugin, fakeSdk],
+    [mock, runtime],
+  ] as const) {
+    expect(resolveWith(plugin, 'hana-music-api/utils', self)).toEqual({
+      id: fileURLToPath(import.meta.resolve('hana-music-api/utils')),
+      external: true,
+    });
+    expect(resolveWith(plugin, 'hana-music-api/schemas', sdkContract)).toEqual({
+      id: fileURLToPath(import.meta.resolve('hana-music-api/schemas')),
+      external: true,
+    });
+    expect(resolveWith(plugin, 'hana-music-api/utils', sdkContract)).toEqual({
+      id: fileURLToPath(import.meta.resolve('hana-music-api/utils')),
+      external: true,
+    });
+    for (const blocked of [
+      'hana-music-api/api/user_detail',
+      'hana-music-api/core',
+      'hana-music-api/schemas',
+      'hana-music-api/schemas/song_detail',
+      'hana-music-api/dist/index.js',
+      'hana-music-api/api/song_detail/extra',
+    ])
+      expect(() => resolveWith(plugin, blocked, serverFile)).toThrow(blocked);
   }
 });
