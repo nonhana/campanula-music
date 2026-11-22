@@ -1,6 +1,6 @@
 ---
 title: 升级与回退
-description: 在保留原域名、Cookie 加密密钥与本地下载的前提下完成版本升级或回退。
+description: Vercel、Docker 与 Node.js 实例在保留域名、密钥与本地下载前提下的升级和回退步骤。
 ---
 
 执行升级前，须保留原有的**站点域名、`COOKIE_SECRET` 与 `LOGIN_COOKIE_NAME`**，预先备份环境变量文件并记录当前稳定版本号。离线下载绑定在原设备、原浏览器及原域名下，若计划更换访问域名，建议先[导出已下载音频](./listen.md#下载管理与导出)。
@@ -66,53 +66,42 @@ docker image inspect "$CAMPANULA_OLD_IMAGE" --format '{{.Id}}'
 
 ### 升级
 
-以原部署用户在服务器执行，目录结构沿用 [Node.js 部署指南](./node.md)。
+以原部署用户在服务器执行，目录位置沿用 [Node.js 部署指南](./node.md)。
 
-1. 更新前检查工作区状态并记录当前软链接指向的版本目录，拉取最新代码后核对 `.node-version` 与 `package.json` 中的运行时版本要求：
+1. 记录当前提交哈希以便回退，拉取最新代码并核对 `.node-version` 与 `package.json` 中的运行时版本要求：
 
    ```bash
    cd "$HOME/campanula"
-   readlink current > "$HOME/campanula-config/previous-release.txt"
-   cd source
+   git rev-parse HEAD > "$HOME/campanula-config/previous-rev.txt"
    git pull --ff-only origin main
    ```
 
-2. 安装依赖并构建产物，复制至带新提交哈希的独立发布目录：
+2. 安装依赖并重新构建产物：
 
    ```bash
    pnpm install --frozen-lockfile && env -u VERCEL pnpm build
    ```
 
-   ```bash
-   CAMPANULA_REV=$(git rev-parse HEAD)
-   mkdir "../releases/$CAMPANULA_REV" &&
-     cp -R build package.json "../releases/$CAMPANULA_REV/"
-   ```
-
-3. 原子切换 `current` 软链接至新版目录并重启进程：
+3. 重启托管进程：
 
    ```bash
-   cd "$HOME/campanula"
-   test -f "releases/$CAMPANULA_REV/build/index.js" &&
-     ln -s "releases/$CAMPANULA_REV" current.next &&
-     mv -Tf current.next current
+   pm2 restart campanula
    ```
 
-   - 使用 systemd 用户服务时运行 `systemctl --user restart campanula`。
-   - 若 Node.js 可执行文件路径发生变化，先同步修改服务文件中的 `ExecStart`，执行 `systemctl --user daemon-reload` 后再重启。
-   - 前台运行时通过 Ctrl+C 停止进程，再按[启动服务](./node.md#启动服务)命令重新启动。
+   - 若本次更新调整了 `ecosystem.config.cjs` 或需要更新启动参数，改用 `pm2 startOrRestart ecosystem.config.cjs --update-env && pm2 save`。
+   - 若使用面板或系统级 `systemd` 等其他方式托管，按对应管理器重启服务即可。
 
 ### 回退
 
 ```bash
 cd "$HOME/campanula"
-CAMPANULA_OLD_RELEASE=$(cat "$HOME/campanula-config/previous-release.txt")
-test -f "$CAMPANULA_OLD_RELEASE/build/index.js" &&
-  ln -s "$CAMPANULA_OLD_RELEASE" current.rollback &&
-  mv -Tf current.rollback current
+git checkout "$(cat "$HOME/campanula-config/previous-rev.txt")"
+pnpm install --frozen-lockfile && env -u VERCEL pnpm build
+pm2 restart campanula
 ```
 
-软链接切换完成后重启 Node.js 服务。若跨度版本涉及浏览器端 IndexedDB 结构变更，回退前应先查阅对应版本发布说明。
+- 回退后仓库处于分离头指针状态，待问题解决需要重新跟踪主分支时，执行 `git checkout main` 即可。
+- 若跨度版本涉及浏览器端 IndexedDB 结构变更，回退前应先查阅对应版本发布说明。
 
 ## 升级后验证
 

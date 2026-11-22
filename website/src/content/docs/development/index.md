@@ -1,18 +1,24 @@
 ---
 title: 本地开发
-description: 准备开发工具链，启动真实模式、Mock 模式或 Astro 文档站本地环境。
+description: 搭建本地环境，启动真实与 Mock 播放器（含本机 HTTPS 证书）、开发文档站及提交前检查。
 ---
 
 建议在开始编码前先阅读[架构与实现概览](./architecture.md)，了解分层边界与媒体分流机制。
 
 ## 环境准备
 
-本地开发需要 Git、Node.js **26.13.1** 与 pnpm **12.18.0**（版本约束以 `.node-version` 与 `package.json` 为准）。已有 Node.js 环境时可通过 `npm install -g pnpm@12.18.0` 安装 pnpm。
+本地开发需要 Git、Node.js（最低 24 及以上版本，推荐按仓库根目录 `.node-version` 安装）与 pnpm（版本以 `package.json` 的 `packageManager` 为准）。
 
 ```bash
 git clone https://github.com/nonhana/campanula-music.git
 cd campanula-music
 pnpm install --frozen-lockfile
+```
+
+若本机尚未安装 pnpm，可在进入仓库目录后按 `package.json` 声明的版本自动安装：
+
+```bash
+npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@').pop()")"
 ```
 
 ## 启动播放器

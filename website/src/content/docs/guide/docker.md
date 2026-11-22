@@ -1,6 +1,6 @@
 ---
 title: Docker 部署
-description: 从源码构建 Campanula 容器镜像并在自建服务器上运行。
+description: 在自建服务器上从源码构建容器镜像，挂载环境变量并以后台容器方式运行。
 ---
 
 部署前请先在服务器安装 Git 与 [Docker Engine](https://docs.docker.com/engine/install/)（通过 `docker version` 确认守护进程连接正常），并按[自建服务器指南](./server.md#生成并保存密钥)生成 `runtime.env`。当前不分发预构建远程镜像，需直接在服务器上从源码构建。

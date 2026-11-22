@@ -1,6 +1,6 @@
 ---
 title: 部署到自建服务器
-description: 在自建服务器上配置域名、环境变量与 HTTPS 反向代理，并通过 Docker 或 Node.js 运行。
+description: 配置域名与环境变量，配合 Caddy 或 Nginx 反代，通过 Docker 或 Node.js 运行。
 ---
 
 在自有 Linux 服务器部署分为三步：

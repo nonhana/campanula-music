@@ -1,7 +1,9 @@
 ---
 title: 设计理念
-description: Campanula 的浅色视觉体系、语义色彩分工、多语种字体方案以及交互与动效演示。
+description: 浅色视觉体系、可复制语义色板、多语种字体方案与交互动效视频演示。
 ---
+
+import DesignColorPalette from '../../../../../src/lib/dev/DesignColorPalette.svelte';
 
 Campanula 以「清晨的风铃草」为视觉基调，通过克制的浅色界面与低干扰排版，将视觉焦点让渡给音乐与封面图。
 
@@ -13,23 +15,25 @@ Campanula 以「清晨的风铃草」为视觉基调，通过克制的浅色界�
 
 ## 色彩分工与多语种字体
 
-| 语义色系  | 界面唯一职责                                     |
-| --------- | ------------------------------------------------ |
-| 薄荷      | 正在播放状态、列表选中项、播放进度条与键盘焦点环 |
-| 珊瑚      | 红心动作与「我喜欢的音乐」标识                   |
-| 蜜桃      | 当前设备专属状态：下载入口、已下载标记与离线提示 |
-| 琥珀 / 红 | 试听片段徽标、下载失败与删除确认等警示           |
+<DesignColorPalette client:load class="not-content my-6" />
 
 曲库内容常同时包含简体中文、繁体中文、日文假名与拉丁字符。应用内置自托管 Noto Sans 可变字体族（拉丁、简体、日文、繁体），按语种自动匹配字形并统一约束为 `400`、`500`、`600` 三个真实字重，避免系统字体回退导致的排版高度跳动与间距失衡。
 
-## 交互与动效演示
+## 交互演示
 
 <figure class="showcase-figure">
-  <video controls muted playsinline preload="none" poster="/showcase/desktop-home.webp" width="1280" height="846" aria-label="Campanula 桌面端界面与交互动效演示">
+  <video
+    controls
+    muted
+    playsinline
+    preload="none"
+    poster="/showcase/desktop-home.webp"
+    width="1280"
+    height="846"
+    aria-label="Campanula 桌面端界面与交互动效演示"
+  >
     <source src="/showcase/demo-walkthrough.mp4" type="video/mp4" />
-    <track kind="captions" src="/showcase/demo-walkthrough.vtt" srclang="zh-CN" label="界面操作说明" />
   </video>
-  <figcaption>桌面端连续操作录屏（无声，涵盖开场转场、歌单浏览、换碟切歌、队列滚动与搜索）</figcaption>
 </figure>
 
 动效只承担三项信息职责——确认操作响应、交代元素空间流向与标示当前状态，不回弹、不阻塞操作：

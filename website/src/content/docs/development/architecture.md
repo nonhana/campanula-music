@@ -1,6 +1,6 @@
 ---
 title: 架构与实现概览
-description: Campanula 的技术分层、无状态服务端与媒体分流机制以及核心客户端工程设计。
+description: 系统分层、无状态 API 与媒体直连分流、六项核心客户端机制以及仓库文档索引。
 ---
 
 本页概述 Campanula 的系统分层与核心机制，本地启动见[本地开发](./index.md)。

@@ -212,8 +212,56 @@ test('表格和代码块四角完整，单行代码的复制图标上下等距',
   expect.soft(top).toBeCloseTo(bottom, 0);
 });
 
+test('设计理念页色板可点击复制色值，窄屏不溢出且保持卡片等高', async ({
+  page,
+  context,
+  baseURL,
+  scan,
+}, info) => {
+  if (info.project.name === 'phone')
+    await page.setViewportSize({ width: 320, height: 720 });
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+    origin: baseURL,
+  });
+  await page.goto('/about/design/');
+  await page.evaluate(() => document.fonts.ready);
+  const swatch = page.locator('[data-swatch="morning-ground"]');
+  await expect(swatch).toBeVisible();
+  const beforeHeight = (await swatch.boundingBox())!.height;
+  await swatch.click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    '#F5FCF9',
+  );
+  await expect(page.locator('[data-color-palette] [role="status"]')).toHaveText(
+    '已复制 晨光底 色值 #F5FCF9',
+  );
+  expect((await swatch.boundingBox())!.height).toBeCloseTo(beforeHeight, 0);
+  await page.locator('[data-swatch="coral-heart"]').click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    '#FF3040',
+  );
+  await expect(page.locator('[data-color-palette] [role="status"]')).toHaveText(
+    '已复制 珊瑚心 色值 #FF3040',
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await scan('design-copied');
+});
+
 test.describe('关闭 JavaScript', () => {
   test.use({ javaScriptEnabled: false });
+  test('设计理念页关闭 JavaScript 仍完整展示色板并隐藏复制图标', async ({
+    page,
+  }) => {
+    await page.goto('/about/design/');
+    const swatch = page.locator('[data-swatch="morning-ground"]');
+    await expect(swatch).toBeVisible();
+    await expect(swatch).toContainText('#F5FCF9');
+    await expect(swatch.locator('.swatch-copy-icon')).toBeHidden();
+  });
   test('首页文档和源码链接可用，读者可以打开部署、目录、文章和 404 出口', async ({
     page,
   }) => {

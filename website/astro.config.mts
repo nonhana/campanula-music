@@ -53,6 +53,12 @@ export default defineConfig({
                 import.meta.url,
               ),
             ),
+            fileURLToPath(
+              new URL(
+                '../src/lib/dev/DesignColorPalette.svelte',
+                import.meta.url,
+              ),
+            ),
           ],
         },
       }),

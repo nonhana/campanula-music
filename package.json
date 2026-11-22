@@ -11,6 +11,7 @@
     "dev": "tsx scripts/dev.mts",
     "dev:mock": "tsx scripts/dev.mts --mock",
     "build": "vite build",
+    "start": "node build",
     "preview": "vite preview",
     "docs:dev": "pnpm docs:demo && cd website && astro dev",
     "docs:build": "pnpm docs:demo && cd website && astro build",

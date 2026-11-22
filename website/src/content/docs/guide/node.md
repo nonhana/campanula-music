@@ -1,72 +1,74 @@
 ---
 title: Node.js 部署
-description: 从源码构建播放器并以 Node.js 启动，配合 systemd 实现开机自启与后台托管。
+description: 从源码构建生产产物，通过仓库标准 PM2 配置后台运行并设置开机自启。
 ---
 
-开始前需准备 Git、[Node.js 26.13.1](https://nodejs.org/en/download) 与 pnpm `12.18.0`（精确版本以仓库根目录 `.node-version` 与 `package.json` 为准）。已有 Node.js 环境时可通过 `npm install -g pnpm@12.18.0` 安装对应版本的 pnpm。
+开始前需准备 Git、[Node.js](https://nodejs.org/en/download)（24 及以上版本，推荐按仓库根目录 `.node-version` 安装）与 pnpm（版本以仓库 `package.json` 的 `packageManager` 为准），并先按[生成并保存密钥](./server.md#生成并保存密钥)创建 `~/campanula-config/runtime.env`。
 
 ## 获取并构建源码
 
-以部署用户登录服务器并在 Bash 中拉取 `main` 分支、安装依赖并构建产物：
+以部署用户登录服务器，拉取 `main` 分支并构建生产产物：
 
 ```bash
-mkdir -p "$HOME/campanula/releases"
+git clone --branch main --single-branch https://github.com/nonhana/campanula-music.git "$HOME/campanula"
 cd "$HOME/campanula"
-git clone --branch main --single-branch https://github.com/nonhana/campanula-music.git source
-cd source
 pnpm install --frozen-lockfile && env -u VERCEL pnpm build
 ```
 
-构建成功且生成 `build/index.js` 后，将当前版本快照复制到独立的 `releases/` 子目录并更新 `current` 软链接：
+若服务器尚未安装 pnpm，可在进入仓库目录后按 `package.json` 声明的版本自动安装：
 
 ```bash
-CAMPANULA_REV=$(git rev-parse HEAD)
-mkdir "../releases/$CAMPANULA_REV" &&
-  cp -R build package.json "../releases/$CAMPANULA_REV/" &&
-  ln -s "releases/$CAMPANULA_REV" ../current
+npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@').pop()")"`
 ```
 
-## 启动服务
+## 使用 PM2 启动与后台托管
 
-确保已按[生成并保存密钥](./server.md#生成并保存密钥)生成 `~/campanula-config/runtime.env`，随后在前台测试启动：
+安装 PM2（若尚未安装）：
 
 ```bash
-cd "$HOME/campanula/current"
+npm install -g pm2
+```
+
+在仓库根目录通过标准配置 `ecosystem.config.cjs` 一键启动服务并保存进程列表：
+
+```bash
+cd "$HOME/campanula"
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+配置服务器重启后自动恢复进程（按 `pm2 startup` 输出的命令执行一次即可）：
+
+```bash
+pm2 startup
+pm2 save
+```
+
+`ecosystem.config.cjs` 默认采用单进程 `fork` 模式，监听 `127.0.0.1:3000`，并交由 Node 原生读取 `~/campanula-config/runtime.env`（不将密钥写入仓库文件或 PM2 进程配置，修改 `runtime.env` 后直接重启即可生效）。
+
+### 常用管理与自定义选项
+
+- **查看状态与日志**：执行 `pm2 status` 查看运行状态，执行 `pm2 logs campanula --lines 50` 排查启动或运行异常。
+- **修改环境变量后重启**：编辑 `~/campanula-config/runtime.env` 后运行 `pm2 restart campanula` 即可重新加载。
+- **覆盖监听地址、端口或环境文件路径**：无需直接改动仓库内的 `ecosystem.config.cjs`，通过环境变量覆盖即可（已启动的实例变更参数时加上 `--update-env`）：
+
+```bash
+PORT=3001 pm2 startOrRestart ecosystem.config.cjs --update-env
+pm2 save
+```
+
+支持覆盖的变量包括 `HOST`（默认 `127.0.0.1`）、`PORT`（默认 `3000`）与 `CAMPANULA_ENV_FILE`（默认 `~/campanula-config/runtime.env`）。
+
+## 前台验证与其他托管方式
+
+若需临时在前台调试启动（不使用 PM2），可在仓库根目录执行：
+
+```bash
 HOST=127.0.0.1 PORT=3000 node --env-file="$HOME/campanula-config/runtime.env" build
 ```
 
-若报错 `EADDRINUSE`，需排查并释放当前占用 `3000` 端口的进程。前台测试确认无异常后，可[配置 HTTPS 反向代理](./server.md#https-反向代理)并[验证部署](./server.md#验证部署)。
+若报错 `EADDRINUSE`，请排查并释放占用 `3000` 端口的进程。
 
-## 使用 systemd 后台托管
+- 若使用 1Panel、宝塔面板等 Node 项目管理功能，或偏好系统级 `systemd`、Supervisor 等进程管理器，直接托管上述启动命令（或在已注入环境变量的环境中运行 `pnpm start`）即可。
 
-为使服务在终端退出后继续运行并支持开机自启，先按 Ctrl+C 停止前台进程，再创建 systemd 用户服务（以下脚本要求当前用户主目录路径不含空格，并将绑定当前 `node` 二进制的绝对路径）：
-
-```bash
-mkdir -p "$HOME/.config/systemd/user"
-CAMPANULA_NODE=$(node -p 'process.execPath')
-cat > "$HOME/.config/systemd/user/campanula.service" <<EOF_SERVICE
-[Unit]
-Description=Campanula Music
-After=network.target
-
-[Service]
-WorkingDirectory=$HOME/campanula/current
-ExecStart=$CAMPANULA_NODE --env-file=$HOME/campanula-config/runtime.env build
-Environment=HOST=127.0.0.1
-Environment=PORT=3000
-Restart=on-failure
-
-[Install]
-WantedBy=default.target
-EOF_SERVICE
-systemctl --user daemon-reload
-systemctl --user enable --now campanula
-sudo loginctl enable-linger "$(id -un)"
-systemctl --user status campanula
-```
-
-- 服务状态显示 `active (running)` 后，再通过 HTTPS 域名访问确认登录页可用。
-- 若服务启动异常，执行 `journalctl --user -u campanula -n 50 --no-pager` 查看标准输出与错误日志。
-- 若使用 PM2、Supervisor 等其他进程管理器，托管上一步中的同一条 `node --env-file=...` 启动命令即可。
-
-后续升级与回退操作见 [Node.js 升级与回退](./upgrade.md#nodejs-升级与回退)。
+服务就绪后，继续[配置 HTTPS 反向代理](./server.md#https-反向代理)并[验证部署](./server.md#验证部署)；后续升级与回退见 [Node.js 升级与回退](./upgrade.md#nodejs-升级与回退)。

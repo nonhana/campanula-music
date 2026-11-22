@@ -1,6 +1,19 @@
 ---
 import { ChevronRight, Cloud, Server } from '@lucide/svelte';
+import { getCollection } from 'astro:content';
+
 import { settingsLink } from '../../../../src/lib/components/ui/control-styles.ts';
+
+const docs = new Map(
+  (await getCollection('docs')).map((entry) => [entry.id, entry.data]),
+);
+
+const descriptionOf = (id: string) => {
+  const description = docs.get(id)?.description;
+  if (!description) throw new Error(`文档缺少 description：${id}`);
+  return description.replace(/。$/, '');
+};
+
 const itemLink =
   'min-h-11 inline-flex items-center rounded-md px-1 text-label text-primary-900 font-500 hover:(text-primary-950 underline underline-offset-4)';
 ---
@@ -15,7 +28,7 @@ const itemLink =
         功能与边界
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        界面预览、核心能力、非计划功能与浏览器适配说明
+        {descriptionOf('about/features')}
       </span>
     </li>
     <li class="flex flex-col items-start">
@@ -23,7 +36,7 @@ const itemLink =
         账号安全与数据归属
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        网易云凭据加密方式、网络流量分流与本地数据存储范围
+        {descriptionOf('about/privacy-and-data')}
       </span>
     </li>
     <li class="flex flex-col items-start">
@@ -31,7 +44,7 @@ const itemLink =
         设计理念
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        浅色视觉体系、色彩分工、多语种字体与动效演示
+        {descriptionOf('about/design')}
       </span>
     </li>
   </ul>
@@ -53,7 +66,7 @@ const itemLink =
           部署到 Vercel
         </span>
         <span class="mt-1 block text-caption text-neutral-600">
-          通过 GitHub 与 Vercel 部署并绑定自定义域名
+          {descriptionOf('guide/vercel')}
         </span>
       </span>
       <ChevronRight
@@ -73,7 +86,7 @@ const itemLink =
           部署到自建服务器
         </span>
         <span class="mt-1 block text-caption text-neutral-600">
-          准备域名与环境变量，配合 Caddy 或 Nginx 配置 HTTPS
+          {descriptionOf('guide/server')}
         </span>
       </span>
       <ChevronRight
@@ -89,7 +102,7 @@ const itemLink =
         Docker 部署
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        从源码构建容器镜像并在自建服务器上运行
+        {descriptionOf('guide/docker')}
       </span>
     </li>
     <li class="flex flex-col items-start">
@@ -97,7 +110,7 @@ const itemLink =
         Node.js 部署
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        使用 Node.js 构建运行并通过 systemd 后台托管
+        {descriptionOf('guide/node')}
       </span>
     </li>
     <li class="flex flex-col items-start">
@@ -105,7 +118,7 @@ const itemLink =
         升级与回退
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        在保留域名、密钥与本地下载的前提下更新或回退版本
+        {descriptionOf('guide/upgrade')}
       </span>
     </li>
   </ul>
@@ -121,7 +134,7 @@ const itemLink =
         安装与离线播放
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        安装为独立应用、离线下载、音频导出与常用交互说明
+        {descriptionOf('guide/listen')}
       </span>
     </li>
   </ul>
@@ -137,7 +150,7 @@ const itemLink =
         本地开发
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        配置开发环境、本机 HTTPS 证书与 Mock 模式启动流程
+        {descriptionOf('development')}
       </span>
     </li>
     <li class="flex flex-col items-start">
@@ -149,7 +162,7 @@ const itemLink =
         架构与实现概览
       </a>
       <span class="px-1 text-caption text-neutral-600">
-        系统分层、请求与媒体分流架构及核心客户端机制
+        {descriptionOf('development/architecture')}
       </span>
     </li>
   </ul>

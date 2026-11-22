@@ -1,6 +1,6 @@
 ---
 title: 功能与边界
-description: Campanula 桌面端与手机端界面预览、核心功能、非计划功能以及浏览器与交互适配规则。
+description: 桌面与手机端界面预览、核心功能清单，以及浏览器支持与交互适配说明。
 ---
 
 Campanula 是一款聚焦听歌主线的第三方网易云音乐播放器，使用听众自己的网易云账号登录后直接进入曲库，不包含推荐广场与商业模块。
@@ -9,31 +9,31 @@ Campanula 是一款聚焦听歌主线的第三方网易云音乐播放器，使�
 
 <figure class="showcase-figure">
   <img src="/showcase/desktop-home.webp" alt="Campanula 桌面端曲库首页，展示我喜欢的音乐、每日推荐、自建歌单与收藏的歌单" width="1600" height="1059" />
-  <figcaption>桌面端曲库首页：薄荷晨光底色、纸白卡片分区与底部播放控制栏</figcaption>
+  <figcaption>Desktop 曲库首页</figcaption>
 </figure>
 
 <figure class="showcase-figure">
   <img src="/showcase/desktop-playlist.webp" alt="Campanula 桌面端自建歌单详情页，包含歌单信息、歌曲列表与正在播放行晨光高亮" width="1600" height="1059" />
-  <figcaption>桌面端歌单页：左侧固定曲库导航，列表当前播放行铺开浅薄荷晨光进度</figcaption>
+  <figcaption>Desktop 歌单页</figcaption>
 </figure>
 
 <figure class="showcase-figure">
   <img src="/showcase/desktop-playing.webp" alt="Campanula 桌面端播放页，展示封面浅雾背景、播放控制与双语歌词" width="1600" height="1051" />
-  <figcaption>桌面端播放页：基于当前封面图生成的浅雾背景，配合双语歌词与音译开关</figcaption>
+  <figcaption>Desktop 播放页</figcaption>
 </figure>
 
 <div class="showcase-mobile-grid">
   <figure class="showcase-figure">
     <img src="/showcase/mobile-home.webp" alt="Campanula 手机端我喜欢的音乐曲库列表" width="720" height="1570" />
-    <figcaption>手机端曲库列表</figcaption>
+    <figcaption>Mobile 曲库列表</figcaption>
   </figure>
   <figure class="showcase-figure">
     <img src="/showcase/mobile-playing.webp" alt="Campanula 手机端播放页，展示封面图与波浪播放进度条" width="720" height="1570" />
-    <figcaption>手机端播放与波浪进度</figcaption>
+    <figcaption>Mobile 播放</figcaption>
   </figure>
   <figure class="showcase-figure">
     <img src="/showcase/mobile-lyrics.webp" alt="Campanula 手机端全屏双语歌词与翻译开关视图" width="720" height="1570" />
-    <figcaption>手机端双语歌词视图</figcaption>
+    <figcaption>Mobile 歌词</figcaption>
   </figure>
 </div>
 
@@ -48,14 +48,6 @@ Campanula 是一款聚焦听歌主线的第三方网易云音乐播放器，使�
 | 离线下载   | 单曲/整张歌单/整张专辑下载、断点续传、独立下载音质、按歌单清理以及带元数据导出到文件夹            |
 
 受版权与网易云会员规则限制，无版权歌曲在列表中置灰且不可播放；非会员账号播放会员歌曲时仅返回试听片段，试听片段不支持下载。
-
-## 非计划功能
-
-为保持界面与维护范围收敛，以下功能不在开发计划内：
-
-- **信息流与社交模块**：推荐广场、排行榜、私人 FM、最近播放、热搜榜、评论、动态与私信、MV、播客、云盘、商城、推送通知。
-- **重型音频插件**：均衡器、音效增强、淡入淡出、定时关闭、桌面悬浮歌词。
-- **多主题与多语言**：仅提供浅色主题与简体中文界面。
 
 ## 运行环境与交互
 
