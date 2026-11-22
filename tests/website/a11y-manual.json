@@ -1,6 +1,6 @@
 {
   "observedRun": "run-a7jefX",
-  "scope": "独立示例页里的歌词叠层、封面背景和短文本需要人工核对。只记录 axe 无法判断的具体节点。",
+  "scope": "独立示例页里的歌词叠层、封面背景和短文本，以及设计理念页静音交互演示视频（无音轨，WCAG 1.2.2 字幕不适用）需要人工核对。只记录 axe 无法判断的具体节点。",
   "nodes": [
     {
       "project": "desktop",
@@ -942,6 +942,34 @@
       "rule": "color-contrast",
       "target": [".flex-1.min-w-0 > p"],
       "reason": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+    },
+    {
+      "project": "desktop",
+      "scenario": "-about-design-",
+      "rule": "video-caption",
+      "target": ["video"],
+      "reason": "Fix all of the following:\n  Check that captions are available for the element"
+    },
+    {
+      "project": "desktop",
+      "scenario": "design-copied",
+      "rule": "video-caption",
+      "target": ["video"],
+      "reason": "Fix all of the following:\n  Check that captions are available for the element"
+    },
+    {
+      "project": "phone",
+      "scenario": "-about-design-",
+      "rule": "video-caption",
+      "target": ["video"],
+      "reason": "Fix all of the following:\n  Check that captions are available for the element"
+    },
+    {
+      "project": "phone",
+      "scenario": "design-copied",
+      "rule": "video-caption",
+      "target": ["video"],
+      "reason": "Fix all of the following:\n  Check that captions are available for the element"
     }
   ],
   "observedRuns": ["run-UD28vI", "run-tH9kvm", "run-uosN6I"]
