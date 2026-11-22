@@ -2,7 +2,7 @@
   <img src="./website/public/showcase/logo.svg" width="80" height="80" alt="Campanula Music Logo" />
 </p>
 
-<h3 align="center">Campanula Music</h3>
+<h2 align="center">Campanula Music</h2>
 
 <p align="center">
   开源的第三方网易云音乐播放器，基于 Svelte 5 + SvelteKit + UnoCSS 与
@@ -11,16 +11,7 @@
   登录自己的网易云账号直达曲库，支持在线播放、歌单整理与离线下载。
 </p>
 
-<p align="center">
-  <a href="https://campanula.caelum.moe">在线文档</a> •
-  <a href="#部署指南">部署指南</a> •
-  <a href="./website/src/content/docs/about/features.md">产品介绍</a> •
-  <a href="./website/src/content/docs/development/index.md">本地开发</a>
-</p>
-
-<p align="center">
-  <video src="./website/public/showcase/demo-walkthrough.mp4" />
-</p>
+https://github.com/user-attachments/assets/0b0a11ce-e3d5-47ff-98db-e82d83398ccc
 
 ## 部署指南
 
