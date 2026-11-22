@@ -18,7 +18,7 @@ description: Vercel、Docker 与 Node.js 实例在保留域名、密钥与本地
    git clone --branch "$CAMPANULA_BRANCH" --single-branch "$CAMPANULA_REPO" campanula-upgrade
    cd campanula-upgrade
    git branch "backup-campanula-$(date +%Y%m%d-%H%M%S)"
-   git remote add campanula-upstream https://github.com/nonhana/campanula-music.git
+   git remote add campanula-upstream https://github.com/campanula-music/campanula.git
    git fetch campanula-upstream main
    git restore --source campanula-upstream/main --staged --worktree -- .
    git diff --cached

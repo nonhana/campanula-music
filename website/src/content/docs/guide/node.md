@@ -10,7 +10,7 @@ description: 从源码构建生产产物，通过仓库标准 PM2 配置后台�
 以部署用户登录服务器，拉取 `main` 分支并构建生产产物：
 
 ```bash
-git clone --branch main --single-branch https://github.com/nonhana/campanula-music.git "$HOME/campanula"
+git clone --branch main --single-branch https://github.com/campanula-music/campanula.git "$HOME/campanula"
 cd "$HOME/campanula"
 pnpm install --frozen-lockfile && env -u VERCEL pnpm build
 ```

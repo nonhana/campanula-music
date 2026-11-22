@@ -10,8 +10,8 @@ description: 搭建本地环境，启动真实与 Mock 播放器（含本机 HTT
 本地开发需要 Git、Node.js（最低 24 及以上版本，推荐按仓库根目录 `.node-version` 安装）与 pnpm（版本以 `package.json` 的 `packageManager` 为准）。
 
 ```bash
-git clone https://github.com/nonhana/campanula-music.git
-cd campanula-music
+git clone https://github.com/campanula-music/campanula.git
+cd campanula
 pnpm install --frozen-lockfile
 ```
 

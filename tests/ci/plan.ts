@@ -99,7 +99,7 @@ export const dailyPlan = (changes: string[] | null): Lane[] => {
   const delivery =
     broad ||
     touched(
-      /^(?:Dockerfile|\.dockerignore|vercel\.json|scripts\/vercel-ignore\.sh|src\/(?:service-worker|app\.html|lib\/app\/(?:download|local|browser\.ts|app\.ts|pacing\.ts|api-client\.ts)|routes\/\+layout)|static\/|tests\/(?:delivery\/(?:pwa\/|node\.|candidate\.|release\.|Dockerfile)|tools\/(?:pwa|build-candidate|delivery|release-check)))/,
+      /^(?:Dockerfile|\.dockerignore|vercel\.json|scripts\/vercel-ignore\.sh|src\/(?:service-worker|app\.html|lib\/app\/(?:download|local|browser\.ts|app\.ts|pacing\.ts|api-client\.ts)|routes\/\+layout)|static\/|tests\/(?:delivery\/(?:pwa\/|node\.|candidate\.|release\.)|tools\/(?:pwa|build-candidate|delivery|release-check)))/,
     );
   const browserTools =
     broad ||

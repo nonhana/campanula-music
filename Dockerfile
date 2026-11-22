@@ -15,7 +15,7 @@ RUN pnpm build
 FROM node:26-alpine
 LABEL org.opencontainers.image.title="Campanula Music" \
       org.opencontainers.image.description="开源的第三方网易云音乐播放器" \
-      org.opencontainers.image.source="https://github.com/nonhana/campanula-music" \
+      org.opencontainers.image.source="https://github.com/campanula-music/campanula" \
       org.opencontainers.image.licenses="MIT"
 WORKDIR /app
 ENV NODE_ENV=production \

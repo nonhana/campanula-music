@@ -1,6 +1,6 @@
 # Issue 跟踪与分诊标签
 
-本仓库的 issue 和 Spec 统一存为 GitHub issue（`nonhana/campanula-music`），操作全部走 `gh` CLI。新建 Spec 或任务票前另读 [issue-template.md](./issue-template.md)。
+本仓库的 issue 和 Spec 统一存为 GitHub issue（`campanula-music/campanula`），操作全部走 `gh` CLI。新建 Spec 或任务票前另读 [issue-template.md](./issue-template.md)。
 
 ## 分诊标签
 
@@ -26,13 +26,13 @@
 
 - **挂到父 Spec（sub-issue）**：
   ```sh
-  gh api --method POST repos/nonhana/campanula-music/issues/<Spec号>/sub_issues \
-    -F sub_issue_id="$(gh api repos/nonhana/campanula-music/issues/<票号> --jq .id)"
+  gh api --method POST repos/campanula-music/campanula/issues/<Spec号>/sub_issues \
+    -F sub_issue_id="$(gh api repos/campanula-music/campanula/issues/<票号> --jq .id)"
   ```
 - **加阻塞依赖（native issue dependencies）**：
   ```sh
-  gh api --method POST repos/nonhana/campanula-music/issues/<被阻塞票号>/dependencies/blocked_by \
-    -F issue_id="$(gh api repos/nonhana/campanula-music/issues/<阻塞者票号> --jq .id)"
+  gh api --method POST repos/campanula-music/campanula/issues/<被阻塞票号>/dependencies/blocked_by \
+    -F issue_id="$(gh api repos/campanula-music/campanula/issues/<阻塞者票号> --jq .id)"
   ```
   注意必须传数值 **database id**（`.id`），不是 `#number` 或 `node_id`。原生依赖不可用时退回在正文顶部写 `Blocked by: #<n>`。
 - **探路（wayfinding）约定**：地图用 `wayfinder:map` label；子票用 `wayfinder:<research|prototype|grilling|task>`；前沿查询过滤掉仍有未关闭阻塞者或已指派人的子票；认领执行 `gh issue edit <n> --add-assignee @me`；解决后评论结论、关闭并在地图“当前决策”追加指针。

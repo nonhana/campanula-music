@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, globSync } from 'node:fs';
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
@@ -18,7 +18,6 @@ const { values } = parseArgs({
     wait: { type: 'boolean', default: false },
     artifact: { type: 'string' },
     sha256: { type: 'string' },
-    'prepare-image': { type: 'boolean', default: false },
   },
 });
 const sha = values.sha;
@@ -26,7 +25,7 @@ if (!sha || !/^[a-f\d]{40}$/.test(sha)) throw new Error('需要完整 --sha');
 await mkdir(join(ROOT, '.reports/releases'), { recursive: true });
 const report = await mkdtemp(join(ROOT, '.reports/releases/run-'));
 const workspace = join(report, 'candidate');
-const repo = 'nonhana/campanula-music';
+const repo = 'campanula-music/campanula';
 const api = async (path: string) =>
   JSON.parse((await execa('gh', ['api', path])).stdout);
 const fetchAcceptance = async (sha: string, artifact: string) => {
@@ -131,20 +130,8 @@ try {
       throw new Error('发布不接受未提交的源码候选');
     candidates.push(candidate);
   }
-  if (values['prepare-image']) {
-    const image = join(ROOT, '.reports/release-image');
-    await mkdir(image);
-    await cp(join(workspace, 'node/output'), join(image, 'build'), {
-      recursive: true,
-    });
-    await writeFile(join(image, 'package.json'), '{"type":"module"}');
-    await writeFile(
-      join(image, 'candidate.json'),
-      JSON.stringify(candidates[0]),
-    );
-  }
   evidence = { ...accepted, candidates, verification };
-  console.log(`只读发布判定通过：${sha}（未发布镜像/标签/域名）`);
+  console.log(`只读发布判定通过：${sha}（未发布标签/域名）`);
 } finally {
   await rm(workspace, { recursive: true, force: true });
   await writeFile(

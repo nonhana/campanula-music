@@ -1,19 +1,12 @@
 name: Full acceptance
 
 on:
-  workflow_call:
-    outputs:
-      candidate_id:
-        description: Verified candidate artifact from this run
-        value: ${{ jobs.delivery.outputs.candidate_id }}
-      candidate_sha256:
-        description: SHA-256 of the verified candidate archive
-        value: ${{ jobs.delivery.outputs.candidate_sha256 }}
   workflow_dispatch:
   schedule:
     - cron: '43 18 * * *'
   push:
     branches: ['acceptance/**']
+    tags: ['v*']
 
 permissions:
   contents: read
@@ -206,9 +199,6 @@ jobs:
           overwrite: true
 
   delivery:
-    outputs:
-      candidate_id: ${{ steps.candidates.outputs.artifact-id }}
-      candidate_sha256: ${{ steps.archive.outputs.sha256 }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -221,16 +211,13 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - name: 同 SHA 双目标、生产 PWA 与版本交接
         run: sh tests/tools/offline.sh pnpm test:ci delivery
-      - id: archive
-        name: 核验即将归档的候选并记录摘要
+      - name: 核验即将归档的候选并记录摘要
         run: |
           set -- .reports/candidates/run-*.tar.gz
           test "$#" -eq 1
           sha256=$(sha256sum "$1" | cut -d' ' -f1)
           pnpm release:check --sha "$GITHUB_SHA" --artifact .reports/candidates --sha256 "$sha256"
-          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
       - name: 候选产物与交付报告
-        id: candidates
         if: always()
         uses: actions/upload-artifact@v7
         with:

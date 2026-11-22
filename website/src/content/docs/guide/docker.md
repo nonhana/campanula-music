@@ -10,7 +10,7 @@ description: 在自建服务器上从源码构建容器镜像，挂载环境变�
 在服务器 Bash 终端中克隆 `main` 分支并构建镜像（构建过程需拉取基础镜像与 npm 依赖）：
 
 ```bash
-git clone --branch main --single-branch https://github.com/nonhana/campanula-music.git campanula-source
+git clone --branch main --single-branch https://github.com/campanula-music/campanula.git campanula-source
 cd campanula-source
 CAMPANULA_REV=$(git rev-parse HEAD)
 docker build --pull \

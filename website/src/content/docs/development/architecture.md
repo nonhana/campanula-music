@@ -43,4 +43,4 @@ Campanula 基于单一 Svelte 5 + SvelteKit 工程构建，前端关闭服务端
 
 ## 本地开发与仓库文档
 
-参与代码修改或配置编码代理时，可从仓库根目录 `AGENTS.md` 索引按需查阅 [仓库 `docs/` 目录](https://github.com/nonhana/campanula-music/tree/main/docs)，其中包含模块边界（`agents/`）、领域术语与核心规则（`product/`）、视觉与交互规范（`design/`）以及架构决策记录（`adr/`）。
+参与代码修改或配置编码代理时，可从仓库根目录 `AGENTS.md` 索引按需查阅 [仓库 `docs/` 目录](https://github.com/campanula-music/campanula/tree/main/docs)，其中包含模块边界（`agents/`）、领域术语与核心规则（`product/`）、视觉与交互规范（`design/`）以及架构决策记录（`adr/`）。

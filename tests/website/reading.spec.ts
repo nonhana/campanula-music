@@ -280,7 +280,7 @@ test.describe('关闭 JavaScript', () => {
       ).toHaveAttribute('href', href);
     await expect(page.getByRole('link', { name: /GitHub/ })).toHaveAttribute(
       'href',
-      /^https:\/\/github\.com\/nonhana\/campanula-music\b/,
+      /^https:\/\/github\.com\/campanula-music\/campanula\b/,
     );
     await expect(page.locator('iframe, audio')).toHaveCount(0);
     await page.locator('#home-deploy').click();

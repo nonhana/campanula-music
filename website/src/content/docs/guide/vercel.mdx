@@ -24,7 +24,7 @@ openssl rand -base64 32
 
 <DeployAction />
 
-1. 点击上方按钮后，选择归属的 GitHub 账号并填写新仓库名称（Vercel 将从 [Campanula 主分支 `main`](https://github.com/nonhana/campanula-music/tree/main) 创建仓库副本）。
+1. 点击上方按钮后，选择归属的 GitHub 账号并填写新仓库名称（Vercel 将从 [Campanula 主分支 `main`](https://github.com/campanula-music/campanula/tree/main) 创建仓库副本）。
 2. 在 **Environment Variables** 栏填入 `COOKIE_SECRET`，作用范围勾选 **Production**。
 3. 点击 **Deploy** 启动首次构建与部署（仓库根目录的 `vercel.json` 已预置构建配置与运行区域）。若遇到 **Verify Your Identity** 提示，按页面指引完成身份验证即可继续。
 4. 进入 **Deployments** 确认状态变为 **Ready**，核对 **Source** 对应新仓库代码，且 Serverless Function 区域为 **Hong Kong (`hkg1`)**。
@@ -44,7 +44,7 @@ openssl rand -base64 32
 
 若不使用一键创建按钮，也可通过 Fork 手动导入：
 
-1. Fork [Campanula 仓库](https://github.com/nonhana/campanula-music) 至个人 GitHub 账号。
+1. Fork [Campanula 仓库](https://github.com/campanula-music/campanula) 至个人 GitHub 账号。
 2. 在 Vercel 控制台选择 **Add New → Project** 并导入该 Fork 仓库，保持默认分支为 `main`。
 3. 添加 `COOKIE_SECRET` 环境变量后点击 **Deploy**。
 
