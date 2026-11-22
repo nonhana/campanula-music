@@ -16,8 +16,24 @@ declare global {
   }
 }
 
+export interface ContrastBand {
+  top: number;
+  bottom: number;
+}
+
 // W3C G18 uses specified text colors; black/white probes separate glyph antialiasing from masks/opacity.
-export const measureContrast = async (page: Page, selectors: string[]) => {
+export const measureContrast = async (
+  page: Page,
+  selectors: string[],
+  band?: ContrastBand,
+) => {
+  if (
+    band &&
+    (!Number.isFinite(band.top) ||
+      !Number.isFinite(band.bottom) ||
+      band.bottom <= band.top)
+  )
+    throw new Error(`invalid contrast band: ${JSON.stringify(band)}`);
   try {
     const targets = await page.evaluate((selectors) => {
       if (window.__campanulaContrast)
@@ -122,7 +138,7 @@ export const measureContrast = async (page: Page, selectors: string[]) => {
     const bareBlack = await paint('black', true);
     const bareWhite = await paint('white', true);
     return await page.evaluate(
-      async ({ targets, images }) => {
+      async ({ targets, images, band }) => {
         for (const target of targets)
           for (const fragment of target.fragments) {
             const range = document.createRange();
@@ -168,6 +184,10 @@ export const measureContrast = async (page: Page, selectors: string[]) => {
           throw new Error(
             'contrast screenshot and CSS viewport coordinates differ',
           );
+        const minY = band ? Math.max(0, Math.ceil(band.top)) : 0;
+        const maxY = band
+          ? Math.min(original.height, Math.floor(band.bottom))
+          : original.height;
         const colorCanvas = document.createElement('canvas');
         colorCanvas.width = colorCanvas.height = 1;
         const colorContext = colorCanvas.getContext('2d', {
@@ -212,8 +232,8 @@ export const measureContrast = async (page: Page, selectors: string[]) => {
           for (const fragment of target.fragments)
             for (const rect of fragment.rects) {
               for (
-                let y = Math.max(0, Math.floor(rect.y));
-                y < Math.min(original.height, Math.ceil(rect.y + rect.height));
+                let y = Math.max(minY, Math.floor(rect.y));
+                y < Math.min(maxY, Math.ceil(rect.y + rect.height));
                 y++
               ) {
                 for (
@@ -280,6 +300,7 @@ export const measureContrast = async (page: Page, selectors: string[]) => {
       {
         targets,
         images: [original, background, black, white, bareBlack, bareWhite],
+        band,
       },
     );
   } finally {
@@ -305,6 +326,7 @@ export const auditContrast = async (
   state: string,
   targets: Record<string, Locator>,
   visibility: 'visible' | 'clipped' = 'visible',
+  band?: ContrastBand,
 ) => {
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await page.waitForTimeout(250);
@@ -320,6 +342,7 @@ export const auditContrast = async (
     const measured = await measureContrast(
       page,
       entries.map(([id]) => `[data-contrast-target="${id}"]`),
+      band,
     );
     const result = measured.map((row, index) => ({
       id: entries[index][0],
@@ -335,6 +358,7 @@ export const auditContrast = async (
           viewport: page.viewportSize(),
           threshold: 4.5,
           visibility,
+          ...(band ? { band } : {}),
           result,
         },
         null,

@@ -689,6 +689,11 @@ test('强制颜色下选中状态、焦点与音量轨道仍可辨认', async ({
   await page.getByRole('button', { name: /^打开播放页/ }).click();
   const player = page.getByRole('dialog', { name: '正在播放', exact: true });
   await player.getByRole('button', { name: /^暂停/ }).click();
+  if (info.project.name === 'desktop') {
+    const lyrics = player.getByRole('group', { name: '歌词', exact: true });
+    await expect(lyrics).toBeVisible();
+    await expect(lyrics).toHaveCSS('mask-image', 'none');
+  }
   const progress = player.getByRole('slider', {
     name: '播放进度',
     exact: true,

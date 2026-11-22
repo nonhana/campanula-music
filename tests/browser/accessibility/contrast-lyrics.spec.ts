@@ -3,7 +3,7 @@ import { auditContrast } from '../../tools/browser/contrast.ts';
 import { expect, login, test } from '../fixture.ts';
 
 for (const cover of ['black', 'white']) {
-  test(`歌词在${cover}封面上未唱、正唱、唱完和滚动边缘仍清晰`, async ({
+  test(`歌词在${cover}封面上未唱、正唱、唱完和滚动后主体阅读区仍清晰`, async ({
     page,
   }, info) => {
     await page.clock.install();
@@ -83,27 +83,57 @@ for (const cover of ['black', 'white']) {
       await page.waitForTimeout(250);
       await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
       try {
-        const targets = await lyrics.evaluate((root, state) => {
-          const bounds = root.getBoundingClientRect();
-          return [...root.querySelectorAll<HTMLElement>('[data-line]')]
-            .filter((line) => {
-              const rect = line.getBoundingClientRect();
-              return rect.bottom > bounds.top && rect.top < bounds.bottom;
-            })
-            .flatMap((line) => {
-              const prefix = `[role="group"][aria-label="歌词"] [data-line="${line.dataset.line}"]`;
-              return [
-                {
-                  id: `lyrics.${line.querySelector('.word') ? 'word' : 'plain'}.line-${line.dataset.line}`,
-                  selector: `${prefix} > .line-text`,
-                },
-                ...[...line.querySelectorAll('.sub')].map((_, index) => ({
-                  id: `lyrics.${state !== 'translation-only' && index === 0 ? 'romanization' : 'translation'}.line-${line.dataset.line}`,
-                  selector: `${prefix} > .sub:nth-of-type(${index + 2})`,
-                })),
-              ];
-            });
-        }, state);
+        const { band, fadeBottom, fadeTop, height, maskImage, targets } =
+          await lyrics.evaluate((root, state) => {
+            const bounds = root.getBoundingClientRect();
+            const probe = document.createElement('div');
+            probe.style.cssText =
+              'position:absolute;top:0;left:0;width:0;visibility:hidden;pointer-events:none;';
+            root.append(probe);
+            const measure = (varName: string) => {
+              probe.style.height = `var(${varName})`;
+              return probe.getBoundingClientRect().height;
+            };
+            const fadeTop = measure('--fade-top');
+            const fadeBottom = measure('--fade-bottom');
+            probe.remove();
+            const band = {
+              top: bounds.top + fadeTop + 1,
+              bottom: bounds.bottom - fadeBottom - 1,
+            };
+            const targets = [
+              ...root.querySelectorAll<HTMLElement>('[data-line]'),
+            ]
+              .filter((line) => {
+                const rect = line.getBoundingClientRect();
+                return rect.bottom > band.top && rect.top < band.bottom;
+              })
+              .flatMap((line) => {
+                const prefix = `[role="group"][aria-label="歌词"] [data-line="${line.dataset.line}"]`;
+                return [
+                  {
+                    id: `lyrics.${line.querySelector('.word') ? 'word' : 'plain'}.line-${line.dataset.line}`,
+                    selector: `${prefix} > .line-text`,
+                  },
+                  ...[...line.querySelectorAll('.sub')].map((_, index) => ({
+                    id: `lyrics.${state !== 'translation-only' && index === 0 ? 'romanization' : 'translation'}.line-${line.dataset.line}`,
+                    selector: `${prefix} > .sub:nth-of-type(${index + 2})`,
+                  })),
+                ];
+              });
+            return {
+              band,
+              fadeBottom,
+              fadeTop,
+              height: bounds.height,
+              maskImage: getComputedStyle(root).maskImage,
+              targets,
+            };
+          }, state);
+        expect(maskImage).toContain('linear-gradient');
+        expect(fadeTop).toBeGreaterThanOrEqual(28);
+        expect(fadeBottom).toBeGreaterThanOrEqual(36);
+        expect(fadeTop + fadeBottom).toBeLessThan(height * 0.35);
         expect(targets.length).toBeGreaterThan(0);
         const measurements = await auditContrast(
           page,
@@ -113,6 +143,7 @@ for (const cover of ['black', 'white']) {
             targets.map(({ id, selector }) => [id, page.locator(selector)]),
           ),
           'clipped',
+          band,
         );
         expect(measurements.some((row) => row.painted > 0)).toBe(true);
       } finally {

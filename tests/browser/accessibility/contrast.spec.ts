@@ -80,3 +80,37 @@ test('采样期间文字移动时明确失败并清理探针', async ({ page }) 
   );
   await expect(page.locator('[data-contrast-text]')).toHaveCount(0);
 });
+
+test('带垂直渐隐的遮罩放开边缘后仍严格校验主体纵带', async ({ page }) => {
+  await page.setContent(`<meta name="viewport" content="width=device-width, initial-scale=1"><style>
+    body { margin:0;background:white;font:24px/30px Arial; }
+    p { margin:0; }
+    .masked {
+      height:90px;
+      mask-image:linear-gradient(180deg, transparent 0, #000 30px, #000 60px, transparent 90px);
+    }
+    #pass { color:black; }
+    #fail { color:#777; }
+  </style><div class="masked"><p id="pass">Top edge<br>Middle body<br>Bottom edge</p></div><div class="masked"><p id="fail">Top edge<br>Middle body<br>Bottom edge</p></div>`);
+  const bandOf = async (selector: string) =>
+    page.locator(selector).evaluate((el) => {
+      const rect = el.closest('.masked')!.getBoundingClientRect();
+      return { top: rect.top + 31, bottom: rect.top + 59 };
+    });
+  const unbanded = await measureContrast(page, ['#pass']);
+  expect(unbanded[0].minimum!).toBeLessThan(4.5);
+  const bandedPass = await measureContrast(
+    page,
+    ['#pass'],
+    await bandOf('#pass'),
+  );
+  expect(bandedPass[0].painted).toBeGreaterThan(0);
+  expect(bandedPass[0].minimum!).toBeGreaterThanOrEqual(4.5);
+  const bandedFail = await measureContrast(
+    page,
+    ['#fail'],
+    await bandOf('#fail'),
+  );
+  expect(bandedFail[0].painted).toBeGreaterThan(0);
+  expect(bandedFail[0].minimum!).toBeLessThan(4.5);
+});

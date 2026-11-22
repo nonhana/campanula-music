@@ -465,7 +465,29 @@
 
 <style>
   .scroll {
+    --fade-top: clamp(28px, 10%, 84px);
+    --fade-bottom: clamp(36px, 14%, 116px);
+
     container-type: size;
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      rgb(0 0 0 / 0.1) calc(var(--fade-top) * 0.2),
+      rgb(0 0 0 / 0.42) calc(var(--fade-top) * 0.45),
+      rgb(0 0 0 / 0.8) calc(var(--fade-top) * 0.72),
+      #000 var(--fade-top),
+      #000 calc(100% - var(--fade-bottom)),
+      rgb(0 0 0 / 0.8) calc(100% - var(--fade-bottom) * 0.72),
+      rgb(0 0 0 / 0.42) calc(100% - var(--fade-bottom) * 0.45),
+      rgb(0 0 0 / 0.1) calc(100% - var(--fade-bottom) * 0.2),
+      transparent 100%
+    );
+  }
+
+  @media (forced-colors: active) {
+    .scroll {
+      mask-image: none;
+    }
   }
 
   .scroll:focus-visible {
