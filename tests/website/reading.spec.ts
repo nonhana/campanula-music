@@ -222,7 +222,8 @@ test.describe('关闭 JavaScript', () => {
       page.getByRole('heading', { name: 'Campanula', exact: true }),
     ).toBeVisible();
     for (const [label, href] of [
-      ['部署指南', '/guide/'],
+      ['文档目录', '/guide/'],
+      ['产品介绍', '/about/features/'],
       ['安装与离线播放', '/guide/listen/'],
       ['升级与回退', '/guide/upgrade/'],
       ['本地开发', '/development/'],

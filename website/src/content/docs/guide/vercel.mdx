@@ -1,6 +1,6 @@
 ---
 title: 部署到 Vercel
-description: 配置 COOKIE_SECRET，部署播放器并绑定域名。
+description: 配置 COOKIE_SECRET，将 Campanula 部署至 Vercel 并绑定自定义域名。
 tableOfContents:
   minHeadingLevel: 2
   maxHeadingLevel: 2
@@ -10,7 +10,7 @@ sidebar:
 
 import DeployAction from '../../../components/guide/DeployAction.astro';
 
-准备 GitHub 账号、已连接 GitHub 的 Vercel 账号和一个自己的域名。
+部署前需准备 GitHub 账号、已关联 GitHub 的 Vercel 账号以及一个已托管 DNS 的自有域名。
 
 ## 生成并保存密钥
 
@@ -18,49 +18,51 @@ import DeployAction from '../../../components/guide/DeployAction.astro';
 openssl rand -base64 32
 ```
 
-在本机运行命令，把**输出**存进密码管理器，部署时填入 `COOKIE_SECRET`。也可以用密码管理器生成至少 32 个字符的随机密码。升级沿用原值。
+在本地终端执行上述命令生成随机密钥（或使用密码管理器生成不少于 32 个字符的随机字符串），妥善保存备用。该密钥将作为 `COOKIE_SECRET` 填入环境变量，后续升级须沿用原值。
 
-## 创建播放器项目
+## 创建部署项目
 
 <DeployAction />
 
-1. 选择 GitHub 账号，填写新仓库名。按钮会复制 [Campanula 主分支 `main`](https://github.com/nonhana/campanula-music/tree/main)。
-2. 在 **Environment Variables** 填入 `COOKIE_SECRET`，应用到 **Production**。
-3. 直接点击 **Deploy**（仓库已通过 `vercel.json` 预置构建与地区配置）。若出现 **Verify Your Identity**，按 Vercel 提示验证后继续。
-4. 到 **Deployments** 找到 **Ready** 的记录，检查 **Source** 是刚复制的 v1 代码，函数地区为 **Hong Kong (`hkg1`)**。
+1. 点击上方按钮后，选择归属的 GitHub 账号并填写新仓库名称（Vercel 将从 [Campanula 主分支 `main`](https://github.com/nonhana/campanula-music/tree/main) 创建仓库副本）。
+2. 在 **Environment Variables** 栏填入 `COOKIE_SECRET`，作用范围勾选 **Production**。
+3. 点击 **Deploy** 启动首次构建与部署（仓库根目录的 `vercel.json` 已预置构建配置与运行区域）。若遇到 **Verify Your Identity** 提示，按页面指引完成身份验证即可继续。
+4. 进入 **Deployments** 确认状态变为 **Ready**，核对 **Source** 对应新仓库代码，且 Serverless Function 区域为 **Hong Kong (`hkg1`)**。
 
-默认由 `vercel.json` 接管以下构建设置，通常无需手动覆盖；仅在排查异常时核对：
+构建设置由 `vercel.json` 自动接管，通常无需修改；排查构建异常时可按以下标准值核对：
 
-| 构建设置         | 值                               |
+| 构建设置         | 预期值                           |
 | ---------------- | -------------------------------- |
 | Root Directory   | 留空（仓库根目录）               |
 | Framework Preset | SvelteKit                        |
 | Install Command  | `pnpm install --frozen-lockfile` |
 | Build Command    | `pnpm build`                     |
 
-如需核对或调整，打开项目的 **Settings → Build and Deployment**。 [Vercel 构建设置](https://vercel.com/docs/builds/configure-a-build)
+如需调整设置位置，见 **Settings → Build and Deployment**（参考 [Vercel 构建设置文档](https://vercel.com/docs/builds/configure-a-build)）。
 
-### 手动导入
+### 手动导入仓库
 
-1. Fork [Campanula 仓库](https://github.com/nonhana/campanula-music)。
-2. 在 Vercel 通过 **Add New → Project** 导入 Fork，使用默认分支 `main`。
-3. 填写 `COOKIE_SECRET`，直接点击 **Deploy**（构建设置由 `vercel.json` 自动接管）。
+若不使用一键创建按钮，也可通过 Fork 手动导入：
 
-## 绑定自己的域名
+1. Fork [Campanula 仓库](https://github.com/nonhana/campanula-music) 至个人 GitHub 账号。
+2. 在 Vercel 控制台选择 **Add New → Project** 并导入该 Fork 仓库，保持默认分支为 `main`。
+3. 添加 `COOKIE_SECRET` 环境变量后点击 **Deploy**。
 
-1. 在项目的 **Settings → Domains** 添加播放器域名，例如 `music.example.com`。
-2. 在 DNS 服务商处按 Vercel 显示的类型、名称和目标添加记录。CNAME 使用项目提供的目标，避开 `*.vercel.app`。使用 Cloudflare DNS 时选 **仅 DNS**。
-3. 回到 **Domains**，等配置验证通过和 HTTPS 证书就绪。 [Vercel 域名配置](https://vercel.com/docs/domains/working-with-domains/add-a-domain)
+## 绑定自定义域名
 
-## 打开自己的登录页
+1. 打开项目的 **Settings → Domains**，添加目标播放域名（如 `music.example.com`）。
+2. 在域名 DNS 服务商处按 Vercel 提示添加记录；若配置 CNAME，优先填写项目面板分配的专用目标地址而非通用 `*.vercel.app`；使用 Cloudflare DNS 时将代理状态设为 **仅 DNS（DNS only）**。
+3. 返回 **Domains** 页面，等待 DNS 验证与 HTTPS 证书自动签发完成（参考 [Vercel 域名配置文档](https://vercel.com/docs/domains/working-with-domains/add-a-domain)）。
 
-打开自己的 HTTPS 地址，确认能看到网易云登录入口。
+## 验证部署
 
-| 现象              | 检查                                                                |
-| ----------------- | ------------------------------------------------------------------- |
-| 需要配置加密密钥  | 检查 Production 的 `COOKIE_SECRET` 至少 32 个字符，保存后重新部署。 |
-| 需要用 HTTPS 打开 | 检查网址以 `https://` 开头，且证书已生效。                          |
-| 打开的是文档站    | 使用仓库根目录和 `pnpm build` 重新部署。                            |
-| 短信登录报 10004  | 改用扫码，或试填 `NETEASE_REAL_IP`（自己的国内公网 IP）后重新部署。 |
+通过绑定的 HTTPS 域名访问站点，确认界面正常展示网易云账号登录入口。
 
-[安装与离线播放](./listen.md) · [Vercel 升级与回退](./upgrade.md#vercel-升级与回退)
+| 异常现象           | 排查方式                                                                        |
+| ------------------ | ------------------------------------------------------------------------------- |
+| 提示需要加密密钥   | 检查 Production 环境的 `COOKIE_SECRET` 长度不少于 32 个字符，保存后触发重新部署 |
+| 提示需使用 HTTPS   | 确认使用 `https://` 访问自定义域名，且 **Domains** 中证书状态正常               |
+| 页面展示为文档站   | 确认 Root Directory 留空，Build Command 为 `pnpm build` 后重新部署              |
+| 短信登录返回 10004 | 改用二维码登录，或在环境变量中配置 `NETEASE_REAL_IP`（中国大陆公网 IP）后重部署 |
+
+下一步可阅读[安装与离线播放](./listen.md)或[Vercel 升级与回退](./upgrade.md#vercel-升级与回退)。

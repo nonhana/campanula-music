@@ -1,12 +1,13 @@
 ---
-title: 直接跑 Node
-description: 构建播放器、启动 Node，并用 systemd 托管进程。
+title: Node.js 部署
+description: 从源码构建播放器并以 Node.js 启动，配合 systemd 实现开机自启与后台托管。
 ---
 
-- 在服务器以部署用户使用 Bash。准备 Git、[Node 26.13.1](https://nodejs.org/en/download) 和 pnpm 12.18.0。
-- 已有 Node 时，可用 `npm install -g pnpm@12.18.0` 安装 pnpm。版本以源码的 `.node-version`、`package.json` 为准。
+开始前需准备 Git、[Node.js 26.13.1](https://nodejs.org/en/download) 与 pnpm `12.18.0`（精确版本以仓库根目录 `.node-version` 与 `package.json` 为准）。已有 Node.js 环境时可通过 `npm install -g pnpm@12.18.0` 安装对应版本的 pnpm。
 
-## 获取并构建 v1
+## 获取并构建源码
+
+以部署用户登录服务器并在 Bash 中拉取 `main` 分支、安装依赖并构建产物：
 
 ```bash
 mkdir -p "$HOME/campanula/releases"
@@ -16,7 +17,7 @@ cd source
 pnpm install --frozen-lockfile && env -u VERCEL pnpm build
 ```
 
-构建成功且存在 `build/index.js` 后，在源码目录保存发布版本。
+构建成功且生成 `build/index.js` 后，将当前版本快照复制到独立的 `releases/` 子目录并更新 `current` 软链接：
 
 ```bash
 CAMPANULA_REV=$(git rev-parse HEAD)
@@ -25,20 +26,20 @@ mkdir "../releases/$CAMPANULA_REV" &&
   ln -s "releases/$CAMPANULA_REV" ../current
 ```
 
-## 传入环境并启动
+## 启动服务
 
-先[生成运行环境文件](./server.md#生成并保留密钥)，再启动并保留终端。
+确保已按[生成并保存密钥](./server.md#生成并保存密钥)生成 `~/campanula-config/runtime.env`，随后在前台测试启动：
 
 ```bash
 cd "$HOME/campanula/current"
 HOST=127.0.0.1 PORT=3000 node --env-file="$HOME/campanula-config/runtime.env" build
 ```
 
-报 `EADDRINUSE` 时检查谁占了 `3000`。启动后[配置 HTTPS](./server.md#https-反向代理)并[验证登录页](./server.md#打开自己的登录页)。
+若报错 `EADDRINUSE`，需排查并释放当前占用 `3000` 端口的进程。前台测试确认无异常后，可[配置 HTTPS 反向代理](./server.md#https-反向代理)并[验证部署](./server.md#验证部署)。
 
-## 让 Linux 在退出终端后继续运行
+## 使用 systemd 后台托管
 
-用 systemd 时，先按 Ctrl+C 停掉前台进程，再创建用户服务。示例要求主目录路径不含空格，服务使用当前 Node 的绝对路径。
+为使服务在终端退出后继续运行并支持开机自启，先按 Ctrl+C 停止前台进程，再创建 systemd 用户服务（以下脚本要求当前用户主目录路径不含空格，并将绑定当前 `node` 二进制的绝对路径）：
 
 ```bash
 mkdir -p "$HOME/.config/systemd/user"
@@ -64,8 +65,8 @@ sudo loginctl enable-linger "$(id -un)"
 systemctl --user status campanula
 ```
 
-- 看到 `active (running)` 后，用 HTTPS 地址再检查一次。
-- 启动失败时，运行 `journalctl --user -u campanula -n 50 --no-pager`。
-- 用其他进程管理器时，托管上一节的同一条启动命令。
+- 服务状态显示 `active (running)` 后，再通过 HTTPS 域名访问确认登录页可用。
+- 若服务启动异常，执行 `journalctl --user -u campanula -n 50 --no-pager` 查看标准输出与错误日志。
+- 若使用 PM2、Supervisor 等其他进程管理器，托管上一步中的同一条 `node --env-file=...` 启动命令即可。
 
-[Node 升级与回退](./upgrade.md#node-升级与回退)
+后续升级与回退操作见 [Node.js 升级与回退](./upgrade.md#nodejs-升级与回退)。

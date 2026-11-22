@@ -24,7 +24,7 @@ const homeLink =
     <title>Campanula · 项目文档</title>
     <meta
       name="description"
-      content="Campanula 项目文档，涵盖部署、安装与离线播放、升级与回退和本地开发。"
+      content="Campanula 项目文档，涵盖功能与安全、部署指南、离线播放、升级与回退及本地开发。"
     />
     <link rel="canonical" href={Astro.site} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -71,7 +71,7 @@ const homeLink =
             </p>
             <nav
               class="guide-links mt-[21px] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-[730px]:(mt-4 gap-x-3) max-[360px]:gap-x-2!"
-              aria-label="使用指南"
+              aria-label="核心文档入口"
               data-reveal-group
             >
               <a
@@ -84,10 +84,10 @@ const homeLink =
                 ]}
                 href="/guide/"
               >
-                部署指南 <ArrowRight size={17} aria-hidden="true" />
+                文档目录 <ArrowRight size={17} aria-hidden="true" />
               </a>
-              <a id="home-listen" class={homeLink} href="/guide/listen/">
-                安装与离线播放
+              <a id="home-about" class={homeLink} href="/about/features/">
+                产品介绍
               </a>
               <SourceLink id="home-source" />
             </nav>
@@ -95,9 +95,12 @@ const homeLink =
         </section>
         <nav
           class="more-guides mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 max-[730px]:mt-5"
-          aria-label="更多文档"
+          aria-label="常用指南"
           data-reveal-group
         >
+          <a id="home-listen" class={homeLink} href="/guide/listen/">
+            安装与离线播放 <ArrowRight size={15} aria-hidden="true" />
+          </a>
           <a id="home-upgrade" class={homeLink} href="/guide/upgrade/">
             升级与回退 <ArrowRight size={15} aria-hidden="true" />
           </a>

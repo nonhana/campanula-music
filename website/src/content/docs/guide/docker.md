@@ -1,15 +1,13 @@
 ---
-title: 用 Docker 运行
-description: 从源码构建镜像并启动播放器。
+title: Docker 部署
+description: 从源码构建 Campanula 容器镜像并在自建服务器上运行。
 ---
 
-- 在服务器安装 Git 和 [Docker Engine](https://docs.docker.com/engine/install/)。用 `docker version` 确认能连接 Docker。
-- 先[生成运行环境文件](./server.md#生成并保留密钥)。
-- **v1 从源码构建。** 旧版 GHCR 标签 `latest` 和 `v0.0.1` 不适用于本指南。
+部署前请先在服务器安装 Git 与 [Docker Engine](https://docs.docker.com/engine/install/)（通过 `docker version` 确认守护进程连接正常），并按[自建服务器指南](./server.md#生成并保存密钥)生成 `runtime.env`。当前不分发预构建远程镜像，需直接在服务器上从源码构建。
 
-## 从 v1 源码构建
+## 从源码构建镜像
 
-在服务器的 Bash 终端执行。构建需要访问 Docker Hub 和 npm。
+在服务器 Bash 终端中克隆 `main` 分支并构建镜像（构建过程需拉取基础镜像与 npm 依赖）：
 
 ```bash
 git clone --branch main --single-branch https://github.com/nonhana/campanula-music.git campanula-source
@@ -20,9 +18,9 @@ docker build --pull \
   --tag "campanula-local:$CAMPANULA_REV" .
 ```
 
-## 配置并启动
+## 启动容器
 
-在同一个源码目录启动。端口只映射到服务器本机。
+在同一源码目录下创建并启动容器，仅向服务器回环地址映射 `3000` 端口：
 
 ```bash
 CAMPANULA_REV=$(git rev-parse HEAD)
@@ -34,7 +32,7 @@ docker run -d \
   "campanula-local:$CAMPANULA_REV"
 ```
 
-- 启动失败时，用 `docker logs --tail 50 campanula` 查日志，用 `docker ps -a` 检查容器名和端口。
-- 改环境文件后，确认是本实例的容器，再执行 `docker stop campanula && docker rm campanula`，然后重跑上面的启动命令。
+- **排查启动失败**：执行 `docker logs --tail 50 campanula` 查看运行日志，或运行 `docker ps -a` 排查同名容器与端口占用冲突。
+- **更新环境变量**：编辑 `runtime.env` 后，先停止并移除旧容器（`docker stop campanula && docker rm campanula`），再重新执行上述 `docker run` 命令重建容器。
 
-接下来[配置 HTTPS](./server.md#https-反向代理)并[验证登录页](./server.md#打开自己的登录页)。更新时见 [Docker 升级与回退](./upgrade.md#docker-升级与回退)。
+容器就绪后，继续[配置 HTTPS 反向代理](./server.md#https-反向代理)并[验证部署](./server.md#验证部署)；后续版本维护见 [Docker 升级与回退](./upgrade.md#docker-升级与回退)。

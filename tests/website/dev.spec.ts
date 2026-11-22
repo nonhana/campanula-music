@@ -19,9 +19,7 @@ test('docs:dev 的目录入口真正执行示例，首页可进入指南，独�
   await page.goto('/');
   await expect(page.locator('#home-source')).toBeVisible();
   await page.locator('#home-deploy').click();
-  await expect(
-    page.getByRole('heading', { name: '部署 Campanula' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: '文档目录' })).toBeVisible();
   await page.goto('/demo/?screen=player');
   const player = page.getByRole('dialog', { name: '正在播放', exact: true });
   await player.getByRole('button', { name: '播放', exact: true }).click();

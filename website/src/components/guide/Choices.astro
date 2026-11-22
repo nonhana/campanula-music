@@ -1,13 +1,45 @@
 ---
 import { ChevronRight, Cloud, Server } from '@lucide/svelte';
 import { settingsLink } from '../../../../src/lib/components/ui/control-styles.ts';
-const listenLink =
-  'mt-2 min-h-11 inline-block content-center rounded-md px-1 text-label text-primary-900 font-500 hover:(text-primary-950 underline underline-offset-4)';
+const itemLink =
+  'min-h-11 inline-flex items-center rounded-md px-1 text-label text-primary-900 font-500 hover:(text-primary-950 underline underline-offset-4)';
 ---
+
+<section class="mt-8" aria-labelledby="about-heading">
+  <h2 id="about-heading" class="px-1 text-title-sm font-600">
+    认识 Campanula
+  </h2>
+  <ul class="grid m-0 mt-2 list-none gap-2.5 p-0">
+    <li class="flex flex-col items-start">
+      <a id="features-guide" class={itemLink} href="/about/features/">
+        功能与边界
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        界面预览、核心能力、非计划功能与浏览器适配说明
+      </span>
+    </li>
+    <li class="flex flex-col items-start">
+      <a id="privacy-guide" class={itemLink} href="/about/privacy-and-data/">
+        账号安全与数据归属
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        网易云凭据加密方式、网络流量分流与本地数据存储范围
+      </span>
+    </li>
+    <li class="flex flex-col items-start">
+      <a id="design-guide" class={itemLink} href="/about/design/">
+        设计理念
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        浅色视觉体系、色彩分工、多语种字体与动效演示
+      </span>
+    </li>
+  </ul>
+</section>
 
 <section class="mt-8" aria-labelledby="deploy-heading">
   <h2 id="deploy-heading" class="px-1 text-title-sm font-600">
-    选择部署方式
+    部署与运维
   </h2>
   <div class="grid mt-3 gap-3">
     <a
@@ -21,7 +53,7 @@ const listenLink =
           部署到 Vercel
         </span>
         <span class="mt-1 block text-caption text-neutral-600">
-          准备 GitHub、Vercel 账号和域名
+          通过 GitHub 与 Vercel 部署并绑定自定义域名
         </span>
       </span>
       <ChevronRight
@@ -38,10 +70,10 @@ const listenLink =
       <Server size={20} class="flex-none text-neutral-700" aria-hidden="true" />
       <span class="min-w-0 flex-1">
         <span class="block text-body text-neutral-900 font-500">
-          部署到自己的服务器
+          部署到自建服务器
         </span>
         <span class="mt-1 block text-caption text-neutral-600">
-          用 Docker 或 Node 运行，配置 HTTPS
+          准备域名与环境变量，配合 Caddy 或 Nginx 配置 HTTPS
         </span>
       </span>
       <ChevronRight
@@ -51,54 +83,74 @@ const listenLink =
       />
     </a>
   </div>
-</section>
-<section class="mt-8" aria-labelledby="listen-heading">
-  <h2 id="listen-heading" class="px-1 text-title-sm font-600">
-    已经部署好了
-  </h2>
-  <a class={listenLink} id="listen-guide" href="/guide/listen/">
-    安装与离线播放
-  </a>
-  <p>
-    <a id="upgrade-guide" class={listenLink} href="/guide/upgrade/">
-      升级与回退
-    </a>
-  </p>
+  <ul class="grid m-0 mt-3 list-none gap-2.5 p-0">
+    <li class="flex flex-col items-start">
+      <a id="deploy-docker" class={itemLink} href="/guide/docker/">
+        Docker 部署
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        从源码构建容器镜像并在自建服务器上运行
+      </span>
+    </li>
+    <li class="flex flex-col items-start">
+      <a id="deploy-node" class={itemLink} href="/guide/node/">
+        Node.js 部署
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        使用 Node.js 构建运行并通过 systemd 后台托管
+      </span>
+    </li>
+    <li class="flex flex-col items-start">
+      <a id="upgrade-guide" class={itemLink} href="/guide/upgrade/">
+        升级与回退
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        在保留域名、密钥与本地下载的前提下更新或回退版本
+      </span>
+    </li>
+  </ul>
 </section>
 
-<section class="mt-8" aria-labelledby="about-heading">
-  <h2 id="about-heading" class="px-1 text-title-sm font-600">
-    认识 Campanula
+<section class="mt-8" aria-labelledby="listen-heading">
+  <h2 id="listen-heading" class="px-1 text-title-sm font-600">
+    日常使用
   </h2>
-  <a id="features-guide" class={listenLink} href="/about/features/">
-    功能与边界
-  </a>
-  <p>
-    <a id="privacy-guide" class={listenLink} href="/about/privacy-and-data/">
-      账号安全与数据归属
-    </a>
-  </p>
-  <p>
-    <a id="design-guide" class={listenLink} href="/about/design/">
-      设计理念
-    </a>
-  </p>
+  <ul class="grid m-0 mt-2 list-none gap-2.5 p-0">
+    <li class="flex flex-col items-start">
+      <a id="listen-guide" class={itemLink} href="/guide/listen/">
+        安装与离线播放
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        安装为独立应用、离线下载、音频导出与常用交互说明
+      </span>
+    </li>
+  </ul>
 </section>
 
 <section class="mt-8" aria-labelledby="develop-heading">
   <h2 id="develop-heading" class="px-1 text-title-sm font-600">
-    参与开发
+    开发与架构
   </h2>
-  <a id="development-guide" class={listenLink} href="/development/">
-    本地开发
-  </a>
-  <p>
-    <a
-      id="architecture-guide"
-      class={listenLink}
-      href="/development/architecture/"
-    >
-      架构与实现概览
-    </a>
-  </p>
+  <ul class="grid m-0 mt-2 list-none gap-2.5 p-0">
+    <li class="flex flex-col items-start">
+      <a id="development-guide" class={itemLink} href="/development/">
+        本地开发
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        配置开发环境、本机 HTTPS 证书与 Mock 模式启动流程
+      </span>
+    </li>
+    <li class="flex flex-col items-start">
+      <a
+        id="architecture-guide"
+        class={itemLink}
+        href="/development/architecture/"
+      >
+        架构与实现概览
+      </a>
+      <span class="px-1 text-caption text-neutral-600">
+        系统分层、请求与媒体分流架构及核心客户端机制
+      </span>
+    </li>
+  </ul>
 </section>

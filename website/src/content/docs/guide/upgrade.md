@@ -1,16 +1,16 @@
 ---
 title: 升级与回退
-description: 沿用原域名和密钥，按部署方式更新或回退。
+description: 在保留原域名、Cookie 加密密钥与本地下载的前提下完成版本升级或回退。
 ---
 
-升级前保留**原域名、`COOKIE_SECRET` 和 `LOGIN_COOKIE_NAME`**，备份环境文件并记下当前可用版本。下载留在原设备、原浏览器和原域名下，换地址前可先[导出](./listen.md#保存与导出下载)。
+执行升级前，须保留原有的**站点域名、`COOKIE_SECRET` 与 `LOGIN_COOKIE_NAME`**，预先备份环境变量文件并记录当前稳定版本号。离线下载绑定在原设备、原浏览器及原域名下，若计划更换访问域名，建议先[导出已下载音频](./listen.md#下载管理与导出)。
 
 ## Vercel 升级与回退
 
 ### 升级
 
-1. 在 Vercel 项目设置中确认连接的仓库与 **Production Branch**。
-2. 在本机 Bash 的空目录执行以下命令，将仓库地址和分支换成自己的。
+1. 在 Vercel 控制台确认项目关联的 GitHub 仓库与 **Production Branch**。
+2. 在本地 Bash 的空目录中执行以下命令（将仓库地址与分支名替换为实际值）：
 
    ```bash
    CAMPANULA_REPO=https://github.com/YOUR_NAME/YOUR_REPO.git
@@ -24,7 +24,7 @@ description: 沿用原域名和密钥，按部署方式更新或回退。
    git diff --cached
    ```
 
-3. 检查差异，把需要保留的自定义配置加回来。有改动时提交并推送到**自己的**生产分支。
+3. 核对暂存区变更，合回需要保留的自定义修改后提交并推送至自有生产分支：
 
    ```bash
    git add -A
@@ -32,17 +32,17 @@ description: 沿用原域名和密钥，按部署方式更新或回退。
    git push origin "$CAMPANULA_BRANCH"
    ```
 
-4. 等部署 **Ready**、项目配置的检查通过，并确认生产域名指向新版。核对 **Source**、`hkg1` 和 Production 的原密钥。
+4. 等待 Vercel 构建变为 **Ready** 并通过全部检查，随后核对 **Source**、区域（`hkg1`）及 Production 环境下的原有密钥。
 
 ### 回退
 
-在 **Deployments** 选上一次正常的生产部署，使用 **Instant Rollback**。回退沿用目标部署当时的环境变量。修复后用 **Undo Rollback** 切回新版，恢复自动发布。 [Vercel 回退说明](https://vercel.com/docs/instant-rollback)
+进入 Vercel 项目 **Deployments** 列表，找到上一版正常的生产构建记录并执行 **Instant Rollback**（回退自动沿用该部署当时的环境变量）。问题修复后可通过 **Undo Rollback** 恢复自动持续部署（参考 [Vercel 回退说明](https://vercel.com/docs/instant-rollback)）。
 
 ## Docker 升级与回退
 
 ### 升级
 
-1. 记录运行中的镜像 ID，保留旧镜像。以下在服务器的源码目录运行，先确认工作区没有待保留的改动。
+1. 在确认源码工作区无未保存更改后，记录当前运行镜像 ID 以便必要时回退，再拉取最新代码：
 
    ```bash
    CAMPANULA_OLD_IMAGE=$(docker inspect campanula --format '{{.Image}}') &&
@@ -50,8 +50,8 @@ description: 沿用原域名和密钥，按部署方式更新或回退。
    git pull --ff-only origin main
    ```
 
-2. 按[从 v1 源码构建](./docker.md#从-v1-源码构建)中的 `docker build` 命令构建新版，先用 `CAMPANULA_REV=$(git rev-parse HEAD)` 取新版提交编号。
-3. 构建成功后，运行 `docker stop campanula && docker rm campanula`，再按[启动命令](./docker.md#配置并启动)创建新版容器，沿用环境文件和端口。
+2. 按[从源码构建镜像](./docker.md#从源码构建镜像)中的步骤更新 `CAMPANULA_REV=$(git rev-parse HEAD)` 并构建新版镜像。
+3. 新镜像构建完成后，执行 `docker stop campanula && docker rm campanula`，再按[启动容器](./docker.md#启动容器)重新创建并启动容器，继续挂载原 `runtime.env`。
 
 ### 回退
 
@@ -60,15 +60,15 @@ CAMPANULA_OLD_IMAGE=$(cat "$HOME/campanula-config/previous-image.txt")
 docker image inspect "$CAMPANULA_OLD_IMAGE" --format '{{.Id}}'
 ```
 
-确认旧镜像还在，再停止并删除新版容器，重跑[启动命令](./docker.md#配置并启动)，将镜像参数换成 `"$CAMPANULA_OLD_IMAGE"`。
+确认旧版镜像仍存在于本机后，停止并删除新版容器，重新执行[启动容器](./docker.md#启动容器)命令并将镜像参数替换为 `"$CAMPANULA_OLD_IMAGE"`。
 
-## Node 升级与回退
+## Node.js 升级与回退
 
 ### 升级
 
-在服务器以原部署用户操作，目录沿用 [Node 指南](./node.md)。
+以原部署用户在服务器执行，目录结构沿用 [Node.js 部署指南](./node.md)。
 
-1. 记录旧版本。在更新源码前检查工作区，拉取后核对新版的 Node 和 pnpm 版本要求。
+1. 更新前检查工作区状态并记录当前软链接指向的版本目录，拉取最新代码后核对 `.node-version` 与 `package.json` 中的运行时版本要求：
 
    ```bash
    cd "$HOME/campanula"
@@ -77,7 +77,7 @@ docker image inspect "$CAMPANULA_OLD_IMAGE" --format '{{.Id}}'
    git pull --ff-only origin main
    ```
 
-2. 构建新版，成功后写入独立发布目录。
+2. 安装依赖并构建产物，复制至带新提交哈希的独立发布目录：
 
    ```bash
    pnpm install --frozen-lockfile && env -u VERCEL pnpm build
@@ -89,7 +89,7 @@ docker image inspect "$CAMPANULA_OLD_IMAGE" --format '{{.Id}}'
      cp -R build package.json "../releases/$CAMPANULA_REV/"
    ```
 
-3. 在 Linux 上将 `current` 切到新版，再重启进程。
+3. 原子切换 `current` 软链接至新版目录并重启进程：
 
    ```bash
    cd "$HOME/campanula"
@@ -98,9 +98,9 @@ docker image inspect "$CAMPANULA_OLD_IMAGE" --format '{{.Id}}'
      mv -Tf current.next current
    ```
 
-   - systemd 用户服务运行 `systemctl --user restart campanula`。
-   - Node 路径有变时，先修改服务的 `ExecStart`，运行 `systemctl --user daemon-reload`，再重启。
-   - 前台进程按 Ctrl+C 停止，再用[原启动命令](./node.md#传入环境并启动)启动。
+   - 使用 systemd 用户服务时运行 `systemctl --user restart campanula`。
+   - 若 Node.js 可执行文件路径发生变化，先同步修改服务文件中的 `ExecStart`，执行 `systemctl --user daemon-reload` 后再重启。
+   - 前台运行时通过 Ctrl+C 停止进程，再按[启动服务](./node.md#启动服务)命令重新启动。
 
 ### 回退
 
@@ -112,11 +112,11 @@ test -f "$CAMPANULA_OLD_RELEASE/build/index.js" &&
   mv -Tf current.rollback current
 ```
 
-切换成功后重启进程。跨浏览器数据库版本回退前先查对应的版本说明。
+软链接切换完成后重启 Node.js 服务。若跨度版本涉及浏览器端 IndexedDB 结构变更，回退前应先查阅对应版本发布说明。
 
-## 在原设备上确认
+## 升级后验证
 
-- 自建服务器先[检查接口和 HTTPS](./server.md#打开自己的登录页)。
-- 用原设备和浏览器打开原域名，检查登录状态，并播放一首已经下载的歌。
-- 还在用旧界面时，联网打开一次，再关闭所有 Campanula 标签页和窗口后重开。保留站点数据。
-- 意外退出登录时，核对域名、Cookie 名和密钥。网易云会话过期后需重新登录。
+- 自建服务器实例先行按[验证部署](./server.md#验证部署)确认本地接口与 HTTPS 反代正常。
+- 在原设备与常用浏览器中访问原域名，核对登录态是否保持有效，并在「已下载」中抽检一首歌曲的离线播放。
+- 若界面仍停留在旧版本外壳，联网访问一次后关闭所有 Campanula 标签页与窗口，再次打开即可启用新版本（无需清理站点数据）。
+- 若发生意外掉登，重点核对访问域名、`LOGIN_COOKIE_NAME` 与 `COOKIE_SECRET` 是否一致；若网易云上游会话已过期，重新扫码或短信登录即可恢复。

@@ -1,14 +1,13 @@
 ---
 title: 本地开发
-description: 启动播放器、mock 或 Astro 文档站。
+description: 准备开发工具链，启动真实模式、Mock 模式或 Astro 文档站本地环境。
 ---
 
-想先了解项目的整体分层与关键机制，见[架构与实现概览](./architecture.md)。
+建议在开始编码前先阅读[架构与实现概览](./architecture.md)，了解分层边界与媒体分流机制。
 
-## 获取源码和工具
+## 环境准备
 
-准备 Git、Node **26.13.1** 和 pnpm **12.18.0**。版本以源码的 `.node-version`、`package.json` 为准。
-已有 Node 时，可用 `npm install -g pnpm@12.18.0` 安装 pnpm。
+本地开发需要 Git、Node.js **26.13.1** 与 pnpm **12.18.0**（版本约束以 `.node-version` 与 `package.json` 为准）。已有 Node.js 环境时可通过 `npm install -g pnpm@12.18.0` 安装 pnpm。
 
 ```bash
 git clone https://github.com/nonhana/campanula-music.git
@@ -16,67 +15,59 @@ cd campanula-music
 pnpm install --frozen-lockfile
 ```
 
-## 官网与部署指南
+## 启动播放器
 
-在仓库根目录按需运行。
+| 启动命令        | 默认本地地址                                  | 适用场景                           |
+| --------------- | --------------------------------------------- | ---------------------------------- |
+| `pnpm dev`      | `https://local.campanula.test:8443/`          | 对接真实网易云上游进行联调         |
+| `pnpm dev:mock` | `https://mock.campanula.test:8444/mock/login` | 使用预置账号与曲库离线调试界面交互 |
 
-| 命令                            | 用途                           |
-| ------------------------------- | ------------------------------ |
-| `pnpm docs:dev`                 | 开发预览，默认端口 `4322`。    |
-| `pnpm docs:build`               | 构建静态站到 `website/dist/`。 |
-| `pnpm docs:preview --port 4322` | 预览构建产物。                 |
+- 运行真实模式前需将 `.env.example` 复制为 `.env`，并通过 `openssl rand -base64 32` 生成随机值填入 `COOKIE_SECRET`（`.env` 仅留在本地，不提交进 Git）。
+- Mock 模式使用内存中的预置数据，重启开发服务器后恢复初始状态。
+- 在交互终端按下 Ctrl+C 可停止当前开发服务。
 
-修改示例播放器或共用组件后，重启 `docs:dev` 以重建示例。开发与预览同时运行时使用不同端口。
+## 首次运行与本地 HTTPS 证书
 
-## 播放器开发
+在交互式终端首次以 HTTPS 模式启动时，启动器会依次引导完成本机 TLS 环境配置（也可手动执行 `pnpm dev:setup`）：
 
-| 命令            | 默认地址                                      |
-| --------------- | --------------------------------------------- |
-| `pnpm dev`      | `https://local.campanula.test:8443/`          |
-| `pnpm dev:mock` | `https://mock.campanula.test:8444/mock/login` |
+1. 检查并按需下载 `mkcert`。
+2. 授权向系统证书存储安装本机根证书（CA）。
+3. 将 `local.campanula.test` 与 `mock.campanula.test` 解析至 `127.0.0.1`（macOS 与 Linux 可由向导自动追加至 `hosts`，Windows 需以管理员权限手动修改）。
+4. 复制终端日志输出的完整 HTTPS 地址在浏览器打开。
 
-- 真实模式先将 `.env.example` 复制为 `.env`，用 `openssl rand -base64 32` 生成并填入 `COOKIE_SECRET`。密钥留在本机。
-- Mock 使用预置账号和曲库，重启恢复初始数据。
-- 按 Ctrl+C 停止当前服务。
+启动器默认复用已存在的本机 `mkcert` CA，并在站点证书剩余有效期不足 30 天时自动续签。若 CA 变更或信任被移除，重新执行 `pnpm dev:setup` 即可；如需指定自定义路径，可通过环境变量 `CAROOT`、`CAMPANULA_MKCERT` 或 `CAMPANULA_DEV_TLS_DIR` 覆盖默认位置。
 
-## 第一次运行
+## 常用参数与排错
 
-首次在交互终端运行 HTTPS 模式，按提示完成以下操作。可单独运行 `pnpm dev:setup`。
+| 命令                      | 说明                                                          |
+| ------------------------- | ------------------------------------------------------------- |
+| `pnpm dev --port 9443`    | 更换 HTTPS 监听端口（`dev:mock` 同样适用）                    |
+| `pnpm dev:http`           | 启用本地 HTTP 备用入口（`http://localhost:5173/`）            |
+| `pnpm dev:mock:http`      | 启用 Mock HTTP 备用入口（`http://127.0.0.1:5174/mock/login`） |
+| `pnpm dev --print-config` | 仅打印当前生效的地址、域名与端口配置而不启动服务              |
 
-1. 安装或确认下载 mkcert。
-2. 授权安装本机证书信任。
-3. 将 `local.campanula.test` 和 `mock.campanula.test` 指向 `127.0.0.1`。macOS 和 Linux 可按提示追加 hosts，Windows 需手动配置。
-4. 打开日志里的完整 HTTPS 地址。
+- **端口冲突**：停止占用目标端口的旧进程，或通过 `--port` 指定其他可用端口。
+- **Fake-IP（如 `198.18.*`）拦截**：在本地网络代理的绕过规则中排除 `local.campanula.test` 与 `mock.campanula.test`，确保域名解析到 `127.0.0.1`。
+- **浏览器提示证书不受信任**：运行 `pnpm dev:setup` 重新安装信任后完全重启浏览器。
+- **打开了旧入口地址**：优先使用当次终端输出的完整地址，并排查当前 shell 是否残留 `CAMPANULA_HTTPS_PORT` 或 `CAMPANULA_DEV_ORIGIN`。
 
-## 证书如何复用
+## 文档站开发
 
-- 启动器复用本机 mkcert CA，站点证书剩余 30 天以内时用同一 CA 续签。
-- CA 变更或信任被移除后，运行 `pnpm dev:setup`，按提示重新确认。
-- 用 `CAROOT`、`CAMPANULA_MKCERT` 或 `CAMPANULA_DEV_TLS_DIR` 指定已有 CA、mkcert 或 TLS 缓存位置。
+官网与本套文档站位于 `website/` 目录，在仓库根目录执行以下命令：
 
-## 端口、HTTP 与排错
+| 命令                            | 用途                                                   |
+| ------------------------------- | ------------------------------------------------------ |
+| `pnpm docs:dev`                 | 构建示例模块并启动 Astro 开发服务器（默认端口 `4322`） |
+| `pnpm docs:build`               | 构建示例与静态文档站至 `website/dist/`                 |
+| `pnpm docs:preview --port 4322` | 本地预览 `website/dist/` 静态构建产物                  |
 
-| 命令                      | 用途                                                 |
-| ------------------------- | ---------------------------------------------------- |
-| `pnpm dev --port 9443`    | 换 HTTPS 端口，mock 同样支持 `--port`。              |
-| `pnpm dev:http`           | HTTP 备用，`http://localhost:5173/`。                |
-| `pnpm dev:mock:http`      | Mock HTTP 备用，`http://127.0.0.1:5174/mock/login`。 |
-| `pnpm dev --print-config` | 只显示地址配置。                                     |
+修改位于 `website/demo/` 的示例播放器源码或共用的 UI 组件后，需重启 `pnpm docs:dev` 以触发示例子项目重建；同时运行开发服务与静态预览时应指定不同端口。
 
-- **端口已占用**：停止原进程或换端口。
-- **Fake-IP（如 `198.18.*`）**：在 VPN 或代理中排除两个本地域名，确认它们解析到 `127.0.0.1`。
-- **证书不受信任**：运行 `pnpm dev:setup` 后重启浏览器。
-- **打开旧地址**：使用日志里的完整地址，检查环境里是否还设置了 `CAMPANULA_HTTPS_PORT` 或 `CAMPANULA_DEV_ORIGIN`。
+## 提交前检查
 
-## 从旧版代理迁移
-
-停止旧的 `dev:proxy` 和后端，再运行 `pnpm dev` 或 `pnpm dev:mock`。换主机后需重新登录，原下载仍在旧地址下。
-
-## 检查改动
-
-| 改动         | 检查命令                                                             |
+| 改动范围     | 对应检查命令                                                         |
 | ------------ | -------------------------------------------------------------------- |
-| 格式         | `pnpm fmt:check`                                                     |
-| 播放器       | `pnpm lint`、`pnpm check` 和受影响的测试。                           |
-| 文档站       | `pnpm exec tsc -p website/tsconfig.json --noEmit`、`pnpm docs:build` |
-| 启动器与证书 | `pnpm test:environment`、`pnpm test:environment:https`               |
+| 全仓代码格式 | `pnpm fmt:check`                                                     |
+| 播放器与源码 | `pnpm lint`、`pnpm check` 与受影响的测试集                           |
+| 文档站与组件 | `pnpm exec tsc -p website/tsconfig.json --noEmit`、`pnpm docs:build` |
+| 启动器与 TLS | `pnpm test:environment`、`pnpm test:environment:https`               |

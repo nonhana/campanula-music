@@ -216,8 +216,9 @@ test('Tab 按从上到下的顺序经过首页链接，反向也能返回', asyn
   await page.goto('/');
   const links = [
     'home-deploy',
-    'home-listen',
+    'home-about',
     'home-source',
+    'home-listen',
     'home-upgrade',
     'home-development',
   ];
