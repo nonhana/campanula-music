@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ChevronDown, ListMusic, MicVocal } from '@lucide/svelte';
+  import { onDestroy } from 'svelte';
 
   import type { Song } from '#lib/api/library.ts';
 
@@ -32,6 +33,7 @@
   import SkipButton from './SkipButton.svelte';
   import type { Turn } from './view.ts';
   import { neighborSong, PAGE_COVER } from './view.ts';
+  import { createScreenWakeLock } from './wake-lock.ts';
   import WaveProgress from './WaveProgress.svelte';
 
   const {
@@ -85,11 +87,22 @@
     if (!queueOpen) return;
     sheet?.querySelector<HTMLElement>('button')?.focus();
   });
+
+  const wakeLock = createScreenWakeLock();
+  const keepAwake = $derived(
+    player.request !== null &&
+      !player.inert &&
+      !queueOpen &&
+      choices.phoneLyrics &&
+      view.state.player.status === 'playing',
+  );
+  $effect(() => wakeLock.setActive(keepAwake));
+  onDestroy(() => wakeLock.destroy());
 </script>
 
 <div class="relative min-h-0 flex flex-1 flex-col" inert={player.inert}>
   <div
-    class="relative grid grid-cols-[48px_minmax(0,1fr)_48px] h-16 flex-none items-center px-1"
+    class="relative grid grid-cols-[48px_minmax(0,1fr)_48px] h-[calc(64px+env(safe-area-inset-top))] flex-none items-center px-1 pt-[env(safe-area-inset-top)]"
   >
     <button
       type="button"

@@ -11,6 +11,7 @@
   import { untrack } from 'svelte';
 
   import { clamp } from '../shared/clamp.ts';
+  import { haptic } from '../shared/haptic.ts';
   import { DELAYS } from '../shared/motion-tokens.ts';
   import { scrollBehavior } from '../shared/motion.ts';
   import { attachGrip, attachTouchClaim } from '../shared/press.ts';
@@ -212,7 +213,7 @@
       starting = true;
       quick = onGrip;
       if (quick && sample.pointerType === 'touch') {
-        navigator.vibrate?.(10);
+        haptic();
       }
       return range > 0 ? metrics.position / range : 0;
     },

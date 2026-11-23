@@ -5,6 +5,7 @@
   import { songTitle } from '#lib/api/library.ts';
 
   import { getAppView } from '../shared/app-context.svelte.ts';
+  import { haptic } from '../shared/haptic.ts';
   import { iconSwap } from '../shared/motion.ts';
 
   const {
@@ -41,7 +42,10 @@
     aria-label="红心《{songTitle(song)}》"
     aria-pressed={hearted}
     disabled={hearts === null}
-    onclick={() => view.app.heart(song, !hearted)}
+    onclick={() => {
+      if (!hearted) haptic();
+      view.app.heart(song, !hearted);
+    }}
   >
     {#key hearted}
       <span class="grid col-start-1 row-start-1" transition:iconSwap>

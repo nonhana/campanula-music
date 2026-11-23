@@ -67,7 +67,7 @@
   style:--player-dock-height="{playerLayer.dockHeight}px"
 >
   <div
-    class="sticky top-0 z-20 bg-primary-50"
+    class="sticky top-0 z-20 bg-primary-50 pt-[env(safe-area-inset-top)]"
     bind:clientHeight={top}
     data-page-top
   >

@@ -22,6 +22,7 @@
 
   import { songMenuActions } from '../menu/song-menu.svelte.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
+  import { haptic } from '../shared/haptic.ts';
   import { formatDuration, langOf } from '../shared/text.ts';
   import Cover from '../ui/Cover.svelte';
   import CreditLine from './CreditLine.svelte';
@@ -121,6 +122,7 @@
     timer = setTimeout(() => {
       timer = undefined;
       longPressed = true;
+      haptic();
       onlongpress?.(from);
     }, LONG_PRESS);
   };

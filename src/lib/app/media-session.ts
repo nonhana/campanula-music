@@ -30,6 +30,9 @@ export const connectMediaSession = ({
   session.setActionHandler('pause', () => {
     if (read().status !== 'paused') player.toggle();
   });
+  session.setActionHandler('stop', () => {
+    if (read().status !== 'paused') player.toggle();
+  });
   session.setActionHandler('previoustrack', () => player.previous());
   session.setActionHandler('nexttrack', () => player.next());
   session.setActionHandler('seekto', (details) => {
@@ -79,14 +82,14 @@ export const connectMediaSession = ({
     session.playbackState = playing ? 'playing' : 'paused';
     const duration =
       state.duration ?? (song.duration === null ? null : song.duration / 1000);
-    if (duration === null) {
+    if (duration === null || !Number.isFinite(duration) || duration <= 0) {
       if (told) {
         told = null;
         session.setPositionState();
       }
       return;
     }
-    const position = Math.min(state.position, duration);
+    const position = Math.max(0, Math.min(state.position, duration));
     const now = clock.now();
     if (
       told &&

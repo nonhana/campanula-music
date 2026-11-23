@@ -148,7 +148,7 @@
   <div
     class={[
       'fixed inset-x-0 z-71 flex flex-col rounded-t-sheet bg-white shadow-float',
-      !confirm && !reading && 'top-6',
+      !confirm && !reading && 'top-[calc(24px+env(safe-area-inset-top))]',
     ]}
     style:max-height={reading
       ? `calc(${SHEET_HEIGHT * 100}dvh + ${DRAWER_BLEED}px)`

@@ -45,7 +45,7 @@
         place === 'desktop'
           ? 'left-1/2 max-w-[calc(100vw-48px)] -translate-x-1/2 flex-col items-center'
           : place === 'top'
-            ? 'inset-x-2 top-16 flex-col-reverse'
+            ? 'inset-x-2 top-[calc(64px+env(safe-area-inset-top))] flex-col-reverse'
             : 'inset-x-2 flex-col',
       ]}
       style:bottom={place === 'desktop'

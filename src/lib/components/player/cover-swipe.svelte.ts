@@ -1,6 +1,7 @@
 import { untrack } from 'svelte';
 import type { Attachment } from 'svelte/attachments';
 
+import { haptic } from '../shared/haptic.ts';
 import { WHEEL } from '../shared/motion-tokens.ts';
 import { attachGrip, createPageHold } from '../shared/press.ts';
 import type { WheelDirection } from './wheel-core.ts';
@@ -31,7 +32,10 @@ export const createCoverSwipe = ({
   const core = createWheelCore({
     notch: () => (WHEEL.pivot * width * WHEEL.pitch * Math.PI) / 180,
     has,
-    commit,
+    commit(direction) {
+      haptic();
+      commit(direction);
+    },
     tap,
     onPose(pose) {
       holdPage(pose.dragging);

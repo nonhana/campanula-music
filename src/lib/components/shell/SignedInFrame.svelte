@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { afterNavigate } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import type { RouteId } from '$app/types';
   import type { Component, Snippet } from 'svelte';
-  import { onMount, untrack } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
 
   import type { Account } from '#lib/api/account.ts';
 
@@ -10,12 +11,15 @@
   import { setOverlays } from '../overlay/overlay-context.ts';
   import OverlayHost from '../overlay/OverlayHost.svelte';
   import { createOverlays } from '../overlay/overlays.svelte.ts';
+  import { currentSong } from '../player/now.ts';
   import PlayerLayer from '../player/PlayerLayer.svelte';
   import { resetSearchBox } from '../search/search-box.svelte.ts';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
+  import { consumeLaunchQueue } from './launch-queue.ts';
   import { pageTransitions } from './page-transition.ts';
   import { warmPlayerBar } from './player-bar.svelte.ts';
+  import { createWindowTitle, formatPlayingTitle } from './window-title.ts';
 
   type DesktopShellComponent = Component<{
     account: Account;
@@ -47,6 +51,19 @@
   );
 
   onMount(() => warmPlayerBar(() => desktopLayout.current));
+  onMount(() =>
+    consumeLaunchQueue({
+      navigate(route) {
+        if (overlays.stack.holdsHistory)
+          void overlays.stack.leave(resolve(route));
+        else if (location.pathname !== route || location.search !== '')
+          void goto(resolve(route));
+      },
+      cleanCurrent(route) {
+        void goto(resolve(route), { replace: true });
+      },
+    }),
+  );
 
   let DesktopShellView = $state.raw<DesktopShellComponent | undefined>(
     untrack(() => initialDesktop),
@@ -112,6 +129,14 @@
     resetSearchBox(view.app);
   });
   resetSearchBox(view.app);
+
+  const windowTitle = createWindowTitle();
+  $effect(() => {
+    const { player } = view.state;
+    const song = player.status === 'playing' ? currentSong(player) : null;
+    windowTitle.setPlaying(song ? formatPlayingTitle(song) : null);
+  });
+  onDestroy(() => windowTitle.destroy());
 </script>
 
 <div class="contents" inert={overlays.stack.baseInert}>

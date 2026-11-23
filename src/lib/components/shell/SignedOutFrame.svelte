@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import type { Snippet } from 'svelte';
   import { onDestroy, onMount } from 'svelte';
@@ -10,6 +11,7 @@
   import { setOverlays } from '../overlay/overlay-context.ts';
   import OverlayHost from '../overlay/OverlayHost.svelte';
   import { createOverlays } from '../overlay/overlays.svelte.ts';
+  import { currentSong } from '../player/now.ts';
   import PlayerLayer from '../player/PlayerLayer.svelte';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
@@ -19,11 +21,13 @@
   } from '../shared/now-locate.svelte.ts';
   import { setScrollLookup } from '../shared/scroll-marks.ts';
   import Scrollbar from '../ui/Scrollbar.svelte';
+  import { consumeLaunchQueue } from './launch-queue.ts';
   import PageLocateButton from './PageLocateButton.svelte';
   import { warmPlayerBar } from './player-bar.svelte.ts';
   import { playerDockBottom, playerDockTop } from './player-dock.ts';
   import PlayerDock from './PlayerDock.svelte';
   import { pageScrollPadding } from './scroll-padding.ts';
+  import { createWindowTitle, formatPlayingTitle } from './window-title.ts';
 
   const { children }: { children: Snippet } = $props();
   const view = getAppView();
@@ -34,8 +38,9 @@
     overlays.multiSelect.mode && !desktopLayout.current,
   );
   const scrollPadding = pageScrollPadding();
+  let headerHeight = $state(0);
   const top = $derived(
-    (desktopLayout.current ? 64 : 56) +
+    (headerHeight || (desktopLayout.current ? 64 : 56)) +
       (view.state.online ? 0 : OFFLINE_BAR_HEIGHT),
   );
   const nowLocate = setNowLocate(
@@ -51,7 +56,28 @@
   // 再加 8px 写进 scroll-padding-top：page-transition.ts 判断封面露没露也按它算
   $effect(() => scrollPadding.set(`${top + 8}px`));
   onMount(() => warmPlayerBar(() => desktopLayout.current));
+  onMount(() =>
+    consumeLaunchQueue({
+      navigate(route) {
+        if (overlays.stack.holdsHistory)
+          void overlays.stack.leave(resolve(route));
+        else if (location.pathname !== route || location.search !== '')
+          void goto(resolve(route));
+      },
+      cleanCurrent(route) {
+        void goto(resolve(route), { replace: true });
+      },
+    }),
+  );
   onDestroy(scrollPadding.release);
+
+  const windowTitle = createWindowTitle();
+  $effect(() => {
+    const { player } = view.state;
+    const song = player.status === 'playing' ? currentSong(player) : null;
+    windowTitle.setPlaying(song ? formatPlayingTitle(song) : null);
+  });
+  onDestroy(() => windowTitle.destroy());
 </script>
 
 {#snippet selectionBar()}
@@ -72,7 +98,8 @@
     style:--player-dock-height="{overlays.playerLayer.dockHeight}px"
   >
     <header
-      class="sticky top-0 z-40 h-14 flex items-center gap-3 bg-primary-50 pl-4 pr-3 md:fixed md:inset-x-0 md:h-16 md:pl-6 md:pr-6"
+      class="sticky top-0 z-40 h-[calc(56px+env(safe-area-inset-top))] flex items-center gap-3 bg-primary-50 pl-4 pr-3 pt-[env(safe-area-inset-top)] md:fixed md:inset-x-0 md:h-16 md:pl-6 md:pr-6 md:pt-0"
+      bind:clientHeight={headerHeight}
       data-page-top
     >
       {#if selecting}
@@ -92,7 +119,9 @@
     </header>
     <main class="md:pt-16">
       {#if !view.state.online}
-        <div class="sticky top-14 z-30 md:top-16">
+        <div
+          class="sticky top-[calc(56px+env(safe-area-inset-top))] z-30 md:top-16"
+        >
           <OfflineBar phone={!desktopLayout.current} />
         </div>
       {/if}

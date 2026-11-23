@@ -73,7 +73,7 @@
 
 <div
   bind:this={strip}
-  class={['flex overflow-x-auto', klass]}
+  class={['flex overflow-x-auto overscroll-x-contain', klass]}
   role="tablist"
   aria-label={label}
 >

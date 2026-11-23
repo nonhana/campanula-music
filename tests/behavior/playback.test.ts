@@ -2580,6 +2580,24 @@ describe('锁屏和通知栏', () => {
     expect(current(app)).toBe(SECOND.id);
     expect(app.state.player.change).toBe('previous');
   });
+
+  it('媒体会话响应 stop 指令暂停播放，暂停态再次收到保持幂等', async () => {
+    const device = world.device();
+    const tab = await signInWithLiked(device);
+    const { app, mediaSession } = tab;
+    await playUntilSounding(tab, FIRST, SECOND);
+
+    mediaSession.press('stop');
+    await world.settle();
+    expect(app.state.player.status).toBe('paused');
+    expect(tab.sounding()).toBeUndefined();
+    expect(mediaSession.playbackState).toBe('paused');
+
+    mediaSession.press('stop');
+    await world.settle();
+    expect(app.state.player.status).toBe('paused');
+    expect(mediaSession.playbackState).toBe('paused');
+  });
 });
 
 const RECORDED_IN_QUALITIES = {

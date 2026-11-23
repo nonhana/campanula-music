@@ -362,8 +362,27 @@ export default defineConfig<Theme>({
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           -webkit-tap-highlight-color: transparent;
+          overscroll-behavior-y: none;
           caret-color: ${colors.primary[800]};
           accent-color: ${colors.primary[800]};
+        }
+
+        body {
+          overscroll-behavior-y: none;
+        }
+
+        button,
+        [role='button'],
+        [role='tab'],
+        nav a,
+        header a {
+          user-select: none;
+          -webkit-touch-callout: none;
+          touch-action: manipulation;
+        }
+
+        img {
+          -webkit-touch-callout: none;
         }
 
         /* 原生滚动条一律隐藏、不占宽度，换成自绘的：锁住滚动时页面不横移 */

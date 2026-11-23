@@ -22,7 +22,7 @@
 
 <!-- data-shelf 让页面返回时按它恢复横向滚动位置 -->
 <div
-  class={['overflow-x-auto', !phone && '-mx-2']}
+  class={['overflow-x-auto overscroll-x-contain', !phone && '-mx-2']}
   data-shelf={label}
   {@attach dragScroll}
 >

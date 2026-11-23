@@ -3,6 +3,7 @@
   "short_name": "Campanula",
   "description": "自部署的网易云音乐播放器",
   "lang": "zh-CN",
+  "dir": "ltr",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -10,6 +11,11 @@
   "orientation": "portrait",
   "background_color": "#F5FCF9",
   "theme_color": "#F5FCF9",
+  "categories": ["music", "entertainment"],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -26,6 +32,56 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "每日推荐",
+      "short_name": "每日推荐",
+      "url": "/daily?source=shortcut",
+      "icons": [
+        {
+          "src": "/icons/shortcut-daily-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "搜索",
+      "short_name": "搜索",
+      "url": "/search?source=shortcut",
+      "icons": [
+        {
+          "src": "/icons/shortcut-search-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "已下载",
+      "short_name": "已下载",
+      "url": "/downloads?source=shortcut",
+      "icons": [
+        {
+          "src": "/icons/shortcut-downloads-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "歌单",
+      "short_name": "歌单",
+      "url": "/playlists?source=shortcut",
+      "icons": [
+        {
+          "src": "/icons/shortcut-playlists-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

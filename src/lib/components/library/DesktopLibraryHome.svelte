@@ -442,6 +442,7 @@
     grid-auto-columns: calc((100% - 24px) / 3.25);
     column-gap: 8px;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
     mask-image: linear-gradient(
       90deg,

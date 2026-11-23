@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { ChevronRight, CircleArrowDown } from '@lucide/svelte';
+  import { onMount } from 'svelte';
 
   import Brand from '../boot/Brand.svelte';
   import OfflineBar from '../notice/OfflineBar.svelte';
@@ -9,6 +11,7 @@
   import { FLOAT_IN_DELAY } from '../shared/motion-tokens.ts';
   import { float } from '../shared/motion.ts';
   import { formatCount } from '../shared/text.ts';
+  import { consumeLaunchQueue } from '../shell/launch-queue.ts';
   import Scrollbar from '../ui/Scrollbar.svelte';
   import LoginForm from './LoginForm.svelte';
 
@@ -19,13 +22,25 @@
   const { expired }: Props = $props();
   const view = getAppView();
   const downloaded = $derived(view.state.downloads.songs?.length ?? 0);
+
+  onMount(() =>
+    consumeLaunchQueue({
+      navigate(route) {
+        if (location.pathname !== route || location.search !== '')
+          void goto(resolve(route));
+      },
+      cleanCurrent(route) {
+        void goto(resolve(route), { replace: true });
+      },
+    }),
+  );
 </script>
 
 <div
   class="bg-primary-50 pb-[calc(32px+env(safe-area-inset-bottom))] min-h-dvh md:pb-16"
 >
   <header
-    class="mx-auto h-14 max-w-[1280px] flex items-center px-4 md:h-16 md:px-8"
+    class="mx-auto h-[calc(56px+env(safe-area-inset-top))] max-w-[1280px] flex items-center px-4 pt-[env(safe-area-inset-top)] md:h-16 md:px-8 md:pt-0"
   >
     <Brand />
   </header>
