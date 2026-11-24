@@ -3,7 +3,7 @@
 
   import { toast } from '../shared/motion.ts';
 
-  type Tone = 'success' | 'error';
+  type Tone = 'success' | 'error' | 'neutral';
 
   const {
     tone,
@@ -38,11 +38,15 @@
   <span
     class={[
       'size-4 grid flex-none place-items-center',
-      tone === 'error' ? 'text-error-700' : 'text-primary-800',
+      tone === 'error'
+        ? 'text-error-700'
+        : tone === 'neutral'
+          ? 'text-neutral-700'
+          : 'text-primary-800',
     ]}
     aria-hidden="true"
   >
-    {#if tone === 'error'}
+    {#if tone === 'error' || tone === 'neutral'}
       <CircleAlert size={16} />
     {:else}
       <Check size={16} />

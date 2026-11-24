@@ -3,6 +3,7 @@
   import PlayerNotice from '../player/PlayerNotice.svelte';
   import { getAppView } from '../shared/app-context.svelte.ts';
   import { desktopLayout } from '../shared/layout.ts';
+  import NoticeCard from './NoticeCard.svelte';
   import OperationNotice from './OperationNotice.svelte';
 
   type Place = 'desktop' | 'top' | 'bottom';
@@ -12,6 +13,10 @@
   const panel = $derived(overlays.downloadPanel);
   const operations = $derived(view.state.notices);
   const playerNotice = $derived(view.state.player.notice);
+  const exitPrompt = $derived(overlays.exitPrompt);
+  const visible = $derived(
+    operations.length > 0 || playerNotice !== null || exitPrompt.open,
+  );
   const place = $derived<Place>(
     desktopLayout.current
       ? 'desktop'
@@ -31,13 +36,13 @@
   const arrival = { moved: false };
   let lastPlace: Place | null = null;
   $effect.pre(() => {
-    const now = operations.length > 0 || playerNotice ? place : null;
+    const now = visible ? place : null;
     arrival.moved = lastPlace !== null && now !== null && now !== lastPlace;
     lastPlace = now;
   });
 </script>
 
-{#if operations.length > 0 || playerNotice}
+{#if visible}
   {#key place}
     <div
       class={[
@@ -59,6 +64,17 @@
       {/each}
       {#if playerNotice}
         <PlayerNotice {playerNotice} {phone} {edge} moved={arrival.moved} />
+      {/if}
+      {#if exitPrompt.open}
+        <NoticeCard
+          tone="neutral"
+          text="再按一次返回退出并停播，上划可后台继续播放"
+          {phone}
+          {edge}
+          moved={arrival.moved}
+          name="exit-guard-notice"
+          onclose={exitPrompt.dismiss}
+        />
       {/if}
     </div>
   {/key}

@@ -17,6 +17,13 @@ const pageStep = (direction: -1 | 1): number | null => {
   }
 };
 
+const sameDocumentBack = (): boolean => {
+  if (!supported) return true;
+  const current = navigation.currentEntry;
+  if (!current || current.index <= 0) return false;
+  return Boolean(navigation.entries()[current.index - 1]?.sameDocument);
+};
+
 const subscribe = createSubscriber((update) =>
   supported ? on(navigation, 'currententrychange', update) : undefined,
 );
@@ -29,6 +36,10 @@ export const pageHistory = {
   get canForward() {
     subscribe();
     return pageStep(1) !== null;
+  },
+  get hasSameDocumentBack() {
+    subscribe();
+    return sameDocumentBack();
   },
 };
 

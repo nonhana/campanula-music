@@ -396,3 +396,62 @@ test('播放页分段条居中固定、队列收窄平移、封面可拖拽切�
     player.getByRole('button', { name: '翻译', exact: true }),
   ).toBeVisible();
 });
+
+test('手机播放中在根页触发返回请求显示二次确认，进入二级页、打开浮层、暂停与桌面端均不拦截', async ({
+  page,
+}, info) => {
+  await login(page, '/');
+  await page.locator('main [data-play-target]').first().click();
+  await expect(
+    page.getByRole('button', { name: '暂停', exact: true }),
+  ).toBeVisible();
+
+  const prompt = page.getByText('再按一次返回退出并停播，上划可后台继续播放', {
+    exact: true,
+  });
+
+  if (info.project.name === 'desktop') {
+    await page.keyboard.press('Escape');
+    await expect(prompt).toHaveCount(0);
+    return;
+  }
+
+  // 根页播放中：第一次返回请求被 CloseWatcher 接住并展示提示
+  await page.keyboard.press('Escape');
+  await expect(prompt).toBeVisible();
+
+  // 打开浮层后守卫撤防，提示收起且按返回只关浮层
+  await page.getByRole('button', { name: /^打开播放页/ }).click();
+  const player = page.getByRole('dialog', { name: '正在播放', exact: true });
+  await expect(player).toBeVisible();
+  await expect(prompt).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(player).toHaveCount(0);
+  await expect(prompt).toHaveCount(0);
+
+  // 进入二级页存在同文档可退历史：不拦截
+  await page.getByRole('link', { name: /^每日推荐/ }).click();
+  await expect(page).toHaveURL(/\/daily$/);
+  await page.keyboard.press('Escape');
+  await expect(prompt).toHaveCount(0);
+
+  // 退回根页后暂停播放：不拦截
+  await page.getByRole('button', { name: '返回', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole('button', { name: '暂停', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '播放', exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(prompt).toHaveCount(0);
+
+  // 恢复播放后再次拦截，点关闭按钮可立即收起提示
+  await page.getByRole('button', { name: '播放', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '暂停', exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(prompt).toBeVisible();
+  await page.getByRole('button', { name: '关闭提示', exact: true }).click();
+  await expect(prompt).toHaveCount(0);
+});

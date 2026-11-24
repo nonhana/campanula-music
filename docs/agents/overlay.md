@@ -6,7 +6,7 @@
 
 - `overlay-stack.ts`：纯核心，不碰 DOM 与 Kit。层的开关、转交、占用的浏览记录、焦点归还、忙时钉住都在这里；单测在 `tests/unit/overlay-stack.test.ts`。
 - `overlay-history.svelte.ts`：核心历史端口（`read` / `write` / `go` / `leave`）在 Kit 上的实现；仅修改端口签名或语义时改动。
-- `overlays.svelte.ts`：登记表，注册各层历史策略、组件与关闭钩子；组件内通过 `getOverlays()`（`overlay-context.ts`）取层与 `stack`。
+- `overlays.svelte.ts`：登记表，注册各层历史策略、组件与关闭钩子，并挂接手机根页播放中防误退守卫（`shell/exit-guard.ts`，仅在 `stack.top === null` 且无同文档可退历史时启用）；组件内通过 `getOverlays()`（`overlay-context.ts`）取层、`stack` 与 `exitPrompt`。
 
 ## 新增一层
 

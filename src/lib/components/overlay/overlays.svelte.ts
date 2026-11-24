@@ -9,6 +9,8 @@ import { createPlayerLayer } from '../player/player-layer.svelte.ts';
 import { queueEmpty } from '../player/view.ts';
 import { getAppView } from '../shared/app-context.svelte.ts';
 import { desktopLayout } from '../shared/layout.ts';
+import { createExitGuard } from '../shell/exit-guard.ts';
+import { pageHistory } from '../shell/page-history.ts';
 import { setSelectionMode } from '../ui/selection-mode.ts';
 import { createOverlayHistory } from './overlay-history.svelte.ts';
 import type {
@@ -253,10 +255,31 @@ export const createOverlays = () => {
   const playerLayer = createPlayerLayer(player, playerDrawer);
   const downloadPanel = createDownloadPanel();
 
+  let exitConfirming = $state(false);
+  const exitGuard = createExitGuard((confirming) => {
+    exitConfirming = confirming;
+  });
+
+  $effect(() => {
+    const { player: playback } = view.state;
+    const playing = playback.current !== null && playback.status !== 'paused';
+    exitGuard.setActive(
+      !view.demo &&
+        playing &&
+        !pageHistory.hasSameDocumentBack &&
+        stack.top === null &&
+        !stack.holdsHistory &&
+        !downloadPanel.expanded,
+    );
+  });
+
   onMount(() => {
     void stack.reconcile();
   });
-  onDestroy(() => stack.clear());
+  onDestroy(() => {
+    exitGuard.destroy();
+    stack.clear();
+  });
 
   return {
     stack,
@@ -285,5 +308,11 @@ export const createOverlays = () => {
     playerDrawer,
     playerLayer,
     downloadPanel,
+    exitPrompt: {
+      get open() {
+        return exitConfirming;
+      },
+      dismiss: () => exitGuard.dismiss(),
+    },
   };
 };
