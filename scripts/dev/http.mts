@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
+import { isIP } from 'node:net';
 
 export const requestURL = (
   url: string,
@@ -26,7 +27,7 @@ export const requestURL = (
         method,
         headers,
         ca,
-        ...(address.protocol === 'https:'
+        ...(address.protocol === 'https:' && !isIP(address.hostname)
           ? { servername: address.hostname }
           : {}),
         ...(address.hostname.endsWith('.test')

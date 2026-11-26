@@ -9,6 +9,8 @@ import {
   rm,
   writeFile,
 } from 'node:fs/promises';
+import { isIP } from 'node:net';
+import { networkInterfaces } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -52,11 +54,74 @@ const modes = {
 const developmentTlsDirectory = () =>
   resolve(SOURCE, process.env.CAMPANULA_DEV_TLS_DIR ?? '.campanula/tls');
 
+const formatOrigin = (http: boolean, hostname: string, port: number) =>
+  `${http ? 'http' : 'https'}://${hostname}${port === (http ? 80 : 443) ? '' : `:${port}`}`;
+
+const isPrivateIpv4 = (address: string) =>
+  address.startsWith('192.168.') ||
+  address.startsWith('10.') ||
+  /^172\.(?:1[6-9]|2\d|3[01])\./.test(address);
+
+const VIRTUAL_BRIDGE_IFACE =
+  /^(?:bridge|docker|br-|veth|virbr|vmnet|vboxnet|podman|awdl|llw|anpi|ap\d)/i;
+
+export const detectLanAddresses = (
+  interfaces: Record<
+    string,
+    | { address: string; family: string | number; internal: boolean }[]
+    | undefined
+  > = networkInterfaces(),
+): string[] => {
+  const candidates: { priority: number; address: string }[] = [];
+  for (const [name, entries] of Object.entries(interfaces)) {
+    if (!entries || VIRTUAL_BRIDGE_IFACE.test(name)) continue;
+    for (const entry of entries) {
+      if (entry.family !== 'IPv4' || entry.internal) continue;
+      // 跳过链路本地地址与常见 TUN Fake-IP 段（198.18.0.0/15）
+      if (
+        entry.address.startsWith('169.254.') ||
+        /^198\.1[89]\./.test(entry.address)
+      )
+        continue;
+      const primaryIface = /^(?:en|eth|wlan|wl)\d*/.test(name);
+      const priority =
+        (primaryIface ? 0 : 2) + (isPrivateIpv4(entry.address) ? 0 : 1);
+      candidates.push({ priority, address: entry.address });
+    }
+  }
+  candidates.sort(
+    (a, b) => a.priority - b.priority || a.address.localeCompare(b.address),
+  );
+  return [...new Set(candidates.map((item) => item.address))];
+};
+
 export const developmentSettings = (
   mode: 'product' | 'mock',
-  { http = false, port }: { http?: boolean; port?: number } = {},
+  {
+    http = false,
+    port,
+    host,
+    lanAddresses: providedLanAddresses,
+  }: {
+    http?: boolean;
+    port?: number;
+    host?: string;
+    lanAddresses?: string[];
+  } = {},
 ) => {
   const selected = modes[mode];
+  const loopbackHost = !host || ['127.0.0.1', 'localhost'].includes(host);
+  const wildcardLan = host === '0.0.0.0';
+  const specificLan = !loopbackHost && !wildcardLan && isIP(host) === 4;
+  if (!loopbackHost && !wildcardLan && !specificLan)
+    throw new Error(
+      '无效的 --host，仅支持 localhost、127.0.0.1、0.0.0.0 或本机 IPv4 地址',
+    );
+  const lanBind = wildcardLan || specificLan;
+  if (lanBind && http)
+    throw new Error(
+      '局域网开发仅支持 HTTPS（局域网 HTTP 无法通过安全上下文与 Secure Cookie）；请改用 pnpm dev:lan',
+    );
   const external =
     !http && process.env.CAMPANULA_DEV_ORIGIN
       ? new URL(process.env.CAMPANULA_DEV_ORIGIN)
@@ -79,18 +144,42 @@ export const developmentSettings = (
     resolvedPort > 65535
   )
     throw new Error('端口需要 0–65535');
-  if (external && external.hostname !== selected.hostname)
+  if (external && !specificLan && external.hostname !== selected.hostname)
     throw new Error(`本模式的开发域名为 ${selected.hostname}`);
   if (!http && resolvedPort === 0)
     throw new Error('HTTPS 入口需要固定端口，请用 --port 指定 1–65535');
-  const hostname =
-    external?.hostname ?? (http ? selected.httpHost : selected.hostname);
+  const lanAddresses = wildcardLan
+    ? (providedLanAddresses ?? detectLanAddresses())
+    : specificLan
+      ? [host!]
+      : [];
+  if (wildcardLan && lanAddresses.length === 0)
+    throw new Error(
+      '未检测到可用的局域网 IPv4 地址；请连接局域网或通过 --host 指定本机 IPv4',
+    );
+  const hostname = specificLan
+    ? host!
+    : (external?.hostname ?? (http ? selected.httpHost : selected.hostname));
+  const origin = formatOrigin(http, hostname, resolvedPort);
+  const extraOrigins = wildcardLan
+    ? lanAddresses.map((ip) => formatOrigin(false, ip, resolvedPort))
+    : [];
+  const listenHost = wildcardLan
+    ? '0.0.0.0'
+    : specificLan
+      ? host!
+      : http
+        ? selected.httpHost
+        : '127.0.0.1';
   return {
     mode,
     http,
     hostname,
     port: resolvedPort,
-    origin: `${http ? 'http' : 'https'}://${hostname}${resolvedPort === (http ? 80 : 443) ? '' : `:${resolvedPort}`}`,
+    listenHost,
+    origin,
+    ...(extraOrigins.length ? { extraOrigins } : {}),
+    ...(lanAddresses.length ? { lanAddresses } : {}),
     tlsDir: developmentTlsDirectory(),
   };
 };
@@ -116,12 +205,13 @@ export const startEnvironment = (options: EnvironmentOptions) =>
 
 const runWorker = async () => {
   const signal = await getCancelSignal();
-  const { mode, port, root, tls, syntheticSession } =
+  const { mode, port, root, tls, listenHost, syntheticSession } =
     (await getOneMessage()) as {
       mode: string;
       port: number;
       root: string;
       tls?: { cert: string; key: string; ca: string };
+      listenHost?: string;
       syntheticSession?: boolean;
     };
   let server: ViteDevServer | undefined;
@@ -162,7 +252,7 @@ const runWorker = async () => {
         envDir: root,
         cacheDir: 'node_modules/.vite',
         server: {
-          host: tls ? '127.0.0.1' : modes[mode].httpHost,
+          host: listenHost ?? (tls ? '127.0.0.1' : modes[mode].httpHost),
           ...(tls
             ? {
                 https: {
@@ -218,24 +308,30 @@ const runWorker = async () => {
 export { certificateFiles };
 export type { TlsFiles };
 const renewalWindow = 30 * 24 * 60 * 60 * 1000;
-const validateCertificate = (files: TlsFiles, now: number, remaining = 0) =>
-  validateTlsFiles(
-    files,
-    Object.values(modes).map((mode) => mode.hostname),
-    now,
-    remaining,
-  );
+const certificateHosts = (extraHosts: string[] = []) => [
+  ...new Set([
+    ...Object.values(modes).map((mode) => mode.hostname),
+    ...extraHosts,
+  ]),
+];
+const validateCertificate = (
+  files: TlsFiles,
+  now: number,
+  remaining = 0,
+  extraHosts: string[] = [],
+) => validateTlsFiles(files, certificateHosts(extraHosts), now, remaining);
 export const ensureDevelopmentCertificate = (options: {
   tlsDir: string;
   caRoot: string;
   mkcertBinary?: string;
+  extraHosts?: string[];
   now?: number;
   signal?: AbortSignal;
 }) =>
   ensureCertificateFiles({
     ...options,
     mkcertBinary: options.mkcertBinary ?? 'mkcert',
-    hosts: Object.values(modes).map((mode) => mode.hostname),
+    hosts: certificateHosts(options.extraHosts),
     renewBefore: renewalWindow,
   });
 
@@ -365,6 +461,7 @@ const prepareCertificate = async (
   tlsDir: string,
   signal: AbortSignal,
   setup = false,
+  extraHosts: string[] = [],
 ) => {
   const receiptPath = join(tlsDir, 'trusted.json');
   let receipt: { caRoot: string; fingerprint: string } | undefined;
@@ -444,6 +541,7 @@ const prepareCertificate = async (
       await certificateFiles(tlsDir),
       Date.now(),
       renewalWindow,
+      extraHosts,
     );
     reusable = existing.fingerprint === receipt.fingerprint;
   } catch (error) {
@@ -457,6 +555,7 @@ const prepareCertificate = async (
     tlsDir,
     caRoot: receipt.caRoot,
     mkcertBinary: binary,
+    extraHosts,
     signal,
   });
   log.success(
@@ -472,13 +571,14 @@ export const prepareDevelopmentCertificate = async (
   tlsDir: string,
   signal: AbortSignal,
   setup = false,
+  extraHosts: string[] = [],
 ) => {
   const release = await ownRoot(join(tlsDir, '.preparation'), {
     signal,
     wait: 120_000,
   });
   try {
-    return await prepareCertificate(tlsDir, signal, setup);
+    return await prepareCertificate(tlsDir, signal, setup, extraHosts);
   } finally {
     await release();
   }
@@ -562,18 +662,25 @@ const main = async () => {
   });
   if (values.help) {
     console.log(
-      'pnpm dev [--mock] [--http] [--setup] [--port 8443]\n--print-config 输出地址配置。--cert / --key / --ca 使用指定证书。--skip-dns-check 用于客户端自行解析的环境。',
+      'pnpm dev [--mock] [--http] [--setup] [--host 0.0.0.0] [--port 8443]\n--print-config 输出地址配置。--host 0.0.0.0 或本机 IPv4 开启局域网 HTTPS。--cert / --key / --ca 使用指定证书。--skip-dns-check 用于客户端自行解析的环境。',
     );
     return;
   }
-  if (values.host && !['127.0.0.1', 'localhost'].includes(values.host))
-    throw new Error('开发服务器仅监听本机回环地址');
   if (values.http && values.setup)
     throw new Error('--setup 准备 HTTPS，不能与 --http 一起使用');
+  if (
+    values.setup &&
+    values.host &&
+    !['127.0.0.1', 'localhost'].includes(values.host)
+  )
+    throw new Error(
+      '--setup 仅准备本机回环 HTTPS，不能与局域网 --host 一起使用',
+    );
   const mode = values.mock ? 'mock' : 'product';
   const settings = developmentSettings(mode, {
     http: values.http,
     ...(values.port !== undefined ? { port: Number(values.port) } : {}),
+    ...(values.host !== undefined ? { host: values.host } : {}),
   });
   if (values['print-config']) {
     console.log(JSON.stringify(settings));
@@ -600,7 +707,7 @@ const main = async () => {
           key: resolve(values.key!),
           ca: resolve(values.ca!),
         };
-        await validateCertificate(tls, Date.now());
+        await validateCertificate(tls, Date.now(), 0, settings.lanAddresses);
         log.step('使用调用方指定的证书，不安装系统 CA', {
           output: process.stdout,
         });
@@ -609,15 +716,16 @@ const main = async () => {
           settings.tlsDir,
           controller.signal,
           values.setup,
+          settings.lanAddresses,
         );
-      if (!values['skip-dns-check'])
+      if (!values['skip-dns-check'] && isIP(settings.hostname) === 0)
         await prepareDevelopmentDns(
           values.setup
             ? Object.values(modes).map((mode) => mode.hostname)
             : settings.hostname,
           controller.signal,
         );
-      else
+      else if (values['skip-dns-check'])
         log.info('已显式略过系统解析检查；客户端仍需自行解析开发域名', {
           output: process.stdout,
         });
@@ -641,17 +749,39 @@ const main = async () => {
             )
           : process.cwd(),
       port: settings.port,
+      listenHost: settings.listenHost,
       signal: controller.signal,
       tls,
       source: process.env.CAMPANULA_DEV_SOURCE ?? SOURCE,
       ...(settings.http ? {} : { origin: settings.origin }),
+      ...(settings.extraOrigins ? { extraOrigins: settings.extraOrigins } : {}),
       onLog: (message) =>
         log.message(message.trimEnd(), { output: process.stdout }),
     });
+    const entryPath = mode === 'mock' ? '/mock/login' : '/';
+    const lanLines = (settings.extraOrigins ?? []).map(
+      (origin) => `LAN:   ${origin}${entryPath}`,
+    );
     log.success(
-      `Ready: ${environment.baseURL}${mode === 'mock' ? '/mock/login' : '/'}\nroot=${environment.root} pid=${environment.pid}`,
+      [
+        `Ready: ${environment.baseURL}${entryPath}`,
+        ...lanLines,
+        `root=${environment.root} pid=${environment.pid}`,
+      ].join('\n'),
       { output: process.stdout },
     );
+    if (settings.lanAddresses?.length && process.stdout.isTTY) {
+      const primaryLan = `${formatOrigin(false, settings.lanAddresses[0]!, settings.port)}${entryPath}`;
+      const { default: QRCode } = await import('qrcode');
+      const qr = await QRCode.toString(primaryLan, {
+        type: 'terminal',
+        small: true,
+      });
+      log.message(
+        `手机扫码访问 ${primaryLan}（首次需点击继续前往）\n${qr.trimEnd()}`,
+        { output: process.stdout },
+      );
+    }
     await environment.finished;
     if (!controller.signal.aborted && environment.exitCode !== 0)
       throw new Error('开发服务器异常退出');

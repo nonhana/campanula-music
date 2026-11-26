@@ -23,10 +23,35 @@ const buildVersion =
   Date.now().toString();
 
 const externalOrigin = process.env.CAMPANULA_DEV_ORIGIN;
-if (externalOrigin) {
+const extraOrigins = (process.env.CAMPANULA_DEV_EXTRA_ORIGINS ?? '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean);
+const externalOrigins = externalOrigin
+  ? [externalOrigin, ...extraOrigins]
+  : extraOrigins;
+const allowedOriginMap = new Map(
+  externalOrigins.map((origin) => [new URL(origin).host, origin]),
+);
+
+const requestAuthority = (req: {
+  httpVersionMajor: number;
+  headers: Record<string, string | string[] | undefined>;
+}): string => {
+  const authority =
+    req.httpVersionMajor === 2 ? req.headers[':authority'] : req.headers.host;
+  return typeof authority === 'string' ? authority : '';
+};
+
+if (externalOrigins.length > 0) {
   adapter.vite = {
     ...adapter.vite,
-    getRequest: (options) => getRequest({ ...options, base: externalOrigin }),
+    getRequest: (options) => {
+      const base =
+        allowedOriginMap.get(requestAuthority(options.request)) ??
+        externalOrigins[0]!;
+      return getRequest({ ...options, base });
+    },
   };
 }
 
@@ -35,22 +60,19 @@ const developmentOrigin = (): Plugin => ({
   enforce: 'pre',
   apply: 'serve',
   configureServer(server) {
-    if (externalOrigin)
-      server.printUrls = () =>
-        server.config.logger.info(`  ➜  Local:   ${externalOrigin}/`);
+    if (externalOrigins.length > 0)
+      server.printUrls = () => {
+        for (const origin of externalOrigins)
+          server.config.logger.info(
+            `  ➜  ${origin === externalOrigin ? 'Local:  ' : 'Network:'} ${origin}/`,
+          );
+      };
     server.middlewares.use((req, res, next) => {
-      const expected = externalOrigin
-        ? new URL(externalOrigin).host
-        : undefined;
-      const authority =
-        req.httpVersionMajor === 2
-          ? req.headers[':authority']
-          : req.headers.host;
-      const host = typeof authority === 'string' ? authority : '';
+      const host = requestAuthority(req);
       const hostname = host.split(':')[0];
       if (
-        expected
-          ? host === expected
+        allowedOriginMap.size > 0
+          ? allowedOriginMap.has(host)
           : hostname === (process.env.CAMPANULA_DEV_HOST ?? 'localhost')
       ) {
         next();
@@ -174,14 +196,22 @@ export default defineConfig({
   server: {
     host: 'localhost',
     strictPort: true,
-    ...(externalOrigin
+    ...(externalOrigins.length > 0
       ? {
-          origin: externalOrigin,
-          allowedHosts: [new URL(externalOrigin).hostname],
+          ...(externalOrigins.length === 1
+            ? { origin: externalOrigins[0] }
+            : {}),
+          allowedHosts: [
+            ...new Set(
+              externalOrigins.map((origin) => new URL(origin).hostname),
+            ),
+          ],
           hmr: {
             protocol: 'wss',
-            host: new URL(externalOrigin).hostname,
-            clientPort: Number(new URL(externalOrigin).port || 443),
+            ...(externalOrigins.length === 1
+              ? { host: new URL(externalOrigins[0]!).hostname }
+              : {}),
+            clientPort: Number(new URL(externalOrigins[0]!).port || 443),
           },
         }
       : {}),

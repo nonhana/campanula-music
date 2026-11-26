@@ -264,6 +264,8 @@ export interface ProcessEnvironmentOptions {
   source?: string;
   port?: number;
   origin?: string;
+  extraOrigins?: string[];
+  listenHost?: string;
   env?: Record<string, string>;
   signal?: AbortSignal;
   workerFile: string;
@@ -300,6 +302,9 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
       ...workspace.env,
       CAMPANULA_DEV_HOST: options.httpHost,
       CAMPANULA_DEV_ORIGIN: options.origin,
+      ...(options.extraOrigins?.length
+        ? { CAMPANULA_DEV_EXTRA_ORIGINS: options.extraOrigins.join(',') }
+        : {}),
     },
     stdin: 'ignore',
     all: true,
@@ -313,6 +318,7 @@ export const launchEnvironment = async (options: ProcessEnvironmentOptions) => {
       port: options.port ?? 0,
       root: workspace.root,
       tls: options.tls,
+      listenHost: options.listenHost,
       syntheticSession: options.syntheticSession,
     },
   });

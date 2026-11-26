@@ -8,6 +8,7 @@ import {
   rm,
   writeFile,
 } from 'node:fs/promises';
+import { isIP } from 'node:net';
 import { basename, join } from 'node:path';
 
 import { execa } from 'execa';
@@ -44,8 +45,10 @@ export const validateTlsFiles = async (
     throw new Error('站点证书与本地 CA 不匹配');
   if (!cert.checkPrivateKey(createPrivateKey(keyBytes)))
     throw new Error('站点证书与私钥不匹配');
-  for (const hostname of hosts)
-    if (!cert.checkHost(hostname)) throw new Error(`证书没有覆盖 ${hostname}`);
+  for (const entry of hosts) {
+    const matched = isIP(entry) ? cert.checkIP(entry) : cert.checkHost(entry);
+    if (!matched) throw new Error(`证书没有覆盖 ${entry}`);
+  }
   return { fingerprint: ca.fingerprint256, expires: cert.validTo };
 };
 

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx scripts/dev.mts",
+    "dev:lan": "tsx scripts/dev.mts --host 0.0.0.0",
     "dev:mock": "tsx scripts/dev.mts --mock",
     "build": "vite build",
     "start": "node build",
