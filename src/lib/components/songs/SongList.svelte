@@ -315,6 +315,7 @@
         <VirtualList
           items={songs}
           itemHeight={rowHeight}
+          surface={bare ? undefined : phone ? 'ground' : 'paper'}
           getKey={(song: Song) => song.id}
           markOf={drag && !drag.marks ? undefined : songMark}
           placeOf={drag?.placeOf}

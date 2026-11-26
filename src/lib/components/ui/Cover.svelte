@@ -3,8 +3,14 @@
   import { imageLoaded, preloadImage } from '../shared/image-reveal.svelte.ts';
   import { displayCoverSource } from '../shared/image-url.ts';
 
+  // 40/44/48px 小封面统一按 48 档取图，歌单、队列与播放条共享同一份图片缓存
+  const SMALL_COVER_BUCKET = 48;
+
   export const coverSource = (url: string, size: number): string =>
-    displayCoverSource(url, size);
+    displayCoverSource(
+      url,
+      size > 0 && size <= SMALL_COVER_BUCKET ? SMALL_COVER_BUCKET : size,
+    );
 
   /** 参数要和之后挂上的 Cover 一样，挂上时才直接显示、不淡入 */
   export const preloadCover = (url: string, size: number): Promise<void> =>
@@ -23,6 +29,7 @@
   import { createImageReveal } from '../shared/image-reveal.svelte.ts';
   import { DURATIONS } from '../shared/motion-tokens.ts';
   import { fade } from '../shared/motion.ts';
+  import { getVirtualList, hasVirtualList } from './virtual-list-context.ts';
 
   interface Props {
     url: string | null;
@@ -47,6 +54,7 @@
     placeholder,
     load = true,
   }: Props = $props();
+  const virtual = hasVirtualList() ? getVirtualList() : null;
   const source = $derived(url === null ? '' : coverSource(url, size));
   const view = getAppView();
   const local = $derived(
@@ -58,7 +66,15 @@
         ? coverSource(url, placeholder)
         : null),
   );
-  const reveal = createImageReveal(() => source);
+  const reveal = createImageReveal(() => source, {
+    instant: virtual !== null,
+  });
+  const deferred = $derived(
+    virtual !== null &&
+      virtual.deferImages &&
+      !local &&
+      reveal.status !== 'cached',
+  );
 </script>
 
 <span
@@ -86,8 +102,9 @@
         draggable="false"
       />
     {/if}
-    {#if load}
-      {#key source}
+    {#if load && !deferred}
+      {#if virtual}
+        <!-- 虚拟列表内复用槽位：不走 {#key} 重建、不跑 opacity 过渡，避免移动端滚动层拆分闪白 -->
         <img
           src={source}
           alt=""
@@ -96,16 +113,34 @@
           class={[
             'col-start-1 row-start-1 size-full object-cover',
             (reveal.status === 'loading' || reveal.status === 'broken') &&
-              'opacity-0',
-            reveal.status === 'loaded' && 'transition-opacity duration-reveal',
+              'invisible',
           ]}
-          loading={eager ? 'eager' : 'lazy'}
-          fetchpriority={eager ? 'high' : undefined}
           decoding="async"
           draggable="false"
           {@attach reveal.image}
         />
-      {/key}
+      {:else}
+        {#key source}
+          <img
+            src={source}
+            alt=""
+            width={size}
+            height={size}
+            class={[
+              'col-start-1 row-start-1 size-full object-cover',
+              (reveal.status === 'loading' || reveal.status === 'broken') &&
+                'opacity-0',
+              reveal.status === 'loaded' &&
+                'transition-opacity duration-reveal',
+            ]}
+            loading={eager ? 'eager' : 'lazy'}
+            fetchpriority={eager ? 'high' : undefined}
+            decoding="async"
+            draggable="false"
+            {@attach reveal.image}
+          />
+        {/key}
+      {/if}
     {/if}
   {/if}
 </span>

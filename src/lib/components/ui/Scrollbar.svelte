@@ -90,12 +90,19 @@
   const gripBottom = $derived(
     Math.min(length, INSET + offset + thumb + GRIP_SLOP),
   );
+  const gripHeight = $derived(
+    scrollable ? Math.max(0, gripBottom - gripTop) : 0,
+  );
   const bubbleCenter = $derived(
     Math.min(
       Math.max(INSET + offset + thumb / 2, bubbleHeight / 2),
       length - bubbleHeight / 2,
     ),
   );
+  let bubbleY = $state(0);
+  $effect.pre(() => {
+    if (dragging && quick) bubbleY = bubbleCenter;
+  });
 
   const scroller = (): HTMLElement | null =>
     onPage ? document.documentElement : (target ?? host?.parentElement ?? null);
@@ -112,7 +119,7 @@
     } else {
       content = axis === 'y' ? el.scrollHeight : el.scrollWidth;
     }
-    metrics =
+    const next =
       axis === 'y'
         ? {
             position: el.scrollTop,
@@ -126,6 +133,13 @@
             content,
             cross: el.clientHeight,
           };
+    if (
+      next.position !== metrics.position ||
+      next.viewport !== metrics.viewport ||
+      next.content !== metrics.content ||
+      next.cross !== metrics.cross
+    )
+      metrics = next;
     readMark();
   };
 
@@ -292,8 +306,8 @@
       <div
         bind:this={grip}
         class="grip"
-        style:top="{gripTop}px"
-        style:height="{gripBottom - gripTop}px"
+        style:height="{gripHeight}px"
+        style:transform="translateY({gripTop}px)"
         {@attach grabbable && touchClaim}
       ></div>
     {/if}
@@ -304,7 +318,7 @@
           'bubble rounded-xl bg-white px-3.5 py-2 shadow-float',
           dragging && quick && mark && 'open',
         ]}
-        style:top="{bubbleCenter}px"
+        style:transform="translate3d(0, {bubbleY}px, 0) translateY(-50%)"
         bind:offsetHeight={bubbleHeight}
       >
         {#if mark}
@@ -393,6 +407,7 @@
 
   .grip {
     position: absolute;
+    top: 0;
     right: 0;
     width: 44px;
     pointer-events: none;
@@ -401,12 +416,12 @@
   /* 让开按着滑块的那根手指 */
   .bubble {
     position: absolute;
+    top: 0;
     right: 56px;
     width: max-content;
     max-width: min(240px, calc(100vw - 96px));
     pointer-events: none;
     opacity: 0;
-    transform: translateY(-50%);
     transition: opacity var(--duration-feedback) var(--ease-in-soft);
   }
 

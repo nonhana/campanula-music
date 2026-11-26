@@ -11,8 +11,11 @@
   import { createSeekSlider } from './seek-slider.svelte.ts';
   import { formatSeconds } from './view.ts';
 
-  const { playhead, touch = false }: { playhead: Playhead; touch?: boolean } =
-    $props();
+  const {
+    playhead,
+    touch = false,
+    paused = false,
+  }: { playhead: Playhead; touch?: boolean; paused?: boolean } = $props();
 
   const WAVELENGTH = 24;
   const MIDDLE = 12;
@@ -83,7 +86,7 @@
           y2={MIDDLE}
         />
         <g clip-path="url(#{uid}-played)">
-          <path class={['flow', waving && 'live']} d={wavePath} />
+          <path class={['flow', waving && !paused && 'live']} d={wavePath} />
         </g>
         <rect class="thumb" x={x - 2} y="3" width="4" height="18" rx="2" />
       </svg>
@@ -133,11 +136,10 @@
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
-    animation: flow var(--loop-wave-flow) linear infinite;
-    animation-play-state: paused;
   }
 
   .flow.live {
+    animation: flow var(--loop-wave-flow) linear infinite;
     animation-play-state: var(--loop-state);
   }
 

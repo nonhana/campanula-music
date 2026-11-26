@@ -5,22 +5,31 @@ export const measureRows = (
   changed: (height: number) => void,
 ): Attachment<HTMLElement> => {
   const heights = new Map<HTMLElement, number>();
+  let observer: ResizeObserver | null = null;
   const publish = () => {
     if (heights.size) changed(Math.max(minimum(), ...heights.values()));
   };
-  return (node) => {
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      const height =
-        entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height;
-      heights.set(node, Math.ceil(height) + 8);
+  const ensureObserver = (): ResizeObserver => {
+    observer ??= new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const height =
+          entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height;
+        heights.set(entry.target as HTMLElement, Math.ceil(height) + 8);
+      }
       publish();
     });
-    observer.observe(node, { box: 'border-box' });
+    return observer;
+  };
+  return (node) => {
+    const current = ensureObserver();
+    current.observe(node, { box: 'border-box' });
     return () => {
-      observer.disconnect();
+      current.unobserve(node);
       heights.delete(node);
-      publish();
+      if (heights.size === 0) {
+        current.disconnect();
+        observer = null;
+      }
     };
   };
 };

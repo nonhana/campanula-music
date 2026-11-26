@@ -71,6 +71,8 @@
   let sheet = $state<HTMLElement>();
 
   const sheetDrawer = createDrawer(() => window.innerHeight * SHEET_HEIGHT);
+  const sheetCovered = $derived(queueOpen && sheetDrawer.position === 0);
+  const visibleTurn = $derived(queueOpen ? null : turn);
   const gripTitle = playerDrawer.grip({
     from: 'open',
     commit: closePlayerPage,
@@ -169,7 +171,7 @@
           >
             <CoverWheel
               {song}
-              {turn}
+              turn={visibleTurn}
               duration={DURATIONS.focal}
               size={PAGE_COVER.phone}
               fluid
@@ -184,10 +186,10 @@
       {/if}
     </div>
 
-    <div class="flex-none pt-5">
+    <div class={['flex-none pt-5', sheetCovered && 'invisible']}>
       <div class="flex items-start gap-1">
         <div class="min-w-0 flex-1">
-          <NowPlayingTitle {song} {turn} phone />
+          <NowPlayingTitle {song} turn={visibleTurn} phone />
         </div>
         <HeartButton {song} size="phone-page" />
         {#if entry}<SongMoreButton
@@ -198,7 +200,7 @@
       </div>
 
       <div class="mt-2">
-        <WaveProgress {playhead} touch />
+        <WaveProgress {playhead} touch paused={queueOpen} />
       </div>
 
       <div class="mt-3 flex items-center justify-between">

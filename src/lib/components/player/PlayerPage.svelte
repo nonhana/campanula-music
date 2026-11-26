@@ -39,7 +39,7 @@
   const DIM = 0.2;
 
   const view = getAppView();
-  const { player: layer, playerDrawer } = getOverlays();
+  const { player: layer, queue, playerDrawer } = getOverlays();
   const player = $derived(view.state.player);
   const song = $derived(currentSong(player));
   const source = $derived(
@@ -48,7 +48,10 @@
       : sourceName(view.state.library, player.queue[player.current].source),
   );
   const turn = $derived(turnOf(player.change));
-  const playhead = createPlayhead(() => view.state.player);
+  const playhead = createPlayhead(
+    () => view.state.player,
+    () => !desktopLayout.current && queue.request !== null,
+  );
   const radius = $derived(
     Math.max(
       0,

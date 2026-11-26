@@ -43,31 +43,58 @@ export interface ImageReveal {
 }
 
 // source 要在组件初始化时调用。
-export const createImageReveal = (source: () => string): ImageReveal => {
+export const createImageReveal = (
+  source: () => string,
+  { instant = false }: { instant?: boolean } = {},
+): ImageReveal => {
   let seen = $state<{
     source: string;
     status: Exclude<ImageStatus, 'loading'>;
   } | null>(null);
-  const status = $derived(seen?.source === source() ? seen.status : 'loading');
+  const status = $derived.by((): ImageStatus => {
+    const src = source();
+    if (!src) return 'loading';
+    if (loaded.has(src)) return 'cached';
+    return seen?.source === src ? seen.status : 'loading';
+  });
 
   return {
     get status() {
       return status;
     },
     image(img) {
-      const src = untrack(source);
-      if (img.complete && img.naturalWidth > 0) loaded.add(src);
-      if (loaded.has(src)) seen = { source: src, status: 'cached' };
+      const initial = untrack(source);
+      if (
+        initial &&
+        img.getAttribute('src') === initial &&
+        img.complete &&
+        img.naturalWidth > 0
+      ) {
+        loaded.add(initial);
+        seen = { source: initial, status: 'cached' };
+      }
       const onload = () => {
+        const src = untrack(source);
+        if (
+          !src ||
+          img.getAttribute('src') !== src ||
+          !img.complete ||
+          img.naturalWidth === 0
+        )
+          return;
         loaded.add(src);
         if (seen?.source !== src) {
           seen = {
             source: src,
-            status: unseen() ? 'cached' : 'loaded',
+            status: instant || unseen() ? 'cached' : 'loaded',
           };
         }
       };
-      const onerror = () => (seen = { source: src, status: 'broken' });
+      const onerror = () => {
+        const src = untrack(source);
+        if (!src || img.getAttribute('src') !== src) return;
+        seen = { source: src, status: 'broken' };
+      };
       img.addEventListener('load', onload);
       img.addEventListener('error', onerror);
       return () => {

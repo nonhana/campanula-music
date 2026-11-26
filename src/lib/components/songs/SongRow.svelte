@@ -92,8 +92,13 @@
   // 长按进入多选后，松手那一下的点按要吞掉；下一次 pointerdown 才复位，不按时间清
   let longPressed = false;
 
-  $effect(() => () => {
-    if (timer) clearTimeout(timer);
+  $effect(() => {
+    void song.id;
+    longPressed = false;
+    cancelLongPress();
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   });
 
   const cancelLongPress = (): void => {

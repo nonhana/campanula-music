@@ -78,13 +78,19 @@
     windowTitle.setPlaying(song ? formatPlayingTitle(song) : null);
   });
   onDestroy(() => windowTitle.destroy());
+  const playerCovered = $derived(
+    overlays.playerLayer.open && overlays.playerDrawer.position === 0,
+  );
 </script>
 
 {#snippet selectionBar()}
   <PhoneSelectionActionBar />
 {/snippet}
 
-<div class="contents" inert={overlays.stack.baseInert}>
+<div
+  class={['contents', playerCovered && 'invisible']}
+  inert={overlays.stack.baseInert}
+>
   <div
     class={[
       'bg-primary-50 min-h-dvh',

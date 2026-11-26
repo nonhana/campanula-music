@@ -93,6 +93,7 @@
       <VirtualList
         items={tasks}
         itemHeight={Math.max(rowHeight, phone ? 64 : 56)}
+        surface={phone ? 'ground' : 'paper'}
         getKey={(task: DownloadTask) => task.song.id}
         row={taskRow}
       />

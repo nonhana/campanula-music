@@ -283,6 +283,7 @@
     <VirtualList
       items={filtered}
       itemHeight={rowHeight}
+      surface="paper"
       getKey={(song: Song) => song.id}
       scrollParent={scroller}
     >

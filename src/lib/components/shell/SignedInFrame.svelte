@@ -137,9 +137,15 @@
     windowTitle.setPlaying(song ? formatPlayingTitle(song) : null);
   });
   onDestroy(() => windowTitle.destroy());
+  const playerCovered = $derived(
+    overlays.playerLayer.open && overlays.playerDrawer.position === 0,
+  );
 </script>
 
-<div class="contents" inert={overlays.stack.baseInert}>
+<div
+  class={['contents', playerCovered && 'invisible']}
+  inert={overlays.stack.baseInert}
+>
   {#if desktopLayout.current}
     {#if DesktopShellView}
       <DesktopShellView {account}>

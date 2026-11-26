@@ -15,6 +15,7 @@
     'grid place-items-center text-caption tabular-nums',
     onGround ? 'text-neutral-600' : 'text-neutral-500',
   ]}
+  style="position: relative; z-index: 1; pointer-events: none"
 >
   {#if now}
     <span class="grid col-start-1 row-start-1 origin-bottom" in:grow out:grow

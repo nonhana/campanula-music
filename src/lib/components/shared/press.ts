@@ -252,6 +252,7 @@ export const attachTouchClaim =
   (grip: Grip): Attachment<HTMLElement> =>
   (element) => {
     let pending: { from: PointerSample; id: number } | null = null;
+    let stopPending: (() => void) | null = null;
     let release: (() => void) | null = null;
     let swallowClick = false;
     let clickTimer: ReturnType<typeof setTimeout> | undefined;
@@ -267,6 +268,11 @@ export const attachTouchClaim =
       time,
       target: element,
     });
+    const clearPending = () => {
+      pending = null;
+      stopPending?.();
+      stopPending = null;
+    };
     const end = () => {
       release?.();
       release = null;
@@ -312,20 +318,6 @@ export const attachTouchClaim =
       };
     };
 
-    const ontouchstart = (event: TouchEvent) => {
-      pending = null;
-      const touch = event.changedTouches[0];
-      if (release !== null || event.touches.length !== 1 || !touch) return;
-      element.style.pointerEvents = 'auto';
-      const top = document.elementFromPoint(touch.clientX, touch.clientY);
-      element.style.pointerEvents = '';
-      if (top === element) {
-        pending = {
-          from: sample(touch, event.timeStamp),
-          id: touch.identifier,
-        };
-      }
-    };
     const ontouchmove = (event: TouchEvent) => {
       if (!pending) return;
       const { from, id } = pending;
@@ -337,12 +329,61 @@ export const attachTouchClaim =
         event.cancelable,
       );
       if (decision === 'wait') return;
-      pending = null;
+      clearPending();
       if (decision === 'pass' || !grip.press(from)) return;
       event.preventDefault();
       claim(touch.target, id);
       grip.move(sample(touch, event.timeStamp));
     };
+
+    const ontouchstart = (event: TouchEvent) => {
+      clearPending();
+      const touch = event.changedTouches[0];
+      if (release !== null || event.touches.length !== 1 || !touch) return;
+      const rect = element.getBoundingClientRect();
+      if (
+        touch.clientX < rect.left ||
+        touch.clientX > rect.right ||
+        touch.clientY < rect.top ||
+        touch.clientY > rect.bottom
+      )
+        return;
+      element.style.pointerEvents = 'auto';
+      const top = document.elementFromPoint(touch.clientX, touch.clientY);
+      element.style.pointerEvents = '';
+      if (top !== element) return;
+      const id = touch.identifier;
+      pending = {
+        from: sample(touch, event.timeStamp),
+        id,
+      };
+      const onpendingend = (endEvent: TouchEvent) => {
+        if (
+          [...endEvent.changedTouches].some((item) => item.identifier === id)
+        ) {
+          clearPending();
+        }
+      };
+      // 仅在按下命中右侧滑块热区时临时挂载非被动 touchmove，日常滑列表全程走浏览器原生合成滚动
+      window.addEventListener('touchmove', ontouchmove, {
+        capture: true,
+        passive: false,
+      });
+      window.addEventListener('touchend', onpendingend, {
+        capture: true,
+        passive: true,
+      });
+      window.addEventListener('touchcancel', onpendingend, {
+        capture: true,
+        passive: true,
+      });
+      stopPending = () => {
+        window.removeEventListener('touchmove', ontouchmove, true);
+        window.removeEventListener('touchend', onpendingend, true);
+        window.removeEventListener('touchcancel', onpendingend, true);
+      };
+    };
+
     const onclick = (event: MouseEvent) => {
       if (!swallowClick || event.detail === 0) return;
       swallowClick = false;
@@ -354,14 +395,10 @@ export const attachTouchClaim =
       capture: true,
       passive: true,
     });
-    window.addEventListener('touchmove', ontouchmove, {
-      capture: true,
-      passive: false,
-    });
     window.addEventListener('click', onclick, true);
     return () => {
+      clearPending();
       window.removeEventListener('touchstart', ontouchstart, true);
-      window.removeEventListener('touchmove', ontouchmove, true);
       window.removeEventListener('click', onclick, true);
       clearTimeout(clickTimer);
       if (release !== null) {

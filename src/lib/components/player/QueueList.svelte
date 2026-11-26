@@ -68,10 +68,7 @@
 
   const locate = createNowLocate({
     scroller: () => scroller ?? null,
-    band: () => {
-      const rect = scroller!.getBoundingClientRect();
-      return { top: rect.top, bottom: rect.bottom };
-    },
+    band: () => ({ top: 0, bottom: scroller!.clientHeight }),
   });
   $effect(() =>
     locate.register({
@@ -79,10 +76,7 @@
         current === null || !scroller
           ? null
           : {
-              top:
-                scroller.getBoundingClientRect().top -
-                scroller.scrollTop +
-                current * rowHeight,
+              top: current * rowHeight - scroller.scrollTop,
               height: rowHeight,
               first: current === 0,
             },
@@ -143,6 +137,7 @@
           items={queue}
           itemHeight={rowHeight}
           scrollParent={scroller}
+          surface={ground ? undefined : 'paper'}
           getKey={(entry: QueueEntry) => entry.song.id}
           markOf={(entry: QueueEntry, i: number) => songMark(entry.song, i)}
         >

@@ -188,6 +188,7 @@
       <VirtualList
         items={songs}
         itemHeight={rowHeight}
+        surface="paper"
         getKey={(song: Song) => song.id}
         scrollParent={scroller}
       >
@@ -202,6 +203,7 @@
     <VirtualList
       items={songs}
       itemHeight={rowHeight}
+      surface="paper"
       getKey={(song: Song) => song.id}
       scrollParent={scroller}
     >
